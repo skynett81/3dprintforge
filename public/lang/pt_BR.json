@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Painel"
+  },
+  "sidebar": {
+    "made_by": "Feito por"
+  },
   "header": {
     "subtitle": "Painel de Controle da Impressora 3D",
     "connecting": "Conectando..."
@@ -75,7 +81,17 @@
     "save": "Salvar",
     "type_required": "Tipo é obrigatório",
     "load_failed": "Não foi possível carregar o inventário de filamentos.",
-    "remaining_of": "restante de"
+    "remaining_of": "restante de",
+    "unassigned": "Não atribuído a impressora",
+    "total_spools": "Bobinas",
+    "total_remaining": "Total restante",
+    "total_value": "Valor do inventário",
+    "low_stock": "Estoque baixo",
+    "low_stock_warning": "{{count}} bobina(s) abaixo de 20% restante",
+    "spool_singular": "bobina",
+    "spool_plural": "bobinas",
+    "used_g": "Usado (g)",
+    "drop_here": "Solte bobinas aqui"
   },
   "controls": {
     "title": "Controles",
@@ -100,7 +116,16 @@
     "calibration": "Calibração / nivelamento automático",
     "gcode_title": "Console G-code",
     "gcode_placeholder": "Digite o comando G-code",
-    "gcode_send": "Enviar"
+    "gcode_send": "Enviar",
+    "speed_profile": "Perfil de velocidade",
+    "presets": "Predefinições:",
+    "cooldown": "Resfriar",
+    "motion": "Movimento",
+    "extruder": "Extrusora",
+    "extrude": "Extrudar",
+    "retract": "Retrair",
+    "ai_spaghetti": "IA Spaghetti",
+    "ai_first_layer": "Primeira camada"
   },
   "speed": {
     "label": "Velocidade:",
@@ -140,6 +165,7 @@
     "unknown": "Desconhecido"
   },
   "tabs": {
+    "controls": "Controles",
     "history": "Histórico",
     "statistics": "Estatísticas",
     "filament": "Filamento",
@@ -159,7 +185,9 @@
     "failed": "Falhou",
     "cancelled": "Cancelada",
     "load_failed": "Não foi possível carregar o histórico.",
-    "placeholder": "O histórico de impressões aparecerá aqui..."
+    "placeholder": "O histórico de impressões aparecerá aqui...",
+    "started": "Iniciado",
+    "ended": "Finalizado"
   },
   "stats": {
     "total_prints": "Total de impressões",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Nenhum erro registrado.",
     "load_failed": "Não foi possível carregar o registro de erros.",
-    "placeholder": "O registro de erros aparecerá aqui..."
+    "placeholder": "O registro de erros aparecerá aqui...",
+    "total": "Total",
+    "critical": "Crítico",
+    "errors": "Erros",
+    "warnings": "Avisos",
+    "info": "Info",
+    "all": "Todos",
+    "search_placeholder": "Pesquisar erros...",
+    "no_match": "Nenhum erro correspondente ao filtro.",
+    "just_now": "agora mesmo",
+    "unknown_error": "Erro desconhecido"
   },
   "settings": {
     "printers_title": "Impressoras",
@@ -237,7 +275,14 @@
     "server_title": "Servidor",
     "load_failed": "Não foi possível carregar as configurações.",
     "placeholder": "As configurações aparecerão aqui...",
-    "language": "Idioma"
+    "language": "Idioma",
+    "demo_title": "Dados de demonstração",
+    "demo_description": "Existem {{count}} impressoras de demonstração com dados de teste no banco de dados.",
+    "demo_delete": "Excluir dados de demonstração",
+    "demo_confirm": "Excluir todas as impressoras de demonstração e seus dados associados (histórico, erros, filamento, telemetria)? Isso não pode ser desfeito.",
+    "notif_log_title": "Registro de notificações",
+    "notif_log_empty": "Nenhuma notificação enviada ainda.",
+    "notif_log_failed": "Não foi possível carregar o registro de notificações."
   },
   "notify": {
     "print": "Impressão",
@@ -271,7 +316,47 @@
     "settings": "Configurações",
     "per_change": "Desperdício por troca de cor",
     "no_data": "Nenhum desperdício registrado ainda.",
-    "load_failed": "Não foi possível carregar dados de desperdício."
+    "load_failed": "Não foi possível carregar dados de desperdício.",
+    "efficiency": "Taxa de desperdício",
+    "color_changes_short": "trocas"
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Ventiladores",
+    "fan_part": "Peça",
+    "fan_aux": "Auxiliar",
+    "fan_chamber": "Câmara",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Bico",
+    "sd_card": "Cartão SD",
+    "sd_inserted": "Inserido",
+    "sd_none": "Não inserido",
+    "light": "Luz",
+    "light_on": "Ligada",
+    "light_off": "Desligada",
+    "speed": "Velocidade",
+    "error": "Erro",
+    "no_error": "Nenhum",
+    "unknown": "Desconhecido"
+  },
+  "prepare": {
+    "uploading": "Enviando...",
+    "heating": "Aquecendo...",
+    "loading_model": "Carregando modelo 3D..."
+  },
+  "makerworld": {
+    "loading": "Carregando info do MakerWorld...",
+    "view_on_mw": "Ver no MakerWorld",
+    "by": "por"
+  },
+  "layout": {
+    "locked": "Layout bloqueado",
+    "unlocked": "Layout desbloqueado — arraste para reordenar"
+  },
+  "print_preview": {
+    "title": "Pré-visualização",
+    "no_preview": "Sem pré-visualização"
   },
   "csv": {
     "date": "Data",

@@ -10,7 +10,7 @@
   }
 
   const STATE_COLORS = {
-    'IDLE': '#8b949e',
+    'IDLE': '#c0c8d2',
     'RUNNING': '#00e676',
     'PAUSE': '#f0883e',
     'FINISH': '#58a6ff',
@@ -31,15 +31,15 @@
 
     svg.innerHTML = `
       <circle cx="${CX}" cy="${CY}" r="${RADIUS}"
-              fill="none" stroke="#21262d" stroke-width="8"/>
+              fill="none" stroke="#30363d" stroke-width="8"/>
       <circle id="progress-circle" cx="${CX}" cy="${CY}" r="${RADIUS}"
               fill="none" stroke="#00e676" stroke-width="8" stroke-linecap="round"
               stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${CIRCUMFERENCE}"
               transform="rotate(-90 ${CX} ${CY})"
               style="transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease"/>
-      <text x="${CX}" y="${CY - 2}" text-anchor="middle" fill="#e6edf3"
+      <text x="${CX}" y="${CY - 2}" text-anchor="middle" fill="#f0f6fc"
             font-size="26" font-weight="700" id="progress-percent">0%</text>
-      <text x="${CX}" y="${CY + 16}" text-anchor="middle" fill="#8b949e"
+      <text x="${CX}" y="${CY + 16}" text-anchor="middle" fill="#e2e8f0"
             font-size="10" id="progress-ring-state">${t('state.idle')}</text>
     `;
 
@@ -71,17 +71,18 @@
         timeStr = `${m}${t('time.m')} ${String(s).padStart(2, '0')}${t('time.s')}`;
       }
 
+      // ETA clock time
+      const eta = new Date(Date.now() + _remainingSeconds * 1000);
+      const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+      const etaStr = eta.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+
+      // Combined: countdown on main line, ETA as subtitle
       if (countdownEl) {
-        countdownEl.textContent = timeStr + ' ' + t('progress.remaining');
+        countdownEl.textContent = timeStr;
         countdownEl.style.display = '';
       }
-
-      // ETA clock time
       if (etaEl) {
-        const eta = new Date(Date.now() + _remainingSeconds * 1000);
-        const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
-        const etaStr = eta.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-        etaEl.innerHTML = `${t('progress.eta_prefix')} <strong>${etaStr}</strong>`;
+        etaEl.innerHTML = `${t('progress.eta_prefix')} ${etaStr}`;
         etaEl.style.display = '';
       }
     } else {
@@ -105,7 +106,7 @@
 
     const percent = data.mc_percent || 0;
     const state = data.gcode_state || 'IDLE';
-    const color = STATE_COLORS[state] || '#8b949e';
+    const color = STATE_COLORS[state] || '#c0c8d2';
     _lastGcodeState = state;
 
     // Progress ring
@@ -124,9 +125,15 @@
       const fname = data.subtask_name || '--';
       fileEl.textContent = fname.replace(/\.(3mf|gcode)$/i, '');
     }
+    // Hide state text when printing (ring already shows it)
     if (stateEl) {
-      stateEl.textContent = stateLabel(state);
-      stateEl.style.color = color;
+      if (state === 'RUNNING') {
+        stateEl.style.display = 'none';
+      } else {
+        stateEl.textContent = stateLabel(state);
+        stateEl.style.color = color;
+        stateEl.style.display = '';
+      }
     }
 
     // Sync countdown from server remaining time (minutes)
@@ -158,12 +165,33 @@
       }
     }
 
-    // Layers
+    // Layers - visual progress bar
     if (layersEl) {
-      if (data.total_layer_num > 0) {
-        layersEl.textContent = t('progress.layer', { current: data.layer_num || 0, total: data.total_layer_num });
+      const current = data.layer_num || 0;
+      const total = data.total_layer_num || 0;
+      if (total > 0) {
+        const pct = Math.round((current / total) * 100);
+        layersEl.innerHTML = `
+          <div class="layer-header">
+            <svg class="layer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span class="layer-text">${t('progress.layer', { current, total })}</span>
+          </div>
+          <div class="layer-bar">
+            <div class="layer-bar-fill" style="width:${pct}%"></div>
+          </div>`;
       } else {
-        layersEl.textContent = '--';
+        layersEl.innerHTML = `
+          <div class="layer-header">
+            <svg class="layer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span class="layer-text" style="color:var(--text-muted)">--</span>
+          </div>
+          <div class="layer-bar">
+            <div class="layer-bar-fill idle"></div>
+          </div>`;
       }
     }
   };

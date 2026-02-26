@@ -3,6 +3,26 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Self-hosted dashboard for Bambu Lab 3D printers",
+  "author": "SkyNett81",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skynett81/bambu-dashboard.git"
+  },
+  "homepage": "https://github.com/skynett81/bambu-dashboard",
+  "bugs": {
+    "url": "https://github.com/skynett81/bambu-dashboard/issues"
+  },
+  "keywords": [
+    "bambu-lab",
+    "3d-printer",
+    "dashboard",
+    "mqtt",
+    "self-hosted"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "start": "node --experimental-sqlite server/index.js",
     "dev": "node --experimental-sqlite --watch server/index.js",
@@ -10,6 +30,7 @@
     "setup": "node --experimental-sqlite server/setup-wizard.js"
   },
   "dependencies": {
+    "basic-ftp": "^5.2.0",
     "mqtt": "^5.10.0",
     "ws": "^8.18.0"
   }

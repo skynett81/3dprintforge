@@ -166,6 +166,8 @@ function _runMigrations() {
     { version: 6, up: _mig006_ams_tray_lifetime },
     { version: 7, up: _mig007_nozzle_index },
     { version: 8, up: _mig008_filament_printer_id },
+    { version: 9, up: _mig009_notifications },
+    { version: 10, up: _mig010_update_history },
   ];
 
   for (const m of migrations) {
@@ -293,6 +295,52 @@ function _mig007_nozzle_index() {
 function _mig008_filament_printer_id() {
   try { db.exec('ALTER TABLE filament_inventory ADD COLUMN printer_id TEXT'); } catch (e) { /* exists */ }
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_filament_printer ON filament_inventory(printer_id)'); } catch (e) { /* exists */ }
+}
+
+function _mig009_notifications() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notification_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+      event_type TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      printer_id TEXT,
+      title TEXT,
+      message TEXT,
+      status TEXT NOT NULL DEFAULT 'sent',
+      error_info TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_notif_log_time ON notification_log(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_notif_log_printer ON notification_log(printer_id);
+
+    CREATE TABLE IF NOT EXISTS notification_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      queued_at TEXT NOT NULL DEFAULT (datetime('now')),
+      event_type TEXT NOT NULL,
+      printer_id TEXT,
+      printer_name TEXT,
+      title TEXT,
+      message TEXT,
+      event_data TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_notif_queue_time ON notification_queue(queued_at);
+  `);
+}
+
+function _mig010_update_history() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS update_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+      from_version TEXT NOT NULL,
+      to_version TEXT NOT NULL,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'started',
+      backup_path TEXT,
+      error_message TEXT,
+      duration_ms INTEGER
+    );
+  `);
 }
 
 // ---- Printer CRUD ----
@@ -876,4 +924,56 @@ export function purgeDemoData() {
   deleted += ids.length;
 
   return { deleted, printerIds: ids };
+}
+
+// ---- Notifications ----
+
+export function addNotificationLog(entry) {
+  return db.prepare(`INSERT INTO notification_log
+    (event_type, channel, printer_id, title, message, status, error_info)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
+    entry.event_type, entry.channel, entry.printer_id || null,
+    entry.title, entry.message, entry.status || 'sent', entry.error_info || null
+  );
+}
+
+export function getNotificationLog(limit = 50, offset = 0) {
+  return db.prepare('SELECT * FROM notification_log ORDER BY timestamp DESC LIMIT ? OFFSET ?')
+    .all(limit, offset);
+}
+
+export function addNotificationQueue(entry) {
+  return db.prepare(`INSERT INTO notification_queue
+    (event_type, printer_id, printer_name, title, message, event_data)
+    VALUES (?, ?, ?, ?, ?, ?)`).run(
+    entry.event_type, entry.printer_id || null, entry.printer_name || null,
+    entry.title, entry.message, entry.event_data ? JSON.stringify(entry.event_data) : null
+  );
+}
+
+export function getNotificationQueue() {
+  return db.prepare('SELECT * FROM notification_queue ORDER BY queued_at ASC').all();
+}
+
+export function clearNotificationQueue() {
+  return db.prepare('DELETE FROM notification_queue').run();
+}
+
+// ---- Update History ----
+
+export function addUpdateEntry(entry) {
+  const result = db.prepare(`
+    INSERT INTO update_history (from_version, to_version, method, status, backup_path)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(entry.from_version, entry.to_version, entry.method, entry.status || 'started', entry.backup_path || null);
+  return result.lastInsertRowid;
+}
+
+export function updateUpdateEntry(id, status, errorMessage, durationMs) {
+  db.prepare('UPDATE update_history SET status = ?, error_message = ?, duration_ms = ? WHERE id = ?')
+    .run(status, errorMessage || null, durationMs || null, id);
+}
+
+export function getUpdateHistory(limit = 20) {
+  return db.prepare('SELECT * FROM update_history ORDER BY timestamp DESC LIMIT ?').all(limit);
 }

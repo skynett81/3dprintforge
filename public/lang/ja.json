@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "ダッシュボード"
+  },
+  "sidebar": {
+    "made_by": "作成者"
+  },
   "header": {
     "subtitle": "3Dプリンター コントロールパネル",
     "connecting": "接続中..."
@@ -75,7 +81,17 @@
     "save": "保存",
     "type_required": "タイプは必須です",
     "load_failed": "フィラメント在庫を読み込めませんでした。",
-    "remaining_of": "残り（全体の）"
+    "remaining_of": "残り（全体の）",
+    "unassigned": "プリンターに未割当",
+    "total_spools": "スプール",
+    "total_remaining": "合計残量",
+    "total_value": "在庫価値",
+    "low_stock": "在庫不足",
+    "low_stock_warning": "{{count}} スプールが残量20%未満",
+    "spool_singular": "スプール",
+    "spool_plural": "スプール",
+    "used_g": "使用量 (g)",
+    "drop_here": "スプールをここにドロップ"
   },
   "controls": {
     "title": "操作",
@@ -100,7 +116,16 @@
     "calibration": "キャリブレーション / オートレベリング",
     "gcode_title": "G-codeコンソール",
     "gcode_placeholder": "G-codeコマンドを入力",
-    "gcode_send": "送信"
+    "gcode_send": "送信",
+    "speed_profile": "速度プロファイル",
+    "presets": "プリセット:",
+    "cooldown": "冷却",
+    "motion": "モーション",
+    "extruder": "エクストルーダー",
+    "extrude": "押出し",
+    "retract": "引込み",
+    "ai_spaghetti": "スパゲッティAI",
+    "ai_first_layer": "第1層"
   },
   "speed": {
     "label": "速度:",
@@ -140,6 +165,7 @@
     "unknown": "不明"
   },
   "tabs": {
+    "controls": "コントロール",
     "history": "履歴",
     "statistics": "統計",
     "filament": "フィラメント",
@@ -160,7 +186,9 @@
     "failed": "失敗",
     "cancelled": "キャンセル",
     "load_failed": "履歴を読み込めませんでした。",
-    "placeholder": "印刷履歴がここに表示されます..."
+    "placeholder": "印刷履歴がここに表示されます...",
+    "started": "開始",
+    "ended": "終了"
   },
   "stats": {
     "total_prints": "総印刷数",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "エラーは記録されていません。",
     "load_failed": "エラーログを読み込めませんでした。",
-    "placeholder": "エラーログがここに表示されます..."
+    "placeholder": "エラーログがここに表示されます...",
+    "total": "合計",
+    "critical": "重大",
+    "errors": "エラー",
+    "warnings": "警告",
+    "info": "情報",
+    "all": "すべて",
+    "search_placeholder": "エラーを検索...",
+    "no_match": "フィルターに一致するエラーはありません。",
+    "just_now": "たった今",
+    "unknown_error": "不明なエラー"
   },
   "settings": {
     "printers_title": "プリンター",
@@ -238,7 +276,14 @@
     "server_title": "サーバー",
     "load_failed": "設定を読み込めませんでした。",
     "placeholder": "設定がここに表示されます...",
-    "language": "言語"
+    "language": "言語",
+    "demo_title": "デモデータ",
+    "demo_description": "データベースにテストデータを含む{{count}}台のデモプリンターがあります。",
+    "demo_delete": "デモデータを削除",
+    "demo_confirm": "すべてのデモプリンターと関連データ（履歴、エラー、フィラメント、テレメトリ）を削除しますか？この操作は元に戻せません。",
+    "notif_log_title": "通知ログ",
+    "notif_log_empty": "まだ通知は送信されていません。",
+    "notif_log_failed": "通知ログを読み込めませんでした。"
   },
   "notify": {
     "print": "印刷",
@@ -272,7 +317,47 @@
     "settings": "設定",
     "per_change": "色変更あたりの廃棄量",
     "no_data": "廃棄記録はまだありません。",
-    "load_failed": "廃棄データを読み込めませんでした。"
+    "load_failed": "廃棄データを読み込めませんでした。",
+    "efficiency": "廃棄率",
+    "color_changes_short": "回変更"
+  },
+  "quick_status": {
+    "title": "ステータス",
+    "fans": "ファン",
+    "fan_part": "パーツ",
+    "fan_aux": "補助",
+    "fan_chamber": "チャンバー",
+    "fan_heatbreak": "ヒートブレイク",
+    "wifi": "WiFi",
+    "nozzle": "ノズル",
+    "sd_card": "SDカード",
+    "sd_inserted": "挿入済み",
+    "sd_none": "未挿入",
+    "light": "ライト",
+    "light_on": "オン",
+    "light_off": "オフ",
+    "speed": "速度",
+    "error": "エラー",
+    "no_error": "なし",
+    "unknown": "不明"
+  },
+  "prepare": {
+    "uploading": "アップロード中...",
+    "heating": "加熱中...",
+    "loading_model": "3Dモデルを読み込み中..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld情報を読み込み中...",
+    "view_on_mw": "MakerWorldで見る",
+    "by": ""
+  },
+  "layout": {
+    "locked": "レイアウトがロックされています",
+    "unlocked": "レイアウトがロック解除されました — ドラッグして並べ替え"
+  },
+  "print_preview": {
+    "title": "プレビュー",
+    "no_preview": "プレビューなし"
   },
   "csv": {
     "date": "日付",

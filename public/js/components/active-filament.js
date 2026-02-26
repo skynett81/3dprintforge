@@ -42,11 +42,10 @@
         <div class="filament-status-header">
           <div class="filament-color-dot" style="background:${color};${isLight ? 'border:2px solid var(--border-color)' : ''}"></div>
           <div>
-            <div class="filament-status-type">${tray.tray_type}</div>
-            <div class="filament-status-brand">${brand}</div>
+            <div class="filament-status-type">${tray.tray_type} <span class="filament-status-brand">${brand}</span></div>
+            <div class="filament-status-name">${name}</div>
           </div>
         </div>
-        <div class="filament-status-name">${name}</div>
         <div class="filament-remain-section">
           <div class="filament-remain-pct ${remainClass}">${remain}%</div>
           <div class="filament-remain-label">${t('filament.remaining')}</div>

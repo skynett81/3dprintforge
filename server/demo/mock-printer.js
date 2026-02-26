@@ -1,8 +1,12 @@
 import { MOCK_AMS_P2S, MOCK_AMS_X1C, MOCK_AMS_H2D } from './mock-data.js';
 
 const PRINT_FILES = [
-  'benchy_v2.3mf', 'cable_clip_x4.3mf', 'phone_stand.3mf',
-  'gridfinity_base.3mf', 'raspberry_pi_case.3mf', 'vase_mode.3mf'
+  { name: 'werewolf_bust.3mf', projectId: '1005938' },
+  { name: 'cable_clip_x4.3mf', projectId: null },
+  { name: 'deadpool_grenade.3mf', projectId: '736412' },
+  { name: 'rv_15amp_inlet_mount.3mf', projectId: '28926' },
+  { name: 'benchy_v2.3mf', projectId: null },
+  { name: 'vase_mode.3mf', projectId: null }
 ];
 
 const PHASES = {
@@ -21,7 +25,8 @@ export class MockPrinter {
     this.phaseStart = Date.now();
     this.paused = false;
     this.pausedAt = 0;
-    this.currentFile = PRINT_FILES[0];
+    this.currentFile = PRINT_FILES[0].name;
+    this.currentProjectId = PRINT_FILES[0].projectId || '0';
     this.fileIndex = 0;
     this.totalLayers = 200;
     this.onUpdate = null;
@@ -113,12 +118,14 @@ export class MockPrinter {
     if (phase === 'IDLE') {
       this.state = this._idleState();
       this.fileIndex = (this.fileIndex + 1) % PRINT_FILES.length;
-      this.currentFile = PRINT_FILES[this.fileIndex];
+      this.currentFile = PRINT_FILES[this.fileIndex].name;
+      this.currentProjectId = PRINT_FILES[this.fileIndex].projectId || '0';
       this.totalLayers = 100 + Math.floor(Math.random() * 250);
     } else if (phase === 'HEATING') {
       this.state.gcode_state = 'PREPARE';
       this.state.subtask_name = this.currentFile;
       this.state.gcode_file = `/sdcard/${this.currentFile.replace('.3mf', '.gcode')}`;
+      this.state.project_id = this.currentProjectId;
     } else if (phase === 'PRINTING') {
       this.state.gcode_state = 'RUNNING';
       this.state.total_layer_num = this.totalLayers;
@@ -142,9 +149,23 @@ export class MockPrinter {
     const bedTarget = 60;
     this.state.nozzle_target_temper = nozzleTarget;
     this.state.bed_target_temper = bedTarget;
-    this.state.bed_temper = 23 + (bedTarget - 23) * Math.min(progress * 1.3, 1) + this._fluctuate(0.3);
-    this.state.nozzle_temper = 24 + (nozzleTarget - 24) * progress + this._fluctuate(0.5);
-    this.state.chamber_temper = 22 + 8 * progress + this._fluctuate(0.2);
+
+    // First 30% of HEATING phase = uploading file to printer
+    if (progress < 0.3) {
+      const uploadProgress = Math.min(Math.floor((progress / 0.3) * 100), 100);
+      this.state.upload = { status: 'uploading', progress: uploadProgress, message: '' };
+      // Temperatures barely start rising during upload
+      this.state.nozzle_temper = 24 + 10 * (progress / 0.3) + this._fluctuate(0.5);
+      this.state.bed_temper = 23 + 5 * (progress / 0.3) + this._fluctuate(0.3);
+      this.state.chamber_temper = 22 + this._fluctuate(0.2);
+    } else {
+      // Upload done, now heating
+      this.state.upload = { status: 'idle', progress: 100, message: '' };
+      const heatProgress = (progress - 0.3) / 0.7; // 0..1 within heating sub-phase
+      this.state.bed_temper = 28 + (bedTarget - 28) * Math.min(heatProgress * 1.3, 1) + this._fluctuate(0.3);
+      this.state.nozzle_temper = 34 + (nozzleTarget - 34) * heatProgress + this._fluctuate(0.5);
+      this.state.chamber_temper = 22 + 8 * heatProgress + this._fluctuate(0.2);
+    }
 
     // H2D dual-nozzle
     if (this.state.nozzle_temper_2 !== undefined) {
@@ -206,6 +227,7 @@ export class MockPrinter {
       total_layer_num: 0,
       subtask_name: '',
       gcode_file: '',
+      project_id: '0',
       nozzle_temper: 24,
       nozzle_target_temper: 0,
       bed_temper: 23,

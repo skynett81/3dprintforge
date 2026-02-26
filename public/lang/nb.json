@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Kontrollpanel"
+  },
+  "sidebar": {
+    "made_by": "Laget av"
+  },
   "header": {
     "subtitle": "3D Printer Kontrollpanel",
     "connecting": "Kobler til..."
@@ -78,7 +84,16 @@
     "type_required": "Type er påkrevd",
     "load_failed": "Kunne ikke laste filamentlager.",
     "remaining_of": "gjenstår av",
-    "unassigned": "Ikke tilknyttet printer"
+    "unassigned": "Ikke tilknyttet printer",
+    "total_spools": "Spoler",
+    "total_remaining": "Totalt gjenstående",
+    "total_value": "Lagerverdi",
+    "low_stock": "Lite igjen",
+    "low_stock_warning": "{{count}} spole(r) under 20% gjenstående",
+    "spool_singular": "spole",
+    "spool_plural": "spoler",
+    "used_g": "Brukt (g)",
+    "drop_here": "Slipp spoler her"
   },
   "controls": {
     "title": "Kontroller",
@@ -103,7 +118,16 @@
     "calibration": "Kalibrering",
     "gcode_title": "G-code konsoll",
     "gcode_placeholder": "Skriv G-code kommando...",
-    "gcode_send": "Send"
+    "gcode_send": "Send",
+    "speed_profile": "Hastighetsprofil",
+    "presets": "Forhåndsvalg:",
+    "cooldown": "Avkjøl",
+    "motion": "Bevegelse",
+    "extruder": "Ekstruder",
+    "extrude": "Ekstruder",
+    "retract": "Trekk tilbake",
+    "ai_spaghetti": "Spaghetti-AI",
+    "ai_first_layer": "Første lag"
   },
   "speed": {
     "label": "Hastighet:",
@@ -149,6 +173,7 @@
     "fw_hw": "HW-versjon"
   },
   "tabs": {
+    "controls": "Kontroller",
     "history": "Historikk",
     "statistics": "Statistikk",
     "telemetry": "Telemetri",
@@ -170,7 +195,9 @@
     "failed": "Feilet",
     "cancelled": "Avbrutt",
     "load_failed": "Kunne ikke laste historikk.",
-    "placeholder": "Utskriftshistorikk vises her..."
+    "placeholder": "Utskriftshistorikk vises her...",
+    "started": "Startet",
+    "ended": "Avsluttet"
   },
   "stats": {
     "total_prints": "Totalt antall",
@@ -221,7 +248,17 @@
   "errors": {
     "no_errors": "Ingen feil registrert.",
     "load_failed": "Kunne ikke laste feillogg.",
-    "placeholder": "Feillogg vises her..."
+    "placeholder": "Feillogg vises her...",
+    "total": "Totalt",
+    "critical": "Kritisk",
+    "errors": "Feil",
+    "warnings": "Advarsler",
+    "info": "Info",
+    "all": "Alle",
+    "search_placeholder": "Sok i feil...",
+    "no_match": "Ingen feil matcher filteret.",
+    "just_now": "akkurat na",
+    "unknown_error": "Ukjent feil"
   },
   "settings": {
     "printers_title": "Printere",
@@ -250,6 +287,51 @@
     "confirm_delete": "Vil du virkelig slette denne printeren? Historikk beholdes.",
     "notifications_title": "Varslinger",
     "notifications_browser": "Nettleservarslinger for utskriftsstatus",
+    "notif_server_title": "Servervarslinger",
+    "notif_enable": "Aktiver servervarslinger",
+    "notif_channels": "Kanaler",
+    "notif_events": "Hendelser",
+    "notif_quiet_hours": "Stille-timer",
+    "notif_quiet_enable": "Aktiver stille-timer",
+    "notif_quiet_from": "Fra",
+    "notif_quiet_to": "Til",
+    "notif_test": "Test",
+    "notif_test_ok": "Sendt!",
+    "notif_test_fail": "Feilet",
+    "notif_save": "Lagre varsler",
+    "notif_saving": "Lagrer...",
+    "notif_saved": "Lagret!",
+    "notif_save_failed": "Lagring feilet",
+    "notif_telegram": "Telegram",
+    "notif_discord": "Discord",
+    "notif_email": "E-post",
+    "notif_webhook": "Webhook",
+    "notif_ntfy": "ntfy",
+    "notif_pushover": "Pushover",
+    "notif_bot_token": "Bot-token",
+    "notif_chat_id": "Chat-ID",
+    "notif_webhook_url": "Webhook-URL",
+    "notif_host": "SMTP-vert",
+    "notif_port": "Port",
+    "notif_user": "Brukernavn",
+    "notif_pass": "Passord",
+    "notif_from": "Fra",
+    "notif_to": "Til",
+    "notif_url": "URL",
+    "notif_headers": "Headers (JSON)",
+    "notif_server_url": "Server-URL",
+    "notif_topic": "Emne",
+    "notif_token": "Token",
+    "notif_api_token": "API-token",
+    "notif_user_key": "Brukernøkkel",
+    "notif_evt_print_started": "Print startet",
+    "notif_evt_print_finished": "Print ferdig",
+    "notif_evt_print_failed": "Print feilet",
+    "notif_evt_print_cancelled": "Print avbrutt",
+    "notif_evt_printer_error": "Printerfeil",
+    "notif_evt_maintenance_due": "Vedlikehold forfalt",
+    "notif_evt_bed_cooled": "Seng avkjølt",
+    "notif_bed_threshold": "Sengtemp terskel (°C)",
     "server_title": "Server",
     "load_failed": "Kunne ikke laste innstillinger.",
     "placeholder": "Innstillinger vises her...",
@@ -257,7 +339,10 @@
     "demo_title": "Demodata",
     "demo_description": "Det finnes {{count}} demo-printere med testdata i databasen.",
     "demo_delete": "Slett demodata",
-    "demo_confirm": "Slette alle demo-printere og tilhørende data (historikk, feil, filament, telemetri)? Dette kan ikke angres."
+    "demo_confirm": "Slette alle demo-printere og tilhørende data (historikk, feil, filament, telemetri)? Dette kan ikke angres.",
+    "notif_log_title": "Varslingslogg",
+    "notif_log_empty": "Ingen varslinger sendt enda.",
+    "notif_log_failed": "Kunne ikke laste varslingslogg."
   },
   "notify": {
     "print": "Utskrift",
@@ -342,7 +427,9 @@
     "settings": "Innstillinger",
     "per_change": "Waste per fargebytte",
     "no_data": "Ingen waste registrert enda.",
-    "load_failed": "Kunne ikke laste waste-data."
+    "load_failed": "Kunne ikke laste waste-data.",
+    "efficiency": "Waste-andel",
+    "color_changes_short": "bytter"
   },
   "telemetry": {
     "no_printer": "Velg en printer for telemetridata.",
@@ -360,6 +447,68 @@
     "active_filament": "Aktivt filament per printer",
     "no_ams_data": "Ingen AMS-data tilgjengelig",
     "select_printer": "Velg printer"
+  },
+  "update": {
+    "title": "Oppdateringer",
+    "current_version": "Gjeldende versjon",
+    "new_version": "Versjon {{version}} tilgjengelig!",
+    "published": "Publisert",
+    "view_changelog": "Se endringslogg",
+    "update_now": "Oppdater nå",
+    "check_now": "Se etter oppdateringer",
+    "no_updates": "Du kjører nyeste versjon.",
+    "checking": "Sjekker etter oppdateringer",
+    "check_failed": "Kunne ikke sjekke etter oppdateringer.",
+    "load_failed": "Kunne ikke laste oppdateringsstatus.",
+    "last_check": "Sist sjekket",
+    "environment": "Miljø",
+    "confirm": "Oppdatere nå? Serveren starter automatisk på nytt.",
+    "in_progress": "Oppdaterer...",
+    "failed": "Oppdatering feilet",
+    "restarting": "Starter serveren på nytt...",
+    "stage_backing_up": "Lager sikkerhetskopi...",
+    "stage_downloading": "Laster ned oppdatering...",
+    "stage_extracting": "Pakker ut filer...",
+    "stage_replacing": "Installerer oppdatering...",
+    "stage_restarting": "Starter serveren på nytt..."
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Vifter",
+    "fan_part": "Delvifte",
+    "fan_aux": "Hjelpevifte",
+    "fan_chamber": "Kammervifte",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Dyse",
+    "sd_card": "SD-kort",
+    "sd_inserted": "Innført",
+    "sd_none": "Ikke innført",
+    "light": "Lys",
+    "light_on": "På",
+    "light_off": "Av",
+    "speed": "Hastighet",
+    "error": "Feil",
+    "no_error": "Ingen",
+    "unknown": "Ukjent"
+  },
+  "prepare": {
+    "uploading": "Laster opp...",
+    "heating": "Varmer opp...",
+    "loading_model": "Laster 3D-modell..."
+  },
+  "makerworld": {
+    "loading": "Henter MakerWorld-info...",
+    "view_on_mw": "Se på MakerWorld",
+    "by": "av"
+  },
+  "layout": {
+    "locked": "Layout låst",
+    "unlocked": "Layout ulåst — dra for å flytte"
+  },
+  "print_preview": {
+    "title": "Forhåndsvisning",
+    "no_preview": "Ingen forhåndsvisning"
   },
   "csv": {
     "date": "Dato",

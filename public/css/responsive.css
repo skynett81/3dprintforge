@@ -1,82 +1,51 @@
-/* Tablet */
+/* ---- Tablet (<=1024px) ---- */
 @media (max-width: 1024px) {
   .dashboard {
     grid-template-columns: 1fr 1fr;
-    padding: var(--gap) 16px;
+    padding: var(--gap) 12px;
   }
 
-  .card-full {
-    grid-column: span 2;
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .printer-selector { flex-wrap: wrap; }
+  .info-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Mobile (<=768px) — sidebar collapses ---- */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
   }
 
-  .card-wide {
-    grid-column: span 2;
+  .sidebar {
+    transform: translateX(-100%);
+    width: 240px;
+    min-width: 240px;
+    z-index: 200;
   }
 
-  #camera-card {
-    grid-column: span 2;
+  .sidebar.open {
+    transform: translateX(0);
   }
 
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .printer-selector {
-    flex-wrap: wrap;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .print-status-panel {
-    flex-wrap: wrap;
-  }
-
-  .print-status-right {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    padding-left: 0;
-    padding-top: 16px;
-    min-width: 100%;
+  .main-wrapper {
+    margin-left: 0;
   }
 }
 
-/* Overlay panel - tablet */
-@media (max-width: 1024px) {
-  .overlay-panel-inner {
-    max-width: 100%;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-  }
-}
-
-/* Mobile */
+/* ---- Small mobile (<=640px) ---- */
 @media (max-width: 640px) {
   .dashboard {
     grid-template-columns: 1fr;
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .card-full,
-  .card-wide {
-    grid-column: span 1;
-  }
-
-  #camera-card {
-    grid-column: span 1;
-  }
-
-  .header {
-    padding: 12px 16px;
-    flex-wrap: wrap;
+    padding: 8px;
     gap: 8px;
   }
 
-  .header-title {
-    font-size: 1rem;
+  .card { padding: 10px; }
+
+  .header {
+    padding: 6px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .printer-selector {
@@ -86,100 +55,29 @@
   }
 
   .printer-tab {
-    font-size: 0.75rem;
-    padding: 4px 10px;
+    font-size: 0.7rem;
+    padding: 3px 8px;
   }
 
-  .print-status-panel {
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
-  }
+  .qs-grid { grid-template-columns: 1fr; }
+  .ams-slots { grid-template-columns: 1fr; }
+  .stats-strip { flex-wrap: wrap; }
+  .spark-panel { min-width: 90px; flex: 1 1 calc(33% - 1px); }
+  .speed-buttons { flex-wrap: wrap; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .controls-grid { grid-template-columns: 1fr 1fr; }
 
-  .print-status-right {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    padding-left: 0;
-    padding-top: 12px;
-    min-width: 100%;
-  }
+  .ctrl-fan-label, .ctrl-temp-label { width: 55px; font-size: 0.7rem; }
+  .ctrl-temp-row { flex-wrap: wrap; }
+  .ctrl-gcode { flex-direction: column; }
 
-  .ams-slots {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { padding: 6px 12px; font-size: 0.75rem; white-space: nowrap; }
+  .info-grid { grid-template-columns: 1fr; }
+  .printer-config-header { flex-direction: column; align-items: flex-start; gap: 6px; }
 
-  .stats-strip {
-    flex-wrap: wrap;
-  }
+  .panel-content-body { padding: 10px; }
+  .panel-content-header { padding: 6px 10px; }
 
-  .spark-panel {
-    min-width: 100px;
-    flex: 1 1 calc(33% - 1px);
-  }
-
-  .speed-buttons {
-    flex-wrap: wrap;
-  }
-
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .controls-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .ctrl-fan-label,
-  .ctrl-temp-label {
-    width: 60px;
-    font-size: 0.75rem;
-  }
-
-  .ctrl-temp-row {
-    flex-wrap: wrap;
-  }
-
-  .ctrl-gcode {
-    flex-direction: column;
-  }
-
-  .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab-btn {
-    padding: 8px 14px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .printer-config-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .overlay-panel-body {
-    padding: 16px;
-  }
-
-  .topnav {
-    padding: 0 12px;
-  }
-
-  .topnav-btn {
-    padding: 8px 10px;
-    font-size: 0.75rem;
-    gap: 4px;
-  }
-
-  .topnav-btn svg {
-    width: 14px;
-    height: 14px;
-  }
+  .sidebar { width: 220px; min-width: 220px; }
 }

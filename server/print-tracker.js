@@ -17,6 +17,11 @@ export class PrintTracker {
     this.colorChanges = 0;
     this.lastTrayId = null;
     this.wastePerChangeG = wastePerChangeG;
+
+    // Notification callbacks
+    this.onPrintStart = null;
+    this.onPrintEnd = null;
+    this.onError = null;
   }
 
   update(printData) {
@@ -54,12 +59,16 @@ export class PrintTracker {
     if (printData.print_error && printData.print_error !== 0) {
       const prevError = this.previousState?.print_error;
       if (prevError !== printData.print_error) {
+        const errMsg = printData.print_error_msg || `Feilkode: ${printData.print_error}`;
         addError({
           printer_id: this.printerId,
           code: String(printData.print_error),
-          message: printData.print_error_msg || `Feilkode: ${printData.print_error}`,
+          message: errMsg,
           severity: 'error'
         });
+        if (this.onError) {
+          this.onError({ printerId: this.printerId, code: String(printData.print_error), errorMessage: errMsg, severity: 'error' });
+        }
       }
     }
 
@@ -69,12 +78,17 @@ export class PrintTracker {
         if (!this._seenHms?.has(hms.attr)) {
           if (!this._seenHms) this._seenHms = new Set();
           this._seenHms.add(hms.attr);
+          const hmsSeverity = hms.code >= 0x0C000000 ? 'error' : 'warning';
+          const hmsMsg = hms.msg || `HMS advarsel: ${hms.attr}`;
           addError({
             printer_id: this.printerId,
             code: `HMS_${hms.attr}`,
-            message: hms.msg || `HMS advarsel: ${hms.attr}`,
-            severity: hms.code >= 0x0C000000 ? 'error' : 'warning'
+            message: hmsMsg,
+            severity: hmsSeverity
           });
+          if (this.onError) {
+            this.onError({ printerId: this.printerId, code: `HMS_${hms.attr}`, errorMessage: hmsMsg, severity: hmsSeverity });
+          }
         }
       }
     }
@@ -132,6 +146,10 @@ export class PrintTracker {
 
     // Save AMS snapshot
     this._saveAmsSnapshot(data);
+
+    if (this.onPrintStart) {
+      this.onPrintStart({ printerId: this.printerId, filename: this.currentPrint.filename });
+    }
   }
 
   _endPrint(status, data) {
@@ -186,6 +204,18 @@ export class PrintTracker {
 
       // Update nozzle session counters
       this._updateNozzleSession(duration, filamentUsedG, this.currentPrint.filament_type);
+
+      // Notification callback
+      if (this.onPrintEnd) {
+        this.onPrintEnd({
+          printerId: this.printerId,
+          filename: record.filename,
+          status,
+          duration,
+          filamentUsed: record.filament_used_g,
+          error: data.print_error_msg || null
+        });
+      }
 
       // Update component wear
       this._updateComponentWear(duration, data);

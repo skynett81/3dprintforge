@@ -47,6 +47,22 @@
 
       let html = buildPrinterSelector('changeMaintPrinter', _selectedMaintPrinter, false);
 
+      // Urgency alerts for overdue components
+      const overdueComps = (s.components || []).filter(c => c.overdue);
+      const nozzleWarn = s.active_nozzle?.wear_estimate?.percentage >= 80;
+      if (overdueComps.length > 0 || nozzleWarn) {
+        html += `<div class="maint-alert-banner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="maint-alert-text">`;
+        for (const c of overdueComps) {
+          html += `<div>${t('maintenance.comp_' + c.component)} — <strong>${t('maintenance.overdue')}</strong> (${c.hours_since_maintenance}${t('time.h')} / ${c.interval_hours}${t('time.h')})</div>`;
+        }
+        if (nozzleWarn) {
+          html += `<div>${t('maintenance.comp_nozzle')} — <strong>${t('maintenance.wear')}: ${s.active_nozzle.wear_estimate.percentage}%</strong></div>`;
+        }
+        html += `</div></div>`;
+      }
+
       // Lifetime stats
       html += `<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="stat-card"><div class="stat-value">${s.total_print_hours}${t('time.h')}</div><div class="stat-label">${t('maintenance.total_hours')}</div></div>

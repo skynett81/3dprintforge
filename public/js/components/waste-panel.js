@@ -1,6 +1,13 @@
-// Poop Counter - Filament waste tracker
+// Poop Counter - Filament waste tracker (Enhanced)
 (function() {
   window.loadWastePanel = loadWaste;
+
+  let _selectedWastePrinter = null;
+
+  window.changeWastePrinter = function(value) {
+    _selectedWastePrinter = value || null;
+    loadWaste();
+  };
 
   function printerName(id) {
     return window.printerState?._printerMeta?.[id]?.name || id || '--';
@@ -22,11 +29,14 @@
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
+    const printerId = _selectedWastePrinter;
+    const params = printerId ? `?printer_id=${printerId}` : '';
+
     try {
-      const res = await fetch('/api/waste/stats');
+      const res = await fetch(`/api/waste/stats${params}`);
       const s = await res.json();
 
-      let html = '';
+      let html = buildPrinterSelector('changeWastePrinter', _selectedWastePrinter);
 
       // Top stats cards
       html += `<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -44,7 +54,11 @@
         </div>
       </div>`;
 
-      // Detail row
+      // Detail row + efficiency
+      const efficiency = s.total_filament_used_g > 0
+        ? ((s.total_waste_g / s.total_filament_used_g) * 100).toFixed(1)
+        : '0';
+
       html += `<div class="stat-detail-row mt-md">
         <div class="stat-detail">
           <span class="stat-detail-label">${t('waste.avg_per_print')}</span>
@@ -53,6 +67,10 @@
         <div class="stat-detail">
           <span class="stat-detail-label">${t('waste.color_changes')}</span>
           <span class="stat-detail-value">${s.total_color_changes}</span>
+        </div>
+        <div class="stat-detail">
+          <span class="stat-detail-label">${t('waste.efficiency')}</span>
+          <span class="stat-detail-value" style="color:${parseFloat(efficiency) > 5 ? 'var(--accent-orange)' : 'var(--accent-green)'}">${efficiency}%</span>
         </div>
       </div>`;
 
@@ -74,30 +92,28 @@
         html += `</div></div>`;
       }
 
-      // Recent events
+      // Recent events as cards
       html += `<div class="mt-md"><div class="card-title">${t('waste.recent')}</div>`;
       if (s.recent?.length > 0) {
-        html += `<table class="data-table"><thead><tr>
-          <th>${t('common.printer')}</th>
-          <th>${t('history.date')}</th>
-          <th>${t('waste.notes')}</th>
-          <th>${t('waste.color_changes')}</th>
-          <th>${t('waste.total_weight')}</th>
-          <th>${t('history.status')}</th>
-        </tr></thead><tbody>`;
+        html += '<div class="waste-recent-list">';
         for (const r of s.recent) {
-          const pillClass = r.reason === 'auto' ? 'pill pill-completed' : 'pill pill-cancelled';
-          const label = r.reason === 'auto' ? t('waste.auto') : t('waste.manual');
-          html += `<tr>
-            <td><span class="printer-tag">${printerName(r.printer_id)}</span></td>
-            <td>${formatDate(r.timestamp)}</td>
-            <td>${r.notes || '--'}</td>
-            <td>${r.color_changes || '--'}</td>
-            <td>${r.waste_g}g</td>
-            <td><span class="${pillClass}">${label}</span></td>
-          </tr>`;
+          const isAuto = r.reason === 'auto';
+          const pillClass = isAuto ? 'pill pill-completed' : 'pill pill-cancelled';
+          const label = isAuto ? t('waste.auto') : t('waste.manual');
+          html += `<div class="waste-recent-card">
+            <div class="waste-recent-top">
+              <span class="printer-tag">${printerName(r.printer_id)}</span>
+              <span class="waste-recent-weight">${r.waste_g}g</span>
+              <span class="${pillClass}">${label}</span>
+            </div>
+            <div class="waste-recent-bottom">
+              <span class="text-muted">${formatDate(r.timestamp)}</span>
+              ${r.color_changes ? `<span class="text-muted">${r.color_changes} ${t('waste.color_changes_short')}</span>` : ''}
+              ${r.notes ? `<span class="text-muted">${r.notes}</span>` : ''}
+            </div>
+          </div>`;
         }
-        html += `</tbody></table>`;
+        html += '</div>';
       } else {
         html += `<p class="text-muted">${t('waste.no_data')}</p>`;
       }
@@ -148,7 +164,7 @@
     const notes = document.getElementById('waste-notes-input')?.value?.trim();
     if (!wasteG || wasteG <= 0) return;
 
-    const printerId = window.printerState.getActivePrinterId();
+    const printerId = _selectedWastePrinter || window.printerState.getActivePrinterId();
     await fetch('/api/waste', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

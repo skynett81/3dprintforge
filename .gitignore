@@ -1,9 +1,31 @@
+# Dependencies
 node_modules/
+
+# User configuration (contains printer access codes)
 config.json
+
+# Runtime data
 data/
-certs/
-*.log
 *.db
+*.log
+
+# SSL certificates
+certs/
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Environment
 .env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups created by updater
+data/backups/

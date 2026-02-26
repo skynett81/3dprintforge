@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Dashboard"
+  },
+  "sidebar": {
+    "made_by": "Gemaakt door"
+  },
   "header": {
     "subtitle": "3D Printer Bedieningspaneel",
     "connecting": "Verbinden..."
@@ -75,7 +81,17 @@
     "save": "Opslaan",
     "type_required": "Type is verplicht",
     "load_failed": "Kan filamentvoorraad niet laden.",
-    "remaining_of": "resterend van"
+    "remaining_of": "resterend van",
+    "unassigned": "Niet toegewezen aan printer",
+    "total_spools": "Spoelen",
+    "total_remaining": "Totaal resterend",
+    "total_value": "Voorraadwaarde",
+    "low_stock": "Lage voorraad",
+    "low_stock_warning": "{{count}} spoel(en) onder 20% resterend",
+    "spool_singular": "spoel",
+    "spool_plural": "spoelen",
+    "used_g": "Gebruikt (g)",
+    "drop_here": "Spoelen hier neerzetten"
   },
   "controls": {
     "title": "Bediening",
@@ -100,7 +116,16 @@
     "calibration": "Kalibratie / Autonivellering",
     "gcode_title": "G-code-console",
     "gcode_placeholder": "Voer G-code-commando in",
-    "gcode_send": "Verzenden"
+    "gcode_send": "Verzenden",
+    "speed_profile": "Snelheidsprofiel",
+    "presets": "Voorinstellingen:",
+    "cooldown": "Afkoelen",
+    "motion": "Beweging",
+    "extruder": "Extruder",
+    "extrude": "Extruderen",
+    "retract": "Intrekken",
+    "ai_spaghetti": "Spaghetti-AI",
+    "ai_first_layer": "Eerste laag"
   },
   "speed": {
     "label": "Snelheid:",
@@ -140,6 +165,7 @@
     "unknown": "Onbekend"
   },
   "tabs": {
+    "controls": "Bediening",
     "history": "Geschiedenis",
     "statistics": "Statistieken",
     "filament": "Filament",
@@ -160,7 +186,9 @@
     "failed": "Mislukt",
     "cancelled": "Geannuleerd",
     "load_failed": "Kan geschiedenis niet laden.",
-    "placeholder": "Printgeschiedenis verschijnt hier..."
+    "placeholder": "Printgeschiedenis verschijnt hier...",
+    "started": "Gestart",
+    "ended": "Beëindigd"
   },
   "stats": {
     "total_prints": "Totaal aantal prints",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "Geen fouten geregistreerd.",
     "load_failed": "Kan foutenlog niet laden.",
-    "placeholder": "Foutenlog verschijnt hier..."
+    "placeholder": "Foutenlog verschijnt hier...",
+    "total": "Totaal",
+    "critical": "Kritiek",
+    "errors": "Fouten",
+    "warnings": "Waarschuwingen",
+    "info": "Info",
+    "all": "Alle",
+    "search_placeholder": "Fouten zoeken...",
+    "no_match": "Geen fouten die overeenkomen met het filter.",
+    "just_now": "zojuist",
+    "unknown_error": "Onbekende fout"
   },
   "settings": {
     "printers_title": "Printers",
@@ -238,7 +276,14 @@
     "server_title": "Server",
     "load_failed": "Kan instellingen niet laden.",
     "placeholder": "Instellingen verschijnen hier...",
-    "language": "Taal"
+    "language": "Taal",
+    "demo_title": "Demogegevens",
+    "demo_description": "Er zijn {{count}} demoprinters met testgegevens in de database.",
+    "demo_delete": "Demogegevens verwijderen",
+    "demo_confirm": "Alle demoprinters en bijbehorende gegevens (geschiedenis, fouten, filament, telemetrie) verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "notif_log_title": "Meldingenlogboek",
+    "notif_log_empty": "Nog geen meldingen verzonden.",
+    "notif_log_failed": "Kon het meldingenlogboek niet laden."
   },
   "notify": {
     "print": "Print",
@@ -272,7 +317,47 @@
     "settings": "Instellingen",
     "per_change": "Afval per kleurwissel",
     "no_data": "Nog geen afval geregistreerd.",
-    "load_failed": "Kon afvalgegevens niet laden."
+    "load_failed": "Kon afvalgegevens niet laden.",
+    "efficiency": "Afvalverhouding",
+    "color_changes_short": "wisselingen"
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Ventilatoren",
+    "fan_part": "Onderdeel",
+    "fan_aux": "Hulpventilator",
+    "fan_chamber": "Kamer",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Nozzle",
+    "sd_card": "SD-kaart",
+    "sd_inserted": "Geplaatst",
+    "sd_none": "Niet geplaatst",
+    "light": "Licht",
+    "light_on": "Aan",
+    "light_off": "Uit",
+    "speed": "Snelheid",
+    "error": "Fout",
+    "no_error": "Geen",
+    "unknown": "Onbekend"
+  },
+  "prepare": {
+    "uploading": "Uploaden...",
+    "heating": "Opwarmen...",
+    "loading_model": "3D-model laden..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld-info laden...",
+    "view_on_mw": "Bekijk op MakerWorld",
+    "by": "door"
+  },
+  "layout": {
+    "locked": "Layout vergrendeld",
+    "unlocked": "Layout ontgrendeld — sleep om te herschikken"
+  },
+  "print_preview": {
+    "title": "Voorbeeld",
+    "no_preview": "Geen voorbeeld"
   },
   "csv": {
     "date": "Datum",

@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Dashboard"
+  },
+  "sidebar": {
+    "made_by": "Made by"
+  },
   "header": {
     "subtitle": "3D Printer Control Panel",
     "connecting": "Connecting..."
@@ -78,7 +84,16 @@
     "type_required": "Type is required",
     "load_failed": "Could not load filament inventory.",
     "remaining_of": "remaining of",
-    "unassigned": "Not assigned to printer"
+    "unassigned": "Not assigned to printer",
+    "total_spools": "Spools",
+    "total_remaining": "Total remaining",
+    "total_value": "Inventory value",
+    "low_stock": "Low stock",
+    "low_stock_warning": "{{count}} spool(s) below 20% remaining",
+    "spool_singular": "spool",
+    "spool_plural": "spools",
+    "used_g": "Used (g)",
+    "drop_here": "Drop spools here"
   },
   "controls": {
     "title": "Controls",
@@ -103,7 +118,16 @@
     "calibration": "Calibration",
     "gcode_title": "G-code console",
     "gcode_placeholder": "Enter G-code command...",
-    "gcode_send": "Send"
+    "gcode_send": "Send",
+    "speed_profile": "Speed Profile",
+    "presets": "Presets:",
+    "cooldown": "Cooldown",
+    "motion": "Motion",
+    "extruder": "Extruder",
+    "extrude": "Extrude",
+    "retract": "Retract",
+    "ai_spaghetti": "Spaghetti AI",
+    "ai_first_layer": "First Layer"
   },
   "speed": {
     "label": "Speed:",
@@ -149,6 +173,7 @@
     "fw_hw": "HW version"
   },
   "tabs": {
+    "controls": "Controls",
     "history": "History",
     "statistics": "Statistics",
     "telemetry": "Telemetry",
@@ -170,7 +195,9 @@
     "failed": "Failed",
     "cancelled": "Cancelled",
     "load_failed": "Could not load history.",
-    "placeholder": "Print history will appear here..."
+    "placeholder": "Print history will appear here...",
+    "started": "Started",
+    "ended": "Ended"
   },
   "stats": {
     "total_prints": "Total prints",
@@ -221,7 +248,17 @@
   "errors": {
     "no_errors": "No errors recorded.",
     "load_failed": "Could not load error log.",
-    "placeholder": "Error log will appear here..."
+    "placeholder": "Error log will appear here...",
+    "total": "Total",
+    "critical": "Critical",
+    "errors": "Errors",
+    "warnings": "Warnings",
+    "info": "Info",
+    "all": "All",
+    "search_placeholder": "Search errors...",
+    "no_match": "No errors matching filter.",
+    "just_now": "just now",
+    "unknown_error": "Unknown error"
   },
   "settings": {
     "printers_title": "Printers",
@@ -250,6 +287,51 @@
     "confirm_delete": "Do you really want to delete this printer? History is kept.",
     "notifications_title": "Notifications",
     "notifications_browser": "Browser notifications for print status",
+    "notif_server_title": "Server Notifications",
+    "notif_enable": "Enable server-side notifications",
+    "notif_channels": "Channels",
+    "notif_events": "Events",
+    "notif_quiet_hours": "Quiet Hours",
+    "notif_quiet_enable": "Enable quiet hours",
+    "notif_quiet_from": "From",
+    "notif_quiet_to": "To",
+    "notif_test": "Test",
+    "notif_test_ok": "Sent!",
+    "notif_test_fail": "Failed",
+    "notif_save": "Save Notifications",
+    "notif_saving": "Saving...",
+    "notif_saved": "Saved!",
+    "notif_save_failed": "Save failed",
+    "notif_telegram": "Telegram",
+    "notif_discord": "Discord",
+    "notif_email": "Email",
+    "notif_webhook": "Webhook",
+    "notif_ntfy": "ntfy",
+    "notif_pushover": "Pushover",
+    "notif_bot_token": "Bot Token",
+    "notif_chat_id": "Chat ID",
+    "notif_webhook_url": "Webhook URL",
+    "notif_host": "SMTP Host",
+    "notif_port": "Port",
+    "notif_user": "Username",
+    "notif_pass": "Password",
+    "notif_from": "From",
+    "notif_to": "To",
+    "notif_url": "URL",
+    "notif_headers": "Headers (JSON)",
+    "notif_server_url": "Server URL",
+    "notif_topic": "Topic",
+    "notif_token": "Token",
+    "notif_api_token": "API Token",
+    "notif_user_key": "User Key",
+    "notif_evt_print_started": "Print started",
+    "notif_evt_print_finished": "Print finished",
+    "notif_evt_print_failed": "Print failed",
+    "notif_evt_print_cancelled": "Print cancelled",
+    "notif_evt_printer_error": "Printer error",
+    "notif_evt_maintenance_due": "Maintenance due",
+    "notif_evt_bed_cooled": "Bed cooled",
+    "notif_bed_threshold": "Bed temp threshold (°C)",
     "server_title": "Server",
     "load_failed": "Could not load settings.",
     "placeholder": "Settings will appear here...",
@@ -257,7 +339,10 @@
     "demo_title": "Demo Data",
     "demo_description": "There are {{count}} demo printers with test data in the database.",
     "demo_delete": "Delete Demo Data",
-    "demo_confirm": "Delete all demo printers and their associated data (history, errors, filament, telemetry)? This cannot be undone."
+    "demo_confirm": "Delete all demo printers and their associated data (history, errors, filament, telemetry)? This cannot be undone.",
+    "notif_log_title": "Notification Log",
+    "notif_log_empty": "No notifications sent yet.",
+    "notif_log_failed": "Could not load notification log."
   },
   "notify": {
     "print": "Print",
@@ -342,7 +427,9 @@
     "settings": "Settings",
     "per_change": "Waste per color change",
     "no_data": "No waste recorded yet.",
-    "load_failed": "Could not load waste data."
+    "load_failed": "Could not load waste data.",
+    "efficiency": "Waste ratio",
+    "color_changes_short": "changes"
   },
   "telemetry": {
     "no_printer": "Select a printer to view telemetry.",
@@ -360,6 +447,68 @@
     "active_filament": "Active filament per printer",
     "no_ams_data": "No AMS data available",
     "select_printer": "Select printer"
+  },
+  "update": {
+    "title": "Updates",
+    "current_version": "Current version",
+    "new_version": "Version {{version}} available!",
+    "published": "Published",
+    "view_changelog": "View changelog",
+    "update_now": "Update now",
+    "check_now": "Check for updates",
+    "no_updates": "You're running the latest version.",
+    "checking": "Checking for updates",
+    "check_failed": "Could not check for updates.",
+    "load_failed": "Could not load update status.",
+    "last_check": "Last check",
+    "environment": "Environment",
+    "confirm": "Update now? The server will restart automatically.",
+    "in_progress": "Updating...",
+    "failed": "Update failed",
+    "restarting": "Restarting server...",
+    "stage_backing_up": "Creating backup...",
+    "stage_downloading": "Downloading update...",
+    "stage_extracting": "Extracting files...",
+    "stage_replacing": "Installing update...",
+    "stage_restarting": "Restarting server..."
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Fans",
+    "fan_part": "Part Fan",
+    "fan_aux": "Aux Fan",
+    "fan_chamber": "Chamber Fan",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Nozzle",
+    "sd_card": "SD Card",
+    "sd_inserted": "Inserted",
+    "sd_none": "Not inserted",
+    "light": "Light",
+    "light_on": "On",
+    "light_off": "Off",
+    "speed": "Speed",
+    "error": "Error",
+    "no_error": "None",
+    "unknown": "Unknown"
+  },
+  "prepare": {
+    "uploading": "Uploading...",
+    "heating": "Heating...",
+    "loading_model": "Loading 3D model..."
+  },
+  "makerworld": {
+    "loading": "Loading MakerWorld info...",
+    "view_on_mw": "View on MakerWorld",
+    "by": "by"
+  },
+  "layout": {
+    "locked": "Layout locked",
+    "unlocked": "Layout unlocked — drag to reorder"
+  },
+  "print_preview": {
+    "title": "Preview",
+    "no_preview": "No preview"
   },
   "csv": {
     "date": "Date",

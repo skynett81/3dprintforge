@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Instrumentpanel"
+  },
+  "sidebar": {
+    "made_by": "Skapad av"
+  },
   "header": {
     "subtitle": "Kontrollpanel för 3D-skrivare",
     "connecting": "Ansluter..."
@@ -75,7 +81,17 @@
     "save": "Spara",
     "type_required": "Typ krävs",
     "load_failed": "Kunde inte ladda filamentlager.",
-    "remaining_of": "kvar av"
+    "remaining_of": "kvar av",
+    "unassigned": "Inte tilldelad skrivare",
+    "total_spools": "Spolar",
+    "total_remaining": "Totalt kvar",
+    "total_value": "Lagervärde",
+    "low_stock": "Lågt lager",
+    "low_stock_warning": "{{count}} spole/ar under 20% kvar",
+    "spool_singular": "spole",
+    "spool_plural": "spolar",
+    "used_g": "Använt (g)",
+    "drop_here": "Släpp spolar här"
   },
   "controls": {
     "title": "Kontroller",
@@ -100,7 +116,16 @@
     "calibration": "Kalibrering / Autonivellering",
     "gcode_title": "G-kodkonsol",
     "gcode_placeholder": "Ange G-kodkommando",
-    "gcode_send": "Skicka"
+    "gcode_send": "Skicka",
+    "speed_profile": "Hastighetsprofil",
+    "presets": "Förval:",
+    "cooldown": "Kyla ner",
+    "motion": "Rörelse",
+    "extruder": "Extruder",
+    "extrude": "Extrudera",
+    "retract": "Dra tillbaka",
+    "ai_spaghetti": "Spaghetti-AI",
+    "ai_first_layer": "Första lagret"
   },
   "speed": {
     "label": "Hastighet:",
@@ -140,6 +165,7 @@
     "unknown": "Okänt"
   },
   "tabs": {
+    "controls": "Kontroller",
     "history": "Historik",
     "statistics": "Statistik",
     "filament": "Filament",
@@ -160,7 +186,9 @@
     "failed": "Misslyckad",
     "cancelled": "Avbruten",
     "load_failed": "Kunde inte ladda historiken.",
-    "placeholder": "Utskriftshistorik visas här..."
+    "placeholder": "Utskriftshistorik visas här...",
+    "started": "Startad",
+    "ended": "Avslutad"
   },
   "stats": {
     "total_prints": "Totalt antal utskrifter",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "Inga fel registrerade.",
     "load_failed": "Kunde inte ladda felloggen.",
-    "placeholder": "Felloggen visas här..."
+    "placeholder": "Felloggen visas här...",
+    "total": "Totalt",
+    "critical": "Kritiska",
+    "errors": "Fel",
+    "warnings": "Varningar",
+    "info": "Info",
+    "all": "Alla",
+    "search_placeholder": "Sök fel...",
+    "no_match": "Inga fel matchar filtret.",
+    "just_now": "just nu",
+    "unknown_error": "Okänt fel"
   },
   "settings": {
     "printers_title": "Skrivare",
@@ -238,7 +276,14 @@
     "server_title": "Server",
     "load_failed": "Kunde inte ladda inställningarna.",
     "placeholder": "Inställningar visas här...",
-    "language": "Språk"
+    "language": "Språk",
+    "demo_title": "Demodata",
+    "demo_description": "Det finns {{count}} demoskrivare med testdata i databasen.",
+    "demo_delete": "Ta bort demodata",
+    "demo_confirm": "Ta bort alla demoskrivare och tillhörande data (historik, fel, filament, telemetri)? Detta kan inte ångras.",
+    "notif_log_title": "Aviseringslogg",
+    "notif_log_empty": "Inga aviseringar skickade ännu.",
+    "notif_log_failed": "Kunde inte ladda aviseringsloggen."
   },
   "notify": {
     "print": "Utskrift",
@@ -272,7 +317,47 @@
     "settings": "Inställningar",
     "per_change": "Avfall per färgbyte",
     "no_data": "Inget avfall registrerat ännu.",
-    "load_failed": "Kunde inte ladda avfallsdata."
+    "load_failed": "Kunde inte ladda avfallsdata.",
+    "efficiency": "Avfallskvot",
+    "color_changes_short": "byten"
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Fläktar",
+    "fan_part": "Delfläkt",
+    "fan_aux": "Hjälpfläkt",
+    "fan_chamber": "Kammarfläkt",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Munstycke",
+    "sd_card": "SD-kort",
+    "sd_inserted": "Insatt",
+    "sd_none": "Ej insatt",
+    "light": "Ljus",
+    "light_on": "På",
+    "light_off": "Av",
+    "speed": "Hastighet",
+    "error": "Fel",
+    "no_error": "Inga",
+    "unknown": "Okänd"
+  },
+  "prepare": {
+    "uploading": "Laddar upp...",
+    "heating": "Värmer upp...",
+    "loading_model": "Laddar 3D-modell..."
+  },
+  "makerworld": {
+    "loading": "Laddar MakerWorld-info...",
+    "view_on_mw": "Visa pa MakerWorld",
+    "by": "av"
+  },
+  "layout": {
+    "locked": "Layout låst",
+    "unlocked": "Layout olåst — dra för att ändra ordning"
+  },
+  "print_preview": {
+    "title": "Förhandsvisning",
+    "no_preview": "Ingen förhandsvisning"
   },
   "csv": {
     "date": "Datum",

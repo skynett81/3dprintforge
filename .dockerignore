@@ -8,3 +8,9 @@ config.json
 .DS_Store
 .dockerignore
 README.md
+LICENSE
+.gitignore
+.vscode
+.idea
+install.sh
+uninstall.sh

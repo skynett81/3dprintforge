@@ -1,7 +1,10 @@
 services:
   bambu-dashboard:
     build: .
-    # network_mode: host is required for LAN access to printers via MQTT
+    container_name: bambu-dashboard
+    # network_mode: host is required for LAN access to printers via MQTT (port 8883)
+    # and for camera RTSPS streams (port 322).
+    # This means EXPOSE in Dockerfile is informational only — all ports are accessible.
     network_mode: host
     restart: unless-stopped
     volumes:
@@ -10,3 +13,5 @@ services:
       - ./certs:/app/certs
     environment:
       - NODE_ENV=production
+      # Uncomment to run with demo printers (no real hardware needed):
+      # - BAMBU_DEMO=true

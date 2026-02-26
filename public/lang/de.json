@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Dashboard"
+  },
+  "sidebar": {
+    "made_by": "Erstellt von"
+  },
   "header": {
     "subtitle": "3D-Drucker Steuerpanel",
     "connecting": "Verbindung wird hergestellt..."
@@ -75,7 +81,17 @@
     "save": "Speichern",
     "type_required": "Typ ist erforderlich",
     "load_failed": "Filamentbestand konnte nicht geladen werden.",
-    "remaining_of": "übrig von"
+    "remaining_of": "übrig von",
+    "unassigned": "Keinem Drucker zugewiesen",
+    "total_spools": "Spulen",
+    "total_remaining": "Gesamt verbleibend",
+    "total_value": "Bestandswert",
+    "low_stock": "Niedriger Bestand",
+    "low_stock_warning": "{{count}} Spule(n) unter 20 % verbleibend",
+    "spool_singular": "Spule",
+    "spool_plural": "Spulen",
+    "used_g": "Verbraucht (g)",
+    "drop_here": "Spulen hier ablegen"
   },
   "controls": {
     "title": "Steuerung",
@@ -100,7 +116,16 @@
     "calibration": "Kalibrierung / Auto-Level",
     "gcode_title": "G-Code-Konsole",
     "gcode_placeholder": "G-Code-Befehl eingeben",
-    "gcode_send": "Senden"
+    "gcode_send": "Senden",
+    "speed_profile": "Geschwindigkeitsprofil",
+    "presets": "Voreinstellungen:",
+    "cooldown": "Abkühlen",
+    "motion": "Bewegung",
+    "extruder": "Extruder",
+    "extrude": "Extrudieren",
+    "retract": "Einziehen",
+    "ai_spaghetti": "Spaghetti-KI",
+    "ai_first_layer": "Erste Schicht"
   },
   "speed": {
     "label": "Geschwindigkeit:",
@@ -140,6 +165,7 @@
     "unknown": "Unbekannt"
   },
   "tabs": {
+    "controls": "Steuerung",
     "history": "Verlauf",
     "statistics": "Statistiken",
     "filament": "Filament",
@@ -160,7 +186,9 @@
     "failed": "Fehlgeschlagen",
     "cancelled": "Abgebrochen",
     "load_failed": "Verlauf konnte nicht geladen werden.",
-    "placeholder": "Druckverlauf erscheint hier..."
+    "placeholder": "Druckverlauf erscheint hier...",
+    "started": "Gestartet",
+    "ended": "Beendet"
   },
   "stats": {
     "total_prints": "Drucke gesamt",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "Keine Fehler aufgezeichnet.",
     "load_failed": "Fehlerprotokoll konnte nicht geladen werden.",
-    "placeholder": "Fehlerprotokoll erscheint hier..."
+    "placeholder": "Fehlerprotokoll erscheint hier...",
+    "total": "Gesamt",
+    "critical": "Kritisch",
+    "errors": "Fehler",
+    "warnings": "Warnungen",
+    "info": "Info",
+    "all": "Alle",
+    "search_placeholder": "Fehler suchen...",
+    "no_match": "Keine Fehler passend zum Filter.",
+    "just_now": "gerade eben",
+    "unknown_error": "Unbekannter Fehler"
   },
   "settings": {
     "printers_title": "Drucker",
@@ -238,7 +276,14 @@
     "server_title": "Server",
     "load_failed": "Einstellungen konnten nicht geladen werden.",
     "placeholder": "Einstellungen erscheinen hier...",
-    "language": "Sprache"
+    "language": "Sprache",
+    "demo_title": "Demodaten",
+    "demo_description": "Es gibt {{count}} Demo-Drucker mit Testdaten in der Datenbank.",
+    "demo_delete": "Demodaten löschen",
+    "demo_confirm": "Alle Demo-Drucker und zugehörige Daten (Verlauf, Fehler, Filament, Telemetrie) löschen? Dies kann nicht rückgängig gemacht werden.",
+    "notif_log_title": "Benachrichtigungsprotokoll",
+    "notif_log_empty": "Noch keine Benachrichtigungen gesendet.",
+    "notif_log_failed": "Benachrichtigungsprotokoll konnte nicht geladen werden."
   },
   "notify": {
     "print": "Druck",
@@ -272,7 +317,47 @@
     "settings": "Einstellungen",
     "per_change": "Abfall pro Farbwechsel",
     "no_data": "Noch kein Abfall erfasst.",
-    "load_failed": "Abfalldaten konnten nicht geladen werden."
+    "load_failed": "Abfalldaten konnten nicht geladen werden.",
+    "efficiency": "Abfallquote",
+    "color_changes_short": "Wechsel"
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Lüfter",
+    "fan_part": "Bauteil",
+    "fan_aux": "Hilfslüfter",
+    "fan_chamber": "Kammer",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WLAN",
+    "nozzle": "Düse",
+    "sd_card": "SD-Karte",
+    "sd_inserted": "Eingelegt",
+    "sd_none": "Nicht eingelegt",
+    "light": "Licht",
+    "light_on": "An",
+    "light_off": "Aus",
+    "speed": "Geschwindigkeit",
+    "error": "Fehler",
+    "no_error": "Keine",
+    "unknown": "Unbekannt"
+  },
+  "prepare": {
+    "uploading": "Wird hochgeladen...",
+    "heating": "Wird aufgeheizt...",
+    "loading_model": "3D-Modell wird geladen..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld-Info wird geladen...",
+    "view_on_mw": "Auf MakerWorld ansehen",
+    "by": "von"
+  },
+  "layout": {
+    "locked": "Layout gesperrt",
+    "unlocked": "Layout entsperrt — zum Neuanordnen ziehen"
+  },
+  "print_preview": {
+    "title": "Vorschau",
+    "no_preview": "Keine Vorschau"
   },
   "csv": {
     "date": "Datum",

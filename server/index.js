@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter } from './database.js';
-import { handleApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge } from './api-routes.js';
+import { handleApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub } from './api-routes.js';
 import { PrinterManager } from './printer-manager.js';
+import { NotificationManager } from './notifications.js';
+import { Updater } from './updater.js';
 
 const IS_DEMO = process.env.BAMBU_DEMO === 'true';
 
@@ -107,6 +109,9 @@ function setMetaAll(printerId, meta) {
   if (hubHttps) hubHttps.setPrinterMeta(printerId, meta);
 }
 
+// Give API routes access to hub for thumbnail service
+setHub(hub);
+
 // Connect API routes to broadcast + sync hub meta
 setApiBroadcast((type, data) => {
   // Sync hub printerMeta cache so new connections get fresh data
@@ -131,6 +136,19 @@ setApiBroadcast((type, data) => {
 // Printer Manager
 const manager = new PrinterManager(config, broadcastAll, setMetaAll);
 await manager.init();
+
+// Notification Manager
+const notifier = new NotificationManager(config.notifications);
+notifier.setPrinterListProvider(() =>
+  getPrinters().map(p => ({ id: p.id, name: p.name }))
+);
+manager.setNotificationHandler(notifier);
+setNotifier(notifier);
+
+// Updater
+const updater = new Updater(config, broadcastAll, notifier, hub);
+setUpdater(updater);
+if (config.update?.autoCheck !== false) updater.start();
 
 // Demo mode - seed mock printers and run simulations
 const demoMockPrinters = [];
@@ -158,7 +176,12 @@ if (IS_DEMO) {
         printer_id: 'demo-p2s', started_at: started, finished_at: finished,
         filename: h.filename, status: h.status, duration_seconds: h.duration_seconds,
         filament_used_g: h.filament_used_g, filament_type: h.filament_type,
-        filament_color: h.filament_color, layer_count: h.layer_count
+        filament_color: h.filament_color, layer_count: h.layer_count,
+        filament_brand: h.filament_brand, speed_level: h.speed_level,
+        nozzle_target: h.nozzle_target, bed_target: h.bed_target,
+        max_nozzle_temp: h.max_nozzle_temp, max_bed_temp: h.max_bed_temp,
+        nozzle_type: h.nozzle_type, nozzle_diameter: h.nozzle_diameter,
+        color_changes: h.color_changes, waste_g: h.waste_g
       });
     }
     console.log(`[demo] Seeded ${MOCK_HISTORY.length} history records`);
@@ -205,6 +228,7 @@ if (IS_DEMO) {
       broadcastAll('status', { printer_id: p.id, ...state });
       const printData = state.print || state;
       sampler.update(printData);
+      notifier.updateBedMonitor(p.id, p.name, printData);
     };
 
     mock.start();
@@ -263,6 +287,8 @@ if (hubHttps) hubHttps.onCommand = commandHandler;
 // Graceful shutdown
 function shutdown() {
   for (const mock of demoMockPrinters) mock.stop();
+  updater.shutdown();
+  notifier.shutdown();
   manager.shutdown();
   process.exit(0);
 }
@@ -274,7 +300,7 @@ httpServer.listen(PORT, () => {
   const printerCount = manager.getPrinterIds().length;
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
-  console.log('  ║   Bambu Dashboard                             ║');
+  console.log(`  ║   Bambu Dashboard v${updater.currentVersion.padEnd(26)}║`);
   console.log(`  ║   HTTP:  http://localhost:${PORT}                  ║`);
   if (hasSSL) {
     console.log(`  ║   HTTPS: https://localhost:${HTTPS_PORT}                ║`);

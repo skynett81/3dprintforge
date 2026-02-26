@@ -10,6 +10,29 @@ export class PrinterManager {
     this.setMeta = hubSetMeta;
     this.printers = new Map();
     this._nextPortOffset = 0;
+    this._notifier = null;
+  }
+
+  setNotificationHandler(notifier) {
+    this._notifier = notifier;
+    // Wire up existing live printers
+    for (const [id, entry] of this.printers) {
+      if (entry.tracker) this._wireTrackerNotifications(id, entry.config.name, entry.tracker);
+    }
+  }
+
+  _wireTrackerNotifications(printerId, printerName, tracker) {
+    if (!this._notifier) return;
+    tracker.onPrintStart = (data) => {
+      this._notifier.notify('print_started', { ...data, printerName });
+    };
+    tracker.onPrintEnd = (data) => {
+      const eventMap = { completed: 'print_finished', failed: 'print_failed', cancelled: 'print_cancelled' };
+      this._notifier.notify(eventMap[data.status] || 'print_finished', { ...data, printerName });
+    };
+    tracker.onError = (data) => {
+      this._notifier.notify('printer_error', { ...data, printerName });
+    };
   }
 
   async init() {
@@ -52,6 +75,7 @@ export class PrinterManager {
           const printData = data.print || data;
           tracker.update(printData);
           sampler.update(printData);
+          if (this._notifier) this._notifier.updateBedMonitor(id, printerConf.name, printData);
         }
       },
       printerState: {}
@@ -91,6 +115,7 @@ export class PrinterManager {
       server: { ...this.config.server, cameraWsPort: cameraPort }
     });
 
+    this._wireTrackerNotifications(id, printerConf.name, tracker);
     this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort });
     this.printers.set(id, { config: printerConf, client, tracker, sampler, camera, cameraPort, live: true });
 

@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "仪表盘"
+  },
+  "sidebar": {
+    "made_by": "作者"
+  },
   "header": {
     "subtitle": "3D打印机控制面板",
     "connecting": "连接中..."
@@ -75,7 +81,17 @@
     "save": "保存",
     "type_required": "类型为必填项",
     "load_failed": "无法加载耗材库存。",
-    "remaining_of": "剩余，共"
+    "remaining_of": "剩余，共",
+    "unassigned": "未分配给打印机",
+    "total_spools": "料卷",
+    "total_remaining": "总剩余量",
+    "total_value": "库存价值",
+    "low_stock": "库存不足",
+    "low_stock_warning": "{{count}} 个料卷剩余低于20%",
+    "spool_singular": "料卷",
+    "spool_plural": "料卷",
+    "used_g": "已用 (g)",
+    "drop_here": "将料卷拖放到这里"
   },
   "controls": {
     "title": "控制",
@@ -100,7 +116,16 @@
     "calibration": "校准 / 自动调平",
     "gcode_title": "G-code 控制台",
     "gcode_placeholder": "输入 G-code 命令",
-    "gcode_send": "发送"
+    "gcode_send": "发送",
+    "speed_profile": "速度配置",
+    "presets": "预设:",
+    "cooldown": "冷却",
+    "motion": "运动",
+    "extruder": "挤出机",
+    "extrude": "挤出",
+    "retract": "回抽",
+    "ai_spaghetti": "意面AI",
+    "ai_first_layer": "首层"
   },
   "speed": {
     "label": "速度：",
@@ -140,6 +165,7 @@
     "unknown": "未知"
   },
   "tabs": {
+    "controls": "控制",
     "history": "历史",
     "statistics": "统计",
     "filament": "耗材",
@@ -159,7 +185,9 @@
     "failed": "失败",
     "cancelled": "已取消",
     "load_failed": "无法加载历史记录。",
-    "placeholder": "打印历史将在此显示..."
+    "placeholder": "打印历史将在此显示...",
+    "started": "开始",
+    "ended": "结束"
   },
   "stats": {
     "total_prints": "总打印次数",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "暂无错误记录。",
     "load_failed": "无法加载错误日志。",
-    "placeholder": "错误日志将在此显示..."
+    "placeholder": "错误日志将在此显示...",
+    "total": "总计",
+    "critical": "严重",
+    "errors": "错误",
+    "warnings": "警告",
+    "info": "信息",
+    "all": "全部",
+    "search_placeholder": "搜索错误...",
+    "no_match": "没有匹配筛选条件的错误。",
+    "just_now": "刚刚",
+    "unknown_error": "未知错误"
   },
   "settings": {
     "printers_title": "打印机",
@@ -237,7 +275,14 @@
     "server_title": "服务器",
     "load_failed": "无法加载设置。",
     "placeholder": "设置将在此显示...",
-    "language": "语言"
+    "language": "语言",
+    "demo_title": "演示数据",
+    "demo_description": "数据库中有 {{count}} 台演示打印机及测试数据。",
+    "demo_delete": "删除演示数据",
+    "demo_confirm": "删除所有演示打印机及关联数据（历史、错误、耗材、遥测）？此操作无法撤销。",
+    "notif_log_title": "通知日志",
+    "notif_log_empty": "尚未发送任何通知。",
+    "notif_log_failed": "无法加载通知日志。"
   },
   "notify": {
     "print": "打印",
@@ -271,7 +316,47 @@
     "settings": "设置",
     "per_change": "每次换色废料",
     "no_data": "尚未记录废料。",
-    "load_failed": "无法加载废料数据。"
+    "load_failed": "无法加载废料数据。",
+    "efficiency": "废料比率",
+    "color_changes_short": "次换色"
+  },
+  "quick_status": {
+    "title": "状态",
+    "fans": "风扇",
+    "fan_part": "零件",
+    "fan_aux": "辅助",
+    "fan_chamber": "腔体",
+    "fan_heatbreak": "热断",
+    "wifi": "WiFi",
+    "nozzle": "喷嘴",
+    "sd_card": "SD卡",
+    "sd_inserted": "已插入",
+    "sd_none": "未插入",
+    "light": "灯光",
+    "light_on": "开",
+    "light_off": "关",
+    "speed": "速度",
+    "error": "错误",
+    "no_error": "无",
+    "unknown": "未知"
+  },
+  "prepare": {
+    "uploading": "上传中...",
+    "heating": "加热中...",
+    "loading_model": "正在加载3D模型..."
+  },
+  "makerworld": {
+    "loading": "正在加载MakerWorld信息...",
+    "view_on_mw": "在MakerWorld查看",
+    "by": "作者:"
+  },
+  "layout": {
+    "locked": "布局已锁定",
+    "unlocked": "布局已解锁 — 拖动以重新排序"
+  },
+  "print_preview": {
+    "title": "预览",
+    "no_preview": "无预览"
   },
   "csv": {
     "date": "日期",

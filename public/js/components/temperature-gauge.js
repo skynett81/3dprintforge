@@ -46,12 +46,12 @@
 
     svg.innerHTML = `
       <path class="gauge-bg" d="${describeArc(CX, CY, RADIUS, ARC_START, ARC_END)}"
-            fill="none" stroke="#21262d" stroke-width="8" stroke-linecap="round"/>
+            fill="none" stroke="#30363d" stroke-width="8" stroke-linecap="round"/>
       <path class="gauge-fill" id="${id}-fill" d="${describeArc(CX, CY, RADIUS, ARC_START, ARC_START)}"
             fill="none" stroke="#00e676" stroke-width="8" stroke-linecap="round"/>
-      <text x="${CX}" y="${CY - 4}" text-anchor="middle" fill="#e6edf3"
+      <text x="${CX}" y="${CY - 4}" text-anchor="middle" fill="#f0f6fc"
             font-size="18" font-weight="600" id="${id}-value">--</text>
-      <text x="${CX}" y="${CY + 14}" text-anchor="middle" fill="#8b949e"
+      <text x="${CX}" y="${CY + 14}" text-anchor="middle" fill="#e2e8f0"
             font-size="10" id="${id}-target"></text>
     `;
   }

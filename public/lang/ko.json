@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "대시보드"
+  },
+  "sidebar": {
+    "made_by": "제작자"
+  },
   "header": {
     "subtitle": "3D 프린터 제어판",
     "connecting": "연결 중..."
@@ -75,7 +81,17 @@
     "save": "저장",
     "type_required": "유형은 필수입니다",
     "load_failed": "필라멘트 재고를 불러올 수 없습니다.",
-    "remaining_of": "남음 (전체 중)"
+    "remaining_of": "남음 (전체 중)",
+    "unassigned": "프린터에 미할당",
+    "total_spools": "스풀",
+    "total_remaining": "총 잔량",
+    "total_value": "재고 가치",
+    "low_stock": "재고 부족",
+    "low_stock_warning": "{{count}}개 스풀이 잔량 20% 미만",
+    "spool_singular": "스풀",
+    "spool_plural": "스풀",
+    "used_g": "사용량 (g)",
+    "drop_here": "스풀을 여기에 놓으세요"
   },
   "controls": {
     "title": "제어",
@@ -100,7 +116,16 @@
     "calibration": "캘리브레이션 / 오토 레벨링",
     "gcode_title": "G-code 콘솔",
     "gcode_placeholder": "G-code 명령어 입력",
-    "gcode_send": "전송"
+    "gcode_send": "전송",
+    "speed_profile": "속도 프로필",
+    "presets": "프리셋:",
+    "cooldown": "냉각",
+    "motion": "모션",
+    "extruder": "익스트루더",
+    "extrude": "압출",
+    "retract": "후퇴",
+    "ai_spaghetti": "스파게티 AI",
+    "ai_first_layer": "첫 번째 레이어"
   },
   "speed": {
     "label": "속도:",
@@ -140,6 +165,7 @@
     "unknown": "알 수 없음"
   },
   "tabs": {
+    "controls": "제어",
     "history": "기록",
     "statistics": "통계",
     "filament": "필라멘트",
@@ -160,7 +186,9 @@
     "failed": "실패",
     "cancelled": "취소됨",
     "load_failed": "기록을 불러올 수 없습니다.",
-    "placeholder": "인쇄 기록이 여기에 표시됩니다..."
+    "placeholder": "인쇄 기록이 여기에 표시됩니다...",
+    "started": "시작",
+    "ended": "종료"
   },
   "stats": {
     "total_prints": "총 인쇄 수",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "기록된 오류가 없습니다.",
     "load_failed": "오류 로그를 불러올 수 없습니다.",
-    "placeholder": "오류 로그가 여기에 표시됩니다..."
+    "placeholder": "오류 로그가 여기에 표시됩니다...",
+    "total": "합계",
+    "critical": "심각",
+    "errors": "오류",
+    "warnings": "경고",
+    "info": "정보",
+    "all": "전체",
+    "search_placeholder": "오류 검색...",
+    "no_match": "필터에 일치하는 오류가 없습니다.",
+    "just_now": "방금",
+    "unknown_error": "알 수 없는 오류"
   },
   "settings": {
     "printers_title": "프린터",
@@ -238,7 +276,14 @@
     "server_title": "서버",
     "load_failed": "설정을 불러올 수 없습니다.",
     "placeholder": "설정이 여기에 표시됩니다...",
-    "language": "언어"
+    "language": "언어",
+    "demo_title": "데모 데이터",
+    "demo_description": "데이터베이스에 테스트 데이터가 포함된 {{count}}대의 데모 프린터가 있습니다.",
+    "demo_delete": "데모 데이터 삭제",
+    "demo_confirm": "모든 데모 프린터와 관련 데이터(기록, 오류, 필라멘트, 텔레메트리)를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "notif_log_title": "알림 로그",
+    "notif_log_empty": "아직 전송된 알림이 없습니다.",
+    "notif_log_failed": "알림 로그를 불러올 수 없습니다."
   },
   "notify": {
     "print": "인쇄",
@@ -272,7 +317,47 @@
     "settings": "설정",
     "per_change": "색상 변경당 폐기량",
     "no_data": "아직 기록된 폐기물이 없습니다.",
-    "load_failed": "폐기물 데이터를 불러올 수 없습니다."
+    "load_failed": "폐기물 데이터를 불러올 수 없습니다.",
+    "efficiency": "폐기 비율",
+    "color_changes_short": "변경"
+  },
+  "quick_status": {
+    "title": "상태",
+    "fans": "팬",
+    "fan_part": "파트",
+    "fan_aux": "보조",
+    "fan_chamber": "챔버",
+    "fan_heatbreak": "히트브레이크",
+    "wifi": "WiFi",
+    "nozzle": "노즐",
+    "sd_card": "SD 카드",
+    "sd_inserted": "삽입됨",
+    "sd_none": "미삽입",
+    "light": "조명",
+    "light_on": "켜짐",
+    "light_off": "꺼짐",
+    "speed": "속도",
+    "error": "오류",
+    "no_error": "없음",
+    "unknown": "알 수 없음"
+  },
+  "prepare": {
+    "uploading": "업로드 중...",
+    "heating": "가열 중...",
+    "loading_model": "3D 모델 로딩 중..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld 정보 로딩 중...",
+    "view_on_mw": "MakerWorld에서 보기",
+    "by": ""
+  },
+  "layout": {
+    "locked": "레이아웃 잠김",
+    "unlocked": "레이아웃 잠금 해제됨 — 드래그하여 순서 변경"
+  },
+  "print_preview": {
+    "title": "미리보기",
+    "no_preview": "미리보기 없음"
   },
   "csv": {
     "date": "날짜",

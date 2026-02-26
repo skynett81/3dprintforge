@@ -81,6 +81,15 @@ function connect() {
         return;
       }
 
+      if (msg.type === 'update_available') {
+        if (typeof handleUpdateAvailable === 'function') handleUpdateAvailable(msg.data);
+        return;
+      }
+      if (msg.type === 'update_status') {
+        if (typeof handleUpdateStatus === 'function') handleUpdateStatus(msg.data);
+        return;
+      }
+
       if (msg.type === 'status' && msg.data) {
         const printerId = msg.data.printer_id;
         if (printerId) {
@@ -174,6 +183,8 @@ function updateDashboard(data) {
   if (typeof updateFanDisplay === 'function') updateFanDisplay(data);
   if (typeof updateActiveFilament === 'function') updateActiveFilament(data);
   if (typeof updatePrinterInfo === 'function') updatePrinterInfo(data);
+  if (typeof updatePrintPreview === 'function') updatePrintPreview(data);
+  if (typeof updateQuickStatus === 'function') updateQuickStatus(data);
   if (typeof updateSparklineStats === 'function') updateSparklineStats(data);
   updateStatusBar(data);
 }
@@ -206,14 +217,38 @@ function updateStatusBar(data) {
 
 // Reload active tab data when switching printers
 window.reloadActiveTab = function() {
-  const panel = document.getElementById('overlay-panel');
-  if (panel?.classList.contains('open') && window._activePanel) {
+  if (window._activePanel) {
     openPanel(window._activePanel);
   }
 };
 
-// ---- Overlay Panel System ----
+// ---- Sidebar Toggle (mobile) ----
+
+window.toggleSidebar = function() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+
+  const isOpen = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', !isOpen);
+  if (backdrop) backdrop.classList.toggle('visible', !isOpen);
+  document.body.style.overflow = !isOpen ? 'hidden' : '';
+};
+
+function closeSidebarIfMobile() {
+  if (window.innerWidth <= 768) {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+}
+
+// ---- Inline Panel System ----
+
 const PANEL_TITLES = {
+  controls: 'tabs.controls',
   history: 'tabs.history',
   stats: 'tabs.statistics',
   telemetry: 'tabs.telemetry',
@@ -224,8 +259,8 @@ const PANEL_TITLES = {
   settings: 'tabs.settings'
 };
 
-// Panel loaders - these call each component's existing load function
 const PANEL_LOADERS = {
+  controls: () => { if (typeof loadControlsPanel === 'function') loadControlsPanel(); },
   history: () => { if (typeof loadHistoryPanel === 'function') loadHistoryPanel(); },
   stats: () => { if (typeof loadStatsPanel === 'function') loadStatsPanel(); },
   telemetry: () => { if (typeof loadTelemetryPanel === 'function') loadTelemetryPanel(); },
@@ -238,41 +273,61 @@ const PANEL_LOADERS = {
 
 window._activePanel = null;
 
-window.openPanel = function(name) {
-  const panel = document.getElementById('overlay-panel');
+window.openPanel = function(name, skipHash) {
+  if (!PANEL_TITLES[name]) return;
+  const panelContent = document.getElementById('panel-content');
+  const dashboardGrid = document.getElementById('dashboard-grid');
+  const statsStrip = document.getElementById('stats-strip');
   const titleEl = document.getElementById('overlay-panel-title');
-  if (!panel) return;
+  if (!panelContent || !dashboardGrid) return;
 
-  // Toggle if same panel
-  if (panel.classList.contains('open') && window._activePanel === name) {
-    closePanel();
-    return;
-  }
+  closeSidebarIfMobile();
 
   window._activePanel = name;
-  titleEl.textContent = t(PANEL_TITLES[name] || name);
+  if (titleEl) titleEl.textContent = t(PANEL_TITLES[name] || name);
 
-  // Highlight active nav button
-  document.querySelectorAll('.topnav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.topnav-btn[data-panel="${name}"]`)?.classList.add('active');
+  // Update URL hash
+  if (!skipHash) history.replaceState(null, '', '#' + name);
 
-  panel.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  // Highlight sidebar button
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.sidebar-btn[data-panel="${name}"]`)?.classList.add('active');
 
-  // Load content
+  // Hide dashboard + stats strip, show panel
+  dashboardGrid.style.display = 'none';
+  if (statsStrip) statsStrip.style.display = 'none';
+  panelContent.style.display = 'flex';
+
+  // Clear and load content
+  const body = document.getElementById('overlay-panel-body');
+  if (body) body.innerHTML = '';
+
   if (PANEL_LOADERS[name]) PANEL_LOADERS[name]();
 };
 
-window.closePanel = function() {
-  const panel = document.getElementById('overlay-panel');
-  if (!panel) return;
+window.showDashboard = function(skipHash) {
+  const panelContent = document.getElementById('panel-content');
+  const dashboardGrid = document.getElementById('dashboard-grid');
+  const statsStrip = document.getElementById('stats-strip');
+  if (!panelContent || !dashboardGrid) return;
 
-  panel.classList.remove('open');
-  document.body.style.overflow = '';
+  closeSidebarIfMobile();
+
+  dashboardGrid.style.display = '';
+  if (statsStrip) statsStrip.style.display = '';
+  panelContent.style.display = 'none';
   window._activePanel = null;
 
-  document.querySelectorAll('.topnav-btn').forEach(b => b.classList.remove('active'));
+  // Update URL hash
+  if (!skipHash) history.replaceState(null, '', location.pathname);
+
+  // Highlight dashboard button
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar-btn[data-panel="dashboard"]')?.classList.add('active');
 };
+
+// Backward compatibility
+window.closePanel = window.showDashboard;
 
 // Re-render all components (called on language switch)
 window.refreshAllComponents = function() {
@@ -285,21 +340,57 @@ window.refreshAllComponents = function() {
   window.reloadActiveTab();
 };
 
+// ---- Hash-based routing ----
+
+function navigateFromHash() {
+  const hash = location.hash.replace('#', '');
+  if (hash && PANEL_TITLES[hash]) {
+    openPanel(hash, true);
+  } else if (window._activePanel) {
+    showDashboard(true);
+  }
+}
+
+window.addEventListener('hashchange', navigateFromHash);
+
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
   await window.i18n.init();
   connect();
 
-  // Close panel on backdrop click
-  const overlayPanel = document.getElementById('overlay-panel');
-  if (overlayPanel) {
-    overlayPanel.addEventListener('click', (e) => {
-      if (e.target === overlayPanel) closePanel();
-    });
+  // Fetch version for sidebar
+  fetch('/api/update/status').then(r => r.json()).then(d => {
+    const el = document.getElementById('sidebar-version');
+    if (el && d.current) el.textContent = `v${d.current}`;
+  }).catch(() => {});
+
+  // Restore panel from URL hash on load
+  const initHash = location.hash.replace('#', '');
+  if (initHash && PANEL_TITLES[initHash]) {
+    // Small delay to let WebSocket connect and components register
+    setTimeout(() => openPanel(initHash), 200);
   }
 
-  // Close panel on ESC
+  // ESC key handler
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePanel();
+    if (e.key === 'Escape') {
+      if (window._activePanel) {
+        showDashboard();
+      } else if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar?.classList.contains('open')) toggleSidebar();
+      }
+    }
+  });
+
+  // Close sidebar on resize above mobile breakpoint
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (sidebar) sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
   });
 });

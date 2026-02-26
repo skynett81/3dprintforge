@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Pannello"
+  },
+  "sidebar": {
+    "made_by": "Creato da"
+  },
   "header": {
     "subtitle": "Pannello di controllo stampante 3D",
     "connecting": "Connessione in corso..."
@@ -75,7 +81,17 @@
     "save": "Salva",
     "type_required": "Il tipo è obbligatorio",
     "load_failed": "Impossibile caricare l'inventario filamenti.",
-    "remaining_of": "rimanente di"
+    "remaining_of": "rimanente di",
+    "unassigned": "Non assegnato a una stampante",
+    "total_spools": "Bobine",
+    "total_remaining": "Totale rimanente",
+    "total_value": "Valore dell'inventario",
+    "low_stock": "Scorte basse",
+    "low_stock_warning": "{{count}} bobina/e sotto il 20% rimanente",
+    "spool_singular": "bobina",
+    "spool_plural": "bobine",
+    "used_g": "Usato (g)",
+    "drop_here": "Rilascia le bobine qui"
   },
   "controls": {
     "title": "Controlli",
@@ -100,7 +116,16 @@
     "calibration": "Calibrazione / Livellamento automatico",
     "gcode_title": "Console G-code",
     "gcode_placeholder": "Inserisci comando G-code",
-    "gcode_send": "Invia"
+    "gcode_send": "Invia",
+    "speed_profile": "Profilo velocità",
+    "presets": "Preimpostazioni:",
+    "cooldown": "Raffredda",
+    "motion": "Movimento",
+    "extruder": "Estrusore",
+    "extrude": "Estrudi",
+    "retract": "Ritrai",
+    "ai_spaghetti": "IA Spaghetti",
+    "ai_first_layer": "Primo strato"
   },
   "speed": {
     "label": "Velocità:",
@@ -140,6 +165,7 @@
     "unknown": "Sconosciuto"
   },
   "tabs": {
+    "controls": "Controlli",
     "history": "Cronologia",
     "statistics": "Statistiche",
     "filament": "Filamento",
@@ -160,7 +186,9 @@
     "failed": "Fallita",
     "cancelled": "Annullata",
     "load_failed": "Impossibile caricare la cronologia.",
-    "placeholder": "La cronologia delle stampe apparirà qui..."
+    "placeholder": "La cronologia delle stampe apparirà qui...",
+    "started": "Iniziato",
+    "ended": "Terminato"
   },
   "stats": {
     "total_prints": "Stampe totali",
@@ -206,7 +234,17 @@
   "errors": {
     "no_errors": "Nessun errore registrato.",
     "load_failed": "Impossibile caricare il registro errori.",
-    "placeholder": "Il registro errori apparirà qui..."
+    "placeholder": "Il registro errori apparirà qui...",
+    "total": "Totale",
+    "critical": "Critico",
+    "errors": "Errori",
+    "warnings": "Avvertimenti",
+    "info": "Info",
+    "all": "Tutti",
+    "search_placeholder": "Cerca errori...",
+    "no_match": "Nessun errore corrispondente al filtro.",
+    "just_now": "adesso",
+    "unknown_error": "Errore sconosciuto"
   },
   "settings": {
     "printers_title": "Stampanti",
@@ -238,7 +276,14 @@
     "server_title": "Server",
     "load_failed": "Impossibile caricare le impostazioni.",
     "placeholder": "Le impostazioni appariranno qui...",
-    "language": "Lingua"
+    "language": "Lingua",
+    "demo_title": "Dati demo",
+    "demo_description": "Ci sono {{count}} stampanti demo con dati di test nel database.",
+    "demo_delete": "Elimina dati demo",
+    "demo_confirm": "Eliminare tutte le stampanti demo e i dati associati (cronologia, errori, filamento, telemetria)? Questa azione non può essere annullata.",
+    "notif_log_title": "Registro notifiche",
+    "notif_log_empty": "Nessuna notifica inviata finora.",
+    "notif_log_failed": "Impossibile caricare il registro delle notifiche."
   },
   "notify": {
     "print": "Stampa",
@@ -272,7 +317,47 @@
     "settings": "Impostazioni",
     "per_change": "Spreco per cambio colore",
     "no_data": "Nessuno spreco registrato ancora.",
-    "load_failed": "Impossibile caricare i dati sullo spreco."
+    "load_failed": "Impossibile caricare i dati sullo spreco.",
+    "efficiency": "Rapporto di spreco",
+    "color_changes_short": "cambi"
+  },
+  "quick_status": {
+    "title": "Stato",
+    "fans": "Ventole",
+    "fan_part": "Pezzo",
+    "fan_aux": "Ausiliaria",
+    "fan_chamber": "Camera",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Ugello",
+    "sd_card": "Scheda SD",
+    "sd_inserted": "Inserita",
+    "sd_none": "Non inserita",
+    "light": "Luce",
+    "light_on": "Accesa",
+    "light_off": "Spenta",
+    "speed": "Velocità",
+    "error": "Errore",
+    "no_error": "Nessuno",
+    "unknown": "Sconosciuto"
+  },
+  "prepare": {
+    "uploading": "Caricamento...",
+    "heating": "Riscaldamento...",
+    "loading_model": "Caricamento modello 3D..."
+  },
+  "makerworld": {
+    "loading": "Caricamento info MakerWorld...",
+    "view_on_mw": "Vedi su MakerWorld",
+    "by": "di"
+  },
+  "layout": {
+    "locked": "Layout bloccato",
+    "unlocked": "Layout sbloccato — trascina per riordinare"
+  },
+  "print_preview": {
+    "title": "Anteprima",
+    "no_preview": "Nessuna anteprima"
   },
   "csv": {
     "date": "Data",

@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Irányítópult"
+  },
+  "sidebar": {
+    "made_by": "Készítette"
+  },
   "header": {
     "subtitle": "3D nyomtató vezérlőpult",
     "connecting": "Csatlakozás..."
@@ -75,7 +81,17 @@
     "save": "Mentés",
     "type_required": "A típus megadása kötelező",
     "load_failed": "Nem sikerült betölteni a filament készletet.",
-    "remaining_of": "maradt a"
+    "remaining_of": "maradt a",
+    "unassigned": "Nincs nyomtatóhoz rendelve",
+    "total_spools": "Tekercsek",
+    "total_remaining": "Összes maradék",
+    "total_value": "Készletérték",
+    "low_stock": "Alacsony készlet",
+    "low_stock_warning": "{{count}} tekercs 20% alatti maradékkal",
+    "spool_singular": "tekercs",
+    "spool_plural": "tekercs",
+    "used_g": "Felhasznált (g)",
+    "drop_here": "Húzza ide a tekercseket"
   },
   "controls": {
     "title": "Vezérlés",
@@ -100,7 +116,16 @@
     "calibration": "Kalibrálás / automatikus szintezés",
     "gcode_title": "G-code konzol",
     "gcode_placeholder": "Írja be a G-code parancsot",
-    "gcode_send": "Küldés"
+    "gcode_send": "Küldés",
+    "speed_profile": "Sebességprofil",
+    "presets": "Előbeállítások:",
+    "cooldown": "Hűtés",
+    "motion": "Mozgás",
+    "extruder": "Extruder",
+    "extrude": "Extrudálás",
+    "retract": "Visszahúzás",
+    "ai_spaghetti": "AI Spagetti",
+    "ai_first_layer": "Első réteg"
   },
   "speed": {
     "label": "Sebesség:",
@@ -140,6 +165,7 @@
     "unknown": "Ismeretlen"
   },
   "tabs": {
+    "controls": "Vezérlés",
     "history": "Előzmények",
     "statistics": "Statisztikák",
     "filament": "Filament",
@@ -159,7 +185,9 @@
     "failed": "Sikertelen",
     "cancelled": "Megszakítva",
     "load_failed": "Nem sikerült betölteni az előzményeket.",
-    "placeholder": "A nyomtatási előzmények itt jelennek meg..."
+    "placeholder": "A nyomtatási előzmények itt jelennek meg...",
+    "started": "Elkezdve",
+    "ended": "Befejezve"
   },
   "stats": {
     "total_prints": "Összes nyomtatás",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Nincsenek rögzített hibák.",
     "load_failed": "Nem sikerült betölteni a hibanaplót.",
-    "placeholder": "A hibanapló itt jelenik meg..."
+    "placeholder": "A hibanapló itt jelenik meg...",
+    "total": "Összesen",
+    "critical": "Kritikus",
+    "errors": "Hibák",
+    "warnings": "Figyelmeztetések",
+    "info": "Infó",
+    "all": "Összes",
+    "search_placeholder": "Hibák keresése...",
+    "no_match": "Nincs a szűrőnek megfelelő hiba.",
+    "just_now": "épp most",
+    "unknown_error": "Ismeretlen hiba"
   },
   "settings": {
     "printers_title": "Nyomtatók",
@@ -237,7 +275,14 @@
     "server_title": "Szerver",
     "load_failed": "Nem sikerült betölteni a beállításokat.",
     "placeholder": "A beállítások itt jelennek meg...",
-    "language": "Nyelv"
+    "language": "Nyelv",
+    "demo_title": "Demó adatok",
+    "demo_description": "{{count}} demó nyomtató található tesztadatokkal az adatbázisban.",
+    "demo_delete": "Demó adatok törlése",
+    "demo_confirm": "Törli az összes demó nyomtatót és a hozzájuk tartozó adatokat (előzmények, hibák, filament, telemetria)? Ez a művelet nem vonható vissza.",
+    "notif_log_title": "Értesítési napló",
+    "notif_log_empty": "Még nem küldtek értesítést.",
+    "notif_log_failed": "Nem sikerült betölteni az értesítési naplót."
   },
   "notify": {
     "print": "Nyomtatás",
@@ -271,7 +316,47 @@
     "settings": "Beállítások",
     "per_change": "Hulladék színváltásonként",
     "no_data": "Még nincs hulladék rögzítve.",
-    "load_failed": "Nem sikerült betölteni a hulladékadatokat."
+    "load_failed": "Nem sikerült betölteni a hulladékadatokat.",
+    "efficiency": "Hulladékarány",
+    "color_changes_short": "váltás"
+  },
+  "quick_status": {
+    "title": "Állapot",
+    "fans": "Ventilátorok",
+    "fan_part": "Alkatrész",
+    "fan_aux": "Segéd",
+    "fan_chamber": "Kamra",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Fúvóka",
+    "sd_card": "SD kártya",
+    "sd_inserted": "Behelyezve",
+    "sd_none": "Nincs behelyezve",
+    "light": "Fény",
+    "light_on": "Be",
+    "light_off": "Ki",
+    "speed": "Sebesség",
+    "error": "Hiba",
+    "no_error": "Nincs",
+    "unknown": "Ismeretlen"
+  },
+  "prepare": {
+    "uploading": "Feltöltés...",
+    "heating": "Fűtés...",
+    "loading_model": "3D modell betoltese..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld info betoltese...",
+    "view_on_mw": "Megnezes a MakerWorldon",
+    "by": ""
+  },
+  "layout": {
+    "locked": "Elrendezés zárolva",
+    "unlocked": "Elrendezés feloldva — húzza az átrendezéshez"
+  },
+  "print_preview": {
+    "title": "Előnézet",
+    "no_preview": "Nincs előnézet"
   },
   "csv": {
     "date": "Dátum",

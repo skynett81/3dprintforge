@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Přehled"
+  },
+  "sidebar": {
+    "made_by": "Vytvořil"
+  },
   "header": {
     "subtitle": "Ovládací panel 3D tiskárny",
     "connecting": "Připojování..."
@@ -75,7 +81,17 @@
     "save": "Uložit",
     "type_required": "Typ je povinný",
     "load_failed": "Nepodařilo se načíst inventář filamentů.",
-    "remaining_of": "zbývá z"
+    "remaining_of": "zbývá z",
+    "unassigned": "Nepřiřazeno k tiskárně",
+    "total_spools": "Cívky",
+    "total_remaining": "Celkem zbývá",
+    "total_value": "Hodnota zásob",
+    "low_stock": "Nízký stav",
+    "low_stock_warning": "{{count}} cívek pod 20% zbývajícího",
+    "spool_singular": "cívka",
+    "spool_plural": "cívky",
+    "used_g": "Spotřebováno (g)",
+    "drop_here": "Přetáhněte cívky sem"
   },
   "controls": {
     "title": "Ovládání",
@@ -100,7 +116,16 @@
     "calibration": "Kalibrace / automatické vyrovnání",
     "gcode_title": "G-code konzole",
     "gcode_placeholder": "Zadejte G-code příkaz",
-    "gcode_send": "Odeslat"
+    "gcode_send": "Odeslat",
+    "speed_profile": "Profil rychlosti",
+    "presets": "Předvolby:",
+    "cooldown": "Zchladit",
+    "motion": "Pohyb",
+    "extruder": "Extruder",
+    "extrude": "Extrudovat",
+    "retract": "Zasunout",
+    "ai_spaghetti": "AI Špagety",
+    "ai_first_layer": "První vrstva"
   },
   "speed": {
     "label": "Rychlost:",
@@ -140,6 +165,7 @@
     "unknown": "Neznámý"
   },
   "tabs": {
+    "controls": "Ovládání",
     "history": "Historie",
     "statistics": "Statistiky",
     "filament": "Filament",
@@ -159,7 +185,9 @@
     "failed": "Selhání",
     "cancelled": "Zrušeno",
     "load_failed": "Nepodařilo se načíst historii.",
-    "placeholder": "Zde se zobrazí historie tisku..."
+    "placeholder": "Zde se zobrazí historie tisku...",
+    "started": "Zahájeno",
+    "ended": "Dokončeno"
   },
   "stats": {
     "total_prints": "Celkem tisků",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Žádné zaznamenané chyby.",
     "load_failed": "Nepodařilo se načíst chybový log.",
-    "placeholder": "Zde se zobrazí chybový log..."
+    "placeholder": "Zde se zobrazí chybový log...",
+    "total": "Celkem",
+    "critical": "Kritické",
+    "errors": "Chyby",
+    "warnings": "Varování",
+    "info": "Info",
+    "all": "Vše",
+    "search_placeholder": "Hledat chyby...",
+    "no_match": "Žádné chyby odpovídající filtru.",
+    "just_now": "právě teď",
+    "unknown_error": "Neznámá chyba"
   },
   "settings": {
     "printers_title": "Tiskárny",
@@ -237,7 +275,14 @@
     "server_title": "Server",
     "load_failed": "Nepodařilo se načíst nastavení.",
     "placeholder": "Zde se zobrazí nastavení...",
-    "language": "Jazyk"
+    "language": "Jazyk",
+    "demo_title": "Ukázková data",
+    "demo_description": "V databázi je {{count}} ukázkových tiskáren s testovacími daty.",
+    "demo_delete": "Smazat ukázková data",
+    "demo_confirm": "Smazat všechny ukázkové tiskárny a přidružená data (historie, chyby, filament, telemetrie)? Tuto akci nelze vrátit zpět.",
+    "notif_log_title": "Protokol oznámení",
+    "notif_log_empty": "Zatím nebyla odeslána žádná oznámení.",
+    "notif_log_failed": "Nepodařilo se načíst protokol oznámení."
   },
   "notify": {
     "print": "Tisk",
@@ -271,7 +316,47 @@
     "settings": "Nastavení",
     "per_change": "Odpad na změnu barvy",
     "no_data": "Zatím žádný odpad nezaznamenán.",
-    "load_failed": "Nepodařilo se načíst data o odpadu."
+    "load_failed": "Nepodařilo se načíst data o odpadu.",
+    "efficiency": "Poměr odpadu",
+    "color_changes_short": "změn"
+  },
+  "quick_status": {
+    "title": "Stav",
+    "fans": "Ventilátory",
+    "fan_part": "Díl",
+    "fan_aux": "Pomocný",
+    "fan_chamber": "Komora",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Tryska",
+    "sd_card": "SD karta",
+    "sd_inserted": "Vložena",
+    "sd_none": "Nevložena",
+    "light": "Světlo",
+    "light_on": "Zapnuto",
+    "light_off": "Vypnuto",
+    "speed": "Rychlost",
+    "error": "Chyba",
+    "no_error": "Žádná",
+    "unknown": "Neznámý"
+  },
+  "prepare": {
+    "uploading": "Nahrávání...",
+    "heating": "Zahřívání...",
+    "loading_model": "Nacitani 3D modelu..."
+  },
+  "makerworld": {
+    "loading": "Nacitani info z MakerWorld...",
+    "view_on_mw": "Zobrazit na MakerWorld",
+    "by": "od"
+  },
+  "layout": {
+    "locked": "Rozložení zamčeno",
+    "unlocked": "Rozložení odemčeno — přetáhněte pro změnu pořadí"
+  },
+  "print_preview": {
+    "title": "Náhled",
+    "no_preview": "Žádný náhled"
   },
   "csv": {
     "date": "Datum",

@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Pano"
+  },
+  "sidebar": {
+    "made_by": "Yapımcı"
+  },
   "header": {
     "subtitle": "3D Yazıcı Kontrol Paneli",
     "connecting": "Bağlanıyor..."
@@ -75,7 +81,17 @@
     "save": "Kaydet",
     "type_required": "Tür gereklidir",
     "load_failed": "Filament envanteri yüklenemedi.",
-    "remaining_of": "kalan miktar:"
+    "remaining_of": "kalan miktar:",
+    "unassigned": "Yazıcıya atanmadı",
+    "total_spools": "Makaralar",
+    "total_remaining": "Toplam kalan",
+    "total_value": "Envanter değeri",
+    "low_stock": "Düşük stok",
+    "low_stock_warning": "{{count}} makara %20'nin altında kalan",
+    "spool_singular": "makara",
+    "spool_plural": "makara",
+    "used_g": "Kullanılan (g)",
+    "drop_here": "Makaraları buraya bırakın"
   },
   "controls": {
     "title": "Kontroller",
@@ -100,7 +116,16 @@
     "calibration": "Kalibrasyon / otomatik seviyeleme",
     "gcode_title": "G-code konsolu",
     "gcode_placeholder": "G-code komutu girin",
-    "gcode_send": "Gönder"
+    "gcode_send": "Gönder",
+    "speed_profile": "Hız Profili",
+    "presets": "Ön Ayarlar:",
+    "cooldown": "Soğut",
+    "motion": "Hareket",
+    "extruder": "Ekstruder",
+    "extrude": "Ekstrüde",
+    "retract": "Geri çek",
+    "ai_spaghetti": "Spagetti AI",
+    "ai_first_layer": "İlk Katman"
   },
   "speed": {
     "label": "Hız:",
@@ -140,6 +165,7 @@
     "unknown": "Bilinmiyor"
   },
   "tabs": {
+    "controls": "Kontroller",
     "history": "Geçmiş",
     "statistics": "İstatistikler",
     "filament": "Filament",
@@ -159,7 +185,9 @@
     "failed": "Başarısız",
     "cancelled": "İptal edildi",
     "load_failed": "Geçmiş yüklenemedi.",
-    "placeholder": "Baskı geçmişi burada görünecek..."
+    "placeholder": "Baskı geçmişi burada görünecek...",
+    "started": "Başladı",
+    "ended": "Bitti"
   },
   "stats": {
     "total_prints": "Toplam baskı",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Kayıtlı hata yok.",
     "load_failed": "Hata günlüğü yüklenemedi.",
-    "placeholder": "Hata günlüğü burada görünecek..."
+    "placeholder": "Hata günlüğü burada görünecek...",
+    "total": "Toplam",
+    "critical": "Kritik",
+    "errors": "Hatalar",
+    "warnings": "Uyarılar",
+    "info": "Bilgi",
+    "all": "Tümü",
+    "search_placeholder": "Hata ara...",
+    "no_match": "Filtreye uyan hata bulunamadı.",
+    "just_now": "az önce",
+    "unknown_error": "Bilinmeyen hata"
   },
   "settings": {
     "printers_title": "Yazıcılar",
@@ -237,7 +275,14 @@
     "server_title": "Sunucu",
     "load_failed": "Ayarlar yüklenemedi.",
     "placeholder": "Ayarlar burada görünecek...",
-    "language": "Dil"
+    "language": "Dil",
+    "demo_title": "Demo Verileri",
+    "demo_description": "Veritabanında test verileri içeren {{count}} demo yazıcı bulunmaktadır.",
+    "demo_delete": "Demo Verilerini Sil",
+    "demo_confirm": "Tüm demo yazıcıları ve ilişkili verileri (geçmiş, hatalar, filament, telemetri) silmek istiyor musunuz? Bu işlem geri alınamaz.",
+    "notif_log_title": "Bildirim Günlüğü",
+    "notif_log_empty": "Henüz bildirim gönderilmedi.",
+    "notif_log_failed": "Bildirim günlüğü yüklenemedi."
   },
   "notify": {
     "print": "Baskı",
@@ -271,7 +316,47 @@
     "settings": "Ayarlar",
     "per_change": "Renk değişimi başına atık",
     "no_data": "Henüz atık kaydedilmedi.",
-    "load_failed": "Atık verileri yüklenemedi."
+    "load_failed": "Atık verileri yüklenemedi.",
+    "efficiency": "Atık oranı",
+    "color_changes_short": "değişim"
+  },
+  "quick_status": {
+    "title": "Durum",
+    "fans": "Fanlar",
+    "fan_part": "Parça",
+    "fan_aux": "Yardımcı",
+    "fan_chamber": "Kabin",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Nozül",
+    "sd_card": "SD Kart",
+    "sd_inserted": "Takılı",
+    "sd_none": "Takılı değil",
+    "light": "Işık",
+    "light_on": "Açık",
+    "light_off": "Kapalı",
+    "speed": "Hız",
+    "error": "Hata",
+    "no_error": "Yok",
+    "unknown": "Bilinmiyor"
+  },
+  "prepare": {
+    "uploading": "Yükleniyor...",
+    "heating": "Isıtılıyor...",
+    "loading_model": "3D model yukleniyor..."
+  },
+  "makerworld": {
+    "loading": "MakerWorld bilgisi yukleniyor...",
+    "view_on_mw": "MakerWorld'de gor",
+    "by": ""
+  },
+  "layout": {
+    "locked": "Düzen kilitli",
+    "unlocked": "Düzen kilidi açık — sıralamak için sürükleyin"
+  },
+  "print_preview": {
+    "title": "Önizleme",
+    "no_preview": "Önizleme yok"
   },
   "csv": {
     "date": "Tarih",

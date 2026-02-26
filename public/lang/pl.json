@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Pulpit"
+  },
+  "sidebar": {
+    "made_by": "Stworzone przez"
+  },
   "header": {
     "subtitle": "Panel sterowania drukarką 3D",
     "connecting": "Łączenie..."
@@ -75,7 +81,17 @@
     "save": "Zapisz",
     "type_required": "Typ jest wymagany",
     "load_failed": "Nie udało się załadować inwentarza filamentów.",
-    "remaining_of": "pozostało z"
+    "remaining_of": "pozostało z",
+    "unassigned": "Nie przypisano do drukarki",
+    "total_spools": "Szpule",
+    "total_remaining": "Łącznie pozostało",
+    "total_value": "Wartość zapasów",
+    "low_stock": "Niski stan",
+    "low_stock_warning": "{{count}} szpula/e poniżej 20% pozostałego",
+    "spool_singular": "szpula",
+    "spool_plural": "szpule",
+    "used_g": "Zużyto (g)",
+    "drop_here": "Upuść szpule tutaj"
   },
   "controls": {
     "title": "Sterowanie",
@@ -100,7 +116,16 @@
     "calibration": "Kalibracja / auto-poziomowanie",
     "gcode_title": "Konsola G-code",
     "gcode_placeholder": "Wpisz polecenie G-code",
-    "gcode_send": "Wyślij"
+    "gcode_send": "Wyślij",
+    "speed_profile": "Profil prędkości",
+    "presets": "Presety:",
+    "cooldown": "Schłodź",
+    "motion": "Ruch",
+    "extruder": "Ekstruder",
+    "extrude": "Ekstruzja",
+    "retract": "Cofnij",
+    "ai_spaghetti": "AI Spaghetti",
+    "ai_first_layer": "Pierwsza warstwa"
   },
   "speed": {
     "label": "Prędkość:",
@@ -140,6 +165,7 @@
     "unknown": "Nieznany"
   },
   "tabs": {
+    "controls": "Sterowanie",
     "history": "Historia",
     "statistics": "Statystyki",
     "filament": "Filament",
@@ -159,7 +185,9 @@
     "failed": "Niepowodzenie",
     "cancelled": "Anulowane",
     "load_failed": "Nie udało się załadować historii.",
-    "placeholder": "Historia wydruków pojawi się tutaj..."
+    "placeholder": "Historia wydruków pojawi się tutaj...",
+    "started": "Rozpoczęto",
+    "ended": "Zakończono"
   },
   "stats": {
     "total_prints": "Łączna liczba wydruków",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Brak zapisanych błędów.",
     "load_failed": "Nie udało się załadować dziennika błędów.",
-    "placeholder": "Dziennik błędów pojawi się tutaj..."
+    "placeholder": "Dziennik błędów pojawi się tutaj...",
+    "total": "Łącznie",
+    "critical": "Krytyczne",
+    "errors": "Błędy",
+    "warnings": "Ostrzeżenia",
+    "info": "Info",
+    "all": "Wszystkie",
+    "search_placeholder": "Szukaj błędów...",
+    "no_match": "Brak błędów pasujących do filtra.",
+    "just_now": "właśnie teraz",
+    "unknown_error": "Nieznany błąd"
   },
   "settings": {
     "printers_title": "Drukarki",
@@ -237,7 +275,14 @@
     "server_title": "Serwer",
     "load_failed": "Nie udało się załadować ustawień.",
     "placeholder": "Ustawienia pojawią się tutaj...",
-    "language": "Język"
+    "language": "Język",
+    "demo_title": "Dane demonstracyjne",
+    "demo_description": "W bazie danych jest {{count}} demonstracyjnych drukarek z danymi testowymi.",
+    "demo_delete": "Usuń dane demonstracyjne",
+    "demo_confirm": "Usunąć wszystkie drukarki demonstracyjne i powiązane dane (historia, błędy, filament, telemetria)? Tej operacji nie można cofnąć.",
+    "notif_log_title": "Dziennik powiadomień",
+    "notif_log_empty": "Nie wysłano jeszcze żadnych powiadomień.",
+    "notif_log_failed": "Nie udało się załadować dziennika powiadomień."
   },
   "notify": {
     "print": "Druk",
@@ -271,7 +316,47 @@
     "settings": "Ustawienia",
     "per_change": "Odpady na zmianę koloru",
     "no_data": "Brak zarejestrowanych odpadów.",
-    "load_failed": "Nie można załadować danych o odpadach."
+    "load_failed": "Nie można załadować danych o odpadach.",
+    "efficiency": "Wskaźnik odpadów",
+    "color_changes_short": "zmian"
+  },
+  "quick_status": {
+    "title": "Status",
+    "fans": "Wentylatory",
+    "fan_part": "Część",
+    "fan_aux": "Pomocniczy",
+    "fan_chamber": "Komora",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Dysza",
+    "sd_card": "Karta SD",
+    "sd_inserted": "Włożona",
+    "sd_none": "Brak",
+    "light": "Światło",
+    "light_on": "Włączone",
+    "light_off": "Wyłączone",
+    "speed": "Prędkość",
+    "error": "Błąd",
+    "no_error": "Brak",
+    "unknown": "Nieznany"
+  },
+  "prepare": {
+    "uploading": "Przesyłanie...",
+    "heating": "Nagrzewanie...",
+    "loading_model": "Ladowanie modelu 3D..."
+  },
+  "makerworld": {
+    "loading": "Ladowanie info z MakerWorld...",
+    "view_on_mw": "Zobacz na MakerWorld",
+    "by": "autor:"
+  },
+  "layout": {
+    "locked": "Układ zablokowany",
+    "unlocked": "Układ odblokowany — przeciągnij, aby zmienić kolejność"
+  },
+  "print_preview": {
+    "title": "Podgląd",
+    "no_preview": "Brak podglądu"
   },
   "csv": {
     "date": "Data",

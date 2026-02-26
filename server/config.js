@@ -9,7 +9,35 @@ const CONFIG_PATH = join(ROOT, 'config.json');
 const DEFAULTS = {
   printers: [],
   server: { port: 3000, httpsPort: 3443, cameraWsPortStart: 9001, forceHttps: false },
-  camera: { enabled: true, resolution: '640x480', framerate: 15, bitrate: '1000k' }
+  camera: { enabled: true, resolution: '640x480', framerate: 15, bitrate: '1000k' },
+  notifications: {
+    enabled: false,
+    channels: {
+      telegram:  { enabled: false, botToken: '', chatId: '' },
+      discord:   { enabled: false, webhookUrl: '' },
+      email:     { enabled: false, host: '', port: 587, user: '', pass: '', from: '', to: '' },
+      webhook:   { enabled: false, url: '', headers: {} },
+      ntfy:      { enabled: false, serverUrl: 'https://ntfy.sh', topic: '', token: '' },
+      pushover:  { enabled: false, apiToken: '', userKey: '' }
+    },
+    events: {
+      print_started:   { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      print_finished:  { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      print_failed:    { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      print_cancelled: { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      printer_error:   { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      maintenance_due: { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      bed_cooled:        { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      update_available:  { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] }
+    },
+    quietHours: { enabled: false, start: '23:00', end: '07:00' },
+    bedCooledThreshold: 30
+  },
+  update: {
+    autoCheck: true,
+    checkIntervalHours: 6,
+    includePrerelease: false
+  }
 };
 
 function migrateLegacyConfig(config) {

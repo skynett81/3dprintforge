@@ -1,4 +1,10 @@
 {
+  "nav": {
+    "dashboard": "Панель"
+  },
+  "sidebar": {
+    "made_by": "Создано"
+  },
   "header": {
     "subtitle": "Панель управления 3D-принтером",
     "connecting": "Подключение..."
@@ -75,7 +81,17 @@
     "save": "Сохранить",
     "type_required": "Тип обязателен",
     "load_failed": "Не удалось загрузить инвентарь филаментов.",
-    "remaining_of": "осталось из"
+    "remaining_of": "осталось из",
+    "unassigned": "Не привязан к принтеру",
+    "total_spools": "Катушки",
+    "total_remaining": "Общий остаток",
+    "total_value": "Стоимость запасов",
+    "low_stock": "Мало запасов",
+    "low_stock_warning": "{{count}} катушек с остатком менее 20%",
+    "spool_singular": "катушка",
+    "spool_plural": "катушки",
+    "used_g": "Использовано (г)",
+    "drop_here": "Перетащите катушки сюда"
   },
   "controls": {
     "title": "Управление",
@@ -100,7 +116,16 @@
     "calibration": "Калибровка / автовыравнивание",
     "gcode_title": "Консоль G-code",
     "gcode_placeholder": "Введите команду G-code",
-    "gcode_send": "Отправить"
+    "gcode_send": "Отправить",
+    "speed_profile": "Профиль скорости",
+    "presets": "Пресеты:",
+    "cooldown": "Охладить",
+    "motion": "Движение",
+    "extruder": "Экструдер",
+    "extrude": "Выдавить",
+    "retract": "Откат",
+    "ai_spaghetti": "ИИ Спагетти",
+    "ai_first_layer": "Первый слой"
   },
   "speed": {
     "label": "Скорость:",
@@ -140,6 +165,7 @@
     "unknown": "Неизвестно"
   },
   "tabs": {
+    "controls": "Управление",
     "history": "История",
     "statistics": "Статистика",
     "filament": "Филамент",
@@ -159,7 +185,9 @@
     "failed": "Ошибка",
     "cancelled": "Отменено",
     "load_failed": "Не удалось загрузить историю.",
-    "placeholder": "История печати появится здесь..."
+    "placeholder": "История печати появится здесь...",
+    "started": "Начало",
+    "ended": "Окончание"
   },
   "stats": {
     "total_prints": "Всего печатей",
@@ -205,7 +233,17 @@
   "errors": {
     "no_errors": "Ошибок не зарегистрировано.",
     "load_failed": "Не удалось загрузить журнал ошибок.",
-    "placeholder": "Журнал ошибок появится здесь..."
+    "placeholder": "Журнал ошибок появится здесь...",
+    "total": "Всего",
+    "critical": "Критические",
+    "errors": "Ошибки",
+    "warnings": "Предупреждения",
+    "info": "Информация",
+    "all": "Все",
+    "search_placeholder": "Поиск ошибок...",
+    "no_match": "Нет ошибок, соответствующих фильтру.",
+    "just_now": "только что",
+    "unknown_error": "Неизвестная ошибка"
   },
   "settings": {
     "printers_title": "Принтеры",
@@ -237,7 +275,14 @@
     "server_title": "Сервер",
     "load_failed": "Не удалось загрузить настройки.",
     "placeholder": "Настройки появятся здесь...",
-    "language": "Язык"
+    "language": "Язык",
+    "demo_title": "Демо-данные",
+    "demo_description": "В базе данных {{count}} демо-принтеров с тестовыми данными.",
+    "demo_delete": "Удалить демо-данные",
+    "demo_confirm": "Удалить все демо-принтеры и связанные данные (история, ошибки, филамент, телеметрия)? Это действие необратимо.",
+    "notif_log_title": "Журнал уведомлений",
+    "notif_log_empty": "Уведомления ещё не отправлялись.",
+    "notif_log_failed": "Не удалось загрузить журнал уведомлений."
   },
   "notify": {
     "print": "Печать",
@@ -271,7 +316,47 @@
     "settings": "Настройки",
     "per_change": "Отходы на смену цвета",
     "no_data": "Отходы пока не зарегистрированы.",
-    "load_failed": "Не удалось загрузить данные об отходах."
+    "load_failed": "Не удалось загрузить данные об отходах.",
+    "efficiency": "Доля отходов",
+    "color_changes_short": "смен"
+  },
+  "quick_status": {
+    "title": "Статус",
+    "fans": "Вентиляторы",
+    "fan_part": "Детали",
+    "fan_aux": "Вспомогат.",
+    "fan_chamber": "Камера",
+    "fan_heatbreak": "Heatbreak",
+    "wifi": "WiFi",
+    "nozzle": "Сопло",
+    "sd_card": "SD-карта",
+    "sd_inserted": "Вставлена",
+    "sd_none": "Не вставлена",
+    "light": "Свет",
+    "light_on": "Вкл",
+    "light_off": "Выкл",
+    "speed": "Скорость",
+    "error": "Ошибка",
+    "no_error": "Нет",
+    "unknown": "Неизвестно"
+  },
+  "prepare": {
+    "uploading": "Загрузка...",
+    "heating": "Нагрев...",
+    "loading_model": "Загрузка 3D-модели..."
+  },
+  "makerworld": {
+    "loading": "Загрузка информации MakerWorld...",
+    "view_on_mw": "Смотреть на MakerWorld",
+    "by": "автор:"
+  },
+  "layout": {
+    "locked": "Макет заблокирован",
+    "unlocked": "Макет разблокирован — перетащите для изменения порядка"
+  },
+  "print_preview": {
+    "title": "Превью",
+    "no_preview": "Нет превью"
   },
   "csv": {
     "date": "Дата",

@@ -8,14 +8,31 @@
   function initCamera(port) {
     if (!port) {
       const meta = window.printerState.getActivePrinterMeta();
-      port = meta.cameraPort || 9001;
+      port = meta.cameraPort || null;
+    }
+
+    const container = document.getElementById('camera-container');
+    if (!container) return;
+
+    // No camera port configured — show placeholder, don't connect
+    if (!port) {
+      if (player) {
+        try { player.destroy(); } catch(e) {}
+        player = null;
+      }
+      currentPort = null;
+      streamActive = false;
+      showPlaceholder(container);
+      return;
     }
 
     if (port === currentPort && player) return;
     currentPort = port;
 
-    const container = document.getElementById('camera-container');
-    if (!container || typeof JSMpeg === 'undefined') return;
+    if (typeof JSMpeg === 'undefined') {
+      showPlaceholder(container);
+      return;
+    }
 
     if (player) {
       try { player.destroy(); } catch(e) {}
@@ -25,6 +42,33 @@
 
     const wsUrl = `ws://${location.hostname}:${port}`;
 
+    // Probe the WebSocket first — only create JSMpeg player if it connects
+    let probe;
+    try {
+      probe = new WebSocket(wsUrl);
+    } catch(e) {
+      showPlaceholder(container);
+      return;
+    }
+
+    const probeTimeout = setTimeout(() => {
+      probe.close();
+      showPlaceholder(container);
+    }, 3000);
+
+    probe.onopen = () => {
+      clearTimeout(probeTimeout);
+      probe.close();
+      startPlayer(container, wsUrl);
+    };
+
+    probe.onerror = () => {
+      clearTimeout(probeTimeout);
+      showPlaceholder(container);
+    };
+  }
+
+  function startPlayer(container, wsUrl) {
     try {
       container.innerHTML = '';
       const canvas = document.createElement('canvas');
@@ -57,7 +101,7 @@
         audio: false,
         loop: false,
         onSourceEstablished: () => {
-          console.log('[kamera] Stream tilkoblet:', port);
+          console.log('[kamera] Stream tilkoblet');
           streamActive = true;
         },
         onSourceCompleted: () => {

@@ -1,10 +1,28 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory } from './database.js';
+import { saveConfig, config } from './config.js';
+import { getThumbnail, getModel } from './thumbnail-service.js';
+import https from 'node:https';
 
 let _broadcastFn = null;
 let _onPrinterRemoved = null;
 let _onPrinterAdded = null;
 let _onPrinterUpdated = null;
 let _onDemoPurge = null;
+let _notifier = null;
+let _updater = null;
+let _hub = null;
+
+export function setNotifier(notifier) {
+  _notifier = notifier;
+}
+
+export function setUpdater(updater) {
+  _updater = updater;
+}
+
+export function setHub(hub) {
+  _hub = hub;
+}
 
 export function setApiBroadcast(fn) {
   _broadcastFn = fn;
@@ -32,7 +50,7 @@ function broadcastPrinterMeta() {
   }
 }
 
-export function handleApiRequest(req, res) {
+export async function handleApiRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname;
   const method = req.method;
@@ -281,6 +299,132 @@ export function handleApiRequest(req, res) {
       return sendJson(res, result);
     }
 
+    // ---- Notifications ----
+    if (method === 'GET' && path === '/api/notifications/config') {
+      const nc = structuredClone(config.notifications || {});
+      // Mask sensitive fields
+      if (nc.channels?.telegram?.botToken) nc.channels.telegram.botToken = '***';
+      if (nc.channels?.email?.pass) nc.channels.email.pass = '***';
+      if (nc.channels?.ntfy?.token && nc.channels.ntfy.token) nc.channels.ntfy.token = '***';
+      if (nc.channels?.pushover?.apiToken) nc.channels.pushover.apiToken = '***';
+      return sendJson(res, nc);
+    }
+
+    if (method === 'PUT' && path === '/api/notifications/config') {
+      return readBody(req, (body) => {
+        // Preserve existing secrets if masked
+        const current = config.notifications || {};
+        if (body.channels?.telegram?.botToken === '***') body.channels.telegram.botToken = current.channels?.telegram?.botToken || '';
+        if (body.channels?.email?.pass === '***') body.channels.email.pass = current.channels?.email?.pass || '';
+        if (body.channels?.ntfy?.token === '***') body.channels.ntfy.token = current.channels?.ntfy?.token || '';
+        if (body.channels?.pushover?.apiToken === '***') body.channels.pushover.apiToken = current.channels?.pushover?.apiToken || '';
+
+        saveConfig({ notifications: body });
+        config.notifications = body;
+        if (_notifier) _notifier.reloadConfig(body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'POST' && path === '/api/notifications/test') {
+      return readBody(req, async (body) => {
+        if (!body.channel || !body.config) {
+          return sendJson(res, { error: 'channel and config required' }, 400);
+        }
+        if (!_notifier) return sendJson(res, { error: 'Notifier not initialized' }, 500);
+        try {
+          await _notifier.testChannel(body.channel, body.config);
+          sendJson(res, { ok: true });
+        } catch (err) {
+          sendJson(res, { error: err.message }, 400);
+        }
+      });
+    }
+
+    if (method === 'GET' && path === '/api/notifications/log') {
+      const limit = parseInt(url.searchParams.get('limit')) || 50;
+      const offset = parseInt(url.searchParams.get('offset')) || 0;
+      return sendJson(res, getNotificationLog(limit, offset));
+    }
+
+    // ---- Update ----
+    if (method === 'GET' && path === '/api/update/status') {
+      if (!_updater) return sendJson(res, { error: 'Updater not initialized' }, 500);
+      return sendJson(res, _updater.getStatus());
+    }
+
+    if (method === 'POST' && path === '/api/update/check') {
+      if (!_updater) return sendJson(res, { error: 'Updater not initialized' }, 500);
+      try {
+        const status = await _updater.checkForUpdate(true);
+        return sendJson(res, status);
+      } catch (err) {
+        return sendJson(res, { error: err.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/update/apply') {
+      if (!_updater) return sendJson(res, { error: 'Updater not initialized' }, 500);
+      try {
+        const result = await _updater.applyUpdate();
+        return sendJson(res, result);
+      } catch (err) {
+        const status = err.message.includes('print') ? 409 : 400;
+        return sendJson(res, { error: err.message }, status);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/update/history') {
+      const limit = parseInt(url.searchParams.get('limit')) || 20;
+      return sendJson(res, getUpdateHistory(limit));
+    }
+
+    // ---- MakerWorld ----
+    const mwMatch = path.match(/^\/api\/makerworld\/(\d+)$/);
+    if (mwMatch && method === 'GET') {
+      const designId = mwMatch[1];
+      return handleMakerWorldFetch(designId, res);
+    }
+
+    // ---- 3D Model ----
+    const modelMatch = path.match(/^\/api\/model\/([a-zA-Z0-9_-]+)$/);
+    if (modelMatch && method === 'GET') {
+      const id = modelMatch[1];
+      try {
+        const model = await getModel(id, _hub);
+        if (!model) return sendJson(res, null, 404);
+        return sendJson(res, model);
+      } catch (err) {
+        console.warn('[api] Model error:', err.message);
+        return sendJson(res, { error: 'Model error' }, 500);
+      }
+    }
+
+    // ---- Thumbnail ----
+    const thumbMatch = path.match(/^\/api\/thumbnail\/([a-zA-Z0-9_-]+)$/);
+    if (thumbMatch && method === 'GET') {
+      const id = thumbMatch[1];
+      try {
+        const result = await getThumbnail(id, _hub);
+        if (!result) {
+          res.writeHead(404);
+          res.end();
+          return;
+        }
+        res.writeHead(200, {
+          'Content-Type': result.contentType,
+          'Content-Length': result.buffer.length,
+          'Cache-Control': 'private, max-age=60'
+        });
+        res.end(result.buffer);
+      } catch (err) {
+        console.warn('[api] Thumbnail error:', err.message);
+        res.writeHead(500);
+        res.end();
+      }
+      return;
+    }
+
     // 404
     sendJson(res, { error: 'Ikke funnet' }, 404);
 
@@ -304,5 +448,68 @@ function readBody(req, callback) {
     } catch (e) {
       callback({});
     }
+  });
+}
+
+// ---- MakerWorld proxy ----
+
+const _mwCache = new Map();
+const MW_CACHE_TTL = 3600000; // 1 hour
+
+async function handleMakerWorldFetch(designId, res) {
+  const cached = _mwCache.get(designId);
+  if (cached && Date.now() - cached.ts < MW_CACHE_TTL) {
+    return sendJson(res, cached.data);
+  }
+
+  const mwUrl = `https://makerworld.com/en/models/${designId}`;
+  const apiUrl = `https://api.bambulab.com/v1/design-service/design/${designId}`;
+
+  try {
+    const json = await fetchJson(apiUrl, 5000);
+    const creator = json.designCreator || {};
+    const instance = (json.instances || [])[0] || {};
+    const data = {
+      title: json.titleTranslated || json.title || null,
+      image: json.coverUrl || instance.cover || null,
+      description: (json.summaryTranslated || json.summary || '').replace(/<[^>]*>/g, ''),
+      url: mwUrl,
+      designer: creator.name || null,
+      designerAvatar: creator.avatar || null,
+      likes: json.likeCount || 0,
+      downloads: json.downloadCount || 0,
+      prints: json.printCount || 0,
+      fallback: false
+    };
+    _mwCache.set(designId, { data, ts: Date.now() });
+    sendJson(res, data);
+  } catch {
+    const fallback = { url: mwUrl, fallback: true };
+    _mwCache.set(designId, { data: fallback, ts: Date.now() });
+    sendJson(res, fallback);
+  }
+}
+
+function fetchJson(url, timeout) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: { 'Accept': 'application/json' },
+      timeout
+    }, (res) => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch { reject(new Error('Invalid JSON')); }
+      });
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
   });
 }

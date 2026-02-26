@@ -107,7 +107,7 @@
         html += `<div class="mt-md"><div class="card-title">${t('stats.filament_by_type')}</div><div class="chart-bars">`;
         for (const f of s.filament_by_type) {
           const pct = maxGrams > 0 ? (f.grams / maxGrams) * 100 : 0;
-          const color = TYPE_COLORS[f.type] || '#8b949e';
+          const color = TYPE_COLORS[f.type] || '#c0c8d2';
           html += `<div class="chart-bar-row"><span class="chart-bar-label">${f.type}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="chart-bar-value">${Math.round(f.grams)}g <span class="text-muted">(${f.prints})</span></span></div>`;
         }
         html += `</div></div>`;
