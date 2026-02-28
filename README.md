@@ -2,7 +2,7 @@
 
 > Self-hosted web dashboard for monitoring and controlling Bambu Lab 3D printers over your local network.
 
-Created by **SkyNett81** &bull; [MIT License](LICENSE)
+Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 ![Bambu Dashboard](docs/dashboard.png)
 
@@ -632,4 +632,4 @@ bambu-dashboard/
 
 ## License
 
-[MIT](LICENSE) — SkyNett81
+[AGPL-3.0](LICENSE) — SkyNett81
