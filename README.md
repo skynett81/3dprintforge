@@ -130,12 +130,49 @@ Events: print started, finished, failed, cancelled, printer error, maintenance d
 
 ## Requirements
 
-- **Node.js 22+** (required — uses built-in SQLite via `--experimental-sqlite`)
-- **ffmpeg** (optional — for camera livestream)
+| Requirement | Version | Required | Notes |
+|-------------|---------|----------|-------|
+| **Node.js** | 22.0+ | Yes | Uses built-in SQLite via `--experimental-sqlite` |
+| **npm** | Included with Node.js | Yes | Package manager |
+| **ffmpeg** | Any recent version | No | Only needed for camera livestream |
+| **git** | Any recent version | No | For cloning, auto-updates, and version control |
+
+### Supported Printers
+
+All Bambu Lab printers with LAN mode enabled:
+- **P1 Series** — P1S, P1P
+- **P2 Series** — P2S Combo
+- **X1 Series** — X1 Carbon, X1E
+- **A1 Series** — A1, A1 Mini
+- **H2D Series** — H2D
+
+### Network Requirements
+
+| Port | Protocol | Direction | Purpose |
+|------|----------|-----------|---------|
+| 3000 | HTTP + WS | Inbound | Dashboard access |
+| 3443 | HTTPS + WSS | Inbound | Secure dashboard (optional) |
+| 9001+ | WS | Inbound | Camera streams (one per printer) |
+| 8883 | MQTTS | Outbound | MQTT connection to printer |
+| 322 | RTSPS | Outbound | Camera feed from printer |
+
+The server and printers must be on the **same local network** (LAN). Each printer requires its **LAN access code** to be enabled.
+
+### Supported Platforms
+
+| Platform | Support |
+|----------|---------|
+| Linux (Ubuntu, Debian, Fedora, etc.) | Full support |
+| macOS | Full support |
+| Windows | Works with Node.js, no install script |
+| Docker | Full support (`network_mode: host` required) |
+| Pterodactyl / wisp.gg | Egg file included |
 
 ---
 
 ## Quick Start
+
+For a detailed step-by-step guide, see **[INSTALL.md](INSTALL.md)**.
 
 ### Option 1: Install Script (Recommended)
 
