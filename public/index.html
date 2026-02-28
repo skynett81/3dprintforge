@@ -342,6 +342,10 @@
 
   <!-- Card hover glow tracking -->
   <script>
+    // HTML escape — prevents XSS in innerHTML templates
+    var _escMap = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+    window.esc = function(s) { return s == null ? '' : String(s).replace(/[&<>"']/g, function(c) { return _escMap[c]; }); };
+
     document.addEventListener('mousemove', e => {
       const cards = document.querySelectorAll('.card');
       for (const card of cards) {

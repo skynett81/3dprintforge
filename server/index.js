@@ -39,7 +39,22 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2'
 };
 
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+};
+
+function applySecurityHeaders(res) {
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    res.setHeader(key, value);
+  }
+}
+
 function handleRequest(req, res) {
+  applySecurityHeaders(res);
   const pathname = req.url.split('?')[0];
 
   // Public auth API routes (login, logout, status) - always accessible

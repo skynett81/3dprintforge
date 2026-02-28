@@ -405,21 +405,21 @@
     const mwIcon = `<svg class="mw-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`;
 
     if (info.fallback || !info.title) {
-      el.innerHTML = `${mwIcon}<a class="mw-link" href="${mwUrl}" target="_blank" rel="noopener">${t('makerworld.view_on_mw')}</a>`;
+      el.innerHTML = `${mwIcon}<a class="mw-link" href="${esc(mwUrl)}" target="_blank" rel="noopener">${t('makerworld.view_on_mw')}</a>`;
     } else {
       let html = '';
       if (info.image) {
-        html += `<img class="mw-thumb" src="${info.image}" alt="" onerror="this.style.display='none'">`;
+        html += `<img class="mw-thumb" src="${esc(info.image)}" alt="" onerror="this.style.display='none'">`;
       }
       html += `<div style="min-width:0;flex:1">`;
-      html += `<div class="mw-title">${info.title}</div>`;
+      html += `<div class="mw-title">${esc(info.title)}</div>`;
       const parts = [];
-      if (info.designer) parts.push(`${t('makerworld.by')} ${info.designer}`);
+      if (info.designer) parts.push(`${t('makerworld.by')} ${esc(info.designer)}`);
       if (info.downloads > 0) parts.push(`${info.downloads} \u2B07`);
       if (info.likes > 0) parts.push(`${info.likes} \u2764`);
       if (parts.length) html += `<span class="mw-designer">${parts.join(' \u00B7 ')}</span>`;
       html += `</div>`;
-      html += `<a class="mw-link" href="${mwUrl}" target="_blank" rel="noopener">${mwIcon}</a>`;
+      html += `<a class="mw-link" href="${esc(mwUrl)}" target="_blank" rel="noopener">${mwIcon}</a>`;
       el.innerHTML = html;
     }
   }

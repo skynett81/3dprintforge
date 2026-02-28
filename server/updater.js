@@ -242,6 +242,10 @@ export class Updater {
   // ---- Git update ----
 
   async _applyGit(version) {
+    // Validate version format to prevent command injection
+    if (!/^\d+\.\d+\.\d+$/.test(version)) {
+      throw new Error(`Invalid version format: ${version}`);
+    }
     const tag = `v${version}`;
     try {
       execSync('git fetch origin --tags', { cwd: ROOT_DIR, timeout: 30000, stdio: 'pipe' });

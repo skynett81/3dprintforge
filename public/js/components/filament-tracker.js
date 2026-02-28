@@ -154,7 +154,7 @@
         const name = printerName(pid);
         h += `<div class="settings-card filament-printer-section" data-printer-id="${pid}">
           <div class="filament-printer-header">
-            <span class="printer-tag">${name}</span>
+            <span class="printer-tag">${esc(name)}</span>
             <span class="text-muted" style="font-size:0.75rem">${ps.length} ${ps.length === 1 ? t('filament.spool_singular') : t('filament.spool_plural')}</span>
             <button class="form-btn form-btn-sm" style="margin-left:auto" onclick="showAddFilamentForm('${pid}')">${t('filament.add_spool')}</button>
           </div>`;
@@ -207,7 +207,7 @@
       </div><div class="chart-bars">`;
       for (const [tp, d] of sorted) {
         const clr = TYPE_COLORS[tp] || 'var(--accent-blue)';
-        h += barRow(tp, (d.count / mx) * 100, clr, `${d.count} (${fmtW(d.remaining_g)})`);
+        h += barRow(esc(tp), (d.count / mx) * 100, clr, `${d.count} (${fmtW(d.remaining_g)})`);
       }
       h += '</div>';
       return h;
@@ -232,7 +232,7 @@
       for (const [br, d] of sorted) {
         const avgKg = d.total_weight > 0 && d.total_cost > 0 ? Math.round(d.total_cost / (d.total_weight / 1000)) : null;
         const extra = avgKg ? ` · ${avgKg} kr/kg` : '';
-        h += barRow(br, (d.count / mx) * 100, 'var(--accent-purple)', `${d.count}${extra}`);
+        h += barRow(esc(br), (d.count / mx) * 100, 'var(--accent-purple)', `${d.count}${extra}`);
       }
       h += '</div>';
       return h;
@@ -262,7 +262,7 @@
       h += sRow(t('filament.total_invested'), `${Math.round(invested)} kr`);
       h += sRow(t('filament.total_used_value'), `${Math.round(usedValue)} kr`, 'var(--accent-orange)');
       h += sRow(t('filament.avg_cost_kg'), `${avgKg} kr/kg`);
-      if (expensive) h += sRow(t('filament.most_expensive'), `${expensive[0]} (${Math.round(expensive[1])} kr)`);
+      if (expensive) h += sRow(t('filament.most_expensive'), `${esc(expensive[0])} (${Math.round(expensive[1])} kr)`);
       h += '</div>';
       return h;
     },
@@ -322,8 +322,8 @@
           <div class="fil-spool-identity">
             <span class="filament-color-swatch" style="background:${color}"></span>
             <div>
-              <strong>${s.type}</strong>
-              <span class="text-muted" style="font-size:0.75rem"> ${s.brand || ''}</span>
+              <strong>${esc(s.type)}</strong>
+              <span class="text-muted" style="font-size:0.75rem"> ${esc(s.brand)}</span>
             </div>
           </div>
           <div class="fil-spool-actions">
@@ -336,7 +336,7 @@
           </div>
         </div>
         <div class="fil-spool-meta">
-          ${s.color_name || ''} &middot; ${Math.round(remaining)}g ${t('filament.remaining')}
+          ${esc(s.color_name)} &middot; ${Math.round(remaining)}g ${t('filament.remaining')}
         </div>
         <div class="filament-bar">
           <div class="filament-bar-fill" style="width:${pct}%;background:${isLow || isEmpty ? 'var(--accent-orange)' : color}"></div>
@@ -366,7 +366,7 @@
       hasAny = true;
       const name = printerName(id);
       const activeTray = amsData.tray_now;
-      html += `<div class="fil-ams-printer"><div class="fil-ams-name">${name}</div><div class="fil-ams-trays">`;
+      html += `<div class="fil-ams-printer"><div class="fil-ams-name">${esc(name)}</div><div class="fil-ams-trays">`;
       let globalSlot = 0;
       for (let u = 0; u < amsData.ams.length; u++) {
         const trays = amsData.ams[u]?.tray;

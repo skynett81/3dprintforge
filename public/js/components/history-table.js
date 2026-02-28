@@ -162,7 +162,7 @@
           <div class="history-card-title">
             <span class="history-card-status-icon">${statusIcon(row.status)}</span>
             ${colorSwatch(row.filament_color)}
-            <span class="history-card-filename">${fname}</span>
+            <span class="history-card-filename">${esc(fname)}</span>
           </div>
           <span class="pill pill-${row.status}">${statusLabel(row.status)}</span>
         </div>`;
@@ -171,7 +171,7 @@
         h += `<div class="history-card-body">
           <div class="history-card-info">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg>
-            <span>${printerName(row.printer_id)}</span>
+            <span>${esc(printerName(row.printer_id))}</span>
           </div>
           <div class="history-card-info">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -187,7 +187,7 @@
           </div>
           <div class="history-card-info">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>${row.filament_type || '--'}${row.filament_brand ? ' · ' + row.filament_brand : ''}${row.filament_used_g ? ' · ' + row.filament_used_g + 'g' : ''}</span>
+            <span>${esc(row.filament_type) || '--'}${row.filament_brand ? ' · ' + esc(row.filament_brand) : ''}${row.filament_used_g ? ' · ' + row.filament_used_g + 'g' : ''}</span>
           </div>`;
         const speed = speedLabel(row.speed_level);
         if (speed) h += `<div class="history-card-info">
@@ -205,8 +205,8 @@
         if (row.nozzle_type || row.nozzle_diameter) h += `<div class="history-detail-row"><span class="history-detail-label">${t('printer_info.nozzle')}</span><span>${row.nozzle_type || ''} ${row.nozzle_diameter ? row.nozzle_diameter + 'mm' : ''}</span></div>`;
         if (row.color_changes > 0) h += `<div class="history-detail-row"><span class="history-detail-label">${t('waste.color_changes')}</span><span>${row.color_changes}</span></div>`;
         if (row.waste_g > 0) h += `<div class="history-detail-row"><span class="history-detail-label">${t('waste.total_weight')}</span><span>${row.waste_g}g</span></div>`;
-        h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.filename')}</span><span class="history-detail-mono">${row.filename || '--'}</span></div>`;
-        if (row.notes) h += `<div class="history-detail-row"><span class="history-detail-label">${t('maintenance.notes')}</span><span>${row.notes}</span></div>`;
+        h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.filename')}</span><span class="history-detail-mono">${esc(row.filename) || '--'}</span></div>`;
+        if (row.notes) h += `<div class="history-detail-row"><span class="history-detail-label">${t('maintenance.notes')}</span><span>${esc(row.notes)}</span></div>`;
         h += '</div></div>';
         h += `<button class="history-card-toggle" onclick="toggleHistoryDetail(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`;
         h += '</div>';
@@ -243,7 +243,7 @@
       const sorted = Object.entries(byPrinter).sort((a, b) => b[1] - a[1]);
       const mx = sorted[0]?.[1] || 1;
       let h = `<div class="card-title">${t('history.printer_breakdown')}</div><div class="chart-bars">`;
-      for (const [pid, cnt] of sorted) h += barRow(printerName(pid), (cnt / mx) * 100, 'var(--accent-purple)', cnt);
+      for (const [pid, cnt] of sorted) h += barRow(esc(printerName(pid)), (cnt / mx) * 100, 'var(--accent-purple)', cnt);
       h += '</div>';
       return h;
     },
@@ -260,7 +260,7 @@
       const sorted = Object.entries(byType).sort((a, b) => b[1].count - a[1].count);
       const mx = sorted[0]?.[1].count || 1;
       let h = `<div class="card-title">${t('history.filament_breakdown')}</div><div class="chart-bars">`;
-      for (const [tp, d] of sorted) h += barRow(tp, (d.count / mx) * 100, 'var(--accent-blue)', `${d.count} (${fmtW(d.weight)})`);
+      for (const [tp, d] of sorted) h += barRow(esc(tp), (d.count / mx) * 100, 'var(--accent-blue)', `${d.count} (${fmtW(d.weight)})`);
       h += '</div>';
       return h;
     },
@@ -275,7 +275,7 @@
       const avgFilament = data.length > 0 ? Math.round(s.totalFilament / data.length) : 0;
       let h = `<div class="card-title">${t('history.duration_stats')}</div><div class="stats-detail-list">`;
       h += sRow(t('stats.avg_duration'), formatDuration(avgDuration));
-      h += sRow(t('stats.longest_print'), `${formatDuration(longest)}${longestRow ? ' — ' + (longestRow.filename || '').replace(/\.(3mf|gcode)$/i, '') : ''}`);
+      h += sRow(t('stats.longest_print'), `${formatDuration(longest)}${longestRow ? ' — ' + esc((longestRow.filename || '').replace(/\.(3mf|gcode)$/i, '')) : ''}`);
       h += sRow(t('stats.avg_filament'), `${avgFilament}g`);
       h += sRow(t('stats.total_time'), formatDuration(s.totalTime));
       h += '</div>';

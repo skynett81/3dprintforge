@@ -142,7 +142,7 @@
       const mx = sorted[0]?.[1] || 1;
       let h = `<div class="card-title">${t('errors.printer_breakdown')}</div><div class="chart-bars">`;
       for (const [pid, cnt] of sorted) {
-        h += barRow(printerName(pid), (cnt / mx) * 100, 'var(--accent-purple)', cnt);
+        h += barRow(esc(printerName(pid)), (cnt / mx) * 100, 'var(--accent-purple)', cnt);
       }
       h += '</div>';
       return h;
@@ -164,8 +164,8 @@
         const color = severityColor(data.severity);
         h += `<div class="error-common-item">
           <span class="error-common-icon" style="color:${color}">${severityIcon(data.severity)}</span>
-          <span class="error-common-msg">${msg}</span>
-          ${data.code ? `<span class="error-code">${data.code}</span>` : ''}
+          <span class="error-common-msg">${esc(msg)}</span>
+          ${data.code ? `<span class="error-code">${esc(data.code)}</span>` : ''}
           <span class="error-common-count" style="color:${color}">${data.count}x</span>
         </div>`;
       }
@@ -362,12 +362,12 @@
           <div class="error-card-icon" style="color:${color}">${severityIcon(sev)}</div>
           <div class="error-card-body">
             <div class="error-card-top">
-              <span class="error-card-message">${e.message || t('errors.unknown_error')}</span>
+              <span class="error-card-message">${esc(e.message) || t('errors.unknown_error')}</span>
               <span class="error-card-ago">${timeAgo(e.timestamp)}</span>
             </div>
             <div class="error-card-meta">
-              <span class="printer-tag">${printerName(e.printer_id)}</span>
-              ${e.code ? `<span class="error-code">${e.code}</span>` : ''}
+              <span class="printer-tag">${esc(printerName(e.printer_id))}</span>
+              ${e.code ? `<span class="error-code">${esc(e.code)}</span>` : ''}
               <span class="error-card-time">${formatDate(e.timestamp)}</span>
             </div>
           </div>

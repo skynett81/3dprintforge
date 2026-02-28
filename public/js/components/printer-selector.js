@@ -30,7 +30,7 @@
                       onclick="selectPrinter('${id}')">
                 ${dot}
                 <span class="printer-tab-info">
-                  <span class="printer-tab-name">${meta.name || id}</span>
+                  <span class="printer-tab-name">${esc(meta.name || id)}</span>
                   ${mini}
                 </span>
               </button>`;

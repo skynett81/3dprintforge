@@ -2,7 +2,31 @@ import { getHistory, addHistory, getStatistics, getFilament, addFilament, update
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import https from 'node:https';
-import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession } from './auth.js';
+import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword } from './auth.js';
+
+// ---- Login rate limiter ----
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const _loginAttempts = new Map(); // ip -> { count, firstAttempt }
+
+function checkLoginRate(ip) {
+  const now = Date.now();
+  const entry = _loginAttempts.get(ip);
+  if (!entry || now - entry.firstAttempt > LOGIN_WINDOW_MS) {
+    _loginAttempts.set(ip, { count: 1, firstAttempt: now });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= LOGIN_MAX_ATTEMPTS;
+}
+
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of _loginAttempts) {
+    if (now - entry.firstAttempt > LOGIN_WINDOW_MS) _loginAttempts.delete(ip);
+  }
+}, 5 * 60 * 1000);
 
 let _broadcastFn = null;
 let _onPrinterRemoved = null;
@@ -70,6 +94,10 @@ export async function handleAuthApiRequest(req, res) {
       if (!isAuthEnabled()) {
         return sendJson(res, { ok: true });
       }
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+      if (!checkLoginRate(clientIp)) {
+        return sendJson(res, { error: 'Too many login attempts. Try again later.' }, 429);
+      }
       return readBody(req, (body) => {
         const { password, username } = body;
         if (!validateCredentials(password, username)) {
@@ -118,7 +146,11 @@ export async function handleApiRequest(req, res) {
   try {
     // ---- Printers ----
     if (method === 'GET' && path === '/api/printers') {
-      return sendJson(res, getPrinters());
+      const printers = getPrinters().map(p => ({
+        ...p,
+        accessCode: p.accessCode ? '***' : ''
+      }));
+      return sendJson(res, printers);
     }
 
     if (method === 'POST' && path === '/api/printers') {
@@ -135,6 +167,11 @@ export async function handleApiRequest(req, res) {
     if (printerMatch && method === 'PUT') {
       return readBody(req, (body) => {
         const id = printerMatch[1];
+        // Preserve existing access code if masked
+        if (body.accessCode === '***') {
+          const existing = getPrinters().find(p => p.id === id);
+          body.accessCode = existing?.accessCode || '';
+        }
         updatePrinter(id, body);
         if (_onPrinterUpdated) _onPrinterUpdated(id, { ...body, id });
         broadcastPrinterMeta();
@@ -429,7 +466,7 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, { error: 'Auth is managed via environment variables' }, 400);
       }
       return readBody(req, (body) => {
-        // Handle users array — preserve masked passwords
+        // Handle users array — preserve masked passwords, hash new ones
         if (Array.isArray(body.users)) {
           const existingUsers = config.auth?.users || [];
           body.users = body.users
@@ -439,13 +476,19 @@ export async function handleApiRequest(req, res) {
                 const existing = existingUsers.find(e => e.username === u.username);
                 return { username: u.username.trim(), password: existing?.password || '' };
               }
-              return { username: u.username.trim(), password: u.password || '' };
+              // Hash new plaintext passwords
+              const pw = u.password || '';
+              return { username: u.username.trim(), password: pw ? hashPassword(pw) : '' };
             })
             .filter(u => u.password); // Remove users with no password
         }
 
-        // Legacy single-user: preserve existing password if masked
-        if (body.password === '***') body.password = config.auth?.password || '';
+        // Legacy single-user: preserve existing password if masked, hash new ones
+        if (body.password === '***') {
+          body.password = config.auth?.password || '';
+        } else if (body.password && !body.password.startsWith('scrypt:')) {
+          body.password = hashPassword(body.password);
+        }
 
         // If no users and no password, disable auth
         const hasUsers = body.users?.length > 0;
@@ -612,10 +655,21 @@ function sendJson(res, data, status = 200) {
   res.end(JSON.stringify(data));
 }
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
+
 function readBody(req, callback) {
   let body = '';
-  req.on('data', chunk => body += chunk);
+  let size = 0;
+  req.on('data', chunk => {
+    size += chunk.length;
+    if (size > MAX_BODY_SIZE) {
+      req.destroy();
+      return;
+    }
+    body += chunk;
+  });
   req.on('end', () => {
+    if (size > MAX_BODY_SIZE) return;
     try {
       callback(JSON.parse(body));
     } catch (e) {

@@ -38,3 +38,10 @@ export function setHTML(selector, html) {
   const elem = typeof selector === 'string' ? $(selector) : selector;
   if (elem) elem.innerHTML = html;
 }
+
+const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+export function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, c => ESC_MAP[c]);
+}

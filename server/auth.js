@@ -1,9 +1,58 @@
 import crypto from 'node:crypto';
-import { config } from './config.js';
+import { config, saveConfig } from './config.js';
 
 // In-memory session store: Map<token, { createdAt, username }>
 const sessions = new Map();
 let _cleanupInterval = null;
+
+// ---- Password hashing (scrypt) ----
+
+const SCRYPT_KEYLEN = 64;
+const SCRYPT_COST = 16384;
+
+export function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(password, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST });
+  return `scrypt:${salt}:${derived.toString('hex')}`;
+}
+
+function verifyPassword(password, stored) {
+  if (stored.startsWith('scrypt:')) {
+    const [, salt, hash] = stored.split(':');
+    const derived = crypto.scryptSync(password, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST });
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), derived);
+  }
+  // Legacy plaintext comparison (for migration) — constant-time
+  const a = Buffer.from(password);
+  const b = Buffer.from(stored);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+function migratePasswords() {
+  let changed = false;
+
+  // Migrate legacy single-user password
+  if (config.auth?.password && !config.auth.password.startsWith('scrypt:')) {
+    config.auth.password = hashPassword(config.auth.password);
+    changed = true;
+  }
+
+  // Migrate multi-user passwords
+  if (config.auth?.users?.length > 0) {
+    for (const user of config.auth.users) {
+      if (user.password && !user.password.startsWith('scrypt:')) {
+        user.password = hashPassword(user.password);
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    saveConfig({ auth: config.auth });
+    console.log('[auth] Passwords migrated to scrypt hashes');
+  }
+}
 
 export function initAuth() {
   const durationMs = (config.auth?.sessionDurationHours || 24) * 3600000;
@@ -16,7 +65,9 @@ export function initAuth() {
     }
   }, 15 * 60 * 1000);
 
+  // Auto-migrate plaintext passwords to hashed
   if (isAuthEnabled()) {
+    migratePasswords();
     console.log('[auth] Authentication enabled');
   }
 }
@@ -40,11 +91,11 @@ export function validateCredentials(password, username) {
 
   // Multi-user mode: check against users array
   if (config.auth.users?.length > 0) {
-    return config.auth.users.some(u => u.username === username && u.password === password);
+    return config.auth.users.some(u => u.username === username && verifyPassword(password, u.password));
   }
 
   // Legacy single-user mode
-  if (password !== config.auth.password) return false;
+  if (!verifyPassword(password, config.auth.password)) return false;
   if (config.auth.username && username !== config.auth.username) return false;
   return true;
 }

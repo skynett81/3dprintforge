@@ -200,7 +200,33 @@ async function sendEmail(conf, title, message) {
   });
 }
 
+function isPrivateUrl(urlStr) {
+  try {
+    const url = new URL(urlStr);
+    const hostname = url.hostname;
+    // Block localhost, private IPs, link-local
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+    if (hostname === '0.0.0.0' || hostname === '[::]') return true;
+    // Block private IP ranges
+    const parts = hostname.split('.').map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 10) return true;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+      if (parts[0] === 192 && parts[1] === 168) return true;
+      if (parts[0] === 169 && parts[1] === 254) return true;
+    }
+    // Block non-http(s) schemes
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 async function sendWebhook(conf, title, message, eventType, data) {
+  if (isPrivateUrl(conf.url)) {
+    throw new Error('Webhook URL cannot target private/internal networks');
+  }
   const payload = JSON.stringify({
     event: eventType, title, message,
     timestamp: new Date().toISOString(),
