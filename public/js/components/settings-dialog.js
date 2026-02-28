@@ -1,27 +1,45 @@
-// Settings - Printer management
+// Settings - Tabbed layout with printer management, auth, notifications, system
 (function() {
   window.loadSettingsPanel = loadSettings;
+
+  let _activeTab = 'printers';
 
   async function loadSettings() {
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
+    // Read sub-slug from hash (e.g. #settings/notifications)
+    const hashSub = location.hash.replace('#', '').split('/')[1];
+    if (hashSub && ['printers','general','notifications','system'].includes(hashSub)) _activeTab = hashSub;
+
     try {
       const res = await fetch('/api/printers');
       const printers = await res.json();
 
-      // Printer info section (live data)
+      // Tab bar
       let html = `
-        <div class="settings-section">
+        <div class="settings-tabs">
+          <button class="settings-tab ${_activeTab === 'printers' ? 'active' : ''}" onclick="switchSettingsTab('printers')">${t('settings.tab_printers')}</button>
+          <button class="settings-tab ${_activeTab === 'general' ? 'active' : ''}" onclick="switchSettingsTab('general')">${t('settings.tab_general')}</button>
+          <button class="settings-tab ${_activeTab === 'notifications' ? 'active' : ''}" onclick="switchSettingsTab('notifications')">${t('settings.tab_notifications')}</button>
+          <button class="settings-tab ${_activeTab === 'system' ? 'active' : ''}" onclick="switchSettingsTab('system')">${t('settings.tab_system')}</button>
+        </div>`;
+
+      // ======== TAB: Printers ========
+      html += `<div class="settings-tab-content ${_activeTab === 'printers' ? 'active' : ''}" id="tab-printers">`;
+
+      // Printer info (live data)
+      html += `
+        <div class="settings-card">
           <div class="card-title">${t('printer_info.title')}</div>
           <div id="settings-printer-info">
             <span class="text-muted" style="font-size:0.8rem">${t('printer_info.waiting')}</span>
           </div>
         </div>`;
 
+      // Printer list
       html += `<div class="card-title mt-md">${t('settings.printers_title')}</div>`;
-      html += '<div class="printer-list">';
-
+      html += '<div class="printer-list-grid">';
       for (const p of printers) {
         html += `
           <div class="printer-config-card">
@@ -37,27 +55,30 @@
             </div>
           </div>`;
       }
-
       html += '</div>';
       html += `<button class="form-btn mt-md" onclick="showAddPrinterForm()">${t('settings.add_printer')}</button>`;
       html += `<div id="printer-form-area"></div>`;
+      html += '</div>'; // end tab-printers
 
-      // Language selector
+      // ======== TAB: General ========
+      html += `<div class="settings-tab-content ${_activeTab === 'general' ? 'active' : ''}" id="tab-general">`;
+      html += '<div class="settings-grid">';
+
+      // Left column: Language + Browser notifications
+      html += '<div>';
       html += `
-        <div class="settings-section mt-md">
+        <div class="settings-card">
           <div class="card-title">${t('settings.language')}</div>
-          <select class="form-input" id="lang-select" onchange="changeLanguage(this.value)" style="max-width:250px">`;
+          <select class="form-input" id="lang-select" onchange="changeLanguage(this.value)">`;
       const locales = window.i18n.getSupportedLocales();
       const names = window.i18n.getLocaleNames();
       const current = window.i18n.getLocale();
       for (const loc of locales) {
         html += `<option value="${loc}" ${loc === current ? 'selected' : ''}>${names[loc]}</option>`;
       }
-      html += `</select></div>`;
-
-      // Browser notification settings
-      html += `
-        <div class="settings-section mt-md">
+      html += `</select>
+        </div>
+        <div class="settings-card mt-md">
           <div class="card-title">${t('settings.notifications_title')}</div>
           <label class="settings-checkbox">
             <input type="checkbox" id="notify-toggle"
@@ -65,55 +86,75 @@
                    onchange="toggleNotificationsPerm(this.checked)">
             <span>${t('settings.notifications_browser')}</span>
           </label>
-        </div>`;
-
-      // Server notification settings (loaded async)
-      html += `<div id="notif-server-section"><div class="text-muted" style="font-size:0.8rem;margin-top:12px">Loading...</div></div>`;
-
-      // Server info
-      html += `
-        <div class="settings-section mt-md">
+        </div>
+        <div class="settings-card mt-md">
           <div class="card-title">${t('settings.server_title')}</div>
           <div class="text-muted" style="font-size:0.8rem">
-            Port: ${location.port || '3000'} | Printere: ${printers.length}
+            Port: ${location.port || '3000'} | ${t('settings.printers_title')}: ${printers.length}
           </div>
         </div>`;
+      html += '</div>';
 
-      // Update section (loaded async)
-      html += `
-        <div class="settings-section mt-md">
-          <div class="card-title">${t('update.title')}</div>
-          <div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-        </div>`;
+      // Right column: Authentication
+      html += '<div id="auth-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>';
 
-      // Notification log section
+      html += '</div>'; // end settings-grid
+      html += '</div>'; // end tab-general
+
+      // ======== TAB: Notifications ========
+      html += `<div class="settings-tab-content ${_activeTab === 'notifications' ? 'active' : ''}" id="tab-notifications">`;
+      html += `<div id="notif-server-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>`;
       html += `
-        <div class="settings-section mt-md">
+        <div class="settings-card mt-md">
           <div class="card-title">${t('settings.notif_log_title')}</div>
           <div id="notif-log-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
         </div>`;
+      html += '</div>'; // end tab-notifications
 
-      // Demo data section (loaded async)
-      html += `<div id="demo-data-section"></div>`;
+      // ======== TAB: System ========
+      html += `<div class="settings-tab-content ${_activeTab === 'system' ? 'active' : ''}" id="tab-system">`;
+      html += '<div class="settings-grid">';
+      html += `
+        <div class="settings-card">
+          <div class="card-title">${t('update.title')}</div>
+          <div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
+        </div>`;
+      html += '<div id="demo-data-section"></div>';
+      html += '</div>'; // end settings-grid
+      html += '</div>'; // end tab-system
 
       panel.innerHTML = html;
 
-      // Populate printer info
+      // Post-render: populate async sections
       const printerInfoEl = document.getElementById('settings-printer-info');
       if (printerInfoEl && typeof renderPrinterInfoSection === 'function') renderPrinterInfoSection(printerInfoEl);
-      // Check for demo data
       checkDemoData();
-      // Load server notification settings
+      loadAuthSettings();
       loadNotifSettings();
-      // Load notification log
       loadNotifLog();
-      // Load update section
       const updateSection = document.getElementById('update-section');
       if (updateSection && typeof renderUpdateSection === 'function') renderUpdateSection(updateSection);
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('settings.load_failed')}</p>`;
     }
   }
+
+  window.switchSettingsTab = function(tab) {
+    _activeTab = tab;
+    const slug = tab === 'printers' ? 'settings' : `settings/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('.settings-tab').forEach(el => {
+      el.classList.toggle('active', el.textContent.trim() === document.querySelector(`.settings-tab[onclick*="'${tab}'"]`)?.textContent.trim());
+    });
+    document.querySelectorAll('.settings-tab-content').forEach(el => {
+      el.classList.toggle('active', el.id === 'tab-' + tab);
+    });
+    // Re-match tab buttons
+    document.querySelectorAll('.settings-tab').forEach(el => {
+      const match = el.getAttribute('onclick')?.match(/switchSettingsTab\('(\w+)'\)/);
+      if (match) el.classList.toggle('active', match[1] === tab);
+    });
+  };
 
   function renderPrinterForm(target, printer = null) {
     const isEdit = !!printer;
@@ -218,7 +259,6 @@
 
   window.changeLanguage = function(locale) {
     window.i18n.setLocale(locale).then(() => {
-      // Re-render settings if open
       if (window._activePanel === 'settings') {
         loadSettings();
       }
@@ -239,7 +279,7 @@
       const data = await res.json();
       if (data.hasDemo) {
         section.innerHTML = `
-          <div class="settings-section mt-md">
+          <div class="settings-card">
             <div class="card-title">${t('settings.demo_title')}</div>
             <div class="text-muted" style="font-size:0.8rem; margin-bottom:8px;">
               ${t('settings.demo_description', { count: data.printerIds.length })}
@@ -256,7 +296,6 @@
       const res = await fetch('/api/demo', { method: 'DELETE' });
       const data = await res.json();
       if (data.deleted > 0) {
-        // Clear local state for deleted printers
         if (data.printerIds && window.printerState) {
           for (const id of data.printerIds) {
             window.printerState.removePrinter(id);
@@ -267,6 +306,139 @@
         loadSettings();
       }
     } catch { /* ignore */ }
+  };
+
+  // ---- Authentication Settings ----
+
+  let _authUsers = [];
+
+  async function loadAuthSettings() {
+    const section = document.getElementById('auth-settings-section');
+    if (!section) return;
+
+    try {
+      const res = await fetch('/api/auth/config');
+      const ac = await res.json();
+
+      const envManaged = ac.envManaged;
+      _authUsers = (ac.users || []).map(u => ({ ...u }));
+
+      let html = `
+        <div class="settings-card">
+          <div class="card-title">${t('settings.auth_title')}</div>`;
+
+      if (envManaged) {
+        html += `<p class="text-muted" style="font-size:0.8rem">${t('settings.auth_env_notice')}</p>`;
+      } else {
+        html += `
+          <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px">${t('settings.auth_info')}</p>
+          <label class="settings-checkbox">
+            <input type="checkbox" id="auth-enabled" ${ac.enabled ? 'checked' : ''}>
+            <span>${t('settings.auth_enable')}</span>
+          </label>
+
+          <div class="card-title mt-md" style="font-size:0.7rem">${t('settings.auth_users_title')}</div>
+          <div id="auth-users-list"></div>
+          <button class="form-btn form-btn-sm mt-sm" onclick="addAuthUser()">${t('settings.auth_add_user')}</button>
+
+          <div class="form-group mt-md">
+            <label class="form-label">${t('settings.auth_session')}</label>
+            <input class="form-input" type="number" id="auth-session-hours" value="${ac.sessionDurationHours || 24}" min="1" max="720" style="max-width:120px">
+          </div>
+          <div class="notif-save-row">
+            <button class="form-btn" id="auth-save-btn" onclick="saveAuthSettings()">${t('settings.auth_save')}</button>
+            <span class="notif-save-status" id="auth-save-status"></span>
+          </div>`;
+      }
+
+      html += '</div>';
+      section.innerHTML = html;
+
+      if (!envManaged) renderAuthUsers();
+    } catch {
+      section.innerHTML = '';
+    }
+  }
+
+  function renderAuthUsers() {
+    const list = document.getElementById('auth-users-list');
+    if (!list) return;
+
+    if (_authUsers.length === 0) {
+      list.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('settings.auth_no_users')}</p>`;
+      return;
+    }
+
+    let html = '<div class="auth-users-grid">';
+    for (let i = 0; i < _authUsers.length; i++) {
+      const u = _authUsers[i];
+      html += `
+        <div class="auth-user-row">
+          <input class="form-input auth-user-input" type="text" value="${(u.username || '').replace(/"/g, '&quot;')}"
+                 placeholder="${t('settings.auth_username_ph')}" data-idx="${i}" data-field="username" onchange="updateAuthUser(this)">
+          <input class="form-input auth-user-input" type="password" value="${u.password || ''}"
+                 placeholder="${u.password === '***' ? t('settings.auth_password_unchanged') : t('settings.auth_password_ph')}"
+                 data-idx="${i}" data-field="password" onchange="updateAuthUser(this)">
+          <button class="form-btn form-btn-sm form-btn-danger" onclick="removeAuthUser(${i})" title="${t('settings.delete')}">✕</button>
+        </div>`;
+    }
+    html += '</div>';
+    list.innerHTML = html;
+  }
+
+  window.addAuthUser = function() {
+    _authUsers.push({ username: '', password: '' });
+    renderAuthUsers();
+    // Focus the new username field
+    const inputs = document.querySelectorAll('.auth-user-row:last-child input[data-field="username"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  };
+
+  window.updateAuthUser = function(el) {
+    const idx = parseInt(el.dataset.idx);
+    const field = el.dataset.field;
+    if (_authUsers[idx]) _authUsers[idx][field] = el.value;
+  };
+
+  window.removeAuthUser = function(idx) {
+    _authUsers.splice(idx, 1);
+    renderAuthUsers();
+  };
+
+  window.saveAuthSettings = async function() {
+    const btn = document.getElementById('auth-save-btn');
+    const status = document.getElementById('auth-save-status');
+    if (btn) btn.disabled = true;
+    if (status) { status.textContent = t('settings.auth_saving'); status.style.color = ''; }
+
+    const body = {
+      enabled: document.getElementById('auth-enabled')?.checked || false,
+      users: _authUsers.filter(u => u.username && u.username.trim()),
+      password: '',
+      username: '',
+      sessionDurationHours: parseInt(document.getElementById('auth-session-hours')?.value) || 24
+    };
+
+    try {
+      const res = await fetch('/api/auth/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (status) { status.textContent = t('settings.auth_saved'); status.style.color = 'var(--accent-green)'; }
+        // Reload to get fresh masked passwords
+        setTimeout(() => loadAuthSettings(), 1500);
+      } else {
+        if (status) { status.textContent = data.error || t('settings.auth_save_failed'); status.style.color = 'var(--accent-red)'; }
+      }
+    } catch {
+      if (status) { status.textContent = t('settings.auth_save_failed'); status.style.color = 'var(--accent-red)'; }
+    }
+
+    if (btn) btn.disabled = false;
+    setTimeout(() => { if (status) { status.textContent = ''; status.style.color = ''; } }, 3000);
   };
 
   // ---- Server Notification Settings ----
@@ -328,7 +500,7 @@
     ];
 
     let html = `
-      <div class="settings-section mt-md notif-section">
+      <div class="settings-card notif-section">
         <div class="card-title">${t('settings.notif_server_title')}</div>
         <label class="settings-checkbox">
           <input type="checkbox" id="notif-enabled" ${nc.enabled ? 'checked' : ''}>

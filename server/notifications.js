@@ -510,6 +510,12 @@ export class NotificationManager {
           message: `New version: ${data.latest}\nCurrent: ${data.current}${data.changelog ? '\n\n' + data.changelog.substring(0, 300) : ''}`
         };
 
+      case 'protection_alert':
+        return {
+          title: `Print Guard Alert — ${printer}`,
+          message: `Printer: ${printer}\nDetection: ${data.eventType || 'Unknown'}\nAction: ${data.action || 'notify'}`
+        };
+
       default:
         return { title: `Bambu Dashboard: ${eventType}`, message: JSON.stringify(data) };
     }

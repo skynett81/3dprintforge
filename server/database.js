@@ -168,6 +168,7 @@ function _runMigrations() {
     { version: 8, up: _mig008_filament_printer_id },
     { version: 9, up: _mig009_notifications },
     { version: 10, up: _mig010_update_history },
+    { version: 11, up: _mig011_protection },
   ];
 
   for (const m of migrations) {
@@ -343,6 +344,34 @@ function _mig010_update_history() {
   `);
 }
 
+function _mig011_protection() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS protection_settings (
+      printer_id TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      spaghetti_action TEXT NOT NULL DEFAULT 'pause',
+      first_layer_action TEXT NOT NULL DEFAULT 'notify',
+      foreign_object_action TEXT NOT NULL DEFAULT 'pause',
+      nozzle_clump_action TEXT NOT NULL DEFAULT 'pause',
+      cooldown_seconds INTEGER NOT NULL DEFAULT 60,
+      auto_resume INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS protection_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id TEXT NOT NULL,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+      event_type TEXT NOT NULL,
+      action_taken TEXT NOT NULL,
+      print_id INTEGER,
+      resolved INTEGER NOT NULL DEFAULT 0,
+      resolved_at TEXT,
+      notes TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_protection_log_printer ON protection_log(printer_id);
+  `);
+}
+
 // ---- Printer CRUD ----
 
 export function getPrinters() {
@@ -463,6 +492,33 @@ export function getStatistics(printerId = null) {
   const amsFilamentByBrand = db.prepare(`SELECT tray_brand as brand, tray_type as type, COUNT(*) as snapshots FROM ams_snapshots${where}${where ? ' AND' : ' WHERE'} tray_brand IS NOT NULL GROUP BY tray_brand, tray_type ORDER BY snapshots DESC LIMIT 10`).all(...params);
   const amsAvgHumidity = db.prepare(`SELECT ams_unit, ROUND(AVG(CAST(humidity AS REAL)), 1) as avg_humidity, COUNT(*) as readings FROM ams_snapshots${where}${where ? ' AND' : ' WHERE'} humidity IS NOT NULL GROUP BY ams_unit ORDER BY ams_unit`).all(...params);
 
+  // Extra stats: waste, color changes, avg filament per print, nozzle breakdown, streaks
+  const wasteStats = db.prepare(`SELECT COALESCE(SUM(waste_g), 0) as total_waste, COALESCE(SUM(color_changes), 0) as total_color_changes FROM print_history${where}`).get(...params);
+  const avgFilamentPerPrint = db.prepare(`SELECT COALESCE(AVG(filament_used_g), 0) as avg FROM print_history${where}${and} status = 'completed' AND filament_used_g > 0`).get(...params);
+  const nozzleBreakdown = db.prepare(`SELECT nozzle_type as type, nozzle_diameter as diameter, COUNT(*) as prints, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed FROM print_history${where}${and} nozzle_type IS NOT NULL GROUP BY nozzle_type, nozzle_diameter ORDER BY prints DESC`).all(...params);
+
+  // Streak: consecutive completed prints (current)
+  const recentPrints = db.prepare(`SELECT status FROM print_history${where} ORDER BY started_at DESC LIMIT 50`).all(...params);
+  let currentStreak = 0;
+  for (const p of recentPrints) {
+    if (p.status === 'completed') currentStreak++;
+    else break;
+  }
+  // Best streak ever
+  let bestStreak = 0, tempStreak = 0;
+  const allPrintsForStreak = db.prepare(`SELECT status FROM print_history${where} ORDER BY started_at ASC`).all(...params);
+  for (const p of allPrintsForStreak) {
+    if (p.status === 'completed') { tempStreak++; if (tempStreak > bestStreak) bestStreak = tempStreak; }
+    else tempStreak = 0;
+  }
+
+  // Avg print time per day-of-week
+  const avgDurationByDay = db.prepare(`SELECT CAST(strftime('%w', started_at) AS INTEGER) as dow, ROUND(AVG(duration_seconds) / 60) as avg_minutes FROM print_history${where}${and} status = 'completed' GROUP BY dow ORDER BY dow`).all(...params);
+
+  // First and last print dates
+  const firstPrint = db.prepare(`SELECT started_at FROM print_history${where} ORDER BY started_at ASC LIMIT 1`).get(...params);
+  const lastPrint = db.prepare(`SELECT started_at FROM print_history${where} ORDER BY started_at DESC LIMIT 1`).get(...params);
+
   return {
     total_prints: total.count,
     completed_prints: completed.count,
@@ -487,7 +543,16 @@ export function getStatistics(printerId = null) {
     prints_by_day_of_week: printsByDayOfWeek,
     prints_by_hour: printsByHour,
     ams_filament_by_brand: amsFilamentByBrand,
-    ams_avg_humidity: amsAvgHumidity
+    ams_avg_humidity: amsAvgHumidity,
+    total_waste_g: Math.round(wasteStats.total_waste * 10) / 10,
+    total_color_changes: wasteStats.total_color_changes,
+    avg_filament_per_print_g: Math.round(avgFilamentPerPrint.avg * 10) / 10,
+    nozzle_breakdown: nozzleBreakdown.map(r => ({ type: r.type, diameter: r.diameter, prints: r.prints, completed: r.completed, rate: r.prints > 0 ? Math.round((r.completed / r.prints) * 100) : 0 })),
+    current_streak: currentStreak,
+    best_streak: bestStreak,
+    avg_duration_by_day: avgDurationByDay,
+    first_print: firstPrint?.started_at || null,
+    last_print: lastPrint?.started_at || null
   };
 }
 
@@ -976,4 +1041,61 @@ export function updateUpdateEntry(id, status, errorMessage, durationMs) {
 
 export function getUpdateHistory(limit = 20) {
   return db.prepare('SELECT * FROM update_history ORDER BY timestamp DESC LIMIT ?').all(limit);
+}
+
+// ---- Protection Settings & Log ----
+
+export function getProtectionSettings(printerId) {
+  return db.prepare('SELECT * FROM protection_settings WHERE printer_id = ?').get(printerId) || null;
+}
+
+export function upsertProtectionSettings(printerId, settings) {
+  db.prepare(`INSERT INTO protection_settings
+    (printer_id, enabled, spaghetti_action, first_layer_action, foreign_object_action, nozzle_clump_action, cooldown_seconds, auto_resume)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(printer_id) DO UPDATE SET
+      enabled = excluded.enabled,
+      spaghetti_action = excluded.spaghetti_action,
+      first_layer_action = excluded.first_layer_action,
+      foreign_object_action = excluded.foreign_object_action,
+      nozzle_clump_action = excluded.nozzle_clump_action,
+      cooldown_seconds = excluded.cooldown_seconds,
+      auto_resume = excluded.auto_resume
+  `).run(
+    printerId,
+    settings.enabled ?? 1,
+    settings.spaghetti_action || 'pause',
+    settings.first_layer_action || 'notify',
+    settings.foreign_object_action || 'pause',
+    settings.nozzle_clump_action || 'pause',
+    settings.cooldown_seconds ?? 60,
+    settings.auto_resume ?? 0
+  );
+}
+
+export function addProtectionLog(entry) {
+  return db.prepare(`INSERT INTO protection_log
+    (printer_id, event_type, action_taken, print_id, notes)
+    VALUES (?, ?, ?, ?, ?)`).run(
+    entry.printer_id, entry.event_type, entry.action_taken,
+    entry.print_id || null, entry.notes || null
+  );
+}
+
+export function getProtectionLog(printerId, limit = 50) {
+  if (printerId) {
+    return db.prepare('SELECT * FROM protection_log WHERE printer_id = ? ORDER BY timestamp DESC LIMIT ?').all(printerId, limit);
+  }
+  return db.prepare('SELECT * FROM protection_log ORDER BY timestamp DESC LIMIT ?').all(limit);
+}
+
+export function resolveProtectionAlert(logId) {
+  db.prepare("UPDATE protection_log SET resolved = 1, resolved_at = datetime('now') WHERE id = ?").run(logId);
+}
+
+export function getActiveAlerts(printerId) {
+  if (printerId) {
+    return db.prepare('SELECT * FROM protection_log WHERE printer_id = ? AND resolved = 0 ORDER BY timestamp DESC').all(printerId);
+  }
+  return db.prepare('SELECT * FROM protection_log WHERE resolved = 0 ORDER BY timestamp DESC').all();
 }

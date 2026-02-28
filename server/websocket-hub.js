@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import { isAuthEnabled, getSessionToken, validateSession } from './auth.js';
 
 export class WebSocketHub {
   constructor(server) {
@@ -8,7 +9,16 @@ export class WebSocketHub {
     this.printerMeta = {};     // { printerId: { name, model, cameraPort } }
     this.onCommand = null;
 
-    this.wss.on('connection', (ws) => {
+    this.wss.on('connection', (ws, req) => {
+      // Auth check for WebSocket
+      if (isAuthEnabled()) {
+        const token = getSessionToken(req);
+        if (!validateSession(token)) {
+          ws.close(4001, 'Unauthorized');
+          return;
+        }
+      }
+
       this.clients.add(ws);
       console.log(`[ws] Klient tilkoblet (${this.clients.size} totalt)`);
 

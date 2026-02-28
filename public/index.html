@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bambu Dashboard</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/responsive.css">
@@ -55,6 +58,11 @@
         <button class="sidebar-btn" data-panel="maintenance" onclick="openPanel('maintenance')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           <span data-i18n-key="tabs.maintenance">Vedlikehold</span>
+        </button>
+        <button class="sidebar-btn" data-panel="protection" onclick="openPanel('protection')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span data-i18n-key="protection.title">Print Guard</span>
+          <span id="protection-badge" style="display:none;background:var(--accent-red);color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:auto;"></span>
         </button>
         <button class="sidebar-btn" data-panel="settings" onclick="openPanel('settings')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -180,6 +188,14 @@
       <main class="dashboard" id="dashboard-grid">
 
         <div class="card" id="progress-card">
+          <!-- 3D fullscreen overlay button -->
+          <div class="camera-overlay model-overlay" id="model-overlay">
+            <button class="camera-fullscreen-btn" title="3D Fullscreen" onclick="open3dFullscreen()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+            </button>
+          </div>
           <div id="print-mw-container" style="display:none">
             <img id="print-mw-image" class="print-mw-image" alt="">
             <img id="print-mw-reveal" class="print-mw-reveal" alt="">
@@ -300,8 +316,41 @@
         </button>
       </div>
       <div id="camera-fullscreen-container" class="camera-fullscreen-container"></div>
+      <div class="camera-stream-link" id="camera-stream-link" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <span class="camera-stream-label" data-i18n-key="camera.stream_url">Stream URL:</span>
+        <code class="camera-stream-url"></code>
+        <button class="camera-copy-btn" data-i18n-key="camera.copy">Kopier</button>
+      </div>
     </div>
   </div>
+
+  <!-- 3D Model Fullscreen Modal -->
+  <div class="camera-modal" id="model-modal">
+    <div class="camera-modal-content model-modal-content">
+      <div class="camera-modal-header">
+        <span class="camera-modal-title" data-i18n-key="model.preview">3D-visning</span>
+        <button class="camera-modal-close" onclick="close3dFullscreen()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div id="model-fullscreen-container" class="camera-fullscreen-container model-fullscreen-container"></div>
+    </div>
+  </div>
+
+  <!-- Card hover glow tracking -->
+  <script>
+    document.addEventListener('mousemove', e => {
+      const cards = document.querySelectorAll('.card');
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', ((e.clientX - rect.left) / rect.width * 100) + '%');
+        card.style.setProperty('--mouse-y', ((e.clientY - rect.top) / rect.height * 100) + '%');
+      }
+    });
+  </script>
 
   <!-- Scripts -->
   <script src="/js/i18n.js"></script>
@@ -329,6 +378,7 @@
   <script src="/js/components/error-log.js"></script>
   <script src="/js/components/waste-panel.js"></script>
   <script src="/js/components/maintenance-panel.js"></script>
+  <script src="/js/components/protection-panel.js"></script>
   <script src="/js/components/settings-dialog.js"></script>
   <script src="/js/components/update-panel.js"></script>
   <script src="/js/components/model-viewer.js"></script>

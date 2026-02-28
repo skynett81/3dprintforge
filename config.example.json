@@ -9,6 +9,12 @@
       "model": "P2S Combo"
     }
   ],
+  "auth": {
+    "enabled": false,
+    "password": "",
+    "username": "",
+    "sessionDurationHours": 24
+  },
   "server": {
     "port": 3000,
     "httpsPort": 3443,

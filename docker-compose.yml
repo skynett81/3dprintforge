@@ -13,5 +13,8 @@ services:
       - ./certs:/app/certs
     environment:
       - NODE_ENV=production
+      # Uncomment to enable authentication:
+      # - BAMBU_AUTH_PASSWORD=your-password
+      # - BAMBU_AUTH_USERNAME=admin
       # Uncomment to run with demo printers (no real hardware needed):
       # - BAMBU_DEMO=true

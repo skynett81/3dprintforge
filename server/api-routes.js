@@ -2,6 +2,7 @@ import { getHistory, addHistory, getStatistics, getFilament, addFilament, update
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import https from 'node:https';
+import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession } from './auth.js';
 
 let _broadcastFn = null;
 let _onPrinterRemoved = null;
@@ -11,6 +12,11 @@ let _onDemoPurge = null;
 let _notifier = null;
 let _updater = null;
 let _hub = null;
+let _guard = null;
+
+export function setGuard(guard) {
+  _guard = guard;
+}
 
 export function setNotifier(notifier) {
   _notifier = notifier;
@@ -42,6 +48,60 @@ export function setOnPrinterUpdated(fn) {
 
 export function setOnDemoPurge(fn) {
   _onDemoPurge = fn;
+}
+
+export async function handleAuthApiRequest(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const path = url.pathname;
+  const method = req.method;
+
+  try {
+    // GET /api/auth/status
+    if (method === 'GET' && path === '/api/auth/status') {
+      const enabled = isAuthEnabled();
+      const token = getSessionToken(req);
+      const authenticated = enabled ? validateSession(token) : true;
+      const requiresUsername = isMultiUser() || !!(config.auth?.username);
+      return sendJson(res, { enabled, authenticated, requiresUsername });
+    }
+
+    // POST /api/auth/login
+    if (method === 'POST' && path === '/api/auth/login') {
+      if (!isAuthEnabled()) {
+        return sendJson(res, { ok: true });
+      }
+      return readBody(req, (body) => {
+        const { password, username } = body;
+        if (!validateCredentials(password, username)) {
+          return sendJson(res, { error: 'Invalid credentials' }, 401);
+        }
+        const token = createSession(username);
+        const maxAge = (config.auth?.sessionDurationHours || 24) * 3600;
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `bambu_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`
+        });
+        res.end(JSON.stringify({ ok: true }));
+      });
+    }
+
+    // POST /api/auth/logout
+    if (method === 'POST' && path === '/api/auth/logout') {
+      const token = getSessionToken(req);
+      if (token) destroySession(token);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Set-Cookie': 'bambu_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
+      });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    sendJson(res, { error: 'Not found' }, 404);
+  } catch (e) {
+    console.error('[auth-api] Error:', e.message);
+    sendJson(res, { error: 'Server error' }, 500);
+  }
 }
 
 function broadcastPrinterMeta() {
@@ -280,6 +340,59 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getAmsTrayLifetime(printerId));
     }
 
+    // ---- Print Guard / Protection ----
+    if (method === 'GET' && path === '/api/protection/settings') {
+      const printerId = url.searchParams.get('printer_id');
+      if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return sendJson(res, _guard.getSettings(printerId) || { printer_id: printerId, enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 });
+    }
+
+    if (method === 'PUT' && path === '/api/protection/settings') {
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return readBody(req, (body) => {
+        if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        _guard.updateSettings(body.printer_id, body);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'GET' && path === '/api/protection/status') {
+      const printerId = url.searchParams.get('printer_id') || null;
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      if (printerId) {
+        return sendJson(res, _guard.getStatus(printerId));
+      }
+      return sendJson(res, { alerts: _guard.getAllActiveAlerts() });
+    }
+
+    if (method === 'GET' && path === '/api/protection/log') {
+      const printerId = url.searchParams.get('printer_id') || null;
+      const limit = parseInt(url.searchParams.get('limit')) || 50;
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return sendJson(res, _guard.getLog(printerId, limit));
+    }
+
+    if (method === 'POST' && path === '/api/protection/resolve') {
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return readBody(req, (body) => {
+        if (!body.logId) return sendJson(res, { error: 'logId required' }, 400);
+        _guard.resolve(body.logId);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'POST' && path === '/api/protection/test') {
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return readBody(req, (body) => {
+        const printerId = body.printer_id;
+        const eventType = body.event_type || 'spaghetti_detected';
+        if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
+        _guard.handleEvent(printerId, eventType, null);
+        return sendJson(res, { ok: true });
+      });
+    }
+
     // ---- Demo data ----
     if (method === 'GET' && path === '/api/demo/status') {
       const ids = getDemoPrinterIds();
@@ -297,6 +410,53 @@ export async function handleApiRequest(req, res) {
         broadcastPrinterMeta();
       }
       return sendJson(res, result);
+    }
+
+    // ---- Auth Config ----
+    if (method === 'GET' && path === '/api/auth/config') {
+      const ac = structuredClone(config.auth || {});
+      // Mask passwords
+      if (ac.password) ac.password = '***';
+      if (ac.users) {
+        ac.users = ac.users.map(u => ({ username: u.username, password: '***' }));
+      }
+      ac.envManaged = !!(process.env.BAMBU_AUTH_PASSWORD);
+      return sendJson(res, ac);
+    }
+
+    if (method === 'PUT' && path === '/api/auth/config') {
+      if (process.env.BAMBU_AUTH_PASSWORD) {
+        return sendJson(res, { error: 'Auth is managed via environment variables' }, 400);
+      }
+      return readBody(req, (body) => {
+        // Handle users array — preserve masked passwords
+        if (Array.isArray(body.users)) {
+          const existingUsers = config.auth?.users || [];
+          body.users = body.users
+            .filter(u => u.username && u.username.trim())
+            .map(u => {
+              if (u.password === '***') {
+                const existing = existingUsers.find(e => e.username === u.username);
+                return { username: u.username.trim(), password: existing?.password || '' };
+              }
+              return { username: u.username.trim(), password: u.password || '' };
+            })
+            .filter(u => u.password); // Remove users with no password
+        }
+
+        // Legacy single-user: preserve existing password if masked
+        if (body.password === '***') body.password = config.auth?.password || '';
+
+        // If no users and no password, disable auth
+        const hasUsers = body.users?.length > 0;
+        const hasPassword = !!body.password;
+        if (!hasUsers && !hasPassword) body.enabled = false;
+
+        config.auth = { ...config.auth, ...body };
+        saveConfig({ auth: config.auth });
+        console.log(`[auth] Config updated: enabled=${config.auth.enabled}, users=${config.auth.users?.length || 0}`);
+        sendJson(res, { ok: true });
+      });
     }
 
     // ---- Notifications ----

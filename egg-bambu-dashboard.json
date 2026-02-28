@@ -1,0 +1,102 @@
+{
+  "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL",
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-02-27T00:00:00+00:00",
+  "name": "Bambu Dashboard",
+  "author": "skynett81@github.com",
+  "description": "Self-hosted dashboard for monitoring and controlling Bambu Lab 3D printers. Provides real-time status, camera feeds, print history, filament tracking, and notifications via MQTT.",
+  "features": null,
+  "docker_images": {
+    "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
+  },
+  "file_denylist": [],
+  "startup": "NODE_ENV=production node --experimental-sqlite server/index.js",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": [\"Bambu Dashboard v\"]}",
+    "logs": "{}",
+    "stop": "^^C"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\napt-get update -qq\napt-get install -y --no-install-recommends git ffmpeg ca-certificates\n\ncd /mnt/server\n\nif [ -d .git ]; then\n  git pull\nelse\n  git clone https://github.com/skynett81/bambu-dashboard.git .\nfi\n\nnpm install --omit=dev\n\nmkdir -p data certs\n\necho \"Installation complete\"",
+      "container": "ghcr.io/parkervcp/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Server Port",
+      "description": "The port the dashboard will listen on. Must match the allocation port.",
+      "env_variable": "SERVER_PORT",
+      "default_value": "3000",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535",
+      "field_type": "text"
+    },
+    {
+      "name": "Auth Password",
+      "description": "Set a password to enable authentication. Leave empty to disable auth.",
+      "env_variable": "BAMBU_AUTH_PASSWORD",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:128",
+      "field_type": "text"
+    },
+    {
+      "name": "Auth Username",
+      "description": "Optional username for authentication. Only used if Auth Password is set.",
+      "env_variable": "BAMBU_AUTH_USERNAME",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:64",
+      "field_type": "text"
+    },
+    {
+      "name": "Demo Mode",
+      "description": "Set to true to run with simulated demo printers (no real hardware needed).",
+      "env_variable": "BAMBU_DEMO",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:true,false",
+      "field_type": "text"
+    },
+    {
+      "name": "Printer IP",
+      "description": "IP address of your Bambu Lab printer. For multiple printers, use the Settings panel in the dashboard.",
+      "env_variable": "BAMBU_IP",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Printer Serial",
+      "description": "Serial number of the printer (found in Settings > Device on the printer screen).",
+      "env_variable": "BAMBU_SERIAL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Printer Access Code",
+      "description": "LAN access code (found in Settings > WiFi/Network on the printer screen).",
+      "env_variable": "BAMBU_ACCESS_CODE",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    }
+  ]
+}

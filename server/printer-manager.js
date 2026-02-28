@@ -2,6 +2,7 @@ import { PrintTracker } from './print-tracker.js';
 import { TelemetrySampler } from './telemetry-sampler.js';
 import { CameraStream } from './camera-stream.js';
 import { getPrinters, addFirmwareEntry, addXcamEvent } from './database.js';
+import { PrintGuardService } from './print-guard.js';
 
 export class PrinterManager {
   constructor(config, broadcastFn, hubSetMeta) {
@@ -11,10 +12,12 @@ export class PrinterManager {
     this.printers = new Map();
     this._nextPortOffset = 0;
     this._notifier = null;
+    this.guard = null;
   }
 
   setNotificationHandler(notifier) {
     this._notifier = notifier;
+    this.guard = new PrintGuardService(this, notifier, this.broadcast);
     // Wire up existing live printers
     for (const [id, entry] of this.printers) {
       if (entry.tracker) this._wireTrackerNotifications(id, entry.config.name, entry.tracker);
@@ -103,6 +106,9 @@ export class PrinterManager {
         for (const [key, eventType] of Object.entries(eventMap)) {
           if (status.toLowerCase().includes(key)) {
             addXcamEvent({ printer_id: id, event_type: eventType });
+            // Trigger print guard
+            const printId = tracker.currentPrint?.id || null;
+            if (this.guard) this.guard.handleEvent(id, eventType, printId);
             break;
           }
         }

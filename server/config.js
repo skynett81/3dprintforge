@@ -8,6 +8,13 @@ const CONFIG_PATH = join(ROOT, 'config.json');
 
 const DEFAULTS = {
   printers: [],
+  auth: {
+    enabled: false,
+    password: '',
+    username: '',
+    users: [],
+    sessionDurationHours: 24
+  },
   server: { port: 3000, httpsPort: 3443, cameraWsPortStart: 9001, forceHttps: false },
   camera: { enabled: true, resolution: '640x480', framerate: 15, bitrate: '1000k' },
   notifications: {
@@ -87,6 +94,16 @@ function loadConfig() {
     if (process.env.BAMBU_ACCESS_CODE) config.printers[0].accessCode = process.env.BAMBU_ACCESS_CODE;
   }
   if (process.env.PORT) config.server.port = parseInt(process.env.PORT);
+  if (process.env.SERVER_PORT) config.server.port = parseInt(process.env.SERVER_PORT);
+
+  // Auth env overrides
+  if (process.env.BAMBU_AUTH_PASSWORD) {
+    config.auth.password = process.env.BAMBU_AUTH_PASSWORD;
+    config.auth.enabled = true;
+  }
+  if (process.env.BAMBU_AUTH_USERNAME) {
+    config.auth.username = process.env.BAMBU_AUTH_USERNAME;
+  }
 
   return config;
 }

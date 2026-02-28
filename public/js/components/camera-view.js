@@ -128,6 +128,11 @@
     container.style.cursor = 'default';
   }
 
+  function getStreamUrl() {
+    if (!currentPort) return null;
+    return `ws://${location.hostname}:${currentPort}`;
+  }
+
   function openFullscreen() {
     if (!currentPort) return;
     const modal = document.getElementById('camera-modal');
@@ -142,6 +147,24 @@
     const canvas = document.createElement('canvas');
     canvas.className = 'camera-canvas-fullscreen';
     fsContainer.appendChild(canvas);
+
+    // Stream link bar
+    const streamUrl = getStreamUrl();
+    const linkBar = document.getElementById('camera-stream-link');
+    if (linkBar && streamUrl) {
+      linkBar.style.display = '';
+      const urlEl = linkBar.querySelector('.camera-stream-url');
+      if (urlEl) urlEl.textContent = streamUrl;
+      const copyBtn = linkBar.querySelector('.camera-copy-btn');
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(streamUrl).then(() => {
+            copyBtn.textContent = t('camera.copied') || 'Kopiert!';
+            setTimeout(() => { copyBtn.textContent = t('camera.copy') || 'Kopier'; }, 1500);
+          });
+        };
+      }
+    }
 
     const wsUrl = `ws://${location.hostname}:${currentPort}`;
 
@@ -171,6 +194,9 @@
       try { fullscreenPlayer.destroy(); } catch(e) {}
       fullscreenPlayer = null;
     }
+
+    const linkBar = document.getElementById('camera-stream-link');
+    if (linkBar) linkBar.style.display = 'none';
   }
 
   window.closeCameraModal = closeFullscreen;
@@ -187,7 +213,10 @@
 
     // Close on ESC
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeFullscreen();
+      if (e.key === 'Escape') {
+        closeFullscreen();
+        close3dFullscreen();
+      }
     });
 
     // Close on backdrop click
@@ -197,5 +226,188 @@
         if (e.target === modal) closeFullscreen();
       });
     }
+
+    const modal3d = document.getElementById('model-modal');
+    if (modal3d) {
+      modal3d.addEventListener('click', (e) => {
+        if (e.target === modal3d) close3dFullscreen();
+      });
+    }
   });
+
+  // ═══ 3D View Fullscreen Modal ═══
+  let _fsViewer = null;
+  let _fsAnimId = null;
+  let _fsMwMode = false;
+
+  function getActiveFilamentColorHex(pd) {
+    if (!pd?.ams?.ams) return null;
+    const activeTrayId = pd.ams.tray_now;
+    if (activeTrayId == null) return null;
+    for (const unit of pd.ams.ams) {
+      const tray = (unit.tray || []).find(t => String(t.id) === String(activeTrayId));
+      if (tray?.tray_color) return tray.tray_color;
+    }
+    return null;
+  }
+
+  function open3dFullscreen() {
+    const modal = document.getElementById('model-modal');
+    if (!modal) return;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    const container = document.getElementById('model-fullscreen-container');
+    container.innerHTML = '';
+
+    const printerId = window.printerState?.getActivePrinterId();
+    const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+    const pd = ps?.print || ps;
+    const fname = pd?.subtask_name || pd?.gcode_file || '';
+
+    // Update header
+    const titleEl = modal.querySelector('.camera-modal-title');
+    if (titleEl) titleEl.textContent = fname ? fname.replace(/\.(3mf|gcode)$/i, '') : t('model.preview');
+
+    // Detect what the small progress card is currently showing
+    const mwContainer = document.getElementById('print-mw-container');
+    const mwImage = document.getElementById('print-mw-image');
+    const smallCanvas = document.getElementById('print-model-canvas');
+    const isMwActive = mwContainer && mwContainer.style.display !== 'none' && mwImage && mwImage.src && mwImage.src !== location.href;
+    const is3dActive = smallCanvas && smallCanvas.style.display !== 'none';
+
+    if (isMwActive) {
+      // Mirror the MakerWorld image view with progress reveal
+      _fsMwMode = true;
+      _showMwFullscreen(container, mwImage.src, pd);
+    } else if (is3dActive && printerId) {
+      // Mirror the 3D model view
+      _fsMwMode = false;
+      _show3dFullscreen(container, printerId, pd);
+    } else {
+      container.innerHTML = `<div class="camera-placeholder"><span>${t('model.not_available')}</span></div>`;
+      return;
+    }
+
+    // Start real-time update loop (works for both modes)
+    startFsUpdateLoop();
+  }
+
+  function _showMwFullscreen(container, imageSrc, pd) {
+    const pct = pd?.total_layer_num > 0 ? ((pd.layer_num || 0) / pd.total_layer_num) * 100 : 0;
+    const clipTop = 100 - pct;
+
+    container.innerHTML = `
+      <div class="fs-mw-wrap">
+        <img class="fs-mw-bg" src="${imageSrc}" alt="">
+        <img class="fs-mw-reveal" id="fs-mw-reveal" src="${imageSrc}" alt="" style="clip-path:inset(${clipTop}% 0 0 0)">
+        <div class="fs-mw-edge" id="fs-mw-edge" style="bottom:${pct}%"></div>
+        <div class="fs-mw-hud">
+          <span class="fs-mw-pct" id="fs-mw-pct">${Math.round(pct)}%</span>
+        </div>
+      </div>`;
+
+    // Tint edge with filament color
+    const hex = getActiveFilamentColorHex(pd);
+    if (hex) {
+      const edge = document.getElementById('fs-mw-edge');
+      const c = '#' + hex.substring(0, 6);
+      if (edge) { edge.style.background = c; edge.style.boxShadow = `0 0 16px ${c}, 0 0 6px ${c}`; }
+    }
+  }
+
+  function _show3dFullscreen(container, printerId, pd) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'camera-canvas-fullscreen';
+    canvas.style.touchAction = 'none';
+    canvas.style.cursor = 'grab';
+    container.appendChild(canvas);
+
+    if (typeof window.ModelViewer === 'undefined') {
+      container.innerHTML = `<div class="camera-placeholder"><span>${t('model.not_available')}</span></div>`;
+      return;
+    }
+
+    fetch(`/api/model/${printerId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('No model');
+        return res.json();
+      })
+      .then(model => {
+        _fsViewer = new window.ModelViewer(canvas);
+        const hex = getActiveFilamentColorHex(pd);
+        if (hex) {
+          model.color = [
+            parseInt(hex.substring(0, 2), 16) / 255,
+            parseInt(hex.substring(2, 4), 16) / 255,
+            parseInt(hex.substring(4, 6), 16) / 255
+          ];
+        }
+        _fsViewer.loadModel(model);
+        const layer = pd?.layer_num || 0;
+        const total = pd?.total_layer_num || 0;
+        if (total > 0) _fsViewer.setProgress(layer / total);
+      })
+      .catch(() => {
+        container.innerHTML = `<div class="camera-placeholder"><span>${t('model.not_available')}</span></div>`;
+      });
+  }
+
+  function startFsUpdateLoop() {
+    if (_fsAnimId) cancelAnimationFrame(_fsAnimId);
+
+    function update() {
+      const modal = document.getElementById('model-modal');
+      if (!modal || !modal.classList.contains('active')) return;
+
+      const printerId = window.printerState?.getActivePrinterId();
+      const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+      const pd = ps?.print || ps;
+      if (!pd) { _fsAnimId = requestAnimationFrame(update); return; }
+
+      const layer = pd.layer_num || 0;
+      const total = pd.total_layer_num || 0;
+      const pct = total > 0 ? (layer / total) * 100 : 0;
+
+      if (_fsMwMode) {
+        // Update MakerWorld reveal
+        const reveal = document.getElementById('fs-mw-reveal');
+        const edge = document.getElementById('fs-mw-edge');
+        const pctEl = document.getElementById('fs-mw-pct');
+        const clipTop = 100 - pct;
+        if (reveal) reveal.style.clipPath = `inset(${clipTop}% 0 0 0)`;
+        if (edge) edge.style.bottom = pct + '%';
+        if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+
+        // Update edge color from active filament
+        const hex = getActiveFilamentColorHex(pd);
+        if (hex && edge) {
+          const c = '#' + hex.substring(0, 6);
+          edge.style.background = c;
+          edge.style.boxShadow = `0 0 16px ${c}, 0 0 6px ${c}`;
+        }
+      } else if (_fsViewer) {
+        if (total > 0) _fsViewer.setProgress(layer / total);
+      }
+
+      _fsAnimId = requestAnimationFrame(update);
+    }
+    _fsAnimId = requestAnimationFrame(update);
+  }
+
+  function close3dFullscreen() {
+    const modal = document.getElementById('model-modal');
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+
+    if (_fsAnimId) { cancelAnimationFrame(_fsAnimId); _fsAnimId = null; }
+    if (_fsViewer) { _fsViewer.destroy(); _fsViewer = null; }
+    _fsMwMode = false;
+  }
+
+  window.open3dFullscreen = open3dFullscreen;
+  window.close3dFullscreen = close3dFullscreen;
 })();

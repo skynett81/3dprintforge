@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bambu Dashboard — Login</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0c1015;
+      --bg-secondary: #131920;
+      --bg-tertiary: #1b222c;
+      --border-color: rgba(255,255,255,0.04);
+      --text-primary: #f0f4f8;
+      --text-secondary: #c0ccda;
+      --text-muted: #8899aa;
+      --accent-green: #00e676;
+      --accent-blue: #5cacff;
+      --accent-red: #ff5252;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      background-image:
+        radial-gradient(ellipse at 30% 20%, rgba(92, 172, 255, 0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(0, 230, 118, 0.03) 0%, transparent 50%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(19, 25, 32, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      text-align: center;
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    .login-logo {
+      width: 52px;
+      height: 52px;
+      margin-bottom: 18px;
+      filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.3));
+    }
+    .login-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
+    .login-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; }
+    .form-group { margin-bottom: 18px; text-align: left; }
+    .form-label {
+      display: block; font-size: 0.8rem; color: var(--text-secondary);
+      margin-bottom: 6px; font-weight: 500;
+    }
+    input {
+      width: 100%; padding: 11px 14px;
+      background: var(--bg-primary); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm); color: var(--text-primary);
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), 0 0 0 3px rgba(92,172,255,0.1), 0 0 20px rgba(92,172,255,0.06);
+    }
+    input::placeholder { color: var(--text-muted); }
+    .btn-login {
+      width: 100%; padding: 12px; margin-top: 10px;
+      background: linear-gradient(135deg, var(--accent-green), #00c864); color: #000;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,230,118,0.2);
+      transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,230,118,0.3);
+      filter: brightness(1.05);
+    }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .error-msg {
+      display: none; margin-top: 14px; padding: 10px 14px;
+      background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2);
+      border-radius: var(--radius-sm); color: var(--accent-red);
+      font-size: 0.85rem;
+    }
+    .error-msg.visible { display: block; }
+    #username-group { display: none; }
+    #username-group.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <img src="/assets/favicon.svg" alt="Logo" class="login-logo">
+    <h1 class="login-title">Bambu Dashboard</h1>
+    <p class="login-sub">Log in to continue</p>
+
+    <form id="login-form" autocomplete="on">
+      <div class="form-group" id="username-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username"
+               autocomplete="username" placeholder="Username">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password"
+               autocomplete="current-password" placeholder="Password" required>
+      </div>
+      <button type="submit" class="btn-login" id="login-btn">Log in</button>
+    </form>
+
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorEl = document.getElementById('error-msg');
+    const usernameGroup = document.getElementById('username-group');
+
+    // Check if auth is enabled and if already authenticated
+    fetch('/api/auth/status')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.enabled || data.authenticated) {
+          window.location.href = '/';
+          return;
+        }
+        if (data.requiresUsername) {
+          usernameGroup.classList.add('visible');
+          document.getElementById('username').required = true;
+        }
+      })
+      .catch(() => {});
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.classList.remove('visible');
+
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: document.getElementById('password').value,
+            username: document.getElementById('username').value || undefined
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          window.location.href = '/';
+        } else {
+          errorEl.textContent = data.error || 'Login failed';
+          errorEl.classList.add('visible');
+        }
+      } catch {
+        errorEl.textContent = 'Connection error';
+        errorEl.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log in';
+      }
+    });
+
+    // Focus the first visible input
+    setTimeout(() => {
+      const first = usernameGroup.classList.contains('visible')
+        ? document.getElementById('username')
+        : document.getElementById('password');
+      first.focus();
+    }, 100);
+  </script>
+</body>
+</html>

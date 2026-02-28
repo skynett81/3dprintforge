@@ -122,6 +122,13 @@ function connect() {
       } else if (msg.type === 'connection') {
         updateConnectionBadge(msg.data.status);
       }
+
+      // Dispatch to registered listeners
+      if (window._wsListeners) {
+        for (const fn of window._wsListeners) {
+          try { fn(msg); } catch {}
+        }
+      }
     } catch (e) {
       console.warn('[ws] Parse-feil:', e);
     }
@@ -256,6 +263,7 @@ const PANEL_TITLES = {
   errors: 'tabs.errors',
   waste: 'tabs.waste',
   maintenance: 'tabs.maintenance',
+  protection: 'protection.title',
   settings: 'tabs.settings'
 };
 
@@ -268,6 +276,7 @@ const PANEL_LOADERS = {
   errors: () => { if (typeof loadErrorsPanel === 'function') loadErrorsPanel(); },
   waste: () => { if (typeof loadWastePanel === 'function') loadWastePanel(); },
   maintenance: () => { if (typeof loadMaintenancePanel === 'function') loadMaintenancePanel(); },
+  protection: () => { if (typeof loadProtectionPanel === 'function') loadProtectionPanel(); },
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); }
 };
 
@@ -344,8 +353,11 @@ window.refreshAllComponents = function() {
 
 function navigateFromHash() {
   const hash = location.hash.replace('#', '');
+  const base = hash.split('/')[0];
   if (hash && PANEL_TITLES[hash]) {
     openPanel(hash, true);
+  } else if (base && PANEL_TITLES[base]) {
+    openPanel(base, true);
   } else if (window._activePanel) {
     showDashboard(true);
   }
@@ -366,9 +378,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Restore panel from URL hash on load
   const initHash = location.hash.replace('#', '');
+  const initBase = initHash.split('/')[0];
   if (initHash && PANEL_TITLES[initHash]) {
-    // Small delay to let WebSocket connect and components register
     setTimeout(() => openPanel(initHash), 200);
+  } else if (initBase && PANEL_TITLES[initBase]) {
+    setTimeout(() => openPanel(initBase), 200);
   }
 
   // ESC key handler

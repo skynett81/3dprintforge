@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter } from './database.js';
-import { handleApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub } from './api-routes.js';
+import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard } from './api-routes.js';
+import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth } from './auth.js';
 import { PrinterManager } from './printer-manager.js';
 import { NotificationManager } from './notifications.js';
 import { Updater } from './updater.js';
@@ -23,6 +24,9 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 // Initialize database
 initDatabase();
 
+// Initialize auth
+initAuth();
+
 const MIME_TYPES = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -35,11 +39,33 @@ const MIME_TYPES = {
 };
 
 function handleRequest(req, res) {
+  const pathname = req.url.split('?')[0];
+
+  // Public auth API routes (login, logout, status) - always accessible
+  if (pathname === '/api/auth/status' || pathname === '/api/auth/login' || pathname === '/api/auth/logout') {
+    return handleAuthApiRequest(req, res);
+  }
+
+  // If auth is enabled, check session before serving anything else
+  if (isAuthEnabled() && !isPublicPath(pathname)) {
+    const token = getSessionToken(req);
+    if (!validateSession(token)) {
+      if (pathname.startsWith('/api/')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized' }));
+        return;
+      }
+      res.writeHead(302, { Location: '/login.html' });
+      res.end();
+      return;
+    }
+  }
+
   if (req.url.startsWith('/api/')) {
     return handleApiRequest(req, res);
   }
 
-  let filePath = join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url.split('?')[0]);
+  let filePath = join(PUBLIC_DIR, req.url === '/' ? 'index.html' : pathname);
 
   if (!filePath.startsWith(PUBLIC_DIR)) {
     res.writeHead(403);
@@ -144,6 +170,7 @@ notifier.setPrinterListProvider(() =>
 );
 manager.setNotificationHandler(notifier);
 setNotifier(notifier);
+setGuard(manager.guard);
 
 // Updater
 const updater = new Updater(config, broadcastAll, notifier, hub);
@@ -207,6 +234,21 @@ if (IS_DEMO) {
       });
     }
     console.log(`[demo] Seeded ${MOCK_ERRORS.length} error records`);
+  }
+
+  // Seed protection settings for demo printers
+  const { getProtectionSettings, upsertProtectionSettings, addProtectionLog } = await import('./database.js');
+  for (const p of MOCK_PRINTERS) {
+    if (!getProtectionSettings(p.id)) {
+      upsertProtectionSettings(p.id, { enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 });
+    }
+  }
+  // Add a couple demo protection log entries
+  const { getProtectionLog } = await import('./database.js');
+  if (getProtectionLog('demo-p2s', 1).length === 0) {
+    addProtectionLog({ printer_id: 'demo-p2s', event_type: 'spaghetti_detected', action_taken: 'pause', notes: 'Demo event' });
+    addProtectionLog({ printer_id: 'demo-x1c', event_type: 'first_layer_issue', action_taken: 'notify', notes: 'Demo event' });
+    console.log('[demo] Seeded protection data');
   }
 
   // AMS data map per printer
@@ -286,6 +328,7 @@ if (hubHttps) hubHttps.onCommand = commandHandler;
 
 // Graceful shutdown
 function shutdown() {
+  shutdownAuth();
   for (const mock of demoMockPrinters) mock.stop();
   updater.shutdown();
   notifier.shutdown();
