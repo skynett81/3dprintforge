@@ -3,7 +3,7 @@
   const DEFAULT_LOCALE = 'nb';
   const SUPPORTED_LOCALES = [
     'nb', 'en', 'de', 'fr', 'es', 'it', 'ja', 'ko',
-    'nl', 'pl', 'pt_BR', 'ru', 'sv', 'tr', 'uk', 'zh_CN',
+    'nl', 'pl', 'pt_BR', 'sv', 'tr', 'uk', 'zh_CN',
     'cs', 'hu'
   ];
 
@@ -11,7 +11,7 @@
     nb: 'Norsk Bokmål', en: 'English', de: 'Deutsch', fr: 'Français',
     es: 'Español', it: 'Italiano', ja: '日本語', ko: '한국어',
     nl: 'Nederlands', pl: 'Polski', pt_BR: 'Português (Brasil)',
-    ru: 'Русский', sv: 'Svenska', tr: 'Türkçe', uk: 'Українська',
+    sv: 'Svenska', tr: 'Türkçe', uk: 'Українська',
     zh_CN: '简体中文', cs: 'Čeština', hu: 'Magyar'
   };
 

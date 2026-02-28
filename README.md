@@ -55,7 +55,7 @@ Events: print started, finished, failed, cancelled, printer error, maintenance d
 
 ### Infrastructure
 - **Authentication** — optional password protection with session management
-- **18 languages** — English, Norwegian, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Russian, Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian
+- **17 languages** — English, Norwegian, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian
 - **HTTPS support** — auto-detected from `certs/` directory
 - **Browser notifications** — real-time alerts for print events
 - **Responsive design** — desktop, tablet, mobile
@@ -124,7 +124,7 @@ Events: print started, finished, failed, cancelled, printer error, maintenance d
 - Camera livestream via ffmpeg + jsmpeg
 - Print history and statistics
 - Multi-printer support
-- 18 language translations
+- 17 language translations
 
 ---
 
@@ -532,9 +532,9 @@ docker compose up -d
 
 ## Language Support
 
-18 languages available. Change via Settings > Language. Preference is saved per browser.
+17 languages available. Change via Settings > Language. Preference is saved per browser.
 
-English, Norwegian (Bokmal), German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (Brazil), Russian, Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian.
+English, Norwegian (Bokmal), German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (Brazil), Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian.
 
 ---
 
@@ -605,7 +605,7 @@ bambu-dashboard/
 │   │   ├── components/        # 27 UI components
 │   │   ├── utils/             # Shared utilities
 │   │   └── lib/               # Third-party (jsmpeg)
-│   ├── lang/                  # 18 language files
+│   ├── lang/                  # 17 language files
 │   └── assets/                # Icons and fonts
 ├── config.example.json        # Configuration template
 ├── egg-bambu-dashboard.json   # Pterodactyl egg
