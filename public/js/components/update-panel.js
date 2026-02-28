@@ -73,7 +73,7 @@
             <div class="update-available-title">${t('update.new_version', { version: status.latest })}</div>`;
         if (status.publishedAt) {
           const d = new Date(status.publishedAt);
-          html += `<div class="update-published">${t('update.published')} ${d.toLocaleDateString()}</div>`;
+          html += `<div class="update-published">${t('update.published')} ${d.toLocaleDateString(window.i18n?.getLocale?.() || 'nb')}</div>`;
         }
         if (status.changelog) {
           html += `
@@ -97,7 +97,7 @@
       }
 
       if (status.lastCheck) {
-        html += `<div class="text-muted" style="font-size:0.75rem;margin-top:8px">${t('update.last_check')}: ${new Date(status.lastCheck).toLocaleString()}</div>`;
+        html += `<div class="text-muted" style="font-size:0.75rem;margin-top:8px">${t('update.last_check')}: ${new Date(status.lastCheck).toLocaleString(window.i18n?.getLocale?.() || 'nb')}</div>`;
       }
 
       html += `<div style="margin-top:8px"><button class="form-btn form-btn-sm" onclick="checkForUpdate()">${t('update.check_now')}</button></div>`;

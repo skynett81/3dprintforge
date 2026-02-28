@@ -131,7 +131,7 @@
 
       let html = `<table class="data-table"><thead><tr><th>${t('printer_info.fw_module')}</th><th>${t('printer_info.fw_version')}</th><th>${t('printer_info.fw_hw')}</th><th>${t('history.date')}</th></tr></thead><tbody>`;
       for (const fw of history) {
-        const date = fw.timestamp ? new Date(fw.timestamp).toLocaleDateString() : '--';
+        const date = fw.timestamp ? new Date(fw.timestamp).toLocaleDateString(window.i18n?.getLocale?.() || 'nb') : '--';
         html += `<tr><td>${esc(fw.module)}</td><td>${esc(fw.sw_ver)}</td><td>${esc(fw.hw_ver) || '--'}</td><td>${date}</td></tr>`;
       }
       html += `</tbody></table>`;
