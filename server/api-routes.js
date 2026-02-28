@@ -382,7 +382,14 @@ export async function handleApiRequest(req, res) {
       const printerId = url.searchParams.get('printer_id');
       if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
       if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
-      return sendJson(res, _guard.getSettings(printerId) || { printer_id: printerId, enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 });
+      return sendJson(res, _guard.getSettings(printerId) || {
+        printer_id: printerId, enabled: 1,
+        spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause',
+        temp_deviation_action: 'notify', filament_runout_action: 'notify', print_error_action: 'notify',
+        fan_failure_action: 'notify', print_stall_action: 'notify',
+        cooldown_seconds: 60, auto_resume: 0,
+        temp_deviation_threshold: 15, filament_low_pct: 5, stall_minutes: 10
+      });
     }
 
     if (method === 'PUT' && path === '/api/protection/settings') {

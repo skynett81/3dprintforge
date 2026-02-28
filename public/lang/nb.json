@@ -640,6 +640,17 @@
     "guard_overview": "Vaktstatus",
     "sensor_dashboard": "Sensordashbord",
     "last_event": "Siste hendelse",
-    "events_24h": "Hendelser (24t)"
+    "events_24h": "Hendelser (24t)",
+    "temp_deviation": "Temperaturavvik",
+    "filament_runout": "Filament lavt/tomt",
+    "print_error": "Printerfeil",
+    "fan_failure": "Viftesvikt",
+    "print_stall": "Utskrift stoppet opp",
+    "section_camera": "Kamera-AI",
+    "section_sensors": "Sensorer",
+    "thresholds": "Terskelverdier",
+    "temp_threshold": "Temp avvik",
+    "filament_threshold": "Filament lavt",
+    "stall_threshold": "Ventetid"
   }
 }

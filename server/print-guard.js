@@ -5,8 +5,27 @@ const ACTION_MAP = {
   spaghetti_detected: 'spaghetti_action',
   first_layer_issue: 'first_layer_action',
   foreign_object: 'foreign_object_action',
-  nozzle_clump: 'nozzle_clump_action'
+  nozzle_clump: 'nozzle_clump_action',
+  temp_deviation: 'temp_deviation_action',
+  filament_runout: 'filament_runout_action',
+  print_error: 'print_error_action',
+  fan_failure: 'fan_failure_action',
+  print_stall: 'print_stall_action'
 };
+
+const EVENT_LABELS = {
+  spaghetti_detected: 'Spaghetti detected',
+  first_layer_issue: 'First layer issue',
+  foreign_object: 'Foreign object detected',
+  nozzle_clump: 'Nozzle clump detected',
+  temp_deviation: 'Temperature deviation',
+  filament_runout: 'Filament low/runout',
+  print_error: 'Printer error',
+  fan_failure: 'Fan failure',
+  print_stall: 'Print stalled'
+};
+
+const ACTION_LABELS = { notify: 'Notify only', pause: 'Print paused', stop: 'Print stopped' };
 
 export class PrintGuardService {
   constructor(printerManager, notifier, broadcast) {
@@ -14,9 +33,174 @@ export class PrintGuardService {
     this.notifier = notifier;
     this.broadcast = broadcast;
     this._cooldowns = new Map(); // printerId:eventType → timestamp
+    this._stallTracking = new Map(); // printerId → { percent, layer, since }
+    this._lastErrorCode = new Map(); // printerId → last error code
   }
 
+  // Called from XCam events (camera AI detection)
   handleEvent(printerId, eventType, printId) {
+    this._processEvent(printerId, eventType, printId);
+  }
+
+  // Called on every MQTT status update — checks all sensor data
+  processSensorData(printerId, state) {
+    try {
+      const settings = getProtectionSettings(printerId);
+      if (!settings || !settings.enabled) return;
+
+      const gcodeState = state.gcode_state || 'IDLE';
+      const isPrinting = gcodeState === 'RUNNING' || gcodeState === 'PAUSE' || gcodeState === 'PREPARE' || gcodeState === 'HEATING';
+
+      // Only monitor sensors during active prints
+      if (!isPrinting) {
+        // Clear stall tracking when not printing
+        this._stallTracking.delete(printerId);
+        this._lastErrorCode.delete(printerId);
+        return;
+      }
+
+      const printer = this.pm.printers.get(printerId);
+      const printId = printer?.tracker?.currentPrint?.id || null;
+
+      this._checkTemperature(printerId, state, settings, printId);
+      this._checkFilament(printerId, state, settings, printId);
+      this._checkPrintError(printerId, state, settings, printId);
+      this._checkFans(printerId, state, settings, printId);
+      this._checkPrintStall(printerId, state, settings, printId);
+    } catch (e) {
+      // Silent — don't break MQTT flow
+    }
+  }
+
+  _checkTemperature(printerId, state, settings, printId) {
+    if (settings.temp_deviation_action === 'ignore') return;
+    const threshold = settings.temp_deviation_threshold || 15;
+
+    // Check nozzle temperature deviation
+    const nozzleTemp = state.nozzle_temper;
+    const nozzleTarget = state.nozzle_target_temper;
+    if (nozzleTemp != null && nozzleTarget != null && nozzleTarget > 0) {
+      const diff = Math.abs(nozzleTemp - nozzleTarget);
+      if (diff > threshold) {
+        this._processEvent(printerId, 'temp_deviation', printId,
+          `Nozzle: ${nozzleTemp}°C (target ${nozzleTarget}°C, deviation ${diff.toFixed(1)}°C)`);
+        return;
+      }
+    }
+
+    // Check bed temperature deviation
+    const bedTemp = state.bed_temper;
+    const bedTarget = state.bed_target_temper;
+    if (bedTemp != null && bedTarget != null && bedTarget > 0) {
+      const diff = Math.abs(bedTemp - bedTarget);
+      if (diff > threshold) {
+        this._processEvent(printerId, 'temp_deviation', printId,
+          `Bed: ${bedTemp}°C (target ${bedTarget}°C, deviation ${diff.toFixed(1)}°C)`);
+      }
+    }
+  }
+
+  _checkFilament(printerId, state, settings, printId) {
+    if (settings.filament_runout_action === 'ignore') return;
+    const lowPct = settings.filament_low_pct || 5;
+
+    const amsUnits = state.ams?.ams;
+    if (!Array.isArray(amsUnits)) return;
+
+    const activeTray = state.tray_now;
+
+    for (const unit of amsUnits) {
+      if (!Array.isArray(unit.tray)) continue;
+      for (const tray of unit.tray) {
+        // Only alert for the active tray or any tray with filament that's critically low
+        const remain = tray.remain;
+        if (remain == null || remain < 0) continue;
+
+        // Check if this tray is active
+        const trayKey = `${unit.id}_${tray.id}`;
+        const isActive = activeTray != null && String(activeTray) === String(tray.id);
+
+        if (remain <= lowPct && isActive) {
+          const trayName = tray.tray_type || `AMS${unit.id} Slot ${tray.id}`;
+          this._processEvent(printerId, 'filament_runout', printId,
+            `${trayName}: ${remain}% remaining`);
+          return; // Only one alert per cycle
+        }
+      }
+    }
+  }
+
+  _checkPrintError(printerId, state, settings, printId) {
+    if (settings.print_error_action === 'ignore') return;
+
+    const errorCode = state.print_error;
+    if (!errorCode || errorCode === 0 || errorCode === '0') return;
+
+    // Avoid re-alerting for the same error
+    const lastError = this._lastErrorCode.get(printerId);
+    if (lastError === errorCode) return;
+    this._lastErrorCode.set(printerId, errorCode);
+
+    this._processEvent(printerId, 'print_error', printId,
+      `Error code: ${errorCode}`);
+  }
+
+  _checkFans(printerId, state, settings, printId) {
+    if (settings.fan_failure_action === 'ignore') return;
+
+    const gcodeState = state.gcode_state;
+    if (gcodeState !== 'RUNNING') return; // Only check during active printing
+
+    // Heatbreak fan should always be running during print
+    const heatbreakSpeed = state.heatbreak_fan_speed;
+    if (heatbreakSpeed != null && heatbreakSpeed === 0) {
+      this._processEvent(printerId, 'fan_failure', printId,
+        'Heatbreak fan stopped during print');
+      return;
+    }
+
+    // If nozzle is at temperature, cooling fan should generally be active
+    // (some materials print without part fan, so only check heatbreak)
+  }
+
+  _checkPrintStall(printerId, state, settings, printId) {
+    if (settings.print_stall_action === 'ignore') return;
+    const stallMinutes = settings.stall_minutes || 10;
+
+    const gcodeState = state.gcode_state;
+    if (gcodeState !== 'RUNNING') {
+      this._stallTracking.delete(printerId);
+      return;
+    }
+
+    const percent = state.mc_percent || 0;
+    const layer = state.layer_num || 0;
+    const now = Date.now();
+
+    const prev = this._stallTracking.get(printerId);
+    if (!prev) {
+      this._stallTracking.set(printerId, { percent, layer, since: now });
+      return;
+    }
+
+    // Progress changed — reset tracking
+    if (percent !== prev.percent || layer !== prev.layer) {
+      this._stallTracking.set(printerId, { percent, layer, since: now });
+      return;
+    }
+
+    // Progress hasn't changed — check if stalled long enough
+    const stalledMs = now - prev.since;
+    if (stalledMs >= stallMinutes * 60 * 1000) {
+      this._processEvent(printerId, 'print_stall', printId,
+        `Stuck at ${percent}% layer ${layer} for ${Math.floor(stalledMs / 60000)} min`);
+      // Reset so we don't spam (cooldown handles the rest)
+      this._stallTracking.set(printerId, { percent, layer, since: now });
+    }
+  }
+
+  // Core event processing — shared by XCam and sensor events
+  _processEvent(printerId, eventType, printId, notes) {
     try {
       const settings = getProtectionSettings(printerId);
       if (!settings || !settings.enabled) return;
@@ -46,7 +230,8 @@ export class PrintGuardService {
         printer_id: printerId,
         event_type: eventType,
         action_taken: action,
-        print_id: printId || null
+        print_id: printId || null,
+        notes: notes || null
       });
 
       // Broadcast to frontend
@@ -54,6 +239,7 @@ export class PrintGuardService {
         printerId,
         eventType,
         action,
+        notes: notes || null,
         timestamp: new Date().toISOString()
       });
 
@@ -61,18 +247,12 @@ export class PrintGuardService {
       if (this.notifier) {
         const printer = this.pm.printers.get(printerId);
         const printerName = printer?.config?.name || printerId;
-        const labels = {
-          spaghetti_detected: 'Spaghetti detected',
-          first_layer_issue: 'First layer issue',
-          foreign_object: 'Foreign object detected',
-          nozzle_clump: 'Nozzle clump detected'
-        };
-        const actionLabels = { notify: 'Notify only', pause: 'Print paused', stop: 'Print stopped' };
         this.notifier.notify('protection_alert', {
           printerName,
           printer_id: printerId,
-          eventType: labels[eventType] || eventType,
-          action: actionLabels[action] || action
+          eventType: EVENT_LABELS[eventType] || eventType,
+          action: ACTION_LABELS[action] || action,
+          notes: notes || ''
         });
       }
     } catch (e) {

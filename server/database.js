@@ -169,6 +169,7 @@ function _runMigrations() {
     { version: 9, up: _mig009_notifications },
     { version: 10, up: _mig010_update_history },
     { version: 11, up: _mig011_protection },
+    { version: 12, up: _mig012_sensor_guards },
   ];
 
   for (const m of migrations) {
@@ -370,6 +371,22 @@ function _mig011_protection() {
     );
     CREATE INDEX IF NOT EXISTS idx_protection_log_printer ON protection_log(printer_id);
   `);
+}
+
+function _mig012_sensor_guards() {
+  const cols = [
+    ['temp_deviation_action', "TEXT NOT NULL DEFAULT 'notify'"],
+    ['filament_runout_action', "TEXT NOT NULL DEFAULT 'notify'"],
+    ['print_error_action', "TEXT NOT NULL DEFAULT 'notify'"],
+    ['fan_failure_action', "TEXT NOT NULL DEFAULT 'notify'"],
+    ['print_stall_action', "TEXT NOT NULL DEFAULT 'notify'"],
+    ['temp_deviation_threshold', 'INTEGER NOT NULL DEFAULT 15'],
+    ['filament_low_pct', 'INTEGER NOT NULL DEFAULT 5'],
+    ['stall_minutes', 'INTEGER NOT NULL DEFAULT 10']
+  ];
+  for (const [col, type] of cols) {
+    try { db.exec(`ALTER TABLE protection_settings ADD COLUMN ${col} ${type}`); } catch (e) { /* exists */ }
+  }
 }
 
 // ---- Printer CRUD ----
@@ -1051,8 +1068,10 @@ export function getProtectionSettings(printerId) {
 
 export function upsertProtectionSettings(printerId, settings) {
   db.prepare(`INSERT INTO protection_settings
-    (printer_id, enabled, spaghetti_action, first_layer_action, foreign_object_action, nozzle_clump_action, cooldown_seconds, auto_resume)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (printer_id, enabled, spaghetti_action, first_layer_action, foreign_object_action, nozzle_clump_action,
+     cooldown_seconds, auto_resume, temp_deviation_action, filament_runout_action, print_error_action,
+     fan_failure_action, print_stall_action, temp_deviation_threshold, filament_low_pct, stall_minutes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(printer_id) DO UPDATE SET
       enabled = excluded.enabled,
       spaghetti_action = excluded.spaghetti_action,
@@ -1060,7 +1079,15 @@ export function upsertProtectionSettings(printerId, settings) {
       foreign_object_action = excluded.foreign_object_action,
       nozzle_clump_action = excluded.nozzle_clump_action,
       cooldown_seconds = excluded.cooldown_seconds,
-      auto_resume = excluded.auto_resume
+      auto_resume = excluded.auto_resume,
+      temp_deviation_action = excluded.temp_deviation_action,
+      filament_runout_action = excluded.filament_runout_action,
+      print_error_action = excluded.print_error_action,
+      fan_failure_action = excluded.fan_failure_action,
+      print_stall_action = excluded.print_stall_action,
+      temp_deviation_threshold = excluded.temp_deviation_threshold,
+      filament_low_pct = excluded.filament_low_pct,
+      stall_minutes = excluded.stall_minutes
   `).run(
     printerId,
     settings.enabled ?? 1,
@@ -1069,7 +1096,15 @@ export function upsertProtectionSettings(printerId, settings) {
     settings.foreign_object_action || 'pause',
     settings.nozzle_clump_action || 'pause',
     settings.cooldown_seconds ?? 60,
-    settings.auto_resume ?? 0
+    settings.auto_resume ?? 0,
+    settings.temp_deviation_action || 'notify',
+    settings.filament_runout_action || 'notify',
+    settings.print_error_action || 'notify',
+    settings.fan_failure_action || 'notify',
+    settings.print_stall_action || 'notify',
+    settings.temp_deviation_threshold ?? 15,
+    settings.filament_low_pct ?? 5,
+    settings.stall_minutes ?? 10
   );
 }
 

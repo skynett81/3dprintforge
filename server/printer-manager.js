@@ -79,6 +79,7 @@ export class PrinterManager {
           tracker.update(printData);
           sampler.update(printData);
           if (this._notifier) this._notifier.updateBedMonitor(id, printerConf.name, printData);
+          if (this.guard) this.guard.processSensorData(id, printData);
         }
       },
       printerState: {}

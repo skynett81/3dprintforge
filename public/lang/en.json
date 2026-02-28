@@ -640,6 +640,17 @@
     "guard_overview": "Guard status",
     "sensor_dashboard": "Sensor dashboard",
     "last_event": "Last event",
-    "events_24h": "Events (24h)"
+    "events_24h": "Events (24h)",
+    "temp_deviation": "Temperature deviation",
+    "filament_runout": "Filament low/runout",
+    "print_error": "Printer error",
+    "fan_failure": "Fan failure",
+    "print_stall": "Print stalled",
+    "section_camera": "Camera AI",
+    "section_sensors": "Sensors",
+    "thresholds": "Thresholds",
+    "temp_threshold": "Temp deviation",
+    "filament_threshold": "Filament low",
+    "stall_threshold": "Stall time"
   }
 }

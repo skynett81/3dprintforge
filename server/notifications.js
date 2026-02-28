@@ -539,7 +539,7 @@ export class NotificationManager {
       case 'protection_alert':
         return {
           title: `Print Guard Alert — ${printer}`,
-          message: `Printer: ${printer}\nDetection: ${data.eventType || 'Unknown'}\nAction: ${data.action || 'notify'}`
+          message: `Printer: ${printer}\nDetection: ${data.eventType || 'Unknown'}\nAction: ${data.action || 'notify'}${data.notes ? '\nDetails: ' + data.notes : ''}`
         };
 
       default:

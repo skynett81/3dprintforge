@@ -31,11 +31,34 @@
   }
   function saveOrder(tabId, order) { localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(order)); }
 
+  // XCam (camera) events
+  const XCAM_EVENTS = ['spaghetti_detected', 'first_layer_issue', 'foreign_object', 'nozzle_clump'];
+  // Sensor events
+  const SENSOR_EVENTS = ['temp_deviation', 'filament_runout', 'print_error', 'fan_failure', 'print_stall'];
+  const ALL_EVENTS = [...XCAM_EVENTS, ...SENSOR_EVENTS];
+
   const EVENT_LABELS = {
     spaghetti_detected: 'protection.spaghetti',
     first_layer_issue:  'protection.first_layer',
     foreign_object:     'protection.foreign_object',
-    nozzle_clump:       'protection.nozzle_clump'
+    nozzle_clump:       'protection.nozzle_clump',
+    temp_deviation:     'protection.temp_deviation',
+    filament_runout:    'protection.filament_runout',
+    print_error:        'protection.print_error',
+    fan_failure:        'protection.fan_failure',
+    print_stall:        'protection.print_stall'
+  };
+
+  const EVENT_ICONS = {
+    spaghetti_detected: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12s2-4 4-4 4 4 4 4"/></svg>',
+    first_layer_issue:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="17" width="18" height="4" rx="1"/><path d="M7 17V13m5 4V9m5 8V5"/></svg>',
+    foreign_object:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    nozzle_clump:       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/></svg>',
+    temp_deviation:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>',
+    filament_runout:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>',
+    print_error:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    fan_failure:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 2C8 2 8 6 8 6s0 2 4 4c4-2 4-4 4-4s0-4-4-4z"/><path d="M12 22c4 0 4-4 4-4s0-2-4-4c-4 2-4 4-4 4s0 4 4 4z"/><path d="M2 12c0 4 4 4 4 4s2 0 4-4c-2-4-4-4-4-4s-4 0-4 4z"/><path d="M22 12c0-4-4-4-4-4s-2 0-4 4c2 4 4 4 4 4s4 0 4-4z"/></svg>',
+    print_stall:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
   };
 
   const ACTION_LABELS = {
@@ -43,6 +66,18 @@
     pause:  'protection.action_pause',
     stop:   'protection.action_stop',
     ignore: 'protection.action_ignore'
+  };
+
+  const ACTION_KEY_MAP = {
+    spaghetti_detected: 'spaghetti_action',
+    first_layer_issue: 'first_layer_action',
+    foreign_object: 'foreign_object_action',
+    nozzle_clump: 'nozzle_clump_action',
+    temp_deviation: 'temp_deviation_action',
+    filament_runout: 'filament_runout_action',
+    print_error: 'print_error_action',
+    fan_failure: 'fan_failure_action',
+    print_stall: 'print_stall_action'
   };
 
   function printerName(id) {
@@ -71,7 +106,7 @@
         h += `<div class="stats-detail-item">
           <span class="stats-detail-item-label" style="display:flex;align-items:center;gap:6px">
             <span style="width:8px;height:8px;border-radius:50%;background:${statusColor};display:inline-block"></span>
-            ${p.name}
+            ${esc(p.name)}
           </span>
           <span class="stats-detail-item-value">${statusText}${pAlerts.length ? ` <span style="color:var(--accent-red);margin-left:6px">${pAlerts.length} alert${pAlerts.length > 1 ? 's' : ''}</span>` : ''}</span>
         </div>`;
@@ -87,11 +122,15 @@
       for (const a of _alerts) {
         const evLabel = t(EVENT_LABELS[a.event_type] || a.event_type);
         const actLabel = t(ACTION_LABELS[a.action_taken] || a.action_taken);
-        h += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid rgba(248,81,73,0.2)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        const icon = EVENT_ICONS[a.event_type] || EVENT_ICONS.print_error;
+        const isSensor = SENSOR_EVENTS.includes(a.event_type);
+        const borderColor = isSensor ? 'rgba(88,166,255,0.2)' : 'rgba(248,81,73,0.2)';
+        const iconColor = isSensor ? 'var(--accent-blue)' : 'var(--accent-red)';
+        h += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid ${borderColor}">
+          <span style="color:${iconColor};flex-shrink:0">${icon}</span>
           <div style="flex:1;min-width:0">
-            <div style="font-size:0.8rem;font-weight:600">${printerName(a.printer_id)} — ${evLabel}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted)">${actLabel} · ${fmtTime(a.timestamp)}</div>
+            <div style="font-size:0.8rem;font-weight:600">${esc(printerName(a.printer_id))} — ${evLabel}</div>
+            <div style="font-size:0.7rem;color:var(--text-muted)">${actLabel} · ${fmtTime(a.timestamp)}${a.notes ? ` · ${esc(a.notes)}` : ''}</div>
           </div>
           <button class="form-btn form-btn-sm form-btn-secondary" onclick="resolveProtectionAlert(${a.id})">${t('protection.resolve')}</button>
         </div>`;
@@ -103,31 +142,30 @@
     'sensor-dashboard': () => {
       let h = `<div class="card-title">${t('protection.sensor_dashboard')}</div>`;
       if (!_printers.length) return h + '<div class="text-muted" style="font-size:0.8rem">No printers</div>';
-      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
-      const eventTypes = ['spaghetti_detected', 'first_layer_issue', 'foreign_object', 'nozzle_clump'];
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">';
+
       for (const p of _printers) {
         const s = _settings[p.id];
         const enabled = s ? s.enabled : 0;
         h += `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;border:1px solid var(--border-color)">
           <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
             <span style="width:8px;height:8px;border-radius:50%;background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'};display:inline-block"></span>
-            ${p.name}
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">`;
-        for (const et of eventTypes) {
-          const action = s ? s[et.replace('_detected', '_action').replace('_issue', '_action').replace('_object', '_object_action').replace('nozzle_clump', 'nozzle_clump_action')] : 'notify';
-          const actionKey = et === 'spaghetti_detected' ? 'spaghetti_action' :
-                           et === 'first_layer_issue' ? 'first_layer_action' :
-                           et === 'foreign_object' ? 'foreign_object_action' : 'nozzle_clump_action';
-          const actualAction = s ? (s[actionKey] || 'notify') : 'notify';
-          const actColor = actualAction === 'pause' ? 'var(--accent-orange)' :
-                          actualAction === 'stop' ? 'var(--accent-red)' :
-                          actualAction === 'ignore' ? 'var(--text-muted)' : 'var(--accent-blue)';
-          const shortLabel = t(EVENT_LABELS[et] || et).split(' ')[0];
-          h += `<div style="font-size:0.65rem;padding:3px 6px;border-radius:6px;background:var(--bg-secondary);text-align:center">
-            <div style="color:var(--text-muted)">${shortLabel}</div>
-            <div style="color:${actColor};font-weight:600">${t(ACTION_LABELS[actualAction] || actualAction)}</div>
+            ${esc(p.name)}
           </div>`;
+
+        // XCam section
+        h += `<div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_camera')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">`;
+        for (const et of XCAM_EVENTS) {
+          h += _sensorCell(s, et);
+        }
+        h += '</div>';
+
+        // Sensor section
+        h += `<div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_sensors')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">`;
+        for (const et of SENSOR_EVENTS) {
+          h += _sensorCell(s, et);
         }
         h += '</div></div>';
       }
@@ -140,22 +178,51 @@
       if (!_printers.length) return h + '<div class="text-muted">No printers</div>';
       h += '<div style="display:flex;flex-direction:column;gap:16px">';
       for (const p of _printers) {
-        const s = _settings[p.id] || { enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 };
+        const s = _settings[p.id] || _defaultSettings();
         h += `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:14px;border:1px solid var(--border-color)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <span style="font-size:0.85rem;font-weight:600">${p.name}</span>
+            <span style="font-size:0.85rem;font-weight:600">${esc(p.name)}</span>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
               <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleProtection('${p.id}', this.checked)" style="accent-color:var(--accent-green)">
               ${t('protection.enabled')}
             </label>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          </div>`;
+
+        // Camera AI section
+        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_camera')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
             ${_settingsRow(p.id, 'spaghetti_action', 'protection.spaghetti', s.spaghetti_action)}
             ${_settingsRow(p.id, 'first_layer_action', 'protection.first_layer', s.first_layer_action)}
             ${_settingsRow(p.id, 'foreign_object_action', 'protection.foreign_object', s.foreign_object_action)}
             ${_settingsRow(p.id, 'nozzle_clump_action', 'protection.nozzle_clump', s.nozzle_clump_action)}
-          </div>
-          <div style="display:flex;gap:12px;margin-top:10px;align-items:center">
+          </div>`;
+
+        // Sensor section
+        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_sensors')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            ${_settingsRow(p.id, 'temp_deviation_action', 'protection.temp_deviation', s.temp_deviation_action)}
+            ${_settingsRow(p.id, 'filament_runout_action', 'protection.filament_runout', s.filament_runout_action)}
+            ${_settingsRow(p.id, 'print_error_action', 'protection.print_error', s.print_error_action)}
+            ${_settingsRow(p.id, 'fan_failure_action', 'protection.fan_failure', s.fan_failure_action)}
+            ${_settingsRow(p.id, 'print_stall_action', 'protection.print_stall', s.print_stall_action)}
+          </div>`;
+
+        // Thresholds section
+        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.thresholds')}</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.temp_threshold')}:
+              <input type="number" value="${s.temp_deviation_threshold ?? 15}" min="5" max="50" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'temp_deviation_threshold', parseInt(this.value))">°C
+            </label>
+            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.filament_threshold')}:
+              <input type="number" value="${s.filament_low_pct ?? 5}" min="1" max="30" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'filament_low_pct', parseInt(this.value))">%
+            </label>
+            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.stall_threshold')}:
+              <input type="number" value="${s.stall_minutes ?? 10}" min="3" max="60" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'stall_minutes', parseInt(this.value))">${t('time.m')}
+            </label>
+          </div>`;
+
+        // General settings
+        h += `<div style="display:flex;gap:12px;align-items:center">
             <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.cooldown')}:
               <input type="number" value="${s.cooldown_seconds}" min="10" max="600" style="width:60px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'cooldown_seconds', parseInt(this.value))">
             </label>
@@ -178,11 +245,14 @@
         const evLabel = t(EVENT_LABELS[entry.event_type] || entry.event_type);
         const actLabel = t(ACTION_LABELS[entry.action_taken] || entry.action_taken);
         const resolvedStyle = entry.resolved ? 'opacity:0.5' : '';
+        const isSensor = SENSOR_EVENTS.includes(entry.event_type);
+        const dotColor = entry.resolved ? 'var(--text-muted)' : (isSensor ? 'var(--accent-blue)' : 'var(--accent-red)');
+        const icon = EVENT_ICONS[entry.event_type] || '';
         h += `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:0.78rem;border-bottom:1px solid var(--border-color);${resolvedStyle}">
-          <span style="width:8px;height:8px;border-radius:50%;background:${entry.resolved ? 'var(--text-muted)' : 'var(--accent-red)'};flex-shrink:0"></span>
+          <span style="color:${dotColor};flex-shrink:0">${icon}</span>
           <span style="min-width:100px;color:var(--text-muted)">${fmtTime(entry.timestamp)}</span>
-          <span style="min-width:80px;font-weight:500">${printerName(entry.printer_id)}</span>
-          <span style="flex:1">${evLabel}</span>
+          <span style="min-width:80px;font-weight:500">${esc(printerName(entry.printer_id))}</span>
+          <span style="flex:1">${evLabel}${entry.notes ? ` <span style="color:var(--text-muted);font-size:0.7rem">(${esc(entry.notes)})</span>` : ''}</span>
           <span style="min-width:80px;color:var(--text-muted)">${actLabel}</span>
           ${entry.resolved ? '<span style="font-size:0.7rem;color:var(--accent-green)">Resolved</span>' : `<button class="form-btn form-btn-sm form-btn-secondary" onclick="resolveProtectionAlert(${entry.id})" style="padding:2px 8px;font-size:0.7rem">${t('protection.resolve')}</button>`}
         </div>`;
@@ -191,6 +261,31 @@
       return h;
     }
   };
+
+  function _sensorCell(s, et) {
+    const actionKey = ACTION_KEY_MAP[et];
+    const actualAction = s ? (s[actionKey] || 'notify') : 'notify';
+    const actColor = actualAction === 'pause' ? 'var(--accent-orange)' :
+                    actualAction === 'stop' ? 'var(--accent-red)' :
+                    actualAction === 'ignore' ? 'var(--text-muted)' : 'var(--accent-blue)';
+    const icon = EVENT_ICONS[et] || '';
+    const label = t(EVENT_LABELS[et] || et);
+    return `<div style="font-size:0.65rem;padding:4px 6px;border-radius:6px;background:var(--bg-secondary);text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="color:var(--text-muted)">${icon}</span>
+      <div style="color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${label}</div>
+      <div style="color:${actColor};font-weight:600">${t(ACTION_LABELS[actualAction] || actualAction)}</div>
+    </div>`;
+  }
+
+  function _defaultSettings() {
+    return {
+      enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause',
+      temp_deviation_action: 'notify', filament_runout_action: 'notify', print_error_action: 'notify',
+      fan_failure_action: 'notify', print_stall_action: 'notify',
+      cooldown_seconds: 60, auto_resume: 0,
+      temp_deviation_threshold: 15, filament_low_pct: 5, stall_minutes: 10
+    };
+  }
 
   function _settingsRow(printerId, field, labelKey, value) {
     const options = ['notify', 'pause', 'stop', 'ignore'].map(v =>
@@ -308,7 +403,7 @@
   };
 
   window.toggleProtection = async function(printerId, enabled) {
-    const s = _settings[printerId] || { spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 };
+    const s = _settings[printerId] || _defaultSettings();
     s.enabled = enabled ? 1 : 0;
     s.printer_id = printerId;
     await fetch('/api/protection/settings', {
@@ -321,7 +416,7 @@
   };
 
   window.updateProtectionSetting = async function(printerId, field, value) {
-    const s = _settings[printerId] || { enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause', cooldown_seconds: 60, auto_resume: 0 };
+    const s = _settings[printerId] || _defaultSettings();
     s[field] = value;
     s.printer_id = printerId;
     await fetch('/api/protection/settings', {
