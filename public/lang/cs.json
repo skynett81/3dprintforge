@@ -525,6 +525,7 @@
     "speed": "Rychlost",
     "error": "Chyba",
     "no_error": "Žádná",
+    "has_errors": "Zobrazit chyby",
     "active": "aktivní",
     "unknown": "Neznámý"
   },

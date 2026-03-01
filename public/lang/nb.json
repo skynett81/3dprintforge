@@ -748,6 +748,7 @@
     "speed": "Hastighet",
     "error": "Feil",
     "no_error": "Ingen",
+    "has_errors": "Se feillogg",
     "active": "aktiv(e)",
     "unknown": "Ukjent"
   },

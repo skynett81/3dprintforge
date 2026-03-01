@@ -526,6 +526,7 @@
     "speed": "Snelheid",
     "error": "Fout",
     "no_error": "Geen",
+    "has_errors": "Foutlog bekijken",
     "active": "actief",
     "unknown": "Onbekend"
   },

@@ -526,6 +526,7 @@
     "speed": "속도",
     "error": "오류",
     "no_error": "없음",
+    "has_errors": "오류 로그 보기",
     "active": "활성",
     "unknown": "알 수 없음"
   },

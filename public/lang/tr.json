@@ -525,6 +525,7 @@
     "speed": "Hız",
     "error": "Hata",
     "no_error": "Yok",
+    "has_errors": "Hata günlüğünü görüntüle",
     "active": "aktif",
     "unknown": "Bilinmiyor"
   },

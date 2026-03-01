@@ -3665,6 +3665,14 @@ tr:hover .filament-delete-btn,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.qs-link {
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.qs-link:hover {
+  text-decoration: underline;
+}
 
 /* ---- Layout Lock Button ---- */
 .layout-lock-btn {

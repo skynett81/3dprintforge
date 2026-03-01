@@ -40,22 +40,19 @@
   function _renderCached() {
     const container = document.getElementById('sidebar-status-content');
     if (!container || !container._lastHtml) return;
-    // Re-render with cached error data
     const printerId = window.printerState?.getActivePrinterId();
     const errEl = container.querySelector('.qs-error-value');
     const guardEl = container.querySelector('.qs-guard-value');
     if (errEl) {
       const err = _cachedErrors[printerId];
       if (err) {
-        errEl.textContent = err.message || err.code;
-        errEl.style.color = err.severity === 'error' ? 'var(--accent-red)' : 'var(--accent-orange)';
+        errEl.innerHTML = `<a href="#errors" class="qs-link" style="color:var(--accent-red)">${t('quick_status.has_errors')}</a>`;
       }
     }
     if (guardEl) {
       const alerts = _cachedAlerts[printerId];
       if (alerts && alerts.length > 0) {
-        guardEl.textContent = `${alerts.length} ${t('quick_status.active')}`;
-        guardEl.style.color = 'var(--accent-orange)';
+        guardEl.innerHTML = `<a href="#protection" class="qs-link" style="color:var(--accent-orange)">${alerts.length} ${t('quick_status.active')}</a>`;
       }
     }
   }
@@ -123,16 +120,12 @@
 
     // Real-time error (from MQTT)
     const errCode = data.print_error || 0;
-
-    // Use cached DB error if no real-time error
     const cachedErr = _cachedErrors[printerId];
+    let hasError = errCode > 0 || !!cachedErr;
     let errStr, errColor;
-    if (errCode > 0) {
-      errStr = `0x${errCode.toString(16).toUpperCase()}`;
-      errColor = 'var(--accent-red)';
-    } else if (cachedErr) {
-      errStr = cachedErr.message || cachedErr.code;
-      errColor = cachedErr.severity === 'error' ? 'var(--accent-red)' : 'var(--accent-orange)';
+    if (hasError) {
+      errStr = `<a href="#errors" class="qs-link" style="color:var(--accent-red)">${t('quick_status.has_errors')}</a>`;
+      errColor = '';
     } else {
       errStr = t('quick_status.no_error');
       errColor = 'var(--accent-green)';
@@ -142,8 +135,8 @@
     const cachedAlerts = _cachedAlerts[printerId];
     let guardStr, guardColor;
     if (cachedAlerts && cachedAlerts.length > 0) {
-      guardStr = `${cachedAlerts.length} ${t('quick_status.active')}`;
-      guardColor = 'var(--accent-orange)';
+      guardStr = `<a href="#protection" class="qs-link" style="color:var(--accent-orange)">${cachedAlerts.length} ${t('quick_status.active')}</a>`;
+      guardColor = '';
     } else {
       guardStr = t('quick_status.no_error');
       guardColor = 'var(--accent-green)';

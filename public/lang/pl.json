@@ -525,6 +525,7 @@
     "speed": "Prędkość",
     "error": "Błąd",
     "no_error": "Brak",
+    "has_errors": "Zobacz dziennik błędów",
     "active": "aktywny",
     "unknown": "Nieznany"
   },

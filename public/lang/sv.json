@@ -526,6 +526,7 @@
     "speed": "Hastighet",
     "error": "Fel",
     "no_error": "Inga",
+    "has_errors": "Visa fellogg",
     "active": "aktiv(a)",
     "unknown": "Okänd"
   },

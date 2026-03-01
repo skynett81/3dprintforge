@@ -526,6 +526,7 @@
     "speed": "速度",
     "error": "エラー",
     "no_error": "なし",
+    "has_errors": "エラーログを表示",
     "active": "アクティブ",
     "unknown": "不明"
   },

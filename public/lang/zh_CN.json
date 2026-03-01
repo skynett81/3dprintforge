@@ -525,6 +525,7 @@
     "speed": "速度",
     "error": "错误",
     "no_error": "无",
+    "has_errors": "查看错误日志",
     "active": "活跃",
     "unknown": "未知"
   },

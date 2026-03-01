@@ -748,6 +748,7 @@
     "speed": "Speed",
     "error": "Error",
     "no_error": "None",
+    "has_errors": "View error log",
     "active": "active",
     "unknown": "Unknown"
   },

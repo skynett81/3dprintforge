@@ -526,6 +526,7 @@
     "speed": "Geschwindigkeit",
     "error": "Fehler",
     "no_error": "Keine",
+    "has_errors": "Fehlerlog anzeigen",
     "active": "aktiv",
     "unknown": "Unbekannt"
   },

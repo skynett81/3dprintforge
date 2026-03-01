@@ -525,6 +525,7 @@
     "speed": "Sebesség",
     "error": "Hiba",
     "no_error": "Nincs",
+    "has_errors": "Hibanapló megtekintése",
     "active": "aktív",
     "unknown": "Ismeretlen"
   },
