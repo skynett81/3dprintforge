@@ -19,11 +19,14 @@ export class BambuMqttClient {
   connect() {
     const url = `mqtts://${this.ip}:8883`;
     console.log(`[mqtt] Kobler til ${url}...`);
+    // Bambu Lab printers use self-signed certificates — TLS verification
+    // cannot be enabled without breaking connectivity. This is a known
+    // limitation of the Bambu Lab protocol.
 
     this.client = mqtt.connect(url, {
       username: 'bblp',
       password: this.accessCode,
-      rejectUnauthorized: false,
+      rejectUnauthorized: false, // Required: Bambu printers use self-signed certs
       keepalive: 30,
       reconnectPeriod: 5000,
       connectTimeout: 10000
@@ -38,7 +41,7 @@ export class BambuMqttClient {
         if (err) {
           console.error('[mqtt] Feil ved abonnering:', err.message);
         } else {
-          console.log(`[mqtt] Abonnerer pa ${topic}`);
+          console.log(`[mqtt] Abonnerer på ${topic}`);
           this._requestFullState();
         }
       });

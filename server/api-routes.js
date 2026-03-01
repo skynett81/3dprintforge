@@ -1,8 +1,12 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight } from './database.js';
+import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import https from 'node:https';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword } from './auth.js';
 
 // ---- Login rate limiter ----
@@ -39,6 +43,24 @@ let _updater = null;
 let _hub = null;
 let _guard = null;
 
+// SpoolmanDB community database cache
+const _spoolmanDbCache = { manufacturers: null, all: null };
+
+function _loadSpoolmanDb() {
+  if (_spoolmanDbCache.all) return _spoolmanDbCache;
+  try {
+    const raw = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'spoolmandb.json'), 'utf8');
+    _spoolmanDbCache.all = JSON.parse(raw);
+    const mfgSet = new Set();
+    for (const f of _spoolmanDbCache.all) mfgSet.add(f.manufacturer);
+    _spoolmanDbCache.manufacturers = [...mfgSet].sort().map(name => ({ id: name, name }));
+  } catch {
+    _spoolmanDbCache.all = [];
+    _spoolmanDbCache.manufacturers = [];
+  }
+  return _spoolmanDbCache;
+}
+
 export function setGuard(guard) {
   _guard = guard;
 }
@@ -53,6 +75,10 @@ export function setUpdater(updater) {
 
 export function setHub(hub) {
   _hub = hub;
+}
+
+function _broadcastInventory(action, entity, data) {
+  if (_broadcastFn) _broadcastFn('inventory_update', { action, entity, ...data, ts: Date.now() });
 }
 
 export function setApiBroadcast(fn) {
@@ -724,6 +750,474 @@ export async function handleApiRequest(req, res) {
       const description = lookupHmsCode(code);
       const wikiUrl = getHmsWikiUrl(code);
       return sendJson(res, { code, description: description || null, wiki_url: wikiUrl });
+    }
+
+    // ---- Inventory: Vendors ----
+    if (method === 'GET' && path === '/api/inventory/vendors') {
+      const filters = {};
+      if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
+      if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
+      if (filters.limit) {
+        const result = getVendors(filters);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
+        return res.end(JSON.stringify(result.rows));
+      }
+      return sendJson(res, getVendors());
+    }
+    if (method === 'POST' && path === '/api/inventory/vendors') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        try {
+          const vendor = addVendor(body);
+          _broadcastInventory('created', 'vendor', { id: vendor.id });
+          sendJson(res, vendor, 201);
+        } catch (e) { sendJson(res, { error: e.message }, 409); }
+      });
+    }
+    const vendorMatch = path.match(/^\/api\/inventory\/vendors\/(\d+)$/);
+    if (vendorMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        updateVendor(parseInt(vendorMatch[1]), body);
+        _broadcastInventory('updated', 'vendor', { id: parseInt(vendorMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    if (vendorMatch && method === 'DELETE') {
+      deleteVendor(parseInt(vendorMatch[1]));
+      _broadcastInventory('deleted', 'vendor', { id: parseInt(vendorMatch[1]) });
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Inventory: Filament Profiles ----
+    if (method === 'GET' && path === '/api/inventory/filaments') {
+      const filters = {};
+      if (url.searchParams.get('vendor_id')) filters.vendor_id = parseInt(url.searchParams.get('vendor_id'));
+      if (url.searchParams.get('material')) filters.material = url.searchParams.get('material');
+      if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
+      if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
+      if (filters.limit) {
+        const result = getFilamentProfiles(filters);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
+        return res.end(JSON.stringify(result.rows));
+      }
+      return sendJson(res, getFilamentProfiles(filters));
+    }
+    const fpMatch = path.match(/^\/api\/inventory\/filaments\/(\d+)$/);
+    if (fpMatch && method === 'GET') {
+      const profile = getFilamentProfile(parseInt(fpMatch[1]));
+      if (!profile) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, profile);
+    }
+    if (method === 'POST' && path === '/api/inventory/filaments') {
+      return readBody(req, (body) => {
+        if (!body.name || !body.material) return sendJson(res, { error: 'name and material required' }, 400);
+        const result = addFilamentProfile(body);
+        _broadcastInventory('created', 'profile', { id: result.id });
+        sendJson(res, result, 201);
+      });
+    }
+    if (fpMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        if (!body.name || !body.material) return sendJson(res, { error: 'name and material required' }, 400);
+        updateFilamentProfile(parseInt(fpMatch[1]), body);
+        _broadcastInventory('updated', 'profile', { id: parseInt(fpMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    if (fpMatch && method === 'DELETE') {
+      deleteFilamentProfile(parseInt(fpMatch[1]));
+      _broadcastInventory('deleted', 'profile', { id: parseInt(fpMatch[1]) });
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Inventory: Spools ----
+    if (method === 'GET' && path === '/api/inventory/spools') {
+      const filters = {};
+      if (url.searchParams.has('archived')) { const av = url.searchParams.get('archived'); filters.archived = av === '1' || av === 'true'; }
+      if (url.searchParams.get('material')) filters.material = url.searchParams.get('material');
+      if (url.searchParams.get('vendor_id')) filters.vendor_id = parseInt(url.searchParams.get('vendor_id'));
+      if (url.searchParams.get('location')) filters.location = url.searchParams.get('location');
+      if (url.searchParams.get('printer_id')) filters.printer_id = url.searchParams.get('printer_id');
+      if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
+      if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
+      const result = getSpools(filters);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
+      return res.end(JSON.stringify(result.rows));
+    }
+    const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
+    if (spoolMatch && method === 'GET') {
+      const spool = getSpool(parseInt(spoolMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, spool);
+    }
+    if (method === 'POST' && path === '/api/inventory/spools') {
+      return readBody(req, (body) => {
+        const result = addSpool(body);
+        _broadcastInventory('created', 'spool', { id: result.id });
+        sendJson(res, result, 201);
+      });
+    }
+    if (spoolMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateSpool(parseInt(spoolMatch[1]), body);
+        _broadcastInventory('updated', 'spool', { id: parseInt(spoolMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    if (spoolMatch && method === 'DELETE') {
+      deleteSpool(parseInt(spoolMatch[1]));
+      _broadcastInventory('deleted', 'spool', { id: parseInt(spoolMatch[1]) });
+      return sendJson(res, { ok: true });
+    }
+
+    // Spool actions
+    const spoolUseMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/use$/);
+    if (spoolUseMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        let weightG = body.weight_g;
+        if (!weightG && body.use_length) {
+          const spool = getSpool(parseInt(spoolUseMatch[1]));
+          if (!spool) return sendJson(res, { error: 'Not found' }, 404);
+          weightG = lengthToWeight(body.use_length, spool.density, spool.diameter);
+          if (!weightG) return sendJson(res, { error: 'Cannot convert length: missing density/diameter on profile' }, 400);
+        }
+        if (!weightG) return sendJson(res, { error: 'weight_g or use_length required' }, 400);
+        useSpoolWeight(parseInt(spoolUseMatch[1]), weightG, body.source || 'manual', null, body.printer_id || null);
+        _broadcastInventory('used', 'spool', { id: parseInt(spoolUseMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    const spoolArchiveMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/archive$/);
+    if (spoolArchiveMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        archiveSpool(parseInt(spoolArchiveMatch[1]), body.archived !== false);
+        _broadcastInventory('archived', 'spool', { id: parseInt(spoolArchiveMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    const spoolAssignMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/assign$/);
+    if (spoolAssignMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        assignSpoolToSlot(parseInt(spoolAssignMatch[1]), body.printer_id || null, body.ams_unit ?? null, body.ams_tray ?? null);
+        _broadcastInventory('assigned', 'spool', { id: parseInt(spoolAssignMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- Inventory: Usage Log ----
+    if (method === 'GET' && path === '/api/inventory/usage') {
+      const filters = {};
+      if (url.searchParams.get('spool_id')) filters.spool_id = parseInt(url.searchParams.get('spool_id'));
+      if (url.searchParams.get('printer_id')) filters.printer_id = url.searchParams.get('printer_id');
+      filters.limit = parseInt(url.searchParams.get('limit') || '100');
+      return sendJson(res, getSpoolUsageLog(filters));
+    }
+
+    // ---- Inventory: Locations ----
+    if (method === 'GET' && path === '/api/inventory/locations') {
+      return sendJson(res, getLocations());
+    }
+    if (method === 'POST' && path === '/api/inventory/locations') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        try {
+          const loc = addLocation(body);
+          sendJson(res, loc, 201);
+        } catch (e) { sendJson(res, { error: e.message }, 409); }
+      });
+    }
+    const locMatch = path.match(/^\/api\/inventory\/locations\/(\d+)$/);
+    if (locMatch && (method === 'PATCH' || method === 'PUT')) {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        const result = updateLocation(parseInt(locMatch[1]), body);
+        if (!result) return sendJson(res, { error: 'Not found' }, 404);
+        sendJson(res, { ok: true, ...result });
+      });
+    }
+    if (locMatch && method === 'DELETE') {
+      deleteLocation(parseInt(locMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Inventory: Stats ----
+    if (method === 'GET' && path === '/api/inventory/stats') {
+      return sendJson(res, getInventoryStats());
+    }
+
+    // ---- Inventory: Search ----
+    if (method === 'GET' && path === '/api/inventory/search') {
+      const q = url.searchParams.get('q');
+      if (!q || q.length < 2) return sendJson(res, { error: 'Query too short' }, 400);
+      const limit = parseInt(url.searchParams.get('limit')) || 50;
+      const offset = parseInt(url.searchParams.get('offset')) || 0;
+      const result = searchSpools(q, limit, offset);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
+      return res.end(JSON.stringify(result.rows));
+    }
+
+    // ---- Inventory: Duplicate Spool ----
+    const spoolDuplicateMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/duplicate$/);
+    if (spoolDuplicateMatch && method === 'POST') {
+      const result = duplicateSpool(parseInt(spoolDuplicateMatch[1]));
+      if (!result) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, result, 201);
+    }
+
+    // ---- Inventory: Measure Weight ----
+    const spoolMeasureMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/measure$/);
+    if (spoolMeasureMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        if (!body.gross_weight_g || body.gross_weight_g <= 0) return sendJson(res, { error: 'gross_weight_g required' }, 400);
+        const result = measureSpoolWeight(parseInt(spoolMeasureMatch[1]), body.gross_weight_g);
+        if (!result) return sendJson(res, { error: 'Not found' }, 404);
+        sendJson(res, result);
+      });
+    }
+
+    // ---- Inventory: Export ----
+    if (method === 'GET' && path === '/api/inventory/export/spools') {
+      const format = url.searchParams.get('format') || 'csv';
+      const rows = getAllSpoolsForExport();
+      if (format === 'json') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="spools.json"' });
+        return res.end(JSON.stringify(rows, null, 2));
+      }
+      const header = 'ID;Profile;Material;Vendor;Color;Remaining (g);Used (g);Initial (g);Cost;Location;Lot Number;Printer;Remaining (m);Created\n';
+      const csv = '\uFEFF' + header + rows.map(r =>
+        `${r.id};${(r.profile_name || '').replace(/;/g, ',')};${r.material || ''};${(r.vendor_name || '').replace(/;/g, ',')};${r.color_name || ''};${r.remaining_weight_g || 0};${r.used_weight_g || 0};${r.initial_weight_g || 0};${r.cost || ''};${(r.location || '').replace(/;/g, ',')};${r.lot_number || ''};${r.printer_id || ''};${r.remaining_length_m || ''};${r.created_at || ''}`
+      ).join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spools.csv"' });
+      return res.end(csv);
+    }
+    if (method === 'GET' && path === '/api/inventory/export/filaments') {
+      const format = url.searchParams.get('format') || 'csv';
+      const rows = getAllFilamentProfilesForExport();
+      if (format === 'json') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="filaments.json"' });
+        return res.end(JSON.stringify(rows, null, 2));
+      }
+      const header = 'ID;Name;Material;Vendor;Color;Color Hex;Density;Diameter;Spool Weight;Article Number;Price\n';
+      const csv = '\uFEFF' + header + rows.map(r =>
+        `${r.id};${(r.name || '').replace(/;/g, ',')};${r.material || ''};${(r.vendor_name || '').replace(/;/g, ',')};${r.color_name || ''};${r.color_hex || ''};${r.density};${r.diameter};${r.spool_weight_g};${r.article_number || ''};${r.price || ''}`
+      ).join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="filaments.csv"' });
+      return res.end(csv);
+    }
+    if (method === 'GET' && path === '/api/inventory/export/vendors') {
+      const format = url.searchParams.get('format') || 'csv';
+      const rows = getAllVendorsForExport();
+      if (format === 'json') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="vendors.json"' });
+        return res.end(JSON.stringify(rows, null, 2));
+      }
+      const header = 'ID;Name;Website;Empty Spool Weight\n';
+      const csv = '\uFEFF' + header + rows.map(r =>
+        `${r.id};${(r.name || '').replace(/;/g, ',')};${r.website || ''};${r.empty_spool_weight_g || ''}`
+      ).join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="vendors.csv"' });
+      return res.end(csv);
+    }
+
+    // ---- Inventory: Color Similarity ----
+    if (method === 'GET' && path === '/api/inventory/colors/similar') {
+      const hex = (url.searchParams.get('hex') || '').replace('#', '');
+      if (!hex || hex.length < 6) return sendJson(res, { error: 'hex required (6 chars)' }, 400);
+      const maxDe = parseFloat(url.searchParams.get('max_delta_e')) || 30;
+      return sendJson(res, findSimilarColors(hex, maxDe));
+    }
+
+    // ---- Inventory: QR Data ----
+    const spoolQrMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/qr$/);
+    if (spoolQrMatch && method === 'GET') {
+      const spool = getSpool(parseInt(spoolQrMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Not found' }, 404);
+      const host = req.headers.host || 'localhost:3000';
+      const proto = req.socket.encrypted ? 'https' : 'http';
+      return sendJson(res, {
+        qr_data: `${proto}://${host}/#filament/spool/${spool.id}`,
+        spool_id: spool.id,
+        label: {
+          name: spool.profile_name || spool.material || '--',
+          vendor: spool.vendor_name || '',
+          material: spool.material || '',
+          color: spool.color_name || '',
+          color_hex: spool.color_hex || '',
+          weight: spool.initial_weight_g,
+          lot_number: spool.lot_number || '',
+          article_number: spool.article_number || ''
+        }
+      });
+    }
+
+    // ---- Inventory: Distinct value lists ----
+    if (method === 'GET' && path === '/api/inventory/materials') {
+      return sendJson(res, getDistinctMaterials());
+    }
+    if (method === 'GET' && path === '/api/inventory/lot-numbers') {
+      return sendJson(res, getDistinctLotNumbers());
+    }
+    if (method === 'GET' && path === '/api/inventory/article-numbers') {
+      return sendJson(res, getDistinctArticleNumbers());
+    }
+
+    // ---- Inventory: Settings ----
+    if (method === 'GET' && path === '/api/inventory/settings') {
+      return sendJson(res, getAllInventorySettings());
+    }
+    const settingMatch = path.match(/^\/api\/inventory\/settings\/([a-zA-Z0-9_.-]+)$/);
+    if (settingMatch) {
+      const key = settingMatch[1];
+      if (method === 'GET') return sendJson(res, { key, value: getInventorySetting(key) });
+      if (method === 'POST') return readBody(req, (body) => { setInventorySetting(key, body.value); sendJson(res, { ok: true }); });
+    }
+
+    // ---- Inventory: Import ----
+    if (method === 'POST' && path === '/api/inventory/import/spools') {
+      return readBody(req, (body) => {
+        if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
+        const count = importSpools(body);
+        _broadcastInventory('import', 'spool', { count });
+        sendJson(res, { imported: count }, 201);
+      });
+    }
+    if (method === 'POST' && path === '/api/inventory/import/filaments') {
+      return readBody(req, (body) => {
+        if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
+        const count = importFilamentProfiles(body);
+        _broadcastInventory('import', 'profile', { count });
+        sendJson(res, { imported: count }, 201);
+      });
+    }
+    if (method === 'POST' && path === '/api/inventory/import/vendors') {
+      return readBody(req, (body) => {
+        if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
+        const count = importVendors(body);
+        _broadcastInventory('import', 'vendor', { count });
+        sendJson(res, { imported: count }, 201);
+      });
+    }
+
+    // ---- Inventory: Custom Field Schemas ----
+    const fieldMatch = path.match(/^\/api\/inventory\/fields\/(vendor|filament|spool)(?:\/([a-zA-Z0-9_.-]+))?$/);
+    if (fieldMatch) {
+      const entityType = fieldMatch[1];
+      const fieldKey = fieldMatch[2];
+      if (method === 'GET' && !fieldKey) return sendJson(res, getFieldSchemas(entityType));
+      if (method === 'POST' && fieldKey) {
+        return readBody(req, (body) => {
+          try {
+            const schema = addFieldSchema(entityType, fieldKey, body);
+            sendJson(res, schema, 201);
+          } catch (e) { sendJson(res, { error: e.message }, 409); }
+        });
+      }
+      if (method === 'DELETE' && fieldKey) {
+        deleteFieldSchema(entityType, fieldKey);
+        return sendJson(res, { ok: true });
+      }
+    }
+
+    // ---- Info & Health ----
+    if (method === 'GET' && path === '/api/info') {
+      return sendJson(res, { name: 'Bambu Dashboard', version: _updater?.currentVersion || 'unknown', uptime: process.uptime() });
+    }
+    if (method === 'GET' && path === '/api/health') {
+      return sendJson(res, { status: 'ok', timestamp: new Date().toISOString() });
+    }
+
+    // ---- Inventory: SpoolmanDB Community Database ----
+    if (method === 'GET' && path === '/api/inventory/spoolmandb/manufacturers') {
+      const data = _loadSpoolmanDb();
+      return sendJson(res, data.manufacturers || []);
+    }
+    if (method === 'GET' && path === '/api/inventory/spoolmandb/filaments') {
+      const data = _loadSpoolmanDb();
+      const mfg = url.searchParams.get('manufacturer');
+      let filaments = data.all || [];
+      if (mfg) filaments = filaments.filter(f => f.manufacturer === mfg);
+      const mat = url.searchParams.get('material');
+      if (mat) filaments = filaments.filter(f => f.material === mat);
+      return sendJson(res, filaments);
+    }
+    if (method === 'GET' && path === '/api/inventory/spoolmandb/materials') {
+      const data = _loadSpoolmanDb();
+      const matSet = new Set();
+      for (const f of (data.all || [])) if (f.material) matSet.add(f.material);
+      return sendJson(res, [...matSet].sort());
+    }
+    if (method === 'POST' && path === '/api/inventory/spoolmandb/import') {
+      return readBody(req, (body) => {
+        // body is a flat filament object from _fetchSpoolmanDbManufacturer
+        let vendorId = null;
+        const mfgName = body.manufacturer;
+        if (mfgName) {
+          const existing = getVendors().find(v => v.name.toLowerCase() === mfgName.toLowerCase());
+          if (existing) { vendorId = existing.id; }
+          else {
+            try {
+              const v = addVendor({ name: mfgName });
+              vendorId = v.id;
+            } catch { vendorId = getVendors().find(v => v.name.toLowerCase() === mfgName.toLowerCase())?.id || null; }
+          }
+        }
+        const profile = addFilamentProfile({
+          vendor_id: vendorId,
+          name: body.name || `${mfgName || ''} ${body.material || 'PLA'}`.trim(),
+          material: body.material || 'PLA',
+          color_name: body.color_name || null,
+          color_hex: body.color_hex || null,
+          density: body.density || 1.24,
+          diameter: body.diameter || 1.75,
+          spool_weight_g: body.weight || 1000,
+          nozzle_temp_min: body.extruder_temp ? body.extruder_temp - 10 : null,
+          nozzle_temp_max: body.extruder_temp || null,
+          bed_temp_min: body.bed_temp ? body.bed_temp - 10 : null,
+          bed_temp_max: body.bed_temp || null,
+          external_id: body.id || null,
+          weights: body.spool_weight ? [{ weight: body.weight || 1000, spool_weight: body.spool_weight, spool_type: 'plastic' }] : null,
+          price: body.price || null
+        });
+        _broadcastInventory('add', 'profile', { id: profile.id });
+        sendJson(res, { ok: true, profile_id: profile.id, vendor_id: vendorId }, 201);
+      });
+    }
+
+    // ---- Prometheus Metrics ----
+    if (method === 'GET' && (path === '/api/metrics' || path === '/metrics')) {
+      const stats = getInventoryStats();
+      const printers = getPrinters();
+      let m = '';
+      m += '# HELP bambu_spools_total Total number of active spools\n# TYPE bambu_spools_total gauge\n';
+      m += `bambu_spools_total ${stats.total_spools}\n`;
+      m += '# HELP bambu_filament_remaining_grams Total remaining filament in grams\n# TYPE bambu_filament_remaining_grams gauge\n';
+      m += `bambu_filament_remaining_grams ${stats.total_remaining_g}\n`;
+      m += '# HELP bambu_filament_used_grams Total used filament in grams\n# TYPE bambu_filament_used_grams gauge\n';
+      m += `bambu_filament_used_grams ${stats.total_used_g}\n`;
+      m += '# HELP bambu_low_stock_count Spools below 20%\n# TYPE bambu_low_stock_count gauge\n';
+      m += `bambu_low_stock_count ${stats.low_stock_count}\n`;
+      m += '# HELP bambu_inventory_cost_total Total inventory cost\n# TYPE bambu_inventory_cost_total gauge\n';
+      m += `bambu_inventory_cost_total ${stats.total_cost}\n`;
+      m += '# HELP bambu_usage_30d_grams Filament used in last 30 days\n# TYPE bambu_usage_30d_grams gauge\n';
+      m += `bambu_usage_30d_grams ${stats.usage_last_30d_g}\n`;
+      m += '# HELP bambu_filament_by_material_grams Remaining filament by material\n# TYPE bambu_filament_by_material_grams gauge\n';
+      for (const mt of stats.by_material) m += `bambu_filament_by_material_grams{material="${(mt.material || 'unknown').replace(/"/g, '')}"} ${mt.remaining_g}\n`;
+      m += '# HELP bambu_printers_total Total configured printers\n# TYPE bambu_printers_total gauge\n';
+      m += `bambu_printers_total ${printers.length}\n`;
+      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' });
+      return res.end(m);
+    }
+
+    // ---- Database Backup ----
+    if (method === 'POST' && path === '/api/backup') {
+      try {
+        const result = createBackup('manual');
+        return sendJson(res, { ok: true, ...result });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/backup/list') {
+      return sendJson(res, listBackups());
     }
 
     // ---- Spoolman ----

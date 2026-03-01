@@ -8,8 +8,57 @@
     sd: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="12" y1="6" x2="12" y2="10"/><line x1="16" y1="6" x2="16" y2="10"/></svg>',
     light: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
     speed: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-    error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    guard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
   };
+
+  // Cache for error/alert data per printer
+  let _cachedErrors = {};
+  let _cachedAlerts = {};
+  let _lastPrinterId = null;
+  let _fetchTimer = null;
+
+  function fetchErrorData(printerId) {
+    if (!printerId) return;
+    // Fetch latest error from error log
+    fetch(`/api/errors?printer_id=${printerId}&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        _cachedErrors[printerId] = (Array.isArray(data) && data.length > 0) ? data[0] : null;
+        _renderCached();
+      }).catch(() => {});
+    // Fetch active protection alerts
+    fetch(`/api/protection/status?printer_id=${printerId}`)
+      .then(r => r.json())
+      .then(data => {
+        const alerts = data.alerts || [];
+        _cachedAlerts[printerId] = alerts.length > 0 ? alerts : null;
+        _renderCached();
+      }).catch(() => {});
+  }
+
+  function _renderCached() {
+    const container = document.getElementById('sidebar-status-content');
+    if (!container || !container._lastHtml) return;
+    // Re-render with cached error data
+    const printerId = window.printerState?.getActivePrinterId();
+    const errEl = container.querySelector('.qs-error-value');
+    const guardEl = container.querySelector('.qs-guard-value');
+    if (errEl) {
+      const err = _cachedErrors[printerId];
+      if (err) {
+        errEl.textContent = err.message || err.code;
+        errEl.style.color = err.severity === 'error' ? 'var(--accent-red)' : 'var(--accent-orange)';
+      }
+    }
+    if (guardEl) {
+      const alerts = _cachedAlerts[printerId];
+      if (alerts && alerts.length > 0) {
+        guardEl.textContent = `${alerts.length} ${t('quick_status.active')}`;
+        guardEl.style.color = 'var(--accent-orange)';
+      }
+    }
+  }
 
   function wifiColor(sig) {
     const dbm = typeof sig === 'string' ? parseInt(sig) : sig;
@@ -19,20 +68,31 @@
     return 'var(--accent-red)';
   }
 
-  function item(icon, label, value, color) {
+  function item(icon, label, value, color, extraClass) {
     const colorStyle = color ? ` style="color:${color}"` : '';
+    const cls = extraClass ? ` ${extraClass}` : '';
     return `<div class="qs-item">
       <div class="qs-icon">${ICONS[icon]}</div>
       <div class="qs-text">
         <span class="qs-label">${label}</span>
-        <span class="qs-value"${colorStyle}>${value}</span>
+        <span class="qs-value${cls}"${colorStyle}>${value}</span>
       </div>
     </div>`;
   }
 
   window.updateQuickStatus = function(data) {
-    const container = document.getElementById('quick-status-content');
+    const container = document.getElementById('sidebar-status-content');
     if (!container) return;
+
+    const printerId = window.printerState?.getActivePrinterId();
+
+    // Fetch error data on printer change or periodically
+    if (printerId !== _lastPrinterId) {
+      _lastPrinterId = printerId;
+      fetchErrorData(printerId);
+      if (_fetchTimer) clearInterval(_fetchTimer);
+      _fetchTimer = setInterval(() => fetchErrorData(printerId), 30000);
+    }
 
     // WiFi
     const wifiSig = data.wifi_signal || '--';
@@ -61,10 +121,33 @@
     const spdLvl = data.spd_lvl || 2;
     const speedStr = t(SPEED_LABELS[spdLvl] || 'speed.standard');
 
-    // Error
+    // Real-time error (from MQTT)
     const errCode = data.print_error || 0;
-    const errStr = errCode > 0 ? `0x${errCode.toString(16).toUpperCase()}` : t('quick_status.no_error');
-    const errColor = errCode > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+
+    // Use cached DB error if no real-time error
+    const cachedErr = _cachedErrors[printerId];
+    let errStr, errColor;
+    if (errCode > 0) {
+      errStr = `0x${errCode.toString(16).toUpperCase()}`;
+      errColor = 'var(--accent-red)';
+    } else if (cachedErr) {
+      errStr = cachedErr.message || cachedErr.code;
+      errColor = cachedErr.severity === 'error' ? 'var(--accent-red)' : 'var(--accent-orange)';
+    } else {
+      errStr = t('quick_status.no_error');
+      errColor = 'var(--accent-green)';
+    }
+
+    // Protection alerts
+    const cachedAlerts = _cachedAlerts[printerId];
+    let guardStr, guardColor;
+    if (cachedAlerts && cachedAlerts.length > 0) {
+      guardStr = `${cachedAlerts.length} ${t('quick_status.active')}`;
+      guardColor = 'var(--accent-orange)';
+    } else {
+      guardStr = t('quick_status.no_error');
+      guardColor = 'var(--accent-green)';
+    }
 
     container.innerHTML = `<div class="qs-grid">
       ${item('wifi', t('quick_status.wifi'), wifiSig, wifiCol)}
@@ -72,7 +155,9 @@
       ${item('sd', t('quick_status.sd_card'), sdStr, sdColor)}
       ${item('light', t('quick_status.light'), lightStr, lightColor)}
       ${item('speed', t('quick_status.speed'), speedStr, '')}
-      ${item('error', t('quick_status.error'), errStr, errColor)}
+      ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}
+      ${item('guard', t('protection.title'), guardStr, guardColor, 'qs-guard-value')}
     </div>`;
+    container._lastHtml = true;
   };
 })();

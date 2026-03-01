@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,7 +15,7 @@ const DEFAULTS = {
     users: [],
     sessionDurationHours: 24
   },
-  server: { port: 3000, httpsPort: 3443, cameraWsPortStart: 9001, forceHttps: false },
+  server: { port: 3000, httpsPort: 3443, cameraWsPortStart: 9001, forceHttps: true },
   camera: { enabled: true, resolution: '640x480', framerate: 15, bitrate: '1000k' },
   notifications: {
     enabled: false,
@@ -73,6 +73,10 @@ function migrateLegacyConfig(config) {
     config.server.cameraWsPortStart = config.server.cameraWsPort;
     delete config.server.cameraWsPort;
   }
+  // Migrate forceHttps: false -> true (security default change)
+  if (config.server && config.server.forceHttps === false) {
+    config.server.forceHttps = true;
+  }
   return config;
 }
 
@@ -84,6 +88,8 @@ function loadConfig() {
       let file = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
       file = migrateLegacyConfig(file);
       config = deepMerge(config, file);
+      // Secure config file permissions (owner-only read/write)
+      try { chmodSync(CONFIG_PATH, 0o600); } catch { /* Windows etc. */ }
     } catch (e) {
       console.warn('[config] Kunne ikke lese config.json:', e.message);
     }
@@ -123,6 +129,7 @@ export function saveConfig(updates) {
   }
   const merged = deepMerge(current, updates);
   writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2));
+  try { chmodSync(CONFIG_PATH, 0o600); } catch { /* Windows etc. */ }
   return merged;
 }
 

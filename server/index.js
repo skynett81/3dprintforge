@@ -1,11 +1,13 @@
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter } from './database.js';
+import { startNightlyBackup } from './backup.js';
 import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard } from './api-routes.js';
 import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth } from './auth.js';
 import { PrinterManager } from './printer-manager.js';
@@ -19,11 +21,37 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const CERTS_DIR = join(ROOT, 'certs');
 
+// Auto-generate self-signed SSL certificates if none exist
+function ensureSSLCerts() {
+  const certPath = join(CERTS_DIR, 'cert.pem');
+  const keyPath = join(CERTS_DIR, 'key.pem');
+  if (existsSync(certPath) && existsSync(keyPath)) return;
+
+  try {
+    if (!existsSync(CERTS_DIR)) mkdirSync(CERTS_DIR, { recursive: true });
+    execSync(
+      `openssl req -x509 -newkey rsa:2048 -keyout "${keyPath}" -out "${certPath}" ` +
+      `-days 365 -nodes -subj "/CN=Bambu Dashboard/O=Local" ` +
+      `-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"`,
+      { stdio: 'pipe' }
+    );
+    chmodSync(keyPath, 0o600);
+    chmodSync(certPath, 0o644);
+    console.log('[security] Auto-genererte SSL-sertifikater (gyldige i 365 dager)');
+  } catch {
+    console.warn('[security] Kunne ikke generere SSL-sertifikater (openssl ikke tilgjengelig?)');
+  }
+}
+ensureSSLCerts();
+
 // Ensure data directory exists
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 // Initialize database
 initDatabase();
+
+// Start nightly backup
+startNightlyBackup();
 
 // Initialize auth
 initAuth();
@@ -44,13 +72,31 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'SAMEORIGIN',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' ws: wss:",
+    "font-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ')
 };
+
+function applyHttpsHeaders(res) {
+  if (forceHttps) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+}
 
 function applySecurityHeaders(res) {
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     res.setHeader(key, value);
   }
+  applyHttpsHeaders(res);
 }
 
 function handleRequest(req, res) {
@@ -115,8 +161,11 @@ const certPath = join(CERTS_DIR, 'cert.pem');
 const keyPath = join(CERTS_DIR, 'key.pem');
 const hasSSL = existsSync(certPath) && existsSync(keyPath);
 
+// Force HTTPS by default when certs are available (unless explicitly disabled)
+const forceHttps = hasSSL && config.server.forceHttps !== false;
+
 const httpServer = createHttpServer((req, res) => {
-  if (hasSSL && config.server.forceHttps) {
+  if (forceHttps) {
     const host = req.headers.host?.replace(`:${PORT}`, `:${HTTPS_PORT}`) || `localhost:${HTTPS_PORT}`;
     res.writeHead(301, { Location: `https://${host}${req.url}` });
     res.end();
@@ -360,9 +409,16 @@ httpServer.listen(PORT, () => {
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
   console.log(`  ║   Bambu Dashboard v${updater.currentVersion.padEnd(26)}║`);
-  console.log(`  ║   HTTP:  http://localhost:${PORT}                  ║`);
-  if (hasSSL) {
+  if (forceHttps) {
     console.log(`  ║   HTTPS: https://localhost:${HTTPS_PORT}                ║`);
+    console.log(`  ║   HTTP → HTTPS redirect aktiv               ║`);
+  } else {
+    console.log(`  ║   HTTP:  http://localhost:${PORT}                  ║`);
+    if (hasSSL) {
+      console.log(`  ║   HTTPS: https://localhost:${HTTPS_PORT}                ║`);
+    } else {
+      console.log('  ║   ⚠ Ingen SSL-sertifikater funnet            ║');
+    }
   }
   console.log(`  ║   Printere: ${printerCount}                              ║`);
   console.log('  ╚══════════════════════════════════════════════╝');
@@ -374,6 +430,6 @@ httpServer.listen(PORT, () => {
 
 if (httpsServer) {
   httpsServer.listen(HTTPS_PORT, () => {
-    console.log(`[server] HTTPS aktiv pa port ${HTTPS_PORT}`);
+    console.log(`[server] HTTPS aktiv på port ${HTTPS_PORT}`);
   });
 }

@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bambu Dashboard</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#00d4ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -74,6 +79,10 @@
           <span data-i18n-key="tabs.settings">Innstillinger</span>
         </button>
       </nav>
+      <div class="sidebar-status" id="sidebar-status">
+        <div class="sidebar-status-title" data-i18n-key="quick_status.title">Status</div>
+        <div id="sidebar-status-content"></div>
+      </div>
       <div class="sidebar-footer">
         <div class="sidebar-version" id="sidebar-version">v...</div>
         <div class="sidebar-credits">
@@ -190,63 +199,62 @@
       <main class="dashboard" id="dashboard-grid">
 
         <div class="card" id="progress-card">
-          <!-- 3D fullscreen overlay button -->
-          <div class="camera-overlay model-overlay" id="model-overlay">
-            <button class="camera-fullscreen-btn" title="3D Fullscreen" onclick="open3dFullscreen()">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-              </svg>
-            </button>
-          </div>
-          <div id="print-mw-container" style="display:none">
-            <img id="print-mw-image" class="print-mw-image" alt="">
-            <img id="print-mw-reveal" class="print-mw-reveal" alt="">
-            <div id="print-mw-edge" class="print-mw-edge"></div>
-          </div>
-          <canvas id="print-model-canvas" class="print-model-canvas"></canvas>
-          <!-- Prepare overlay (upload/heating) -->
-          <div class="prepare-overlay" id="prepare-overlay" style="display:none">
-            <div class="prepare-icon" id="prepare-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
+          <!-- 3D viewport wrapper -->
+          <div class="print-viewport">
+            <div class="camera-overlay model-overlay" id="model-overlay">
+              <button class="camera-fullscreen-btn" title="3D Fullscreen" onclick="open3dFullscreen()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+              </button>
             </div>
-            <div class="prepare-status" id="prepare-status"></div>
-            <div class="prepare-bar-wrap">
-              <div class="prepare-bar" id="prepare-bar"></div>
+            <div id="print-mw-container" style="display:none">
+              <img id="print-mw-image" class="print-mw-image" alt="">
+              <img id="print-mw-reveal" class="print-mw-reveal" alt="">
+              <div id="print-mw-edge" class="print-mw-edge"></div>
             </div>
-            <div class="prepare-detail" id="prepare-detail"></div>
-          </div>
-          <!-- HUD overlay -->
-          <div class="print-preview-hud" id="print-preview-hud">
-            <div class="hud-top">
-              <span class="hud-file" id="hud-file">--</span>
-              <span class="hud-state" id="hud-state"></span>
-            </div>
-            <div class="hud-bottom">
-              <div class="hud-ring-wrap">
-                <svg class="progress-ring" viewBox="0 0 140 140" id="progress-ring"></svg>
+            <canvas id="print-model-canvas" class="print-model-canvas"></canvas>
+            <div class="prepare-overlay" id="prepare-overlay" style="display:none">
+              <div class="prepare-icon" id="prepare-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
               </div>
-              <div class="hud-stats">
-                <div class="hud-pct" id="hud-pct">0%</div>
-                <div class="progress-countdown" id="progress-countdown"></div>
-                <div class="progress-eta" id="progress-eta"></div>
-                <div class="hud-layers" id="progress-layers">--</div>
+              <div class="prepare-status" id="prepare-status"></div>
+              <div class="prepare-bar-wrap">
+                <div class="prepare-bar" id="prepare-bar"></div>
               </div>
-              <div class="hud-filament" id="active-filament">
-                <span class="text-muted" data-i18n-key="progress.waiting">Venter...</span>
+              <div class="prepare-detail" id="prepare-detail"></div>
+            </div>
+            <div class="print-preview-hud" id="print-preview-hud">
+              <div class="hud-top">
+                <span class="hud-file" id="hud-file">--</span>
+                <span class="hud-state" id="hud-state"></span>
               </div>
             </div>
+            <div style="display:none">
+              <span id="progress-file">--</span>
+              <span id="progress-state"></span>
+              <span id="progress-time">--</span>
+            </div>
           </div>
-          <!-- Hidden compat elements for print-progress.js -->
-          <div style="display:none">
-            <span id="progress-file">--</span>
-            <span id="progress-state"></span>
-            <span id="progress-time">--</span>
+          <!-- Print info bar (below 3D) -->
+          <div class="print-info-bar">
+            <div class="hud-ring-wrap">
+              <svg class="progress-ring" viewBox="0 0 140 140" id="progress-ring"></svg>
+            </div>
+            <div class="hud-stats">
+              <div class="hud-pct" id="hud-pct">0%</div>
+              <div class="progress-countdown" id="progress-countdown"></div>
+              <div class="progress-eta" id="progress-eta"></div>
+              <div class="hud-layers" id="progress-layers">--</div>
+            </div>
+            <div class="hud-filament" id="active-filament">
+              <span class="text-muted" data-i18n-key="progress.waiting">Venter...</span>
+            </div>
           </div>
-          <!-- Model metadata bar (dimensions, weight, slice info) -->
           <div class="model-meta-bar" id="model-meta-bar" style="display:none"></div>
         </div>
 
@@ -300,10 +308,6 @@
           <div id="fans-card-content"></div>
         </div>
 
-        <div class="card" id="quick-status-card">
-          <div class="card-title" data-i18n-key="quick_status.title">Status</div>
-          <div id="quick-status-content"></div>
-        </div>
 
       </main>
 
@@ -399,6 +403,7 @@
   <script src="/js/components/dashboard-dnd.js"></script>
   <script src="/js/components/sparkline-stats.js"></script>
   <script src="/js/app.js"></script>
+  <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
 
 </body>
 </html>

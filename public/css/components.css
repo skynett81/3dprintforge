@@ -27,9 +27,16 @@
 
 /* ---- Progress Card with 3D Viewer ---- */
 #progress-card {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 0 !important;
   overflow: hidden;
+}
+
+.print-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
 }
 
 .print-model-canvas {
@@ -41,6 +48,16 @@
   display: block;
   cursor: grab;
   touch-action: none;
+}
+
+.print-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  flex-shrink: 0;
 }
 
 .print-model-canvas:active {
@@ -515,14 +532,13 @@
   font-weight: 600;
 }
 
-/* ---- HUD Overlay ---- */
+/* ---- HUD Overlay (top bar only) ---- */
 .print-preview-hud {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   z-index: 2;
 }
 
@@ -556,15 +572,7 @@
   flex-shrink: 0;
 }
 
-.hud-bottom {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 10px 14px;
-  background: linear-gradient(to top, rgba(13,17,23,0.9) 0%, rgba(13,17,23,0.6) 60%, transparent);
-  pointer-events: auto;
-}
-
+/* ---- Print Info Bar (below 3D viewport) ---- */
 .hud-ring-wrap {
   flex-shrink: 0;
 }
@@ -587,36 +595,32 @@
 .hud-pct {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  color: var(--text-primary);
 }
 
 .progress-countdown {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .progress-eta {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--accent-green);
   font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .hud-layers {
-  font-size: 0.75rem;
-  color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
 }
 
 .hud-filament {
   flex-shrink: 0;
-  max-width: 140px;
-  color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  margin-left: auto;
+  max-width: 160px;
+  color: var(--text-primary);
 }
 
 .hud-filament .text-muted {
@@ -638,8 +642,7 @@
 .ams-slot {
   border: none;
   border-radius: var(--radius);
-  padding: 14px 10px;
-  text-align: center;
+  padding: 10px 12px;
   transition: all 0.3s var(--ease-out);
   background: var(--bg-tertiary);
   box-shadow: var(--shadow-sm);
@@ -658,13 +661,58 @@
 .ams-slot-inner {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
 }
 
+.ams-slot-empty-inner {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.ams-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ams-row-top {
+  gap: 8px;
+}
+
+.ams-info-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ams-sep {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.ams-row-bar .ams-remain-bar {
+  flex: 1;
+}
+
+.ams-row-details {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.ams-row-bottom {
+  justify-content: space-between;
+}
+
 .ams-color-ring {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   border-radius: 50%;
   position: relative;
   display: flex;
@@ -678,8 +726,8 @@
 }
 
 .ams-active-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 6px rgba(255,255,255,0.6);
@@ -717,6 +765,7 @@
 .ams-remain-text {
   font-size: 0.7rem;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .ams-slot-num {
@@ -2742,12 +2791,11 @@
 }
 
 .ams-brand {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 .ams-temp-range {
@@ -2928,7 +2976,8 @@
   background: rgba(0, 230, 118, 0.1);
   border-radius: 8px;
   padding: 1px 6px;
-  margin-top: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .ams-rfid-badge svg {
@@ -2940,8 +2989,7 @@
 .ams-dry-info {
   font-size: 0.6rem;
   color: var(--text-muted);
-  margin-top: 2px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 3px;
 }
@@ -3139,7 +3187,9 @@
   transition: all var(--transition);
 }
 
-.filament-card:hover .filament-delete-btn {
+.filament-card:hover .filament-delete-btn,
+tr:hover .filament-delete-btn,
+.inv-location-item:hover .filament-delete-btn {
   opacity: 1;
 }
 
@@ -3521,8 +3571,8 @@
 /* ---- Quick Status Grid ---- */
 .qs-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
+  grid-template-columns: 1fr;
+  gap: 4px;
 }
 
 .qs-item {
@@ -3554,7 +3604,7 @@
 }
 
 .qs-value {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -4449,6 +4499,37 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   color: var(--text-secondary);
 }
 
+.fil-spool-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  margin-left: 32px;
+}
+
+.fil-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.fil-bar-row .filament-bar {
+  flex: 1;
+  margin-top: 0;
+}
+
+.fil-bar-weight {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.fil-spool-info {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
 .fil-spool-footer {
   display: flex;
   justify-content: space-between;
@@ -4492,7 +4573,8 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   opacity: 0;
 }
 
-.filament-card:hover .filament-edit-btn {
+.filament-card:hover .filament-edit-btn,
+tr:hover .filament-edit-btn {
   opacity: 1;
 }
 
@@ -4829,3 +4911,284 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   min-width: 36px;
   text-align: right;
 }
+
+/* ---- Inventory System ---- */
+
+.inv-filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.inv-filter-bar select {
+  max-width: 160px;
+  font-size: 0.75rem;
+}
+.inv-archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-left: auto;
+}
+.inv-archive-toggle input { width: 14px; height: 14px; }
+
+.filament-card-archived {
+  opacity: 0.5;
+  border: 1px dashed var(--border-color) !important;
+}
+.filament-card-archived:hover { opacity: 0.8; }
+
+.inv-profile-card {
+  cursor: default;
+}
+.inv-profile-card .fil-spool-actions { opacity: 0; transition: opacity 0.15s; }
+.inv-profile-card:hover .fil-spool-actions { opacity: 1; }
+
+.inv-location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.inv-location-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  font-size: 0.85rem;
+}
+
+.inv-source-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.inv-source-auto { background: rgba(18, 121, 255, 0.15); color: var(--accent-blue); }
+.inv-source-manual { background: rgba(0, 230, 118, 0.15); color: var(--accent-green); }
+
+.fil-ams-linked {
+  display: block;
+  line-height: 1.2;
+}
+
+/* ═══ Inventory Enhancements ═══ */
+
+/* Search input in filter bar */
+.inv-search-input {
+  min-width: 140px;
+  flex: 0 0 auto;
+}
+
+/* Pagination */
+.inv-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 4px;
+}
+.inv-page-info {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Export dropdown */
+.inv-export-dropdown {
+  position: relative;
+}
+.inv-export-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 100;
+  min-width: 160px;
+  padding: 4px 0;
+}
+.inv-export-menu.show { display: block; }
+.inv-export-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.inv-export-menu button:hover {
+  background: var(--bg-secondary);
+}
+
+/* Modal overlay */
+.inv-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv-modal {
+  background: var(--bg-card);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+}
+.inv-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+}
+.inv-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.inv-modal-close:hover { color: var(--text-primary); }
+.inv-modal-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-color);
+  text-align: right;
+}
+
+/* QR Label */
+.inv-qr-label-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+}
+.inv-qr-code svg { width: 120px; height: 120px; }
+.inv-qr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.82rem;
+}
+.inv-qr-info strong { font-size: 0.95rem; }
+.inv-qr-label-vertical { flex-direction: column; text-align: center; }
+.inv-qr-label-vertical .inv-qr-info { text-align: center; }
+.inv-qr-label-compact { gap: 8px; padding: 8px; }
+.inv-qr-label-compact .inv-qr-code svg { width: 80px; height: 80px; }
+.inv-qr-label-compact .inv-qr-info { font-size: 0.7rem; }
+.inv-qr-label-compact .inv-qr-info strong { font-size: 0.8rem; }
+
+/* Profile badges */
+.fil-profile-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+.fil-badge { font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); }
+.fil-badge-glow { background: #2d1f4e; color: #c4b5fd; border-color: #7c3aed40; }
+
+/* Similar colors */
+.inv-similar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.82rem;
+}
+
+/* SpoolmanDB browser */
+.inv-spoolmandb-mfg {
+  border-bottom: 1px solid var(--border-color);
+}
+.inv-spoolmandb-mfg-name {
+  padding: 6px 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.inv-spoolmandb-mfg-name:hover { background: var(--bg-secondary); }
+.inv-spoolmandb-mfg.expanded .inv-spoolmandb-filaments { display: block !important; }
+.inv-spoolmandb-fil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 16px;
+  font-size: 0.8rem;
+}
+.inv-spoolmandb-fil .form-btn { margin-left: auto; }
+
+/* DnD Locations */
+.inv-dnd-columns {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.inv-dnd-column {
+  min-width: 160px;
+  flex: 1;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 8px;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s;
+}
+.inv-dnd-column.inv-dnd-over {
+  border-color: var(--accent-blue);
+}
+.inv-dnd-column-header {
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+.inv-dnd-spool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin: 3px 0;
+  background: var(--bg-card);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: grab;
+}
+.inv-dnd-spool:active { cursor: grabbing; }
+
+/* Extra fields on cards */
+.fil-extra-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 0 0;
+}
+.fil-extra-field {
+  font-size: 0.68rem;
+  background: var(--bg-secondary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+.fil-extra-key {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Filament card archived */
+.filament-card-archived {
+  opacity: 0.5;
+}
+.filament-card-archived:hover { opacity: 0.8; }

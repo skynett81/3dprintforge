@@ -258,15 +258,15 @@ export const MOCK_FILAMENT = [
   { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PLA', color_name: 'Svart', color_hex: '000000', weight_total_g: 1000, weight_used_g: 350, cost_nok: 219 },
   { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PETG', color_name: 'Oransje', color_hex: 'FF6600', weight_total_g: 1000, weight_used_g: 80, cost_nok: 249 },
   { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'TPU', color_name: 'Klar', color_hex: 'CCDDFF', weight_total_g: 500, weight_used_g: 28, cost_nok: 299 },
-  { printer_id: 'demo-x1c', brand: 'eSUN', type: 'PLA+', color_name: 'Rod', color_hex: 'CC0000', weight_total_g: 1000, weight_used_g: 0, cost_nok: 179 },
-  { printer_id: 'demo-x1c', brand: 'Polymaker', type: 'ASA', color_name: 'Gra', color_hex: '888888', weight_total_g: 1000, weight_used_g: 0, cost_nok: 329 },
-  { printer_id: 'demo-h2d', brand: 'Bambu Lab', type: 'PLA', color_name: 'Bla', color_hex: '0066FF', weight_total_g: 1000, weight_used_g: 150, cost_nok: 219 }
+  { printer_id: 'demo-x1c', brand: 'eSUN', type: 'PLA+', color_name: 'Rød', color_hex: 'CC0000', weight_total_g: 1000, weight_used_g: 0, cost_nok: 179 },
+  { printer_id: 'demo-x1c', brand: 'Polymaker', type: 'ASA', color_name: 'Grå', color_hex: '888888', weight_total_g: 1000, weight_used_g: 0, cost_nok: 329 },
+  { printer_id: 'demo-h2d', brand: 'Bambu Lab', type: 'PLA', color_name: 'Blå', color_hex: '0066FF', weight_total_g: 1000, weight_used_g: 150, cost_nok: 219 }
 ];
 
 // Demo feillogg
 export const MOCK_ERRORS = [
   { code: '0300_0100', message: 'Filament brutt i AMS spor 1', severity: 'warning', days_ago: 4 },
-  { code: '0700_0001', message: 'Forste lag inspeksjon: avvik detektert', severity: 'warning', days_ago: 4 },
+  { code: '0700_0001', message: 'Første lag inspeksjon: avvik detektert', severity: 'warning', days_ago: 4 },
   { code: '0500_0200', message: 'Dysetemperatur ustabil', severity: 'error', days_ago: 20 },
   { code: '0300_0300', message: 'AMS spor 3 kunne ikke leses', severity: 'info', days_ago: 22 },
   { code: '0C00_0001', message: 'Nettverkstilkobling midlertidig tapt', severity: 'warning', days_ago: 25 }

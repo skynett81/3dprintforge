@@ -128,7 +128,7 @@ async function sendEmail(conf, title, message) {
             break;
           case 2: // STARTTLS
             if (code === 220) {
-              const tls = tlsConnect({ socket, rejectUnauthorized: false }, () => {
+              const tls = tlsConnect({ socket, servername: conf.host, rejectUnauthorized: true }, () => {
                 socket = tls;
                 socket.setEncoding('utf-8');
                 buffer = '';
@@ -189,7 +189,7 @@ async function sendEmail(conf, title, message) {
 
     const connectOpts = { host: conf.host, port };
     if (useDirectTLS) {
-      const s = tlsConnect({ ...connectOpts, rejectUnauthorized: false }, () => handleSmtp(s));
+      const s = tlsConnect({ ...connectOpts, servername: conf.host, rejectUnauthorized: true }, () => handleSmtp(s));
       s.on('error', done);
       s.setTimeout(15000, () => s.destroy(new Error('SMTP timeout')));
     } else {

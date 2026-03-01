@@ -1,4 +1,4 @@
-import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed } from './database.js';
+import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight } from './database.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -227,8 +227,11 @@ export class PrintTracker {
     };
 
     try {
-      addHistory(record);
+      const printHistoryId = addHistory(record);
       console.log(`[tracker:${this.printerId}] Print ${status}: ${record.filename} (${Math.round(duration / 60)}m, ${filamentUsedG.toFixed(1)}g, ${this.colorChanges} fargebytter, ${wasteG}g waste)`);
+
+      // Update spool inventory from AMS data
+      this._updateSpoolUsage(data, printHistoryId);
 
       // Update nozzle session counters
       this._updateNozzleSession(duration, filamentUsedG, this.currentPrint.filament_type);
@@ -423,6 +426,29 @@ export class PrintTracker {
         upsertComponentWear(this.printerId, 'fan_heatbreak', hours, 0);
     } catch (e) {
       console.error(`[tracker:${this.printerId}] Component wear update feilet:`, e.message);
+    }
+  }
+
+  _updateSpoolUsage(data, printHistoryId) {
+    if (!this.amsSnapshot) return;
+    try {
+      const currentAms = this._getAmsRemaining(data);
+      for (const [key, startRemain] of Object.entries(this.amsSnapshot)) {
+        const endRemain = currentAms[key] ?? startRemain;
+        const diff = startRemain - endRemain;
+        if (diff > 0) {
+          const [unitId, trayId] = key.split('_').map(Number);
+          const usedG = (diff / 100) * 1000;
+          // Look up spool assigned to this AMS slot
+          const spool = getSpoolBySlot(this.printerId, unitId, trayId);
+          if (spool) {
+            useSpoolWeight(spool.id, usedG, 'auto', printHistoryId, this.printerId);
+            console.log(`[tracker:${this.printerId}] Spool #${spool.id} usage: ${usedG.toFixed(1)}g (AMS${unitId}:${trayId})`);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`[tracker:${this.printerId}] Spool usage update feilet:`, e.message);
     }
   }
 

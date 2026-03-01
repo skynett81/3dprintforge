@@ -28,11 +28,11 @@ export class CameraStream {
     this.wss = new WebSocketServer({ port: this.port });
 
     this.wss.on('error', (err) => {
-      console.warn(`[kamera] WebSocket-feil pa port ${this.port}: ${err.message}`);
+      console.warn(`[kamera] WebSocket-feil på port ${this.port}: ${err.message}`);
       this.wss = null;
     });
 
-    console.log(`[kamera] WebSocket server pa port ${this.port}`);
+    console.log(`[kamera] WebSocket server på port ${this.port}`);
 
     this.wss.on('connection', (ws) => {
       this.clients.add(ws);
@@ -121,7 +121,7 @@ export class CameraStream {
       if (this.clients.size > 0 && this.restartCount < 5) {
         this.restartCount++;
         const delay = Math.min(2000 * this.restartCount, 15000);
-        console.log(`[kamera] Restarter om ${delay}ms (forsok ${this.restartCount}/5)...`);
+        console.log(`[kamera] Restarter om ${delay}ms (forsøk ${this.restartCount}/5)...`);
         this.restartTimer = setTimeout(() => {
           this._startFfmpeg();
         }, delay);

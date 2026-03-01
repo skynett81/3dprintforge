@@ -101,9 +101,6 @@
 
       html += '</div>'; // end settings-grid
 
-      // Spoolman integration
-      html += '<div id="spoolman-settings-section" class="mt-md"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>';
-
       // OBS Overlay URL
       html += `<div class="settings-card mt-md">
         <div class="card-title">${t('settings.obs_title')}</div>
@@ -151,7 +148,6 @@
       if (printerInfoEl && typeof renderPrinterInfoSection === 'function') renderPrinterInfoSection(printerInfoEl);
       checkDemoData();
       loadAuthSettings();
-      loadSpoolmanSettings();
       loadNotifSettings();
       loadNotifLog();
       const updateSection = document.getElementById('update-section');
@@ -752,100 +748,6 @@
       const btn = input.nextElementSibling;
       if (btn) { btn.textContent = t('camera.copied'); setTimeout(() => { btn.textContent = t('camera.copy'); }, 1500); }
     });
-  };
-
-  // ---- Spoolman Settings ----
-  async function loadSpoolmanSettings() {
-    const section = document.getElementById('spoolman-settings-section');
-    if (!section) return;
-
-    try {
-      const res = await fetch('/api/spoolman/config', { method: 'GET' }).catch(() => null);
-      // Config might not exist yet, use defaults
-      let sc = { enabled: false, url: '' };
-      if (res && res.ok) {
-        // No dedicated GET, we read from general config via spoolman/test
-      }
-    } catch (_) {}
-
-    // We need to infer config — there's no dedicated GET for spoolman config
-    // So we render based on what the test endpoint can tell us
-    let sc = { enabled: false, url: '' };
-    try {
-      // Try fetching spoolman spools to see if it's configured
-      const testRes = await fetch('/api/spoolman/spools');
-      if (testRes.ok) {
-        sc.enabled = true;
-        // We can't easily get the URL back, so leave blank for editing
-      }
-    } catch (_) {}
-
-    let html = `<div class="settings-card">
-      <div class="card-title">${t('settings.spoolman_title')}</div>
-      <p class="text-muted" style="font-size:0.8rem;margin-bottom:10px">${t('settings.spoolman_description')}</p>
-      <label class="settings-checkbox">
-        <input type="checkbox" id="spoolman-enabled" ${sc.enabled ? 'checked' : ''}>
-        <span>${t('settings.spoolman_enable')}</span>
-      </label>
-      <div class="form-group mt-sm">
-        <label class="form-label">${t('settings.spoolman_url')}</label>
-        <div style="display:flex;gap:8px">
-          <input class="form-input" id="spoolman-url" value="${sc.url}" placeholder="${t('settings.spoolman_url_placeholder')}" style="flex:1">
-          <button class="form-btn form-btn-sm" id="spoolman-test-btn" onclick="testSpoolman()">${t('settings.spoolman_test')}</button>
-        </div>
-        <span class="text-muted" id="spoolman-test-status" style="font-size:0.75rem;margin-top:4px;display:block"></span>
-      </div>
-      <div class="notif-save-row">
-        <button class="form-btn" onclick="saveSpoolmanSettings()">${t('settings.save')}</button>
-        <span class="notif-save-status" id="spoolman-save-status"></span>
-      </div>
-    </div>`;
-    section.innerHTML = html;
-  }
-
-  window.testSpoolman = async function() {
-    const url = document.getElementById('spoolman-url')?.value?.trim();
-    const status = document.getElementById('spoolman-test-status');
-    const btn = document.getElementById('spoolman-test-btn');
-    if (!url) { if (status) status.textContent = t('settings.spoolman_url_placeholder'); return; }
-    if (btn) btn.disabled = true;
-    if (status) { status.textContent = '...'; status.style.color = ''; }
-    try {
-      const res = await fetch(`/api/spoolman/test?url=${encodeURIComponent(url)}`);
-      const data = await res.json();
-      if (data.ok) {
-        if (status) { status.textContent = `${t('settings.spoolman_test_ok')}${data.version ? ' (v' + data.version + ')' : ''}`; status.style.color = 'var(--accent-green)'; }
-      } else {
-        if (status) { status.textContent = `${t('settings.spoolman_test_fail')}: ${data.error || ''}`; status.style.color = 'var(--accent-red)'; }
-      }
-    } catch {
-      if (status) { status.textContent = t('settings.spoolman_test_fail'); status.style.color = 'var(--accent-red)'; }
-    }
-    if (btn) btn.disabled = false;
-  };
-
-  window.saveSpoolmanSettings = async function() {
-    const status = document.getElementById('spoolman-save-status');
-    const body = {
-      enabled: document.getElementById('spoolman-enabled')?.checked || false,
-      url: document.getElementById('spoolman-url')?.value?.trim() || ''
-    };
-    try {
-      const res = await fetch('/api/spoolman/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.ok) {
-        if (status) { status.textContent = t('settings.auth_saved'); status.style.color = 'var(--accent-green)'; }
-      } else {
-        if (status) { status.textContent = t('settings.auth_save_failed'); status.style.color = 'var(--accent-red)'; }
-      }
-    } catch {
-      if (status) { status.textContent = t('settings.auth_save_failed'); status.style.color = 'var(--accent-red)'; }
-    }
-    setTimeout(() => { if (status) { status.textContent = ''; status.style.color = ''; } }, 3000);
   };
 
   // ---- Appearance / Theme ----
