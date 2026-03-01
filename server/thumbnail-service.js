@@ -434,23 +434,93 @@ function generateBoatShape() {
   return { vertices: v, triangles: t };
 }
 
-// Bust shape: cylinder base + icosphere head
+// Bust shape: sculpted torso with shoulders, neck, and head
 function generateBustShape() {
-  const body = generateCylinder(14, 30, 16);
-  const head = generateIcosphere(2, 13);
-  // Offset head up above body
-  const headOffset = 36;
-  const offsetVerts = [];
-  for (let i = 0; i < head.vertices.length; i += 3) {
-    offsetVerts.push(head.vertices[i], head.vertices[i + 1] + headOffset, head.vertices[i + 2]);
+  const verts = [];
+  const tris = [];
+  const segs = 20;
+
+  // Profile: [y, radiusX, radiusZ] rings from base to top
+  const profile = [
+    [0,   16, 10],   // base
+    [4,   17, 11],   // lower torso
+    [10,  16, 10],   // waist
+    [16,  18, 11],   // chest
+    [22,  19, 12],   // upper chest
+    [26,  17, 11],   // shoulders top
+    [30,  12, 9],    // shoulder-neck transition
+    [34,  7,  7],    // neck bottom
+    [38,  6,  6],    // neck top
+    [42,  10, 10],   // jaw
+    [46,  11, 11],   // cheeks
+    [50,  10, 10.5], // temples
+    [54,  9.5, 10],  // forehead
+    [57,  8,  9],    // upper forehead
+    [60,  5,  6],    // crown
+    [62,  2,  2],    // top
+  ];
+
+  // Generate rings
+  for (const [y, rx, rz] of profile) {
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      verts.push(Math.cos(a) * rx, y, Math.sin(a) * rz);
+    }
   }
-  // Merge
-  const bodyVertCount = body.vertices.length / 3;
-  const verts = [...body.vertices, ...offsetVerts];
-  const tris = [...body.triangles];
-  for (const idx of head.triangles) {
-    tris.push(idx + bodyVertCount);
+
+  // Connect rings
+  for (let r = 0; r < profile.length - 1; r++) {
+    for (let i = 0; i < segs; i++) {
+      const n = (i + 1) % segs;
+      const c = r * segs, nr = (r + 1) * segs;
+      tris.push(c + i, c + n, nr + n);
+      tris.push(c + i, nr + n, nr + i);
+    }
   }
+
+  // Cap bottom
+  const bc = verts.length / 3;
+  verts.push(0, profile[0][0], 0);
+  for (let i = 0; i < segs; i++) {
+    tris.push(bc, (i + 1) % segs, i);
+  }
+
+  // Cap top
+  const tc = verts.length / 3;
+  const lastRing = (profile.length - 1) * segs;
+  verts.push(0, profile[profile.length - 1][0], 0);
+  for (let i = 0; i < segs; i++) {
+    tris.push(tc, lastRing + i, lastRing + (i + 1) % segs);
+  }
+
+  // Nose: small bump on front (z+) side at face height
+  const noseBase = verts.length / 3;
+  const noseY = 48, noseZ = 12.5, noseW = 2.5, noseH = 4;
+  verts.push(-noseW, noseY - noseH / 2, noseZ);   // 0
+  verts.push(noseW, noseY - noseH / 2, noseZ);     // 1
+  verts.push(noseW, noseY + noseH / 2, noseZ);      // 2
+  verts.push(-noseW, noseY + noseH / 2, noseZ);     // 3
+  verts.push(0, noseY, noseZ + 4);                   // 4 tip
+  tris.push(noseBase, noseBase + 1, noseBase + 4);
+  tris.push(noseBase + 1, noseBase + 2, noseBase + 4);
+  tris.push(noseBase + 2, noseBase + 3, noseBase + 4);
+  tris.push(noseBase + 3, noseBase, noseBase + 4);
+
+  // Ears: small bumps on sides at ear height
+  for (const side of [-1, 1]) {
+    const eb = verts.length / 3;
+    const earX = side * 11.5, earY = 48, earZ = -1;
+    verts.push(earX, earY - 3, earZ - 2);
+    verts.push(earX, earY + 3, earZ - 2);
+    verts.push(earX, earY + 3, earZ + 2);
+    verts.push(earX, earY - 3, earZ + 2);
+    verts.push(earX + side * 4, earY, earZ);
+    tris.push(eb, eb + 1, eb + 4);
+    tris.push(eb + 1, eb + 2, eb + 4);
+    tris.push(eb + 2, eb + 3, eb + 4);
+    tris.push(eb + 3, eb, eb + 4);
+  }
+
   return { vertices: verts, triangles: tris };
 }
 

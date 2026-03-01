@@ -279,7 +279,7 @@
       // Reset layer texture
       this._useLayerTex = false;
 
-      this.dist = 4.5;
+      this.dist = 3.5;
       this.yaw = 0.6;
       this.pitch = 0.35;
       this._autoRotate = true;

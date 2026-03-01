@@ -408,7 +408,11 @@ body {
 
 #progress-card,
 #camera-card {
-  min-height: 420px;
+  grid-row: span 6;
+}
+
+#ams-card {
+  grid-row: span 3;
 }
 
 /* ---- Cards — rounded, clean ---- */
