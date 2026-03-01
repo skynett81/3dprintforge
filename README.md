@@ -56,11 +56,13 @@ Events: print started, finished, failed, cancelled, printer error, maintenance d
 ### Infrastructure
 - **Authentication** — optional password protection with session management
 - **17 languages** — English, Norwegian, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian
-- **HTTPS support** — auto-detected from `certs/` directory
+- **HTTPS by default** — auto-generated self-signed SSL certificates, forced HTTPS redirect, HSTS headers
+- **Content Security Policy** — CSP headers to prevent XSS and code injection
 - **Browser notifications** — real-time alerts for print events
 - **Responsive design** — desktop, tablet, mobile
 - **Modern UI** — glassmorphism effects, smooth transitions, Inter font
-- **Auto-update** — checks GitHub Releases, one-click update with automatic backup
+- **Auto-update** — checks GitHub Releases, one-click update with automatic backup, toast notification banner
+- **Spoolman integration** — optional connection to Spoolman for filament inventory sync
 - **Demo mode** — 3 mock printers for testing without hardware
 - **Setup wizard** — web-based first-time configuration
 - **Zero framework frontend** — pure HTML/CSS/JS, no build step
@@ -70,6 +72,29 @@ Events: print started, finished, failed, cancelled, printer error, maintenance d
 ---
 
 ## Changelog
+
+### v1.1.5 — Security + UI Improvements (2026-03-01)
+
+**Security**
+- Auto-generated self-signed SSL certificates (no manual setup needed)
+- HTTPS forced by default with HTTP→HTTPS redirect
+- HSTS (Strict-Transport-Security) header
+- Content Security Policy (CSP) header
+- Config file restricted to owner-only permissions (0600)
+- SMTP TLS verification enabled by default
+
+**UI**
+- Sidebar printer status indicators (online/offline/printing)
+- AMS panel visual redesign with improved filament display
+- 3D viewport restructured — HUD info moved below canvas
+- Improved card grid sizing for 3D view, camera, and AMS panels
+- Anatomical bust model for demo mode 3D preview
+- Update notification toast banner when new version available
+
+**Other**
+- Spoolman integration support
+- Database migrations v12-v20
+- 117 API endpoints (up from 40+)
 
 ### v1.1.1 — Visual Redesign + Print Guard (2026-02-28)
 
@@ -150,8 +175,8 @@ All Bambu Lab printers with LAN mode enabled:
 
 | Port | Protocol | Direction | Purpose |
 |------|----------|-----------|---------|
-| 3000 | HTTP + WS | Inbound | Dashboard access |
-| 3443 | HTTPS + WSS | Inbound | Secure dashboard (optional) |
+| 3000 | HTTP + WS | Inbound | Dashboard (redirects to HTTPS) |
+| 3443 | HTTPS + WSS | Inbound | Secure dashboard (default) |
 | 9001+ | WS | Inbound | Camera streams (one per printer) |
 | 8883 | MQTTS | Outbound | MQTT connection to printer |
 | 322 | RTSPS | Outbound | Camera feed from printer |
@@ -209,7 +234,7 @@ Edit `config.json` with your printer details (see [Configuration](#configuration
 npm start
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `https://localhost:3443` in your browser (HTTP on port 3000 redirects automatically).
 
 ### Option 3: Docker
 
@@ -258,7 +283,7 @@ Edit `config.json` (created from `config.example.json`):
     "port": 3000,
     "httpsPort": 3443,
     "cameraWsPortStart": 9001,
-    "forceHttps": false
+    "forceHttps": true
   },
   "camera": {
     "enabled": true,
@@ -297,7 +322,9 @@ Add more entries to the `printers` array. Each printer gets its own MQTT connect
 
 ## HTTPS Setup
 
-Place certificate files in the `certs/` directory:
+HTTPS is enabled by default. On first start, the server auto-generates a self-signed SSL certificate if none exists. HTTPS runs on port 3443, and HTTP traffic on port 3000 is automatically redirected.
+
+To use your own certificate, place files in the `certs/` directory:
 
 ```
 certs/
@@ -305,13 +332,7 @@ certs/
   key.pem
 ```
 
-The server auto-detects certificates and enables HTTPS on port 3443. Set `"forceHttps": true` in config to redirect all HTTP traffic.
-
-Generate a self-signed certificate for testing:
-```bash
-mkdir -p certs
-openssl req -x509 -newkey rsa:2048 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj '/CN=localhost'
-```
+The server includes HSTS and CSP security headers. To disable forced HTTPS redirect, set `"forceHttps": false` in config.json.
 
 ---
 
@@ -400,7 +421,7 @@ Browser <--WS:9001+--> ffmpeg  <--RTSPS:322---> Camera
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Vanilla HTML/CSS/JS — 27 component modules, no build step, no frameworks |
+| Frontend | Vanilla HTML/CSS/JS — 28 component modules, no build step, no frameworks |
 | Backend | Node.js 22 with 3 npm packages: `mqtt`, `ws`, `basic-ftp` |
 | Database | SQLite (built into Node.js 22 via `--experimental-sqlite`) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in browser |
@@ -411,21 +432,22 @@ Browser <--WS:9001+--> ffmpeg  <--RTSPS:322---> Camera
 
 | Port | Protocol | Direction | Description |
 |------|----------|-----------|-------------|
-| 3000 | HTTP + WS | Inbound | Dashboard + WebSocket |
-| 3443 | HTTPS + WSS | Inbound | Secure dashboard (if certs configured) |
+| 3000 | HTTP + WS | Inbound | Dashboard (redirects to HTTPS) |
+| 3443 | HTTPS + WSS | Inbound | Secure dashboard (default) |
 | 9001+ | WS | Inbound | Camera streams (one per printer) |
 | 8883 | MQTTS | Outbound | Connection to printer |
 | 322 | RTSPS | Outbound | Camera feed from printer |
 
-### Server Modules (18)
+### Server Modules (19)
 
 | Module | Purpose |
 |--------|---------|
-| `index.js` | HTTP/HTTPS servers, static files, demo mode |
-| `config.js` | Configuration loading and defaults |
-| `database.js` | SQLite schema, migrations (v1-v11), CRUD |
-| `api-routes.js` | REST API (40+ endpoints) |
+| `index.js` | HTTP/HTTPS servers, auto-SSL, CSP/HSTS headers, static files, demo mode |
+| `config.js` | Configuration loading, defaults, and migrations |
+| `database.js` | SQLite schema, migrations (v1-v20), CRUD |
+| `api-routes.js` | REST API (117 endpoints) |
 | `auth.js` | Authentication and session management |
+| `backup.js` | Backup and restore functionality |
 | `printer-manager.js` | Printer lifecycle, MQTT connection management |
 | `mqtt-client.js` | MQTT connectivity to Bambu printers |
 | `mqtt-commands.js` | MQTT command serialization (pause, resume, stop, etc.) |
@@ -433,18 +455,20 @@ Browser <--WS:9001+--> ffmpeg  <--RTSPS:322---> Camera
 | `camera-stream.js` | ffmpeg process management for camera streams |
 | `print-tracker.js` | Print job tracking, state transitions, history logging |
 | `print-guard.js` | Print protection via xcam sensors |
+| `telemetry.js` | Telemetry data processing |
 | `telemetry-sampler.js` | Time-series data sampling |
 | `thumbnail-service.js` | Print thumbnail fetching via FTPS from printer SD |
 | `notifications.js` | 6-channel notification system |
 | `updater.js` | GitHub Releases auto-update with backup |
 | `setup-wizard.js` | Web-based first-time setup |
 
-### Frontend Components (27)
+### Frontend Components (28)
 
 | Component | Purpose |
 |-----------|---------|
 | `print-preview.js` | 3D model viewer + MakerWorld image reveal |
 | `model-viewer.js` | WebGL 3D renderer with layer animation |
+| `model-info-panel.js` | 3D model metadata display |
 | `temperature-gauge.js` | Animated SVG ring gauges |
 | `sparkline-stats.js` | Grafana-style stat panels with rolling graphs |
 | `ams-panel.js` | AMS filament visualization |
@@ -462,7 +486,7 @@ Browser <--WS:9001+--> ffmpeg  <--RTSPS:322---> Camera
 | `notifications.js` | Browser notification system |
 | `printer-selector.js` | Multi-printer switcher |
 | `error-log.js` | Error log viewer |
-| `update-panel.js` | Auto-update UI |
+| `update-panel.js` | Auto-update UI with toast notifications |
 | `active-filament.js` | Active filament display on dashboard |
 | `fan-display.js` | Fan speed visualization |
 | `print-progress.js` | Print progress tracking |
@@ -511,9 +535,9 @@ sudo journalctl -u bambu-dashboard -f
 
 ## Updating
 
-The dashboard checks for updates automatically (every 6 hours by default). When a new version is available, a badge appears in the header.
+The dashboard checks for updates automatically (every 6 hours by default). When a new version is available, a toast notification banner appears at the top of the page, and a badge appears in the sidebar.
 
-**From the dashboard:** Click the update badge > "Update Now". The server backs up current files, downloads the new version, and restarts automatically.
+**From the dashboard:** Click "View details" on the toast or navigate to Settings > System. Click "Update Now" — the server backs up current files, downloads the new version, and restarts automatically.
 
 **Manual update (git):**
 ```bash
@@ -569,12 +593,13 @@ English, Norwegian (Bokmal), German, French, Spanish, Italian, Japanese, Korean,
 
 ```
 bambu-dashboard/
-├── server/                    # Backend (18 modules)
-│   ├── index.js               # Entry point
+├── server/                    # Backend (19 modules)
+│   ├── index.js               # Entry point (auto-SSL, CSP, HSTS)
 │   ├── config.js              # Configuration
-│   ├── database.js            # SQLite database (11 migrations)
-│   ├── api-routes.js          # REST API
+│   ├── database.js            # SQLite database (20 migrations)
+│   ├── api-routes.js          # REST API (117 endpoints)
 │   ├── auth.js                # Authentication
+│   ├── backup.js              # Backup and restore
 │   ├── printer-manager.js     # Printer management
 │   ├── mqtt-client.js         # MQTT connection
 │   ├── mqtt-commands.js       # Command serialization
@@ -582,6 +607,7 @@ bambu-dashboard/
 │   ├── camera-stream.js       # Camera streaming
 │   ├── print-tracker.js       # Print job tracking
 │   ├── print-guard.js         # Print protection (xcam)
+│   ├── telemetry.js           # Telemetry processing
 │   ├── telemetry-sampler.js   # Telemetry sampling
 │   ├── thumbnail-service.js   # Thumbnail fetching
 │   ├── notifications.js       # Notification system
@@ -602,7 +628,7 @@ bambu-dashboard/
 │   │   ├── app.js             # Main app logic
 │   │   ├── state.js           # State management
 │   │   ├── i18n.js            # Internationalization
-│   │   ├── components/        # 27 UI components
+│   │   ├── components/        # 28 UI components
 │   │   ├── utils/             # Shared utilities
 │   │   └── lib/               # Third-party (jsmpeg)
 │   ├── lang/                  # 17 language files

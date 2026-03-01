@@ -194,7 +194,7 @@ EOF
   echo -e "${GREEN}  Installation complete!${NC}"
   echo -e "${BOLD}========================================${NC}"
   echo ""
-  echo -e "  Dashboard: ${BOLD}http://$(hostname -I | awk '{print $1}'):3000${NC}"
+  echo -e "  Dashboard: ${BOLD}https://$(hostname -I | awk '{print $1}'):3443${NC}"
   echo ""
   echo -e "  Next steps:"
   echo -e "  1. Edit ${YELLOW}config.json${NC} with your printer IP, serial & access code"

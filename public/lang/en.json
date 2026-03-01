@@ -727,7 +727,8 @@
     "stage_downloading": "Downloading update...",
     "stage_extracting": "Extracting files...",
     "stage_replacing": "Installing update...",
-    "stage_restarting": "Restarting server..."
+    "stage_restarting": "Restarting server...",
+    "view_details": "View details"
   },
   "quick_status": {
     "title": "Status",

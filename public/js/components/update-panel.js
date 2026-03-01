@@ -6,6 +6,7 @@
   window.handleUpdateAvailable = function(data) {
     _updateState = data;
     showUpdateBadge(true);
+    showUpdateToast(data.latest);
   };
 
   // Called from app.js when WS receives update_status
@@ -51,6 +52,30 @@
     const overlay = document.getElementById('update-overlay');
     if (overlay) overlay.style.display = 'none';
   }
+
+  // Toast banner at top of screen
+  function showUpdateToast(version) {
+    let toast = document.getElementById('update-toast');
+    if (toast) { toast.classList.add('visible'); return; }
+
+    toast = document.createElement('div');
+    toast.id = 'update-toast';
+    toast.className = 'update-toast';
+    toast.innerHTML = `
+      <span>${t('update.new_version', { version: version })} — </span>
+      <button class="update-toast-btn" onclick="location.hash='#settings/system'">${t('update.view_details')}</button>
+      <button class="update-toast-close" onclick="dismissUpdateToast()" aria-label="Close">&times;</button>`;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('visible')));
+  }
+
+  window.dismissUpdateToast = function() {
+    const toast = document.getElementById('update-toast');
+    if (toast) {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 400);
+    }
+  };
 
   // Render update section inside settings panel
   window.renderUpdateSection = async function(container) {
@@ -149,7 +174,7 @@
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
   }
 
-  // On load, check for updates to show badge
+  // On load, check for updates to show badge + toast
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       const res = await fetch('/api/update/status');
@@ -157,6 +182,7 @@
       if (status.available) {
         _updateState = status;
         showUpdateBadge(true);
+        showUpdateToast(status.latest);
       }
     } catch { /* ok */ }
   });

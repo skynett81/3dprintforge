@@ -140,7 +140,7 @@ Open `config.json` in your editor and add your printer(s):
 npm start
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `https://localhost:3443` in your browser (HTTP on port 3000 redirects automatically).
 
 > **Tip:** You can also add, edit, and remove printers from the Settings tab in the dashboard without editing config.json.
 
@@ -213,7 +213,7 @@ npm install
 npm run demo
 ```
 
-This starts 3 simulated printers (P2S Combo, X1 Carbon, H2D) with live print cycles, telemetry, AMS data, and seeded history. Open `http://localhost:3000` to explore.
+This starts 3 simulated printers (P2S Combo, X1 Carbon, H2D) with live print cycles, telemetry, AMS data, and seeded history. Open `https://localhost:3443` to explore.
 
 ---
 
@@ -238,9 +238,11 @@ Or use environment variables:
 BAMBU_AUTH_PASSWORD=your-password npm start
 ```
 
-### Enable HTTPS (optional)
+### HTTPS (enabled by default)
 
-Place your certificate files in the `certs/` directory:
+HTTPS is enabled automatically on first start. The server auto-generates a self-signed SSL certificate and redirects HTTP (port 3000) to HTTPS (port 3443). Security headers (HSTS, CSP) are included.
+
+To use your own certificate, place files in the `certs/` directory:
 
 ```
 certs/
@@ -248,13 +250,7 @@ certs/
   key.pem
 ```
 
-The server auto-detects them and enables HTTPS on port 3443.
-
-Generate a self-signed certificate for testing:
-```bash
-mkdir -p certs
-openssl req -x509 -newkey rsa:2048 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj '/CN=localhost'
-```
+To disable forced HTTPS redirect, set `"forceHttps": false` in config.json.
 
 ### Set up notifications (optional)
 
@@ -338,7 +334,7 @@ You can also add printers from the **Settings** tab in the dashboard — no rest
 
 ### Automatic (from dashboard)
 
-The dashboard checks for updates every 6 hours. When a new version is available, a badge appears in the header. Click it and select **Update Now** — the server backs up current files, downloads the new version, and restarts.
+The dashboard checks for updates every 6 hours. When a new version is available, a toast notification banner appears at the top of the page. Click **View details** to go to Settings > System, then select **Update Now** — the server backs up current files, downloads the new version, and restarts.
 
 ### Manual (git)
 
