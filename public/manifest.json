@@ -7,6 +7,7 @@
   "background_color": "#0a0e27",
   "theme_color": "#00d4ff",
   "orientation": "any",
+  "categories": ["utilities", "productivity"],
   "icons": [
     {
       "src": "/assets/favicon.svg",
@@ -30,5 +31,40 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "/#dashboard",
+      "description": "View printer dashboard"
+    },
+    {
+      "name": "Print Queue",
+      "short_name": "Queue",
+      "url": "/#queue",
+      "description": "Manage print queue"
+    },
+    {
+      "name": "Filament Inventory",
+      "short_name": "Filament",
+      "url": "/#filament",
+      "description": "Manage filament inventory"
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "url": "/#settings",
+      "description": "Configure dashboard"
+    }
+  ],
+  "share_target": {
+    "action": "/#queue",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "name",
+      "text": "description"
+    }
+  }
 }

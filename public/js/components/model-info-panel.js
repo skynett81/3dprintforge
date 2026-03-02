@@ -136,8 +136,8 @@
     html += `<input type="text" id="mi-search-input" class="mi-input" placeholder="${t('model_info.search_placeholder')}">`;
     html += `<select id="mi-search-source" class="mi-select">`;
     html += `<option value="all">${t('model_info.all_sources')}</option>`;
-    html += `<option value="makerworld">MakerWorld</option>`;
     html += `<option value="printables">Printables</option>`;
+    html += `<option value="makerworld">MakerWorld</option>`;
     html += `<option value="thingiverse">Thingiverse</option>`;
     html += `</select>`;
     html += `<button id="mi-search-btn" class="mi-btn">${t('model_info.search')}</button>`;
@@ -145,8 +145,18 @@
     html += `<div id="mi-search-results" class="mi-search-results"></div>`;
     html += `</div>`;
 
-    // Section 3: Recent Links
+    // Section 3: Link by URL
     html += `<div class="mi-section">`;
+    html += `<h3 class="mi-section-title">${t('model_info.link_by_url')}</h3>`;
+    html += `<div class="mi-search-bar">`;
+    html += `<input type="text" id="mi-url-input" class="mi-input" placeholder="${t('model_info.url_placeholder')}">`;
+    html += `<button id="mi-url-btn" class="mi-btn">${t('model_info.link')}</button>`;
+    html += `</div>`;
+    html += `<div id="mi-url-status"></div>`;
+    html += `</div>`;
+
+    // Section 4: Recent Links
+    html += `<div class="mi-section mi-section-full">`;
     html += `<h3 class="mi-section-title">${t('model_info.recent_links')}</h3>`;
     html += `<div id="mi-recent-links" class="mi-recent-links"></div>`;
     html += `</div>`;
@@ -165,6 +175,12 @@
     const searchInput = document.getElementById('mi-search-input');
     searchBtn.addEventListener('click', doSearch);
     searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+    // URL link events
+    const urlBtn = document.getElementById('mi-url-btn');
+    const urlInput = document.getElementById('mi-url-input');
+    urlBtn.addEventListener('click', linkByUrl);
+    urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') linkByUrl(); });
   };
 
   function renderActiveModel() {
@@ -268,6 +284,10 @@
     let html = `<div class="mi-result-card">`;
     if (item.image) {
       html += `<img class="mi-result-img" src="${esc(item.image)}" alt="" onerror="this.style.display='none'">`;
+    } else {
+      html += `<div class="mi-result-img-placeholder">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>`;
     }
     html += `<div class="mi-result-info">`;
     html += `<div class="mi-result-title">${esc(item.title)}</div>`;
@@ -275,27 +295,113 @@
     html += `<span class="mi-source-badge" style="background:${src.bg};border-color:${src.border};color:${src.text}">${src.label}</span>`;
     if (item.designer) html += `<span>${esc(item.designer)}</span>`;
     if (item.downloads > 0) html += `<span>\u2B07 ${item.downloads}</span>`;
+    if (item.likes > 0) html += `<span>\u2764 ${item.likes}</span>`;
     html += `</div>`;
     html += `</div>`;
 
+    // Action buttons
+    html += `<div class="mi-result-actions">`;
+    // View link
+    html += `<a class="mi-action-btn mi-action-view" href="${esc(item.url)}" target="_blank" rel="noopener" title="${t('model_info.view_on')} ${src.label}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>`;
     // Link button
     const printerId = window.printerState?.getActivePrinterId() || '';
     const filename = _currentFilename;
     if (printerId && filename) {
-      html += `<button class="mi-result-link-btn mi-btn" `
+      html += `<button class="mi-action-btn mi-action-link mi-result-link-btn" `
         + `data-source="${esc(item.source)}" `
         + `data-source_id="${esc(item.source_id)}" `
         + `data-title="${esc(item.title)}" `
         + `data-url="${esc(item.url)}" `
         + `data-image="${esc(item.image || '')}" `
-        + `data-designer="${esc(item.designer || '')}">`
-        + `${t('model_info.link')}</button>`;
-    } else {
-      html += `<a class="mi-btn mi-btn-sm" href="${esc(item.url)}" target="_blank" rel="noopener">\u2192</a>`;
+        + `data-designer="${esc(item.designer || '')}" `
+        + `title="${t('model_info.link')}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </button>`;
     }
+    html += `</div>`;
 
     html += `</div>`;
     return html;
+  }
+
+  // ---- Link by URL ----
+  function linkByUrl() {
+    const input = document.getElementById('mi-url-input');
+    const status = document.getElementById('mi-url-status');
+    if (!input || !status) return;
+
+    const url = input.value.trim();
+    if (!url) return;
+
+    const printerId = window.printerState?.getActivePrinterId();
+    if (!printerId || !_currentFilename) {
+      status.innerHTML = `<div class="mi-empty">${t('model_info.no_active_model')}</div>`;
+      return;
+    }
+
+    // Parse URL to determine source
+    let source = null, sourceId = null;
+    const mwMatch = url.match(/makerworld\.com\/.*?models?\/(\d+)/);
+    const prMatch = url.match(/printables\.com\/model\/(\d+)/);
+    const tvMatch = url.match(/thingiverse\.com\/thing:(\d+)/);
+
+    if (mwMatch) { source = 'makerworld'; sourceId = mwMatch[1]; }
+    else if (prMatch) { source = 'printables'; sourceId = prMatch[1]; }
+    else if (tvMatch) { source = 'thingiverse'; sourceId = tvMatch[1]; }
+    else {
+      status.innerHTML = `<div class="mi-empty">${t('model_info.url_invalid')}</div>`;
+      return;
+    }
+
+    status.innerHTML = `<div class="mi-loading">${t('model_info.loading')}</div>`;
+
+    // Fetch details and link
+    const apiMap = {
+      makerworld: (id) => `/api/makerworld/${id}`,
+      printables: (id) => `/api/printables/${id}`,
+      thingiverse: (id) => `/api/thingiverse/${id}`
+    };
+
+    fetch(apiMap[source](sourceId))
+      .then(r => r.ok ? r.json() : { url, source, fallback: true })
+      .then(fullData => {
+        const body = {
+          filename: _currentFilename,
+          source,
+          source_id: sourceId,
+          title: fullData.title || `${SOURCE_COLORS[source].label} #${sourceId}`,
+          url: fullData.url || url,
+          image: fullData.image || null,
+          designer: fullData.designer || null,
+          description: fullData.description || null,
+          category: fullData.category || null,
+          print_settings: fullData.print_settings || null
+        };
+
+        return fetch(`/api/model-link/${encodeURIComponent(printerId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }).then(r => r.ok ? r.json() : null).then(result => {
+          if (result?.ok) {
+            _currentModelData = { ...body };
+            renderStrip(document.getElementById('model-info'));
+            renderActiveModel();
+            loadRecentLinks();
+            input.value = '';
+            const src = SOURCE_COLORS[source];
+            status.innerHTML = `<div class="mi-url-success">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>${t('model_info.linked_success')}</span>
+            </div>`;
+          }
+        });
+      })
+      .catch(() => {
+        status.innerHTML = `<div class="mi-empty">${t('model_info.search_error')}</div>`;
+      });
   }
 
   function linkModel(dataset) {
@@ -363,11 +469,18 @@
         }
         el.innerHTML = links.map(link => {
           const src = SOURCE_COLORS[link.source] || SOURCE_COLORS.makerworld;
-          return `<div class="mi-recent-item">`
-            + `<span class="mi-recent-file">${esc(link.filename)}</span>`
-            + `<span class="mi-source-badge mi-source-badge-sm" style="background:${src.bg};border-color:${src.border};color:${src.text}">${src.label}</span>`
-            + `<a class="mi-recent-link" href="${esc(link.url)}" target="_blank" rel="noopener">${esc(link.title || link.source_id)}</a>`
-            + `</div>`;
+          return `<div class="mi-recent-card">
+            <div class="mi-recent-card-accent" style="background:${src.text}"></div>
+            <div class="mi-recent-card-body">
+              <div class="mi-recent-card-top">
+                <span class="mi-source-badge mi-source-badge-sm" style="background:${src.bg};border-color:${src.border};color:${src.text}">${src.label}</span>
+                <a class="mi-recent-card-title" href="${esc(link.url)}" target="_blank" rel="noopener">${esc(link.title || link.source_id)}</a>
+              </div>
+              <div class="mi-recent-card-meta">
+                <span class="mi-recent-file">${esc(link.filename)}</span>
+              </div>
+            </div>
+          </div>`;
         }).join('');
       })
       .catch(() => {

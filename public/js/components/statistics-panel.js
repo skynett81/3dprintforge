@@ -132,7 +132,7 @@
       for (const m of s.monthly_trends) {
         const th = mx > 0 ? (m.total/mx)*100 : 0;
         const ch = mx > 0 ? (m.completed/mx)*100 : 0;
-        h += `<div class="week-bar-group" style="min-width:44px"><div class="week-bar-stack" style="height:60px"><div class="week-bar-bg" style="height:${th}%"></div><div class="week-bar-fg" style="height:${ch}%"></div></div><div class="week-bar-label">${m.month.split('-')[1]}</div><div class="week-bar-count">${m.total}</div></div>`;
+        h += `<div class="week-bar-group"><div class="week-bar-stack" style="height:60px"><div class="week-bar-bg" style="height:${th}%"></div><div class="week-bar-fg" style="height:${ch}%"></div></div><div class="week-bar-label">${m.month.split('-')[1]}</div><div class="week-bar-count">${m.total}</div></div>`;
       }
       h += '</div>';
       const hrs = s.monthly_trends.reduce((a,m) => a+(m.total_seconds||0),0)/3600;

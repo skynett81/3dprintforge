@@ -50,22 +50,26 @@
   // ═══ Tab config ═══
   const TAB_CONFIG = {
     inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'] },
+    drying:    { label: 'filament.tab_drying',    modules: ['active-drying', 'drying-history', 'drying-presets'] },
+    tools:     { label: 'filament.tab_tools',     modules: ['checked-out', 'color-card', 'nfc-manager', 'spool-timeline', 'material-ref'] },
     manage:    { label: 'filament.tab_manage',    modules: ['vendors-list', 'filament-profiles-list', 'locations-list', 'locations-dnd'] },
-    stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'usage-history'] }
+    stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
   const MODULE_SIZE = {
     'spool-summary': 'full', 'active-filament': 'full',
     'low-stock-alert': 'full', 'spool-grid': 'full',
+    'active-drying': 'full', 'drying-history': 'full', 'drying-presets': 'full',
+    'checked-out': 'full', 'color-card': 'full', 'nfc-manager': 'full', 'spool-timeline': 'full', 'material-ref': 'full',
     'vendors-list': 'full', 'filament-profiles-list': 'full', 'locations-list': 'full', 'locations-dnd': 'full',
     'type-breakdown': 'half', 'brand-breakdown': 'half',
     'cost-summary': 'half', 'stock-health': 'half',
-    'usage-history': 'full'
+    'usage-predictions': 'full', 'cost-estimation': 'full', 'usage-history': 'full'
   };
 
   const STORAGE_PREFIX = 'filament-module-order-';
   const LOCK_KEY = 'filament-layout-locked';
 
-  const _MOD_VER = 5;
+  const _MOD_VER = 9;
   if (localStorage.getItem('filament-mod-ver') !== String(_MOD_VER)) {
     for (const tab of Object.keys(TAB_CONFIG)) localStorage.removeItem(STORAGE_PREFIX + tab);
     localStorage.setItem('filament-mod-ver', String(_MOD_VER));
@@ -79,9 +83,47 @@
   let _locations = [];
   let _draggedMod = null;
   let _showArchived = false;
+  let _dryingSessions = [];
+  let _dryingPresets = [];
+  let _dryingStatus = [];
+  let _dryingTimers = {};
   let _filterMaterial = '';
   let _filterVendor = '';
   let _filterLocation = '';
+  let _filterPrinter = 'all';
+
+  // ═══ Printer capability map (Bambu Lab printers) ═══
+  const PRINTER_CAPS = {
+    'X1 Carbon':  { maxNozzle: 300, maxBed: 120, enclosed: true },
+    'X1':         { maxNozzle: 300, maxBed: 110, enclosed: true },
+    'X1E':        { maxNozzle: 300, maxBed: 120, enclosed: true },
+    'P1S':        { maxNozzle: 300, maxBed: 110, enclosed: true },
+    'P1P':        { maxNozzle: 300, maxBed: 110, enclosed: false },
+    'P2S Combo':  { maxNozzle: 300, maxBed: 110, enclosed: true },
+    'A1':         { maxNozzle: 300, maxBed: 100, enclosed: false },
+    'A1 Mini':    { maxNozzle: 300, maxBed: 80,  enclosed: false },
+    'H2D':        { maxNozzle: 300, maxBed: 110, enclosed: true },
+  };
+  const ENCLOSURE_MATERIALS = new Set(['ABS', 'ASA', 'PC', 'PA', 'PA-CF', 'PA-GF', 'PA6-CF', 'PAHT-CF', 'PPA-CF', 'PPA-GF']);
+
+  function checkCompatibility(spool) {
+    const warnings = [];
+    if (!spool.printer_id) return warnings;
+    const printer = window.stateStore?._printerMeta?.[spool.printer_id];
+    const model = printer?.model || '';
+    const caps = PRINTER_CAPS[model];
+    if (!caps) return warnings;
+    if (spool.nozzle_temp_max && spool.nozzle_temp_max > caps.maxNozzle) {
+      warnings.push(t('filament.compat_nozzle_too_hot').replace('{{required}}', spool.nozzle_temp_max).replace('{{max}}', caps.maxNozzle));
+    }
+    if (spool.bed_temp_max && spool.bed_temp_max > caps.maxBed) {
+      warnings.push(t('filament.compat_bed_too_hot').replace('{{required}}', spool.bed_temp_max).replace('{{max}}', caps.maxBed));
+    }
+    if (!caps.enclosed && ENCLOSURE_MATERIALS.has(spool.material)) {
+      warnings.push(t('filament.compat_needs_enclosure').replace('{{material}}', spool.material));
+    }
+    return warnings;
+  }
   let _sortBy = 'recent';
   let _searchQuery = '';
   let _currentPage = 0;
@@ -285,6 +327,12 @@
             <div class="fil-spool-meta">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g</div>
             <div class="fil-spool-meta text-muted" style="font-size:0.7rem">${p.nozzle_temp_min || p.nozzle_temp_max ? `🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C` : ''} ${p.bed_temp_min || p.bed_temp_max ? `🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C` : ''}${p.price ? ` · ${p.price} ${t('stats.currency')}` : ''}</div>
             ${p.finish || p.translucent || p.glow ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}</div>` : ''}
+            ${p.pressure_advance_k || p.max_volumetric_speed || p.retraction_distance || p.cooling_fan_speed ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${[
+              p.pressure_advance_k ? 'PA:' + p.pressure_advance_k : '',
+              p.max_volumetric_speed ? 'Vol:' + p.max_volumetric_speed + 'mm³/s' : '',
+              p.retraction_distance ? 'Ret:' + p.retraction_distance + 'mm' : '',
+              p.cooling_fan_speed ? 'Fan:' + p.cooling_fan_speed + '%' : ''
+            ].filter(Boolean).join(' · ')}</div>` : ''}
           </div>`;
         }
         h += '</div>';
@@ -474,6 +522,26 @@
       return h;
     },
 
+    'usage-predictions': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        ${t('filament.usage_predictions')}
+      </div>`;
+      h += `<div id="usage-predictions-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadUsagePredictions(), 0);
+      return h;
+    },
+
+    'cost-estimation': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        ${t('filament.cost_estimate')}
+      </div>`;
+      h += `<div id="cost-estimation-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadCostEstimation(), 0);
+      return h;
+    },
+
     'usage-history': () => {
       let h = `<div class="ctrl-card-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -481,6 +549,168 @@
       </div>`;
       h += `<div id="usage-history-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       setTimeout(() => loadUsageHistory(), 0);
+      return h;
+    },
+
+    // ── Drying modules ──
+    'active-drying': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg>
+        ${t('filament.active_drying')}
+      </div>`;
+      if (!_dryingSessions || _dryingSessions.length === 0) {
+        h += `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.drying_no_active')}</p>`;
+        return h;
+      }
+      for (const ds of _dryingSessions) {
+        const startTime = new Date(ds.started_at + 'Z').getTime();
+        const endTime = startTime + ds.duration_minutes * 60 * 1000;
+        const now = Date.now();
+        const elapsed = Math.max(0, now - startTime);
+        const remaining = Math.max(0, endTime - now);
+        const elapsedMin = Math.floor(elapsed / 60000);
+        const remainMin = Math.floor(remaining / 60000);
+        const remainH = Math.floor(remainMin / 60);
+        const remainM = remainMin % 60;
+        const pct = Math.min(100, Math.round((elapsed / (ds.duration_minutes * 60000)) * 100));
+        const colorDot = ds.color_hex ? `<span class="fil-color-dot" style="background:#${ds.color_hex}"></span>` : '';
+        const methodLabel = t('filament.drying_method_' + (ds.method || 'dryer_box'));
+        h += `<div class="fil-drying-card active" data-drying-id="${ds.id}">
+          ${colorDot}
+          <div class="fil-drying-info">
+            <div class="label">${esc(ds.profile_name || '?')} ${ds.vendor_name ? '(' + esc(ds.vendor_name) + ')' : ''}</div>
+            <div class="meta">${esc(ds.material || '')} · ${methodLabel} · ${ds.temperature ? ds.temperature + '°C' : ''}</div>
+          </div>
+          <div class="fil-drying-timer" id="drying-timer-${ds.id}">${remainH}h ${String(remainM).padStart(2, '0')}m</div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <div class="filament-bar" style="width:80px;height:6px"><div class="filament-bar-fill" style="width:${pct}%;background:var(--accent-orange,#f0883e)"></div></div>
+            <button class="form-btn form-btn-sm" onclick="completeDryingItem(${ds.id})">${t('filament.drying_complete')}</button>
+          </div>
+        </div>`;
+      }
+      // Start live countdown timers
+      setTimeout(() => _startDryingTimers(), 0);
+      return h;
+    },
+
+    'drying-history': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>
+        ${t('filament.drying_history')}
+      </div>`;
+      h += `<div id="drying-history-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadDryingHistory(), 0);
+      return h;
+    },
+
+    'drying-presets': () => {
+      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          ${t('filament.drying_presets')}
+        </span>
+        <button class="form-btn form-btn-sm" onclick="showAddDryingPresetForm()">${t('filament.drying_preset_add')}</button>
+      </div>`;
+      h += `<div id="drying-presets-form" style="display:none"></div>`;
+      if (!_dryingPresets || _dryingPresets.length === 0) {
+        h += `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">No presets</p>`;
+        return h;
+      }
+      h += `<table class="fil-drying-presets-table"><thead><tr>
+        <th>${t('filament.filter_material')}</th>
+        <th>${t('filament.drying_temp')}</th>
+        <th>${t('filament.drying_duration')}</th>
+        <th>${t('filament.drying_max_days')}</th>
+        <th></th>
+      </tr></thead><tbody>`;
+      for (const p of _dryingPresets) {
+        h += `<tr>
+          <td><strong>${esc(p.material)}</strong></td>
+          <td>${p.temperature}°C</td>
+          <td>${p.duration_minutes} min (${(p.duration_minutes / 60).toFixed(1)}h)</td>
+          <td>${p.max_days_without_drying} d</td>
+          <td style="text-align:right">
+            <button class="filament-edit-btn" style="opacity:1" onclick="editDryingPreset('${esc(p.material)}')" title="${t('settings.edit')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingPresetItem('${esc(p.material)}')" title="${t('settings.delete')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </td>
+        </tr>`;
+      }
+      h += '</tbody></table>';
+      return h;
+    },
+
+    // ── Tools tab modules ──
+    'checked-out': () => {
+      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ${t('filament.checked_out_spools')}
+        </span>
+      </div>`;
+      h += `<div id="checked-out-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadCheckedOut(), 0);
+      return h;
+    },
+
+    'color-card': () => {
+      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>
+          ${t('filament.color_card')}
+        </span>
+        <button class="form-btn form-btn-sm" onclick="exportColorCard()">${t('filament.color_card_export')}</button>
+      </div>`;
+      h += `<div id="color-card-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadColorCard(), 0);
+      return h;
+    },
+
+    'nfc-manager': () => {
+      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
+          ${t('filament.nfc_manager')}
+        </span>
+        <button class="form-btn form-btn-sm" onclick="startNfcScan()">${t('filament.nfc_scan')}</button>
+      </div>`;
+      h += `<div id="nfc-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadNfcMappings(), 0);
+      return h;
+    },
+
+    'spool-timeline': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${t('filament.spool_timeline')}
+      </div>`;
+      h += `<div id="timeline-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadTimeline(), 0);
+      return h;
+    },
+
+    'material-ref': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        ${t('filament.material_reference')}
+      </div>`;
+      h += `<div class="fil-matref-filter mb-sm">
+        <select class="form-input form-input-sm" id="matref-category-filter" onchange="filterMaterials()">
+          <option value="">All Categories</option>
+          <option value="standard">Standard</option>
+          <option value="engineering">Engineering</option>
+          <option value="composite">Composite</option>
+          <option value="flexible">Flexible</option>
+          <option value="specialty">Specialty</option>
+          <option value="support">Support</option>
+          <option value="high-performance">High Performance</option>
+        </select>
+      </div>`;
+      h += `<div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadMaterials(), 0);
       return h;
     }
   };
@@ -515,6 +745,17 @@
     const archivedClass = s.archived ? 'filament-card-archived' : '';
     const cleanName = _cleanProfileName(s);
     const subtitle = [s.vendor_name, s.diameter && s.diameter !== 1.75 ? s.diameter + 'mm' : ''].filter(Boolean).join(' · ');
+    // Drying status indicator
+    const dryStatus = _dryingStatus.find(d => d.id === s.id);
+    const dryIcon = dryStatus?.drying_status === 'overdue' ? `<span class="fil-dry-badge fil-dry-overdue" title="${t('filament.drying_status_overdue')}">&#x1F534;</span>`
+      : dryStatus?.drying_status === 'due_soon' ? `<span class="fil-dry-badge" title="${t('filament.drying_status_due_soon')}">&#x1F7E1;</span>`
+      : dryStatus?.drying_status === 'fresh' ? `<span class="fil-dry-badge" title="${t('filament.drying_status_fresh')}">&#x1F7E2;</span>`
+      : '';
+    // Compatibility check
+    const compatWarnings = checkCompatibility(s);
+    const compatIcon = compatWarnings.length > 0
+      ? `<span class="fil-compat-warn" title="${esc(compatWarnings.join('\n'))}">&#x26A0;&#xFE0F;</span>`
+      : '';
     const infoParts = [`${pct}%`];
     if (s.remaining_length_m) infoParts.push(s.remaining_length_m.toFixed(1) + 'm');
     if (s.location) infoParts.push('📍' + esc(s.location));
@@ -528,11 +769,18 @@
       <div class="filament-card ${lowClass} ${archivedClass}" data-spool-id="${s.id}">
         <div class="fil-spool-top">
           <div class="fil-spool-identity">
+            <input type="checkbox" class="fil-bulk-check" onclick="toggleSpoolSelect(${s.id}, this)" ${_selectedSpools.has(s.id) ? 'checked' : ''} title="${t('filament.bulk_select')}">
             ${renderColorSwatch(s)}
             <strong>${esc(cleanName)}</strong>
           </div>
           <div class="fil-spool-actions">
             ${s.archived ? `<button class="filament-edit-btn" onclick="unarchiveSpoolItem(${s.id})" title="${t('filament.unarchive')}">↩</button>` : ''}
+            <button class="filament-edit-btn" onclick="showSwatchLabel(${s.id})" title="${t('filament.swatch_label')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="12" r="4"/></svg>
+            </button>
+            <button class="filament-edit-btn" onclick="showSpoolTimeline(${s.id})" title="${t('filament.spool_timeline')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </button>
             <button class="filament-edit-btn" onclick="showSpoolLabel(${s.id})" title="${t('filament.qr_label')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
             </button>
@@ -541,6 +789,9 @@
             </button>
             <button class="filament-edit-btn" onclick="showMeasureDialog(${s.id})" title="${t('filament.measure_weight')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg>
+            </button>
+            <button class="filament-edit-btn" onclick="showStartDryingDialog(${s.id})" title="${t('filament.start_drying')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
             </button>
             <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -560,7 +811,7 @@
           </div>
           <span class="fil-bar-weight">${Math.round(s.remaining_weight_g)}g / ${Math.round(s.initial_weight_g)}g</span>
         </div>
-        <div class="fil-spool-info">${infoParts.join(' · ')}</div>
+        <div class="fil-spool-info">${infoParts.join(' · ')}${dryIcon}${compatIcon}</div>
         <div class="fil-spool-footer">
           <span>${footerLeft}</span>
           <span>${s.cost ? s.cost + ' kr' : ''}</span>
@@ -688,22 +939,35 @@
     if (!panel) return;
 
     const hashParts = location.hash.replace('#', '').split('/');
-    if (hashParts[0] === 'filament' && hashParts[1] && TAB_CONFIG[hashParts[1]]) {
-      _activeTab = hashParts[1];
+    if (hashParts[0] === 'filament' && hashParts[1]) {
+      if (hashParts[1] === 'printer' && hashParts[2]) {
+        _filterPrinter = hashParts[2];
+      } else if (TAB_CONFIG[hashParts[1]]) {
+        _activeTab = hashParts[1];
+      }
     }
 
     try {
       // Fetch all data in parallel
-      const [spoolsRes, vendorsRes, profilesRes, locationsRes] = await Promise.all([
+      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes] = await Promise.all([
         fetch('/api/inventory/spools'),
         fetch('/api/inventory/vendors'),
         fetch('/api/inventory/filaments'),
-        fetch('/api/inventory/locations')
+        fetch('/api/inventory/locations'),
+        fetch('/api/inventory/drying/sessions/active'),
+        fetch('/api/inventory/drying/presets'),
+        fetch('/api/inventory/drying/status')
       ]);
       _spools = await spoolsRes.json();
       _vendors = await vendorsRes.json();
       _profiles = await profilesRes.json();
       _locations = await locationsRes.json();
+      _dryingSessions = await dryingActiveRes.json();
+      _dryingPresets = await dryingPresetsRes.json();
+      _dryingStatus = await dryingStatusRes.json();
+      // Clear old drying timers
+      for (const tid of Object.values(_dryingTimers)) clearInterval(tid);
+      _dryingTimers = {};
 
       let html = '';
 
@@ -744,6 +1008,21 @@
         <button class="tele-lock-btn ${_locked ? '' : 'active'}" onclick="toggleFilamentLock()" title="${_locked ? t('filament.layout_locked') : t('filament.layout_unlocked')}">${lockIcon}</button>
       </div>`;
 
+      // ── Printer tabs ──
+      const printerIds = [...new Set(_spools.map(s => s.printer_id).filter(Boolean))];
+      if (printerIds.length > 1) {
+        html += '<div class="tabs history-printer-tabs">';
+        html += `<button class="tab-btn ${_filterPrinter === 'all' ? 'active' : ''}" onclick="filterFilamentPrinter('all')">${t('history.all_printers')}</button>`;
+        for (const pid of printerIds) {
+          html += `<button class="tab-btn ${_filterPrinter === pid ? 'active' : ''}" onclick="filterFilamentPrinter('${pid}')">${esc(printerName(pid))}</button>`;
+        }
+        html += '</div>';
+      }
+
+      // Filter spools by selected printer
+      const filteredSpools = _filterPrinter === 'all'
+        ? _spools : _spools.filter(s => s.printer_id === _filterPrinter);
+
       // ── Tab bar ──
       html += '<div class="tabs">';
       for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
@@ -761,7 +1040,7 @@
         for (const modId of order) {
           const builder = BUILDERS[modId];
           if (!builder) continue;
-          const content = builder(_spools);
+          const content = builder(filteredSpools);
           if (!content) continue;
           const draggable = _locked ? '' : 'draggable="true"';
           const unlocked = _locked ? '' : ' stats-module-unlocked';
@@ -866,6 +1145,12 @@
   // ═══ Global API ═══
   window.loadFilamentPanel = loadFilament;
   window.switchFilamentTab = switchTab;
+  window.filterFilamentPrinter = function(printerId) {
+    _filterPrinter = printerId;
+    const slug = printerId === 'all' ? 'filament' : `filament/printer/${printerId}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    loadFilament();
+  };
   window.toggleFilamentLock = function() {
     _locked = !_locked;
     localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
@@ -1263,6 +1548,14 @@
         <div class="form-group" style="width:120px"><label class="form-label">${t('filament.weight_options')}</label><input class="form-input" id="${pfx}-weights" value="${_parseWeightOptions(profile?.weight_options)}" placeholder="250, 500, 1000"></div>
         <div class="form-group" style="width:120px"><label class="form-label">${t('filament.diameters')}</label><input class="form-input" id="${pfx}-diameters" value="${_parseDiameters(profile?.diameters)}" placeholder="1.75, 2.85"></div>
       </div>
+      <div class="flex gap-sm" style="flex-wrap:wrap;margin-top:4px">
+        <div style="font-size:0.75rem;width:100%;color:var(--text-muted);font-weight:600">${t('filament.optimal_settings')}</div>
+        <div class="form-group" style="width:90px"><label class="form-label">${t('filament.pressure_advance')}</label><input class="form-input" id="${pfx}-pa-k" type="number" step="0.001" value="${profile?.pressure_advance_k || ''}"></div>
+        <div class="form-group" style="width:100px"><label class="form-label">${t('filament.max_volumetric_speed')}</label><input class="form-input" id="${pfx}-max-vol" type="number" step="0.1" value="${profile?.max_volumetric_speed || ''}"></div>
+        <div class="form-group" style="width:90px"><label class="form-label">${t('filament.retraction_distance')}</label><input class="form-input" id="${pfx}-retract-dist" type="number" step="0.1" value="${profile?.retraction_distance || ''}"></div>
+        <div class="form-group" style="width:90px"><label class="form-label">${t('filament.retraction_speed')}</label><input class="form-input" id="${pfx}-retract-speed" type="number" step="1" value="${profile?.retraction_speed || ''}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">${t('filament.cooling_fan_speed')}</label><input class="form-input" id="${pfx}-fan-speed" type="number" min="0" max="100" value="${profile?.cooling_fan_speed || ''}"></div>
+      </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
         <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px">
           <input type="checkbox" id="${pfx}-translucent" ${profile?.translucent ? 'checked' : ''}>
@@ -1338,7 +1631,12 @@
         if (!v) return null;
         const spoolW = parseFloat(document.getElementById(`${pfx}-spool-weight`)?.value) || null;
         return JSON.stringify(v.split(',').map(s => parseInt(s.trim())).filter(n => n > 0).map(w => ({ weight: w, spool_weight: spoolW, spool_type: 'plastic' })));
-      })()
+      })(),
+      pressure_advance_k: parseFloat(document.getElementById(`${pfx}-pa-k`)?.value) || null,
+      max_volumetric_speed: parseFloat(document.getElementById(`${pfx}-max-vol`)?.value) || null,
+      retraction_distance: parseFloat(document.getElementById(`${pfx}-retract-dist`)?.value) || null,
+      retraction_speed: parseFloat(document.getElementById(`${pfx}-retract-speed`)?.value) || null,
+      cooling_fan_speed: parseInt(document.getElementById(`${pfx}-fan-speed`)?.value) || null,
     };
   }
 
@@ -1871,6 +2169,25 @@
             ${[25, 50, 100].map(n => `<option value="${n}" ${(_pageSize === n || (!_pageSize && n === 50)) ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </div>
+        <div style="border-top:1px solid var(--border-color);margin-top:8px;padding-top:8px">
+          <div style="font-size:0.8rem;font-weight:600;margin-bottom:6px">${t('filament.cost_estimate')}</div>
+          <div class="form-group">
+            <label class="form-label">${t('filament.electricity_rate')}</label>
+            <input class="form-input" id="set-electricity-rate" type="number" step="0.01" value="${settings.electricity_rate_kwh || ''}" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('filament.printer_wattage')}</label>
+            <input class="form-input" id="set-printer-wattage" type="number" value="${settings.printer_wattage || ''}" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('filament.machine_cost')}</label>
+            <input class="form-input" id="set-machine-cost" type="number" step="0.01" value="${settings.machine_cost || ''}" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('filament.machine_lifetime')}</label>
+            <input class="form-input" id="set-machine-lifetime" type="number" value="${settings.machine_lifetime_hours || ''}" placeholder="5000">
+          </div>
+        </div>
       </div>
       <div class="inv-modal-footer">
         <button class="form-btn" onclick="saveInventorySettings()">${t('filament.save')}</button>
@@ -1884,7 +2201,11 @@
       ['default_weight', document.getElementById('set-default-weight')?.value],
       ['currency', document.getElementById('set-currency')?.value],
       ['low_stock_threshold', document.getElementById('set-low-threshold')?.value],
-      ['page_size', document.getElementById('set-page-size')?.value]
+      ['page_size', document.getElementById('set-page-size')?.value],
+      ['electricity_rate_kwh', document.getElementById('set-electricity-rate')?.value],
+      ['printer_wattage', document.getElementById('set-printer-wattage')?.value],
+      ['machine_cost', document.getElementById('set-machine-cost')?.value],
+      ['machine_lifetime_hours', document.getElementById('set-machine-lifetime')?.value]
     ];
     for (const [key, value] of keys) {
       if (value != null) await fetch(`/api/inventory/settings/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) });
@@ -1916,6 +2237,867 @@
     });
     _wsListenerAttached = true;
   }
+
+  // ═══ Drying Management Functions ═══
+
+  function _startDryingTimers() {
+    for (const ds of _dryingSessions) {
+      if (_dryingTimers[ds.id]) continue;
+      _dryingTimers[ds.id] = setInterval(() => {
+        const el = document.getElementById('drying-timer-' + ds.id);
+        if (!el) { clearInterval(_dryingTimers[ds.id]); delete _dryingTimers[ds.id]; return; }
+        const startTime = new Date(ds.started_at + 'Z').getTime();
+        const endTime = startTime + ds.duration_minutes * 60 * 1000;
+        const remaining = Math.max(0, endTime - Date.now());
+        const remainMin = Math.floor(remaining / 60000);
+        const remainH = Math.floor(remainMin / 60);
+        const remainM = remainMin % 60;
+        el.textContent = remaining <= 0 ? 'Done!' : `${remainH}h ${String(remainM).padStart(2, '0')}m`;
+        if (remaining <= 0) el.style.color = 'var(--accent-green, #00e676)';
+      }, 5000);
+    }
+  }
+
+  async function _loadDryingHistory() {
+    const container = document.getElementById('drying-history-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/inventory/drying/sessions?active=0&limit=50');
+      const sessions = await res.json();
+      if (sessions.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.drying_no_history')}</p>`;
+        return;
+      }
+      let h = `<table class="fil-drying-presets-table"><thead><tr>
+        <th>${t('common.date')}</th>
+        <th>${t('filament.profile_name')}</th>
+        <th>${t('filament.filter_material')}</th>
+        <th>${t('filament.drying_method')}</th>
+        <th>${t('filament.drying_temp')}</th>
+        <th>${t('filament.drying_duration')}</th>
+        <th>${t('filament.drying_humidity_before')}</th>
+        <th>${t('filament.drying_humidity_after')}</th>
+        <th></th>
+      </tr></thead><tbody>`;
+      for (const s of sessions) {
+        const date = s.completed_at ? new Date(s.completed_at + 'Z').toLocaleDateString() : new Date(s.started_at + 'Z').toLocaleDateString();
+        const methodLabel = t('filament.drying_method_' + (s.method || 'dryer_box'));
+        h += `<tr>
+          <td>${date}</td>
+          <td>${esc(s.profile_name || '?')}</td>
+          <td>${esc(s.material || '')}</td>
+          <td>${methodLabel}</td>
+          <td>${s.temperature ? s.temperature + '°C' : '-'}</td>
+          <td>${s.duration_minutes} min</td>
+          <td>${s.humidity_before != null ? s.humidity_before + '%' : '-'}</td>
+          <td>${s.humidity_after != null ? s.humidity_after + '%' : '-'}</td>
+          <td><button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingItem(${s.id})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button></td>
+        </tr>`;
+      }
+      h += '</tbody></table>';
+      container.innerHTML = h;
+    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+  }
+
+  async function _loadUsagePredictions() {
+    const container = document.getElementById('usage-predictions-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/inventory/predictions');
+      const data = await res.json();
+      if (!data.per_spool || data.per_spool.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        return;
+      }
+      // Only show spools with actual usage data
+      const active = data.per_spool.filter(s => s.avg_daily_g > 0);
+      if (active.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        return;
+      }
+      let h = `<table class="fil-drying-presets-table"><thead><tr>
+        <th></th>
+        <th>${t('filament.profile_name')}</th>
+        <th>${t('filament.filter_material')}</th>
+        <th>${t('filament.remaining_weight')}</th>
+        <th>${t('filament.avg_daily_usage')}</th>
+        <th>${t('filament.days_until_empty')}</th>
+        <th></th>
+      </tr></thead><tbody>`;
+      for (const s of active) {
+        const daysColor = s.days_until_empty != null && s.days_until_empty < 14 ? 'var(--accent-orange,#f0883e)' : '';
+        const reorderBadge = s.needs_reorder ? `<span style="background:var(--accent-orange,#f0883e);color:#fff;padding:1px 6px;border-radius:4px;font-size:0.7rem">${t('filament.needs_reorder')}</span>` : '';
+        const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
+        h += `<tr>
+          <td>${colorDot}</td>
+          <td>${esc(s.profile_name || '?')} ${s.vendor_name ? '<span class="text-muted">(' + esc(s.vendor_name) + ')</span>' : ''}</td>
+          <td>${esc(s.material || '')}</td>
+          <td>${Math.round(s.remaining_weight_g)}g</td>
+          <td>${s.avg_daily_g}g/d</td>
+          <td style="color:${daysColor};font-weight:${s.needs_reorder ? '700' : '400'}">${s.days_until_empty != null ? s.days_until_empty + 'd' : '-'}</td>
+          <td>${reorderBadge}</td>
+        </tr>`;
+      }
+      h += '</tbody></table>';
+      // Material summary
+      if (data.by_material && data.by_material.length > 0) {
+        h += `<div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted)">`;
+        h += data.by_material.map(m => `${m.material}: ${m.avg_daily_g}g/d`).join(' · ');
+        h += '</div>';
+      }
+      container.innerHTML = h;
+    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+  }
+
+  async function _loadCostEstimation() {
+    const container = document.getElementById('cost-estimation-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/history');
+      const history = await res.json();
+      const completed = history.filter(r => r.status === 'completed' && r.filament_used_g > 0);
+      if (completed.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        return;
+      }
+      let totalFilament = 0, totalElectricity = 0, totalDepreciation = 0, totalCost = 0;
+      const byMaterial = {};
+      const rows = [];
+      for (const r of completed.slice(0, 50)) {
+        try {
+          const params = new URLSearchParams({ filament_g: r.filament_used_g, duration_s: r.duration_seconds || 0 });
+          const cRes = await fetch('/api/inventory/cost-estimate?' + params);
+          const cost = await cRes.json();
+          totalFilament += cost.filament_cost;
+          totalElectricity += cost.electricity_cost;
+          totalDepreciation += cost.depreciation_cost;
+          totalCost += cost.total_cost;
+          const mat = r.filament_type || 'Unknown';
+          if (!byMaterial[mat]) byMaterial[mat] = { count: 0, cost: 0 };
+          byMaterial[mat].count++;
+          byMaterial[mat].cost += cost.total_cost;
+          rows.push({ name: r.filename, cost: cost.total_cost });
+        } catch {}
+      }
+      const currency = _spools[0]?.cost ? 'kr' : 'kr';
+      let h = `<div class="fil-health-legend" style="gap:12px;margin-bottom:8px">
+        <span><strong>${t('filament.filament_cost')}:</strong> ${totalFilament.toFixed(2)} kr</span>
+        <span><strong>${t('filament.electricity_cost')}:</strong> ${totalElectricity.toFixed(2)} kr</span>
+        <span><strong>${t('filament.depreciation_cost')}:</strong> ${totalDepreciation.toFixed(2)} kr</span>
+        <span style="font-weight:700"><strong>${t('filament.total_cost')}:</strong> ${totalCost.toFixed(2)} kr</span>
+      </div>`;
+      const mats = Object.entries(byMaterial).sort((a, b) => b[1].cost - a[1].cost);
+      if (mats.length > 0) {
+        h += `<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">`;
+        h += mats.map(([m, d]) => `${m}: ${d.cost.toFixed(2)} kr (${d.count})`).join(' · ');
+        h += '</div>';
+      }
+      container.innerHTML = h;
+    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+  }
+
+  window.showStartDryingDialog = function(spoolId) {
+    const spool = _spools.find(s => s.id === spoolId);
+    if (!spool) return;
+    const preset = _dryingPresets.find(p => p.material === spool.material);
+    const formContainer = document.getElementById('inv-global-form');
+    if (!formContainer) return;
+
+    const cleanName = _cleanProfileName(spool);
+    formContainer.style.display = 'block';
+    formContainer.innerHTML = `
+      <div class="ctrl-card" style="margin-bottom:12px">
+        <div class="ctrl-card-title">${t('filament.start_drying')} — ${esc(cleanName)}</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px">
+          <label class="form-label">${t('filament.drying_temp')}
+            <input class="form-input form-input-sm" type="number" id="dry-temp" value="${preset?.temperature || 50}" min="30" max="120">
+          </label>
+          <label class="form-label">${t('filament.drying_duration')}
+            <input class="form-input form-input-sm" type="number" id="dry-duration" value="${preset?.duration_minutes || 240}" min="30" max="1440">
+          </label>
+          <label class="form-label">${t('filament.drying_method')}
+            <select class="form-input form-input-sm" id="dry-method">
+              <option value="dryer_box">${t('filament.drying_method_dryer_box')}</option>
+              <option value="ams_drying">${t('filament.drying_method_ams')}</option>
+              <option value="oven">${t('filament.drying_method_oven')}</option>
+              <option value="other">${t('filament.drying_method_other')}</option>
+            </select>
+          </label>
+          <label class="form-label">${t('filament.drying_humidity_before')}
+            <input class="form-input form-input-sm" type="number" id="dry-humidity" step="0.1" min="0" max="100" placeholder="Optional">
+          </label>
+          <label class="form-label" style="grid-column:1/-1">${t('filament.drying_notes')}
+            <input class="form-input form-input-sm" type="text" id="dry-notes" placeholder="Optional">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="form-btn" onclick="submitStartDrying(${spoolId})">${t('filament.start_drying')}</button>
+          <button class="form-btn form-btn-sm" onclick="document.getElementById('inv-global-form').style.display='none'">${t('common.cancel')}</button>
+        </div>
+      </div>`;
+    formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.submitStartDrying = async function(spoolId) {
+    const temp = parseInt(document.getElementById('dry-temp')?.value || '50');
+    const duration = parseInt(document.getElementById('dry-duration')?.value || '240');
+    const method = document.getElementById('dry-method')?.value || 'dryer_box';
+    const humidity = parseFloat(document.getElementById('dry-humidity')?.value) || null;
+    const notes = document.getElementById('dry-notes')?.value || null;
+
+    try {
+      const res = await fetch('/api/inventory/drying/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spool_id: spoolId, temperature: temp, duration_minutes: duration, method, humidity_before: humidity, notes })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.getElementById('inv-global-form').style.display = 'none';
+      loadFilament();
+    } catch (e) { alert('Failed to start drying: ' + e.message); }
+  };
+
+  window.completeDryingItem = async function(sessionId) {
+    const humidityAfter = prompt(t('filament.drying_humidity_after'));
+    try {
+      const res = await fetch(`/api/inventory/drying/sessions/${sessionId}/complete`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ humidity_after: humidityAfter ? parseFloat(humidityAfter) : null })
+      });
+      if (!res.ok) throw new Error('Failed');
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  window.deleteDryingItem = async function(sessionId) {
+    if (!confirm(t('common.delete_confirm'))) return;
+    try {
+      await fetch(`/api/inventory/drying/sessions/${sessionId}`, { method: 'DELETE' });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  window.showAddDryingPresetForm = function() {
+    const container = document.getElementById('drying-presets-form');
+    if (!container) return;
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <label class="form-label">${t('filament.filter_material')}
+          <input class="form-input form-input-sm" type="text" id="preset-material" placeholder="e.g. PLA">
+        </label>
+        <label class="form-label">${t('filament.drying_temp')}
+          <input class="form-input form-input-sm" type="number" id="preset-temp" value="50" min="30" max="120">
+        </label>
+        <label class="form-label">${t('filament.drying_duration')}
+          <input class="form-input form-input-sm" type="number" id="preset-duration" value="240" min="30" max="1440">
+        </label>
+        <label class="form-label">${t('filament.drying_max_days')}
+          <input class="form-input form-input-sm" type="number" id="preset-maxdays" value="30" min="1" max="365">
+        </label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="form-btn" onclick="submitDryingPreset()">${t('common.save')}</button>
+        <button class="form-btn form-btn-sm" onclick="document.getElementById('drying-presets-form').style.display='none'">${t('common.cancel')}</button>
+      </div>`;
+  };
+
+  window.editDryingPreset = function(material) {
+    const preset = _dryingPresets.find(p => p.material === material);
+    if (!preset) return;
+    const container = document.getElementById('drying-presets-form');
+    if (!container) return;
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <label class="form-label">${t('filament.filter_material')}
+          <input class="form-input form-input-sm" type="text" id="preset-material" value="${esc(material)}" readonly>
+        </label>
+        <label class="form-label">${t('filament.drying_temp')}
+          <input class="form-input form-input-sm" type="number" id="preset-temp" value="${preset.temperature}" min="30" max="120">
+        </label>
+        <label class="form-label">${t('filament.drying_duration')}
+          <input class="form-input form-input-sm" type="number" id="preset-duration" value="${preset.duration_minutes}" min="30" max="1440">
+        </label>
+        <label class="form-label">${t('filament.drying_max_days')}
+          <input class="form-input form-input-sm" type="number" id="preset-maxdays" value="${preset.max_days_without_drying || 30}" min="1" max="365">
+        </label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="form-btn" onclick="submitDryingPreset()">${t('common.save')}</button>
+        <button class="form-btn form-btn-sm" onclick="document.getElementById('drying-presets-form').style.display='none'">${t('common.cancel')}</button>
+      </div>`;
+  };
+
+  window.submitDryingPreset = async function() {
+    const material = document.getElementById('preset-material')?.value?.trim();
+    const temperature = parseInt(document.getElementById('preset-temp')?.value || '50');
+    const duration_minutes = parseInt(document.getElementById('preset-duration')?.value || '240');
+    const max_days_without_drying = parseInt(document.getElementById('preset-maxdays')?.value || '30');
+    if (!material) return;
+    try {
+      const res = await fetch(`/api/inventory/drying/presets/${encodeURIComponent(material)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ temperature, duration_minutes, max_days_without_drying })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.getElementById('drying-presets-form').style.display = 'none';
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  window.deleteDryingPresetItem = async function(material) {
+    if (!confirm(t('filament.drying_preset_delete'))) return;
+    try {
+      await fetch(`/api/inventory/drying/presets/${encodeURIComponent(material)}`, { method: 'DELETE' });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  // ═══ Checked-out spools ═══
+  async function _loadCheckedOut() {
+    const el = document.getElementById('checked-out-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/inventory/checked-out');
+      const spools = await res.json();
+      if (!spools.length) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.no_checked_out')}</p>`; return; }
+      let h = '<div class="fil-checkout-list">';
+      for (const s of spools) {
+        const color = hexToRgb(s.color_hex);
+        h += `<div class="fil-checkout-item">
+          <span class="filament-color-swatch" style="background:${color}"></span>
+          <div class="fil-checkout-info">
+            <strong>${esc(s.profile_name || s.material || '--')}</strong>
+            <span class="text-muted" style="font-size:0.75rem">${s.checked_out_by ? t('filament.checked_out_by') + ': ' + esc(s.checked_out_by) : ''} ${s.checked_out_from ? '· ' + esc(s.checked_out_from) : ''}</span>
+          </div>
+          <button class="form-btn form-btn-sm" onclick="checkinSpoolItem(${s.id})">${t('filament.checkin')}</button>
+        </div>`;
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  window.checkoutSpoolItem = async function(id) {
+    const actor = prompt(t('filament.checkout_actor'));
+    if (actor === null) return;
+    try {
+      await fetch(`/api/inventory/spools/${id}/checkout`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actor: actor || undefined })
+      });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  window.checkinSpoolItem = async function(id) {
+    try {
+      await fetch(`/api/inventory/spools/${id}/checkin`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  // ═══ Color Card ═══
+  async function _loadColorCard() {
+    const el = document.getElementById('color-card-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/inventory/color-card');
+      const grouped = await res.json();
+      const materials = Object.keys(grouped).sort();
+      if (materials.length === 0) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.no_spools')}</p>`; return; }
+      let h = '<div class="fil-color-card" id="color-card-canvas-area">';
+      for (const mat of materials) {
+        h += `<div class="fil-color-group"><div class="fil-color-group-title">${esc(mat)}</div><div class="fil-color-swatches">`;
+        for (const s of grouped[mat]) {
+          const c = hexToRgb(s.color_hex);
+          const border = isLightColor(s.color_hex) ? 'border:1px solid var(--border-color)' : '';
+          h += `<div class="fil-color-swatch-card" title="${esc(s.vendor_name || '')} ${esc(s.name || '')}\n${esc(s.color_name || '')}">
+            <div class="fil-color-swatch-big" style="background:${c};${border}"></div>
+            <div class="fil-color-swatch-name">${esc(s.color_name || s.name || '')}</div>
+          </div>`;
+        }
+        h += '</div></div>';
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  window.exportColorCard = function() {
+    const area = document.getElementById('color-card-canvas-area');
+    if (!area) return;
+    const win = window.open('', '_blank', 'width=800,height=600');
+    win.document.write(`<html><head><title>${t('filament.color_card')}</title><style>
+      body{font-family:sans-serif;padding:20px;background:#fff;color:#333}
+      .fil-color-group{margin-bottom:16px}
+      .fil-color-group-title{font-weight:bold;font-size:14px;margin-bottom:8px;border-bottom:1px solid #ddd;padding-bottom:4px}
+      .fil-color-swatches{display:flex;flex-wrap:wrap;gap:8px}
+      .fil-color-swatch-card{text-align:center;width:60px}
+      .fil-color-swatch-big{width:48px;height:48px;border-radius:6px;margin:0 auto 4px}
+      .fil-color-swatch-name{font-size:9px;word-break:break-word}
+      @media print{@page{margin:10mm}}
+    </style></head><body>${area.innerHTML}</body></html>`);
+    win.document.close();
+    win.print();
+  };
+
+  // ═══ NFC Manager ═══
+  async function _loadNfcMappings() {
+    const el = document.getElementById('nfc-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/nfc/mappings');
+      const mappings = await res.json();
+      if (!mappings.length) {
+        el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.nfc_no_mappings')}</p>`;
+        return;
+      }
+      let h = '<div class="fil-nfc-list">';
+      for (const m of mappings) {
+        const color = m.color_hex ? hexToRgb(m.color_hex) : '#888';
+        h += `<div class="fil-nfc-item">
+          <span class="filament-color-swatch" style="background:${color}"></span>
+          <div class="fil-nfc-info">
+            <strong>${esc(m.spool_name || t('filament.nfc_unlinked'))}</strong>
+            <span class="text-muted" style="font-size:0.75rem">UID: ${esc(m.tag_uid)} · ${esc(m.standard || 'openspool')}</span>
+          </div>
+          <button class="filament-delete-btn" style="opacity:1" onclick="unlinkNfcItem('${esc(m.tag_uid)}')" title="${t('settings.delete')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  window.startNfcScan = async function() {
+    if (!('NDEFReader' in window)) {
+      alert(t('filament.nfc_not_supported'));
+      return;
+    }
+    try {
+      const ndef = new NDEFReader();
+      await ndef.scan();
+      const overlay = document.createElement('div');
+      overlay.className = 'inv-modal-overlay';
+      overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); ndef.onreading = null; } };
+      overlay.innerHTML = `<div class="inv-modal" style="max-width:400px">
+        <div class="inv-modal-header">
+          <span>${t('filament.nfc_scanning')}</span>
+          <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+        </div>
+        <div style="padding:24px;text-align:center">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
+          <p style="margin-top:12px">${t('filament.nfc_hold_tag')}</p>
+          <div id="nfc-scan-result"></div>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+
+      ndef.onreading = async (event) => {
+        const uid = event.serialNumber || 'unknown';
+        const resultEl = document.getElementById('nfc-scan-result');
+        if (!resultEl) return;
+        // Check if tag is linked
+        try {
+          const res = await fetch(`/api/nfc/lookup/${encodeURIComponent(uid)}`);
+          if (res.ok) {
+            const tag = await res.json();
+            resultEl.innerHTML = `<div style="margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:8px">
+              <strong>${esc(tag.spool_name || 'Unknown')}</strong><br>
+              <span class="text-muted">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span><br>
+              <span class="text-muted">UID: ${esc(uid)}</span>
+            </div>`;
+          } else {
+            resultEl.innerHTML = `<div style="margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:8px">
+              <p>${t('filament.nfc_tag_unknown')}</p>
+              <span class="text-muted">UID: ${esc(uid)}</span><br>
+              <button class="form-btn form-btn-sm" style="margin-top:8px" onclick="linkNfcToSpool('${esc(uid)}')">${t('filament.nfc_link')}</button>
+            </div>`;
+          }
+        } catch { resultEl.innerHTML = '<span class="text-muted">Error</span>'; }
+      };
+    } catch (e) {
+      alert(t('filament.nfc_error') + ': ' + e.message);
+    }
+  };
+
+  window.linkNfcToSpool = async function(uid) {
+    const spoolId = prompt(t('filament.nfc_enter_spool_id'));
+    if (!spoolId) return;
+    try {
+      await fetch('/api/nfc/link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_uid: uid, spool_id: parseInt(spoolId) })
+      });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  window.unlinkNfcItem = async function(uid) {
+    if (!confirm(t('filament.nfc_unlink_confirm'))) return;
+    try {
+      await fetch(`/api/nfc/link/${encodeURIComponent(uid)}`, { method: 'DELETE' });
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  // ═══ Spool Timeline ═══
+  async function _loadTimeline() {
+    const el = document.getElementById('timeline-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/inventory/events?limit=50');
+      const events = await res.json();
+      if (!events.length) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.timeline_empty')}</p>`; return; }
+      const eventIcons = {
+        created: '&#x2795;', edited: '&#x270F;', used: '&#x1F4E6;', dried: '&#x1F4A7;',
+        assigned: '&#x1F5A8;', unassigned: '&#x2B05;', archived: '&#x1F4E6;', unarchived: '&#x21A9;',
+        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;'
+      };
+      let h = '<div class="fil-timeline">';
+      for (const ev of events) {
+        const icon = eventIcons[ev.event_type] || '&#x2022;';
+        const time = ev.timestamp ? new Date(ev.timestamp + 'Z').toLocaleString() : '';
+        h += `<div class="fil-timeline-item">
+          <div class="fil-timeline-dot">${icon}</div>
+          <div class="fil-timeline-content">
+            <div class="fil-timeline-header">
+              <strong>${esc(ev.spool_name || 'Spool #' + ev.spool_id)}</strong>
+              <span class="text-muted" style="font-size:0.7rem">${time}</span>
+            </div>
+            <div class="fil-timeline-event">${t('filament.event_' + ev.event_type, {}, ev.event_type)}</div>
+            ${ev.actor ? `<span class="text-muted" style="font-size:0.7rem">${esc(ev.actor)}</span>` : ''}
+          </div>
+        </div>`;
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  // ═══ Spool Timeline Dialog (per spool) ═══
+  window.showSpoolTimeline = async function(id) {
+    try {
+      const res = await fetch(`/api/inventory/spools/${id}/timeline`);
+      const events = await res.json();
+      const eventIcons = {
+        created: '&#x2795;', edited: '&#x270F;', used: '&#x1F4E6;', dried: '&#x1F4A7;',
+        assigned: '&#x1F5A8;', unassigned: '&#x2B05;', archived: '&#x1F4E6;', unarchived: '&#x21A9;',
+        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;'
+      };
+      let h = '';
+      if (!events.length) { h = `<p class="text-muted">${t('filament.timeline_empty')}</p>`; }
+      else {
+        h = '<div class="fil-timeline">';
+        for (const ev of events) {
+          const icon = eventIcons[ev.event_type] || '&#x2022;';
+          const time = ev.timestamp ? new Date(ev.timestamp + 'Z').toLocaleString() : '';
+          h += `<div class="fil-timeline-item">
+            <div class="fil-timeline-dot">${icon}</div>
+            <div class="fil-timeline-content">
+              <div class="fil-timeline-header"><span>${t('filament.event_' + ev.event_type, {}, ev.event_type)}</span><span class="text-muted" style="font-size:0.7rem">${time}</span></div>
+            </div>
+          </div>`;
+        }
+        h += '</div>';
+      }
+      const overlay = document.createElement('div');
+      overlay.className = 'inv-modal-overlay';
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+      overlay.innerHTML = `<div class="inv-modal" style="max-width:500px">
+        <div class="inv-modal-header">
+          <span>${t('filament.spool_timeline')}</span>
+          <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+        </div>
+        <div style="padding:12px;max-height:400px;overflow-y:auto">${h}</div>
+      </div>`;
+      document.body.appendChild(overlay);
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  // ═══ Bulk Operations ═══
+  let _selectedSpools = new Set();
+
+  window.toggleSpoolSelect = function(id, el) {
+    if (_selectedSpools.has(id)) {
+      _selectedSpools.delete(id);
+      el.closest('.filament-card')?.classList.remove('filament-card-selected');
+    } else {
+      _selectedSpools.add(id);
+      el.closest('.filament-card')?.classList.add('filament-card-selected');
+    }
+    _updateBulkBar();
+  };
+
+  function _updateBulkBar() {
+    let bar = document.getElementById('bulk-action-bar');
+    if (_selectedSpools.size === 0) {
+      if (bar) bar.remove();
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'bulk-action-bar';
+      bar.className = 'fil-bulk-bar';
+      document.body.appendChild(bar);
+    }
+    bar.innerHTML = `<span>${_selectedSpools.size} ${t('filament.bulk_selected')}</span>
+      <div class="fil-bulk-actions">
+        <button class="form-btn form-btn-sm" onclick="bulkAction('mark_dried')">${t('filament.start_drying')}</button>
+        <button class="form-btn form-btn-sm" onclick="bulkAction('relocate')">${t('filament.bulk_relocate')}</button>
+        <button class="form-btn form-btn-sm" onclick="bulkAction('archive')">${t('filament.archive')}</button>
+        <button class="form-btn form-btn-sm" style="color:var(--accent-red)" onclick="bulkAction('delete')">${t('settings.delete')}</button>
+        <button class="form-btn form-btn-sm" onclick="clearBulkSelection()">${t('common.cancel')}</button>
+      </div>`;
+  }
+
+  window.clearBulkSelection = function() {
+    _selectedSpools.clear();
+    document.querySelectorAll('.filament-card-selected').forEach(el => el.classList.remove('filament-card-selected'));
+    _updateBulkBar();
+  };
+
+  window.bulkAction = async function(action) {
+    const ids = Array.from(_selectedSpools);
+    if (ids.length === 0) return;
+    let body = { action, spool_ids: ids };
+    if (action === 'delete' && !confirm(t('filament.bulk_delete_confirm', { count: ids.length }))) return;
+    if (action === 'archive' && !confirm(t('filament.bulk_archive_confirm', { count: ids.length }))) return;
+    if (action === 'relocate') {
+      const loc = prompt(t('filament.bulk_relocate_prompt'));
+      if (!loc) return;
+      body.location = loc;
+    }
+    try {
+      const res = await fetch('/api/inventory/spools/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('Failed');
+      _selectedSpools.clear();
+      _updateBulkBar();
+      loadFilament();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  // ═══ Swatch Labels (enhanced) ═══
+  window.showSwatchLabel = async function(id) {
+    const res = await fetch(`/api/inventory/spools/${id}/label?format=swatch_40x30`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const s = data.spool;
+    if (!s) return;
+    const color = hexToRgb(s.color_hex);
+    const textColor = isLightColor(s.color_hex) ? '#333' : '#fff';
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:500px">
+      <div class="inv-modal-header">
+        <span>${t('filament.swatch_label')}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px">
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <label class="form-label" style="margin:0;font-size:0.75rem">${t('filament.label_format')}:</label>
+          <select class="form-input" id="swatch-format" style="width:auto;font-size:0.75rem" onchange="updateSwatchPreview(${id})">
+            <option value="swatch_40x30">Swatch 40x30mm</option>
+            <option value="swatch_50x75">Full 50x75mm</option>
+          </select>
+        </div>
+        <div id="swatch-preview" class="fil-swatch-preview">
+          <div class="fil-swatch-card" style="background:${color};color:${textColor}">
+            <div class="fil-swatch-material">${esc(s.material || '')}</div>
+            <div class="fil-swatch-vendor">${esc(s.vendor_name || '')}</div>
+            ${s.color_name ? `<div class="fil-swatch-color-name">${esc(s.color_name)}</div>` : ''}
+            <div class="fil-swatch-temps">${s.nozzle_temp_min || ''}–${s.nozzle_temp_max || ''}°C</div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-modal-footer">
+        <button class="form-btn" onclick="printSwatchLabel()">${t('filament.print_label')}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay._spoolData = s;
+  };
+
+  window.updateSwatchPreview = function(id) {
+    const overlay = document.querySelector('.inv-modal-overlay');
+    if (!overlay || !overlay._spoolData) return;
+    const s = overlay._spoolData;
+    const format = document.getElementById('swatch-format')?.value || 'swatch_40x30';
+    const color = hexToRgb(s.color_hex);
+    const textColor = isLightColor(s.color_hex) ? '#333' : '#fff';
+    const el = document.getElementById('swatch-preview');
+    if (!el) return;
+    if (format === 'swatch_50x75') {
+      let qrHtml = '';
+      if (typeof qrcode !== 'undefined') {
+        const qr = qrcode(0, 'M');
+        qr.addData(JSON.stringify({ id: s.id, material: s.material }));
+        qr.make();
+        qrHtml = qr.createSvgTag(3, 0);
+      }
+      el.innerHTML = `<div class="fil-swatch-card fil-swatch-full" style="background:${color};color:${textColor}">
+        <div style="display:flex;gap:8px;align-items:center">
+          ${qrHtml ? `<div style="background:#fff;padding:4px;border-radius:4px">${qrHtml}</div>` : ''}
+          <div>
+            <div class="fil-swatch-material" style="font-size:16px">${esc(s.material || '')}</div>
+            <div class="fil-swatch-vendor">${esc(s.vendor_name || '')}</div>
+          </div>
+        </div>
+        ${s.color_name ? `<div class="fil-swatch-color-name">${esc(s.color_name)}</div>` : ''}
+        <div class="fil-swatch-temps">${s.nozzle_temp_min || ''}–${s.nozzle_temp_max || ''}°C / Bed: ${s.bed_temp_min || ''}–${s.bed_temp_max || ''}°C</div>
+      </div>`;
+    } else {
+      el.innerHTML = `<div class="fil-swatch-card" style="background:${color};color:${textColor}">
+        <div class="fil-swatch-material">${esc(s.material || '')}</div>
+        <div class="fil-swatch-vendor">${esc(s.vendor_name || '')}</div>
+        ${s.color_name ? `<div class="fil-swatch-color-name">${esc(s.color_name)}</div>` : ''}
+        <div class="fil-swatch-temps">${s.nozzle_temp_min || ''}–${s.nozzle_temp_max || ''}°C</div>
+      </div>`;
+    }
+  };
+
+  window.printSwatchLabel = function() {
+    const preview = document.getElementById('swatch-preview');
+    if (!preview) return;
+    const format = document.getElementById('swatch-format')?.value || 'swatch_40x30';
+    const widthMm = format === 'swatch_50x75' ? 75 : 40;
+    const heightMm = format === 'swatch_50x75' ? 50 : 30;
+    const win = window.open('', '_blank', 'width=400,height=300');
+    win.document.write(`<html><head><title>${t('filament.swatch_label')}</title><style>
+      body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh}
+      .fil-swatch-card{width:${widthMm}mm;height:${heightMm}mm;border-radius:4px;padding:4mm;display:flex;flex-direction:column;justify-content:center;gap:2px;font-family:sans-serif}
+      .fil-swatch-card.fil-swatch-full{height:auto;min-height:${heightMm}mm}
+      .fil-swatch-material{font-weight:bold;font-size:14px}
+      .fil-swatch-vendor{font-size:11px;opacity:0.85}
+      .fil-swatch-color-name{font-size:10px;opacity:0.7}
+      .fil-swatch-temps{font-size:9px;opacity:0.6}
+      svg{width:60px;height:60px}
+      @media print{@page{size:${widthMm}mm ${heightMm}mm;margin:0}body{min-height:auto}}
+    </style></head><body>${preview.innerHTML}</body></html>`);
+    win.document.close();
+    win.print();
+  };
+
+  // ═══ Material Reference ═══
+
+  let _materialsCache = null;
+
+  async function _loadMaterials() {
+    const el = document.getElementById('matref-container');
+    if (!el) return;
+    try {
+      if (!_materialsCache) {
+        const res = await fetch('/api/materials');
+        _materialsCache = await res.json();
+      }
+      _renderMaterials(_materialsCache, el);
+    } catch (e) {
+      el.innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    }
+  }
+
+  function _renderMaterials(materials, el) {
+    const filter = document.getElementById('matref-category-filter')?.value || '';
+    const filtered = filter ? materials.filter(m => m.category === filter) : materials;
+    if (!filtered.length) { el.innerHTML = `<div class="text-muted">${t('filament.no_materials')}</div>`; return; }
+
+    let html = '<div class="fil-matref-grid">';
+    for (const m of filtered) {
+      const tips = m.tips ? (() => { try { return JSON.parse(m.tips); } catch { return {}; } })() : {};
+      const badges = [];
+      if (m.abrasive) badges.push('<span class="fil-matref-badge fil-matref-abrasive">Abrasive</span>');
+      if (m.food_safe) badges.push('<span class="fil-matref-badge fil-matref-foodsafe">Food Safe</span>');
+      if (m.uv_resistant) badges.push('<span class="fil-matref-badge fil-matref-uv">UV Resistant</span>');
+      if (m.enclosure) badges.push('<span class="fil-matref-badge fil-matref-enclosure">Enclosure</span>');
+
+      html += `<div class="fil-matref-card" onclick="showMaterialDetail(${m.id})">
+        <div class="fil-matref-header">
+          <strong>${m.material}</strong>
+          <span class="fil-matref-cat">${m.category}</span>
+        </div>
+        <div class="fil-matref-bars">
+          ${_matBar(t('filament.mat_difficulty'), m.difficulty, '#e74c3c')}
+          ${_matBar(t('filament.mat_strength'), m.strength, '#3498db')}
+          ${_matBar(t('filament.mat_temp_res'), m.temp_resistance, '#e67e22')}
+          ${_matBar(t('filament.mat_flexibility'), m.flexibility, '#2ecc71')}
+        </div>
+        <div class="fil-matref-temps">
+          ${m.nozzle_temp_min && m.nozzle_temp_max ? `<span>Nozzle: ${m.nozzle_temp_min}-${m.nozzle_temp_max}°C</span>` : ''}
+          ${m.bed_temp_min && m.bed_temp_max ? `<span>Bed: ${m.bed_temp_min}-${m.bed_temp_max}°C</span>` : ''}
+        </div>
+        ${badges.length ? `<div class="fil-matref-badges">${badges.join('')}</div>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  function _matBar(label, value, color) {
+    const pct = (value / 5) * 100;
+    return `<div class="fil-matref-bar-row"><span class="fil-matref-bar-label">${label}</span><div class="fil-matref-bar"><div class="fil-matref-bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="fil-matref-bar-val">${value}/5</span></div>`;
+  }
+
+  window.filterMaterials = function() {
+    if (_materialsCache) {
+      const el = document.getElementById('matref-container');
+      if (el) _renderMaterials(_materialsCache, el);
+    }
+  };
+
+  window.showMaterialDetail = async function(id) {
+    try {
+      const res = await fetch(`/api/materials/${id}`);
+      const m = await res.json();
+      const tips = m.tips ? (() => { try { return JSON.parse(m.tips); } catch { return {}; } })() : {};
+
+      let html = `<div class="modal-overlay" id="material-detail-modal">
+        <div class="modal-content" style="max-width:500px">
+          <div class="modal-header"><h3>${m.material}</h3>
+            <button class="modal-close" onclick="document.getElementById('material-detail-modal').remove()">&times;</button></div>
+          <div class="modal-body">
+            <div class="fil-matref-detail-grid">
+              <div class="fil-matref-detail-section">
+                <h4>${t('filament.mat_properties')}</h4>
+                ${_matBar(t('filament.mat_difficulty'), m.difficulty, '#e74c3c')}
+                ${_matBar(t('filament.mat_strength'), m.strength, '#3498db')}
+                ${_matBar(t('filament.mat_temp_res'), m.temp_resistance, '#e67e22')}
+                ${_matBar(t('filament.mat_moisture'), m.moisture_sensitivity, '#9b59b6')}
+                ${_matBar(t('filament.mat_flexibility'), m.flexibility, '#2ecc71')}
+                ${_matBar(t('filament.mat_adhesion'), m.layer_adhesion, '#1abc9c')}
+              </div>
+              <div class="fil-matref-detail-section">
+                <h4>${t('filament.mat_temps')}</h4>
+                ${m.nozzle_temp_min ? `<div>Nozzle: ${m.nozzle_temp_min} - ${m.nozzle_temp_max}°C</div>` : ''}
+                ${m.bed_temp_min ? `<div>Bed: ${m.bed_temp_min} - ${m.bed_temp_max}°C</div>` : ''}
+                ${m.chamber_temp ? `<div>Chamber: ${m.chamber_temp}°C</div>` : ''}
+                ${m.typical_density ? `<div>Density: ${m.typical_density} g/cm³</div>` : ''}
+                ${m.nozzle_recommendation ? `<div>Nozzle: ${m.nozzle_recommendation}</div>` : ''}
+              </div>
+            </div>
+            ${tips.print ? `<div class="fil-matref-tip"><strong>${t('filament.mat_tip_print')}:</strong> ${tips.print}</div>` : ''}
+            ${tips.storage ? `<div class="fil-matref-tip"><strong>${t('filament.mat_tip_storage')}:</strong> ${tips.storage}</div>` : ''}
+            ${tips.post ? `<div class="fil-matref-tip"><strong>${t('filament.mat_tip_post')}:</strong> ${tips.post}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+    } catch (e) { alert('Error: ' + e.message); }
+  };
 
   // ═══ Legacy compat: old /api/filament still works for backward compat ═══
   window.showAddFilamentForm = window.showAddSpoolForm;

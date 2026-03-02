@@ -240,21 +240,35 @@
     'protection-log': () => {
       let h = `<div class="card-title">${t('protection.tab_log')}</div>`;
       if (!_log.length) return h + `<div class="text-muted" style="font-size:0.8rem">${t('protection.no_alerts')}</div>`;
-      h += '<div style="display:flex;flex-direction:column;gap:4px">';
+      h += '<div class="protection-log-cards">';
       for (const entry of _log) {
         const evLabel = t(EVENT_LABELS[entry.event_type] || entry.event_type);
         const actLabel = t(ACTION_LABELS[entry.action_taken] || entry.action_taken);
-        const resolvedStyle = entry.resolved ? 'opacity:0.5' : '';
         const isSensor = SENSOR_EVENTS.includes(entry.event_type);
-        const dotColor = entry.resolved ? 'var(--text-muted)' : (isSensor ? 'var(--accent-blue)' : 'var(--accent-red)');
+        const accentColor = entry.resolved ? 'var(--text-muted)' : (entry.action_taken === 'stop' ? 'var(--accent-red)' : entry.action_taken === 'pause' ? 'var(--accent-orange)' : isSensor ? 'var(--accent-blue)' : 'var(--accent-red)');
         const icon = EVENT_ICONS[entry.event_type] || '';
-        h += `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:0.78rem;border-bottom:1px solid var(--border-color);${resolvedStyle}">
-          <span style="color:${dotColor};flex-shrink:0">${icon}</span>
-          <span style="min-width:100px;color:var(--text-muted)">${fmtTime(entry.timestamp)}</span>
-          <span style="min-width:80px;font-weight:500">${esc(printerName(entry.printer_id))}</span>
-          <span style="flex:1">${evLabel}${entry.notes ? ` <span style="color:var(--text-muted);font-size:0.7rem">(${esc(entry.notes)})</span>` : ''}</span>
-          <span style="min-width:80px;color:var(--text-muted)">${actLabel}</span>
-          ${entry.resolved ? '<span style="font-size:0.7rem;color:var(--accent-green)">Resolved</span>' : `<button class="form-btn form-btn-sm form-btn-secondary" onclick="resolveProtectionAlert(${entry.id})" style="padding:2px 8px;font-size:0.7rem">${t('protection.resolve')}</button>`}
+        const resolvedCls = entry.resolved ? ' protection-log-card-resolved' : '';
+        const actionPill = entry.action_taken === 'pause' ? 'pill-warning' : entry.action_taken === 'stop' ? 'pill-failed' : 'pill-info';
+
+        h += `<div class="protection-log-card${resolvedCls}">
+          <div class="protection-log-card-accent" style="background:${accentColor}"></div>
+          <div class="protection-log-card-body">
+            <div class="protection-log-card-header">
+              <span class="protection-log-card-icon" style="color:${accentColor}">${icon}</span>
+              <span class="protection-log-card-event">${evLabel}</span>
+              <span class="pill ${actionPill}">${actLabel}</span>
+            </div>
+            <div class="protection-log-card-meta">
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(printerName(entry.printer_id))}</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${fmtTime(entry.timestamp)}</span>
+              ${entry.notes ? `<span class="protection-log-card-notes">${esc(entry.notes)}</span>` : ''}
+            </div>
+            <div class="protection-log-card-footer">
+              ${entry.resolved
+                ? `<span class="pill pill-completed" style="font-size:0.65rem">${t('protection.resolved_label') || 'Resolved'}</span>`
+                : `<button class="form-btn form-btn-sm" onclick="resolveProtectionAlert(${entry.id})">${t('protection.resolve')}</button>`}
+            </div>
+          </div>
         </div>`;
       }
       h += '</div>';

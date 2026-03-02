@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { config, saveConfig } from './config.js';
+import { getUserByUsername, updateUser, getApiKeyByHash, updateApiKeyLastUsed } from './database.js';
 
 // In-memory session store: Map<token, { createdAt, username }>
 const sessions = new Map();
@@ -152,4 +153,53 @@ export function isPublicPath(pathname) {
   if (PUBLIC_PATHS.has(pathname)) return true;
   if (pathname.startsWith('/api/auth/')) return true;
   return false;
+}
+
+// ---- DB-backed user validation ----
+
+export function validateCredentialsDB(username, password) {
+  const user = getUserByUsername(username);
+  if (!user) return null;
+  if (!verifyPassword(password, user.password_hash)) return null;
+  updateUser(user.id, { last_login: new Date().toISOString() });
+  return user;
+}
+
+// ---- API Key authentication ----
+
+export function validateApiKey(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+
+  const key = authHeader.substring(7);
+  const hash = crypto.createHash('sha256').update(key).digest('hex');
+  const apiKey = getApiKeyByHash(hash);
+  if (!apiKey) return null;
+
+  // Check expiration
+  if (apiKey.expires_at && new Date(apiKey.expires_at) < new Date()) return null;
+
+  updateApiKeyLastUsed(apiKey.id);
+  return apiKey;
+}
+
+export function generateApiKey() {
+  const key = crypto.randomBytes(32).toString('hex');
+  const hash = crypto.createHash('sha256').update(key).digest('hex');
+  const prefix = key.substring(0, 8);
+  return { key, hash, prefix };
+}
+
+// ---- Permission checking ----
+
+export function hasPermission(permissions, required) {
+  if (!permissions) return false;
+  const perms = typeof permissions === 'string' ? JSON.parse(permissions) : permissions;
+  if (perms.includes('*')) return true;
+  return perms.includes(required);
+}
+
+export function getSessionUser(token) {
+  if (!token) return null;
+  return sessions.get(token) || null;
 }

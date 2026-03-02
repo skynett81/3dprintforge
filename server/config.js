@@ -35,7 +35,13 @@ const DEFAULTS = {
       printer_error:   { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
       maintenance_due: { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
       bed_cooled:        { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
-      update_available:  { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] }
+      update_available:  { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      drying_due:        { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      filament_low_stock: { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      queue_item_started:  { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      queue_item_completed: { enabled: false, channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      queue_item_failed:   { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] },
+      queue_completed:     { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover'] }
     },
     quietHours: { enabled: false, start: '23:00', end: '07:00' },
     bedCooledThreshold: 30

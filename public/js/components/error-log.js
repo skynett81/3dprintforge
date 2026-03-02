@@ -58,6 +58,7 @@
   let _searchTerm = '';
   let _selectedErrorPrinter = null;
   let _activeTab = 'log';
+  let _showAcknowledged = false;
   let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _draggedMod = null;
 
@@ -88,10 +89,14 @@
   const BUILDERS = {
     'error-summary': (errors) => {
       const c = getCounts(errors);
-      return `<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      const ackCount = errors.filter(e => e.acknowledged).length;
+      const unackCount = errors.length - ackCount;
+      return `<div class="stat-grid">
         <div class="stat-card"><div class="stat-value">${errors.length}</div><div class="stat-label">${t('errors.total')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-red)">${c.fatal + c.critical}</div><div class="stat-label">${t('errors.critical')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-orange)">${c.error}</div><div class="stat-label">${t('errors.errors')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent-green)">${ackCount}</div><div class="stat-label">${t('errors.acknowledged')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent-yellow, #e3b341)">${unackCount}</div><div class="stat-label">${t('errors.unacknowledged')}</div></div>
       </div>`;
     },
 
@@ -105,12 +110,27 @@
       </div>
       <div style="margin-top:8px">
         <input type="text" class="form-input" style="width:100%" placeholder="${t('errors.search_placeholder')}" value="${_searchTerm}" oninput="searchErrors(this.value)">
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="error-filter-btn ${!_showAcknowledged ? 'active' : ''}" style="--filter-color:var(--accent-blue)" onclick="toggleErrorAcknowledged(false)">${t('errors.show_active')}</button>
+        <button class="error-filter-btn ${_showAcknowledged ? 'active' : ''}" style="--filter-color:var(--accent-green)" onclick="toggleErrorAcknowledged(true)">${t('errors.show_all')}</button>
       </div>`;
       return h;
     },
 
     'error-list': (errors) => {
-      return `<div id="error-cards-container" style="max-height:600px;overflow-y:auto"></div>`;
+      const unackCount = errors.filter(e => !e.acknowledged).length;
+      let h = '';
+      if (unackCount > 0) {
+        h += `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <button class="speed-btn" onclick="acknowledgeAllErrors()" title="${t('errors.acknowledge_all')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>${t('errors.acknowledge_all')}</span>
+          </button>
+        </div>`;
+      }
+      h += `<div id="error-cards-container" style="max-height:600px;overflow-y:auto"></div>`;
+      return h;
     },
 
     'severity-breakdown': (errors) => {
@@ -317,6 +337,11 @@
 
     let filtered = _allErrors;
 
+    // Hide acknowledged unless toggled
+    if (!_showAcknowledged) {
+      filtered = filtered.filter(e => !e.acknowledged);
+    }
+
     if (_activeSeverity !== 'all') {
       if (_activeSeverity === 'critical') {
         filtered = filtered.filter(e => e.severity === 'fatal' || e.severity === 'critical');
@@ -361,7 +386,10 @@
         const isHms = e.code && e.code.startsWith('HMS_');
         const hmsAttr = isHms ? e.code.replace('HMS_', '') : null;
         const wikiUrl = isHms ? `https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${hmsAttr.replace(/-/g, '_')}` : null;
-        html += `<div class="error-card" style="--error-color:${color}">
+        const acked = e.acknowledged;
+
+        html += `<div class="error-card${acked ? ' error-card-acked' : ''}" style="--error-color:${color}">
+          <div class="error-card-accent" style="background:${color}"></div>
           <div class="error-card-icon" style="color:${color}">${severityIcon(sev)}</div>
           <div class="error-card-body">
             <div class="error-card-top">
@@ -376,10 +404,19 @@
                 ${t('errors.hms_wiki_link')}
               </a>` : ''}
               <span class="error-card-time">${formatDate(e.timestamp)}</span>
+              <span class="error-severity-pill" style="background:${color}">${sev}</span>
             </div>
           </div>
-          <div class="error-card-severity">
-            <span class="error-severity-pill" style="background:${color}">${sev}</span>
+          <div class="error-card-actions">
+            ${acked
+              ? `<span class="pill pill-success" style="font-size:0.65rem">${t('errors.acknowledged')}</span>`
+              : `<button class="error-action-btn error-action-ack" onclick="acknowledgeError(${e.id})" title="${t('errors.acknowledge')}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>`
+            }
+            <button class="error-action-btn error-action-del" onclick="deleteErrorEntry(${e.id})" title="${t('errors.delete')}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
           </div>
         </div>`;
       }
@@ -413,6 +450,59 @@
   window.searchErrors = function(term) {
     _searchTerm = term.toLowerCase();
     renderFilteredErrors();
+  };
+
+  window.toggleErrorAcknowledged = function(show) {
+    _showAcknowledged = show;
+    loadErrors();
+  };
+
+  window.acknowledgeError = async function(id) {
+    try {
+      await fetch(`/api/errors/${id}`, { method: 'PATCH' });
+      const err = _allErrors.find(e => e.id === id);
+      if (err) err.acknowledged = 1;
+      renderFilteredErrors();
+      // Update summary counts
+      const summaryMod = document.querySelector('[data-module-id="error-summary"]');
+      if (summaryMod) {
+        const handle = summaryMod.querySelector('.stats-module-handle');
+        const content = BUILDERS['error-summary'](_allErrors);
+        summaryMod.innerHTML = (handle ? handle.outerHTML : '') + content;
+      }
+    } catch (e) {
+      console.error('Failed to acknowledge error:', e);
+    }
+  };
+
+  window.deleteErrorEntry = async function(id) {
+    try {
+      await fetch(`/api/errors/${id}`, { method: 'DELETE' });
+      _allErrors = _allErrors.filter(e => e.id !== id);
+      renderFilteredErrors();
+      // Update summary counts
+      const summaryMod = document.querySelector('[data-module-id="error-summary"]');
+      if (summaryMod) {
+        const handle = summaryMod.querySelector('.stats-module-handle');
+        const content = BUILDERS['error-summary'](_allErrors);
+        summaryMod.innerHTML = (handle ? handle.outerHTML : '') + content;
+      }
+    } catch (e) {
+      console.error('Failed to delete error:', e);
+    }
+  };
+
+  window.acknowledgeAllErrors = async function() {
+    try {
+      await fetch('/api/errors/acknowledge-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: _selectedErrorPrinter })
+      });
+      loadErrors();
+    } catch (e) {
+      console.error('Failed to acknowledge all errors:', e);
+    }
   };
 
 })();

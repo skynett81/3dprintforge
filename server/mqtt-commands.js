@@ -43,6 +43,37 @@ export function buildSkipObjectsCommand(objList) {
   return { print: { sequence_id: nextSeq(), command: 'skip_objects', obj_list: objList } };
 }
 
+export function buildPrintCommand(filename, plateId = 1) {
+  const subtaskName = filename.split('/').pop().replace(/\.[^.]+$/, '');
+  return {
+    print: {
+      sequence_id: nextSeq(),
+      command: 'project_file',
+      param: `Metadata/plate_${plateId}.gcode`,
+      subtask_name: subtaskName,
+      url: `ftp://${filename}`,
+      bed_type: 'auto',
+      timelapse: false,
+      bed_leveling: true,
+      flow_cali: false,
+      vibration_cali: false,
+      layer_inspect: false,
+      use_ams: true
+    }
+  };
+}
+
+export function buildGcodeMultiLine(lines) {
+  const cmds = [];
+  for (const line of lines.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith(';')) {
+      cmds.push(buildGcodeCommand(trimmed));
+    }
+  }
+  return cmds;
+}
+
 export function buildCommandFromClientMessage(msg) {
   switch (msg.action) {
     case 'pause': return buildPauseCommand();
@@ -52,6 +83,7 @@ export function buildCommandFromClientMessage(msg) {
     case 'light': return buildLightCommand(msg.node || 'chamber_light', msg.mode || 'on');
     case 'gcode': return buildGcodeCommand(msg.gcode);
     case 'skip_objects': return msg.obj_list ? buildSkipObjectsCommand(msg.obj_list) : null;
+    case 'print_file': return msg.filename ? buildPrintCommand(msg.filename, msg.plate_id) : null;
     default: return null;
   }
 }

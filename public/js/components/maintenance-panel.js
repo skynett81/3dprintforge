@@ -76,7 +76,7 @@
     },
 
     'lifetime-stats': (s) => {
-      return `<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      return `<div class="stat-grid">
         <div class="stat-card"><div class="stat-value">${s.total_print_hours}${t('time.h')}</div><div class="stat-label">${t('maintenance.total_hours')}</div></div>
         <div class="stat-card"><div class="stat-value">${s.total_prints}</div><div class="stat-label">${t('maintenance.total_prints')}</div></div>
         <div class="stat-card"><div class="stat-value">${fmtW(s.total_filament_g)}</div><div class="stat-label">${t('maintenance.total_filament')}</div></div>
@@ -280,7 +280,12 @@
     _selectedMaintPrinter = printerId;
 
     if (!printerId) {
-      panel.innerHTML = `<p class="text-muted">${t('maintenance.no_printer')}</p>`;
+      panel.innerHTML = `<div style="text-align:center;padding:3rem 1rem">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:1rem"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="4" y="10" width="16" height="10" rx="1"/><circle cx="8" cy="15" r="1"/><line x1="12" y1="15" x2="18" y2="15"/></svg>
+        <h3 style="margin:0 0 0.5rem;color:var(--text-primary)">${t('common.no_printers_title')}</h3>
+        <p class="text-muted" style="margin:0 0 1rem">${t('common.no_printers_desc')}</p>
+        <button class="btn btn-primary" onclick="location.hash='#settings'">${t('common.add_printer_btn')}</button>
+      </div>`;
       return;
     }
 

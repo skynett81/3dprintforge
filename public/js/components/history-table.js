@@ -64,6 +64,7 @@
   let _data = [];
   let _activeFilter = 'all';
   let _activeTab = 'history';
+  let _activePrinter = 'all';
   let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _draggedMod = null;
 
@@ -154,9 +155,10 @@
         const endDate = row.finished_at ? formatDate(row.finished_at) : '--';
         const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
 
-        h += `<div class="history-card history-card-${row.status}" data-status="${row.status}" style="${display}">`;
-
-        // Left accent stripe is done via CSS based on status class
+        const accentColor = { completed: 'var(--accent-green)', failed: 'var(--accent-red)', cancelled: 'var(--accent-orange)' }[row.status] || 'var(--text-muted)';
+        h += `<div class="history-card" data-status="${row.status}" style="${display}">`;
+        h += `<div class="history-card-accent" style="background:${accentColor}"></div>`;
+        h += `<div class="history-card-content">`;
 
         h += `<div class="history-card-header">
           <div class="history-card-title">
@@ -167,34 +169,18 @@
           <span class="pill pill-${row.status}">${statusLabel(row.status)}</span>
         </div>`;
 
-        // Card body — 2 column info grid
-        h += `<div class="history-card-body">
-          <div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg>
-            <span>${esc(printerName(row.printer_id))}</span>
-          </div>
-          <div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span>${formatDateShort(row.started_at)}</span>
-          </div>
-          <div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>${formatDuration(row.duration_seconds)}</span>
-          </div>
-          <div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            <span>${row.layer_count || '--'} ${t('history.layers').toLowerCase()}</span>
-          </div>
-          <div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>${esc(row.filament_type) || '--'}${row.filament_brand ? ' · ' + esc(row.filament_brand) : ''}${row.filament_used_g ? ' · ' + row.filament_used_g + 'g' : ''}</span>
-          </div>`;
+        // Card body — 3 column labeled grid
         const speed = speedLabel(row.speed_level);
-        if (speed) h += `<div class="history-card-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>${speed}</span>
-          </div>`;
-        h += '</div>';
+        const filText = `${esc(row.filament_type) || '--'}${row.filament_used_g ? ' · ' + row.filament_used_g + 'g' : ''}`;
+        h += `<div class="history-card-grid">
+          <div class="hc-cell"><span class="hc-cell-label">${t('common.printer')}</span><span class="hc-cell-value">${esc(printerName(row.printer_id))}</span></div>
+          <div class="hc-cell"><span class="hc-cell-label">${t('history.date')}</span><span class="hc-cell-value">${formatDateShort(row.started_at)}</span></div>
+          <div class="hc-cell"><span class="hc-cell-label">${t('history.duration')}</span><span class="hc-cell-value">${formatDuration(row.duration_seconds)}</span></div>
+          <div class="hc-cell"><span class="hc-cell-label">${t('history.layers')}</span><span class="hc-cell-value">${row.layer_count || '--'}</span></div>
+          <div class="hc-cell"><span class="hc-cell-label">${t('history.filament')}</span><span class="hc-cell-value">${filText}</span></div>
+          <div class="hc-cell"><span class="hc-cell-label">${speed ? t('speed.label').replace(':','') : ''}</span><span class="hc-cell-value">${speed || ''}</span></div>
+          <div class="hc-cell hc-cost-cell" data-filament-g="${row.filament_used_g || 0}" data-duration-s="${row.duration_seconds || 0}"><span class="hc-cell-label">${t('filament.cost_estimate')}</span><span class="hc-cell-value hc-cost-value">--</span></div>
+        </div>`;
 
         // Detail section (expandable)
         h += `<div class="history-card-detail" style="display:none"><div class="history-detail-grid">`;
@@ -207,12 +193,15 @@
         if (row.waste_g > 0) h += `<div class="history-detail-row"><span class="history-detail-label">${t('waste.total_weight')}</span><span>${row.waste_g}g</span></div>`;
         h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.filename')}</span><span class="history-detail-mono">${esc(row.filename) || '--'}</span></div>`;
         if (row.notes) h += `<div class="history-detail-row"><span class="history-detail-label">${t('maintenance.notes')}</span><span>${esc(row.notes)}</span></div>`;
+        h += `<div class="history-cost-row" id="cost-row-${row.id}" style="display:none"></div>`;
         h += '</div></div>';
         h += `<button class="history-card-toggle" onclick="toggleHistoryDetail(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`;
-        h += '</div>';
+        h += '</div>'; // close .history-card-content
+        h += '</div>'; // close .history-card
       }
       h += '</div>';
-      h += `<div class="history-export"><a href="/api/history/export" class="form-btn form-btn-sm form-btn-secondary" download>
+      const exportUrl = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
+      h += `<div class="history-export"><a href="${exportUrl}" class="form-btn form-btn-sm form-btn-secondary" download>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         ${t('stats.download_csv')}</a></div>`;
       return h;
@@ -337,7 +326,9 @@
     // Read sub-slug from hash
     const hashParts = location.hash.replace('#', '').split('/');
     if (hashParts[0] === 'history' && hashParts[1]) {
-      if (TAB_CONFIG[hashParts[1]]) {
+      if (hashParts[1] === 'printer' && hashParts[2]) {
+        _activePrinter = hashParts[2];
+      } else if (TAB_CONFIG[hashParts[1]]) {
         _activeTab = hashParts[1];
       } else if (['completed', 'failed', 'cancelled'].includes(hashParts[1])) {
         _activeFilter = hashParts[1];
@@ -354,6 +345,10 @@
         return;
       }
 
+      // Filter data by selected printer
+      const filteredData = _activePrinter === 'all'
+        ? _data : _data.filter(r => r.printer_id === _activePrinter);
+
       let html = '<div class="history-layout">';
 
       // Toolbar
@@ -366,6 +361,17 @@
         </button>
       </div>`;
 
+      // Printer tab bar
+      const printerIds = [...new Set(_data.map(r => r.printer_id))];
+      if (printerIds.length > 1) {
+        html += '<div class="tabs history-printer-tabs">';
+        html += `<button class="tab-btn ${_activePrinter === 'all' ? 'active' : ''}" onclick="filterHistoryPrinter('all')">${t('history.all_printers')}</button>`;
+        for (const pid of printerIds) {
+          html += `<button class="tab-btn ${_activePrinter === pid ? 'active' : ''}" onclick="filterHistoryPrinter('${pid}')">${esc(printerName(pid))}</button>`;
+        }
+        html += '</div>';
+      }
+
       // Tab bar
       html += '<div class="tabs">';
       for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
@@ -376,11 +382,11 @@
       // Tab panels
       for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
         const order = getOrder(tabId);
-        html += `<div class="tab-panel history-tab-panel ${tabId === _activeTab ? 'active' : ''}" id="history-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:10px">`;
+        html += `<div class="tab-panel history-tab-panel stats-tab-panel ${tabId === _activeTab ? 'active' : ''}" id="history-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
         for (const modId of order) {
           const builder = BUILDERS[modId];
           if (!builder) continue;
-          const content = builder(_data);
+          const content = builder(filteredData);
           if (!content) continue;
           const draggable = _locked ? '' : 'draggable="true"';
           const unlocked = _locked ? '' : ' stats-module-unlocked';
@@ -401,8 +407,25 @@
         const cont = document.getElementById(`history-tab-${tabId}`);
         if (cont) initModuleDrag(cont, tabId);
       }
+      // Async cost estimation
+      _loadHistoryCosts(panel);
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('history.load_failed')}</p>`;
+    }
+  }
+
+  async function _loadHistoryCosts(panel) {
+    const cells = panel.querySelectorAll('.hc-cost-cell');
+    for (const cell of cells) {
+      const fg = parseFloat(cell.dataset.filamentG) || 0;
+      const ds = parseInt(cell.dataset.durationS) || 0;
+      if (fg <= 0 && ds <= 0) continue;
+      try {
+        const res = await fetch(`/api/inventory/cost-estimate?filament_g=${fg}&duration_s=${ds}`);
+        const cost = await res.json();
+        const valEl = cell.querySelector('.hc-cost-value');
+        if (valEl && cost.total_cost > 0) valEl.textContent = cost.total_cost.toFixed(2) + ' kr';
+      } catch {}
     }
   }
 
@@ -416,12 +439,38 @@
   };
 
   window.toggleHistoryDetail = function(btn) {
-    const card = btn.closest('.history-card');
+    const card = btn.closest('.history-card-content') || btn.closest('.history-card');
     const detail = card.querySelector('.history-card-detail');
     if (!detail) return;
     const isOpen = detail.style.display !== 'none';
     detail.style.display = isOpen ? 'none' : '';
     btn.classList.toggle('open', !isOpen);
+    // Lazy-load cost data when opening
+    if (!isOpen) {
+      const costRow = detail.querySelector('.history-cost-row');
+      if (costRow && !costRow.dataset.loaded) {
+        costRow.dataset.loaded = '1';
+        const printId = costRow.id.replace('cost-row-', '');
+        fetch(`/api/cost/${printId}`).then(r => r.ok ? r.json() : null).then(cost => {
+          if (cost && cost.total_cost > 0) {
+            costRow.style.display = '';
+            costRow.innerHTML = `<div class="history-detail-row"><span class="history-detail-label">${t('history.print_cost')}</span><span>${cost.total_cost.toFixed(2)} ${cost.currency || 'NOK'}</span></div>` +
+              (cost.filament_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_filament')}</span><span>${cost.filament_cost.toFixed(2)}</span></div>` : '') +
+              (cost.electricity_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_electricity')}</span><span>${cost.electricity_cost.toFixed(2)}</span></div>` : '') +
+              (cost.depreciation_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_depreciation')}</span><span>${cost.depreciation_cost.toFixed(2)}</span></div>` : '') +
+              (cost.labor_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_labor')}</span><span>${cost.labor_cost.toFixed(2)}</span></div>` : '') +
+              (cost.markup_amount > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_markup')}</span><span>${cost.markup_amount.toFixed(2)}</span></div>` : '');
+          }
+        }).catch(() => {});
+      }
+    }
+  };
+
+  window.filterHistoryPrinter = function(printerId) {
+    _activePrinter = printerId;
+    const slug = printerId === 'all' ? 'history' : `history/printer/${printerId}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    loadHistory();
   };
 
   window.filterHistory = function(status, btn) {

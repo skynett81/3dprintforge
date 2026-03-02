@@ -1,13 +1,14 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, deleteTag, assignTag, unassignTag, getEntityTags, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal } from './database.js';
 import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import https from 'node:https';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
+import { readFileSync, existsSync, statSync, createReadStream } from 'node:fs';
+import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword } from './auth.js';
+import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser } from './auth.js';
 
 // ---- Login rate limiter ----
 const LOGIN_MAX_ATTEMPTS = 5;
@@ -42,6 +43,9 @@ let _notifier = null;
 let _updater = null;
 let _hub = null;
 let _guard = null;
+let _queueManager = null;
+let _timelapseService = null;
+let _ecomLicense = null;
 
 // SpoolmanDB community database cache
 const _spoolmanDbCache = { manufacturers: null, all: null };
@@ -75,6 +79,18 @@ export function setUpdater(updater) {
 
 export function setHub(hub) {
   _hub = hub;
+}
+
+export function setQueueManager(qm) {
+  _queueManager = qm;
+}
+
+export function setTimelapseService(tl) {
+  _timelapseService = tl;
+}
+
+export function setEcomLicense(mgr) {
+  _ecomLicense = mgr;
 }
 
 function _broadcastInventory(action, entity, data) {
@@ -359,6 +375,21 @@ export async function handleApiRequest(req, res) {
       const limit = parseInt(url.searchParams.get('limit')) || 50;
       const printerId = url.searchParams.get('printer_id') || null;
       return sendJson(res, getErrors(limit, printerId));
+    }
+    if (method === 'POST' && path === '/api/errors/acknowledge-all') {
+      return readBody(req, (body) => {
+        acknowledgeAllErrors(body?.printer_id || null);
+        return sendJson(res, { ok: true });
+      });
+    }
+    const errorMatch = path.match(/^\/api\/errors\/(\d+)$/);
+    if (errorMatch && method === 'PATCH') {
+      acknowledgeError(parseInt(errorMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+    if (errorMatch && method === 'DELETE') {
+      deleteError(parseInt(errorMatch[1]));
+      return sendJson(res, { ok: true });
     }
 
     // ---- Telemetry ----
@@ -1184,6 +1215,78 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Inventory: Drying Management ----
+    if (method === 'GET' && path === '/api/inventory/drying/sessions') {
+      const filters = {};
+      if (url.searchParams.get('spool_id')) filters.spool_id = parseInt(url.searchParams.get('spool_id'));
+      if (url.searchParams.has('active')) filters.active = url.searchParams.get('active') === '1';
+      if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
+      return sendJson(res, getDryingSessions(filters));
+    }
+    if (method === 'GET' && path === '/api/inventory/drying/sessions/active') {
+      return sendJson(res, getActiveDryingSessions());
+    }
+    if (method === 'POST' && path === '/api/inventory/drying/sessions') {
+      return readBody(req, (body) => {
+        if (!body.spool_id || !body.duration_minutes) return sendJson(res, { error: 'spool_id and duration_minutes required' }, 400);
+        const result = startDryingSession(body);
+        _broadcastInventory('drying_started', 'drying_session', { id: result.id, spool_id: body.spool_id });
+        sendJson(res, result, 201);
+      });
+    }
+    const dryingCompleteMatch = path.match(/^\/api\/inventory\/drying\/sessions\/(\d+)\/complete$/);
+    if (dryingCompleteMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        completeDryingSession(parseInt(dryingCompleteMatch[1]), body.humidity_after || null);
+        _broadcastInventory('drying_completed', 'drying_session', { id: parseInt(dryingCompleteMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    const dryingDeleteMatch = path.match(/^\/api\/inventory\/drying\/sessions\/(\d+)$/);
+    if (dryingDeleteMatch && method === 'DELETE') {
+      deleteDryingSession(parseInt(dryingDeleteMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path === '/api/inventory/drying/presets') {
+      return sendJson(res, getDryingPresets());
+    }
+    const dryingPresetMatch = path.match(/^\/api\/inventory\/drying\/presets\/(.+)$/);
+    if (dryingPresetMatch && method === 'GET') {
+      const preset = getDryingPreset(decodeURIComponent(dryingPresetMatch[1]));
+      if (!preset) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, preset);
+    }
+    if (dryingPresetMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        if (!body.temperature || !body.duration_minutes) return sendJson(res, { error: 'temperature and duration_minutes required' }, 400);
+        upsertDryingPreset(decodeURIComponent(dryingPresetMatch[1]), body);
+        _broadcastInventory('updated', 'drying_preset', { material: decodeURIComponent(dryingPresetMatch[1]) });
+        sendJson(res, { ok: true });
+      });
+    }
+    if (dryingPresetMatch && method === 'DELETE') {
+      deleteDryingPreset(decodeURIComponent(dryingPresetMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path === '/api/inventory/drying/status') {
+      return sendJson(res, getSpoolsDryingStatus());
+    }
+
+    // ---- Inventory: Predictions ----
+    if (method === 'GET' && path === '/api/inventory/predictions') {
+      return sendJson(res, getUsagePredictions());
+    }
+
+    // ---- Inventory: Cost Estimate ----
+    if (method === 'GET' && path === '/api/inventory/cost-estimate') {
+      const filamentG = parseFloat(url.searchParams.get('filament_g') || '0');
+      const durationS = parseInt(url.searchParams.get('duration_s') || '0');
+      const spoolId = url.searchParams.get('spool_id') ? parseInt(url.searchParams.get('spool_id')) : null;
+      return sendJson(res, estimatePrintCost(filamentG, durationS, spoolId));
+    }
+
     // ---- Prometheus Metrics ----
     if (method === 'GET' && (path === '/api/metrics' || path === '/metrics')) {
       const stats = getInventoryStats();
@@ -1269,6 +1372,1570 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Print Queue ----
+
+    if (method === 'GET' && path === '/api/queue') {
+      const status = url.searchParams.get('status') || null;
+      return sendJson(res, getQueues(status));
+    }
+
+    if (method === 'POST' && path === '/api/queue') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
+        const id = createQueue(body);
+        addQueueLog(id, null, null, 'queue_created', body.name);
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed' });
+        return sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    const queueMatch = path.match(/^\/api\/queue\/(\d+)$/);
+    if (queueMatch) {
+      const queueId = parseInt(queueMatch[1]);
+      if (method === 'GET') {
+        const queue = getQueue(queueId);
+        if (!queue) return sendJson(res, { error: 'Not found' }, 404);
+        return sendJson(res, queue);
+      }
+      if (method === 'PUT') {
+        return readBody(req, (body) => {
+          updateQueue(queueId, body);
+          if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+          return sendJson(res, { ok: true });
+        });
+      }
+      if (method === 'DELETE') {
+        deleteQueue(queueId);
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+        return sendJson(res, { ok: true });
+      }
+    }
+
+    const queuePauseMatch = path.match(/^\/api\/queue\/(\d+)\/pause$/);
+    if (queuePauseMatch && method === 'POST') {
+      const queueId = parseInt(queuePauseMatch[1]);
+      updateQueue(queueId, { status: 'paused' });
+      addQueueLog(queueId, null, null, 'queue_paused', null);
+      if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+      return sendJson(res, { ok: true });
+    }
+
+    const queueResumeMatch = path.match(/^\/api\/queue\/(\d+)\/resume$/);
+    if (queueResumeMatch && method === 'POST') {
+      const queueId = parseInt(queueResumeMatch[1]);
+      updateQueue(queueId, { status: 'active' });
+      addQueueLog(queueId, null, null, 'queue_resumed', null);
+      if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+      return sendJson(res, { ok: true });
+    }
+
+    const queueItemsMatch = path.match(/^\/api\/queue\/(\d+)\/items$/);
+    if (queueItemsMatch) {
+      const queueId = parseInt(queueItemsMatch[1]);
+      if (method === 'GET') {
+        const queue = getQueue(queueId);
+        if (!queue) return sendJson(res, { error: 'Not found' }, 404);
+        return sendJson(res, queue.items || []);
+      }
+      if (method === 'POST') {
+        return readBody(req, (body) => {
+          if (!body.filename) return sendJson(res, { error: 'Filename required' }, 400);
+          const id = addQueueItem(queueId, body);
+          addQueueLog(queueId, id, null, 'item_added', body.filename);
+          if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+          return sendJson(res, { ok: true, id }, 201);
+        });
+      }
+    }
+
+    const queueBatchAddMatch = path.match(/^\/api\/queue\/(\d+)\/batch-add$/);
+    if (queueBatchAddMatch && method === 'POST') {
+      const queueId = parseInt(queueBatchAddMatch[1]);
+      return readBody(req, (body) => {
+        const items = body.items || [];
+        const ids = [];
+        for (const item of items) {
+          if (!item.filename) continue;
+          const id = addQueueItem(queueId, item);
+          addQueueLog(queueId, id, null, 'item_added', item.filename);
+          ids.push(id);
+        }
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+        return sendJson(res, { ok: true, ids }, 201);
+      });
+    }
+
+    const queueReorderMatch = path.match(/^\/api\/queue\/(\d+)\/reorder$/);
+    if (queueReorderMatch && method === 'POST') {
+      const queueId = parseInt(queueReorderMatch[1]);
+      return readBody(req, (body) => {
+        if (!Array.isArray(body.item_ids)) return sendJson(res, { error: 'item_ids array required' }, 400);
+        reorderQueueItems(queueId, body.item_ids);
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    const queueMultiStartMatch = path.match(/^\/api\/queue\/(\d+)\/multi-start$/);
+    if (queueMultiStartMatch && method === 'POST') {
+      const queueId = parseInt(queueMultiStartMatch[1]);
+      return readBody(req, (body) => {
+        const printerIds = body.printer_ids || [];
+        const filename = body.filename;
+        if (!filename || printerIds.length === 0) return sendJson(res, { error: 'filename and printer_ids required' }, 400);
+        const ids = [];
+        for (let i = 0; i < printerIds.length; i++) {
+          const id = addQueueItem(queueId, { filename, printer_id: printerIds[i], priority: body.priority || 0, sort_order: i + 1 });
+          addQueueLog(queueId, id, printerIds[i], 'item_added', `Multi-print: ${filename}`);
+          ids.push(id);
+        }
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
+        return sendJson(res, { ok: true, ids }, 201);
+      });
+    }
+
+    const itemMatch = path.match(/^\/api\/queue\/items\/(\d+)$/);
+    if (itemMatch) {
+      const itemId = parseInt(itemMatch[1]);
+      if (method === 'PUT') {
+        return readBody(req, (body) => {
+          updateQueueItem(itemId, body);
+          const item = getQueueItem(itemId);
+          if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId: item?.queue_id });
+          return sendJson(res, { ok: true });
+        });
+      }
+      if (method === 'DELETE') {
+        const item = getQueueItem(itemId);
+        deleteQueueItem(itemId);
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId: item?.queue_id });
+        return sendJson(res, { ok: true });
+      }
+    }
+
+    const itemSkipMatch = path.match(/^\/api\/queue\/items\/(\d+)\/skip$/);
+    if (itemSkipMatch && method === 'POST') {
+      const itemId = parseInt(itemSkipMatch[1]);
+      const item = getQueueItem(itemId);
+      if (item) {
+        updateQueueItem(itemId, { status: 'skipped', completed_at: new Date().toISOString() });
+        addQueueLog(item.queue_id, itemId, null, 'item_skipped', null);
+        if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId: item.queue_id });
+      }
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path === '/api/queue/log') {
+      const queueId = url.searchParams.get('queue_id') ? parseInt(url.searchParams.get('queue_id')) : null;
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      return sendJson(res, getQueueLog(queueId, limit));
+    }
+
+    if (method === 'GET' && path === '/api/queue/active') {
+      return sendJson(res, getActiveQueueItems());
+    }
+
+    if (method === 'POST' && path === '/api/queue/dispatch') {
+      if (_queueManager) _queueManager.forceDispatch();
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Tags ----
+
+    if (method === 'GET' && path === '/api/tags') {
+      const category = url.searchParams.get('category') || null;
+      return sendJson(res, getTags(category));
+    }
+
+    if (method === 'POST' && path === '/api/tags') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
+        try {
+          const id = createTag(body.name, body.category, body.color);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) {
+          return sendJson(res, { error: 'Tag already exists' }, 409);
+        }
+      });
+    }
+
+    const tagDeleteMatch = path.match(/^\/api\/tags\/(\d+)$/);
+    if (tagDeleteMatch && method === 'DELETE') {
+      deleteTag(parseInt(tagDeleteMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'POST' && path === '/api/tags/assign') {
+      return readBody(req, (body) => {
+        if (!body.entity_type || !body.entity_id || !body.tag_id) return sendJson(res, { error: 'entity_type, entity_id, tag_id required' }, 400);
+        assignTag(body.entity_type, body.entity_id, body.tag_id);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'DELETE' && path === '/api/tags/unassign') {
+      return readBody(req, (body) => {
+        if (!body.entity_type || !body.entity_id || !body.tag_id) return sendJson(res, { error: 'entity_type, entity_id, tag_id required' }, 400);
+        unassignTag(body.entity_type, body.entity_id, body.tag_id);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    const entityTagsMatch = path.match(/^\/api\/tags\/entity\/([a-z_]+)\/(\d+)$/);
+    if (entityTagsMatch && method === 'GET') {
+      return sendJson(res, getEntityTags(entityTagsMatch[1], parseInt(entityTagsMatch[2])));
+    }
+
+    // ---- NFC ----
+    if (method === 'GET' && path === '/api/nfc/mappings') {
+      return sendJson(res, getNfcMappings());
+    }
+
+    const nfcLookupMatch = path.match(/^\/api\/nfc\/lookup\/(.+)$/);
+    if (nfcLookupMatch && method === 'GET') {
+      const tag = lookupNfcTag(decodeURIComponent(nfcLookupMatch[1]));
+      if (!tag) return sendJson(res, { error: 'Tag not found' }, 404);
+      updateNfcScan(decodeURIComponent(nfcLookupMatch[1]));
+      return sendJson(res, tag);
+    }
+
+    if (method === 'POST' && path === '/api/nfc/link') {
+      return readBody(req, (body) => {
+        if (!body.tag_uid || !body.spool_id) return sendJson(res, { error: 'tag_uid and spool_id required' }, 400);
+        try {
+          const id = linkNfcTag(body.tag_uid, body.spool_id, body.standard, body.data ? JSON.stringify(body.data) : null);
+          return sendJson(res, { ok: true, id });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const nfcUnlinkMatch = path.match(/^\/api\/nfc\/link\/(.+)$/);
+    if (nfcUnlinkMatch && method === 'DELETE') {
+      unlinkNfcTag(decodeURIComponent(nfcUnlinkMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Spool Checkout ----
+    const checkoutMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/(checkout|checkin)$/);
+    if (checkoutMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const spoolId = parseInt(checkoutMatch[1]);
+        if (checkoutMatch[2] === 'checkout') {
+          checkoutSpool(spoolId, body.actor, body.from_location);
+        } else {
+          checkinSpool(spoolId, body.actor, body.to_location);
+        }
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'GET' && path === '/api/inventory/checked-out') {
+      return sendJson(res, getCheckedOutSpools());
+    }
+
+    const checkoutLogMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/checkout-log$/);
+    if (checkoutLogMatch && method === 'GET') {
+      return sendJson(res, getCheckoutLog(parseInt(checkoutLogMatch[1])));
+    }
+
+    // ---- Spool Timeline ----
+    const timelineMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/timeline$/);
+    if (timelineMatch && method === 'GET') {
+      return sendJson(res, getSpoolTimeline(parseInt(timelineMatch[1])));
+    }
+
+    if (method === 'GET' && path === '/api/inventory/events') {
+      const url = new URL(req.url, 'http://localhost');
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      return sendJson(res, getRecentSpoolEvents(limit));
+    }
+
+    // ---- Bulk Operations ----
+    if (method === 'POST' && path === '/api/inventory/spools/bulk') {
+      return readBody(req, (body) => {
+        if (!body.action || !Array.isArray(body.spool_ids) || body.spool_ids.length === 0) {
+          return sendJson(res, { error: 'action and spool_ids[] required' }, 400);
+        }
+        const ids = body.spool_ids.map(Number);
+        switch (body.action) {
+          case 'delete': bulkDeleteSpools(ids); break;
+          case 'archive': bulkArchiveSpools(ids); break;
+          case 'relocate':
+            if (!body.location) return sendJson(res, { error: 'location required for relocate' }, 400);
+            bulkRelocateSpools(ids, body.location);
+            break;
+          case 'mark_dried': bulkMarkDried(ids); break;
+          default: return sendJson(res, { error: 'Unknown action: ' + body.action }, 400);
+        }
+        return sendJson(res, { ok: true, count: ids.length });
+      });
+    }
+
+    // ---- Swatch/Color Card Labels ----
+    const swatchMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/label$/);
+    if (swatchMatch && method === 'GET') {
+      const spool = getSpool(parseInt(swatchMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Spool not found' }, 404);
+      const url = new URL(req.url, 'http://localhost');
+      const format = url.searchParams.get('format') || 'swatch_40x30';
+      return sendJson(res, { spool, format });
+    }
+
+    if (method === 'POST' && path === '/api/inventory/labels/batch') {
+      return readBody(req, (body) => {
+        if (!Array.isArray(body.spool_ids)) return sendJson(res, { error: 'spool_ids[] required' }, 400);
+        const spools = body.spool_ids.map(id => getSpool(Number(id))).filter(Boolean);
+        return sendJson(res, { spools, format: body.format || 'swatch_40x30' });
+      });
+    }
+
+    if (method === 'GET' && path === '/api/inventory/color-card') {
+      const result = getSpools({ archived: false });
+      const allSpools = result.rows || [];
+      const grouped = {};
+      for (const s of allSpools) {
+        const mat = s.material || 'Unknown';
+        if (!grouped[mat]) grouped[mat] = [];
+        grouped[mat].push({ id: s.id, name: s.profile_name || s.material, color_hex: s.color_hex, vendor_name: s.vendor_name, color_name: s.color_name });
+      }
+      return sendJson(res, grouped);
+    }
+
+    // ---- SD Card Files ----
+    const filesMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/files$/);
+    if (filesMatch && method === 'GET') {
+      const printer = getPrinters().find(p => p.id === filesMatch[1]);
+      if (!printer || !printer.ip || !printer.accessCode) return sendJson(res, { error: 'Printer not found or no access code' }, 400);
+      try {
+        const files = await listPrinterFiles(printer.ip, printer.accessCode);
+        return sendJson(res, files);
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    const fileDeleteMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/files\/(.+)$/);
+    if (fileDeleteMatch && method === 'DELETE') {
+      const printer = getPrinters().find(p => p.id === fileDeleteMatch[1]);
+      if (!printer || !printer.ip || !printer.accessCode) return sendJson(res, { error: 'Printer not found' }, 400);
+      try {
+        await deletePrinterFile(printer.ip, printer.accessCode, decodeURIComponent(fileDeleteMatch[2]));
+        return sendJson(res, { ok: true });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    const filePrintMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/files\/print$/);
+    if (filePrintMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        if (!body.filename) return sendJson(res, { error: 'filename required' }, 400);
+        // Send print command via WebSocket to client which forwards to MQTT
+        if (_broadcastFn) {
+          _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: { action: 'print_file', filename: body.filename, plate_id: body.plate_id } });
+        }
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- G-Code Macros ----
+    if (method === 'GET' && path === '/api/macros') {
+      const url = new URL(req.url, 'http://localhost');
+      const category = url.searchParams.get('category');
+      return sendJson(res, getMacros(category));
+    }
+
+    if (method === 'POST' && path === '/api/macros') {
+      return readBody(req, (body) => {
+        if (!body.name || !body.gcode) return sendJson(res, { error: 'name and gcode required' }, 400);
+        const id = addMacro(body);
+        return sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    const macroMatch = path.match(/^\/api\/macros\/(\d+)$/);
+    if (macroMatch && method === 'GET') {
+      const macro = getMacro(parseInt(macroMatch[1]));
+      if (!macro) return sendJson(res, { error: 'Macro not found' }, 404);
+      return sendJson(res, macro);
+    }
+
+    if (macroMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateMacro(parseInt(macroMatch[1]), body);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (macroMatch && method === 'DELETE') {
+      deleteMacro(parseInt(macroMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const macroRunMatch = path.match(/^\/api\/macros\/(\d+)\/run$/);
+    if (macroRunMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const macro = getMacro(parseInt(macroRunMatch[1]));
+        if (!macro) return sendJson(res, { error: 'Macro not found' }, 404);
+        if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        // Send each gcode line via broadcast to the printer
+        const lines = macro.gcode.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith(';'));
+        for (const line of lines) {
+          if (_broadcastFn) {
+            _broadcastFn({ type: 'command', printerId: body.printer_id, command: { action: 'gcode', gcode: line } });
+          }
+        }
+        return sendJson(res, { ok: true, lines_sent: lines.length });
+      });
+    }
+
+    // ---- Outgoing Webhooks ----
+    if (method === 'GET' && path === '/api/webhooks') {
+      return sendJson(res, getWebhookConfigs());
+    }
+
+    if (method === 'POST' && path === '/api/webhooks') {
+      return readBody(req, (body) => {
+        if (!body.name || !body.url) return sendJson(res, { error: 'name and url required' }, 400);
+        try {
+          const id = addWebhookConfig(body);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const webhookMatch = path.match(/^\/api\/webhooks\/(\d+)$/);
+    if (webhookMatch && method === 'GET') {
+      const wh = getWebhookConfig(parseInt(webhookMatch[1]));
+      if (!wh) return sendJson(res, { error: 'Webhook not found' }, 404);
+      return sendJson(res, wh);
+    }
+
+    if (webhookMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          updateWebhookConfig(parseInt(webhookMatch[1]), body);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    if (webhookMatch && method === 'DELETE') {
+      deleteWebhookConfig(parseInt(webhookMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const webhookTestMatch = path.match(/^\/api\/webhooks\/(\d+)\/test$/);
+    if (webhookTestMatch && method === 'POST') {
+      const wh = getWebhookConfig(parseInt(webhookTestMatch[1]));
+      if (!wh) return sendJson(res, { error: 'Webhook not found' }, 404);
+      try {
+        const payload = JSON.stringify({ event: 'test', title: 'Webhook Test', message: 'This is a test from Bambu Dashboard', timestamp: new Date().toISOString(), data: {} });
+        const deliveryId = addWebhookDelivery({ webhook_id: wh.id, event_type: 'test', payload, status: 'pending' });
+        // Fire and forget — the webhook dispatcher will handle retry
+        _dispatchWebhook(wh, payload, deliveryId).catch(() => {});
+        return sendJson(res, { ok: true, delivery_id: deliveryId });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    const webhookDeliveriesMatch = path.match(/^\/api\/webhooks\/(\d+)\/deliveries$/);
+    if (webhookDeliveriesMatch && method === 'GET') {
+      return sendJson(res, getWebhookDeliveries(parseInt(webhookDeliveriesMatch[1])));
+    }
+
+    // ---- Print Cost ----
+    const costMatch = path.match(/^\/api\/cost\/(\d+)$/);
+    if (costMatch && method === 'GET') {
+      const cost = getPrintCost(parseInt(costMatch[1]));
+      if (!cost) return sendJson(res, { error: 'No cost data for this print' }, 404);
+      return sendJson(res, cost);
+    }
+
+    if (method === 'GET' && path === '/api/cost/report') {
+      const u = new URL(req.url, 'http://localhost');
+      return sendJson(res, getCostReport(u.searchParams.get('from'), u.searchParams.get('to')));
+    }
+
+    if (method === 'GET' && path === '/api/cost/summary') {
+      const u = new URL(req.url, 'http://localhost');
+      return sendJson(res, getCostSummary(u.searchParams.get('from'), u.searchParams.get('to')));
+    }
+
+    const costCalcMatch = path.match(/^\/api\/cost\/estimate$/);
+    if (costCalcMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const result = estimatePrintCostAdvanced(body.filament_g || 0, body.duration_seconds || 0, body.spool_id || null);
+        return sendJson(res, result);
+      });
+    }
+
+    // ---- Material Reference ----
+    if (method === 'GET' && path === '/api/materials') {
+      return sendJson(res, getMaterials());
+    }
+
+    if (method === 'POST' && path === '/api/materials') {
+      return readBody(req, (body) => {
+        if (!body.material) return sendJson(res, { error: 'material name required' }, 400);
+        try {
+          const id = addMaterial(body);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const materialMatch = path.match(/^\/api\/materials\/(\d+)$/);
+    if (materialMatch && method === 'GET') {
+      const mat = getMaterial(parseInt(materialMatch[1]));
+      if (!mat) return sendJson(res, { error: 'Material not found' }, 404);
+      return sendJson(res, mat);
+    }
+
+    if (materialMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          updateMaterial(parseInt(materialMatch[1]), body);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const materialLookupMatch = path.match(/^\/api\/materials\/lookup\/(.+)$/);
+    if (materialLookupMatch && method === 'GET') {
+      const mat = getMaterialByName(decodeURIComponent(materialLookupMatch[1]));
+      if (!mat) return sendJson(res, { error: 'Material not found' }, 404);
+      return sendJson(res, mat);
+    }
+
+    // ---- Hardware Database ----
+    if (method === 'GET' && path === '/api/hardware') {
+      const u = new URL(req.url, 'http://localhost');
+      const category = u.searchParams.get('category');
+      return sendJson(res, getHardwareItems(category));
+    }
+
+    if (method === 'POST' && path === '/api/hardware') {
+      return readBody(req, (body) => {
+        if (!body.category || !body.name) return sendJson(res, { error: 'category and name required' }, 400);
+        try {
+          const id = addHardwareItem(body);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const hwMatch = path.match(/^\/api\/hardware\/(\d+)$/);
+    if (hwMatch && method === 'GET') {
+      const item = getHardwareItem(parseInt(hwMatch[1]));
+      if (!item) return sendJson(res, { error: 'Hardware not found' }, 404);
+      return sendJson(res, item);
+    }
+
+    if (hwMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          updateHardwareItem(parseInt(hwMatch[1]), body);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    if (hwMatch && method === 'DELETE') {
+      deleteHardwareItem(parseInt(hwMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const hwAssignMatch = path.match(/^\/api\/hardware\/(\d+)\/assign$/);
+    if (hwAssignMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        try {
+          assignHardware(parseInt(hwAssignMatch[1]), body.printer_id);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const hwUnassignMatch = path.match(/^\/api\/hardware\/(\d+)\/unassign$/);
+    if (hwUnassignMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        try {
+          unassignHardware(parseInt(hwUnassignMatch[1]), body.printer_id);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const hwPrinterMatch = path.match(/^\/api\/hardware\/printer\/([a-zA-Z0-9_-]+)$/);
+    if (hwPrinterMatch && method === 'GET') {
+      return sendJson(res, getHardwareForPrinter(hwPrinterMatch[1]));
+    }
+
+    const hwAssignmentsMatch = path.match(/^\/api\/hardware\/(\d+)\/assignments$/);
+    if (hwAssignmentsMatch && method === 'GET') {
+      return sendJson(res, getHardwareAssignments(parseInt(hwAssignmentsMatch[1])));
+    }
+
+    // ---- User Roles ----
+    if (method === 'GET' && path === '/api/roles') {
+      return sendJson(res, getRoles());
+    }
+
+    if (method === 'POST' && path === '/api/roles') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        try {
+          const id = addRole(body);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const roleMatch = path.match(/^\/api\/roles\/(\d+)$/);
+    if (roleMatch && method === 'GET') {
+      const role = getRole(parseInt(roleMatch[1]));
+      if (!role) return sendJson(res, { error: 'Role not found' }, 404);
+      return sendJson(res, role);
+    }
+
+    if (roleMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          updateRole(parseInt(roleMatch[1]), body);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    if (roleMatch && method === 'DELETE') {
+      deleteRole(parseInt(roleMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Users Management ----
+    if (method === 'GET' && path === '/api/users') {
+      const users = getUsers().map(u => ({ ...u, password_hash: undefined }));
+      return sendJson(res, users);
+    }
+
+    if (method === 'POST' && path === '/api/users') {
+      return readBody(req, (body) => {
+        if (!body.username || !body.password) return sendJson(res, { error: 'username and password required' }, 400);
+        try {
+          const id = addUser({
+            username: body.username,
+            password_hash: hashPassword(body.password),
+            role_id: body.role_id || null,
+            display_name: body.display_name || null
+          });
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const userMatch = path.match(/^\/api\/users\/(\d+)$/);
+    if (userMatch && method === 'GET') {
+      const user = getUser(parseInt(userMatch[1]));
+      if (!user) return sendJson(res, { error: 'User not found' }, 404);
+      return sendJson(res, { ...user, password_hash: undefined });
+    }
+
+    if (userMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          const updates = {};
+          if (body.username) updates.username = body.username;
+          if (body.display_name !== undefined) updates.display_name = body.display_name;
+          if (body.role_id !== undefined) updates.role_id = body.role_id;
+          if (body.password) updates.password_hash = hashPassword(body.password);
+          updateUser(parseInt(userMatch[1]), updates);
+          return sendJson(res, { ok: true });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    if (userMatch && method === 'DELETE') {
+      deleteUser(parseInt(userMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- API Keys ----
+    if (method === 'GET' && path === '/api/keys') {
+      return sendJson(res, getApiKeys());
+    }
+
+    if (method === 'POST' && path === '/api/keys') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        try {
+          const { key, hash, prefix } = generateApiKey();
+          const id = addApiKey({
+            name: body.name,
+            key_hash: hash,
+            key_prefix: prefix,
+            permissions: body.permissions || ['*'],
+            user_id: body.user_id || null,
+            expires_at: body.expires_at || null
+          });
+          // Return full key only on creation
+          return sendJson(res, { ok: true, id, key, prefix }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const keyMatch = path.match(/^\/api\/keys\/(\d+)$/);
+    if (keyMatch && method === 'DELETE') {
+      deleteApiKey(parseInt(keyMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const keyDeactivateMatch = path.match(/^\/api\/keys\/(\d+)\/deactivate$/);
+    if (keyDeactivateMatch && method === 'POST') {
+      deactivateApiKey(parseInt(keyDeactivateMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- E-Commerce License ----
+    if (method === 'GET' && path === '/api/ecommerce/license') {
+      return sendJson(res, _ecomLicense ? _ecomLicense.getStatus() : { active: false, status: 'inactive' });
+    }
+
+    if (method === 'POST' && path === '/api/ecommerce/license/activate') {
+      return readBody(req, async (body) => {
+        if (!body.license_key) return sendJson(res, { error: 'license_key required' }, 400);
+        if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
+        try {
+          const result = await _ecomLicense.activate(body.license_key, body.email);
+          return sendJson(res, result);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    if (method === 'POST' && path === '/api/ecommerce/license/deactivate') {
+      if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
+      return sendJson(res, _ecomLicense.deactivate());
+    }
+
+    if (method === 'POST' && path === '/api/ecommerce/license/validate') {
+      if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
+      try {
+        const result = await _ecomLicense.validate(true);
+        return sendJson(res, result);
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    if (method === 'GET' && path === '/api/ecommerce/fees') {
+      const from = url.searchParams.get('from');
+      const to = url.searchParams.get('to');
+      return sendJson(res, {
+        summary: getEcomFeesSummary(from, to),
+        total: getEcomFeesTotal(),
+        fees: getEcomFees()
+      });
+    }
+
+    if (method === 'POST' && path === '/api/ecommerce/fees/report') {
+      if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
+      try {
+        const result = await _ecomLicense.reportFees();
+        return sendJson(res, result);
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    // ---- E-Commerce ----
+    if (method === 'GET' && path === '/api/ecommerce/configs') {
+      return sendJson(res, getEcommerceConfigs());
+    }
+
+    if (method === 'POST' && path === '/api/ecommerce/configs') {
+      if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        try {
+          const id = addEcommerceConfig(body);
+          return sendJson(res, { ok: true, id }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    const ecomConfigMatch = path.match(/^\/api\/ecommerce\/configs\/(\d+)$/);
+    if (ecomConfigMatch) {
+      const id = parseInt(ecomConfigMatch[1]);
+      if (method === 'GET') return sendJson(res, getEcommerceConfig(id) || { error: 'Not found' });
+      if (method === 'PUT') {
+        if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
+        return readBody(req, (body) => { updateEcommerceConfig(id, body); sendJson(res, { ok: true }); });
+      }
+      if (method === 'DELETE') {
+        if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
+        deleteEcommerceConfig(id); return sendJson(res, { ok: true });
+      }
+    }
+
+    if (method === 'GET' && path === '/api/ecommerce/orders') {
+      const configId = url.searchParams.get('config_id');
+      return sendJson(res, getEcommerceOrders(configId ? parseInt(configId) : null));
+    }
+
+    const ecomOrderMatch = path.match(/^\/api\/ecommerce\/orders\/(\d+)$/);
+    if (ecomOrderMatch) {
+      const id = parseInt(ecomOrderMatch[1]);
+      if (method === 'GET') return sendJson(res, getEcommerceOrder(id) || { error: 'Not found' });
+      if (method === 'PUT') return readBody(req, (body) => { updateEcommerceOrder(id, body); sendJson(res, { ok: true }); });
+    }
+
+    const ecomFulfillMatch = path.match(/^\/api\/ecommerce\/orders\/(\d+)\/fulfill$/);
+    if (ecomFulfillMatch && method === 'POST') {
+      const id = parseInt(ecomFulfillMatch[1]);
+      updateEcommerceOrder(id, { status: 'fulfilled', fulfilled_at: new Date().toISOString() });
+      return sendJson(res, { ok: true });
+    }
+
+    // E-Commerce webhook receiver (public endpoint for platforms)
+    const ecomWebhookMatch = path.match(/^\/api\/ecommerce\/webhook\/(\d+)$/);
+    if (ecomWebhookMatch && method === 'POST') {
+      const configId = parseInt(ecomWebhookMatch[1]);
+      if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
+      return _readRawBody(req, (rawBody) => {
+        const ecomConfig = getEcommerceConfig(configId);
+        if (!ecomConfig || !ecomConfig.active) return sendJson(res, { error: 'Not found' }, 404);
+
+        // Verify HMAC signature if secret configured
+        if (ecomConfig.webhook_secret) {
+          const sig = req.headers['x-shopify-hmac-sha256'] || req.headers['x-wc-webhook-signature'] || req.headers['x-webhook-signature'] || '';
+          const expected = createHmac('sha256', ecomConfig.webhook_secret).update(rawBody).digest('base64');
+          try {
+            if (!sig || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+              return sendJson(res, { error: 'Invalid signature' }, 401);
+            }
+          } catch { return sendJson(res, { error: 'Invalid signature' }, 401); }
+        }
+
+        let body;
+        try { body = JSON.parse(rawBody); } catch { return sendJson(res, { error: 'Invalid JSON' }, 400); }
+
+        // Parse order from different platforms
+        const order = _parseEcommerceOrder(ecomConfig.platform, body);
+        if (!order) return sendJson(res, { error: 'Could not parse order' }, 400);
+
+        const orderId = addEcommerceOrder({
+          config_id: configId,
+          order_id: order.orderId,
+          platform_order_id: order.platformOrderId,
+          customer_name: order.customerName,
+          items: order.items,
+          status: 'received'
+        });
+
+        // Track 5% transaction fee
+        if (_ecomLicense && order.orderTotal > 0) {
+          _ecomLicense.addOrderFee(orderId, configId, order.orderTotal, order.currency || 'NOK');
+        }
+
+        // Auto-queue if enabled
+        if (ecomConfig.auto_queue && ecomConfig.target_queue_id && _queueManager) {
+          const mapping = typeof ecomConfig.sku_to_file_mapping === 'string' ? JSON.parse(ecomConfig.sku_to_file_mapping) : (ecomConfig.sku_to_file_mapping || {});
+          const queueItemIds = [];
+          for (const item of order.items) {
+            const filename = mapping[item.sku] || mapping[item.name];
+            if (filename) {
+              for (let c = 0; c < (item.quantity || 1); c++) {
+                try {
+                  const qiId = addQueueItem({ queue_id: ecomConfig.target_queue_id, filename, notes: `Order #${order.orderId} — ${item.name}` });
+                  queueItemIds.push(qiId);
+                } catch (_) {}
+              }
+            }
+          }
+          if (queueItemIds.length > 0) {
+            updateEcommerceOrder(orderId, { status: 'queued', queue_item_ids: queueItemIds });
+          }
+        }
+
+        return sendJson(res, { ok: true, order_id: orderId }, 201);
+      });
+    }
+
+    // ---- Timelapse ----
+    if (method === 'GET' && path === '/api/timelapse') {
+      const printerId = url.searchParams.get('printer_id');
+      return sendJson(res, getTimelapseRecordings(printerId));
+    }
+
+    const timelapseIdMatch = path.match(/^\/api\/timelapse\/(\d+)$/);
+    if (timelapseIdMatch) {
+      const id = parseInt(timelapseIdMatch[1]);
+      if (method === 'GET') return sendJson(res, getTimelapseRecording(id) || { error: 'Not found' });
+      if (method === 'DELETE') {
+        const rec = getTimelapseRecording(id);
+        if (rec && rec.file_path) { try { const { unlinkSync: ul } = await import('node:fs'); ul(rec.file_path); } catch (_) {} }
+        deleteTimelapseRecording(id);
+        return sendJson(res, { ok: true });
+      }
+    }
+
+    // Serve timelapse video file
+    const timelapseVideoMatch = path.match(/^\/api\/timelapse\/(\d+)\/video$/);
+    if (timelapseVideoMatch && method === 'GET') {
+      const id = parseInt(timelapseVideoMatch[1]);
+      const rec = getTimelapseRecording(id);
+      if (!rec || !rec.file_path || !existsSync(rec.file_path)) return sendJson(res, { error: 'Video not found' }, 404);
+      const stat = statSync(rec.file_path);
+      res.writeHead(200, {
+        'Content-Type': 'video/mp4',
+        'Content-Length': stat.size,
+        'Content-Disposition': `inline; filename="${rec.filename || 'timelapse'}.mp4"`
+      });
+      createReadStream(rec.file_path).pipe(res);
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/timelapse/active') {
+      if (!_timelapseService) return sendJson(res, []);
+      return sendJson(res, _timelapseService.getActiveRecordings());
+    }
+
+    // ---- Push Subscriptions ----
+    if (method === 'POST' && path === '/api/push/subscribe') {
+      return readBody(req, (body) => {
+        if (!body.endpoint) return sendJson(res, { error: 'endpoint required' }, 400);
+        const id = addPushSubscription({
+          endpoint: body.endpoint,
+          keys_p256dh: body.keys?.p256dh || null,
+          keys_auth: body.keys?.auth || null,
+          user_agent: req.headers['user-agent'] || null
+        });
+        return sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (method === 'POST' && path === '/api/push/unsubscribe') {
+      return readBody(req, (body) => {
+        if (!body.endpoint) return sendJson(res, { error: 'endpoint required' }, 400);
+        deletePushSubscription(body.endpoint);
+        return sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'GET' && path === '/api/push/vapid-key') {
+      const vapidPublicKey = getInventorySetting('vapid_public_key');
+      return sendJson(res, { key: vapidPublicKey || null });
+    }
+
+    // ---- Community Filaments ----
+    if (method === 'GET' && path === '/api/community-filaments') {
+      const filters = {};
+      if (url.searchParams.get('manufacturer')) filters.manufacturer = url.searchParams.get('manufacturer');
+      if (url.searchParams.get('material')) filters.material = url.searchParams.get('material');
+      if (url.searchParams.get('search')) filters.search = url.searchParams.get('search');
+      if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
+      if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
+      return sendJson(res, getCommunityFilaments(filters));
+    }
+
+    if (method === 'GET' && path === '/api/community-filaments/manufacturers') {
+      return sendJson(res, getCommunityManufacturers());
+    }
+
+    if (method === 'GET' && path === '/api/community-filaments/materials') {
+      return sendJson(res, getCommunityMaterials());
+    }
+
+    if (method === 'GET' && path === '/api/community-filaments/color-search') {
+      const hex = (url.searchParams.get('hex') || '').replace('#', '');
+      const tolerance = parseInt(url.searchParams.get('tolerance') || '30');
+      if (!hex || hex.length < 6) return sendJson(res, { error: 'hex parameter required (6 chars)' }, 400);
+      return sendJson(res, searchCommunityByColor(hex, tolerance));
+    }
+
+    const cfMatch = path.match(/^\/api\/community-filaments\/(\d+)$/);
+    if (cfMatch && method === 'GET') {
+      const cf = getCommunityFilament(parseInt(cfMatch[1]));
+      if (!cf) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, cf);
+    }
+
+    if (method === 'POST' && path === '/api/community-filaments') {
+      return readBody(req, (body) => {
+        if (!body.manufacturer || !body.material) return sendJson(res, { error: 'manufacturer and material required' }, 400);
+        const id = addCommunityFilament(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (cfMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateCommunityFilament(parseInt(cfMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (cfMatch && method === 'DELETE') {
+      deleteCommunityFilament(parseInt(cfMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Brand Defaults ----
+    if (method === 'GET' && path === '/api/brand-defaults') {
+      const manufacturer = url.searchParams.get('manufacturer');
+      return sendJson(res, getBrandDefaults(manufacturer || null));
+    }
+
+    const bdMatch = path.match(/^\/api\/brand-defaults\/(\d+)$/);
+    if (bdMatch && method === 'GET') {
+      const bd = getBrandDefault(parseInt(bdMatch[1]));
+      if (!bd) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, bd);
+    }
+
+    if (method === 'POST' && path === '/api/brand-defaults') {
+      return readBody(req, (body) => {
+        if (!body.manufacturer) return sendJson(res, { error: 'manufacturer required' }, 400);
+        const id = upsertBrandDefault(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (bdMatch && method === 'DELETE') {
+      deleteBrandDefault(parseInt(bdMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Custom Fields ----
+    if (method === 'GET' && path === '/api/custom-fields') {
+      const entityType = url.searchParams.get('entity_type');
+      return sendJson(res, getCustomFieldDefs(entityType || null));
+    }
+
+    const cfdMatch = path.match(/^\/api\/custom-fields\/(\d+)$/);
+    if (cfdMatch && method === 'GET') {
+      const cf = getCustomFieldDef(parseInt(cfdMatch[1]));
+      if (!cf) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, cf);
+    }
+
+    if (method === 'POST' && path === '/api/custom-fields') {
+      return readBody(req, (body) => {
+        if (!body.entity_type || !body.field_name || !body.field_label) return sendJson(res, { error: 'entity_type, field_name, field_label required' }, 400);
+        const id = addCustomFieldDef(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (cfdMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateCustomFieldDef(parseInt(cfdMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (cfdMatch && method === 'DELETE') {
+      deleteCustomFieldDef(parseInt(cfdMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const cfvMatch = path.match(/^\/api\/custom-fields\/values\/([a-z_]+)\/(\d+)$/);
+    if (cfvMatch && method === 'GET') {
+      return sendJson(res, getCustomFieldValues(cfvMatch[1], parseInt(cfvMatch[2])));
+    }
+
+    if (method === 'POST' && path === '/api/custom-fields/values') {
+      return readBody(req, (body) => {
+        if (!body.field_id || !body.entity_type || !body.entity_id) return sendJson(res, { error: 'field_id, entity_type, entity_id required' }, 400);
+        setCustomFieldValue(body.field_id, body.entity_type, body.entity_id, body.value || null);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- Printer Groups ----
+    if (method === 'GET' && path === '/api/printer-groups') {
+      const groups = getPrinterGroups();
+      for (const g of groups) g.members = getGroupMembers(g.id);
+      return sendJson(res, groups);
+    }
+
+    const pgMatch = path.match(/^\/api\/printer-groups\/(\d+)$/);
+    if (pgMatch && method === 'GET') {
+      const g = getPrinterGroup(parseInt(pgMatch[1]));
+      if (!g) return sendJson(res, { error: 'Not found' }, 404);
+      g.members = getGroupMembers(g.id);
+      return sendJson(res, g);
+    }
+
+    if (method === 'POST' && path === '/api/printer-groups') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        const id = addPrinterGroup(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (pgMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updatePrinterGroup(parseInt(pgMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (pgMatch && method === 'DELETE') {
+      deletePrinterGroup(parseInt(pgMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const pgMemberMatch = path.match(/^\/api\/printer-groups\/(\d+)\/members$/);
+    if (pgMemberMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        addPrinterToGroup(parseInt(pgMemberMatch[1]), body.printer_id);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    const pgMemberDelMatch = path.match(/^\/api\/printer-groups\/(\d+)\/members\/([a-zA-Z0-9_-]+)$/);
+    if (pgMemberDelMatch && method === 'DELETE') {
+      removePrinterFromGroup(parseInt(pgMemberDelMatch[1]), pgMemberDelMatch[2]);
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path.match(/^\/api\/printers\/[a-zA-Z0-9_-]+\/groups$/)) {
+      const pid = path.split('/')[3];
+      return sendJson(res, getPrinterGroupsForPrinter(pid));
+    }
+
+    // ---- Projects ----
+    if (method === 'GET' && path === '/api/projects') {
+      const status = url.searchParams.get('status');
+      return sendJson(res, getProjects(status || null));
+    }
+
+    const projMatch = path.match(/^\/api\/projects\/(\d+)$/);
+    if (projMatch && method === 'GET') {
+      const p = getProject(parseInt(projMatch[1]));
+      if (!p) return sendJson(res, { error: 'Not found' }, 404);
+      p.prints = getProjectPrints(p.id);
+      return sendJson(res, p);
+    }
+
+    if (method === 'POST' && path === '/api/projects') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'name required' }, 400);
+        const id = addProject(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (projMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateProject(parseInt(projMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (projMatch && method === 'DELETE') {
+      deleteProject(parseInt(projMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const projPrintMatch = path.match(/^\/api\/projects\/(\d+)\/prints$/);
+    if (projPrintMatch && method === 'GET') {
+      return sendJson(res, getProjectPrints(parseInt(projPrintMatch[1])));
+    }
+
+    if (projPrintMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        body.project_id = parseInt(projPrintMatch[1]);
+        const id = addProjectPrint(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    const projPrintItemMatch = path.match(/^\/api\/projects\/prints\/(\d+)$/);
+    if (projPrintItemMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateProjectPrint(parseInt(projPrintItemMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (projPrintItemMatch && method === 'DELETE') {
+      deleteProjectPrint(parseInt(projPrintItemMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Export ----
+    if (method === 'GET' && path === '/api/export/templates') {
+      const entityType = url.searchParams.get('entity_type');
+      return sendJson(res, getExportTemplates(entityType || null));
+    }
+
+    if (method === 'POST' && path === '/api/export/templates') {
+      return readBody(req, (body) => {
+        if (!body.name || !body.entity_type || !body.columns) return sendJson(res, { error: 'name, entity_type, columns required' }, 400);
+        const id = addExportTemplate(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    const etMatch = path.match(/^\/api\/export\/templates\/(\d+)$/);
+    if (etMatch && method === 'DELETE') {
+      deleteExportTemplate(parseInt(etMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path === '/api/export/spools') {
+      const format = url.searchParams.get('format') || 'csv';
+      const data = getAllSpoolsForExport();
+      if (format === 'json') return sendJson(res, data);
+      // CSV
+      if (data.length === 0) { res.writeHead(200, { 'Content-Type': 'text/csv' }); return res.end(''); }
+      const keys = Object.keys(data[0]);
+      const csv = [keys.join(','), ...data.map(row => keys.map(k => { const v = row[k]; return v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`; }).join(','))].join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="spools.csv"' });
+      return res.end(csv);
+    }
+
+    if (method === 'GET' && path === '/api/export/filament-profiles') {
+      const format = url.searchParams.get('format') || 'csv';
+      const data = getAllFilamentProfilesForExport();
+      if (format === 'json') return sendJson(res, data);
+      if (data.length === 0) { res.writeHead(200, { 'Content-Type': 'text/csv' }); return res.end(''); }
+      const keys = Object.keys(data[0]);
+      const csv = [keys.join(','), ...data.map(row => keys.map(k => { const v = row[k]; return v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`; }).join(','))].join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="filament_profiles.csv"' });
+      return res.end(csv);
+    }
+
+    if (method === 'GET' && path === '/api/export/vendors') {
+      const format = url.searchParams.get('format') || 'csv';
+      const data = getAllVendorsForExport();
+      if (format === 'json') return sendJson(res, data);
+      if (data.length === 0) { res.writeHead(200, { 'Content-Type': 'text/csv' }); return res.end(''); }
+      const keys = Object.keys(data[0]);
+      const csv = [keys.join(','), ...data.map(row => keys.map(k => { const v = row[k]; return v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`; }).join(','))].join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="vendors.csv"' });
+      return res.end(csv);
+    }
+
+    if (method === 'GET' && path === '/api/export/history') {
+      const format = url.searchParams.get('format') || 'csv';
+      const limit = parseInt(url.searchParams.get('limit') || '1000');
+      const data = getHistory(null, limit);
+      if (format === 'json') return sendJson(res, data);
+      if (data.length === 0) { res.writeHead(200, { 'Content-Type': 'text/csv' }); return res.end(''); }
+      const keys = Object.keys(data[0]);
+      const csv = [keys.join(','), ...data.map(row => keys.map(k => { const v = row[k]; return v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`; }).join(','))].join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="print_history.csv"' });
+      return res.end(csv);
+    }
+
+    // ---- User Quotas ----
+    const uqMatch = path.match(/^\/api\/users\/(\d+)\/quota$/);
+    if (uqMatch && method === 'GET') {
+      return sendJson(res, getUserQuota(parseInt(uqMatch[1])) || { balance: 0 });
+    }
+
+    if (uqMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          upsertUserQuota(parseInt(uqMatch[1]), body);
+          sendJson(res, { ok: true });
+        } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
+    const utMatch = path.match(/^\/api\/users\/(\d+)\/transactions$/);
+    if (utMatch && method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      return sendJson(res, getUserTransactions(parseInt(utMatch[1]), limit));
+    }
+
+    if (utMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        body.user_id = parseInt(utMatch[1]);
+        if (!body.type || !body.amount) return sendJson(res, { error: 'type and amount required' }, 400);
+        try {
+          const id = addUserTransaction(body);
+          sendJson(res, { ok: true, id }, 201);
+        } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
+    // ---- Failure Detection ----
+    if (method === 'GET' && path === '/api/failure-detections') {
+      const printerId = url.searchParams.get('printer_id');
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      return sendJson(res, getFailureDetections(printerId || null, limit));
+    }
+
+    const fdMatch = path.match(/^\/api\/failure-detections\/(\d+)$/);
+    if (fdMatch && method === 'GET') {
+      const d = getFailureDetection(parseInt(fdMatch[1]));
+      if (!d) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, d);
+    }
+
+    if (fdMatch && method === 'DELETE') {
+      deleteFailureDetection(parseInt(fdMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const fdAckMatch = path.match(/^\/api\/failure-detections\/(\d+)\/acknowledge$/);
+    if (fdAckMatch && method === 'POST') {
+      acknowledgeFailureDetection(parseInt(fdAckMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Price History ----
+    const phMatch = path.match(/^\/api\/price-history\/(\d+)$/);
+    if (phMatch && method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit') || '100');
+      return sendJson(res, getPriceHistory(parseInt(phMatch[1]), limit));
+    }
+
+    if (method === 'POST' && path === '/api/price-history') {
+      return readBody(req, (body) => {
+        if (!body.filament_profile_id || !body.price) return sendJson(res, { error: 'filament_profile_id and price required' }, 400);
+        try {
+          const id = addPriceEntry(body);
+          sendJson(res, { ok: true, id }, 201);
+        } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
+    const phStatsMatch = path.match(/^\/api\/price-history\/(\d+)\/stats$/);
+    if (phStatsMatch && method === 'GET') {
+      return sendJson(res, getPriceStats(parseInt(phStatsMatch[1])) || {});
+    }
+
+    // ---- Hex Color Search ----
+    if (method === 'GET' && path === '/api/inventory/color-search') {
+      const hex = (url.searchParams.get('hex') || '').replace('#', '');
+      const tolerance = parseInt(url.searchParams.get('tolerance') || '30');
+      if (!hex || hex.length < 6) return sendJson(res, { error: 'hex parameter required (6 chars)' }, 400);
+      return sendJson(res, searchSpoolsByColor(hex, tolerance));
+    }
+
+    // ---- Build Plates ----
+    if (method === 'GET' && path === '/api/build-plates') {
+      const printerId = url.searchParams.get('printer_id');
+      return sendJson(res, getBuildPlates(printerId || null));
+    }
+
+    const bpMatch = path.match(/^\/api\/build-plates\/(\d+)$/);
+    if (bpMatch && method === 'GET') {
+      const bp = getBuildPlate(parseInt(bpMatch[1]));
+      if (!bp) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, bp);
+    }
+
+    if (method === 'POST' && path === '/api/build-plates') {
+      return readBody(req, (body) => {
+        if (!body.printer_id || !body.name) return sendJson(res, { error: 'printer_id and name required' }, 400);
+        const id = addBuildPlate(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (bpMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateBuildPlate(parseInt(bpMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (bpMatch && method === 'DELETE') {
+      deleteBuildPlate(parseInt(bpMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Dryer Models ----
+    if (method === 'GET' && path === '/api/dryer-models') {
+      return sendJson(res, getDryerModels());
+    }
+
+    const dmMatch = path.match(/^\/api\/dryer-models\/(\d+)$/);
+    if (dmMatch && method === 'GET') {
+      const dm = getDryerModel(parseInt(dmMatch[1]));
+      if (!dm) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, dm);
+    }
+
+    if (method === 'POST' && path === '/api/dryer-models') {
+      return readBody(req, (body) => {
+        if (!body.brand || !body.model) return sendJson(res, { error: 'brand and model required' }, 400);
+        const id = addDryerModel(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (dmMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateDryerModel(parseInt(dmMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (dmMatch && method === 'DELETE') {
+      deleteDryerModel(parseInt(dmMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Storage Conditions ----
+    const scMatch = path.match(/^\/api\/storage-conditions\/(\d+)$/);
+    if (scMatch && method === 'GET') {
+      return sendJson(res, getStorageConditions(parseInt(scMatch[1])));
+    }
+
+    if (method === 'POST' && path === '/api/storage-conditions') {
+      return readBody(req, (body) => {
+        if (!body.spool_id) return sendJson(res, { error: 'spool_id required' }, 400);
+        try {
+          const id = addStorageCondition(body);
+          sendJson(res, { ok: true, id }, 201);
+        } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
+    const scDelMatch = path.match(/^\/api\/storage-conditions\/entry\/(\d+)$/);
+    if (scDelMatch && method === 'DELETE') {
+      deleteStorageCondition(parseInt(scDelMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Courses ----
+    if (method === 'GET' && path === '/api/courses') {
+      const category = url.searchParams.get('category');
+      return sendJson(res, getCourses(category || null));
+    }
+
+    if (method === 'GET' && path === '/api/courses/with-progress') {
+      const userId = parseInt(url.searchParams.get('user_id') || '0');
+      return sendJson(res, getAllCoursesWithProgress(userId));
+    }
+
+    const courseMatch = path.match(/^\/api\/courses\/(\d+)$/);
+    if (courseMatch && method === 'GET') {
+      const c = getCourse(parseInt(courseMatch[1]));
+      if (!c) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, c);
+    }
+
+    if (method === 'POST' && path === '/api/courses') {
+      return readBody(req, (body) => {
+        if (!body.title) return sendJson(res, { error: 'title required' }, 400);
+        const id = addCourse(body);
+        sendJson(res, { ok: true, id }, 201);
+      });
+    }
+
+    if (courseMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateCourse(parseInt(courseMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (courseMatch && method === 'DELETE') {
+      deleteCourse(parseInt(courseMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    const cpMatch = path.match(/^\/api\/courses\/(\d+)\/progress$/);
+    if (cpMatch && method === 'GET') {
+      const userId = parseInt(url.searchParams.get('user_id') || '0');
+      return sendJson(res, getCourseProgress(parseInt(cpMatch[1]), userId) || { status: 'not_started' });
+    }
+
+    if (cpMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const userId = body.user_id || 0;
+        upsertCourseProgress(parseInt(cpMatch[1]), userId, body);
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'GET' && path === '/api/courses/user-progress') {
+      const userId = parseInt(url.searchParams.get('user_id') || '0');
+      return sendJson(res, getUserCourseProgress(userId));
+    }
+
+    // ---- Auto-Generated Spool Name ----
+    const autoNameMatch = path.match(/^\/api\/inventory\/auto-name\/(\d+)$/);
+    if (autoNameMatch && method === 'GET') {
+      return sendJson(res, { name: generateSpoolName(parseInt(autoNameMatch[1])) });
+    }
+
+    // ---- Hub/Kiosk Settings ----
+    if (method === 'GET' && path === '/api/hub/settings') {
+      return sendJson(res, {
+        hub_mode: getInventorySetting('hub_mode') === '1',
+        kiosk_mode: getInventorySetting('kiosk_mode') === '1',
+        kiosk_panels: (getInventorySetting('kiosk_panels') || 'dashboard,queue').split(','),
+        hub_refresh_interval: parseInt(getInventorySetting('hub_refresh_interval') || '30')
+      });
+    }
+
+    if (method === 'PUT' && path === '/api/hub/settings') {
+      return readBody(req, (body) => {
+        if (body.hub_mode !== undefined) setInventorySetting('hub_mode', body.hub_mode ? '1' : '0');
+        if (body.kiosk_mode !== undefined) setInventorySetting('kiosk_mode', body.kiosk_mode ? '1' : '0');
+        if (body.kiosk_panels !== undefined) setInventorySetting('kiosk_panels', Array.isArray(body.kiosk_panels) ? body.kiosk_panels.join(',') : body.kiosk_panels);
+        if (body.hub_refresh_interval !== undefined) setInventorySetting('hub_refresh_interval', String(body.hub_refresh_interval));
+        sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- TOTP 2FA ----
+    if (method === 'POST' && path === '/api/auth/totp/setup') {
+      return readBody(req, (body) => {
+        const secret = _generateTotpSecret(randomBytes(20));
+        const user = getSessionUser(req);
+        if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
+        updateUser(user.id, { totp_secret: secret });
+        const issuer = 'BambuDashboard';
+        const otpauth = `otpauth://totp/${issuer}:${encodeURIComponent(user.username)}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
+        sendJson(res, { secret, otpauth });
+      });
+    }
+
+    if (method === 'POST' && path === '/api/auth/totp/verify') {
+      return readBody(req, (body) => {
+        const user = getSessionUser(req);
+        if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
+        if (!body.code) return sendJson(res, { error: 'code required' }, 400);
+        const dbUser = getUser(user.id);
+        if (!dbUser || !dbUser.totp_secret) return sendJson(res, { error: 'TOTP not set up' }, 400);
+        const valid = _verifyTotp(dbUser.totp_secret, body.code);
+        if (!valid) return sendJson(res, { error: 'Invalid code' }, 400);
+        // Generate backup codes
+        const backupCodes = Array.from({ length: 8 }, () => randomBytes(4).toString('hex'));
+        updateUser(user.id, { totp_enabled: 1, totp_backup_codes: JSON.stringify(backupCodes) });
+        sendJson(res, { ok: true, backup_codes: backupCodes });
+      });
+    }
+
+    if (method === 'POST' && path === '/api/auth/totp/disable') {
+      return readBody(req, (body) => {
+        const user = getSessionUser(req);
+        if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
+        updateUser(user.id, { totp_enabled: 0, totp_secret: null, totp_backup_codes: null });
+        sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- Staggered Start ----
+    if (method === 'POST' && path === '/api/printer-groups/staggered-start') {
+      return readBody(req, (body) => {
+        if (!body.group_id || !body.filename) return sendJson(res, { error: 'group_id and filename required' }, 400);
+        const group = getPrinterGroup(body.group_id);
+        if (!group) return sendJson(res, { error: 'Group not found' }, 404);
+        const members = getGroupMembers(group.id);
+        const delay = group.stagger_delay_s || body.delay_seconds || 30;
+        const results = [];
+        for (let i = 0; i < members.length; i++) {
+          results.push({ printer_id: members[i].printer_id, delay_s: i * delay, start_order: i + 1 });
+        }
+        sendJson(res, { group: group.name, filename: body.filename, schedule: results });
+      });
+    }
+
     // 404
     sendJson(res, { error: 'Ikke funnet' }, 404);
 
@@ -1298,12 +2965,116 @@ function readBody(req, callback) {
   });
   req.on('end', () => {
     if (size > MAX_BODY_SIZE) return;
+    let parsed;
     try {
-      callback(JSON.parse(body));
+      parsed = JSON.parse(body);
     } catch (e) {
-      callback({});
+      parsed = {};
     }
+    callback(parsed);
   });
+}
+
+// Raw body reader (for HMAC signature verification)
+function _readRawBody(req, callback) {
+  let body = '';
+  let size = 0;
+  req.on('data', chunk => {
+    size += chunk.length;
+    if (size > MAX_BODY_SIZE) { req.destroy(); return; }
+    body += chunk;
+  });
+  req.on('end', () => {
+    if (size > MAX_BODY_SIZE) return;
+    callback(body);
+  });
+}
+
+// Parse order from different e-commerce platforms
+function _parseEcommerceOrder(platform, body) {
+  try {
+    if (platform === 'shopify') {
+      const items = (body.line_items || []).map(li => ({ sku: li.sku || '', name: li.title || li.name || '', quantity: li.quantity || 1, price: parseFloat(li.price) || 0 }));
+      const orderTotal = parseFloat(body.total_price) || items.reduce((s, i) => s + i.price * i.quantity, 0);
+      return {
+        orderId: String(body.order_number || body.id || ''),
+        platformOrderId: String(body.id || ''),
+        customerName: body.customer ? `${body.customer.first_name || ''} ${body.customer.last_name || ''}`.trim() : (body.email || ''),
+        items,
+        orderTotal,
+        currency: body.currency || 'NOK'
+      };
+    }
+    if (platform === 'woocommerce') {
+      const items = (body.line_items || []).map(li => ({ sku: li.sku || '', name: li.name || '', quantity: li.quantity || 1, price: parseFloat(li.total) / (li.quantity || 1) || 0 }));
+      const orderTotal = parseFloat(body.total) || items.reduce((s, i) => s + (parseFloat(i.price) * i.quantity), 0);
+      return {
+        orderId: String(body.number || body.id || ''),
+        platformOrderId: String(body.id || ''),
+        customerName: body.billing ? `${body.billing.first_name || ''} ${body.billing.last_name || ''}`.trim() : '',
+        items,
+        orderTotal,
+        currency: body.currency || 'NOK'
+      };
+    }
+    // Generic / custom
+    const items = (body.items || body.line_items || []).map(li => ({ sku: li.sku || '', name: li.name || li.title || '', quantity: li.quantity || 1, price: parseFloat(li.price) || 0 }));
+    const orderTotal = parseFloat(body.total) || parseFloat(body.order_total) || items.reduce((s, i) => s + i.price * i.quantity, 0);
+    return {
+      orderId: String(body.order_id || body.id || Date.now()),
+      platformOrderId: String(body.platform_order_id || body.id || ''),
+      customerName: body.customer_name || body.customer || '',
+      items,
+      orderTotal,
+      currency: body.currency || 'NOK'
+    };
+  } catch { return null; }
+}
+
+// ---- SD Card File Operations (FTPS) ----
+
+async function _getFtp() {
+  try { return await import('basic-ftp'); } catch { return null; }
+}
+
+async function listPrinterFiles(ip, accessCode) {
+  const ftp = await _getFtp();
+  if (!ftp) throw new Error('basic-ftp not installed');
+  const client = new ftp.Client();
+  client.ftp.verbose = false;
+  try {
+    await client.access({ host: ip, port: 990, user: 'bblp', password: accessCode, secure: 'implicit', secureOptions: { rejectUnauthorized: false } });
+    const items = [];
+    const paths = ['/sdcard/', '/cache/'];
+    for (const basePath of paths) {
+      try {
+        const list = await client.list(basePath);
+        for (const item of list) {
+          if (item.name.endsWith('.3mf') || item.name.endsWith('.gcode') || item.name.endsWith('.gcode.3mf')) {
+            items.push({
+              name: item.name,
+              path: basePath + item.name,
+              size: item.size || 0,
+              date: item.modifiedAt ? item.modifiedAt.toISOString() : null,
+              type: item.isDirectory ? 'directory' : 'file'
+            });
+          }
+        }
+      } catch (_) { /* path might not exist */ }
+    }
+    return items;
+  } finally { client.close(); }
+}
+
+async function deletePrinterFile(ip, accessCode, filePath) {
+  const ftp = await _getFtp();
+  if (!ftp) throw new Error('basic-ftp not installed');
+  const client = new ftp.Client();
+  client.ftp.verbose = false;
+  try {
+    await client.access({ host: ip, port: 990, user: 'bblp', password: accessCode, secure: 'implicit', secureOptions: { rejectUnauthorized: false } });
+    await client.remove(filePath);
+  } finally { client.close(); }
 }
 
 // ---- MakerWorld proxy ----
@@ -1386,8 +3157,12 @@ function fetchJson(url, timeout) {
 function fetchHtml(url, timeout) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BambuDashboard/1.0)', 'Accept': 'text/html' },
-      timeout
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml'
+      },
+      timeout,
+      maxHeaderSize: 32768
     }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         return fetchHtml(res.headers.location, timeout).then(resolve, reject);
@@ -1416,49 +3191,45 @@ async function handlePrintablesFetch(id, res) {
   const url = `https://www.printables.com/model/${id}`;
 
   try {
-    // Try scraping OG meta tags and structured data
     const html = await fetchHtml(url, 8000);
+
+    // OG tags — Printables uses name= instead of property=
     const og = (name) => {
-      const m = html.match(new RegExp(`<meta\\s+property=["']og:${name}["']\\s+content=["']([^"']+)["']`, 'i'));
+      const m = html.match(new RegExp(`<meta\\s+(?:property|name)=["']og:${name}["']\\s+content=["']([^"']+)["']`, 'i'))
+        || html.match(new RegExp(`<meta\\s+content=["']([^"']+)["']\\s+(?:property|name)=["']og:${name}["']`, 'i'));
       return m ? m[1] : null;
     };
-    const title = og('title') || `Printables #${id}`;
-    const image = og('image') || null;
-    const description = og('description') || '';
 
-    // Try to extract designer from structured data
+    // JSON-LD structured data
+    let ld = {};
+    const ldMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/s);
+    if (ldMatch) { try { ld = JSON.parse(ldMatch[1]); } catch {} }
+
+    const ogTitle = og('title');
+    const title = ld.name || (ogTitle ? ogTitle.replace(/\s*\|.*$/, '') : null) || `Printables #${id}`;
+    const image = ld.image?.url || og('image') || null;
+    const description = (ld.description || og('description') || '').substring(0, 500);
+
+    // Designer from title (pattern: "Title by Designer | ...")
     let designer = null;
-    const authorMatch = html.match(/"author"\s*:\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)"/);
-    if (authorMatch) designer = authorMatch[1];
-
-    // Try to extract category
-    let category = null;
-    const catMatch = html.match(/"category"\s*:\s*"([^"]+)"/i) || html.match(/class="[^"]*category[^"]*"[^>]*>([^<]+)/i);
-    if (catMatch) category = catMatch[1].trim();
-
-    // Try to extract print settings from structured data or page content
-    const printSettings = {};
-    const settingsPatterns = [
-      [/Printer\s*(?:Brand)?:\s*([^<\n]+)/i, 'printer'],
-      [/Rafts?:\s*(Yes|No|None|yes|no)/i, 'rafts'],
-      [/Supports?:\s*(Yes|No|None|yes|no|Everywhere|Touching)/i, 'supports'],
-      [/Resolution:\s*([\d.]+)/i, 'resolution'],
-      [/Infill:\s*([\d.]+)/i, 'infill'],
-      [/Filament[^:]*:\s*([^<\n]{2,60})/i, 'filament'],
-      [/Layer\s*Height:\s*([\d.]+)/i, 'layer_height'],
-    ];
-    for (const [regex, key] of settingsPatterns) {
-      const m = html.match(regex);
-      if (m) printSettings[key] = m[1].trim();
+    if (ogTitle) {
+      const byMatch = ogTitle.match(/by\s+(.+?)\s*\|/i);
+      if (byMatch) designer = byMatch[1].trim();
     }
+
+    const printSettings = {};
+    if (ld.material) printSettings.filament = ld.material;
+    if (ld.weight?.value) printSettings.weight = `${ld.weight.value}${ld.weight.unitCode || 'g'}`;
+
+    const category = null;
 
     const data = {
       title,
       image,
-      description: description.substring(0, 500),
+      description,
       url,
       designer,
-      likes: 0,
+      likes: ld.aggregateRating?.ratingCount || 0,
       downloads: 0,
       category,
       print_settings: Object.keys(printSettings).length ? printSettings : null,
@@ -1584,6 +3355,7 @@ async function handleModelSearch(query, source, res) {
 async function searchMakerWorld(query) {
   try {
     const json = await fetchJson(`https://api.bambulab.com/v1/design-service/design/search?keyword=${query}&limit=5`, 8000);
+    if (json.code && json.code !== 200) return []; // API error
     const hits = json.hits || json.designs || [];
     return hits.slice(0, 5).map(d => ({
       source: 'makerworld',
@@ -1601,6 +3373,15 @@ async function searchMakerWorld(query) {
 async function searchPrintables(query) {
   try {
     const html = await fetchHtml(`https://www.printables.com/search/models?q=${query}`, 8000);
+
+    // Build image map: model ID → thumbnail URL
+    const imgMap = {};
+    const imgRegex = /https:\/\/media\.printables\.com\/media\/prints\/(\d+)\/images\/[^"'\s]+thumbs\/inside\/320x240\/[^"'\s]+/g;
+    let im;
+    while ((im = imgRegex.exec(html)) !== null) {
+      if (!imgMap[im[1]]) imgMap[im[1]] = im[0];
+    }
+
     const results = [];
     const regex = /href="\/model\/(\d+)-([^"]+)"/g;
     let match;
@@ -1612,7 +3393,7 @@ async function searchPrintables(query) {
           source: 'printables',
           source_id: id,
           title: slug.charAt(0).toUpperCase() + slug.slice(1),
-          image: null,
+          image: imgMap[id] || null,
           url: `https://www.printables.com/model/${id}`,
           designer: null,
           likes: 0,
@@ -1639,4 +3420,139 @@ async function searchThingiverse(query) {
       downloads: d.download_count || 0
     }));
   } catch { return []; }
+}
+
+// ---- TOTP Helpers ----
+
+function _generateTotpSecret(buffer) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const byte of buffer) bits += byte.toString(2).padStart(8, '0');
+  let secret = '';
+  for (let i = 0; i + 5 <= bits.length; i += 5) secret += alphabet[parseInt(bits.substring(i, i + 5), 2)];
+  return secret;
+}
+
+function _verifyTotp(secret, code, window = 1) {
+  const epoch = Math.floor(Date.now() / 1000);
+  // Decode base32 secret
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const c of secret.toUpperCase()) {
+    const idx = alphabet.indexOf(c);
+    if (idx >= 0) bits += idx.toString(2).padStart(5, '0');
+  }
+  const keyBytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) keyBytes.push(parseInt(bits.substring(i, i + 8), 2));
+  const key = Buffer.from(keyBytes);
+
+  for (let i = -window; i <= window; i++) {
+    const counter = Math.floor(epoch / 30) + i;
+    const buf = Buffer.alloc(8);
+    buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
+    buf.writeUInt32BE(counter & 0xFFFFFFFF, 4);
+    const h = createHmac('sha1', key).update(buf).digest();
+    const offset = h[h.length - 1] & 0x0F;
+    const otp = ((h[offset] & 0x7F) << 24 | h[offset + 1] << 16 | h[offset + 2] << 8 | h[offset + 3]) % 1000000;
+    if (String(otp).padStart(6, '0') === String(code).padStart(6, '0')) return true;
+  }
+  return false;
+}
+
+// ---- Webhook Dispatcher ----
+
+async function _dispatchWebhook(whConfig, payload, deliveryId) {
+  const url = new URL(whConfig.url);
+  const isHttps = url.protocol === 'https:';
+  const reqModule = isHttps ? (await import('node:https')).default : (await import('node:http')).default;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload),
+    'User-Agent': 'BambuDashboard-Webhook/1.0',
+    ...(typeof whConfig.headers === 'string' ? JSON.parse(whConfig.headers) : (whConfig.headers || {}))
+  };
+
+  if (whConfig.secret) {
+    headers['X-Webhook-Signature'] = 'sha256=' + createHmac('sha256', whConfig.secret).update(payload).digest('hex');
+  }
+
+  return new Promise((resolve) => {
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (isHttps ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'POST',
+      headers,
+      rejectUnauthorized: true
+    };
+
+    const req = reqModule.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        const success = res.statusCode >= 200 && res.statusCode < 300;
+        try {
+          updateWebhookDelivery(deliveryId, {
+            status: success ? 'sent' : 'failed',
+            attempts: 1,
+            last_attempt: new Date().toISOString(),
+            response_code: res.statusCode,
+            response_body: data.substring(0, 500)
+          });
+        } catch (_) {}
+        resolve(success);
+      });
+    });
+
+    req.on('error', (err) => {
+      try {
+        updateWebhookDelivery(deliveryId, {
+          status: 'failed',
+          attempts: 1,
+          last_attempt: new Date().toISOString(),
+          response_body: err.message
+        });
+      } catch (_) {}
+      resolve(false);
+    });
+
+    req.setTimeout(10000, () => { req.destroy(); });
+    req.write(payload);
+    req.end();
+  });
+}
+
+// Dispatch webhooks for notification events
+export function dispatchWebhooksForEvent(eventType, title, message, data) {
+  try {
+    const webhooks = getActiveWebhooks();
+    for (const wh of webhooks) {
+      const events = typeof wh.events === 'string' ? JSON.parse(wh.events) : (wh.events || []);
+      if (events.length > 0 && !events.includes(eventType) && !events.includes('*')) continue;
+
+      let payload;
+      if (wh.template === 'discord') {
+        const colors = { print_started: 3447003, print_finished: 3066993, print_failed: 15158332, print_cancelled: 15844367, printer_error: 15158332, test: 10181046 };
+        payload = JSON.stringify({
+          embeds: [{ title, description: message, color: colors[eventType] || 9807270, timestamp: new Date().toISOString(), footer: { text: 'Bambu Dashboard' } }]
+        });
+      } else if (wh.template === 'slack') {
+        payload = JSON.stringify({
+          text: `*${title}*\n${message}`
+        });
+      } else {
+        payload = JSON.stringify({
+          event: eventType, title, message,
+          timestamp: new Date().toISOString(),
+          data: data || {}
+        });
+      }
+
+      const deliveryId = addWebhookDelivery({ webhook_id: wh.id, event_type: eventType, payload, status: 'pending' });
+      _dispatchWebhook(wh, payload, deliveryId).catch(() => {});
+    }
+  } catch (e) {
+    console.error('[webhook] Dispatch error:', e.message);
+  }
 }

@@ -68,7 +68,8 @@ async function sendDiscord(conf, title, message, eventType) {
     print_started: 0x3498db, print_finished: 0x2ecc71,
     print_failed: 0xe74c3c, print_cancelled: 0xf39c12,
     printer_error: 0xe74c3c, maintenance_due: 0xf39c12,
-    bed_cooled: 0x2ecc71, test: 0x9b59b6, digest: 0x3498db
+    bed_cooled: 0x2ecc71, test: 0x9b59b6, digest: 0x3498db,
+    drying_due: 0xf0883e, filament_low_stock: 0xf0883e
   };
   const body = JSON.stringify({
     embeds: [{
@@ -249,13 +250,15 @@ async function sendNtfy(conf, title, message, eventType) {
   const priorityMap = {
     print_failed: '5', printer_error: '5', maintenance_due: '4',
     print_finished: '3', bed_cooled: '3', print_cancelled: '3',
-    print_started: '2', test: '3', digest: '3'
+    print_started: '2', test: '3', digest: '3',
+    drying_due: '3', filament_low_stock: '4'
   };
   const tagMap = {
     print_started: 'rocket', print_finished: 'white_check_mark',
     print_failed: 'x', print_cancelled: 'stop_sign',
     printer_error: 'warning', maintenance_due: 'wrench',
-    bed_cooled: 'snowflake', test: 'test_tube', digest: 'clipboard'
+    bed_cooled: 'snowflake', test: 'test_tube', digest: 'clipboard',
+    drying_due: 'droplet', filament_low_stock: 'warning'
   };
   const headers = {
     'Title': title,
@@ -272,7 +275,8 @@ async function sendPushover(conf, title, message, eventType) {
   const priorityMap = {
     print_failed: 1, printer_error: 1, maintenance_due: 0,
     print_finished: 0, bed_cooled: -1, print_started: -1,
-    print_cancelled: 0, test: 0, digest: 0
+    print_cancelled: 0, test: 0, digest: 0,
+    drying_due: 0, filament_low_stock: 0
   };
   const body = JSON.stringify({
     token: conf.apiToken,
@@ -290,12 +294,20 @@ export class NotificationManager {
     this.config = notifConfig || {};
     this._bedMonitors = new Map();
     this._maintenanceAlerted = new Set();
+    this._dryingAlerted = new Set();
+    this._lowStockAlerted = new Set();
     this._getPrinterIds = null;
+    this._getSpoolsDryingStatus = null;
+    this._getLowStockSpools = null;
     this._digestTimer = null;
     this._maintenanceTimer = null;
+    this._dryingTimer = null;
+    this._lowStockTimer = null;
 
     this._startDigestTimer();
     this._startMaintenanceChecker();
+    this._startDryingChecker();
+    this._startLowStockChecker();
   }
 
   reloadConfig(newConfig) {
@@ -308,9 +320,41 @@ export class NotificationManager {
     this._getPrinterIds = fn;
   }
 
+  setDryingStatusProvider(fn) {
+    this._getSpoolsDryingStatus = fn;
+  }
+
+  setLowStockProvider(fn) {
+    this._getLowStockSpools = fn;
+  }
+
   // ---- Core dispatch ----
 
+  setWebhookDispatcher(fn) {
+    this._webhookDispatcher = fn;
+  }
+
+  setPushDispatcher(fn) {
+    this._pushDispatcher = fn;
+  }
+
   async notify(eventType, data) {
+    // Always dispatch to outgoing webhooks (independent of notification system)
+    if (this._webhookDispatcher) {
+      try {
+        const { title: whTitle, message: whMsg } = this._formatMessage(eventType, data);
+        this._webhookDispatcher(eventType, whTitle, whMsg, data);
+      } catch (_) {}
+    }
+
+    // Always dispatch to Web Push subscribers
+    if (this._pushDispatcher) {
+      try {
+        const { title: pushTitle, message: pushMsg } = this._formatMessage(eventType, data);
+        this._pushDispatcher(eventType, pushTitle, pushMsg, data);
+      } catch (_) {}
+    }
+
     if (!this.config.enabled) return;
 
     const eventConf = this.config.events?.[eventType];
@@ -484,6 +528,77 @@ export class NotificationManager {
     }
   }
 
+  // ---- Drying checker ----
+
+  _startDryingChecker() {
+    this._dryingTimer = setInterval(() => this._checkDrying(), 60 * 60 * 1000);
+    setTimeout(() => this._checkDrying(), 30000);
+  }
+
+  _checkDrying() {
+    if (!this.config.enabled || !this.config.events?.drying_due?.enabled) return;
+    if (!this._getSpoolsDryingStatus) return;
+
+    try {
+      const statuses = this._getSpoolsDryingStatus();
+      for (const s of statuses) {
+        if (s.drying_status === 'overdue') {
+          const key = `drying:${s.id}`;
+          if (!this._dryingAlerted.has(key)) {
+            this._dryingAlerted.add(key);
+            this.notify('drying_due', {
+              spoolId: s.id,
+              spoolName: s.profile_name || 'Unknown',
+              material: s.material || 'Unknown',
+              daysSinceDried: Math.round(s.days_since_dried || 0),
+              maxDays: s.max_days_without_drying || 30
+            });
+          }
+        } else {
+          this._dryingAlerted.delete(`drying:${s.id}`);
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  // ---- Low stock checker ----
+
+  _startLowStockChecker() {
+    this._lowStockTimer = setInterval(() => this._checkLowStock(), 60 * 60 * 1000);
+    setTimeout(() => this._checkLowStock(), 45000);
+  }
+
+  _checkLowStock() {
+    if (!this.config.enabled || !this.config.events?.filament_low_stock?.enabled) return;
+    if (!this._getLowStockSpools) return;
+
+    try {
+      const spools = this._getLowStockSpools();
+      for (const s of spools) {
+        const key = `low:${s.id}`;
+        if (!this._lowStockAlerted.has(key)) {
+          this._lowStockAlerted.add(key);
+          this.notify('filament_low_stock', {
+            spoolId: s.id,
+            spoolName: s.profile_name || 'Unknown',
+            material: s.material || 'Unknown',
+            vendorName: s.vendor_name || '',
+            remainingG: Math.round(s.remaining_weight_g),
+            remainingPct: s.remaining_pct,
+            thresholdPct: 20
+          });
+        }
+      }
+      // Clear alerts for spools no longer low
+      for (const key of this._lowStockAlerted) {
+        const id = parseInt(key.split(':')[1]);
+        if (!spools.find(s => s.id === id)) {
+          this._lowStockAlerted.delete(key);
+        }
+      }
+    } catch { /* skip */ }
+  }
+
   // ---- Message formatting ----
 
   _formatMessage(eventType, data) {
@@ -540,6 +655,42 @@ export class NotificationManager {
         return {
           title: `Print Guard Alert — ${printer}`,
           message: `Printer: ${printer}\nDetection: ${data.eventType || 'Unknown'}\nAction: ${data.action || 'notify'}${data.notes ? '\nDetails: ' + data.notes : ''}`
+        };
+
+      case 'drying_due':
+        return {
+          title: `Drying Due — ${data.material}`,
+          message: `Spool: ${data.spoolName}\nMaterial: ${data.material}\nDays since dried: ${data.daysSinceDried}\nRecommended: dry every ${data.maxDays} days`
+        };
+
+      case 'filament_low_stock':
+        return {
+          title: `Low Stock — ${data.material}`,
+          message: `Spool: ${data.spoolName}\nMaterial: ${data.material}${data.vendorName ? '\nVendor: ' + data.vendorName : ''}\nRemaining: ${data.remainingG}g (${data.remainingPct}%)`
+        };
+
+      case 'queue_item_started':
+        return {
+          title: `Queue Print Started — ${data.printerName || 'Unknown'}`,
+          message: `Queue: ${data.queueName || 'Unknown'}\nPrinter: ${data.printerName || 'Unknown'}\nFile: ${data.filename || 'Unknown'}`
+        };
+
+      case 'queue_item_completed':
+        return {
+          title: `Queue Print Completed — ${data.printerName || 'Unknown'}`,
+          message: `Queue: ${data.queueName || 'Unknown'}\nPrinter: ${data.printerName || 'Unknown'}\nFile: ${data.filename || 'Unknown'}`
+        };
+
+      case 'queue_item_failed':
+        return {
+          title: `Queue Print Failed — ${data.printerName || 'Unknown'}`,
+          message: `Queue: ${data.queueName || 'Unknown'}\nPrinter: ${data.printerName || 'Unknown'}\nFile: ${data.filename || 'Unknown'}${data.error ? '\nError: ' + data.error : ''}`
+        };
+
+      case 'queue_completed':
+        return {
+          title: `Queue Completed — ${data.queueName || 'Unknown'}`,
+          message: `All items in queue "${data.queueName}" have been printed.`
         };
 
       default:

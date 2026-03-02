@@ -1,4 +1,4 @@
-import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight } from './database.js';
+import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced } from './database.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -248,6 +248,9 @@ export class PrintTracker {
         });
       }
 
+      // Auto-save print cost
+      this._savePrintCost(printHistoryId, filamentUsedG, duration, data);
+
       // Update component wear
       this._updateComponentWear(duration, data);
 
@@ -451,6 +454,29 @@ export class PrintTracker {
       }
     } catch (e) {
       console.error(`[tracker:${this.printerId}] Spool usage update feilet:`, e.message);
+    }
+  }
+
+  _savePrintCost(printHistoryId, filamentUsedG, durationSeconds, data) {
+    try {
+      // Find the spool used for cost-per-gram calculation
+      let spoolId = null;
+      if (this.amsSnapshot && data.ams?.tray_now != null) {
+        const activeTray = String(data.ams.tray_now);
+        for (const key of Object.keys(this.amsSnapshot)) {
+          const [unitId, trayId] = key.split('_').map(Number);
+          if (String(trayId) === activeTray) {
+            const spool = getSpoolBySlot(this.printerId, unitId, trayId);
+            if (spool) { spoolId = spool.id; break; }
+          }
+        }
+      }
+      const costs = estimatePrintCostAdvanced(filamentUsedG || 0, durationSeconds || 0, spoolId);
+      if (costs.total_cost > 0) {
+        savePrintCost(printHistoryId, costs);
+      }
+    } catch (e) {
+      console.error(`[tracker:${this.printerId}] Cost save feilet:`, e.message);
     }
   }
 

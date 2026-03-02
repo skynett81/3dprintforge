@@ -6,14 +6,18 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
-import { initDatabase, getPrinters, addPrinter as dbAddPrinter } from './database.js';
+import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById } from './database.js';
 import { startNightlyBackup } from './backup.js';
-import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard } from './api-routes.js';
-import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth } from './auth.js';
+import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, dispatchWebhooksForEvent } from './api-routes.js';
+import { EcomLicenseManager } from './ecom-license.js';
+import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth, validateApiKey } from './auth.js';
 import { PrinterManager } from './printer-manager.js';
 import { NotificationManager } from './notifications.js';
 import { Updater } from './updater.js';
 import { sendTelemetryPing } from './telemetry.js';
+import { QueueManager } from './queue-manager.js';
+import { TimelapseService } from './timelapse-service.js';
+import { FailureDetectionService } from './failure-detection.js';
 
 const IS_DEMO = process.env.BAMBU_DEMO === 'true';
 
@@ -108,10 +112,11 @@ function handleRequest(req, res) {
     return handleAuthApiRequest(req, res);
   }
 
-  // If auth is enabled, check session before serving anything else
+  // If auth is enabled, check session or API key before serving anything else
   if (isAuthEnabled() && !isPublicPath(pathname)) {
     const token = getSessionToken(req);
-    if (!validateSession(token)) {
+    const apiKey = pathname.startsWith('/api/') ? validateApiKey(req) : null;
+    if (!validateSession(token) && !apiKey) {
       if (pathname.startsWith('/api/')) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Unauthorized' }));
@@ -233,6 +238,12 @@ const notifier = new NotificationManager(config.notifications);
 notifier.setPrinterListProvider(() =>
   getPrinters().map(p => ({ id: p.id, name: p.name }))
 );
+notifier.setDryingStatusProvider(() => getSpoolsDryingStatus());
+notifier.setLowStockProvider(() => {
+  const threshold = parseInt(getInventorySetting('low_stock_threshold') || '20');
+  return getLowStockSpools(threshold);
+});
+notifier.setWebhookDispatcher(dispatchWebhooksForEvent);
 manager.setNotificationHandler(notifier);
 setNotifier(notifier);
 setGuard(manager.guard);
@@ -241,6 +252,168 @@ setGuard(manager.guard);
 const updater = new Updater(config, broadcastAll, notifier, hub);
 setUpdater(updater);
 if (config.update?.autoCheck !== false) updater.start();
+
+// Queue Manager
+const queueManager = new QueueManager(manager, notifier, broadcastAll);
+queueManager.init();
+setQueueManager(queueManager);
+
+// Timelapse Service
+const timelapseService = new TimelapseService();
+timelapseService.init();
+setTimelapseService(timelapseService);
+
+// E-Commerce License Manager
+const ecomLicense = new EcomLicenseManager();
+await ecomLicense.init();
+setEcomLicense(ecomLicense);
+
+// AI Failure Detection Service
+const failureDetector = new FailureDetectionService(manager, notifier, (type, data) => hub.broadcast(type, data));
+failureDetector.init();
+
+// Generate VAPID keys for Web Push if not yet set
+if (!getInventorySetting('vapid_public_key')) {
+  try {
+    const { generateKeyPairSync } = await import('node:crypto');
+    const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+    const pubRaw = publicKey.export({ type: 'spki', format: 'der' });
+    const privRaw = privateKey.export({ type: 'pkcs8', format: 'der' });
+    setInventorySetting('vapid_public_key', pubRaw.subarray(-65).toString('base64url'));
+    setInventorySetting('vapid_private_key', privRaw.subarray(-32).toString('base64url'));
+    console.log('[pwa] VAPID keys generated for Web Push');
+  } catch (e) {
+    console.warn('[pwa] Could not generate VAPID keys:', e.message);
+  }
+}
+
+// Web Push dispatcher
+import { createSign, createHash } from 'node:crypto';
+
+notifier.setPushDispatcher(async (eventType, title, message, data) => {
+  const vapidPublicKey = getInventorySetting('vapid_public_key');
+  const vapidPrivateKey = getInventorySetting('vapid_private_key');
+  if (!vapidPublicKey || !vapidPrivateKey) return;
+
+  const subs = getPushSubscriptions();
+  if (subs.length === 0) return;
+
+  const payload = JSON.stringify({ title, body: message, event: eventType, url: '/', tag: eventType });
+
+  for (const sub of subs) {
+    try {
+      await _sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+    } catch (e) {
+      // Remove invalid subscriptions (410 Gone)
+      if (e.statusCode === 410 || e.statusCode === 404) {
+        deletePushSubscriptionById(sub.id);
+      }
+    }
+  }
+});
+
+async function _sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey) {
+  const endpoint = new URL(sub.endpoint);
+  const audience = `${endpoint.protocol}//${endpoint.host}`;
+
+  // Create VAPID JWT
+  const header = Buffer.from(JSON.stringify({ typ: 'JWT', alg: 'ES256' })).toString('base64url');
+  const claims = Buffer.from(JSON.stringify({
+    aud: audience,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    sub: 'mailto:noreply@bambu-dashboard.local'
+  })).toString('base64url');
+
+  const unsignedToken = `${header}.${claims}`;
+
+  // Sign with VAPID private key
+  const privKeyDer = Buffer.concat([
+    Buffer.from('302e020100300506032b8104002204203021020101041c', 'hex').subarray(0, 7),
+    Buffer.from('3041020100301306072a8648ce3d020106082a8648ce3d030107042730250201010420', 'hex'),
+    Buffer.from(vapidPrivateKey, 'base64url')
+  ]);
+
+  try {
+    const sign = createSign('SHA256');
+    sign.update(unsignedToken);
+    const sig = sign.sign({ key: privKeyDer, format: 'der', type: 'pkcs8' });
+    // Convert DER signature to raw r||s (64 bytes)
+    const rLen = sig[3];
+    const r = sig.subarray(4, 4 + rLen);
+    const sStart = 4 + rLen + 2;
+    const sLen = sig[sStart - 1];
+    const s = sig.subarray(sStart, sStart + sLen);
+    const rawR = r.length > 32 ? r.subarray(r.length - 32) : Buffer.concat([Buffer.alloc(32 - r.length), r]);
+    const rawS = s.length > 32 ? s.subarray(s.length - 32) : Buffer.concat([Buffer.alloc(32 - s.length), s]);
+    const rawSig = Buffer.concat([rawR, rawS]).toString('base64url');
+    const jwt = `${unsignedToken}.${rawSig}`;
+    const vapidAuth = `vapid t=${jwt}, k=${vapidPublicKey}`;
+
+    // Simple unencrypted push (TTL-only, no payload encryption for simplicity)
+    // Most push services accept this for non-sensitive data
+    const { request: httpsReq } = await import('node:https');
+    const { request: httpReq } = await import('node:http');
+    const reqFn = endpoint.protocol === 'https:' ? httpsReq : httpReq;
+
+    return new Promise((resolve, reject) => {
+      const req = reqFn(endpoint.href, {
+        method: 'POST',
+        headers: {
+          'Authorization': vapidAuth,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+          'TTL': '86400'
+        }
+      }, (res) => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve();
+          else { const err = new Error(`Push ${res.statusCode}`); err.statusCode = res.statusCode; reject(err); }
+        });
+      });
+      req.on('error', reject);
+      req.setTimeout(10000, () => req.destroy());
+      req.write(payload);
+      req.end();
+    });
+  } catch (e) {
+    // VAPID signing not available, skip silently
+  }
+}
+
+// Wire print completion to queue manager + timelapse for all live printers
+for (const [id, entry] of manager.printers) {
+  if (entry.tracker) {
+    const origOnPrintEnd = entry.tracker.onPrintEnd;
+    const origOnPrintStart = entry.tracker.onPrintStart;
+
+    // Timelapse + AI detection start on print start
+    entry.tracker.onPrintStart = (data) => {
+      if (origOnPrintStart) origOnPrintStart(data);
+      const printer = getPrinters().find(p => p.id === id);
+      if (printer && printer.ip && printer.accessCode) {
+        const timelapseSetting = getInventorySetting('timelapse_enabled');
+        if (timelapseSetting === '1' || timelapseSetting === 'true') {
+          timelapseService.startRecording(id, printer.ip, printer.accessCode);
+        }
+        // Start AI failure detection monitoring
+        failureDetector.startMonitoring(id, printer.ip, printer.accessCode);
+      }
+    };
+
+    entry.tracker.onPrintEnd = (data) => {
+      if (origOnPrintEnd) origOnPrintEnd(data);
+      queueManager.onPrintComplete(id, data.status, null);
+      // Stop timelapse recording
+      if (timelapseService.isRecording(id)) {
+        timelapseService.stopRecording(id).catch(() => {});
+      }
+      // Stop AI failure detection
+      failureDetector.stopMonitoring(id);
+    };
+  }
+}
 
 // Demo mode - seed mock printers and run simulations
 const demoMockPrinters = [];
@@ -454,7 +627,9 @@ if (hubHttps) hubHttps.onCommand = commandHandler;
 // Graceful shutdown
 function shutdown() {
   shutdownAuth();
+  ecomLicense.shutdown();
   for (const mock of demoMockPrinters) mock.stop();
+  queueManager.shutdown();
   updater.shutdown();
   notifier.shutdown();
   manager.shutdown();

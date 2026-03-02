@@ -256,6 +256,7 @@ function closeSidebarIfMobile() {
 
 const PANEL_TITLES = {
   controls: 'tabs.controls',
+  queue: 'queue.title',
   history: 'tabs.history',
   stats: 'tabs.statistics',
   telemetry: 'tabs.telemetry',
@@ -265,11 +266,13 @@ const PANEL_TITLES = {
   maintenance: 'tabs.maintenance',
   protection: 'protection.title',
   modelinfo: 'tabs.model_info',
+  learning: 'tabs.learning',
   settings: 'tabs.settings'
 };
 
 const PANEL_LOADERS = {
   controls: () => { if (typeof loadControlsPanel === 'function') loadControlsPanel(); },
+  queue: () => { if (typeof loadQueuePanel === 'function') loadQueuePanel(); },
   history: () => { if (typeof loadHistoryPanel === 'function') loadHistoryPanel(); },
   stats: () => { if (typeof loadStatsPanel === 'function') loadStatsPanel(); },
   telemetry: () => { if (typeof loadTelemetryPanel === 'function') loadTelemetryPanel(); },
@@ -279,6 +282,7 @@ const PANEL_LOADERS = {
   maintenance: () => { if (typeof loadMaintenancePanel === 'function') loadMaintenancePanel(); },
   protection: () => { if (typeof loadProtectionPanel === 'function') loadProtectionPanel(); },
   modelinfo: () => { if (typeof loadModelInfoPanel === 'function') loadModelInfoPanel(); },
+  learning: () => { if (typeof loadLearningPanel === 'function') loadLearningPanel(); },
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); }
 };
 
