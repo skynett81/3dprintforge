@@ -134,6 +134,7 @@
             <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.filename}</div>
             <div style="font-size:0.75rem;color:var(--text-secondary);display:flex;gap:8px;margin-top:2px">
               ${item.printer_id ? `<span>${printerName(item.printer_id)}</span>` : ''}
+              ${item.target_printers ? (() => { try { const tp = JSON.parse(item.target_printers); return tp.length > 0 ? `<span title="${tp.map(p => printerName(p)).join(', ')}">${tp.length} ${t('queue.multiprint')}</span>` : ''; } catch(_) { return ''; } })() : ''}
               ${item.copies > 1 ? `<span>${item.copies_completed}/${item.copies} copies</span>` : ''}
               ${item.required_material ? `<span>${item.required_material}</span>` : ''}
             </div>
@@ -251,6 +252,10 @@
 
   // ═══ Add item dialog ═══
   window._queueAddItem = function(queueId) {
+    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
+    const printerChecks = printers.map(p =>
+      `<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-printer-check" value="${p.id}"> ${p.name || p.id}</label>`
+    ).join('');
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal-content" style="max-width:450px">
@@ -262,6 +267,12 @@
       </div>
       <div class="form-group"><label>${t('queue.required_material')}</label><input type="text" id="qi-material" class="form-input" placeholder="PLA" /></div>
       <div class="form-group"><label>${t('queue.notes')}</label><input type="text" id="qi-notes" class="form-input" /></div>
+      ${printers.length > 0 ? `<div class="form-group">
+        <label style="display:flex;align-items:center;gap:6px">${t('queue.select_printers')}
+          <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:1px 6px" onclick="document.querySelectorAll('.qi-printer-check').forEach(c=>c.checked=!c.checked)">${t('queue.all_printers')}</button>
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:4px">${printerChecks}</div>
+      </div>` : ''}
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="btn btn-ghost" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
         <button class="btn btn-primary" data-ripple onclick="window._queueDoAddItem(${queueId})">${t('queue.add_item')}</button>
@@ -275,12 +286,14 @@
     const filename = document.getElementById('qi-filename')?.value?.trim();
     if (!filename) return;
 
+    const selectedPrinters = [...document.querySelectorAll('.qi-printer-check:checked')].map(c => c.value);
     const body = {
       filename,
       copies: parseInt(document.getElementById('qi-copies')?.value) || 1,
       priority: parseInt(document.getElementById('qi-priority')?.value) || 0,
       required_material: document.getElementById('qi-material')?.value?.trim() || null,
-      notes: document.getElementById('qi-notes')?.value?.trim() || null
+      notes: document.getElementById('qi-notes')?.value?.trim() || null,
+      target_printers: selectedPrinters.length > 0 ? selectedPrinters : null
     };
 
     await fetch(`/api/queue/${queueId}/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

@@ -290,8 +290,12 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
             ${t('controls.sd_files')}
           </span>
-          <button class="form-btn form-btn-sm" data-ripple onclick="loadPrinterFiles('${esc(meta.id)}')">${t('controls.refresh')}</button>
+          <div style="display:flex;gap:4px">
+            <button class="form-btn form-btn-sm" data-ripple onclick="showFileUpload('${esc(meta.id)}')">${t('controls.upload_file')}</button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="loadPrinterFiles('${esc(meta.id)}')">${t('controls.refresh')}</button>
+          </div>
         </div>
+        <div id="ctrl-upload-area" style="display:none"></div>
         <div id="ctrl-files-list"><span class="text-muted" style="font-size:0.8rem">${t('controls.sd_click_refresh')}</span></div>
       </div>`;
     }
@@ -692,4 +696,107 @@
       } catch (e) { showToast(e.message, 'error'); }
     }, { danger: true });
   };
+
+  // ═══ File Upload to Printer ═══
+  let _uploadPrinterId = null;
+
+  window.showFileUpload = function(printerId) {
+    _uploadPrinterId = printerId;
+    const area = document.getElementById('ctrl-upload-area');
+    if (!area) return;
+    const visible = area.style.display !== 'none';
+    if (visible) { area.style.display = 'none'; area.innerHTML = ''; return; }
+    area.style.display = 'block';
+    area.innerHTML = `
+      <div class="ctrl-upload-box" id="ctrl-drop-zone">
+        <input type="file" id="ctrl-file-input" accept=".3mf,.gcode,.stl,.obj,.step" style="display:none" onchange="handleFileSelect(this)" />
+        <div style="text-align:center;padding:16px;cursor:pointer" onclick="document.getElementById('ctrl-file-input').click()">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">${t('controls.drop_files')}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">.3mf, .gcode, .stl, .obj, .step</div>
+        </div>
+        <div id="ctrl-upload-progress" style="display:none"></div>
+      </div>`;
+    // Drag-and-drop
+    const zone = document.getElementById('ctrl-drop-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+    zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.style.borderColor = '';
+      if (e.dataTransfer.files.length) _doUpload(e.dataTransfer.files[0]);
+    });
+  };
+
+  window.handleFileSelect = function(input) {
+    if (input.files.length) _doUpload(input.files[0]);
+  };
+
+  async function _doUpload(file) {
+    const prog = document.getElementById('ctrl-upload-progress');
+    if (!prog) return;
+    prog.style.display = 'block';
+    prog.innerHTML = `<div style="padding:8px;font-size:0.8rem"><span class="spinner" style="width:14px;height:14px;margin-right:6px"></span>${t('controls.uploading')} ${esc(file.name)}...</div>`;
+
+    try {
+      // First upload to server
+      const params = new URLSearchParams({ filename: file.name, printer_id: _uploadPrinterId || '' });
+      const uploadRes = await fetch(`/api/slicer/upload?${params}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file
+      });
+      const uploadData = await uploadRes.json();
+      if (uploadData.error) throw new Error(uploadData.error);
+
+      if (uploadData.needsSlicing) {
+        prog.innerHTML = `<div style="padding:8px;font-size:0.8rem"><span class="spinner" style="width:14px;height:14px;margin-right:6px"></span>${t('controls.slicing')} ${esc(file.name)}...</div>`;
+        // Poll for slice completion
+        await _pollJobStatus(uploadData.jobId, prog, file.name);
+      } else {
+        // Direct upload to printer
+        await _sendToPrinter(uploadData.jobId, prog, file.name);
+      }
+    } catch (e) {
+      prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--danger)">${t('controls.upload_failed')}: ${esc(e.message)}</div>`;
+    }
+  }
+
+  async function _pollJobStatus(jobId, prog, filename) {
+    for (let i = 0; i < 120; i++) {
+      await new Promise(r => setTimeout(r, 2500));
+      const res = await fetch(`/api/slicer/jobs/${jobId}`);
+      const job = await res.json();
+      if (job.status === 'ready') {
+        await _sendToPrinter(jobId, prog, filename);
+        return;
+      }
+      if (job.status === 'error') {
+        prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--danger)">${t('controls.slice_failed')}: ${esc(job.error_message || 'Unknown')}</div>`;
+        return;
+      }
+    }
+    prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--warning)">${t('controls.slice_timeout')}</div>`;
+  }
+
+  async function _sendToPrinter(jobId, prog, filename) {
+    if (!_uploadPrinterId) {
+      prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--success)">${t('controls.upload_complete')}</div>`;
+      return;
+    }
+    prog.innerHTML = `<div style="padding:8px;font-size:0.8rem"><span class="spinner" style="width:14px;height:14px;margin-right:6px"></span>${t('controls.sending_to_printer')}...</div>`;
+    try {
+      const res = await fetch(`/api/slicer/jobs/${jobId}/upload-to-printer`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: _uploadPrinterId })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--success)">${t('controls.upload_complete')} — ${esc(data.filename)}</div>`;
+      showToast(t('controls.file_uploaded'), 'success');
+      loadPrinterFiles(_uploadPrinterId);
+    } catch (e) {
+      prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--danger)">${t('controls.upload_failed')}: ${esc(e.message)}</div>`;
+    }
+  }
 })();

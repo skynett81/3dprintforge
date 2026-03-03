@@ -242,6 +242,11 @@
     "import_type": "Type",
     "import_file": "File",
     "imported_count": "{{count}} imported",
+    "import_drop": "Click or drag CSV/JSON file to import",
+    "import_format_detected": "Format detected",
+    "import_duplicates": "{{count}} potential duplicates found",
+    "import_rows": "rows found",
+    "import_more_rows": "more rows",
     "default_weight": "Default spool weight (g)",
     "currency": "Currency",
     "low_stock_threshold": "Low stock threshold",
@@ -365,7 +370,20 @@
     "mat_temps": "Temperatures",
     "mat_tip_print": "Printing",
     "mat_tip_storage": "Storage",
-    "mat_tip_post": "Post-processing"
+    "mat_tip_post": "Post-processing",
+    "favorite": "Favorite",
+    "favorites_only": "Favorites only",
+    "add_favorite": "Add to favorites",
+    "remove_favorite": "Remove from favorites",
+    "filter_color": "Filter by color",
+    "bulk_quantity": "Quantity",
+    "bulk_added": "{{count}} spools added",
+    "view_grid": "Grid view",
+    "view_list": "List view",
+    "view_table": "Table view",
+    "share_palette": "Share",
+    "palette_shared": "Palette link copied",
+    "transmission_distance": "TD (HueForge)"
   },
   "controls": {
     "title": "Controls",
@@ -427,7 +445,17 @@
     "print_confirm": "Start printing this file?",
     "add_to_queue": "Add to Queue",
     "no_queues": "No queues available. Create a queue first.",
-    "delete_file_confirm": "Delete this file from the printer?"
+    "delete_file_confirm": "Delete this file from the printer?",
+    "upload_file": "Upload",
+    "drop_files": "Click or drag file to upload",
+    "uploading": "Uploading",
+    "slicing": "Slicing",
+    "sending_to_printer": "Sending to printer",
+    "upload_complete": "Upload complete",
+    "upload_failed": "Upload failed",
+    "slice_failed": "Slicing failed",
+    "slice_timeout": "Slicing timed out",
+    "file_uploaded": "File uploaded to printer"
   },
   "speed": {
     "label": "Speed:",
@@ -659,6 +687,15 @@
     "notif_webhook": "Webhook",
     "notif_ntfy": "ntfy",
     "notif_pushover": "Pushover",
+    "notif_sms": "SMS",
+    "notif_sms_provider": "Provider",
+    "notif_sms_generic": "Generic HTTP Gateway",
+    "notif_sms_account_sid": "Account SID",
+    "notif_sms_auth_token": "Auth Token",
+    "notif_sms_from": "From Number",
+    "notif_sms_to": "To Number",
+    "notif_sms_gateway_url": "Gateway URL",
+    "notif_sms_gateway_headers": "Gateway Headers (JSON)",
     "notif_bot_token": "Bot Token",
     "notif_chat_id": "Chat ID",
     "notif_webhook_url": "Webhook URL",
@@ -1271,7 +1308,13 @@
     "mod_queue_list": "Queues",
     "mod_active_jobs": "Queue Items",
     "mod_completed_items": "History",
-    "mod_queue_settings": "Settings"
+    "mod_queue_settings": "Settings",
+    "multiprint": "printers",
+    "select_printers": "Target printers",
+    "all_printers": "Toggle all",
+    "insufficient_filament": "Insufficient filament",
+    "filament_warning": "Filament warning",
+    "material_mismatch": "Material mismatch"
   },
   "tags": {
     "title": "Tags",
@@ -1410,5 +1453,19 @@
     "sort_material": "Material",
     "sort_brand": "Brand",
     "sort_printer": "Printer"
+  },
+  "color": {
+    "red": "Red",
+    "orange": "Orange",
+    "yellow": "Yellow",
+    "green": "Green",
+    "blue": "Blue",
+    "purple": "Purple",
+    "pink": "Pink",
+    "black": "Black",
+    "white": "White",
+    "gray": "Gray",
+    "brown": "Brown",
+    "transparent": "Transparent"
   }
 }

@@ -1,4 +1,4 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 
 export class QueueManager {
@@ -120,19 +120,95 @@ export class QueueManager {
       const prevState = tracker?.previousState?.gcode_state;
       if (prevState !== 'IDLE' && prevState !== 'FINISH') continue;
 
-      // Material/nozzle compatibility check
+      // Nozzle compatibility check
       if (item.required_nozzle_mm) {
         const nozzleDia = tracker?.previousState?.nozzle_diameter;
         if (nozzleDia && Math.abs(nozzleDia - item.required_nozzle_mm) > 0.01) continue;
       }
 
+      // Material compatibility check — match required_material against AMS tray types
+      if (item.required_material) {
+        const ams = tracker?.previousState?.ams?.ams;
+        let hasMaterial = false;
+        if (Array.isArray(ams)) {
+          for (const unit of ams) {
+            if (Array.isArray(unit?.tray)) {
+              for (const tray of unit.tray) {
+                if (tray?.tray_type && tray.tray_type.toLowerCase() === item.required_material.toLowerCase()) {
+                  hasMaterial = true; break;
+                }
+              }
+            }
+            if (hasMaterial) break;
+          }
+        }
+        if (!hasMaterial) continue;
+      }
+
+      // Target printers filter — only dispatch to specified printers
+      if (item.target_printers) {
+        try {
+          const targets = typeof item.target_printers === 'string' ? JSON.parse(item.target_printers) : item.target_printers;
+          if (Array.isArray(targets) && targets.length > 0 && !targets.includes(id)) continue;
+        } catch (_) {}
+      }
+
       candidates.push(id);
     }
 
-    return candidates.length > 0 ? candidates[0] : null;
+    if (candidates.length <= 1) return candidates[0] || null;
+
+    // Load balancing — pick the printer with fewest active+pending jobs across all queues
+    const jobCounts = new Map();
+    for (const cid of candidates) jobCounts.set(cid, 0);
+    // Count active jobs
+    for (const [pid] of this._activeJobs) {
+      if (jobCounts.has(pid)) jobCounts.set(pid, jobCounts.get(pid) + 1);
+    }
+    // Count pending items assigned to specific printers
+    try {
+      const allQueues = getQueues('active');
+      for (const q of allQueues) {
+        const fullQ = getQueue(q.id);
+        if (!fullQ?.items) continue;
+        for (const it of fullQ.items) {
+          if (it.status === 'pending' && it.printer_id && jobCounts.has(it.printer_id)) {
+            jobCounts.set(it.printer_id, jobCounts.get(it.printer_id) + 1);
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Select printer with lowest job count
+    let bestId = candidates[0], bestCount = Infinity;
+    for (const [pid, count] of jobCounts) {
+      if (count < bestCount) { bestCount = count; bestId = pid; }
+    }
+    return bestId;
   }
 
   _dispatchItem(queue, item, printerId) {
+    // Pre-print filament check — warn if spool has insufficient filament
+    if (item.estimated_filament_g && item.estimated_filament_g > 0) {
+      const printer = this._pm.printers.get(printerId);
+      const ams = printer?.tracker?.previousState?.ams?.ams;
+      if (Array.isArray(ams)) {
+        for (const unit of ams) {
+          if (!Array.isArray(unit?.tray)) continue;
+          for (const tray of unit.tray) {
+            if (!tray?.tray_sub_brands) continue;
+            const spool = getSpoolBySlot(printerId, unit.id ?? 0, tray.id ?? 0);
+            if (spool && spool.remaining_weight_g < item.estimated_filament_g) {
+              const msg = `Low filament: ${spool.profile_name || 'spool'} has ${Math.round(spool.remaining_weight_g)}g, job needs ~${Math.round(item.estimated_filament_g)}g`;
+              addQueueLog(queue.id, item.id, printerId, 'filament_warning', msg);
+              this._notifyEvent('queue_filament_warning', { printerId, filename: item.filename, message: msg });
+              console.log(`[queue] ${msg}`);
+            }
+          }
+        }
+      }
+    }
+
     // Update item status
     updateQueueItem(item.id, { status: 'printing', printer_id: printerId, started_at: new Date().toISOString() });
     this._activeJobs.set(printerId, { queueId: queue.id, itemId: item.id });

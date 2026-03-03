@@ -1,4 +1,4 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, deleteTag, assignTag, unassignTag, getEntityTags, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, deleteTag, assignTag, unassignTag, getEntityTags, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData } from './database.js';
 import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -9,6 +9,8 @@ import { readFileSync, existsSync, statSync, createReadStream } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser } from './auth.js';
+import { getSlicerStatus, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
+import { getSlicerJobs as dbGetSlicerJobs, getSlicerJob as dbGetSlicerJob, deleteSlicerJob as dbDeleteSlicerJob } from './database.js';
 
 // ---- Login rate limiter ----
 const LOGIN_MAX_ATTEMPTS = 5;
@@ -936,6 +938,25 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    const spoolFavMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/favorite$/);
+    if (spoolFavMatch && method === 'POST') {
+      const id = parseInt(spoolFavMatch[1]);
+      const isFavorite = toggleSpoolFavorite(id);
+      _broadcastInventory('updated', 'spool', { id });
+      return sendJson(res, { ok: true, is_favorite: isFavorite });
+    }
+
+    if (method === 'POST' && path === '/api/inventory/spools/batch-add') {
+      return readBody(req, (body) => {
+        const count = Math.min(Math.max(parseInt(body.count) || 1, 1), 50);
+        const data = { ...body };
+        delete data.count;
+        const ids = batchAddSpools(data, count);
+        _broadcastInventory('created', 'spool', { ids });
+        return sendJson(res, { ok: true, ids, count: ids.length }, 201);
+      });
+    }
+
     // ---- Inventory: Usage Log ----
     if (method === 'GET' && path === '/api/inventory/usage') {
       const filters = {};
@@ -1701,6 +1722,60 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, grouped);
     }
 
+    // ---- Shared Palettes ----
+    if (method === 'POST' && path === '/api/inventory/palette/share') {
+      return readBody(req, (body) => {
+        const token = createSharedPalette(body.title, body.filters);
+        return sendJson(res, { ok: true, token, url: `/palette/${token}` }, 201);
+      });
+    }
+    const paletteMatch = path.match(/^\/api\/palette\/([a-z0-9]+)$/);
+    if (paletteMatch && method === 'GET') {
+      const palette = getSharedPalette(paletteMatch[1]);
+      if (!palette) return sendJson(res, { error: 'Not found' }, 404);
+      const filters = palette.filters ? JSON.parse(palette.filters) : {};
+      const spools = getSharedPaletteSpools(filters);
+      return sendJson(res, { palette, spools });
+    }
+    if (paletteMatch && method === 'DELETE') {
+      deleteSharedPalette(paletteMatch[1]);
+      return sendJson(res, { ok: true });
+    }
+    const paletteHtmlMatch = path.match(/^\/palette\/([a-z0-9]+)$/);
+    if (paletteHtmlMatch && method === 'GET') {
+      const palette = getSharedPalette(paletteHtmlMatch[1]);
+      if (!palette) { res.writeHead(404); return res.end('Palette not found'); }
+      const filters = palette.filters ? JSON.parse(palette.filters) : {};
+      const spools = getSharedPaletteSpools(filters);
+      const grouped = {};
+      for (const s of spools) {
+        const mat = s.material || 'Other';
+        if (!grouped[mat]) grouped[mat] = [];
+        grouped[mat].push(s);
+      }
+      let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>${palette.title || 'Filament Palette'}</title>
+        <style>
+          body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#1a1a2e;color:#e0e0e0}
+          h1{font-size:1.4rem;margin:0 0 16px}h2{font-size:1rem;margin:16px 0 8px;color:#888}
+          .palette-grid{display:flex;flex-wrap:wrap;gap:8px}
+          .swatch{width:60px;height:60px;border-radius:8px;display:flex;align-items:flex-end;justify-content:center;font-size:0.6rem;padding:4px;text-shadow:0 1px 2px rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.1)}
+          .meta{font-size:0.75rem;color:#888;margin-top:16px}
+        </style></head><body>
+        <h1>${palette.title || 'Filament Palette'}</h1>`;
+      for (const [mat, items] of Object.entries(grouped)) {
+        html += `<h2>${mat} (${items.length})</h2><div class="palette-grid">`;
+        for (const s of items) {
+          const hex = s.color_hex || '#666';
+          html += `<div class="swatch" style="background:${hex}" title="${s.profile_name || ''} — ${s.vendor_name || ''}">${s.color_name || ''}</div>`;
+        }
+        html += '</div>';
+      }
+      html += `<p class="meta">Shared from Bambu Dashboard · ${spools.length} colors · Viewed ${palette.view_count} times</p></body></html>`;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
     // ---- SD Card Files ----
     const filesMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/files$/);
     if (filesMatch && method === 'GET') {
@@ -1731,6 +1806,74 @@ export async function handleApiRequest(req, res) {
           _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: { action: 'print_file', filename: body.filename, plate_id: body.plate_id } });
         }
         return sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- Cloud Slicer ----
+    if (method === 'GET' && path === '/api/slicer/status') {
+      return sendJson(res, getSlicerStatus());
+    }
+
+    if (method === 'GET' && path === '/api/slicer/jobs') {
+      const limit = parseInt(url.searchParams.get('limit')) || 50;
+      return sendJson(res, dbGetSlicerJobs(limit));
+    }
+
+    const slicerJobMatch = path.match(/^\/api\/slicer\/jobs\/(\d+)$/);
+    if (slicerJobMatch && method === 'GET') {
+      const job = dbGetSlicerJob(parseInt(slicerJobMatch[1]));
+      if (!job) return sendJson(res, { error: 'Job not found' }, 404);
+      return sendJson(res, job);
+    }
+
+    if (slicerJobMatch && method === 'DELETE') {
+      const id = parseInt(slicerJobMatch[1]);
+      cleanupJob(id);
+      dbDeleteSlicerJob(id);
+      return sendJson(res, { ok: true });
+    }
+
+    // Upload file (binary body, filename in query param)
+    if (method === 'POST' && path === '/api/slicer/upload') {
+      const filename = url.searchParams.get('filename');
+      const printerId = url.searchParams.get('printer_id') || null;
+      const autoQueue = url.searchParams.get('auto_queue') === '1';
+      if (!filename) return sendJson(res, { error: 'filename query param required' }, 400);
+      return readBinaryBody(req, (buffer) => {
+        try {
+          const result = saveUploadedFile(filename, buffer, printerId, autoQueue);
+          sendJson(res, result, 201);
+          // Auto-slice if needed
+          if (result.needsSlicing) {
+            sliceFile(result.jobId).catch(e => console.error('[slicer] Slice failed:', e.message));
+          }
+        } catch (e) { sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    // Trigger slicing for a pending job
+    const sliceMatch = path.match(/^\/api\/slicer\/jobs\/(\d+)\/slice$/);
+    if (sliceMatch && method === 'POST') {
+      const id = parseInt(sliceMatch[1]);
+      try {
+        const result = await sliceFile(id);
+        return sendJson(res, result);
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    // Upload sliced file to printer via FTPS
+    const uploadMatch = path.match(/^\/api\/slicer\/jobs\/(\d+)\/upload-to-printer$/);
+    if (uploadMatch && method === 'POST') {
+      return readBody(req, async (body) => {
+        const id = parseInt(uploadMatch[1]);
+        const printerId = body.printer_id;
+        if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
+        const printer = getPrinters().find(p => p.id === printerId);
+        if (!printer || !printer.ip || !printer.accessCode) return sendJson(res, { error: 'Printer not found or no access code' }, 400);
+        try {
+          const result = await uploadToPrinter(id, printer.ip, printer.accessCode);
+          sendJson(res, result);
+        } catch (e) { sendJson(res, { error: e.message }, 500); }
       });
     }
 
@@ -3111,6 +3254,22 @@ function readBody(req, callback) {
       parsed = {};
     }
     callback(parsed);
+  });
+}
+
+// Binary body reader (for file uploads, 100 MB limit)
+const MAX_UPLOAD_SIZE = 100 * 1024 * 1024;
+function readBinaryBody(req, callback) {
+  const chunks = [];
+  let size = 0;
+  req.on('data', chunk => {
+    size += chunk.length;
+    if (size > MAX_UPLOAD_SIZE) { req.destroy(); return; }
+    chunks.push(chunk);
+  });
+  req.on('end', () => {
+    if (size > MAX_UPLOAD_SIZE) return;
+    callback(Buffer.concat(chunks));
   });
 }
 

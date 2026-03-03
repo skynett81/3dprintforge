@@ -242,6 +242,11 @@
     "import_type": "Type",
     "import_file": "Fil",
     "imported_count": "{{count}} importert",
+    "import_drop": "Klikk eller dra CSV/JSON-fil for import",
+    "import_format_detected": "Format oppdaget",
+    "import_duplicates": "{{count}} mulige duplikater funnet",
+    "import_rows": "rader funnet",
+    "import_more_rows": "flere rader",
     "default_weight": "Standard spolevekt (g)",
     "currency": "Valuta",
     "low_stock_threshold": "Lavt lager terskel",
@@ -365,7 +370,20 @@
     "mat_temps": "Temperaturer",
     "mat_tip_print": "Printing",
     "mat_tip_storage": "Oppbevaring",
-    "mat_tip_post": "Etterbehandling"
+    "mat_tip_post": "Etterbehandling",
+    "favorite": "Favoritt",
+    "favorites_only": "Kun favoritter",
+    "add_favorite": "Legg til favoritt",
+    "remove_favorite": "Fjern fra favoritter",
+    "filter_color": "Filtrer etter farge",
+    "bulk_quantity": "Antall",
+    "bulk_added": "{{count}} spoler lagt til",
+    "view_grid": "Rutenett",
+    "view_list": "Listevisning",
+    "view_table": "Tabellvisning",
+    "share_palette": "Del",
+    "palette_shared": "Palettlenke kopiert",
+    "transmission_distance": "TD (HueForge)"
   },
   "controls": {
     "title": "Kontroller",
@@ -427,7 +445,17 @@
     "print_confirm": "Starte utskrift av denne filen?",
     "add_to_queue": "Legg i kø",
     "no_queues": "Ingen køer tilgjengelig. Opprett en kø først.",
-    "delete_file_confirm": "Slette denne filen fra printeren?"
+    "delete_file_confirm": "Slette denne filen fra printeren?",
+    "upload_file": "Last opp",
+    "drop_files": "Klikk eller dra fil for å laste opp",
+    "uploading": "Laster opp",
+    "slicing": "Slicer",
+    "sending_to_printer": "Sender til printer",
+    "upload_complete": "Opplasting fullført",
+    "upload_failed": "Opplasting feilet",
+    "slice_failed": "Slicing feilet",
+    "slice_timeout": "Slicing tidsavbrudd",
+    "file_uploaded": "Fil lastet opp til printer"
   },
   "speed": {
     "label": "Hastighet:",
@@ -659,6 +687,15 @@
     "notif_webhook": "Webhook",
     "notif_ntfy": "ntfy",
     "notif_pushover": "Pushover",
+    "notif_sms": "SMS",
+    "notif_sms_provider": "Leverandør",
+    "notif_sms_generic": "Generisk HTTP-gateway",
+    "notif_sms_account_sid": "Konto-SID",
+    "notif_sms_auth_token": "Auth-token",
+    "notif_sms_from": "Fra-nummer",
+    "notif_sms_to": "Til-nummer",
+    "notif_sms_gateway_url": "Gateway-URL",
+    "notif_sms_gateway_headers": "Gateway-headers (JSON)",
     "notif_bot_token": "Bot-token",
     "notif_chat_id": "Chat-ID",
     "notif_webhook_url": "Webhook-URL",
@@ -1271,7 +1308,13 @@
     "mod_queue_list": "Køer",
     "mod_active_jobs": "Køelementer",
     "mod_completed_items": "Historikk",
-    "mod_queue_settings": "Innstillinger"
+    "mod_queue_settings": "Innstillinger",
+    "multiprint": "printere",
+    "select_printers": "Målprintere",
+    "all_printers": "Velg alle",
+    "insufficient_filament": "Utilstrekkelig filament",
+    "filament_warning": "Filament-advarsel",
+    "material_mismatch": "Materialfeil"
   },
   "tags": {
     "title": "Merkelapper",
@@ -1410,5 +1453,19 @@
     "sort_material": "Materiale",
     "sort_brand": "Merke",
     "sort_printer": "Printer"
+  },
+  "color": {
+    "red": "Rød",
+    "orange": "Oransje",
+    "yellow": "Gul",
+    "green": "Grønn",
+    "blue": "Blå",
+    "purple": "Lilla",
+    "pink": "Rosa",
+    "black": "Svart",
+    "white": "Hvit",
+    "gray": "Grå",
+    "brown": "Brun",
+    "transparent": "Gjennomsiktig"
   }
 }

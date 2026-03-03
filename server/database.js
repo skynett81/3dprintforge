@@ -219,6 +219,10 @@ function _runMigrations() {
     { version: 54, up: _mig054_learning_center_v2 },
     { version: 55, up: _mig055_knowledge_base },
     { version: 56, up: _mig054_learning_center_v2 },
+    { version: 57, up: _mig057_favorites_multiprint },
+    { version: 58, up: _mig058_shared_palettes },
+    { version: 59, up: _mig059_transmission_distance },
+    { version: 60, up: _mig060_slicer_jobs },
   ];
 
   for (const m of migrations) {
@@ -2843,6 +2847,46 @@ function _mig055_knowledge_base() {
   for (const p of profiles) pi.run(...p);
 }
 
+function _mig057_favorites_multiprint() {
+  db.exec(`ALTER TABLE spools ADD COLUMN is_favorite INTEGER DEFAULT 0`);
+  db.exec(`ALTER TABLE queue_items ADD COLUMN target_printers TEXT`);
+}
+
+function _mig059_transmission_distance() {
+  db.exec(`ALTER TABLE filament_profiles ADD COLUMN transmission_distance REAL`);
+}
+
+function _mig060_slicer_jobs() {
+  db.exec(`CREATE TABLE IF NOT EXISTS slicer_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    printer_id TEXT,
+    original_filename TEXT NOT NULL,
+    stored_filename TEXT,
+    status TEXT DEFAULT 'uploading',
+    slicer_used TEXT,
+    gcode_filename TEXT,
+    estimated_filament_g REAL,
+    estimated_time_s INTEGER,
+    file_size INTEGER,
+    error_message TEXT,
+    auto_queue INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
+  )`);
+}
+
+function _mig058_shared_palettes() {
+  db.exec(`CREATE TABLE IF NOT EXISTS shared_palettes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT UNIQUE NOT NULL,
+    title TEXT,
+    filters TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT,
+    view_count INTEGER DEFAULT 0
+  )`);
+}
+
 // ---- Printer CRUD ----
 
 export function getPrinters() {
@@ -3719,8 +3763,9 @@ export function addFilamentProfile(p) {
      nozzle_temp_min, nozzle_temp_max, bed_temp_min, bed_temp_max, comment,
      article_number, multi_color_hexes, multi_color_direction, extra_fields,
      finish, translucent, glow, weight_options, external_id, diameters, weights, price,
-     pressure_advance_k, max_volumetric_speed, retraction_distance, retraction_speed, cooling_fan_speed, optimal_settings)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     pressure_advance_k, max_volumetric_speed, retraction_distance, retraction_speed, cooling_fan_speed, optimal_settings,
+     transmission_distance)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     p.vendor_id || null, p.name, p.material, p.color_name || null, p.color_hex || null,
     p.density ?? 1.24, p.diameter ?? 1.75, p.spool_weight_g ?? 1000,
     p.nozzle_temp_min || null, p.nozzle_temp_max || null, p.bed_temp_min || null, p.bed_temp_max || null,
@@ -3730,7 +3775,8 @@ export function addFilamentProfile(p) {
     _jsonCol(p.weight_options), p.external_id || null, _jsonCol(p.diameters), _jsonCol(p.weights),
     p.price ?? null,
     p.pressure_advance_k ?? null, p.max_volumetric_speed ?? null, p.retraction_distance ?? null,
-    p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings));
+    p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings),
+    p.transmission_distance ?? null);
   return { id: Number(result.lastInsertRowid) };
 }
 
@@ -3739,7 +3785,8 @@ export function updateFilamentProfile(id, p) {
     density=?, diameter=?, spool_weight_g=?, nozzle_temp_min=?, nozzle_temp_max=?, bed_temp_min=?, bed_temp_max=?,
     comment=?, article_number=?, multi_color_hexes=?, multi_color_direction=?, extra_fields=?,
     finish=?, translucent=?, glow=?, weight_options=?, external_id=?, diameters=?, weights=?, price=?,
-    pressure_advance_k=?, max_volumetric_speed=?, retraction_distance=?, retraction_speed=?, cooling_fan_speed=?, optimal_settings=?
+    pressure_advance_k=?, max_volumetric_speed=?, retraction_distance=?, retraction_speed=?, cooling_fan_speed=?, optimal_settings=?,
+    transmission_distance=?
     WHERE id=?`).run(
     p.vendor_id || null, p.name, p.material, p.color_name || null, p.color_hex || null,
     p.density ?? 1.24, p.diameter ?? 1.75, p.spool_weight_g ?? 1000,
@@ -3750,7 +3797,8 @@ export function updateFilamentProfile(id, p) {
     _jsonCol(p.weight_options), p.external_id || null, _jsonCol(p.diameters), _jsonCol(p.weights),
     p.price ?? null,
     p.pressure_advance_k ?? null, p.max_volumetric_speed ?? null, p.retraction_distance ?? null,
-    p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings), id);
+    p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings),
+    p.transmission_distance ?? null, id);
 }
 
 export function deleteFilamentProfile(id) {
@@ -3867,6 +3915,84 @@ export function assignSpoolToSlot(spoolId, printerId, amsUnit, amsTray) {
 export function getSpoolBySlot(printerId, amsUnit, amsTray) {
   return db.prepare(SPOOL_SELECT + ' WHERE s.printer_id = ? AND s.ams_unit = ? AND s.ams_tray = ? AND s.archived = 0')
     .get(printerId, amsUnit, amsTray) || null;
+}
+
+export function toggleSpoolFavorite(id) {
+  db.prepare('UPDATE spools SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id);
+  const row = db.prepare('SELECT is_favorite FROM spools WHERE id = ?').get(id);
+  return row ? row.is_favorite : 0;
+}
+
+export function batchAddSpools(data, count) {
+  const ids = [];
+  for (let i = 0; i < count; i++) {
+    const result = addSpool(data);
+    ids.push(result.id);
+  }
+  return ids;
+}
+
+// ---- Shared Palettes ----
+
+export function createSharedPalette(title, filters) {
+  const token = [...Array(16)].map(() => Math.random().toString(36)[2]).join('');
+  db.prepare('INSERT INTO shared_palettes (token, title, filters) VALUES (?, ?, ?)').run(token, title || null, filters ? JSON.stringify(filters) : null);
+  return token;
+}
+
+export function getSharedPalette(token) {
+  const row = db.prepare('SELECT * FROM shared_palettes WHERE token = ?').get(token);
+  if (row) db.prepare('UPDATE shared_palettes SET view_count = view_count + 1 WHERE token = ?').run(token);
+  return row || null;
+}
+
+export function deleteSharedPalette(token) {
+  db.prepare('DELETE FROM shared_palettes WHERE token = ?').run(token);
+}
+
+export function getSharedPaletteSpools(filters) {
+  let sql = SPOOL_SELECT + ' WHERE s.archived = 0';
+  const params = [];
+  if (filters?.material) { sql += ' AND fp.material = ?'; params.push(filters.material); }
+  if (filters?.vendor) { sql += ' AND v.name = ?'; params.push(filters.vendor); }
+  if (filters?.location) { sql += ' AND s.location = ?'; params.push(filters.location); }
+  sql += ' ORDER BY fp.material, fp.color_name';
+  return _enrichSpoolRows(db.prepare(sql).all(...params));
+}
+
+// ---- Slicer Jobs ----
+
+export function addSlicerJob(data) {
+  const result = db.prepare(`INSERT INTO slicer_jobs (printer_id, original_filename, stored_filename, status, slicer_used, file_size, auto_queue)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
+    data.printer_id || null, data.original_filename, data.stored_filename || null,
+    data.status || 'uploading', data.slicer_used || null, data.file_size || 0, data.auto_queue ? 1 : 0
+  );
+  return Number(result.lastInsertRowid);
+}
+
+export function updateSlicerJob(id, data) {
+  const sets = [];
+  const params = [];
+  for (const [k, v] of Object.entries(data)) {
+    sets.push(`${k} = ?`);
+    params.push(v);
+  }
+  if (!sets.length) return;
+  params.push(id);
+  db.prepare(`UPDATE slicer_jobs SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+}
+
+export function getSlicerJob(id) {
+  return db.prepare('SELECT * FROM slicer_jobs WHERE id = ?').get(id) || null;
+}
+
+export function getSlicerJobs(limit = 50) {
+  return db.prepare('SELECT * FROM slicer_jobs ORDER BY created_at DESC LIMIT ?').all(limit);
+}
+
+export function deleteSlicerJob(id) {
+  db.prepare('DELETE FROM slicer_jobs WHERE id = ?').run(id);
 }
 
 // ---- Spool Usage Log ----
@@ -4370,12 +4496,13 @@ export function deleteQueue(id) {
 
 export function addQueueItem(queueId, item) {
   const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM queue_items WHERE queue_id = ?').get(queueId);
-  const r = db.prepare(`INSERT INTO queue_items (queue_id, filename, printer_id, status, priority, copies, estimated_duration_s, estimated_filament_g, required_material, required_nozzle_mm, notes, sort_order)
-    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+  const targetPrinters = item.target_printers ? JSON.stringify(item.target_printers) : null;
+  const r = db.prepare(`INSERT INTO queue_items (queue_id, filename, printer_id, status, priority, copies, estimated_duration_s, estimated_filament_g, required_material, required_nozzle_mm, notes, sort_order, target_printers)
+    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     queueId, item.filename, item.printer_id || null, item.priority || 0,
     item.copies || 1, item.estimated_duration_s || null, item.estimated_filament_g || null,
     item.required_material || null, item.required_nozzle_mm || null, item.notes || null,
-    (maxSort?.m || 0) + 1
+    (maxSort?.m || 0) + 1, targetPrinters
   );
   return r.lastInsertRowid;
 }

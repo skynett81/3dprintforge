@@ -271,6 +271,32 @@ async function sendNtfy(conf, title, message, eventType) {
   return _httpPost(url, headers, message);
 }
 
+async function sendSms(conf, title, message) {
+  const text = `${title}\n${message}`.substring(0, 1600);
+  if (conf.provider === 'twilio') {
+    // Twilio REST API
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${conf.accountSid}/Messages.json`;
+    const body = `To=${encodeURIComponent(conf.toNumber)}&From=${encodeURIComponent(conf.fromNumber)}&Body=${encodeURIComponent(text)}`;
+    const auth = Buffer.from(`${conf.accountSid}:${conf.authToken}`).toString('base64');
+    return _httpPost(url, {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }, body);
+  } else {
+    // Generic HTTP SMS gateway
+    const url = conf.gatewayUrl;
+    if (!url) throw new Error('SMS gateway URL not configured');
+    const payload = JSON.stringify({
+      to: conf.toNumber,
+      from: conf.fromNumber || 'BambuDash',
+      message: text,
+      ...( conf.extraParams ? JSON.parse(conf.extraParams) : {} )
+    });
+    const headers = conf.gatewayHeaders ? JSON.parse(conf.gatewayHeaders) : {};
+    return _httpPost(url, headers, payload);
+  }
+}
+
 async function sendPushover(conf, title, message, eventType) {
   const priorityMap = {
     print_failed: 1, printer_error: 1, maintenance_due: 0,
@@ -714,6 +740,7 @@ export class NotificationManager {
       case 'webhook':   return sendWebhook(conf, title, message, eventType, data);
       case 'ntfy':      return sendNtfy(conf, title, message, eventType);
       case 'pushover':  return sendPushover(conf, title, message, eventType);
+      case 'sms':       return sendSms(conf, title, message);
       default: throw new Error(`Unknown channel: ${name}`);
     }
   }

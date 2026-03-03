@@ -5266,6 +5266,93 @@ tr:hover .filament-edit-btn {
 }
 .inv-archive-toggle input { width: 14px; height: 14px; }
 
+.inv-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.15s;
+}
+.inv-filter-chip:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.inv-filter-chip.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+
+.inv-color-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0;
+}
+.inv-color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.inv-color-chip:hover { border-color: var(--text-primary); color: var(--text-primary); }
+.inv-color-chip.active { background: var(--surface-hover); border-color: var(--accent-blue); color: var(--text-primary); }
+
+.fil-fav-btn { color: var(--text-muted); }
+.fil-fav-active { color: #e53935 !important; }
+.fil-fav-btn:hover { color: #e53935; }
+
+.inv-view-toggle {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1px;
+}
+.inv-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.inv-view-btn:hover { color: var(--text-primary); }
+.inv-view-btn.active { background: var(--accent-blue); color: #fff; }
+
+.inv-list-view { display: flex; flex-direction: column; gap: 2px; }
+.inv-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+.inv-list-row:hover { background: var(--surface-hover); }
+.inv-list-name { flex: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-list-material { width: 50px; flex-shrink: 0; font-size: 0.75rem; color: var(--text-muted); }
+.inv-list-bar { flex-shrink: 0; }
+.inv-list-weight { width: 100px; flex-shrink: 0; font-size: 0.8rem; text-align: right; }
+.inv-list-loc { width: 80px; flex-shrink: 0; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-list-cost { width: 70px; flex-shrink: 0; font-size: 0.8rem; text-align: right; }
+.inv-list-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+.inv-table-view { font-size: 0.82rem; }
+.inv-table-view th { font-size: 0.75rem; white-space: nowrap; }
+
 .filament-card-archived {
   opacity: 0.5;
   border: 1px dashed var(--border-color) !important;
@@ -6100,6 +6187,13 @@ tr:hover .filament-edit-btn {
 .ctrl-macro-btn {
   min-width: 80px;
 }
+.ctrl-upload-box {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.ctrl-upload-box:hover { border-color: var(--text-muted); }
 .ctrl-files-grid {
   display: flex;
   flex-direction: column;

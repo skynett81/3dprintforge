@@ -675,6 +675,15 @@
       { key: 'pushover', label: t('settings.notif_pushover'), fields: [
         { id: 'apiToken', label: t('settings.notif_api_token') },
         { id: 'userKey', label: t('settings.notif_user_key') }
+      ]},
+      { key: 'sms', label: t('settings.notif_sms'), fields: [
+        { id: 'provider', label: t('settings.notif_sms_provider'), type: 'select', options: [{ value: 'twilio', label: 'Twilio' }, { value: 'generic', label: t('settings.notif_sms_generic') }] },
+        { id: 'accountSid', label: t('settings.notif_sms_account_sid') },
+        { id: 'authToken', label: t('settings.notif_sms_auth_token'), type: 'password' },
+        { id: 'fromNumber', label: t('settings.notif_sms_from') },
+        { id: 'toNumber', label: t('settings.notif_sms_to') },
+        { id: 'gatewayUrl', label: t('settings.notif_sms_gateway_url') },
+        { id: 'gatewayHeaders', label: t('settings.notif_sms_gateway_headers') }
       ]}
     ];
 
@@ -720,11 +729,15 @@
       for (const f of ch.fields) {
         let val = chConf[f.id] ?? '';
         if (f.id === 'headers' && typeof val === 'object') val = JSON.stringify(val);
-        html += `
-          <div class="notif-field">
-            <label>${f.label}</label>
-            <input type="${f.type || 'text'}" id="notif-${ch.key}-${f.id}" value="${String(val).replace(/"/g, '&quot;')}" autocomplete="off">
-          </div>`;
+        html += `<div class="notif-field"><label>${f.label}</label>`;
+        if (f.type === 'select' && f.options) {
+          html += `<select id="notif-${ch.key}-${f.id}" class="form-input" style="height:28px;font-size:0.8rem">`;
+          for (const opt of f.options) html += `<option value="${opt.value}" ${val === opt.value ? 'selected' : ''}>${opt.label}</option>`;
+          html += '</select>';
+        } else {
+          html += `<input type="${f.type || 'text'}" id="notif-${ch.key}-${f.id}" value="${String(val).replace(/"/g, '&quot;')}" autocomplete="off">`;
+        }
+        html += '</div>';
       }
       html += '</div></div>';
     }
@@ -811,7 +824,8 @@
       email: ['host', 'port', 'user', 'pass', 'from', 'to'],
       webhook: ['url', 'headers'],
       ntfy: ['serverUrl', 'topic', 'token'],
-      pushover: ['apiToken', 'userKey']
+      pushover: ['apiToken', 'userKey'],
+      sms: ['provider', 'accountSid', 'authToken', 'fromNumber', 'toNumber', 'gatewayUrl', 'gatewayHeaders']
     };
     const conf = { enabled: document.getElementById(`notif-ch-${key}-on`)?.checked || false };
     for (const f of (fields[key] || [])) {
@@ -832,7 +846,7 @@
     if (status) status.textContent = t('settings.notif_saving');
 
     const allEvents = ['print_started','print_finished','print_failed','print_cancelled','printer_error','maintenance_due','bed_cooled','drying_due','filament_low_stock','queue_item_started','queue_item_completed','queue_item_failed','queue_completed'];
-    const allChannelKeys = ['telegram','discord','email','webhook','ntfy','pushover'];
+    const allChannelKeys = ['telegram','discord','email','webhook','ntfy','pushover','sms'];
 
     const eventsConf = {};
     for (const ev of allEvents) {
