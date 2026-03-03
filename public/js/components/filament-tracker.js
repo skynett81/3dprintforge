@@ -51,18 +51,18 @@
   const TAB_CONFIG = {
     inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'] },
     database:  { label: 'filament.tab_database',  modules: ['db-hero', 'db-browser'] },
-    drying:    { label: 'filament.tab_drying',    modules: ['active-drying', 'drying-history', 'drying-presets'] },
-    tools:     { label: 'filament.tab_tools',     modules: ['checked-out', 'color-card', 'nfc-manager', 'spool-timeline', 'material-ref'] },
-    manage:    { label: 'filament.tab_manage',    modules: ['vendors-list', 'filament-profiles-list', 'locations-list', 'tags-list', 'price-watch', 'locations-dnd'] },
+    drying:    { label: 'filament.tab_drying',    modules: ['drying-dashboard'] },
+    tools:     { label: 'filament.tab_tools',     modules: ['tools-dashboard'] },
+    manage:    { label: 'filament.tab_manage',    modules: ['manage-dashboard'] },
     stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
   const MODULE_SIZE = {
     'spool-summary': 'full', 'active-filament': 'full',
     'low-stock-alert': 'full', 'spool-grid': 'full',
     'db-hero': 'full', 'db-browser': 'full',
-    'active-drying': 'full', 'drying-history': 'full', 'drying-presets': 'full',
-    'checked-out': 'full', 'color-card': 'full', 'nfc-manager': 'full', 'spool-timeline': 'full', 'material-ref': 'full',
-    'vendors-list': 'full', 'filament-profiles-list': 'full', 'locations-list': 'full', 'tags-list': 'full', 'price-watch': 'full', 'locations-dnd': 'full',
+    'drying-dashboard': 'full',
+    'tools-dashboard': 'full',
+    'manage-dashboard': 'full',
     'type-breakdown': 'half', 'brand-breakdown': 'half',
     'cost-summary': 'half', 'stock-health': 'half',
     'restock-suggestions': 'full', 'usage-predictions': 'full', 'cost-estimation': 'full', 'usage-history': 'full'
@@ -71,7 +71,7 @@
   const STORAGE_PREFIX = 'filament-module-order-';
   const LOCK_KEY = 'filament-layout-locked';
 
-  const _MOD_VER = 10;
+  const _MOD_VER = 13;
   if (localStorage.getItem('filament-mod-ver') !== String(_MOD_VER)) {
     for (const tab of Object.keys(TAB_CONFIG)) localStorage.removeItem(STORAGE_PREFIX + tab);
     localStorage.setItem('filament-mod-ver', String(_MOD_VER));
@@ -89,6 +89,12 @@
   let _dryingPresets = [];
   let _dryingStatus = [];
   let _dryingTimers = {};
+  let _dryingSubTab = 'active';
+  let _toolsSubTab = 'spools';
+  let _manageSubTab = 'profiles';
+  let _dryingHistory = [];
+  let _dryHistoryFilter = { material: '', method: '' };
+  let _dryHistorySort = 'date_desc';
   let _filterMaterial = '';
   let _filterVendor = '';
   let _filterLocation = '';
@@ -403,182 +409,22 @@
 
     // ── Manage tab modules ──
 
-    'vendors-list': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        ${t('filament.vendors_title')}
-      </div>`;
-
-      if (_vendors.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_vendors')}</p>`;
-      } else {
-        const canWrite = !window._can || window._can('filament');
-        h += `<table class="data-table"><thead><tr>${canWrite ? `<th style="width:30px"><input type="checkbox" class="fil-bulk-check" onchange="window._bulkSelectAllVendors(this.checked)" title="${t('filament.bulk_select_all')}"></th>` : ''}<th>${t('filament.vendor_name')}</th><th>${t('filament.vendor_website')}</th><th>${t('filament.vendor_empty_spool')}</th><th></th></tr></thead><tbody>`;
-        for (const v of _vendors) {
-          h += `<tr data-vendor-id="${v.id}" class="${_selectedVendors.has(v.id) ? 'bulk-row-selected' : ''}">
-            ${canWrite ? `<td><input type="checkbox" class="fil-bulk-check fil-vendor-check" ${_selectedVendors.has(v.id) ? 'checked' : ''} onchange="window.toggleVendorSelect(${v.id}, this)"></td>` : ''}
-            <td><strong>${esc(v.name)}</strong></td>
-            <td>${v.website ? `<a href="${esc(v.website)}" target="_blank" class="text-muted">${esc(v.website)}</a>` : '--'}</td>
-            <td>${v.empty_spool_weight_g ? v.empty_spool_weight_g + 'g' : '--'}</td>
-            <td style="text-align:right">
-              <button class="filament-edit-btn" onclick="editVendor(${v.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              <button class="filament-delete-btn" onclick="deleteVendorItem(${v.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </td>
-          </tr>`;
-        }
-        h += '</tbody></table>';
+    // ── Manage dashboard (unified) ──
+    'manage-dashboard': (spools) => {
+      const tabs = [
+        { id: 'profiles', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', label: t('filament.profiles_title') },
+        { id: 'vendors', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', label: t('filament.vendors_title') },
+        { id: 'locations', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', label: t('filament.locations_title') },
+        { id: 'tags', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', label: t('filament.tags_title') },
+        { id: 'prices', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', label: t('filament.price_watch_title') }
+      ];
+      let h = `<div class="drying-sub-tabs">`;
+      for (const tab of tabs) {
+        h += `<button class="drying-sub-tab${_manageSubTab === tab.id ? ' active' : ''}" data-manage-tab="${tab.id}" onclick="window._switchManageSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
       }
-
-      h += `<div id="vendor-form-container"></div>`;
-      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddVendorForm()">+ ${t('filament.vendor_add')}</button>`;
-      return h;
-    },
-
-    'filament-profiles-list': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        ${t('filament.profiles_title')}
-      </div>`;
-
-      if (_profiles.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_profiles')}</p>`;
-      } else {
-        const canWrite = !window._can || window._can('filament');
-        h += '<div class="filament-grid">';
-        for (const p of _profiles) {
-          const color = hexToRgb(p.color_hex);
-          h += `<div class="filament-card inv-spool-card inv-profile-card ${_selectedProfiles.has(p.id) ? 'filament-card-selected' : ''}" data-profile-id="${p.id}">
-            <div class="fil-spool-top">
-              <div class="fil-spool-identity">
-                ${canWrite ? `<input type="checkbox" class="fil-bulk-check fil-profile-check" ${_selectedProfiles.has(p.id) ? 'checked' : ''} onclick="window.toggleProfileSelect(${p.id}, this)">` : ''}
-                <span class="filament-color-swatch" style="background:${color}"></span>
-                <div>
-                  <strong>${esc(p.name)}</strong>
-                  <span class="text-muted" style="font-size:0.75rem">${esc(p.vendor_name || '--')}</span>
-                </div>
-              </div>
-              <div class="fil-spool-actions">
-                <button class="filament-edit-btn" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-tooltip="${t('filament.share_to_community')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-                <button class="filament-edit-btn" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                <button class="filament-delete-btn" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              </div>
-            </div>
-            <div class="fil-spool-meta">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g</div>
-            <div class="fil-spool-meta text-muted" style="font-size:0.7rem">${p.nozzle_temp_min || p.nozzle_temp_max ? `🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C` : ''} ${p.bed_temp_min || p.bed_temp_max ? `🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C` : ''}${p.price ? ` · ${formatCurrency(p.price)}` : ''}</div>
-            ${p.finish || p.translucent || p.glow ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}</div>` : ''}
-            ${p.pressure_advance_k || p.max_volumetric_speed || p.retraction_distance || p.cooling_fan_speed ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${[
-              p.pressure_advance_k ? 'PA:' + p.pressure_advance_k : '',
-              p.max_volumetric_speed ? 'Vol:' + p.max_volumetric_speed + 'mm³/s' : '',
-              p.retraction_distance ? 'Ret:' + p.retraction_distance + 'mm' : '',
-              p.cooling_fan_speed ? 'Fan:' + p.cooling_fan_speed + '%' : ''
-            ].filter(Boolean).join(' · ')}</div>` : ''}
-          </div>`;
-        }
-        h += '</div>';
-      }
-
-      h += `<div id="profile-form-container"></div>`;
-      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddProfileForm()">+ ${t('filament.profile_add')}</button>`;
-      return h;
-    },
-
-    'locations-list': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        ${t('filament.locations_title')}
-      </div>`;
-
-      if (_locations.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_locations')}</p>`;
-      } else {
-        h += '<div class="inv-location-list">';
-        for (const l of _locations) {
-          h += `<div class="inv-location-item">
-            <span>${esc(l.name)}${l.description ? ` <span class="text-muted">(${esc(l.description)})</span>` : ''}</span>
-            <div>
-              <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-          </div>`;
-        }
-        h += '</div>';
-      }
-
-      h += `<div id="location-form-container"></div>`;
-      h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddLocationForm()">+ ${t('filament.location_add')}</button>`;
-      return h;
-    },
-
-    'tags-list': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        ${t('filament.tags_title')}
-      </div>`;
-
-      if (_tags.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_tags')}</p>`;
-      } else {
-        h += '<div class="inv-location-list">';
-        for (const tag of _tags) {
-          const dot = tag.color ? `<span class="fil-tag-dot" style="background:${esc(tag.color)}"></span>` : '';
-          h += `<div class="fil-tag-item">
-            ${dot}
-            <span style="flex:1"><strong>${esc(tag.name)}</strong> <span class="text-muted" style="font-size:0.75rem">(${esc(tag.category || 'custom')})</span></span>
-            <span class="text-muted" style="font-size:0.75rem">${t('filament.tag_usage_count', { count: tag.usage_count || 0 })}</span>
-            <div>
-              <button class="filament-edit-btn" onclick="showEditTagForm(${tag.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              <button class="filament-delete-btn" onclick="deleteTagItem(${tag.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-          </div>`;
-        }
-        h += '</div>';
-      }
-
-      h += `<div id="tag-form-container"></div>`;
-      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddTagForm()">+ ${t('filament.tag_add')}</button>`;
-      return h;
-    },
-
-    'price-watch': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        ${t('filament.price_watch_title')}
-      </div>`;
-      h += `<div id="price-watch-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadPriceWatch(), 0);
-      return h;
-    },
-
-    'locations-dnd': (spools) => {
-      const active = spools.filter(s => !s.archived);
-      if (active.length === 0 && _locations.length === 0) return '';
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        ${t('filament.locations_dnd_title')}
-      </div>`;
-      // Group spools by location
-      const byLoc = { '': [] };
-      for (const l of _locations) byLoc[l.name] = [];
-      for (const s of active) {
-        const loc = s.location || '';
-        if (!byLoc[loc]) byLoc[loc] = [];
-        byLoc[loc].push(s);
-      }
-      h += '<div class="inv-dnd-columns">';
-      for (const [locName, locSpools] of Object.entries(byLoc)) {
-        const label = locName || t('filament.unassigned');
-        h += `<div class="inv-dnd-column" data-location="${esc(locName)}" ondragover="event.preventDefault();this.classList.add('inv-dnd-over')" ondragleave="this.classList.remove('inv-dnd-over')" ondrop="window._invDropSpool(event,this)">
-          <div class="inv-dnd-column-header">${esc(label)} <span class="text-muted">(${locSpools.length})</span></div>`;
-        for (const s of locSpools) {
-          const color = hexToRgb(s.color_hex);
-          h += `<div class="inv-dnd-spool" draggable="true" data-spool-id="${s.id}" ondragstart="event.dataTransfer.setData('text/plain','${s.id}')">
-            <span class="filament-color-swatch" style="background:${color};width:10px;height:10px"></span>
-            <span>${esc(s.profile_name || s.material || '--')} · ${Math.round(s.remaining_weight_g)}g</span>
-          </div>`;
-        }
-        h += '</div>';
-      }
-      h += '</div>';
+      h += `</div>`;
+      h += `<div id="manage-sub-content"></div>`;
+      setTimeout(() => _renderManageSubContent(spools), 0);
       return h;
     },
 
@@ -741,171 +587,55 @@
       return h;
     },
 
-    // ── Drying modules ──
-    'active-drying': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg>
-        ${t('filament.active_drying')}
+    // ── Drying dashboard (unified) ──
+    'drying-dashboard': () => {
+      // Stats hero
+      const activeCount = _dryingSessions?.length || 0;
+      const needsDrying = _dryingStatus?.filter(d => d.drying_status === 'overdue' || d.drying_status === 'due_soon').length || 0;
+      const needsColor = needsDrying > 0 ? '#f0883e' : '#3fb950';
+      let h = `<div class="fil-hero-grid" style="margin-bottom:16px">
+        ${heroCard('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg>', activeCount, t('filament.drying_stats_active'), activeCount > 0 ? '#f0883e' : '#8b949e')}
+        ${heroCard('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>', '<span id="drying-stat-total">...</span>', t('filament.drying_stats_total'), '#3fb950')}
+        ${heroCard('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>', '<span id="drying-stat-humidity">...</span>', t('filament.drying_stats_humidity'), '#1279ff')}
+        ${heroCard('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', needsDrying, t('filament.drying_stats_needs'), needsColor)}
       </div>`;
-      if (!_dryingSessions || _dryingSessions.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.drying_no_active')}</p>`;
-        return h;
+
+      // Sub-tabs + quick-start
+      h += `<div class="drying-sub-tabs">
+        <button class="drying-sub-tab${_dryingSubTab === 'active' ? ' active' : ''}" onclick="window._switchDryingSubTab('active')">${t('filament.drying_sub_active')}${activeCount > 0 ? ' (' + activeCount + ')' : ''}</button>
+        <button class="drying-sub-tab${_dryingSubTab === 'history' ? ' active' : ''}" onclick="window._switchDryingSubTab('history')">${t('filament.drying_sub_history')}</button>
+        <button class="drying-sub-tab${_dryingSubTab === 'presets' ? ' active' : ''}" onclick="window._switchDryingSubTab('presets')">${t('filament.drying_sub_presets')}</button>
+        <div style="flex:1"></div>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._dryingQuickStart()" style="display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          ${t('filament.drying_quick_start')}
+        </button>
+      </div>`;
+
+      // Sub-tab content container
+      h += `<div id="drying-sub-content"></div>`;
+      setTimeout(() => {
+        _renderDryingSubContent();
+        _loadDryingStats();
+      }, 0);
+      return h;
+    },
+
+    // ── Tools dashboard (unified) ──
+    'tools-dashboard': () => {
+      const tabs = [
+        { id: 'spools', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>', label: t('filament.tools_sub_spools') },
+        { id: 'colors', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>', label: t('filament.color_card') },
+        { id: 'tags', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>', label: t('filament.nfc_manager') },
+        { id: 'reference', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', label: t('filament.material_reference') }
+      ];
+      let h = `<div class="drying-sub-tabs">`;
+      for (const tab of tabs) {
+        h += `<button class="drying-sub-tab${_toolsSubTab === tab.id ? ' active' : ''}" onclick="window._switchToolsSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
       }
-      for (const ds of _dryingSessions) {
-        const startTime = new Date(ds.started_at + 'Z').getTime();
-        const endTime = startTime + ds.duration_minutes * 60 * 1000;
-        const now = Date.now();
-        const elapsed = Math.max(0, now - startTime);
-        const remaining = Math.max(0, endTime - now);
-        const elapsedMin = Math.floor(elapsed / 60000);
-        const remainMin = Math.floor(remaining / 60000);
-        const remainH = Math.floor(remainMin / 60);
-        const remainM = remainMin % 60;
-        const pct = Math.min(100, Math.round((elapsed / (ds.duration_minutes * 60000)) * 100));
-        const colorDot = ds.color_hex ? `<span class="fil-color-dot" style="background:#${ds.color_hex}"></span>` : '';
-        const methodLabel = t('filament.drying_method_' + (ds.method || 'dryer_box'));
-        h += `<div class="fil-drying-card active" data-drying-id="${ds.id}">
-          ${colorDot}
-          <div class="fil-drying-info">
-            <div class="label">${esc(ds.profile_name || '?')} ${ds.vendor_name ? '(' + esc(ds.vendor_name) + ')' : ''}</div>
-            <div class="meta">${esc(ds.material || '')} · ${methodLabel} · ${ds.temperature ? ds.temperature + '°C' : ''}</div>
-          </div>
-          <div class="fil-drying-timer" id="drying-timer-${ds.id}">${remainH}h ${String(remainM).padStart(2, '0')}m</div>
-          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-            <div class="filament-bar" style="width:80px;height:6px"><div class="filament-bar-fill" style="width:${pct}%;background:var(--accent-orange,#f0883e)"></div></div>
-            <button class="form-btn form-btn-sm" data-ripple onclick="completeDryingItem(${ds.id})">${t('filament.drying_complete')}</button>
-          </div>
-        </div>`;
-      }
-      // Start live countdown timers
-      setTimeout(() => _startDryingTimers(), 0);
-      return h;
-    },
-
-    'drying-history': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>
-        ${t('filament.drying_history')}
-      </div>`;
-      h += `<div id="drying-history-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadDryingHistory(), 0);
-      return h;
-    },
-
-    'drying-presets': () => {
-      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-          ${t('filament.drying_presets')}
-        </span>
-        <button class="form-btn form-btn-sm" data-ripple onclick="showAddDryingPresetForm()">${t('filament.drying_preset_add')}</button>
-      </div>`;
-      h += `<div id="drying-presets-form" style="display:none"></div>`;
-      if (!_dryingPresets || _dryingPresets.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">No presets</p>`;
-        return h;
-      }
-      h += `<table class="fil-drying-presets-table"><thead><tr>
-        <th>${t('filament.filter_material')}</th>
-        <th>${t('filament.drying_temp')}</th>
-        <th>${t('filament.drying_duration')}</th>
-        <th>${t('filament.drying_max_days')}</th>
-        <th></th>
-      </tr></thead><tbody>`;
-      for (const p of _dryingPresets) {
-        h += `<tr>
-          <td><strong>${esc(p.material)}</strong></td>
-          <td>${p.temperature}°C</td>
-          <td>${p.duration_minutes} min (${(p.duration_minutes / 60).toFixed(1)}h)</td>
-          <td>${p.max_days_without_drying} d</td>
-          <td style="text-align:right">
-            <button class="filament-edit-btn" style="opacity:1" onclick="editDryingPreset('${esc(p.material)}')" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingPresetItem('${esc(p.material)}')" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </td>
-        </tr>`;
-      }
-      h += '</tbody></table>';
-      return h;
-    },
-
-    // ── Tools tab modules ──
-    'checked-out': () => {
-      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          ${t('filament.checked_out_spools')}
-        </span>
-      </div>`;
-      h += `<div id="checked-out-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadCheckedOut(), 0);
-      return h;
-    },
-
-    'color-card': () => {
-      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>
-          ${t('filament.color_card')}
-        </span>
-        <div id="color-card-actions" style="display:none;gap:4px">
-          <button class="form-btn form-btn-sm" data-ripple onclick="exportColorCard()">${t('filament.color_card_export')}</button>
-          <button class="form-btn form-btn-sm" data-ripple onclick="sharePalette()" style="display:flex;align-items:center;gap:4px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            ${t('filament.share_palette')}
-          </button>
-        </div>
-      </div>`;
-      h += `<div id="color-card-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadColorCard(), 0);
-      return h;
-    },
-
-    'nfc-manager': () => {
-      let h = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
-          ${t('filament.nfc_manager')}
-        </span>
-        <button class="form-btn form-btn-sm" data-ripple onclick="openTagScanner()">${t('filament.tag_scan')}</button>
-      </div>`;
-      h += `<div id="nfc-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadNfcMappings(), 0);
-      return h;
-    },
-
-    'spool-timeline': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        ${t('filament.spool_timeline')}
-      </div>`;
-      h += `<div id="timeline-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadTimeline(), 0);
-      return h;
-    },
-
-    'material-ref': () => {
-      let h = `<div class="ctrl-card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        ${t('filament.material_reference')}
-      </div>`;
-      h += `<div class="fil-matref-filter mb-sm">
-        <select class="form-input form-input-sm" id="matref-category-filter" onchange="filterMaterials()">
-          <option value="">All Categories</option>
-          <option value="standard">Standard</option>
-          <option value="engineering">Engineering</option>
-          <option value="composite">Composite</option>
-          <option value="flexible">Flexible</option>
-          <option value="specialty">Specialty</option>
-          <option value="support">Support</option>
-          <option value="high-performance">High Performance</option>
-        </select>
-      </div>`;
-      h += `<div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
-      setTimeout(() => _loadMaterials(), 0);
+      h += `</div>`;
+      h += `<div id="tools-sub-content"></div>`;
+      setTimeout(() => _renderToolsSubContent(), 0);
       return h;
     },
 
@@ -1707,6 +1437,183 @@
     await fetch(`/api/inventory/spools/${id}/archive`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived: false }) });
     loadFilament();
   };
+
+  // ═══ Manage Dashboard Sub-tabs ═══
+  window._switchManageSubTab = function(tab) {
+    _manageSubTab = tab;
+    const container = document.getElementById('manage-sub-content')?.closest('.stats-module');
+    if (container) {
+      container.querySelectorAll('[data-manage-tab]').forEach(b => {
+        b.classList.toggle('active', b.dataset.manageTab === tab);
+      });
+    }
+    _renderManageSubContent(_spools);
+  };
+
+  function _renderManageSubContent(spools) {
+    const el = document.getElementById('manage-sub-content');
+    if (!el) return;
+    if (_manageSubTab === 'profiles') {
+      el.innerHTML = _renderProfilesList();
+    } else if (_manageSubTab === 'vendors') {
+      el.innerHTML = _renderVendorsList();
+    } else if (_manageSubTab === 'locations') {
+      el.innerHTML = _renderLocationsList() + _renderLocationsDnd(spools || _spools);
+    } else if (_manageSubTab === 'tags') {
+      el.innerHTML = _renderTagsList();
+    } else if (_manageSubTab === 'prices') {
+      el.innerHTML = `<div id="price-watch-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadPriceWatch();
+    }
+  }
+
+  function _renderVendorsList() {
+    let h = '';
+    if (_vendors.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_vendors')}</p>`;
+    } else {
+      const canWrite = !window._can || window._can('filament');
+      h += `<table class="data-table"><thead><tr>${canWrite ? `<th style="width:30px"><input type="checkbox" class="fil-bulk-check" onchange="window._bulkSelectAllVendors(this.checked)" title="${t('filament.bulk_select_all')}"></th>` : ''}<th>${t('filament.vendor_name')}</th><th>${t('filament.vendor_website')}</th><th>${t('filament.vendor_empty_spool')}</th><th></th></tr></thead><tbody>`;
+      for (const v of _vendors) {
+        h += `<tr data-vendor-id="${v.id}" class="${_selectedVendors.has(v.id) ? 'bulk-row-selected' : ''}">
+          ${canWrite ? `<td><input type="checkbox" class="fil-bulk-check fil-vendor-check" ${_selectedVendors.has(v.id) ? 'checked' : ''} onchange="window.toggleVendorSelect(${v.id}, this)"></td>` : ''}
+          <td><strong>${esc(v.name)}</strong></td>
+          <td>${v.website ? `<a href="${esc(v.website)}" target="_blank" class="text-muted">${esc(v.website)}</a>` : '--'}</td>
+          <td>${v.empty_spool_weight_g ? v.empty_spool_weight_g + 'g' : '--'}</td>
+          <td style="text-align:right">
+            <button class="filament-edit-btn" onclick="editVendor(${v.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="filament-delete-btn" onclick="deleteVendorItem(${v.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </td>
+        </tr>`;
+      }
+      h += '</tbody></table>';
+    }
+    h += `<div id="vendor-form-container"></div>`;
+    if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddVendorForm()">+ ${t('filament.vendor_add')}</button>`;
+    return h;
+  }
+
+  function _renderProfilesList() {
+    let h = '';
+    if (_profiles.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_profiles')}</p>`;
+    } else {
+      const canWrite = !window._can || window._can('filament');
+      h += '<div class="filament-grid">';
+      for (const p of _profiles) {
+        const color = hexToRgb(p.color_hex);
+        h += `<div class="filament-card inv-spool-card inv-profile-card ${_selectedProfiles.has(p.id) ? 'filament-card-selected' : ''}" data-profile-id="${p.id}">
+          <div class="fil-spool-top">
+            <div class="fil-spool-identity">
+              ${canWrite ? `<input type="checkbox" class="fil-bulk-check fil-profile-check" ${_selectedProfiles.has(p.id) ? 'checked' : ''} onclick="window.toggleProfileSelect(${p.id}, this)">` : ''}
+              <span class="filament-color-swatch" style="background:${color}"></span>
+              <div>
+                <strong>${esc(p.name)}</strong>
+                <span class="text-muted" style="font-size:0.75rem">${esc(p.vendor_name || '--')}</span>
+              </div>
+            </div>
+            <div class="fil-spool-actions">
+              <button class="filament-edit-btn" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-tooltip="${t('filament.share_to_community')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+              <button class="filament-edit-btn" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="filament-delete-btn" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <div class="fil-spool-meta">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g</div>
+          <div class="fil-spool-meta text-muted" style="font-size:0.7rem">${p.nozzle_temp_min || p.nozzle_temp_max ? `🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C` : ''} ${p.bed_temp_min || p.bed_temp_max ? `🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C` : ''}${p.price ? ` · ${formatCurrency(p.price)}` : ''}</div>
+          ${p.finish || p.translucent || p.glow ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}</div>` : ''}
+          ${p.pressure_advance_k || p.max_volumetric_speed || p.retraction_distance || p.cooling_fan_speed ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${[
+            p.pressure_advance_k ? 'PA:' + p.pressure_advance_k : '',
+            p.max_volumetric_speed ? 'Vol:' + p.max_volumetric_speed + 'mm³/s' : '',
+            p.retraction_distance ? 'Ret:' + p.retraction_distance + 'mm' : '',
+            p.cooling_fan_speed ? 'Fan:' + p.cooling_fan_speed + '%' : ''
+          ].filter(Boolean).join(' · ')}</div>` : ''}
+        </div>`;
+      }
+      h += '</div>';
+    }
+    h += `<div id="profile-form-container"></div>`;
+    if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddProfileForm()">+ ${t('filament.profile_add')}</button>`;
+    return h;
+  }
+
+  function _renderLocationsList() {
+    let h = '';
+    if (_locations.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_locations')}</p>`;
+    } else {
+      h += '<div class="inv-location-list">';
+      for (const l of _locations) {
+        h += `<div class="inv-location-item">
+          <span>${esc(l.name)}${l.description ? ` <span class="text-muted">(${esc(l.description)})</span>` : ''}</span>
+          <div>
+            <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>`;
+      }
+      h += '</div>';
+    }
+    h += `<div id="location-form-container"></div>`;
+    h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddLocationForm()">+ ${t('filament.location_add')}</button>`;
+    return h;
+  }
+
+  function _renderTagsList() {
+    let h = '';
+    if (_tags.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_tags')}</p>`;
+    } else {
+      h += '<div class="inv-location-list">';
+      for (const tag of _tags) {
+        const dot = tag.color ? `<span class="fil-tag-dot" style="background:${esc(tag.color)}"></span>` : '';
+        h += `<div class="fil-tag-item">
+          ${dot}
+          <span style="flex:1"><strong>${esc(tag.name)}</strong> <span class="text-muted" style="font-size:0.75rem">(${esc(tag.category || 'custom')})</span></span>
+          <span class="text-muted" style="font-size:0.75rem">${t('filament.tag_usage_count', { count: tag.usage_count || 0 })}</span>
+          <div>
+            <button class="filament-edit-btn" onclick="showEditTagForm(${tag.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="filament-delete-btn" onclick="deleteTagItem(${tag.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>`;
+      }
+      h += '</div>';
+    }
+    h += `<div id="tag-form-container"></div>`;
+    if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddTagForm()">+ ${t('filament.tag_add')}</button>`;
+    return h;
+  }
+
+  function _renderLocationsDnd(spools) {
+    const active = (spools || []).filter(s => !s.archived);
+    if (active.length === 0 && _locations.length === 0) return '';
+    let h = `<div class="ctrl-card-title" style="margin-top:16px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      ${t('filament.locations_dnd_title')}
+    </div>`;
+    const byLoc = { '': [] };
+    for (const l of _locations) byLoc[l.name] = [];
+    for (const s of active) {
+      const loc = s.location || '';
+      if (!byLoc[loc]) byLoc[loc] = [];
+      byLoc[loc].push(s);
+    }
+    h += '<div class="inv-dnd-columns">';
+    for (const [locName, locSpools] of Object.entries(byLoc)) {
+      const label = locName || t('filament.unassigned');
+      h += `<div class="inv-dnd-column" data-location="${esc(locName)}" ondragover="event.preventDefault();this.classList.add('inv-dnd-over')" ondragleave="this.classList.remove('inv-dnd-over')" ondrop="window._invDropSpool(event,this)">
+        <div class="inv-dnd-column-header">${esc(label)} <span class="text-muted">(${locSpools.length})</span></div>`;
+      for (const s of locSpools) {
+        const color = hexToRgb(s.color_hex);
+        h += `<div class="inv-dnd-spool" draggable="true" data-spool-id="${s.id}" ondragstart="event.dataTransfer.setData('text/plain','${s.id}')">
+          <span class="filament-color-swatch" style="background:${color};width:10px;height:10px"></span>
+          <span>${esc(s.profile_name || s.material || '--')} · ${Math.round(s.remaining_weight_g)}g</span>
+        </div>`;
+      }
+      h += '</div>';
+    }
+    h += '</div>';
+    return h;
+  }
 
   // ═══ Vendor CRUD ═══
   window.showAddVendorForm = function() {
@@ -2842,48 +2749,259 @@
     }
   }
 
-  async function _loadDryingHistory() {
-    const container = document.getElementById('drying-history-container');
-    if (!container) return;
+  // ── Drying dashboard sub-tab rendering ──
+  async function _loadDryingStats() {
     try {
-      const res = await fetch('/api/inventory/drying/sessions?active=0&limit=50');
-      const sessions = await res.json();
-      if (sessions.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.drying_no_history')}</p>`;
-        return;
+      const res = await fetch('/api/inventory/drying/sessions?active=0&limit=200');
+      _dryingHistory = await res.json();
+      const totalEl = document.getElementById('drying-stat-total');
+      const humidEl = document.getElementById('drying-stat-humidity');
+      if (totalEl) totalEl.textContent = _dryingHistory.length;
+      if (humidEl) {
+        const withHumidity = _dryingHistory.filter(s => s.humidity_before != null && s.humidity_after != null);
+        if (withHumidity.length > 0) {
+          const avg = withHumidity.reduce((sum, s) => sum + (s.humidity_before - s.humidity_after), 0) / withHumidity.length;
+          humidEl.textContent = avg.toFixed(1) + '%';
+        } else {
+          humidEl.textContent = '-';
+        }
       }
-      let h = `<table class="fil-drying-presets-table"><thead><tr>
-        <th>${t('common.date')}</th>
-        <th>${t('filament.profile_name')}</th>
-        <th>${t('filament.filter_material')}</th>
-        <th>${t('filament.drying_method')}</th>
-        <th>${t('filament.drying_temp')}</th>
-        <th>${t('filament.drying_duration')}</th>
-        <th>${t('filament.drying_humidity_before')}</th>
-        <th>${t('filament.drying_humidity_after')}</th>
-        <th></th>
-      </tr></thead><tbody>`;
-      for (const s of sessions) {
-        const date = s.completed_at ? new Date(s.completed_at + 'Z').toLocaleDateString() : new Date(s.started_at + 'Z').toLocaleDateString();
-        const methodLabel = t('filament.drying_method_' + (s.method || 'dryer_box'));
-        h += `<tr>
-          <td>${date}</td>
-          <td>${esc(s.profile_name || '?')}</td>
-          <td>${esc(s.material || '')}</td>
-          <td>${methodLabel}</td>
-          <td>${s.temperature ? s.temperature + '°C' : '-'}</td>
-          <td>${s.duration_minutes} min</td>
-          <td>${s.humidity_before != null ? s.humidity_before + '%' : '-'}</td>
-          <td>${s.humidity_after != null ? s.humidity_after + '%' : '-'}</td>
-          <td><button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingItem(${s.id})" data-tooltip="${t('settings.delete')}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button></td>
-        </tr>`;
-      }
-      h += '</tbody></table>';
-      container.innerHTML = h;
-    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+    } catch { /* ignore */ }
   }
+
+  window._switchDryingSubTab = function(tab) {
+    _dryingSubTab = tab;
+    document.querySelectorAll('.drying-sub-tab').forEach(b => b.classList.toggle('active', b.textContent.trim().startsWith(
+      tab === 'active' ? t('filament.drying_sub_active') : tab === 'history' ? t('filament.drying_sub_history') : t('filament.drying_sub_presets')
+    )));
+    _renderDryingSubContent();
+  };
+
+  function _renderDryingSubContent() {
+    const el = document.getElementById('drying-sub-content');
+    if (!el) return;
+    if (_dryingSubTab === 'active') _renderDryingActive(el);
+    else if (_dryingSubTab === 'history') _renderDryingHistory(el);
+    else if (_dryingSubTab === 'presets') _renderDryingPresets(el);
+  }
+
+  function _renderDryingActive(el) {
+    if (!_dryingSessions || _dryingSessions.length === 0) {
+      el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.drying_no_active')}</p>`;
+      return;
+    }
+    let h = '';
+    for (const ds of _dryingSessions) {
+      const startTime = new Date(ds.started_at + 'Z').getTime();
+      const endTime = startTime + ds.duration_minutes * 60 * 1000;
+      const now = Date.now();
+      const elapsed = Math.max(0, now - startTime);
+      const remaining = Math.max(0, endTime - now);
+      const remainMin = Math.floor(remaining / 60000);
+      const remainH = Math.floor(remainMin / 60);
+      const remainM = remainMin % 60;
+      const pct = Math.min(100, Math.round((elapsed / (ds.duration_minutes * 60000)) * 100));
+      const colorDot = ds.color_hex ? `<span class="fil-color-dot" style="background:#${ds.color_hex}"></span>` : '';
+      const methodLabel = t('filament.drying_method_' + (ds.method || 'dryer_box'));
+      h += `<div class="fil-drying-card active" data-drying-id="${ds.id}">
+        ${colorDot}
+        <div class="fil-drying-info">
+          <div class="label">${esc(ds.profile_name || '?')} ${ds.vendor_name ? '(' + esc(ds.vendor_name) + ')' : ''}</div>
+          <div class="meta">${esc(ds.material || '')} · ${methodLabel} · ${ds.temperature ? ds.temperature + '°C' : ''}</div>
+        </div>
+        <div class="fil-drying-timer" id="drying-timer-${ds.id}">${remainH}h ${String(remainM).padStart(2, '0')}m</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <div class="filament-bar" style="width:80px;height:6px"><div class="filament-bar-fill" style="width:${pct}%;background:var(--accent-orange,#f0883e)"></div></div>
+          <button class="form-btn form-btn-sm" data-ripple onclick="completeDryingItem(${ds.id})">${t('filament.drying_complete')}</button>
+        </div>
+      </div>`;
+    }
+    el.innerHTML = h;
+    _startDryingTimers();
+  }
+
+  function _renderDryingHistory(el) {
+    // Filter bar
+    const materials = [...new Set(_dryingHistory.map(s => s.material).filter(Boolean))].sort();
+    const methods = [...new Set(_dryingHistory.map(s => s.method).filter(Boolean))].sort();
+    let h = `<div class="inv-filter-bar" style="margin-bottom:10px">
+      <select class="form-input form-input-sm" onchange="window._dryFilterMaterial(this.value)" style="max-width:150px">
+        <option value="">${t('filament.drying_filter_material')}</option>
+        ${materials.map(m => `<option value="${m}" ${m === _dryHistoryFilter.material ? 'selected' : ''}>${m}</option>`).join('')}
+      </select>
+      <select class="form-input form-input-sm" onchange="window._dryFilterMethod(this.value)" style="max-width:150px">
+        <option value="">${t('filament.drying_filter_method')}</option>
+        ${methods.map(m => `<option value="${m}" ${m === _dryHistoryFilter.method ? 'selected' : ''}>${t('filament.drying_method_' + m)}</option>`).join('')}
+      </select>
+      <select class="form-input form-input-sm" onchange="window._drySort(this.value)" style="max-width:150px">
+        <option value="date_desc" ${_dryHistorySort === 'date_desc' ? 'selected' : ''}>${t('filament.drying_sort_newest')}</option>
+        <option value="date_asc" ${_dryHistorySort === 'date_asc' ? 'selected' : ''}>${t('filament.drying_sort_oldest')}</option>
+      </select>
+    </div>`;
+
+    // Filter + sort
+    let filtered = _dryingHistory.slice();
+    if (_dryHistoryFilter.material) filtered = filtered.filter(s => s.material === _dryHistoryFilter.material);
+    if (_dryHistoryFilter.method) filtered = filtered.filter(s => s.method === _dryHistoryFilter.method);
+    if (_dryHistorySort === 'date_asc') filtered.reverse();
+
+    if (filtered.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.8rem">${t('filament.drying_no_history')}</p>`;
+      el.innerHTML = h;
+      return;
+    }
+
+    h += `<table class="fil-drying-presets-table"><thead><tr>
+      <th>${t('common.date')}</th>
+      <th>${t('filament.profile_name')}</th>
+      <th>${t('filament.filter_material')}</th>
+      <th>${t('filament.drying_method')}</th>
+      <th>${t('filament.drying_temp')}</th>
+      <th>${t('filament.drying_duration')}</th>
+      <th>${t('filament.drying_humidity_before')}</th>
+      <th>${t('filament.drying_humidity_after')}</th>
+      <th></th>
+    </tr></thead><tbody>`;
+    for (const s of filtered) {
+      const date = s.completed_at ? new Date(s.completed_at + 'Z').toLocaleDateString() : new Date(s.started_at + 'Z').toLocaleDateString();
+      const methodLabel = t('filament.drying_method_' + (s.method || 'dryer_box'));
+      h += `<tr>
+        <td>${date}</td>
+        <td>${esc(s.profile_name || '?')}</td>
+        <td>${esc(s.material || '')}</td>
+        <td>${methodLabel}</td>
+        <td>${s.temperature ? s.temperature + '°C' : '-'}</td>
+        <td>${s.duration_minutes} min</td>
+        <td>${s.humidity_before != null ? s.humidity_before + '%' : '-'}</td>
+        <td>${s.humidity_after != null ? s.humidity_after + '%' : '-'}</td>
+        <td><button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingItem(${s.id})" data-tooltip="${t('settings.delete')}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button></td>
+      </tr>`;
+    }
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  }
+
+  function _renderDryingPresets(el) {
+    let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="form-btn form-btn-sm" data-ripple onclick="showAddDryingPresetForm()">${t('filament.drying_preset_add')}</button>
+    </div>`;
+    h += `<div id="drying-presets-form" style="display:none"></div>`;
+    if (!_dryingPresets || _dryingPresets.length === 0) {
+      h += `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">No presets</p>`;
+      el.innerHTML = h;
+      return;
+    }
+    h += `<table class="fil-drying-presets-table"><thead><tr>
+      <th>${t('filament.filter_material')}</th>
+      <th>${t('filament.drying_temp')}</th>
+      <th>${t('filament.drying_duration')}</th>
+      <th>${t('filament.drying_max_days')}</th>
+      <th></th>
+    </tr></thead><tbody>`;
+    for (const p of _dryingPresets) {
+      h += `<tr>
+        <td><strong>${esc(p.material)}</strong></td>
+        <td>${p.temperature}°C</td>
+        <td>${p.duration_minutes} min (${(p.duration_minutes / 60).toFixed(1)}h)</td>
+        <td>${p.max_days_without_drying} d</td>
+        <td style="text-align:right">
+          <button class="filament-edit-btn" style="opacity:1" onclick="editDryingPreset('${esc(p.material)}')" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingPresetItem('${esc(p.material)}')" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </td>
+      </tr>`;
+    }
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  }
+
+  window._dryFilterMaterial = function(v) { _dryHistoryFilter.material = v; _renderDryingSubContent(); };
+  window._dryFilterMethod = function(v) { _dryHistoryFilter.method = v; _renderDryingSubContent(); };
+  window._drySort = function(v) { _dryHistorySort = v; _renderDryingSubContent(); };
+
+  window._dryingQuickStart = function() {
+    let spoolOpts = `<option value="">${t('filament.drying_select_spool')}</option>`;
+    for (const s of _spools) {
+      const name = s.profile_name || s.material || `Spool #${s.id}`;
+      const vendor = s.vendor_name ? ` (${s.vendor_name})` : '';
+      spoolOpts += `<option value="${s.id}" data-material="${esc(s.material || '')}">${esc(name)}${esc(vendor)}</option>`;
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:440px">
+      <div class="inv-modal-header">
+        <span>${t('filament.drying_quick_start')}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div class="inv-modal-body">
+        <div class="form-group"><label class="form-label">${t('filament.drying_select_spool')}</label>
+          <select class="form-input" id="qs-dry-spool" onchange="window._qsDrySpoolChanged()">${spoolOpts}</select>
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px">
+          <label class="form-label">${t('filament.drying_temp')}
+            <input class="form-input form-input-sm" type="number" id="qs-dry-temp" value="50" min="30" max="120">
+          </label>
+          <label class="form-label">${t('filament.drying_duration')}
+            <input class="form-input form-input-sm" type="number" id="qs-dry-duration" value="240" min="30" max="1440">
+          </label>
+          <label class="form-label">${t('filament.drying_method')}
+            <select class="form-input form-input-sm" id="qs-dry-method">
+              <option value="dryer_box">${t('filament.drying_method_dryer_box')}</option>
+              <option value="ams_drying">${t('filament.drying_method_ams')}</option>
+              <option value="oven">${t('filament.drying_method_oven')}</option>
+              <option value="other">${t('filament.drying_method_other')}</option>
+            </select>
+          </label>
+          <label class="form-label">${t('filament.drying_humidity_before')}
+            <input class="form-input form-input-sm" type="number" id="qs-dry-humidity" step="0.1" min="0" max="100" placeholder="Optional">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="form-btn" data-ripple onclick="window._qsDrySubmit()">${t('filament.drying_quick_start')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.inv-modal-overlay').remove()">${t('common.cancel')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window._qsDrySpoolChanged = function() {
+    const select = document.getElementById('qs-dry-spool');
+    if (!select?.value) return;
+    const spool = _spools.find(s => s.id === parseInt(select.value));
+    if (!spool) return;
+    const preset = _dryingPresets.find(p => p.material === spool.material);
+    if (preset) {
+      const tempEl = document.getElementById('qs-dry-temp');
+      const durEl = document.getElementById('qs-dry-duration');
+      if (tempEl) tempEl.value = preset.temperature;
+      if (durEl) durEl.value = preset.duration_minutes;
+    }
+  };
+
+  window._qsDrySubmit = async function() {
+    const spoolId = parseInt(document.getElementById('qs-dry-spool')?.value);
+    if (!spoolId) return;
+    const temp = parseInt(document.getElementById('qs-dry-temp')?.value || '50');
+    const duration = parseInt(document.getElementById('qs-dry-duration')?.value || '240');
+    const method = document.getElementById('qs-dry-method')?.value || 'dryer_box';
+    const humidity = parseFloat(document.getElementById('qs-dry-humidity')?.value) || null;
+    try {
+      const res = await fetch('/api/inventory/drying/sessions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spool_id: spoolId, temperature: temp, duration_minutes: duration, method, humidity_before: humidity })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.querySelector('.inv-modal-overlay')?.remove();
+      loadFilament();
+    } catch (e) { showToast(e.message, 'error'); }
+  };
 
   async function _loadPriceWatch() {
     const container = document.getElementById('price-watch-container');
@@ -2907,7 +3025,7 @@
             </span>
             ${statusIcon}
             ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" class="filament-edit-btn" title="${t('filament.price_source')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
-            <button class="filament-delete-btn" onclick="_deletePriceAlert(${a.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="filament-delete-btn" onclick="window._deletePriceAlert(${a.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>`;
         }
         h += '</div>';
@@ -2915,7 +3033,7 @@
         h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.price_watch_none')}</p>`;
       }
       h += `<div id="price-alert-form-container"></div>`;
-      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="_showAddPriceAlert()">+ ${t('filament.price_alert_add')}</button>`;
+      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="window._showAddPriceAlert()">+ ${t('filament.price_alert_add')}</button>`;
       container.innerHTML = h;
     } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
   }
@@ -2923,14 +3041,14 @@
   window._showAddPriceAlert = function() {
     const container = document.getElementById('price-alert-form-container');
     if (!container) return;
-    const profiles = _filamentProfiles || [];
+    const profiles = _profiles || [];
     let opts = profiles.map(p => `<option value="${p.id}">${esc(p.name)} (${esc(p.material || '')})</option>`).join('');
     container.innerHTML = `<div class="inv-inline-form" style="margin-top:8px">
       <select class="form-input form-input-sm" id="pa-profile"><option value="">-- ${t('filament.profile_name')} --</option>${opts}</select>
       <input class="form-input form-input-sm" id="pa-target" type="number" step="0.01" placeholder="${t('filament.price_target')}" style="width:100px">
       <input class="form-input form-input-sm" id="pa-currency" type="text" value="USD" placeholder="USD" style="width:60px">
       <input class="form-input form-input-sm" id="pa-url" type="url" placeholder="${t('filament.price_source_url')}" style="flex:1">
-      <button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="_savePriceAlert()">${t('filament.tag_save')}</button>
+      <button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="window._savePriceAlert()">${t('filament.tag_save')}</button>
     </div>`;
   };
 
@@ -3292,6 +3410,96 @@
       loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
   };
+
+  // ═══ Tools Dashboard Sub-tabs ═══
+  window._switchToolsSubTab = function(tab) {
+    _toolsSubTab = tab;
+    document.querySelectorAll('#tools-sub-content').length; // ensure dom ready
+    document.querySelectorAll('.drying-sub-tab').forEach(b => {
+      const parent = b.closest('[id]');
+      if (parent && parent.id !== 'tools-sub-content') return; // only tools tabs
+    });
+    // Re-render tabs active state
+    const container = document.getElementById('tools-sub-content')?.closest('.stats-module');
+    if (container) {
+      container.querySelectorAll('.drying-sub-tab').forEach(b => {
+        const isActive = b.textContent.trim() === ({
+          spools: t('filament.tools_sub_spools'),
+          colors: t('filament.color_card'),
+          tags: t('filament.nfc_manager'),
+          reference: t('filament.material_reference')
+        })[tab];
+        b.classList.toggle('active', isActive);
+      });
+    }
+    _renderToolsSubContent();
+  };
+
+  function _renderToolsSubContent() {
+    const el = document.getElementById('tools-sub-content');
+    if (!el) return;
+    if (_toolsSubTab === 'spools') {
+      el.innerHTML = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ${t('filament.checked_out_spools')}
+        </span>
+      </div>
+      <div id="checked-out-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>
+      <div class="ctrl-card-title" style="margin-top:16px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${t('filament.spool_timeline')}
+      </div>
+      <div id="timeline-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadCheckedOut();
+      _loadTimeline();
+    } else if (_toolsSubTab === 'colors') {
+      el.innerHTML = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>
+          ${t('filament.color_card')}
+        </span>
+        <div id="color-card-actions" style="display:none;gap:4px">
+          <button class="form-btn form-btn-sm" data-ripple onclick="exportColorCard()">${t('filament.color_card_export')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="sharePalette()" style="display:flex;align-items:center;gap:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            ${t('filament.share_palette')}
+          </button>
+        </div>
+      </div>
+      <div id="color-card-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadColorCard();
+    } else if (_toolsSubTab === 'tags') {
+      el.innerHTML = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
+          ${t('filament.nfc_manager')}
+        </span>
+        <button class="form-btn form-btn-sm" data-ripple onclick="openTagScanner()">${t('filament.tag_scan')}</button>
+      </div>
+      <div id="nfc-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadNfcMappings();
+    } else if (_toolsSubTab === 'reference') {
+      el.innerHTML = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        ${t('filament.material_reference')}
+      </div>
+      <div class="fil-matref-filter mb-sm">
+        <select class="form-input form-input-sm" id="matref-category-filter" onchange="filterMaterials()">
+          <option value="">All Categories</option>
+          <option value="standard">Standard</option>
+          <option value="engineering">Engineering</option>
+          <option value="composite">Composite</option>
+          <option value="flexible">Flexible</option>
+          <option value="specialty">Specialty</option>
+          <option value="support">Support</option>
+          <option value="high-performance">High Performance</option>
+        </select>
+      </div>
+      <div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadMaterials();
+    }
+  }
 
   // ═══ Color Card ═══
   async function _loadColorCard() {
@@ -3880,7 +4088,7 @@
         </div>
         <div class="inv-modal-footer">
           <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
-          <button class="form-btn form-btn-primary" onclick="_applyBulkEdit()">${t('filament.bulk_apply', { count: n })}</button>
+          <button class="form-btn form-btn-primary" onclick="window._applyBulkEdit()">${t('filament.bulk_apply', { count: n })}</button>
         </div>
       </div>
     </div>`;
@@ -3930,8 +4138,8 @@
             </select>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="form-btn form-btn-sm form-btn-primary" onclick="_doBulkTag('assign')">${t('filament.bulk_tag_assign_btn')}</button>
-            <button class="form-btn form-btn-sm" onclick="_doBulkTag('unassign')">${t('filament.bulk_tag_unassign_btn')}</button>
+            <button class="form-btn form-btn-sm form-btn-primary" onclick="window._doBulkTag('assign')">${t('filament.bulk_tag_assign_btn')}</button>
+            <button class="form-btn form-btn-sm" onclick="window._doBulkTag('unassign')">${t('filament.bulk_tag_unassign_btn')}</button>
           </div>
         </div>
         <div class="inv-modal-footer">
@@ -3979,7 +4187,7 @@
         </div>
         <div class="inv-modal-footer">
           <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
-          <button class="form-btn form-btn-primary" onclick="_doBulkDry()">${t('filament.start_drying')}</button>
+          <button class="form-btn form-btn-primary" onclick="window._doBulkDry()">${t('filament.start_drying')}</button>
         </div>
       </div>
     </div>`;
@@ -4209,7 +4417,7 @@
         </div>
         <div class="inv-modal-footer">
           <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
-          <button class="form-btn form-btn-primary" onclick="_applyBulkEditProfiles()">${t('filament.bulk_apply', { count: n })}</button>
+          <button class="form-btn form-btn-primary" onclick="window._applyBulkEditProfiles()">${t('filament.bulk_apply', { count: n })}</button>
         </div>
       </div>
     </div>`;
@@ -4321,14 +4529,14 @@
             ${spoolTags.map(tg => `<span class="fil-tag-chip" style="--tag-color:${esc(tg.color || '#58a6ff')}">
               <span class="fil-tag-dot" style="background:${esc(tg.color || '#58a6ff')}"></span>
               ${esc(tg.name)}
-              <span class="fil-tag-chip-remove" onclick="_removeSpoolTag(${spoolId},${tg.id})">&times;</span>
+              <span class="fil-tag-chip-remove" onclick="window._removeSpoolTag(${spoolId},${tg.id})">&times;</span>
             </span>`).join('')}
           </div>
           ${availableTags.length ? `<div style="display:flex;gap:6px;align-items:center">
             <select class="form-input form-input-sm" id="spool-tag-select" style="flex:1">
               ${availableTags.map(tg => `<option value="${tg.id}">${esc(tg.name)}</option>`).join('')}
             </select>
-            <button class="form-btn form-btn-sm form-btn-primary" onclick="_addSpoolTag(${spoolId})">${t('filament.tag_add_to_spool')}</button>
+            <button class="form-btn form-btn-sm form-btn-primary" onclick="window._addSpoolTag(${spoolId})">${t('filament.tag_add_to_spool')}</button>
           </div>` : `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_tags')}</p>`}
         </div>
         <div class="inv-modal-footer">

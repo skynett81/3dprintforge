@@ -5244,6 +5244,12 @@ tr:hover .filament-edit-btn {
 
 /* ---- Inventory System ---- */
 
+.inv-inline-form {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
 .inv-filter-bar {
   display: flex;
   gap: 6px;
@@ -6185,6 +6191,31 @@ tr:hover .filament-edit-btn {
 }
 .tag-scanner-tab:hover { background: var(--bg-tertiary); }
 .tag-scanner-tab.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+/* Drying sub-tabs */
+.drying-sub-tabs {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.drying-sub-tab {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.drying-sub-tab:hover { background: var(--bg-tertiary); }
+.drying-sub-tab.active {
   background: var(--accent-blue);
   color: white;
   border-color: var(--accent-blue);
