@@ -223,6 +223,8 @@ function _runMigrations() {
     { version: 58, up: _mig058_shared_palettes },
     { version: 59, up: _mig059_transmission_distance },
     { version: 60, up: _mig060_slicer_jobs },
+    { version: 61, up: _mig061_filament_database_v2 },
+    { version: 62, up: _mig062_price_alerts },
   ];
 
   for (const m of migrations) {
@@ -2875,6 +2877,57 @@ function _mig060_slicer_jobs() {
   )`);
 }
 
+function _mig061_filament_database_v2() {
+  const cols = [
+    'pressure_advance_k REAL',
+    'max_volumetric_speed REAL',
+    'flow_ratio REAL',
+    'retraction_distance REAL',
+    'retraction_speed REAL',
+    'fan_speed_min INTEGER',
+    'fan_speed_max INTEGER',
+    'chamber_temp INTEGER',
+    'material_type TEXT',
+    'category TEXT',
+    'difficulty INTEGER',
+    'image_url TEXT',
+    'purchase_url TEXT',
+    'price REAL',
+    'price_currency TEXT',
+    'brand_key TEXT',
+    'external_source_id TEXT',
+    'total_td_votes INTEGER',
+    'tips TEXT',
+    'updated_at TEXT'
+  ];
+  for (const col of cols) {
+    try { db.exec(`ALTER TABLE community_filaments ADD COLUMN ${col}`); } catch { /* exists */ }
+  }
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_cf_category ON community_filaments(category);
+    CREATE INDEX IF NOT EXISTS idx_cf_brand_key ON community_filaments(brand_key);
+    CREATE INDEX IF NOT EXISTS idx_cf_material_type ON community_filaments(material_type);
+    CREATE INDEX IF NOT EXISTS idx_cf_source_id ON community_filaments(external_source_id);
+  `);
+}
+
+function _mig062_price_alerts() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS price_alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE CASCADE,
+      target_price REAL NOT NULL,
+      currency TEXT DEFAULT 'USD',
+      source_url TEXT,
+      notify INTEGER DEFAULT 1,
+      triggered INTEGER DEFAULT 0,
+      triggered_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_pa_profile ON price_alerts(filament_profile_id);
+  `);
+}
+
 function _mig058_shared_palettes() {
   db.exec(`CREATE TABLE IF NOT EXISTS shared_palettes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3831,6 +3884,7 @@ export function getSpools(filters = {}) {
   if (filters.vendor_id) { where += ' AND fp.vendor_id = ?'; params.push(filters.vendor_id); }
   if (filters.location) { where += ' AND s.location = ?'; params.push(filters.location); }
   if (filters.printer_id) { where += ' AND s.printer_id = ?'; params.push(filters.printer_id); }
+  if (filters.tag_id) { where += ' AND s.id IN (SELECT entity_id FROM entity_tags WHERE entity_type = ? AND tag_id = ?)'; params.push('spool', filters.tag_id); }
   const countSql = `SELECT COUNT(*) as total FROM spools s
     LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
     LEFT JOIN vendors v ON fp.vendor_id = v.id` + where;
@@ -3838,12 +3892,19 @@ export function getSpools(filters = {}) {
   let sql = SPOOL_SELECT + where + ' ORDER BY s.archived ASC, s.last_used_at DESC NULLS LAST, s.created_at DESC';
   if (filters.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
   if (filters.offset) { sql += ' OFFSET ?'; params.push(filters.offset); }
-  return { rows: _enrichSpoolRows(db.prepare(sql).all(...params)), total };
+  const rows = _enrichSpoolRows(db.prepare(sql).all(...params));
+  // Enrich with tags
+  const tagStmt = db.prepare('SELECT t.* FROM tags t JOIN entity_tags et ON t.id = et.tag_id WHERE et.entity_type = ? AND et.entity_id = ? ORDER BY t.name');
+  for (const row of rows) { row.tags = tagStmt.all('spool', row.id); }
+  return { rows, total };
 }
 
 export function getSpool(id) {
   const row = db.prepare(SPOOL_SELECT + ' WHERE s.id = ?').get(id) || null;
-  if (row) _enrichSpoolRows([row]);
+  if (row) {
+    _enrichSpoolRows([row]);
+    row.tags = db.prepare('SELECT t.* FROM tags t JOIN entity_tags et ON t.id = et.tag_id WHERE et.entity_type = ? AND et.entity_id = ? ORDER BY t.name').all('spool', row.id);
+  }
   return row;
 }
 
@@ -4398,6 +4459,75 @@ export function getLowStockSpools(thresholdPct = 20) {
     ORDER BY remaining_pct ASC`).all(thresholdPct);
 }
 
+export function getRestockSuggestions(daysAhead = 30) {
+  // Get usage by profile over last 90 days, grouped by filament profile
+  const profileUsage = db.prepare(`
+    SELECT fp.id AS profile_id, fp.name AS profile_name, fp.material, fp.color_hex,
+      v.name AS vendor_name, v.id AS vendor_id,
+      COALESCE(SUM(sul.used_weight_g), 0) AS total_used_90d,
+      COUNT(DISTINCT DATE(sul.timestamp)) AS active_days,
+      ROUND(COALESCE(SUM(sul.used_weight_g), 0) / MAX(1, COUNT(DISTINCT DATE(sul.timestamp))), 2) AS avg_daily_g
+    FROM filament_profiles fp
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    LEFT JOIN spools s ON s.filament_profile_id = fp.id AND s.archived = 0
+    LEFT JOIN spool_usage_log sul ON sul.spool_id = s.id AND sul.timestamp >= datetime('now', '-90 days')
+    GROUP BY fp.id
+    HAVING total_used_90d > 0
+    ORDER BY avg_daily_g DESC
+  `).all();
+
+  // Get current stock per profile
+  const stockByProfile = db.prepare(`
+    SELECT s.filament_profile_id, SUM(s.remaining_weight_g) AS total_remaining_g,
+      COUNT(*) AS spool_count, AVG(s.initial_weight_g) AS avg_spool_size_g
+    FROM spools s WHERE s.archived = 0 AND s.remaining_weight_g > 0
+    GROUP BY s.filament_profile_id
+  `).all();
+  const stockMap = {};
+  for (const row of stockByProfile) stockMap[row.filament_profile_id] = row;
+
+  // Get latest cost per profile
+  const priceByProfile = db.prepare(`
+    SELECT s.filament_profile_id, s.cost, s.initial_weight_g
+    FROM spools s
+    WHERE s.cost > 0
+    GROUP BY s.filament_profile_id
+    HAVING s.id = MAX(s.id)
+  `).all();
+  const priceMap = {};
+  for (const row of priceByProfile) priceMap[row.filament_profile_id] = { price: row.cost, weight_g: row.initial_weight_g };
+
+  return profileUsage.map(pu => {
+    const stock = stockMap[pu.profile_id] || { total_remaining_g: 0, spool_count: 0, avg_spool_size_g: 1000 };
+    const needed_g = pu.avg_daily_g * daysAhead;
+    const deficit_g = Math.max(0, needed_g - stock.total_remaining_g);
+    const days_until_out = pu.avg_daily_g > 0 ? Math.round(stock.total_remaining_g / pu.avg_daily_g) : null;
+    const spoolSize = stock.avg_spool_size_g || 1000;
+    const spools_to_order = deficit_g > 0 ? Math.ceil(deficit_g / spoolSize) : 0;
+    const priceInfo = priceMap[pu.profile_id];
+    const est_cost = priceInfo && spools_to_order > 0 ? Math.round(priceInfo.price * spools_to_order * 100) / 100 : null;
+
+    return {
+      profile_id: pu.profile_id,
+      profile_name: pu.profile_name,
+      material: pu.material,
+      color_hex: pu.color_hex,
+      vendor_name: pu.vendor_name,
+      vendor_id: pu.vendor_id,
+      avg_daily_g: pu.avg_daily_g,
+      total_used_90d: pu.total_used_90d,
+      current_stock_g: Math.round(stock.total_remaining_g),
+      current_spool_count: stock.spool_count,
+      days_until_out,
+      needed_g: Math.round(needed_g),
+      deficit_g: Math.round(deficit_g),
+      spools_to_order,
+      est_cost,
+      urgency: days_until_out === null ? 'unknown' : days_until_out <= 7 ? 'critical' : days_until_out <= 14 ? 'high' : days_until_out <= 30 ? 'medium' : 'low'
+    };
+  }).filter(s => s.urgency !== 'low');
+}
+
 export function estimatePrintCost(filamentUsedG, durationSeconds, spoolId = null) {
   const electricityRate = parseFloat(getInventorySetting('electricity_rate_kwh') || '0');
   const printerWattage = parseFloat(getInventorySetting('printer_wattage') || '0');
@@ -4569,8 +4699,9 @@ export function getQueueLog(queueId, limit = 50) {
 // ---- Tags ----
 
 export function getTags(category) {
-  if (category) return db.prepare('SELECT * FROM tags WHERE category = ? ORDER BY name').all(category);
-  return db.prepare('SELECT * FROM tags ORDER BY category, name').all();
+  const base = `SELECT t.*, (SELECT COUNT(*) FROM entity_tags et WHERE et.tag_id = t.id) AS usage_count FROM tags t`;
+  if (category) return db.prepare(base + ' WHERE t.category = ? ORDER BY t.name').all(category);
+  return db.prepare(base + ' ORDER BY t.category, t.name').all();
 }
 
 export function createTag(name, category, color) {
@@ -4578,9 +4709,17 @@ export function createTag(name, category, color) {
   return r.lastInsertRowid;
 }
 
+export function updateTag(id, name, category, color) {
+  db.prepare('UPDATE tags SET name = ?, category = ?, color = ? WHERE id = ?').run(name, category || 'custom', color || null, id);
+}
+
 export function deleteTag(id) {
   db.prepare('DELETE FROM entity_tags WHERE tag_id = ?').run(id);
   db.prepare('DELETE FROM tags WHERE id = ?').run(id);
+}
+
+export function getEntitiesByTag(entityType, tagId) {
+  return db.prepare('SELECT entity_id FROM entity_tags WHERE entity_type = ? AND tag_id = ?').all(entityType, tagId).map(r => r.entity_id);
 }
 
 export function assignTag(entityType, entityId, tagId) {
@@ -4708,6 +4847,78 @@ export function bulkRelocateSpools(ids, location) {
 export function bulkMarkDried(ids) {
   const placeholders = ids.map(() => '?').join(',');
   db.prepare(`UPDATE spools SET last_dried_at = datetime('now') WHERE id IN (${placeholders})`).run(...ids);
+}
+
+export function bulkEditSpools(ids, fields) {
+  const allowed = ['cost_per_kg', 'notes', 'location', 'material', 'color_hex', 'color_name', 'weight_total'];
+  const sets = [];
+  const vals = [];
+  for (const [k, v] of Object.entries(fields)) {
+    if (allowed.includes(k)) { sets.push(`${k} = ?`); vals.push(v); }
+  }
+  if (sets.length === 0 || ids.length === 0) return 0;
+  const placeholders = ids.map(() => '?').join(',');
+  const result = db.prepare(`UPDATE spools SET ${sets.join(', ')} WHERE id IN (${placeholders})`).run(...vals, ...ids);
+  return result.changes;
+}
+
+export function bulkAssignTag(tagId, entityType, entityIds) {
+  const stmt = db.prepare('INSERT OR IGNORE INTO entity_tags (entity_type, entity_id, tag_id) VALUES (?, ?, ?)');
+  let count = 0;
+  for (const id of entityIds) { stmt.run(entityType, id, tagId); count++; }
+  return count;
+}
+
+export function bulkUnassignTag(tagId, entityType, entityIds) {
+  const placeholders = entityIds.map(() => '?').join(',');
+  const result = db.prepare(`DELETE FROM entity_tags WHERE tag_id = ? AND entity_type = ? AND entity_id IN (${placeholders})`).run(tagId, entityType, ...entityIds);
+  return result.changes;
+}
+
+export function bulkDeleteProfiles(ids) {
+  const placeholders = ids.map(() => '?').join(',');
+  db.prepare(`DELETE FROM filament_profiles WHERE id IN (${placeholders})`).run(...ids);
+}
+
+export function bulkEditProfiles(ids, fields) {
+  const allowed = ['material', 'density', 'diameter', 'vendor_id', 'notes'];
+  const sets = [];
+  const vals = [];
+  for (const [k, v] of Object.entries(fields)) {
+    if (allowed.includes(k)) { sets.push(`${k} = ?`); vals.push(v); }
+  }
+  if (sets.length === 0 || ids.length === 0) return 0;
+  const placeholders = ids.map(() => '?').join(',');
+  const result = db.prepare(`UPDATE filament_profiles SET ${sets.join(', ')} WHERE id IN (${placeholders})`).run(...vals, ...ids);
+  return result.changes;
+}
+
+export function bulkDeleteVendors(ids) {
+  const placeholders = ids.map(() => '?').join(',');
+  // Check for dependent profiles
+  const deps = db.prepare(`SELECT COUNT(*) as c FROM filament_profiles WHERE vendor_id IN (${placeholders})`).get(...ids);
+  if (deps.c > 0) throw new Error(`Cannot delete: ${deps.c} profiles depend on these vendors`);
+  db.prepare(`DELETE FROM vendors WHERE id IN (${placeholders})`).run(...ids);
+}
+
+export function bulkStartDrying(ids, opts = {}) {
+  const stmt = db.prepare(`INSERT INTO drying_sessions
+    (spool_id, temperature, duration_minutes, method, notes, active)
+    VALUES (?, ?, ?, ?, ?, 1)`);
+  const results = [];
+  for (const id of ids) {
+    const r = stmt.run(id, opts.temperature || null, opts.duration_minutes || null, opts.method || 'dryer_box', opts.notes || null);
+    results.push(Number(r.lastInsertRowid));
+  }
+  // Also mark spools as drying
+  const placeholders = ids.map(() => '?').join(',');
+  db.prepare(`UPDATE spools SET last_dried_at = datetime('now') WHERE id IN (${placeholders})`).run(...ids);
+  return results;
+}
+
+export function getSpoolsForExportByIds(ids) {
+  const placeholders = ids.map(() => '?').join(',');
+  return _enrichSpoolRows(db.prepare(SPOOL_SELECT + ` WHERE s.id IN (${placeholders}) ORDER BY s.id`).all(...ids));
 }
 
 // ---- G-Code Macros ----
@@ -5199,16 +5410,33 @@ export function deletePushSubscriptionById(id) {
 // ---- Community Filaments ----
 
 export function getCommunityFilaments(filters = {}) {
-  let sql = 'SELECT * FROM community_filaments WHERE 1=1';
+  let where = 'WHERE 1=1';
   const params = [];
-  if (filters.manufacturer) { sql += ' AND manufacturer = ?'; params.push(filters.manufacturer); }
-  if (filters.material) { sql += ' AND material = ?'; params.push(filters.material); }
-  if (filters.color_hex) { sql += ' AND color_hex = ?'; params.push(filters.color_hex.replace('#', '')); }
-  if (filters.search) { sql += ' AND (name LIKE ? OR manufacturer LIKE ? OR color_name LIKE ?)'; params.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`); }
-  sql += ' ORDER BY manufacturer, name';
-  if (filters.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
-  if (filters.offset) { sql += ' OFFSET ?'; params.push(filters.offset); }
-  return db.prepare(sql).all(...params);
+  if (filters.manufacturer) { where += ' AND manufacturer = ?'; params.push(filters.manufacturer); }
+  if (filters.material) { where += ' AND material = ?'; params.push(filters.material); }
+  if (filters.material_type) { where += ' AND material_type = ?'; params.push(filters.material_type); }
+  if (filters.category) { where += ' AND category = ?'; params.push(filters.category); }
+  if (filters.color_hex) { where += ' AND color_hex = ?'; params.push(filters.color_hex.replace('#', '')); }
+  if (filters.has_k_value) { where += ' AND pressure_advance_k IS NOT NULL'; }
+  if (filters.has_td) { where += ' AND td_value IS NOT NULL AND td_value > 0'; }
+  if (filters.temp_min) { where += ' AND extruder_temp >= ?'; params.push(filters.temp_min); }
+  if (filters.temp_max) { where += ' AND extruder_temp <= ?'; params.push(filters.temp_max); }
+  if (filters.search) { where += ' AND (name LIKE ? OR manufacturer LIKE ? OR color_name LIKE ? OR material LIKE ?)'; params.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`); }
+
+  const allowedSort = ['manufacturer', 'name', 'material', 'extruder_temp', 'pressure_advance_k', 'td_value', 'price', 'category'];
+  const sort = allowedSort.includes(filters.sort) ? filters.sort : 'manufacturer';
+  const dir = filters.sort_dir === 'DESC' ? 'DESC' : 'ASC';
+  const order = `ORDER BY ${sort} ${dir}, manufacturer ASC, name ASC`;
+
+  if (filters.limit) {
+    const total = db.prepare(`SELECT COUNT(*) as c FROM community_filaments ${where}`).get(...params).c;
+    const countParams = [...params];
+    params.push(filters.limit);
+    if (filters.offset) params.push(filters.offset);
+    const rows = db.prepare(`SELECT * FROM community_filaments ${where} ${order} LIMIT ?${filters.offset ? ' OFFSET ?' : ''}`).all(...params);
+    return { rows, total };
+  }
+  return db.prepare(`SELECT * FROM community_filaments ${where} ${order}`).all(...params);
 }
 
 export function getCommunityFilament(id) {
@@ -5238,16 +5466,20 @@ export function getCommunityMaterials() {
   return db.prepare('SELECT DISTINCT material FROM community_filaments ORDER BY material').all().map(r => r.material);
 }
 
+const CF_COLUMNS = ['manufacturer', 'name', 'material', 'density', 'diameter', 'weight', 'spool_weight', 'extruder_temp', 'bed_temp', 'color_name', 'color_hex', 'td_value', 'shore_hardness', 'source', 'pressure_advance_k', 'max_volumetric_speed', 'flow_ratio', 'retraction_distance', 'retraction_speed', 'fan_speed_min', 'fan_speed_max', 'chamber_temp', 'material_type', 'category', 'difficulty', 'image_url', 'purchase_url', 'price', 'price_currency', 'brand_key', 'external_source_id', 'total_td_votes', 'tips', 'updated_at'];
+
 export function addCommunityFilament(f) {
-  const result = db.prepare('INSERT INTO community_filaments (manufacturer, name, material, density, diameter, weight, spool_weight, extruder_temp, bed_temp, color_name, color_hex, td_value, shore_hardness, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-    f.manufacturer, f.name || null, f.material, f.density || null, f.diameter || 1.75, f.weight || 1000, f.spool_weight || null, f.extruder_temp || null, f.bed_temp || null, f.color_name || null, f.color_hex || null, f.td_value || null, f.shore_hardness || null, f.source || 'user');
+  const cols = CF_COLUMNS.filter(c => f[c] !== undefined);
+  const placeholders = cols.map(() => '?').join(', ');
+  const vals = cols.map(c => f[c] ?? null);
+  const result = db.prepare(`INSERT INTO community_filaments (${cols.join(', ')}) VALUES (${placeholders})`).run(...vals);
   return Number(result.lastInsertRowid);
 }
 
 export function updateCommunityFilament(id, updates) {
   const fields = [];
   const values = [];
-  for (const key of ['manufacturer', 'name', 'material', 'density', 'diameter', 'weight', 'spool_weight', 'extruder_temp', 'bed_temp', 'color_name', 'color_hex', 'td_value', 'shore_hardness', 'source']) {
+  for (const key of CF_COLUMNS) {
     if (updates[key] !== undefined) { fields.push(`${key} = ?`); values.push(updates[key]); }
   }
   if (fields.length === 0) return;
@@ -5257,6 +5489,39 @@ export function updateCommunityFilament(id, updates) {
 
 export function deleteCommunityFilament(id) {
   db.prepare('DELETE FROM community_filaments WHERE id = ?').run(id);
+}
+
+export function getCommunityFilamentStats() {
+  return {
+    total: db.prepare('SELECT COUNT(*) as c FROM community_filaments').get().c,
+    brands: db.prepare('SELECT COUNT(DISTINCT manufacturer) as c FROM community_filaments').get().c,
+    materials: db.prepare('SELECT COUNT(DISTINCT material) as c FROM community_filaments').get().c,
+    with_k_value: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE pressure_advance_k IS NOT NULL').get().c,
+    with_td: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE td_value IS NOT NULL AND td_value > 0').get().c,
+    top_brands: db.prepare('SELECT manufacturer, COUNT(*) as count FROM community_filaments GROUP BY manufacturer ORDER BY count DESC LIMIT 20').all(),
+    material_breakdown: db.prepare('SELECT material, COUNT(*) as count FROM community_filaments GROUP BY material ORDER BY count DESC').all()
+  };
+}
+
+export function upsertCommunityFilament(f) {
+  // Check by external_source_id first
+  if (f.external_source_id) {
+    const existing = db.prepare('SELECT id FROM community_filaments WHERE external_source_id = ?').get(f.external_source_id);
+    if (existing) { updateCommunityFilament(existing.id, f); return existing.id; }
+  }
+  // Fallback to natural key
+  const existing = db.prepare("SELECT id FROM community_filaments WHERE manufacturer = ? AND COALESCE(name,'') = ? AND material = ? AND COALESCE(color_name,'') = ?").get(f.manufacturer, f.name || '', f.material, f.color_name || '');
+  if (existing) { updateCommunityFilament(existing.id, f); return existing.id; }
+  return addCommunityFilament(f);
+}
+
+export function clearCommunityFilaments(source = null) {
+  if (source) db.prepare('DELETE FROM community_filaments WHERE source = ?').run(source);
+  else db.prepare('DELETE FROM community_filaments').run();
+}
+
+export function getCommunityFilamentCategories() {
+  return db.prepare('SELECT COALESCE(category, \'uncategorized\') as category, COUNT(*) as count FROM community_filaments GROUP BY category ORDER BY count DESC').all();
 }
 
 // ---- Brand Defaults ----
@@ -5543,6 +5808,62 @@ export function getLowestPrice(profileId) {
 
 export function getPriceStats(profileId) {
   return db.prepare('SELECT MIN(price) as min_price, MAX(price) as max_price, AVG(price) as avg_price, COUNT(*) as entries FROM price_history WHERE filament_profile_id = ?').get(profileId) || null;
+}
+
+// ---- Price Alerts ----
+
+export function getPriceAlerts() {
+  return db.prepare(`SELECT pa.*, fp.name AS profile_name, fp.material, fp.color_hex, v.name AS vendor_name,
+    (SELECT MIN(ph.price) FROM price_history ph WHERE ph.filament_profile_id = pa.filament_profile_id) AS lowest_price,
+    (SELECT ph.price FROM price_history ph WHERE ph.filament_profile_id = pa.filament_profile_id ORDER BY ph.recorded_at DESC LIMIT 1) AS latest_price
+    FROM price_alerts pa
+    LEFT JOIN filament_profiles fp ON pa.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    ORDER BY pa.created_at DESC`).all();
+}
+
+export function getPriceAlert(id) {
+  return db.prepare('SELECT * FROM price_alerts WHERE id = ?').get(id) || null;
+}
+
+export function addPriceAlert(a) {
+  const result = db.prepare('INSERT INTO price_alerts (filament_profile_id, target_price, currency, source_url, notify) VALUES (?, ?, ?, ?, ?)').run(
+    a.filament_profile_id, a.target_price, a.currency || 'USD', a.source_url || null, a.notify !== false ? 1 : 0);
+  return Number(result.lastInsertRowid);
+}
+
+export function updatePriceAlert(id, fields) {
+  const allowed = ['target_price', 'currency', 'source_url', 'notify', 'triggered'];
+  const sets = [];
+  const vals = [];
+  for (const key of allowed) {
+    if (fields[key] !== undefined) {
+      sets.push(`${key} = ?`);
+      vals.push(fields[key]);
+    }
+  }
+  if (sets.length === 0) return;
+  vals.push(id);
+  db.prepare(`UPDATE price_alerts SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+
+export function deletePriceAlert(id) {
+  db.prepare('DELETE FROM price_alerts WHERE id = ?').run(id);
+}
+
+export function checkPriceAlerts() {
+  // Find alerts where the latest price is at or below target
+  return db.prepare(`SELECT pa.*, fp.name AS profile_name, fp.material, v.name AS vendor_name,
+    (SELECT ph.price FROM price_history ph WHERE ph.filament_profile_id = pa.filament_profile_id ORDER BY ph.recorded_at DESC LIMIT 1) AS latest_price
+    FROM price_alerts pa
+    LEFT JOIN filament_profiles fp ON pa.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE pa.notify = 1 AND pa.triggered = 0
+    AND (SELECT ph.price FROM price_history ph WHERE ph.filament_profile_id = pa.filament_profile_id ORDER BY ph.recorded_at DESC LIMIT 1) <= pa.target_price`).all();
+}
+
+export function triggerPriceAlert(id) {
+  db.prepare("UPDATE price_alerts SET triggered = 1, triggered_at = datetime('now') WHERE id = ?").run(id);
 }
 
 // ---- Build Plates ----
