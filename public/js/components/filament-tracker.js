@@ -458,6 +458,7 @@
                 </div>
               </div>
               <div class="fil-spool-actions">
+                <button class="filament-edit-btn" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-tooltip="${t('filament.share_to_community')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
                 <button class="filament-edit-btn" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                 <button class="filament-delete-btn" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
@@ -1909,6 +1910,10 @@
         <div class="form-group" style="width:70px"><label class="form-label">${t('filament.profile_density')}</label><input class="form-input" id="${pfx}-density" type="number" step="0.01" value="${profile?.density ?? 1.24}"></div>
         <div class="form-group" style="width:70px"><label class="form-label">${t('filament.profile_diameter')}</label><input class="form-input" id="${pfx}-diameter" type="number" step="0.01" value="${profile?.diameter ?? 1.75}"></div>
         <div class="form-group" style="width:80px"><label class="form-label">${t('filament.price')}</label><input class="form-input" id="${pfx}-price" type="number" step="0.01" value="${profile?.price || ''}"></div>
+        <div class="form-group" style="flex:1;min-width:180px"><label class="form-label">${t('filament.purchase_url')}</label>
+          <div style="display:flex;gap:4px"><input class="form-input" id="${pfx}-purchase-url" value="${profile?.purchase_url || ''}" placeholder="https://...">
+          <button class="form-btn form-btn-sm" type="button" data-ripple onclick="window._checkPrice('${pfx}')" title="${t('filament.check_price')}" style="white-space:nowrap">${t('filament.check_price')}</button></div>
+        </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <div class="form-group" style="width:80px"><label class="form-label">${t('filament.profile_nozzle_temp')} ${t('filament.temp_min')}</label><input class="form-input" id="${pfx}-nozzle-min" type="number" value="${profile?.nozzle_temp_min || ''}"></div>
@@ -2017,6 +2022,7 @@
       retraction_speed: parseFloat(document.getElementById(`${pfx}-retract-speed`)?.value) || null,
       cooling_fan_speed: parseInt(document.getElementById(`${pfx}-fan-speed`)?.value) || null,
       transmission_distance: parseFloat(document.getElementById(`${pfx}-td`)?.value) || null,
+      purchase_url: document.getElementById(`${pfx}-purchase-url`)?.value?.trim() || null,
     };
   }
 
@@ -2034,11 +2040,66 @@
     loadFilament();
   };
 
+  window._checkPrice = async function(pfx) {
+    const url = document.getElementById(`${pfx}-purchase-url`)?.value?.trim();
+    if (!url) { showToast(t('filament.enter_url_first'), 'warning'); return; }
+    try {
+      const res = await fetch('/api/inventory/price-check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.price) {
+        const priceInput = document.getElementById(`${pfx}-price`);
+        if (priceInput && !priceInput.value) priceInput.value = data.price;
+        showToast(`${t('filament.price_found')}: ${data.currency || ''}${data.price}`, 'success');
+      } else {
+        showToast(t('filament.price_not_found'), 'warning');
+      }
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
   window.deleteProfileItem = function(id) {
     return confirmAction(t('filament.profile_delete_confirm'), async () => {
       await fetch(`/api/inventory/filaments/${id}`, { method: 'DELETE' });
       loadFilament();
     }, { danger: true });
+  };
+
+  // ═══ Community Sharing ═══
+  window._shareProfile = async function(id) {
+    const profile = _profiles.find(p => p.id === id);
+    if (!profile) return;
+    const confirmed = confirm(t('filament.share_confirm', { name: profile.name || profile.material }));
+    if (!confirmed) return;
+    try {
+      const res = await fetch('/api/community-filaments/share', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_id: id })
+      });
+      const data = await res.json();
+      if (data.ok) showToast(t('filament.shared_success'), 'success');
+      else showToast(data.error || 'Error', 'error');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window._rateCommunityFilament = async function(id, rating) {
+    try {
+      const res = await fetch(`/api/community-filaments/${id}/rate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(t('filament.rating_saved'), 'success');
+        // Update stars display
+        for (let i = 1; i <= 5; i++) {
+          const star = document.getElementById(`cf-star-${i}`);
+          if (star) star.style.color = i <= rating ? 'var(--accent-orange)' : 'var(--text-muted)';
+        }
+      }
+      else showToast(data.error || 'Error', 'error');
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   // ═══ Location CRUD ═══
@@ -3748,33 +3809,38 @@
   };
 
   // ── Bulk Labels ──
-  window.bulkLabels = async function() {
+  window.bulkLabels = function() {
     const ids = Array.from(_selectedSpools);
-    try {
-      const res = await fetch('/api/inventory/labels/batch', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spool_ids: ids })
-      });
-      const data = await res.json();
-      if (!data.spools?.length) return showToast('No spool data', 'warning');
-      const win = window.open('', '_blank');
-      let h = '<!DOCTYPE html><html><head><title>Spool Labels</title><style>body{font-family:sans-serif;margin:0;padding:10px}';
-      h += '.label{display:inline-block;width:40mm;height:30mm;border:1px solid #ccc;border-radius:4px;padding:4px;margin:3px;font-size:9px;overflow:hidden;page-break-inside:avoid}';
-      h += '.label-color{width:100%;height:8mm;border-radius:3px;margin-bottom:2px}';
-      h += '.label-name{font-weight:bold;font-size:10px}.label-detail{color:#666}';
-      h += '@media print{.label{border-color:#000}}</style></head><body>';
-      for (const s of data.spools) {
-        const hex = s.color_hex || 'cccccc';
-        h += `<div class="label"><div class="label-color" style="background:#${esc(hex)}"></div>`;
-        h += `<div class="label-name">${esc(s.name || s.material || 'Spool')}</div>`;
-        h += `<div class="label-detail">${esc(s.vendor_name || '')} ${esc(s.material || '')}</div>`;
-        h += `<div class="label-detail">${s.weight_remaining != null ? s.weight_remaining + 'g' : ''} ${s.location ? '@ ' + esc(s.location) : ''}</div>`;
-        h += '</div>';
-      }
-      h += '</body></html>';
-      win.document.write(h);
-      win.document.close();
-    } catch (e) { showToast(e.message, 'error'); }
+    if (ids.length === 0) return;
+    // Show format picker
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:350px">
+      <div class="inv-modal-header"><span>${t('filament.print_labels')}</span><button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button></div>
+      <div class="inv-modal-body">
+        <p style="font-size:0.85rem;margin:0 0 8px">${ids.length} ${t('filament.bulk_selected')}</p>
+        <div class="form-group"><label class="form-label">${t('filament.label_format')}</label>
+          <select class="form-input" id="label-format-select">
+            <option value="thermal_40x30">Thermal 40x30mm</option>
+            <option value="thermal_50x30">Thermal 50x30mm</option>
+            <option value="a4_grid_3x8">A4 Grid 3x8 (Avery L7159)</option>
+            <option value="a4_grid_2x7">A4 Grid 2x7 (Avery L7163)</option>
+          </select>
+        </div>
+      </div>
+      <div class="inv-modal-footer">
+        <button class="form-btn" data-ripple onclick="window._doPrintLabels()">${t('filament.print_label')}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window._doPrintLabels = function() {
+    const ids = Array.from(_selectedSpools);
+    const format = document.getElementById('label-format-select')?.value || 'thermal_40x30';
+    document.querySelector('.inv-modal-overlay')?.remove();
+    window.open(`/print/labels?ids=${ids.join(',')}&format=${format}`, '_blank');
   };
 
   // ── Bulk Export ──
@@ -4372,6 +4438,14 @@
     html += '</div>';
     if (f.tips) html += `<div style="margin-top:8px;padding:8px;background:var(--bg-tertiary);border-radius:6px;font-size:0.8rem"><strong>Tips:</strong> ${esc(f.tips)}</div>`;
     if (f.purchase_url) html += `<div style="margin-top:8px"><a href="${esc(f.purchase_url)}" target="_blank" rel="noopener" class="form-btn form-btn-sm" style="display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> ${t('filament.db_buy')}</a></div>`;
+    // Community rating
+    const avgRating = f.rating_count > 0 ? (f.rating_sum / f.rating_count) : 0;
+    html += `<div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:0.8rem;font-weight:600">${t('filament.community_rating')}:</span>
+      <span style="display:flex;gap:2px">${[1,2,3,4,5].map(i => `<span id="cf-star-${i}" style="cursor:pointer;font-size:1.1rem;color:${i <= Math.round(avgRating) ? 'var(--accent-orange)' : 'var(--text-muted)'}" onclick="window._rateCommunityFilament(${f.id},${i})">&#9733;</span>`).join('')}</span>
+      ${f.rating_count > 0 ? `<span class="text-muted" style="font-size:0.75rem">(${avgRating.toFixed(1)} / ${f.rating_count})</span>` : `<span class="text-muted" style="font-size:0.75rem">${t('filament.no_ratings')}</span>`}
+    </div>`;
+    if (f.shared_by) html += `<div class="text-muted" style="font-size:0.7rem;margin-top:4px">${t('filament.shared_by')}: ${esc(f.shared_by)}</div>`;
     html += `</div>
         <div class="inv-modal-footer">
           ${window._can && window._can('filament') ? `<button class="form-btn" onclick="window._dbImport(${f.id});this.closest('.inv-modal-backdrop').remove()">
@@ -4406,8 +4480,8 @@
   function _dbToggleCompare(id) {
     const idx = _dbCompare.indexOf(id);
     if (idx >= 0) _dbCompare.splice(idx, 1);
-    else if (_dbCompare.length < 3) _dbCompare.push(id);
-    else { showToast('Max 3 filaments', 'warning'); return; }
+    else if (_dbCompare.length < 4) _dbCompare.push(id);
+    else { showToast('Max 4 filaments', 'warning'); return; }
     _refreshDbBrowser();
   }
 
@@ -4418,6 +4492,8 @@
 
     const fields = ['material','material_type','extruder_temp','bed_temp','chamber_temp','pressure_advance_k','td_value','flow_ratio','max_volumetric_speed','fan_speed_min','fan_speed_max','retraction_distance','retraction_speed','density','price'];
     const labels = ['Material','Type','Nozzle Temp','Bed Temp','Chamber','K-Value','TD','Flow Ratio','Max Vol. Speed','Fan Min','Fan Max','Retract Dist.','Retract Speed','Density','Price'];
+    // Fields where lower is better
+    const lowerIsBetter = new Set(['price','retraction_distance','density']);
 
     let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
       <div class="inv-modal" style="max-width:${items.length*200+120}px">
@@ -4433,16 +4509,27 @@
       const key = fields[i];
       const vals = items.map(f => f[key]);
       if (vals.every(v => v == null || v === '')) continue;
+      // Find best/worst for numeric fields
+      const numVals = vals.map(v => v != null ? parseFloat(v) : NaN).filter(n => !isNaN(n));
+      const isNumeric = numVals.length >= 2 && !['material','material_type'].includes(key);
+      const bestVal = isNumeric ? (lowerIsBetter.has(key) ? Math.min(...numVals) : Math.max(...numVals)) : null;
+      const worstVal = isNumeric ? (lowerIsBetter.has(key) ? Math.max(...numVals) : Math.min(...numVals)) : null;
       html += `<tr><td style="font-weight:600;font-size:0.8rem">${labels[i]}</td>`;
       for (const v of vals) {
         let display = v != null ? String(v) : '--';
         if (key === 'price' && v) display = '$' + v;
-        if (['extruder_temp','bed_temp','chamber_temp'].includes(key) && v) display += '°C';
+        if (['extruder_temp','bed_temp','chamber_temp'].includes(key) && v) display += '\u00B0C';
         if (key === 'max_volumetric_speed' && v) display += ' mm\u00B3/s';
         if (['retraction_distance'].includes(key) && v) display += ' mm';
         if (['retraction_speed'].includes(key) && v) display += ' mm/s';
         if (key === 'density' && v) display += ' g/cm\u00B3';
-        html += `<td style="font-size:0.8rem">${display}</td>`;
+        let style = 'font-size:0.8rem';
+        if (isNumeric && v != null && bestVal !== worstVal) {
+          const n = parseFloat(v);
+          if (n === bestVal) style += ';color:var(--accent-green);font-weight:600';
+          else if (n === worstVal) style += ';color:var(--accent-red)';
+        }
+        html += `<td style="${style}">${display}</td>`;
       }
       html += '</tr>';
     }

@@ -464,7 +464,20 @@
     "view_table": "Tabellvisning",
     "share_palette": "Del",
     "palette_shared": "Palettlenke kopiert",
-    "transmission_distance": "TD (HueForge)"
+    "transmission_distance": "TD (HueForge)",
+    "print_labels": "Skriv ut etiketter",
+    "purchase_url": "Kjøps-URL",
+    "check_price": "Sjekk pris",
+    "enter_url_first": "Skriv inn en URL først",
+    "price_found": "Pris funnet",
+    "price_not_found": "Kunne ikke hente pris fra URL",
+    "share_to_community": "Del til fellesskapet",
+    "share_confirm": "Dele \"{{name}}\" til fellesskapsdatabasen?",
+    "shared_success": "Profil delt til fellesskapet",
+    "community_rating": "Vurdering",
+    "no_ratings": "Ingen vurderinger ennå",
+    "rating_saved": "Vurdering lagret",
+    "shared_by": "Delt av"
   },
   "controls": {
     "title": "Kontroller",
@@ -536,7 +549,28 @@
     "upload_failed": "Opplasting feilet",
     "slice_failed": "Slicing feilet",
     "slice_timeout": "Slicing tidsavbrudd",
-    "file_uploaded": "Fil lastet opp til printer"
+    "file_uploaded": "Fil lastet opp til printer",
+    "bed_mesh": "Bed Level Mesh",
+    "bed_check": "Bed-sjekk",
+    "capture_baseline": "Ta baseline-bilde",
+    "bed_mesh_hint": "Klikk Oppdater for å laste bed mesh-data",
+    "no_bed_mesh": "Ingen bed mesh-data tilgjengelig",
+    "bed_clear": "Bed er klar",
+    "bed_not_clear": "Bed er ikke klar",
+    "confidence": "Konfidens",
+    "capture_baseline_confirm": "Sørg for at bed er tom og ren, bekreft deretter for å ta et baseline-bilde.",
+    "baseline_saved": "Baseline lagret",
+    "filament_change": "Filamentbytte",
+    "start_filament_change": "Start filamentbytte",
+    "fc_step_init": "Konfigurer filamentbytte-parametre",
+    "fc_step_unload": "Laster ut filament...",
+    "fc_step_load": "Laster inn nytt filament...",
+    "fc_step_resume": "Gjenopptar print...",
+    "fc_start": "Start",
+    "fc_working": "Jobber",
+    "fc_next": "Neste",
+    "fc_complete": "Filamentbytte fullført",
+    "fc_retry": "Prøv igjen"
   },
   "speed": {
     "label": "Hastighet:",
@@ -1395,7 +1429,8 @@
     "all_printers": "Velg alle",
     "insufficient_filament": "Utilstrekkelig filament",
     "filament_warning": "Filament-advarsel",
-    "material_mismatch": "Materialfeil"
+    "material_mismatch": "Materialfeil",
+    "required_tags": "Påkrevde printer-tagger"
   },
   "tags": {
     "title": "Merkelapper",

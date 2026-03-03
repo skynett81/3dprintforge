@@ -225,6 +225,11 @@ function _runMigrations() {
     { version: 60, up: _mig060_slicer_jobs },
     { version: 61, up: _mig061_filament_database_v2 },
     { version: 62, up: _mig062_price_alerts },
+    { version: 63, up: _mig063_queue_tags },
+    { version: 64, up: _mig064_bed_mesh },
+    { version: 65, up: _mig065_filament_changes },
+    { version: 66, up: _mig066_price_source_url },
+    { version: 67, up: _mig067_community_sharing },
   ];
 
   for (const m of migrations) {
@@ -2925,6 +2930,71 @@ function _mig062_price_alerts() {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_pa_profile ON price_alerts(filament_profile_id);
+  `);
+}
+
+function _mig063_queue_tags() {
+  try { db.exec('ALTER TABLE queue_items ADD COLUMN required_tags TEXT'); } catch { /* exists */ }
+}
+
+function _mig064_bed_mesh() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bed_mesh_data (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id TEXT NOT NULL,
+      mesh_data TEXT NOT NULL,
+      mesh_rows INTEGER,
+      mesh_cols INTEGER,
+      z_min REAL,
+      z_max REAL,
+      z_mean REAL,
+      z_std_dev REAL,
+      source TEXT DEFAULT 'auto',
+      captured_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_bmd_printer ON bed_mesh_data(printer_id);
+  `);
+}
+
+function _mig065_filament_changes() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS filament_changes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id TEXT NOT NULL,
+      from_spool_id INTEGER,
+      to_spool_id INTEGER,
+      ams_unit INTEGER,
+      ams_tray INTEGER,
+      status TEXT NOT NULL DEFAULT 'pending',
+      current_step TEXT DEFAULT 'init',
+      error_message TEXT,
+      started_at TEXT DEFAULT (datetime('now')),
+      completed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_fc_printer ON filament_changes(printer_id);
+  `);
+}
+
+function _mig066_price_source_url() {
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN purchase_url TEXT'); } catch { /* exists */ }
+}
+
+function _mig067_community_sharing() {
+  const cols = ['shared_by TEXT', 'shared_from_profile_id INTEGER', 'rating_sum INTEGER DEFAULT 0', 'rating_count INTEGER DEFAULT 0'];
+  for (const col of cols) {
+    try { db.exec(`ALTER TABLE community_filaments ADD COLUMN ${col}`); } catch { /* exists */ }
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS community_ratings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_filament_id INTEGER NOT NULL REFERENCES community_filaments(id) ON DELETE CASCADE,
+      user_id TEXT,
+      rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+      comment TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(community_filament_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_cr_filament ON community_ratings(community_filament_id);
   `);
 }
 
@@ -6249,4 +6319,90 @@ export function seedKbData() {
   db.exec('DELETE FROM kb_accessories');
   db.exec('DELETE FROM kb_printers');
   _mig055_knowledge_base();
+}
+
+// ---- Bed Mesh Data ----
+export function addBedMesh(printerId, meshData, stats) {
+  const r = db.prepare(`INSERT INTO bed_mesh_data (printer_id, mesh_data, mesh_rows, mesh_cols, z_min, z_max, z_mean, z_std_dev, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    printerId, JSON.stringify(meshData), stats.rows, stats.cols, stats.zMin, stats.zMax, stats.zMean, stats.zStdDev, stats.source || 'auto'
+  );
+  return Number(r.lastInsertRowid);
+}
+export function getBedMeshHistory(printerId, limit = 10) {
+  return db.prepare('SELECT * FROM bed_mesh_data WHERE printer_id = ? ORDER BY captured_at DESC LIMIT ?').all(printerId, limit);
+}
+export function getLatestBedMesh(printerId) {
+  return db.prepare('SELECT * FROM bed_mesh_data WHERE printer_id = ? ORDER BY captured_at DESC LIMIT 1').get(printerId) || null;
+}
+export function deleteBedMesh(id) { db.prepare('DELETE FROM bed_mesh_data WHERE id = ?').run(id); }
+
+// ---- Filament Changes ----
+export function createFilamentChange(printerId, fromSpoolId, toSpoolId, amsUnit, amsTray) {
+  const r = db.prepare(`INSERT INTO filament_changes (printer_id, from_spool_id, to_spool_id, ams_unit, ams_tray, status, current_step)
+    VALUES (?, ?, ?, ?, ?, 'in_progress', 'pause')`).run(printerId, fromSpoolId || null, toSpoolId || null, amsUnit ?? null, amsTray ?? null);
+  return Number(r.lastInsertRowid);
+}
+export function updateFilamentChange(id, opts) {
+  const fields = []; const values = [];
+  for (const key of ['status', 'current_step', 'error_message', 'completed_at']) {
+    if (opts[key] !== undefined) { fields.push(`${key} = ?`); values.push(opts[key]); }
+  }
+  if (fields.length === 0) return;
+  values.push(id);
+  db.prepare(`UPDATE filament_changes SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+export function getActiveFilamentChange(printerId) {
+  return db.prepare("SELECT * FROM filament_changes WHERE printer_id = ? AND status = 'in_progress' ORDER BY started_at DESC LIMIT 1").get(printerId) || null;
+}
+export function getFilamentChangeHistory(printerId, limit = 20) {
+  return db.prepare('SELECT * FROM filament_changes WHERE printer_id = ? ORDER BY started_at DESC LIMIT ?').all(printerId, limit);
+}
+
+// ---- Community Sharing ----
+export function shareFilamentProfile(profileId, sharedBy) {
+  const profile = db.prepare(`SELECT fp.*, v.name as vendor_name FROM filament_profiles fp LEFT JOIN vendors v ON fp.vendor_id = v.id WHERE fp.id = ?`).get(profileId);
+  if (!profile) return null;
+  const existing = db.prepare('SELECT id FROM community_filaments WHERE shared_from_profile_id = ?').get(profileId);
+  if (existing) return Number(existing.id);
+  const r = db.prepare(`INSERT INTO community_filaments
+    (manufacturer, name, material, density, diameter, weight, extruder_temp, bed_temp, color_name, color_hex,
+     pressure_advance_k, max_volumetric_speed, flow_ratio, retraction_distance, retraction_speed,
+     source, shared_by, shared_from_profile_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user_shared', ?, ?)`).run(
+    profile.vendor_name || 'Unknown', profile.name, profile.material,
+    profile.density, profile.diameter, profile.spool_weight_g,
+    profile.nozzle_temp_min, profile.bed_temp_min,
+    profile.color_name, profile.color_hex,
+    profile.pressure_advance_k, profile.max_volumetric_speed,
+    profile.flow_ratio, profile.retraction_distance, profile.retraction_speed,
+    sharedBy || 'anonymous', profileId
+  );
+  return Number(r.lastInsertRowid);
+}
+export function rateCommunityFilament(filamentId, userId, rating, comment) {
+  db.prepare(`INSERT INTO community_ratings (community_filament_id, user_id, rating, comment)
+    VALUES (?, ?, ?, ?) ON CONFLICT(community_filament_id, user_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment, created_at = datetime('now')`)
+    .run(filamentId, userId || 'default', rating, comment || null);
+  const agg = db.prepare('SELECT SUM(rating) as s, COUNT(*) as c FROM community_ratings WHERE community_filament_id = ?').get(filamentId);
+  db.prepare('UPDATE community_filaments SET rating_sum = ?, rating_count = ? WHERE id = ?').run(agg.s || 0, agg.c || 0, filamentId);
+  return { rating_sum: agg.s || 0, rating_count: agg.c || 0, average: agg.c > 0 ? (agg.s / agg.c).toFixed(1) : null };
+}
+export function getCommunityFilamentRatings(filamentId) {
+  return db.prepare('SELECT * FROM community_ratings WHERE community_filament_id = ? ORDER BY created_at DESC').all(filamentId);
+}
+export function importCommunityToInventory(communityId, vendorId) {
+  const cf = db.prepare('SELECT * FROM community_filaments WHERE id = ?').get(communityId);
+  if (!cf) return null;
+  const r = db.prepare(`INSERT INTO filament_profiles
+    (vendor_id, name, material, color_name, color_hex, density, diameter, spool_weight_g,
+     nozzle_temp_min, bed_temp_min, pressure_advance_k, max_volumetric_speed,
+     flow_ratio, retraction_distance, retraction_speed)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    vendorId || null, cf.name || cf.material, cf.material,
+    cf.color_name, cf.color_hex, cf.density, cf.diameter, cf.weight,
+    cf.extruder_temp, cf.bed_temp, cf.pressure_advance_k,
+    cf.max_volumetric_speed, cf.flow_ratio, cf.retraction_distance, cf.retraction_speed
+  );
+  return Number(r.lastInsertRowid);
 }

@@ -429,7 +429,20 @@
     "import_format_detected": "Format detected",
     "import_duplicates": "{{count}} potential duplicates found",
     "import_rows": "rows found",
-    "import_more_rows": "more rows"
+    "import_more_rows": "more rows",
+    "print_labels": "Print Labels",
+    "purchase_url": "Purchase URL",
+    "check_price": "Check Price",
+    "enter_url_first": "Enter a URL first",
+    "price_found": "Price found",
+    "price_not_found": "Could not extract price from URL",
+    "share_to_community": "Share to Community",
+    "share_confirm": "Share \"{{name}}\" to the community database?",
+    "shared_success": "Profile shared to community",
+    "community_rating": "Rating",
+    "no_ratings": "No ratings yet",
+    "rating_saved": "Rating saved",
+    "shared_by": "Shared by"
   },
   "controls": {
     "title": "Bediening",
@@ -501,7 +514,28 @@
     "upload_failed": "Upload failed",
     "slice_failed": "Slicing failed",
     "slice_timeout": "Slicing timed out",
-    "file_uploaded": "File uploaded to printer"
+    "file_uploaded": "File uploaded to printer",
+    "bed_mesh": "Bed Level Mesh",
+    "bed_check": "Bed Check",
+    "capture_baseline": "Capture Baseline",
+    "bed_mesh_hint": "Click Refresh to load bed mesh data",
+    "no_bed_mesh": "No bed mesh data available",
+    "bed_clear": "Bed is clear",
+    "bed_not_clear": "Bed is not clear",
+    "confidence": "Confidence",
+    "capture_baseline_confirm": "Ensure the bed is empty and clean, then confirm to capture a baseline image.",
+    "baseline_saved": "Baseline captured successfully",
+    "filament_change": "Filament Change",
+    "start_filament_change": "Start Filament Change",
+    "fc_step_init": "Configure filament change parameters",
+    "fc_step_unload": "Unloading filament...",
+    "fc_step_load": "Loading new filament...",
+    "fc_step_resume": "Resuming print...",
+    "fc_start": "Start",
+    "fc_working": "Working",
+    "fc_next": "Next",
+    "fc_complete": "Filament change complete",
+    "fc_retry": "Retry"
   },
   "speed": {
     "label": "Snelheid:",
@@ -1295,7 +1329,8 @@
     "all_printers": "Toggle all",
     "insufficient_filament": "Insufficient filament",
     "filament_warning": "Filament warning",
-    "material_mismatch": "Material mismatch"
+    "material_mismatch": "Material mismatch",
+    "required_tags": "Required Printer Tags"
   },
   "tags": {
     "title": "Tags",

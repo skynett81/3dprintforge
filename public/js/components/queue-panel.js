@@ -251,11 +251,26 @@
   };
 
   // ═══ Add item dialog ═══
-  window._queueAddItem = function(queueId) {
+  window._queueAddItem = async function(queueId) {
     const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
     const printerChecks = printers.map(p =>
       `<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-printer-check" value="${p.id}"> ${p.name || p.id}</label>`
     ).join('');
+    // Fetch available tags for tag-based matching
+    let tagsHtml = '';
+    try {
+      const tRes = await fetch('/api/tags');
+      const tags = await tRes.json();
+      if (tags.length > 0) {
+        const tagChecks = tags.map(tg =>
+          `<label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-tag-check" value="${tg.id}"> <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tg.color || '#58a6ff'}"></span> ${tg.name}</label>`
+        ).join('');
+        tagsHtml = `<div class="form-group">
+          <label>${t('queue.required_tags')}</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:4px">${tagChecks}</div>
+        </div>`;
+      }
+    } catch (_) {}
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal-content" style="max-width:450px">
@@ -267,6 +282,7 @@
       </div>
       <div class="form-group"><label>${t('queue.required_material')}</label><input type="text" id="qi-material" class="form-input" placeholder="PLA" /></div>
       <div class="form-group"><label>${t('queue.notes')}</label><input type="text" id="qi-notes" class="form-input" /></div>
+      ${tagsHtml}
       ${printers.length > 0 ? `<div class="form-group">
         <label style="display:flex;align-items:center;gap:6px">${t('queue.select_printers')}
           <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:1px 6px" onclick="document.querySelectorAll('.qi-printer-check').forEach(c=>c.checked=!c.checked)">${t('queue.all_printers')}</button>
@@ -287,13 +303,15 @@
     if (!filename) return;
 
     const selectedPrinters = [...document.querySelectorAll('.qi-printer-check:checked')].map(c => c.value);
+    const selectedTags = [...document.querySelectorAll('.qi-tag-check:checked')].map(c => parseInt(c.value));
     const body = {
       filename,
       copies: parseInt(document.getElementById('qi-copies')?.value) || 1,
       priority: parseInt(document.getElementById('qi-priority')?.value) || 0,
       required_material: document.getElementById('qi-material')?.value?.trim() || null,
       notes: document.getElementById('qi-notes')?.value?.trim() || null,
-      target_printers: selectedPrinters.length > 0 ? selectedPrinters : null
+      target_printers: selectedPrinters.length > 0 ? selectedPrinters : null,
+      required_tags: selectedTags.length > 0 ? selectedTags : null
     };
 
     await fetch(`/api/queue/${queueId}/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

@@ -8,7 +8,7 @@ import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById } from './database.js';
 import { startNightlyBackup } from './backup.js';
-import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, dispatchWebhooksForEvent } from './api-routes.js';
+import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, dispatchWebhooksForEvent } from './api-routes.js';
 import { EcomLicenseManager } from './ecom-license.js';
 import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth, validateApiKey, getSessionUser } from './auth.js';
 import { PrinterManager } from './printer-manager.js';
@@ -174,6 +174,11 @@ function handleRequest(req, res) {
     return handleApiRequest(req, res);
   }
 
+  // Print labels route (not under /api/)
+  if (pathname.startsWith('/print/labels')) {
+    return handleApiRequest(req, res);
+  }
+
   let filePath = join(PUBLIC_DIR, req.url === '/' ? 'index.html' : pathname);
 
   if (!filePath.startsWith(PUBLIC_DIR)) {
@@ -296,7 +301,7 @@ setUpdater(updater);
 if (config.update?.autoCheck !== false) updater.start();
 
 // Queue Manager
-const queueManager = new QueueManager(manager, notifier, broadcastAll);
+const queueManager = new QueueManager(manager, notifier, broadcastAll, null); // failureDetector set below
 queueManager.init();
 setQueueManager(queueManager);
 
@@ -313,6 +318,9 @@ setEcomLicense(ecomLicense);
 // AI Failure Detection Service
 const failureDetector = new FailureDetectionService(manager, notifier, (type, data) => hub.broadcast(type, data));
 failureDetector.init();
+queueManager._failureDetector = failureDetector;
+setPrinterManager(manager);
+setFailureDetector(failureDetector);
 
 // Generate VAPID keys for Web Push if not yet set
 if (!getInventorySetting('vapid_public_key')) {

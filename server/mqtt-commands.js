@@ -74,6 +74,32 @@ export function buildGcodeMultiLine(lines) {
   return cmds;
 }
 
+export function buildFilamentUnloadSequence(tempC = 220) {
+  return [
+    `M104 S${tempC}`,
+    `M109 S${tempC}`,
+    'G92 E0',
+    'G1 E-50 F300',
+    'G1 E-100 F1000',
+    'M104 S0',
+  ].join('\n');
+}
+
+export function buildFilamentLoadSequence(tempC = 220, purgeLength = 30) {
+  return [
+    `M104 S${tempC}`,
+    `M109 S${tempC}`,
+    'G92 E0',
+    'G1 E80 F300',
+    `G1 E${purgeLength} F100`,
+    'G92 E0',
+  ].join('\n');
+}
+
+export function buildAmsTrayChangeCommand(trayId) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_change_filament', target: trayId } };
+}
+
 export function buildCommandFromClientMessage(msg) {
   switch (msg.action) {
     case 'pause': return buildPauseCommand();

@@ -1,11 +1,12 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 
 export class QueueManager {
-  constructor(printerManager, notifier, broadcastFn) {
+  constructor(printerManager, notifier, broadcastFn, failureDetector) {
     this._pm = printerManager;
     this._notifier = notifier;
     this._broadcast = broadcastFn;
+    this._failureDetector = failureDetector || null;
     this._activeJobs = new Map(); // printerId -> { queueId, itemId }
     this._cooldownTimers = new Map(); // printerId -> timeout
     this._dispatchInterval = null;
@@ -153,6 +154,17 @@ export class QueueManager {
         } catch (_) {}
       }
 
+      // Tag-based matching — printer must have ALL required tags
+      if (item.required_tags) {
+        try {
+          const requiredTags = typeof item.required_tags === 'string' ? JSON.parse(item.required_tags) : item.required_tags;
+          if (Array.isArray(requiredTags) && requiredTags.length > 0) {
+            const printerTags = getEntityTags('printer', id).map(t => t.id);
+            if (!requiredTags.every(tagId => printerTags.includes(tagId))) continue;
+          }
+        } catch (_) {}
+      }
+
       candidates.push(id);
     }
 
@@ -187,7 +199,23 @@ export class QueueManager {
     return bestId;
   }
 
-  _dispatchItem(queue, item, printerId) {
+  async _dispatchItem(queue, item, printerId) {
+    // Bed check before dispatch (if enabled)
+    if (this._failureDetector && getInventorySetting('bed_check_enabled') === '1') {
+      const printer = this._pm.printers.get(printerId);
+      if (printer?.config?.ip && printer?.config?.access_code) {
+        try {
+          const result = await this._failureDetector.checkBedClear(printerId, printer.config.ip, printer.config.access_code);
+          if (!result.clear) {
+            addQueueLog(queue.id, item.id, printerId, 'bed_not_clear', `Confidence: ${Math.round((result.confidence || 0) * 100)}%`);
+            this._broadcast('queue_update', { action: 'bed_not_clear', queueId: queue.id, printerId });
+            console.log(`[queue] Bed not clear for ${printerId}, skipping dispatch`);
+            return;
+          }
+        } catch (e) { console.warn(`[queue] Bed check failed for ${printerId}:`, e.message); }
+      }
+    }
+
     // Pre-print filament check — warn if spool has insufficient filament
     if (item.estimated_filament_g && item.estimated_filament_g > 0) {
       const printer = this._pm.printers.get(printerId);

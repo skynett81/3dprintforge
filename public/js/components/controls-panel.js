@@ -282,6 +282,37 @@
       <div id="ctrl-macros-list"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>
     </div>`;
 
+    // ===== CARD: Bed Level Mesh =====
+    if (meta?.id) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            ${t('controls.bed_mesh')}
+          </span>
+          <div style="display:flex;gap:4px">
+            <button class="form-btn form-btn-sm" data-ripple onclick="window._loadBedMesh('${esc(meta.id)}')">${t('controls.refresh')}</button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="window._captureBedCheck('${esc(meta.id)}')">${t('controls.bed_check')}</button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="window._captureBaseline('${esc(meta.id)}')">${t('controls.capture_baseline')}</button>
+          </div>
+        </div>
+        <div id="ctrl-bed-mesh"><span class="text-muted" style="font-size:0.8rem">${t('controls.bed_mesh_hint')}</span></div>
+      </div>`;
+    }
+
+    // ===== CARD: Filament Change =====
+    if (meta?.id) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
+          ${t('controls.filament_change')}
+        </div>
+        <div id="ctrl-filament-change">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._startFilamentChange('${esc(meta.id)}')">${t('controls.start_filament_change')}</button>
+        </div>
+      </div>`;
+    }
+
     // ===== CARD: SD Card Files =====
     if (meta?.id) {
       html += `<div class="ctrl-card ctrl-area-files">
@@ -695,6 +726,145 @@
         loadPrinterFiles(printerId);
       } catch (e) { showToast(e.message, 'error'); }
     }, { danger: true });
+  };
+
+  // ═══ Bed Mesh Heatmap ═══
+  window._loadBedMesh = async function(printerId) {
+    const el = document.getElementById('ctrl-bed-mesh');
+    if (!el) return;
+    el.innerHTML = '<span class="text-muted" style="font-size:0.8rem">Loading...</span>';
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/bed-mesh`);
+      const data = await res.json();
+      if (!data.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.no_bed_mesh')}</span>`; return; }
+      const latest = data[0];
+      const mesh = JSON.parse(latest.mesh_data);
+      const rows = latest.mesh_rows || mesh.length;
+      const cols = latest.mesh_cols || (mesh[0]?.length || 0);
+      if (!rows || !cols) { el.innerHTML = '<span class="text-muted" style="font-size:0.8rem">Invalid mesh</span>'; return; }
+      // Render canvas heatmap
+      const cellW = 40, cellH = 40;
+      const w = cols * cellW, h = rows * cellH;
+      let html = `<div style="overflow:auto"><canvas id="bed-mesh-canvas" width="${w}" height="${h}" style="border:1px solid var(--border-color);border-radius:4px"></canvas></div>`;
+      html += `<div style="font-size:0.75rem;margin-top:4px;display:flex;gap:12px;color:var(--text-secondary)">
+        <span>Z min: ${latest.z_min?.toFixed(3) ?? '--'}mm</span>
+        <span>Z max: ${latest.z_max?.toFixed(3) ?? '--'}mm</span>
+        <span>Z mean: ${latest.z_mean?.toFixed(3) ?? '--'}mm</span>
+        <span>${new Date(latest.captured_at).toLocaleString()}</span>
+      </div>`;
+      el.innerHTML = html;
+      // Draw heatmap
+      const canvas = document.getElementById('bed-mesh-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const zMin = latest.z_min ?? 0, zMax = latest.z_max ?? 1;
+      const range = Math.max(zMax - zMin, 0.001);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const z = mesh[r]?.[c] ?? 0;
+          const norm = (z - zMin) / range; // 0..1
+          // Blue(low) → Green(mid) → Red(high)
+          let red, green, blue;
+          if (norm < 0.5) { red = 0; green = Math.round(norm * 2 * 255); blue = Math.round((1 - norm * 2) * 255); }
+          else { red = Math.round((norm - 0.5) * 2 * 255); green = Math.round((1 - (norm - 0.5) * 2) * 255); blue = 0; }
+          ctx.fillStyle = `rgb(${red},${green},${blue})`;
+          ctx.fillRect(c * cellW, r * cellH, cellW - 1, cellH - 1);
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(z.toFixed(2), c * cellW + cellW / 2, r * cellH + cellH / 2 + 4);
+        }
+      }
+    } catch (e) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">Error: ${esc(e.message)}</span>`; }
+  };
+
+  // ═══ Bed Check AI ═══
+  window._captureBedCheck = async function(printerId) {
+    const el = document.getElementById('ctrl-bed-mesh');
+    if (!el) return;
+    el.innerHTML = '<span class="text-muted" style="font-size:0.8rem"><span class="spinner" style="width:12px;height:12px;margin-right:4px"></span>Checking bed...</span>';
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/bed-check`, { method: 'POST' });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const icon = data.clear ? '&#x2705;' : '&#x274C;';
+      const conf = data.confidence ? Math.round(data.confidence * 100) + '%' : '--';
+      el.innerHTML = `<div style="font-size:0.85rem;padding:8px">${icon} ${data.clear ? t('controls.bed_clear') : t('controls.bed_not_clear')} <span class="text-muted">(${t('controls.confidence')}: ${conf}, ${data.reason || ''})</span></div>`;
+    } catch (e) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">Error: ${esc(e.message)}</span>`; }
+  };
+
+  window._captureBaseline = async function(printerId) {
+    const confirmed = confirm(t('controls.capture_baseline_confirm'));
+    if (!confirmed) return;
+    const el = document.getElementById('ctrl-bed-mesh');
+    if (!el) return;
+    el.innerHTML = '<span class="text-muted" style="font-size:0.8rem"><span class="spinner" style="width:12px;height:12px;margin-right:4px"></span>Capturing baseline...</span>';
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/bed-check/baseline`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) showToast(t('controls.baseline_saved'), 'success');
+      else showToast(data.error || 'Error', 'error');
+      el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${data.ok ? t('controls.baseline_saved') : data.error}</span>`;
+    } catch (e) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">Error: ${esc(e.message)}</span>`; }
+  };
+
+  // ═══ Smart Filament Changer ═══
+  window._startFilamentChange = async function(printerId) {
+    const el = document.getElementById('ctrl-filament-change');
+    if (!el) return;
+    // Show wizard
+    el.innerHTML = `<div class="ctrl-fc-wizard">
+      <div style="font-size:0.85rem;margin-bottom:8px">${t('controls.fc_step_init')}</div>
+      <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap">
+        <div><label class="form-label">AMS Unit</label><input class="form-input form-input-sm" id="fc-ams-unit" type="number" value="0" min="0" max="3" style="width:60px"></div>
+        <div><label class="form-label">Tray</label><input class="form-input form-input-sm" id="fc-ams-tray" type="number" value="0" min="0" max="3" style="width:60px"></div>
+        <div><label class="form-label">${t('controls.temp_nozzle')}</label><input class="form-input form-input-sm" id="fc-temp" type="number" value="220" min="150" max="320" style="width:70px"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._doFilamentChange('${esc(printerId)}', 'start')">${t('controls.fc_start')}</button>
+      </div>
+    </div>`;
+  };
+
+  window._doFilamentChange = async function(printerId, step) {
+    const el = document.getElementById('ctrl-filament-change');
+    if (!el) return;
+    const body = { step };
+    if (step === 'start') {
+      body.ams_unit = parseInt(document.getElementById('fc-ams-unit')?.value) || 0;
+      body.ams_tray = parseInt(document.getElementById('fc-ams-tray')?.value) || 0;
+      body.temperature = parseInt(document.getElementById('fc-temp')?.value) || 220;
+    }
+    el.innerHTML = `<div style="font-size:0.8rem"><span class="spinner" style="width:12px;height:12px;margin-right:4px"></span>${t('controls.fc_working')}...</div>`;
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/change-filament`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      // Show next step
+      const nextSteps = { start: 'unload', unload: 'load', load: 'resume' };
+      const nextStep = nextSteps[step];
+      const stepLabels = {
+        unload: t('controls.fc_step_unload'),
+        load: t('controls.fc_step_load'),
+        resume: t('controls.fc_step_resume')
+      };
+      if (nextStep) {
+        el.innerHTML = `<div style="font-size:0.85rem;margin-bottom:8px">${stepLabels[nextStep]}</div>
+          <div style="display:flex;gap:6px">
+            <button class="form-btn form-btn-sm" data-ripple onclick="window._doFilamentChange('${esc(printerId)}', '${nextStep}')">${t('controls.fc_next')}: ${stepLabels[nextStep]}</button>
+            <button class="form-btn form-btn-sm" data-ripple style="color:var(--text-muted)" onclick="window._startFilamentChange('${esc(printerId)}')">${t('common.cancel')}</button>
+          </div>`;
+      } else {
+        el.innerHTML = `<div style="font-size:0.85rem;color:var(--accent-green)">${t('controls.fc_complete')}</div>`;
+        showToast(t('controls.fc_complete'), 'success');
+      }
+    } catch (e) {
+      el.innerHTML = `<div style="font-size:0.8rem;color:var(--accent-red)">Error: ${esc(e.message)}</div>
+        <button class="form-btn form-btn-sm" data-ripple style="margin-top:4px" onclick="window._startFilamentChange('${esc(printerId)}')">${t('controls.fc_retry')}</button>`;
+    }
   };
 
   // ═══ File Upload to Printer ═══

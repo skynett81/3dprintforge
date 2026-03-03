@@ -1,4 +1,4 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, importCommunityToInventory } from './database.js';
 import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -10,6 +10,7 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission } from './auth.js';
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
+import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand } from './mqtt-commands.js';
 import { getSlicerJobs as dbGetSlicerJobs, getSlicerJob as dbGetSlicerJob, deleteSlicerJob as dbDeleteSlicerJob } from './database.js';
 import { readFileSync as _readPkg } from 'node:fs';
 
@@ -83,6 +84,8 @@ let _guard = null;
 let _queueManager = null;
 let _timelapseService = null;
 let _ecomLicense = null;
+let _printerManager = null;
+let _failureDetector = null;
 
 // SpoolmanDB community database cache
 const _spoolmanDbCache = { manufacturers: null, all: null };
@@ -197,6 +200,14 @@ export function setTimelapseService(tl) {
 
 export function setEcomLicense(mgr) {
   _ecomLicense = mgr;
+}
+
+export function setPrinterManager(pm) {
+  _printerManager = pm;
+}
+
+export function setFailureDetector(fd) {
+  _failureDetector = fd;
 }
 
 function _broadcastInventory(action, entity, data) {
@@ -3602,6 +3613,195 @@ export async function handleApiRequest(req, res) {
           results.push({ printer_id: members[i].printer_id, delay_s: i * delay, start_order: i + 1 });
         }
         sendJson(res, { group: group.name, filename: body.filename, schedule: results });
+      });
+    }
+
+    // ---- Print Labels (HTML page) ----
+    if (method === 'GET' && path === '/print/labels') {
+      const ids = (url.searchParams.get('ids') || '').split(',').map(Number).filter(Boolean);
+      const format = url.searchParams.get('format') || 'thermal_40x30';
+      if (ids.length === 0) { res.writeHead(400, { 'Content-Type': 'text/plain' }); return res.end('No spool IDs'); }
+      const spools = ids.map(id => getSpool(id)).filter(Boolean);
+      if (spools.length === 0) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('No spools found'); }
+      const host = req.headers.host || 'localhost:3000';
+      const proto = req.socket?.encrypted ? 'https' : 'http';
+      const FORMATS = {
+        thermal_40x30: { width: '40mm', height: '30mm', pageSize: 'auto' },
+        thermal_50x30: { width: '50mm', height: '30mm', pageSize: 'auto' },
+        a4_grid_3x8:  { width: '63.5mm', height: '33.9mm', pageSize: 'A4' },
+        a4_grid_2x7:  { width: '99.1mm', height: '38.1mm', pageSize: 'A4' },
+      };
+      const fmt = FORMATS[format] || FORMATS.thermal_40x30;
+      const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      let labels = '';
+      for (const s of spools) {
+        const color = s.color_hex ? '#' + s.color_hex.replace('#','') : '#888';
+        labels += `<div class="label"><div class="label-qr" id="qr-${s.id}"></div><div class="label-info">
+          <div class="label-name">${esc(s.profile_name || s.material || '--')}</div>
+          <div>${esc(s.vendor_name || '')}</div>
+          <div><span class="cdot" style="background:${color}"></span> ${esc(s.color_name || '')}</div>
+          ${s.lot_number ? `<div>Lot: ${esc(s.lot_number)}</div>` : ''}
+          <div>${Math.round(s.initial_weight_g || 1000)}g</div>
+        </div></div>`;
+      }
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Spool Labels</title>
+<script src="/js/lib/qrcode-generator.js"><\/script>
+<style>@page{size:${fmt.pageSize};margin:5mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif}
+.grid{display:flex;flex-wrap:wrap;gap:0}.label{width:${fmt.width};height:${fmt.height};border:0.5px dashed #ccc;padding:2mm;display:flex;gap:2mm;page-break-inside:avoid;overflow:hidden}
+.label-qr{flex:0 0 auto;display:flex;align-items:center}.label-qr svg{width:${parseInt(fmt.height)-6}mm;height:${parseInt(fmt.height)-6}mm}
+.label-info{flex:1;display:flex;flex-direction:column;justify-content:center;font-size:7pt;line-height:1.3;overflow:hidden}
+.label-name{font-weight:700;font-size:8pt}.cdot{width:8px;height:8px;border-radius:50%;display:inline-block;border:0.5px solid #999}
+@media print{.label{border:none}.no-print{display:none}}</style></head><body>
+<div class="no-print" style="padding:10px;background:#f5f5f5;margin-bottom:10px"><button onclick="window.print()">Print</button> <span>${spools.length} labels (${format})</span></div>
+<div class="grid">${labels}</div>
+<script>document.querySelectorAll('[id^="qr-"]').forEach(el=>{const id=el.id.replace('qr-','');try{const q=qrcode(0,'M');q.addData('${proto}://${host}/#filament/spool/'+id);q.make();el.innerHTML=q.createSvgTag(3,2)}catch(e){el.textContent='QR'}})<\/script></body></html>`;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+
+    // ---- Bed Mesh Data ----
+    const bedMeshMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh$/);
+    if (bedMeshMatch && method === 'GET') {
+      const pid = bedMeshMatch[1];
+      return sendJson(res, { latest: getLatestBedMesh(pid), history: getBedMeshHistory(pid, 10) });
+    }
+    if (bedMeshMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const pid = bedMeshMatch[1];
+        if (!body.mesh_data || !Array.isArray(body.mesh_data)) return sendJson(res, { error: 'mesh_data (2D array) required' }, 400);
+        const flat = body.mesh_data.flat();
+        const mean = flat.reduce((s, v) => s + v, 0) / flat.length;
+        const stats = {
+          rows: body.mesh_data.length, cols: body.mesh_data[0]?.length || 0,
+          zMin: Math.min(...flat), zMax: Math.max(...flat), zMean: mean,
+          zStdDev: Math.sqrt(flat.reduce((s, v) => s + (v - mean) ** 2, 0) / flat.length),
+          source: body.source || 'manual'
+        };
+        const id = addBedMesh(pid, body.mesh_data, stats);
+        sendJson(res, { id, stats }, 201);
+      });
+    }
+    const bedMeshDelMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh\/(\d+)$/);
+    if (bedMeshDelMatch && method === 'DELETE') {
+      deleteBedMesh(parseInt(bedMeshDelMatch[2]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Bed Check AI ----
+    const bedCheckMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-check$/);
+    if (bedCheckMatch && method === 'POST') {
+      const pid = bedCheckMatch[1];
+      const printer = _printerManager?.printers?.get(pid);
+      if (!printer?.config?.ip) return sendJson(res, { error: 'Printer not found or no IP' }, 404);
+      const result = await _failureDetector.checkBedClear(pid, printer.config.ip, printer.config.access_code);
+      return sendJson(res, result);
+    }
+    const baselineMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-check\/baseline$/);
+    if (baselineMatch && method === 'POST') {
+      const pid = baselineMatch[1];
+      const printer = _printerManager?.printers?.get(pid);
+      if (!printer?.config?.ip) return sendJson(res, { error: 'Printer not found or no IP' }, 404);
+      const result = await _failureDetector.captureBaseline(pid, printer.config.ip, printer.config.access_code);
+      return sendJson(res, result);
+    }
+
+    // ---- Smart Filament Changer ----
+    const changeFilMatch = path.match(/^\/api\/printers\/([^/]+)\/change-filament$/);
+    if (changeFilMatch && method === 'GET') {
+      const pid = changeFilMatch[1];
+      return sendJson(res, { active: getActiveFilamentChange(pid), history: getFilamentChangeHistory(pid) });
+    }
+    if (changeFilMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const pid = changeFilMatch[1];
+        const printer = _printerManager?.printers?.get(pid);
+        if (!printer?.client) return sendJson(res, { error: 'Printer not connected' }, 400);
+        const { from_spool_id, to_spool_id, ams_unit, ams_tray, step } = body;
+        if (step === 'start') {
+          const id = createFilamentChange(pid, from_spool_id, to_spool_id, ams_unit, ams_tray);
+          const isAms = ams_unit !== undefined && ams_tray !== undefined;
+          if (isAms) {
+            printer.client.sendCommand(buildAmsTrayChangeCommand(ams_unit * 4 + ams_tray));
+            updateFilamentChange(id, { current_step: 'ams_changing' });
+          } else {
+            printer.client.sendCommand(buildPauseCommand());
+            updateFilamentChange(id, { current_step: 'paused' });
+          }
+          return sendJson(res, { id, status: 'in_progress' }, 201);
+        }
+        if (step === 'unload') {
+          const active = getActiveFilamentChange(pid);
+          if (!active) return sendJson(res, { error: 'No active change' }, 400);
+          const cmds = buildGcodeMultiLine(buildFilamentUnloadSequence(body.temp || 220));
+          for (const cmd of cmds) printer.client.sendCommand(cmd);
+          updateFilamentChange(active.id, { current_step: 'unloading' });
+          return sendJson(res, { step: 'unloading' });
+        }
+        if (step === 'load') {
+          const active = getActiveFilamentChange(pid);
+          if (!active) return sendJson(res, { error: 'No active change' }, 400);
+          const cmds = buildGcodeMultiLine(buildFilamentLoadSequence(body.temp || 220, body.purge_length || 30));
+          for (const cmd of cmds) printer.client.sendCommand(cmd);
+          if (active.to_spool_id) assignSpoolToSlot(active.to_spool_id, pid, active.ams_unit || 0, active.ams_tray || 0);
+          updateFilamentChange(active.id, { current_step: 'loading' });
+          return sendJson(res, { step: 'loading' });
+        }
+        if (step === 'resume') {
+          const active = getActiveFilamentChange(pid);
+          if (!active) return sendJson(res, { error: 'No active change' }, 400);
+          printer.client.sendCommand(buildResumeCommand());
+          updateFilamentChange(active.id, { status: 'completed', current_step: 'done', completed_at: new Date().toISOString() });
+          return sendJson(res, { step: 'completed' });
+        }
+        return sendJson(res, { error: 'Invalid step (start|unload|load|resume)' }, 400);
+      });
+    }
+
+    // ---- External Price Check ----
+    if (method === 'POST' && path === '/api/inventory/price-check') {
+      return readBody(req, async (body) => {
+        if (!body.url) return sendJson(res, { error: 'url required' }, 400);
+        const { extractPriceFromUrl } = await import('./price-checker.js');
+        const result = await extractPriceFromUrl(body.url);
+        if (result.price !== null && body.profile_id) {
+          addPriceEntry({ filament_profile_id: body.profile_id, vendor_id: body.vendor_id || null, price: result.price, currency: result.currency || 'USD', source_url: body.url });
+        }
+        return sendJson(res, result);
+      });
+    }
+
+    // ---- Community Sharing ----
+    if (method === 'POST' && path === '/api/community-filaments/share') {
+      return readBody(req, (body) => {
+        if (!body.profile_id) return sendJson(res, { error: 'profile_id required' }, 400);
+        const user = req._user;
+        const id = shareFilamentProfile(body.profile_id, user?.username || 'anonymous');
+        if (!id) return sendJson(res, { error: 'Profile not found or already shared' }, 400);
+        if (_broadcastFn) _broadcastFn('community_update', { action: 'shared', id });
+        sendJson(res, { id }, 201);
+      });
+    }
+    const cfRateMatch = path.match(/^\/api\/community-filaments\/(\d+)\/rate$/);
+    if (cfRateMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const id = parseInt(cfRateMatch[1]);
+        if (!body.rating || body.rating < 1 || body.rating > 5) return sendJson(res, { error: 'rating (1-5) required' }, 400);
+        const user = req._user;
+        const result = rateCommunityFilament(id, user?.username || 'default', body.rating, body.comment);
+        sendJson(res, result);
+      });
+    }
+    const cfRatingsMatch = path.match(/^\/api\/community-filaments\/(\d+)\/ratings$/);
+    if (cfRatingsMatch && method === 'GET') {
+      return sendJson(res, getCommunityFilamentRatings(parseInt(cfRatingsMatch[1])));
+    }
+    const cfImportMatch = path.match(/^\/api\/community-filaments\/(\d+)\/import$/);
+    if (cfImportMatch && method === 'POST') {
+      return readBody(req, (body) => {
+        const profileId = importCommunityToInventory(parseInt(cfImportMatch[1]), body.vendor_id);
+        if (!profileId) return sendJson(res, { error: 'Community filament not found' }, 404);
+        if (_broadcastFn) _broadcastFn('inventory_update', { action: 'add', entity: 'profile', id: profileId });
+        sendJson(res, { profile_id: profileId }, 201);
       });
     }
 

@@ -56,6 +56,60 @@ export class FailureDetectionService {
     for (const [pid] of this._monitors) this.stopMonitoring(pid);
   }
 
+  async checkBedClear(printerId, printerIp, accessCode) {
+    const framePath = join(FRAMES_DIR, `${printerId}_bedcheck_${Date.now()}.jpg`);
+    try {
+      await this._captureFrame(printerIp, accessCode, framePath);
+      if (!existsSync(framePath)) return { clear: false, reason: 'frame_capture_failed' };
+
+      const frame = readFileSync(framePath);
+      const stats = this._getFrameStats(frame);
+      try { unlinkSync(framePath); } catch {}
+
+      // Load baseline stats
+      const baselineJson = getInventorySetting(`bed_check_baseline_${printerId}`);
+      let baseline = null;
+      try { baseline = baselineJson ? JSON.parse(baselineJson) : null; } catch {}
+
+      if (!baseline) {
+        const isClear = stats.entropy < 5.5 && stats.variance < 3000;
+        return { clear: isClear, confidence: isClear ? 0.6 : 0.4, reason: isClear ? 'low_entropy_heuristic' : 'uncertain_no_baseline', stats: { entropy: +stats.entropy.toFixed(2), variance: +stats.variance.toFixed(0) } };
+      }
+
+      const entropyDiff = Math.abs(stats.entropy - baseline.entropy);
+      const varianceDiff = Math.abs(stats.variance - baseline.variance) / Math.max(baseline.variance, 1);
+      const highRatioDiff = Math.abs(stats.highRatio - baseline.highRatio);
+      const similarity = 1 - (entropyDiff / 4 + varianceDiff / 2 + highRatioDiff) / 3;
+      const isClear = similarity > 0.7;
+
+      return { clear: isClear, confidence: Math.min(Math.max(similarity, 0.1), 0.95), reason: isClear ? 'matches_baseline' : 'differs_from_baseline', stats: { entropy: +stats.entropy.toFixed(2), variance: +stats.variance.toFixed(0), similarity: +similarity.toFixed(3) } };
+    } catch (e) {
+      try { unlinkSync(framePath); } catch {}
+      return { clear: false, reason: 'error', error: e.message };
+    }
+  }
+
+  async captureBaseline(printerId, printerIp, accessCode) {
+    const framePath = join(FRAMES_DIR, `${printerId}_baseline_${Date.now()}.jpg`);
+    try {
+      await this._captureFrame(printerIp, accessCode, framePath);
+      if (!existsSync(framePath)) return { ok: false, error: 'capture_failed' };
+
+      const frame = readFileSync(framePath);
+      const stats = this._getFrameStats(frame);
+      const { setInventorySetting: setSetting } = await import('./database.js');
+      setSetting(`bed_check_baseline_${printerId}`, JSON.stringify({
+        entropy: stats.entropy, variance: stats.variance, highRatio: stats.highRatio,
+        lowRatio: stats.lowRatio, mean: stats.mean, captured_at: new Date().toISOString()
+      }));
+      try { unlinkSync(framePath); } catch {}
+      return { ok: true, stats: { entropy: +stats.entropy.toFixed(2), variance: +stats.variance.toFixed(0) } };
+    } catch (e) {
+      try { unlinkSync(framePath); } catch {}
+      return { ok: false, error: e.message };
+    }
+  }
+
   async _captureAndAnalyze(printerId, printerIp, accessCode) {
     const framePath = join(FRAMES_DIR, `${printerId}_${Date.now()}.jpg`);
 
