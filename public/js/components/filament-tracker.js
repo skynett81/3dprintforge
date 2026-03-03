@@ -50,26 +50,28 @@
   // ═══ Tab config ═══
   const TAB_CONFIG = {
     inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'] },
+    database:  { label: 'filament.tab_database',  modules: ['db-hero', 'db-browser'] },
     drying:    { label: 'filament.tab_drying',    modules: ['active-drying', 'drying-history', 'drying-presets'] },
     tools:     { label: 'filament.tab_tools',     modules: ['checked-out', 'color-card', 'nfc-manager', 'spool-timeline', 'material-ref'] },
-    manage:    { label: 'filament.tab_manage',    modules: ['vendors-list', 'filament-profiles-list', 'locations-list', 'locations-dnd'] },
-    stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'usage-predictions', 'cost-estimation', 'usage-history'] }
+    manage:    { label: 'filament.tab_manage',    modules: ['vendors-list', 'filament-profiles-list', 'locations-list', 'tags-list', 'price-watch', 'locations-dnd'] },
+    stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
   const MODULE_SIZE = {
     'spool-summary': 'full', 'active-filament': 'full',
     'low-stock-alert': 'full', 'spool-grid': 'full',
+    'db-hero': 'full', 'db-browser': 'full',
     'active-drying': 'full', 'drying-history': 'full', 'drying-presets': 'full',
     'checked-out': 'full', 'color-card': 'full', 'nfc-manager': 'full', 'spool-timeline': 'full', 'material-ref': 'full',
-    'vendors-list': 'full', 'filament-profiles-list': 'full', 'locations-list': 'full', 'locations-dnd': 'full',
+    'vendors-list': 'full', 'filament-profiles-list': 'full', 'locations-list': 'full', 'tags-list': 'full', 'price-watch': 'full', 'locations-dnd': 'full',
     'type-breakdown': 'half', 'brand-breakdown': 'half',
     'cost-summary': 'half', 'stock-health': 'half',
-    'usage-predictions': 'full', 'cost-estimation': 'full', 'usage-history': 'full'
+    'restock-suggestions': 'full', 'usage-predictions': 'full', 'cost-estimation': 'full', 'usage-history': 'full'
   };
 
   const STORAGE_PREFIX = 'filament-module-order-';
   const LOCK_KEY = 'filament-layout-locked';
 
-  const _MOD_VER = 9;
+  const _MOD_VER = 10;
   if (localStorage.getItem('filament-mod-ver') !== String(_MOD_VER)) {
     for (const tab of Object.keys(TAB_CONFIG)) localStorage.removeItem(STORAGE_PREFIX + tab);
     localStorage.setItem('filament-mod-ver', String(_MOD_VER));
@@ -93,7 +95,30 @@
   let _filterPrinter = 'all';
   let _filterFavorites = false;
   let _filterColorFamily = '';
+  let _filterTag = '';
+  let _tags = [];
   let _viewMode = localStorage.getItem('inv-view-mode') || 'grid';
+
+  // ═══ Filament Database state ═══
+  let _dbFilaments = [];
+  let _dbTotal = 0;
+  let _dbPage = 0;
+  let _dbPageSize = 50;
+  let _dbSearch = '';
+  let _dbFilterBrand = '';
+  let _dbFilterMaterial = '';
+  let _dbFilterCategory = '';
+  let _dbFilterHasK = false;
+  let _dbFilterHasTd = false;
+  let _dbSort = 'manufacturer';
+  let _dbSortDir = 'ASC';
+  let _dbViewMode = localStorage.getItem('db-view-mode') || 'cards';
+  let _dbStats = null;
+  let _dbBrands = [];
+  let _dbMaterials = [];
+  let _dbCompare = [];
+  let _dbLoaded = false;
+  let _dbSearchTimer = null;
 
   // ═══ Color family classification ═══
   const COLOR_FAMILIES = {
@@ -253,6 +278,10 @@
       </div>`;
 
       h += `<div class="inv-filter-bar">
+        <label class="bulk-select-all" title="${t('filament.bulk_select_all')}">
+          <input type="checkbox" id="bulk-select-all-cb" onchange="window._bulkSelectAll(this.checked)">
+          <span>${t('filament.bulk_select_all')}</span>
+        </label>
         <input class="form-input form-input-sm inv-search-input" type="text" placeholder="${t('filament.search_placeholder')}" value="${esc(_searchQuery)}" oninput="window._invSearch(this.value)">
         <button class="inv-filter-chip ${_filterFavorites ? 'active' : ''}" onclick="window._invToggleFavorites()" title="${t('filament.favorites_only')}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="${_filterFavorites ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -269,6 +298,10 @@
           <option value="">${t('filament.filter_all')} ${t('filament.filter_location')}</option>
           ${[...new Set(spools.map(s => s.location).filter(Boolean))].sort().map(l => `<option value="${l}" ${l === _filterLocation ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
+        ${_tags.length ? `<select class="form-input form-input-sm" onchange="window._invFilterTag(this.value)">
+          <option value="">${t('filament.all_tags')}</option>
+          ${_tags.map(tg => `<option value="${tg.id}" ${String(tg.id) === _filterTag ? 'selected' : ''}>${esc(tg.name)}</option>`).join('')}
+        </select>` : ''}
         <select class="form-input form-input-sm" onchange="window._invSort(this.value)">
           <option value="recent" ${_sortBy === 'recent' ? 'selected' : ''}>${t('filament.sort_recent')}</option>
           <option value="name" ${_sortBy === 'name' ? 'selected' : ''}>${t('filament.sort_name')}</option>
@@ -316,6 +349,7 @@
         if (_filterVendor && s.vendor_name !== _filterVendor) return false;
         if (_filterLocation && s.location !== _filterLocation) return false;
         if (_filterColorFamily && _classifyColor(s.color_hex) !== _filterColorFamily) return false;
+        if (_filterTag && !(s.tags && s.tags.some(tg => String(tg.id) === _filterTag))) return false;
         if (_searchQuery) {
           const q = _searchQuery.toLowerCase();
           const fields = [s.profile_name, s.material, s.vendor_name, s.color_name, s.lot_number, s.location, s.comment, s.article_number].filter(Boolean);
@@ -378,9 +412,11 @@
       if (_vendors.length === 0) {
         h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_vendors')}</p>`;
       } else {
-        h += '<table class="data-table"><thead><tr><th>' + t('filament.vendor_name') + '</th><th>' + t('filament.vendor_website') + '</th><th>' + t('filament.vendor_empty_spool') + '</th><th></th></tr></thead><tbody>';
+        const canWrite = !window._can || window._can('filament');
+        h += `<table class="data-table"><thead><tr>${canWrite ? `<th style="width:30px"><input type="checkbox" class="fil-bulk-check" onchange="window._bulkSelectAllVendors(this.checked)" title="${t('filament.bulk_select_all')}"></th>` : ''}<th>${t('filament.vendor_name')}</th><th>${t('filament.vendor_website')}</th><th>${t('filament.vendor_empty_spool')}</th><th></th></tr></thead><tbody>`;
         for (const v of _vendors) {
-          h += `<tr>
+          h += `<tr data-vendor-id="${v.id}" class="${_selectedVendors.has(v.id) ? 'bulk-row-selected' : ''}">
+            ${canWrite ? `<td><input type="checkbox" class="fil-bulk-check fil-vendor-check" ${_selectedVendors.has(v.id) ? 'checked' : ''} onchange="window.toggleVendorSelect(${v.id}, this)"></td>` : ''}
             <td><strong>${esc(v.name)}</strong></td>
             <td>${v.website ? `<a href="${esc(v.website)}" target="_blank" class="text-muted">${esc(v.website)}</a>` : '--'}</td>
             <td>${v.empty_spool_weight_g ? v.empty_spool_weight_g + 'g' : '--'}</td>
@@ -394,7 +430,7 @@
       }
 
       h += `<div id="vendor-form-container"></div>`;
-      h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddVendorForm()">+ ${t('filament.vendor_add')}</button>`;
+      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddVendorForm()">+ ${t('filament.vendor_add')}</button>`;
       return h;
     },
 
@@ -407,12 +443,14 @@
       if (_profiles.length === 0) {
         h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_profiles')}</p>`;
       } else {
+        const canWrite = !window._can || window._can('filament');
         h += '<div class="filament-grid">';
         for (const p of _profiles) {
           const color = hexToRgb(p.color_hex);
-          h += `<div class="filament-card inv-spool-card inv-profile-card">
+          h += `<div class="filament-card inv-spool-card inv-profile-card ${_selectedProfiles.has(p.id) ? 'filament-card-selected' : ''}" data-profile-id="${p.id}">
             <div class="fil-spool-top">
               <div class="fil-spool-identity">
+                ${canWrite ? `<input type="checkbox" class="fil-bulk-check fil-profile-check" ${_selectedProfiles.has(p.id) ? 'checked' : ''} onclick="window.toggleProfileSelect(${p.id}, this)">` : ''}
                 <span class="filament-color-swatch" style="background:${color}"></span>
                 <div>
                   <strong>${esc(p.name)}</strong>
@@ -439,7 +477,7 @@
       }
 
       h += `<div id="profile-form-container"></div>`;
-      h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddProfileForm()">+ ${t('filament.profile_add')}</button>`;
+      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddProfileForm()">+ ${t('filament.profile_add')}</button>`;
       return h;
     },
 
@@ -467,6 +505,46 @@
 
       h += `<div id="location-form-container"></div>`;
       h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddLocationForm()">+ ${t('filament.location_add')}</button>`;
+      return h;
+    },
+
+    'tags-list': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        ${t('filament.tags_title')}
+      </div>`;
+
+      if (_tags.length === 0) {
+        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_tags')}</p>`;
+      } else {
+        h += '<div class="inv-location-list">';
+        for (const tag of _tags) {
+          const dot = tag.color ? `<span class="fil-tag-dot" style="background:${esc(tag.color)}"></span>` : '';
+          h += `<div class="fil-tag-item">
+            ${dot}
+            <span style="flex:1"><strong>${esc(tag.name)}</strong> <span class="text-muted" style="font-size:0.75rem">(${esc(tag.category || 'custom')})</span></span>
+            <span class="text-muted" style="font-size:0.75rem">${t('filament.tag_usage_count', { count: tag.usage_count || 0 })}</span>
+            <div>
+              <button class="filament-edit-btn" onclick="showEditTagForm(${tag.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="filament-delete-btn" onclick="deleteTagItem(${tag.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>`;
+        }
+        h += '</div>';
+      }
+
+      h += `<div id="tag-form-container"></div>`;
+      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="showAddTagForm()">+ ${t('filament.tag_add')}</button>`;
+      return h;
+    },
+
+    'price-watch': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        ${t('filament.price_watch_title')}
+      </div>`;
+      h += `<div id="price-watch-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadPriceWatch(), 0);
       return h;
     },
 
@@ -619,6 +697,16 @@
         <span class="fil-health-avg-label">${t('filament.avg_remaining')}</span>
         <span class="fil-health-avg-value" style="color:${avg > 50 ? 'var(--accent-green)' : avg > 20 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${avg}%</span>
       </div>`;
+      return h;
+    },
+
+    'restock-suggestions': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        ${t('filament.restock_title')}
+      </div>`;
+      h += `<div id="restock-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      setTimeout(() => _loadRestockSuggestions(), 0);
       return h;
     },
 
@@ -816,6 +904,96 @@
       h += `<div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       setTimeout(() => _loadMaterials(), 0);
       return h;
+    },
+
+    // ── Filament Database modules ──
+    'db-hero': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        ${t('filament.tab_database')}
+      </div>`;
+      if (!_dbStats) {
+        h += '<div id="db-hero-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>';
+        setTimeout(() => _loadDbStats(), 0);
+        return h;
+      }
+      h += `<div class="fil-hero-grid">
+        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', _dbStats.total.toLocaleString(), t('filament.db_total'), '#1279ff')}
+        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', _dbStats.brands.toLocaleString(), t('filament.db_brands'), '#00e676')}
+        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', _dbStats.materials.toLocaleString(), t('filament.db_materials'), '#f0883e')}
+        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', _dbStats.with_k_value.toLocaleString(), t('filament.db_with_k'), '#9b4dff')}
+        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>', _dbStats.with_td.toLocaleString(), t('filament.db_with_td'), '#e3b341')}
+      </div>`;
+      return h;
+    },
+
+    'db-browser': () => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        ${t('filament.db_search_placeholder')}
+      </div>`;
+      // Search bar
+      h += `<div class="db-search-bar">
+        <input class="form-input" type="text" placeholder="${t('filament.db_search_placeholder')}" value="${esc(_dbSearch)}" oninput="window._dbOnSearch(this.value)" id="db-search-input">
+      </div>`;
+      // Filter row
+      h += '<div class="db-filters">';
+      h += `<select class="form-input form-input-sm" onchange="window._dbSetBrand(this.value)" style="max-width:180px"><option value="">${t('filament.filter_all_brands')}</option>`;
+      for (const b of _dbBrands) h += `<option value="${esc(b)}"${b===_dbFilterBrand?' selected':''}>${esc(b)}</option>`;
+      h += '</select>';
+      h += `<select class="form-input form-input-sm" onchange="window._dbSetMaterial(this.value)" style="max-width:140px"><option value="">${t('filament.filter_all_materials')}</option>`;
+      for (const m of _dbMaterials) h += `<option value="${esc(m)}"${m===_dbFilterMaterial?' selected':''}>${esc(m)}</option>`;
+      h += '</select>';
+      h += `<select class="form-input form-input-sm" onchange="window._dbSetCategory(this.value)" style="max-width:140px"><option value="">${t('filament.db_all_categories')}</option>`;
+      for (const c of ['standard','engineering','composite','flexible','specialty','support']) h += `<option value="${c}"${c===_dbFilterCategory?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`;
+      h += '</select>';
+      h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterHasK?'checked':''} onchange="window._dbToggleK(this.checked)"> K-Value</label>`;
+      h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterHasTd?'checked':''} onchange="window._dbToggleTd(this.checked)"> TD</label>`;
+      h += '</div>';
+      // Toolbar
+      h += '<div class="db-toolbar">';
+      h += '<div class="db-view-toggle">';
+      for (const [mode, icon] of [['cards','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>'],['table','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>']]) {
+        h += `<button class="form-btn form-btn-sm${_dbViewMode===mode?' active':''}" onclick="window._dbSetView('${mode}')" title="${mode}">${icon}</button>`;
+      }
+      h += '</div>';
+      h += `<select class="form-input form-input-sm" onchange="window._dbSetSort(this.value)" style="max-width:160px">`;
+      for (const [val, label] of [['manufacturer','Brand'],['name','Name'],['material','Material'],['extruder_temp','Temp'],['pressure_advance_k','K-Value'],['td_value','TD Value'],['price','Price']]) {
+        h += `<option value="${val}"${_dbSort===val?' selected':''}>${label}</option>`;
+      }
+      h += '</select>';
+      h += `<button class="form-btn form-btn-sm" onclick="window._dbToggleSortDir()" title="Sort direction">${_dbSortDir==='ASC'?'&#x2191;':'&#x2193;'}</button>`;
+      h += `<span class="db-results-count">${_dbTotal.toLocaleString()} ${t('filament.db_results')}</span>`;
+      h += '</div>';
+      // Results
+      h += '<div id="db-results-container">';
+      if (!_dbLoaded) {
+        h += '<span class="text-muted" style="font-size:0.8rem">Loading...</span>';
+        setTimeout(() => _loadDbFilaments(), 0);
+      } else if (_dbFilaments.length === 0) {
+        h += `<p class="text-muted" style="font-size:0.85rem;padding:20px 0;text-align:center">${t('filament.db_no_results')}</p>`;
+      } else {
+        h += _renderDbResults();
+      }
+      h += '</div>';
+      // Pagination
+      if (_dbLoaded && _dbTotal > _dbPageSize) {
+        const totalPages = Math.ceil(_dbTotal / _dbPageSize);
+        h += '<div class="db-pagination">';
+        h += `<button class="form-btn form-btn-sm" onclick="window._dbPrevPage()" ${_dbPage===0?'disabled':''}>&#x2190;</button>`;
+        h += `<span class="db-page-info">${_dbPage+1} / ${totalPages}</span>`;
+        h += `<button class="form-btn form-btn-sm" onclick="window._dbNextPage()" ${_dbPage>=totalPages-1?'disabled':''}>&#x2192;</button>`;
+        h += '</div>';
+      }
+      // Compare bar
+      if (_dbCompare.length > 0) {
+        h += `<div class="db-compare-bar">
+          <span>${_dbCompare.length} ${t('filament.db_compare')}</span>
+          <button class="form-btn form-btn-sm" onclick="window._dbShowCompare()">${t('filament.db_compare')}</button>
+          <button class="form-btn form-btn-sm" onclick="window._dbClearCompare()">${t('filament.db_clear_compare')}</button>
+        </div>`;
+      }
+      return h;
     }
   };
 
@@ -901,6 +1079,9 @@
             <button class="filament-edit-btn" onclick="showStartDryingDialog(${s.id})" title="${t('filament.start_drying')}" data-tooltip="${t('filament.start_drying')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
             </button>
+            <button class="filament-edit-btn" onclick="showSpoolTagAssign(${s.id})" title="${t('filament.tags_title')}" data-tooltip="${t('filament.tags_title')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </button>
             <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -924,6 +1105,7 @@
           <span>${footerLeft}</span>
           <span>${s.cost ? formatCurrency(s.cost) : ''}</span>
         </div>
+        ${s.tags && s.tags.length ? `<div class="fil-tag-badges">${s.tags.map(tg => `<span class="fil-tag-badge" style="--tag-color:${esc(tg.color || '#58a6ff')}">${esc(tg.name)}</span>`).join('')}</div>` : ''}
         ${s.extra_fields ? renderExtraFields(s.extra_fields) : ''}
         <div id="spool-edit-${s.id}" style="display:none"></div>
       </div>`;
@@ -1119,14 +1301,15 @@
 
     try {
       // Fetch all data in parallel
-      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes] = await Promise.all([
+      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes] = await Promise.all([
         fetch('/api/inventory/spools'),
         fetch('/api/inventory/vendors'),
         fetch('/api/inventory/filaments'),
         fetch('/api/inventory/locations'),
         fetch('/api/inventory/drying/sessions/active'),
         fetch('/api/inventory/drying/presets'),
-        fetch('/api/inventory/drying/status')
+        fetch('/api/inventory/drying/status'),
+        fetch('/api/tags')
       ]);
       _spools = await spoolsRes.json();
       _vendors = await vendorsRes.json();
@@ -1135,6 +1318,7 @@
       _dryingSessions = await dryingActiveRes.json();
       _dryingPresets = await dryingPresetsRes.json();
       _dryingStatus = await dryingStatusRes.json();
+      _tags = await tagsRes.json();
       // Clear old drying timers
       for (const tid of Object.values(_dryingTimers)) clearInterval(tid);
       _dryingTimers = {};
@@ -1146,13 +1330,13 @@
         ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
         : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="tele-top-bar">
-        <button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
+        ${window._can && window._can('filament') ? `<button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>${t('filament.add_spool')}</span>
-        </button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="showSpoolmanDbBrowser()" style="display:flex;align-items:center;gap:4px" title="${t('filament.browse_spoolmandb')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <span>SpoolmanDB</span>
+        </button>` : ''}
+        <button class="form-btn form-btn-sm" data-ripple onclick="switchFilamentTab('database')" style="display:flex;align-items:center;gap:4px" title="${t('filament.tab_database')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <span>${t('filament.tab_database')}</span>
         </button>
         <div class="inv-export-dropdown">
           <button class="form-btn form-btn-sm" data-ripple onclick="this.nextElementSibling.classList.toggle('show')" style="display:flex;align-items:center;gap:4px">
@@ -1335,6 +1519,7 @@
   window._invToggleArchived = function(v) { _showArchived = v; _currentPage = 0; loadFilament(); };
   window._invToggleFavorites = function() { _filterFavorites = !_filterFavorites; _currentPage = 0; loadFilament(); };
   window._invFilterColor = function(v) { _filterColorFamily = v; _currentPage = 0; loadFilament(); };
+  window._invFilterTag = function(v) { _filterTag = v; _currentPage = 0; loadFilament(); };
   window._invViewMode = function(mode) { _viewMode = mode; localStorage.setItem('inv-view-mode', mode); loadFilament(); };
 
   window.toggleFavorite = async function(spoolId) {
@@ -2637,6 +2822,109 @@
     } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
   }
 
+  async function _loadPriceWatch() {
+    const container = document.getElementById('price-watch-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/price-alerts');
+      const alerts = await res.json();
+      let h = '';
+      if (alerts.length > 0) {
+        h += '<div class="inv-location-list">';
+        for (const a of alerts) {
+          const colorDot = a.color_hex ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#${a.color_hex};border:1px solid var(--border-color)"></span>` : '';
+          const statusIcon = a.triggered ? `<span style="color:var(--accent-green,#3fb950)" title="${t('filament.price_alert_triggered')}">&#10003;</span>` : '';
+          const priceInfo = a.latest_price != null ? `<span class="text-muted">${t('filament.price_current')}: ${a.latest_price}</span>` : '';
+          h += `<div class="fil-tag-item">
+            ${colorDot}
+            <span style="flex:1">
+              <strong>${esc(a.profile_name || '?')}</strong>
+              ${a.vendor_name ? '<span class="text-muted">(' + esc(a.vendor_name) + ')</span>' : ''}
+              <br><span class="text-muted" style="font-size:0.75rem">${t('filament.price_target')}: ${a.target_price} ${esc(a.currency || '')} ${priceInfo}</span>
+            </span>
+            ${statusIcon}
+            ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" class="filament-edit-btn" title="${t('filament.price_source')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
+            <button class="filament-delete-btn" onclick="_deletePriceAlert(${a.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>`;
+        }
+        h += '</div>';
+      } else {
+        h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.price_watch_none')}</p>`;
+      }
+      h += `<div id="price-alert-form-container"></div>`;
+      if (window._can && window._can('filament')) h += `<button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="_showAddPriceAlert()">+ ${t('filament.price_alert_add')}</button>`;
+      container.innerHTML = h;
+    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+  }
+
+  window._showAddPriceAlert = function() {
+    const container = document.getElementById('price-alert-form-container');
+    if (!container) return;
+    const profiles = _filamentProfiles || [];
+    let opts = profiles.map(p => `<option value="${p.id}">${esc(p.name)} (${esc(p.material || '')})</option>`).join('');
+    container.innerHTML = `<div class="inv-inline-form" style="margin-top:8px">
+      <select class="form-input form-input-sm" id="pa-profile"><option value="">-- ${t('filament.profile_name')} --</option>${opts}</select>
+      <input class="form-input form-input-sm" id="pa-target" type="number" step="0.01" placeholder="${t('filament.price_target')}" style="width:100px">
+      <input class="form-input form-input-sm" id="pa-currency" type="text" value="USD" placeholder="USD" style="width:60px">
+      <input class="form-input form-input-sm" id="pa-url" type="url" placeholder="${t('filament.price_source_url')}" style="flex:1">
+      <button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="_savePriceAlert()">${t('filament.tag_save')}</button>
+    </div>`;
+  };
+
+  window._savePriceAlert = async function() {
+    const profileId = document.getElementById('pa-profile')?.value;
+    const target = parseFloat(document.getElementById('pa-target')?.value);
+    const currency = document.getElementById('pa-currency')?.value || 'USD';
+    const url = document.getElementById('pa-url')?.value || '';
+    if (!profileId || !target) return;
+    await fetch('/api/price-alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filament_profile_id: parseInt(profileId), target_price: target, currency, source_url: url || null }) });
+    _loadPriceWatch();
+  };
+
+  window._deletePriceAlert = async function(id) {
+    if (!confirm(t('filament.price_alert_delete_confirm'))) return;
+    await fetch('/api/price-alerts/' + id, { method: 'DELETE' });
+    _loadPriceWatch();
+  };
+
+  async function _loadRestockSuggestions() {
+    const container = document.getElementById('restock-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/inventory/restock?days=30');
+      const data = await res.json();
+      if (!data || data.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.restock_none')}</p>`;
+        return;
+      }
+      let h = `<table class="fil-drying-presets-table"><thead><tr>
+        <th></th>
+        <th>${t('filament.profile_name')}</th>
+        <th>${t('filament.filter_material')}</th>
+        <th>${t('filament.restock_stock')}</th>
+        <th>${t('filament.restock_days_left')}</th>
+        <th>${t('filament.restock_order')}</th>
+        <th>${t('filament.restock_urgency')}</th>
+      </tr></thead><tbody>`;
+      for (const s of data) {
+        const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
+        const urgencyColors = { critical: '#f85149', high: '#f0883e', medium: '#d29922', low: '#58a6ff' };
+        const uColor = urgencyColors[s.urgency] || '#8b949e';
+        h += `<tr>
+          <td>${colorDot}</td>
+          <td>${esc(s.profile_name || '?')} ${s.vendor_name ? '<span class="text-muted">(' + esc(s.vendor_name) + ')</span>' : ''}</td>
+          <td>${esc(s.material || '')}</td>
+          <td>${s.current_stock_g}g <span class="text-muted">(${s.current_spool_count} ${s.current_spool_count === 1 ? 'spool' : 'spools'})</span></td>
+          <td style="color:${s.days_until_out != null && s.days_until_out <= 14 ? uColor : ''};font-weight:${s.days_until_out != null && s.days_until_out <= 7 ? '700' : '400'}">${s.days_until_out != null ? s.days_until_out + 'd' : '-'}</td>
+          <td>${s.spools_to_order > 0 ? `<strong>${s.spools_to_order}</strong> ${s.spools_to_order === 1 ? 'spool' : 'spools'}${s.est_cost ? ` <span class="text-muted">(~${s.est_cost})</span>` : ''}` : '-'}</td>
+          <td><span style="background:${uColor};color:#fff;padding:1px 8px;border-radius:4px;font-size:0.7rem;text-transform:uppercase">${s.urgency}</span></td>
+        </tr>`;
+      }
+      h += '</tbody></table>';
+      container.innerHTML = h;
+    } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
+  }
+
   async function _loadUsagePredictions() {
     const container = document.getElementById('usage-predictions-container');
     if (!container) return;
@@ -3188,6 +3476,8 @@
 
   // ═══ Bulk Operations ═══
   let _selectedSpools = new Set();
+  let _selectedProfiles = new Set();
+  let _selectedVendors = new Set();
 
   window.toggleSpoolSelect = function(id, el) {
     if (_selectedSpools.has(id)) {
@@ -3198,7 +3488,40 @@
       el.closest('.filament-card')?.classList.add('filament-card-selected');
     }
     _updateBulkBar();
+    _updateSelectAllCheckbox();
   };
+
+  window._bulkSelectAll = function(checked) {
+    const cards = document.querySelectorAll('.inv-spool-card[data-spool-id]');
+    if (checked) {
+      cards.forEach(c => {
+        const id = parseInt(c.dataset.spoolId);
+        _selectedSpools.add(id);
+        c.classList.add('filament-card-selected');
+        const cb = c.querySelector('.fil-bulk-check');
+        if (cb) cb.checked = true;
+      });
+    } else {
+      cards.forEach(c => {
+        const id = parseInt(c.dataset.spoolId);
+        _selectedSpools.delete(id);
+        c.classList.remove('filament-card-selected');
+        const cb = c.querySelector('.fil-bulk-check');
+        if (cb) cb.checked = false;
+      });
+    }
+    _updateBulkBar();
+  };
+
+  function _updateSelectAllCheckbox() {
+    const cb = document.getElementById('bulk-select-all-cb');
+    if (!cb) return;
+    const cards = document.querySelectorAll('.inv-spool-card[data-spool-id]');
+    const total = cards.length;
+    const selected = _selectedSpools.size;
+    cb.checked = total > 0 && selected >= total;
+    cb.indeterminate = selected > 0 && selected < total;
+  }
 
   function _updateBulkBar() {
     let bar = document.getElementById('bulk-action-bar');
@@ -3212,12 +3535,17 @@
       bar.className = 'fil-bulk-bar';
       document.body.appendChild(bar);
     }
+    const canWrite = !window._can || window._can('filament');
     bar.innerHTML = `<span>${_selectedSpools.size} ${t('filament.bulk_selected')}</span>
       <div class="fil-bulk-actions">
-        <button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('mark_dried')">${t('filament.start_drying')}</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('relocate')">${t('filament.bulk_relocate')}</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('archive')">${t('filament.archive')}</button>
-        <button class="form-btn form-btn-sm" data-ripple style="color:var(--accent-red)" onclick="bulkAction('delete')">${t('settings.delete')}</button>
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkEditDialog()">${t('filament.bulk_edit')}</button>` : ''}
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkTagDialog()">${t('filament.bulk_tag')}</button>` : ''}
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkDryDialog()">${t('filament.bulk_dry')}</button>` : ''}
+        <button class="form-btn form-btn-sm" data-ripple onclick="bulkLabels()">${t('filament.bulk_labels')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="bulkExport()">${t('filament.bulk_export')}</button>
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('relocate')">${t('filament.bulk_relocate')}</button>` : ''}
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('archive')">${t('filament.archive')}</button>` : ''}
+        ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple style="color:var(--accent-red)" onclick="bulkAction('delete')">${t('settings.delete')}</button>` : ''}
         <button class="form-btn form-btn-sm" data-ripple onclick="clearBulkSelection()">${t('common.cancel')}</button>
       </div>`;
   }
@@ -3225,7 +3553,9 @@
   window.clearBulkSelection = function() {
     _selectedSpools.clear();
     document.querySelectorAll('.filament-card-selected').forEach(el => el.classList.remove('filament-card-selected'));
+    document.querySelectorAll('.fil-bulk-check').forEach(cb => cb.checked = false);
     _updateBulkBar();
+    _updateSelectAllCheckbox();
   };
 
   window.bulkAction = async function(action) {
@@ -3244,9 +3574,10 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(b)
         });
-        if (!res.ok) throw new Error('Failed');
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
         _selectedSpools.clear();
         _updateBulkBar();
+        _updateSelectAllCheckbox();
         loadFilament();
       } catch (e) { showToast(e.message, 'error'); }
     };
@@ -3258,6 +3589,508 @@
       return confirmAction(t('filament.bulk_archive_confirm', { count: ids.length }), () => _doBulk(body), {});
     }
     await _doBulk(body);
+  };
+
+  // ── Bulk Edit Dialog ──
+  window.showBulkEditDialog = function() {
+    const n = _selectedSpools.size;
+    const locs = [...new Set(_spools.map(s => s.location).filter(Boolean))].sort();
+    const mats = [...new Set(_spools.map(s => s.material).filter(Boolean))].sort();
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:420px">
+        <div class="inv-modal-header"><h3>${t('filament.bulk_edit_title', { count: n })}</h3></div>
+        <div class="inv-modal-body">
+          <div class="bulk-edit-row"><label><input type="checkbox" id="be-cost-cb"> ${t('filament.cost_per_kg')}</label>
+            <input type="number" step="0.01" class="form-input form-input-sm" id="be-cost" disabled></div>
+          <div class="bulk-edit-row"><label><input type="checkbox" id="be-notes-cb"> ${t('filament.notes')}</label>
+            <input type="text" class="form-input form-input-sm" id="be-notes" disabled></div>
+          <div class="bulk-edit-row"><label><input type="checkbox" id="be-location-cb"> ${t('filament.location')}</label>
+            <select class="form-input form-input-sm" id="be-location" disabled>
+              <option value="">--</option>${locs.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('')}
+            </select></div>
+          <div class="bulk-edit-row"><label><input type="checkbox" id="be-material-cb"> ${t('filament.material')}</label>
+            <select class="form-input form-input-sm" id="be-material" disabled>
+              <option value="">--</option>${mats.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}
+            </select></div>
+        </div>
+        <div class="inv-modal-footer">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+          <button class="form-btn form-btn-primary" onclick="_applyBulkEdit()">${t('filament.bulk_apply', { count: n })}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    // Wire checkboxes to enable/disable inputs
+    for (const key of ['cost', 'notes', 'location', 'material']) {
+      document.getElementById(`be-${key}-cb`).onchange = function() {
+        document.getElementById(`be-${key}`).disabled = !this.checked;
+      };
+    }
+  };
+
+  window._applyBulkEdit = async function() {
+    const fields = {};
+    if (document.getElementById('be-cost-cb').checked) fields.cost_per_kg = parseFloat(document.getElementById('be-cost').value) || 0;
+    if (document.getElementById('be-notes-cb').checked) fields.notes = document.getElementById('be-notes').value;
+    if (document.getElementById('be-location-cb').checked) fields.location = document.getElementById('be-location').value;
+    if (document.getElementById('be-material-cb').checked) fields.material = document.getElementById('be-material').value;
+    if (Object.keys(fields).length === 0) return showToast('No fields selected', 'warning');
+    try {
+      const res = await fetch('/api/inventory/spools/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit', spool_ids: Array.from(_selectedSpools), fields })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      clearBulkSelection();
+      loadFilament();
+      showToast(t('filament.bulk_edit_done'), 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Bulk Tag Dialog ──
+  window.showBulkTagDialog = async function() {
+    const n = _selectedSpools.size;
+    let tags = [];
+    try { const r = await fetch('/api/tags'); tags = await r.json(); } catch {}
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:360px">
+        <div class="inv-modal-header"><h3>${t('filament.bulk_tag_title', { count: n })}</h3></div>
+        <div class="inv-modal-body">
+          <div style="margin-bottom:8px">
+            <label>${t('filament.bulk_tag_assign')}</label>
+            <select class="form-input form-input-sm" id="bt-tag">
+              <option value="">--</option>
+              ${tags.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="form-btn form-btn-sm form-btn-primary" onclick="_doBulkTag('assign')">${t('filament.bulk_tag_assign_btn')}</button>
+            <button class="form-btn form-btn-sm" onclick="_doBulkTag('unassign')">${t('filament.bulk_tag_unassign_btn')}</button>
+          </div>
+        </div>
+        <div class="inv-modal-footer">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  };
+
+  window._doBulkTag = async function(action) {
+    const tagId = parseInt(document.getElementById('bt-tag').value);
+    if (!tagId) return showToast('Select a tag', 'warning');
+    try {
+      const res = await fetch('/api/tags/bulk-assign', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_id: tagId, entity_type: 'spool', entity_ids: Array.from(_selectedSpools), action })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      loadFilament();
+      showToast(action === 'assign' ? t('filament.bulk_tag_assigned') : t('filament.bulk_tag_unassigned'), 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Bulk Drying Dialog ──
+  window.showBulkDryDialog = async function() {
+    const n = _selectedSpools.size;
+    let presets = [];
+    try { const r = await fetch('/api/inventory/drying/presets'); presets = await r.json(); } catch {}
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:380px">
+        <div class="inv-modal-header"><h3>${t('filament.bulk_dry_title', { count: n })}</h3></div>
+        <div class="inv-modal-body">
+          <div class="bulk-edit-row"><label>${t('filament.drying_preset')}</label>
+            <select class="form-input form-input-sm" id="bd-preset" onchange="_fillDryPreset(this.value)">
+              <option value="">-- ${t('filament.manual')} --</option>
+              ${presets.map(p => `<option value="${p.id}" data-temp="${p.temperature||''}" data-dur="${p.duration_minutes||''}" data-method="${p.method||'dryer_box'}">${esc(p.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bulk-edit-row"><label>${t('filament.drying_temp')}</label>
+            <input type="number" class="form-input form-input-sm" id="bd-temp" placeholder="50"> °C</div>
+          <div class="bulk-edit-row"><label>${t('filament.drying_duration')}</label>
+            <input type="number" class="form-input form-input-sm" id="bd-dur" placeholder="240"> min</div>
+        </div>
+        <div class="inv-modal-footer">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+          <button class="form-btn form-btn-primary" onclick="_doBulkDry()">${t('filament.start_drying')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  };
+
+  window._fillDryPreset = function(presetId) {
+    const opt = document.querySelector(`#bd-preset option[value="${presetId}"]`);
+    if (opt) {
+      document.getElementById('bd-temp').value = opt.dataset.temp || '';
+      document.getElementById('bd-dur').value = opt.dataset.dur || '';
+    }
+  };
+
+  window._doBulkDry = async function() {
+    try {
+      const res = await fetch('/api/inventory/spools/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start_drying', spool_ids: Array.from(_selectedSpools),
+          temperature: parseInt(document.getElementById('bd-temp').value) || null,
+          duration_minutes: parseInt(document.getElementById('bd-dur').value) || null
+        })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      clearBulkSelection();
+      loadFilament();
+      showToast(t('filament.bulk_dry_started'), 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Bulk Labels ──
+  window.bulkLabels = async function() {
+    const ids = Array.from(_selectedSpools);
+    try {
+      const res = await fetch('/api/inventory/labels/batch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spool_ids: ids })
+      });
+      const data = await res.json();
+      if (!data.spools?.length) return showToast('No spool data', 'warning');
+      const win = window.open('', '_blank');
+      let h = '<!DOCTYPE html><html><head><title>Spool Labels</title><style>body{font-family:sans-serif;margin:0;padding:10px}';
+      h += '.label{display:inline-block;width:40mm;height:30mm;border:1px solid #ccc;border-radius:4px;padding:4px;margin:3px;font-size:9px;overflow:hidden;page-break-inside:avoid}';
+      h += '.label-color{width:100%;height:8mm;border-radius:3px;margin-bottom:2px}';
+      h += '.label-name{font-weight:bold;font-size:10px}.label-detail{color:#666}';
+      h += '@media print{.label{border-color:#000}}</style></head><body>';
+      for (const s of data.spools) {
+        const hex = s.color_hex || 'cccccc';
+        h += `<div class="label"><div class="label-color" style="background:#${esc(hex)}"></div>`;
+        h += `<div class="label-name">${esc(s.name || s.material || 'Spool')}</div>`;
+        h += `<div class="label-detail">${esc(s.vendor_name || '')} ${esc(s.material || '')}</div>`;
+        h += `<div class="label-detail">${s.weight_remaining != null ? s.weight_remaining + 'g' : ''} ${s.location ? '@ ' + esc(s.location) : ''}</div>`;
+        h += '</div>';
+      }
+      h += '</body></html>';
+      win.document.write(h);
+      win.document.close();
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Bulk Export ──
+  window.bulkExport = async function() {
+    const ids = Array.from(_selectedSpools);
+    try {
+      const res = await fetch('/api/inventory/spools/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'export', spool_ids: ids, format: 'csv' })
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `spools-export-${ids.length}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Profile multi-select ──
+  window.toggleProfileSelect = function(id, el) {
+    if (_selectedProfiles.has(id)) {
+      _selectedProfiles.delete(id);
+      el.closest('.filament-card')?.classList.remove('filament-card-selected');
+    } else {
+      _selectedProfiles.add(id);
+      el.closest('.filament-card')?.classList.add('filament-card-selected');
+    }
+    _updateManageBulkBar();
+  };
+
+  window._bulkSelectAllProfiles = function(checked) {
+    document.querySelectorAll('.inv-profile-card[data-profile-id]').forEach(c => {
+      const id = parseInt(c.dataset.profileId);
+      if (checked) { _selectedProfiles.add(id); c.classList.add('filament-card-selected'); }
+      else { _selectedProfiles.delete(id); c.classList.remove('filament-card-selected'); }
+      const cb = c.querySelector('.fil-profile-check');
+      if (cb) cb.checked = checked;
+    });
+    _updateManageBulkBar();
+  };
+
+  // ── Vendor multi-select ──
+  window.toggleVendorSelect = function(id, el) {
+    if (_selectedVendors.has(id)) {
+      _selectedVendors.delete(id);
+      el.closest('tr')?.classList.remove('bulk-row-selected');
+    } else {
+      _selectedVendors.add(id);
+      el.closest('tr')?.classList.add('bulk-row-selected');
+    }
+    _updateManageBulkBar();
+  };
+
+  window._bulkSelectAllVendors = function(checked) {
+    document.querySelectorAll('tr[data-vendor-id]').forEach(r => {
+      const id = parseInt(r.dataset.vendorId);
+      if (checked) { _selectedVendors.add(id); r.classList.add('bulk-row-selected'); }
+      else { _selectedVendors.delete(id); r.classList.remove('bulk-row-selected'); }
+      const cb = r.querySelector('.fil-vendor-check');
+      if (cb) cb.checked = checked;
+    });
+    _updateManageBulkBar();
+  };
+
+  function _updateManageBulkBar() {
+    let bar = document.getElementById('manage-bulk-bar');
+    const pCount = _selectedProfiles.size;
+    const vCount = _selectedVendors.size;
+    if (pCount === 0 && vCount === 0) {
+      if (bar) bar.remove();
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'manage-bulk-bar';
+      bar.className = 'fil-bulk-bar';
+      document.body.appendChild(bar);
+    }
+    let html = '';
+    if (pCount > 0) {
+      html += `<span>${pCount} ${t('filament.profiles_selected')}</span>
+        <div class="fil-bulk-actions">
+          <button class="form-btn form-btn-sm" data-ripple onclick="showBulkEditProfilesDialog()">${t('filament.bulk_edit')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="color:var(--accent-red)" onclick="bulkDeleteProfiles()">${t('settings.delete')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="clearManageBulkSelection()">${t('common.cancel')}</button>
+        </div>`;
+    }
+    if (vCount > 0) {
+      if (pCount > 0) html += '<span style="border-left:1px solid var(--border-color);height:20px;margin:0 4px"></span>';
+      html += `<span>${vCount} ${t('filament.vendors_selected')}</span>
+        <div class="fil-bulk-actions">
+          <button class="form-btn form-btn-sm" data-ripple style="color:var(--accent-red)" onclick="bulkDeleteVendors()">${t('settings.delete')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="clearManageBulkSelection()">${t('common.cancel')}</button>
+        </div>`;
+    }
+    bar.innerHTML = html;
+  }
+
+  window.clearManageBulkSelection = function() {
+    _selectedProfiles.clear();
+    _selectedVendors.clear();
+    document.querySelectorAll('.filament-card-selected').forEach(el => el.classList.remove('filament-card-selected'));
+    document.querySelectorAll('.bulk-row-selected').forEach(el => el.classList.remove('bulk-row-selected'));
+    document.querySelectorAll('.fil-profile-check, .fil-vendor-check').forEach(cb => cb.checked = false);
+    _updateManageBulkBar();
+  };
+
+  window.bulkDeleteProfiles = function() {
+    const ids = Array.from(_selectedProfiles);
+    confirmAction(t('filament.bulk_delete_profiles_confirm', { count: ids.length }), async () => {
+      try {
+        const res = await fetch('/api/inventory/profiles/bulk', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', profile_ids: ids })
+        });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+        _selectedProfiles.clear();
+        _updateManageBulkBar();
+        loadFilament();
+        showToast(t('filament.bulk_profiles_deleted'), 'success');
+      } catch (e) { showToast(e.message, 'error'); }
+    }, { danger: true });
+  };
+
+  window.bulkDeleteVendors = function() {
+    const ids = Array.from(_selectedVendors);
+    confirmAction(t('filament.bulk_delete_vendors_confirm', { count: ids.length }), async () => {
+      try {
+        const res = await fetch('/api/inventory/vendors/bulk', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', vendor_ids: ids })
+        });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+        _selectedVendors.clear();
+        _updateManageBulkBar();
+        loadFilament();
+        showToast(t('filament.bulk_vendors_deleted'), 'success');
+      } catch (e) { showToast(e.message, 'error'); }
+    }, { danger: true });
+  };
+
+  window.showBulkEditProfilesDialog = function() {
+    const n = _selectedProfiles.size;
+    const mats = [...new Set(_profiles.map(p => p.material).filter(Boolean))].sort();
+    const vendors = _vendors.map(v => ({ id: v.id, name: v.name }));
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:420px">
+        <div class="inv-modal-header"><h3>${t('filament.bulk_edit_profiles_title', { count: n })}</h3></div>
+        <div class="inv-modal-body">
+          <div class="bulk-edit-row"><label><input type="checkbox" id="bep-material-cb"> ${t('filament.material')}</label>
+            <select class="form-input form-input-sm" id="bep-material" disabled>
+              <option value="">--</option>${mats.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}
+            </select></div>
+          <div class="bulk-edit-row"><label><input type="checkbox" id="bep-vendor-cb"> ${t('filament.vendor')}</label>
+            <select class="form-input form-input-sm" id="bep-vendor" disabled>
+              <option value="">--</option>${vendors.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')}
+            </select></div>
+          <div class="bulk-edit-row"><label><input type="checkbox" id="bep-density-cb"> ${t('filament.density')}</label>
+            <input type="number" step="0.01" class="form-input form-input-sm" id="bep-density" placeholder="1.24" disabled> g/cm³</div>
+        </div>
+        <div class="inv-modal-footer">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+          <button class="form-btn form-btn-primary" onclick="_applyBulkEditProfiles()">${t('filament.bulk_apply', { count: n })}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    for (const key of ['material', 'vendor', 'density']) {
+      document.getElementById(`bep-${key}-cb`).onchange = function() {
+        document.getElementById(`bep-${key}`).disabled = !this.checked;
+      };
+    }
+  };
+
+  window._applyBulkEditProfiles = async function() {
+    const fields = {};
+    if (document.getElementById('bep-material-cb').checked) fields.material = document.getElementById('bep-material').value;
+    if (document.getElementById('bep-vendor-cb').checked) fields.vendor_id = parseInt(document.getElementById('bep-vendor').value) || null;
+    if (document.getElementById('bep-density-cb').checked) fields.density = parseFloat(document.getElementById('bep-density').value) || null;
+    if (Object.keys(fields).length === 0) return showToast(t('filament.bulk_no_fields'), 'warning');
+    try {
+      const res = await fetch('/api/inventory/profiles/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit', profile_ids: Array.from(_selectedProfiles), fields })
+      });
+      if (!res.ok) throw new Error('Failed');
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      clearManageBulkSelection();
+      loadFilament();
+      showToast(t('filament.bulk_edit_done'), 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Tag Management (Manage tab) ──
+  window.showAddTagForm = function() {
+    const container = document.getElementById('tag-form-container');
+    if (!container) return;
+    container.innerHTML = `<div class="inv-inline-form" style="margin-top:8px">
+      <input type="text" class="form-input form-input-sm" id="tag-name" placeholder="${t('filament.tag_name')}">
+      <select class="form-input form-input-sm" id="tag-category">
+        <option value="custom">${t('tags.custom')}</option>
+        <option value="material">${t('tags.material')}</option>
+        <option value="printer">${t('tags.printer')}</option>
+        <option value="nozzle">${t('tags.nozzle')}</option>
+      </select>
+      <input type="color" id="tag-color" value="#58a6ff" style="width:36px;height:28px;border:none;padding:0;cursor:pointer">
+      <button class="form-btn form-btn-sm form-btn-primary" onclick="saveTag()">${t('filament.tag_save')}</button>
+      <button class="form-btn form-btn-sm" onclick="document.getElementById('tag-form-container').innerHTML=''">${t('common.cancel')}</button>
+    </div>`;
+  };
+
+  window.showEditTagForm = function(id) {
+    const tag = _tags.find(t => t.id === id);
+    if (!tag) return;
+    const container = document.getElementById('tag-form-container');
+    if (!container) return;
+    container.innerHTML = `<div class="inv-inline-form" style="margin-top:8px">
+      <input type="hidden" id="tag-edit-id" value="${id}">
+      <input type="text" class="form-input form-input-sm" id="tag-name" value="${esc(tag.name)}">
+      <select class="form-input form-input-sm" id="tag-category">
+        <option value="custom" ${tag.category === 'custom' ? 'selected' : ''}>${t('tags.custom')}</option>
+        <option value="material" ${tag.category === 'material' ? 'selected' : ''}>${t('tags.material')}</option>
+        <option value="printer" ${tag.category === 'printer' ? 'selected' : ''}>${t('tags.printer')}</option>
+        <option value="nozzle" ${tag.category === 'nozzle' ? 'selected' : ''}>${t('tags.nozzle')}</option>
+      </select>
+      <input type="color" id="tag-color" value="${tag.color || '#58a6ff'}" style="width:36px;height:28px;border:none;padding:0;cursor:pointer">
+      <button class="form-btn form-btn-sm form-btn-primary" onclick="saveTag()">${t('filament.tag_save')}</button>
+      <button class="form-btn form-btn-sm" onclick="document.getElementById('tag-form-container').innerHTML=''">${t('common.cancel')}</button>
+    </div>`;
+  };
+
+  window.saveTag = async function() {
+    const name = document.getElementById('tag-name').value.trim();
+    if (!name) return;
+    const category = document.getElementById('tag-category').value;
+    const color = document.getElementById('tag-color').value;
+    const editId = document.getElementById('tag-edit-id')?.value;
+    try {
+      const res = await fetch(editId ? `/api/tags/${editId}` : '/api/tags', {
+        method: editId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, color })
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+      loadFilament();
+      showToast(t('filament.tag_saved'), 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window.deleteTagItem = function(id) {
+    const tag = _tags.find(t => t.id === id);
+    confirmAction(t('filament.tag_delete_confirm', { name: tag?.name || '' }), async () => {
+      try {
+        await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+        loadFilament();
+        showToast(t('filament.tag_deleted'), 'success');
+      } catch (e) { showToast(e.message, 'error'); }
+    }, { danger: true });
+  };
+
+  // ── Individual spool tag assignment ──
+  window.showSpoolTagAssign = async function(spoolId) {
+    const spool = _spools.find(s => s.id === spoolId);
+    if (!spool) return;
+    const spoolTags = spool.tags || [];
+    const availableTags = _tags.filter(t => !spoolTags.some(st => st.id === t.id));
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:380px">
+        <div class="inv-modal-header"><h3>${t('filament.tags_title')}</h3></div>
+        <div class="inv-modal-body">
+          <div class="fil-tag-badges" style="margin-bottom:8px;min-height:24px">
+            ${spoolTags.map(tg => `<span class="fil-tag-chip" style="--tag-color:${esc(tg.color || '#58a6ff')}">
+              <span class="fil-tag-dot" style="background:${esc(tg.color || '#58a6ff')}"></span>
+              ${esc(tg.name)}
+              <span class="fil-tag-chip-remove" onclick="_removeSpoolTag(${spoolId},${tg.id})">&times;</span>
+            </span>`).join('')}
+          </div>
+          ${availableTags.length ? `<div style="display:flex;gap:6px;align-items:center">
+            <select class="form-input form-input-sm" id="spool-tag-select" style="flex:1">
+              ${availableTags.map(tg => `<option value="${tg.id}">${esc(tg.name)}</option>`).join('')}
+            </select>
+            <button class="form-btn form-btn-sm form-btn-primary" onclick="_addSpoolTag(${spoolId})">${t('filament.tag_add_to_spool')}</button>
+          </div>` : `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_tags')}</p>`}
+        </div>
+        <div class="inv-modal-footer">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.close')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  };
+
+  window._addSpoolTag = async function(spoolId) {
+    const tagId = parseInt(document.getElementById('spool-tag-select').value);
+    if (!tagId) return;
+    try {
+      await fetch('/api/tags/assign', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_type: 'spool', entity_id: spoolId, tag_id: tagId })
+      });
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      loadFilament();
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window._removeSpoolTag = async function(spoolId, tagId) {
+    try {
+      await fetch('/api/tags/unassign', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_type: 'spool', entity_id: spoolId, tag_id: tagId })
+      });
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      loadFilament();
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   // ═══ Swatch Labels (enhanced) ═══
@@ -3363,6 +4196,284 @@
   };
 
   // ═══ Material Reference ═══
+
+  // ═══ Filament Database Functions ═══
+
+  async function _loadDbStats() {
+    try {
+      const res = await fetch('/api/community-filaments/stats');
+      _dbStats = await res.json();
+      const el = document.getElementById('db-hero-container');
+      if (el) {
+        el.outerHTML = `<div class="fil-hero-grid">
+          ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', _dbStats.total.toLocaleString(), t('filament.db_total'), '#1279ff')}
+          ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', _dbStats.brands.toLocaleString(), t('filament.db_brands'), '#00e676')}
+          ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', _dbStats.materials.toLocaleString(), t('filament.db_materials'), '#f0883e')}
+          ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', _dbStats.with_k_value.toLocaleString(), t('filament.db_with_k'), '#9b4dff')}
+          ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>', _dbStats.with_td.toLocaleString(), t('filament.db_with_td'), '#e3b341')}
+        </div>`;
+      }
+    } catch { /* silent */ }
+  }
+
+  async function _loadDbFilaments() {
+    const params = new URLSearchParams();
+    if (_dbSearch) params.set('search', _dbSearch);
+    if (_dbFilterBrand) params.set('manufacturer', _dbFilterBrand);
+    if (_dbFilterMaterial) params.set('material', _dbFilterMaterial);
+    if (_dbFilterCategory) params.set('category', _dbFilterCategory);
+    if (_dbFilterHasK) params.set('has_k_value', '1');
+    if (_dbFilterHasTd) params.set('has_td', '1');
+    params.set('sort', _dbSort);
+    params.set('sort_dir', _dbSortDir);
+    params.set('limit', _dbPageSize);
+    params.set('offset', _dbPage * _dbPageSize);
+
+    try {
+      const promises = [fetch('/api/community-filaments?' + params)];
+      if (!_dbBrands.length) promises.push(fetch('/api/community-filaments/manufacturers'));
+      if (!_dbMaterials.length) promises.push(fetch('/api/community-filaments/materials'));
+      const results = await Promise.all(promises);
+
+      const data = await results[0].json();
+      _dbFilaments = data.rows || data;
+      _dbTotal = data.total || _dbFilaments.length;
+      _dbLoaded = true;
+
+      if (results[1]) _dbBrands = await results[1].json();
+      if (results[2]) _dbMaterials = await results[2].json();
+
+      _refreshDbBrowser();
+    } catch (e) {
+      const el = document.getElementById('db-results-container');
+      if (el) el.innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    }
+  }
+
+  function _refreshDbBrowser() {
+    // Re-render the db-browser module content
+    const panel = document.getElementById('filament-tab-database');
+    if (!panel) return;
+    const mod = panel.querySelector('[data-module-id="db-browser"]');
+    if (!mod) return;
+    const builder = BUILDERS['db-browser'];
+    if (builder) {
+      const handle = mod.querySelector('.stats-module-handle');
+      mod.innerHTML = (handle ? handle.outerHTML : '') + builder(_spools);
+    }
+  }
+
+  function _renderDbResults() {
+    if (_dbViewMode === 'table') return _renderDbTable();
+    return _renderDbCards();
+  }
+
+  function _renderDbCards() {
+    let h = '<div class="db-card-grid">';
+    for (const f of _dbFilaments) {
+      const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
+      const textColor = f.color_hex && isLightColor(f.color_hex) ? '#000' : '#fff';
+      const badges = [];
+      if (f.category) badges.push(`<span class="fil-badge" style="background:var(--bg-tertiary);font-size:0.65rem">${f.category}</span>`);
+      if (f.pressure_advance_k != null) badges.push(`<span class="fil-badge" style="background:#2d1f4e;color:#c4b5fd;font-size:0.65rem">K=${f.pressure_advance_k}</span>`);
+      if (f.td_value && f.td_value > 0) badges.push(`<span class="fil-badge" style="background:#3d2e00;color:#e3b341;font-size:0.65rem">TD=${f.td_value}</span>`);
+      const inCompare = _dbCompare.includes(f.id);
+
+      h += `<div class="db-filament-card" onclick="window._dbShowDetail(${f.id})">
+        <div class="db-card-color" style="background:${color}"></div>
+        <div class="db-card-body">
+          <div class="db-card-brand">${esc(f.manufacturer || '')}</div>
+          <div class="db-card-name">${esc(f.name || f.material)}</div>
+          <div class="db-card-material">${esc(f.material || '')}${f.material_type ? ' <span class="text-muted">' + esc(f.material_type) + '</span>' : ''}</div>
+          <div class="db-card-temps">${f.extruder_temp ? f.extruder_temp + '°C' : '--'} / ${f.bed_temp ? f.bed_temp + '°C' : '--'}</div>
+          <div class="fil-profile-badges" style="margin-top:4px">${badges.join('')}</div>
+        </div>
+        <div class="db-card-actions">
+          ${window._can && window._can('filament') ? `<button class="form-btn form-btn-sm" onclick="event.stopPropagation();window._dbImport(${f.id})" title="${t('filament.db_add_to_inventory')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>` : ''}
+          <button class="form-btn form-btn-sm${inCompare?' active':''}" onclick="event.stopPropagation();window._dbToggleCompare(${f.id})" title="${t('filament.db_compare')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function _renderDbTable() {
+    let h = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>';
+    h += '<th></th><th>Brand</th><th>Name</th><th>Material</th><th>Nozzle</th><th>Bed</th><th>K-Value</th><th>TD</th><th>Price</th><th></th>';
+    h += '</tr></thead><tbody>';
+    for (const f of _dbFilaments) {
+      const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
+      h += `<tr style="cursor:pointer" onclick="window._dbShowDetail(${f.id})">
+        <td><span class="filament-color-swatch" style="background:${color};width:14px;height:14px;display:inline-block;border-radius:50%"></span></td>
+        <td>${esc(f.manufacturer || '')}</td>
+        <td>${esc(f.name || '--')}</td>
+        <td>${esc(f.material || '')}${f.material_type ? ' <span class="text-muted">' + esc(f.material_type) + '</span>' : ''}</td>
+        <td>${f.extruder_temp ? f.extruder_temp + '°C' : '--'}</td>
+        <td>${f.bed_temp ? f.bed_temp + '°C' : '--'}</td>
+        <td>${f.pressure_advance_k != null ? f.pressure_advance_k : '--'}</td>
+        <td>${f.td_value && f.td_value > 0 ? f.td_value : '--'}</td>
+        <td>${f.price ? '$' + f.price : '--'}</td>
+        <td>${window._can && window._can('filament') ? `<button class="form-btn form-btn-sm" onclick="event.stopPropagation();window._dbImport(${f.id})" title="${t('filament.db_add_to_inventory')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : ''}</td>
+      </tr>`;
+    }
+    h += '</tbody></table></div>';
+    return h;
+  }
+
+  function _dbShowDetail(id) {
+    const f = _dbFilaments.find(x => x.id === id);
+    if (!f) return;
+    const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
+    const textColor = f.color_hex && isLightColor(f.color_hex) ? '#000' : '#fff';
+
+    const fields = [
+      ['Material', f.material + (f.material_type ? ' ' + f.material_type : '')],
+      ['Category', f.category || '--'],
+      [t('filament.db_nozzle_temp'), f.extruder_temp ? f.extruder_temp + '°C' : '--'],
+      [t('filament.db_bed_temp'), f.bed_temp ? f.bed_temp + '°C' : '--'],
+      [t('filament.db_chamber_temp'), f.chamber_temp ? f.chamber_temp + '°C' : '--'],
+      [t('filament.db_k_value'), f.pressure_advance_k != null ? f.pressure_advance_k : '--'],
+      [t('filament.db_td_value'), f.td_value && f.td_value > 0 ? f.td_value + (f.total_td_votes ? ` (${f.total_td_votes} votes)` : '') : '--'],
+      [t('filament.db_flow_ratio'), f.flow_ratio || '--'],
+      [t('filament.db_volumetric'), f.max_volumetric_speed ? f.max_volumetric_speed + ' mm\u00B3/s' : '--'],
+      [t('filament.db_fan_speed'), (f.fan_speed_min != null || f.fan_speed_max != null) ? `${f.fan_speed_min || 0}% - ${f.fan_speed_max || 100}%` : '--'],
+      [t('filament.db_retraction'), f.retraction_distance != null ? f.retraction_distance + ' mm' + (f.retraction_speed ? ' @ ' + f.retraction_speed + ' mm/s' : '') : '--'],
+      ['Density', f.density ? f.density + ' g/cm\u00B3' : '--'],
+      ['Diameter', f.diameter ? f.diameter + ' mm' : '1.75 mm'],
+      [t('filament.db_price'), f.price ? '$' + f.price + (f.price_currency && f.price_currency !== 'USD' ? ' ' + f.price_currency : '') : '--'],
+      [t('filament.db_source'), f.source || '--']
+    ];
+
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:520px">
+        <div class="inv-modal-header">
+          <span>${esc(f.manufacturer || '')} — ${esc(f.name || f.material)}</span>
+          <button class="inv-modal-close" onclick="this.closest('.inv-modal-backdrop').remove()">&times;</button>
+        </div>
+        <div class="inv-modal-body">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="width:48px;height:48px;border-radius:8px;background:${color};border:2px solid var(--border-color);flex-shrink:0"></div>
+            <div>
+              <div style="font-weight:600;font-size:1rem">${esc(f.name || f.material)}</div>
+              <div class="text-muted" style="font-size:0.8rem">${esc(f.manufacturer || '')} &middot; ${esc(f.material)}${f.material_type ? ' ' + esc(f.material_type) : ''}</div>
+              ${f.color_name ? '<div class="text-muted" style="font-size:0.75rem">' + esc(f.color_name) + (f.color_hex ? ' #' + f.color_hex : '') + '</div>' : ''}
+            </div>
+          </div>
+          <div class="db-detail-grid">`;
+    for (const [label, val] of fields) {
+      if (val === '--' || val === '-- mm' || val === null) continue;
+      html += `<div class="db-detail-field"><div class="db-detail-label">${label}</div><div class="db-detail-value">${val}</div></div>`;
+    }
+    html += '</div>';
+    if (f.tips) html += `<div style="margin-top:8px;padding:8px;background:var(--bg-tertiary);border-radius:6px;font-size:0.8rem"><strong>Tips:</strong> ${esc(f.tips)}</div>`;
+    if (f.purchase_url) html += `<div style="margin-top:8px"><a href="${esc(f.purchase_url)}" target="_blank" rel="noopener" class="form-btn form-btn-sm" style="display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> ${t('filament.db_buy')}</a></div>`;
+    html += `</div>
+        <div class="inv-modal-footer">
+          ${window._can && window._can('filament') ? `<button class="form-btn" onclick="window._dbImport(${f.id});this.closest('.inv-modal-backdrop').remove()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ${t('filament.db_add_to_inventory')}
+          </button>
+          <button class="form-btn form-btn-sm" onclick="window._dbImport(${f.id},true);this.closest('.inv-modal-backdrop').remove()">${t('filament.db_add_with_spool')}</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  async function _dbImport(id, createSpool = false) {
+    try {
+      const res = await fetch('/api/community-filaments/import-to-inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, create_spool: createSpool })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(t('filament.db_imported'), 'success');
+      } else {
+        showToast(data.error || 'Error', 'error');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  function _dbToggleCompare(id) {
+    const idx = _dbCompare.indexOf(id);
+    if (idx >= 0) _dbCompare.splice(idx, 1);
+    else if (_dbCompare.length < 3) _dbCompare.push(id);
+    else { showToast('Max 3 filaments', 'warning'); return; }
+    _refreshDbBrowser();
+  }
+
+  function _dbShowCompare() {
+    if (_dbCompare.length < 2) return;
+    const items = _dbCompare.map(id => _dbFilaments.find(f => f.id === id)).filter(Boolean);
+    if (items.length < 2) return;
+
+    const fields = ['material','material_type','extruder_temp','bed_temp','chamber_temp','pressure_advance_k','td_value','flow_ratio','max_volumetric_speed','fan_speed_min','fan_speed_max','retraction_distance','retraction_speed','density','price'];
+    const labels = ['Material','Type','Nozzle Temp','Bed Temp','Chamber','K-Value','TD','Flow Ratio','Max Vol. Speed','Fan Min','Fan Max','Retract Dist.','Retract Speed','Density','Price'];
+
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:${items.length*200+120}px">
+        <div class="inv-modal-header"><span>${t('filament.db_compare')}</span><button class="inv-modal-close" onclick="this.closest('.inv-modal-backdrop').remove()">&times;</button></div>
+        <div class="inv-modal-body" style="overflow-x:auto">
+          <table class="data-table"><thead><tr><th></th>`;
+    for (const f of items) {
+      const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
+      html += `<th><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span class="filament-color-swatch" style="background:${color};width:20px;height:20px;border-radius:50%;display:inline-block"></span><span style="font-size:0.75rem">${esc(f.manufacturer||'')}</span><span style="font-size:0.7rem" class="text-muted">${esc(f.name||f.material)}</span></div></th>`;
+    }
+    html += '</tr></thead><tbody>';
+    for (let i = 0; i < fields.length; i++) {
+      const key = fields[i];
+      const vals = items.map(f => f[key]);
+      if (vals.every(v => v == null || v === '')) continue;
+      html += `<tr><td style="font-weight:600;font-size:0.8rem">${labels[i]}</td>`;
+      for (const v of vals) {
+        let display = v != null ? String(v) : '--';
+        if (key === 'price' && v) display = '$' + v;
+        if (['extruder_temp','bed_temp','chamber_temp'].includes(key) && v) display += '°C';
+        if (key === 'max_volumetric_speed' && v) display += ' mm\u00B3/s';
+        if (['retraction_distance'].includes(key) && v) display += ' mm';
+        if (['retraction_speed'].includes(key) && v) display += ' mm/s';
+        if (key === 'density' && v) display += ' g/cm\u00B3';
+        html += `<td style="font-size:0.8rem">${display}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table></div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  // DB Browser interaction handlers
+  window._dbOnSearch = function(val) {
+    clearTimeout(_dbSearchTimer);
+    _dbSearchTimer = setTimeout(() => {
+      _dbSearch = val;
+      _dbPage = 0;
+      _loadDbFilaments();
+    }, 300);
+  };
+  window._dbSetBrand = function(v) { _dbFilterBrand = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbSetMaterial = function(v) { _dbFilterMaterial = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbSetCategory = function(v) { _dbFilterCategory = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleK = function(v) { _dbFilterHasK = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleTd = function(v) { _dbFilterHasTd = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbSetSort = function(v) { _dbSort = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleSortDir = function() { _dbSortDir = _dbSortDir === 'ASC' ? 'DESC' : 'ASC'; _loadDbFilaments(); };
+  window._dbSetView = function(v) { _dbViewMode = v; localStorage.setItem('db-view-mode', v); _refreshDbBrowser(); };
+  window._dbPrevPage = function() { if (_dbPage > 0) { _dbPage--; _loadDbFilaments(); } };
+  window._dbNextPage = function() { if ((_dbPage + 1) * _dbPageSize < _dbTotal) { _dbPage++; _loadDbFilaments(); } };
+  window._dbShowDetail = _dbShowDetail;
+  window._dbImport = _dbImport;
+  window._dbToggleCompare = _dbToggleCompare;
+  window._dbShowCompare = _dbShowCompare;
+  window._dbClearCompare = function() { _dbCompare = []; _refreshDbBrowser(); };
 
   let _materialsCache = null;
 
