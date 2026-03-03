@@ -6165,6 +6165,31 @@ tr:hover .filament-edit-btn {
   line-height: 1.2;
 }
 
+/* Tag Scanner */
+.tag-scanner-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+.tag-scanner-tab {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.tag-scanner-tab:hover { background: var(--bg-tertiary); }
+.tag-scanner-tab.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
 /* NFC */
 .fil-nfc-list {
   display: flex;

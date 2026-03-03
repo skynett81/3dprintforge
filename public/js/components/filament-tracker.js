@@ -851,11 +851,13 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>
           ${t('filament.color_card')}
         </span>
-        <button class="form-btn form-btn-sm" data-ripple onclick="exportColorCard()">${t('filament.color_card_export')}</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="sharePalette()" style="display:flex;align-items:center;gap:4px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          ${t('filament.share_palette')}
-        </button>
+        <div id="color-card-actions" style="display:none;gap:4px">
+          <button class="form-btn form-btn-sm" data-ripple onclick="exportColorCard()">${t('filament.color_card_export')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="sharePalette()" style="display:flex;align-items:center;gap:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            ${t('filament.share_palette')}
+          </button>
+        </div>
       </div>`;
       h += `<div id="color-card-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       setTimeout(() => _loadColorCard(), 0);
@@ -868,7 +870,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
           ${t('filament.nfc_manager')}
         </span>
-        <button class="form-btn form-btn-sm" data-ripple onclick="startNfcScan()">${t('filament.nfc_scan')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="openTagScanner()">${t('filament.tag_scan')}</button>
       </div>`;
       h += `<div id="nfc-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       setTimeout(() => _loadNfcMappings(), 0);
@@ -3299,7 +3301,13 @@
       const res = await fetch('/api/inventory/color-card');
       const grouped = await res.json();
       const materials = Object.keys(grouped).sort();
-      if (materials.length === 0) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.no_spools')}</p>`; return; }
+      const actions = document.getElementById('color-card-actions');
+      if (materials.length === 0) {
+        el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.no_spools')}</p>`;
+        if (actions) actions.style.display = 'none';
+        return;
+      }
+      if (actions) actions.style.display = 'flex';
       let h = '<div class="fil-color-card" id="color-card-canvas-area">';
       for (const mat of materials) {
         h += `<div class="fil-color-group"><div class="fil-color-group-title">${esc(mat)}</div><div class="fil-color-swatches">`;
@@ -3388,68 +3396,264 @@
     } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
   }
 
-  window.startNfcScan = async function() {
-    if (!('NDEFReader' in window)) {
-      showToast(t('filament.nfc_not_supported'), 'warning');
-      return;
-    }
-    try {
-      const ndef = new NDEFReader();
-      await ndef.scan();
-      const overlay = document.createElement('div');
-      overlay.className = 'inv-modal-overlay';
-      overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); ndef.onreading = null; } };
-      overlay.innerHTML = `<div class="inv-modal" style="max-width:400px">
-        <div class="inv-modal-header">
-          <span>${t('filament.nfc_scanning')}</span>
-          <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
-        </div>
-        <div style="padding:24px;text-align:center">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
-          <p style="margin-top:12px">${t('filament.nfc_hold_tag')}</p>
-          <div id="nfc-scan-result"></div>
+  // ── Multi-method Tag Scanner ──
+  let _tagScannerStream = null;
+  let _tagScannerNdef = null;
+  let _tagScannerWedgeTimer = null;
+
+  window.openTagScanner = function() {
+    const hasNfc = 'NDEFReader' in window;
+    const methods = [];
+    if (hasNfc) methods.push({ id: 'nfc', label: t('filament.tag_method_nfc') });
+    methods.push({ id: 'camera', label: t('filament.tag_method_camera') });
+    methods.push({ id: 'usb', label: t('filament.tag_method_usb') });
+    methods.push({ id: 'manual', label: t('filament.tag_method_manual') });
+
+    const tabs = methods.map((m, i) =>
+      `<button class="tag-scanner-tab${i === 0 ? ' active' : ''}" data-method="${m.id}" onclick="window._tagSwitchTab('${m.id}')">${m.label}</button>`
+    ).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.id = 'tag-scanner-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) window.closeTagScanner(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:440px">
+      <div class="inv-modal-header">
+        <span>${t('filament.tag_scanner')}</span>
+        <button class="inv-modal-close" onclick="closeTagScanner()">&times;</button>
+      </div>
+      <div class="tag-scanner-tabs">${tabs}</div>
+      <div id="tag-scanner-body" style="padding:16px;min-height:180px"></div>
+      <div id="tag-scanner-result" style="padding:0 16px 16px"></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    window._tagSwitchTab(methods[0].id);
+  };
+
+  window._tagSwitchTab = function(method) {
+    // Clean up previous method
+    _tagCleanupMethod();
+    // Update tab active state
+    document.querySelectorAll('.tag-scanner-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.method === method);
+    });
+    const body = document.getElementById('tag-scanner-body');
+    const result = document.getElementById('tag-scanner-result');
+    if (!body) return;
+    if (result) result.innerHTML = '';
+
+    if (method === 'nfc') {
+      body.innerHTML = `<div style="text-align:center;padding:16px 0">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>
+        <p style="margin-top:12px">${t('filament.nfc_hold_tag')}</p>
+        <p class="text-muted" style="font-size:0.75rem">${t('filament.nfc_scanning')}...</p>
+      </div>`;
+      _tagStartNfc();
+    } else if (method === 'camera') {
+      body.innerHTML = `<div style="position:relative">
+        <video id="tag-scanner-video" style="width:100%;border-radius:6px;background:#000" autoplay playsinline></video>
+        <canvas id="tag-scanner-canvas" style="display:none"></canvas>
+      </div>
+      <p class="text-muted" style="font-size:0.75rem;text-align:center;margin-top:8px">${t('filament.scanning')}</p>`;
+      _tagStartCamera();
+    } else if (method === 'usb') {
+      body.innerHTML = `<div style="text-align:center;padding:16px 0">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><circle cx="12" cy="16" r="2"/></svg>
+        <p style="margin-top:12px;font-size:0.85rem">${t('filament.tag_usb_hint')}</p>
+        <input type="text" id="tag-usb-input" class="form-input" style="margin-top:12px;text-align:center;font-family:monospace;font-size:1.1rem;letter-spacing:1px" autofocus placeholder="${t('filament.tag_usb_placeholder')}">
+      </div>`;
+      setTimeout(() => {
+        const inp = document.getElementById('tag-usb-input');
+        if (inp) {
+          inp.focus();
+          inp.addEventListener('input', () => {
+            clearTimeout(_tagScannerWedgeTimer);
+            if (inp.value.length >= 4) {
+              _tagScannerWedgeTimer = setTimeout(() => {
+                const uid = inp.value.trim();
+                if (uid) _handleScannedTag(uid);
+              }, 500);
+            }
+          });
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              clearTimeout(_tagScannerWedgeTimer);
+              const uid = inp.value.trim();
+              if (uid) _handleScannedTag(uid);
+            }
+          });
+        }
+      }, 50);
+    } else if (method === 'manual') {
+      body.innerHTML = `<div style="padding:8px 0">
+        <p style="font-size:0.85rem;margin-bottom:12px">${t('filament.tag_manual_hint')}</p>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="tag-manual-input" class="form-input" style="flex:1;font-family:monospace" placeholder="${t('filament.tag_manual_placeholder')}">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._tagManualLookup()">${t('filament.nfc_link')}</button>
         </div>
       </div>`;
-      document.body.appendChild(overlay);
+      setTimeout(() => { const inp = document.getElementById('tag-manual-input'); if (inp) inp.focus(); }, 50);
+    }
+  };
 
-      ndef.onreading = async (event) => {
+  window._tagManualLookup = function() {
+    const inp = document.getElementById('tag-manual-input');
+    const uid = inp?.value?.trim();
+    if (!uid) return;
+    _handleScannedTag(uid);
+  };
+
+  async function _tagStartNfc() {
+    try {
+      _tagScannerNdef = new NDEFReader();
+      await _tagScannerNdef.scan();
+      _tagScannerNdef.onreading = (event) => {
         const uid = event.serialNumber || 'unknown';
-        const resultEl = document.getElementById('nfc-scan-result');
-        if (!resultEl) return;
-        // Check if tag is linked
-        try {
-          const res = await fetch(`/api/nfc/lookup/${encodeURIComponent(uid)}`);
-          if (res.ok) {
-            const tag = await res.json();
-            resultEl.innerHTML = `<div style="margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:8px">
-              <strong>${esc(tag.spool_name || 'Unknown')}</strong><br>
-              <span class="text-muted">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span><br>
-              <span class="text-muted">UID: ${esc(uid)}</span>
-            </div>`;
-          } else {
-            resultEl.innerHTML = `<div style="margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:8px">
-              <p>${t('filament.nfc_tag_unknown')}</p>
-              <span class="text-muted">UID: ${esc(uid)}</span><br>
-              <button class="form-btn form-btn-sm" data-ripple style="margin-top:8px" onclick="linkNfcToSpool('${esc(uid)}')">${t('filament.nfc_link')}</button>
-            </div>`;
-          }
-        } catch { resultEl.innerHTML = '<span class="text-muted">Error</span>'; }
+        _handleScannedTag(uid);
       };
     } catch (e) {
       showToast(t('filament.nfc_error') + ': ' + e.message, 'error');
     }
-  };
+  }
 
-  window.linkNfcToSpool = async function(uid) {
-    const spoolId = prompt(t('filament.nfc_enter_spool_id'));
+  async function _tagStartCamera() {
+    const video = document.getElementById('tag-scanner-video');
+    const canvas = document.getElementById('tag-scanner-canvas');
+    if (!video || !canvas) return;
+    try {
+      _tagScannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = _tagScannerStream;
+      video.play();
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const startScan = () => _tagScanFrame(video, canvas, ctx);
+      if (typeof jsQR === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/js/lib/jsqr.min.js';
+        script.onload = startScan;
+        script.onerror = () => showToast(t('filament.qr_lib_failed'), 'error');
+        document.head.appendChild(script);
+      } else {
+        startScan();
+      }
+    } catch {
+      const body = document.getElementById('tag-scanner-body');
+      if (body) body.innerHTML = `<p class="text-muted" style="padding:24px;text-align:center">${t('filament.camera_denied')}</p>`;
+    }
+  }
+
+  function _tagScanFrame(video, canvas, ctx) {
+    if (!document.getElementById('tag-scanner-overlay')) return;
+    if (!_tagScannerStream) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        // Parse as spool URL or raw UID
+        const spoolMatch = code.data.match(/#filament\/spool\/(\d+)/);
+        if (spoolMatch) {
+          const spoolId = parseInt(spoolMatch[1]);
+          const spool = _spools.find(s => s.id === spoolId);
+          if (spool) {
+            _tagCleanupMethod();
+            closeTagScanner();
+            showEditSpoolForm(spoolId);
+            return;
+          }
+        }
+        // Try as NFC UID
+        _handleScannedTag(code.data);
+        return;
+      }
+    }
+    requestAnimationFrame(() => _tagScanFrame(video, canvas, ctx));
+  }
+
+  async function _handleScannedTag(uid) {
+    const resultEl = document.getElementById('tag-scanner-result');
+    if (!resultEl) return;
+    resultEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center">
+      <span class="text-muted">${t('filament.scanning')}...</span>
+    </div>`;
+    try {
+      const res = await fetch(`/api/nfc/lookup/${encodeURIComponent(uid)}`);
+      if (res.ok) {
+        const tag = await res.json();
+        const color = tag.color_hex ? hexToRgb(tag.color_hex) : '#888';
+        resultEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="filament-color-swatch" style="background:${color};width:24px;height:24px"></span>
+            <div>
+              <strong>${esc(tag.spool_name || 'Unknown')}</strong><br>
+              <span class="text-muted" style="font-size:0.8rem">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span>
+            </div>
+          </div>
+          <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}</span>
+        </div>`;
+      } else {
+        // Build spool options for linking
+        let spoolOpts = `<option value="">${t('filament.tag_select_spool')}</option>`;
+        for (const s of _spools) {
+          const name = s.profile_name || s.material || `Spool #${s.id}`;
+          const vendor = s.vendor_name ? ` (${s.vendor_name})` : '';
+          spoolOpts += `<option value="${s.id}">${esc(name)}${esc(vendor)}</option>`;
+        }
+        resultEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px">
+          <p style="margin-bottom:8px">${t('filament.tag_not_found')}</p>
+          <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}</span>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <select id="tag-link-spool-select" class="form-input" style="flex:1">${spoolOpts}</select>
+            <button class="form-btn form-btn-sm" data-ripple onclick="window._tagLinkSpool('${esc(uid)}')">${t('filament.tag_link_spool')}</button>
+          </div>
+        </div>`;
+      }
+    } catch {
+      resultEl.innerHTML = `<span class="text-muted">Error</span>`;
+    }
+  }
+
+  window._tagLinkSpool = async function(uid) {
+    const select = document.getElementById('tag-link-spool-select');
+    const spoolId = select?.value;
     if (!spoolId) return;
     try {
       await fetch('/api/nfc/link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag_uid: uid, spool_id: parseInt(spoolId) })
       });
+      showToast(t('filament.tag_found'), 'success');
+      closeTagScanner();
       loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  function _tagCleanupMethod() {
+    // Stop camera
+    if (_tagScannerStream) {
+      _tagScannerStream.getTracks().forEach(t => t.stop());
+      _tagScannerStream = null;
+    }
+    // Stop NFC
+    if (_tagScannerNdef) {
+      _tagScannerNdef.onreading = null;
+      _tagScannerNdef = null;
+    }
+    // Clear wedge timer
+    clearTimeout(_tagScannerWedgeTimer);
+  }
+
+  window.closeTagScanner = function() {
+    _tagCleanupMethod();
+    const overlay = document.getElementById('tag-scanner-overlay');
+    if (overlay) overlay.remove();
+  };
+
+  window.linkNfcToSpool = async function(uid) {
+    // Legacy compat — opens tag scanner instead
+    window.openTagScanner();
   };
 
   window.unlinkNfcItem = function(uid) {
