@@ -159,7 +159,8 @@
       html += '<div id="demo-data-section" style="display:none"></div>';
       html += '</div>';
 
-      // -- Section: Security & Access --
+      // -- Section: Security & Access (admin only) --
+      if (window._can && window._can('admin')) {
       html += `<div class="settings-section-header mt-md">${t('settings.section_security')}</div>`;
       html += '<div class="settings-grid">';
       html += `
@@ -186,6 +187,7 @@
           </div>
         </div>`;
       html += '</div>';
+      } // end admin-only security section
 
       // -- Section: Printer Management --
       html += `<div class="settings-section-header mt-md">${t('settings.section_printer_mgmt')}</div>`;
@@ -304,8 +306,7 @@
       loadNotifSettings();
       loadNotifLog();
       loadWebhooks();
-      loadUsers();
-      loadApiKeys();
+      if (window._can && window._can('admin')) { loadUsers(); loadApiKeys(); }
       loadEcomLicenseStatus();
       loadTimelapseSettings();
       loadHubSettings();

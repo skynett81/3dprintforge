@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { config, saveConfig } from './config.js';
 import { getUserByUsername, updateUser, getApiKeyByHash, updateApiKeyLastUsed } from './database.js';
 
-// In-memory session store: Map<token, { createdAt, username }>
+// In-memory session store: Map<token, { createdAt, username, userId, roleId, roleName, permissions, displayName }>
 const sessions = new Map();
 let _cleanupInterval = null;
 
@@ -101,11 +101,20 @@ export function validateCredentials(password, username) {
   return true;
 }
 
-export function createSession(username) {
+export function createSession(userOrUsername) {
   const token = crypto.randomBytes(32).toString('hex');
+  const isObj = userOrUsername && typeof userOrUsername === 'object';
+  const perms = isObj && userOrUsername.permissions
+    ? (typeof userOrUsername.permissions === 'string' ? JSON.parse(userOrUsername.permissions) : userOrUsername.permissions)
+    : ['*'];
   sessions.set(token, {
     createdAt: Date.now(),
-    username: username || null
+    username: isObj ? userOrUsername.username : (userOrUsername || null),
+    userId: isObj ? (userOrUsername.id || null) : null,
+    roleId: isObj ? (userOrUsername.role_id || null) : null,
+    roleName: isObj ? (userOrUsername.role_name || null) : null,
+    permissions: perms,
+    displayName: isObj ? (userOrUsername.display_name || null) : null
   });
   return token;
 }
@@ -202,4 +211,17 @@ export function hasPermission(permissions, required) {
 export function getSessionUser(token) {
   if (!token) return null;
   return sessions.get(token) || null;
+}
+
+// ---- Request-level permission helpers ----
+
+export function getRequestUser(req) {
+  return req._user || null;
+}
+
+export function requirePermission(req, permission) {
+  if (!isAuthEnabled()) return true;
+  const user = getRequestUser(req);
+  if (!user) return false;
+  return hasPermission(user.permissions, permission);
 }

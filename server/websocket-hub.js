@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { isAuthEnabled, getSessionToken, validateSession } from './auth.js';
+import { isAuthEnabled, getSessionToken, validateSession, getSessionUser, hasPermission } from './auth.js';
 
 export class WebSocketHub {
   constructor(server) {
@@ -17,6 +17,11 @@ export class WebSocketHub {
           ws.close(4001, 'Unauthorized');
           return;
         }
+        // Store user permissions on the WebSocket connection
+        const session = getSessionUser(token);
+        ws._user = session || { permissions: ['view'] };
+      } else {
+        ws._user = { permissions: ['*'] };
       }
 
       this.clients.add(ws);
@@ -35,6 +40,11 @@ export class WebSocketHub {
         try {
           const msg = JSON.parse(raw.toString());
           if (msg.type === 'command' && this.onCommand) {
+            // Check permission for commands (requires 'controls' permission)
+            if (!hasPermission(ws._user?.permissions, 'controls')) {
+              ws.send(JSON.stringify({ type: 'error', data: { error: 'Forbidden', message: 'Permission denied: controls' } }));
+              return;
+            }
             this.onCommand(msg);
           }
         } catch (e) {
