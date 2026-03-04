@@ -13,14 +13,27 @@
   function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   let _activeTab = 'printers';
+  let _printerSubTab = 'list';
+  let _generalSubTab = 'preferences';
+  let _appearanceSubTab = 'theme';
+  let _systemSubTab = 'updates';
+  let _notifSubTab = 'channels';
 
   async function loadSettings() {
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
-    // Read sub-slug from hash (e.g. #settings/notifications)
-    const hashSub = location.hash.replace('#', '').split('/')[1];
+    // Read sub-slug from hash (e.g. #settings/notifications or #settings/system/security)
+    const hashParts = location.hash.replace('#', '').split('/');
+    const hashSub = hashParts[1];
     if (hashSub && ['printers','general','appearance','notifications','system'].includes(hashSub)) _activeTab = hashSub;
+    if (hashParts[2]) {
+      if (_activeTab === 'printers' && ['list','status'].includes(hashParts[2])) _printerSubTab = hashParts[2];
+      if (_activeTab === 'general' && ['preferences','auth','obs'].includes(hashParts[2])) _generalSubTab = hashParts[2];
+      if (_activeTab === 'appearance' && ['theme','customize'].includes(hashParts[2])) _appearanceSubTab = hashParts[2];
+      if (_activeTab === 'system' && ['updates','security','printers','automation','integrations','data'].includes(hashParts[2])) _systemSubTab = hashParts[2];
+      if (_activeTab === 'notifications' && ['channels','log','webhooks'].includes(hashParts[2])) _notifSubTab = hashParts[2];
+    }
 
     try {
       const res = await fetch('/api/printers');
@@ -36,286 +49,93 @@
           <button class="settings-tab ${_activeTab === 'system' ? 'active' : ''}" onclick="switchSettingsTab('system')">${t('settings.tab_system')}</button>
         </div>`;
 
-      // ======== TAB: Printers ========
+      // ======== TAB: Printers (sub-tabs) ========
       html += `<div class="settings-tab-content ${_activeTab === 'printers' ? 'active' : ''}" id="tab-printers">`;
-
-      // Printer info (live data)
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('printer_info.title')}</div>
-          <div id="settings-printer-info">
-            <span class="text-muted" style="font-size:0.8rem">${t('printer_info.waiting')}</span>
-          </div>
-        </div>`;
-
-      // Printer list
-      html += `<div class="card-title mt-md">${t('settings.printers_title')}</div>`;
-      html += '<div class="printer-list-grid">';
-      for (const p of printers) {
-        html += `
-          <div class="printer-config-card">
-            <div class="printer-config-header">
-              <div>
-                <strong>${p.name}</strong>
-                <div class="text-muted" style="font-size:0.75rem">${p.model || ''} ${p.ip && p.serial && p.accessCode ? '| ' + p.ip + ' | ' + t('settings.auto_connect') : '| ' + t('settings.add_details')}</div>
-              </div>
-              <div class="printer-config-actions">
-                <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.edit')}" onclick="editPrinter('${p.id}')">${t('settings.edit')}</button>
-                <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.delete')}" onclick="removePrinter('${p.id}')">${t('settings.delete')}</button>
-              </div>
-            </div>
-          </div>`;
+      {
+        const ptabs = [
+          { id: 'list', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', label: t('settings.settings_sub_printer_list') },
+          { id: 'status', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>', label: t('settings.settings_sub_printer_status') }
+        ];
+        html += '<div class="drying-sub-tabs">';
+        for (const tab of ptabs) html += `<button class="drying-sub-tab${_printerSubTab === tab.id ? ' active' : ''}" data-printer-tab="${tab.id}" onclick="window._switchPrinterSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '</div>';
+        html += '<div id="printer-sub-content"></div>';
       }
-      html += '</div>';
-      html += `<button class="form-btn mt-md" data-ripple onclick="showAddPrinterForm()">${t('settings.add_printer')}</button>`;
-      html += `<div id="printer-form-area"></div>`;
       html += '</div>'; // end tab-printers
 
-      // ======== TAB: General ========
+      // ======== TAB: General (sub-tabs) ========
       html += `<div class="settings-tab-content ${_activeTab === 'general' ? 'active' : ''}" id="tab-general">`;
-      html += '<div class="settings-grid">';
-
-      // Left column: Language + Browser notifications
-      html += '<div>';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.language')}</div>
-          <select class="form-input" id="lang-select" onchange="changeLanguage(this.value)">`;
-      const locales = window.i18n.getSupportedLocales();
-      const names = window.i18n.getLocaleNames();
-      const current = window.i18n.getLocale();
-      for (const loc of locales) {
-        html += `<option value="${loc}" ${loc === current ? 'selected' : ''}>${names[loc]}</option>`;
+      {
+        const gtabs = [
+          { id: 'preferences', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', label: t('settings.settings_sub_preferences') },
+          { id: 'auth', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', label: t('settings.settings_sub_auth') },
+          { id: 'obs', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', label: t('settings.settings_sub_obs') }
+        ];
+        html += '<div class="drying-sub-tabs">';
+        for (const tab of gtabs) html += `<button class="drying-sub-tab${_generalSubTab === tab.id ? ' active' : ''}" data-general-tab="${tab.id}" onclick="window._switchGeneralSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '</div>';
+        html += '<div id="general-sub-content"></div>';
       }
-      html += `</select>
-        </div>
-        <div class="settings-card mt-md">
-          <div class="card-title">${t('settings.notifications_title')}</div>
-          <label class="settings-checkbox">
-            <input type="checkbox" id="notify-toggle"
-                   ${typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'checked' : ''}
-                   onchange="toggleNotificationsPerm(this.checked)">
-            <span>${t('settings.notifications_browser')}</span>
-          </label>
-        </div>
-        <div class="settings-card mt-md">
-          <div class="card-title">${t('settings.server_title')}</div>
-          <div class="text-muted" style="font-size:0.8rem">
-            Port: ${location.port || '3000'} | ${t('settings.printers_title')}: ${printers.length}
-          </div>
-        </div>`;
-      html += '</div>';
-
-      // Right column: Authentication
-      html += '<div id="auth-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>';
-
-      html += '</div>'; // end settings-grid
-
-      // OBS Overlay URL
-      html += `<div class="settings-card mt-md">
-        <div class="card-title">${t('settings.obs_title')}</div>
-        <p class="text-muted" style="font-size:0.8rem;margin-bottom:8px">${t('settings.obs_description')}</p>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="form-input" id="obs-url-display" readonly value="${location.origin}/obs.html" style="flex:1;font-size:0.8rem">
-          <button class="form-btn form-btn-sm" data-ripple onclick="copyObsUrl()">${t('camera.copy')}</button>
-        </div>
-        <p class="text-muted" style="font-size:0.75rem;margin-top:6px">${t('settings.obs_params')}</p>
-      </div>`;
-
       html += '</div>'; // end tab-general
 
-      // ======== TAB: Appearance ========
+      // ======== TAB: Appearance (sub-tabs) ========
       html += `<div class="settings-tab-content ${_activeTab === 'appearance' ? 'active' : ''}" id="tab-appearance">`;
-      html += buildAppearanceTab();
+      {
+        const atabs = [
+          { id: 'theme', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>', label: t('settings.settings_sub_theme') },
+          { id: 'customize', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>', label: t('settings.settings_sub_customize') }
+        ];
+        html += '<div class="drying-sub-tabs">';
+        for (const tab of atabs) html += `<button class="drying-sub-tab${_appearanceSubTab === tab.id ? ' active' : ''}" data-appearance-tab="${tab.id}" onclick="window._switchAppearanceSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '</div>';
+        html += '<div id="appearance-sub-content"></div>';
+      }
       html += '</div>'; // end tab-appearance
 
-      // ======== TAB: Notifications ========
+      // ======== TAB: Notifications (sub-tabs) ========
       html += `<div class="settings-tab-content ${_activeTab === 'notifications' ? 'active' : ''}" id="tab-notifications">`;
-      html += `<div id="notif-server-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>`;
-      html += `
-        <div class="settings-card mt-md">
-          <div class="card-title">${t('settings.notif_log_title')}</div>
-          <div id="notif-log-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-        </div>`;
-      html += `
-        <div class="settings-card mt-md">
-          <div class="card-title">${t('settings.webhooks_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.webhooks_desc')}</p>
-          <div id="webhooks-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showWebhookEditor()">${t('settings.webhook_add')}</button>
-        </div>`;
+      {
+        const ntabs = [
+          { id: 'channels', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>', label: t('settings.settings_sub_channels') },
+          { id: 'log', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>', label: t('settings.settings_sub_log') },
+          { id: 'webhooks', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>', label: t('settings.settings_sub_webhooks') }
+        ];
+        html += '<div class="drying-sub-tabs">';
+        for (const tab of ntabs) html += `<button class="drying-sub-tab${_notifSubTab === tab.id ? ' active' : ''}" data-notif-tab="${tab.id}" onclick="window._switchNotifSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '</div>';
+        html += '<div id="notif-sub-content"></div>';
+      }
       html += '</div>'; // end tab-notifications
 
-      // ======== TAB: System ========
+      // ======== TAB: System (sub-tabs) ========
       html += `<div class="settings-tab-content ${_activeTab === 'system' ? 'active' : ''}" id="tab-system">`;
-
-      // -- Updates & Demo --
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('update.title')}</div>
-          <div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-        </div>`;
-      html += '<div id="demo-data-section" style="display:none"></div>';
-      html += '</div>';
-
-      // -- Section: Security & Access (admin only) --
-      if (window._can && window._can('admin')) {
-      html += `<div class="settings-section-header mt-md">${t('settings.section_security')}</div>`;
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.users_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.users_desc')}</p>
-          <div id="users-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showUserEditor()">${t('settings.user_add')}</button>
-        </div>`;
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.api_keys_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.api_keys_desc')}</p>
-          <div id="api-keys-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showApiKeyEditor()">${t('settings.api_key_add')}</button>
-        </div>`;
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.push_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.push_desc')}</p>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <button class="form-btn form-btn-primary" data-ripple onclick="subscribePush()">${t('settings.push_enable')}</button>
-            <button class="form-btn" data-ripple onclick="unsubscribePush()">${t('settings.push_disable')}</button>
-          </div>
-        </div>`;
-      html += '</div>';
-      } // end admin-only security section
-
-      // -- Section: Printer Management --
-      html += `<div class="settings-section-header mt-md">${t('settings.section_printer_mgmt')}</div>`;
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.printer_groups_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.printer_groups_desc')}</p>
-          <div id="printer-groups-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showPrinterGroupEditor()">${t('settings.printer_groups_add')}</button>
-        </div>`;
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.hub_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.hub_desc')}</p>
-          <div id="hub-settings-section">
-            <label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-              <input type="checkbox" id="hub-mode" onchange="toggleHubMode(this.checked)">
-              <span>${t('settings.hub_enable')}</span>
-            </label>
-            <label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-              <input type="checkbox" id="kiosk-mode" onchange="toggleKioskMode(this.checked)">
-              <span>${t('settings.kiosk_enable')}</span>
-            </label>
-          </div>
-        </div>`;
-      html += '</div>';
-
-      // -- Section: Automation & Monitoring --
-      html += `<div class="settings-section-header mt-md">${t('settings.section_automation')}</div>`;
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.ai_detection_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.ai_detection_desc')}</p>
-          <div id="ai-detection-section">
-            <label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-              <input type="checkbox" id="ai-detection-enabled" onchange="toggleAiDetection(this.checked)">
-              <span>${t('settings.ai_detection_enable')}</span>
-            </label>
-            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem">
-              <label style="font-size:0.85rem">${t('settings.ai_detection_sensitivity')}</label>
-              <select class="form-input" id="ai-detection-sensitivity" onchange="updateAiSensitivity(this.value)" style="width:auto">
-                <option value="low">${t('settings.sensitivity_low')}</option>
-                <option value="medium">${t('settings.sensitivity_medium')}</option>
-                <option value="high">${t('settings.sensitivity_high')}</option>
-              </select>
-            </div>
-            <div id="ai-detection-list" style="margin-top:0.5rem"></div>
-          </div>
-        </div>`;
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.timelapse_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.timelapse_desc')}</p>
-          <div id="timelapse-settings-section">
-            <label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-              <input type="checkbox" id="timelapse-enabled" onchange="toggleTimelapse(this.checked)">
-              <span>${t('settings.timelapse_enable')}</span>
-            </label>
-            <div id="timelapse-list" style="margin-top:0.5rem"></div>
-          </div>
-        </div>`;
-      html += '</div>';
-
-      // -- Section: Integrations --
-      html += `<div class="settings-section-header mt-md">${t('settings.section_integrations')}</div>`;
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card" id="ecom-premium-card">
-          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem">
-            <span class="premium-badge" id="ecom-premium-badge">${t('settings.ecom_premium')}</span>
-            <div class="card-title">${t('settings.ecom_title')}</div>
-          </div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.ecom_desc')}</p>
-          <div id="ecom-license-area"><div class="text-muted" style="font-size:0.8rem">${t('settings.ecom_license_checking')}</div></div>
-          <div id="ecom-section" style="display:none"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" id="ecom-add-btn" style="display:none" data-ripple onclick="showEcomEditor()">${t('settings.ecom_add')}</button>
-        </div>`;
-      html += '</div>';
-
-      // -- Section: Data & Customization --
-      html += `<div class="settings-section-header mt-md">${t('settings.section_data')}</div>`;
-      html += '<div class="settings-grid">';
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.custom_fields_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.custom_fields_desc')}</p>
-          <div id="custom-fields-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showCustomFieldEditor()">${t('settings.custom_fields_add')}</button>
-        </div>`;
-      html += `
-        <div class="settings-card">
-          <div class="card-title">${t('settings.brand_defaults_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.brand_defaults_desc')}</p>
-          <div id="brand-defaults-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
-          <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showBrandDefaultEditor()">${t('settings.brand_defaults_add')}</button>
-        </div>`;
-      html += `
-        <div class="settings-card" style="cursor:pointer" onclick="openPanel('learning')">
-          <div class="card-title">${t('settings.courses_title')}</div>
-          <p class="text-muted" style="font-size:0.85rem">${t('settings.courses_desc')}</p>
-          <button class="form-btn form-btn-sm mt-sm" data-ripple onclick="openPanel('learning')">${t('learning.go_to')} \u2192</button>
-        </div>`;
-      html += '</div>';
-
+      {
+        const stabs = [
+          { id: 'updates', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', label: t('settings.settings_sub_updates') },
+          { id: 'security', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', label: t('settings.settings_sub_security'), admin: true },
+          { id: 'printers', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>', label: t('settings.settings_sub_printers') },
+          { id: 'automation', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', label: t('settings.settings_sub_automation') },
+          { id: 'integrations', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>', label: t('settings.settings_sub_integrations') },
+          { id: 'data', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', label: t('settings.settings_sub_data') }
+        ];
+        html += '<div class="drying-sub-tabs">';
+        for (const tab of stabs) {
+          if (tab.admin && !(window._can && window._can('admin'))) continue;
+          html += `<button class="drying-sub-tab${_systemSubTab === tab.id ? ' active' : ''}" data-system-tab="${tab.id}" onclick="window._switchSystemSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        }
+        html += '</div>';
+        html += '<div id="system-sub-content"></div>';
+      }
       html += '</div>'; // end tab-system
 
       panel.innerHTML = html;
 
-      // Post-render: populate async sections
-      const printerInfoEl = document.getElementById('settings-printer-info');
-      if (printerInfoEl && typeof renderPrinterInfoSection === 'function') renderPrinterInfoSection(printerInfoEl);
-      checkDemoData();
-      loadAuthSettings();
-      loadNotifSettings();
-      loadNotifLog();
-      loadWebhooks();
-      if (window._can && window._can('admin')) { loadUsers(); loadApiKeys(); }
-      loadEcomLicenseStatus();
-      loadTimelapseSettings();
-      loadHubSettings();
-      loadAiDetectionSettings();
-      loadPrinterGroupsSettings();
-      loadCustomFieldsSettings();
-      loadBrandDefaultsSettings();
-      const updateSection = document.getElementById('update-section');
-      if (updateSection && typeof renderUpdateSection === 'function') renderUpdateSection(updateSection);
+      // Post-render: lazy-load all sub-tabbed sections
+      _renderPrinterSubContent(printers);
+      _renderGeneralSubContent(printers);
+      _renderAppearanceSubContent();
+      _renderNotifSubContent();
+      _renderSystemSubContent();
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('settings.load_failed')}</p>`;
     }
@@ -342,6 +162,204 @@
       if (match) el.classList.toggle('active', match[1] === tab);
     });
   };
+
+  // ═══ Printers sub-tabs ═══
+  let _cachedPrinters = [];
+  window._switchPrinterSubTab = function(tab) {
+    _printerSubTab = tab;
+    const slug = `settings/printers/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('[data-printer-tab]').forEach(b => b.classList.toggle('active', b.dataset.printerTab === tab));
+    _renderPrinterSubContent(_cachedPrinters);
+  };
+
+  function _renderPrinterSubContent(printers) {
+    if (printers && printers.length) _cachedPrinters = printers;
+    const p = _cachedPrinters;
+    const el = document.getElementById('printer-sub-content');
+    if (!el) return;
+
+    if (_printerSubTab === 'list') {
+      let h = '';
+      h += '<div class="printer-list-grid">';
+      for (const pr of p) {
+        h += `<div class="printer-config-card"><div class="printer-config-header"><div><strong>${pr.name}</strong><div class="text-muted" style="font-size:0.75rem">${pr.model || ''} ${pr.ip && pr.serial && pr.accessCode ? '| ' + pr.ip + ' | ' + t('settings.auto_connect') : '| ' + t('settings.add_details')}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.edit')}" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.delete')}" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
+      }
+      h += '</div>';
+      h += `<button class="form-btn mt-md" data-ripple onclick="showAddPrinterForm()">${t('settings.add_printer')}</button>`;
+      h += '<div id="printer-form-area"></div>';
+      el.innerHTML = h;
+    } else if (_printerSubTab === 'status') {
+      el.innerHTML = `<div class="settings-card"><div class="card-title">${t('printer_info.title')}</div><div id="settings-printer-info"><span class="text-muted" style="font-size:0.8rem">${t('printer_info.waiting')}</span></div></div>`;
+      const printerInfoEl = document.getElementById('settings-printer-info');
+      if (printerInfoEl && typeof renderPrinterInfoSection === 'function') renderPrinterInfoSection(printerInfoEl);
+    }
+  }
+
+  // ═══ Appearance sub-tabs ═══
+  window._switchAppearanceSubTab = function(tab) {
+    _appearanceSubTab = tab;
+    const slug = `settings/appearance/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('[data-appearance-tab]').forEach(b => b.classList.toggle('active', b.dataset.appearanceTab === tab));
+    _renderAppearanceSubContent();
+  };
+
+  function _renderAppearanceSubContent() {
+    const el = document.getElementById('appearance-sub-content');
+    if (!el) return;
+
+    const cfg = window.theme ? window.theme.get() : { preset: 'light', accentColor: null, radius: 12 };
+    const currentAccent = cfg.accentColor || (window.theme ? window.theme.getDefaultAccent() : '#00AE42');
+    const currentRadius = cfg.radius ?? 12;
+
+    if (_appearanceSubTab === 'theme') {
+      let h = `<div class="settings-card"><div class="card-title">${t('settings.theme_title')}</div><div class="theme-preset-grid">`;
+      h += `<button class="theme-preset-card ${cfg.preset === 'light' ? 'active' : ''}" onclick="setThemePreset('light')"><div class="theme-preset-preview theme-preview-light"><div class="tpp-sidebar"></div><div class="tpp-main"><div class="tpp-card"></div><div class="tpp-card"></div></div></div><span>${t('settings.theme_light')}</span></button>`;
+      h += `<button class="theme-preset-card ${cfg.preset === 'dark' ? 'active' : ''}" onclick="setThemePreset('dark')"><div class="theme-preset-preview theme-preview-dark"><div class="tpp-sidebar"></div><div class="tpp-main"><div class="tpp-card"></div><div class="tpp-card"></div></div></div><span>${t('settings.theme_dark')}</span></button>`;
+      h += `<button class="theme-preset-card ${cfg.preset === 'auto' ? 'active' : ''}" onclick="setThemePreset('auto')"><div class="theme-preset-preview theme-preview-auto"><div class="tpp-half-light"></div><div class="tpp-half-dark"></div></div><span>${t('settings.theme_auto')}</span></button>`;
+      h += '</div></div>';
+      h += `<div class="mt-md"><button class="form-btn form-btn-secondary" data-ripple onclick="resetTheme()">${t('settings.theme_reset')}</button></div>`;
+      el.innerHTML = h;
+    } else if (_appearanceSubTab === 'customize') {
+      let h = `<div class="settings-card"><div class="card-title">${t('settings.theme_accent')}</div><div class="theme-color-row">`;
+      for (const s of ACCENT_SWATCHES) {
+        const isActive = currentAccent.toLowerCase() === s.color.toLowerCase();
+        h += `<button class="theme-color-swatch ${isActive ? 'active' : ''}" style="background:${s.color}" onclick="setThemeAccent('${s.color}')" title="${s.label}"></button>`;
+      }
+      h += `<label class="theme-color-custom" title="${t('settings.theme_accent')}"><input type="color" id="theme-accent-picker" value="${currentAccent}" onchange="setThemeAccent(this.value)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></label></div>`;
+      if (cfg.accentColor) h += `<button class="form-btn form-btn-sm form-btn-secondary mt-sm" data-ripple onclick="setThemeAccent(null)">${t('settings.theme_accent_reset')}</button>`;
+      h += '</div>';
+      h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.theme_radius')}</div><div class="theme-radius-row"><span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_sharp')}</span><input type="range" class="theme-radius-slider" id="theme-radius-slider" min="0" max="20" step="1" value="${currentRadius}" oninput="setThemeRadius(this.value)"><span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_round')}</span><span class="theme-radius-value" id="theme-radius-value">${currentRadius}px</span></div></div>`;
+      el.innerHTML = h;
+    }
+  }
+
+  // ═══ General sub-tabs ═══
+  window._switchGeneralSubTab = function(tab) {
+    _generalSubTab = tab;
+    const slug = `settings/general/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('[data-general-tab]').forEach(b => b.classList.toggle('active', b.dataset.generalTab === tab));
+    _renderGeneralSubContent(_cachedPrinters);
+  };
+
+  function _renderGeneralSubContent(printers) {
+    if (printers && printers.length) _cachedPrinters = printers;
+    const p = _cachedPrinters;
+    const el = document.getElementById('general-sub-content');
+    if (!el) return;
+
+    if (_generalSubTab === 'preferences') {
+      const locales = window.i18n.getSupportedLocales();
+      const names = window.i18n.getLocaleNames();
+      const current = window.i18n.getLocale();
+      let opts = '';
+      for (const loc of locales) opts += `<option value="${loc}" ${loc === current ? 'selected' : ''}>${names[loc]}</option>`;
+      let h = '<div class="settings-grid"><div>';
+      h += `<div class="settings-card"><div class="card-title">${t('settings.language')}</div><select class="form-input" id="lang-select" onchange="changeLanguage(this.value)">${opts}</select></div>`;
+      h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.notifications_title')}</div><label class="settings-checkbox"><input type="checkbox" id="notify-toggle" ${typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'checked' : ''} onchange="toggleNotificationsPerm(this.checked)"><span>${t('settings.notifications_browser')}</span></label></div>`;
+      h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.server_title')}</div><div class="text-muted" style="font-size:0.8rem">Port: ${location.port || '3000'} | ${t('settings.printers_title')}: ${p.length}</div></div>`;
+      h += '</div></div>';
+      el.innerHTML = h;
+
+    } else if (_generalSubTab === 'auth') {
+      el.innerHTML = '<div id="auth-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>';
+      loadAuthSettings();
+
+    } else if (_generalSubTab === 'obs') {
+      el.innerHTML = `<div class="settings-card"><div class="card-title">${t('settings.obs_title')}</div><p class="text-muted" style="font-size:0.8rem;margin-bottom:8px">${t('settings.obs_description')}</p><div style="display:flex;gap:8px;align-items:center"><input class="form-input" id="obs-url-display" readonly value="${location.origin}/obs.html" style="flex:1;font-size:0.8rem"><button class="form-btn form-btn-sm" data-ripple onclick="copyObsUrl()">${t('camera.copy')}</button></div><p class="text-muted" style="font-size:0.75rem;margin-top:6px">${t('settings.obs_params')}</p></div>`;
+    }
+  }
+
+  // ═══ Notifications sub-tabs ═══
+  window._switchNotifSubTab = function(tab) {
+    _notifSubTab = tab;
+    const slug = `settings/notifications/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('[data-notif-tab]').forEach(b => b.classList.toggle('active', b.dataset.notifTab === tab));
+    _renderNotifSubContent();
+  };
+
+  function _renderNotifSubContent() {
+    const el = document.getElementById('notif-sub-content');
+    if (!el) return;
+    if (_notifSubTab === 'channels') {
+      el.innerHTML = `<div id="notif-server-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>`;
+      loadNotifSettings();
+    } else if (_notifSubTab === 'log') {
+      el.innerHTML = `<div class="settings-card"><div class="card-title">${t('settings.notif_log_title')}</div><div id="notif-log-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>`;
+      loadNotifLog();
+    } else if (_notifSubTab === 'webhooks') {
+      el.innerHTML = `<div class="settings-card"><div class="card-title">${t('settings.webhooks_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.webhooks_desc')}</p><div id="webhooks-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showWebhookEditor()">${t('settings.webhook_add')}</button></div>`;
+      loadWebhooks();
+    }
+  }
+
+  // ═══ System sub-tabs ═══
+  window._switchSystemSubTab = function(tab) {
+    _systemSubTab = tab;
+    const slug = `settings/system/${tab}`;
+    if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    document.querySelectorAll('[data-system-tab]').forEach(b => b.classList.toggle('active', b.dataset.systemTab === tab));
+    _renderSystemSubContent();
+  };
+
+  function _renderSystemSubContent() {
+    const el = document.getElementById('system-sub-content');
+    if (!el) return;
+
+    if (_systemSubTab === 'updates') {
+      el.innerHTML = `<div class="settings-grid"><div class="settings-card"><div class="card-title">${t('update.title')}</div><div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div><div id="demo-data-section" style="display:none"></div></div>`;
+      const updateSection = document.getElementById('update-section');
+      if (updateSection && typeof renderUpdateSection === 'function') renderUpdateSection(updateSection);
+      checkDemoData();
+
+    } else if (_systemSubTab === 'security') {
+      let h = '<div class="settings-grid">';
+      h += `<div class="settings-card"><div class="card-title">${t('settings.users_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.users_desc')}</p><div id="users-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showUserEditor()">${t('settings.user_add')}</button></div>`;
+      h += `<div class="settings-card"><div class="card-title">${t('settings.api_keys_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.api_keys_desc')}</p><div id="api-keys-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showApiKeyEditor()">${t('settings.api_key_add')}</button></div>`;
+      h += `<div class="settings-card"><div class="card-title">${t('settings.push_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.push_desc')}</p><div style="display:flex;gap:0.5rem;flex-wrap:wrap"><button class="form-btn form-btn-primary" data-ripple onclick="subscribePush()">${t('settings.push_enable')}</button><button class="form-btn" data-ripple onclick="unsubscribePush()">${t('settings.push_disable')}</button></div></div>`;
+      h += '</div>';
+      el.innerHTML = h;
+      if (window._can && window._can('admin')) { loadUsers(); loadApiKeys(); }
+
+    } else if (_systemSubTab === 'printers') {
+      let h = '<div class="settings-grid">';
+      h += `<div class="settings-card"><div class="card-title">${t('settings.printer_groups_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.printer_groups_desc')}</p><div id="printer-groups-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showPrinterGroupEditor()">${t('settings.printer_groups_add')}</button></div>`;
+      h += `<div class="settings-card"><div class="card-title">${t('settings.hub_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.hub_desc')}</p><div id="hub-settings-section"><label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem"><input type="checkbox" id="hub-mode" onchange="toggleHubMode(this.checked)"><span>${t('settings.hub_enable')}</span></label><label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem"><input type="checkbox" id="kiosk-mode" onchange="toggleKioskMode(this.checked)"><span>${t('settings.kiosk_enable')}</span></label></div></div>`;
+      h += '</div>';
+      el.innerHTML = h;
+      loadPrinterGroupsSettings();
+      loadHubSettings();
+
+    } else if (_systemSubTab === 'automation') {
+      let h = '<div class="settings-grid">';
+      h += `<div class="settings-card"><div class="card-title">${t('settings.ai_detection_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.ai_detection_desc')}</p><div id="ai-detection-section"><label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem"><input type="checkbox" id="ai-detection-enabled" onchange="toggleAiDetection(this.checked)"><span>${t('settings.ai_detection_enable')}</span></label><div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem"><label style="font-size:0.85rem">${t('settings.ai_detection_sensitivity')}</label><select class="form-input" id="ai-detection-sensitivity" onchange="updateAiSensitivity(this.value)" style="width:auto"><option value="low">${t('settings.sensitivity_low')}</option><option value="medium">${t('settings.sensitivity_medium')}</option><option value="high">${t('settings.sensitivity_high')}</option></select></div><div id="ai-detection-list" style="margin-top:0.5rem"></div></div></div>`;
+      h += `<div class="settings-card"><div class="card-title">${t('settings.timelapse_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.timelapse_desc')}</p><div id="timelapse-settings-section"><label class="form-checkbox-label" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem"><input type="checkbox" id="timelapse-enabled" onchange="toggleTimelapse(this.checked)"><span>${t('settings.timelapse_enable')}</span></label><div id="timelapse-list" style="margin-top:0.5rem"></div></div></div>`;
+      h += '</div>';
+      el.innerHTML = h;
+      loadAiDetectionSettings();
+      loadTimelapseSettings();
+
+    } else if (_systemSubTab === 'integrations') {
+      let h = '<div class="settings-grid">';
+      h += `<div class="settings-card" id="ecom-premium-card"><div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem"><span class="premium-badge" id="ecom-premium-badge">${t('settings.ecom_premium')}</span><div class="card-title">${t('settings.ecom_title')}</div></div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.ecom_desc')}</p><div id="ecom-license-area"><div class="text-muted" style="font-size:0.8rem">${t('settings.ecom_license_checking')}</div></div><div id="ecom-section" style="display:none"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" id="ecom-add-btn" style="display:none" data-ripple onclick="showEcomEditor()">${t('settings.ecom_add')}</button></div>`;
+      h += '</div>';
+      el.innerHTML = h;
+      loadEcomLicenseStatus();
+
+    } else if (_systemSubTab === 'data') {
+      let h = '<div class="settings-grid">';
+      h += `<div class="settings-card"><div class="card-title">${t('settings.custom_fields_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.custom_fields_desc')}</p><div id="custom-fields-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showCustomFieldEditor()">${t('settings.custom_fields_add')}</button></div>`;
+      h += `<div class="settings-card"><div class="card-title">${t('settings.brand_defaults_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.brand_defaults_desc')}</p><div id="brand-defaults-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showBrandDefaultEditor()">${t('settings.brand_defaults_add')}</button></div>`;
+      h += `<div class="settings-card" style="cursor:pointer" onclick="openPanel('learning')"><div class="card-title">${t('settings.courses_title')}</div><p class="text-muted" style="font-size:0.85rem">${t('settings.courses_desc')}</p><button class="form-btn form-btn-sm mt-sm" data-ripple onclick="openPanel('learning')">${t('learning.go_to')} \u2192</button></div>`;
+      h += '</div>';
+      el.innerHTML = h;
+      loadCustomFieldsSettings();
+      loadBrandDefaultsSettings();
+    }
+  }
 
   function renderPrinterForm(target, printer = null) {
     const isEdit = !!printer;
@@ -1030,19 +1048,12 @@
 
   window.setThemePreset = function(preset) {
     if (window.theme) window.theme.set({ preset });
-    // Re-render to update active states
-    if (window._activePanel === 'settings' && _activeTab === 'appearance') {
-      const container = document.getElementById('tab-appearance');
-      if (container) container.innerHTML = buildAppearanceTab();
-    }
+    if (window._activePanel === 'settings' && _activeTab === 'appearance') _renderAppearanceSubContent();
   };
 
   window.setThemeAccent = function(color) {
     if (window.theme) window.theme.set({ accentColor: color });
-    if (window._activePanel === 'settings' && _activeTab === 'appearance') {
-      const container = document.getElementById('tab-appearance');
-      if (container) container.innerHTML = buildAppearanceTab();
-    }
+    if (window._activePanel === 'settings' && _activeTab === 'appearance') _renderAppearanceSubContent();
   };
 
   window.setThemeRadius = function(val) {
@@ -1055,10 +1066,7 @@
   window.resetTheme = function() {
     return confirmAction(t('settings.theme_reset_confirm'), () => {
       if (window.theme) window.theme.set({ preset: 'light', accentColor: null, radius: 12 });
-      if (window._activePanel === 'settings' && _activeTab === 'appearance') {
-        const container = document.getElementById('tab-appearance');
-        if (container) container.innerHTML = buildAppearanceTab();
-      }
+      if (window._activePanel === 'settings' && _activeTab === 'appearance') _renderAppearanceSubContent();
     }, {});
   };
 
