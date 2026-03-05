@@ -181,14 +181,29 @@
 
     if (_printerSubTab === 'list') {
       let h = '';
+      // Bambu Lab Cloud section
+      h += `<div id="cloud-section" class="settings-card" style="margin-bottom:0.75rem"><div class="card-title" style="display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg> ${t('settings.bambu_cloud')}</div><div id="cloud-content"><span class="text-muted" style="font-size:0.8rem">...</span></div></div>`;
+      // Discovery + Add buttons
+      h += `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap">
+        <button class="form-btn" data-ripple onclick="discoverPrinters()" id="discover-btn" style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          ${t('settings.discover_printers')}
+        </button>
+        <button class="form-btn" data-ripple onclick="showAddPrinterForm()" style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          ${t('settings.add_printer')}
+        </button>
+      </div>`;
+      h += '<div id="discovery-results"></div>';
       h += '<div class="printer-list-grid">';
       for (const pr of p) {
         h += `<div class="printer-config-card"><div class="printer-config-header"><div><strong>${pr.name}</strong><div class="text-muted" style="font-size:0.75rem">${pr.model || ''} ${pr.ip && pr.serial && pr.accessCode ? '| ' + pr.ip + ' | ' + t('settings.auto_connect') : '| ' + t('settings.add_details')}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.edit')}" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.delete')}" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
       }
       h += '</div>';
-      h += `<button class="form-btn mt-md" data-ripple onclick="showAddPrinterForm()">${t('settings.add_printer')}</button>`;
       h += '<div id="printer-form-area"></div>';
       el.innerHTML = h;
+      // Load cloud status async
+      _loadCloudStatus();
     } else if (_printerSubTab === 'status') {
       el.innerHTML = `<div class="settings-card"><div class="card-title">${t('printer_info.title')}</div><div id="settings-printer-info"><span class="text-muted" style="font-size:0.8rem">${t('printer_info.waiting')}</span></div></div>`;
       const printerInfoEl = document.getElementById('settings-printer-info');
@@ -395,8 +410,10 @@
         </div>
         <div class="form-actions">
           <button class="form-btn" data-ripple onclick="savePrinterForm('${printer?.id || ''}')">${t('settings.save')}</button>
+          <button class="form-btn form-btn-secondary" data-ripple onclick="testPrinterConnection()">${t('settings.test_connection')}</button>
           <button class="form-btn form-btn-secondary" data-ripple onclick="cancelPrinterForm()">${t('settings.cancel')}</button>
         </div>
+        <div id="test-connection-result" style="margin-top:0.5rem"></div>
         <p class="text-muted mt-sm" style="font-size:0.75rem">${t('settings.auto_connect_hint')}</p>
       </div>`;
   }
@@ -461,6 +478,301 @@
         loadSettings();
       } catch (e) { /* ignore */ }
     }, { danger: true });
+  };
+
+  // ═══ Printer Discovery ═══
+  window.discoverPrinters = async function() {
+    const btn = document.getElementById('discover-btn');
+    const results = document.getElementById('discovery-results');
+    if (!btn || !results) return;
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-sm"></span> ${t('settings.discovering')}`;
+    results.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/discovery/scan');
+      const data = await res.json();
+
+      if (!data.printers || data.printers.length === 0) {
+        results.innerHTML = `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0;font-size:0.85rem">${t('settings.discovery_none')}</p></div>`;
+      } else {
+        let h = `<div class="settings-card" style="margin-bottom:0.75rem"><div class="card-title">${t('settings.discovery_found').replace('{count}', data.printers.length)}</div>`;
+        for (const p of data.printers) {
+          const signalBar = p.signal != null ? `<span class="text-muted" style="font-size:0.75rem">${t('settings.discovery_signal')}: ${p.signal}%</span>` : '';
+          h += `<div class="printer-config-card" style="margin-bottom:0.5rem"><div class="printer-config-header"><div>`;
+          h += `<strong>${_esc(p.name)}</strong>`;
+          h += `<div class="text-muted" style="font-size:0.75rem">${_esc(p.model)} | ${_esc(p.ip)} | ${_esc(p.serial)} ${signalBar}</div>`;
+          h += `</div><div class="printer-config-actions">`;
+          if (p.alreadyAdded) {
+            h += `<span class="badge badge-muted" style="font-size:0.7rem">${t('settings.discovery_already_added')}</span>`;
+          } else {
+            h += `<button class="form-btn form-btn-sm" data-ripple onclick="addDiscoveredPrinter(${_esc(JSON.stringify(JSON.stringify(p)))})">${t('settings.discovery_add')}</button>`;
+          }
+          h += '</div></div></div>';
+        }
+        h += '</div>';
+        results.innerHTML = h;
+      }
+    } catch (e) {
+      results.innerHTML = `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0">${t('settings.discovery_none')}</p></div>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg> ${t('settings.discover_printers')}`;
+    }
+  };
+
+  window.addDiscoveredPrinter = function(jsonStr) {
+    try {
+      const p = JSON.parse(jsonStr);
+      const area = document.getElementById('printer-form-area');
+      if (!area) return;
+      renderPrinterForm(area, { name: p.name, model: p.model, ip: p.ip, serial: p.serial });
+      // Focus on access code field
+      setTimeout(() => {
+        const accessEl = document.getElementById('pf-access');
+        if (accessEl) accessEl.focus();
+      }, 100);
+    } catch { /* ignore */ }
+  };
+
+  window.testPrinterConnection = async function() {
+    const ip = document.getElementById('pf-ip')?.value.trim();
+    const serial = document.getElementById('pf-serial')?.value.trim();
+    const accessCode = document.getElementById('pf-access')?.value.trim();
+    const resultEl = document.getElementById('test-connection-result');
+    if (!resultEl) return;
+
+    if (!ip || !accessCode) {
+      resultEl.innerHTML = `<span style="color:var(--warning-color,#f0ad4e);font-size:0.8rem">${t('settings.discovery_enter_access')}</span>`;
+      return;
+    }
+
+    resultEl.innerHTML = `<span class="text-muted" style="font-size:0.8rem"><span class="spinner-sm"></span> ${t('settings.testing_connection')}</span>`;
+
+    try {
+      const res = await fetch('/api/discovery/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, serial, accessCode })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        resultEl.innerHTML = `<span style="color:var(--success-color,#28a745);font-size:0.8rem">&#10003; ${t('settings.test_success')}</span>`;
+      } else {
+        const err = data.error === 'timeout' ? t('settings.test_timeout') : t('settings.test_failed');
+        resultEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">&#10007; ${err}</span>`;
+      }
+    } catch {
+      resultEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">&#10007; ${t('settings.test_failed')}</span>`;
+    }
+  };
+
+  // ═══ Bambu Lab Cloud ═══
+  let _cloudEmail = '';
+  let _cloudState = 'loading'; // loading, login, verify, connected
+
+  async function _loadCloudStatus() {
+    const el = document.getElementById('cloud-content');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/bambu-cloud/status');
+      const data = await res.json();
+      if (data.authenticated) {
+        _cloudState = 'connected';
+        _cloudEmail = data.email || '';
+        _renderCloudConnected(el);
+      } else {
+        _cloudState = 'login';
+        _renderCloudLoginForm(el);
+      }
+    } catch {
+      _cloudState = 'login';
+      _renderCloudLoginForm(el);
+    }
+  }
+
+  function _renderCloudLoginForm(el) {
+    el.innerHTML = `
+      <p class="text-muted" style="font-size:0.8rem;margin:0 0 0.5rem">${t('settings.bambu_cloud_desc')}</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="margin:0;flex:1;min-width:140px">
+          <input class="form-input" id="cloud-email" placeholder="${t('settings.cloud_email')}" value="${_esc(_cloudEmail)}" style="font-size:0.85rem">
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:140px">
+          <input class="form-input" id="cloud-password" type="password" placeholder="${t('settings.cloud_password')}" style="font-size:0.85rem">
+        </div>
+        <button class="form-btn" data-ripple onclick="bambuCloudLogin()" id="cloud-login-btn" style="white-space:nowrap">${t('settings.cloud_login')}</button>
+      </div>
+      <div id="cloud-error" style="margin-top:0.35rem"></div>`;
+  }
+
+  function _renderCloudVerifyForm(el) {
+    el.innerHTML = `
+      <p style="font-size:0.85rem;margin:0 0 0.5rem;color:var(--text-primary)">${t('settings.cloud_verify_desc')}</p>
+      <div style="display:flex;gap:0.5rem;align-items:flex-end">
+        <div class="form-group" style="margin:0;flex:1;max-width:200px">
+          <input class="form-input" id="cloud-code" placeholder="000000" maxlength="6" style="font-size:1rem;letter-spacing:0.2em;text-align:center">
+        </div>
+        <button class="form-btn" data-ripple onclick="bambuCloudVerify()" id="cloud-verify-btn">${t('settings.cloud_verify')}</button>
+        <button class="form-btn form-btn-secondary" data-ripple onclick="_resetCloudLogin()">${t('settings.cancel')}</button>
+      </div>
+      <div id="cloud-error" style="margin-top:0.35rem"></div>`;
+    setTimeout(() => { const c = document.getElementById('cloud-code'); if (c) c.focus(); }, 50);
+  }
+
+  function _renderCloudConnected(el) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <span style="font-size:0.85rem;color:var(--success-color,#28a745)">&#10003; ${t('settings.cloud_connected').replace('{email}', _esc(_cloudEmail))}</span>
+        <button class="form-btn form-btn-sm" data-ripple onclick="bambuCloudGetPrinters()" id="cloud-import-btn">${t('settings.cloud_import')}</button>
+        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="bambuCloudLogout()">${t('settings.cloud_disconnect')}</button>
+      </div>
+      <div id="cloud-printer-results" style="margin-top:0.5rem"></div>`;
+  }
+
+  window._resetCloudLogin = function() {
+    _cloudState = 'login';
+    const el = document.getElementById('cloud-content');
+    if (el) _renderCloudLoginForm(el);
+  };
+
+  window.bambuCloudLogin = async function() {
+    const email = document.getElementById('cloud-email')?.value.trim();
+    const password = document.getElementById('cloud-password')?.value;
+    const errEl = document.getElementById('cloud-error');
+    if (!email || !password) return;
+
+    const btn = document.getElementById('cloud-login-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.cloud_logging_in'); }
+
+    try {
+      const res = await fetch('/api/bambu-cloud/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (data.needsVerification) {
+        _cloudEmail = email;
+        _cloudState = 'verify';
+        const el = document.getElementById('cloud-content');
+        if (el) _renderCloudVerifyForm(el);
+      } else if (data.ok) {
+        _cloudEmail = data.email || email;
+        _cloudState = 'connected';
+        const el = document.getElementById('cloud-content');
+        if (el) _renderCloudConnected(el);
+      } else {
+        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_login_failed')}</span>`;
+        if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_login'); }
+      }
+    } catch {
+      if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_login_failed')}</span>`;
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_login'); }
+    }
+  };
+
+  window.bambuCloudVerify = async function() {
+    const code = document.getElementById('cloud-code')?.value.trim();
+    const errEl = document.getElementById('cloud-error');
+    if (!code) return;
+
+    const btn = document.getElementById('cloud-verify-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.cloud_verifying'); }
+
+    try {
+      const res = await fetch('/api/bambu-cloud/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: _cloudEmail, code })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        _cloudEmail = data.email || _cloudEmail;
+        _cloudState = 'connected';
+        const el = document.getElementById('cloud-content');
+        if (el) _renderCloudConnected(el);
+      } else {
+        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed')}</span>`;
+        if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify'); }
+      }
+    } catch {
+      if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed')}</span>`;
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify'); }
+    }
+  };
+
+  window.bambuCloudGetPrinters = async function() {
+    const resultsEl = document.getElementById('cloud-printer-results');
+    const btn = document.getElementById('cloud-import-btn');
+    if (!resultsEl) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.cloud_loading'); }
+    resultsEl.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/bambu-cloud/printers');
+      const data = await res.json();
+
+      if (!data.printers || data.printers.length === 0) {
+        resultsEl.innerHTML = `<p class="text-muted" style="font-size:0.8rem;margin:0">${t('settings.cloud_no_printers')}</p>`;
+      } else {
+        let h = '';
+        for (const p of data.printers) {
+          const ipInfo = p.ip ? `| ${_esc(p.ip)}` : '';
+          const localBadge = p.ip ? ' <span style="color:var(--success-color,#28a745);font-size:0.7rem">&#9679; LAN</span>' : '';
+          h += `<div class="printer-config-card" style="margin-bottom:0.4rem"><div class="printer-config-header"><div>`;
+          h += `<strong>${_esc(p.name)}</strong>`;
+          h += `<div class="text-muted" style="font-size:0.75rem">${_esc(p.model)} | ${_esc(p.serial)} ${ipInfo}${localBadge}</div>`;
+          h += `</div><div class="printer-config-actions">`;
+          if (p.alreadyAdded) {
+            h += `<span class="badge badge-muted" style="font-size:0.7rem">${t('settings.discovery_already_added')}</span>`;
+          } else {
+            h += `<button class="form-btn form-btn-sm" data-ripple onclick="addCloudPrinter(${_esc(JSON.stringify(JSON.stringify(p)))})">${t('settings.discovery_add')}</button>`;
+          }
+          h += '</div></div></div>';
+        }
+        resultsEl.innerHTML = h;
+      }
+    } catch {
+      resultsEl.innerHTML = `<p class="text-muted" style="font-size:0.8rem;margin:0">${t('settings.cloud_no_printers')}</p>`;
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_import'); }
+    }
+  };
+
+  window.addCloudPrinter = async function(jsonStr) {
+    try {
+      const p = JSON.parse(jsonStr);
+      const body = {
+        id: p.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+        name: p.name,
+        model: p.model,
+        ip: p.ip || '',
+        serial: p.serial,
+        accessCode: p.accessCode
+      };
+      await fetch('/api/printers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      showToast(t('settings.cloud_added'), 'success');
+      loadSettings();
+    } catch { /* ignore */ }
+  };
+
+  window.bambuCloudLogout = async function() {
+    try {
+      await fetch('/api/bambu-cloud/logout', { method: 'POST' });
+      _cloudState = 'login';
+      _cloudEmail = '';
+      const el = document.getElementById('cloud-content');
+      if (el) _renderCloudLoginForm(el);
+    } catch { /* ignore */ }
   };
 
   window.changeLanguage = function(locale) {

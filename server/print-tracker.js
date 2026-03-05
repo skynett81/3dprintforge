@@ -1,4 +1,4 @@
-import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced } from './database.js';
+import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot } from './database.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -47,6 +47,10 @@ export class PrintTracker {
     this.onPrintStart = null;
     this.onPrintEnd = null;
     this.onError = null;
+    this.onNfcAutoLinked = null;
+
+    // NFC auto-detection cache: tag_uid -> { spool_id, ams_unit, tray_id }
+    this._nfcProcessed = new Map();
   }
 
   update(printData) {
@@ -186,6 +190,9 @@ export class PrintTracker {
     const startTime = new Date(this.currentPrint.started_at);
     const duration = Math.round((Date.now() - startTime.getTime()) / 1000);
 
+    // Track completion percentage for proportional deduction on cancel/fail
+    const completionPct = parseInt(data.mc_percent) || 0;
+
     let filamentUsedG = 0;
     if (this.amsSnapshot) {
       const currentAms = this._getAmsRemaining(data);
@@ -223,7 +230,8 @@ export class PrintTracker {
       max_bed_temp: this.currentPrint.maxTemp_bed,
       filament_brand: this.currentPrint.filament_brand,
       ams_units_used: this.currentPrint.ams_units_used,
-      tray_id: this.currentPrint.tray_id
+      tray_id: this.currentPrint.tray_id,
+      completion_pct: status === 'completed' ? 100 : completionPct
     };
 
     try {
@@ -357,6 +365,84 @@ export class PrintTracker {
       }
     } catch (e) {
       console.error(`[tracker:${this.printerId}] AMS snapshot feil:`, e.message);
+    }
+
+    // Auto-detect NFC tags from AMS trays
+    this._processAmsNfcTags(data);
+  }
+
+  _processAmsNfcTags(data) {
+    if (!data.ams?.ams) return;
+    try {
+      // Track which tags are currently present so we can evict stale cache entries
+      const currentTags = new Set();
+
+      for (const unit of data.ams.ams) {
+        for (const tray of (unit.tray || [])) {
+          if (!tray) continue;
+          const tagUid = tray.tag_uid;
+          if (!tagUid || tagUid === '0000000000000000') continue;
+
+          const amsUnit = parseInt(unit.id) || 0;
+          const trayId = parseInt(tray.id) || 0;
+          const cacheKey = `${tagUid}:${amsUnit}:${trayId}`;
+          currentTags.add(cacheKey);
+
+          // Skip if already processed in this slot
+          if (this._nfcProcessed.has(cacheKey)) continue;
+
+          const mapping = lookupNfcTag(tagUid);
+
+          if (mapping && mapping.spool_id) {
+            // Tag known and linked to a spool — auto-assign spool to this printer slot
+            const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
+            if (!existing || existing.id !== mapping.spool_id) {
+              assignSpoolToSlot(mapping.spool_id, this.printerId, amsUnit, trayId);
+              console.log(`[tracker:${this.printerId}] NFC auto-assigned spool #${mapping.spool_id} to AMS ${amsUnit}:${trayId} (tag ${tagUid})`);
+              if (this.onNfcAutoLinked) {
+                this.onNfcAutoLinked({
+                  action: 'assigned',
+                  printer_id: this.printerId,
+                  ams_unit: amsUnit,
+                  tray_id: trayId,
+                  tag_uid: tagUid,
+                  spool_id: mapping.spool_id,
+                  spool_name: mapping.spool_name || null
+                });
+              }
+            }
+          } else if (!mapping) {
+            // Unknown tag — check if a spool is already assigned to this slot and auto-link
+            const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
+            if (existing) {
+              linkNfcTag(tagUid, existing.id, 'ams', null);
+              console.log(`[tracker:${this.printerId}] NFC auto-linked tag ${tagUid} to spool #${existing.id} in AMS ${amsUnit}:${trayId}`);
+              if (this.onNfcAutoLinked) {
+                this.onNfcAutoLinked({
+                  action: 'linked',
+                  printer_id: this.printerId,
+                  ams_unit: amsUnit,
+                  tray_id: trayId,
+                  tag_uid: tagUid,
+                  spool_id: existing.id,
+                  spool_name: existing.name || null
+                });
+              }
+            }
+          }
+
+          this._nfcProcessed.set(cacheKey, Date.now());
+        }
+      }
+
+      // Evict cache entries for tags no longer present (spool removed from tray)
+      for (const key of this._nfcProcessed.keys()) {
+        if (!currentTags.has(key)) {
+          this._nfcProcessed.delete(key);
+        }
+      }
+    } catch (e) {
+      console.error(`[tracker:${this.printerId}] NFC auto-detect feil:`, e.message);
     }
   }
 

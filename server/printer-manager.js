@@ -36,6 +36,9 @@ export class PrinterManager {
     tracker.onError = (data) => {
       this._notifier.notify('printer_error', { ...data, printerName });
     };
+    tracker.onNfcAutoLinked = (data) => {
+      if (this.broadcast) this.broadcast('nfc_auto_linked', { ...data, printerName });
+    };
   }
 
   async init() {

@@ -1,8 +1,9 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, importCommunityToInventory } from './database.js';
+import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot } from './database.js';
 import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
+import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream } from 'node:fs';
@@ -86,6 +87,9 @@ let _timelapseService = null;
 let _ecomLicense = null;
 let _printerManager = null;
 let _failureDetector = null;
+let _discovery = null;
+let _testMqttConnection = null;
+let _bambuCloud = null;
 
 // SpoolmanDB community database cache
 const _spoolmanDbCache = { manufacturers: null, all: null };
@@ -129,6 +133,8 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/queue')) return 'queue';
 
   // Control routes (printer management, maintenance, protection)
+  if (path.startsWith('/api/discovery')) return 'admin';
+  if (path.startsWith('/api/bambu-cloud')) return 'admin';
   if (path === '/api/printers' && method === 'POST') return 'admin';
   if (path.match(/^\/api\/printers\/[^/]+$/) && (method === 'PUT' || method === 'DELETE')) return 'controls';
   if (path.startsWith('/api/maintenance') || path.startsWith('/api/protection')) return 'controls';
@@ -208,6 +214,15 @@ export function setPrinterManager(pm) {
 
 export function setFailureDetector(fd) {
   _failureDetector = fd;
+}
+
+export function setDiscovery(discovery, testFn) {
+  _discovery = discovery;
+  _testMqttConnection = testFn;
+}
+
+export function setBambuCloud(cloud) {
+  _bambuCloud = cloud;
 }
 
 function _broadcastInventory(action, entity, data) {
@@ -349,6 +364,111 @@ export async function handleApiRequest(req, res) {
     // ---- API Documentation ----
     if (method === 'GET' && path === '/api/docs') {
       return sendJson(res, _getApiDocs());
+    }
+
+    // ---- Printers ----
+    // ---- Printer Discovery ----
+    if (method === 'GET' && path === '/api/discovery/scan') {
+      if (!_discovery) return sendJson(res, { error: 'Discovery not available' }, 503);
+      try {
+        const found = await _discovery.scan();
+        const existing = getPrinters().map(p => p.serial);
+        const printers = found.map(p => ({
+          ...p,
+          alreadyAdded: existing.includes(p.serial)
+        }));
+        return sendJson(res, { printers, total: found.length });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/discovery/status') {
+      if (!_discovery) return sendJson(res, { scanning: false, printers: [] });
+      return sendJson(res, { scanning: _discovery.isScanning(), printers: _discovery.getCached() });
+    }
+
+    if (method === 'POST' && path === '/api/discovery/test') {
+      if (!_testMqttConnection) return sendJson(res, { error: 'Test not available' }, 503);
+      return readBody(req, async (body) => {
+        const { ip, serial, accessCode } = body;
+        if (!ip || !accessCode) return sendJson(res, { error: 'ip and accessCode required' }, 400);
+        try {
+          const result = await _testMqttConnection(ip, serial || '', accessCode);
+          sendJson(res, result);
+        } catch (e) {
+          sendJson(res, { ok: false, error: e.message });
+        }
+      });
+    }
+
+    // ---- Bambu Lab Cloud ----
+    if (method === 'GET' && path === '/api/bambu-cloud/status') {
+      if (!_bambuCloud) return sendJson(res, { authenticated: false });
+      return sendJson(res, _bambuCloud.getStatus());
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/login') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      return readBody(req, async (body) => {
+        const { email, password } = body;
+        if (!email || !password) return sendJson(res, { error: 'Email and password required' }, 400);
+        try {
+          const result = await _bambuCloud.login(email, password);
+          sendJson(res, result);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 401);
+        }
+      });
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/verify') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      return readBody(req, async (body) => {
+        const { email, code } = body;
+        if (!email || !code) return sendJson(res, { error: 'Email and code required' }, 400);
+        try {
+          const result = await _bambuCloud.verify(email, code);
+          sendJson(res, result);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 401);
+        }
+      });
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/printers') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      if (!_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        // Fetch cloud printers and run SSDP scan in parallel
+        const [cloudPrinters, localPrinters] = await Promise.all([
+          _bambuCloud.getPrinters(),
+          _discovery ? _discovery.scan(3000) : []
+        ]);
+        // Build serial→IP lookup from SSDP results
+        const localBySerial = new Map();
+        for (const lp of localPrinters) localBySerial.set(lp.serial, lp);
+
+        const existing = getPrinters().map(p => p.serial);
+        const printers = cloudPrinters.map(p => {
+          const local = localBySerial.get(p.serial);
+          return {
+            ...p,
+            ip: local?.ip || p.ip || '',
+            localModel: local?.model || '',
+            alreadyAdded: existing.includes(p.serial)
+          };
+        });
+        sendJson(res, { printers });
+      } catch (e) {
+        sendJson(res, { error: e.message }, 500);
+      }
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/logout') {
+      if (_bambuCloud) _bambuCloud.logout();
+      return sendJson(res, { ok: true });
     }
 
     // ---- Printers ----
@@ -1120,6 +1240,125 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Import spools from AMS ----
+    if (method === 'POST' && path === '/api/inventory/import-ams') {
+      const imported = [];
+      if (!_printerManager) return sendJson(res, { error: 'No printer manager' }, 500);
+
+      for (const [printerId, entry] of _printerManager.printers) {
+        if (!entry.live || !entry.client) continue;
+        const state = entry.client.state;
+        const amsData = state?.ams;
+        if (!amsData?.ams) continue;
+
+        for (const unit of amsData.ams) {
+          const trays = unit.tray;
+          if (!trays) continue;
+          for (const tray of trays) {
+            if (!tray || !tray.tray_type) continue;
+            const amsUnit = parseInt(unit.id) || 0;
+            const trayId = parseInt(tray.id) || 0;
+
+            // If spool already linked to this slot, just ensure NFC tag is linked
+            const existing = getSpoolBySlot(printerId, amsUnit, trayId);
+            if (existing) {
+              const tagUid = tray.tag_uid;
+              if (tagUid && tagUid !== '0000000000000000') {
+                const nfcEntry = lookupNfcTag(tagUid);
+                if (!nfcEntry) {
+                  linkNfcTag(tagUid, existing.id, 'bambu', JSON.stringify({
+                    tray_uuid: tray.tray_uuid || null,
+                    tray_id_name: tray.tray_id_name || null,
+                    source: 'ams-import'
+                  }));
+                  imported.push({
+                    spool_id: existing.id, printer_id: printerId, ams_unit: amsUnit,
+                    tray_id: trayId, material: tray.tray_type, color: tray.tray_color?.substring(0, 6),
+                    tag_uid: tagUid, nfc_linked: true, remain_pct: tray.remain
+                  });
+                }
+              }
+              continue;
+            }
+
+            // Find or create vendor "Bambu Lab"
+            let vendors = getVendors();
+            let vendor = vendors.find(v => v.name === 'Bambu Lab');
+            if (!vendor) {
+              vendor = addVendor({ name: 'Bambu Lab', website: 'https://bambulab.com' });
+            }
+
+            // Color hex (strip alpha)
+            const colorHex = tray.tray_color ? tray.tray_color.substring(0, 6) : null;
+            const brand = tray.tray_sub_brands || tray.tray_type;
+            const profileName = `${brand}${colorHex ? '' : ''}`;
+
+            // Find or create filament profile
+            const profiles = getFilamentProfiles();
+            let profile = profiles.find(p =>
+              p.vendor_id === vendor.id &&
+              p.material === tray.tray_type &&
+              p.color_hex?.toLowerCase() === colorHex?.toLowerCase()
+            );
+            if (!profile) {
+              profile = addFilamentProfile({
+                vendor_id: vendor.id,
+                name: profileName,
+                material: tray.tray_type,
+                color_name: tray.tray_id_name || null,
+                color_hex: colorHex,
+                diameter: tray.tray_diameter ? parseFloat(tray.tray_diameter) : 1.75,
+                spool_weight_g: tray.tray_weight ? parseInt(tray.tray_weight) : 1000,
+                nozzle_temp_min: tray.nozzle_temp_min ? parseInt(tray.nozzle_temp_min) : null,
+                nozzle_temp_max: tray.nozzle_temp_max ? parseInt(tray.nozzle_temp_max) : null
+              });
+            }
+
+            // Create spool
+            const initialWeight = tray.tray_weight ? parseInt(tray.tray_weight) : 1000;
+            const remainPct = tray.remain >= 0 ? tray.remain : 100;
+            const remainWeight = Math.round(initialWeight * remainPct / 100);
+
+            const spool = addSpool({
+              filament_profile_id: profile.id,
+              initial_weight_g: initialWeight,
+              remaining_weight_g: remainWeight,
+              used_weight_g: initialWeight - remainWeight,
+              printer_id: printerId,
+              ams_unit: amsUnit,
+              ams_tray: trayId,
+              comment: `Imported from AMS${amsUnit + 1} slot ${trayId + 1}`
+            });
+
+            // Link NFC/RFID tag if present on the spool
+            const tagUid = tray.tag_uid;
+            if (tagUid && tagUid !== '0000000000000000') {
+              linkNfcTag(tagUid, spool.id, 'bambu', JSON.stringify({
+                tray_uuid: tray.tray_uuid || null,
+                tray_id_name: tray.tray_id_name || null,
+                source: 'ams-import'
+              }));
+            }
+
+            imported.push({
+              spool_id: spool.id,
+              printer_id: printerId,
+              ams_unit: amsUnit,
+              tray_id: trayId,
+              material: tray.tray_type,
+              color: colorHex,
+              brand: brand,
+              tag_uid: tagUid || null,
+              remain_pct: remainPct
+            });
+          }
+        }
+      }
+
+      if (imported.length > 0) _broadcastInventory('created', 'spool', { count: imported.length });
+      return sendJson(res, { ok: true, imported, count: imported.length }, 201);
+    }
+
     // ---- Inventory: Usage Log ----
     if (method === 'GET' && path === '/api/inventory/usage') {
       const filters = {};
@@ -1172,12 +1411,74 @@ export async function handleApiRequest(req, res) {
       return res.end(JSON.stringify(result.rows));
     }
 
+    // ---- Filament Matching ----
+    if (method === 'GET' && path === '/api/inventory/match-printer') {
+      const material = url.searchParams.get('material');
+      const colorHex = url.searchParams.get('color_hex');
+      const minWeight = parseFloat(url.searchParams.get('min_weight_g') || '0');
+      return sendJson(res, matchPrinterForFilament(material, colorHex, minWeight));
+    }
+
+    // ---- Temperature Guide ----
+    if (method === 'GET' && path === '/api/inventory/temperature-guide') {
+      return sendJson(res, getTemperatureGuide());
+    }
+
+    // ---- Filament Compatibility Matrix ----
+    if (method === 'GET' && path === '/api/inventory/compatibility') {
+      const material = url.searchParams.get('material');
+      return sendJson(res, getCompatibilityMatrix(material || null));
+    }
+    const compatMatch = path.match(/^\/api\/inventory\/compatibility\/(\d+)$/);
+    if (method === 'POST' && path === '/api/inventory/compatibility') {
+      return readBody(req, (body) => {
+        if (!body.material) return sendJson(res, { error: 'material required' }, 400);
+        const result = addCompatibilityRule(body);
+        sendJson(res, result, 201);
+      });
+    }
+    if (compatMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        if (!body.material) return sendJson(res, { error: 'material required' }, 400);
+        updateCompatibilityRule(parseInt(compatMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+    if (compatMatch && method === 'DELETE') {
+      deleteCompatibilityRule(parseInt(compatMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Inventory: FIFO Spool Suggestion ----
+    if (method === 'GET' && path === '/api/inventory/spools/fifo') {
+      const material = url.searchParams.get('material');
+      const colorHex = url.searchParams.get('color_hex');
+      const profileId = url.searchParams.get('profile_id') ? parseInt(url.searchParams.get('profile_id')) : null;
+      return sendJson(res, getFifoSpool(material, colorHex, profileId));
+    }
+
     // ---- Inventory: Duplicate Spool ----
     const spoolDuplicateMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/duplicate$/);
     if (spoolDuplicateMatch && method === 'POST') {
       const result = duplicateSpool(parseInt(spoolDuplicateMatch[1]));
       if (!result) return sendJson(res, { error: 'Not found' }, 404);
       return sendJson(res, result, 201);
+    }
+
+    // ---- Inventory: Merge Spools ----
+    if (method === 'POST' && path === '/api/inventory/spools/merge') {
+      return readBody(req, (body) => {
+        if (!body.target_id || !Array.isArray(body.source_ids) || body.source_ids.length === 0) {
+          return sendJson(res, { error: 'target_id and source_ids[] required' }, 400);
+        }
+        const targetId = Number(body.target_id);
+        const sourceIds = body.source_ids.map(Number).filter(id => id !== targetId);
+        if (sourceIds.length === 0) return sendJson(res, { error: 'source_ids must differ from target_id' }, 400);
+        const result = mergeSpools(targetId, sourceIds, body.actor || null);
+        if (!result) return sendJson(res, { error: 'Target spool not found' }, 404);
+        _broadcastInventory('spool_merged', { target_id: targetId, source_ids: sourceIds });
+        sendJson(res, result);
+      });
     }
 
     // ---- Inventory: Measure Weight ----
@@ -1258,10 +1559,14 @@ export async function handleApiRequest(req, res) {
           vendor: spool.vendor_name || '',
           material: spool.material || '',
           color: spool.color_name || '',
+          color_name: spool.color_name || '',
           color_hex: spool.color_hex || '',
           weight: spool.initial_weight_g,
+          spool_weight_g: spool.initial_weight_g,
+          remaining_weight_g: spool.remaining_weight_g,
           lot_number: spool.lot_number || '',
-          article_number: spool.article_number || ''
+          article_number: spool.article_number || '',
+          short_id: spool.short_id || ''
         }
       });
     }
@@ -3105,6 +3410,64 @@ export async function handleApiRequest(req, res) {
       return res.end(csv);
     }
 
+    // ---- Slicer Profile Export ----
+    const slicerExportMatch = path.match(/^\/api\/inventory\/filaments\/(\d+)\/slicer-export$/);
+    if (slicerExportMatch && method === 'GET') {
+      const profile = getFilamentProfile(parseInt(slicerExportMatch[1]));
+      if (!profile) return sendJson(res, { error: 'Not found' }, 404);
+      const format = url.searchParams.get('format') || 'orcaslicer';
+      const name = `${profile.vendor_name || 'Custom'} ${profile.name} ${profile.material}`.trim();
+      if (format === 'prusaslicer') {
+        const ini = [
+          `# PrusaSlicer filament profile`,
+          `# Generated by Bambu Dashboard`,
+          `[filament:${name}]`,
+          `filament_type = ${profile.material}`,
+          `filament_colour = #${(profile.color_hex || 'FFFFFF').replace('#', '')}`,
+          `filament_density = ${profile.density || 1.24}`,
+          `filament_diameter = ${profile.diameter || 1.75}`,
+          `filament_cost = ${profile.price || 0}`,
+          `filament_spool_weight = ${profile.spool_weight_g || 0}`,
+          profile.nozzle_temp_min ? `temperature = ${profile.nozzle_temp_max || profile.nozzle_temp_min}` : '',
+          profile.nozzle_temp_min ? `first_layer_temperature = ${profile.nozzle_temp_min}` : '',
+          profile.bed_temp_min ? `bed_temperature = ${profile.bed_temp_max || profile.bed_temp_min}` : '',
+          profile.bed_temp_min ? `first_layer_bed_temperature = ${profile.bed_temp_min}` : '',
+          profile.retraction_distance ? `retract_length = ${profile.retraction_distance}` : '',
+          profile.retraction_speed ? `retract_speed = ${profile.retraction_speed}` : '',
+          profile.cooling_fan_speed != null ? `max_fan_speed = ${profile.cooling_fan_speed}` : '',
+          profile.pressure_advance_k ? `pressure_advance = ${profile.pressure_advance_k}` : '',
+          profile.max_volumetric_speed ? `filament_max_volumetric_speed = ${profile.max_volumetric_speed}` : '',
+        ].filter(Boolean).join('\n');
+        res.writeHead(200, { 'Content-Type': 'text/plain', 'Content-Disposition': `attachment; filename="${name.replace(/[^a-zA-Z0-9 _-]/g, '')}.ini"` });
+        return res.end(ini);
+      }
+      // OrcaSlicer JSON format
+      const orca = {
+        type: 'filament',
+        name: name,
+        from: 'Bambu Dashboard',
+        filament_id: [String(profile.id)],
+        setting_id: '',
+        filament_type: [profile.material],
+        filament_colour: [`#${(profile.color_hex || 'FFFFFF').replace('#', '')}`],
+        filament_density: [String(profile.density || 1.24)],
+        filament_diameter: [String(profile.diameter || 1.75)],
+        filament_cost: [String(profile.price || 0)],
+        nozzle_temperature: [String(profile.nozzle_temp_max || profile.nozzle_temp_min || 200)],
+        nozzle_temperature_initial_layer: [String(profile.nozzle_temp_min || 200)],
+        bed_temperature: [String(profile.bed_temp_max || profile.bed_temp_min || 60)],
+        bed_temperature_initial_layer: [String(profile.bed_temp_min || 60)],
+        filament_max_volumetric_speed: [String(profile.max_volumetric_speed || 0)],
+        filament_retraction_length: profile.retraction_distance ? [String(profile.retraction_distance)] : undefined,
+        filament_retraction_speed: profile.retraction_speed ? [String(profile.retraction_speed)] : undefined,
+        fan_max_speed: profile.cooling_fan_speed != null ? [String(profile.cooling_fan_speed)] : undefined,
+        pressure_advance: profile.pressure_advance_k ? [String(profile.pressure_advance_k)] : undefined,
+      };
+      Object.keys(orca).forEach(k => orca[k] === undefined && delete orca[k]);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="${name.replace(/[^a-zA-Z0-9 _-]/g, '')}.json"` });
+      return res.end(JSON.stringify(orca, null, 2));
+    }
+
     if (method === 'GET' && path === '/api/export/vendors') {
       const format = url.searchParams.get('format') || 'csv';
       const data = getAllVendorsForExport();
@@ -3251,6 +3614,123 @@ export async function handleApiRequest(req, res) {
       const tolerance = parseInt(url.searchParams.get('tolerance') || '30');
       if (!hex || hex.length < 6) return sendJson(res, { error: 'hex parameter required (6 chars)' }, 400);
       return sendJson(res, searchSpoolsByColor(hex, tolerance));
+    }
+
+    // ---- Auto-trash empty spools ----
+    if (method === 'POST' && path === '/api/inventory/auto-trash') {
+      if (!hasPermission(sessionUser, 'filament')) return sendJson(res, { error: 'Forbidden' }, 403);
+      const deleted = autoTrashEmptySpools();
+      return sendJson(res, { deleted });
+    }
+
+    // ---- Recent profiles (for quick-create) ----
+    if (method === 'GET' && path === '/api/inventory/recent-profiles') {
+      const limit = parseInt(url.searchParams.get('limit') || '5');
+      return sendJson(res, getRecentProfiles(limit));
+    }
+
+    // ---- Location alerts ----
+    if (method === 'GET' && path === '/api/inventory/location-alerts') {
+      return sendJson(res, getLocationAlerts());
+    }
+
+    // ---- Bambu Lab store link ----
+    if (method === 'GET' && path === '/api/inventory/store-link') {
+      const material = url.searchParams.get('material') || '';
+      const color = url.searchParams.get('color') || '';
+      const searchQuery = [material, color].filter(Boolean).join(' ');
+      return sendJson(res, {
+        bambu_store: `https://store.bambulab.com/collections/filament?q=${encodeURIComponent(searchQuery)}`,
+        amazon: `https://www.amazon.com/s?k=bambu+lab+${encodeURIComponent(searchQuery)}+filament`,
+        search_query: searchQuery
+      });
+    }
+
+    // ---- AI-powered inventory insights ----
+    if (method === 'GET' && path === '/api/inventory/insights') {
+      try {
+        const predictions = getUsagePredictions();
+        const restock = getRestockSuggestions(30);
+        const stats = getInventoryStats();
+        const insights = [];
+
+        // Low stock warnings
+        const lowStock = predictions.per_spool.filter(s => s.needs_reorder);
+        if (lowStock.length > 0) {
+          insights.push({
+            type: 'warning',
+            title: 'Low Stock Alert',
+            message: `${lowStock.length} spool(s) will run out within 14 days at current usage rate.`,
+            items: lowStock.slice(0, 5).map(s => `${s.profile_name || s.material} - ${s.days_until_empty} days remaining`)
+          });
+        }
+
+        // Restock suggestions
+        const urgentRestock = restock.filter(r => r.urgency === 'high' || r.urgency === 'medium');
+        if (urgentRestock.length > 0) {
+          insights.push({
+            type: 'restock',
+            title: 'Restock Recommendations',
+            message: `${urgentRestock.length} filament(s) should be reordered based on usage patterns.`,
+            items: urgentRestock.slice(0, 5).map(r => `${r.profile_name} (${r.vendor_name || '?'}) - ${r.recommended_spools || 1} spool(s)`)
+          });
+        }
+
+        // Usage patterns
+        if (predictions.by_material.length > 0) {
+          const topMaterial = predictions.by_material[0];
+          insights.push({
+            type: 'info',
+            title: 'Top Material Usage',
+            message: `${topMaterial.material || 'Unknown'} is your most used material (${Math.round(topMaterial.total_used_g)}g in 90 days, avg ${topMaterial.avg_daily_g}g/day).`,
+            items: predictions.by_material.slice(0, 3).map(m => `${m.material}: ${Math.round(m.total_used_g)}g total`)
+          });
+        }
+
+        // Cost optimization
+        if (stats.total_spools > 0 && stats.total_cost > 0) {
+          const avgCostPerKg = (stats.total_cost / (stats.total_weight_g / 1000)).toFixed(2);
+          insights.push({
+            type: 'info',
+            title: 'Cost Overview',
+            message: `Average cost: ${avgCostPerKg}/kg across ${stats.total_spools} active spools. Total inventory value: ${stats.total_cost.toFixed(2)}.`
+          });
+        }
+
+        // Dormant spools (not used in 60+ days)
+        const dormant = predictions.per_spool.filter(s => s.avg_daily_g === 0 && s.remaining_weight_g > 100);
+        if (dormant.length > 0) {
+          insights.push({
+            type: 'suggestion',
+            title: 'Dormant Spools',
+            message: `${dormant.length} spool(s) haven't been used in 90+ days but still have significant filament remaining.`,
+            items: dormant.slice(0, 5).map(s => `${s.profile_name || s.material} - ${Math.round(s.remaining_weight_g)}g remaining`)
+          });
+        }
+
+        return sendJson(res, { insights });
+      } catch (e) { return sendJson(res, { insights: [], error: e.message }); }
+    }
+
+    // ---- 3MF / Gcode file analysis ----
+    if (method === 'POST' && path === '/api/inventory/analyze-file') {
+      return readBinaryBody(req, (buffer) => {
+        try {
+          const contentType = req.headers['content-type'] || '';
+          const filename = url.searchParams.get('filename') || '';
+          let result;
+          if (filename.endsWith('.3mf') || contentType.includes('3mf')) {
+            result = parse3mf(buffer);
+          } else if (filename.endsWith('.gcode') || filename.endsWith('.g') || contentType.includes('gcode')) {
+            result = parseGcode(buffer);
+          } else {
+            return sendJson(res, { error: 'Unsupported file type. Use .3mf or .gcode' }, 400);
+          }
+          return sendJson(res, result);
+        } catch (e) {
+          return sendJson(res, { error: 'Failed to parse file: ' + e.message }, 500);
+        }
+      });
     }
 
     // ---- Build Plates ----
@@ -3659,6 +4139,44 @@ export async function handleApiRequest(req, res) {
       return res.end(html);
     }
 
+    // ---- ZPL Label Generation (direct thermal printers) ----
+    if (method === 'GET' && path === '/api/inventory/label-zpl') {
+      const spoolId = parseInt(url.searchParams.get('spool_id'));
+      if (!spoolId) return sendJson(res, { error: 'spool_id required' }, 400);
+      const spool = getSpool(spoolId);
+      if (!spool) return sendJson(res, { error: 'Spool not found' }, 404);
+      const host = req.headers.host || 'localhost:3443';
+      const proto = req.socket?.encrypted ? 'https' : 'http';
+      const qrData = `${proto}://${host}/#filament/spool/${spool.id}`;
+      const name = (spool.profile_name || spool.material || 'Spool').substring(0, 30);
+      const vendor = (spool.vendor_name || '').substring(0, 25);
+      const color = (spool.color_name || '').substring(0, 20);
+      const weight = `${Math.round(spool.initial_weight_g || 1000)}g`;
+      const shortId = spool.short_id || String(spool.id);
+      // Generate ZPL for 40x30mm label (320x240 dots at 8 dots/mm)
+      const zpl = `^XA
+^CF0,22
+^FO160,20^FD${name}^FS
+^CF0,18
+^FO160,50^FD${vendor}^FS
+^FO160,75^FD${color}^FS
+^FO160,100^FD${weight}^FS
+^FO160,125^FD#${shortId}^FS
+^FO20,20^BQN,2,4^FDMA,${qrData}^FS
+^XZ`;
+      const dymoDsl = `<?xml version="1.0" encoding="utf-8"?>
+<DieCutLabel Version="8.0">
+  <PaperOrientation>Landscape</PaperOrientation>
+  <Id>Address</Id>
+  <ObjectInfo>
+    <TextObject><Name>Name</Name><ForeColor Alpha="255" Red="0" Green="0" Blue="0"/><Text>${name}</Text></TextObject>
+    <TextObject><Name>Vendor</Name><Text>${vendor} - ${color}</Text></TextObject>
+    <TextObject><Name>Weight</Name><Text>${weight} #${shortId}</Text></TextObject>
+  </ObjectInfo>
+</DieCutLabel>`;
+      return sendJson(res, { zpl: zpl.trim(), dymo_xml: dymoDsl.trim(), spool_id: spool.id, short_id: shortId });
+    }
+
     // ---- Bed Mesh Data ----
     const bedMeshMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh$/);
     if (bedMeshMatch && method === 'GET') {
@@ -3860,6 +4378,16 @@ function _getApiDocs() {
       { method: 'POST', path: '/api/auth/logout', tag: 'Auth', summary: 'Logout / destroy session', permission: null },
       { method: 'GET', path: '/api/auth/config', tag: 'Auth', summary: 'Get auth configuration', permission: 'admin' },
       { method: 'PUT', path: '/api/auth/config', tag: 'Auth', summary: 'Update auth configuration', permission: 'admin' },
+      // Discovery
+      { method: 'GET', path: '/api/discovery/scan', tag: 'Discovery', summary: 'Scan for printers on local network (SSDP)', permission: 'admin' },
+      { method: 'GET', path: '/api/discovery/status', tag: 'Discovery', summary: 'Get discovery scan status and cached results', permission: 'admin' },
+      { method: 'POST', path: '/api/discovery/test', tag: 'Discovery', summary: 'Test MQTT connection to a printer', permission: 'admin' },
+      // Bambu Cloud
+      { method: 'GET', path: '/api/bambu-cloud/status', tag: 'Bambu Cloud', summary: 'Get cloud authentication status', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/login', tag: 'Bambu Cloud', summary: 'Login with Bambu Lab account (triggers 2FA)', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/verify', tag: 'Bambu Cloud', summary: 'Verify 2FA code', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/printers', tag: 'Bambu Cloud', summary: 'List printers from Bambu Lab account', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/logout', tag: 'Bambu Cloud', summary: 'Logout from Bambu Lab cloud', permission: 'admin' },
       // Printers
       { method: 'GET', path: '/api/printers', tag: 'Printers', summary: 'List all printers', permission: 'view' },
       { method: 'POST', path: '/api/printers', tag: 'Printers', summary: 'Add a printer', permission: 'admin' },
@@ -3885,6 +4413,8 @@ function _getApiDocs() {
       { method: 'POST', path: '/api/inventory/spools/:id/archive', tag: 'Inventory', summary: 'Archive a spool', permission: 'filament' },
       { method: 'POST', path: '/api/inventory/spools/:id/use', tag: 'Inventory', summary: 'Record spool weight usage', permission: 'filament' },
       { method: 'POST', path: '/api/inventory/spools/:id/duplicate', tag: 'Inventory', summary: 'Duplicate a spool', permission: 'filament' },
+      { method: 'POST', path: '/api/inventory/spools/merge', tag: 'Inventory', summary: 'Merge multiple spools into one', permission: 'filament' },
+      { method: 'GET', path: '/api/inventory/spools/fifo', tag: 'Inventory', summary: 'Get FIFO spool suggestions (oldest first)', permission: 'view' },
       { method: 'POST', path: '/api/inventory/spools/:id/measure', tag: 'Inventory', summary: 'Measure spool weight', permission: 'filament' },
       { method: 'POST', path: '/api/inventory/spools/:id/favorite', tag: 'Inventory', summary: 'Toggle spool favorite', permission: 'filament' },
       { method: 'GET', path: '/api/inventory/spools/:id/timeline', tag: 'Inventory', summary: 'Get spool event timeline', permission: 'view' },

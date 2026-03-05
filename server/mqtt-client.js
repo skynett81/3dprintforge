@@ -96,6 +96,14 @@ export class BambuMqttClient {
         command: 'pushall'
       }
     });
+
+    // Request firmware/hardware version info
+    this.sendCommand({
+      info: {
+        sequence_id: String(this.seqId++),
+        command: 'get_version'
+      }
+    });
   }
 
   _handleMessage(msg) {

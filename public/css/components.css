@@ -5250,6 +5250,61 @@ tr:hover .filament-edit-btn {
   flex-wrap: wrap;
   align-items: center;
 }
+.modifier-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.modifier-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  transition: all 0.15s;
+  user-select: none;
+}
+.modifier-tag:hover {
+  border-color: var(--accent);
+}
+.modifier-tag.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.modifier-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+  margin-left: 2px;
+}
+.compat-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.compat-matrix th, .compat-matrix td {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+.compat-matrix th {
+  background: var(--card-bg);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.compat-matrix td:first-child {
+  text-align: left;
+}
+.compat-good { background: rgba(34,197,94,0.1); }
+.compat-fair { background: rgba(234,179,8,0.1); }
+.compat-poor { background: rgba(239,68,68,0.1); }
 .inv-filter-bar {
   display: flex;
   gap: 6px;

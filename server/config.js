@@ -56,6 +56,12 @@ const DEFAULTS = {
     checkIntervalHours: 6,
     includePrerelease: false,
     githubToken: ''
+  },
+  bambuCloud: {
+    accessToken: '',
+    refreshToken: '',
+    accountEmail: '',
+    tokenExpiresAt: 0
   }
 };
 

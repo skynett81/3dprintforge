@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
-import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById } from './database.js';
+import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
 import { startNightlyBackup } from './backup.js';
-import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, dispatchWebhooksForEvent } from './api-routes.js';
+import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, setDiscovery, setBambuCloud, dispatchWebhooksForEvent } from './api-routes.js';
+import { PrinterDiscovery, testMqttConnection } from './printer-discovery.js';
+import { BambuCloud } from './bambu-cloud.js';
 import { EcomLicenseManager } from './ecom-license.js';
 import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth, shutdownAuth, validateApiKey, getSessionUser } from './auth.js';
 import { PrinterManager } from './printer-manager.js';
@@ -56,6 +58,10 @@ initDatabase();
 
 // Start nightly backup
 startNightlyBackup();
+
+// Auto-trash empty spools (run on startup + every 24h)
+try { autoTrashEmptySpools(); } catch (e) { console.error('Auto-trash startup error:', e.message); }
+setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { console.error('Auto-trash error:', e.message); } }, 24 * 60 * 60 * 1000);
 
 // Initialize auth
 initAuth();
@@ -321,6 +327,14 @@ failureDetector.init();
 queueManager._failureDetector = failureDetector;
 setPrinterManager(manager);
 setFailureDetector(failureDetector);
+
+// Printer Discovery (SSDP)
+const discovery = new PrinterDiscovery();
+setDiscovery(discovery, testMqttConnection);
+
+// Bambu Lab Cloud
+const bambuCloud = new BambuCloud();
+setBambuCloud(bambuCloud);
 
 // Generate VAPID keys for Web Push if not yet set
 if (!getInventorySetting('vapid_public_key')) {
@@ -596,6 +610,9 @@ if (IS_DEMO) {
     tracker.onError = (data) => {
       notifier.notify('printer_error', { ...data, printerName: p.name });
     };
+    tracker.onNfcAutoLinked = (data) => {
+      broadcastAll('nfc_auto_linked', { ...data, printerName: p.name });
+    };
 
     // XCam event handler for demo printers
     mock.onXcamEvent = (status) => {
@@ -683,6 +700,7 @@ function shutdown() {
   updater.shutdown();
   notifier.shutdown();
   manager.shutdown();
+  discovery.shutdown();
   process.exit(0);
 }
 process.on('SIGINT', shutdown);

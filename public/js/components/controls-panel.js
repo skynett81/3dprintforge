@@ -432,9 +432,15 @@
     if (!panel) return;
     _rendered = false;
     panel.innerHTML = '<div id="controls-panel-content"></div>';
-    if (_lastData) {
-      renderControls(document.getElementById('controls-panel-content'), _lastData);
-    } else if (!window.printerState.getActivePrinterId()) {
+    // Use _lastData, or fall back to cached printer state
+    let data = _lastData;
+    if (!data && window.printerState?.getActivePrinterId()) {
+      const s = window.printerState.getActivePrinterState();
+      if (s) data = s.print || s;
+    }
+    if (data && Object.keys(data).length > 0) {
+      renderControls(document.getElementById('controls-panel-content'), data);
+    } else if (!window.printerState?.getActivePrinterId()) {
       document.getElementById('controls-panel-content').innerHTML = `<div style="text-align:center;padding:3rem 1rem">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:1rem"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="4" y="10" width="16" height="10" rx="1"/><circle cx="8" cy="15" r="1"/><line x1="12" y1="15" x2="18" y2="15"/></svg>
         <h3 style="margin:0 0 0.5rem;color:var(--text-primary)">${t('common.no_printers_title')}</h3>

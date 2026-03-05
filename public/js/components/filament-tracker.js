@@ -102,8 +102,10 @@
   let _filterFavorites = false;
   let _filterColorFamily = '';
   let _filterTag = '';
+  let _filterCategory = '';
   let _tags = [];
   let _viewMode = localStorage.getItem('inv-view-mode') || 'grid';
+  let _groupBy = localStorage.getItem('inv-group-by') || 'material';
 
   // ═══ Filament Database state ═══
   let _dbFilaments = [];
@@ -296,6 +298,10 @@
           <option value="">${t('filament.filter_all')} ${t('filament.filter_material')}</option>
           ${[...new Set(spools.map(s => s.material).filter(Boolean))].sort().map(m => `<option value="${m}" ${m === _filterMaterial ? 'selected' : ''}>${m}</option>`).join('')}
         </select>
+        <select class="form-input form-input-sm" onchange="window._invFilterCategory(this.value)">
+          <option value="">${t('filament.filter_all')} ${t('filament.filter_category')}</option>
+          ${Object.keys(FILAMENT_TYPES).map(c => `<option value="${c}" ${c === _filterCategory ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
         <select class="form-input form-input-sm" onchange="window._invFilterVendor(this.value)">
           <option value="">${t('filament.filter_all')} ${t('filament.filter_vendor')}</option>
           ${[...new Set(spools.map(s => s.vendor_name).filter(Boolean))].sort().map(v => `<option value="${v}" ${v === _filterVendor ? 'selected' : ''}>${v}</option>`).join('')}
@@ -313,6 +319,7 @@
           <option value="name" ${_sortBy === 'name' ? 'selected' : ''}>${t('filament.sort_name')}</option>
           <option value="remaining_asc" ${_sortBy === 'remaining_asc' ? 'selected' : ''}>${t('filament.sort_remaining_asc')}</option>
           <option value="remaining_desc" ${_sortBy === 'remaining_desc' ? 'selected' : ''}>${t('filament.sort_remaining_desc')}</option>
+          <option value="fifo" ${_sortBy === 'fifo' ? 'selected' : ''}>${t('filament.sort_fifo')}</option>
         </select>
         <label class="inv-archive-toggle">
           <input type="checkbox" ${_showArchived ? 'checked' : ''} onchange="window._invToggleArchived(this.checked)">
@@ -327,6 +334,9 @@
           </button>
           <button class="inv-view-btn ${_viewMode === 'table' ? 'active' : ''}" onclick="window._invViewMode('table')" title="${t('filament.view_table')}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </button>
+          <button class="inv-view-btn ${_viewMode === 'groups' ? 'active' : ''}" onclick="window._invViewMode('groups')" title="${t('filament.groups_view')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
           </button>
         </div>
       </div>`;
@@ -352,13 +362,14 @@
         if (!_showArchived && s.archived) return false;
         if (_filterFavorites && !s.is_favorite) return false;
         if (_filterMaterial && s.material !== _filterMaterial) return false;
+        if (_filterCategory && !Object.entries(FILAMENT_TYPES).some(([cat, types]) => cat === _filterCategory && types.includes(s.material))) return false;
         if (_filterVendor && s.vendor_name !== _filterVendor) return false;
         if (_filterLocation && s.location !== _filterLocation) return false;
         if (_filterColorFamily && _classifyColor(s.color_hex) !== _filterColorFamily) return false;
         if (_filterTag && !(s.tags && s.tags.some(tg => String(tg.id) === _filterTag))) return false;
         if (_searchQuery) {
           const q = _searchQuery.toLowerCase();
-          const fields = [s.profile_name, s.material, s.vendor_name, s.color_name, s.lot_number, s.location, s.comment, s.article_number].filter(Boolean);
+          const fields = [s.profile_name, s.material, s.vendor_name, s.color_name, s.lot_number, s.location, s.comment, s.article_number, s.short_id].filter(Boolean);
           if (!fields.some(f => f.toLowerCase().includes(q))) return false;
         }
         return true;
@@ -372,6 +383,11 @@
         if (_sortBy === 'name') return (a.profile_name || '').localeCompare(b.profile_name || '');
         if (_sortBy === 'remaining_asc') return (a.remaining_weight_g || 0) - (b.remaining_weight_g || 0);
         if (_sortBy === 'remaining_desc') return (b.remaining_weight_g || 0) - (a.remaining_weight_g || 0);
+        if (_sortBy === 'fifo') {
+          const aD = a.purchase_date || a.created_at || '';
+          const bD = b.purchase_date || b.created_at || '';
+          return aD.localeCompare(bD);
+        }
         const aDate = a.last_used_at || a.created_at || '';
         const bDate = b.last_used_at || b.created_at || '';
         return bDate.localeCompare(aDate);
@@ -386,6 +402,8 @@
 
       if (filtered.length === 0) {
         h += `<p class="text-muted" style="font-size:0.85rem;text-align:center;padding:20px 0">${_searchQuery ? t('filament.no_search_results') : t('filament.no_spools')}</p>`;
+      } else if (_viewMode === 'groups') {
+        h += _renderSpoolGroups(filtered);
       } else if (_viewMode === 'table') {
         h += _renderSpoolTable(pageSpools);
       } else if (_viewMode === 'list') {
@@ -416,7 +434,8 @@
         { id: 'vendors', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', label: t('filament.vendors_title') },
         { id: 'locations', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', label: t('filament.locations_title') },
         { id: 'tags', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', label: t('filament.tags_title') },
-        { id: 'prices', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', label: t('filament.price_watch_title') }
+        { id: 'prices', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', label: t('filament.price_watch_title') },
+        { id: 'insights', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', label: t('filament.ai_insights') }
       ];
       let h = `<div class="drying-sub-tabs">`;
       for (const tab of tabs) {
@@ -627,7 +646,9 @@
         { id: 'spools', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>', label: t('filament.tools_sub_spools') },
         { id: 'colors', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>', label: t('filament.color_card') },
         { id: 'tags', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/><path d="M16.37 2a20.42 20.42 0 010 20"/></svg>', label: t('filament.nfc_manager') },
-        { id: 'reference', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', label: t('filament.material_reference') }
+        { id: 'reference', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', label: t('filament.material_reference') },
+        { id: 'compat', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>', label: t('filament.compatibility') },
+        { id: 'tempguide', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>', label: t('filament.temp_guide') }
       ];
       let h = `<div class="drying-sub-tabs">`;
       for (const tab of tabs) {
@@ -773,7 +794,9 @@
       : '';
     const infoParts = [`${pct}%`];
     if (s.remaining_length_m) infoParts.push(s.remaining_length_m.toFixed(1) + 'm');
+    if (s.short_id) infoParts.push('#' + s.short_id);
     if (s.location) infoParts.push('📍' + esc(s.location));
+    if (s.storage_method) infoParts.push(s.storage_method === 'dry_box' ? '📦' : s.storage_method === 'vacuum_bag' ? '🫙' : '🌬');
     if (s.transmission_distance) infoParts.push('TD:' + s.transmission_distance);
     if (s.archived) infoParts.push('📦');
     const footerLeft = [
@@ -812,6 +835,9 @@
             <button class="filament-edit-btn" onclick="showStartDryingDialog(${s.id})" title="${t('filament.start_drying')}" data-tooltip="${t('filament.start_drying')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
             </button>
+            <button class="filament-edit-btn" onclick="window.open('https://store.bambulab.com/collections/filament?q='+encodeURIComponent('${esc(s.material||'')} ${esc(s.color_name||'')}'),'_blank')" title="${t('filament.buy_reorder')}" data-tooltip="${t('filament.buy_reorder')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            </button>
             <button class="filament-edit-btn" onclick="showSpoolTagAssign(${s.id})" title="${t('filament.tags_title')}" data-tooltip="${t('filament.tags_title')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
             </button>
@@ -843,6 +869,42 @@
         <div id="spool-edit-${s.id}" style="display:none"></div>
       </div>`;
   }
+
+  function _renderSpoolGroups(spools) {
+    const groupFn = {
+      material: s => s.material || 'Unknown',
+      brand: s => s.brand || 'Unknown',
+      color: s => _classifyColor(s.color_hex) || 'Other',
+      location: s => s.location || t('filament.no_location')
+    }[_groupBy] || (s => s.material || 'Unknown');
+    const groups = {};
+    for (const s of spools) {
+      const key = groupFn(s);
+      (groups[key] || (groups[key] = [])).push(s);
+    }
+    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+    let h = `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+      <span class="text-muted" style="font-size:0.75rem">${t('filament.group_by')}:</span>
+      ${[['material','material'],['brand','vendor'],['color','color'],['location','location']].map(([g, k]) =>
+        `<button class="form-btn form-btn-sm ${_groupBy === g ? '' : 'form-btn-ghost'}" data-ripple onclick="window._setGroupBy('${g}')" style="font-size:0.7rem;padding:2px 8px">${t('filament.group_by_' + k)}</button>`
+      ).join('')}
+    </div>`;
+    for (const key of sortedKeys) {
+      const grp = groups[key];
+      const totalWeight = grp.reduce((s, sp) => s + (sp.remaining_weight_g || 0), 0);
+      h += `<div style="margin-bottom:12px">
+        <div style="font-size:0.85rem;font-weight:600;padding:4px 0;border-bottom:1px solid var(--border-color);margin-bottom:6px;display:flex;justify-content:space-between">
+          <span>${key}</span>
+          <span class="text-muted" style="font-size:0.75rem">${grp.length} ${t('filament.total_spools').toLowerCase()} &middot; ${Math.round(totalWeight)}g</span>
+        </div>
+        <div class="filament-grid">`;
+      for (const s of grp) h += renderSpoolCard(s);
+      h += '</div></div>';
+    }
+    return h;
+  }
+
+  window._setGroupBy = function(g) { _groupBy = g; localStorage.setItem('inv-group-by', g); loadFilament(); };
 
   function _renderSpoolList(spools) {
     let h = '<div class="inv-list-view">';
@@ -1023,7 +1085,9 @@
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
-    const hashParts = location.hash.replace('#', '').split('/');
+    const hashFull = location.hash.replace('#', '');
+    const [hashPath, hashQuery] = hashFull.split('?');
+    const hashParts = hashPath.split('/');
     if (hashParts[0] === 'filament' && hashParts[1]) {
       if (hashParts[1] === 'printer' && hashParts[2]) {
         _filterPrinter = hashParts[2];
@@ -1031,10 +1095,18 @@
         _activeTab = hashParts[1];
       }
     }
+    if (hashQuery) {
+      const params = new URLSearchParams(hashQuery);
+      if (params.has('material')) _filterMaterial = params.get('material');
+      if (params.has('brand')) _filterVendor = params.get('brand');
+      if (params.has('location')) _filterLocation = params.get('location');
+      if (params.has('search')) _searchQuery = params.get('search');
+      if (params.has('view')) _viewMode = params.get('view');
+    }
 
     try {
       // Fetch all data in parallel
-      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes] = await Promise.all([
+      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes, alertsRes] = await Promise.all([
         fetch('/api/inventory/spools'),
         fetch('/api/inventory/vendors'),
         fetch('/api/inventory/filaments'),
@@ -1042,7 +1114,8 @@
         fetch('/api/inventory/drying/sessions/active'),
         fetch('/api/inventory/drying/presets'),
         fetch('/api/inventory/drying/status'),
-        fetch('/api/tags')
+        fetch('/api/tags'),
+        fetch('/api/inventory/location-alerts')
       ]);
       _spools = await spoolsRes.json();
       _vendors = await vendorsRes.json();
@@ -1052,6 +1125,8 @@
       _dryingPresets = await dryingPresetsRes.json();
       _dryingStatus = await dryingStatusRes.json();
       _tags = await tagsRes.json();
+      let _locationAlerts = [];
+      try { _locationAlerts = await alertsRes.json(); } catch {}
       // Clear old drying timers
       for (const tid of Object.values(_dryingTimers)) clearInterval(tid);
       _dryingTimers = {};
@@ -1063,10 +1138,19 @@
         ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
         : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="tele-top-bar">
-        ${window._can && window._can('filament') ? `<button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>${t('filament.add_spool')}</span>
-        </button>` : ''}
+        ${window._can && window._can('filament') ? `<div class="inv-export-dropdown" style="display:inline-block">
+          <button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>${t('filament.add_spool')}</span>
+          </button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="showQuickCreate(this)" style="padding:2px 4px;margin-left:-4px;border-radius:0 4px 4px 0" title="${t('filament.quick_create')}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>` : ''}
+        <button class="form-btn form-btn-sm" data-ripple onclick="importFromAms()" style="display:flex;align-items:center;gap:4px" title="${t('filament.import_ams')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h4v4h-4z"/></svg>
+          <span>${t('filament.import_ams')}</span>
+        </button>
         <button class="form-btn form-btn-sm" data-ripple onclick="switchFilamentTab('database')" style="display:flex;align-items:center;gap:4px" title="${t('filament.tab_database')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           <span>${t('filament.tab_database')}</span>
@@ -1083,6 +1167,8 @@
             <button onclick="exportInventory('vendors','csv')">${t('filament.export_vendors_csv')}</button>
             <hr style="margin:4px 0;border-color:var(--border-color)">
             <button onclick="showImportDialog()">${t('filament.import')}</button>
+            <hr style="margin:4px 0;border-color:var(--border-color)">
+            <button onclick="showAnalyzeFileDialog()">${t('filament.analyze_file')}</button>
           </div>
         </div>
         <button class="form-btn form-btn-sm" data-ripple onclick="openQrScanner()" style="display:flex;align-items:center;gap:4px" title="${t('filament.scan_qr')}">
@@ -1120,6 +1206,15 @@
       // Global form container
       html += `<div id="inv-global-form" style="display:none"></div>`;
 
+      // ── Location alerts ──
+      if (_locationAlerts.length > 0 && _activeTab === 'inventory') {
+        html += '<div style="margin:4px 0;padding:6px 10px;background:var(--bg-warning, rgba(255,165,0,0.1));border:1px solid var(--accent-orange, orange);border-radius:6px;font-size:0.75rem">';
+        for (const a of _locationAlerts) {
+          html += `<div style="padding:1px 0">&#9888; ${t('filament.location_alert_' + a.type, { location: a.location, current: a.current, threshold: a.threshold })}</div>`;
+        }
+        html += '</div>';
+      }
+
       // ── Tab panels ──
       for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
         const order = getOrder(tabId);
@@ -1146,6 +1241,9 @@
         const cont = document.getElementById(`filament-tab-${tabId}`);
         if (cont) initModuleDrag(cont, tabId);
       }
+
+      // Update URL hash with current filters
+      _updateFilterHash();
 
       // Attach WS listener for live updates
       attachInventoryWsListener();
@@ -1213,9 +1311,16 @@
 
   function buildLocationSelect(selected) {
     let html = `<option value="">${t('filament.filter_all')}</option>`;
-    for (const l of _locations) {
-      html += `<option value="${esc(l.name)}" ${l.name === selected ? 'selected' : ''}>${esc(l.name)}</option>`;
+    const byParent = {};
+    for (const l of _locations) (byParent[l.parent_id || 0] || (byParent[l.parent_id || 0] = [])).push(l);
+    function addLevel(pid, depth) {
+      for (const l of (byParent[pid] || [])) {
+        const prefix = '\u00A0\u00A0'.repeat(depth);
+        html += `<option value="${esc(l.name)}" ${l.name === selected ? 'selected' : ''}>${prefix}${esc(l.name)}</option>`;
+        addLevel(l.id, depth + 1);
+      }
     }
+    addLevel(0, 0);
     return html;
   }
 
@@ -1253,7 +1358,20 @@
   window._invToggleFavorites = function() { _filterFavorites = !_filterFavorites; _currentPage = 0; loadFilament(); };
   window._invFilterColor = function(v) { _filterColorFamily = v; _currentPage = 0; loadFilament(); };
   window._invFilterTag = function(v) { _filterTag = v; _currentPage = 0; loadFilament(); };
+  window._invFilterCategory = function(v) { _filterCategory = v; _currentPage = 0; loadFilament(); };
   window._invViewMode = function(mode) { _viewMode = mode; localStorage.setItem('inv-view-mode', mode); loadFilament(); };
+
+  function _updateFilterHash() {
+    const params = new URLSearchParams();
+    if (_filterMaterial) params.set('material', _filterMaterial);
+    if (_filterVendor) params.set('brand', _filterVendor);
+    if (_filterLocation) params.set('location', _filterLocation);
+    if (_searchQuery) params.set('search', _searchQuery);
+    if (_viewMode !== 'grid') params.set('view', _viewMode);
+    const q = params.toString();
+    const path = `#filament/${_activeTab}`;
+    history.replaceState(null, '', q ? `${path}?${q}` : path);
+  }
 
   window.toggleFavorite = async function(spoolId) {
     await fetch(`/api/inventory/spools/${spoolId}/favorite`, { method: 'POST' });
@@ -1275,6 +1393,40 @@
     container.style.display = '';
     container.innerHTML = renderSpoolForm(null);
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.showQuickCreate = async function(btn) {
+    // Remove existing dropdown
+    document.querySelector('.quick-create-menu')?.remove();
+    try {
+      const res = await fetch('/api/inventory/recent-profiles');
+      const profiles = await res.json();
+      if (!profiles.length) { showToast(t('filament.recent_profiles') + ': ' + t('common.none'), 'info'); return; }
+      const menu = document.createElement('div');
+      menu.className = 'inv-export-menu quick-create-menu show';
+      menu.style.cssText = 'min-width:200px';
+      for (const p of profiles) {
+        const b = document.createElement('button');
+        b.textContent = `${p.brand || ''} ${p.material || ''} ${p.color_name || ''}`.trim();
+        b.onclick = async () => {
+          menu.remove();
+          const data = {
+            filament_profile_id: p.id,
+            initial_weight_g: p.spool_weight_g || 1000,
+            used_weight_g: 0,
+            remaining_weight_g: p.spool_weight_g || 1000
+          };
+          try {
+            await fetch('/api/inventory/spools', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            showToast(t('filament.spool_added'), 'success');
+            loadFilament();
+          } catch { showToast(t('filament.save_failed'), 'error'); }
+        };
+        menu.appendChild(b);
+      }
+      btn.closest('.inv-export-dropdown').appendChild(menu);
+      setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+    } catch { showToast(t('filament.save_failed'), 'error'); }
   };
 
   window.showEditSpoolForm = function(spoolId) {
@@ -1329,6 +1481,15 @@
               <label class="form-label">${t('filament.purchase_date')}</label>
               <input class="form-input" id="sp-purchase-${id}" type="date" value="${spool?.purchase_date || ''}">
             </div>
+            <div class="form-group" style="width:110px">
+              <label class="form-label">${t('filament.storage_method')}</label>
+              <select class="form-input" id="sp-storage-${id}">
+                <option value="">${t('common.none')}</option>
+                <option value="dry_box" ${spool?.storage_method === 'dry_box' ? 'selected' : ''}>${t('filament.storage_dry_box')}</option>
+                <option value="vacuum_bag" ${spool?.storage_method === 'vacuum_bag' ? 'selected' : ''}>${t('filament.storage_vacuum')}</option>
+                <option value="open_air" ${spool?.storage_method === 'open_air' ? 'selected' : ''}>${t('filament.storage_open_air')}</option>
+              </select>
+            </div>
             <div class="form-group" style="flex:1;min-width:120px">
               <label class="form-label">${t('filament.comment')}</label>
               <input class="form-input" id="sp-comment-${id}" value="${spool?.comment || ''}">
@@ -1375,6 +1536,7 @@
       comment: document.getElementById('sp-comment-new').value || null,
       purchase_date: document.getElementById('sp-purchase-new').value || null,
       spool_weight: parseFloat(document.getElementById('sp-tare-new').value) || null,
+      storage_method: document.getElementById('sp-storage-new').value || null,
       extra_fields: _collectExtraFields('sp-new')
     };
     data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
@@ -1404,6 +1566,7 @@
       purchase_date: document.getElementById(`sp-purchase-${id}`).value || null,
       archived: spool?.archived || 0,
       spool_weight: parseFloat(document.getElementById(`sp-tare-${id}`).value) || null,
+      storage_method: document.getElementById(`sp-storage-${id}`).value || null,
       extra_fields: _collectExtraFields(`sp-${id}`)
     };
     data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
@@ -1464,6 +1627,9 @@
     } else if (_manageSubTab === 'prices') {
       el.innerHTML = `<div id="price-watch-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       _loadPriceWatch();
+    } else if (_manageSubTab === 'insights') {
+      el.innerHTML = `<div id="insights-container"><span class="text-muted" style="font-size:0.8rem">${t('filament.ai_loading')}</span></div>`;
+      _loadInsights();
     }
   }
 
@@ -1514,13 +1680,14 @@
             </div>
             <div class="fil-spool-actions">
               <button class="filament-edit-btn" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-tooltip="${t('filament.share_to_community')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+              <button class="filament-edit-btn" onclick="window._exportSlicerProfile(${p.id})" title="${t('filament.export_slicer')}" data-tooltip="${t('filament.export_slicer')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
               <button class="filament-edit-btn" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
               <button class="filament-delete-btn" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
           <div class="fil-spool-meta">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g</div>
           <div class="fil-spool-meta text-muted" style="font-size:0.7rem">${p.nozzle_temp_min || p.nozzle_temp_max ? `🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C` : ''} ${p.bed_temp_min || p.bed_temp_max ? `🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C` : ''}${p.price ? ` · ${formatCurrency(p.price)}` : ''}</div>
-          ${p.finish || p.translucent || p.glow ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}</div>` : ''}
+          ${p.finish || p.translucent || p.glow || p.modifiers ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}${_parseModifiers(p.modifiers).map(m => `<span class="modifier-badge">${m}</span>`).join('')}</div>` : ''}
           ${p.pressure_advance_k || p.max_volumetric_speed || p.retraction_distance || p.cooling_fan_speed ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${[
             p.pressure_advance_k ? 'PA:' + p.pressure_advance_k : '',
             p.max_volumetric_speed ? 'Vol:' + p.max_volumetric_speed + 'mm³/s' : '',
@@ -1541,16 +1708,33 @@
     if (_locations.length === 0) {
       h += `<p class="text-muted" style="font-size:0.85rem">${t('filament.no_locations')}</p>`;
     } else {
-      h += '<div class="inv-location-list">';
+      // Build tree: top-level first, then children
+      const byParent = {};
       for (const l of _locations) {
-        h += `<div class="inv-location-item">
-          <span>${esc(l.name)}${l.description ? ` <span class="text-muted">(${esc(l.description)})</span>` : ''}</span>
-          <div>
-            <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-        </div>`;
+        const pid = l.parent_id || 0;
+        (byParent[pid] || (byParent[pid] = [])).push(l);
       }
+      function renderLevel(parentId, depth) {
+        const items = byParent[parentId] || [];
+        let out = '';
+        for (const l of items) {
+          const indent = depth * 20;
+          const thresholdInfo = [];
+          if (l.min_spools) thresholdInfo.push(`min:${l.min_spools}`);
+          if (l.max_spools) thresholdInfo.push(`max:${l.max_spools}`);
+          out += `<div class="inv-location-item" style="padding-left:${indent}px">
+            <span>${depth > 0 ? '&#x2514; ' : ''}${esc(l.name)}${l.description ? ` <span class="text-muted">(${esc(l.description)})</span>` : ''}${thresholdInfo.length ? ` <span class="text-muted" style="font-size:0.7rem">[${thresholdInfo.join(', ')}]</span>` : ''}</span>
+            <div>
+              <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>`;
+          out += renderLevel(l.id, depth + 1);
+        }
+        return out;
+      }
+      h += '<div class="inv-location-list">';
+      h += renderLevel(0, 0);
       h += '</div>';
     }
     h += `<div id="location-form-container"></div>`;
@@ -1704,6 +1888,20 @@
   function _parseDiameters(json) {
     try { const arr = json ? (typeof json === 'string' ? JSON.parse(json) : json) : []; return arr.join(', '); } catch { return ''; }
   }
+  function _parseModifiers(json) {
+    try { return json ? (typeof json === 'string' ? JSON.parse(json) : json) : []; } catch { return []; }
+  }
+  const _MODIFIERS = [
+    'CF','GF','KF','HF','HS','HT','ESD','FR','UV',
+    'Silk','Marble','Wood','Metal','Glow','Sparkle','Galaxy',
+    'Tough','Flex','Pro','Plus','Basic','Lite','Max',
+    'Matte','Glossy','Satin','Transparent','Translucent',
+    'Recycled','Bio','ASA-Blend','Conductive','Magnetic',
+    'Hygroscopic','Abrasive','Food-Safe','Medical',
+    'Lightweight','Heavy','Foaming','Gradient','Dual-Color',
+    'Neon','Pastel','Fluorescent','Phosphorescent',
+    'Temperature','Humidity','Color-Change','Pearlescent'
+  ];
 
   // Multi-color + extra fields helpers
   function _hasMultiColor(profile) {
@@ -1840,6 +2038,15 @@
         <div class="form-group" style="width:120px"><label class="form-label">${t('filament.weight_options')}</label><input class="form-input" id="${pfx}-weights" value="${_parseWeightOptions(profile?.weight_options)}" placeholder="250, 500, 1000"></div>
         <div class="form-group" style="width:120px"><label class="form-label">${t('filament.diameters')}</label><input class="form-input" id="${pfx}-diameters" value="${_parseDiameters(profile?.diameters)}" placeholder="1.75, 2.85"></div>
       </div>
+      <div style="margin-top:4px">
+        <label class="form-label">${t('filament.modifiers')}</label>
+        <div class="modifier-tags" id="${pfx}-modifiers">
+          ${_MODIFIERS.map(m => {
+            const active = _parseModifiers(profile?.modifiers).includes(m);
+            return `<span class="modifier-tag${active ? ' active' : ''}" onclick="this.classList.toggle('active')" data-mod="${m}">${m}</span>`;
+          }).join('')}
+        </div>
+      </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;margin-top:4px">
         <div style="font-size:0.75rem;width:100%;color:var(--text-muted);font-weight:600">${t('filament.optimal_settings')}</div>
         <div class="form-group" style="width:90px"><label class="form-label">${t('filament.pressure_advance')}</label><input class="form-input" id="${pfx}-pa-k" type="number" step="0.001" value="${profile?.pressure_advance_k || ''}"></div>
@@ -1932,6 +2139,12 @@
       cooling_fan_speed: parseInt(document.getElementById(`${pfx}-fan-speed`)?.value) || null,
       transmission_distance: parseFloat(document.getElementById(`${pfx}-td`)?.value) || null,
       purchase_url: document.getElementById(`${pfx}-purchase-url`)?.value?.trim() || null,
+      modifiers: (() => {
+        const el = document.getElementById(`${pfx}-modifiers`);
+        if (!el) return null;
+        const active = [...el.querySelectorAll('.modifier-tag.active')].map(t => t.dataset.mod);
+        return active.length > 0 ? active : null;
+      })(),
     };
   }
 
@@ -1976,6 +2189,21 @@
   };
 
   // ═══ Community Sharing ═══
+  window._exportSlicerProfile = function(id) {
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-backdrop';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:320px">
+      <h3>${t('filament.export_slicer')}</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0">
+        <a href="/api/inventory/filaments/${id}/slicer-export?format=orcaslicer" download class="form-btn form-btn-primary" style="text-align:center" onclick="setTimeout(()=>this.closest('.inv-modal-backdrop').remove(),200)">OrcaSlicer (.json)</a>
+        <a href="/api/inventory/filaments/${id}/slicer-export?format=prusaslicer" download class="form-btn" style="text-align:center" onclick="setTimeout(()=>this.closest('.inv-modal-backdrop').remove(),200)">PrusaSlicer (.ini)</a>
+      </div>
+      <button class="form-btn" style="width:100%" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
   window._shareProfile = async function(id) {
     const profile = _profiles.find(p => p.id === id);
     if (!profile) return;
@@ -2012,12 +2240,24 @@
   };
 
   // ═══ Location CRUD ═══
+  function _buildParentLocationOptions(excludeId) {
+    let opts = `<option value="">${t('common.none')}</option>`;
+    for (const l of _locations) {
+      if (l.id === excludeId) continue;
+      opts += `<option value="${l.id}">${esc(l.name)}</option>`;
+    }
+    return opts;
+  }
+
   window.showAddLocationForm = function() {
     const c = document.getElementById('location-form-container');
     if (!c) return;
     c.innerHTML = `<div class="settings-form mt-sm" style="border-top:1px solid var(--border-color);padding-top:8px">
-      <div class="flex gap-sm">
-        <div class="form-group" style="flex:1"><label class="form-label">${t('filament.location_name')}</label><input class="form-input" id="loc-name"></div>
+      <div class="flex gap-sm" style="flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:120px"><label class="form-label">${t('filament.location_name')}</label><input class="form-input" id="loc-name"></div>
+        <div class="form-group" style="width:120px"><label class="form-label">${t('filament.location_parent')}</label><select class="form-input" id="loc-parent">${_buildParentLocationOptions()}</select></div>
+        <div class="form-group" style="width:70px"><label class="form-label">${t('filament.location_min_spools')}</label><input class="form-input" id="loc-min-spools" type="number" min="0"></div>
+        <div class="form-group" style="width:70px"><label class="form-label">${t('filament.location_max_spools')}</label><input class="form-input" id="loc-max-spools" type="number" min="0"></div>
       </div>
       <div class="flex gap-sm"><button class="form-btn" data-ripple onclick="saveNewLocation()">${t('filament.save')}</button><button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('location-form-container').innerHTML=''">${t('settings.cancel')}</button></div>
     </div>`;
@@ -2026,7 +2266,14 @@
   window.saveNewLocation = async function() {
     const name = document.getElementById('loc-name')?.value?.trim();
     if (!name) return;
-    await fetch('/api/inventory/locations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const data = { name };
+    const parentId = document.getElementById('loc-parent')?.value;
+    if (parentId) data.parent_id = parseInt(parentId);
+    const minS = document.getElementById('loc-min-spools')?.value;
+    if (minS) data.min_spools = parseInt(minS);
+    const maxS = document.getElementById('loc-max-spools')?.value;
+    if (maxS) data.max_spools = parseInt(maxS);
+    await fetch('/api/inventory/locations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     loadFilament();
   };
 
@@ -2041,9 +2288,12 @@
     const c = document.getElementById('location-form-container');
     if (!c) return;
     c.innerHTML = `<div class="settings-form mt-sm" style="border-top:1px solid var(--border-color);padding-top:8px">
-      <div class="flex gap-sm">
-        <div class="form-group" style="flex:1"><label class="form-label">${t('filament.location_name')}</label><input class="form-input" id="loc-edit-name" value="${esc(l.name)}"></div>
-        <div class="form-group" style="flex:1"><label class="form-label">${t('filament.location_description')}</label><input class="form-input" id="loc-edit-desc" value="${esc(l.description || '')}"></div>
+      <div class="flex gap-sm" style="flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:120px"><label class="form-label">${t('filament.location_name')}</label><input class="form-input" id="loc-edit-name" value="${esc(l.name)}"></div>
+        <div class="form-group" style="flex:1;min-width:120px"><label class="form-label">${t('filament.location_description')}</label><input class="form-input" id="loc-edit-desc" value="${esc(l.description || '')}"></div>
+        <div class="form-group" style="width:120px"><label class="form-label">${t('filament.location_parent')}</label><select class="form-input" id="loc-edit-parent">${_buildParentLocationOptions(id).replace(`value="${l.parent_id}"`, `value="${l.parent_id}" selected`)}</select></div>
+        <div class="form-group" style="width:70px"><label class="form-label">${t('filament.location_min_spools')}</label><input class="form-input" id="loc-edit-min-spools" type="number" min="0" value="${l.min_spools || ''}"></div>
+        <div class="form-group" style="width:70px"><label class="form-label">${t('filament.location_max_spools')}</label><input class="form-input" id="loc-edit-max-spools" type="number" min="0" value="${l.max_spools || ''}"></div>
       </div>
       <div class="flex gap-sm"><button class="form-btn" data-ripple onclick="saveLocationEdit(${id})">${t('filament.save')}</button><button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('location-form-container').innerHTML=''">${t('settings.cancel')}</button></div>
     </div>`;
@@ -2053,7 +2303,14 @@
     const name = document.getElementById('loc-edit-name')?.value?.trim();
     if (!name) return;
     const desc = document.getElementById('loc-edit-desc')?.value?.trim() || null;
-    await fetch(`/api/inventory/locations/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) });
+    const data = { name, description: desc };
+    const parentId = document.getElementById('loc-edit-parent')?.value;
+    data.parent_id = parentId ? parseInt(parentId) : null;
+    const minS = document.getElementById('loc-edit-min-spools')?.value;
+    data.min_spools = minS ? parseInt(minS) : null;
+    const maxS = document.getElementById('loc-edit-max-spools')?.value;
+    data.max_spools = maxS ? parseInt(maxS) : null;
+    await fetch(`/api/inventory/locations/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     loadFilament();
   };
 
@@ -2094,6 +2351,61 @@
     else { const err = await res.json().catch(() => ({})); showToast(err.error || t('filament.measure_failed'), 'error'); }
   };
 
+  // ═══ Code 128 Barcode Generator ═══
+  function _code128Svg(text, height = 40) {
+    const C128 = [
+      [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],
+      [1,3,1,2,2,2],[1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],
+      [2,2,1,3,1,2],[2,3,1,2,1,2],[1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],
+      [1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],[2,2,3,2,1,1],[2,2,1,1,3,2],
+      [2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],[3,1,1,2,2,2],
+      [3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],
+      [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3],
+      [1,3,1,3,2,1],[1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3],
+      [2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1],
+      [1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],[3,1,3,1,2,1],[2,1,1,3,3,1],
+      [2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],[3,1,1,1,2,3],
+      [3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1],
+      [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2],
+      [1,2,1,1,2,4],[1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4],
+      [1,1,2,4,1,2],[1,2,2,1,1,4],[1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1],
+      [2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],[2,4,1,1,1,2],[1,3,4,1,1,1],
+      [1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],[1,2,4,1,1,2],
+      [1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1],
+      [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],
+      [1,1,4,1,1,3],[1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],
+      [1,1,4,1,3,1],[3,1,1,1,4,1],[4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],
+      [2,1,1,2,3,2],[2,3,3,1,1,1,2]
+    ];
+    // Use Code B
+    const codes = [104]; // Start B
+    let checksum = 104;
+    for (let i = 0; i < text.length; i++) {
+      const val = text.charCodeAt(i) - 32;
+      codes.push(val);
+      checksum += val * (i + 1);
+    }
+    codes.push(checksum % 103);
+    codes.push(106); // Stop
+    let bars = '';
+    let x = 10;
+    for (const code of codes) {
+      const pattern = C128[code];
+      for (let i = 0; i < pattern.length; i++) {
+        if (i % 2 === 0) bars += `<rect x="${x}" y="0" width="${pattern[i]}" height="${height}" fill="black"/>`;
+        x += pattern[i];
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${x + 10} ${height + 14}" style="max-width:100%"><rect width="100%" height="100%" fill="white"/>${bars}<text x="${(x + 10)/2}" y="${height + 12}" text-anchor="middle" font-size="10" font-family="monospace">${text}</text></svg>`;
+  }
+
+  window._toggleLabelCode = function(type) {
+    const qrEl = document.querySelector('.inv-qr-code');
+    const bcEl = document.querySelector('.inv-barcode');
+    if (qrEl) qrEl.style.display = (type === 'barcode') ? 'none' : '';
+    if (bcEl) bcEl.style.display = (type === 'qr') ? 'none' : '';
+  };
+
   // ═══ QR Label ═══
   window.showSpoolLabel = async function(id) {
     const res = await fetch(`/api/inventory/spools/${id}/qr`);
@@ -2124,6 +2436,12 @@
           <option value="vertical">${t('filament.label_vertical')}</option>
           <option value="compact">${t('filament.label_compact')}</option>
         </select>
+        <label class="form-label" style="margin:0;font-size:0.75rem">${t('filament.label_code_type')}:</label>
+        <select class="form-input" id="qr-label-code-type" style="width:auto;font-size:0.75rem" onchange="window._toggleLabelCode(this.value)">
+          <option value="qr" selected>QR</option>
+          <option value="barcode">Code 128</option>
+          <option value="both">${t('filament.label_both')}</option>
+        </select>
         <label class="form-label" style="margin:0;font-size:0.75rem">${t('filament.label_width')}:</label>
         <select class="form-input" id="qr-label-width" style="width:auto;font-size:0.75rem">
           <option value="62">62mm</option>
@@ -2134,19 +2452,33 @@
       </div>
       <div class="inv-qr-label-content inv-qr-label-horizontal" id="qr-label-print">
         <div class="inv-qr-code">${qrHtml}</div>
+        <div class="inv-barcode" style="display:none;max-width:140px">${_code128Svg(label.short_id || String(id))}</div>
         <div class="inv-qr-info">
           <strong>${esc(label.name)}</strong>
           <span>${esc(label.vendor || '')} · ${esc(label.material || '')}</span>
           <span>${label.color_name ? esc(label.color_name) : ''}</span>
+          ${label.short_id ? `<span>#${esc(label.short_id)}</span>` : ''}
           <span>${label.spool_weight_g ? label.spool_weight_g + 'g' : ''} ${label.remaining_weight_g ? '(' + Math.round(label.remaining_weight_g) + 'g ' + t('filament.remaining') + ')' : ''}</span>
           ${label.lot_number ? `<span>Lot: ${esc(label.lot_number)}</span>` : ''}
         </div>
       </div>
-      <div class="inv-modal-footer">
+      <div class="inv-modal-footer" style="display:flex;gap:6px">
         <button class="form-btn" data-ripple onclick="printQrLabel()">${t('filament.print_label')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._copyZplLabel(${id})" title="${t('filament.copy_zpl')}">${t('filament.copy_zpl')}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
+  };
+
+  window._copyZplLabel = async function(spoolId) {
+    try {
+      const res = await fetch('/api/inventory/label-zpl?spool_id=' + spoolId);
+      const data = await res.json();
+      if (data.zpl) {
+        await navigator.clipboard.writeText(data.zpl);
+        showToast(t('filament.zpl_copied'), 'success');
+      }
+    } catch { showToast('Error', 'error'); }
   };
 
   window.printQrLabel = function() {
@@ -2257,6 +2589,20 @@
   };
 
   // ═══ Export ═══
+  window.importFromAms = async function() {
+    try {
+      const res = await fetch('/api/inventory/import-ams', { method: 'POST' });
+      const data = await res.json();
+      if (data.count > 0) {
+        loadFilament();
+      } else {
+        alert(t('filament.import_ams_none'));
+      }
+    } catch (e) {
+      alert(t('filament.import_ams_failed'));
+    }
+  };
+
   window.exportInventory = function(type, format) {
     // Close dropdown
     document.querySelectorAll('.inv-export-menu.show').forEach(m => m.classList.remove('show'));
@@ -2628,6 +2974,61 @@
     }
   };
 
+  // ═══ 3MF / Gcode File Analyzer ═══
+  window.showAnalyzeFileDialog = function() {
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:500px">
+      <div class="inv-modal-header">
+        <span>${t('filament.analyze_file')}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px">
+        <p class="text-muted" style="font-size:0.8rem;margin-bottom:8px">${t('filament.analyze_file_hint')}</p>
+        <input type="file" id="analyze-file-input" accept=".3mf,.gcode,.g" class="form-input">
+        <div id="analyze-file-result" style="margin-top:8px"></div>
+      </div>
+      <div class="inv-modal-footer">
+        <button class="form-btn" data-ripple onclick="window._doAnalyzeFile()">${t('filament.analyze')}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window._doAnalyzeFile = async function() {
+    const input = document.getElementById('analyze-file-input');
+    const file = input?.files?.[0];
+    if (!file) return;
+    const resultEl = document.getElementById('analyze-file-result');
+    resultEl.innerHTML = '<span class="text-muted">Analyzing...</span>';
+    try {
+      const formData = file;
+      const res = await fetch(`/api/inventory/analyze-file?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.error) { resultEl.innerHTML = `<span style="color:var(--accent-red)">${esc(data.error)}</span>`; return; }
+      let h = '<div style="border:1px solid var(--border-color);border-radius:6px;padding:8px;font-size:0.8rem">';
+      if (data.plate_name) h += `<div><strong>${t('common.name')}:</strong> ${esc(data.plate_name)}</div>`;
+      h += `<div><strong>${t('filament.total_weight')}:</strong> ${Math.round(data.total_weight_g * 100) / 100}g</div>`;
+      if (data.estimated_time_min) h += `<div><strong>${t('filament.estimated_time')}:</strong> ${Math.floor(data.estimated_time_min / 60)}h ${data.estimated_time_min % 60}m</div>`;
+      if (data.filaments.length) {
+        h += `<div style="margin-top:6px"><strong>${t('filament.filaments_used')}:</strong></div>`;
+        h += '<table style="width:100%;font-size:0.75rem;border-collapse:collapse;margin-top:4px">';
+        h += '<tr style="background:var(--bg-secondary)"><th style="padding:2px 6px;text-align:left">#</th><th style="padding:2px 6px;text-align:left">${t("filament.material")}</th><th style="padding:2px 6px;text-align:right">${t("filament.weight")}</th></tr>';
+        data.filaments.forEach((f, i) => {
+          h += `<tr><td style="padding:2px 6px">${i + 1}</td><td style="padding:2px 6px">${esc(f.material || '?')}</td><td style="padding:2px 6px;text-align:right">${Math.round(f.weight_g * 100) / 100}g</td></tr>`;
+        });
+        h += '</table>';
+      }
+      h += '</div>';
+      resultEl.innerHTML = h;
+    } catch (e) { resultEl.innerHTML = `<span style="color:var(--accent-red)">${esc(e.message)}</span>`; }
+  };
+
   // ═══ Inventory Settings ═══
   window.showInventorySettings = async function() {
     let settings = {};
@@ -2660,6 +3061,11 @@
             ${[25, 50, 100].map(n => `<option value="${n}" ${(_pageSize === n || (!_pageSize && n === 50)) ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">${t('filament.auto_trash_days')}</label>
+          <input class="form-input" id="set-auto-trash" type="number" value="${settings.auto_trash_days || 0}" placeholder="0" min="0" max="365">
+          <span class="text-muted" style="font-size:0.7rem">${t('filament.auto_trash_hint')}</span>
+        </div>
         <div style="border-top:1px solid var(--border-color);margin-top:8px;padding-top:8px">
           <div style="font-size:0.8rem;font-weight:600;margin-bottom:6px">${t('filament.cost_estimate')}</div>
           <div class="form-group">
@@ -2678,6 +3084,10 @@
             <label class="form-label">${t('filament.machine_lifetime')}</label>
             <input class="form-input" id="set-machine-lifetime" type="number" value="${settings.machine_lifetime_hours || ''}" placeholder="5000">
           </div>
+          <div class="form-group">
+            <label class="form-label">${t('filament.labor_rate')}</label>
+            <input class="form-input" id="set-labor-rate" type="number" step="0.01" value="${settings.labor_rate_hourly || ''}" placeholder="0.00">
+          </div>
         </div>
       </div>
       <div class="inv-modal-footer">
@@ -2693,10 +3103,12 @@
       ['currency', document.getElementById('set-currency')?.value],
       ['low_stock_threshold', document.getElementById('set-low-threshold')?.value],
       ['page_size', document.getElementById('set-page-size')?.value],
+      ['auto_trash_days', document.getElementById('set-auto-trash')?.value],
       ['electricity_rate_kwh', document.getElementById('set-electricity-rate')?.value],
       ['printer_wattage', document.getElementById('set-printer-wattage')?.value],
       ['machine_cost', document.getElementById('set-machine-cost')?.value],
-      ['machine_lifetime_hours', document.getElementById('set-machine-lifetime')?.value]
+      ['machine_lifetime_hours', document.getElementById('set-machine-lifetime')?.value],
+      ['labor_rate_hourly', document.getElementById('set-labor-rate')?.value]
     ];
     for (const [key, value] of keys) {
       if (value != null) await fetch(`/api/inventory/settings/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) });
@@ -3002,6 +3414,34 @@
       loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
   };
+
+  async function _loadInsights() {
+    const container = document.getElementById('insights-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/inventory/insights');
+      const data = await res.json();
+      if (!data.insights || data.insights.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="font-size:0.85rem;padding:12px 0">${t('filament.ai_insights_hint')}</p>`;
+        return;
+      }
+      const icons = { warning: '&#9888;', restock: '&#128230;', info: '&#128161;', suggestion: '&#128300;' };
+      const colors = { warning: 'var(--accent-orange, orange)', restock: 'var(--accent-red, red)', info: 'var(--accent-blue, #4a9eff)', suggestion: 'var(--accent-green, green)' };
+      let h = '';
+      for (const insight of data.insights) {
+        h += `<div style="padding:10px;border:1px solid ${colors[insight.type] || 'var(--border-color)'};border-radius:8px;margin-bottom:8px;background:color-mix(in srgb, ${colors[insight.type] || 'var(--border-color)'} 5%, transparent)">
+          <div style="font-weight:600;font-size:0.85rem;margin-bottom:4px">${icons[insight.type] || ''} ${esc(insight.title)}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">${esc(insight.message)}</div>`;
+        if (insight.items?.length) {
+          h += '<ul style="margin:6px 0 0;padding-left:18px;font-size:0.75rem">';
+          for (const item of insight.items) h += `<li>${esc(item)}</li>`;
+          h += '</ul>';
+        }
+        h += '</div>';
+      }
+      container.innerHTML = h;
+    } catch { container.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
 
   async function _loadPriceWatch() {
     const container = document.getElementById('price-watch-container');
@@ -3498,7 +3938,89 @@
       </div>
       <div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
       _loadMaterials();
+    } else if (_toolsSubTab === 'compat') {
+      el.innerHTML = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        ${t('filament.compatibility')}
+      </div>
+      <div id="compat-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadCompatMatrix();
+    } else if (_toolsSubTab === 'tempguide') {
+      el.innerHTML = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        ${t('filament.temp_guide')}
+      </div>
+      <div id="tempguide-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      _loadTempGuide();
     }
+  }
+
+  // ═══ Temperature Guide ═══
+  async function _loadTempGuide() {
+    const el = document.getElementById('tempguide-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/inventory/temperature-guide');
+      const data = await res.json();
+      if (data.length === 0) { el.innerHTML = `<p class="text-muted">${t('filament.temp_guide_empty')}</p>`; return; }
+      let h = '<div style="overflow-x:auto"><table class="compat-matrix"><thead><tr>';
+      h += `<th>${t('filament.filter_material')}</th><th>${t('filament.nozzle_temp')} (°C)</th><th>${t('filament.bed_temp')} (°C)</th>`;
+      h += `<th>${t('filament.temp_enclosure')}</th><th>${t('filament.temp_nozzle_rec')}</th><th>${t('filament.temp_tips')}</th></tr></thead><tbody>`;
+      for (const r of data) {
+        let tipsHtml = '—';
+        if (r.tips) {
+          try {
+            const tp = typeof r.tips === 'string' ? JSON.parse(r.tips) : r.tips;
+            const parts = [];
+            if (tp.print) parts.push(`<b>${t('filament.tip_print')}:</b> ${tp.print}`);
+            if (tp.storage) parts.push(`<b>${t('filament.tip_storage')}:</b> ${tp.storage}`);
+            if (tp.post) parts.push(`<b>${t('filament.tip_post')}:</b> ${tp.post}`);
+            tipsHtml = parts.length ? parts.join('<br>') : String(r.tips);
+          } catch { tipsHtml = String(r.tips); }
+        }
+        h += `<tr>
+          <td><b>${r.material}</b> <span class="text-muted">(${r.profile_count})</span></td>
+          <td>${r.nozzle_min || '?'}–${r.nozzle_max || '?'}</td>
+          <td>${r.bed_min || '?'}–${r.bed_max || '?'}</td>
+          <td>${r.enclosure ? '✅' : '—'}</td>
+          <td>${r.nozzle_recommendation || '—'}</td>
+          <td style="max-width:300px;font-size:0.8em">${tipsHtml}</td>
+        </tr>`;
+      }
+      h += '</tbody></table></div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  // ═══ Compatibility Matrix ═══
+  async function _loadCompatMatrix() {
+    const el = document.getElementById('compat-container');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/inventory/compatibility');
+      const rules = await res.json();
+      if (rules.length === 0) { el.innerHTML = `<p class="text-muted">${t('filament.compat_empty')}</p>`; return; }
+      const materials = [...new Set(rules.map(r => r.material))].sort();
+      const plates = [...new Set(rules.map(r => r.plate_type))].sort();
+      const icons = { good: '✅', fair: '⚠️', poor: '❌' };
+      let h = '<div style="overflow-x:auto"><table class="compat-matrix"><thead><tr><th>' + t('filament.filter_material') + '</th>';
+      for (const p of plates) h += `<th>${p.replace(/_/g, ' ')}</th>`;
+      h += '</tr></thead><tbody>';
+      for (const mat of materials) {
+        h += `<tr><td><b>${mat}</b></td>`;
+        for (const plate of plates) {
+          const rule = rules.find(r => r.material === mat && r.plate_type === plate);
+          if (rule) {
+            h += `<td title="${rule.notes || ''}" class="compat-${rule.compatibility}">${icons[rule.compatibility] || '—'}</td>`;
+          } else {
+            h += '<td>—</td>';
+          }
+        }
+        h += '</tr>';
+      }
+      h += '</tbody></table></div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
   }
 
   // ═══ Color Card ═══
@@ -3799,7 +4321,8 @@
               <span class="text-muted" style="font-size:0.8rem">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span>
             </div>
           </div>
-          <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}</span>
+          <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}${tag.standard ? ` · ${esc(tag.standard)}` : ''}</span>
+          ${'NDEFReader' in window ? `<button class="form-btn form-btn-sm" data-ripple style="margin-top:6px" onclick="window._nfcWriteToTag(${tag.spool_id})">${t('filament.nfc_write_to_tag')}</button>` : ''}
         </div>`;
       } else {
         // Build spool options for linking
@@ -3812,8 +4335,13 @@
         resultEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px">
           <p style="margin-bottom:8px">${t('filament.tag_not_found')}</p>
           <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}</span>
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-            <select id="tag-link-spool-select" class="form-input" style="flex:1">${spoolOpts}</select>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="tag-link-spool-select" class="form-input" style="flex:1;min-width:120px">${spoolOpts}</select>
+            <select id="tag-link-standard" class="form-input" style="width:100px">
+              <option value="openspool">${t('filament.nfc_standard_openspool')}</option>
+              <option value="bambu">${t('filament.nfc_standard_bambu')}</option>
+              <option value="ntag">${t('filament.nfc_standard_ntag')}</option>
+            </select>
             <button class="form-btn form-btn-sm" data-ripple onclick="window._tagLinkSpool('${esc(uid)}')">${t('filament.tag_link_spool')}</button>
           </div>
         </div>`;
@@ -3827,15 +4355,42 @@
     const select = document.getElementById('tag-link-spool-select');
     const spoolId = select?.value;
     if (!spoolId) return;
+    const standard = document.getElementById('tag-link-standard')?.value || 'openspool';
     try {
       await fetch('/api/nfc/link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_uid: uid, spool_id: parseInt(spoolId) })
+        body: JSON.stringify({ tag_uid: uid, spool_id: parseInt(spoolId), standard })
       });
       showToast(t('filament.tag_found'), 'success');
       closeTagScanner();
       loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ═══ NFC Write ═══
+  window._nfcWriteToTag = async function(spoolId) {
+    if (!('NDEFReader' in window)) { showToast(t('filament.nfc_write_unsupported'), 'error'); return; }
+    const spool = _spools.find(s => s.id === spoolId);
+    if (!spool) return;
+    const host = location.host;
+    const proto = location.protocol;
+    const url = `${proto}//${host}/#filament/spool/${spoolId}`;
+    const statusEl = document.getElementById('tag-scanner-result');
+    if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center"><span class="text-muted">${t('filament.nfc_hold_to_write')}...</span></div>`;
+    try {
+      const writer = new NDEFReader();
+      await writer.write({
+        records: [
+          { recordType: 'url', data: url },
+          { recordType: 'text', data: `${spool.profile_name || spool.material || 'Spool'} #${spool.short_id || spoolId}` }
+        ]
+      });
+      showToast(t('filament.nfc_write_success'), 'success');
+      if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color:var(--accent-green)">${t('filament.nfc_write_success')}</div>`;
+    } catch (e) {
+      showToast(t('filament.nfc_write_failed') + ': ' + e.message, 'error');
+      if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color:var(--accent-red)">${t('filament.nfc_write_failed')}: ${esc(e.message)}</div>`;
+    }
   };
 
   function _tagCleanupMethod() {
@@ -4014,6 +4569,7 @@
         ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkEditDialog()">${t('filament.bulk_edit')}</button>` : ''}
         ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkTagDialog()">${t('filament.bulk_tag')}</button>` : ''}
         ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="showBulkDryDialog()">${t('filament.bulk_dry')}</button>` : ''}
+        ${canWrite && _selectedSpools.size >= 2 ? `<button class="form-btn form-btn-sm" data-ripple onclick="window._showMergeDialog()">${t('filament.merge')}</button>` : ''}
         <button class="form-btn form-btn-sm" data-ripple onclick="bulkLabels()">${t('filament.bulk_labels')}</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="bulkExport()">${t('filament.bulk_export')}</button>
         ${canWrite ? `<button class="form-btn form-btn-sm" data-ripple onclick="bulkAction('relocate')">${t('filament.bulk_relocate')}</button>` : ''}
@@ -4270,6 +4826,75 @@
       a.href = url; a.download = `spools-export-${ids.length}.csv`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // ── Merge Spools Dialog ──
+  window._showMergeDialog = function() {
+    const ids = Array.from(_selectedSpools);
+    if (ids.length < 2) return showToast(t('filament.merge_min'), 'error');
+    const selected = _spools.filter(s => ids.includes(s.id));
+    const profiles = [...new Set(selected.map(s => s.filament_profile_id))];
+    const sameProfile = profiles.length === 1;
+
+    let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
+      <div class="inv-modal" style="max-width:500px">
+        <h3>${t('filament.merge_title')}</h3>
+        ${!sameProfile ? `<div class="form-help" style="color:var(--accent-orange);margin-bottom:12px">${t('filament.merge_warning_profile')}</div>` : ''}
+        <p style="margin-bottom:12px">${t('filament.merge_desc')}</p>
+        <div style="margin-bottom:16px">
+          <label class="form-label">${t('filament.merge_target')}</label>
+          <select id="merge-target" class="form-input">
+            ${selected.map(s => `<option value="${s.id}">#${s.id} — ${s.profile_name || s.material || '?'} (${Math.round(s.remaining_weight_g)}g)</option>`).join('')}
+          </select>
+        </div>
+        <div id="merge-preview" style="background:var(--card-bg);border-radius:8px;padding:12px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.cancel')}</button>
+          <button class="form-btn form-btn-primary" data-ripple onclick="window._executeMerge()">${t('filament.merge_confirm')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    const sel = document.getElementById('merge-target');
+    const updatePreview = () => {
+      const targetId = Number(sel.value);
+      const target = selected.find(s => s.id === targetId);
+      const sources = selected.filter(s => s.id !== targetId);
+      const totalRemaining = selected.reduce((sum, s) => sum + (s.remaining_weight_g || 0), 0);
+      const totalUsed = selected.reduce((sum, s) => sum + (s.used_weight_g || 0), 0);
+      const totalCost = selected.reduce((sum, s) => sum + (s.cost || 0), 0);
+      document.getElementById('merge-preview').innerHTML = `
+        <div style="font-weight:600;margin-bottom:8px">${t('filament.merge_preview')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.9em">
+          <span>${t('filament.merge_keep')}:</span><span><b>#${target.id}</b> — ${target.profile_name || '?'}</span>
+          <span>${t('filament.merge_absorb')}:</span><span>${sources.map(s => '#' + s.id).join(', ')}</span>
+          <span>${t('filament.remaining_weight')}:</span><span>${Math.round(totalRemaining)}g</span>
+          <span>${t('filament.used_weight')}:</span><span>${Math.round(totalUsed)}g</span>
+          ${totalCost > 0 ? `<span>${t('filament.cost')}:</span><span>${totalCost.toFixed(2)}</span>` : ''}
+        </div>
+        <div style="margin-top:8px;font-size:0.85em;opacity:0.7">${t('filament.merge_source_archived')}</div>`;
+    };
+    sel.addEventListener('change', updatePreview);
+    updatePreview();
+  };
+
+  window._executeMerge = async function() {
+    const targetId = Number(document.getElementById('merge-target').value);
+    const sourceIds = Array.from(_selectedSpools).filter(id => id !== targetId);
+    try {
+      const res = await fetch('/api/inventory/spools/merge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: targetId, source_ids: sourceIds })
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Merge failed'); }
+      document.querySelector('.inv-modal-backdrop')?.remove();
+      _selectedSpools.clear();
+      _updateBulkBar();
+      _updateSelectAllCheckbox();
+      showToast(t('filament.merge_success'), 'success');
+      loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
   };
 
