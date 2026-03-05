@@ -1,4 +1,4 @@
-import { addHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot } from './database.js';
+import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot } from './database.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -129,6 +129,12 @@ export class PrintTracker {
   }
 
   _onStateChange(prevState, currState, data) {
+    // On first connect, capture an already-finished print retroactively
+    if (!prevState && (currState === 'FINISH' || currState === 'FAILED') && !this.currentPrint) {
+      this._captureRetroactivePrint(currState, data);
+      return;
+    }
+
     if (currState === 'RUNNING' && prevState !== 'PAUSE') {
       this._startPrint(data);
     }
@@ -477,6 +483,56 @@ export class PrintTracker {
       }
     }
     return remaining;
+  }
+
+  _captureRetroactivePrint(currState, data) {
+    const filename = data.subtask_name || data.gcode_file || 'Unknown';
+    if (!filename || filename === 'Unknown') return;
+
+    // Check if this print was already recorded (by filename + printer)
+    const recent = getHistory(5, 0, this.printerId);
+    if (recent.some(h => h.filename === filename)) {
+      console.log(`[tracker:${this.printerId}] Retroactive print already recorded: ${filename}`);
+      return;
+    }
+
+    const status = currState === 'FINISH' ? 'completed' : 'failed';
+    const filamentInfo = this._getActiveFilament(data);
+    const layers = data.total_layer_num || 0;
+    const now = new Date().toISOString();
+
+    const record = {
+      printer_id: this.printerId,
+      started_at: now,
+      finished_at: now,
+      filename: filename,
+      status: status,
+      duration_seconds: null,
+      filament_used_g: null,
+      filament_type: filamentInfo.type,
+      filament_color: filamentInfo.color,
+      layer_count: layers,
+      notes: 'Retroactively captured on connect',
+      color_changes: 0,
+      waste_g: 0,
+      nozzle_type: data.nozzle_type || null,
+      nozzle_diameter: data.nozzle_diameter || null,
+      speed_level: data.spd_lvl || null,
+      bed_target: data.bed_target_temper || 0,
+      nozzle_target: data.nozzle_target_temper || 0,
+      max_nozzle_temp: data.nozzle_temper || 0,
+      max_bed_temp: data.bed_temper || 0,
+      filament_brand: filamentInfo.brand,
+      ams_units_used: data.ams?.ams?.length || 0,
+      tray_id: data.ams?.tray_now != null ? String(data.ams.tray_now) : null
+    };
+
+    try {
+      addHistory(record);
+      console.log(`[tracker:${this.printerId}] Retroactively captured ${status} print: ${filename}`);
+    } catch (e) {
+      console.error(`[tracker:${this.printerId}] Failed to capture retroactive print:`, e.message);
+    }
   }
 
   _buildNotes(data) {

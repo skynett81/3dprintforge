@@ -1,5 +1,28 @@
-// AMS Panel - Enhanced with humidity, temp, brand, RFID, drying, AMS-Lite
+// AMS Panel - Enhanced with humidity, temp, brand, RFID, drying, AMS-Lite, inventory integration
 (function() {
+  let _inventorySpools = null;
+  let _inventoryLoaded = false;
+
+  async function _loadInventorySpools() {
+    try {
+      const res = await fetch('/api/inventory/spools');
+      _inventorySpools = await res.json();
+      _inventoryLoaded = true;
+    } catch { _inventorySpools = []; _inventoryLoaded = true; }
+  }
+
+  // Load inventory on first call, refresh periodically
+  function _getLinkedSpool(printerId, amsUnit, amsTray) {
+    if (!_inventorySpools) return null;
+    return _inventorySpools.find(s =>
+      s.printer_id === printerId && s.ams_unit === amsUnit && s.ams_tray === amsTray && !s.archived
+    ) || null;
+  }
+
+  // Refresh inventory cache every 30s
+  setInterval(() => { if (_inventoryLoaded) _loadInventorySpools(); }, 30000);
+  _loadInventorySpools();
+
   function hexToRgb(hex) {
     if (!hex || hex.length < 6) return 'rgb(128,128,128)';
     const r = parseInt(hex.substring(0, 2), 16);
@@ -69,9 +92,25 @@
           const isActive = String(globalSlot) === String(activeTray);
           const color = hexToRgb(tray.tray_color);
           const light = isLightColor(tray.tray_color);
-          const remain = tray.remain >= 0 ? Math.round(tray.remain) : '?';
           const brand = tray.tray_sub_brands || '';
           const tempRange = (tray.nozzle_temp_min && tray.nozzle_temp_max) ? `${tray.nozzle_temp_min}-${tray.nozzle_temp_max}°C` : '';
+
+          // Check inventory for linked spool with accurate weight data
+          const printerId = meta?.id || window.printerState?.getActivePrinterId?.() || null;
+          const linkedSpool = _getLinkedSpool(printerId, unitIdx, i);
+
+          let remain, remainParts;
+          if (linkedSpool && linkedSpool.initial_weight_g > 0) {
+            // Use inventory data for accurate weight tracking
+            const pct = Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100);
+            remain = pct;
+            remainParts = [`${pct}%`, `${Math.round(linkedSpool.remaining_weight_g)}g / ${linkedSpool.initial_weight_g}g`];
+          } else {
+            // Fallback to MQTT/AMS data
+            remain = tray.remain >= 0 ? Math.round(tray.remain) : '?';
+            remainParts = [`${remain}%`];
+            if (tray.tray_weight) remainParts.push(`${tray.tray_weight}g`);
+          }
 
           // RFID detection
           const hasRfid = !!(tray.tag_uid || tray.tray_uuid);
@@ -84,10 +123,6 @@
           const detailParts = [];
           if (tempRange) detailParts.push(tempRange);
           if (tray.k) detailParts.push(`K: ${tray.k}`);
-
-          // Remain text: percent + weight
-          const remainParts = [`${remain}%`];
-          if (tray.tray_weight) remainParts.push(`${tray.tray_weight}g`);
 
           slot.className = `ams-slot ${isActive ? 'ams-active' : ''}`;
           slot.innerHTML = `

@@ -225,6 +225,18 @@ export function setBambuCloud(cloud) {
   _bambuCloud = cloud;
 }
 
+function _mapCloudStatus(task) {
+  const s = task.status;
+  if (s == null) return null;
+  // Cloud uses failedType to indicate actual failure
+  if (task.failedType && task.failedType > 0) return 'failed';
+  // Status 0 = in progress, skip
+  if (s === 0) return null;
+  // Status 2+ with endTime = completed print
+  if (s >= 1 && task.endTime) return 'completed';
+  return null;
+}
+
 function _broadcastInventory(action, entity, data) {
   if (_broadcastFn) _broadcastFn('inventory_update', { action, entity, ...data, ts: Date.now() });
 }
@@ -464,6 +476,85 @@ export async function handleApiRequest(req, res) {
         sendJson(res, { error: e.message }, 500);
       }
       return;
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/tasks') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const tasks = await _bambuCloud.getTaskHistory();
+        return sendJson(res, { tasks, count: tasks.length });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/import-history') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const tasks = await _bambuCloud.getTaskHistory();
+        const imported = [];
+        for (const task of tasks) {
+          const designName = task.designTitle || '';
+          const taskTitle = task.title || '';
+          const filename = designName && taskTitle && designName !== taskTitle
+            ? `${designName} — ${taskTitle}` : designName || taskTitle || task.name || 'Unknown';
+          const status = _mapCloudStatus(task);
+          if (!status) continue;
+
+          // Check for duplicates by cloud task id or filename + startTime
+          const devId = task.deviceId || task.dev_id || '';
+          const existingPrinter = getPrinters().find(p => p.serial === devId);
+          const printerId = existingPrinter?.id || null;
+          const existing = getHistory(100, 0, printerId);
+          const startTime = task.startTime || task.start_time;
+          const startDate = startTime ? new Date(typeof startTime === 'number' ? startTime * 1000 : startTime).toISOString() : new Date().toISOString();
+          if (existing.some(h => h.started_at === startDate || (h.filename === filename && h.notes?.includes('Cloud')))) continue;
+
+          const endTime = task.endTime || task.end_time;
+          const endDate = endTime ? new Date(typeof endTime === 'number' ? endTime * 1000 : endTime).toISOString() : startDate;
+          const duration = task.costTime || null;
+
+          // Extract filament info from AMS mapping
+          const ams0 = task.amsDetailMapping?.[0];
+          const filamentColor = ams0?.sourceColor?.substring(0, 6) || null;
+
+          const record = {
+            printer_id: printerId,
+            started_at: startDate,
+            finished_at: endDate,
+            filename,
+            status,
+            duration_seconds: duration,
+            filament_used_g: task.weight ? parseFloat(task.weight) : null,
+            filament_type: ams0?.filamentType || null,
+            filament_color: filamentColor,
+            layer_count: null,
+            notes: 'Imported from Bambu Lab Cloud',
+            color_changes: task.amsDetailMapping?.length > 1 ? task.amsDetailMapping.length - 1 : 0,
+            waste_g: 0,
+            nozzle_type: null,
+            nozzle_diameter: null,
+            speed_level: null,
+            bed_target: null,
+            nozzle_target: null,
+            max_nozzle_temp: null,
+            max_bed_temp: null,
+            filament_brand: null,
+            ams_units_used: task.amsDetailMapping?.length || null,
+            tray_id: ams0 ? String(ams0.slotId) : null
+          };
+
+          try {
+            addHistory(record);
+            imported.push({ filename, status, printer_id: printerId, started_at: startDate });
+          } catch (e) {
+            console.error('[cloud-import] Failed to add:', filename, e.message);
+          }
+        }
+        return sendJson(res, { ok: true, imported, count: imported.length }, 201);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
     }
 
     if (method === 'POST' && path === '/api/bambu-cloud/logout') {

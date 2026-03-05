@@ -90,6 +90,17 @@ export class BambuCloud {
   }
 
   /**
+   * Get print task history from the cloud account.
+   * Returns array of task objects with print details.
+   */
+  async getTaskHistory() {
+    if (!this._token) throw new Error('Not authenticated');
+
+    const res = await this._request('GET', '/v1/user-service/my/tasks?limit=500', null, this._token);
+    return res.hits || res.tasks || [];
+  }
+
+  /**
    * Logout — clear stored token.
    */
   logout() {
