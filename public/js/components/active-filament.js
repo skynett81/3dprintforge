@@ -25,15 +25,29 @@
     }
 
     const color = hexToDisplayColor(tray.tray_color);
-    const remain = tray.remain >= 0 ? Math.round(tray.remain) : 0;
     const brand = tray.tray_sub_brands || '';
     const name = tray.tray_id_name || tray.tray_type;
     const tempMin = tray.nozzle_temp_min || '?';
     const tempMax = tray.nozzle_temp_max || '?';
     const isLight = isLightHex(tray.tray_color);
     const slotNum = parseInt(activeTrayIdx) + 1;
-    const totalG = tray.tray_weight ? parseFloat(tray.tray_weight) : null;
-    const remainG = totalG ? totalG * (remain / 100) : null;
+
+    // Use inventory data if available (same source as AMS panel)
+    const printerId = window.printerState?.getActivePrinterId?.() || null;
+    const amsUnitIdx = 0;
+    const amsTrayIdx = parseInt(activeTrayIdx);
+    const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, amsTrayIdx);
+
+    let remain, totalG, remainG;
+    if (linkedSpool && linkedSpool.initial_weight_g > 0) {
+      totalG = linkedSpool.initial_weight_g;
+      remainG = linkedSpool.remaining_weight_g;
+      remain = Math.round((remainG / totalG) * 100);
+    } else {
+      remain = tray.remain >= 0 ? Math.round(tray.remain) : 0;
+      totalG = tray.tray_weight ? parseFloat(tray.tray_weight) : null;
+      remainG = totalG ? totalG * (remain / 100) : null;
+    }
 
     // Estimate filament consumption during active print
     const est = window._printEstimates;

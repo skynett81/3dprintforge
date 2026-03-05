@@ -19,6 +19,9 @@
     ) || null;
   }
 
+  // Expose for active-filament panel
+  window.getLinkedSpool = _getLinkedSpool;
+
   // Refresh inventory cache every 30s
   setInterval(() => { if (_inventoryLoaded) _loadInventorySpools(); }, 30000);
   _loadInventorySpools();
