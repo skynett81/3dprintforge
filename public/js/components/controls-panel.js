@@ -58,6 +58,25 @@
       html += `</div></div>`;
     }
 
+    // ===== CARD: Layer Pauses (only during print) =====
+    if (isPrinting && meta?.id) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            ${t('controls.layer_pauses')}
+          </span>
+          <span class="text-muted" style="font-size:0.75rem">${t('controls.layers')}: ${data.layer_num || 0} / ${data.total_layer_num || '?'}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input class="form-input" id="ctrl-lp-layers" placeholder="${t('controls.layer_pause_placeholder')}" style="flex:1">
+          <input class="form-input" id="ctrl-lp-reason" placeholder="${t('controls.layer_pause_reason')}" style="flex:1">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._addLayerPause('${esc(meta.id)}')">${t('controls.add')}</button>
+        </div>
+        <div id="ctrl-layer-pauses-list"><span class="text-muted" style="font-size:0.8rem">${t('controls.no_layer_pauses')}</span></div>
+      </div>`;
+    }
+
     // ===== CARD: Speed Profile =====
     const spdLvl = data.spd_lvl || 2;
     const spdMag = data.spd_mag || 100;
@@ -257,6 +276,48 @@
     }
 
     html += `</div></div>`;
+
+    // ===== CARD: Z-Offset Calibration Wizard (only when idle) =====
+    if (!isPrinting) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6"/><path d="M2 12h6m8 0h6"/></svg>
+          ${t('controls.z_wizard_title')}
+        </div>
+        <div class="ctrl-wizard-steps">
+          <div class="ctrl-wizard-step">
+            <span class="ctrl-wizard-num">1</span>
+            <div style="flex:1">
+              <div style="font-size:0.85rem;font-weight:600">${t('controls.z_step_home')}</div>
+              <button class="form-btn form-btn-sm" data-ripple style="margin-top:4px" onclick="window._zWizardHome()">G28 — Home</button>
+            </div>
+          </div>
+          <div class="ctrl-wizard-step">
+            <span class="ctrl-wizard-num">2</span>
+            <div style="flex:1">
+              <div style="font-size:0.85rem;font-weight:600">${t('controls.z_step_level')}</div>
+              <button class="form-btn form-btn-sm" data-ripple style="margin-top:4px" onclick="window._zWizardLevel()">G29 — Auto-level</button>
+            </div>
+          </div>
+          <div class="ctrl-wizard-step">
+            <span class="ctrl-wizard-num">3</span>
+            <div style="flex:1">
+              <div style="font-size:0.85rem;font-weight:600">${t('controls.z_step_adjust')}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap">
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(-0.10)">-0.10</button>
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(-0.05)">-0.05</button>
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(-0.01)">-0.01</button>
+                <span id="ctrl-z-offset-val" style="font-family:monospace;font-weight:600;min-width:60px;text-align:center">${t('controls.z_offset_current')}: 0.00 mm</span>
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(0.01)">+0.01</button>
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(0.05)">+0.05</button>
+                <button class="form-btn form-btn-sm" data-ripple onclick="window._zWizardAdjust(0.10)">+0.10</button>
+                <button class="form-btn form-btn-sm" data-ripple style="opacity:0.7" onclick="window._zWizardReset()" title="Reset">↺</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
 
     // ===== CARD: G-code Console (full width) =====
     html += `<div class="ctrl-card ctrl-area-gcode">
@@ -735,53 +796,153 @@
   };
 
   // ═══ Bed Mesh Heatmap ═══
+  let _meshHistory = [];
+  let _meshSelectedIdx = 0;
+  let _meshDiffMode = false;
+  let _meshPrinterId = null;
+
+  function _meshColor(z, absMax) {
+    // Fixed scale: -absMax (blue) → 0 (green) → +absMax (red)
+    const norm = Math.max(-1, Math.min(1, z / Math.max(absMax, 0.001)));
+    let r, g, b;
+    if (norm < 0) { r = 0; g = Math.round((1 + norm) * 255); b = Math.round(-norm * 255); }
+    else { r = Math.round(norm * 255); g = Math.round((1 - norm) * 255); b = 0; }
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function _drawMeshCanvas(canvasId, mesh, rows, cols, zMin, zMax) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const absMax = Math.max(Math.abs(zMin), Math.abs(zMax), 0.3);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const z = mesh[r]?.[c] ?? 0;
+        ctx.fillStyle = _meshColor(z, absMax);
+        ctx.fillRect(c * 40, r * 40, 39, 39);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(z.toFixed(2), c * 40 + 20, r * 40 + 20);
+      }
+    }
+  }
+
+  function _renderMeshView() {
+    const el = document.getElementById('ctrl-bed-mesh');
+    if (!el || !_meshHistory.length) return;
+    const entry = _meshHistory[_meshSelectedIdx];
+    if (!entry) return;
+    const mesh = JSON.parse(entry.mesh_data);
+    const rows = entry.mesh_rows || mesh.length;
+    const cols = entry.mesh_cols || (mesh[0]?.length || 0);
+    if (!rows || !cols) { el.innerHTML = '<span class="text-muted" style="font-size:0.8rem">Invalid mesh</span>'; return; }
+
+    // History dropdown
+    let html = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">';
+    html += `<select class="form-input" style="flex:1;min-width:160px;font-size:0.8rem" onchange="window._meshSelectIdx(this.value)">`;
+    for (let i = 0; i < _meshHistory.length; i++) {
+      const h = _meshHistory[i];
+      const label = new Date(h.captured_at).toLocaleString() + (i === 0 ? ` (${t('controls.mesh_latest')})` : '');
+      html += `<option value="${i}"${i === _meshSelectedIdx ? ' selected' : ''}>${esc(label)}</option>`;
+    }
+    html += '</select>';
+    if (_meshHistory.length > 1) {
+      html += `<label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" ${_meshDiffMode ? 'checked' : ''} onchange="window._meshToggleDiff(this.checked)">
+        ${t('controls.mesh_diff')}
+      </label>`;
+    }
+    html += '</div>';
+
+    const w = cols * 40, h = rows * 40;
+
+    if (_meshDiffMode && _meshHistory.length > 1) {
+      // Diff: selected vs oldest (baseline)
+      const baseline = _meshHistory[_meshHistory.length - 1];
+      const baseMesh = JSON.parse(baseline.mesh_data);
+      const diffMesh = [];
+      let dMin = Infinity, dMax = -Infinity, dSum = 0, dCount = 0;
+      for (let r = 0; r < rows; r++) {
+        diffMesh[r] = [];
+        for (let c = 0; c < cols; c++) {
+          const dz = (mesh[r]?.[c] ?? 0) - (baseMesh[r]?.[c] ?? 0);
+          diffMesh[r][c] = dz;
+          if (dz < dMin) dMin = dz;
+          if (dz > dMax) dMax = dz;
+          dSum += dz; dCount++;
+        }
+      }
+      const dMean = dCount ? dSum / dCount : 0;
+
+      html += `<div style="display:flex;gap:12px;flex-wrap:wrap">`;
+      html += `<div><div style="font-size:0.75rem;font-weight:600;margin-bottom:2px">${t('controls.mesh_current')}</div>`;
+      html += `<canvas id="bed-mesh-canvas-cur" width="${w}" height="${h}" style="border:1px solid var(--border-color);border-radius:4px"></canvas></div>`;
+      html += `<div><div style="font-size:0.75rem;font-weight:600;margin-bottom:2px">${t('controls.mesh_diff_label')}</div>`;
+      html += `<canvas id="bed-mesh-canvas-diff" width="${w}" height="${h}" style="border:1px solid var(--border-color);border-radius:4px"></canvas></div>`;
+      html += '</div>';
+
+      // Diff stats
+      html += `<div class="bed-mesh-stats">
+        <span>${t('controls.mesh_diff_label')}: ${new Date(baseline.captured_at).toLocaleDateString()} → ${new Date(entry.captured_at).toLocaleDateString()}</span>
+        <span>dZ min: ${dMin.toFixed(3)}mm</span>
+        <span>dZ max: ${dMax.toFixed(3)}mm</span>
+        <span>dZ mean: ${dMean.toFixed(3)}mm</span>
+      </div>`;
+
+      el.innerHTML = html;
+      _drawMeshCanvas('bed-mesh-canvas-cur', mesh, rows, cols, entry.z_min ?? 0, entry.z_max ?? 0);
+      _drawMeshCanvas('bed-mesh-canvas-diff', diffMesh, rows, cols, dMin, dMax);
+    } else {
+      // Single mesh view
+      html += `<div style="overflow:auto"><canvas id="bed-mesh-canvas" width="${w}" height="${h}" style="border:1px solid var(--border-color);border-radius:4px"></canvas></div>`;
+      // Stats
+      const stdDev = entry.z_std_dev;
+      html += `<div class="bed-mesh-stats">
+        <span>Z min: <strong>${entry.z_min?.toFixed(3) ?? '--'}mm</strong></span>
+        <span>Z max: <strong>${entry.z_max?.toFixed(3) ?? '--'}mm</strong></span>
+        <span>Z mean: <strong>${entry.z_mean?.toFixed(3) ?? '--'}mm</strong></span>
+        ${stdDev != null ? `<span>StdDev: <strong>${stdDev.toFixed(3)}mm</strong></span>` : ''}
+        <span>Range: <strong>${((entry.z_max ?? 0) - (entry.z_min ?? 0)).toFixed(3)}mm</strong></span>
+        <span>${rows}x${cols} ${t('controls.mesh_points')}</span>
+      </div>`;
+      // Color legend
+      html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">
+        <span style="width:12px;height:12px;background:rgb(0,0,255);border-radius:2px;display:inline-block"></span> ${t('controls.mesh_low')}
+        <span style="width:12px;height:12px;background:rgb(0,255,0);border-radius:2px;display:inline-block;margin-left:8px"></span> ${t('controls.mesh_flat')}
+        <span style="width:12px;height:12px;background:rgb(255,0,0);border-radius:2px;display:inline-block;margin-left:8px"></span> ${t('controls.mesh_high')}
+      </div>`;
+
+      el.innerHTML = html;
+      _drawMeshCanvas('bed-mesh-canvas', mesh, rows, cols, entry.z_min ?? 0, entry.z_max ?? 0);
+    }
+  }
+
   window._loadBedMesh = async function(printerId) {
     const el = document.getElementById('ctrl-bed-mesh');
     if (!el) return;
+    _meshPrinterId = printerId;
     el.innerHTML = '<span class="text-muted" style="font-size:0.8rem">Loading...</span>';
     try {
       const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/bed-mesh`);
       const data = await res.json();
       if (!data.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.no_bed_mesh')}</span>`; return; }
-      const latest = data[0];
-      const mesh = JSON.parse(latest.mesh_data);
-      const rows = latest.mesh_rows || mesh.length;
-      const cols = latest.mesh_cols || (mesh[0]?.length || 0);
-      if (!rows || !cols) { el.innerHTML = '<span class="text-muted" style="font-size:0.8rem">Invalid mesh</span>'; return; }
-      // Render canvas heatmap
-      const cellW = 40, cellH = 40;
-      const w = cols * cellW, h = rows * cellH;
-      let html = `<div style="overflow:auto"><canvas id="bed-mesh-canvas" width="${w}" height="${h}" style="border:1px solid var(--border-color);border-radius:4px"></canvas></div>`;
-      html += `<div style="font-size:0.75rem;margin-top:4px;display:flex;gap:12px;color:var(--text-secondary)">
-        <span>Z min: ${latest.z_min?.toFixed(3) ?? '--'}mm</span>
-        <span>Z max: ${latest.z_max?.toFixed(3) ?? '--'}mm</span>
-        <span>Z mean: ${latest.z_mean?.toFixed(3) ?? '--'}mm</span>
-        <span>${new Date(latest.captured_at).toLocaleString()}</span>
-      </div>`;
-      el.innerHTML = html;
-      // Draw heatmap
-      const canvas = document.getElementById('bed-mesh-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const zMin = latest.z_min ?? 0, zMax = latest.z_max ?? 1;
-      const range = Math.max(zMax - zMin, 0.001);
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const z = mesh[r]?.[c] ?? 0;
-          const norm = (z - zMin) / range; // 0..1
-          // Blue(low) → Green(mid) → Red(high)
-          let red, green, blue;
-          if (norm < 0.5) { red = 0; green = Math.round(norm * 2 * 255); blue = Math.round((1 - norm * 2) * 255); }
-          else { red = Math.round((norm - 0.5) * 2 * 255); green = Math.round((1 - (norm - 0.5) * 2) * 255); blue = 0; }
-          ctx.fillStyle = `rgb(${red},${green},${blue})`;
-          ctx.fillRect(c * cellW, r * cellH, cellW - 1, cellH - 1);
-          ctx.fillStyle = '#fff';
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(z.toFixed(2), c * cellW + cellW / 2, r * cellH + cellH / 2 + 4);
-        }
-      }
+      _meshHistory = data;
+      _meshSelectedIdx = 0;
+      _meshDiffMode = false;
+      _renderMeshView();
     } catch (e) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">Error: ${esc(e.message)}</span>`; }
+  };
+
+  window._meshSelectIdx = function(idx) {
+    _meshSelectedIdx = parseInt(idx) || 0;
+    _renderMeshView();
+  };
+
+  window._meshToggleDiff = function(enabled) {
+    _meshDiffMode = enabled;
+    _renderMeshView();
   };
 
   // ═══ Bed Check AI ═══
@@ -975,4 +1136,91 @@
       prog.innerHTML = `<div style="padding:8px;font-size:0.8rem;color:var(--danger)">${t('controls.upload_failed')}: ${esc(e.message)}</div>`;
     }
   }
+
+  // ═══ Layer Pauses ═══
+  window._addLayerPause = async function(printerId) {
+    const layersInput = document.getElementById('ctrl-lp-layers');
+    const reasonInput = document.getElementById('ctrl-lp-reason');
+    if (!layersInput?.value?.trim()) { showToast('Enter layer numbers', 'warning'); return; }
+    const layers = layersInput.value.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => n > 0);
+    if (!layers.length) { showToast('Invalid layer numbers', 'warning'); return; }
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/layer-pauses`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ layer_numbers: layers, reason: reasonInput?.value?.trim() || null })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      layersInput.value = ''; if (reasonInput) reasonInput.value = '';
+      showToast(t('controls.layer_pause_added'), 'success');
+      _loadLayerPauses(printerId);
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window._loadLayerPauses = async function(printerId) {
+    const el = document.getElementById('ctrl-layer-pauses-list');
+    if (!el) return;
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/layer-pauses`);
+      const pauses = await res.json();
+      if (!pauses.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.no_layer_pauses')}</span>`; return; }
+      let h = '';
+      for (const p of pauses) {
+        const layers = JSON.parse(p.layer_numbers || '[]');
+        const triggered = JSON.parse(p.triggered_layers || '[]');
+        const layerChips = layers.map(l => {
+          const done = triggered.includes(l);
+          return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:0.75rem;${done ? 'background:var(--success);color:#fff;text-decoration:line-through' : 'background:var(--bg-tertiary)'}">${l}</span>`;
+        }).join(' ');
+        h += `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-subtle)">
+          <div style="flex:1;display:flex;flex-wrap:wrap;gap:3px">${layerChips}</div>
+          ${p.reason ? `<span class="text-muted" style="font-size:0.75rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.reason)}">${esc(p.reason)}</span>` : ''}
+          <button class="filament-delete-btn" style="opacity:0.7" onclick="window._deleteLayerPause('${esc(printerId)}', ${p.id})" title="${t('settings.delete')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      }
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  };
+
+  window._deleteLayerPause = async function(printerId, pauseId) {
+    try {
+      await fetch(`/api/printers/${encodeURIComponent(printerId)}/layer-pauses/${pauseId}`, { method: 'DELETE' });
+      _loadLayerPauses(printerId);
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  // Auto-load layer pauses when panel opens during print
+  setTimeout(() => {
+    const meta = window.printerState?.getActivePrinterMeta();
+    if (meta?.id && document.getElementById('ctrl-layer-pauses-list')) {
+      _loadLayerPauses(meta.id);
+    }
+  }, 200);
+
+  // ═══ Z-Offset Calibration Wizard ═══
+  let _zBabyStep = 0;
+
+  window._zWizardHome = function() {
+    sendGcode('G28');
+    showToast(t('controls.z_homing'), 'info');
+  };
+
+  window._zWizardLevel = function() {
+    sendGcode('G29');
+    showToast(t('controls.z_leveling'), 'info');
+  };
+
+  window._zWizardAdjust = function(offset) {
+    _zBabyStep += offset;
+    sendGcode(`G91\nG0 Z${offset} F300\nG90`);
+    const el = document.getElementById('ctrl-z-offset-val');
+    if (el) el.textContent = _zBabyStep.toFixed(2) + ' mm';
+  };
+
+  window._zWizardReset = function() {
+    _zBabyStep = 0;
+    const el = document.getElementById('ctrl-z-offset-val');
+    if (el) el.textContent = '0.00 mm';
+  };
 })();

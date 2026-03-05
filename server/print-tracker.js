@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool } from './database.js';
+import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -143,7 +143,31 @@ export class PrintTracker {
       }
     }
 
+    // Check layer pause schedule
+    if (this.currentPrint && printData.layer_num > 0 && printData.gcode_state === 'RUNNING') {
+      this._checkLayerPauses(printData.layer_num);
+    }
+
     this.previousState = { ...printData };
+  }
+
+  _checkLayerPauses(currentLayer) {
+    try {
+      const pauses = getActiveLayerPauses(this.printerId);
+      for (const pause of pauses) {
+        const layers = JSON.parse(pause.layer_numbers || '[]');
+        const triggered = JSON.parse(pause.triggered_layers || '[]');
+        if (layers.includes(currentLayer) && !triggered.includes(currentLayer)) {
+          markLayerTriggered(pause.id, currentLayer);
+          console.log(`[tracker:${this.printerId}] Layer pause triggered at layer ${currentLayer}: ${pause.reason || 'scheduled'}`);
+          if (this.onLayerPause) {
+            this.onLayerPause({ printerId: this.printerId, layer: currentLayer, reason: pause.reason });
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`[tracker:${this.printerId}] Layer pause check error:`, e.message);
+    }
   }
 
   _onStateChange(prevState, currState, data) {
@@ -302,6 +326,9 @@ export class PrintTracker {
     } catch (e) {
       console.error(`[tracker:${this.printerId}] Kunne ikke lagre print:`, e.message);
     }
+
+    // Deactivate any layer pauses for this printer
+    try { deactivateLayerPauses(this.printerId); } catch (_) {}
 
     this.currentPrint = null;
     this.amsSnapshot = null;

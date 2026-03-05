@@ -37,6 +37,17 @@
   function barRow(lbl, pct, clr, val) { return `<div class="chart-bar-row"><span class="chart-bar-label">${lbl}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="chart-bar-value">${val}</span></div>`; }
   function sRow(lbl, val, clr) { return `<div class="stats-detail-item"><span class="stats-detail-item-label">${lbl}</span><span class="stats-detail-item-value"${clr?` style="color:${clr}"`:''}>${val}</span></div>`; }
 
+  function _buildColorStyle(colorHex, multiColorHexes, multiColorDirection) {
+    let hexes;
+    try { hexes = multiColorHexes ? (typeof multiColorHexes === 'string' ? JSON.parse(multiColorHexes) : multiColorHexes) : null; } catch { hexes = null; }
+    if (hexes && hexes.length > 1) {
+      const colors = hexes.map(h => hexToRgb(h));
+      const dir = multiColorDirection === 'longitudinal' ? '90deg' : '180deg';
+      return `linear-gradient(${dir},${colors.join(',')})`;
+    }
+    return hexToRgb(colorHex);
+  }
+
   const TYPE_COLORS = { 'PLA':'#00e676','PLA+':'#00c853','PETG':'#f0883e','TPU':'#9b4dff','ABS':'#ff5252','ASA':'#1279ff','PA':'#e3b341','PA-CF':'#d2a8ff','PET-CF':'#f778ba','PLA-CF':'#79c0ff','PC':'#8b949e','PLA Silk':'#ffd700','PLA Matte':'#7cb342','PETG-CF':'#ff9800' };
 
   function heroCard(icon, value, label, color) {
@@ -109,6 +120,7 @@
 
   // ═══ Filament Database state ═══
   let _dbFilaments = [];
+  let _dbOwnedIds = new Set();
   let _dbTotal = 0;
   let _dbPage = 0;
   let _dbPageSize = 50;
@@ -830,15 +842,8 @@
   }
 
   function renderColorSwatch(s) {
-    // Multi-color gradient swatch
-    let hexes;
-    try { hexes = s.multi_color_hexes ? JSON.parse(s.multi_color_hexes) : null; } catch { hexes = null; }
-    if (hexes && hexes.length > 1) {
-      const colors = hexes.map(h => hexToRgb(h));
-      const dir = s.multi_color_direction === 'longitudinal' ? '90deg' : '180deg';
-      return `<span class="filament-color-swatch" style="background:linear-gradient(${dir},${colors.join(',')})"></span>`;
-    }
-    return `<span class="filament-color-swatch" style="background:${hexToRgb(s.color_hex)}"></span>`;
+    const bg = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
+    return `<span class="filament-color-swatch" style="background:${bg}"></span>`;
   }
 
   function renderSpoolCard(s) {
@@ -874,6 +879,7 @@
       else infoParts.push(t('filament.months_ago', { n: Math.floor(daysAgo / 30) }));
     }
     if (s.archived) infoParts.push('📦');
+    if (s.is_refill) infoParts.push('♻ x' + (s.refill_count || 1));
     const footerLeft = [
       s.printer_id ? '🖨 ' + esc(printerName(s.printer_id)) : '',
       s.ams_unit != null ? `AMS${s.ams_unit+1}:${(s.ams_tray||0)+1}` : ''
@@ -918,6 +924,9 @@
             </button>
             <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="filament-edit-btn" onclick="showRefillDialog(${s.id})" title="${t('filament.refill_spool')}" data-tooltip="${t('filament.refill_spool')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 11-.57-8.38"/></svg>
             </button>
             ${!s.archived ? `<button class="filament-edit-btn" onclick="archiveSpoolItem(${s.id})" title="${t('filament.archive')}" data-tooltip="${t('filament.archive')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
@@ -2321,6 +2330,23 @@
     } catch (e) { showToast(e.message, 'error'); }
   };
 
+  window._submitTdVote = async function(id) {
+    const val = parseFloat(document.getElementById(`td-vote-${id}`)?.value);
+    if (!val || val <= 0) return;
+    try {
+      const res = await fetch(`/api/community-filaments/${id}/td-vote`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ td_value: val })
+      });
+      const data = await res.json();
+      if (data.td_value != null) {
+        showToast(`TD updated: ${data.td_value} (${data.total_td_votes} votes)`, 'success');
+        const f = _dbFilaments.find(x => x.id === id);
+        if (f) { f.td_value = data.td_value; f.total_td_votes = data.total_td_votes; }
+      } else showToast(data.error || 'Error', 'error');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
   // ═══ Location CRUD ═══
   function _buildParentLocationOptions(excludeId) {
     let opts = `<option value="">${t('common.none')}</option>`;
@@ -2404,6 +2430,41 @@
   };
 
   // ═══ Measure Weight ═══
+  window.showRefillDialog = function(id) {
+    const spool = _spools.find(s => s.id === id);
+    if (!spool) return;
+    const container = document.getElementById(`spool-edit-${id}`);
+    if (!container) return;
+    container.style.display = '';
+    container.innerHTML = `<div class="settings-form" style="margin:6px 0;padding:6px;border-top:1px solid var(--border-color)">
+      <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px">${t('filament.refill_spool')} ${spool.is_refill ? '♻ x' + (spool.refill_count || 1) : ''}</div>
+      <div class="flex gap-sm" style="align-items:flex-end">
+        <div class="form-group" style="width:120px">
+          <label class="form-label">${t('filament.new_fill_weight')}</label>
+          <input class="form-input" id="refill-weight-${id}" type="number" value="${spool.initial_weight_g || 1000}" min="1">
+        </div>
+        <button class="form-btn form-btn-sm" data-ripple onclick="submitRefill(${id})">${t('filament.refill')}</button>
+        <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+      </div>
+    </div>`;
+  };
+
+  window.submitRefill = async function(id) {
+    const weightEl = document.getElementById(`refill-weight-${id}`);
+    const weight = parseFloat(weightEl?.value);
+    if (!weight || weight <= 0) { showToast('Enter a valid weight', 'warning'); return; }
+    try {
+      const res = await fetch(`/api/inventory/spools/${id}/refill`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_weight_g: weight })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      showToast(t('filament.refill_done'), 'success');
+      document.getElementById(`spool-edit-${id}`).style.display = 'none';
+      _loadSpools();
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
   window.showMeasureDialog = function(id) {
     const spool = _spools.find(s => s.id === id);
     if (!spool) return;
@@ -2417,16 +2478,34 @@
       const gross = Math.round(totalG * p / 100 + tare);
       return `<button class="measure-quick-btn" onclick="document.getElementById('measure-weight-${id}').value=${gross};document.getElementById('measure-weight-${id}').dispatchEvent(new Event('input'))">${p}% <span class="measure-quick-g">${gross}g</span></button>`;
     }).join('');
+    const density = spool.density || 1.24;
+    const diameter = spool.diameter || 1.75;
     container.innerHTML = `<div class="settings-form" style="margin:6px 0;padding:6px;border-top:1px solid var(--border-color)">
-      <div class="flex gap-sm" style="align-items:flex-end">
-        <div class="form-group" style="width:120px">
-          <label class="form-label">${t('filament.gross_weight')}</label>
-          <input class="form-input" id="measure-weight-${id}" type="number" placeholder="${t('filament.gross_weight_placeholder')}">
-        </div>
-        <button class="form-btn form-btn-sm" data-ripple onclick="submitMeasure(${id})">${t('filament.measure')}</button>
-        <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+      <div class="flex gap-sm" style="align-items:center;margin-bottom:4px">
+        <label style="font-size:0.7rem;cursor:pointer"><input type="radio" name="measure-mode-${id}" value="scale" checked onchange="document.getElementById('measure-scale-${id}').style.display='';document.getElementById('measure-length-${id}').style.display='none'"> ${t('filament.gross_weight')}</label>
+        <label style="font-size:0.7rem;cursor:pointer"><input type="radio" name="measure-mode-${id}" value="length" onchange="document.getElementById('measure-scale-${id}').style.display='none';document.getElementById('measure-length-${id}').style.display=''"> ${t('filament.use_by_length')}</label>
       </div>
-      <div class="measure-quick-btns">${quickBtns}</div>
+      <div id="measure-scale-${id}">
+        <div class="flex gap-sm" style="align-items:flex-end">
+          <div class="form-group" style="width:120px">
+            <label class="form-label">${t('filament.gross_weight')}</label>
+            <input class="form-input" id="measure-weight-${id}" type="number" placeholder="${t('filament.gross_weight_placeholder')}">
+          </div>
+          <button class="form-btn form-btn-sm" data-ripple onclick="submitMeasure(${id})">${t('filament.measure')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+        </div>
+        <div class="measure-quick-btns">${quickBtns}</div>
+      </div>
+      <div id="measure-length-${id}" style="display:none">
+        <div class="flex gap-sm" style="align-items:flex-end">
+          <div class="form-group" style="width:120px">
+            <label class="form-label">${t('filament.meters')}</label>
+            <input class="form-input" id="measure-length-val-${id}" type="number" step="0.1" placeholder="${t('filament.enter_meters')}">
+          </div>
+          <button class="form-btn form-btn-sm" data-ripple onclick="submitMeasureLength(${id},${density},${diameter})">${t('filament.measure')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+        </div>
+      </div>
     </div>`;
   };
 
@@ -2439,6 +2518,21 @@
     });
     if (res.ok) loadFilament();
     else { const err = await res.json().catch(() => ({})); showToast(err.error || t('filament.measure_failed'), 'error'); }
+  };
+
+  window.submitMeasureLength = async function(id, density, diameter) {
+    const meters = parseFloat(document.getElementById(`measure-length-val-${id}`)?.value);
+    if (!meters || meters <= 0) return;
+    const radiusCm = (diameter / 10) / 2;
+    const lengthCm = meters * 100;
+    const volumeCm3 = lengthCm * Math.PI * radiusCm * radiusCm;
+    const grams = Math.round(volumeCm3 * density * 100) / 100;
+    const res = await fetch(`/api/inventory/spools/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ used_weight_g_add: grams })
+    });
+    if (res.ok) loadFilament();
+    else showToast(t('filament.measure_failed'), 'error');
   };
 
   // ═══ Code 128 Barcode Generator ═══
@@ -2555,6 +2649,8 @@
       <div class="inv-modal-footer" style="display:flex;gap:6px">
         <button class="form-btn" data-ripple onclick="printQrLabel()">${t('filament.print_label')}</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="window._copyZplLabel(${id})" title="${t('filament.copy_zpl')}">${t('filament.copy_zpl')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._copyDymoLabel(${id})" title="${t('filament.copy_dymo')}">${t('filament.copy_dymo')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._copyEscPosLabel(${id})" title="${t('filament.copy_escpos')}">${t('filament.copy_escpos')}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -2567,6 +2663,28 @@
       if (data.zpl) {
         await navigator.clipboard.writeText(data.zpl);
         showToast(t('filament.zpl_copied'), 'success');
+      }
+    } catch { showToast('Error', 'error'); }
+  };
+
+  window._copyDymoLabel = async function(spoolId) {
+    try {
+      const res = await fetch('/api/inventory/label-zpl?spool_id=' + spoolId);
+      const data = await res.json();
+      if (data.dymo_xml) {
+        await navigator.clipboard.writeText(data.dymo_xml);
+        showToast(t('filament.dymo_copied'), 'success');
+      }
+    } catch { showToast('Error', 'error'); }
+  };
+
+  window._copyEscPosLabel = async function(spoolId) {
+    try {
+      const res = await fetch('/api/inventory/label-zpl?spool_id=' + spoolId);
+      const data = await res.json();
+      if (data.escpos) {
+        await navigator.clipboard.writeText(data.escpos);
+        showToast(t('filament.escpos_copied'), 'success');
       }
     } catch { showToast('Error', 'error'); }
   };
@@ -5454,6 +5572,7 @@
       const data = await results[0].json();
       _dbFilaments = data.rows || data;
       _dbTotal = data.total || _dbFilaments.length;
+      if (data.owned_ids) _dbOwnedIds = new Set(data.owned_ids);
       _dbLoaded = true;
 
       if (results[1]) _dbBrands = await results[1].json();
@@ -5501,9 +5620,10 @@
       const ratingAvg = f.rating_count > 0 ? (f.rating_sum / f.rating_count).toFixed(1) : null;
       const stars = ratingAvg ? '★'.repeat(Math.round(ratingAvg)) + '☆'.repeat(5 - Math.round(ratingAvg)) : '';
       const inCompare = _dbCompare.includes(f.id);
+      const isOwned = _dbOwnedIds.has(f.id);
 
       h += `<div class="db-filament-card" onclick="window._dbShowDetail(${f.id})">
-        <div class="db-card-color" style="background:${color}"></div>
+        <div class="db-card-color" style="background:${color}">${isOwned ? `<span style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#4ade80;font-size:0.6rem;padding:1px 5px;border-radius:8px">✓ ${t('filament.owned')}</span>` : ''}</div>
         <div class="db-card-body">
           <div class="db-card-brand">${esc(f.manufacturer || '')}${ratingAvg ? ` <span style="color:#fbbf24;font-size:0.7rem">${stars} (${ratingAvg})</span>` : ''}</div>
           <div class="db-card-name">${esc(f.name || f.material)}</div>
@@ -5531,8 +5651,9 @@
     h += '</tr></thead><tbody>';
     for (const f of _dbFilaments) {
       const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
+      const owned = _dbOwnedIds.has(f.id);
       h += `<tr style="cursor:pointer" onclick="window._dbShowDetail(${f.id})">
-        <td><span class="filament-color-swatch" style="background:${color};width:14px;height:14px;display:inline-block;border-radius:50%"></span></td>
+        <td><span class="filament-color-swatch" style="background:${color};width:14px;height:14px;display:inline-block;border-radius:50%"></span>${owned ? ' <span style="color:#4ade80;font-size:0.65rem">✓</span>' : ''}</td>
         <td>${esc(f.manufacturer || '')}</td>
         <td>${esc(f.name || '--')}</td>
         <td>${esc(f.material || '')}${f.material_type ? ' <span class="text-muted">' + esc(f.material_type) + '</span>' : ''}</td>
@@ -5601,6 +5722,21 @@
       <span style="font-size:0.8rem;font-weight:600">${t('filament.community_rating')}:</span>
       <span style="display:flex;gap:2px">${[1,2,3,4,5].map(i => `<span id="cf-star-${i}" style="cursor:pointer;font-size:1.1rem;color:${i <= Math.round(avgRating) ? 'var(--accent-orange)' : 'var(--text-muted)'}" onclick="window._rateCommunityFilament(${f.id},${i})">&#9733;</span>`).join('')}</span>
       ${f.rating_count > 0 ? `<span class="text-muted" style="font-size:0.75rem">(${avgRating.toFixed(1)} / ${f.rating_count})</span>` : `<span class="text-muted" style="font-size:0.75rem">${t('filament.no_ratings')}</span>`}
+    </div>`;
+    // TD voting
+    html += `<div style="margin-top:10px;padding:8px;background:var(--bg-tertiary);border-radius:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:0.8rem;font-weight:600">${t('filament.db_td_value')}:</span>
+        <span style="font-size:0.9rem;font-weight:700;color:var(--accent-orange)">${f.td_value && f.td_value > 0 ? f.td_value : '--'}</span>
+        ${f.total_td_votes ? `<span class="text-muted" style="font-size:0.7rem">(${f.total_td_votes} ${t('filament.td_votes_count')})</span>` : ''}
+      </div>
+      <div class="flex gap-sm" style="align-items:flex-end">
+        <div class="form-group" style="width:90px;margin:0">
+          <label class="form-label" style="font-size:0.65rem">${t('filament.td_your_value')}</label>
+          <input class="form-input" id="td-vote-${f.id}" type="number" step="0.01" placeholder="e.g. 1.42" style="font-size:0.8rem">
+        </div>
+        <button class="form-btn form-btn-sm" onclick="window._submitTdVote(${f.id})">${t('filament.td_submit')}</button>
+      </div>
     </div>`;
     if (f.shared_by) html += `<div class="text-muted" style="font-size:0.7rem;margin-top:4px">${t('filament.shared_by')}: ${esc(f.shared_by)}</div>`;
     html += `</div>

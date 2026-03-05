@@ -1,4 +1,4 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 
 export class QueueManager {
@@ -9,6 +9,7 @@ export class QueueManager {
     this._failureDetector = failureDetector || null;
     this._activeJobs = new Map(); // printerId -> { queueId, itemId }
     this._cooldownTimers = new Map(); // printerId -> timeout
+    this._staggerTimers = new Map(); // queueId -> timestamp of last dispatch
     this._dispatchInterval = null;
   }
 
@@ -92,6 +93,11 @@ export class QueueManager {
       const queue = getQueue(q.id);
       if (!queue || queue.status !== 'active') continue;
 
+      // Stagger check: skip if we dispatched to this queue recently
+      if (queue.stagger_seconds > 0 && this._staggerTimers.has(queue.id)) {
+        if (Date.now() - this._staggerTimers.get(queue.id) < queue.stagger_seconds * 1000) continue;
+      }
+
       const nextItem = getNextPendingItem(queue.id, queue.priority_mode);
       if (!nextItem) continue;
 
@@ -99,6 +105,11 @@ export class QueueManager {
       if (!printerId) continue;
 
       this._dispatchItem(queue, nextItem, printerId);
+
+      // Record stagger timestamp after dispatch
+      if (queue.stagger_seconds > 0) {
+        this._staggerTimers.set(queue.id, Date.now());
+      }
     }
   }
 
@@ -165,14 +176,43 @@ export class QueueManager {
         } catch (_) {}
       }
 
-      candidates.push(id);
+      // Build volume check — skip if model won't fit
+      if (item.plate_width || item.plate_depth || item.plate_height) {
+        const caps = getPrinterCapabilities(id);
+        if (caps?.build_volume) {
+          const bv = caps.build_volume;
+          if ((item.plate_width && item.plate_width > bv.w) ||
+              (item.plate_depth && item.plate_depth > bv.d) ||
+              (item.plate_height && item.plate_height > bv.h)) continue;
+        }
+      }
+
+      // Temperature check — skip if printer can't handle material temps
+      if (item.required_material) {
+        const caps = getPrinterCapabilities(id);
+        if (caps) {
+          const mat = item.required_material.toUpperCase();
+          // High-temp materials need adequate bed/nozzle temps
+          const highTempBed = { ABS: 90, ASA: 90, PC: 100, PA: 80, 'PA-CF': 80, 'PA-GF': 80 };
+          const highTempNozzle = { ABS: 250, ASA: 260, PC: 280, PA: 270, 'PA-CF': 280, 'PA-GF': 280, PETG: 250 };
+          if (highTempBed[mat] && caps.heated_bed_max && caps.heated_bed_max < highTempBed[mat]) continue;
+          if (highTempNozzle[mat] && caps.nozzle_temp_max && caps.nozzle_temp_max < highTempNozzle[mat]) continue;
+        }
+      }
+
+      candidates.push({ id, caps: getPrinterCapabilities(id) });
     }
 
-    if (candidates.length <= 1) return candidates[0] || null;
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0].id;
+
+    // Enclosure preference — high-temp materials prefer enclosed printers
+    const HIGH_TEMP_MATS = new Set(['ABS', 'ASA', 'PC', 'PA', 'PA-CF', 'PA-GF']);
+    const prefersEnclosure = item.required_material && HIGH_TEMP_MATS.has(item.required_material.toUpperCase());
 
     // Load balancing — pick the printer with fewest active+pending jobs across all queues
     const jobCounts = new Map();
-    for (const cid of candidates) jobCounts.set(cid, 0);
+    for (const c of candidates) jobCounts.set(c.id, 0);
     // Count active jobs
     for (const [pid] of this._activeJobs) {
       if (jobCounts.has(pid)) jobCounts.set(pid, jobCounts.get(pid) + 1);
@@ -191,10 +231,13 @@ export class QueueManager {
       }
     } catch (_) {}
 
-    // Select printer with lowest job count
-    let bestId = candidates[0], bestCount = Infinity;
-    for (const [pid, count] of jobCounts) {
-      if (count < bestCount) { bestCount = count; bestId = pid; }
+    // Score each candidate: lower is better (job count minus enclosure bonus)
+    let bestId = candidates[0].id, bestScore = Infinity;
+    for (const c of candidates) {
+      let score = jobCounts.get(c.id) || 0;
+      // Enclosed printers get a bonus (-1) for high-temp materials
+      if (prefersEnclosure && c.caps?.has_enclosure) score -= 1;
+      if (score < bestScore) { bestScore = score; bestId = c.id; }
     }
     return bestId;
   }

@@ -220,6 +220,7 @@
       <div class="form-row" style="display:flex;gap:12px;align-items:center">
         <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="qc-auto" /> ${t('queue.auto_start')}</label>
         <div class="form-group" style="flex:1"><label>${t('queue.cooldown')}</label><input type="number" id="qc-cooldown" class="form-input" value="60" min="0" /></div>
+        <div class="form-group" style="flex:1"><label>${t('queue.stagger')}</label><input type="number" id="qc-stagger" class="form-input" value="0" min="0" title="${t('queue.stagger_hint')}" /></div>
       </div>
       <div class="form-group"><label>${t('queue.bed_clear_gcode')}</label><textarea id="qc-gcode" class="form-input" rows="3" placeholder="G28\nG1 Z50"></textarea></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
@@ -242,6 +243,7 @@
       target_printer_id: document.getElementById('qc-printer')?.value || null,
       auto_start: document.getElementById('qc-auto')?.checked || false,
       cooldown_seconds: parseInt(document.getElementById('qc-cooldown')?.value) || 60,
+      stagger_seconds: parseInt(document.getElementById('qc-stagger')?.value) || 0,
       bed_clear_gcode: document.getElementById('qc-gcode')?.value?.trim() || null
     };
 

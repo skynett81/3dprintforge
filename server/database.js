@@ -235,6 +235,8 @@ function _runMigrations() {
     { version: 70, up: _mig070_competitive_features },
     { version: 71, up: _mig071_printer_cost_settings },
     { version: 72, up: _mig072_location_fk },
+    { version: 73, up: _mig073_td_votes_queue_dims },
+    { version: 74, up: _mig074_round5_features },
   ];
 
   for (const m of migrations) {
@@ -3095,6 +3097,39 @@ function _mig072_location_fk() {
   db.exec(`UPDATE spools SET location_id = (SELECT id FROM locations WHERE name = spools.location) WHERE location IS NOT NULL AND location_id IS NULL`);
 }
 
+function _mig073_td_votes_queue_dims() {
+  db.exec(`CREATE TABLE IF NOT EXISTS td_votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    community_filament_id INTEGER NOT NULL REFERENCES community_filaments(id) ON DELETE CASCADE,
+    user_id TEXT,
+    td_value REAL NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(community_filament_id, user_id)
+  )`);
+  try { db.exec('ALTER TABLE queue_items ADD COLUMN plate_width REAL'); } catch { /* exists */ }
+  try { db.exec('ALTER TABLE queue_items ADD COLUMN plate_height REAL'); } catch { /* exists */ }
+  try { db.exec('ALTER TABLE queue_items ADD COLUMN plate_depth REAL'); } catch { /* exists */ }
+}
+
+function _mig074_round5_features() {
+  // Staggered queue start
+  try { db.exec('ALTER TABLE print_queue ADD COLUMN stagger_seconds INTEGER DEFAULT 0'); } catch { /* exists */ }
+  // Layer pause scheduling
+  db.exec(`CREATE TABLE IF NOT EXISTS layer_pauses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    printer_id TEXT NOT NULL,
+    layer_numbers TEXT NOT NULL,
+    reason TEXT,
+    active INTEGER DEFAULT 1,
+    triggered_layers TEXT DEFAULT '[]',
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_lp_printer ON layer_pauses(printer_id)'); } catch { /* exists */ }
+  // Refill spool
+  try { db.exec('ALTER TABLE spools ADD COLUMN is_refill INTEGER DEFAULT 0'); } catch { /* exists */ }
+  try { db.exec('ALTER TABLE spools ADD COLUMN refill_count INTEGER DEFAULT 0'); } catch { /* exists */ }
+}
+
 function _generateShortId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I/O/0/1 to avoid confusion
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -4148,6 +4183,16 @@ export function archiveSpool(id, archived = true) {
   try { addSpoolEvent(id, archived ? 'archived' : 'unarchived', null, null); } catch (_) {}
 }
 
+export function refillSpool(id, newWeightG) {
+  const spool = db.prepare('SELECT * FROM spools WHERE id = ?').get(id);
+  if (!spool) return null;
+  const refillCount = (spool.refill_count || 0) + 1;
+  db.prepare('UPDATE spools SET is_refill = 1, refill_count = ?, remaining_weight_g = ?, used_weight_g = 0, initial_weight_g = ? WHERE id = ?')
+    .run(refillCount, newWeightG, newWeightG, id);
+  try { addSpoolEvent(id, 'refilled', `Refill #${refillCount}, ${newWeightG}g`, null); } catch (_) {}
+  return { id, refill_count: refillCount };
+}
+
 export function autoTrashEmptySpools() {
   const setting = getInventorySetting('auto_trash_days');
   const days = parseInt(setting) || 0;
@@ -4979,11 +5024,12 @@ export function getSpoolsDryingStatus() {
 // ---- Print Queue ----
 
 export function createQueue(opts) {
-  const r = db.prepare(`INSERT INTO print_queue (name, description, status, auto_start, cooldown_seconds, bed_clear_gcode, priority_mode, target_printer_id, created_by)
-    VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?)`).run(
+  const r = db.prepare(`INSERT INTO print_queue (name, description, status, auto_start, cooldown_seconds, bed_clear_gcode, priority_mode, target_printer_id, created_by, stagger_seconds)
+    VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?)`).run(
     opts.name, opts.description || null, opts.auto_start ? 1 : 0,
     opts.cooldown_seconds || 60, opts.bed_clear_gcode || null,
-    opts.priority_mode || 'fifo', opts.target_printer_id || null, opts.created_by || null
+    opts.priority_mode || 'fifo', opts.target_printer_id || null, opts.created_by || null,
+    opts.stagger_seconds || 0
   );
   return r.lastInsertRowid;
 }
@@ -5015,6 +5061,7 @@ export function updateQueue(id, opts) {
   }
   if (opts.auto_start !== undefined) { fields.push('auto_start = ?'); values.push(opts.auto_start ? 1 : 0); }
   if (opts.cooldown_seconds !== undefined) { fields.push('cooldown_seconds = ?'); values.push(opts.cooldown_seconds); }
+  if (opts.stagger_seconds !== undefined) { fields.push('stagger_seconds = ?'); values.push(opts.stagger_seconds); }
   if (fields.length === 0) return;
   values.push(id);
   db.prepare(`UPDATE print_queue SET ${fields.join(', ')} WHERE id = ?`).run(...values);
@@ -5422,6 +5469,25 @@ export function getPendingDeliveries() {
 }
 
 // ---- Print Costs (Advanced) ----
+
+export function recalculateAllCosts() {
+  const rows = db.prepare(`SELECT id, printer_id, duration_seconds, filament_used_g, status FROM print_history WHERE duration_seconds > 0`).all();
+  let updated = 0;
+  for (const row of rows) {
+    try {
+      const costs = estimatePrintCostAdvanced(row.filament_used_g || 0, row.duration_seconds || 0, null, row.printer_id, row.status);
+      if (costs.total_cost > 0) {
+        db.prepare(`INSERT OR REPLACE INTO print_costs (print_history_id, filament_cost, electricity_cost, depreciation_cost, labor_cost, markup_amount, total_cost, currency)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+          row.id, costs.filament_cost || 0, costs.electricity_cost || 0, costs.depreciation_cost || 0,
+          costs.labor_cost || 0, costs.markup_amount || 0, costs.total_cost || 0, costs.currency || 'NOK'
+        );
+        updated++;
+      }
+    } catch (_) {}
+  }
+  return { total: rows.length, updated };
+}
 
 export function savePrintCost(printHistoryId, costs) {
   db.prepare(`INSERT OR REPLACE INTO print_costs (print_history_id, filament_cost, electricity_cost, depreciation_cost, labor_cost, markup_amount, total_cost, currency)
@@ -5968,6 +6034,14 @@ export function updateCommunityFilament(id, updates) {
 
 export function deleteCommunityFilament(id) {
   db.prepare('DELETE FROM community_filaments WHERE id = ?').run(id);
+}
+
+export function getOwnedCommunityIds() {
+  const rows = db.prepare(`SELECT cf.id FROM community_filaments cf
+    INNER JOIN filament_profiles fp ON LOWER(cf.material) = LOWER(fp.material)
+    INNER JOIN vendors v ON fp.vendor_id = v.id AND LOWER(cf.manufacturer) = LOWER(v.name)
+    WHERE fp.id IN (SELECT DISTINCT filament_profile_id FROM spools WHERE archived = 0 AND filament_profile_id IS NOT NULL)`).all();
+  return rows.map(r => r.id);
 }
 
 export function getCommunityFilamentStats() {
@@ -6599,6 +6673,19 @@ export function getEcomFeesTotal() {
 
 // ---- Knowledge Base CRUD ----
 
+const _capCache = {};
+export function getPrinterCapabilities(printerId) {
+  if (_capCache[printerId]) return _capCache[printerId];
+  const printer = db.prepare('SELECT model FROM printers WHERE id = ?').get(printerId);
+  if (!printer?.model) return null;
+  const kb = db.prepare('SELECT build_volume, heated_bed_max, nozzle_temp_max, supported_filaments, has_enclosure FROM kb_printers WHERE model = ? OR full_name LIKE ?').get(printer.model, `%${printer.model}%`);
+  if (!kb) return null;
+  let bv = null;
+  if (kb.build_volume) { const m = kb.build_volume.match(/(\d+)\s*x\s*(\d+)\s*x\s*(\d+)/i); if (m) bv = { w: parseInt(m[1]), d: parseInt(m[2]), h: parseInt(m[3]) }; }
+  const caps = { build_volume: bv, heated_bed_max: kb.heated_bed_max, nozzle_temp_max: kb.nozzle_temp_max, has_enclosure: kb.has_enclosure, supported_filaments: kb.supported_filaments ? JSON.parse(kb.supported_filaments) : [] };
+  _capCache[printerId] = caps;
+  return caps;
+}
 export function getKbPrinters() { return db.prepare('SELECT * FROM kb_printers ORDER BY release_year DESC, model').all(); }
 export function getKbPrinter(id) { return db.prepare('SELECT * FROM kb_printers WHERE id = ?').get(id); }
 export function addKbPrinter(p) {
@@ -6746,6 +6833,31 @@ export function getLatestBedMesh(printerId) {
 }
 export function deleteBedMesh(id) { db.prepare('DELETE FROM bed_mesh_data WHERE id = ?').run(id); }
 
+// ---- Layer Pauses ----
+export function addLayerPause(printerId, layerNumbers, reason) {
+  const r = db.prepare('INSERT INTO layer_pauses (printer_id, layer_numbers, reason) VALUES (?, ?, ?)').run(printerId, JSON.stringify(layerNumbers), reason || null);
+  return Number(r.lastInsertRowid);
+}
+export function getLayerPauses(printerId) {
+  return db.prepare('SELECT * FROM layer_pauses WHERE printer_id = ? ORDER BY created_at DESC').all(printerId);
+}
+export function getActiveLayerPauses(printerId) {
+  return db.prepare('SELECT * FROM layer_pauses WHERE printer_id = ? AND active = 1').all(printerId);
+}
+export function deleteLayerPause(id) { db.prepare('DELETE FROM layer_pauses WHERE id = ?').run(id); }
+export function deactivateLayerPauses(printerId) {
+  db.prepare('UPDATE layer_pauses SET active = 0 WHERE printer_id = ?').run(printerId);
+}
+export function markLayerTriggered(id, layerNum) {
+  const row = db.prepare('SELECT triggered_layers FROM layer_pauses WHERE id = ?').get(id);
+  if (!row) return;
+  const triggered = JSON.parse(row.triggered_layers || '[]');
+  if (!triggered.includes(layerNum)) {
+    triggered.push(layerNum);
+    db.prepare('UPDATE layer_pauses SET triggered_layers = ? WHERE id = ?').run(JSON.stringify(triggered), id);
+  }
+}
+
 // ---- Filament Changes ----
 export function createFilamentChange(printerId, fromSpoolId, toSpoolId, amsUnit, amsTray) {
   const r = db.prepare(`INSERT INTO filament_changes (printer_id, from_spool_id, to_spool_id, ams_unit, ams_tray, status, current_step)
@@ -6799,6 +6911,18 @@ export function rateCommunityFilament(filamentId, userId, rating, comment) {
 }
 export function getCommunityFilamentRatings(filamentId) {
   return db.prepare('SELECT * FROM community_ratings WHERE community_filament_id = ? ORDER BY created_at DESC').all(filamentId);
+}
+export function submitTdVote(filamentId, userId, tdValue) {
+  db.prepare(`INSERT INTO td_votes (community_filament_id, user_id, td_value)
+    VALUES (?, ?, ?) ON CONFLICT(community_filament_id, user_id) DO UPDATE SET td_value = excluded.td_value, created_at = datetime('now')`)
+    .run(filamentId, userId || 'default', tdValue);
+  const agg = db.prepare('SELECT AVG(td_value) as avg, MIN(td_value) as min, MAX(td_value) as max, COUNT(*) as count FROM td_votes WHERE community_filament_id = ?').get(filamentId);
+  const avgTd = agg.avg ? Math.round(agg.avg * 100) / 100 : null;
+  db.prepare('UPDATE community_filaments SET td_value = ?, total_td_votes = ? WHERE id = ?').run(avgTd, agg.count, filamentId);
+  return { td_value: avgTd, total_td_votes: agg.count, td_min: agg.min, td_max: agg.max };
+}
+export function getTdVotes(filamentId) {
+  return db.prepare('SELECT * FROM td_votes WHERE community_filament_id = ? ORDER BY created_at DESC').all(filamentId);
 }
 export function importCommunityToInventory(communityId, vendorId) {
   const cf = db.prepare('SELECT * FROM community_filaments WHERE id = ?').get(communityId);

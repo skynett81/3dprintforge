@@ -6546,7 +6546,7 @@ tr:hover .filament-edit-btn {
   display: flex; flex-direction: column;
 }
 .db-filament-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-.db-card-color { height: 5px; width: 100%; flex-shrink: 0; }
+.db-card-color { height: 5px; width: 100%; flex-shrink: 0; position: relative; }
 .db-card-body { padding: 8px 10px; flex: 1; }
 .db-card-brand { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-card-name { font-weight: 600; font-size: 0.82rem; margin: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -8211,6 +8211,63 @@ input[type="range"]::-webkit-slider-thumb:active {
   .kb-hero-grid { grid-template-columns: 1fr 1fr; }
   .kb-detail-panel { max-width: 100%; max-height: 95vh; }
   .kb-detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Bed Mesh Stats ---- */
+.bed-mesh-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border-color);
+}
+.bed-mesh-stats strong {
+  color: var(--text-primary);
+}
+
+/* ---- Cost Setup Hints ---- */
+.stats-setup-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  font-size: 0.8rem;
+}
+.stats-setup-icon {
+  font-size: 1rem;
+}
+
+/* ---- Z-Offset Wizard ---- */
+.ctrl-wizard-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ctrl-wizard-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+.ctrl-wizard-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* ---- Accessibility: Reduced Motion ---- */

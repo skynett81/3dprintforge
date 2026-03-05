@@ -20,6 +20,7 @@ import { sendTelemetryPing } from './telemetry.js';
 import { QueueManager } from './queue-manager.js';
 import { TimelapseService } from './timelapse-service.js';
 import { FailureDetectionService } from './failure-detection.js';
+import { buildPauseCommand } from './mqtt-commands.js';
 
 const IS_DEMO = process.env.BAMBU_DEMO === 'true';
 
@@ -476,6 +477,12 @@ for (const [id, entry] of manager.printers) {
       }
       // Stop AI failure detection
       failureDetector.stopMonitoring(id);
+    };
+
+    // Layer pause — pause printer when target layer is reached
+    entry.tracker.onLayerPause = (data) => {
+      if (entry.client) entry.client.sendCommand(buildPauseCommand());
+      broadcastAll('layer_pause_triggered', data);
     };
   }
 }

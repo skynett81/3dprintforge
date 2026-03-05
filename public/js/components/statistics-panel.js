@@ -290,10 +290,32 @@
 
     // ═══ Cost tab modules ═══
     'cost-hero': (s, x, cost) => {
-      if (!cost || !cost.summary) return '';
+      const hasData = cost?.summary?.grand_total > 0;
+      // Always show the recalculate button + setup hints
+      let html = '';
+      if (!hasData) {
+        html += `<div class="stats-card" style="text-align:center;padding:24px">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9h8M8 15h6"/></svg>
+          <div style="font-size:1rem;font-weight:600;margin-bottom:8px">${t('stats.cost_no_data')}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">${t('stats.cost_setup_hint')}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px">
+            <div class="stats-setup-item"><span class="stats-setup-icon">&#x26A1;</span> ${t('stats.cost_hint_electricity')}</div>
+            <div class="stats-setup-item"><span class="stats-setup-icon">&#x1F5A8;</span> ${t('stats.cost_hint_machine')}</div>
+            <div class="stats-setup-item"><span class="stats-setup-icon">&#x1F9F5;</span> ${t('stats.cost_hint_spool')}</div>
+          </div>
+          <button class="form-btn" data-ripple onclick="window._recalcCosts()" id="cost-recalc-btn">${t('stats.cost_recalculate')}</button>
+        </div>`;
+        return html;
+      }
       const c = cost.summary;
       const cur = c.currency || 'NOK';
-      return `<div class="stats-hero-grid">
+      html += `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px">
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._recalcCosts()" title="${t('stats.cost_recalculate')}" style="font-size:0.75rem">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 11-.57-8.38"/></svg>
+          ${t('stats.cost_recalculate')}
+        </button>
+      </div>`;
+      html += `<div class="stats-hero-grid">
         <div class="stats-hero-card">
           <div class="stats-hero-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9h8M8 15h6"/></svg></div>
           <div class="stats-hero-value">${c.grand_total.toFixed(2)} ${cur}</div>
@@ -315,6 +337,7 @@
           <div class="stats-hero-label">${t('stats.cost_per_kg')}</div>
         </div>
       </div>`;
+      return html;
     },
 
     'cost-breakdown': (s, x, cost) => {
@@ -567,4 +590,18 @@
       for (const p of printers) { window._printerNames[p.id] = p.name; }
     } catch {}
   })();
+
+  window._recalcCosts = async function() {
+    const btn = document.getElementById('cost-recalc-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('stats.cost_recalculating'); }
+    try {
+      const res = await fetch('/api/statistics/costs/recalculate', { method: 'POST' });
+      const data = await res.json();
+      showToast(`${t('stats.cost_recalculated')}: ${data.updated}/${data.total}`, 'success');
+      loadStatistics();
+    } catch (e) {
+      showToast(e.message, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = t('stats.cost_recalculate'); }
+    }
+  };
 })();
