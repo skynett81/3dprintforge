@@ -3190,7 +3190,9 @@ export function getStatistics(printerId = null) {
     GROUP BY week ORDER BY week
   `).all(...params);
 
-  const totalCost = db.prepare("SELECT COALESCE(SUM(cost_nok * (weight_used_g / weight_total_g)), 0) as cost FROM filament_inventory WHERE weight_total_g > 0").get();
+  const legacyCost = db.prepare("SELECT COALESCE(SUM(cost_nok * (weight_used_g / weight_total_g)), 0) as cost FROM filament_inventory WHERE weight_total_g > 0").get();
+  const spoolCost = db.prepare("SELECT COALESCE(SUM(cost * (used_weight_g / initial_weight_g)), 0) as cost FROM spools WHERE initial_weight_g > 0 AND cost > 0").get();
+  const totalCost = { cost: (legacyCost.cost || 0) + (spoolCost.cost || 0) };
 
   // Success rate by filament type
   const and = where ? ' AND' : ' WHERE';
@@ -3530,8 +3532,10 @@ export function getWasteStats(printerId = null) {
   // Total prints for average
   const totalPrints = db.prepare(`SELECT COUNT(*) as count FROM print_history${where}`).get(...params);
 
-  // Average cost per gram from inventory
-  const costInfo = db.prepare("SELECT COALESCE(AVG(cost_nok / weight_total_g), 0.25) as avg_cost_per_g FROM filament_inventory WHERE weight_total_g > 0 AND cost_nok > 0").get();
+  // Average cost per gram from inventory (legacy + spools)
+  const legacyCostInfo = db.prepare("SELECT AVG(cost_nok / weight_total_g) as avg FROM filament_inventory WHERE weight_total_g > 0 AND cost_nok > 0").get();
+  const spoolCostInfo = db.prepare("SELECT AVG(cost / initial_weight_g) as avg FROM spools WHERE initial_weight_g > 0 AND cost > 0").get();
+  const costInfo = { avg_cost_per_g: spoolCostInfo.avg || legacyCostInfo.avg || 0.25 };
 
   // Waste per week (combined)
   const wastePerWeek = db.prepare(`
@@ -4861,6 +4865,16 @@ export function estimatePrintCost(filamentUsedG, durationSeconds, spoolId = null
       } else if (spool.profile_price > 0) {
         filamentCostPerG = spool.profile_price / 1000;
       }
+    }
+  }
+  // Fallback: average cost per gram from spools or legacy inventory
+  if (filamentCostPerG <= 0) {
+    const spoolAvg = db.prepare("SELECT AVG(cost / initial_weight_g) as avg FROM spools WHERE initial_weight_g > 0 AND cost > 0").get();
+    if (spoolAvg?.avg > 0) {
+      filamentCostPerG = spoolAvg.avg;
+    } else {
+      const legacyAvg = db.prepare("SELECT AVG(cost_nok / weight_total_g) as avg FROM filament_inventory WHERE weight_total_g > 0 AND cost_nok > 0").get();
+      filamentCostPerG = legacyAvg?.avg || 0;
     }
   }
 

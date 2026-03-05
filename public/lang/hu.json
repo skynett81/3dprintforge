@@ -1464,7 +1464,16 @@
     "tab_overview": "Overview",
     "tab_fans": "Fans & Speed",
     "layout_locked": "Locked",
-    "layout_unlocked": "Unlocked"
+    "layout_unlocked": "Unlocked",
+    "tab_network": "Network",
+    "progress_chart": "Print Progress",
+    "layer_chart": "Layer Progress",
+    "wifi_chart": "WiFi Signal",
+    "layers": "Layers",
+    "signal_strength": "Signal Strength",
+    "signal_excellent": "Excellent",
+    "signal_good": "Good",
+    "signal_weak": "Weak"
   },
   "model_meta": {
     "dimensions": "Dimensions",

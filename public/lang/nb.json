@@ -1348,8 +1348,17 @@
     "load_failed": "Kunne ikke laste telemetridata.",
     "tab_overview": "Oversikt",
     "tab_fans": "Vifter & Hastighet",
+    "tab_network": "Nettverk",
     "layout_locked": "Låst",
-    "layout_unlocked": "Ulåst"
+    "layout_unlocked": "Ulåst",
+    "progress_chart": "Utskriftsfremdrift",
+    "layer_chart": "Lagfremdrift",
+    "wifi_chart": "WiFi-signal",
+    "layers": "Lag",
+    "signal_strength": "Signalstyrke",
+    "signal_excellent": "Utmerket",
+    "signal_good": "Bra",
+    "signal_weak": "Svakt"
   },
   "common": {
     "printer": "Printer",

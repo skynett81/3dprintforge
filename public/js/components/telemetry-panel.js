@@ -19,19 +19,21 @@
 
   // ═══ Tab config ═══
   const TAB_CONFIG = {
-    overview: { label: 'telemetry.tab_overview', modules: ['live-values', 'print-status', 'temperature-chart'] },
-    fans:     { label: 'telemetry.tab_fans',     modules: ['fan-dashboard', 'fan-chart', 'speed-chart'] }
+    overview: { label: 'telemetry.tab_overview', modules: ['live-values', 'print-status', 'temperature-chart', 'progress-chart', 'layer-chart'] },
+    fans:     { label: 'telemetry.tab_fans',     modules: ['fan-dashboard', 'fan-chart', 'speed-chart'] },
+    network:  { label: 'telemetry.tab_network',  modules: ['wifi-chart'] }
   };
   const MODULE_SIZE = {
     'live-values': 'full', 'print-status': 'full', 'temperature-chart': 'full',
-    'fan-dashboard': 'full', 'fan-chart': 'half', 'speed-chart': 'half'
+    'fan-dashboard': 'full', 'fan-chart': 'half', 'speed-chart': 'half',
+    'progress-chart': 'half', 'layer-chart': 'half', 'wifi-chart': 'full'
   };
 
   const STORAGE_PREFIX = 'tele-module-order-';
   const LOCK_KEY = 'tele-layout-locked';
 
   // Clear stale saved orders when module set changes
-  const _MOD_VER = 2;
+  const _MOD_VER = 3;
   if (localStorage.getItem('tele-mod-ver') !== String(_MOD_VER)) {
     for (const tab of Object.keys(TAB_CONFIG)) localStorage.removeItem(STORAGE_PREFIX + tab);
     localStorage.setItem('tele-mod-ver', String(_MOD_VER));
@@ -99,13 +101,14 @@
       if (!ps) return '';
       const pd = ps.print || ps;
       const state = pd.gcode_state || 'IDLE';
-      const progress = pd.mc_percent || 0;
-      const fileName = pd.gcode_file || pd.subtask_name || '';
-      const remaining = pd.mc_remaining_time;
-      const layer = pd.layer_num || 0;
-      const totalLayers = pd.total_layer_num || 0;
       const isActive = state === 'RUNNING' || state === 'PAUSE';
-      const barColor = state === 'PAUSE' ? '#f0883e' : '#00e676';
+      const isIdle = !isActive;
+      const progress = isActive ? (pd.mc_percent || 0) : 0;
+      const fileName = isActive ? (pd.gcode_file || pd.subtask_name || '') : '';
+      const remaining = pd.mc_remaining_time;
+      const layer = isActive ? (pd.layer_num || 0) : 0;
+      const totalLayers = isActive ? (pd.total_layer_num || 0) : 0;
+      const barColor = state === 'PAUSE' ? '#f0883e' : isIdle ? theme.getCSSVar('--text-muted') : '#00e676';
 
       const stateMap = { RUNNING: t('status.printing'), PAUSE: t('status.paused'), FINISH: t('status.finished'), FAILED: t('status.failed') };
       const stateLabel = stateMap[state] || t('status.idle');
@@ -122,15 +125,17 @@
             <span class="tele-status-state" style="color:${barColor}">${stateLabel}</span>
             <span class="tele-status-pct">${isActive ? progress + '%' : ''}</span>
           </div>
-          <div class="tele-progress-bar"><div class="tele-progress-fill" style="width:${progress}%;background:${barColor}"></div></div>
+          ${isActive ? `<div class="tele-progress-bar"><div class="tele-progress-fill" style="width:${progress}%;background:${barColor}"></div></div>` : ''}
           ${fileName ? `<div class="tele-status-file" title="${fileName}">${fileName.replace(/\.gcode$|\.3mf$/i, '')}</div>` : ''}
         </div>
         <div class="tele-status-right">`;
       if (isActive && remaining) h += `<div class="tele-status-detail"><span class="tele-status-dlabel">${t('status.remaining')}</span><span class="tele-status-dvalue">${fmtRemain(remaining)}</span></div>`;
-      if (layer > 0) h += `<div class="tele-status-detail"><span class="tele-status-dlabel">${t('status.layers')}</span><span class="tele-status-dvalue">${layer} / ${totalLayers || '?'}</span></div>`;
-      const spdLvl = pd.spd_lvl || 2;
-      const spdLabels = { 1: t('speed.silent'), 2: t('speed.standard'), 3: t('speed.sport'), 4: t('speed.ludicrous') };
-      h += `<div class="tele-status-detail"><span class="tele-status-dlabel">${t('speed.label')}</span><span class="tele-status-dvalue">${spdLabels[spdLvl] || spdLabels[2]}</span></div>`;
+      if (isActive && layer > 0) h += `<div class="tele-status-detail"><span class="tele-status-dlabel">${t('status.layers')}</span><span class="tele-status-dvalue">${layer} / ${totalLayers || '?'}</span></div>`;
+      if (isActive) {
+        const spdLvl = pd.spd_lvl || 2;
+        const spdLabels = { 1: t('speed.silent'), 2: t('speed.standard'), 3: t('speed.sport'), 4: t('speed.ludicrous') };
+        h += `<div class="tele-status-detail"><span class="tele-status-dlabel">${t('speed.label')}</span><span class="tele-status-dvalue">${spdLabels[spdLvl] || spdLabels[2]}</span></div>`;
+      }
       h += `</div></div>`;
       return h;
     },
@@ -141,11 +146,13 @@
         ${t('telemetry.temperatures')}
       </div>`;
       if (!data.length) { h += `<p class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</p>`; return h; }
+      // Use historical target data from telemetry, fallback to live state
+      const last = data[data.length - 1];
       const ps = window.printerState?._printers?.[_printerId];
       const pd = ps?.print || ps;
       const targets = {
-        nozzle_temp: pd?.nozzle_target_temper || pd?.nozzle_temper_target || 0,
-        bed_temp: pd?.bed_target_temper || pd?.bed_temper_target || 0
+        nozzle_temp: last?.nozzle_target || pd?.nozzle_target_temper || pd?.nozzle_temper_target || 0,
+        bed_temp: last?.bed_target || pd?.bed_target_temper || pd?.bed_temper_target || 0
       };
       h += renderChart(data,
         ['nozzle_temp', 'bed_temp', 'chamber_temp'],
@@ -212,6 +219,63 @@
         { speed_mag: t('speed.label') },
         200
       );
+      return h;
+    },
+
+    'progress-chart': (data) => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${t('telemetry.progress_chart')}
+      </div>`;
+      if (!data.length) { h += `<p class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</p>`; return h; }
+      h += renderChart(data,
+        ['print_progress'],
+        { print_progress: '#00e676' },
+        { print_progress: t('telemetry.print_progress') },
+        100
+      );
+      return h;
+    },
+
+    'layer-chart': (data) => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        ${t('telemetry.layer_chart')}
+      </div>`;
+      if (!data.length) { h += `<p class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</p>`; return h; }
+      h += renderChart(data,
+        ['layer_num'],
+        { layer_num: '#f0883e' },
+        { layer_num: t('telemetry.layers') }
+      );
+      return h;
+    },
+
+    'wifi-chart': (data) => {
+      let h = `<div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0114 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+        ${t('telemetry.wifi_chart')}
+      </div>`;
+      if (!data.length) { h += `<p class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</p>`; return h; }
+      // WiFi signal is negative dBm — map to quality 0-100 (higher = better)
+      // -30 dBm = 70 quality (excellent), -50 = 50, -70 = 30, -90 = 10
+      const wifiData = data.map(d => {
+        const raw = parseInt(d.wifi_signal) || 0;
+        const quality = Math.max(0, Math.min(100, 100 + raw));
+        return { ...d, wifi_quality: quality };
+      });
+      h += renderChart(wifiData,
+        ['wifi_quality'],
+        { wifi_quality: '#9b4dff' },
+        { wifi_quality: t('telemetry.signal_strength') },
+        100
+      );
+      // Add signal quality legend
+      h += `<div class="text-muted" style="font-size:0.75rem;text-align:center;margin-top:0.25rem">
+        <span style="color:#00e676">\u25cf</span> 70+ ${t('telemetry.signal_excellent')} &nbsp;
+        <span style="color:#e3b341">\u25cf</span> 30-70 ${t('telemetry.signal_good')} &nbsp;
+        <span style="color:#ff5252">\u25cf</span> 0-30 ${t('telemetry.signal_weak')}
+      </div>`;
       return h;
     }
   };
