@@ -17,7 +17,7 @@
     overview:  { label: 'stats.tab_overview',  modules: ['hero-stats','overview','weekly-trends','monthly-trends'] },
     filament:  { label: 'stats.tab_filament',  modules: ['filament-by-type','success-by-filament','success-by-speed','filament-by-brand','top-files'] },
     activity:  { label: 'stats.tab_activity',  modules: ['day-heatmap','hour-heatmap','avg-time-by-day'] },
-    hardware:  { label: 'stats.tab_hardware',  modules: ['temp-records','nozzle-usage','ams-stats','xcam-stats'] },
+    hardware:  { label: 'stats.tab_hardware',  modules: ['temp-records','nozzle-usage','ams-stats','xcam-stats','maintenance-overview','nozzle-health','build-plate-stats','firmware-info'] },
     cost:      { label: 'stats.tab_cost',      modules: ['cost-hero','cost-breakdown','cost-trends','cost-by-printer','cost-by-material'] }
   };
 
@@ -31,6 +31,7 @@
     'day-heatmap': 'half', 'hour-heatmap': 'full', 'avg-time-by-day': 'half',
     'temp-records': 'half', 'nozzle-usage': 'half',
     'ams-stats': 'half', 'xcam-stats': 'half',
+    'maintenance-overview': 'full', 'nozzle-health': 'half', 'build-plate-stats': 'half', 'firmware-info': 'half',
     'cost-hero': 'full', 'cost-breakdown': 'half', 'cost-trends': 'half',
     'cost-by-printer': 'half', 'cost-by-material': 'half'
   };
@@ -44,6 +45,7 @@
   let _data = null;
   let _xcam = null;
   let _costData = null;
+  let _hwData = null;
   let _dateFrom = null;
   let _dateTo = null;
   let _draggedMod = null;
@@ -245,6 +247,10 @@
       h += sRow(t('stats.avg_nozzle'), `${Math.round(s.temp_stats.avg_nozzle)}°C`, '#ff5252');
       h += sRow(t('stats.peak_bed'), `${Math.round(s.temp_stats.peak_bed)}°C`, '#1279ff');
       h += sRow(t('stats.avg_bed'), `${Math.round(s.temp_stats.avg_bed)}°C`, '#1279ff');
+      if (s.temp_stats.peak_chamber > 0) {
+        h += sRow(t('stats.peak_chamber'), `${Math.round(s.temp_stats.peak_chamber)}°C`, '#e3b341');
+        h += sRow(t('stats.avg_chamber'), `${Math.round(s.temp_stats.avg_chamber)}°C`, '#e3b341');
+      }
       h += '</div>';
       return h;
     },
@@ -286,6 +292,93 @@
           <div class="xcam-card"><div class="xcam-count">${xcam.foreign_object||0}</div><div class="xcam-label">${t('stats.xcam_foreign')}</div></div>
           <div class="xcam-card"><div class="xcam-count">${xcam.nozzle_clump||0}</div><div class="xcam-label">${t('stats.xcam_clump')}</div></div>
         </div>`;
+    },
+
+    // ═══ Hardware extended modules ═══
+    'maintenance-overview': (s, x, c, hw) => {
+      if (!hw?.maintenance?.length) return '';
+      const pNames = window._printerNames || {};
+      const showPrinter = !window._statsPanel_printer;
+      let h = `<div class="card-title">${t('stats.hw_maintenance')}</div><div class="hw-maint-list">`;
+      for (const m of hw.maintenance) {
+        const pct = m.percentage || 0;
+        const clr = m.overdue ? 'var(--accent-red)' : pct >= 70 ? 'var(--accent-orange)' : 'var(--accent-green)';
+        const label = showPrinter ? `${pNames[m.printer_id] || m.printer_id} — ${m.label}` : m.label;
+        const hrs = `${m.hours_since_maintenance}/${m.interval_hours}${t('time.h')}`;
+        h += `<div class="hw-maint-row">
+          <span class="hw-maint-label">${label}</span>
+          <div class="hw-maint-bar-track"><div class="hw-maint-bar-fill${m.overdue ? ' overdue' : ''}" style="width:${Math.min(pct, 100)}%;background:${clr}"></div></div>
+          <span class="hw-maint-value${m.overdue ? ' overdue' : ''}">${hrs}</span>
+        </div>`;
+      }
+      h += '</div>';
+      return h;
+    },
+
+    'nozzle-health': (s, x, c, hw) => {
+      if (!hw?.active_nozzles?.length) return '';
+      const pNames = window._printerNames || {};
+      const showPrinter = !window._statsPanel_printer;
+      let h = `<div class="card-title">${t('stats.hw_nozzle_health')}</div>`;
+      for (const n of hw.active_nozzles) {
+        const wear = n.wear;
+        const wClr = !wear ? 'var(--text-muted)' : wear.percentage >= 80 ? 'var(--accent-red)' : wear.percentage >= 50 ? 'var(--accent-orange)' : 'var(--accent-green)';
+        const wPct = wear ? wear.percentage : 0;
+        const pLabel = showPrinter ? `<span class="hw-nozzle-printer">${pNames[n.printer_id] || n.printer_id}</span>` : '';
+        h += `<div class="hw-nozzle-card">
+          ${pLabel}
+          <div class="hw-nozzle-type">${n.type || 'Standard'} ${n.diameter || '0.4'}mm</div>
+          <div class="hw-nozzle-wear-track"><div class="hw-nozzle-wear-fill" style="width:${wPct}%;background:${wClr}"></div></div>
+          <div class="hw-nozzle-details">
+            ${sRow(t('stats.hw_print_hours'), `${n.print_hours}${t('time.h')}`)}
+            ${sRow(t('stats.hw_prints'), n.print_count)}
+            ${sRow(t('stats.hw_filament_through'), fmtW(n.filament_g))}
+            ${n.abrasive_g > 0 ? sRow(t('stats.hw_abrasive'), fmtW(n.abrasive_g), 'var(--accent-orange)') : ''}
+            ${sRow(t('stats.hw_wear'), `${wPct}%`, wClr)}
+          </div>
+        </div>`;
+      }
+      return h;
+    },
+
+    'build-plate-stats': (s, x, c, hw) => {
+      if (!hw?.build_plates?.length) return '';
+      const pNames = window._printerNames || {};
+      const showPrinter = !window._statsPanel_printer;
+      const condClr = { good: 'var(--accent-green)', fair: 'var(--accent-orange)', worn: 'var(--accent-red)', new: 'var(--accent-blue)' };
+      let h = `<div class="card-title">${t('stats.hw_build_plates')}</div>`;
+      const mx = Math.max(...hw.build_plates.map(p => p.print_count || 0), 1);
+      h += '<div class="chart-bars">';
+      for (const p of hw.build_plates) {
+        const pct = mx > 0 ? ((p.print_count || 0) / mx) * 100 : 0;
+        const cond = p.surface_condition || 'good';
+        const clr = condClr[cond] || 'var(--accent-blue)';
+        const label = showPrinter ? `${pNames[p.printer_id] || ''} ${p.name}` : p.name;
+        const badge = p.active ? '' : ` <span style="opacity:0.5">(${t('stats.hw_inactive')})</span>`;
+        h += barRow(`${label}${badge}`, pct, clr, `${p.print_count || 0} ${t('stats.hw_prints_short')}`);
+      }
+      h += '</div>';
+      if (hw.total_plate_prints > 0) {
+        h += `<div class="stats-detail-list" style="margin-top:8px">${sRow(t('stats.hw_total_plate_prints'), hw.total_plate_prints)}</div>`;
+      }
+      return h;
+    },
+
+    'firmware-info': (s, x, c, hw) => {
+      if (!hw?.firmware?.length) return '';
+      const pNames = window._printerNames || {};
+      const showPrinter = !window._statsPanel_printer;
+      let h = `<div class="card-title">${t('stats.hw_firmware')}</div>`;
+      h += `<table class="data-table"><thead><tr>`;
+      if (showPrinter) h += `<th>${t('stats.printer')}</th>`;
+      h += `<th>${t('stats.hw_module')}</th><th>${t('stats.hw_version')}</th></tr></thead><tbody>`;
+      for (const f of hw.firmware) {
+        h += '<tr>';
+        if (showPrinter) h += `<td>${pNames[f.printer_id] || f.printer_id}</td>`;
+        h += `<td>${f.module}</td><td>${f.sw_ver || '--'}</td></tr>`;
+      }
+      h += '</tbody></table>';
+      return h;
     },
 
     // ═══ Cost tab modules ═══
@@ -484,6 +577,7 @@
     if (hashParts[0] === 'stats' && hashParts[1] && TAB_CONFIG[hashParts[1]]) {
       _activeTab = hashParts[1];
     }
+    window._statsPanel_printer = _printer;
 
     try {
       const qp = new URLSearchParams();
@@ -491,14 +585,16 @@
       if (_dateFrom) qp.set('from', _dateFrom);
       if (_dateTo) qp.set('to', _dateTo);
       const params = qp.toString() ? '?' + qp.toString() : '';
-      const [statsRes, xcamRes, costRes] = await Promise.all([
+      const [statsRes, xcamRes, costRes, hwRes] = await Promise.all([
         fetch(`/api/statistics${params}`),
         fetch(`/api/xcam/stats${params}`).catch(() => null),
-        fetch(`/api/statistics/costs${params}`).catch(() => null)
+        fetch(`/api/statistics/costs${params}`).catch(() => null),
+        fetch(`/api/statistics/hardware${_printer ? '?printer_id=' + _printer : ''}`).catch(() => null)
       ]);
       _data = await statsRes.json();
       try { _xcam = xcamRes ? await xcamRes.json() : null; } catch (_) { _xcam = null; }
       try { _costData = costRes ? await costRes.json() : null; } catch (_) { _costData = null; }
+      try { _hwData = hwRes ? await hwRes.json() : null; } catch (_) { _hwData = null; }
 
       let html = '<div class="stats-layout">';
 
@@ -520,6 +616,7 @@
           ${lockIcon} <span>${_locked ? t('stats.layout_locked') : t('stats.layout_unlocked')}</span>
         </button>
         <button class="form-btn form-btn-sm" data-ripple onclick="exportCsv()">${t('stats.download_csv')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="exportJson()">${t('stats.download_json')}</button>
       </div>`;
 
       // Tab bar
@@ -538,7 +635,7 @@
         for (const modId of order) {
           const builder = BUILDERS[modId];
           if (!builder) continue;
-          const content = builder(_data, _xcam, _costData);
+          const content = builder(_data, _xcam, _costData, _hwData);
           if (!content) continue;
           const draggable = _locked ? '' : 'draggable="true"';
           const unlocked = _locked ? '' : ' stats-module-unlocked';
@@ -567,7 +664,7 @@
 
   // ═══ Global API ═══
   window.loadStatsPanel = loadStatistics;
-  window.changeStatsPrinter = function(v) { _printer = v || null; loadStatistics(); };
+  window.changeStatsPrinter = function(v) { _printer = v || null; window._statsPanel_printer = _printer; loadStatistics(); };
   window.switchStatsTab = switchTab;
   window.toggleStatsLock = function() {
     _locked = !_locked;
@@ -576,6 +673,11 @@
   };
   window.exportCsv = function() {
     window.open(`/api/history/export${_printer ? '?printer_id='+_printer : ''}`);
+  };
+  window.exportJson = function() {
+    const params = new URLSearchParams({ format: 'json' });
+    if (_printer) params.set('printer_id', _printer);
+    window.open(`/api/history/export?${params}`);
   };
   window.statsSetDateFrom = function(v) { _dateFrom = v || null; loadStatistics(); };
   window.statsSetDateTo = function(v) { _dateTo = v || null; loadStatistics(); };

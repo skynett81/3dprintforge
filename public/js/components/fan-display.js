@@ -2,7 +2,10 @@
 (function() {
   function fanPercent(raw) {
     const val = parseInt(raw) || 0;
-    return Math.round((val / 255) * 100);
+    if (val === 0) return 0;
+    // Bambu printers report 0-15 speed levels; some firmware sends 0-255 PWM
+    const max = val > 15 ? 255 : 15;
+    return Math.min(100, Math.round((val / max) * 100));
   }
 
   function fanColor(pct) {

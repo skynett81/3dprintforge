@@ -21,8 +21,8 @@ export function lookupHmsCode(attr) {
 }
 
 export function getHmsWikiUrl(attr) {
-  const code = String(attr).replace(/-/g, '_');
-  return `https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${code}`;
+  const parts = String(attr).replace(/[_-]/g, '+');
+  return `https://www.google.com/search?q=Bambu+Lab+HMS+${parts}`;
 }
 
 const ABRASIVE_TYPES = ['PA-CF', 'PA-GF', 'PET-CF', 'PLA-CF', 'PAHT-CF', 'PA6-CF', 'PA6-GF', 'PPA-CF', 'PPA-GF'];
@@ -63,7 +63,7 @@ export class PrintTracker {
       this._onStateChange(prevState, currState, printData);
     }
 
-    // Track color changes during print
+    // Track color changes during print (254 = external spool, 255 = no tray)
     if (this.currentPrint && printData.ams?.tray_now != null) {
       const currentTray = String(printData.ams.tray_now);
       if (this.lastTrayId !== null && currentTray !== this.lastTrayId && currentTray !== '255') {
@@ -81,6 +81,9 @@ export class PrintTracker {
       }
       if (printData.bed_temper > this.currentPrint.maxTemp_bed) {
         this.currentPrint.maxTemp_bed = printData.bed_temper;
+      }
+      if (printData.chamber_temper > (this.currentPrint.maxTemp_chamber || 0)) {
+        this.currentPrint.maxTemp_chamber = printData.chamber_temper;
       }
     }
 
@@ -102,19 +105,38 @@ export class PrintTracker {
       }
     }
 
+    // Build error context snapshot
+    const errorContext = {
+      filename: this.currentPrint?.filename || printData.subtask_name || null,
+      layer_num: printData.layer_num || null,
+      total_layer_num: printData.total_layer_num || null,
+      progress: printData.mc_percent ?? null,
+      nozzle_temper: printData.nozzle_temper ?? null,
+      bed_temper: printData.bed_temper ?? null,
+      chamber_temper: printData.chamber_temper ?? null,
+      gcode_state: printData.gcode_state || null,
+      fan_speed: printData.cooling_fan_speed ?? null
+    };
+
     // Log errors
     if (printData.print_error && printData.print_error !== 0) {
       const prevError = this.previousState?.print_error;
       if (prevError !== printData.print_error) {
-        const errMsg = printData.print_error_msg || `Feilkode: ${printData.print_error}`;
+        // Convert decimal to hex format (e.g. 50364419 → 0300_8003)
+        const raw = parseInt(printData.print_error) || 0;
+        const hexCode = raw > 0xFFFF
+          ? `${((raw >> 16) & 0xFFFF).toString(16).padStart(4, '0')}_${(raw & 0xFFFF).toString(16).padStart(4, '0')}`.toUpperCase()
+          : String(printData.print_error);
+        const errMsg = printData.print_error_msg || `Feilkode: ${hexCode}`;
         addError({
           printer_id: this.printerId,
-          code: String(printData.print_error),
+          code: hexCode,
           message: errMsg,
-          severity: 'error'
+          severity: 'error',
+          context: errorContext
         });
         if (this.onError) {
-          this.onError({ printerId: this.printerId, code: String(printData.print_error), errorMessage: errMsg, severity: 'error' });
+          this.onError({ printerId: this.printerId, code: hexCode, errorMessage: errMsg, severity: 'error' });
         }
       }
     }
@@ -134,7 +156,7 @@ export class PrintTracker {
             code: `HMS_${hms.attr}`,
             message: hmsMsg,
             severity: hmsSeverity,
-            wiki_url: wikiUrl
+            context: errorContext
           });
           if (this.onError) {
             this.onError({ printerId: this.printerId, code: `HMS_${hms.attr}`, errorMessage: hmsMsg, severity: hmsSeverity, wikiUrl });
@@ -212,6 +234,7 @@ export class PrintTracker {
       pauseCount: 0,
       maxTemp_nozzle: data.nozzle_target_temper || 0,
       maxTemp_bed: data.bed_target_temper || 0,
+      maxTemp_chamber: data.chamber_temper || 0,
       speed_level: data.spd_lvl || 2,
       nozzle_type: data.nozzle_type || null,
       nozzle_diameter: data.nozzle_diameter || null,
@@ -276,6 +299,7 @@ export class PrintTracker {
       nozzle_target: this.currentPrint.nozzle_target,
       max_nozzle_temp: this.currentPrint.maxTemp_nozzle,
       max_bed_temp: this.currentPrint.maxTemp_bed,
+      max_chamber_temp: this.currentPrint.maxTemp_chamber || null,
       filament_brand: this.currentPrint.filament_brand,
       ams_units_used: this.currentPrint.ams_units_used,
       tray_id: this.currentPrint.tray_id,
@@ -567,6 +591,7 @@ export class PrintTracker {
       nozzle_target: data.nozzle_target_temper || 0,
       max_nozzle_temp: data.nozzle_temper || 0,
       max_bed_temp: data.bed_temper || 0,
+      max_chamber_temp: data.chamber_temper || null,
       filament_brand: filamentInfo.brand,
       ams_units_used: data.ams?.ams?.length || 0,
       tray_id: data.ams?.tray_now != null ? String(data.ams.tray_now) : null

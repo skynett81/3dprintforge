@@ -40,6 +40,30 @@
   }
   function barRow(lbl, pct, clr, val) { return `<div class="chart-bar-row"><span class="chart-bar-label">${lbl}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="chart-bar-value">${val}</span></div>`; }
 
+  function parseContext(e) {
+    if (!e.context) return null;
+    try { return typeof e.context === 'string' ? JSON.parse(e.context) : e.context; } catch { return null; }
+  }
+
+  function countOccurrences(errors, code) {
+    if (!code) return 0;
+    let n = 0;
+    for (const e of errors) { if (e.code === code) n++; }
+    return n;
+  }
+
+  function stateLabel(state) {
+    const map = { RUNNING: 'Printing', PAUSE: 'Paused', FINISH: 'Finished', FAILED: 'Failed', IDLE: 'Idle', PREPARE: 'Preparing' };
+    return map[state] || state || '--';
+  }
+
+  function fanPercent(raw) {
+    const v = parseInt(raw) || 0;
+    if (v === 0) return '0%';
+    const max = v > 15 ? 255 : 15;
+    return Math.min(100, Math.round((v / max) * 100)) + '%';
+  }
+
   // ═══ Tab config ═══
   const TAB_CONFIG = {
     log:   { label: 'errors.tab_log',   modules: ['error-summary', 'error-filters', 'error-list'] },
@@ -389,9 +413,29 @@
         const sev = e.severity || 'info';
         const color = severityColor(sev);
         const isHms = e.code && e.code.startsWith('HMS_');
-        const hmsAttr = isHms ? e.code.replace('HMS_', '') : null;
-        const wikiUrl = isHms ? `https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${hmsAttr.replace(/-/g, '_')}` : null;
+        // Build search URL: split code parts into space-separated words for better Google results
+        const codeUrl = e.code ? `https://www.google.com/search?q=Bambu+Lab+${isHms ? 'HMS+' : 'error+'}${e.code.replace(/^HMS_/, '').replace(/[_-]/g, '+')}`  : null;
         const acked = e.acknowledged;
+        const ctx = parseContext(e);
+        const occurrences = e.code ? countOccurrences(_allErrors, e.code) : 0;
+
+        // Build context details section
+        let detailRows = '';
+        if (ctx) {
+          if (ctx.filename) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_file')}</span><span class="err-detail-val">${esc(ctx.filename)}</span></div>`;
+          if (ctx.gcode_state) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_state')}</span><span class="err-detail-val">${stateLabel(ctx.gcode_state)}</span></div>`;
+          if (ctx.layer_num != null && ctx.total_layer_num) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_layer')}</span><span class="err-detail-val">${ctx.layer_num} / ${ctx.total_layer_num}</span></div>`;
+          if (ctx.progress != null) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_progress')}</span><span class="err-detail-val">${ctx.progress}%</span></div>`;
+          if (ctx.nozzle_temper != null) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_nozzle')}</span><span class="err-detail-val">${Math.round(ctx.nozzle_temper)}°C</span></div>`;
+          if (ctx.bed_temper != null) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_bed')}</span><span class="err-detail-val">${Math.round(ctx.bed_temper)}°C</span></div>`;
+          if (ctx.chamber_temper != null) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_chamber')}</span><span class="err-detail-val">${Math.round(ctx.chamber_temper)}°C</span></div>`;
+          if (ctx.fan_speed != null) detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_fan')}</span><span class="err-detail-val">${fanPercent(ctx.fan_speed)}</span></div>`;
+        }
+        if (occurrences > 1) {
+          detailRows += `<div class="err-detail-row"><span class="err-detail-lbl">${t('errors.ctx_occurrences')}</span><span class="err-detail-val err-detail-count">${occurrences}x</span></div>`;
+        }
+
+        const hasDetails = detailRows.length > 0;
 
         html += `<div class="error-card${acked ? ' error-card-acked' : ''}" style="--error-color:${color}">
           <div class="error-card-accent" style="background:${color}"></div>
@@ -403,14 +447,21 @@
             </div>
             <div class="error-card-meta">
               <span class="printer-tag">${esc(printerName(e.printer_id))}</span>
-              ${e.code ? `<span class="error-code">${esc(e.code)}</span>` : ''}
-              ${wikiUrl ? `<a href="${wikiUrl}" target="_blank" rel="noopener" class="error-wiki-link" title="${t('errors.hms_wiki_link')}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                ${t('errors.hms_wiki_link')}
-              </a>` : ''}
+              ${e.code && codeUrl ? `<a href="${codeUrl}" target="_blank" rel="noopener" class="error-code error-code-link" title="${isHms ? t('errors.hms_wiki_link') : t('errors.search_code')}">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                ${esc(e.code)}
+              </a>` : e.code ? `<span class="error-code">${esc(e.code)}</span>` : ''}
+              ${occurrences > 1 ? `<span class="err-occ-badge" style="color:${color}">${occurrences}x</span>` : ''}
               <span class="error-card-time">${formatDate(e.timestamp)}</span>
               <span class="error-severity-pill" style="background:${color}">${sev}</span>
+              ${hasDetails ? `<button class="err-expand-btn" onclick="toggleErrorDetails(this)" title="${t('errors.show_details')}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                ${t('errors.details')}
+              </button>` : ''}
             </div>
+            ${hasDetails ? `<div class="err-details-panel" style="display:none">
+              <div class="err-detail-grid">${detailRows}</div>
+            </div>` : ''}
           </div>
           <div class="error-card-actions">
             ${acked
@@ -495,6 +546,15 @@
     } catch (e) {
       console.error('Failed to delete error:', e);
     }
+  };
+
+  window.toggleErrorDetails = function(btn) {
+    const card = btn.closest('.error-card-body');
+    const panel = card?.querySelector('.err-details-panel');
+    if (!panel) return;
+    const show = panel.style.display === 'none';
+    panel.style.display = show ? '' : 'none';
+    btn.classList.toggle('err-expand-open', show);
   };
 
   window.acknowledgeAllErrors = async function() {

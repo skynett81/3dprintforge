@@ -19,6 +19,114 @@
   let _systemSubTab = 'updates';
   let _notifSubTab = 'channels';
 
+  // Search index: each entry maps a translatable label + keywords to a tab/sub-tab path
+  const _searchIndex = [
+    // Printers tab
+    { key: 'settings.printers_title', kw: 'printer list manage ip serial access code', tab: 'printers', sub: 'list' },
+    { key: 'settings.bambu_cloud', kw: 'cloud import login account bambu', tab: 'printers', sub: 'list' },
+    { key: 'settings.discover_printers', kw: 'discover scan network find', tab: 'printers', sub: 'list' },
+    { key: 'printer_info.title', kw: 'printer status info firmware nozzle', tab: 'printers', sub: 'status' },
+    // General tab
+    { key: 'settings.language', kw: 'language locale i18n translation', tab: 'general', sub: 'preferences' },
+    { key: 'settings.notifications_title', kw: 'browser notifications permission', tab: 'general', sub: 'preferences' },
+    { key: 'settings.server_title', kw: 'server port', tab: 'general', sub: 'preferences' },
+    { key: 'settings.auth_title', kw: 'authentication login password user auth', tab: 'general', sub: 'auth' },
+    { key: 'settings.obs_title', kw: 'obs overlay streaming browser source', tab: 'general', sub: 'obs' },
+    // Appearance tab
+    { key: 'settings.theme_title', kw: 'theme dark light auto mode', tab: 'appearance', sub: 'theme' },
+    { key: 'settings.theme_accent', kw: 'accent color swatch', tab: 'appearance', sub: 'customize' },
+    { key: 'settings.theme_radius', kw: 'corner roundness radius sharp round border', tab: 'appearance', sub: 'customize' },
+    // Notifications tab
+    { key: 'settings.notif_server_title', kw: 'telegram discord email webhook ntfy pushover sms notification', tab: 'notifications', sub: 'channels' },
+    { key: 'settings.notif_log_title', kw: 'notification log history sent', tab: 'notifications', sub: 'log' },
+    { key: 'settings.webhooks_title', kw: 'webhook outgoing http external', tab: 'notifications', sub: 'webhooks' },
+    // System tab
+    { key: 'update.title', kw: 'update version upgrade check', tab: 'system', sub: 'updates' },
+    { key: 'settings.demo_title', kw: 'demo data test', tab: 'system', sub: 'updates' },
+    { key: 'settings.users_title', kw: 'user management roles admin permissions', tab: 'system', sub: 'security' },
+    { key: 'settings.api_keys_title', kw: 'api key token bearer integration', tab: 'system', sub: 'security' },
+    { key: 'settings.push_title', kw: 'push notifications vapid browser', tab: 'system', sub: 'security' },
+    { key: 'settings.totp_title', kw: 'two factor 2fa totp authenticator', tab: 'system', sub: 'security' },
+    { key: 'settings.printer_groups_title', kw: 'group printer farm organize', tab: 'system', sub: 'printers' },
+    { key: 'settings.hub_title', kw: 'hub kiosk mode display multi printer', tab: 'system', sub: 'printers' },
+    { key: 'settings.ai_detection_title', kw: 'ai failure detection camera spaghetti', tab: 'system', sub: 'automation' },
+    { key: 'settings.timelapse_title', kw: 'timelapse recording ffmpeg video', tab: 'system', sub: 'automation' },
+    { key: 'settings.ecom_title', kw: 'ecommerce shopify woocommerce orders shop', tab: 'system', sub: 'integrations' },
+    { key: 'settings.spoolman_title', kw: 'spoolman filament sync external', tab: 'system', sub: 'integrations' },
+    { key: 'settings.custom_fields_title', kw: 'custom field spool printer profile project', tab: 'system', sub: 'data' },
+    { key: 'settings.brand_defaults_title', kw: 'brand default temperature filament material', tab: 'system', sub: 'data' },
+    { key: 'settings.courses_title', kw: 'learning center tutorial guide course', tab: 'system', sub: 'data' },
+  ];
+
+  function _settingsSearch(query) {
+    if (!query || query.length < 2) return [];
+    const q = query.toLowerCase();
+    return _searchIndex.filter(entry => {
+      const label = t(entry.key).toLowerCase();
+      return label.includes(q) || entry.kw.includes(q);
+    });
+  }
+
+  function _navigateToSetting(tab, sub) {
+    // Set sub-tab state
+    if (tab === 'printers') _printerSubTab = sub;
+    else if (tab === 'general') _generalSubTab = sub;
+    else if (tab === 'appearance') _appearanceSubTab = sub;
+    else if (tab === 'notifications') _notifSubTab = sub;
+    else if (tab === 'system') _systemSubTab = sub;
+    // Switch main tab
+    window.switchSettingsTab(tab);
+    // Switch sub-tab
+    if (tab === 'printers') window._switchPrinterSubTab(sub);
+    else if (tab === 'general') window._switchGeneralSubTab(sub);
+    else if (tab === 'appearance') window._switchAppearanceSubTab(sub);
+    else if (tab === 'notifications') window._switchNotifSubTab(sub);
+    else if (tab === 'system') window._switchSystemSubTab(sub);
+    // Clear search
+    const input = document.getElementById('settings-search-input');
+    if (input) input.value = '';
+    const dropdown = document.getElementById('settings-search-results');
+    if (dropdown) dropdown.style.display = 'none';
+  }
+
+  window._settingsSearchInput = function(e) {
+    const query = e.target.value;
+    const dropdown = document.getElementById('settings-search-results');
+    if (!dropdown) return;
+    const results = _settingsSearch(query);
+    if (!results.length || !query || query.length < 2) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    const tabNames = {
+      printers: t('settings.tab_printers'),
+      general: t('settings.tab_general'),
+      appearance: t('settings.tab_appearance'),
+      notifications: t('settings.tab_notifications'),
+      system: t('settings.tab_system')
+    };
+    let html = '';
+    for (const r of results) {
+      html += `<button class="settings-search-item" onmousedown="_navigateToSettingFromSearch('${r.tab}','${r.sub}')">
+        <span class="settings-search-label">${_esc(t(r.key))}</span>
+        <span class="settings-search-path">${_esc(tabNames[r.tab])}</span>
+      </button>`;
+    }
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+  };
+
+  window._navigateToSettingFromSearch = function(tab, sub) {
+    _navigateToSetting(tab, sub);
+  };
+
+  window._settingsSearchBlur = function() {
+    setTimeout(() => {
+      const dropdown = document.getElementById('settings-search-results');
+      if (dropdown) dropdown.style.display = 'none';
+    }, 150);
+  };
+
   async function loadSettings() {
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
@@ -39,8 +147,13 @@
       const res = await fetch('/api/printers');
       const printers = await res.json();
 
-      // Tab bar
+      // Search bar + Tab bar
       let html = `
+        <div class="settings-search-wrap">
+          <svg class="settings-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="settings-search-input" id="settings-search-input" placeholder="${t('settings.search_placeholder')}" oninput="_settingsSearchInput(event)" onblur="_settingsSearchBlur()" autocomplete="off">
+          <div class="settings-search-results" id="settings-search-results" style="display:none"></div>
+        </div>
         <div class="settings-tabs">
           <button class="settings-tab ${_activeTab === 'printers' ? 'active' : ''}" onclick="switchSettingsTab('printers')">${t('settings.tab_printers')}</button>
           <button class="settings-tab ${_activeTab === 'general' ? 'active' : ''}" onclick="switchSettingsTab('general')">${t('settings.tab_general')}</button>

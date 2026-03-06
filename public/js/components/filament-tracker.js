@@ -1006,9 +1006,9 @@
         <span class="inv-list-loc text-muted">${s.location || ''}</span>
         <span class="inv-list-cost">${s.cost ? formatCurrency(s.cost) : ''}</span>
         <span class="inv-list-actions">
-          <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="${s.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-          <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})" title="${t('filament.toggle_favorite')}" aria-label="${t('filament.toggle_favorite')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="${s.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" aria-label="${t('settings.edit')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </span>
       </div>`;
     }
@@ -1038,9 +1038,9 @@
         <td>${s.cost ? formatCurrency(s.cost) : '--'}</td>
         <td>${s.printer_id ? esc(printerName(s.printer_id)) : '--'}</td>
         <td style="white-space:nowrap">
-          <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="${s.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-          <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})" title="${t('filament.toggle_favorite')}" aria-label="${t('filament.toggle_favorite')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="${s.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" aria-label="${t('settings.edit')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </td>
       </tr>`;
     }
@@ -2025,7 +2025,7 @@
       h += `<div class="flex gap-sm" style="margin:2px 0">
         <input class="form-input form-input-sm ${pfx}-ef-key" value="${esc(k)}" placeholder="${t('filament.field_key')}" style="width:100px">
         <input class="form-input form-input-sm ${pfx}-ef-val" value="${esc(String(v))}" placeholder="${t('filament.field_value')}" style="flex:1">
-        <button class="filament-delete-btn" onclick="this.parentElement.remove()" type="button" style="opacity:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="filament-delete-btn" onclick="this.parentElement.remove()" type="button" style="opacity:1" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>`;
       idx++;
     }
@@ -2080,7 +2080,7 @@
     row.style.margin = '2px 0';
     row.innerHTML = `<input class="form-input form-input-sm ${pfx}-ef-key" placeholder="${t('filament.field_key')}" style="width:100px">
       <input class="form-input form-input-sm ${pfx}-ef-val" placeholder="${t('filament.field_value')}" style="flex:1">
-      <button class="filament-delete-btn" onclick="this.parentElement.remove()" type="button" style="opacity:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+      <button class="filament-delete-btn" onclick="this.parentElement.remove()" type="button" style="opacity:1" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     container.appendChild(row);
   };
 

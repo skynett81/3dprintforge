@@ -79,8 +79,10 @@
       vec3 n = normalize(vN);
       if (!gl_FrontFacing) n = -n;
       float diff = max(dot(n, uLight), 0.0);
-      float spec = pow(max(dot(reflect(-uLight, n), vec3(0,0,1)), 0.0), 16.0) * 0.3;
-      vec3 c = baseColor * (0.18 + diff * 0.72) + vec3(spec);
+      float spec = pow(max(dot(reflect(-uLight, n), vec3(0,0,1)), 0.0), 24.0) * 0.35;
+      // Fill light from opposite side for softer shadows
+      float fill = max(dot(n, normalize(vec3(-0.3, 0.4, -0.6))), 0.0) * 0.2;
+      vec3 c = baseColor * (0.22 + diff * 0.68 + fill) + vec3(spec);
       float d = uCutY - vWorldY;
       if (d >= 0.0 && d < 0.04) {
         c += vec3(0.0, 0.85, 0.45) * (1.0 - d / 0.04) * 0.55;
@@ -197,7 +199,7 @@
       // Orbit state
       this.yaw = 0.6;
       this.pitch = 0.4;
-      this.dist = 3;
+      this.dist = 2.2;
       this.modelColor = [0.95, 0.65, 0.25];
       this.vertCount = 0;
       this.gridCount = 0;
@@ -217,6 +219,13 @@
       this._autoRotate = true;
       this._dragging = false;
 
+      // Auto-fit state (refit on canvas resize)
+      this._fitModelH = 0;
+      this._fitModelW = 0;
+      this._fitCanvasW = 0;
+      this._fitCanvasH = 0;
+      this._userZoomed = false;
+
       // Buffers
       this.posBuf = gl.createBuffer();
       this.normBuf = gl.createBuffer();
@@ -230,14 +239,14 @@
       this._tmp1 = mat4();
       this._nm = new Float32Array(9);
 
-      // Grid
-      const gridVerts = buildGrid(2.4, 12);
+      // Grid — subtle, smaller to not overwhelm model
+      const gridVerts = buildGrid(1.6, 8);
       this.gridCount = gridVerts.length / 3;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf);
       gl.bufferData(gl.ARRAY_BUFFER, gridVerts, gl.STATIC_DRAW);
 
       gl.enable(gl.DEPTH_TEST);
-      gl.clearColor(0.08, 0.09, 0.14, 1);
+      gl.clearColor(0.06, 0.07, 0.18, 1);
 
       this._setupControls();
       this._render = this._render.bind(this);
@@ -279,9 +288,14 @@
       // Reset layer texture
       this._useLayerTex = false;
 
-      this.dist = 3.5;
+      // Store model dimensions for auto-fit (also on resize)
+      this._fitModelH = cb.maxY - cb.minY;
+      this._fitModelW = cb.size;
+      this._userZoomed = false;
+
       this.yaw = 0.6;
-      this.pitch = 0.35;
+      this.pitch = 0.3;
+      this._fitToView();
       this._autoRotate = true;
 
       this._startLoop();
@@ -340,6 +354,22 @@
       }
     }
 
+    _fitToView() {
+      if (this._fitModelH <= 0) return;
+      const w = this.canvas.clientWidth || 1;
+      const h = this.canvas.clientHeight || 1;
+      const fov = 0.55;
+      const aspect = w / h;
+      const halfTanV = Math.tan(fov / 2);
+      const projH = this._fitModelH * Math.cos(this.pitch);
+      const fitV = (projH / 2) / halfTanV;
+      const fitH = (this._fitModelW / 2) / (halfTanV * aspect);
+      this.dist = Math.max(fitV, fitH) * 0.85;
+      this.dist = Math.max(0.5, Math.min(10, this.dist));
+      this._fitCanvasW = w;
+      this._fitCanvasH = h;
+    }
+
     _startLoop() {
       if (this.animId) return;
       const loop = () => {
@@ -364,12 +394,20 @@
       if (this.canvas.width !== w || this.canvas.height !== h) {
         this.canvas.width = w;
         this.canvas.height = h;
+        // Refit camera when canvas resizes significantly (and user hasn't manually zoomed)
+        if (!this._userZoomed && this._fitModelH > 0) {
+          const dw = Math.abs(w - this._fitCanvasW);
+          const dh = Math.abs(h - this._fitCanvasH);
+          if (dw > 30 || dh > 30) {
+            this._fitToView();
+          }
+        }
       }
       gl.viewport(0, 0, w, h);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
       const aspect = w / h || 1;
-      mat4Perspective(this._proj, 0.8, aspect, 0.1, 100);
+      mat4Perspective(this._proj, 0.55, aspect, 0.1, 100);
 
       const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
       const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
@@ -388,7 +426,7 @@
       if (this.progGrid && this.gridCount > 0) {
         gl.useProgram(this.progGrid);
         gl.uniformMatrix4fv(gl.getUniformLocation(this.progGrid, 'uMVP'), false, this._mvp);
-        gl.uniform4f(gl.getUniformLocation(this.progGrid, 'uColor'), 0.3, 0.35, 0.4, 0.5);
+        gl.uniform4f(gl.getUniformLocation(this.progGrid, 'uColor'), 0.15, 0.17, 0.22, 0.15);
         const gPosLoc = gl.getAttribLocation(this.progGrid, 'aPos');
         gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf);
         gl.enableVertexAttribArray(gPosLoc);
@@ -481,7 +519,8 @@
 
       cv.addEventListener('wheel', (e) => {
         e.preventDefault();
-        this.dist = Math.max(1.5, Math.min(16, this.dist + e.deltaY * 0.005));
+        this._userZoomed = true;
+        this.dist = Math.max(0.8, Math.min(12, this.dist + e.deltaY * 0.005));
       }, { passive: false });
     }
 

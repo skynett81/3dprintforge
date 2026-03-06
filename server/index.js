@@ -86,7 +86,7 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https://*.bblmw.com https://public-cdn.bblmw.com",
     "connect-src 'self' ws: wss: https://open.er-api.com",
@@ -205,7 +205,13 @@ function handleRequest(req, res) {
 
   try {
     const content = readFileSync(filePath);
-    res.writeHead(200, { 'Content-Type': contentType });
+    const headers = { 'Content-Type': contentType };
+    // No-cache for dev assets so changes are seen immediately
+    if (['.css', '.js', '.html'].includes(ext)) {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+    }
+    res.writeHead(200, headers);
     res.end(content);
   } catch (e) {
     res.writeHead(500);

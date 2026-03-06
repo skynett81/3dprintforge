@@ -103,7 +103,7 @@
       id: 'spark-fan',
       key: 'fan_part',
       color: '#00e676',
-      extract: d => Math.round((parseInt(d.cooling_fan_speed) || 0) / 255 * 100),
+      extract: d => { const v = parseInt(d.cooling_fan_speed) || 0; return v === 0 ? 0 : Math.min(100, Math.round((v / (v > 15 ? 255 : 15)) * 100)); },
       format: v => `${Math.round(v)}%`,
       valColor: v => v > 0 ? '#00e676' : ''
     },

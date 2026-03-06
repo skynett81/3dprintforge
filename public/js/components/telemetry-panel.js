@@ -52,7 +52,7 @@
   }
 
   // ═══ Helpers ═══
-  function fanPct(raw) { return Math.round((parseInt(raw) || 0) / 255 * 100); }
+  function fanPct(raw) { const v = parseInt(raw) || 0; if (v === 0) return 0; const mx = v > 15 ? 255 : 15; return Math.min(100, Math.round((v / mx) * 100)); }
   function fmtRemain(mins) {
     if (!mins || mins <= 0) return '--';
     const h = Math.floor(mins / 60);
@@ -202,7 +202,7 @@
         ['fan_cooling', 'fan_aux', 'fan_chamber', 'fan_heatbreak'],
         { fan_cooling: '#00e676', fan_aux: '#f0883e', fan_chamber: '#1279ff', fan_heatbreak: '#9b4dff' },
         { fan_cooling: t('fans.part'), fan_aux: t('fans.aux'), fan_chamber: t('fans.chamber'), fan_heatbreak: t('telemetry.heatbreak') },
-        255
+        15
       );
       return h;
     },

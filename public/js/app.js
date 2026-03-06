@@ -2,6 +2,7 @@ const state = window.printerState;
 let ws = null;
 let reconnectTimer = null;
 let reconnectDelay = 1000;
+let _wasConnected = false;
 
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -9,6 +10,11 @@ function connect() {
 
   ws.onopen = () => {
     console.log('[ws] Tilkoblet');
+    if (_wasConnected) {
+      // Reconnected after a disconnect
+      if (typeof showToast === 'function') showToast(t('connection.reconnected'), 'success', 3000);
+    }
+    _wasConnected = true;
     reconnectDelay = 1000;
     updateConnectionBadge('connected');
   };
@@ -137,6 +143,9 @@ function connect() {
   ws.onclose = () => {
     console.log('[ws] Frakoblet - gjenkobler...');
     updateConnectionBadge('disconnected');
+    if (_wasConnected && typeof showToast === 'function') {
+      showToast(t('connection.lost'), 'warning', 4000);
+    }
     scheduleReconnect();
   };
 

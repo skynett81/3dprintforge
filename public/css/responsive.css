@@ -8,6 +8,31 @@
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .printer-selector { flex-wrap: wrap; }
   .info-grid { grid-template-columns: 1fr; }
+
+  /* Controls: 2-column layout between mobile and desktop */
+  .ctrl-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ctrl-area-objects,
+  .ctrl-area-gcode { grid-column: 1 / -1; }
+
+  /* Settings tabs scroll horizontally */
+  .settings-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+  .settings-tab { white-space: nowrap; }
+
+  /* Stats strip: compact for tablet */
+  .stats-strip { flex-wrap: wrap; }
+  .spark-panel { min-width: 100px; }
+
+  /* Filament: compact spool cards */
+  .spool-card { min-width: 180px; }
+
+  /* Panel body: slightly less padding */
+  .panel-content-body { padding: 14px; }
 }
 
 /* ---- Mobile (<=768px) — sidebar collapses ---- */
@@ -40,6 +65,8 @@
     gap: 10px;
   }
 
+  #progress-card { min-height: 380px; }
+  .print-viewport { min-height: 280px; }
   .card { padding: 14px; }
 
   .header {

@@ -62,6 +62,19 @@
   color: var(--accent-cyan);
 }
 
+.gauge-minmax {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.gauge-wrapper:hover .gauge-minmax {
+  opacity: 1;
+}
+
 /* Danger zone pulse for high temperatures */
 .gauge-danger .gauge-svg {
   animation: gaugeDangerPulse 1.5s ease-in-out infinite;
@@ -83,6 +96,7 @@
 .print-viewport {
   position: relative;
   flex: 1 1 0;
+  min-height: 500px;
   overflow: hidden;
 }
 
@@ -810,6 +824,13 @@
 .ams-slot.ams-empty {
   opacity: 0.55;
   border-style: dashed;
+}
+
+.ams-ext-slot {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+  margin-top: 4px;
 }
 
 .ams-slot-inner {
@@ -1763,12 +1784,43 @@
   color: var(--text-muted);
   font-size: 0.8rem;
 }
+.camera-placeholder-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 .camera-hint {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   opacity: 0.7;
   text-align: center;
-  max-width: 280px;
+  max-width: 300px;
   line-height: 1.4;
+}
+.camera-setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  text-align: left;
+}
+.camera-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+.camera-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-blue, #58a6ff);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .camera-canvas {
@@ -1823,6 +1875,56 @@
 
 .camera-fullscreen-btn:hover {
   background: rgba(0, 174, 66, 0.3);
+}
+
+.camera-screenshot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.camera-screenshot-btn:hover {
+  background: rgba(0, 120, 255, 0.3);
+  transform: scale(1.15);
+}
+
+.camera-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 1;
+}
+
+.camera-skeleton-pulse {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.camera-skeleton-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 
 /* ---- Camera Fullscreen Modal ---- */
@@ -1962,13 +2064,15 @@
 
 /* ---- 3D Model Modal ---- */
 .model-modal-content {
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .model-fullscreen-container {
-  aspect-ratio: 4/3;
-  background: #e8e8e8;
+  aspect-ratio: 16/10;
+  background: #14151e;
   position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 /* ---- Fullscreen MakerWorld View ---- */
@@ -3070,6 +3174,78 @@
   padding-top: 12px;
 }
 
+/* Settings Search */
+.settings-search-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+.settings-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.settings-search-input {
+  width: 100%;
+  padding: 7px 12px 7px 32px;
+  background: var(--bg-tertiary, #252a4a);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.settings-search-input:focus {
+  border-color: var(--accent, #00AE42);
+}
+.settings-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+.settings-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card, #1a1f3c);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.settings-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+  gap: 8px;
+}
+.settings-search-item:hover {
+  background: var(--bg-tertiary, #252a4a);
+}
+.settings-search-label {
+  font-weight: 500;
+}
+.settings-search-path {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 /* Settings Tabs */
 .settings-tabs {
   display: flex;
@@ -3327,6 +3503,25 @@
   color: var(--text-secondary);
   margin-top: 4px;
 }
+
+/* ---- Hardware Stats Modules ---- */
+.hw-maint-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.hw-maint-row { display: grid; grid-template-columns: 1fr 120px 80px; gap: 8px; align-items: center; font-size: 0.82rem; }
+.hw-maint-label { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hw-maint-bar-track { height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; }
+.hw-maint-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+.hw-maint-bar-fill.overdue { animation: pulse-bar 1.5s infinite; }
+@keyframes pulse-bar { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.hw-maint-value { text-align: right; font-size: 0.75rem; color: var(--text-muted); }
+.hw-maint-value.overdue { color: var(--accent-red); font-weight: 600; }
+
+.hw-nozzle-card { background: var(--bg-tertiary); border-radius: var(--radius); padding: 12px; margin-top: 8px; }
+.hw-nozzle-card:first-of-type { margin-top: 10px; }
+.hw-nozzle-printer { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.hw-nozzle-type { font-size: 0.95rem; font-weight: 600; margin: 4px 0 8px; }
+.hw-nozzle-wear-track { height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.hw-nozzle-wear-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+.hw-nozzle-details { display: flex; flex-direction: column; }
 
 /* ---- Firmware History ---- */
 .firmware-history {
@@ -4292,6 +4487,25 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   border-radius: 4px;
 }
 
+.error-code-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--accent-blue);
+  background: rgba(18, 121, 255, 0.08);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.error-code-link:hover {
+  color: var(--accent-blue);
+  background: rgba(18, 121, 255, 0.18);
+  text-decoration: underline;
+}
+.error-code-link svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
 .error-wiki-link {
   display: inline-flex;
   align-items: center;
@@ -4360,6 +4574,72 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* ---- Error Details Panel ---- */
+.err-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.err-expand-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.err-expand-btn svg { transition: transform 0.2s; }
+.err-expand-open svg { transform: rotate(180deg); }
+
+.err-details-panel {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  animation: err-slide-down 0.2s ease-out;
+}
+@keyframes err-slide-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.err-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px 16px;
+}
+.err-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 0.72rem;
+}
+.err-detail-lbl {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.err-detail-val {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-family: monospace;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.err-detail-count {
+  color: var(--accent-orange);
+  font-weight: 700;
+}
+.err-occ-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  opacity: 0.8;
 }
 
 /* ---- Telemetry Top Bar ---- */

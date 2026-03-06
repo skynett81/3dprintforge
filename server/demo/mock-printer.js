@@ -195,10 +195,10 @@ export class MockPrinter {
     this.state.bed_temper = 60 + this._fluctuate(0.3);
     this.state.chamber_temper = 30 + 5 * Math.min(progress * 2, 1) + this._fluctuate(0.3);
 
-    this.state.cooling_fan_speed = '180';
-    this.state.big_fan1_speed = '120';
-    this.state.big_fan2_speed = '100';
-    this.state.heatbreak_fan_speed = '200';
+    this.state.cooling_fan_speed = '11';
+    this.state.big_fan1_speed = '8';
+    this.state.big_fan2_speed = '7';
+    this.state.heatbreak_fan_speed = '13';
 
     // H2D dual-nozzle
     if (this.state.nozzle_temper_2 !== undefined) {
@@ -238,9 +238,9 @@ export class MockPrinter {
     this.state.chamber_temper = 35 - 13 * progress + this._fluctuate(0.2);
     this.state.nozzle_target_temper = 0;
     this.state.bed_target_temper = 0;
-    this.state.cooling_fan_speed = '255';
-    this.state.big_fan1_speed = '255';
-    this.state.big_fan2_speed = '200';
+    this.state.cooling_fan_speed = '15';
+    this.state.big_fan1_speed = '15';
+    this.state.big_fan2_speed = '13';
   }
 
   _idleState() {

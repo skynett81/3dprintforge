@@ -20,11 +20,12 @@
 
   function fetchErrorData(printerId) {
     if (!printerId) return;
-    // Fetch latest error from error log
-    fetch(`/api/errors?printer_id=${printerId}&limit=1`)
+    // Fetch latest unacknowledged error from error log
+    fetch(`/api/errors?printer_id=${printerId}&limit=10`)
       .then(r => r.json())
       .then(data => {
-        _cachedErrors[printerId] = (Array.isArray(data) && data.length > 0) ? data[0] : null;
+        const unacked = Array.isArray(data) ? data.find(e => !e.acknowledged) : null;
+        _cachedErrors[printerId] = unacked || null;
         _renderCached();
       }).catch(() => {});
     // Fetch active protection alerts

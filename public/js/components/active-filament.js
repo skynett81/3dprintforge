@@ -5,7 +5,7 @@
     if (!container) return;
 
     const amsData = data.ams;
-    if (!amsData?.ams?.[0]?.tray) {
+    if (!amsData) {
       container.innerHTML = `
         <div class="filament-inactive">
           <span class="text-muted">${t('filament.no_data')}</span>
@@ -14,7 +14,27 @@
     }
 
     const activeTrayIdx = amsData.tray_now;
-    const tray = amsData.ams[0].tray.find(t => String(t.id) === String(activeTrayIdx));
+    const isExternal = String(activeTrayIdx) === '254' || String(activeTrayIdx) === '255';
+
+    // Find active tray — search all AMS units, or use vt_tray for external
+    let tray = null;
+    let amsUnitIdx = 0;
+    let amsTrayIdx = 0;
+
+    if (isExternal && amsData.vt_tray?.tray_type) {
+      tray = amsData.vt_tray;
+      amsUnitIdx = 255;
+      amsTrayIdx = 0;
+    } else if (amsData.ams) {
+      const idx = parseInt(activeTrayIdx);
+      // Global index: 0-3 = unit 0, 4-7 = unit 1, 8-11 = unit 2, 12-15 = unit 3
+      amsUnitIdx = Math.floor(idx / 4);
+      amsTrayIdx = idx % 4;
+      const unit = amsData.ams[amsUnitIdx];
+      if (unit?.tray) {
+        tray = unit.tray.find(t => String(t.id) === String(amsTrayIdx));
+      }
+    }
 
     if (!tray || !tray.tray_type) {
       container.innerHTML = `
@@ -30,13 +50,11 @@
     const tempMin = tray.nozzle_temp_min || '?';
     const tempMax = tray.nozzle_temp_max || '?';
     const isLight = isLightHex(tray.tray_color);
-    const slotNum = parseInt(activeTrayIdx) + 1;
+    const slotLabel = isExternal ? t('ams.external') : t('filament.slot', { num: parseInt(activeTrayIdx) + 1 });
 
     // Use inventory data if available (same source as AMS panel)
     const printerId = window.printerState?.getActivePrinterId?.() || null;
-    const amsUnitIdx = 0;
-    const amsTrayIdx = parseInt(activeTrayIdx);
-    const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, amsTrayIdx);
+    const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, isExternal ? 0 : amsTrayIdx);
 
     let remain, totalG, remainG;
     if (linkedSpool && linkedSpool.initial_weight_g > 0) {
@@ -95,7 +113,7 @@
         </div>
         ${usageHtml}
         <div class="filament-status-meta">
-          ${t('filament.slot', { num: slotNum })} &middot; ${tempMin}-${tempMax}°C
+          ${slotLabel} &middot; ${tempMin}-${tempMax}°C
         </div>
       </div>`;
   };

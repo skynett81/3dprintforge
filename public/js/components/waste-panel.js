@@ -19,12 +19,14 @@
 
   // ═══ Tab config ═══
   const TAB_CONFIG = {
-    overview: { label: 'waste.tab_overview', modules: ['waste-summary', 'waste-details', 'weekly-chart'] },
+    overview: { label: 'waste.tab_overview', modules: ['waste-summary', 'waste-details', 'waste-by-material', 'waste-by-printer', 'weekly-chart', 'monthly-chart'] },
     history:  { label: 'waste.tab_history',  modules: ['recent-events'] }
   };
   const MODULE_SIZE = {
     'waste-summary': 'half', 'waste-details': 'half',
-    'weekly-chart': 'full', 'waste-settings': 'half',
+    'waste-by-material': 'half', 'waste-by-printer': 'half',
+    'weekly-chart': 'full', 'monthly-chart': 'full',
+    'waste-settings': 'half',
     'recent-events': 'full'
   };
 
@@ -99,6 +101,57 @@
       return h;
     },
 
+    'waste-by-material': (s) => {
+      if (!s.waste_by_material?.length) return `<div class="card-title">${t('waste.by_material')}</div><p class="text-muted" style="font-size:0.8rem">${t('waste.no_material_data')}</p>`;
+      const max = Math.max(...s.waste_by_material.map(m => m.total));
+      let h = `<div class="card-title">${t('waste.by_material')}</div>`;
+      const colors = ['var(--accent-orange)', 'var(--accent-cyan)', 'var(--accent-red)', 'var(--accent-green)', 'var(--accent-blue)'];
+      for (let i = 0; i < s.waste_by_material.length; i++) {
+        const m = s.waste_by_material[i];
+        const pct = max > 0 ? (m.total / max) * 100 : 0;
+        h += barRow(m.type, pct, colors[i % colors.length], formatWeight(m.total));
+      }
+      return h;
+    },
+
+    'waste-by-printer': (s) => {
+      if (!s.waste_by_printer?.length) return `<div class="card-title">${t('waste.by_printer')}</div><p class="text-muted" style="font-size:0.8rem">${t('waste.no_printer_data')}</p>`;
+      const max = Math.max(...s.waste_by_printer.map(p => p.total));
+      let h = `<div class="card-title">${t('waste.by_printer')}</div>`;
+      const colors = ['var(--accent-cyan)', 'var(--accent-orange)', 'var(--accent-green)', 'var(--accent-red)'];
+      for (let i = 0; i < s.waste_by_printer.length; i++) {
+        const p = s.waste_by_printer[i];
+        const pct = max > 0 ? (p.total / max) * 100 : 0;
+        h += barRow(printerName(p.printer_id), pct, colors[i % colors.length], formatWeight(p.total));
+      }
+      return h;
+    },
+
+    'monthly-chart': (s) => {
+      let h = `<div class="card-title">${t('waste.per_month')}</div>`;
+      if (s.waste_per_month?.length > 0) {
+        const maxMonth = Math.max(...s.waste_per_month.map(m => m.total));
+        h += '<div class="week-chart">';
+        for (const m of s.waste_per_month) {
+          const ht = maxMonth > 0 ? (m.total / maxMonth) * 100 : 0;
+          const label = m.month.split('-')[1];
+          const monthNames = ['', 'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const name = monthNames[parseInt(label)] || label;
+          h += `<div class="week-bar-group">
+            <div class="week-bar-stack" style="height:80px">
+              <div class="week-bar-fg" style="height:${ht}%;background:var(--accent-red)"></div>
+            </div>
+            <div class="week-bar-label">${name}</div>
+            <div class="week-bar-count">${formatWeight(m.total)}</div>
+          </div>`;
+        }
+        h += '</div>';
+      } else {
+        h += `<p class="text-muted" style="font-size:0.8rem">${t('waste.no_data')}</p>`;
+      }
+      return h;
+    },
+
     'recent-events': (s) => {
       if (!s.recent?.length) return `<p class="text-muted">${t('waste.no_data')}</p>`;
       let h = `<div class="card-title">${t('waste.recent')}</div>`;
@@ -107,11 +160,12 @@
         const isAuto = r.reason === 'auto';
         const pillClass = isAuto ? 'pill pill-completed' : 'pill pill-cancelled';
         const label = isAuto ? t('waste.auto') : t('waste.manual');
+        const deleteBtn = !isAuto && r.id ? ` <button class="filament-delete-btn" onclick="deleteWasteEntry(${r.id})" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '';
         h += `<div class="waste-recent-card">
           <div class="waste-recent-top">
             <span class="printer-tag">${printerName(r.printer_id)}</span>
             <span class="waste-recent-weight">${r.waste_g}g</span>
-            <span class="${pillClass}">${label}</span>
+            <span class="${pillClass}">${label}</span>${deleteBtn}
           </div>
           <div class="waste-recent-bottom">
             <span class="text-muted">${formatDate(r.timestamp)}</span>
@@ -204,6 +258,7 @@
         <button class="speed-btn ${_locked ? '' : 'active'}" data-ripple onclick="toggleWasteLock()" title="${_locked ? t('waste.layout_locked') : t('waste.layout_unlocked')}">
           ${lockIcon} <span>${_locked ? t('waste.layout_locked') : t('waste.layout_unlocked')}</span>
         </button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="exportWasteCsv()">${t('waste.download_csv')}</button>
       </div>`;
 
       // Global form container
@@ -303,5 +358,16 @@
 
   window.saveWastePerChange = function(val) {
     localStorage.setItem('wastePerChange', val);
+  };
+
+  window.deleteWasteEntry = async function(id) {
+    if (!confirm(t('waste.delete_confirm'))) return;
+    await fetch(`/api/waste/${id}`, { method: 'DELETE' });
+    loadWaste();
+  };
+
+  window.exportWasteCsv = function() {
+    const params = _selectedWastePrinter ? `?printer_id=${_selectedWastePrinter}` : '';
+    window.open(`/api/waste/export${params}`);
   };
 })();

@@ -19,6 +19,8 @@
   "connection": {
     "connected": "Ansluten",
     "disconnected": "Frånkopplad",
+    "reconnected": "Connection restored",
+    "lost": "Connection lost — reconnecting...",
     "printers": "{{count}} skrivare",
     "printer": "{{count}} skrivare"
   },
@@ -60,7 +62,18 @@
     "rtsp_disabled_hint": "Enable \"LAN Only Liveview\" in printer settings. If already enabled, a firmware update may be required.",
     "stream_url": "Stream URL:",
     "copy": "Copy",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "connecting": "Connecting to camera...",
+    "screenshot": "Take screenshot",
+    "screenshot_saved": "Screenshot saved",
+    "screenshot_failed": "No camera image available",
+    "setup_hint": "Waiting for printer connection...",
+    "stream_unavailable": "Camera stream not connected",
+    "auth_denied": "Camera denied — LAN Live View is disabled",
+    "lan_liveview_hint": "LAN Live View must be enabled on the printer for the camera to work.",
+    "step_printer_screen": "On the printer screen, go to Settings",
+    "step_settings": "Select General or Network",
+    "step_lan_liveview": "Enable \"LAN Only Liveview\""
   },
   "temperature": {
     "title": "Temperaturer",
@@ -77,7 +90,8 @@
     "temp": "Temp",
     "slot": "Plats {{num}}",
     "slot_multi": "AMS{{unit}} Plats {{num}}",
-    "empty": "Tom"
+    "empty": "Tom",
+    "external": "External"
   },
   "filament": {
     "no_data": "Ingen filamentdata",
@@ -546,7 +560,8 @@
     "escpos_copied": "ESC/POS data copied to clipboard!",
     "import_ams": "Import from AMS",
     "import_ams_none": "No new spools to import. All AMS slots are already registered.",
-    "import_ams_failed": "Failed to import from AMS."
+    "import_ams_failed": "Failed to import from AMS.",
+    "toggle_favorite": "Toggle favorite"
   },
   "controls": {
     "title": "Kontroller",
@@ -776,6 +791,7 @@
     "week": "Vecka",
     "total": "Totalt",
     "download_csv": "Ladda ner CSV",
+    "download_json": "Download JSON",
     "load_failed": "Kunde inte ladda statistiken.",
     "placeholder": "Statistik visas här...",
     "success_by_filament": "Framgång per filament",
@@ -848,7 +864,23 @@
     "cost_hint_spool": "Spool prices",
     "cost_recalculate": "Recalculate Costs",
     "cost_recalculating": "Recalculating...",
-    "cost_recalculated": "Costs recalculated"
+    "cost_recalculated": "Costs recalculated",
+    "hw_maintenance": "Maintenance status",
+    "hw_nozzle_health": "Nozzle health",
+    "hw_build_plates": "Build plates",
+    "hw_firmware": "Firmware",
+    "hw_module": "Module",
+    "hw_version": "Version",
+    "hw_print_hours": "Print hours",
+    "hw_prints": "Prints",
+    "hw_prints_short": "prints",
+    "hw_filament_through": "Filament through",
+    "hw_abrasive": "Abrasive filament",
+    "hw_wear": "Wear",
+    "hw_inactive": "inactive",
+    "hw_total_plate_prints": "Total plate prints",
+    "peak_chamber": "Peak chamber temp",
+    "avg_chamber": "Avg chamber temp"
   },
   "errors": {
     "no_errors": "Inga fel registrerade.",
@@ -887,7 +919,19 @@
     "cost_recalculated": "Costs recalculated",
     "severity_breakdown": "Errors by severity",
     "printer_breakdown": "Errors by printer",
-    "common_errors": "Most common errors"
+    "common_errors": "Most common errors",
+    "details": "Details",
+    "show_details": "Show details",
+    "ctx_file": "File",
+    "ctx_state": "State",
+    "ctx_layer": "Layer",
+    "ctx_progress": "Progress",
+    "ctx_nozzle": "Nozzle",
+    "ctx_bed": "Bed",
+    "ctx_chamber": "Chamber",
+    "ctx_fan": "Fan",
+    "ctx_occurrences": "Occurrences",
+    "search_code": "Search for this error code"
   },
   "settings": {
     "printers_title": "Skrivare",
@@ -1007,6 +1051,7 @@
     "settings_sub_printer_status": "Printer Status",
     "settings_sub_theme": "Theme",
     "settings_sub_customize": "Customize",
+    "search_placeholder": "Search settings...",
     "pg_name": "Group Name",
     "pg_name_ph": "e.g. Farm A",
     "pg_description": "Description",
@@ -1317,7 +1362,14 @@
     "cost_hint_spool": "Spool prices",
     "cost_recalculate": "Recalculate Costs",
     "cost_recalculating": "Recalculating...",
-    "cost_recalculated": "Costs recalculated"
+    "cost_recalculated": "Costs recalculated",
+    "by_material": "By Material",
+    "by_printer": "By Printer",
+    "per_month": "Monthly Trend",
+    "delete_confirm": "Delete this waste entry?",
+    "download_csv": "Download CSV",
+    "no_material_data": "No material data yet.",
+    "no_printer_data": "No printer data yet."
   },
   "update": {
     "title": "Updates",
@@ -1725,6 +1777,10 @@
     "confirm_delete": "Are you sure you want to delete this entry?",
     "copy_json": "Copy JSON",
     "copied": "Copied to clipboard!",
+    "connecting": "Connecting to camera...",
+    "screenshot": "Take screenshot",
+    "screenshot_saved": "Screenshot saved",
+    "screenshot_failed": "No camera image available",
     "tab_printers": "Printers",
     "tab_accessories": "Accessories",
     "tab_filaments": "Filaments",

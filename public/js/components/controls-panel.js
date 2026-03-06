@@ -5,7 +5,10 @@
   let _rendered = false;
 
   function fanPercent(raw) {
-    return Math.round((parseInt(raw) || 0) / 255 * 100);
+    const val = parseInt(raw) || 0;
+    if (val === 0) return 0;
+    const max = val > 15 ? 255 : 15;
+    return Math.min(100, Math.round((val / max) * 100));
   }
 
   function speedLevelKey(lvl) {
@@ -449,7 +452,7 @@
     const valueEl = container.querySelector(`#fan-val-${id}`);
     if (!slider || rawSpeed === undefined) return;
     if (slider.matches(':active')) return;
-    const pct = Math.round((parseInt(rawSpeed) || 0) / 255 * 100);
+    const pct = fanPercent(rawSpeed);
     slider.value = pct;
     if (valueEl) valueEl.textContent = `${pct}%`;
   }

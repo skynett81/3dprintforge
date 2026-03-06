@@ -237,6 +237,8 @@ function _runMigrations() {
     { version: 72, up: _mig072_location_fk },
     { version: 73, up: _mig073_td_votes_queue_dims },
     { version: 74, up: _mig074_round5_features },
+    { version: 75, up: _mig075_chamber_temp },
+    { version: 76, up: _mig076_error_context },
   ];
 
   for (const m of migrations) {
@@ -3130,6 +3132,14 @@ function _mig074_round5_features() {
   try { db.exec('ALTER TABLE spools ADD COLUMN refill_count INTEGER DEFAULT 0'); } catch { /* exists */ }
 }
 
+function _mig075_chamber_temp() {
+  try { db.exec('ALTER TABLE print_history ADD COLUMN max_chamber_temp REAL'); } catch { /* exists */ }
+}
+
+function _mig076_error_context() {
+  try { db.exec('ALTER TABLE error_log ADD COLUMN context TEXT'); } catch { /* exists */ }
+}
+
 function _generateShortId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I/O/0/1 to avoid confusion
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -3204,16 +3214,16 @@ export function addHistory(record) {
     INSERT INTO print_history (printer_id, started_at, finished_at, filename, status,
       duration_seconds, filament_used_g, filament_type, filament_color, layer_count,
       notes, color_changes, waste_g, nozzle_type, nozzle_diameter, speed_level,
-      bed_target, nozzle_target, max_nozzle_temp, max_bed_temp, filament_brand,
+      bed_target, nozzle_target, max_nozzle_temp, max_bed_temp, max_chamber_temp, filament_brand,
       ams_units_used, tray_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(record.printer_id || null, record.started_at, record.finished_at, record.filename, record.status,
     record.duration_seconds, record.filament_used_g, record.filament_type,
     record.filament_color, record.layer_count, record.notes || null,
     record.color_changes || 0, record.waste_g || 0,
     record.nozzle_type || null, record.nozzle_diameter || null,
     record.speed_level || null, record.bed_target || null, record.nozzle_target || null,
-    record.max_nozzle_temp || null, record.max_bed_temp || null,
+    record.max_nozzle_temp || null, record.max_bed_temp || null, record.max_chamber_temp || null,
     record.filament_brand || null, record.ams_units_used || null,
     record.tray_id || null);
   return Number(result.lastInsertRowid);
@@ -3268,7 +3278,7 @@ export function getStatistics(printerId = null, startDate = null, endDate = null
   const filamentByBrand = db.prepare(`SELECT filament_brand as brand, filament_type as type, COALESCE(SUM(filament_used_g), 0) as grams, COUNT(*) as prints FROM print_history${where}${and}filament_brand IS NOT NULL GROUP BY filament_brand, filament_type ORDER BY grams DESC`).all(...params);
 
   // Temperature records
-  const tempStats = db.prepare(`SELECT COALESCE(MAX(max_nozzle_temp), 0) as peak_nozzle, COALESCE(AVG(max_nozzle_temp), 0) as avg_nozzle, COALESCE(MAX(max_bed_temp), 0) as peak_bed, COALESCE(AVG(max_bed_temp), 0) as avg_bed FROM print_history${where}${and}status = 'completed' AND max_nozzle_temp > 0`).get(...params);
+  const tempStats = db.prepare(`SELECT COALESCE(MAX(max_nozzle_temp), 0) as peak_nozzle, COALESCE(AVG(max_nozzle_temp), 0) as avg_nozzle, COALESCE(MAX(max_bed_temp), 0) as peak_bed, COALESCE(AVG(max_bed_temp), 0) as avg_bed, COALESCE(MAX(max_chamber_temp), 0) as peak_chamber, COALESCE(AVG(CASE WHEN max_chamber_temp > 0 THEN max_chamber_temp END), 0) as avg_chamber FROM print_history${where}${and}status = 'completed' AND max_nozzle_temp > 0`).get(...params);
 
   // Top 5 files
   const topFiles = db.prepare(`SELECT filename, COUNT(*) as count, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed FROM print_history${where}${and}filename IS NOT NULL GROUP BY filename ORDER BY count DESC LIMIT 5`).all(...params);
@@ -3336,7 +3346,7 @@ export function getStatistics(printerId = null, startDate = null, endDate = null
     success_by_filament: successByFilament.map(r => ({ type: r.type, total: r.total, completed: r.completed, rate: r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0 })),
     success_by_speed: successBySpeed.map(r => ({ level: r.level, total: r.total, completed: r.completed, rate: r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0 })),
     filament_by_brand: filamentByBrand,
-    temp_stats: tempStats || { peak_nozzle: 0, avg_nozzle: 0, peak_bed: 0, avg_bed: 0 },
+    temp_stats: tempStats || { peak_nozzle: 0, avg_nozzle: 0, peak_bed: 0, avg_bed: 0, peak_chamber: 0, avg_chamber: 0 },
     top_files: topFiles,
     monthly_trends: monthlyTrends,
     total_layers: totalLayers.total,
@@ -3354,6 +3364,83 @@ export function getStatistics(printerId = null, startDate = null, endDate = null
     first_print: firstPrint?.started_at || null,
     last_print: lastPrint?.started_at || null
   };
+}
+
+export function getHardwareStats(printerId = null) {
+  const result = {};
+
+  // Build plates
+  const plates = getBuildPlates(printerId);
+  result.build_plates = plates.map(p => ({
+    id: p.id, name: p.name, type: p.type, printer_id: p.printer_id,
+    surface_condition: p.surface_condition, print_count: p.print_count || 0,
+    active: p.active, installed_at: p.installed_at
+  }));
+  result.total_plate_prints = plates.reduce((sum, p) => sum + (p.print_count || 0), 0);
+
+  // Maintenance components
+  if (printerId) {
+    const status = getMaintenanceStatus(printerId);
+    result.maintenance = status.components;
+    result.total_print_hours = status.total_print_hours;
+  } else {
+    const printerIds = db.prepare('SELECT DISTINCT printer_id FROM maintenance_schedule').all().map(r => r.printer_id);
+    const allComponents = [];
+    let totalHours = 0;
+    for (const pid of printerIds) {
+      try {
+        const status = getMaintenanceStatus(pid);
+        totalHours += status.total_print_hours || 0;
+        for (const c of status.components) allComponents.push({ ...c, printer_id: pid });
+      } catch (_) {}
+    }
+    result.maintenance = allComponents;
+    result.total_print_hours = Math.round(totalHours * 10) / 10;
+  }
+
+  // Active nozzle sessions
+  if (printerId) {
+    const nozzle = getActiveNozzleSession(printerId);
+    result.active_nozzles = nozzle ? [{
+      printer_id: printerId,
+      type: nozzle.nozzle_type, diameter: nozzle.nozzle_diameter,
+      installed_at: nozzle.installed_at,
+      print_hours: Math.round(nozzle.total_print_hours * 10) / 10,
+      filament_g: Math.round(nozzle.total_filament_g),
+      abrasive_g: Math.round(nozzle.abrasive_filament_g),
+      print_count: nozzle.print_count,
+      wear: estimateNozzleWear(nozzle)
+    }] : [];
+  } else {
+    const nozzles = db.prepare('SELECT * FROM nozzle_sessions WHERE retired_at IS NULL ORDER BY installed_at DESC').all();
+    result.active_nozzles = nozzles.map(n => ({
+      printer_id: n.printer_id,
+      type: n.nozzle_type, diameter: n.nozzle_diameter,
+      installed_at: n.installed_at,
+      print_hours: Math.round(n.total_print_hours * 10) / 10,
+      filament_g: Math.round(n.total_filament_g),
+      abrasive_g: Math.round(n.abrasive_filament_g),
+      print_count: n.print_count,
+      wear: estimateNozzleWear(n)
+    }));
+  }
+
+  // Firmware
+  if (printerId) {
+    result.firmware = getLatestFirmware(printerId).map(f => ({ ...f, printer_id: printerId }));
+  } else {
+    result.firmware = db.prepare(`SELECT printer_id, module, sw_ver, hw_ver, sn, MAX(timestamp) as timestamp
+      FROM firmware_history GROUP BY printer_id, module ORDER BY printer_id, module`).all();
+  }
+
+  // Component wear
+  if (printerId) {
+    result.component_wear = getComponentWear(printerId);
+  } else {
+    result.component_wear = db.prepare('SELECT * FROM component_wear ORDER BY printer_id, component').all();
+  }
+
+  return result;
 }
 
 // ---- Filament ----
@@ -3394,8 +3481,9 @@ export function getErrors(limit = 50, printerId = null) {
 }
 
 export function addError(e) {
-  return db.prepare('INSERT INTO error_log (printer_id, timestamp, code, message, severity) VALUES (?, ?, ?, ?, ?)').run(
-    e.printer_id || null, e.timestamp || new Date().toISOString(), e.code, e.message, e.severity
+  const ctx = e.context ? JSON.stringify(e.context) : null;
+  return db.prepare('INSERT INTO error_log (printer_id, timestamp, code, message, severity, context) VALUES (?, ?, ?, ?, ?, ?)').run(
+    e.printer_id || null, e.timestamp || new Date().toISOString(), e.code, e.message, e.severity, ctx
   );
 }
 
@@ -3420,6 +3508,10 @@ export function addWaste(w) {
   return db.prepare('INSERT INTO filament_waste (printer_id, waste_g, reason, notes) VALUES (?, ?, ?, ?)').run(
     w.printer_id || null, w.waste_g, w.reason || 'manual', w.notes || null
   );
+}
+
+export function deleteWaste(id) {
+  return db.prepare('DELETE FROM filament_waste WHERE id = ?').run(id);
 }
 
 export function getWasteHistory(limit = 50, printerId = null) {
@@ -3612,9 +3704,34 @@ export function getWasteStats(printerId = null) {
     ) GROUP BY week ORDER BY week
   `).all(...params, ...params);
 
+  // Waste per month (combined, last 6 months)
+  const and = where ? ' AND' : ' WHERE';
+  const wastePerMonth = db.prepare(`
+    SELECT month, SUM(waste) as total FROM (
+      SELECT strftime('%Y-%m', started_at) as month, waste_g as waste FROM print_history${where}${and} started_at >= datetime('now', '-180 days') AND waste_g > 0
+      UNION ALL
+      SELECT strftime('%Y-%m', timestamp) as month, waste_g as waste FROM filament_waste${where}${and} timestamp >= datetime('now', '-180 days')
+    ) GROUP BY month ORDER BY month
+  `).all(...params, ...params);
+
+  // Waste by material (from print_history only)
+  const wasteByMaterial = db.prepare(`SELECT filament_type as type, ROUND(SUM(waste_g), 1) as total FROM print_history${where}${and} waste_g > 0 AND filament_type IS NOT NULL GROUP BY filament_type ORDER BY total DESC`).all(...params);
+
+  // Waste by printer (combined)
+  const wasteByPrinter = db.prepare(`
+    SELECT printer_id, ROUND(SUM(waste), 1) as total FROM (
+      SELECT printer_id, waste_g as waste FROM print_history${where}${and} waste_g > 0
+      UNION ALL
+      SELECT printer_id, waste_g as waste FROM filament_waste${where}
+    ) WHERE printer_id IS NOT NULL GROUP BY printer_id ORDER BY total DESC
+  `).all(...params, ...params);
+
+  // Total filament used (for efficiency ratio)
+  const totalFilament = db.prepare(`SELECT COALESCE(SUM(filament_used_g), 0) as total FROM print_history${where}`).get(...params);
+
   // Recent events (combined from both tables)
-  const recentAuto = db.prepare(`SELECT printer_id, started_at as timestamp, filename as notes, color_changes, waste_g, 'auto' as reason FROM print_history${where}${where ? ' AND' : ' WHERE'} waste_g > 0 ORDER BY started_at DESC LIMIT 20`).all(...params);
-  const recentManual = db.prepare(`SELECT printer_id, timestamp, notes, 0 as color_changes, waste_g, reason FROM filament_waste${where} ORDER BY timestamp DESC LIMIT 20`).all(...params);
+  const recentAuto = db.prepare(`SELECT printer_id, started_at as timestamp, filename as notes, color_changes, waste_g, 'auto' as reason FROM print_history${where}${and} waste_g > 0 ORDER BY started_at DESC LIMIT 20`).all(...params);
+  const recentManual = db.prepare(`SELECT id, printer_id, timestamp, notes, 0 as color_changes, waste_g, reason FROM filament_waste${where} ORDER BY timestamp DESC LIMIT 20`).all(...params);
 
   const recent = [...recentAuto, ...recentManual]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -3628,9 +3745,13 @@ export function getWasteStats(printerId = null) {
     total_color_changes: autoWaste.changes,
     total_cost: Math.round(totalWasteG * avgPerG * 10) / 10,
     avg_per_print: totalPrints.count > 0 ? Math.round((totalWasteG / totalPrints.count) * 10) / 10 : 0,
+    total_filament_used_g: Math.round(totalFilament.total * 10) / 10,
     manual_entries: manualWaste.count,
     prints_with_changes: autoWaste.prints_with_changes,
     waste_per_week: wastePerWeek,
+    waste_per_month: wastePerMonth,
+    waste_by_material: wasteByMaterial,
+    waste_by_printer: wasteByPrinter,
     recent
   };
 }

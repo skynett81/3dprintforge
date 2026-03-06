@@ -92,7 +92,7 @@
               <span class="ams-slot-num">${slotLabel}</span>
             </div>`;
         } else {
-          const isActive = String(globalSlot) === String(activeTray);
+          const isActive = String(globalSlot) === String(activeTray) && String(activeTray) !== '254' && String(activeTray) !== '255';
           const color = hexToRgb(tray.tray_color);
           const light = isLightColor(tray.tray_color);
           const brand = tray.tray_sub_brands || '';
@@ -182,5 +182,78 @@
         globalSlot++;
       }
     }
+
+    // Render external spool holder (vt_tray)
+    const vtTray = amsData.vt_tray;
+    const isExtActive = String(activeTray) === '254' || String(activeTray) === '255';
+    const extSlot = document.createElement('div');
+
+    if (vtTray && vtTray.tray_type) {
+      const color = hexToRgb(vtTray.tray_color);
+      const light = isLightColor(vtTray.tray_color);
+      const brand = vtTray.tray_sub_brands || '';
+      const tempRange = (vtTray.nozzle_temp_min && vtTray.nozzle_temp_max) ? `${vtTray.nozzle_temp_min}-${vtTray.nozzle_temp_max}°C` : '';
+
+      const printerId = meta?.id || window.printerState?.getActivePrinterId?.() || null;
+      const linkedSpool = _getLinkedSpool(printerId, 255, 0);
+
+      let remain, remainParts, remainG = null, totalG = null;
+      if (linkedSpool && linkedSpool.initial_weight_g > 0) {
+        remainG = linkedSpool.remaining_weight_g;
+        totalG = linkedSpool.initial_weight_g;
+        const pct = Math.round((remainG / totalG) * 100);
+        remain = pct;
+        remainParts = [`${pct}%`, `${Math.round(remainG)}g / ${totalG}g`];
+      } else {
+        remain = vtTray.remain >= 0 ? Math.round(vtTray.remain) : '?';
+        remainParts = [`${remain}%`];
+        if (vtTray.tray_weight) {
+          totalG = parseFloat(vtTray.tray_weight);
+          remainG = totalG * (remain / 100);
+          remainParts.push(`${vtTray.tray_weight}g`);
+        }
+      }
+
+      const hasRfid = !!(vtTray.tag_uid || vtTray.tray_uuid);
+      const rfidBadge = hasRfid ? `<span class="ams-rfid-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 12a7 7 0 0 1 7-7 7 7 0 0 1 5.7 3"/><circle cx="12" cy="12" r="2"/></svg>RFID</span>` : '';
+
+      const detailParts = [];
+      if (tempRange) detailParts.push(tempRange);
+      if (vtTray.k) detailParts.push(`K: ${vtTray.k}`);
+
+      extSlot.className = `ams-slot ams-ext-slot ${isExtActive ? 'ams-active' : ''}`;
+      extSlot.innerHTML = `
+        <div class="ams-slot-inner">
+          <div class="ams-row ams-row-top">
+            <div class="ams-color-ring" style="background:${color};${light ? `border:2px solid ${theme.getCSSVar('--text-muted')};` : ''}">
+              ${isExtActive ? '<div class="ams-active-dot"></div>' : ''}
+            </div>
+            <div class="ams-info-main">
+              <span class="ams-type">${vtTray.tray_type}</span>
+              ${brand ? `<span class="ams-sep">\u00b7</span><span class="ams-brand">${brand}</span>` : ''}
+            </div>
+            ${rfidBadge}
+          </div>
+          <div class="ams-row ams-row-bar">
+            <div class="ams-remain-bar"><div class="ams-remain-fill" style="width:${remain}%;background:${color}"></div></div>
+            <span class="ams-remain-text">${remainParts.join(' \u00b7 ')}</span>
+          </div>
+          ${detailParts.length ? `<div class="ams-row ams-row-details">${detailParts.join(' \u00b7 ')}</div>` : ''}
+          <div class="ams-row ams-row-bottom">
+            <span></span>
+            <span class="ams-slot-num">${t('ams.external')}</span>
+          </div>
+        </div>`;
+    } else {
+      // Empty external slot — always show it
+      extSlot.className = `ams-slot ams-ext-slot ams-empty ${isExtActive ? 'ams-active' : ''}`;
+      extSlot.innerHTML = `
+        <div class="ams-slot-inner ams-slot-empty-inner">
+          <div class="ams-color-ring ams-empty-ring"></div>
+          <span class="ams-type">${t('ams.empty')}</span>
+          <span class="ams-slot-num">${t('ams.external')}</span>
+        </div>`;
+    }
+    container.appendChild(extSlot);
   };
 })();

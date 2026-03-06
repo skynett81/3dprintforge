@@ -14,18 +14,6 @@
     const container = document.getElementById('camera-container');
     if (!container) return;
 
-    // Check if RTSP is disabled on this printer (e.g. P2S)
-    const printerId = window.printerState?.getActivePrinterId();
-    const ps = printerId ? window.printerState?._printers?.[printerId] : null;
-    const pd = ps?.print || ps;
-    if (pd?.ipcam?.rtsp_url === 'disable') {
-      if (player) { try { player.destroy(); } catch(e) {} player = null; }
-      currentPort = null;
-      streamActive = false;
-      showRtspDisabled(container);
-      return;
-    }
-
     // No camera port configured — show placeholder, don't connect
     if (!port) {
       if (player) {
@@ -38,18 +26,18 @@
       return;
     }
 
-    if (port === currentPort && player) return;
+    if (port === currentPort && (player || _jpegWs)) return;
     currentPort = port;
-
-    if (typeof JSMpeg === 'undefined') {
-      showPlaceholder(container);
-      return;
-    }
 
     if (player) {
       try { player.destroy(); } catch(e) {}
       player = null;
     }
+    if (_jpegWs) {
+      try { _jpegWs.close(); } catch(e) {}
+      _jpegWs = null;
+    }
+    _streamMode = null;
     streamActive = false;
 
     const wsUrl = `ws://${location.hostname}:${port}`;
@@ -65,7 +53,7 @@
 
     const probeTimeout = setTimeout(() => {
       probe.close();
-      showPlaceholder(container);
+      showPlaceholder(container, 'probe_failed');
     }, 3000);
 
     probe.onopen = () => {
@@ -76,66 +64,231 @@
 
     probe.onerror = () => {
       clearTimeout(probeTimeout);
-      showPlaceholder(container);
+      showPlaceholder(container, 'probe_failed');
     };
   }
+
+  let _streamMode = null; // 'jpeg' or 'mpeg'
+  let _jpegWs = null;
 
   function startPlayer(container, wsUrl) {
     try {
       container.innerHTML = '';
-      const canvas = document.createElement('canvas');
-      canvas.className = 'camera-canvas';
-      container.appendChild(canvas);
 
-      // Fullscreen button overlay
+      // Skeleton loader while connecting
+      const skeleton = document.createElement('div');
+      skeleton.className = 'camera-skeleton';
+      skeleton.innerHTML = `<div class="camera-skeleton-pulse"></div><span class="camera-skeleton-text">${t('camera.connecting')}</span>`;
+      container.appendChild(skeleton);
+
+      // Fullscreen + screenshot button overlay
       const overlay = document.createElement('div');
       overlay.className = 'camera-overlay';
       const fullscreenTitle = t('camera.fullscreen');
+      const screenshotTitle = t('camera.screenshot');
       overlay.innerHTML = `
-        <button class="camera-fullscreen-btn" title="${fullscreenTitle}">
+        <button class="camera-screenshot-btn" title="${screenshotTitle}" aria-label="${screenshotTitle}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <button class="camera-fullscreen-btn" title="${fullscreenTitle}" aria-label="${fullscreenTitle}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
           </svg>
         </button>`;
+      overlay.querySelector('.camera-screenshot-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        _takeScreenshot(container);
+      });
       overlay.querySelector('.camera-fullscreen-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         openFullscreen();
       });
-      container.appendChild(overlay);
 
       // Click anywhere on camera to open fullscreen
       container.style.cursor = 'pointer';
       container.onclick = () => { if (streamActive) openFullscreen(); };
 
-      player = new JSMpeg.Player(wsUrl, {
-        canvas: canvas,
-        autoplay: true,
-        audio: false,
-        loop: false,
-        onSourceEstablished: () => {
-          console.log('[kamera] Stream tilkoblet');
-          streamActive = true;
-        },
-        onSourceCompleted: () => {
-          console.log('[kamera] Stream avsluttet');
-          streamActive = false;
-          showPlaceholder(container);
+      // Detect stream type: first message determines JPEG vs MPEG-TS or error
+      _streamMode = null;
+      const detectWs = new WebSocket(wsUrl);
+
+      detectWs.onmessage = (e) => {
+        // Text message = JSON error from server
+        if (typeof e.data === 'string') {
+          detectWs.close();
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.error === 'auth_denied') {
+              console.log('[kamera] Auth avvist — LAN Live View deaktivert');
+              _streamMode = 'error';
+              showPlaceholder(container, 'auth_denied');
+              return;
+            }
+          } catch {}
+          showPlaceholder(container, 'stream_unavailable');
+          return;
         }
-      });
+
+        // Binary message = stream data
+        const data = new Uint8Array(e.data);
+        detectWs.close();
+
+        if (data.length > 2 && data[0] === 0xFF && data[1] === 0xD8) {
+          console.log('[kamera] JPEG-modus detektert');
+          _streamMode = 'jpeg';
+          _startJpegPlayer(container, wsUrl, overlay);
+        } else {
+          console.log('[kamera] MPEG-modus detektert');
+          _streamMode = 'mpeg';
+          _startMpegPlayer(container, wsUrl, overlay);
+        }
+      };
+
+      detectWs.binaryType = 'arraybuffer';
+
+      detectWs.onerror = () => {
+        showPlaceholder(container, 'probe_failed');
+      };
+
+      // Timeout — no data in 10s means camera is not streaming
+      setTimeout(() => {
+        if (!_streamMode && detectWs.readyState <= 1) {
+          detectWs.close();
+          showPlaceholder(container, 'stream_unavailable');
+        }
+      }, 10000);
     } catch (e) {
       console.warn('[kamera] Kunne ikke starte:', e.message);
       showPlaceholder(container);
     }
   }
 
-  function showPlaceholder(container) {
+  function _removeSkeleton(container) {
+    const sk = container.querySelector('.camera-skeleton');
+    if (sk) sk.remove();
+  }
+
+  function _startJpegPlayer(container, wsUrl, overlay) {
+    _removeSkeleton(container);
+    container.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'camera-canvas';
+    img.style.objectFit = 'contain';
+    container.appendChild(img);
+    container.appendChild(overlay);
+
+    if (_jpegWs) { try { _jpegWs.close(); } catch {} }
+
+    _jpegWs = new WebSocket(wsUrl);
+    _jpegWs.binaryType = 'arraybuffer';
+
+    _jpegWs.onopen = () => {
+      console.log('[kamera] JPEG stream tilkoblet');
+      streamActive = true;
+    };
+
+    _jpegWs.onmessage = (e) => {
+      const blob = new Blob([e.data], { type: 'image/jpeg' });
+      const url = URL.createObjectURL(blob);
+      const old = img.src;
+      img.src = url;
+      if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+    };
+
+    _jpegWs.onclose = () => {
+      console.log('[kamera] JPEG stream avsluttet');
+      streamActive = false;
+      _jpegWs = null;
+    };
+
+    _jpegWs.onerror = () => {
+      streamActive = false;
+      _jpegWs = null;
+      showPlaceholder(container, 'probe_failed');
+    };
+  }
+
+  function _startMpegPlayer(container, wsUrl, overlay) {
+    _removeSkeleton(container);
+    container.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'camera-canvas';
+    container.appendChild(canvas);
+    container.appendChild(overlay);
+
+    player = new JSMpeg.Player(wsUrl, {
+      canvas: canvas,
+      autoplay: true,
+      audio: false,
+      loop: false,
+      onSourceEstablished: () => {
+        console.log('[kamera] MPEG stream tilkoblet');
+        streamActive = true;
+      },
+      onSourceCompleted: () => {
+        console.log('[kamera] MPEG stream avsluttet');
+        streamActive = false;
+        showPlaceholder(container);
+      }
+    });
+  }
+
+  function showPlaceholder(container, reason) {
+    // Determine the specific reason for no camera
+    const printerId = window.printerState?.getActivePrinterId();
+    const meta = printerId ? window.printerState.getActivePrinterMeta() : {};
+    const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+    const pd = ps?.print || ps;
+    const hasPort = !!meta.cameraPort;
+    const probeFailure = reason === 'probe_failed';
+
+    const isAuthDenied = reason === 'auth_denied';
+    let icon, title, hint, steps;
+
+    if (!hasPort && !isAuthDenied) {
+      // No camera port assigned — config/setup issue
+      icon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="6" width="15" height="12" rx="2"/>
+        <path d="M17 10l4-2v8l-4-2z"/>
+      </svg>`;
+      title = t('camera.not_available');
+      hint = t('camera.setup_hint');
+      steps = null;
+    } else {
+      // Auth denied or stream failed — LAN Live View needs to be enabled
+      icon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-yellow, #e3b341)" stroke-width="1.5">
+        <rect x="2" y="6" width="15" height="12" rx="2"/>
+        <path d="M17 10l4-2v8l-4-2z"/>
+        <line x1="2" y1="2" x2="22" y2="22" stroke-width="2" stroke="var(--accent-red, #f85149)"/>
+      </svg>`;
+      title = isAuthDenied ? t('camera.auth_denied') : t('camera.stream_unavailable');
+      hint = t('camera.lan_liveview_hint');
+      steps = `
+        <div class="camera-setup-steps">
+          <div class="camera-step">
+            <span class="camera-step-num">1</span>
+            <span>${t('camera.step_printer_screen')}</span>
+          </div>
+          <div class="camera-step">
+            <span class="camera-step-num">2</span>
+            <span>${t('camera.step_settings')}</span>
+          </div>
+          <div class="camera-step">
+            <span class="camera-step-num">3</span>
+            <span>${t('camera.step_lan_liveview')}</span>
+          </div>
+        </div>`;
+    }
+
     container.innerHTML = `
       <div class="camera-placeholder">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="2" y="6" width="15" height="12" rx="2"/>
-          <path d="M17 10l4-2v8l-4-2z"/>
-        </svg>
-        <span>${t('camera.not_available')}</span>
+        ${icon}
+        <span class="camera-placeholder-title">${title}</span>
+        ${hint ? `<span class="camera-hint">${hint}</span>` : ''}
+        ${steps || ''}
       </div>`;
     container.style.cursor = 'default';
   }
@@ -195,15 +348,39 @@
     const wsUrl = `ws://${location.hostname}:${currentPort}`;
 
     try {
-      fullscreenPlayer = new JSMpeg.Player(wsUrl, {
-        canvas: canvas,
-        autoplay: true,
-        audio: false,
-        loop: false,
-        onSourceCompleted: () => {
+      if (_streamMode === 'jpeg') {
+        // JPEG fullscreen — use <img> element
+        fsContainer.innerHTML = '';
+        const fsImg = document.createElement('img');
+        fsImg.className = 'camera-canvas-fullscreen';
+        fsImg.style.objectFit = 'contain';
+        fsContainer.appendChild(fsImg);
+
+        const fsJpegWs = new WebSocket(wsUrl);
+        fsJpegWs.binaryType = 'arraybuffer';
+        fsJpegWs.onmessage = (e) => {
+          const blob = new Blob([e.data], { type: 'image/jpeg' });
+          const url = URL.createObjectURL(blob);
+          const old = fsImg.src;
+          fsImg.src = url;
+          if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+        };
+        fsJpegWs.onclose = () => {
           fsContainer.innerHTML = `<div class="camera-placeholder"><span>${t('camera.stream_ended')}</span></div>`;
-        }
-      });
+        };
+        fullscreenPlayer = { destroy: () => { try { fsJpegWs.close(); } catch {} } };
+      } else {
+        // MPEG-TS fullscreen — use JSMpeg canvas
+        fullscreenPlayer = new JSMpeg.Player(wsUrl, {
+          canvas: canvas,
+          autoplay: true,
+          audio: false,
+          loop: false,
+          onSourceCompleted: () => {
+            fsContainer.innerHTML = `<div class="camera-placeholder"><span>${t('camera.stream_ended')}</span></div>`;
+          }
+        });
+      }
     } catch (e) {
       fsContainer.innerHTML = `<div class="camera-placeholder"><span>${t('camera.connect_failed')}</span></div>`;
     }
@@ -223,6 +400,39 @@
 
     const linkBar = document.getElementById('camera-stream-link');
     if (linkBar) linkBar.style.display = 'none';
+  }
+
+  function _takeScreenshot(container) {
+    // Find the visible image or canvas in camera container
+    const img = container.querySelector('img.camera-canvas');
+    const canvas = container.querySelector('canvas.camera-canvas');
+
+    const c = document.createElement('canvas');
+    const ctx = c.getContext('2d');
+
+    if (img && img.src) {
+      c.width = img.naturalWidth || img.width;
+      c.height = img.naturalHeight || img.height;
+      ctx.drawImage(img, 0, 0);
+    } else if (canvas) {
+      c.width = canvas.width;
+      c.height = canvas.height;
+      ctx.drawImage(canvas, 0, 0);
+    } else {
+      if (typeof showToast === 'function') showToast(t('camera.screenshot_failed'), 'error');
+      return;
+    }
+
+    c.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `camera-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (typeof showToast === 'function') showToast(t('camera.screenshot_saved'), 'success');
+    }, 'image/png');
   }
 
   window.closeCameraModal = closeFullscreen;
