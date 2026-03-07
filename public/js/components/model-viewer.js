@@ -184,6 +184,19 @@
     return new Float32Array(verts);
   }
 
+  // Fine grid for build plate look (Bambu Studio style)
+  function buildFineGrid(size, divisions) {
+    const half = size / 2;
+    const step = size / divisions;
+    const verts = [];
+    for (let i = 0; i <= divisions; i++) {
+      const p = -half + i * step;
+      verts.push(p, 0, -half, p, 0, half);
+      verts.push(-half, 0, p, half, 0, p);
+    }
+    return new Float32Array(verts);
+  }
+
   // ---- ModelViewer class ----
 
   class ModelViewer {
@@ -230,6 +243,7 @@
       this.posBuf = gl.createBuffer();
       this.normBuf = gl.createBuffer();
       this.gridBuf = gl.createBuffer();
+      this.fineGridBuf = gl.createBuffer();
 
       // Matrices
       this._proj = mat4();
@@ -239,14 +253,21 @@
       this._tmp1 = mat4();
       this._nm = new Float32Array(9);
 
-      // Grid — subtle, smaller to not overwhelm model
-      const gridVerts = buildGrid(1.6, 8);
+      // Coarse grid (major lines - Bambu Studio style)
+      const gridVerts = buildGrid(2.4, 6);
       this.gridCount = gridVerts.length / 3;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf);
       gl.bufferData(gl.ARRAY_BUFFER, gridVerts, gl.STATIC_DRAW);
 
+      // Fine grid (minor lines)
+      const fineVerts = buildFineGrid(2.4, 30);
+      this.fineGridCount = fineVerts.length / 3;
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.fineGridBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, fineVerts, gl.STATIC_DRAW);
+
       gl.enable(gl.DEPTH_TEST);
-      gl.clearColor(0.06, 0.07, 0.18, 1);
+      // Bambu Studio style dark grey background
+      gl.clearColor(0.14, 0.15, 0.16, 1);
 
       this._setupControls();
       this._render = this._render.bind(this);
@@ -422,16 +443,29 @@
       mat4Mul(this._mvp, this._proj, this._tmp1);
       mat3NormalFromMat4(this._nm, this._tmp1);
 
-      // Draw grid
-      if (this.progGrid && this.gridCount > 0) {
+      // Draw grids (Bambu Studio build plate style)
+      if (this.progGrid) {
         gl.useProgram(this.progGrid);
         gl.uniformMatrix4fv(gl.getUniformLocation(this.progGrid, 'uMVP'), false, this._mvp);
-        gl.uniform4f(gl.getUniformLocation(this.progGrid, 'uColor'), 0.15, 0.17, 0.22, 0.15);
         const gPosLoc = gl.getAttribLocation(this.progGrid, 'aPos');
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf);
         gl.enableVertexAttribArray(gPosLoc);
-        gl.vertexAttribPointer(gPosLoc, 3, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINES, 0, this.gridCount);
+
+        // Fine grid (subtle minor lines)
+        if (this.fineGridCount > 0) {
+          gl.uniform4f(gl.getUniformLocation(this.progGrid, 'uColor'), 0.22, 0.23, 0.25, 0.25);
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.fineGridBuf);
+          gl.vertexAttribPointer(gPosLoc, 3, gl.FLOAT, false, 0, 0);
+          gl.drawArrays(gl.LINES, 0, this.fineGridCount);
+        }
+
+        // Coarse grid (visible major lines)
+        if (this.gridCount > 0) {
+          gl.uniform4f(gl.getUniformLocation(this.progGrid, 'uColor'), 0.3, 0.31, 0.33, 0.4);
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.gridBuf);
+          gl.vertexAttribPointer(gPosLoc, 3, gl.FLOAT, false, 0, 0);
+          gl.drawArrays(gl.LINES, 0, this.gridCount);
+        }
+
         gl.disableVertexAttribArray(gPosLoc);
       }
 

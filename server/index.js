@@ -268,6 +268,13 @@ function setMetaAll(printerId, meta) {
 // Give API routes access to hub for thumbnail service
 setHub(hub);
 
+// Wire thumbnail cache to PrintTracker for history thumbnail saving
+import('./thumbnail-service.js').then(({ getThumbnailCache }) => {
+  import('./print-tracker.js').then(({ PrintTracker }) => {
+    PrintTracker._thumbCacheRef = getThumbnailCache();
+  });
+}).catch(() => {});
+
 // Connect API routes to broadcast + sync hub meta
 setApiBroadcast((type, data) => {
   // Sync hub printerMeta cache so new connections get fresh data

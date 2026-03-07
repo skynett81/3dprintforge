@@ -1,4 +1,4 @@
-// Model Info — Dashboard strip + sidebar panel (MakerWorld, Printables, Thingiverse)
+// Model Info — Device hardware panel (Bambu Studio style) + model linking
 (function() {
   const SOURCE_COLORS = {
     makerworld:  { bg: 'rgba(18,121,255,0.15)', border: 'rgba(18,121,255,0.4)', text: '#1279ff', label: 'MakerWorld' },
@@ -11,8 +11,86 @@
   let _fetching = false;
   let _currentFilename = '';
 
-  // ---- Dashboard strip (replaces old MakerWorld strip) ----
+  // Module code → friendly name mapping
+  const MODULE_NAMES = {
+    'ota':  'Printer Firmware',
+    'ap2':  'Application Processor',
+    'mc':   'Motion Controller',
+    'th':   'Toolhead',
+    'smc':  'Speed Motor Controller',
+    'ahb':  'Filament Buffer',
+    'n3f':  'AMS 2 Pro',
+    'n3s':  'AMS 2 Pro',
+    'ams':  'AMS',
+    'n1f':  'AMS Lite',
+    'rv1126': 'Camera Module',
+    'esp32':  'WiFi Module'
+  };
 
+  // Module code → detail suffix (shown after dash)
+  const MODULE_SUFFIX = {
+    'ahb': 'for P2'
+  };
+
+  // SVG icons for device sections
+  const PRINTER_SVG = `<svg viewBox="0 0 80 80" width="120" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="20" width="60" height="50" rx="4" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <rect x="15" y="25" width="50" height="30" rx="2" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.5"/>
+    <rect x="10" y="12" width="60" height="10" rx="3" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <circle cx="65" cy="17" r="2" fill="var(--accent-green)"/>
+    <line x1="30" y1="40" x2="50" y2="40" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="2 2"/>
+    <rect x="35" y="60" width="10" height="8" rx="1" fill="var(--text-muted)" opacity="0.3"/>
+  </svg>`;
+
+  const AMS_SVG = `<svg viewBox="0 0 80 60" width="120" height="90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="5" width="70" height="50" rx="4" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <rect x="10" y="12" width="13" height="35" rx="2" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <rect x="26" y="12" width="13" height="35" rx="2" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <rect x="42" y="12" width="13" height="35" rx="2" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <rect x="58" y="12" width="13" height="35" rx="2" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <circle cx="16" cy="20" r="4" fill="var(--accent-blue)" opacity="0.5"/>
+    <circle cx="32" cy="20" r="4" fill="var(--accent-green)" opacity="0.5"/>
+    <circle cx="48" cy="20" r="4" fill="#e06" opacity="0.5"/>
+    <circle cx="64" cy="20" r="4" fill="var(--text-muted)" opacity="0.3"/>
+  </svg>`;
+
+  const BUFFER_SVG = `<svg viewBox="0 0 80 50" width="120" height="75" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="5" width="70" height="40" rx="4" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <path d="M15 15 Q25 25 35 15 Q45 25 55 15 Q65 25 70 20" stroke="var(--text-muted)" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <path d="M15 25 Q25 35 35 25 Q45 35 55 25 Q65 35 70 30" stroke="var(--text-muted)" stroke-width="1.5" fill="none" opacity="0.3"/>
+  </svg>`;
+
+  const TOOLHEAD_SVG = `<svg viewBox="0 0 60 60" width="100" height="100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="8" width="30" height="40" rx="4" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <circle cx="30" cy="24" r="6" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-primary)" opacity="0.5"/>
+    <path d="M28 44 L30 52 L32 44" stroke="var(--text-muted)" stroke-width="1.5" fill="none"/>
+    <rect x="22" y="12" width="16" height="4" rx="1" fill="var(--text-muted)" opacity="0.2"/>
+  </svg>`;
+
+  const BOARD_SVG = `<svg viewBox="0 0 60 60" width="100" height="100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="12" width="44" height="36" rx="3" stroke="var(--text-muted)" stroke-width="1.5" fill="var(--bg-tertiary)"/>
+    <rect x="14" y="18" width="8" height="8" rx="1" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <rect x="26" y="18" width="8" height="8" rx="1" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <rect x="38" y="18" width="8" height="8" rx="1" stroke="var(--text-muted)" stroke-width="1" fill="var(--bg-primary)" opacity="0.4"/>
+    <line x1="14" y1="32" x2="46" y2="32" stroke="var(--text-muted)" stroke-width="0.5" opacity="0.3"/>
+    <line x1="14" y1="36" x2="46" y2="36" stroke="var(--text-muted)" stroke-width="0.5" opacity="0.3"/>
+    <line x1="14" y1="40" x2="46" y2="40" stroke="var(--text-muted)" stroke-width="0.5" opacity="0.3"/>
+    <circle cx="12" cy="46" r="1.5" fill="var(--text-muted)" opacity="0.3"/>
+    <circle cx="48" cy="46" r="1.5" fill="var(--text-muted)" opacity="0.3"/>
+    <circle cx="12" cy="14" r="1.5" fill="var(--text-muted)" opacity="0.3"/>
+    <circle cx="48" cy="14" r="1.5" fill="var(--text-muted)" opacity="0.3"/>
+  </svg>`;
+
+  function getModuleIcon(code) {
+    const base = code.split('/')[0];
+    if (base === 'ahb') return BUFFER_SVG;
+    if (['n3f','n3s','ams','n1f'].includes(base)) return AMS_SVG;
+    if (base === 'th') return TOOLHEAD_SVG;
+    if (['mc','smc','ap2','rv1126','esp32'].includes(base)) return BOARD_SVG;
+    return BOARD_SVG;
+  }
+
+  // ---- Dashboard strip (MakerWorld / Printables / Thingiverse) ----
   window.updateModelInfo = function(data, isActive) {
     const strip = document.getElementById('model-info');
     if (!strip) return;
@@ -29,7 +107,6 @@
     const filename = data.subtask_name || data.gcode_file || '';
     _currentFilename = filename;
 
-    // MakerWorld auto-detect via project_id
     if (projectId && projectId !== '0') {
       if (projectId === _currentProjectId && _currentModelData !== null) return;
       _currentProjectId = projectId;
@@ -55,7 +132,6 @@
       return;
     }
 
-    // Check for manually linked model
     _currentProjectId = '';
     const printerId = window.printerState?.getActivePrinterId();
     if (printerId && filename) {
@@ -74,7 +150,6 @@
           strip.style.display = '';
           renderStrip(strip);
         } else {
-          // No link — show small "link model" button
           strip.style.display = '';
           strip.innerHTML = `<button class="mi-link-btn" onclick="openPanel('modelinfo')" title="${t('model_info.link_model')}">`
             + `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`
@@ -117,71 +192,231 @@
 
   // ---- Sidebar Panel ----
 
-  window.loadModelInfoPanel = function() {
+  window.loadModelInfoPanel = async function() {
     const container = document.getElementById('overlay-panel-body');
     if (!container) return;
 
-    let html = `<div class="mi-panel">`;
+    const state = window.printerState?.getActivePrinterState?.() || {};
+    const meta = window.printerState?.getActivePrinterMeta?.() || {};
+    const printerId = window.printerState?.getActivePrinterId?.();
+    const printData = state.print || state;
+    const gcodeState = printData.gcode_state || 'IDLE';
+    const stateLabel = { RUNNING: 'Printing', PAUSE: 'Paused', IDLE: 'Idle', FINISH: 'Finished', FAILED: 'Failed', PREPARE: 'Preparing' }[gcodeState] || gcodeState;
 
-    // Section 1: Active Model
-    html += `<div class="mi-section">`;
-    html += `<h3 class="mi-section-title">${t('model_info.active_model')}</h3>`;
-    html += `<div id="mi-active-model" class="mi-active-model"></div>`;
-    html += `</div>`;
+    // Show loading state
+    container.innerHTML = `<div class="di-panel"><div class="di-header">${esc(meta.name || printerId || 'Printer')}(${stateLabel})</div><div style="padding:20px;color:var(--text-muted)">Loading device info...</div></div>`;
 
-    // Section 2: Search
-    html += `<div class="mi-section">`;
-    html += `<h3 class="mi-section-title">${t('model_info.search_models')}</h3>`;
-    html += `<div class="mi-search-bar">`;
-    html += `<input type="text" id="mi-search-input" class="mi-input" placeholder="${t('model_info.search_placeholder')}">`;
-    html += `<select id="mi-search-source" class="mi-select">`;
-    html += `<option value="all">${t('model_info.all_sources')}</option>`;
-    html += `<option value="printables">Printables</option>`;
-    html += `<option value="makerworld">MakerWorld</option>`;
-    html += `<option value="thingiverse">Thingiverse</option>`;
-    html += `</select>`;
-    html += `<button id="mi-search-btn" class="mi-btn" data-ripple>${t('model_info.search')}</button>`;
-    html += `</div>`;
-    html += `<div id="mi-search-results" class="mi-search-results"></div>`;
-    html += `</div>`;
+    // Fetch firmware modules from API (reliable source)
+    let modules = [];
+    if (printerId) {
+      try {
+        const res = await fetch(`/api/firmware?printer_id=${encodeURIComponent(printerId)}`);
+        const data = await res.json();
+        if (Array.isArray(data)) modules = data;
+      } catch {}
+    }
 
-    // Section 3: Link by URL
-    html += `<div class="mi-section">`;
-    html += `<h3 class="mi-section-title">${t('model_info.link_by_url')}</h3>`;
-    html += `<div class="mi-search-bar">`;
-    html += `<input type="text" id="mi-url-input" class="mi-input" placeholder="${t('model_info.url_placeholder')}">`;
-    html += `<button id="mi-url-btn" class="mi-btn" data-ripple>${t('model_info.link')}</button>`;
-    html += `</div>`;
-    html += `<div id="mi-url-status"></div>`;
-    html += `</div>`;
+    // Deduplicate: keep latest entry per module name
+    const modMap = new Map();
+    for (const m of modules) {
+      const existing = modMap.get(m.module);
+      if (!existing || m.id > existing.id) modMap.set(m.module, m);
+    }
+    const uniqueModules = [...modMap.values()];
 
-    // Section 4: Recent Links
-    html += `<div class="mi-section mi-section-full">`;
-    html += `<h3 class="mi-section-title">${t('model_info.recent_links')}</h3>`;
-    html += `<div id="mi-recent-links" class="mi-recent-links"></div>`;
+    // Find OTA module for printer firmware version
+    const otaMod = uniqueModules.find(m => m.module === 'ota');
+    const fwVersion = otaMod?.sw_ver || '--';
+    const upgradeState = printData.upgrade_state || {};
+
+    let html = `<div class="di-panel">`;
+
+    // ---- Device header ----
+    html += `<div class="di-header">${esc(meta.name || printerId || 'Printer')}(${stateLabel})</div>`;
+
+    // ---- Printer section ----
+    html += `<div class="di-device-section di-printer-section">`;
+    html += `<div class="di-device-image">${PRINTER_SVG}</div>`;
+    html += `<div class="di-device-info">`;
+    html += `<div class="di-firmware-actions"><button class="di-update-btn" id="di-update-firmware-btn">Update firmware</button></div>`;
+
+    if (upgradeState.status === 'SUCCESS' || upgradeState.progress === 100) {
+      html += `<div class="di-fw-status di-fw-success">Updating successful</div>`;
+      html += `<div class="di-fw-progress-row"><div class="di-fw-progress"><div class="di-fw-progress-fill" style="width:100%"></div></div><span class="di-fw-percent">100%</span></div>`;
+      html += `<a class="di-release-note" href="https://wiki.bambulab.com/en/software/firmware-release-notes" target="_blank" rel="noopener">Release Note</a>`;
+    } else if (upgradeState.progress > 0 && upgradeState.progress < 100) {
+      html += `<div class="di-fw-status">Updating... ${upgradeState.progress}%</div>`;
+      html += `<div class="di-fw-progress-row"><div class="di-fw-progress"><div class="di-fw-progress-fill" style="width:${upgradeState.progress}%"></div></div><span class="di-fw-percent">${upgradeState.progress}%</span></div>`;
+    } else {
+      html += `<div class="di-fw-version"><strong>Version:</strong> ${esc(fwVersion)}</div>`;
+    }
+
+    html += `</div></div>`;
+
+    // ---- Usage & Maintenance summary ----
+    html += `<div class="di-usage-section" id="di-usage-section"><div class="di-usage-loading">Loading usage data...</div></div>`;
+
+    // ---- All hardware modules in grid ----
+    const order = ['ahb', 'n3f', 'n3s', 'ams', 'n1f', 'th', 'mc', 'smc', 'ap2'];
+    const sorted = [...uniqueModules]
+      .filter(m => m.module !== 'ota')
+      .sort((a, b) => {
+        const ai = order.indexOf(a.module.split('/')[0]);
+        const bi = order.indexOf(b.module.split('/')[0]);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+
+    html += `<div class="di-modules-grid">`;
+    for (const mod of sorted) {
+      const base = mod.module.split('/')[0];
+      const friendlyName = MODULE_NAMES[base] || base.toUpperCase();
+      const suffix = MODULE_SUFFIX[base] || '';
+      const unitIdx = mod.module.includes('/') ? parseInt(mod.module.split('/')[1]) : -1;
+      const unitLabel = unitIdx >= 0 ? ` (${unitIdx + 1})` : '';
+      const title = suffix ? `${friendlyName} \u2013 ${suffix}` : `${friendlyName}${unitLabel}`;
+      const icon = getModuleIcon(mod.module);
+
+      html += `<div class="di-module-card">`;
+      html += `<div class="di-module-card-icon">${icon}</div>`;
+      html += `<div class="di-module-card-info">`;
+      html += `<div class="di-module-name">${esc(title)}</div>`;
+      html += `<div class="di-module-detail"><span class="di-detail-label">Serial:</span> ${esc(mod.sn || '--')}</div>`;
+      html += `<div class="di-module-detail"><span class="di-detail-label">Version:</span> ${esc(mod.sw_ver || '--')}</div>`;
+      if (mod.hw_ver && mod.hw_ver !== 'N/A') {
+        html += `<div class="di-module-detail"><span class="di-detail-label">Hardware:</span> ${esc(mod.hw_ver)}</div>`;
+      }
+      html += `</div></div>`;
+    }
     html += `</div>`;
 
     html += `</div>`;
     container.innerHTML = html;
 
-    // Render active model
-    renderActiveModel();
+    // Firmware update button handler
+    const updateBtn = document.getElementById('di-update-firmware-btn');
+    if (updateBtn && printerId) {
+      updateBtn.onclick = async () => {
+        updateBtn.disabled = true;
+        updateBtn.textContent = 'Checking...';
+        try {
+          const res = await fetch(`/api/update/status`);
+          const data = await res.json();
+          if (data.updateAvailable) {
+            updateBtn.textContent = 'Update available!';
+          } else {
+            updateBtn.textContent = 'Up to date';
+          }
+        } catch {
+          updateBtn.textContent = 'Check failed';
+        }
+        setTimeout(() => {
+          updateBtn.disabled = false;
+          updateBtn.textContent = 'Update firmware';
+        }, 3000);
+      };
+    }
 
-    // Load recent links
-    loadRecentLinks();
-
-    // Search events
-    const searchBtn = document.getElementById('mi-search-btn');
-    const searchInput = document.getElementById('mi-search-input');
-    searchBtn.addEventListener('click', doSearch);
-    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
-
-    // URL link events
-    const urlBtn = document.getElementById('mi-url-btn');
-    const urlInput = document.getElementById('mi-url-input');
-    urlBtn.addEventListener('click', linkByUrl);
-    urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') linkByUrl(); });
+    // Load usage & maintenance data async
+    if (printerId) {
+      loadUsageSection(printerId);
+    }
   };
+
+  async function loadUsageSection(printerId) {
+    const section = document.getElementById('di-usage-section');
+    if (!section) return;
+
+    try {
+      const [statusRes, wearRes] = await Promise.all([
+        fetch(`/api/maintenance/status?printer_id=${encodeURIComponent(printerId)}`),
+        fetch(`/api/wear?printer_id=${encodeURIComponent(printerId)}`)
+      ]);
+      const status = await statusRes.json();
+      const wear = await wearRes.json().catch(() => []);
+
+      function fmtW(g) { return g >= 1000 ? `${(g/1000).toFixed(1)} kg` : `${Math.round(g)}g`; }
+
+      let h = '';
+
+      // Usage stats cards
+      h += `<div class="di-usage-header">Usage & Maintenance</div>`;
+      h += `<div class="di-stats-row">`;
+      h += `<div class="di-stat-card"><div class="di-stat-value">${status.total_print_hours || 0}h</div><div class="di-stat-label">Total Print Time</div></div>`;
+      h += `<div class="di-stat-card"><div class="di-stat-value">${status.total_prints || 0}</div><div class="di-stat-label">Total Prints</div></div>`;
+      h += `<div class="di-stat-card"><div class="di-stat-value">${fmtW(status.total_filament_g || 0)}</div><div class="di-stat-label">Filament Used</div></div>`;
+
+      // Active nozzle
+      if (status.active_nozzle) {
+        const n = status.active_nozzle;
+        const w = n.wear_estimate;
+        h += `<div class="di-stat-card"><div class="di-stat-value">${n.type || 'SS'} ${n.diameter}mm</div><div class="di-stat-label">Nozzle (${w.percentage}% wear)</div></div>`;
+      }
+      h += `</div>`;
+
+      // Component maintenance status
+      const comps = status.components || [];
+      if (comps.length) {
+        h += `<div class="di-maint-grid">`;
+        for (const c of comps) {
+          const pct = c.percentage || 0;
+          const barColor = c.overdue ? 'var(--accent-red)' : pct >= 75 ? 'var(--accent-orange)' : 'var(--accent-green)';
+          const statusText = c.overdue ? 'Overdue!' : `${c.hours_since_maintenance}h / ${c.interval_hours}h`;
+          const compNames = {
+            nozzle: 'Nozzle', ptfe_tube: 'PTFE Tube', linear_rods: 'Linear Rods',
+            carbon_rods: 'Carbon Rods', build_plate: 'Build Plate', general: 'General Service'
+          };
+          const label = compNames[c.component] || c.component;
+
+          h += `<div class="di-maint-item">`;
+          h += `<div class="di-maint-item-header"><span class="di-maint-comp-name">${label}</span>`;
+          if (c.overdue) h += `<span class="di-maint-overdue">Overdue</span>`;
+          h += `<span class="di-maint-hours">${statusText}</span></div>`;
+          h += `<div class="di-maint-bar"><div class="di-maint-bar-fill" style="width:${Math.min(pct, 100)}%;background:${barColor}"></div></div>`;
+          h += `</div>`;
+        }
+        h += `</div>`;
+      }
+
+      // Wear tracking
+      const WEAR_LIMITS = {
+        fan_cooling: 3000, fan_aux: 3000, fan_chamber: 3000, fan_heatbreak: 3000,
+        hotend_heater: 2000, bed_heater: 5000, belts_x: 5000, belts_y: 5000,
+        linear_rails: 10000, extruder_motor: 5000
+      };
+      const wearNames = {
+        fan_cooling: 'Cooling Fan', fan_aux: 'Aux Fan', fan_chamber: 'Chamber Fan',
+        fan_heatbreak: 'Heatbreak Fan', hotend_heater: 'Hotend Heater', bed_heater: 'Bed Heater',
+        belts_x: 'Belt X', belts_y: 'Belt Y', linear_rails: 'Linear Rails', extruder_motor: 'Extruder Motor'
+      };
+
+      if (Array.isArray(wear) && wear.length) {
+        h += `<div class="di-wear-header">Wear Tracking</div>`;
+        h += `<div class="di-maint-grid">`;
+        for (const w of wear) {
+          const limit = WEAR_LIMITS[w.component] || 5000;
+          const pct = Math.min(Math.round((w.total_hours / limit) * 100), 100);
+          const barColor = pct >= 80 ? 'var(--accent-red)' : pct >= 50 ? 'var(--accent-orange)' : 'var(--accent-green)';
+          const label = wearNames[w.component] || w.component;
+
+          h += `<div class="di-maint-item">`;
+          h += `<div class="di-maint-item-header"><span class="di-maint-comp-name">${label}</span>`;
+          h += `<span class="di-maint-hours">${Math.round(w.total_hours)}h / ${limit}h</span></div>`;
+          h += `<div class="di-maint-bar"><div class="di-maint-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
+          h += `</div>`;
+        }
+        h += `</div>`;
+      }
+
+      // Link to full maintenance panel
+      h += `<a class="di-maint-link" href="#maintenance" onclick="openPanel('maintenance');return false;">View full maintenance &rarr;</a>`;
+
+      section.innerHTML = h;
+    } catch {
+      section.innerHTML = '<div class="di-usage-loading" style="color:var(--text-muted)">Could not load usage data</div>';
+    }
+  }
+
+  // ---- Remaining model linking functions (search, link by URL, etc.) ----
 
   function renderActiveModel() {
     const el = document.getElementById('mi-active-model');
@@ -215,7 +450,6 @@
     }
     html += `</div></div>`;
 
-    // Description
     if (data.description) {
       html += `<div class="mi-description">`;
       html += `<h4 class="mi-sub-title">${t('model_info.description')}</h4>`;
@@ -223,7 +457,6 @@
       html += `</div>`;
     }
 
-    // Print Settings
     const ps = data.print_settings;
     if (ps && typeof ps === 'object' && Object.keys(ps).length) {
       html += `<div class="mi-print-settings">`;
@@ -272,8 +505,6 @@
           return;
         }
         results.innerHTML = items.map(item => renderSearchResult(item)).join('');
-
-        // Bind link buttons
         results.querySelectorAll('.mi-result-link-btn').forEach(btn => {
           btn.addEventListener('click', () => linkModel(btn.dataset));
         });
@@ -301,16 +532,12 @@
     if (item.designer) html += `<span>${esc(item.designer)}</span>`;
     if (item.downloads > 0) html += `<span>\u2B07 ${item.downloads}</span>`;
     if (item.likes > 0) html += `<span>\u2764 ${item.likes}</span>`;
-    html += `</div>`;
-    html += `</div>`;
+    html += `</div></div>`;
 
-    // Action buttons
     html += `<div class="mi-result-actions">`;
-    // View link
     html += `<a class="mi-action-btn mi-action-view" href="${esc(item.url)}" target="_blank" rel="noopener" title="${t('model_info.view_on')} ${src.label}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </a>`;
-    // Link button
     const printerId = window.printerState?.getActivePrinterId() || '';
     const filename = _currentFilename;
     if (printerId && filename) {
@@ -325,13 +552,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       </button>`;
     }
-    html += `</div>`;
-
-    html += `</div>`;
+    html += `</div></div>`;
     return html;
   }
 
-  // ---- Link by URL ----
   function linkByUrl() {
     const input = document.getElementById('mi-url-input');
     const status = document.getElementById('mi-url-status');
@@ -346,7 +570,6 @@
       return;
     }
 
-    // Parse URL to determine source
     let source = null, sourceId = null;
     const mwMatch = url.match(/makerworld\.com\/.*?models?\/(\d+)/);
     const prMatch = url.match(/printables\.com\/model\/(\d+)/);
@@ -362,7 +585,6 @@
 
     status.innerHTML = `<div class="mi-loading">${t('model_info.loading')}</div>`;
 
-    // Fetch details and link
     const apiMap = {
       makerworld: (id) => `/api/makerworld/${id}`,
       printables: (id) => `/api/printables/${id}`,
@@ -413,7 +635,6 @@
     const printerId = window.printerState?.getActivePrinterId();
     if (!printerId || !_currentFilename) return;
 
-    // Fetch full details from source API first
     const apiMap = {
       makerworld: (id) => `/api/makerworld/${id}`,
       printables: (id) => `/api/printables/${id}`,

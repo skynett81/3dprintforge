@@ -143,7 +143,8 @@ export function initDatabase() {
     ['max_bed_temp', 'REAL'],
     ['filament_brand', 'TEXT'],
     ['ams_units_used', 'INTEGER'],
-    ['tray_id', 'TEXT']
+    ['tray_id', 'TEXT'],
+    ['gcode_file', 'TEXT']
   ];
   for (const [col, type] of newCols) {
     try { db.exec(`ALTER TABLE print_history ADD COLUMN ${col} ${type}`); } catch (e) { /* exists */ }
@@ -3209,14 +3210,18 @@ export function getHistory(limit = 50, offset = 0, printerId = null) {
   return db.prepare('SELECT * FROM print_history ORDER BY started_at DESC LIMIT ? OFFSET ?').all(limit, offset);
 }
 
+export function getHistoryById(id) {
+  return db.prepare('SELECT * FROM print_history WHERE id = ?').get(id) || null;
+}
+
 export function addHistory(record) {
   const result = db.prepare(`
     INSERT INTO print_history (printer_id, started_at, finished_at, filename, status,
       duration_seconds, filament_used_g, filament_type, filament_color, layer_count,
       notes, color_changes, waste_g, nozzle_type, nozzle_diameter, speed_level,
       bed_target, nozzle_target, max_nozzle_temp, max_bed_temp, max_chamber_temp, filament_brand,
-      ams_units_used, tray_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ams_units_used, tray_id, gcode_file)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(record.printer_id || null, record.started_at, record.finished_at, record.filename, record.status,
     record.duration_seconds, record.filament_used_g, record.filament_type,
     record.filament_color, record.layer_count, record.notes || null,
@@ -3225,7 +3230,7 @@ export function addHistory(record) {
     record.speed_level || null, record.bed_target || null, record.nozzle_target || null,
     record.max_nozzle_temp || null, record.max_bed_temp || null, record.max_chamber_temp || null,
     record.filament_brand || null, record.ams_units_used || null,
-    record.tray_id || null);
+    record.tray_id || null, record.gcode_file || null);
   return Number(result.lastInsertRowid);
 }
 
@@ -4380,15 +4385,18 @@ export function getSpoolBySlot(printerId, amsUnit, amsTray) {
 }
 
 export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct) {
-  const spool = db.prepare('SELECT id, initial_weight_g, remaining_weight_g FROM spools WHERE printer_id = ? AND ams_unit = ? AND ams_tray = ? AND archived = 0')
+  const spool = db.prepare('SELECT id, initial_weight_g, remaining_weight_g, used_weight_g FROM spools WHERE printer_id = ? AND ams_unit = ? AND ams_tray = ? AND archived = 0')
     .get(printerId, amsUnit, trayId);
   if (!spool || !spool.initial_weight_g) return null;
-  const newWeight = Math.round((remainPct / 100) * spool.initial_weight_g * 10) / 10;
-  const diff = Math.abs(newWeight - (spool.remaining_weight_g || 0));
+  const amsWeight = Math.round((remainPct / 100) * spool.initial_weight_g * 10) / 10;
+  const diff = Math.abs(amsWeight - (spool.remaining_weight_g || 0));
   if (diff < 5) return null; // Ignore noise < 5g
+  // Only update if AMS reports LESS remaining than our tracking
+  // (AMS can't add filament back, so if our tracking shows more used, trust our data)
+  if (amsWeight >= (spool.remaining_weight_g || 0)) return null;
   db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = MAX(0, initial_weight_g - ?), last_used_at = datetime(\'now\') WHERE id = ?')
-    .run(newWeight, newWeight, spool.id);
-  return { spoolId: spool.id, newWeight, diff };
+    .run(amsWeight, amsWeight, spool.id);
+  return { spoolId: spool.id, newWeight: amsWeight, diff };
 }
 
 export function toggleSpoolFavorite(id) {
@@ -5388,6 +5396,205 @@ export function addSpoolEvent(spoolId, eventType, details, actor) {
 
 export function getSpoolTimeline(spoolId, limit = 100) {
   return db.prepare('SELECT * FROM spool_events WHERE spool_id = ? ORDER BY timestamp DESC LIMIT ?').all(spoolId, limit);
+}
+
+export function getSpoolPrintStats(spoolId) {
+  // Get usage log entries linked to print history
+  const usageRows = db.prepare(`
+    SELECT sul.used_weight_g, sul.timestamp, sul.print_history_id, sul.source,
+           ph.filename, ph.status, ph.duration_seconds, ph.filament_used_g as print_total_g,
+           ph.started_at, ph.finished_at
+    FROM spool_usage_log sul
+    LEFT JOIN print_history ph ON sul.print_history_id = ph.id
+    WHERE sul.spool_id = ?
+    ORDER BY sul.timestamp DESC
+  `).all(spoolId);
+
+  // Get spool info with cost
+  const spool = db.prepare(`
+    SELECT s.*, fp.price as profile_price, fp.name as profile_name, fp.material,
+           fp.color_hex, fp.color_name, v.name as vendor_name
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.id = ?
+  `).get(spoolId);
+  if (!spool) return null;
+
+  const costPerG = spool.cost && spool.initial_weight_g > 0
+    ? spool.cost / spool.initial_weight_g
+    : spool.profile_price && spool.initial_weight_g > 0
+      ? spool.profile_price / spool.initial_weight_g
+      : 0;
+
+  const totalUsedG = spool.used_weight_g || 0;
+  const totalCostUsed = totalUsedG * costPerG;
+  const remainingValue = (spool.remaining_weight_g || 0) * costPerG;
+
+  // Prints linked to this spool
+  const prints = usageRows.filter(r => r.print_history_id).map(r => ({
+    print_id: r.print_history_id,
+    filename: r.filename,
+    status: r.status,
+    used_g: r.used_weight_g,
+    cost: r.used_weight_g * costPerG,
+    duration_seconds: r.duration_seconds,
+    started_at: r.started_at,
+    finished_at: r.finished_at
+  }));
+
+  const completedPrints = prints.filter(p => p.status === 'completed');
+  const failedPrints = prints.filter(p => p.status === 'failed');
+
+  return {
+    spool_id: spoolId,
+    total_prints: prints.length,
+    completed_prints: completedPrints.length,
+    failed_prints: failedPrints.length,
+    total_used_g: Math.round(totalUsedG * 100) / 100,
+    total_cost_used: Math.round(totalCostUsed * 100) / 100,
+    remaining_value: Math.round(remainingValue * 100) / 100,
+    cost_per_g: Math.round(costPerG * 1000) / 1000,
+    currency: 'NOK',
+    avg_per_print_g: completedPrints.length > 0 ? Math.round(completedPrints.reduce((s,p) => s + p.used_g, 0) / completedPrints.length * 100) / 100 : 0,
+    total_print_time_s: prints.reduce((s,p) => s + (p.duration_seconds||0), 0),
+    waste_from_failed_g: Math.round(failedPrints.reduce((s,p) => s + p.used_g, 0) * 100) / 100,
+    prints
+  };
+}
+
+export function estimateFilamentFromHistory() {
+  // Find prints with null filament_used_g that have duration & tray info
+  const nullPrints = db.prepare(`
+    SELECT ph.id, ph.printer_id, ph.tray_id, ph.duration_seconds, ph.layer_count,
+           ph.filament_type, ph.filament_color, ph.filament_brand, ph.status,
+           ph.nozzle_diameter, ph.speed_level, ph.filename
+    FROM print_history ph
+    WHERE ph.filament_used_g IS NULL AND ph.status = 'completed' AND ph.duration_seconds > 0
+  `).all();
+
+  if (!nullPrints.length) return { updated: 0, prints: [] };
+
+  // Get average g/second from prints that DO have filament data
+  const ref = db.prepare(`
+    SELECT AVG(filament_used_g / duration_seconds) as g_per_sec,
+           AVG(filament_used_g / NULLIF(layer_count, 0)) as g_per_layer
+    FROM print_history
+    WHERE filament_used_g > 0 AND duration_seconds > 60 AND status = 'completed'
+  `).get();
+
+  const gPerSec = ref?.g_per_sec || 0.02;   // fallback ~72g/hour
+  const gPerLayer = ref?.g_per_layer || 0.3; // fallback
+
+  const results = [];
+  for (const p of nullPrints) {
+    // Estimate: use layer count if available (more accurate), else duration
+    let estimatedG;
+    if (p.layer_count > 0 && ref?.g_per_layer > 0) {
+      estimatedG = p.layer_count * gPerLayer;
+    } else {
+      estimatedG = p.duration_seconds * gPerSec;
+    }
+    estimatedG = Math.round(estimatedG * 10) / 10;
+
+    results.push({
+      print_id: p.id,
+      filename: p.filename,
+      tray_id: p.tray_id,
+      duration_seconds: p.duration_seconds,
+      layer_count: p.layer_count,
+      estimated_g: estimatedG,
+      method: (p.layer_count > 0 && ref?.g_per_layer > 0) ? 'layer_avg' : 'duration_avg'
+    });
+  }
+
+  return {
+    total_null_prints: nullPrints.length,
+    reference_g_per_sec: Math.round(gPerSec * 10000) / 10000,
+    reference_g_per_layer: Math.round((gPerLayer || 0) * 1000) / 1000,
+    prints: results
+  };
+}
+
+export function backfillFilamentUsage() {
+  // Find prints that have weight but no spool_usage_log entry AND a valid tray
+  const missingUsage = db.prepare(`
+    SELECT ph.id, ph.printer_id, ph.tray_id, ph.filament_used_g
+    FROM print_history ph
+    WHERE ph.filament_used_g > 0 AND ph.status = 'completed'
+      AND ph.tray_id IS NOT NULL AND CAST(ph.tray_id AS INTEGER) != 255
+      AND NOT EXISTS (SELECT 1 FROM spool_usage_log sul WHERE sul.print_history_id = ph.id)
+  `).all();
+
+  // Also handle null-weight prints via estimation
+  const estimate = estimateFilamentFromHistory();
+
+  let updated = 0;
+  let spoolsUpdated = 0;
+  const spoolUpdates = {};
+
+  // First: update null-weight prints with estimates
+  for (const p of estimate.prints) {
+    db.prepare('UPDATE print_history SET filament_used_g = ? WHERE id = ? AND filament_used_g IS NULL')
+      .run(p.estimated_g, p.print_id);
+    updated++;
+
+    // Find spool for this tray
+    const trayNum = parseInt(p.tray_id);
+    if (!isNaN(trayNum) && trayNum !== 255) {
+      const ph = db.prepare('SELECT printer_id FROM print_history WHERE id = ?').get(p.print_id);
+      if (ph) {
+        const spool = getSpoolBySlot(ph.printer_id, 0, trayNum);
+        if (spool) {
+          // Check if already logged
+          const existing = db.prepare('SELECT id FROM spool_usage_log WHERE print_history_id = ? AND spool_id = ?').get(p.print_id, spool.id);
+          if (!existing) {
+            useSpoolWeight(spool.id, p.estimated_g, 'backfill', p.print_id, ph.printer_id);
+            if (!spoolUpdates[spool.id]) spoolUpdates[spool.id] = 0;
+            spoolUpdates[spool.id] += p.estimated_g;
+            spoolsUpdated++;
+          }
+        }
+      }
+    }
+  }
+
+  // Second: link existing prints (with weight) that have no spool_usage_log
+  for (const m of missingUsage) {
+    const trayNum = parseInt(m.tray_id);
+    if (isNaN(trayNum) || trayNum === 255) continue;
+    const spool = getSpoolBySlot(m.printer_id, 0, trayNum);
+    if (spool) {
+      const existing = db.prepare('SELECT id FROM spool_usage_log WHERE print_history_id = ? AND spool_id = ?').get(m.id, spool.id);
+      if (!existing) {
+        useSpoolWeight(spool.id, m.filament_used_g, 'backfill', m.id, m.printer_id);
+        if (!spoolUpdates[spool.id]) spoolUpdates[spool.id] = 0;
+        spoolUpdates[spool.id] += m.filament_used_g;
+        spoolsUpdated++;
+      }
+    }
+  }
+
+  return {
+    updated,
+    spools_updated: spoolsUpdated,
+    spool_details: Object.entries(spoolUpdates).map(([id, g]) => ({ spool_id: Number(id), added_g: Math.round(g * 10) / 10 })),
+    estimated_prints: estimate.prints,
+    linked_prints: missingUsage.length
+  };
+}
+
+export function syncSpoolWeightsFromLog() {
+  // Recalculate used_weight_g and remaining_weight_g from spool_usage_log
+  // Use a single SQL UPDATE to avoid any caching/prepared-statement issues
+  db.exec(`
+    UPDATE spools SET
+      used_weight_g = COALESCE((SELECT SUM(used_weight_g) FROM spool_usage_log WHERE spool_id = spools.id), 0),
+      remaining_weight_g = MAX(0, initial_weight_g - COALESCE((SELECT SUM(used_weight_g) FROM spool_usage_log WHERE spool_id = spools.id), 0))
+    WHERE archived = 0
+  `);
+  const results = db.prepare('SELECT id as spool_id, ROUND(used_weight_g, 1) as used_g, ROUND(remaining_weight_g, 1) as remaining_g FROM spools WHERE archived = 0').all();
+  return results;
 }
 
 export function getRecentSpoolEvents(limit = 50) {

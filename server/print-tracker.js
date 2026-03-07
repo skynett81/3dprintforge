@@ -1,5 +1,5 @@
 import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -227,6 +227,7 @@ export class PrintTracker {
     this.currentPrint = {
       started_at: new Date().toISOString(),
       filename: data.subtask_name || data.gcode_file || 'Ukjent',
+      gcode_file: data.gcode_file || null,
       filament_type: filamentInfo.type,
       filament_color: filamentInfo.color,
       filament_brand: filamentInfo.brand,
@@ -303,12 +304,16 @@ export class PrintTracker {
       filament_brand: this.currentPrint.filament_brand,
       ams_units_used: this.currentPrint.ams_units_used,
       tray_id: this.currentPrint.tray_id,
+      gcode_file: this.currentPrint.gcode_file,
       completion_pct: status === 'completed' ? 100 : completionPct
     };
 
     try {
       const printHistoryId = addHistory(record);
       console.log(`[tracker:${this.printerId}] Print ${status}: ${record.filename} (${Math.round(duration / 60)}m, ${filamentUsedG.toFixed(1)}g, ${this.colorChanges} fargebytter, ${wasteG}g waste)`);
+
+      // Save thumbnail from cache if available
+      this._saveHistoryThumbnail(printHistoryId);
 
       // Update spool inventory from AMS data
       this._updateSpoolUsage(data, printHistoryId);
@@ -621,6 +626,24 @@ export class PrintTracker {
       parts.push(`Hastighet: ${names[this.currentPrint.speed_level] || this.currentPrint.speed_level}`);
     }
     return parts.length > 0 ? parts.join(' | ') : null;
+  }
+
+  _saveHistoryThumbnail(historyId) {
+    try {
+      // Import thumbnail cache from thumbnail-service
+      const thumbCache = PrintTracker._thumbCacheRef;
+      if (!thumbCache) return;
+      const cached = thumbCache.get(this.printerId);
+      if (!cached || !cached.buffer) return;
+
+      const thumbDir = join(__dirname, '..', 'data', 'history-thumbnails');
+      if (!existsSync(thumbDir)) mkdirSync(thumbDir, { recursive: true });
+      const ext = cached.contentType === 'image/svg+xml' ? 'svg' : 'png';
+      writeFileSync(join(thumbDir, `${historyId}.${ext}`), cached.buffer);
+      console.log(`[tracker:${this.printerId}] Thumbnail lagret for history #${historyId}`);
+    } catch (e) {
+      console.warn(`[tracker:${this.printerId}] Thumbnail-lagring feilet:`, e.message);
+    }
   }
 
   _updateComponentWear(durationSec, data) {

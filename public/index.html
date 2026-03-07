@@ -337,12 +337,29 @@
         </div>
 
         <div class="card" id="ams-card">
-          <div class="card-title" id="ams-header">AMS</div>
-          <div class="ams-slots" id="ams-slots">
-            <div class="ams-slot ams-empty"><div class="ams-slot-inner">--</div></div>
-            <div class="ams-slot ams-empty"><div class="ams-slot-inner">--</div></div>
-            <div class="ams-slot ams-empty"><div class="ams-slot-inner">--</div></div>
-            <div class="ams-slot ams-empty"><div class="ams-slot-inner">--</div></div>
+          <div class="ams-top-bar" id="ams-top-bar">
+            <div class="ams-humidity-info" id="ams-humidity-info"></div>
+            <div class="ams-tabs" id="ams-tabs"></div>
+          </div>
+          <div class="ams-visual-area">
+            <div class="ams-left-section">
+              <div class="ams-cards-row" id="ams-slots"></div>
+              <div class="ams-tube-area" id="ams-tube-area">
+                <canvas id="ams-tube-canvas" height="36"></canvas>
+                <div class="ams-hub-icon" id="ams-hub-icon"></div>
+              </div>
+            </div>
+            <div class="ams-divider"></div>
+            <div class="ams-ext-section" id="ams-ext-section"></div>
+          </div>
+          <div class="ams-bottom-controls" id="ams-controls">
+            <button class="ams-ctrl-btn" id="ams-auto-refill-btn" title="Auto-refill">
+              <span>Auto-refill</span>
+              <span class="ams-toggle-indicator" id="ams-refill-indicator"></span>
+            </button>
+            <div class="ams-ctrl-spacer"></div>
+            <button class="ams-ctrl-btn" id="ams-unload-btn">Unload</button>
+            <button class="ams-ctrl-btn" id="ams-load-btn">Load</button>
           </div>
         </div>
 

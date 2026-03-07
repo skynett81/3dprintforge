@@ -755,3 +755,18 @@ export function clearThumbnailCache(printerId) {
     _modelCache.clear();
   }
 }
+
+/**
+ * Get the internal thumbnail cache Map (for print tracker to save history thumbnails).
+ */
+export function getThumbnailCache() {
+  return _cache;
+}
+
+/**
+ * Fetch a thumbnail from a printer for a specific gcode file.
+ * Used for history thumbnails on-demand.
+ */
+export async function fetchHistoryThumbnail(ip, accessCode, gcodeFile) {
+  return fetchThumbnailFromPrinter(ip, accessCode, gcodeFile);
+}

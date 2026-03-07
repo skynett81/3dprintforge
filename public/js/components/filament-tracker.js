@@ -490,8 +490,8 @@
       } else if (_viewMode === 'list') {
         h += _renderSpoolList(pageSpools);
       } else {
-        h += '<div class="filament-grid">';
-        for (const s of pageSpools) h += renderSpoolCard(s);
+        h += '<div class="spool-card-grid">';
+        for (const s of pageSpools) h += _renderSpoolVisualCard(s);
         h += '</div>';
       }
 
@@ -953,6 +953,241 @@
         <div id="spool-edit-${s.id}" style="display:none"></div>
       </div>`;
   }
+
+  // ═══ Visual spool card (history-style) ═══
+  function _renderSpoolVisualCard(s) {
+    const pct = s.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 0;
+    const colorStyle = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
+    const isLight = isLightColor(s.color_hex);
+    const textColor = isLight ? '#333' : '#fff';
+    const cleanName = _cleanProfileName(s);
+    const vendorName = s.vendor_name || '--';
+    const remaining = `${Math.round(s.remaining_weight_g)}g / ${Math.round(s.initial_weight_g)}g`;
+    const isLow = (pct > 0 && pct < _lowStockPct);
+    const isEmpty = pct === 0 && s.used_weight_g > 0;
+    const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
+    const statusText = isEmpty ? 'Tom' : isLow ? 'Lav' : `${pct}%`;
+
+    return `<div class="spool-vcard" onclick="window._showSpoolDetail(${s.id})">
+      <div class="spool-vcard-thumb" style="background:${colorStyle}">
+        <div class="spool-vcard-icon" style="color:${textColor}">
+          <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="32" cy="32" r="26"/>
+            <circle cx="32" cy="32" r="10"/>
+            <circle cx="32" cy="32" r="4" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="spool-vcard-badge">${esc(s.material || '--')}</span>
+        ${s.is_favorite ? '<span class="spool-vcard-fav">♥</span>' : ''}
+      </div>
+      <div class="spool-vcard-info">
+        <div class="spool-vcard-name" title="${esc(cleanName)}">${esc(cleanName)}</div>
+        <div class="spool-vcard-meta">${esc(vendorName)} · ${remaining}</div>
+        <div class="spool-vcard-bottom">
+          <span class="spool-vcard-pct" style="color:${statusColor}">${statusText}</span>
+          <div class="spool-vcard-bar"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor}"></div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ═══ Spool detail overlay ═══
+  window._showSpoolDetail = async function(id) {
+    const s = _spools.find(sp => sp.id === id);
+    if (!s) return;
+    const pct = s.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 0;
+    const colorStyle = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
+    const isLight = isLightColor(s.color_hex);
+    const textColor = isLight ? '#333' : '#fff';
+    const cleanName = _cleanProfileName(s);
+    const isEmpty = pct === 0 && s.used_weight_g > 0;
+    const isLow = (pct > 0 && pct < _lowStockPct);
+    const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
+    const statusText = isEmpty ? 'Tom' : isLow ? 'Lav beholdning' : 'På lager';
+
+    const daysAgo = s.last_used_at ? Math.floor((Date.now() - new Date(s.last_used_at).getTime()) / 86400000) : null;
+    const lastUsedText = daysAgo !== null ? (daysAgo < 1 ? 'I dag' : daysAgo + ' dager siden') : '--';
+    const amsText = s.ams_unit != null ? `AMS${s.ams_unit+1} spor ${(s.ams_tray||0)+1}` : '--';
+    const printerText = s.printer_id ? printerName(s.printer_id) : '--';
+
+    // Fetch print stats
+    let ps = null;
+    try {
+      const res = await fetch(`/api/inventory/spools/${id}/print-stats`);
+      if (res.ok) ps = await res.json();
+    } catch {}
+
+    const costPerG = ps ? ps.cost_per_g : 0;
+    const fmtTime = (sec) => {
+      if (!sec) return '--';
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      return h > 0 ? `${h}t ${m}m` : `${m}m`;
+    };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ph-detail-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    overlay.innerHTML = `<div class="ph-detail-panel" style="max-width:860px">
+      <button class="ph-detail-close" onclick="this.closest('.ph-detail-overlay').remove()">&times;</button>
+      <div class="ph-detail-layout">
+        <div class="ph-detail-left">
+          <div class="spool-detail-color" style="background:${colorStyle};min-height:200px;display:flex;align-items:center;justify-content:center;border-radius:12px 0 0 0">
+            <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="${textColor}" stroke-width="1.5" opacity="0.6">
+              <circle cx="32" cy="32" r="28"/>
+              <circle cx="32" cy="32" r="12"/>
+              <circle cx="32" cy="32" r="4" fill="${textColor}"/>
+            </svg>
+          </div>
+          <div class="ph-detail-status-banner" style="background:${statusColor}">
+            <span>${statusText} · ${pct}%</span>
+          </div>
+          <div style="padding:12px 16px">
+            <div class="spool-detail-bar-wrap">
+              <div class="spool-vcard-bar" style="height:8px;border-radius:4px"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor};height:100%;border-radius:4px"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-top:4px">
+                <span>${Math.round(s.remaining_weight_g)}g igjen</span>
+                <span>${Math.round(s.initial_weight_g)}g total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-detail-right">
+          <div class="ph-detail-header">
+            <h3 class="ph-detail-title">${esc(cleanName)}</h3>
+          </div>
+          <div class="ph-detail-grid">
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Merke</span>
+              <span class="ph-detail-value">${esc(s.vendor_name || '--')}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Materiale</span>
+              <span class="ph-detail-value"><span class="color-dot" style="background:${hexToRgb(s.color_hex)}"></span> ${esc(s.material || '--')}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Farge</span>
+              <span class="ph-detail-value">${esc(s.color_name || '--')}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Diameter</span>
+              <span class="ph-detail-value">${s.diameter || 1.75}mm</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Brukt</span>
+              <span class="ph-detail-value">${Math.round(s.used_weight_g || 0)}g</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Gjenstående</span>
+              <span class="ph-detail-value">${Math.round(s.remaining_weight_g)}g (${pct}%)</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Printer</span>
+              <span class="ph-detail-value">${esc(printerText)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">AMS-plassering</span>
+              <span class="ph-detail-value">${amsText}</span>
+            </div>
+            ${s.cost ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Spolpris</span>
+              <span class="ph-detail-value">${formatCurrency(s.cost)}</span>
+            </div>` : ''}
+            ${costPerG > 0 ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Pris/gram</span>
+              <span class="ph-detail-value">${formatCurrency(costPerG, 3)}</span>
+            </div>` : ''}
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Sist brukt</span>
+              <span class="ph-detail-value">${lastUsedText}</span>
+            </div>
+            ${s.location ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Plassering</span>
+              <span class="ph-detail-value">${esc(s.location)}</span>
+            </div>` : ''}
+            ${s.lot_number ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Lot-nummer</span>
+              <span class="ph-detail-value">${esc(s.lot_number)}</span>
+            </div>` : ''}
+          </div>
+          ${ps && ps.total_prints > 0 ? `
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-field ph-detail-field-wide">
+            <span class="ph-detail-label">Bruksstatistikk</span>
+          </div>
+          <div class="ph-detail-grid">
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Antall prints</span>
+              <span class="ph-detail-value">${ps.total_prints} (${ps.completed_prints} fullført${ps.failed_prints > 0 ? ', ' + ps.failed_prints + ' feilet' : ''})</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Total printtid</span>
+              <span class="ph-detail-value">${fmtTime(ps.total_print_time_s)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Snitt per print</span>
+              <span class="ph-detail-value">${Math.round(ps.avg_per_print_g)}g</span>
+            </div>
+            ${ps.total_cost_used > 0 ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Filamentkostnad brukt</span>
+              <span class="ph-detail-value">${formatCurrency(ps.total_cost_used)}</span>
+            </div>` : ''}
+            ${ps.remaining_value > 0 ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Gjenværende verdi</span>
+              <span class="ph-detail-value">${formatCurrency(ps.remaining_value)}</span>
+            </div>` : ''}
+            ${ps.waste_from_failed_g > 0 ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Svinn (feilede)</span>
+              <span class="ph-detail-value">${Math.round(ps.waste_from_failed_g)}g (${formatCurrency(ps.waste_from_failed_g * costPerG)})</span>
+            </div>` : ''}
+          </div>
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-field ph-detail-field-wide">
+            <span class="ph-detail-label">Siste prints</span>
+          </div>
+          <div class="spool-print-list">
+            ${ps.prints.slice(0, 8).map(p => `<div class="spool-print-row">
+              <span class="spool-print-name" title="${esc(p.filename || '')}">${esc((p.filename || '?').replace(/\.gcode\.3mf$|\.3mf$|\.gcode$/i, '').substring(0, 35))}</span>
+              <span class="spool-print-meta">${Math.round(p.used_g)}g${costPerG > 0 ? ' · ' + formatCurrency(p.cost) : ''} · ${fmtTime(p.duration_seconds)}</span>
+              <span class="spool-print-status spool-print-status-${p.status}">${p.status === 'completed' ? '✓' : p.status === 'failed' ? '✗' : '−'}</span>
+            </div>`).join('')}
+          </div>` : `
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-field ph-detail-field-wide">
+            <span class="ph-detail-label">Bruksstatistikk</span>
+            <span class="ph-detail-value" style="color:var(--text-muted)">Ingen prints registrert for denne spolen</span>
+          </div>`}
+          ${s.comment ? `<div class="ph-detail-divider"></div><div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">Kommentar</span><span class="ph-detail-value">${esc(s.comment)}</span></div>` : ''}
+          <div class="ph-detail-divider"></div>
+          <div class="spool-detail-actions">
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showEditSpoolForm(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Rediger
+            </button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showMeasureDialog(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+              Vei
+            </button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showStartDryingDialog(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+              Tørk
+            </button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolTimeline(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Historikk
+            </button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolLabel(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              QR
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    document.body.appendChild(overlay);
+  };
 
   function _renderSpoolGroups(spools) {
     const groupFn = {
@@ -1521,12 +1756,26 @@
   };
 
   window.showEditSpoolForm = function(spoolId) {
-    const container = document.getElementById(`spool-edit-${spoolId}`);
-    if (!container) return;
     const spool = _spools.find(s => s.id === spoolId);
     if (!spool) return;
-    container.style.display = '';
-    container.innerHTML = renderSpoolForm(spool);
+    const container = document.getElementById(`spool-edit-${spoolId}`);
+    if (container) {
+      container.style.display = '';
+      container.innerHTML = renderSpoolForm(spool);
+      return;
+    }
+    // Fallback: open in modal overlay (visual card view)
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:700px">
+      <div class="inv-modal-header">
+        <span>${t('settings.edit')} — ${esc(_cleanProfileName(spool))}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px" id="spool-edit-modal-${spoolId}">${renderSpoolForm(spool)}</div>
+    </div>`;
+    document.body.appendChild(overlay);
   };
 
   function renderSpoolForm(spool) {
@@ -1662,6 +1911,9 @@
     };
     data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
     await fetch(`/api/inventory/spools/${spoolId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    // Close modal overlay if editing from visual card view
+    const modal = document.getElementById(`spool-edit-modal-${spoolId}`);
+    if (modal) modal.closest('.inv-modal-overlay')?.remove();
     loadFilament();
   };
 
@@ -1672,7 +1924,10 @@
 
   window.hideSpoolEdit = function(spoolId) {
     const c = document.getElementById(`spool-edit-${spoolId}`);
-    if (c) { c.style.display = 'none'; c.innerHTML = ''; }
+    if (c) { c.style.display = 'none'; c.innerHTML = ''; return; }
+    // Fallback: close modal overlay if editing from visual card view
+    const modal = document.getElementById(`spool-edit-modal-${spoolId}`);
+    if (modal) modal.closest('.inv-modal-overlay')?.remove();
   };
 
   window.deleteSpoolItem = function(id) {
@@ -2468,9 +2723,6 @@
   window.showMeasureDialog = function(id) {
     const spool = _spools.find(s => s.id === id);
     if (!spool) return;
-    const container = document.getElementById(`spool-edit-${id}`);
-    if (!container) return;
-    container.style.display = '';
     const tare = spool.spool_weight ?? spool.vendor_empty_spool_weight_g ?? 250;
     const totalG = spool.initial_weight_g || 1000;
     const quickPcts = [0, 25, 50, 75, 100];
@@ -2480,7 +2732,8 @@
     }).join('');
     const density = spool.density || 1.24;
     const diameter = spool.diameter || 1.75;
-    container.innerHTML = `<div class="settings-form" style="margin:6px 0;padding:6px;border-top:1px solid var(--border-color)">
+    const cancelAction = `closeMeasureDialog(${id})`;
+    const formHtml = `<div class="settings-form" style="margin:6px 0;padding:6px;border-top:1px solid var(--border-color)">
       <div class="flex gap-sm" style="align-items:center;margin-bottom:4px">
         <label style="font-size:0.7rem;cursor:pointer"><input type="radio" name="measure-mode-${id}" value="scale" checked onchange="document.getElementById('measure-scale-${id}').style.display='';document.getElementById('measure-length-${id}').style.display='none'"> ${t('filament.gross_weight')}</label>
         <label style="font-size:0.7rem;cursor:pointer"><input type="radio" name="measure-mode-${id}" value="length" onchange="document.getElementById('measure-scale-${id}').style.display='none';document.getElementById('measure-length-${id}').style.display=''"> ${t('filament.use_by_length')}</label>
@@ -2492,7 +2745,7 @@
             <input class="form-input" id="measure-weight-${id}" type="number" placeholder="${t('filament.gross_weight_placeholder')}">
           </div>
           <button class="form-btn form-btn-sm" data-ripple onclick="submitMeasure(${id})">${t('filament.measure')}</button>
-          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="${cancelAction}">${t('settings.cancel')}</button>
         </div>
         <div class="measure-quick-btns">${quickBtns}</div>
       </div>
@@ -2503,10 +2756,36 @@
             <input class="form-input" id="measure-length-val-${id}" type="number" step="0.1" placeholder="${t('filament.enter_meters')}">
           </div>
           <button class="form-btn form-btn-sm" data-ripple onclick="submitMeasureLength(${id},${density},${diameter})">${t('filament.measure')}</button>
-          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="document.getElementById('spool-edit-${id}').style.display='none'">${t('settings.cancel')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="background:transparent;color:var(--text-muted)" onclick="${cancelAction}">${t('settings.cancel')}</button>
         </div>
       </div>
     </div>`;
+    const container = document.getElementById(`spool-edit-${id}`);
+    if (container) {
+      container.style.display = '';
+      container.innerHTML = formHtml;
+      return;
+    }
+    // Fallback: open in modal overlay (visual card view)
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.id = `measure-modal-${id}`;
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:500px">
+      <div class="inv-modal-header">
+        <span>${t('filament.measure_weight')} — ${esc(_cleanProfileName(spool))}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px">${formHtml}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window.closeMeasureDialog = function(id) {
+    const c = document.getElementById(`spool-edit-${id}`);
+    if (c) { c.style.display = 'none'; return; }
+    const m = document.getElementById(`measure-modal-${id}`);
+    if (m) m.remove();
   };
 
   window.submitMeasure = async function(id) {
@@ -2516,7 +2795,7 @@
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gross_weight_g: grossWeight })
     });
-    if (res.ok) loadFilament();
+    if (res.ok) { closeMeasureDialog(id); loadFilament(); }
     else { const err = await res.json().catch(() => ({})); showToast(err.error || t('filament.measure_failed'), 'error'); }
   };
 
@@ -2531,7 +2810,7 @@
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ used_weight_g_add: grams })
     });
-    if (res.ok) loadFilament();
+    if (res.ok) { closeMeasureDialog(id); loadFilament(); }
     else showToast(t('filament.measure_failed'), 'error');
   };
 
@@ -3877,12 +4156,9 @@
     const spool = _spools.find(s => s.id === spoolId);
     if (!spool) return;
     const preset = _dryingPresets.find(p => p.material === spool.material);
-    const formContainer = document.getElementById('inv-global-form');
-    if (!formContainer) return;
-
     const cleanName = _cleanProfileName(spool);
-    formContainer.style.display = 'block';
-    formContainer.innerHTML = `
+    const cancelAction = `closeDryingDialog()`;
+    const formHtml = `
       <div class="ctrl-card" style="margin-bottom:12px">
         <div class="ctrl-card-title">${t('filament.start_drying')} — ${esc(cleanName)}</div>
         <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px">
@@ -3909,10 +4185,37 @@
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="form-btn" data-ripple onclick="submitStartDrying(${spoolId})">${t('filament.start_drying')}</button>
-          <button class="form-btn form-btn-sm" data-ripple onclick="document.getElementById('inv-global-form').style.display='none'">${t('common.cancel')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="${cancelAction}">${t('common.cancel')}</button>
         </div>
       </div>`;
-    formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const formContainer = document.getElementById('inv-global-form');
+    if (formContainer) {
+      formContainer.style.display = 'block';
+      formContainer.innerHTML = formHtml;
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    // Fallback: open in modal overlay (visual card view)
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.id = 'drying-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:500px">
+      <div class="inv-modal-header">
+        <span>${t('filament.start_drying')} — ${esc(cleanName)}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px">${formHtml}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window.closeDryingDialog = function() {
+    const c = document.getElementById('inv-global-form');
+    if (c) { c.style.display = 'none'; return; }
+    const m = document.getElementById('drying-modal-overlay');
+    if (m) m.remove();
   };
 
   window.submitStartDrying = async function(spoolId) {
@@ -3929,7 +4232,7 @@
         body: JSON.stringify({ spool_id: spoolId, temperature: temp, duration_minutes: duration, method, humidity_before: humidity, notes })
       });
       if (!res.ok) throw new Error('Failed');
-      document.getElementById('inv-global-form').style.display = 'none';
+      closeDryingDialog();
       loadFilament();
     } catch (e) { showToast(e.message, 'error'); }
   };

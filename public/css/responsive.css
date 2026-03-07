@@ -87,7 +87,10 @@
   }
 
   .qs-grid { grid-template-columns: 1fr; }
-  .ams-slots { grid-template-columns: 1fr; }
+  .ams-cards-row { flex-wrap: wrap; }
+  .ams-card { min-width: calc(50% - 6px); }
+  .ams-visual-area { flex-direction: column; }
+  .ams-ext-section { flex-direction: row; border-left: none; border-top: 1px solid var(--border-color); padding-left: 0; padding-top: 10px; width: 100%; }
   .stats-strip { flex-wrap: wrap; }
   .spark-panel { min-width: 90px; flex: 1 1 calc(33% - 1px); }
   .speed-buttons { flex-wrap: wrap; }

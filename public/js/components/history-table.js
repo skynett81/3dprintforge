@@ -1,4 +1,4 @@
-// Print History — Modular with Tabs and Drag-and-Drop
+// Print History — Bambu Studio style
 (function() {
 
   // ═══ Helpers ═══
@@ -6,8 +6,11 @@
     return window.printerState?._printerMeta?.[id]?.name || id || '--';
   }
   function statusLabel(status) {
-    const key = { completed: 'completed', failed: 'failed', cancelled: 'cancelled' }[status];
-    return key ? t(`history.${key}`) : status;
+    const map = { completed: 'completed', failed: 'failed', cancelled: 'cancelled' };
+    return map[status] ? t(`history.${map[status]}`) : status;
+  }
+  function statusColor(status) {
+    return { completed: 'var(--accent-green)', failed: 'var(--accent-red)', cancelled: 'var(--accent-orange)' }[status] || 'var(--text-muted)';
   }
   function formatDuration(seconds) {
     if (!seconds) return '--';
@@ -28,6 +31,11 @@
     const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
     return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short' });
   }
+  function formatDateFull(iso) {
+    if (!iso) return '--';
+    const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+    return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
   function colorSwatch(hex) {
     if (!hex || hex.length < 6) return '';
     return `<span class="history-color-swatch" style="background:#${hex.substring(0, 6)}"></span>`;
@@ -42,31 +50,68 @@
 
   // ═══ Status icon helper ═══
   function statusIcon(status) {
-    if (status === 'completed') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-    if (status === 'failed') return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+    if (status === 'completed') return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+    if (status === 'failed') return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+  }
+
+  // Placeholder thumbnail SVG
+  function thumbPlaceholder(color) {
+    const c = color && color.length >= 6 ? '#' + color.substring(0, 6) : '#555';
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="200" height="200" fill="#2a2a2a"/>
+      <g transform="translate(100,100)">
+        <rect x="-40" y="-30" width="80" height="60" rx="6" fill="${c}" opacity="0.7"/>
+        <rect x="-30" y="-40" width="60" height="30" rx="4" fill="${c}" opacity="0.5"/>
+        <circle cx="0" cy="10" r="15" fill="${c}" opacity="0.9"/>
+      </g>
+    </svg>`;
   }
 
   // ═══ Tab config ═══
   const TAB_CONFIG = {
     history: { label: 'history.tab_history', modules: ['history-summary', 'history-filters', 'history-list'] },
-    stats:   { label: 'history.tab_stats',   modules: ['status-breakdown', 'printer-breakdown', 'filament-breakdown', 'duration-stats'] }
+    stats:   { label: 'history.tab_stats',   modules: ['status-breakdown', 'duration-stats', 'temperature-stats', 'filament-breakdown', 'nozzle-stats', 'top-models', 'printer-breakdown', 'print-timeline'] }
   };
   const MODULE_SIZE = {
     'history-summary': 'full', 'history-filters': 'full', 'history-list': 'full',
-    'status-breakdown': 'half', 'printer-breakdown': 'half',
-    'filament-breakdown': 'half', 'duration-stats': 'half'
+    'status-breakdown': 'third', 'printer-breakdown': 'third',
+    'filament-breakdown': 'full', 'duration-stats': 'third',
+    'nozzle-stats': 'third', 'temperature-stats': 'third',
+    'print-timeline': 'full', 'top-models': 'third'
   };
 
   const STORAGE_PREFIX = 'history-module-order-';
   const LOCK_KEY = 'history-layout-locked';
 
   let _data = [];
+  let _cloudTasks = null;
   let _activeFilter = 'all';
   let _activeTab = 'history';
   let _activePrinter = 'all';
   let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _draggedMod = null;
+
+  // Load cloud tasks for design title enrichment
+  async function _loadCloudTasks() {
+    if (_cloudTasks !== null) return;
+    try {
+      const res = await fetch('/api/bambu-cloud/tasks');
+      if (!res.ok) { _cloudTasks = []; return; }
+      const data = await res.json();
+      _cloudTasks = data.tasks || data || [];
+    } catch { _cloudTasks = []; }
+  }
+
+  function _getCloudMatch(filename) {
+    if (!_cloudTasks || !filename) return null;
+    const fn = filename.toLowerCase().trim();
+    return _cloudTasks.find(t => {
+      const tt = (t.title || '').toLowerCase().trim();
+      const dt = (t.designTitle || '').toLowerCase().trim();
+      return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+    }) || null;
+  }
 
   // ═══ Persistence ═══
   function getOrder(tabId) {
@@ -148,56 +193,36 @@
     },
 
     'history-list': (data) => {
-      let h = '<div class="history-cards" id="history-cards">';
+      let h = '<div class="ph-grid" id="history-cards">';
       for (const row of data) {
         const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
-        const startDate = formatDate(row.started_at);
-        const endDate = row.finished_at ? formatDate(row.finished_at) : '--';
+        const cloud = _getCloudMatch(row.filename);
+        const displayName = cloud?.designTitle || fname;
         const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
+        const pName = printerName(row.printer_id);
+        const duration = formatDuration(row.duration_seconds);
+        const dateShort = formatDateShort(row.started_at);
+        const thumbUrl = `/api/history/${row.id}/thumbnail`;
+        const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
+        const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
 
-        const accentColor = { completed: 'var(--accent-green)', failed: 'var(--accent-red)', cancelled: 'var(--accent-orange)' }[row.status] || 'var(--text-muted)';
-        h += `<div class="history-card" data-status="${row.status}" style="${display}">`;
-        h += `<div class="history-card-accent" style="background:${accentColor}"></div>`;
-        h += `<div class="history-card-content">`;
-
-        h += `<div class="history-card-header">
-          <div class="history-card-title">
-            <span class="history-card-status-icon">${statusIcon(row.status)}</span>
-            ${colorSwatch(row.filament_color)}
-            <span class="history-card-filename">${esc(fname)}</span>
+        h += `<div class="ph-card" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+          <div class="ph-card-thumb">
+            <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
+            <span class="ph-badge">Gcode</span>
           </div>
-          <span class="pill pill-${row.status}">${statusLabel(row.status)}</span>
+          <div class="ph-card-info">
+            <div class="ph-card-name" title="${esc(displayName)}">${esc(displayName)}</div>
+            <div class="ph-card-meta">
+              <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
+              <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
+            </div>
+            <div class="ph-card-bottom">
+              <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
+              <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
+            </div>
+          </div>
         </div>`;
-
-        // Card body — 3 column labeled grid
-        const speed = speedLabel(row.speed_level);
-        const filText = `${esc(row.filament_type) || '--'}${row.filament_used_g ? ' · ' + row.filament_used_g + 'g' : ''}`;
-        h += `<div class="history-card-grid">
-          <div class="hc-cell"><span class="hc-cell-label">${t('common.printer')}</span><span class="hc-cell-value">${esc(printerName(row.printer_id))}</span></div>
-          <div class="hc-cell"><span class="hc-cell-label">${t('history.date')}</span><span class="hc-cell-value">${formatDateShort(row.started_at)}</span></div>
-          <div class="hc-cell"><span class="hc-cell-label">${t('history.duration')}</span><span class="hc-cell-value">${formatDuration(row.duration_seconds)}</span></div>
-          <div class="hc-cell"><span class="hc-cell-label">${t('history.layers')}</span><span class="hc-cell-value">${row.layer_count || '--'}</span></div>
-          <div class="hc-cell"><span class="hc-cell-label">${t('history.filament')}</span><span class="hc-cell-value">${filText}</span></div>
-          <div class="hc-cell"><span class="hc-cell-label">${speed ? t('speed.label').replace(':','') : ''}</span><span class="hc-cell-value">${speed || ''}</span></div>
-          <div class="hc-cell hc-cost-cell" data-filament-g="${row.filament_used_g || 0}" data-duration-s="${row.duration_seconds || 0}"><span class="hc-cell-label">${t('filament.cost_estimate')}</span><span class="hc-cell-value hc-cost-value">--</span></div>
-        </div>`;
-
-        // Detail section (expandable)
-        h += `<div class="history-card-detail" style="display:none"><div class="history-detail-grid">`;
-        h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.started')}</span><span>${startDate}</span></div>`;
-        h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.ended')}</span><span>${endDate}</span></div>`;
-        if (row.nozzle_target || row.max_nozzle_temp) h += `<div class="history-detail-row"><span class="history-detail-label">${t('temperature.nozzle')}</span><span>${row.nozzle_target ? row.nozzle_target + '°C' : ''}${row.max_nozzle_temp ? ' (max ' + Math.round(row.max_nozzle_temp) + '°C)' : ''}</span></div>`;
-        if (row.bed_target || row.max_bed_temp) h += `<div class="history-detail-row"><span class="history-detail-label">${t('temperature.bed')}</span><span>${row.bed_target ? row.bed_target + '°C' : ''}${row.max_bed_temp ? ' (max ' + Math.round(row.max_bed_temp) + '°C)' : ''}</span></div>`;
-        if (row.nozzle_type || row.nozzle_diameter) h += `<div class="history-detail-row"><span class="history-detail-label">${t('printer_info.nozzle')}</span><span>${row.nozzle_type || ''} ${row.nozzle_diameter ? row.nozzle_diameter + 'mm' : ''}</span></div>`;
-        if (row.color_changes > 0) h += `<div class="history-detail-row"><span class="history-detail-label">${t('waste.color_changes')}</span><span>${row.color_changes}</span></div>`;
-        if (row.waste_g > 0) h += `<div class="history-detail-row"><span class="history-detail-label">${t('waste.total_weight')}</span><span>${row.waste_g}g</span></div>`;
-        h += `<div class="history-detail-row"><span class="history-detail-label">${t('history.filename')}</span><span class="history-detail-mono">${esc(row.filename) || '--'}</span></div>`;
-        if (row.notes) h += `<div class="history-detail-row"><span class="history-detail-label">${t('maintenance.notes')}</span><span>${esc(row.notes)}</span></div>`;
-        h += `<div class="history-cost-row" id="cost-row-${row.id}" style="display:none"></div>`;
-        h += '</div></div>';
-        h += `<button class="history-card-toggle" data-ripple data-tooltip="${t('history.expand_details') || 'Details'}" onclick="toggleHistoryDetail(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`;
-        h += '</div>'; // close .history-card-content
-        h += '</div>'; // close .history-card
       }
       h += '</div>';
       const exportUrl = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
@@ -239,17 +264,73 @@
 
     'filament-breakdown': (data) => {
       if (!data.length) return '';
+      // Group by type + color for full breakdown
       const byType = {};
+      const byColor = {};
+      const byBrand = {};
       for (const r of data) {
         const tp = r.filament_type || 'Unknown';
-        if (!byType[tp]) byType[tp] = { count: 0, weight: 0 };
+        const color = r.filament_color || '';
+        const brand = r.filament_brand || 'Unknown';
+        if (!byType[tp]) byType[tp] = { count: 0, weight: 0, colors: new Set() };
         byType[tp].count++;
         byType[tp].weight += r.filament_used_g || 0;
+        if (color) byType[tp].colors.add(color.substring(0, 6));
+
+        // By color
+        const colorKey = color ? color.substring(0, 6) : 'none';
+        if (!byColor[colorKey]) byColor[colorKey] = { count: 0, weight: 0, type: tp };
+        byColor[colorKey].count++;
+        byColor[colorKey].weight += r.filament_used_g || 0;
+
+        // By brand
+        if (!byBrand[brand]) byBrand[brand] = { count: 0, weight: 0 };
+        byBrand[brand].count++;
+        byBrand[brand].weight += r.filament_used_g || 0;
       }
-      const sorted = Object.entries(byType).sort((a, b) => b[1].count - a[1].count);
-      const mx = sorted[0]?.[1].count || 1;
-      let h = `<div class="card-title">${t('history.filament_breakdown')}</div><div class="chart-bars">`;
-      for (const [tp, d] of sorted) h += barRow(esc(tp), (d.count / mx) * 100, 'var(--accent-blue)', `${d.count} (${fmtW(d.weight)})`);
+
+      let h = `<div class="card-title">${t('history.filament_breakdown')}</div>`;
+      h += '<div class="filament-breakdown-grid">';
+
+      // Left: Type bars + Brand bars
+      h += '<div class="filament-breakdown-col">';
+      const sortedTypes = Object.entries(byType).sort((a, b) => b[1].count - a[1].count);
+      const mxT = sortedTypes[0]?.[1].count || 1;
+      h += '<div class="card-subtitle">Per type</div><div class="chart-bars">';
+      for (const [tp, d] of sortedTypes) {
+        const swatches = [...d.colors].map(c => `<span class="color-dot" style="background:#${c}"></span>`).join('');
+        h += `<div class="chart-bar-row"><span class="chart-bar-label">${swatches} ${esc(tp)}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(d.count/mxT)*100}%;background:var(--accent-blue)"></div></div><span class="chart-bar-value">${d.count} · ${fmtW(d.weight)}</span></div>`;
+      }
+      h += '</div>';
+
+      const sortedBrands = Object.entries(byBrand).sort((a, b) => b[1].weight - a[1].weight);
+      if (sortedBrands.length > 1 || (sortedBrands.length === 1 && sortedBrands[0][0] !== 'Unknown')) {
+        const mxB = sortedBrands[0]?.[1].weight || 1;
+        h += '<div class="card-subtitle" style="margin-top:12px">Per merke</div><div class="chart-bars">';
+        for (const [brand, d] of sortedBrands) {
+          h += barRow(esc(brand), (d.weight/mxB)*100, 'var(--accent-purple)', `${d.count}× · ${fmtW(d.weight)}`);
+        }
+        h += '</div>';
+      }
+      h += '</div>';
+
+      // Right: Color chips
+      const sortedColors = Object.entries(byColor).filter(([k]) => k !== 'none').sort((a, b) => b[1].count - a[1].count);
+      if (sortedColors.length > 0) {
+        h += '<div class="filament-breakdown-col">';
+        h += '<div class="card-subtitle">Farger brukt</div><div class="filament-color-grid">';
+        for (const [hex, d] of sortedColors) {
+          const c = '#' + hex;
+          const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+          const light = (r*299+g*587+b*114)/1000 > 160;
+          h += `<div class="filament-color-chip" style="background:${c};color:${light?'#333':'#fff'}">
+            <span class="filament-color-type">${esc(d.type)}</span>
+            <span class="filament-color-stats">${d.count}× · ${fmtW(d.weight)}</span>
+          </div>`;
+        }
+        h += '</div></div>';
+      }
+
       h += '</div>';
       return h;
     },
@@ -269,8 +350,314 @@
       h += sRow(t('stats.total_time'), formatDuration(s.totalTime));
       h += '</div>';
       return h;
+    },
+
+    'nozzle-stats': (data) => {
+      if (!data.length) return '';
+      const byNozzle = {};
+      let totalLayers = 0;
+      for (const r of data) {
+        const key = r.nozzle_type && r.nozzle_diameter
+          ? `${r.nozzle_type} ${r.nozzle_diameter}mm`
+          : r.nozzle_diameter ? `${r.nozzle_diameter}mm` : null;
+        if (key) {
+          if (!byNozzle[key]) byNozzle[key] = { count: 0, time: 0, layers: 0 };
+          byNozzle[key].count++;
+          byNozzle[key].time += r.duration_seconds || 0;
+          byNozzle[key].layers += r.layer_count || 0;
+        }
+        totalLayers += r.layer_count || 0;
+      }
+      const sorted = Object.entries(byNozzle).sort((a, b) => b[1].count - a[1].count);
+      if (!sorted.length) return '';
+      const mx = sorted[0][1].count;
+      let h = `<div class="card-title">Dysestatistikk</div><div class="chart-bars">`;
+      for (const [nz, d] of sorted) {
+        h += barRow(esc(nz), (d.count / mx) * 100, 'var(--accent-orange, #f0883e)', `${d.count}× · ${formatDuration(d.time)}`);
+      }
+      h += '</div>';
+      h += `<div class="stats-detail-list" style="margin-top:10px">`;
+      h += sRow('Totalt lag printet', totalLayers.toLocaleString());
+      const speedLevels = data.filter(r => r.speed_level != null);
+      if (speedLevels.length > 0) {
+        const speedNames = { 1: 'Stille', 2: 'Standard', 3: 'Sport', 4: 'Ludicrous' };
+        const bySp = {};
+        for (const r of speedLevels) {
+          const name = speedNames[r.speed_level] || `Nivå ${r.speed_level}`;
+          bySp[name] = (bySp[name] || 0) + 1;
+        }
+        const topSpeed = Object.entries(bySp).sort((a, b) => b[1] - a[1]);
+        h += sRow('Mest brukte hastighet', topSpeed[0] ? `${topSpeed[0][0]} (${topSpeed[0][1]}×)` : '--');
+      }
+      h += '</div>';
+      return h;
+    },
+
+    'temperature-stats': (data) => {
+      if (!data.length) return '';
+      const nozzleTemps = data.filter(r => r.max_nozzle_temp > 100).map(r => r.max_nozzle_temp);
+      const bedTemps = data.filter(r => r.max_bed_temp > 0).map(r => r.max_bed_temp);
+      if (!nozzleTemps.length && !bedTemps.length) return '';
+
+      let h = `<div class="card-title">Temperaturstatistikk</div><div class="stats-detail-list">`;
+      if (nozzleTemps.length) {
+        const avg = Math.round(nozzleTemps.reduce((a, b) => a + b, 0) / nozzleTemps.length);
+        const max = Math.max(...nozzleTemps);
+        const min = Math.min(...nozzleTemps);
+        h += sRow('Dyse gjennomsnitt', `${avg}°C`);
+        h += sRow('Dyse maks', `${max}°C`);
+        h += sRow('Dyse min', `${min}°C`);
+      }
+      if (bedTemps.length) {
+        const avg = Math.round(bedTemps.reduce((a, b) => a + b, 0) / bedTemps.length);
+        const max = Math.max(...bedTemps);
+        h += sRow('Bed gjennomsnitt', `${avg}°C`);
+        h += sRow('Bed maks', `${max}°C`);
+      }
+      const wasteTotal = data.reduce((s, r) => s + (r.waste_g || 0), 0);
+      if (wasteTotal > 0) h += sRow('Total filamentsvinn', fmtW(wasteTotal));
+      const colorChanges = data.reduce((s, r) => s + (r.color_changes || 0), 0);
+      if (colorChanges > 0) h += sRow('Fargebytter totalt', colorChanges);
+      h += '</div>';
+      return h;
+    },
+
+    'print-timeline': (data) => {
+      if (!data.length) return '';
+      // Group prints by day
+      const byDay = {};
+      for (const r of data) {
+        if (!r.started_at) continue;
+        const day = r.started_at.substring(0, 10);
+        if (!byDay[day]) byDay[day] = { count: 0, time: 0, success: 0 };
+        byDay[day].count++;
+        byDay[day].time += r.duration_seconds || 0;
+        if (r.status === 'completed') byDay[day].success++;
+      }
+      const days = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0]));
+      if (days.length < 2) return '';
+
+      const maxCount = Math.max(...days.map(d => d[1].count), 1);
+      let h = `<div class="card-title">Printtidslinje</div>`;
+      h += `<div class="timeline-chart">`;
+      for (const [day, d] of days) {
+        const pct = (d.count / maxCount) * 100;
+        const dateLabel = day.substring(5); // MM-DD
+        const successRate = d.count > 0 ? Math.round(d.success / d.count * 100) : 0;
+        const color = successRate === 100 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange, #f0883e)' : 'var(--accent-red)';
+        h += `<div class="timeline-bar" title="${day}: ${d.count} prints, ${formatDuration(d.time)}">
+          <div class="timeline-bar-fill" style="height:${pct}%;background:${color}"></div>
+          <span class="timeline-bar-label">${dateLabel}</span>
+          <span class="timeline-bar-count">${d.count}</span>
+        </div>`;
+      }
+      h += '</div>';
+
+      // Activity summary
+      const totalDays = days.length;
+      const first = days[0][0];
+      const last = days[days.length - 1][0];
+      const span = Math.max(1, Math.round((new Date(last) - new Date(first)) / 86400000));
+      const activePct = Math.round(totalDays / span * 100);
+      h += `<div class="stats-detail-list" style="margin-top:10px">`;
+      h += sRow('Aktive printdager', `${totalDays} av ${span} dager (${activePct}%)`);
+      h += sRow('Prints per dag (snitt)', (data.length / totalDays).toFixed(1));
+      const byHour = Array(24).fill(0);
+      for (const r of data) {
+        if (!r.started_at) continue;
+        const h24 = new Date(r.started_at).getHours();
+        byHour[h24]++;
+      }
+      const peakHour = byHour.indexOf(Math.max(...byHour));
+      h += sRow('Mest aktive time', `${String(peakHour).padStart(2,'0')}:00 – ${String(peakHour+1).padStart(2,'0')}:00 (${byHour[peakHour]} prints)`);
+      h += '</div>';
+      return h;
+    },
+
+    'top-models': (data) => {
+      if (!data.length) return '';
+      const byModel = {};
+      for (const r of data) {
+        const name = (r.filename || 'Ukjent').replace(/\.(3mf|gcode)$/i, '');
+        if (!byModel[name]) byModel[name] = { count: 0, time: 0, success: 0, fail: 0 };
+        byModel[name].count++;
+        byModel[name].time += r.duration_seconds || 0;
+        if (r.status === 'completed') byModel[name].success++;
+        if (r.status === 'failed') byModel[name].fail++;
+      }
+      const sorted = Object.entries(byModel).sort((a, b) => b[1].count - a[1].count).slice(0, 10);
+      const mx = sorted[0]?.[1].count || 1;
+      let h = `<div class="card-title">Mest printede modeller</div><div class="chart-bars">`;
+      for (const [name, d] of sorted) {
+        const failTag = d.fail > 0 ? ` <span style="color:var(--accent-red);font-size:0.7rem">(${d.fail} feilet)</span>` : '';
+        h += barRow(esc(name.length > 30 ? name.substring(0, 28) + '…' : name), (d.count / mx) * 100, 'var(--accent-green)', `${d.count}×${failTag}`);
+      }
+      h += '</div>';
+      return h;
     }
   };
+
+  // ═══ Detail overlay ═══
+  function showDetail(id) {
+    const row = _data.find(r => r.id === id);
+    if (!row) return;
+
+    const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
+    const cloud = _getCloudMatch(row.filename);
+    const displayName = cloud?.designTitle || fname;
+    const pName = printerName(row.printer_id);
+    const speed = speedLabel(row.speed_level);
+    const filWeight = row.filament_used_g ? (cloud?.weight || row.filament_used_g) + 'g' : '--';
+    const filBrand = row.filament_brand || '--';
+    const filType = row.filament_type || '--';
+    const filColorHex = row.filament_color && row.filament_color.length >= 6 ? '#' + row.filament_color.substring(0, 6) : null;
+    const traySlot = row.tray_id != null && row.tray_id !== '255' ? `A${parseInt(row.tray_id) + 1}` : row.tray_id === '255' ? 'Ext' : '--';
+    const amsUsed = row.ams_units_used ? `${row.ams_units_used} enhet${row.ams_units_used > 1 ? 'er' : ''}` : '--';
+    const thumbUrl = `/api/history/${row.id}/thumbnail`;
+    const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
+    const nozzleText = [row.nozzle_type, row.nozzle_diameter ? row.nozzle_diameter + 'mm' : ''].filter(Boolean).join(' ') || '--';
+    const plateLabel = cloud?.plateName || (cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '');
+
+    // Build filament chip with color swatch
+    let filChip = '';
+    if (row.filament_type) {
+      const fColor = filColorHex || '#888';
+      filChip = `<div class="ph-detail-filament-chip">
+        <div class="ph-fil-swatch" style="background:${fColor}"></div>
+        <div class="ph-fil-chip-info">
+          <span class="ph-fil-chip-brand">${esc(filBrand)}</span>
+          <span class="ph-fil-chip-type">${esc(filType)}${filWeight !== '--' ? ' · ' + filWeight : ''}</span>
+          <span class="ph-fil-chip-slot">${traySlot}</span>
+        </div>
+      </div>`;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ph-detail-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    // Build temperature info
+    const tempInfo = [];
+    if (row.max_nozzle_temp > 0) tempInfo.push(`Dyse: ${row.max_nozzle_temp}°C`);
+    if (row.max_bed_temp > 0) tempInfo.push(`Bed: ${row.max_bed_temp}°C`);
+    const tempText = tempInfo.length ? tempInfo.join(' · ') : '--';
+
+    overlay.innerHTML = `<div class="ph-detail-panel">
+      <button class="ph-detail-close" onclick="this.closest('.ph-detail-overlay').remove()">&times;</button>
+      <div class="ph-detail-layout">
+        <div class="ph-detail-left">
+          <div class="ph-detail-thumb">
+            <img src="${thumbUrl}" alt="" onerror="this.src='${fallbackThumb}'">
+            <span class="ph-badge">Gcode</span>
+          </div>
+          <div class="ph-detail-status-banner" style="background:${statusColor(row.status)}">
+            ${statusIcon(row.status)}
+            <span>${statusLabel(row.status)}</span>
+          </div>
+          ${filChip ? `<div class="ph-detail-filaments-section">
+            <span class="ph-detail-label">Filaments</span>
+            ${filChip}
+          </div>` : ''}
+        </div>
+        <div class="ph-detail-right">
+          <div class="ph-detail-header">
+            <h3 class="ph-detail-title">${esc(displayName)}</h3>
+          </div>
+          <div class="ph-detail-grid">
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('common.printer')}</span>
+              <span class="ph-detail-value">${esc(pName)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('history.duration')}</span>
+              <span class="ph-detail-value">${formatDuration(row.duration_seconds)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Filamentmerke</span>
+              <span class="ph-detail-value">${esc(filBrand)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Filamenttype</span>
+              <span class="ph-detail-value">${filColorHex ? `<span class="color-dot" style="background:${filColorHex}"></span> ` : ''}${esc(filType)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Vekt brukt</span>
+              <span class="ph-detail-value">${filWeight}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('history.layers')}</span>
+              <span class="ph-detail-value">${row.layer_count || '--'}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">AMS-spor</span>
+              <span class="ph-detail-value">${traySlot}</span>
+            </div>
+            ${speed ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">${t('speed.label').replace(':','')}</span>
+              <span class="ph-detail-value">${speed}</span>
+            </div>` : ''}
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('printer_info.nozzle')}</span>
+              <span class="ph-detail-value">${nozzleText}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">Temperaturer</span>
+              <span class="ph-detail-value">${tempText}</span>
+            </div>
+            <div class="ph-detail-field ph-detail-cost-field" data-id="${row.id}" data-filament-g="${row.filament_used_g || 0}" data-duration-s="${row.duration_seconds || 0}">
+              <span class="ph-detail-label">${t('filament.cost_estimate')}</span>
+              <span class="ph-detail-value ph-detail-cost-value">--</span>
+            </div>
+            ${plateLabel ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">Plate</span>
+              <span class="ph-detail-value">${esc(plateLabel)}</span>
+            </div>` : ''}
+          </div>
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-grid">
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('history.started')}</span>
+              <span class="ph-detail-value">${formatDateFull(row.started_at)}</span>
+            </div>
+            <div class="ph-detail-field">
+              <span class="ph-detail-label">${t('history.ended')}</span>
+              <span class="ph-detail-value">${formatDateFull(row.finished_at)}</span>
+            </div>
+          </div>
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-footer-fields">
+            <div class="ph-detail-field ph-detail-field-wide">
+              <span class="ph-detail-label">${t('history.filename')}</span>
+              <span class="ph-detail-value ph-detail-mono">${esc(row.filename) || '--'}</span>
+            </div>
+            ${row.notes ? `<div class="ph-detail-field ph-detail-field-wide">
+              <span class="ph-detail-label">${t('maintenance.notes')}</span>
+              <span class="ph-detail-value">${esc(row.notes)}</span>
+            </div>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    document.body.appendChild(overlay);
+
+    // Load cost estimate
+    const costField = overlay.querySelector('.ph-detail-cost-field');
+    if (costField) {
+      const fg = parseFloat(costField.dataset.filamentG) || 0;
+      const ds = parseInt(costField.dataset.durationS) || 0;
+      if (fg > 0 || ds > 0) {
+        fetch(`/api/inventory/cost-estimate?filament_g=${fg}&duration_s=${ds}`)
+          .then(r => r.json())
+          .then(cost => {
+            if (cost.total_cost > 0) {
+              const el = costField.querySelector('.ph-detail-cost-value');
+              if (el) el.textContent = formatCurrency(cost.total_cost);
+            }
+          }).catch(() => {});
+      }
+    }
+  }
 
   // ═══ Tab switching ═══
   function switchTab(tabId) {
@@ -327,7 +714,6 @@
 
     panel.innerHTML = `<div class="history-loading"><span class="text-muted">${t('progress.waiting')}</span></div>`;
 
-    // Read sub-slug from hash
     const hashParts = location.hash.replace('#', '').split('/');
     if (hashParts[0] === 'history' && hashParts[1]) {
       if (hashParts[1] === 'printer' && hashParts[2]) {
@@ -341,15 +727,14 @@
     }
 
     try {
-      const res = await fetch('/api/history?limit=100');
-      _data = await res.json();
+      const [histRes] = await Promise.all([fetch('/api/history?limit=100'), _loadCloudTasks()]);
+      _data = await histRes.json();
 
       if (!_data.length) {
         panel.innerHTML = `<p class="text-muted">${t('history.no_records')}</p>`;
         return;
       }
 
-      // Filter data by selected printer
       const filteredData = _activePrinter === 'all'
         ? _data : _data.filter(r => r.printer_id === _activePrinter);
 
@@ -395,7 +780,8 @@
           if (!content) continue;
           const draggable = _locked ? '' : 'draggable="true"';
           const unlocked = _locked ? '' : ' stats-module-unlocked';
-          const span = (MODULE_SIZE[modId] || 'full') === 'full' ? 'grid-column:1/-1;' : '';
+          const size = MODULE_SIZE[modId] || 'full';
+          const span = size === 'full' ? 'grid-column:1/-1;' : size === 'half' ? 'grid-column:span 2;' : '';
           html += `<div class="stats-module${unlocked}" data-module-id="${modId}" ${draggable} style="${span}--i:${_si++};">`;
           if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
           html += content;
@@ -404,39 +790,22 @@
         html += '</div>';
       }
 
-      html += '</div>'; // close .history-layout
+      html += '</div>';
       panel.innerHTML = html;
 
-      // Attach module DnD
       for (const tabId of Object.keys(TAB_CONFIG)) {
         const cont = document.getElementById(`history-tab-${tabId}`);
         if (cont) initModuleDrag(cont, tabId);
       }
-      // Async cost estimation
-      _loadHistoryCosts(panel);
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('history.load_failed')}</p>`;
-    }
-  }
-
-  async function _loadHistoryCosts(panel) {
-    const cells = panel.querySelectorAll('.hc-cost-cell');
-    for (const cell of cells) {
-      const fg = parseFloat(cell.dataset.filamentG) || 0;
-      const ds = parseInt(cell.dataset.durationS) || 0;
-      if (fg <= 0 && ds <= 0) continue;
-      try {
-        const res = await fetch(`/api/inventory/cost-estimate?filament_g=${fg}&duration_s=${ds}`);
-        const cost = await res.json();
-        const valEl = cell.querySelector('.hc-cost-value');
-        if (valEl && cost.total_cost > 0) valEl.textContent = formatCurrency(cost.total_cost);
-      } catch {}
     }
   }
 
   // ═══ Global API ═══
   window.loadHistoryPanel = loadHistory;
   window.switchHistoryTab = switchTab;
+  window.showHistoryDetail = showDetail;
   window.toggleHistoryLock = function() {
     _locked = !_locked;
     localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
@@ -450,25 +819,6 @@
     const isOpen = detail.style.display !== 'none';
     detail.style.display = isOpen ? 'none' : '';
     btn.classList.toggle('open', !isOpen);
-    // Lazy-load cost data when opening
-    if (!isOpen) {
-      const costRow = detail.querySelector('.history-cost-row');
-      if (costRow && !costRow.dataset.loaded) {
-        costRow.dataset.loaded = '1';
-        const printId = costRow.id.replace('cost-row-', '');
-        fetch(`/api/cost/${printId}`).then(r => r.ok ? r.json() : null).then(cost => {
-          if (cost && cost.total_cost > 0) {
-            costRow.style.display = '';
-            costRow.innerHTML = `<div class="history-detail-row"><span class="history-detail-label">${t('history.print_cost')}</span><span>${formatCurrency(cost.total_cost)}</span></div>` +
-              (cost.filament_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_filament')}</span><span>${formatCurrency(cost.filament_cost)}</span></div>` : '') +
-              (cost.electricity_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_electricity')}</span><span>${formatCurrency(cost.electricity_cost)}</span></div>` : '') +
-              (cost.depreciation_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_depreciation')}</span><span>${formatCurrency(cost.depreciation_cost)}</span></div>` : '') +
-              (cost.labor_cost > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_labor')}</span><span>${formatCurrency(cost.labor_cost)}</span></div>` : '') +
-              (cost.markup_amount > 0 ? `<div class="history-detail-row text-muted" style="font-size:0.8rem"><span class="history-detail-label" style="padding-left:1rem">${t('history.cost_markup')}</span><span>${formatCurrency(cost.markup_amount)}</span></div>` : '');
-          }
-        }).catch(() => {});
-      }
-    }
   };
 
   window.filterHistoryPrinter = function(printerId) {
@@ -491,7 +841,7 @@
         if (match && match[1] === status) b.classList.add('active');
       });
     }
-    document.querySelectorAll('.history-card').forEach(card => {
+    document.querySelectorAll('.ph-card').forEach(card => {
       card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
     });
   };

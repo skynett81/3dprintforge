@@ -1,4 +1,4 @@
-import { getHistory, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats } from './database.js';
+import { getHistory, getHistoryById, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats } from './database.js';
 import { createBackup, listBackups } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -1204,6 +1204,94 @@ export async function handleApiRequest(req, res) {
       return;
     }
 
+    // ---- History thumbnail ----
+    const histThumbMatch = path.match(/^\/api\/history\/(\d+)\/thumbnail$/);
+    if (histThumbMatch && method === 'GET') {
+      const histId = histThumbMatch[1];
+      const thumbDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'history-thumbnails');
+      // Try cached file first (PNG then SVG)
+      for (const ext of ['png', 'svg']) {
+        const thumbPath = join(thumbDir, `${histId}.${ext}`);
+        if (existsSync(thumbPath)) {
+          const ct = ext === 'svg' ? 'image/svg+xml' : 'image/png';
+          res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' });
+          return createReadStream(thumbPath).pipe(res);
+        }
+      }
+      // On-demand: try Bambu Cloud tasks (cover images), then FTPS
+      try {
+        const row = getHistoryById(parseInt(histId));
+        if (row) {
+          // 1) Try Bambu Cloud task matching by title/filename
+          if (_bambuCloud && _bambuCloud.isAuthenticated()) {
+            try {
+              const tasks = await _bambuCloud.getTaskHistory();
+              const taskList = tasks.tasks || tasks;
+              if (Array.isArray(taskList)) {
+                const fn = (row.filename || '').toLowerCase().trim();
+                const match = taskList.find(t => {
+                  const tt = (t.title || '').toLowerCase().trim();
+                  const dt = (t.designTitle || '').toLowerCase().trim();
+                  return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+                });
+                if (match && match.cover) {
+                  // Download cover image and cache it
+                  const imgBuf = await new Promise((resolve) => {
+                    https.get(match.cover, { timeout: 10000 }, (imgRes) => {
+                      if (imgRes.statusCode !== 200) { imgRes.resume(); return resolve(null); }
+                      const chunks = [];
+                      imgRes.on('data', c => chunks.push(c));
+                      imgRes.on('end', () => resolve(Buffer.concat(chunks)));
+                      imgRes.on('error', () => resolve(null));
+                    }).on('error', () => resolve(null));
+                  });
+                  if (imgBuf && imgBuf.length > 100) {
+                    try { mkdirSync(thumbDir, { recursive: true }); writeFileSync(join(thumbDir, `${histId}.png`), imgBuf); } catch {}
+                    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': imgBuf.length, 'Cache-Control': 'public, max-age=86400' });
+                    res.end(imgBuf);
+                    return;
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('[api] Cloud thumb fetch error:', e.message);
+            }
+          }
+
+          // 2) Fallback: try FTPS from printer
+          const printers = getPrinters();
+          const printer = printers.find(p => p.id === row.printer_id);
+          const ac = printer?.accessCode || printer?.access_code;
+          if (printer && printer.ip && ac) {
+            const { fetchHistoryThumbnail } = await import('./thumbnail-service.js');
+            const candidates = [];
+            if (row.gcode_file) candidates.push(row.gcode_file);
+            if (row.filename) {
+              const base = row.filename.replace(/\.(3mf|gcode)$/i, '');
+              candidates.push(`/sdcard/${base}.gcode`);
+              candidates.push(`/cache/${base}.gcode`);
+            }
+            for (const gcodePath of candidates) {
+              try {
+                const png = await fetchHistoryThumbnail(printer.ip, ac, gcodePath);
+                if (png) {
+                  try { mkdirSync(thumbDir, { recursive: true }); writeFileSync(join(thumbDir, `${histId}.png`), png); } catch {}
+                  res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': png.length, 'Cache-Control': 'public, max-age=86400' });
+                  res.end(png);
+                  return;
+                }
+              } catch {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[api] History thumb error:', e.message);
+      }
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+
     // ---- HMS Codes ----
     if (method === 'GET' && path === '/api/hms-codes') {
       try {
@@ -2354,6 +2442,29 @@ export async function handleApiRequest(req, res) {
     const timelineMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/timeline$/);
     if (timelineMatch && method === 'GET') {
       return sendJson(res, getSpoolTimeline(parseInt(timelineMatch[1])));
+    }
+
+    const printStatsMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/print-stats$/);
+    if (printStatsMatch && method === 'GET') {
+      const stats = getSpoolPrintStats(parseInt(printStatsMatch[1]));
+      if (!stats) return sendJson(res, { error: 'Spool not found' }, 404);
+      return sendJson(res, stats);
+    }
+
+    if (method === 'GET' && path === '/api/inventory/estimate-usage') {
+      return sendJson(res, estimateFilamentFromHistory());
+    }
+
+    if (method === 'POST' && path === '/api/inventory/backfill-usage') {
+      const result = backfillFilamentUsage();
+      // Auto-sync spool weights from log after backfill
+      const synced = syncSpoolWeightsFromLog();
+      result.synced_spools = synced;
+      return sendJson(res, result);
+    }
+
+    if (method === 'POST' && path === '/api/inventory/sync-weights') {
+      return sendJson(res, syncSpoolWeightsFromLog());
     }
 
     if (method === 'GET' && path === '/api/inventory/events') {
@@ -4694,6 +4805,7 @@ function _getApiDocs() {
       { method: 'POST', path: '/api/inventory/spools/:id/measure', tag: 'Inventory', summary: 'Measure spool weight', permission: 'filament' },
       { method: 'POST', path: '/api/inventory/spools/:id/favorite', tag: 'Inventory', summary: 'Toggle spool favorite', permission: 'filament' },
       { method: 'GET', path: '/api/inventory/spools/:id/timeline', tag: 'Inventory', summary: 'Get spool event timeline', permission: 'view' },
+      { method: 'GET', path: '/api/inventory/spools/:id/print-stats', tag: 'Inventory', summary: 'Get spool print usage statistics with cost breakdown', permission: 'view' },
       { method: 'GET', path: '/api/inventory/stats', tag: 'Inventory', summary: 'Get inventory statistics', permission: 'view' },
       { method: 'GET', path: '/api/inventory/search', tag: 'Inventory', summary: 'Search spools', permission: 'view' },
       { method: 'GET', path: '/api/inventory/export', tag: 'Inventory', summary: 'Export all spools', permission: 'view' },
