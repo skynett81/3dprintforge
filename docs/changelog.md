@@ -4,6 +4,103 @@ All notable changes to Bambu Dashboard.
 
 ---
 
+## v1.1.9 — Print Guard, History Sorting, AMS Redesign & 3D Progress Fix (2026-03-08)
+
+### Print Guard / Protection System
+- Fixed guard system being completely non-functional (default settings fallback)
+- Guard now works out-of-the-box without requiring manual database setup
+- Fixed race condition where protection panel overwrote errors panel content
+
+### Error Handling
+- Eliminated false HMS errors (0500_0500, 0500_0600, 0C00_0300)
+- Added print error dedup across server restarts
+- Added PRINT_ERROR_IGNORE set for known false positives (0300_8003)
+- HMS codes in FINISH/IDLE state are now ignored
+
+### History Panel
+- Sort by date, name, duration, filament usage, or status
+- Toggle between grid and list view (compact rows with thumbnails)
+- Sort direction and view mode persisted in localStorage
+
+### Waste History
+- Sortable waste history entries (date, waste, used filament, duration)
+- Client-side sort with toggle direction
+
+### 3D Preview & Fullscreen
+- Progress line now uses actual print percentage (mc_percent) instead of layer ratio
+- Fixes mismatch between progress bar and 3D reveal on both dashboard and fullscreen
+- Added fullscreen info bar with print progress %, status, time remaining, ETA, and layer info
+- Info bar uses proper theme colors for readability in both light and dark mode
+
+### AMS Panel
+- Tabs restyled with pill/capsule borders (Bambu Studio style)
+- Tabs aligned directly above their respective filament cards
+- Humidity indicator now uses pill-style border
+- Layer label in fullscreen uses proper i18n template interpolation
+
+### Translations
+- Added progress state keys: printing, paused, finished, idle, preparing, failed (nb/en)
+- Added history sort keys: sort_date, sort_name, sort_duration, sort_filament, sort_status (nb/en)
+- Added waste sort keys: sort_date, sort_waste, sort_used, sort_duration (nb/en)
+
+### Technical
+- Service worker cache bumped to v5
+- G-code console history styling added
+
+---
+
+## v1.1.8 — Inventory UX, Cost Analytics, AMS Sync & Smart Cost Handling (2026-03-03)
+
+### Inventory & Cost
+- Inventory UX improvements with cost analytics
+- AMS sync enhancements
+- Smart cost handling and recalculation
+
+### Queue & Controls
+- Queue staggering and layer pauses
+- Z-offset wizard
+- Spool refill tracking
+- DYMO/ESC-POS label printing
+
+### Camera & Telemetry
+- Camera screenshots
+- Telemetry charts for print progress, layers, WiFi signal
+- Temperature trends
+
+### Cloud Integration
+- Cloud print history import
+- Retroactive print capture
+- AMS inventory tracking
+- Bambu Cloud login
+- Printer discovery
+
+### UI
+- Settings search
+- Sub-tab navigation for all settings
+- Consolidated filament dashboards
+- Multi-method tag scanner (camera, USB reader, manual entry)
+
+---
+
+## v1.1.7 — NFC Scanner, Filament Tracking & Cloud Thumbnails (2026-03-03)
+
+### Filament & AMS
+- AMS import and filament tools improvements
+- Estimated remaining filament after print on AMS and filament panels
+- Fixed filament remaining mismatch between AMS and active filament panels
+
+### Camera
+- P2S camera detection
+- Cloud thumbnail caching and fallback
+
+### Maintenance
+- Fixed nozzle session retire SQL bug
+
+### Telemetry
+- Telemetry charts for print progress, layers, and WiFi signal
+
+---
+
 ## v1.1.6 — Feature Parity Release (2026-03-03)
 
 ### Learning Center & Knowledge Base
