@@ -538,7 +538,9 @@
   }
 
   function _showMwFullscreen(container, imageSrc, pd) {
-    const pct = pd?.total_layer_num > 0 ? ((pd.layer_num || 0) / pd.total_layer_num) * 100 : 0;
+    const pct = pd?.mc_percent || 0;
+    const layer = pd?.layer_num || 0;
+    const total = pd?.total_layer_num || 0;
     const clipTop = 100 - pct;
 
     container.innerHTML = `
@@ -547,7 +549,7 @@
         <img class="fs-mw-reveal" id="fs-mw-reveal" src="${imageSrc}" alt="" style="clip-path:inset(${clipTop}% 0 0 0)">
         <div class="fs-mw-edge" id="fs-mw-edge" style="bottom:${pct}%"></div>
         <div class="fs-mw-hud">
-          <span class="fs-mw-pct" id="fs-mw-pct">${Math.round(pct)}%</span>
+          <span class="fs-mw-pct" id="fs-mw-pct">${t('progress.layer', { current: layer, total: total })}</span>
         </div>
       </div>`;
 
@@ -588,9 +590,8 @@
           ];
         }
         _fsViewer.loadModel(model);
-        const layer = pd?.layer_num || 0;
-        const total = pd?.total_layer_num || 0;
-        if (total > 0) _fsViewer.setProgress(layer / total);
+        const initPct = pd?.mc_percent || 0;
+        if (initPct > 0) _fsViewer.setProgress(initPct / 100);
       })
       .catch(() => {
         container.innerHTML = `<div class="camera-placeholder"><span>${t('model.not_available')}</span></div>`;
@@ -649,7 +650,7 @@
 
       const layer = pd.layer_num || 0;
       const total = pd.total_layer_num || 0;
-      const pct = total > 0 ? (layer / total) * 100 : 0;
+      const pct = pd.mc_percent || 0;
 
       if (_fsMwMode) {
         // Update MakerWorld reveal
@@ -669,7 +670,7 @@
           edge.style.boxShadow = `0 0 16px ${c}, 0 0 6px ${c}`;
         }
       } else if (_fsViewer) {
-        if (total > 0) _fsViewer.setProgress(layer / total);
+        if (pct > 0) _fsViewer.setProgress(pct / 100);
       }
 
       // Update info bar

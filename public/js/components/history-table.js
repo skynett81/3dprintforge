@@ -116,6 +116,9 @@
   let _activePrinter = 'all';
   let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _draggedMod = null;
+  let _viewMode = localStorage.getItem('history-view-mode') || 'grid';
+  let _sortField = localStorage.getItem('history-sort-field') || 'date';
+  let _sortDir = localStorage.getItem('history-sort-dir') || 'desc';
 
   // Load cloud tasks for design title enrichment
   async function _loadCloudTasks() {
@@ -226,38 +229,109 @@
     },
 
     'history-list': (data) => {
-      let h = '<div class="ph-grid" id="history-cards">';
-      for (const row of data) {
-        const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
-        const cloud = _getCloudMatch(row.filename);
-        const displayName = cloud?.designTitle || fname;
-        const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
-        const pName = printerName(row.printer_id);
-        const duration = formatDuration(row.duration_seconds);
-        const dateShort = formatDateShort(row.started_at);
-        const thumbUrl = `/api/history/${row.id}/thumbnail`;
-        const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
-        const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
+      // Sort data
+      const sorted = [...data].sort((a, b) => {
+        let va, vb;
+        switch (_sortField) {
+          case 'date': va = a.started_at || ''; vb = b.started_at || ''; break;
+          case 'name': va = (a.filename || '').toLowerCase(); vb = (b.filename || '').toLowerCase(); break;
+          case 'duration': va = a.duration_seconds || 0; vb = b.duration_seconds || 0; break;
+          case 'status': va = a.status || ''; vb = b.status || ''; break;
+          case 'filament': va = a.filament_used_g || 0; vb = b.filament_used_g || 0; break;
+          default: va = a.started_at || ''; vb = b.started_at || '';
+        }
+        const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+        return _sortDir === 'asc' ? cmp : -cmp;
+      });
 
-        h += `<div class="ph-card" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
-          <div class="ph-card-thumb">
-            <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
-            <span class="ph-badge">Gcode</span>
-          </div>
-          <div class="ph-card-info">
-            <div class="ph-card-name" title="${esc(displayName)}">${esc(displayName)}</div>
-            <div class="ph-card-meta">
-              <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
-              <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
-            </div>
-            <div class="ph-card-bottom">
-              <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
-              <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
-            </div>
-          </div>
-        </div>`;
+      // Sort + view toolbar
+      const arrow = _sortDir === 'asc' ? '↑' : '↓';
+      const sortBtns = [
+        { field: 'date', label: t('history.sort_date') },
+        { field: 'name', label: t('history.sort_name') },
+        { field: 'duration', label: t('history.sort_duration') },
+        { field: 'filament', label: t('history.sort_filament') },
+        { field: 'status', label: t('history.sort_status') }
+      ];
+      let h = '<div class="ph-list-toolbar">';
+      h += '<div class="ph-sort-btns">';
+      for (const s of sortBtns) {
+        const active = _sortField === s.field;
+        h += `<button class="ph-sort-btn${active ? ' active' : ''}" onclick="historySort('${s.field}')">${s.label}${active ? ' ' + arrow : ''}</button>`;
       }
       h += '</div>';
+      h += '<div class="ph-view-btns">';
+      h += `<button class="ph-view-btn${_viewMode === 'grid' ? ' active' : ''}" onclick="historyViewMode('grid')" title="Grid">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>`;
+      h += `<button class="ph-view-btn${_viewMode === 'list' ? ' active' : ''}" onclick="historyViewMode('list')" title="List">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>`;
+      h += '</div></div>';
+
+      if (_viewMode === 'grid') {
+        h += '<div class="ph-grid" id="history-cards">';
+        for (const row of sorted) {
+          const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
+          const cloud = _getCloudMatch(row.filename);
+          const displayName = cloud?.designTitle || fname;
+          const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
+          const pName = printerName(row.printer_id);
+          const duration = formatDuration(row.duration_seconds);
+          const dateShort = formatDateShort(row.started_at);
+          const thumbUrl = `/api/history/${row.id}/thumbnail`;
+          const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
+          const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
+
+          h += `<div class="ph-card" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+            <div class="ph-card-thumb">
+              <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
+              <span class="ph-badge">Gcode</span>
+            </div>
+            <div class="ph-card-info">
+              <div class="ph-card-name" title="${esc(displayName)}">${esc(displayName)}</div>
+              <div class="ph-card-meta">
+                <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
+                <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
+              </div>
+              <div class="ph-card-bottom">
+                <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
+                <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
+              </div>
+            </div>
+          </div>`;
+        }
+        h += '</div>';
+      } else {
+        // List view
+        h += '<div class="ph-list" id="history-cards">';
+        for (const row of sorted) {
+          const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
+          const cloud = _getCloudMatch(row.filename);
+          const displayName = cloud?.designTitle || fname;
+          const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
+          const pName = printerName(row.printer_id);
+          const duration = formatDuration(row.duration_seconds);
+          const dateFull = formatDate(row.started_at);
+          const filWeight = row.filament_used_g ? fmtW(row.filament_used_g) : '--';
+          const thumbUrl = `/api/history/${row.id}/thumbnail`;
+          const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
+
+          h += `<div class="ph-list-row" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+            <div class="ph-list-thumb">
+              <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
+            </div>
+            <div class="ph-list-name" title="${esc(displayName)}">${esc(displayName)}</div>
+            <div class="ph-list-date">${dateFull}</div>
+            <div class="ph-list-duration">${duration}</div>
+            <div class="ph-list-filament">${filWeight}</div>
+            <div class="ph-list-printer">${esc(pName)}</div>
+            <div class="ph-list-status" style="color:${statusColor(row.status)}">${statusIcon(row.status)}</div>
+          </div>`;
+        }
+        h += '</div>';
+      }
+
       const exportUrl = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
       h += `<div class="history-export"><a href="${exportUrl}" class="form-btn form-btn-sm form-btn-secondary" data-ripple download>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -975,6 +1049,24 @@
     loadHistory();
   };
 
+  window.historySort = function(field) {
+    if (_sortField === field) {
+      _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      _sortField = field;
+      _sortDir = field === 'name' ? 'asc' : 'desc';
+    }
+    localStorage.setItem('history-sort-field', _sortField);
+    localStorage.setItem('history-sort-dir', _sortDir);
+    loadHistory();
+  };
+
+  window.historyViewMode = function(mode) {
+    _viewMode = mode;
+    localStorage.setItem('history-view-mode', mode);
+    loadHistory();
+  };
+
   window.filterHistory = function(status, btn) {
     _activeFilter = status;
     const slug = status === 'all' ? 'history' : `history/${status}`;
@@ -988,7 +1080,7 @@
         if (match && match[1] === status) b.classList.add('active');
       });
     }
-    document.querySelectorAll('.ph-card').forEach(card => {
+    document.querySelectorAll('.ph-card, .ph-list-row').forEach(card => {
       card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
     });
   };

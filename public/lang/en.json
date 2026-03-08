@@ -845,7 +845,12 @@
     "cost_electricity": "Electricity",
     "cost_depreciation": "Depreciation",
     "cost_labor": "Labor",
-    "cost_markup": "Markup"
+    "cost_markup": "Markup",
+    "sort_date": "Date",
+    "sort_name": "Name",
+    "sort_duration": "Duration",
+    "sort_filament": "Filament",
+    "sort_status": "Status"
   },
   "stats": {
     "total_prints": "Total prints",

@@ -845,7 +845,12 @@
     "cost_electricity": "Strøm",
     "cost_depreciation": "Avskriving",
     "cost_labor": "Arbeid",
-    "cost_markup": "Påslag"
+    "cost_markup": "Påslag",
+    "sort_date": "Dato",
+    "sort_name": "Navn",
+    "sort_duration": "Varighet",
+    "sort_filament": "Filament",
+    "sort_status": "Status"
   },
   "stats": {
     "total_prints": "Totalt antall",

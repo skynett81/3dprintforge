@@ -99,7 +99,7 @@
     // Update progress on every tick
     const layer = data.layer_num || 0;
     const total = data.total_layer_num || 0;
-    const pct = total > 0 ? (layer / total) * 100 : 0;
+    const pct = data.mc_percent || 0;
 
     if (_usingMwImage) {
       // Reveal bright image from bottom via clip-path
@@ -118,8 +118,8 @@
         }
       }
     } else if (_viewer) {
-      if (total > 0) {
-        _viewer.setProgress(layer / total);
+      if (pct > 0) {
+        _viewer.setProgress(pct / 100);
       }
       // Upload per-layer color map to GPU for multi-color rendering
       if (_layerColors.length > 0) {
@@ -232,10 +232,9 @@
         const rgb = getActiveFilamentColor(data);
         if (rgb) model.color = rgb;
         _viewer.loadModel(model);
-        const layer = data.layer_num || 0;
-        const total = data.total_layer_num || 0;
-        if (total > 0) {
-          _viewer.setProgress(layer / total);
+        const initPct = data.mc_percent || 0;
+        if (initPct > 0) {
+          _viewer.setProgress(initPct / 100);
         } else {
           _viewer.setProgress(0);
         }
