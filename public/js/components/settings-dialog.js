@@ -438,10 +438,25 @@
     if (!el) return;
 
     if (_systemSubTab === 'updates') {
-      el.innerHTML = `<div class="settings-grid"><div class="settings-card"><div class="card-title">${t('update.title')}</div><div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div><div id="demo-data-section" style="display:none"></div></div>`;
+      let h = '<div class="settings-grid">';
+      // Updates card
+      h += `<div class="settings-card"><div class="card-title">${t('update.title')}</div><div id="update-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>`;
+      // System info card
+      h += `<div class="settings-card"><div class="card-title" style="display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> ${t('settings.system_info_title')}</div><div id="system-info-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>`;
+      // Scheduled tasks card
+      h += `<div class="settings-card"><div class="card-title" style="display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${t('settings.scheduled_tasks_title')}</div><div id="scheduled-tasks-section"></div></div>`;
+      // Backups card (full width)
+      h += `<div class="settings-card" style="grid-column:1/-1"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between"><span style="display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ${t('settings.backup_title')}</span><div style="display:flex;gap:6px"><label class="form-btn form-btn-sm" data-ripple style="cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ${t('settings.backup_upload')}<input type="file" accept=".db" style="display:none" onchange="window._uploadBackup(this)"></label><button class="form-btn form-btn-primary form-btn-sm" data-ripple id="backup-create-btn" onclick="window._createBackup()">${t('settings.backup_create')}</button></div></div><p class="text-muted" style="font-size:0.8rem;margin:4px 0 8px">${t('settings.backup_desc')}</p><div id="backup-list-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div></div>`;
+      // Demo data
+      h += '<div id="demo-data-section" style="display:none"></div>';
+      h += '</div>';
+      el.innerHTML = h;
       const updateSection = document.getElementById('update-section');
       if (updateSection && typeof renderUpdateSection === 'function') renderUpdateSection(updateSection);
       checkDemoData();
+      _loadSystemInfo();
+      _loadScheduledTasks();
+      _loadBackupList();
 
     } else if (_systemSubTab === 'security') {
       let h = '<div class="settings-grid">';
@@ -488,6 +503,148 @@
       loadBrandDefaultsSettings();
     }
   }
+
+  // ═══ System Info, Backups, Scheduled Tasks ═══
+
+  function _fmtUptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    let r = '';
+    if (d) r += d + 'd ';
+    if (h) r += h + 'h ';
+    r += m + 'm';
+    return r;
+  }
+
+  function _fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  async function _loadSystemInfo() {
+    const el = document.getElementById('system-info-section');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/system/info');
+      const info = await res.json();
+      const rows = [
+        [t('settings.system_uptime'), _fmtUptime(info.uptime_seconds)],
+        [t('settings.system_node'), info.node_version],
+        [t('settings.system_platform'), info.platform],
+        [t('settings.system_db_version'), 'v' + info.db_version],
+        [t('settings.system_db_size'), _fmtBytes(info.db_size)],
+        [t('settings.system_printers'), info.printer_count],
+        ['PID', info.pid],
+        ['Memory', info.memory_mb + ' MB'],
+      ];
+      el.innerHTML = '<div class="stats-detail-list">' + rows.map(([k, v]) =>
+        `<div class="stats-detail-row"><span class="stats-detail-label">${k}</span><span class="stats-detail-value">${v}</span></div>`
+      ).join('') + '</div>';
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  function _loadScheduledTasks() {
+    const el = document.getElementById('scheduled-tasks-section');
+    if (!el) return;
+    const tasks = [
+      { name: t('settings.task_nightly_backup'), desc: t('settings.task_nightly_backup_desc'), icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>', active: true },
+      { name: t('settings.task_auto_trash'), desc: t('settings.task_auto_trash_desc'), icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>', active: true },
+    ];
+    el.innerHTML = tasks.map(task => `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color)">
+      <div style="display:flex;align-items:center;gap:8px">${task.icon}<div><div style="font-size:0.85rem;font-weight:500">${task.name}</div><div class="text-muted" style="font-size:0.75rem">${task.desc}</div></div></div>
+      <span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:${task.active ? 'rgba(0,230,118,0.15);color:var(--accent-green)' : 'rgba(255,82,82,0.15);color:var(--accent-red)'}">${task.active ? t('settings.task_status_active') : t('settings.task_status_disabled')}</span>
+    </div>`).join('');
+  }
+
+  async function _loadBackupList() {
+    const el = document.getElementById('backup-list-section');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/backup/list');
+      const backups = await res.json();
+      if (!backups.length) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('settings.backup_empty')}</p>`; return; }
+      let h = '<div style="display:flex;flex-direction:column;gap:4px">';
+      for (const b of backups) {
+        const date = new Date(b.created_at).toLocaleString();
+        const size = _fmtBytes(b.size);
+        const label = b.filename.includes('-nightly-') ? 'nightly' : b.filename.includes('-manual-') ? 'manual' : 'auto';
+        const badgeColor = label === 'nightly' ? 'var(--accent-blue)' : 'var(--accent-green)';
+        h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-secondary);border-radius:6px;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="font-size:0.65rem;padding:1px 6px;border-radius:8px;background:${badgeColor};color:#fff;text-transform:uppercase;flex-shrink:0">${label}</span>
+            <span style="font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${date}</span>
+            <span class="text-muted" style="font-size:0.75rem;flex-shrink:0">${size}</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="form-btn form-btn-sm" style="font-size:0.75rem;padding:3px 8px;color:var(--accent-green)" onclick="window._restoreBackup('${b.filename}')" title="${t('settings.backup_restore')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
+            </button>
+            <a href="/api/backup/download/${encodeURIComponent(b.filename)}" class="form-btn form-btn-sm" style="text-decoration:none;font-size:0.75rem;padding:3px 8px" title="${t('settings.backup_download')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+            <button class="form-btn form-btn-sm" style="font-size:0.75rem;padding:3px 8px;color:var(--accent-red)" onclick="window._deleteBackup('${b.filename}')" title="${t('settings.backup_delete')}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+          </div>
+        </div>`;
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
+  }
+
+  window._createBackup = async function() {
+    const btn = document.getElementById('backup-create-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.backup_creating'); }
+    try {
+      const res = await fetch('/api/backup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      showToast('Backup created: ' + data.filename, 'success');
+      _loadBackupList();
+    } catch (e) { showToast(e.message, 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = t('settings.backup_create'); } }
+  };
+
+  window._deleteBackup = async function(filename) {
+    if (!confirm(t('settings.backup_delete_confirm'))) return;
+    try {
+      const res = await fetch('/api/backup/' + encodeURIComponent(filename), { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed');
+      _loadBackupList();
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window._restoreBackup = async function(filename) {
+    if (!confirm(t('settings.backup_restore_confirm', { filename }))) return;
+    try {
+      const res = await fetch('/api/backup/restore/' + encodeURIComponent(filename), { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      showToast(t('settings.backup_restore_success'), 'success');
+      // Reload page after short delay to pick up restored database
+      setTimeout(() => location.reload(), 2000);
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  window._uploadBackup = async function(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith('.db')) { showToast(t('settings.backup_upload_invalid'), 'warning'); return; }
+    try {
+      const buffer = await file.arrayBuffer();
+      const res = await fetch('/api/backup/upload?filename=' + encodeURIComponent(file.name), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buffer
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      showToast(t('settings.backup_upload_success', { filename: data.filename }), 'success');
+      _loadBackupList();
+    } catch (e) { showToast(e.message, 'error'); }
+    finally { input.value = ''; }
+  };
 
   function renderPrinterForm(target, printer = null) {
     const isEdit = !!printer;

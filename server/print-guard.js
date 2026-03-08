@@ -27,6 +27,24 @@ const EVENT_LABELS = {
 
 const ACTION_LABELS = { notify: 'Notify only', pause: 'Print paused', stop: 'Print stopped' };
 
+const DEFAULT_SETTINGS = {
+  enabled: 1,
+  spaghetti_action: 'pause',
+  first_layer_action: 'notify',
+  foreign_object_action: 'pause',
+  nozzle_clump_action: 'pause',
+  temp_deviation_action: 'notify',
+  filament_runout_action: 'notify',
+  print_error_action: 'notify',
+  fan_failure_action: 'notify',
+  print_stall_action: 'notify',
+  cooldown_seconds: 60,
+  auto_resume: 0,
+  temp_deviation_threshold: 15,
+  filament_low_pct: 5,
+  stall_minutes: 10
+};
+
 export class PrintGuardService {
   constructor(printerManager, notifier, broadcast) {
     this.pm = printerManager;
@@ -45,8 +63,8 @@ export class PrintGuardService {
   // Called on every MQTT status update — checks all sensor data
   processSensorData(printerId, state) {
     try {
-      const settings = getProtectionSettings(printerId);
-      if (!settings || !settings.enabled) return;
+      const settings = this._getSettings(printerId);
+      if (!settings.enabled) return;
 
       const gcodeState = state.gcode_state || 'IDLE';
       const isPrinting = gcodeState === 'RUNNING' || gcodeState === 'PAUSE' || gcodeState === 'PREPARE' || gcodeState === 'HEATING';
@@ -200,11 +218,15 @@ export class PrintGuardService {
     }
   }
 
+  _getSettings(printerId) {
+    return getProtectionSettings(printerId) || { ...DEFAULT_SETTINGS, printer_id: printerId };
+  }
+
   // Core event processing — shared by XCam and sensor events
   _processEvent(printerId, eventType, printId, notes) {
     try {
-      const settings = getProtectionSettings(printerId);
-      if (!settings || !settings.enabled) return;
+      const settings = this._getSettings(printerId);
+      if (!settings.enabled) return;
 
       const actionKey = ACTION_MAP[eventType];
       if (!actionKey) return;
@@ -278,7 +300,7 @@ export class PrintGuardService {
   }
 
   getStatus(printerId) {
-    const settings = getProtectionSettings(printerId);
+    const settings = this._getSettings(printerId);
     const alerts = getActiveAlerts(printerId);
     return { settings, alerts };
   }
@@ -289,7 +311,7 @@ export class PrintGuardService {
   }
 
   getSettings(printerId) {
-    return getProtectionSettings(printerId);
+    return this._getSettings(printerId);
   }
 
   updateSettings(printerId, settings) {

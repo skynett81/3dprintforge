@@ -526,6 +526,13 @@
       return;
     }
 
+    // Add info bar below the 3D/MW container
+    const infoBar = document.createElement('div');
+    infoBar.id = 'fs-info-bar';
+    infoBar.className = 'fs-info-bar';
+    container.parentElement.appendChild(infoBar);
+    _updateFsInfoBar(pd);
+
     // Start real-time update loop (works for both modes)
     startFsUpdateLoop();
   }
@@ -590,6 +597,44 @@
       });
   }
 
+  function _updateFsInfoBar(pd) {
+    const bar = document.getElementById('fs-info-bar');
+    if (!bar || !pd) return;
+
+    const pct = pd.mc_percent || 0;
+    const gcState = pd.gcode_state || 'IDLE';
+    const remaining = pd.mc_remaining_time || 0;
+    const layer = pd.layer_num || 0;
+    const total = pd.total_layer_num || 0;
+    const isPrinting = gcState === 'RUNNING' || gcState === 'PAUSE';
+
+    const stateMap = { RUNNING: t('progress.printing'), PAUSE: t('progress.paused'), FINISH: t('progress.finished'), IDLE: t('progress.idle'), PREPARE: t('progress.preparing'), FAILED: t('progress.failed') };
+    const stateText = stateMap[gcState] || gcState;
+
+    let timeStr = '';
+    if (remaining > 0 && isPrinting) {
+      const h = Math.floor(remaining / 60);
+      const m = remaining % 60;
+      timeStr = h > 0 ? `${h}${t('time.h')} ${String(m).padStart(2, '0')}${t('time.m')}` : `${m}${t('time.m')}`;
+    }
+
+    let etaStr = '';
+    if (remaining > 0 && isPrinting) {
+      const eta = new Date(Date.now() + remaining * 60 * 1000);
+      const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+      etaStr = `${t('progress.eta_prefix')} ${eta.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    bar.innerHTML = `
+      <div class="fs-info-pct">${pct}%</div>
+      <div class="fs-info-details">
+        <span class="fs-info-state">${esc(stateText)}</span>
+        ${timeStr ? `<span class="fs-info-time">${timeStr}</span>` : ''}
+        ${etaStr ? `<span class="fs-info-eta">${etaStr}</span>` : ''}
+        ${total > 0 ? `<span class="fs-info-layers">${t('progress.layer', { current: layer, total: total })}</span>` : ''}
+      </div>`;
+  }
+
   function startFsUpdateLoop() {
     if (_fsAnimId) cancelAnimationFrame(_fsAnimId);
 
@@ -614,7 +659,7 @@
         const clipTop = 100 - pct;
         if (reveal) reveal.style.clipPath = `inset(${clipTop}% 0 0 0)`;
         if (edge) edge.style.bottom = pct + '%';
-        if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+        if (pctEl) pctEl.textContent = `${t('progress.layer', { current: layer, total: total })}`;
 
         // Update edge color from active filament
         const hex = getActiveFilamentColorHex(pd);
@@ -626,6 +671,9 @@
       } else if (_fsViewer) {
         if (total > 0) _fsViewer.setProgress(layer / total);
       }
+
+      // Update info bar
+      _updateFsInfoBar(pd);
 
       _fsAnimId = requestAnimationFrame(update);
     }
@@ -642,6 +690,10 @@
     if (_fsAnimId) { cancelAnimationFrame(_fsAnimId); _fsAnimId = null; }
     if (_fsViewer) { _fsViewer.destroy(); _fsViewer = null; }
     _fsMwMode = false;
+
+    // Remove info bar
+    const infoBar = document.getElementById('fs-info-bar');
+    if (infoBar) infoBar.remove();
   }
 
   window.open3dFullscreen = open3dFullscreen;

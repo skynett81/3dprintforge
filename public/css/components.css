@@ -1118,7 +1118,9 @@
   gap: 4px;
   font-size: 0.78rem;
   color: var(--text-secondary);
-  padding: 2px 0;
+  padding: 2px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
 }
 
 .ams-humidity-icon {
@@ -1128,31 +1130,34 @@
 
 .ams-tabs {
   display: flex;
-  gap: 0;
-  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .ams-tab {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 5px 16px;
-  border: none;
+  padding: 3px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s, border-color 0.2s;
 }
 
-.ams-tab svg { opacity: 0.45; }
-.ams-tab:hover { color: var(--text-secondary); }
+.ams-tab svg { opacity: 0.45; width: 10px; height: 10px; }
+.ams-tab:hover { color: var(--text-secondary); border-color: var(--text-secondary); }
 
 .ams-tab-active {
   color: var(--text-primary);
   font-weight: 600;
+  border-color: var(--text-primary);
 }
 .ams-tab-active svg { opacity: 0.9; }
 
@@ -2005,6 +2010,29 @@
 }
 
 /* ---- G-code Console ---- */
+.ctrl-gcode-history {
+  max-height: 120px;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  display: none;
+}
+.ctrl-gcode-history:has(.ctrl-gcode-line) { display: block; }
+.ctrl-gcode-line {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  color: var(--text-muted);
+}
+.ctrl-gcode-line.ctrl-gcode-user { color: var(--accent-cyan); }
+.ctrl-gcode-time { opacity: 0.5; flex-shrink: 0; }
+.ctrl-gcode-cmd { text-transform: uppercase; }
+
 .ctrl-gcode {
   display: flex;
   gap: 8px;
@@ -2549,6 +2577,57 @@
   overflow: hidden;
 }
 
+/* ---- Fullscreen Info Bar ---- */
+.fs-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.fs-info-pct {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+}
+
+.fs-info-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.fs-info-state {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fs-info-time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fs-info-eta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-green);
+}
+
+.fs-info-layers {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
 /* ---- Fullscreen MakerWorld View ---- */
 .fs-mw-wrap {
   position: relative;
@@ -2594,11 +2673,15 @@
 }
 
 .fs-mw-pct {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: #fff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(4px);
 }
 
 /* ---- Tables ---- */

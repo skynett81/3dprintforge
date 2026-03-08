@@ -118,6 +118,8 @@
   let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _stats = null;
   let _draggedMod = null;
+  let _historySortField = 'timestamp';
+  let _historySortDir = 'desc';
 
   // ═══ Persistence ═══
   function getOrder(tabId) {
@@ -501,9 +503,36 @@
 
     'recent-events': (s) => {
       if (!s.recent?.length) return `<p class="text-muted">${t('waste.no_data')}</p>`;
-      let h = `<div class="card-title">${t('waste.recent')}</div>`;
+
+      // Sort entries
+      const sorted = [...s.recent].sort((a, b) => {
+        let va, vb;
+        switch (_historySortField) {
+          case 'waste_g': va = a.waste_g || 0; vb = b.waste_g || 0; break;
+          case 'filament_used_g': va = a.filament_used_g || 0; vb = b.filament_used_g || 0; break;
+          case 'duration_seconds': va = a.duration_seconds || 0; vb = b.duration_seconds || 0; break;
+          default: va = new Date(a.timestamp || 0).getTime(); vb = new Date(b.timestamp || 0).getTime();
+        }
+        return _historySortDir === 'asc' ? va - vb : vb - va;
+      });
+
+      const sortBtn = (field, label) => {
+        const isActive = _historySortField === field;
+        const arrow = isActive ? (_historySortDir === 'asc' ? ' ↑' : ' ↓') : '';
+        return `<button class="error-filter-btn${isActive ? ' active' : ''}" style="font-size:0.65rem;padding:3px 8px" onclick="wasteHistorySort('${field}')">${label}${arrow}</button>`;
+      };
+
+      let h = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="card-title" style="margin:0">${t('waste.recent')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${sortBtn('timestamp', t('waste.sort_date') || 'Dato')}
+          ${sortBtn('waste_g', t('waste.sort_waste') || 'Svinn')}
+          ${sortBtn('filament_used_g', t('waste.sort_used') || 'Brukt')}
+          ${sortBtn('duration_seconds', t('waste.sort_duration') || 'Varighet')}
+        </div>
+      </div>`;
       h += '<div class="waste-recent-list">';
-      for (const r of s.recent) {
+      for (const r of sorted) {
         const isAuto = r.reason === 'auto';
         const isFailed = r.status === 'failed' || r.status === 'cancelled';
         const borderColor = isFailed ? 'var(--accent-red)' : r.color_changes > 0 ? 'var(--accent-purple)' : 'var(--accent-orange)';
@@ -747,6 +776,24 @@
     } catch (e) {
       console.error('[waste] Recalc failed:', e);
       if (window.showToast) window.showToast('Rekalkulering feilet', 'error');
+    }
+  };
+
+  window.wasteHistorySort = function(field) {
+    if (_historySortField === field) {
+      _historySortDir = _historySortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      _historySortField = field;
+      _historySortDir = 'desc';
+    }
+    // Re-render just the history module
+    if (_stats) {
+      const mod = document.querySelector('[data-module-id="recent-events"]');
+      if (mod) {
+        const handle = mod.querySelector('.stats-module-handle');
+        const content = BUILDERS['recent-events'](_stats);
+        mod.innerHTML = (handle ? handle.outerHTML : '') + content;
+      }
     }
   };
 

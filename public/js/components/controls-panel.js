@@ -328,6 +328,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
         ${t('controls.gcode_title')}
       </div>
+      <div id="gcode-history" class="ctrl-gcode-history"></div>
       <div class="ctrl-gcode">
         <input class="form-input ctrl-gcode-input" id="gcode-input" placeholder="${t('controls.gcode_placeholder')}" onkeydown="if(event.key==='Enter')sendGcodeInput()">
         <button class="form-btn form-btn-sm" data-ripple onclick="sendGcodeInput()">${t('controls.gcode_send')}</button>
@@ -398,6 +399,8 @@
     html += '</div>'; // close .ctrl-layout
     container.innerHTML = html;
     _rendered = true;
+    // Load macros now that DOM is ready
+    loadMacros();
   }
 
   // Lightweight update — only change values that differ
@@ -551,15 +554,32 @@
     sendCommand('gcode', { gcode: `M140 S${bed}` });
   };
 
+  function appendGcodeHistory(cmd, isUser) {
+    const hist = document.getElementById('gcode-history');
+    if (!hist) return;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const line = document.createElement('div');
+    line.className = 'ctrl-gcode-line' + (isUser ? ' ctrl-gcode-user' : '');
+    line.innerHTML = `<span class="ctrl-gcode-time">${time}</span><span class="ctrl-gcode-cmd">${cmd.replace(/\\n/g, ' → ')}</span>`;
+    hist.appendChild(line);
+    hist.scrollTop = hist.scrollHeight;
+    // Keep max 50 lines
+    while (hist.children.length > 50) hist.removeChild(hist.firstChild);
+  }
+
   window.sendGcode = function(gcode) {
     sendCommand('gcode', { gcode });
+    appendGcodeHistory(gcode, false);
   };
 
   window.sendGcodeInput = function() {
     const input = document.getElementById('gcode-input');
     if (!input || !input.value.trim()) return;
-    sendCommand('gcode', { gcode: input.value.trim() });
+    const cmd = input.value.trim();
+    sendCommand('gcode', { gcode: cmd });
+    appendGcodeHistory(cmd, true);
     input.value = '';
+    input.focus();
   };
 
   window.confirmStop = function() {
@@ -642,8 +662,7 @@
     } catch { el.innerHTML = '<span class="text-muted">Error</span>'; }
   }
 
-  // Load macros when panel renders
-  setTimeout(() => loadMacros(), 100);
+  // loadMacros is called from renderControls after DOM is ready
 
   window.runMacro = async function(id) {
     const meta = window.printerState?.getActivePrinterMeta();

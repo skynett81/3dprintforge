@@ -1,12 +1,12 @@
 import { getHistory, getHistoryById, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste } from './database.js';
-import { createBackup, listBackups } from './backup.js';
+import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
 import { saveConfig, config } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
-import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission } from './auth.js';
@@ -161,7 +161,7 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/ecommerce')) return 'admin';
   if (path.startsWith('/api/export')) return 'admin';
   if (path.startsWith('/api/courses') || path.startsWith('/api/kb')) return 'admin';
-  if (path === '/api/backup') return 'admin';
+  if (path.startsWith('/api/backup')) return 'admin';
   if (path.startsWith('/api/timelapse') && method === 'DELETE') return 'admin';
   if (path.startsWith('/api/model-link')) return 'controls';
 
@@ -883,14 +883,7 @@ export async function handleApiRequest(req, res) {
       const printerId = url.searchParams.get('printer_id');
       if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
       if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
-      return sendJson(res, _guard.getSettings(printerId) || {
-        printer_id: printerId, enabled: 1,
-        spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause',
-        temp_deviation_action: 'notify', filament_runout_action: 'notify', print_error_action: 'notify',
-        fan_failure_action: 'notify', print_stall_action: 'notify',
-        cooldown_seconds: 60, auto_resume: 0,
-        temp_deviation_threshold: 15, filament_low_pct: 5, stall_minutes: 10
-      });
+      return sendJson(res, _guard.getSettings(printerId));
     }
 
     if (method === 'PUT' && path === '/api/protection/settings') {
@@ -2093,6 +2086,75 @@ export async function handleApiRequest(req, res) {
     }
     if (method === 'GET' && path === '/api/backup/list') {
       return sendJson(res, listBackups());
+    }
+    const backupDlMatch = path.match(/^\/api\/backup\/download\/(.+\.db)$/);
+    if (backupDlMatch && method === 'GET') {
+      const backupPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'backups', backupDlMatch[1]);
+      if (!existsSync(backupPath)) return sendJson(res, { error: 'Not found' }, 404);
+      const stat = statSync(backupPath);
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${backupDlMatch[1]}"`,
+        'Content-Length': stat.size
+      });
+      return createReadStream(backupPath).pipe(res);
+    }
+    if (method === 'DELETE' && path.match(/^\/api\/backup\/(.+\.db)$/)) {
+      const fname = path.match(/^\/api\/backup\/(.+\.db)$/)[1];
+      const backupPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'backups', fname);
+      if (!existsSync(backupPath)) return sendJson(res, { error: 'Not found' }, 404);
+      try { unlinkSync(backupPath); return sendJson(res, { ok: true }); }
+      catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    // ---- Backup Restore ----
+    const restoreMatch = path.match(/^\/api\/backup\/restore\/(.+\.db)$/);
+    if (restoreMatch && method === 'POST') {
+      try {
+        const result = restoreBackup(decodeURIComponent(restoreMatch[1]));
+        return sendJson(res, { ok: true, ...result, restart_required: true });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    // ---- Backup Upload ----
+    if (method === 'POST' && path === '/api/backup/upload') {
+      return new Promise((resolve) => {
+        const chunks = [];
+        let totalSize = 0;
+        const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+        req.on('data', (chunk) => {
+          totalSize += chunk.length;
+          if (totalSize > MAX_SIZE) { req.destroy(); return; }
+          chunks.push(chunk);
+        });
+        req.on('end', () => {
+          try {
+            const buffer = Buffer.concat(chunks);
+            // Extract filename from Content-Disposition or query param
+            const fname = url.searchParams.get('filename') || 'uploaded-backup.db';
+            const result = uploadBackup(buffer, fname);
+            resolve(sendJson(res, { ok: true, ...result }));
+          } catch (e) { resolve(sendJson(res, { error: e.message }, 500)); }
+        });
+        req.on('error', () => resolve(sendJson(res, { error: 'Upload failed' }, 500)));
+      });
+    }
+
+    // ---- System Info ----
+    if (method === 'GET' && path === '/api/system/info') {
+      const dbPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'dashboard.db');
+      const dbSize = existsSync(dbPath) ? statSync(dbPath).size : 0;
+      const uptime = process.uptime();
+      return sendJson(res, {
+        uptime_seconds: Math.floor(uptime),
+        node_version: process.version,
+        platform: `${process.platform} ${process.arch}`,
+        db_size: dbSize,
+        db_version: 76,
+        printer_count: getPrinters().length,
+        pid: process.pid,
+        memory_mb: Math.round(process.memoryUsage().rss / 1024 / 1024)
+      });
     }
 
     // ---- Spoolman ----

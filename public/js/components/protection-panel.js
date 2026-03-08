@@ -142,16 +142,72 @@
     'sensor-dashboard': () => {
       let h = `<div class="card-title">${t('protection.sensor_dashboard')}</div>`;
       if (!_printers.length) return h + '<div class="text-muted" style="font-size:0.8rem">No printers</div>';
-      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">';
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">';
 
       for (const p of _printers) {
         const s = _settings[p.id];
         const enabled = s ? s.enabled : 0;
+        const live = window.printerState?._printers?.[p.id] || {};
+        const gcState = live.gcode_state || 'IDLE';
+        const isPrinting = ['RUNNING', 'PAUSE', 'PREPARE', 'HEATING'].includes(gcState);
+        const stateColor = isPrinting ? 'var(--accent-green)' : 'var(--text-muted)';
+        const _stateMap = { RUNNING: 'Printing', PAUSE: 'Paused', IDLE: 'Idle', PREPARE: 'Preparing', HEATING: 'Heating', FINISH: 'Finished' };
+        const stateLabel = _stateMap[gcState] || gcState;
+
         h += `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;border:1px solid var(--border-color)">
-          <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'};display:inline-block"></span>
-            ${esc(p.name)}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'};display:inline-block"></span>
+              ${esc(p.name)}
+            </div>
+            <span class="pill ${isPrinting ? 'pill-success' : 'pill-info'}" style="font-size:0.6rem">${esc(stateLabel)}</span>
           </div>`;
+
+        // Live sensor readings
+        const nTemp = live.nozzle_temper != null ? Math.round(live.nozzle_temper) : null;
+        const nTarget = live.nozzle_target_temper != null ? Math.round(live.nozzle_target_temper) : null;
+        const bTemp = live.bed_temper != null ? Math.round(live.bed_temper) : null;
+        const bTarget = live.bed_target_temper != null ? Math.round(live.bed_target_temper) : null;
+        const hbFan = live.heatbreak_fan_speed;
+        const cFan = live.cooling_fan_speed;
+        const threshold = s?.temp_deviation_threshold || 15;
+
+        if (nTemp != null || bTemp != null) {
+          h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">`;
+          if (nTemp != null) {
+            const nDev = nTarget > 0 ? Math.abs(nTemp - nTarget) : 0;
+            const nColor = nDev > threshold ? 'var(--accent-red)' : nTarget > 0 ? 'var(--accent-green)' : 'var(--text-muted)';
+            h += `<div style="background:var(--bg-secondary);border-radius:6px;padding:6px 8px;text-align:center">
+              <div style="font-size:0.6rem;color:var(--text-muted)">Nozzle</div>
+              <div style="font-size:0.95rem;font-weight:700;color:${nColor}">${nTemp}°C</div>
+              ${nTarget > 0 ? `<div style="font-size:0.6rem;color:var(--text-muted)">→ ${nTarget}°C</div>` : ''}
+            </div>`;
+          }
+          if (bTemp != null) {
+            const bDev = bTarget > 0 ? Math.abs(bTemp - bTarget) : 0;
+            const bColor = bDev > threshold ? 'var(--accent-red)' : bTarget > 0 ? 'var(--accent-green)' : 'var(--text-muted)';
+            h += `<div style="background:var(--bg-secondary);border-radius:6px;padding:6px 8px;text-align:center">
+              <div style="font-size:0.6rem;color:var(--text-muted)">Bed</div>
+              <div style="font-size:0.95rem;font-weight:700;color:${bColor}">${bTemp}°C</div>
+              ${bTarget > 0 ? `<div style="font-size:0.6rem;color:var(--text-muted)">→ ${bTarget}°C</div>` : ''}
+            </div>`;
+          }
+          h += '</div>';
+        }
+
+        if (hbFan != null || cFan != null) {
+          h += `<div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.7rem">`;
+          if (hbFan != null) {
+            const hbPct = Math.min(100, Math.round((hbFan / (hbFan > 15 ? 255 : 15)) * 100));
+            const hbColor = isPrinting && hbPct === 0 ? 'var(--accent-red)' : 'var(--text-muted)';
+            h += `<span style="color:${hbColor}">Heatbreak: ${hbPct}%</span>`;
+          }
+          if (cFan != null) {
+            const cPct = Math.min(100, Math.round((cFan / (cFan > 15 ? 255 : 15)) * 100));
+            h += `<span style="color:var(--text-muted)">Part fan: ${cPct}%</span>`;
+          }
+          h += '</div>';
+        }
 
         // XCam section
         h += `<div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_camera')}</div>
@@ -479,6 +535,7 @@
   }
 
   // ═══ WebSocket handling ═══
+  let _refreshTimer = null;
   function handleWsMessage(data) {
     if (data.type === 'protection_alert' || data.type === 'protection_resolved') {
       loadData().then(() => {
@@ -486,10 +543,22 @@
         updateBadge();
       });
     }
+    // Throttled re-render on printer status updates to keep sensor dashboard live
+    if (data.type === 'status' && window._activePanel === 'protection' && _activeTab === 'status') {
+      if (!_refreshTimer) {
+        _refreshTimer = setTimeout(() => {
+          _refreshTimer = null;
+          if (window._activePanel === 'protection') render();
+        }, 3000);
+      }
+    }
   }
 
   // ═══ Entry point ═══
   window.loadProtectionPanel = async function() {
+    // Clear any pending refresh timer from previous session
+    if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
+
     const hashParts = location.hash.replace('#protection', '').split('/').filter(Boolean);
     if (hashParts[0] && TAB_CONFIG[hashParts[0]]) _activeTab = hashParts[0];
 

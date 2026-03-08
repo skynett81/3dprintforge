@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
+import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -78,8 +78,21 @@ export class PrintTracker {
     // NFC auto-detection cache: tag_uid -> { spool_id, ams_unit, tray_id }
     this._nfcProcessed = new Map();
 
-    // HMS dedup — one log per code per print session
+    // HMS dedup — one log per code per print session, seeded from DB to survive restarts
     this._hmsLogged = new Set();
+    // print_error dedup — track last logged print_error to prevent duplicates across restarts
+    this._lastPrintError = null;
+    try {
+      const recent = getErrors(20, this.printerId);
+      for (const e of recent) {
+        if (e.code && e.code.startsWith('HMS_')) {
+          this._hmsLogged.add(e.code.substring(4));
+        } else if (e.code) {
+          // Seed last print_error from most recent non-HMS error
+          if (!this._lastPrintError) this._lastPrintError = e.code;
+        }
+      }
+    } catch { /* ignore */ }
   }
 
   update(printData) {
@@ -147,7 +160,8 @@ export class PrintTracker {
       fan_speed: printData.cooling_fan_speed ?? null
     };
 
-    // Log errors
+    // Log errors — dedup via previousState + seeded _lastPrintError, skip known benign codes
+    const PRINT_ERROR_IGNORE = new Set(['0300_8003']);
     if (printData.print_error && printData.print_error !== 0) {
       const prevError = this.previousState?.print_error;
       if (prevError !== printData.print_error) {
@@ -156,26 +170,33 @@ export class PrintTracker {
         const hexCode = raw > 0xFFFF
           ? `${((raw >> 16) & 0xFFFF).toString(16).padStart(4, '0')}_${(raw & 0xFFFF).toString(16).padStart(4, '0')}`.toUpperCase()
           : String(printData.print_error);
-        const errMsg = printData.print_error_msg || `Feilkode: ${hexCode}`;
-        addError({
-          printer_id: this.printerId,
-          code: hexCode,
-          message: errMsg,
-          severity: 'error',
-          context: errorContext
-        });
-        if (this.onError) {
-          this.onError({ printerId: this.printerId, code: hexCode, errorMessage: errMsg, severity: 'error' });
+        // Skip benign codes and already-logged codes (survives restarts via seed)
+        if (!PRINT_ERROR_IGNORE.has(hexCode) && this._lastPrintError !== hexCode) {
+          this._lastPrintError = hexCode;
+          const errMsg = printData.print_error_msg || `Feilkode: ${hexCode}`;
+          addError({
+            printer_id: this.printerId,
+            code: hexCode,
+            message: errMsg,
+            severity: 'error',
+            context: errorContext
+          });
+          if (this.onError) {
+            this.onError({ printerId: this.printerId, code: hexCode, errorMessage: errMsg, severity: 'error' });
+          }
         }
       }
     }
 
-    // Log HMS errors — only during active prints (not FINISH/IDLE), dedup per code per session
+    // Log HMS errors — only during RUNNING/PAUSE (skip FINISH/IDLE/PREPARE), dedup per code per session
+    // Ignore known benign/status HMS codes that are not actual errors
+    const HMS_IGNORE = new Set(['0500_0500', '0500_0600', '0C00_0300']);
     const gcodeState = printData.gcode_state || '';
-    if (printData.hms && Array.isArray(printData.hms) && !['FINISH', 'IDLE'].includes(gcodeState)) {
+    if (printData.hms && Array.isArray(printData.hms) && ['RUNNING', 'PAUSE'].includes(gcodeState)) {
       if (!this._hmsLogged) this._hmsLogged = new Set();
       for (const hms of printData.hms) {
         const hexAttr = hmsAttrToHex(hms.attr) || String(hms.attr);
+        if (HMS_IGNORE.has(hexAttr)) continue;
         if (this._hmsLogged.has(hexAttr)) continue;
         this._hmsLogged.add(hexAttr);
         const hmsSeverity = hms.code >= 0x0C000000 ? 'error' : 'warning';
@@ -250,6 +271,7 @@ export class PrintTracker {
     console.log(`[tracker:${this.printerId}] Print startet: ${data.subtask_name || 'ukjent'}`);
 
     this._hmsLogged = new Set(); // Reset HMS dedup for new print
+    this._lastPrintError = null; // Reset print_error dedup for new print
     this.amsSnapshot = this._getAmsRemaining(data);
     this.colorChanges = 0;
     this.lastTrayId = data.ams?.tray_now != null ? String(data.ams.tray_now) : null;
@@ -405,7 +427,7 @@ export class PrintTracker {
 
   _checkNozzleChange(data) {
     const nType = data.nozzle_type;
-    const nDia = data.nozzle_diameter;
+    const nDia = data.nozzle_diameter != null ? parseFloat(data.nozzle_diameter) : null;
     if (!nType && !nDia) return;
 
     try {
@@ -416,7 +438,7 @@ export class PrintTracker {
         }
       } else {
         const typeChanged = nType && active.nozzle_type.toLowerCase() !== nType.toLowerCase();
-        const diaChanged = nDia && active.nozzle_diameter !== nDia;
+        const diaChanged = nDia && Math.abs(active.nozzle_diameter - nDia) > 0.01;
         if (typeChanged || diaChanged) {
           retireNozzleSession(active.id);
           createNozzleSession(this.printerId, nType || active.nozzle_type, nDia || active.nozzle_diameter);

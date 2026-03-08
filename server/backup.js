@@ -1,10 +1,32 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DATA_DIR } from './config.js';
 
 const DB_PATH = join(DATA_DIR, 'dashboard.db');
 const BACKUP_DIR = join(DATA_DIR, 'backups');
 const MAX_BACKUPS = 7;
+
+export function restoreBackup(filename) {
+  const srcPath = join(BACKUP_DIR, filename);
+  if (!existsSync(srcPath)) throw new Error('Backup not found');
+  if (!filename.endsWith('.db')) throw new Error('Invalid backup file');
+  // Create a safety backup before restoring
+  createBackup('pre-restore');
+  copyFileSync(srcPath, DB_PATH);
+  console.log(`[backup] Database gjenopprettet fra: ${filename}`);
+  return { restored: filename };
+}
+
+export function uploadBackup(buffer, originalName) {
+  if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true });
+  const safeName = (originalName || 'uploaded.db').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filename = safeName.endsWith('.db') ? safeName : safeName + '.db';
+  const destPath = join(BACKUP_DIR, filename);
+  writeFileSync(destPath, buffer);
+  const stat = statSync(destPath);
+  console.log(`[backup] Backup lastet opp: ${filename} (${Math.round(stat.size / 1024)}KB)`);
+  return { filename, size: stat.size, created_at: stat.mtime.toISOString() };
+}
 
 export function createBackup(label = 'manual') {
   if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true });
