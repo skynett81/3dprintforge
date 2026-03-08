@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
+import { addHistory, getHistory, addError, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses } from './database.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -78,23 +78,8 @@ export class PrintTracker {
     // NFC auto-detection cache: tag_uid -> { spool_id, ams_unit, tray_id }
     this._nfcProcessed = new Map();
 
-    // Seed HMS dedup from recent errors so we don't re-log on restart
-    this._hmsLastLogged = new Map();
-    try {
-      const HMS_DEDUP_MS = 30 * 60 * 1000;
-      const recentErrors = getErrors(100, this.printerId);
-      const now = Date.now();
-      for (const err of recentErrors) {
-        if (err.code?.startsWith('HMS_')) {
-          const ts = new Date(err.timestamp).getTime();
-          if (now - ts < HMS_DEDUP_MS) {
-            const dedupKey = `${this.printerId}_${err.code.slice(4)}`;
-            const existing = this._hmsLastLogged.get(dedupKey) || 0;
-            if (ts > existing) this._hmsLastLogged.set(dedupKey, ts);
-          }
-        }
-      }
-    } catch (_) {}
+    // HMS dedup — one log per code per print session
+    this._hmsLogged = new Set();
   }
 
   update(printData) {
@@ -185,17 +170,14 @@ export class PrintTracker {
       }
     }
 
-    // Log HMS errors (with time-based dedup — max once per 30 min per code per printer)
-    if (printData.hms && Array.isArray(printData.hms)) {
-      if (!this._hmsLastLogged) this._hmsLastLogged = new Map();
-      const HMS_DEDUP_MS = 30 * 60 * 1000; // 30 minutes
-      const now = Date.now();
+    // Log HMS errors — only during active prints (not FINISH/IDLE), dedup per code per session
+    const gcodeState = printData.gcode_state || '';
+    if (printData.hms && Array.isArray(printData.hms) && !['FINISH', 'IDLE'].includes(gcodeState)) {
+      if (!this._hmsLogged) this._hmsLogged = new Set();
       for (const hms of printData.hms) {
         const hexAttr = hmsAttrToHex(hms.attr) || String(hms.attr);
-        const dedupKey = `${this.printerId}_${hexAttr}`;
-        const lastLogged = this._hmsLastLogged.get(dedupKey) || 0;
-        if (now - lastLogged < HMS_DEDUP_MS) continue;
-        this._hmsLastLogged.set(dedupKey, now);
+        if (this._hmsLogged.has(hexAttr)) continue;
+        this._hmsLogged.add(hexAttr);
         const hmsSeverity = hms.code >= 0x0C000000 ? 'error' : 'warning';
         const description = lookupHmsCode(hms.attr);
         const wikiUrl = getHmsWikiUrl(hms.attr);
@@ -267,6 +249,7 @@ export class PrintTracker {
   _startPrint(data) {
     console.log(`[tracker:${this.printerId}] Print startet: ${data.subtask_name || 'ukjent'}`);
 
+    this._hmsLogged = new Set(); // Reset HMS dedup for new print
     this.amsSnapshot = this._getAmsRemaining(data);
     this.colorChanges = 0;
     this.lastTrayId = data.ams?.tray_now != null ? String(data.ams.tray_now) : null;
