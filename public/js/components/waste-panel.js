@@ -623,7 +623,22 @@
     }
 
     const printerId = _selectedWastePrinter;
-    const params = printerId ? `?printer_id=${printerId}` : '';
+    // Sync settings from server on load
+    try {
+      const [purgeRes, changeRes] = await Promise.all([
+        fetch('/api/inventory/settings/startup_purge_g').then(r => r.json()).catch(() => null),
+        fetch('/api/inventory/settings/waste_per_change_g').then(r => r.json()).catch(() => null)
+      ]);
+      if (purgeRes?.value) localStorage.setItem('wastePurgeStartup', purgeRes.value);
+      if (changeRes?.value) localStorage.setItem('wastePerChange', changeRes.value);
+    } catch {}
+    const purgeG = localStorage.getItem('wastePurgeStartup') || '1';
+    const changeG = localStorage.getItem('wastePerChange') || '5';
+    const qp = new URLSearchParams();
+    if (printerId) qp.set('printer_id', printerId);
+    qp.set('startup_purge_g', purgeG);
+    qp.set('waste_per_change_g', changeG);
+    const params = '?' + qp.toString();
 
     try {
       const res = await fetch(`/api/waste/stats${params}`);
@@ -755,10 +770,12 @@
 
   window.saveWastePerChange = function(val) {
     localStorage.setItem('wastePerChange', val);
+    fetch('/api/inventory/settings/waste_per_change_g', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: val }) }).catch(() => {});
   };
 
   window.saveWastePurgeSetting = function(val) {
     localStorage.setItem('wastePurgeStartup', val);
+    fetch('/api/inventory/settings/startup_purge_g', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: val }) }).catch(() => {});
   };
 
   window.recalcWaste = async function() {

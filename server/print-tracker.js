@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking } from './database.js';
+import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting } from './database.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -355,9 +355,10 @@ export class PrintTracker {
       }
     }
 
-    // Waste = startup purge (~1g) + color change waste + failed print filament
-    const STARTUP_PURGE_G = 1.0;
-    let wasteG = STARTUP_PURGE_G + (this.colorChanges * this.wastePerChangeG);
+    // Waste = startup purge + color change waste + failed print filament
+    const startupPurgeG = parseFloat(getInventorySetting('startup_purge_g')) || 1.0;
+    const wastePerChange = parseFloat(getInventorySetting('waste_per_change_g')) || this.wastePerChangeG;
+    let wasteG = startupPurgeG + (this.colorChanges * wastePerChange);
     if (status === 'failed' || status === 'cancelled') {
       // All filament used in a failed/cancelled print is waste
       wasteG += filamentUsedG;
@@ -635,14 +636,28 @@ export class PrintTracker {
     if (!data.ams?.ams) return result;
 
     const activeTray = data.ams.tray_now;
+    let matchedUnit = null, matchedTrayId = null;
     for (const unit of data.ams.ams) {
       const tray = (unit.tray || []).find(t => t && String(t.id) === String(activeTray));
       if (tray) {
         result.type = tray.tray_type || null;
         result.color = tray.tray_color || null;
         result.brand = tray.tray_sub_brands || tray.tray_id_name || null;
+        matchedUnit = unit.id ?? 0;
+        matchedTrayId = tray.id;
         break;
       }
+    }
+
+    // Fallback: enrich from linked inventory spool if MQTT data is incomplete
+    if (matchedTrayId !== null && (!result.brand || !result.type)) {
+      try {
+        const spool = getSpoolBySlot(this.printerId, matchedUnit, matchedTrayId);
+        if (spool) {
+          if (!result.brand) result.brand = spool.vendor_name || spool.profile_name || null;
+          if (!result.type) result.type = spool.material || null;
+        }
+      } catch { /* ignore */ }
     }
 
     return result;

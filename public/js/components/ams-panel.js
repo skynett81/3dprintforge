@@ -260,6 +260,22 @@
           }
         }
 
+        // Calculate remaining grams for display
+        let displayGrams = null;
+        if (linkedSpool && linkedSpool.remaining_weight_g > 0) {
+          displayGrams = linkedSpool.remaining_weight_g;
+        } else if (remain !== null) {
+          const tw = tray.tray_weight ? parseFloat(tray.tray_weight) : null;
+          if (tw > 0) displayGrams = Math.round(tw * remain / 100);
+        }
+        // Adjust grams for in-progress consumption
+        if (isActive && isPrinting && est && est.weight_g > 0 && displayGrams !== null) {
+          const pct = data.mc_percent || 0;
+          const consumedG = Math.round(est.weight_g * pct / 100);
+          const remainingPrintG = est.weight_g - consumedG;
+          displayGrams = Math.max(0, Math.round(displayGrams - remainingPrintG));
+        }
+
         const hasRfid = !!(tray.tag_uid || tray.tray_uuid);
 
         const fillPct = remain !== null ? Math.max(8, Math.min(100, remain)) : 100;
@@ -302,7 +318,7 @@
             ${isActive ? '<div class="ams-card-active-border"></div>' : ''}
             ${warnIcon}
             <span class="ams-card-type">${tray.tray_type}</span>
-            ${remain !== null ? `<span class="ams-card-remain" style="color:${textColor}">${remain}%</span>` : ''}
+            ${remain !== null ? `<span class="ams-card-remain" style="color:${textColor}">${remain}%${displayGrams !== null ? `<span class="ams-card-grams">${Math.round(displayGrams)}g</span>` : ''}</span>` : ''}
             ${hasRfid ? `<div class="ams-card-rfid" style="color:${textColor}"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3"/></svg></div>` : ''}
           </div>`;
       }

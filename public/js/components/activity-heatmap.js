@@ -1,15 +1,16 @@
-// Activity Heatmap — GitHub-style year calendar
+// Activity Heatmap — GitHub-style year calendar + stats
 (function() {
+  'use strict';
 
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const DAYS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
+  const DAYS = ['Man', '', 'Ons', '', 'Fre', '', 'Søn'];
 
+  function _tl(key, fb) { return (typeof t === 'function' ? t(key) : '') || fb; }
   function _fmtDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
-
   function _dayName(d) {
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+    return ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'][d.getDay()];
   }
 
   function _colorForCount(count, max) {
@@ -25,7 +26,11 @@
     const el = document.getElementById('overlay-panel-body');
     if (!el) return;
 
-    el.innerHTML = '<div class="text-muted" style="padding:20px;font-size:0.85rem">Loading activity data...</div>';
+    // Keep tab bar if present
+    const tabBar = el.querySelector('._wrapper-tabs');
+    el.innerHTML = '';
+    if (tabBar) el.appendChild(tabBar);
+    el.insertAdjacentHTML('beforeend', '<div class="matrec-empty"><div class="matrec-spinner"></div></div>');
 
     try {
       const [daily, streakDays] = await Promise.all([
@@ -33,7 +38,6 @@
         fetch('/api/activity/streaks').then(r => r.json())
       ]);
 
-      // Build day map
       const dayMap = {};
       let maxPrints = 0;
       for (const d of daily) {
@@ -45,28 +49,19 @@
       const streakSet = new Set(streakDays);
       let currentStreak = 0;
       let longestStreak = 0;
-      let tempStreak = 0;
+      let tempStreak = 1;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Current streak (count back from today)
       const checkDate = new Date(today);
-      while (true) {
-        if (streakSet.has(_fmtDate(checkDate))) {
-          currentStreak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
+      while (streakSet.has(_fmtDate(checkDate))) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
       }
 
-      // Longest streak
       const sortedDays = [...streakSet].sort();
-      tempStreak = 1;
       for (let i = 1; i < sortedDays.length; i++) {
-        const prev = new Date(sortedDays[i - 1]);
-        const curr = new Date(sortedDays[i]);
-        const diff = (curr - prev) / 86400000;
+        const diff = (new Date(sortedDays[i]) - new Date(sortedDays[i - 1])) / 86400000;
         if (diff === 1) {
           tempStreak++;
         } else {
@@ -83,67 +78,81 @@
       const activeDays = streakDays.length;
       const totalCompleted = daily.reduce((s, d) => s + (d.completed || 0), 0);
       const totalFailed = daily.reduce((s, d) => s + (d.failed || 0), 0);
+      const successRate = totalPrints > 0 ? Math.round((totalCompleted / totalPrints) * 100) : 0;
+      const avgPerDay = activeDays > 0 ? (totalPrints / activeDays).toFixed(1) : '0';
 
-      let h = '';
+      let h = '<div class="act-panel">';
 
-      // ── Summary cards ──
-      h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px">`;
-      h += _statCard(t('activity.total_prints'), totalPrints, 'var(--accent-blue)');
-      h += _statCard(t('activity.active_days'), activeDays, 'var(--accent-green)');
-      h += _statCard(t('activity.current_streak'), currentStreak + 'd', 'var(--accent-yellow)');
-      h += _statCard(t('activity.longest_streak'), longestStreak + 'd', 'var(--accent-purple)');
-      h += _statCard(t('activity.print_hours'), Math.round(totalHours) + 'h', 'var(--text-primary)');
-      h += _statCard(t('activity.filament_used'), Math.round(totalFilament) + 'g', 'var(--accent-red)');
-      h += _statCard(t('activity.completed'), totalCompleted, 'var(--accent-green)');
-      h += _statCard(t('activity.failed'), totalFailed, 'var(--accent-red)');
+      // ── Stats strip ──
+      h += `<div class="stats-strip act-stats">
+        <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Totalt')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
+        <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Aktive dager')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
+        <div class="spark-panel"><span class="spark-label">${_tl('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
+        <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Lengste')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
+        <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Suksessrate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
+      </div>`;
+
+      // ── Secondary stats ──
+      h += `<div class="auto-grid auto-grid--md act-cards">`;
+      h += _statCard(_tl('activity.print_hours', 'Utskriftstimer'), Math.round(totalHours) + 'h', 'var(--accent-blue)');
+      h += _statCard(_tl('activity.filament_used', 'Filament brukt'), totalFilament >= 1000 ? (totalFilament / 1000).toFixed(1) + 'kg' : Math.round(totalFilament) + 'g', 'var(--accent-orange)');
+      h += _statCard(_tl('activity.completed', 'Fullført'), totalCompleted, 'var(--accent-green)');
+      h += _statCard(_tl('activity.failed', 'Feilet'), totalFailed, 'var(--accent-red)');
+      h += _statCard(_tl('activity.avg_per_day', 'Snitt per dag'), avgPerDay, 'var(--accent-purple)');
       h += `</div>`;
 
       // ── Year heatmap ──
-      h += `<div class="card" style="overflow-x:auto">`;
-      h += `<div class="card-title">${t('activity.year_heatmap')}</div>`;
-      h += _renderHeatmap(dayMap, maxPrints);
-      h += `</div>`;
+      h += `<div class="card act-heatmap-card">
+        <div class="card-title">${_tl('activity.year_heatmap', 'Utskriftsaktivitet — siste 12 måneder')}</div>
+        ${_renderHeatmap(dayMap, maxPrints)}
+      </div>`;
 
       // ── Monthly breakdown ──
-      h += `<div class="card" style="margin-top:16px">`;
-      h += `<div class="card-title">${t('activity.monthly_breakdown')}</div>`;
-      h += _renderMonthlyBars(daily);
-      h += `</div>`;
+      h += `<div class="card act-monthly-card">
+        <div class="card-title">${_tl('activity.monthly_breakdown', 'Månedlig oversikt')}</div>
+        ${_renderMonthlyBars(daily)}
+      </div>`;
 
       // ── Busiest days ──
-      h += `<div class="card" style="margin-top:16px">`;
-      h += `<div class="card-title">${t('activity.busiest_days')}</div>`;
-      h += _renderBusiestDays(daily);
-      h += `</div>`;
+      h += `<div class="card act-busiest-card">
+        <div class="card-title">${_tl('activity.busiest_days', 'Travleste dager')}</div>
+        ${_renderBusiestDays(daily)}
+      </div>`;
 
-      el.innerHTML = h;
+      h += '</div>';
+
+      // Replace content, preserve tab bar
+      const tb = el.querySelector('._wrapper-tabs');
+      el.innerHTML = '';
+      if (tb) el.appendChild(tb);
+      el.insertAdjacentHTML('beforeend', h);
+
     } catch (e) {
-      el.innerHTML = `<div class="text-muted" style="padding:20px">Error: ${e.message}</div>`;
+      const tb = el.querySelector('._wrapper-tabs');
+      el.innerHTML = '';
+      if (tb) el.appendChild(tb);
+      el.insertAdjacentHTML('beforeend', `<div class="matrec-empty"><p>Error: ${e.message}</p></div>`);
     }
   }
 
   function _statCard(label, value, color) {
-    return `<div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:12px 16px;text-align:center">
-      <div class="text-muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em">${label}</div>
-      <div style="font-size:1.4rem;font-weight:800;color:${color};margin-top:4px">${value}</div>
+    return `<div class="act-stat-card">
+      <span class="act-stat-label">${label}</span>
+      <span class="act-stat-value" style="color:${color}">${value}</span>
     </div>`;
   }
 
   function _renderHeatmap(dayMap, maxPrints) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Go back 52 weeks from today
     const start = new Date(today);
     start.setDate(start.getDate() - 364);
-    // Align to Monday
     while (start.getDay() !== 1) start.setDate(start.getDate() - 1);
 
     const cellSize = 13;
     const gap = 2;
     const step = cellSize + gap;
 
-    // Build weeks
     const weeks = [];
     const d = new Date(start);
     let currentWeek = [];
@@ -160,20 +169,17 @@
     const svgWidth = weeks.length * step + 30;
     const svgHeight = 7 * step + 25;
 
-    let svg = `<svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="min-width:${svgWidth}px;max-width:900px">`;
+    let svg = `<div class="act-heatmap-scroll"><svg class="act-heatmap-svg" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
 
     // Day labels
     DAYS.forEach((label, i) => {
-      if (label) {
-        svg += `<text x="0" y="${i * step + cellSize + 18}" font-size="9" fill="var(--text-muted)" font-family="inherit">${label}</text>`;
-      }
+      if (label) svg += `<text x="0" y="${i * step + cellSize + 18}" font-size="9" fill="var(--text-muted)" font-family="inherit">${label}</text>`;
     });
 
     // Month labels
     let lastMonth = -1;
     weeks.forEach((week, wi) => {
-      const firstDay = week[0];
-      const month = firstDay.getMonth();
+      const month = week[0].getMonth();
       if (month !== lastMonth) {
         svg += `<text x="${wi * step + 28}" y="10" font-size="9" fill="var(--text-muted)" font-family="inherit">${MONTHS[month]}</text>`;
         lastMonth = month;
@@ -187,41 +193,38 @@
         const entry = dayMap[dayStr];
         const count = entry?.prints || 0;
         const color = _colorForCount(count, maxPrints);
-        const dow = (day.getDay() + 6) % 7; // Mon=0, Sun=6
+        const dow = (day.getDay() + 6) % 7;
         const x = wi * step + 28;
         const y = dow * step + 15;
 
         const tooltip = count > 0
-          ? `${dayStr}: ${count} print${count !== 1 ? 's' : ''} (${entry.hours || 0}h)`
-          : `${dayStr}: ${t('activity.no_prints')}`;
+          ? `${dayStr}: ${count} ${count === 1 ? 'print' : 'prints'} (${entry.hours || 0}h)`
+          : `${dayStr}: ${_tl('activity.no_prints', 'ingen utskrifter')}`;
 
-        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-color)" stroke-width="0.5" opacity="0.95">
-          <title>${tooltip}</title>
-        </rect>`;
+        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-subtle)" stroke-width="0.5"><title>${tooltip}</title></rect>`;
       });
     });
 
-    svg += '</svg>';
+    svg += '</svg></div>';
 
     // Legend
-    svg += `<div style="display:flex;align-items:center;gap:4px;margin-top:8px;justify-content:flex-end;font-size:0.65rem;color:var(--text-muted)">`;
-    svg += `<span>${t('activity.less')}</span>`;
-    svg += `<div style="width:${cellSize}px;height:${cellSize}px;background:var(--bg-tertiary);border-radius:2px;border:1px solid var(--border-color)"></div>`;
-    svg += `<div style="width:${cellSize}px;height:${cellSize}px;background:rgba(0,230,118,0.3);border-radius:2px"></div>`;
-    svg += `<div style="width:${cellSize}px;height:${cellSize}px;background:rgba(0,230,118,0.5);border-radius:2px"></div>`;
-    svg += `<div style="width:${cellSize}px;height:${cellSize}px;background:rgba(0,230,118,0.7);border-radius:2px"></div>`;
-    svg += `<div style="width:${cellSize}px;height:${cellSize}px;background:rgba(0,230,118,0.95);border-radius:2px"></div>`;
-    svg += `<span>${t('activity.more')}</span>`;
-    svg += `</div>`;
+    svg += `<div class="act-heatmap-legend">
+      <span>${_tl('activity.less', 'Mindre')}</span>
+      <div class="act-legend-cell" style="background:var(--bg-tertiary);border:1px solid var(--border-color)"></div>
+      <div class="act-legend-cell" style="background:rgba(0,230,118,0.3)"></div>
+      <div class="act-legend-cell" style="background:rgba(0,230,118,0.5)"></div>
+      <div class="act-legend-cell" style="background:rgba(0,230,118,0.7)"></div>
+      <div class="act-legend-cell" style="background:rgba(0,230,118,0.95)"></div>
+      <span>${_tl('activity.more', 'Mer')}</span>
+    </div>`;
 
     return svg;
   }
 
   function _renderMonthlyBars(daily) {
-    // Group by month
     const months = {};
     for (const d of daily) {
-      const key = d.day.substring(0, 7); // YYYY-MM
+      const key = d.day.substring(0, 7);
       if (!months[key]) months[key] = { prints: 0, hours: 0, filament: 0 };
       months[key].prints += d.prints;
       months[key].hours += d.hours || 0;
@@ -229,49 +232,53 @@
     }
 
     const keys = Object.keys(months).sort();
-    if (!keys.length) return `<div class="text-muted" style="font-size:0.8rem">${t('activity.no_data')}</div>`;
+    if (!keys.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'Ingen data')}</p></div>`;
 
     const maxPrints = Math.max(...Object.values(months).map(m => m.prints), 1);
 
-    let h = `<div style="display:flex;flex-direction:column;gap:6px">`;
+    let h = '<div class="act-monthly-list">';
     for (const key of keys) {
       const m = months[key];
       const pct = (m.prints / maxPrints) * 100;
       const [y, mon] = key.split('-');
       const label = `${MONTHS[parseInt(mon) - 1]} ${y}`;
 
-      h += `<div style="display:flex;align-items:center;gap:8px">`;
-      h += `<div style="width:60px;font-size:0.72rem;color:var(--text-secondary);text-align:right;flex-shrink:0">${label}</div>`;
-      h += `<div style="flex:1;height:18px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">`;
-      h += `<div style="width:${pct}%;height:100%;background:var(--accent-green);border-radius:4px;transition:width 0.3s"></div>`;
-      h += `</div>`;
-      h += `<div style="width:80px;font-size:0.72rem;color:var(--text-primary);font-weight:600">${m.prints} prints</div>`;
-      h += `</div>`;
+      h += `<div class="act-monthly-row">
+        <span class="act-monthly-label">${label}</span>
+        <div class="matrec-bar-track"><div class="matrec-bar-fill" style="width:${pct}%;background:var(--accent-green)"></div></div>
+        <span class="act-monthly-value">${m.prints} <span class="act-monthly-detail">(${Math.round(m.hours)}h · ${Math.round(m.filament)}g)</span></span>
+      </div>`;
     }
-    h += `</div>`;
+    h += '</div>';
     return h;
   }
 
   function _renderBusiestDays(daily) {
     const sorted = [...daily].sort((a, b) => b.prints - a.prints).slice(0, 10);
-    if (!sorted.length) return `<div class="text-muted" style="font-size:0.8rem">${t('activity.no_data')}</div>`;
+    if (!sorted.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'Ingen data')}</p></div>`;
 
-    let h = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">`;
-    for (const d of sorted) {
+    let h = '<div class="auto-grid auto-grid--md">';
+    for (let i = 0; i < sorted.length; i++) {
+      const d = sorted[i];
       const date = new Date(d.day + 'T00:00:00');
       const dayName = _dayName(date);
       const dateStr = `${dayName} ${date.getDate()}. ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+      const medal = i === 0 ? ' act-busiest--gold' : i === 1 ? ' act-busiest--silver' : i === 2 ? ' act-busiest--bronze' : '';
 
-      h += `<div style="background:var(--bg-tertiary);padding:8px 12px;border-radius:6px;display:flex;justify-content:space-between;align-items:center">`;
-      h += `<div><div style="font-size:0.8rem;font-weight:600">${dateStr}</div>`;
-      h += `<div style="font-size:0.68rem;color:var(--text-muted)">${d.hours || 0}h · ${Math.round(d.filament_g || 0)}g</div></div>`;
-      h += `<div style="font-size:1.1rem;font-weight:800;color:var(--accent-green)">${d.prints}</div>`;
-      h += `</div>`;
+      h += `<div class="act-busiest-card${medal}">
+        <div class="act-busiest-info">
+          <span class="act-busiest-rank">#${i + 1}</span>
+          <div>
+            <div class="act-busiest-date">${dateStr}</div>
+            <div class="act-busiest-meta">${d.hours || 0}h · ${Math.round(d.filament_g || 0)}g</div>
+          </div>
+        </div>
+        <span class="act-busiest-count">${d.prints}</span>
+      </div>`;
     }
-    h += `</div>`;
+    h += '</div>';
     return h;
   }
 
   window.loadActivityPanel = loadActivity;
-
 })();

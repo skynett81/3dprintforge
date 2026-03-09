@@ -1333,6 +1333,14 @@
   opacity: 0.85;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+.ams-card-grams {
+  font-size: 0.58rem;
+  font-weight: 500;
 }
 
 .ams-card-rfid {
@@ -2183,8 +2191,8 @@
 .stats-date-range input[type="date"] { background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 4px 8px; border-radius: 6px; font-size: 0.78rem; max-width: 140px; }
 .stats-date-sep { color: var(--text-secondary); font-size: 0.8rem; }
 .stats-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-.stats-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 500; }
-.stats-table td { padding: 5px 8px; border-bottom: 1px solid var(--bg-secondary); }
+.stats-table th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
+.stats-table td { padding: 5px 10px; border-bottom: 1px solid var(--bg-secondary); white-space: nowrap; }
 
 /* Tab panels as grids */
 .stats-tab-panel {
@@ -2196,7 +2204,7 @@
 
 .stats-tab-panel.active { display: grid; }
 
-.stats-module { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px 18px; position: relative; transition: all 0.25s var(--ease-out); box-shadow: var(--shadow-sm); margin-bottom: 0; }
+.stats-module { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px 18px; position: relative; transition: all 0.25s var(--ease-out); box-shadow: var(--shadow-sm); margin-bottom: 0; overflow-x: auto; }
 .stats-module:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .stats-module-full { grid-column: 1 / -1; }
 .stats-module-unlocked { border: 1px dashed rgba(0, 0, 0, 0.15); cursor: grab; }
@@ -2217,14 +2225,14 @@
 /* ---- Stats Hero Cards ---- */
 .stats-hero-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
   gap: 10px;
 }
 
 .stats-hero-card {
   background: var(--bg-tertiary);
   border-radius: var(--radius-sm);
-  padding: 14px 10px;
+  padding: 14px 14px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -2265,6 +2273,7 @@
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .stats-hero-label {
@@ -3461,6 +3470,190 @@
 }
 
 /* Duplicate chart-bars removed — see line ~1427 for grid-based version */
+
+/* ═══════════════════════════════════════════════════
+   Activity Panel (.act-)
+   ═══════════════════════════════════════════════════ */
+
+.act-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.act-stats {
+  margin-bottom: 0;
+}
+
+.act-cards {
+  margin-bottom: 0;
+}
+
+.act-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  text-align: center;
+  transition: all 0.25s var(--ease-out);
+}
+
+.act-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.act-stat-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.act-stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+/* Heatmap */
+.act-heatmap-card {
+  overflow: hidden;
+}
+
+.act-heatmap-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.act-heatmap-svg {
+  width: 100%;
+  min-width: 780px;
+  max-width: 920px;
+}
+
+.act-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  justify-content: flex-end;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.act-legend-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+}
+
+/* Monthly bars */
+.act-monthly-card,
+.act-busiest-card-wrap {
+  /* standard card styling is enough */
+}
+
+.act-monthly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.act-monthly-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.act-monthly-label {
+  width: 70px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.act-monthly-row .matrec-bar-track {
+  flex: 1;
+  height: 20px;
+}
+
+.act-monthly-value {
+  width: 120px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.act-monthly-detail {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+/* Busiest days */
+.act-busiest-card {
+  background: var(--bg-tertiary);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 3px solid transparent;
+  transition: all 0.2s var(--ease-out);
+}
+
+.act-busiest-card:hover {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.act-busiest--gold  { border-left-color: #f5c842; }
+.act-busiest--silver { border-left-color: #b0b8c4; }
+.act-busiest--bronze { border-left-color: #cd7f32; }
+
+.act-busiest-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.act-busiest-rank {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 22px;
+}
+
+.act-busiest-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.act-busiest-meta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.act-busiest-count {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent-green);
+}
+
+@media (max-width: 600px) {
+  .act-monthly-label { width: 50px; font-size: 0.68rem; }
+  .act-monthly-value { width: 80px; }
+  .act-monthly-detail { display: none; }
+  .act-busiest-rank { display: none; }
+}
 
 /* ---- Week Chart ---- */
 .week-chart {

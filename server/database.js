@@ -3801,7 +3801,7 @@ export function getAmsStats(printerId) {
 
 // ---- Waste Tracking ----
 
-export function getWasteStats(printerId = null) {
+export function getWasteStats(printerId = null, startupPurgeG = 1.0, wastePerChangeG = 5.0) {
   const where = printerId ? ' WHERE printer_id = ?' : '';
   const params = printerId ? [printerId] : [];
 
@@ -3867,12 +3867,13 @@ export function getWasteStats(printerId = null) {
   const wasteBreakdown = db.prepare(`
     SELECT
       ROUND(SUM(CASE WHEN status IN ('failed','cancelled') THEN filament_used_g ELSE 0 END), 1) as failed_g,
-      ROUND(SUM(CASE WHEN color_changes > 0 THEN color_changes * 5.0 ELSE 0 END), 1) as color_change_g,
+      COALESCE(SUM(CASE WHEN color_changes > 0 THEN color_changes ELSE 0 END), 0) as total_color_change_count,
       COUNT(*) as total_prints,
       COUNT(CASE WHEN status IN ('failed','cancelled') THEN 1 END) as failed_prints
     FROM print_history${where}
   `).get(...params);
-  const purgeG = Math.round((totalPrints.count * 1.0) * 10) / 10; // 1g per print startup
+  const purgeG = Math.round((totalPrints.count * startupPurgeG) * 10) / 10;
+  const colorChangeG = Math.round((wasteBreakdown.total_color_change_count * wastePerChangeG) * 10) / 10;
 
   // Daily waste (last 30 days)
   const wastePerDay = db.prepare(`
@@ -3914,7 +3915,7 @@ export function getWasteStats(printerId = null) {
     prints_with_waste: autoWaste.prints_with_waste + manualWaste.count,
     waste_breakdown: {
       purge_g: purgeG,
-      color_change_g: wasteBreakdown.color_change_g || 0,
+      color_change_g: colorChangeG,
       failed_g: wasteBreakdown.failed_g || 0,
       manual_g: manualWaste.total,
       failed_prints: wasteBreakdown.failed_prints || 0
@@ -6093,11 +6094,17 @@ export function getPendingDeliveries() {
 // ---- Print Costs (Advanced) ----
 
 export function recalculateAllCosts() {
-  const rows = db.prepare(`SELECT id, printer_id, duration_seconds, filament_used_g, waste_g, status FROM print_history`).all();
+  const rows = db.prepare(`SELECT id, printer_id, duration_seconds, filament_used_g, waste_g, status, tray_id FROM print_history`).all();
   let updated = 0;
   for (const row of rows) {
     try {
-      const costs = estimatePrintCostAdvanced(row.filament_used_g || 0, row.duration_seconds || 0, null, row.printer_id, row.status, row.waste_g || 0);
+      // Try to find the linked spool for accurate filament cost
+      let spoolId = null;
+      if (row.printer_id && row.tray_id != null) {
+        const spool = db.prepare('SELECT id FROM spools WHERE printer_id = ? AND ams_tray = ? AND archived = 0').get(row.printer_id, parseInt(row.tray_id));
+        if (spool) spoolId = spool.id;
+      }
+      const costs = estimatePrintCostAdvanced(row.filament_used_g || 0, row.duration_seconds || 0, spoolId, row.printer_id, row.status, row.waste_g || 0);
       if (costs.total_cost > 0) {
         db.prepare(`INSERT OR REPLACE INTO print_costs (print_history_id, filament_cost, electricity_cost, depreciation_cost, labor_cost, markup_amount, total_cost, currency)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(

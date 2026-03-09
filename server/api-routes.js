@@ -671,7 +671,20 @@ export async function handleApiRequest(req, res) {
       const offset = parseInt(url.searchParams.get('offset')) || 0;
       const printerId = url.searchParams.get('printer_id') || null;
       const status = url.searchParams.get('status') || null;
-      return sendJson(res, getHistory(limit, offset, printerId, status));
+      const rows = getHistory(limit, offset, printerId, status);
+      // Enrich rows missing filament brand/type from linked inventory spool
+      for (const row of rows) {
+        if ((!row.filament_brand || !row.filament_type) && row.printer_id && row.tray_id != null) {
+          try {
+            const spool = getSpoolBySlot(row.printer_id, 0, parseInt(row.tray_id));
+            if (spool) {
+              if (!row.filament_brand) row.filament_brand = spool.vendor_name || spool.profile_name || null;
+              if (!row.filament_type) row.filament_type = spool.material || null;
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      return sendJson(res, rows);
     }
 
     // ---- CSV Export ----
@@ -756,7 +769,9 @@ export async function handleApiRequest(req, res) {
     // ---- Waste ----
     if (method === 'GET' && path === '/api/waste/stats') {
       const printerId = url.searchParams.get('printer_id') || null;
-      return sendJson(res, getWasteStats(printerId));
+      const startupPurgeG = parseFloat(url.searchParams.get('startup_purge_g')) || 1.0;
+      const wastePerChangeG = parseFloat(url.searchParams.get('waste_per_change_g')) || 5.0;
+      return sendJson(res, getWasteStats(printerId, startupPurgeG, wastePerChangeG));
     }
 
     if (method === 'GET' && path === '/api/waste/history') {
