@@ -1415,6 +1415,7 @@
     "tab_activity": "Aktivitet",
     "tab_hardware": "Maskin",
     "tab_cost": "Kostnad",
+    "tab_printstats": "Utskrifter",
     "layout_locked": "Låst",
     "layout_unlocked": "Ulåst",
     "date_from": "Fra dato",
@@ -2933,7 +2934,18 @@
     "title": "Prestasjoner",
     "completion": "Fullføring",
     "earned": "Opptjent",
-    "total": "Totalt"
+    "total": "Totalt",
+    "cat_prints": "Utskrifter",
+    "cat_filament": "Filament",
+    "cat_time": "Tid",
+    "cat_quality": "Kvalitet",
+    "cat_exploration": "Utforsking",
+    "cat_dedication": "Dedikasjon",
+    "cat_milestones": "Milepæler",
+    "cat_collection": "Samling",
+    "in_progress": "Pågår",
+    "locked": "Låst",
+    "almost_there": "Nesten der!"
   },
   "screenshots": {
     "title": "Skjermbilder"

@@ -1415,6 +1415,7 @@
     "tab_activity": "Activity",
     "tab_hardware": "Hardware",
     "tab_cost": "Cost",
+    "tab_printstats": "Print Stats",
     "layout_locked": "Locked",
     "layout_unlocked": "Unlocked",
     "date_from": "From date",
@@ -2933,7 +2934,18 @@
     "title": "Achievements",
     "completion": "Completion",
     "earned": "Earned",
-    "total": "Total"
+    "total": "Total",
+    "cat_prints": "Prints",
+    "cat_filament": "Filament",
+    "cat_time": "Time",
+    "cat_quality": "Quality",
+    "cat_exploration": "Exploration",
+    "cat_dedication": "Dedication",
+    "cat_milestones": "Milestones",
+    "cat_collection": "Collection",
+    "in_progress": "In Progress",
+    "locked": "Locked",
+    "almost_there": "Almost There!"
   },
   "screenshots": {
     "title": "Screenshots"

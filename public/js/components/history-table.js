@@ -100,8 +100,7 @@
 
   // ═══ Tab config ═══
   const TAB_CONFIG = {
-    history: { label: 'history.tab_history', modules: ['history-summary', 'history-filters', 'history-list'] },
-    stats:   { label: 'history.tab_stats',   modules: ['stats-hero', 'stats-status-activity', 'stats-duration-temp', 'filament-breakdown', 'stats-nozzle-models', 'print-timeline'] }
+    history: { label: 'history.tab_history', modules: ['history-summary', 'history-filters', 'history-list'] }
   };
   const MODULE_SIZE = {
     'history-summary': 'full', 'history-filters': 'full', 'history-list': 'full',
@@ -1033,12 +1032,15 @@
         html += '</div>';
       }
 
-      // Tab bar
-      html += '<div class="tabs">';
-      for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
-        html += `<button class="tab-btn history-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchHistoryTab('${id}')">${t(cfg.label)}</button>`;
+      // Tab bar (only show if more than one tab)
+      const tabKeys = Object.keys(TAB_CONFIG);
+      if (tabKeys.length > 1) {
+        html += '<div class="tabs">';
+        for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
+          html += `<button class="tab-btn history-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchHistoryTab('${id}')">${t(cfg.label)}</button>`;
+        }
+        html += '</div>';
       }
-      html += '</div>';
 
       // Tab panels
       for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
