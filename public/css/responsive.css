@@ -111,3 +111,82 @@
 
   .sidebar { width: 230px; min-width: 230px; }
 }
+
+/* ---- Responsive Tables → Card Layout ---- */
+@media (max-width: 768px) {
+  .resp-table { border: none; }
+  .resp-table thead { display: none; }
+  .resp-table tbody tr {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 12px;
+  }
+  .resp-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none;
+    font-size: 0.8rem;
+  }
+  .resp-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .resp-table tbody td:first-child {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+  }
+}
+
+/* ---- History List → Card Layout on mobile ---- */
+@media (max-width: 768px) {
+  .ph-list .ph-list-row {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 12px;
+  }
+  .ph-list .ph-list-row > div[data-label]:not(.ph-list-thumb) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.8rem;
+  }
+  .ph-list .ph-list-row > div[data-label]:not(.ph-list-thumb)::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .ph-list .ph-list-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+  }
+}
+
+/* ---- Mobile utility classes ---- */
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+  .mobile-full-width { width: 100% !important; }
+  .mobile-stack { flex-direction: column !important; }
+}
+@media (min-width: 769px) {
+  .hide-desktop { display: none !important; }
+}

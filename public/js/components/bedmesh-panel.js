@@ -1,6 +1,7 @@
 // Bed Mesh Visualizer — 3D heatmap of printer bed leveling data
 (function() {
   let _meshData = null;
+  let _latestEntry = null;
   let _history = [];
   let _canvas = null;
   let _ctx = null;
@@ -9,10 +10,13 @@
   let _lastMouse = { x: 0, y: 0 };
   let _scale = 1;
   let _viewMode = '3d'; // 3d | heatmap
+  let _printerId = null;
 
   window.loadBedMeshPanel = function() {
     const el = document.getElementById('overlay-panel-body');
     if (!el) return;
+
+    _printerId = window.printerState?.getActivePrinterId();
 
     el.innerHTML = `<style>
       .bm-container { display:grid; grid-template-columns:1fr 280px; gap:16px; }
@@ -37,12 +41,17 @@
       .bm-history-item { display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.75rem; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; }
       .bm-history-item:hover { color:var(--accent-blue); }
       .bm-history-item.active { color:var(--accent-blue); font-weight:700; }
-      .bm-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+      .bm-empty { text-align:center; padding:40px 20px; color:var(--text-muted); }
       .bm-empty-icon { font-size:3rem; margin-bottom:12px; opacity:0.3; }
-      .bm-empty p { font-size:0.85rem; }
+      .bm-empty p { font-size:0.85rem; margin:4px 0; }
       .bm-legend { display:flex; align-items:center; gap:2px; padding:8px; font-size:0.65rem; color:var(--text-muted); }
       .bm-legend-bar { height:12px; flex:1; border-radius:3px; background:linear-gradient(90deg, #1279ff, #00ae42, #f59e0b, #e53935); }
       .bm-upload-btn { padding:6px 14px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:0.78rem; font-weight:600; }
+      .bm-action-btn { padding:6px 14px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); border-radius:var(--radius); cursor:pointer; font-size:0.78rem; font-weight:600; }
+      .bm-action-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
+      .bm-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+      .bm-actions-bar { display:flex; gap:8px; align-items:center; padding:10px 0; }
+      .bm-scan-status { font-size:0.78rem; color:var(--text-muted); margin-left:8px; }
     </style>
     <div class="bm-container">
       <div>
@@ -53,10 +62,13 @@
             <button class="bm-view-btn" id="bm-btn-heatmap" onclick="_bmSetView('heatmap')">${t('bedmesh.heatmap')}</button>
             <button class="bm-view-btn" onclick="_bmReset()">${t('bedmesh.reset_view')}</button>
             <div style="flex:1"></div>
+            <button class="bm-action-btn" onclick="_bmScanPrinter()" id="bm-scan-btn">${t('bedmesh.scan_printer') || 'Skann printer'}</button>
+            <button class="bm-action-btn" onclick="_bmCalibrate()" id="bm-cal-btn">${t('bedmesh.calibrate') || 'Kalibrer seng'}</button>
             <button class="bm-upload-btn" onclick="_bmUpload()">${t('bedmesh.upload_mesh')}</button>
           </div>
           <div class="bm-legend"><span>Low</span><div class="bm-legend-bar"></div><span>High</span></div>
         </div>
+        <div id="bm-status-bar"></div>
       </div>
       <div class="bm-sidebar">
         <div class="bm-stats" id="bm-stats"></div>
@@ -71,20 +83,21 @@
   };
 
   async function _loadData() {
-    const printerId = window.printerState?.getActivePrinterId();
-    if (!printerId) {
+    if (!_printerId) {
       _showEmpty(t('bedmesh.no_printer'));
       return;
     }
     try {
-      const r = await fetch(`/api/printers/${printerId}/bed-mesh`);
+      const r = await fetch(`/api/printers/${_printerId}/bed-mesh`);
       const data = await r.json();
       _history = data.history || [];
       if (data.latest && data.latest.mesh_data) {
+        _latestEntry = data.latest;
         _meshData = typeof data.latest.mesh_data === 'string' ? JSON.parse(data.latest.mesh_data) : data.latest.mesh_data;
         _renderStats(data.latest);
       } else {
         _meshData = null;
+        _latestEntry = null;
         _showEmpty(t('bedmesh.no_data'));
       }
       _renderHistory(data.latest?.id);
@@ -99,13 +112,20 @@
     if (statsEl) statsEl.innerHTML = `<div class="bm-empty"><div class="bm-empty-icon">\u25A6</div><p>${msg}</p></div>`;
   }
 
+  function _setStatus(msg, type) {
+    const el = document.getElementById('bm-status-bar');
+    if (!el) return;
+    const color = type === 'success' ? 'var(--accent-green)' : type === 'error' ? 'var(--accent-red)' : 'var(--text-muted)';
+    el.innerHTML = msg ? `<div class="bm-scan-status" style="color:${color};padding:8px 0">${msg}</div>` : '';
+  }
+
   function _renderStats(mesh) {
     const el = document.getElementById('bm-stats');
     if (!el || !mesh) return;
     const range = ((mesh.z_max || 0) - (mesh.z_min || 0)).toFixed(3);
     const rangeNum = parseFloat(range);
     const cls = rangeNum < 0.1 ? 'bm-stat-good' : rangeNum < 0.3 ? 'bm-stat-warn' : 'bm-stat-bad';
-    const quality = rangeNum < 0.1 ? t('bedmesh.excellent') : rangeNum < 0.2 ? t('bedmesh.good') : rangeNum < 0.3 ? t('bedmesh.fair') : t('bedmesh.poor');
+    const quality = rangeNum < 0.1 ? (t('bedmesh.excellent') || 'Utmerket') : rangeNum < 0.2 ? (t('bedmesh.good') || 'Bra') : rangeNum < 0.3 ? (t('bedmesh.fair') || 'Ok') : (t('bedmesh.poor') || 'Dårlig');
     el.innerHTML = `<h4>${t('bedmesh.stats')}</h4>
       <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.grid')}</span><span class="bm-stat-value">${mesh.mesh_rows || '?'}x${mesh.mesh_cols || '?'}</span></div>
       <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.z_min')}</span><span class="bm-stat-value">${(mesh.z_min || 0).toFixed(3)} mm</span></div>
@@ -130,17 +150,66 @@
       const range = ((h.z_max || 0) - (h.z_min || 0)).toFixed(3);
       const active = h.id === activeId ? ' active' : '';
       html += `<div class="bm-history-item${active}" onclick="_bmLoadHistory(${h.id})">
-        <span>${date}</span><span>${range} mm</span>
+        <span>${date} <span style="color:var(--text-muted);font-size:0.7rem">${h.source || ''}</span></span><span>${range} mm</span>
       </div>`;
     }
     el.innerHTML = html;
   }
 
+  // ── Scan printer FTP for mesh files ──
+  window._bmScanPrinter = async function() {
+    if (!_printerId) { if (typeof showToast === 'function') showToast(t('bedmesh.no_printer'), 'error'); return; }
+    const btn = document.getElementById('bm-scan-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    _setStatus(t('bedmesh.scanning') || 'Skanner printer via FTP...', 'info');
+    try {
+      const r = await fetch(`/api/printers/${_printerId}/bed-mesh/scan`, { method: 'POST' });
+      const data = await r.json();
+      if (data.ok && data.id) {
+        _setStatus((t('bedmesh.scan_found') || 'Mesh funnet') + ': ' + data.source, 'success');
+        if (typeof showToast === 'function') showToast(t('bedmesh.scan_found') || 'Mesh-data funnet og lagret!', 'success');
+        _loadData();
+      } else if (data.files) {
+        const msg = (t('bedmesh.scan_no_mesh') || 'Ingen mesh-filer funnet') + '. ' + (t('bedmesh.files_found') || 'Filer') + ': ' + data.files.join(', ');
+        _setStatus(msg, 'info');
+      } else {
+        _setStatus(data.error || data.message || 'Scan failed', 'error');
+      }
+    } catch (e) {
+      _setStatus('FTP scan error: ' + e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = t('bedmesh.scan_printer') || 'Skann printer'; }
+    }
+  };
+
+  // ── Trigger bed calibration via G-code ──
+  window._bmCalibrate = async function() {
+    if (!_printerId) { if (typeof showToast === 'function') showToast(t('bedmesh.no_printer'), 'error'); return; }
+    if (!confirm(t('bedmesh.calibrate_confirm') || 'Start auto bed leveling? Printeren vil kjøre homing (G28) og deretter bed leveling (G29). Sørg for at sengen er klar.')) return;
+    const btn = document.getElementById('bm-cal-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    _setStatus(t('bedmesh.calibrating') || 'Starter kalibrering...', 'info');
+    try {
+      const r = await fetch(`/api/printers/${_printerId}/bed-mesh/calibrate`, { method: 'POST' });
+      const data = await r.json();
+      if (data.ok) {
+        _setStatus(t('bedmesh.calibrate_started') || 'Kalibrering startet. Printeren kjører G28 + G29. Vent til den er ferdig, og bruk deretter "Skann printer" for å hente resultatene.', 'success');
+        if (typeof showToast === 'function') showToast(t('bedmesh.calibrate_started') || 'Kalibrering startet!', 'success');
+      } else {
+        _setStatus(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      _setStatus('Error: ' + e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = t('bedmesh.calibrate') || 'Kalibrer seng'; }
+    }
+  };
+
   window._bmLoadHistory = async function(id) {
-    const printerId = window.printerState?.getActivePrinterId();
-    if (!printerId) return;
+    if (!_printerId) return;
     const item = _history.find(h => h.id === id);
     if (!item) return;
+    _latestEntry = item;
     _meshData = typeof item.mesh_data === 'string' ? JSON.parse(item.mesh_data) : item.mesh_data;
     _renderStats(item);
     _renderHistory(id);
@@ -160,7 +229,6 @@
   };
 
   window._bmUpload = function() {
-    const input = document.createElement('textarea');
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
@@ -169,8 +237,8 @@
       <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 10px">${t('bedmesh.paste_hint')}</p>
       <textarea id="bm-paste" style="width:100%;height:200px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px;font-family:monospace;font-size:0.75rem;color:var(--text-primary);box-sizing:border-box;resize:vertical" placeholder="0.01 0.02 0.03\n0.02 0.01 0.02\n0.03 0.02 0.01"></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button style="padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
-        <button style="padding:8px 16px;border-radius:var(--radius);border:none;background:var(--accent-blue);color:#fff;cursor:pointer;font-weight:600" onclick="_bmSubmitPaste()">Upload</button>
+        <button class="bm-action-btn" onclick="this.closest('div[style*=fixed]').remove()">${t('bedmesh.cancel') || 'Avbryt'}</button>
+        <button class="bm-upload-btn" onclick="_bmSubmitPaste()">${t('bedmesh.upload') || 'Last opp'}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -180,16 +248,14 @@
     const text = document.getElementById('bm-paste')?.value?.trim();
     if (!text) return;
     try {
-      // Parse space/tab/comma separated values
       const rows = text.split('\n').filter(l => l.trim());
       const mesh = rows.map(r => r.trim().split(/[\s,]+/).map(Number));
       if (!mesh.length || mesh.some(r => r.some(isNaN))) {
         if (typeof showToast === 'function') showToast(t('bedmesh.parse_error'), 'error');
         return;
       }
-      const pid = window.printerState?.getActivePrinterId();
-      if (!pid) return;
-      await fetch(`/api/printers/${pid}/bed-mesh`, {
+      if (!_printerId) return;
+      await fetch(`/api/printers/${_printerId}/bed-mesh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mesh_data: mesh, source: 'manual' })
@@ -218,7 +284,6 @@
       _scale = Math.max(0.5, Math.min(3, _scale - e.deltaY * 0.001));
       _draw();
     });
-    // Touch
     _canvas.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) { _dragging = true; _lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
     });
@@ -246,7 +311,9 @@
       _ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#999';
       _ctx.font = '14px Inter, sans-serif';
       _ctx.textAlign = 'center';
-      _ctx.fillText(t('bedmesh.no_data'), rect.width / 2, rect.height / 2);
+      _ctx.fillText(t('bedmesh.no_data_short') || 'Ingen mesh-data', rect.width / 2, rect.height / 2 - 20);
+      _ctx.font = '12px Inter, sans-serif';
+      _ctx.fillText(t('bedmesh.use_actions') || 'Bruk knappene under for å hente eller laste opp data', rect.width / 2, rect.height / 2 + 5);
       return;
     }
 
@@ -271,7 +338,6 @@
         const t = (val - zMin) / range;
         _ctx.fillStyle = _heatColor(t);
         _ctx.fillRect(pad + c * cellW, pad + r * cellH, cellW - 1, cellH - 1);
-        // Value label
         _ctx.fillStyle = t > 0.5 ? '#fff' : '#000';
         _ctx.font = `${Math.min(cellW * 0.3, 11)}px Inter, sans-serif`;
         _ctx.textAlign = 'center';
@@ -297,16 +363,13 @@
     const cosZ = Math.cos(radZ), sinZ = Math.sin(radZ);
 
     function project(x, y, z) {
-      // Rotate around Z
       const rx = x * cosZ - y * sinZ;
       const ry = x * sinZ + y * cosZ;
-      // Rotate around X (tilt)
       const py = ry * cosX - z * sinX;
       const pz = ry * sinX + z * cosX;
       return { x: cx + rx * size, y: cy - py * size, z: pz };
     }
 
-    // Build quads
     const quads = [];
     for (let r = 0; r < rows - 1; r++) {
       for (let c = 0; c < cols - 1; c++) {
@@ -330,7 +393,6 @@
       }
     }
 
-    // Sort by depth (painter's algorithm)
     quads.sort((a, b) => a.z - b.z);
 
     for (const q of quads) {
@@ -347,7 +409,6 @@
   }
 
   function _heatColor(t) {
-    // Blue -> Green -> Yellow -> Red
     if (t < 0.33) {
       const s = t / 0.33;
       return `rgb(${Math.round(18 + (0 - 18) * s)}, ${Math.round(121 + (174 - 121) * s)}, ${Math.round(255 + (66 - 255) * s)})`;

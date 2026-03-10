@@ -40,10 +40,13 @@
 
     if (prev === 'RUNNING' && curr === 'FINISH') {
       notify(key, t('notify.print_finished'), t('notify.print_finished_body', { name }));
+      if (typeof notificationSound !== 'undefined') notificationSound.printComplete();
     } else if (prev === 'RUNNING' && curr === 'FAILED') {
       notify(key, t('notify.print_failed'), t('notify.print_failed_body', { name }));
+      if (typeof notificationSound !== 'undefined') notificationSound.printFailed();
     } else if (prev !== 'RUNNING' && curr === 'RUNNING') {
       notify(key, t('notify.print_started'), t('notify.print_started_body', { name }));
+      if (typeof notificationSound !== 'undefined') notificationSound.info();
     }
   };
 

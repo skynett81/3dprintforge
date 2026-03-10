@@ -29,6 +29,8 @@ import { buildPauseCommand } from './mqtt-commands.js';
 import { initHaDiscovery, onPrinterStateUpdate, shutdownHaDiscovery } from './ha-discovery.js';
 import { initRemoteNodes, shutdownRemoteNodes } from './remote-nodes.js';
 import { MaterialRecommenderService } from './material-recommender.js';
+import { createLogger } from './logger.js';
+const log = createLogger('server');
 
 const IS_DEMO = process.env.BAMBU_DEMO === 'true';
 
@@ -147,10 +149,47 @@ function handleCors(req, res) {
 function handleRequest(req, res) {
   applySecurityHeaders(res);
 
+  // Request logging
+  const reqStart = Date.now();
+  const origEnd = res.end.bind(res);
+  res.end = function(...args) {
+    const duration = Date.now() - reqStart;
+    const pathname = req.url.split('?')[0];
+    // Only log API requests and slow static file requests
+    if (pathname.startsWith('/api/') || duration > 500) {
+      log.info(`${req.method} ${pathname} ${res.statusCode} ${duration}ms`);
+    }
+    return origEnd(...args);
+  };
+
   // CORS handling for API routes
   if (req.url.startsWith('/api/') && handleCors(req, res)) return;
 
   const pathname = req.url.split('?')[0];
+
+  // CSRF protection — validate Origin header on state-changing requests
+  if (req.url.startsWith('/api/') && req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    // API key requests bypass CSRF (they authenticate via header, not cookies)
+    const hasApiKey = req.headers.authorization?.startsWith('Bearer ') || req.headers['x-api-key'];
+    if (!hasApiKey && origin) {
+      const host = req.headers.host;
+      try {
+        const originHost = new URL(origin).host;
+        if (originHost !== host) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'CSRF validation failed: origin mismatch' }));
+          return;
+        }
+      } catch {
+        // Malformed origin header
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'CSRF validation failed: invalid origin' }));
+        return;
+      }
+    }
+  }
 
   // Public auth API routes (login, logout, status) - always accessible
   if (pathname === '/api/auth/status' || pathname === '/api/auth/login' || pathname === '/api/auth/logout') {
@@ -285,7 +324,7 @@ import('./thumbnail-service.js').then(({ getThumbnailCache }) => {
   import('./print-tracker.js').then(({ PrintTracker }) => {
     PrintTracker._thumbCacheRef = getThumbnailCache();
   });
-}).catch(() => {});
+}).catch(e => log.warn('Failed to wire thumbnail cache', e.message));
 
 // Connect API routes to broadcast + sync hub meta
 setApiBroadcast((type, data) => {
@@ -535,7 +574,7 @@ for (const [id, entry] of manager.printers) {
       // Start power monitoring for this print
       onPrintStart(id);
       // Dispatch plugin hook
-      pluginManager.dispatch('onPrintStart', { printerId: id, ...data }).catch(() => {});
+      pluginManager.dispatch('onPrintStart', { printerId: id, ...data }).catch(e => log.warn('Plugin onPrintStart dispatch failed', e.message));
     };
 
     entry.tracker.onPrintEnd = (data) => {
@@ -543,7 +582,7 @@ for (const [id, entry] of manager.printers) {
       queueManager.onPrintComplete(id, data.status, null);
       // Stop timelapse recording
       if (timelapseService.isRecording(id)) {
-        timelapseService.stopRecording(id).catch(() => {});
+        timelapseService.stopRecording(id).catch(e => log.warn('Failed to stop timelapse recording', e.message));
       }
       // Stop AI failure detection
       failureDetector.stopMonitoring(id);
@@ -554,14 +593,14 @@ for (const [id, entry] of manager.printers) {
       // Recalculate wear predictions after print
       wearPrediction.onPrintEnd(id, data);
       // Dispatch plugin hook
-      pluginManager.dispatch('onPrintEnd', { printerId: id, ...data }).catch(() => {});
+      pluginManager.dispatch('onPrintEnd', { printerId: id, ...data }).catch(e => log.warn('Plugin onPrintEnd dispatch failed', e.message));
     };
 
     // Wire plugin dispatch into onError
     const origOnError = entry.tracker.onError;
     entry.tracker.onError = (data) => {
       if (origOnError) origOnError(data);
-      pluginManager.dispatch('onError', { printerId: id, ...data }).catch(() => {});
+      pluginManager.dispatch('onError', { printerId: id, ...data }).catch(e => log.warn('Plugin onError dispatch failed', e.message));
     };
 
     // Milestone screenshot capture (25/50/75/100%)
@@ -573,7 +612,7 @@ for (const [id, entry] of manager.printers) {
           captureMilestone(id, printer.ip, printer.accessCode, data.milestone, {
             layer: data.layer,
             totalLayers: data.totalLayers
-          }).catch(() => {});
+          }).catch(e => log.warn('Milestone capture failed', e.message));
         }
       }
     };
@@ -843,7 +882,7 @@ httpServer.listen(PORT, () => {
   sendTelemetryPing();
 
   // Dispatch plugin onServerStart hook
-  pluginManager.dispatch('onServerStart', { port: PORT }).catch(() => {});
+  pluginManager.dispatch('onServerStart', { port: PORT }).catch(e => log.warn('Plugin onServerStart dispatch failed', e.message));
 });
 
 if (httpsServer) {

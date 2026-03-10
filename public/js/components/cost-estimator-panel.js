@@ -346,16 +346,110 @@
       </div>`;
     }
 
+    // Cost breakdown visualization bar
+    html += `<div id="cost-breakdown-chart"></div>`;
+
     html += `<div id="ce-compare-result"></div>`;
+
+    // Energy info section
+    html += '<div class="card" style="margin-top:12px">';
+    html += '<div class="card-title">\u26A1 ' + (_tl('cost.energy_info', '') || 'Energy Prices') + '</div>';
+    html += '<div id="cost-energy-info" style="font-size:0.85rem;color:var(--text-muted)">Loading...</div>';
+    html += '</div>';
 
     el.innerHTML = html;
     document.getElementById('ce-save-btn')?.addEventListener('click', doSave);
     document.getElementById('ce-compare-btn')?.addEventListener('click', showCompareUI);
+
+    // Render cost breakdown chart
+    _renderCostBreakdown(c);
+
+    // Load energy price data
+    _loadEnergyInfo();
   }
 
   function _costPct(part, total) {
     if (!total || !part) return 0;
     return Math.min(100, Math.round(part / total * 100));
+  }
+
+  // ═══ Energy info & Cost breakdown ═══
+
+  async function _loadEnergyInfo() {
+    const el = document.getElementById('cost-energy-info');
+    if (!el) return;
+    try {
+      const [currentRes, cheapestRes, todayRes] = await Promise.all([
+        fetch('/api/energy/current').then(r => r.json()).catch(() => null),
+        fetch('/api/energy/cheapest?duration=120').then(r => r.json()).catch(() => null),
+        fetch('/api/energy/today').then(r => r.json()).catch(() => null)
+      ]);
+
+      let h = '<div class="auto-grid auto-grid--xs" style="gap:12px">';
+
+      if (currentRes && currentRes.total !== undefined) {
+        const level = currentRes.level || 'normal';
+        const levelColor = level === 'low' ? 'var(--accent-green)' : level === 'high' ? 'var(--accent-red)' : 'var(--accent-orange)';
+        h += '<div style="text-align:center;padding:8px">';
+        h += `<div style="font-size:1.4rem;font-weight:800;color:${levelColor}">${(currentRes.total * 100).toFixed(1)}</div>`;
+        h += '<div style="font-size:0.7rem;color:var(--text-muted)">\u00F8re/kWh now</div>';
+        h += '</div>';
+      }
+
+      if (todayRes) {
+        h += '<div style="text-align:center;padding:8px">';
+        h += `<div style="font-size:1.4rem;font-weight:800">${(todayRes.avg * 100).toFixed(1)}</div>`;
+        h += '<div style="font-size:0.7rem;color:var(--text-muted)">\u00F8re/kWh avg today</div>';
+        h += '</div>';
+        h += '<div style="text-align:center;padding:8px">';
+        h += `<div style="font-size:1.4rem;font-weight:800;color:var(--accent-green)">${(todayRes.min * 100).toFixed(1)}</div>`;
+        h += '<div style="font-size:0.7rem;color:var(--text-muted)">\u00F8re/kWh cheapest</div>';
+        h += '</div>';
+      }
+
+      if (cheapestRes && cheapestRes.start) {
+        const start = new Date(cheapestRes.start);
+        const end = new Date(cheapestRes.end);
+        const fmt = (d) => d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+        h += '<div style="text-align:center;padding:8px;grid-column:1/-1">';
+        h += `<div style="font-size:0.85rem;font-weight:600;color:var(--accent-green)">\uD83D\uDCA1 Cheapest 2h window: ${fmt(start)} \u2013 ${fmt(end)}</div>`;
+        h += `<div style="font-size:0.7rem;color:var(--text-muted)">Avg: ${(cheapestRes.avgPrice * 100).toFixed(1)} \u00F8re/kWh</div>`;
+        h += '</div>';
+      }
+
+      h += '</div>';
+      el.innerHTML = h;
+    } catch (e) {
+      el.innerHTML = '<span style="color:var(--text-muted)">Energy data not available</span>';
+    }
+  }
+
+  function _renderCostBreakdown(result) {
+    const breakdown = document.getElementById('cost-breakdown-chart');
+    if (!breakdown || !result) return;
+
+    const items = [
+      { label: 'Filament', value: result.filament_cost || 0, color: 'var(--accent-blue, #3b82f6)' },
+      { label: 'Energy', value: result.electricity_cost || 0, color: 'var(--accent-yellow, #eab308)' },
+      { label: 'Wear', value: result.wear_cost || 0, color: 'var(--accent-orange)' },
+    ];
+    const total = items.reduce((s, i) => s + i.value, 0) || 1;
+
+    let h = '<div style="margin-top:12px">';
+    h += '<div style="display:flex;height:24px;border-radius:6px;overflow:hidden;margin-bottom:8px">';
+    for (const item of items) {
+      const pct = (item.value / total * 100).toFixed(1);
+      if (item.value > 0) {
+        h += `<div style="width:${pct}%;background:${item.color};transition:width 0.3s" data-tooltip="${item.label}: ${item.value.toFixed(2)} (${pct}%)"></div>`;
+      }
+    }
+    h += '</div>';
+    h += '<div style="display:flex;gap:16px;font-size:0.75rem">';
+    for (const item of items) {
+      h += `<div style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${item.color}"></span>${item.label}: ${item.value.toFixed(2)}</div>`;
+    }
+    h += '</div></div>';
+    breakdown.innerHTML = h;
   }
 
   // ═══ Save / Compare ═══

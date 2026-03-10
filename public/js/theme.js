@@ -62,6 +62,92 @@
       '--glow-blue': 'rgba(18, 121, 255, 0.12)',
       '--glow-red': 'rgba(229, 57, 53, 0.12)',
       '--glow-cyan': 'rgba(0, 174, 66, 0.12)',
+    },
+    oled: {
+      '--bg-primary': '#000000',
+      '--bg-secondary': '#0a0a0a',
+      '--bg-tertiary': '#111111',
+      '--bg-card': '#0a0a0a',
+      '--bg-elevated': '#151515',
+      '--bg-inset': 'rgba(0, 0, 0, 0.4)',
+      '--text-primary': '#e8e8ec',
+      '--text-secondary': '#a0a0b0',
+      '--text-muted': '#6b6b7a',
+      '--border-color': 'rgba(255, 255, 255, 0.06)',
+      '--border-subtle': 'rgba(255, 255, 255, 0.03)',
+      '--shadow-sm': '0 1px 3px rgba(0, 0, 0, 0.5)',
+      '--shadow-md': '0 4px 12px rgba(0, 0, 0, 0.6)',
+      '--shadow-lg': '0 8px 24px rgba(0, 0, 0, 0.7)',
+      '--shadow-glow': 'none',
+      '--shadow-neon': 'none',
+      '--shadow-inset': 'none',
+      '--surface-glass': 'rgba(10, 10, 10, 0.95)',
+      '--surface-glass-strong': 'rgba(10, 10, 10, 0.98)',
+      '--neon-blue': 'transparent',
+      '--neon-cyan': 'transparent',
+      '--neon-purple': 'transparent',
+      '--glow-green': 'rgba(0, 174, 66, 0.15)',
+      '--glow-blue': 'rgba(18, 121, 255, 0.12)',
+      '--glow-red': 'rgba(229, 57, 53, 0.12)',
+      '--glow-cyan': 'rgba(0, 174, 66, 0.12)',
+    },
+    bambuGreen: {
+      '--bg-primary': '#0a1a0f',
+      '--bg-secondary': '#0f2015',
+      '--bg-tertiary': '#142a1b',
+      '--bg-card': '#0f2015',
+      '--bg-elevated': '#1a3522',
+      '--bg-inset': 'rgba(0, 0, 0, 0.3)',
+      '--text-primary': '#e0f0e6',
+      '--text-secondary': '#8fbf9a',
+      '--text-muted': '#5a8a66',
+      '--border-color': 'rgba(0, 212, 106, 0.1)',
+      '--border-subtle': 'rgba(0, 212, 106, 0.06)',
+      '--shadow-sm': '0 1px 3px rgba(0, 0, 0, 0.4)',
+      '--shadow-md': '0 4px 12px rgba(0, 0, 0, 0.5)',
+      '--shadow-lg': '0 8px 24px rgba(0, 0, 0, 0.6)',
+      '--shadow-glow': 'none',
+      '--shadow-neon': 'none',
+      '--shadow-inset': 'none',
+      '--surface-glass': 'rgba(15, 32, 21, 0.95)',
+      '--surface-glass-strong': 'rgba(15, 32, 21, 0.98)',
+      '--neon-blue': 'transparent',
+      '--neon-cyan': 'transparent',
+      '--neon-purple': 'transparent',
+      '--glow-green': 'rgba(0, 212, 106, 0.2)',
+      '--glow-blue': 'rgba(18, 121, 255, 0.12)',
+      '--glow-red': 'rgba(229, 57, 53, 0.12)',
+      '--glow-cyan': 'rgba(0, 212, 106, 0.15)',
+      '--accent-green': '#00d46a',
+    },
+    midnightBlue: {
+      '--bg-primary': '#0a0f1a',
+      '--bg-secondary': '#0f1520',
+      '--bg-tertiary': '#14202a',
+      '--bg-card': '#0f1520',
+      '--bg-elevated': '#1a2535',
+      '--bg-inset': 'rgba(0, 0, 0, 0.3)',
+      '--text-primary': '#e0e8f0',
+      '--text-secondary': '#8fa0bf',
+      '--text-muted': '#5a6a8a',
+      '--border-color': 'rgba(77, 159, 255, 0.1)',
+      '--border-subtle': 'rgba(77, 159, 255, 0.06)',
+      '--shadow-sm': '0 1px 3px rgba(0, 0, 0, 0.4)',
+      '--shadow-md': '0 4px 12px rgba(0, 0, 0, 0.5)',
+      '--shadow-lg': '0 8px 24px rgba(0, 0, 0, 0.6)',
+      '--shadow-glow': 'none',
+      '--shadow-neon': 'none',
+      '--shadow-inset': 'none',
+      '--surface-glass': 'rgba(15, 21, 32, 0.95)',
+      '--surface-glass-strong': 'rgba(15, 21, 32, 0.98)',
+      '--neon-blue': 'transparent',
+      '--neon-cyan': 'transparent',
+      '--neon-purple': 'transparent',
+      '--glow-green': 'rgba(0, 174, 66, 0.15)',
+      '--glow-blue': 'rgba(77, 159, 255, 0.2)',
+      '--glow-red': 'rgba(229, 57, 53, 0.12)',
+      '--glow-cyan': 'rgba(77, 159, 255, 0.15)',
+      '--accent-blue': '#4d9fff',
     }
   };
 
@@ -73,7 +159,7 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        _config.preset = ['light', 'dark', 'auto'].includes(parsed.preset) ? parsed.preset : 'light';
+        _config.preset = ['light', 'dark', 'auto', 'oled', 'bambuGreen', 'midnightBlue'].includes(parsed.preset) ? parsed.preset : 'light';
         _config.accentColor = typeof parsed.accentColor === 'string' ? parsed.accentColor : null;
         _config.radius = typeof parsed.radius === 'number' ? Math.max(0, Math.min(20, parsed.radius)) : DEFAULT_RADIUS;
       }
@@ -88,7 +174,7 @@
     if (_config.preset === 'auto') {
       return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
     }
-    return _config.preset;
+    return PRESETS[_config.preset] ? _config.preset : 'light';
   }
 
   function apply() {
@@ -126,10 +212,11 @@
     root.style.setProperty('--radius-xs', Math.max(r - 8, 0) + 'px');
 
     // data-theme attribute for CSS selectors (icon visibility etc.)
-    root.setAttribute('data-theme', resolved);
+    const themeFamily = (resolved === 'light') ? 'light' : 'dark';
+    root.setAttribute('data-theme', themeFamily);
 
     // Update toggle button icon if present
-    updateToggleButton(resolved);
+    updateToggleButton(themeFamily);
 
     // Remove transition class after animation completes
     clearTimeout(window._themeTransTimeout);
@@ -170,7 +257,7 @@
 
     set(updates) {
       if (updates.preset !== undefined) {
-        _config.preset = ['light', 'dark', 'auto'].includes(updates.preset) ? updates.preset : 'light';
+        _config.preset = ['light', 'dark', 'auto', 'oled', 'bambuGreen', 'midnightBlue'].includes(updates.preset) ? updates.preset : 'light';
       }
       if (updates.accentColor !== undefined) {
         _config.accentColor = updates.accentColor;
@@ -190,7 +277,11 @@
     },
 
     getPresets() {
-      return { light: { ...PRESETS.light }, dark: { ...PRESETS.dark } };
+      const result = {};
+      for (const key of Object.keys(PRESETS)) {
+        result[key] = { ...PRESETS[key] };
+      }
+      return result;
     },
 
     getCSSVar(name) {
@@ -206,8 +297,19 @@
     }
   };
 
+  // Compact mode toggle
+  window.toggleCompactMode = function() {
+    const isCompact = document.body.classList.toggle('compact-mode');
+    try { localStorage.setItem('compact-mode', isCompact ? '1' : '0'); } catch (_) {}
+  };
+
   // Init immediately
   load();
   setupAutoListener();
   apply();
+
+  // Restore compact mode from localStorage
+  try {
+    if (localStorage.getItem('compact-mode') === '1') document.body.classList.add('compact-mode');
+  } catch (_) {}
 })();

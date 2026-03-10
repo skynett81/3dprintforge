@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { isAuthEnabled, getSessionToken, validateSession, getSessionUser, hasPermission } from './auth.js';
+import { onLog } from './logger.js';
 
 export class WebSocketHub {
   constructor(server) {
@@ -7,6 +8,7 @@ export class WebSocketHub {
     this.clients = new Set();
     this.printerStates = {};   // { printerId: state }
     this.printerMeta = {};     // { printerId: { name, model, cameraPort } }
+    this._lastState = new Map(); // printerId -> last sent state (for delta compression)
     this.onCommand = null;
 
     this.wss.on('connection', (ws, req) => {
@@ -39,6 +41,14 @@ export class WebSocketHub {
       ws.on('message', (raw) => {
         try {
           const msg = JSON.parse(raw.toString());
+          if (msg.type === 'subscribe_logs') {
+            ws._subscribedLogs = true;
+            return;
+          }
+          if (msg.type === 'unsubscribe_logs') {
+            ws._subscribedLogs = false;
+            return;
+          }
           if (msg.type === 'command' && this.onCommand) {
             // Check permission for commands (requires 'controls' permission)
             if (!hasPermission(ws._user?.permissions, 'controls')) {
@@ -62,6 +72,18 @@ export class WebSocketHub {
         this.clients.delete(ws);
       });
     });
+
+    // Stream server logs to subscribed clients
+    onLog(({ ts, level, prefix, msg }) => {
+      // Skip debug logs to avoid noise
+      if (level === 'debug') return;
+      const logMsg = JSON.stringify({ type: 'log_entry', data: { ts, level, prefix, msg } });
+      for (const ws of this.clients) {
+        if (ws.readyState === 1 && ws._subscribedLogs) {
+          ws.send(logMsg);
+        }
+      }
+    });
   }
 
   setPrinterMeta(printerId, meta) {
@@ -75,13 +97,52 @@ export class WebSocketHub {
   removePrinterMeta(printerId) {
     delete this.printerMeta[printerId];
     delete this.printerStates[printerId];
+    this._lastState.delete(printerId);
   }
 
   broadcast(type, data) {
     if (type === 'status' && data.printer_id) {
       this.printerStates[data.printer_id] = data;
     }
-    const msg = JSON.stringify({ type, data });
+
+    let msg;
+
+    // Delta compression for status updates
+    if (type === 'status' && data.printer_id) {
+      const pid = data.printer_id;
+      const last = this._lastState.get(pid);
+      if (last) {
+        const delta = {};
+        let hasChanges = false;
+        for (const [key, value] of Object.entries(data)) {
+          if (key === 'printer_id') { delta.printer_id = value; continue; }
+          if (key === 'print' && typeof value === 'object' && last.print) {
+            // Deep diff print sub-object
+            const printDelta = {};
+            let printChanged = false;
+            for (const [pk, pv] of Object.entries(value)) {
+              if (JSON.stringify(pv) !== JSON.stringify(last.print[pk])) {
+                printDelta[pk] = pv;
+                printChanged = true;
+              }
+            }
+            if (printChanged) { delta.print = printDelta; hasChanges = true; }
+          } else if (JSON.stringify(value) !== JSON.stringify(last[key])) {
+            delta[key] = value;
+            hasChanges = true;
+          }
+        }
+        if (!hasChanges) return; // Nothing changed, skip broadcast
+        this._lastState.set(pid, JSON.parse(JSON.stringify(data)));
+        msg = JSON.stringify({ type, data: delta, delta: true });
+      } else {
+        this._lastState.set(pid, JSON.parse(JSON.stringify(data)));
+        msg = JSON.stringify({ type, data });
+      }
+    } else {
+      msg = JSON.stringify({ type, data });
+    }
+
     for (const ws of this.clients) {
       if (ws.readyState === 1) {
         ws.send(msg);

@@ -5,11 +5,18 @@
   let _view = 'month'; // month | week
   let _printers = [];
 
+  function _panelSwitcher() {
+    return '<div class="tabs" style="margin-bottom:12px">' +
+      '<button class="tab-btn" onclick="openPanel(\'queue\')">' + (t('queue.title') || 'Utskriftskø') + '</button>' +
+      '<button class="tab-btn active" onclick="openPanel(\'scheduler\')">' + (t('tabs.scheduler') || 'Planlegger') + '</button>' +
+      '</div>';
+  }
+
   window.loadSchedulerPanel = function() {
     const el = document.getElementById('overlay-panel-body');
     if (!el) return;
 
-    el.innerHTML = `<style>
+    el.innerHTML = _panelSwitcher() + `<style>
       .sched-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
       .sched-nav { display:flex; align-items:center; gap:6px; }
       .sched-nav-btn { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:6px 12px; cursor:pointer; color:var(--text-primary); font-size:0.8rem; font-weight:600; transition:background 0.15s; }
@@ -97,14 +104,16 @@
     const from = new Date(y, m - 1, 1).toISOString();
     const to = new Date(y, m + 2, 0).toISOString();
 
-    // Fetch both scheduled events and print history in parallel
-    const [schedRes, histRes] = await Promise.allSettled([
+    // Fetch scheduled events, print history, and queue items in parallel
+    const [schedRes, histRes, queueRes] = await Promise.allSettled([
       fetch(`/api/scheduler?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then(r => r.json()),
-      fetch(`/api/history?limit=500`).then(r => r.json())
+      fetch(`/api/history?limit=500`).then(r => r.json()),
+      fetch('/api/queue').then(r => r.json())
     ]);
 
     const scheduled = schedRes.status === 'fulfilled' && Array.isArray(schedRes.value) ? schedRes.value : [];
     const history = histRes.status === 'fulfilled' && Array.isArray(histRes.value) ? histRes.value : [];
+    const queues = queueRes.status === 'fulfilled' && Array.isArray(queueRes.value) ? queueRes.value : [];
 
     // Convert print history to calendar events
     const fromDate = new Date(y, m - 1, 1);
@@ -117,6 +126,7 @@
       })
       .map(h => ({
         id: 'h_' + h.id,
+        _historyId: h.id,
         title: _trimFilename(h.filename || t('scheduler.untitled')),
         scheduled_at: h.started_at,
         finished_at: h.finished_at,
@@ -124,11 +134,66 @@
         color: h.status === 'completed' ? '#00ae42' : h.status === 'failed' ? '#e53935' : '#f59e0b',
         duration_seconds: h.duration_seconds,
         filament_type: h.filament_type,
+        filament_color: h.filament_color,
+        filament_used_g: h.filament_used_g,
+        filament_brand: h.filament_brand,
+        layer_count: h.layer_count,
+        notes: h.notes,
         printer_id: h.printer_id,
         _fromHistory: true
       }));
 
-    _events = [...scheduled, ...historyEvents];
+    // Add currently running prints from printer state
+    const runningEvents = [];
+    const now = new Date().toISOString();
+    const printerIds = window.printerState?.getPrinterIds() || [];
+    for (const pid of printerIds) {
+      const ps = window.printerState._printers[pid] || {};
+      const printData = ps.print || ps;
+      const gcodeState = (printData.gcode_state || '').toUpperCase();
+      if (gcodeState === 'RUNNING' || gcodeState === 'PAUSE') {
+        const meta = window.printerState._printerMeta[pid] || {};
+        const filename = printData.gcode_file || printData.subtask_name || '';
+        runningEvents.push({
+          id: 'run_' + pid,
+          title: _trimFilename(filename) || (meta.name || pid),
+          scheduled_at: now,
+          status: gcodeState === 'PAUSE' ? 'paused' : 'running',
+          color: gcodeState === 'PAUSE' ? '#f59e0b' : '#1279ff',
+          printer_id: pid,
+          _fromLive: true,
+          _progress: parseInt(printData.mc_percent) || 0
+        });
+      }
+    }
+
+    // Add pending queue items on today's date
+    const pendingEvents = [];
+    for (const q of queues) {
+      if (q.printing_count > 0) {
+        pendingEvents.push({
+          id: 'q_printing_' + q.id,
+          title: q.name + ' (' + t('scheduler.in_progress') + ')',
+          scheduled_at: now,
+          status: 'running',
+          color: '#f59e0b',
+          _fromQueue: true
+        });
+      }
+      if (q.item_count - q.completed_count - q.printing_count > 0) {
+        const remaining = q.item_count - q.completed_count - q.printing_count;
+        pendingEvents.push({
+          id: 'q_pending_' + q.id,
+          title: q.name + ' — ' + remaining + ' ' + (t('scheduler.pending') || 'ventende'),
+          scheduled_at: now,
+          status: 'pending',
+          color: '#1279ff',
+          _fromQueue: true
+        });
+      }
+    }
+
+    _events = [...scheduled, ...runningEvents, ...pendingEvents, ...historyEvents];
     _render();
   }
 
@@ -179,16 +244,17 @@
       const dateStr = _dateStr(y, m, d);
       const isToday = dateStr === todayStr;
       const dayEvents = _eventsForDate(dateStr);
-      html += `<div class="sched-cell${isToday ? ' today' : ''}" onclick="_schedShowAdd('${dateStr}')">`;
-      html += `<div class="sched-day-num">${d}</div>`;
+      const hasEvents = dayEvents.length > 0;
+      html += `<div class="sched-cell${isToday ? ' today' : ''}" onclick="_schedDayClick('${dateStr}')">`;
+      html += `<div class="sched-day-num">${d}${hasEvents ? ' <span style=\\"font-weight:400;font-size:0.6rem;color:var(--text-muted)\\">(' + dayEvents.length + ')</span>' : ''}</div>`;
       const maxShow = 3;
       for (let i = 0; i < Math.min(dayEvents.length, maxShow); i++) {
         const ev = dayEvents[i];
         const bg = _eventColor(ev);
-        html += `<div class="sched-event" style="background:${bg}" onclick="event.stopPropagation();_schedEdit(${ev.id})" title="${_esc(ev.title)}">${_esc(ev.title)}</div>`;
+        html += `<div class="sched-event" style="background:${bg};padding:3px 6px" onclick="event.stopPropagation();_schedEdit('${ev.id}')" title="${_esc(ev.title)}">${_esc(ev.title)}</div>`;
       }
       if (dayEvents.length > maxShow) {
-        html += `<div class="sched-more">+${dayEvents.length - maxShow} ${t('scheduler.more')}</div>`;
+        html += `<div class="sched-more" style="cursor:pointer">+${dayEvents.length - maxShow} ${t('scheduler.more')}</div>`;
       }
       html += '</div>';
     }
@@ -236,7 +302,7 @@
         html += `<div class="sched-week-cell" onclick="_schedShowAdd('${dateStr}', ${h})">`;
         for (const ev of hourEvents) {
           const bg = _eventColor(ev);
-          html += `<div class="sched-event" style="background:${bg}" onclick="event.stopPropagation();_schedEdit(${ev.id})" title="${_esc(ev.title)}">${_esc(ev.title)}</div>`;
+          html += `<div class="sched-event" style="background:${bg}" onclick="event.stopPropagation();_schedEdit('${ev.id}')" title="${_esc(ev.title)}">${_esc(ev.title)}</div>`;
         }
         html += '</div>';
       }
@@ -290,6 +356,67 @@
     document.querySelectorAll('.sched-view-btn').forEach(b => b.classList.toggle('active', b.textContent.trim().toLowerCase() === v));
   };
 
+  // Day click — show day detail if events exist, else add new
+  window._schedDayClick = function(dateStr) {
+    const dayEvents = _eventsForDate(dateStr);
+    if (dayEvents.length === 0) {
+      _schedShowAdd(dateStr);
+      return;
+    }
+    // Show day detail dialog
+    const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+    const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const statusLabels = {
+      completed: t('scheduler.completed') || 'Fullfort',
+      failed: t('scheduler.failed') || 'Feilet',
+      running: t('scheduler.in_progress') || 'Pagar',
+      paused: t('scheduler.paused') || 'Pauset',
+      pending: t('scheduler.pending') || 'Ventende'
+    };
+
+    let listHtml = dayEvents.map(ev => {
+      const color = _eventColor(ev);
+      const statusText = statusLabels[ev.status] || ev.status || '';
+      const timeStr = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
+      const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : '';
+      const progress = ev._progress != null ? ` (${ev._progress}%)` : '';
+      const thumbSrc = ev._historyId ? `/api/history/${ev._historyId}/thumbnail` : '';
+      const filamentInfo = ev.filament_used_g ? `<span>${ev.filament_used_g}g</span>` : '';
+      const colorSwatch = ev.filament_color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#${ev.filament_color.substring(0,6)};border:1px solid var(--border-subtle)"></span>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.1s;border:1px solid var(--border-subtle);margin-bottom:6px" onclick="_schedEdit('${ev.id}')" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
+        ${thumbSrc ? `<img src="${thumbSrc}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:4px;background:var(--bg-tertiary);flex-shrink:0" onerror="this.style.display='none'">` : `<span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></span>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(ev.title)}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:8px;align-items:center;margin-top:2px;flex-wrap:wrap">
+            <span style="color:${color}">${statusText}${progress}</span>
+            ${timeStr ? '<span>' + timeStr + '</span>' : ''}
+            ${printerLabel ? '<span>' + _esc(printerLabel) + '</span>' : ''}
+            ${ev.duration_seconds ? '<span>' + _fmtDuration(ev.duration_seconds) + '</span>' : ''}
+            ${colorSwatch}
+            ${filamentInfo}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'sched-dialog-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="sched-dialog">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">${dateLabel}</h3>
+        <span style="font-size:0.8rem;color:var(--text-muted)">${dayEvents.length} ${dayEvents.length === 1 ? 'hendelse' : 'hendelser'}</span>
+      </div>
+      ${listHtml}
+      <div class="sched-dialog-actions" style="margin-top:12px">
+        <button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();_schedShowAdd('${dateStr}')">+ ${t('scheduler.add_event') || 'Ny hendelse'}</button>
+        <div style="flex:1"></div>
+        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Lukk'}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
   // Add/Edit dialog
   window._schedShowAdd = function(dateStr, hour) {
     const dt = dateStr || new Date().toISOString().slice(0, 10);
@@ -298,9 +425,9 @@
   };
 
   window._schedEdit = function(id) {
-    const ev = _events.find(e => e.id === id);
+    const ev = _events.find(e => String(e.id) === String(id));
     if (!ev) return;
-    if (ev._fromHistory) {
+    if (ev._fromHistory || ev._fromLive || ev._fromQueue) {
       _showHistoryDetail(ev);
     } else {
       _showDialog(ev);
@@ -311,21 +438,61 @@
     const overlay = document.createElement('div');
     overlay.className = 'sched-dialog-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-    const statusLabel = ev.status === 'completed' ? t('scheduler.completed') : ev.status === 'failed' ? t('scheduler.failed') : t('scheduler.in_progress');
-    const statusColor = ev.status === 'completed' ? '#00ae42' : ev.status === 'failed' ? '#e53935' : '#f59e0b';
-    const dur = ev.duration_seconds ? _fmtDuration(ev.duration_seconds) : '--';
-    const startTime = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleString() : '--';
-    const endTime = ev.finished_at ? new Date(ev.finished_at).toLocaleString() : '--';
+
+    const statusMap = {
+      completed: { label: t('scheduler.completed') || 'Fullfort', color: '#00ae42' },
+      failed: { label: t('scheduler.failed') || 'Feilet', color: '#e53935' },
+      running: { label: t('scheduler.in_progress') || 'Pagar', color: '#f59e0b' },
+      paused: { label: t('scheduler.paused') || 'Pauset', color: '#f59e0b' },
+      pending: { label: t('scheduler.pending') || 'Ventende', color: '#1279ff' }
+    };
+    const st = statusMap[ev.status] || { label: ev.status, color: 'var(--text-muted)' };
+    const dur = ev.duration_seconds ? _fmtDuration(ev.duration_seconds) : null;
+    const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+    const startTime = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleString(locale) : '--';
+    const endTime = ev.finished_at ? new Date(ev.finished_at).toLocaleString(locale) : null;
+    const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : null;
+
+    // Thumbnail for history events
+    let thumbHtml = '';
+    if (ev._historyId) {
+      thumbHtml = `<div style="float:right;margin:0 0 12px 12px"><img src="/api/history/${ev._historyId}/thumbnail" alt="" style="width:100px;height:100px;object-fit:contain;border-radius:var(--radius-sm);background:var(--bg-tertiary)" onerror="this.style.display='none'"></div>`;
+    }
+
+    let fields = '';
+    fields += `<div class="sched-field"><label>${t('history.status') || 'Status'}</label><div style="color:${st.color};font-weight:600">${st.label}${ev._progress != null ? ' — ' + ev._progress + '%' : ''}</div></div>`;
+    if (ev._fromLive && ev._progress != null) {
+      fields += `<div class="sched-field"><label>${t('scheduler.progress') || 'Fremdrift'}</label><div style="margin-top:4px"><div style="background:var(--bg-tertiary);border-radius:4px;height:8px;overflow:hidden"><div style="background:${st.color};height:100%;width:${ev._progress}%;transition:width 0.3s"></div></div></div></div>`;
+    }
+    if (printerLabel) fields += `<div class="sched-field"><label>${t('scheduler.printer') || 'Printer'}</label><div>${_esc(printerLabel)}</div></div>`;
+    fields += `<div class="sched-field"><label>${t('scheduler.started') || 'Startet'}</label><div>${startTime}</div></div>`;
+    if (endTime) fields += `<div class="sched-field"><label>${t('scheduler.finished') || 'Ferdig'}</label><div>${endTime}</div></div>`;
+    if (dur) fields += `<div class="sched-field"><label>${t('scheduler.duration') || 'Varighet'}</label><div>${dur}</div></div>`;
+
+    // Filament info with color swatch
+    if (ev.filament_type || ev.filament_brand || ev.filament_used_g) {
+      let filInfo = '';
+      if (ev.filament_color) {
+        const hex = '#' + ev.filament_color.substring(0, 6);
+        filInfo += `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};border:1px solid var(--border-subtle);vertical-align:middle;margin-right:4px"></span>`;
+      }
+      if (ev.filament_brand) filInfo += _esc(ev.filament_brand);
+      else if (ev.filament_type) filInfo += _esc(ev.filament_type);
+      if (ev.filament_used_g) filInfo += ` — ${ev.filament_used_g}g`;
+      fields += `<div class="sched-field"><label>${t('history.filament') || 'Filament'}</label><div>${filInfo}</div></div>`;
+    }
+    if (ev.layer_count) fields += `<div class="sched-field"><label>${t('history.layers') || 'Lag'}</label><div>${ev.layer_count}</div></div>`;
+    if (ev.notes) fields += `<div class="sched-field"><label>${t('scheduler.notes') || 'Notater'}</label><div style="font-size:0.8rem;color:var(--text-muted)">${_esc(ev.notes)}</div></div>`;
+
     overlay.innerHTML = `<div class="sched-dialog">
-      <h3>${_esc(ev.title)}</h3>
-      <div class="sched-field"><label>${t('history.status')}</label><div style="color:${statusColor};font-weight:600">${statusLabel}</div></div>
-      <div class="sched-field"><label>${t('scheduler.started')}</label><div>${startTime}</div></div>
-      <div class="sched-field"><label>${t('scheduler.finished')}</label><div>${endTime}</div></div>
-      <div class="sched-field"><label>${t('scheduler.duration')}</label><div>${dur}</div></div>
-      ${ev.filament_type ? `<div class="sched-field"><label>${t('history.filament')}</label><div>${_esc(ev.filament_type)}</div></div>` : ''}
+      ${thumbHtml}
+      <h3 style="margin-top:0">${_esc(ev.title)}</h3>
+      ${fields}
       <div class="sched-dialog-actions">
+        ${ev._fromHistory ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#history'">${t('history.view') || 'Vis historikk'}</button>` : ''}
+        ${ev._fromQueue ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#queue'">${t('queue.title') || 'Vis ko'}</button>` : ''}
         <div style="flex:1"></div>
-        <button class="sched-btn-cancel" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'OK'}</button>
+        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Lukk'}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);

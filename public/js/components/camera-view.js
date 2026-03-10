@@ -1,5 +1,18 @@
 // Camera View - jsmpeg MPEG1 player with multi-printer support + fullscreen
 (function() {
+  'use strict';
+
+  function _isMobile() { return window.innerWidth <= 768; }
+
+  // Mobile optimization settings
+  const QUALITY_SETTINGS = {
+    high:   { maxWidth: '100%',  interval: null },
+    medium: { maxWidth: '480px', interval: 2000 },
+    low:    { maxWidth: '320px', interval: 5000 }
+  };
+
+  let _jpegFrameCount = 0;
+
   let player = null;
   let fullscreenPlayer = null;
   let currentPort = null;
@@ -177,6 +190,9 @@
     const img = document.createElement('img');
     img.className = 'camera-canvas';
     img.style.objectFit = 'contain';
+    if (_isMobile()) {
+      img.style.maxHeight = '240px';
+    }
     container.appendChild(img);
     container.appendChild(overlay);
 
@@ -191,6 +207,9 @@
     };
 
     _jpegWs.onmessage = (e) => {
+      // Skip every other frame on mobile to reduce CPU/bandwidth usage
+      if (_isMobile() && _jpegFrameCount++ % 2 !== 0) return;
+
       const blob = new Blob([e.data], { type: 'image/jpeg' });
       const url = URL.createObjectURL(blob);
       const old = img.src;
@@ -216,6 +235,9 @@
     container.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.className = 'camera-canvas';
+    if (_isMobile()) {
+      canvas.style.maxHeight = '240px';
+    }
     container.appendChild(canvas);
     container.appendChild(overlay);
 
@@ -455,10 +477,13 @@
       }
     });
 
-    // Close on backdrop click
+    // Close on backdrop click/touch
     const modal = document.getElementById('camera-modal');
     if (modal) {
       modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeFullscreen();
+      });
+      modal.addEventListener('touchend', (e) => {
         if (e.target === modal) closeFullscreen();
       });
     }

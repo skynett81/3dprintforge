@@ -35,26 +35,41 @@ function loadSpoolmanDb() {
   const path = join(__dirname_seed, 'spoolmandb.json');
   if (!existsSync(path)) return [];
   const items = JSON.parse(readFileSync(path, 'utf8'));
-  return items.map(item => ({
-    manufacturer: item.manufacturer,
-    name: item.name || null,
-    material: item.material || 'PLA',
-    density: item.density || null,
-    diameter: item.diameter || 1.75,
-    weight: item.weight || 1000,
-    spool_weight: item.spool_weight || null,
-    extruder_temp: item.extruder_temp || null,
-    bed_temp: item.bed_temp || null,
-    color_name: item.color_name || null,
-    color_hex: (item.color_hex || '').replace('#', '') || null,
-    td_value: null,
-    shore_hardness: null,
-    source: 'spoolmandb',
-    brand_key: normalizeBrandKey(item.manufacturer),
-    category: categorize(item.material, null),
-    external_source_id: `smdb:${normalizeBrandKey(item.manufacturer)}:${(item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-')}:${item.material}`,
-    updated_at: new Date().toISOString()
-  }));
+  return items.map(item => {
+    const tempRange = item.extruder_temp_range || [];
+    const bedRange = item.bed_temp_range || [];
+    return {
+      manufacturer: item.manufacturer,
+      name: item.name || null,
+      material: item.material || 'PLA',
+      density: item.density || null,
+      diameter: item.diameter || 1.75,
+      weight: item.weight || 1000,
+      spool_weight: item.spool_weight || null,
+      extruder_temp: item.extruder_temp || null,
+      bed_temp: item.bed_temp || null,
+      color_name: item.color_name || item.name || null,
+      color_hex: (item.color_hex || '').replace('#', '') || null,
+      color_hexes: item.color_hexes ? JSON.stringify(item.color_hexes) : null,
+      finish: item.finish || null,
+      pattern: item.pattern || null,
+      translucent: item.translucent ? 1 : 0,
+      glow: item.glow ? 1 : 0,
+      multi_color_direction: item.multi_color_direction || null,
+      spool_type: item.spool_type || null,
+      extruder_temp_min: tempRange[0] || null,
+      extruder_temp_max: tempRange[1] || null,
+      bed_temp_min: bedRange[0] || null,
+      bed_temp_max: bedRange[1] || null,
+      td_value: null,
+      shore_hardness: null,
+      source: 'spoolmandb',
+      brand_key: normalizeBrandKey(item.manufacturer),
+      category: categorize(item.material, null),
+      external_source_id: `smdb:${normalizeBrandKey(item.manufacturer)}:${(item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-')}:${item.material}`,
+      updated_at: new Date().toISOString()
+    };
+  });
 }
 
 function load3dfpData(filePath) {

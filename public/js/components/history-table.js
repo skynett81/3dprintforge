@@ -45,6 +45,12 @@
     return level && map[level] ? t(map[level]) : null;
   }
   function fmtW(g) { return g >= 1000 ? (g/1000).toFixed(1)+' kg' : Math.round(g)+'g'; }
+  function estimatePrintCostBadge(filamentUsedG, filamentType) {
+    const prices = { PLA: 200, PETG: 250, ABS: 220, TPU: 350, ASA: 280, PA: 450, PC: 400 };
+    const pricePerKg = prices[filamentType] || 230;
+    const costNOK = (filamentUsedG / 1000) * pricePerKg;
+    return Math.round(costNOK);
+  }
   function barRow(lbl, pct, clr, val) { return `<div class="chart-bar-row"><span class="chart-bar-label">${lbl}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="chart-bar-value">${val}</span></div>`; }
   function sRow(lbl, val, clr) { return `<div class="stats-detail-item"><span class="stats-detail-item-label">${lbl}</span><span class="stats-detail-item-value"${clr?` style="color:${clr}"`:''}>${val}</span></div>`; }
 
@@ -233,12 +239,12 @@
       const sorted = [...data].sort((a, b) => {
         let va, vb;
         switch (_sortField) {
-          case 'date': va = a.started_at || ''; vb = b.started_at || ''; break;
+          case 'date': va = new Date(a.started_at || 0).getTime(); vb = new Date(b.started_at || 0).getTime(); break;
           case 'name': va = (a.filename || '').toLowerCase(); vb = (b.filename || '').toLowerCase(); break;
           case 'duration': va = a.duration_seconds || 0; vb = b.duration_seconds || 0; break;
           case 'status': va = a.status || ''; vb = b.status || ''; break;
           case 'filament': va = a.filament_used_g || 0; vb = b.filament_used_g || 0; break;
-          default: va = a.started_at || ''; vb = b.started_at || '';
+          default: va = new Date(a.started_at || 0).getTime(); vb = new Date(b.started_at || 0).getTime();
         }
         const cmp = va < vb ? -1 : va > vb ? 1 : 0;
         return _sortDir === 'asc' ? cmp : -cmp;
@@ -267,7 +273,13 @@
       h += `<button class="ph-view-btn${_viewMode === 'list' ? ' active' : ''}" onclick="historyViewMode('list')" title="List">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       </button>`;
-      h += '</div></div>';
+      h += '</div>';
+      // Compare toolbar
+      h += '<div class="compare-toolbar">';
+      h += '<button class="form-btn form-btn-sm form-btn-secondary" id="compare-selected-btn" style="display:none" onclick="window._launchCompareSelected()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Compare</button>';
+      h += '<button class="form-btn form-btn-sm form-btn-secondary" onclick="window.openPrintCompare()" title="Compare prints"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>';
+      h += '</div>';
+      h += '</div>';
 
       if (_viewMode === 'grid') {
         h += '<div class="ph-grid" id="history-cards">';
@@ -284,6 +296,7 @@
           const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
 
           h += `<div class="ph-card" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+            <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
             <div class="ph-card-thumb">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
               <span class="ph-badge">Gcode</span>
@@ -296,7 +309,14 @@
               </div>
               <div class="ph-card-bottom">
                 <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
+                ${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : ''}
                 <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
+              </div>
+              <div class="ph-card-notes" data-id="${row.id}">
+                <span class="ph-notes-text" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this)">${row.notes ? esc(row.notes) : ''}</span>
+                <span class="ph-notes-edit-icon" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this.previousElementSibling)" title="Edit notes">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
               </div>
             </div>
           </div>`;
@@ -318,24 +338,36 @@
           const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
 
           h += `<div class="ph-list-row" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
-            <div class="ph-list-thumb">
+            <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
+            <div class="ph-list-thumb" data-label="">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
             </div>
-            <div class="ph-list-name" title="${esc(displayName)}">${esc(displayName)}</div>
-            <div class="ph-list-date">${dateFull}</div>
-            <div class="ph-list-duration">${duration}</div>
-            <div class="ph-list-filament">${filWeight}</div>
-            <div class="ph-list-printer">${esc(pName)}</div>
-            <div class="ph-list-status" style="color:${statusColor(row.status)}">${statusIcon(row.status)}</div>
+            <div class="ph-list-name" data-label="Fil" title="${esc(displayName)}">${esc(displayName)}</div>
+            <div class="ph-list-date" data-label="Dato">${dateFull}</div>
+            <div class="ph-list-duration" data-label="Varighet">${duration}</div>
+            <div class="ph-list-filament" data-label="Filament">${filWeight}</div>
+            <div class="ph-list-cost" data-label="Kostnad">${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : '--'}</div>
+            <div class="ph-list-printer" data-label="Printer">${esc(pName)}</div>
+            <div class="ph-list-notes" data-label="Notater" data-id="${row.id}">
+              <span class="ph-notes-text" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this)">${row.notes ? esc(row.notes) : ''}</span>
+              <span class="ph-notes-edit-icon" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this.previousElementSibling)" title="Edit notes">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </span>
+            </div>
+            <div class="ph-list-status" data-label="Status" style="color:${statusColor(row.status)}">${statusIcon(row.status)}</div>
           </div>`;
         }
         h += '</div>';
       }
 
-      const exportUrl = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
-      h += `<div class="history-export"><a href="${exportUrl}" class="form-btn form-btn-sm form-btn-secondary" data-ripple download>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        ${t('stats.download_csv')}</a></div>`;
+      const exportBase = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
+      const csvUrl = exportBase + (exportBase.includes('?') ? '&' : '?') + 'format=csv';
+      const jsonUrl = exportBase + (exportBase.includes('?') ? '&' : '?') + 'format=json';
+      const dlIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      h += `<div class="history-export">
+        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window.downloadExport('${csvUrl}')">${dlIcon} Export CSV</button>
+        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window.downloadExport('${jsonUrl}')">${dlIcon} Export JSON</button>
+      </div>`;
       return h;
     },
 
@@ -661,14 +693,15 @@
       if (days.length < 2) return '';
 
       const maxCount = Math.max(...days.map(d => d[1].count), 1);
-      let h = `<div class="card-title">Printtidslinje</div>`;
+      let h = `<div class="card-title">${t('stats.print_timeline') || 'Printtidslinje'}</div>`;
       h += `<div class="timeline-chart">`;
       for (const [day, d] of days) {
         const pct = (d.count / maxCount) * 100;
-        const dateLabel = day.substring(5);
+        const dateLabel = day.substring(8) + '.' + day.substring(5, 7);
         const successRate = d.count > 0 ? Math.round(d.success / d.count * 100) : 0;
         const color = successRate === 100 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange, #f0883e)' : 'var(--accent-red)';
-        h += `<div class="timeline-bar" title="${day}: ${d.count} prints, ${formatDuration(d.time)}">
+        const tooltipDate = dateLabel + "." + day.substring(0, 4);
+        h += `<div class="timeline-bar" title="${tooltipDate}: ${d.count} prints, ${formatDuration(d.time)}">
           <div class="timeline-bar-fill" style="height:${pct}%;background:${color}"></div>
           <span class="timeline-bar-label">${dateLabel}</span>
           <span class="timeline-bar-count">${d.count}</span>
@@ -966,7 +999,11 @@
       _data = await histRes.json();
 
       if (!_data.length) {
-        panel.innerHTML = `<p class="text-muted">${t('history.no_records')}</p>`;
+        panel.innerHTML = emptyState({
+          icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
+          title: t('history.no_records'),
+          desc: t('history.no_records_desc') || 'Your print history will appear here once you complete your first print.'
+        });
         return;
       }
 
@@ -1103,6 +1140,69 @@
     }
     document.querySelectorAll('.ph-card, .ph-list-row').forEach(card => {
       card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+    });
+  };
+
+  // ═══ Compare helpers ═══
+  window._updateCompareBtn = function() {
+    const checked = document.querySelectorAll('.ph-compare-cb:checked');
+    const btn = document.getElementById('compare-selected-btn');
+    if (btn) {
+      btn.style.display = checked.length === 2 ? '' : 'none';
+    }
+  };
+
+  window._launchCompareSelected = function() {
+    const checked = document.querySelectorAll('.ph-compare-cb:checked');
+    if (checked.length !== 2) return;
+    const id1 = parseInt(checked[0].value);
+    const id2 = parseInt(checked[1].value);
+    if (typeof window.openPrintCompare === 'function') {
+      window.openPrintCompare(id1, id2);
+    }
+  };
+
+  // ═══ Inline notes editing ═══
+  window._editHistoryNote = function(id, textEl) {
+    // Don't open if already editing
+    if (textEl.parentElement.querySelector('textarea')) return;
+    const currentText = textEl.textContent || '';
+    const ta = document.createElement('textarea');
+    ta.className = 'ph-notes-textarea';
+    ta.value = currentText;
+    ta.rows = 2;
+    ta.placeholder = 'Add a note...';
+    textEl.style.display = 'none';
+    textEl.parentElement.querySelector('.ph-notes-edit-icon').style.display = 'none';
+    textEl.parentElement.insertBefore(ta, textEl);
+    ta.focus();
+
+    async function saveNote() {
+      const newText = ta.value.trim();
+      try {
+        const resp = await fetch(`/api/history/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: newText })
+        });
+        if (!resp.ok) throw new Error('Failed to save');
+        textEl.textContent = newText;
+        // Update local cache
+        const cached = _data.find(r => r.id === id);
+        if (cached) cached.notes = newText;
+        if (typeof showToast === 'function') showToast('Note saved', 'success', 2000);
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('Failed to save note', 'error', 3000);
+      }
+      ta.remove();
+      textEl.style.display = '';
+      textEl.parentElement.querySelector('.ph-notes-edit-icon').style.display = '';
+    }
+
+    ta.addEventListener('blur', saveNote);
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+      if (e.key === 'Escape') { ta.value = currentText; ta.blur(); }
     });
   };
 

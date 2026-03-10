@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bambu-dash-v5';
+const CACHE_NAME = 'bambu-dash-v15';
 const PRECACHE = [
   '/',
   '/css/main.css',
@@ -8,6 +8,14 @@ const PRECACHE = [
   '/js/i18n.js',
   '/js/state.js',
   '/js/app.js',
+  '/js/interactions.js',
+  '/js/components/queue-panel.js',
+  '/js/components/queue-wrapper.js',
+  '/js/components/scheduler-panel.js',
+  '/js/components/filament-ring.js',
+  '/js/components/countdown-timer.js',
+  '/js/components/active-filament.js',
+  '/js/components/ams-panel.js',
   '/assets/favicon.svg'
 ];
 

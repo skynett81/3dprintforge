@@ -103,16 +103,18 @@ function connect() {
           if (!state._printerMeta[printerId]) return;
           state.updatePrinter(printerId, msg.data);
 
+          // Read full merged state (not delta) for dashboard updates
+          const fullState = state._printers[printerId] || {};
+          const fullPrintData = fullState.print || fullState;
+
           // Check notifications for all printers
           if (typeof checkNotifications === 'function') {
-            const printData = msg.data.print || msg.data;
-            checkNotifications(printerId, printData);
+            checkNotifications(printerId, fullPrintData);
           }
 
           // Only update dashboard if this is the active printer
           if (printerId === state.getActivePrinterId()) {
-            const printData = msg.data.print || msg.data;
-            updateDashboard(printData);
+            updateDashboard(fullPrintData);
           }
 
           // Always update printer selector (status dots)
@@ -121,9 +123,9 @@ function connect() {
           }
         } else {
           // Legacy single-printer format
-          const printData = msg.data.print || msg.data;
           state.updatePrinter('default', msg.data);
-          updateDashboard(printData);
+          const fullState = state._printers['default'] || {};
+          updateDashboard(fullState.print || fullState);
         }
       } else if (msg.type === 'connection') {
         updateConnectionBadge(msg.data.status);
@@ -177,6 +179,11 @@ function sendCommand(action, extra = {}) {
 
 window.sendCommand = sendCommand;
 
+// Expose raw WS send for components (e.g. log-viewer subscriptions)
+window._wsSend = function(data) {
+  if (ws && ws.readyState === 1) ws.send(data);
+};
+
 let _connectionStatus = 'disconnected';
 
 function updateConnectionBadge(status) {
@@ -202,6 +209,8 @@ function updateDashboard(data) {
   if (typeof updatePrintPreview === 'function') updatePrintPreview(data);
   if (typeof updateQuickStatus === 'function') updateQuickStatus(data);
   if (typeof updateSparklineStats === 'function') updateSparklineStats(data);
+  if (typeof updateCountdownTimer === 'function') updateCountdownTimer(data);
+  if (typeof updateFilamentRing === 'function') updateFilamentRing(data);
   updateStatusBar(data);
 }
 
@@ -302,7 +311,12 @@ const PANEL_TITLES = {
   materialrec: 'material_rec.title',
   wearprediction: 'wear.title',
   erroranalysis: 'error_analysis.title',
-  orders: 'orders.title'
+  orders: 'orders.title',
+  achievements: 'achievements.title',
+  profiles: 'profiles.title',
+  calendar: 'calendar.title',
+  screenshots: 'screenshots.title',
+  logs: 'logs.title'
 };
 
 const PANEL_LOADERS = {
@@ -329,8 +343,11 @@ const PANEL_LOADERS = {
   wearprediction: () => { if (typeof loadWearPredictionPanel === 'function') loadWearPredictionPanel(); },
   erroranalysis: () => { if (typeof loadErrorAnalysisPanel === 'function') loadErrorAnalysisPanel(); },
   orders: () => { if (typeof loadOrderPanel === 'function') loadOrderPanel(); },
+  achievements: () => { if (typeof loadAchievementsPanel === 'function') loadAchievementsPanel(); },
+  profiles: () => { if (typeof loadProfilesPanel === 'function') loadProfilesPanel(); },
+  calendar: () => { if (typeof loadPrintCalendar === 'function') loadPrintCalendar(); },
   // Redirects — sub-panels call the parent wrapper loader with initialTab
-  scheduler: () => { if (typeof loadQueuePanel === 'function') loadQueuePanel('scheduler'); },
+  scheduler: () => { if (typeof loadSchedulerPanel === 'function') loadSchedulerPanel(); },
   gallery: () => { if (typeof loadHistoryPanel === 'function') loadHistoryPanel('gallery'); },
   activity: () => { if (typeof loadHistoryPanel === 'function') loadHistoryPanel('activity'); },
   stats: () => { if (typeof loadAnalysisPanel === 'function') loadAnalysisPanel('stats'); },
@@ -346,6 +363,8 @@ const PANEL_LOADERS = {
   multicolor: () => { if (typeof loadFilamentPanel === 'function') loadFilamentPanel('multicolor'); },
   learning: () => { if (typeof loadKnowledgePanel === 'function') loadKnowledgePanel('learning'); },
   modelinfo: () => { if (typeof loadKnowledgePanel === 'function') loadKnowledgePanel('modelinfo'); },
+  screenshots: () => { if (typeof loadScreenshotGallery === 'function') loadScreenshotGallery(); },
+  logs: () => { if (typeof loadLogViewer === 'function') loadLogViewer(); },
 };
 
 window._activePanel = null;
@@ -361,7 +380,59 @@ window.openPanel = function(name, skipHash) {
   closeSidebarIfMobile();
 
   window._activePanel = name;
-  if (titleEl) titleEl.textContent = t(PANEL_TITLES[name] || name);
+
+  // Persist last panel to localStorage
+  try { localStorage.setItem('lastPanel', name); } catch (_) {}
+
+  // Breadcrumb navigation
+  if (titleEl) {
+    const _sectionMap = {
+      printing: ['controls', 'scheduler', 'queue', 'fleet', 'profiles'],
+      history: ['history', 'activity', 'gallery'],
+      analysis: ['stats', 'comparison', 'printermatrix', 'timetracker', 'waste', 'calendar', 'erroranalysis'],
+      monitoring: ['diagnostics', 'bedmesh', 'health', 'telemetry', 'protection', 'errors'],
+      materials: ['filament', 'multicolor', 'forecast', 'materialrec', 'maintenance'],
+      library: ['library', 'gcode', 'modelinfo', 'knowledge', 'screenshots'],
+      tools: ['costestimator', 'labels', 'widgets', 'playground', 'learning', 'achievements'],
+      system: ['wearprediction', 'plugins', 'backup', 'settings', 'logs']
+    };
+    const _sectionLabels = {
+      printing: 'Utskrift', history: 'Historikk', analysis: 'Analyse',
+      monitoring: 'Overvåking', materials: 'Materialer', library: 'Bibliotek',
+      tools: 'Verktøy', system: 'System'
+    };
+    let sectionKey = null;
+    for (const [key, panels] of Object.entries(_sectionMap)) {
+      if (panels.includes(name)) { sectionKey = key; break; }
+    }
+    const sectionLabel = sectionKey ? _sectionLabels[sectionKey] : null;
+    const panelLabel = t(PANEL_TITLES[name] || name);
+
+    let breadcrumbHtml = '<nav class="breadcrumb">';
+    breadcrumbHtml += '<a href="#" onclick="showDashboard();return false;">Dashboard</a>';
+    if (sectionLabel) {
+      breadcrumbHtml += '<span class="breadcrumb-sep">/</span>';
+      breadcrumbHtml += `<span>${sectionLabel}</span>`;
+    }
+    breadcrumbHtml += '<span class="breadcrumb-sep">/</span>';
+    breadcrumbHtml += `<span class="breadcrumb-current">${panelLabel}</span>`;
+    breadcrumbHtml += '</nav>';
+    titleEl.innerHTML = breadcrumbHtml;
+
+    // Add favorite toggle star button next to breadcrumb
+    if (typeof window.isFavorite === 'function') {
+      const isFav = window.isFavorite(name);
+      const starBtn = document.createElement('button');
+      starBtn.className = 'fav-toggle-btn' + (isFav ? ' is-fav' : '');
+      starBtn.dataset.panel = name;
+      starBtn.title = isFav ? 'Fjern fra favoritter' : 'Legg til favoritter';
+      starBtn.innerHTML = isFav
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+      starBtn.onclick = function() { window.toggleFavorite(name); };
+      titleEl.appendChild(starBtn);
+    }
+  }
 
   // Update URL hash
   if (!skipHash) history.replaceState(null, '', '#' + name);
@@ -369,7 +440,14 @@ window.openPanel = function(name, skipHash) {
   // Highlight sidebar button and expand its section
   document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
   // Map old panel names to their new merged parent for sidebar highlighting
-  const _panelParentMap = {};
+  const _panelParentMap = {
+    // Sub-tabs → parent sidebar button
+    gallery: 'history', activity: 'history',
+    stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
+    telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
+    gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
+    forecast: 'filament', multicolor: 'filament'
+  };
   const sidebarName = _panelParentMap[name] || name;
   document.querySelector(`.sidebar-btn[data-panel="${sidebarName}"]`)?.classList.add('active');
   _expandSectionForPanel(name);
@@ -424,6 +502,17 @@ window.openPanel = function(name, skipHash) {
   }
 
   if (PANEL_LOADERS[name]) PANEL_LOADERS[name]();
+
+  // Auto-refresh
+  clearInterval(window._autoRefreshInterval);
+  const refreshMs = parseInt(localStorage.getItem('autoRefreshMs')) || 0;
+  if (refreshMs > 0 && PANEL_LOADERS[name]) {
+    window._autoRefreshInterval = setInterval(() => {
+      if (window._activePanel === name && PANEL_LOADERS[name]) {
+        PANEL_LOADERS[name]();
+      }
+    }, refreshMs);
+  }
 };
 
 window.showDashboard = function(skipHash) {
@@ -432,6 +521,7 @@ window.showDashboard = function(skipHash) {
   const statsStrip = document.getElementById('stats-strip');
   if (!panelContent || !dashboardGrid) return;
 
+  clearInterval(window._autoRefreshInterval);
   closeSidebarIfMobile();
 
   dashboardGrid.classList.remove('view-hidden');
@@ -449,6 +539,20 @@ window.showDashboard = function(skipHash) {
 
 // Backward compatibility
 window.closePanel = window.showDashboard;
+
+// Auto-refresh configuration
+window.setAutoRefresh = function(ms) {
+  const val = parseInt(ms) || 0;
+  localStorage.setItem('autoRefreshMs', val);
+  clearInterval(window._autoRefreshInterval);
+  if (val > 0 && window._activePanel && PANEL_LOADERS[window._activePanel]) {
+    window._autoRefreshInterval = setInterval(() => {
+      if (window._activePanel && PANEL_LOADERS[window._activePanel]) {
+        PANEL_LOADERS[window._activePanel]();
+      }
+    }, val);
+  }
+};
 
 // Re-render all components (called on language switch)
 window.refreshAllComponents = function() {
@@ -509,7 +613,16 @@ function _restoreSidebarSections() {
 
 // Auto-expand section when its child panel becomes active
 function _expandSectionForPanel(panelName) {
-  const btn = document.querySelector(`.sidebar-btn[data-panel="${panelName}"]`);
+  // Try direct match first, then check parent map
+  const parentMap = {
+    gallery: 'history', activity: 'history',
+    stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
+    telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
+    gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
+    forecast: 'filament', multicolor: 'filament'
+  };
+  const resolvedName = parentMap[panelName] || panelName;
+  const btn = document.querySelector(`.sidebar-btn[data-panel="${resolvedName}"]`) || document.querySelector(`.sidebar-btn[data-panel="${panelName}"]`);
   if (!btn) return;
   const section = btn.closest('.sidebar-section');
   if (section && section.classList.contains('collapsed')) {
@@ -564,13 +677,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (el && d.current) el.textContent = `v${d.current}`;
   }).catch(() => {});
 
-  // Restore panel from URL hash on load
+  // Restore panel from URL hash on load, fallback to localStorage
   const initHash = location.hash.replace('#', '');
   const initBase = initHash.split('/')[0];
   if (initHash && PANEL_TITLES[initHash]) {
     setTimeout(() => openPanel(initHash), 200);
   } else if (initBase && PANEL_TITLES[initBase]) {
     setTimeout(() => openPanel(initBase), 200);
+  } else {
+    // No hash — try restoring last panel from localStorage
+    try {
+      const lastPanel = localStorage.getItem('lastPanel');
+      if (lastPanel && PANEL_TITLES[lastPanel]) {
+        setTimeout(() => openPanel(lastPanel), 200);
+      }
+    } catch (_) {}
   }
 
   // ESC key handler
@@ -595,4 +716,68 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.style.overflow = '';
     }
   });
+
+  // ---- System Info Badge ----
+  function formatUptime(sec) {
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (d > 0) return d + 'd ' + h + 'h';
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+  }
+
+  let _lastSystemInfo = null;
+
+  async function fetchSystemInfo() {
+    const badge = document.getElementById('system-info-badge');
+    if (!badge) return;
+    try {
+      const res = await fetch('/api/system/info');
+      if (!res.ok) return;
+      const info = await res.json();
+      _lastSystemInfo = info;
+      const uptime = formatUptime(info.uptime || info.uptime_seconds || 0);
+      const memMB = info.memory_mb || Math.round((info.memoryUsage?.rss || 0) / 1024 / 1024);
+      badge.textContent = uptime + ' · ' + memMB + ' MB';
+      badge.title = 'Server uptime: ' + uptime + '\nMemory: ' + memMB + ' MB\nNode: ' + (info.node_version || info.nodeVersion) + '\nPrinters: ' + (info.printer_count ?? info.printerCount) + '\nStarted: ' + (info.startedAt || '—');
+    } catch (_) {
+      badge.textContent = '';
+    }
+  }
+
+  badge_click: {
+    const sib = document.getElementById('system-info-badge');
+    if (sib) {
+      sib.addEventListener('click', () => {
+        if (!_lastSystemInfo) return;
+        const info = _lastSystemInfo;
+        const uptime = formatUptime(info.uptime || info.uptime_seconds || 0);
+        const memMB = info.memory_mb || Math.round((info.memoryUsage?.rss || 0) / 1024 / 1024);
+        const heapUsed = info.memoryUsage ? Math.round(info.memoryUsage.heapUsed / 1024 / 1024) : '—';
+        const heapTotal = info.memoryUsage ? Math.round(info.memoryUsage.heapTotal / 1024 / 1024) : '—';
+        const dbMB = info.dbSize ? (info.dbSize / 1024 / 1024).toFixed(1) : (info.db_size ? (info.db_size / 1024 / 1024).toFixed(1) : '—');
+        const lines = [
+          'Server Uptime: ' + uptime,
+          'Memory (RSS): ' + memMB + ' MB',
+          'Heap: ' + heapUsed + ' / ' + heapTotal + ' MB',
+          'Node: ' + (info.node_version || info.nodeVersion),
+          'Platform: ' + (info.platform || '—'),
+          'Printers: ' + (info.printer_count ?? info.printerCount),
+          'DB Size: ' + dbMB + ' MB',
+          'Started: ' + (info.startedAt || '—'),
+          'PID: ' + (info.pid || '—')
+        ];
+        if (typeof showToast === 'function') {
+          showToast(lines.join('\n'), 'info', 8000);
+        } else {
+          alert(lines.join('\n'));
+        }
+      });
+    }
+  }
+
+  // Fetch immediately, then every 30 seconds
+  fetchSystemInfo();
+  setInterval(fetchSystemInfo, 30000);
 });

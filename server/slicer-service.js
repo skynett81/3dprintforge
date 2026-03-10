@@ -4,6 +4,9 @@ import { execFile } from 'node:child_process';
 import { DATA_DIR } from './config.js';
 import { addSlicerJob, updateSlicerJob, getSlicerJob } from './database.js';
 import { parse3mf, parseGcode } from './file-parser.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('slicer');
 
 const UPLOAD_DIR = join(DATA_DIR, 'uploads');
 if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -199,7 +202,7 @@ export function sliceFile(jobId, options = {}) {
 
 // Upload file to printer via FTPS
 export async function uploadToPrinter(jobId, printerIp, accessCode) {
-  const ftp = await import('basic-ftp').catch(() => null);
+  const ftp = await import('basic-ftp').catch(e => { log.warn('basic-ftp not available', e.message); return null; });
   if (!ftp) throw new Error('basic-ftp not available');
 
   const job = getSlicerJob(jobId);

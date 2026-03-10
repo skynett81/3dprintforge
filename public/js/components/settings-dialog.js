@@ -362,6 +362,12 @@
       if (cfg.accentColor) h += `<button class="form-btn form-btn-sm form-btn-secondary mt-sm" data-ripple onclick="setThemeAccent(null)">${t('settings.theme_accent_reset')}</button>`;
       h += '</div>';
       h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.theme_radius')}</div><div class="theme-radius-row"><span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_sharp')}</span><input type="range" class="theme-radius-slider" id="theme-radius-slider" min="0" max="20" step="1" value="${currentRadius}" oninput="setThemeRadius(this.value)"><span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_round')}</span><span class="theme-radius-value" id="theme-radius-value">${currentRadius}px</span></div></div>`;
+      h += '<div class="settings-card mt-md"><div class="settings-row">';
+      h += '<div class="settings-label">' + (t('settings.compact_mode') || 'Compact Mode') + '</div>';
+      h += '<div class="settings-control">';
+      h += '<label class="toggle-switch"><input type="checkbox" id="compact-mode-toggle" ' + (document.body.classList.contains('compact-mode') ? 'checked' : '') + ' onchange="toggleCompactMode()"><span class="toggle-slider"></span></label>';
+      h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">' + (t('settings.compact_mode_desc') || 'Denser layout with smaller spacing') + '</span>';
+      h += '</div></div></div>';
       el.innerHTML = h;
     }
   }
@@ -391,6 +397,32 @@
       h += `<div class="settings-card"><div class="card-title">${t('settings.language')}</div><select class="form-input" id="lang-select" onchange="changeLanguage(this.value)">${opts}</select></div>`;
       h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.notifications_title')}</div><label class="settings-checkbox"><input type="checkbox" id="notify-toggle" ${typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'checked' : ''} onchange="toggleNotificationsPerm(this.checked)"><span>${t('settings.notifications_browser')}</span></label></div>`;
       h += `<div class="settings-card mt-md"><div class="card-title">${t('settings.server_title')}</div><div class="text-muted" style="font-size:0.8rem">Port: ${location.port || '3000'} | ${t('settings.printers_title')}: ${p.length}</div></div>`;
+      h += '<div class="settings-card mt-md"><div class="settings-row">';
+      h += '<div class="settings-label">' + (t('settings.onboarding_tour') || 'Guided Tour') + '</div>';
+      h += '<div class="settings-control">';
+      h += '<button class="form-btn form-btn-secondary" onclick="localStorage.removeItem(\'onboarding-completed\'); startTour(); document.querySelector(\'.ix-modal-overlay\')?.remove();">' + (t('settings.restart_tour') || 'Restart Tour') + '</button>';
+      h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">' + (t('settings.restart_tour_desc') || 'Show the guided introduction again') + '</span>';
+      h += '</div></div></div>';
+      // Notification sounds toggle
+      h += '<div class="settings-card mt-md"><div class="settings-row">';
+      h += '<div class="settings-label">' + (t('settings.notification_sounds') || 'Notification Sounds') + '</div>';
+      h += '<div class="settings-control">';
+      h += '<label class="settings-checkbox"><input type="checkbox" id="sound-toggle" ' + (typeof notificationSound !== 'undefined' && notificationSound.isEnabled() ? 'checked' : '') + ' onchange="if(typeof notificationSound!==\'undefined\'){notificationSound.setEnabled(this.checked);if(this.checked)notificationSound.info();}"><span>' + (t('settings.notification_sounds_desc') || 'Play sounds for print events') + '</span></label>';
+      h += '</div></div></div>';
+      // Auto-refresh setting
+      var _arVal = parseInt(localStorage.getItem('autoRefreshMs')) || 0;
+      h += '<div class="settings-card mt-md"><div class="settings-row">';
+      h += '<div class="settings-label">Auto-refresh</div>';
+      h += '<div class="settings-control">';
+      h += '<select class="form-input" id="auto-refresh-select" onchange="if(typeof window.setAutoRefresh===\'function\')window.setAutoRefresh(this.value)">';
+      h += '<option value="0"' + (_arVal === 0 ? ' selected' : '') + '>Av</option>';
+      h += '<option value="10000"' + (_arVal === 10000 ? ' selected' : '') + '>10s</option>';
+      h += '<option value="30000"' + (_arVal === 30000 ? ' selected' : '') + '>30s</option>';
+      h += '<option value="60000"' + (_arVal === 60000 ? ' selected' : '') + '>60s</option>';
+      h += '<option value="300000"' + (_arVal === 300000 ? ' selected' : '') + '>5min</option>';
+      h += '</select>';
+      h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">Automatically reload panel content</span>';
+      h += '</div></div></div>';
       h += '</div></div>';
       el.innerHTML = h;
 
@@ -632,6 +664,20 @@
       h += `<div class="settings-card"><div class="card-title">${t('settings.custom_fields_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.custom_fields_desc')}</p><div id="custom-fields-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showCustomFieldEditor()">${t('settings.custom_fields_add')}</button></div>`;
       h += `<div class="settings-card"><div class="card-title">${t('settings.brand_defaults_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.brand_defaults_desc')}</p><div id="brand-defaults-section"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showBrandDefaultEditor()">${t('settings.brand_defaults_add')}</button></div>`;
       h += `<div class="settings-card" style="cursor:pointer" onclick="openPanel('learning')"><div class="card-title">${t('settings.courses_title')}</div><p class="text-muted" style="font-size:0.85rem">${t('settings.courses_desc')}</p><button class="form-btn form-btn-sm mt-sm" data-ripple onclick="openPanel('learning')">${t('learning.go_to')} \u2192</button></div>`;
+      // Export & Import card
+      h += `<div class="settings-card">
+        <div class="card-title">Eksporter & Importer</div>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Eksporter alle innstillinger som JSON-fil, eller importer fra en tidligere eksport.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="form-btn form-btn-primary" data-ripple onclick="window._exportDashboardSettings()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Eksporter innstillinger
+          </button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._importDashboardSettings()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importer innstillinger
+          </button>
+        </div>
+        <div id="settings-import-status" style="margin-top:8px"></div>
+      </div>`;
       h += '</div>';
       el.innerHTML = h;
       loadCustomFieldsSettings();
@@ -3233,5 +3279,57 @@
 
     el.innerHTML = h;
   }
+
+  // ═══ Export & Import Dashboard Settings ═══
+
+  window._exportDashboardSettings = async function() {
+    try {
+      const res = await fetch('/api/settings/export');
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bambu-dashboard-settings.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (typeof showToast === 'function') showToast('Innstillinger eksportert', 'success', 3000);
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Eksport feilet: ' + e.message, 'error', 4000);
+    }
+  };
+
+  window._importDashboardSettings = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('settings-import-status');
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data._meta || data._meta.type !== 'bambu-dashboard-settings') {
+          throw new Error('Ugyldig innstillingsfil');
+        }
+        const res = await fetch('/api/settings/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: text
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Import feilet');
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-green);font-size:0.8rem">${result.applied} innstillinger importert</span>`;
+        if (typeof showToast === 'function') showToast(`${result.applied} innstillinger importert`, 'success', 3000);
+      } catch (err) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-red);font-size:0.8rem">${err.message}</span>`;
+        if (typeof showToast === 'function') showToast('Import feilet: ' + err.message, 'error', 4000);
+      }
+    };
+    input.click();
+  };
 
 })();

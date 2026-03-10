@@ -46,5 +46,62 @@ export function esc(str) {
   return String(str).replace(/[&<>"']/g, c => ESC_MAP[c]);
 }
 
+/**
+ * Generate HTML for an empty state placeholder.
+ * @param {Object} opts
+ * @param {string} opts.icon - SVG string for the icon
+ * @param {string} opts.title - Main heading
+ * @param {string} [opts.desc] - Description text
+ * @param {string} [opts.actionLabel] - Button label
+ * @param {string} [opts.actionOnClick] - onclick handler string
+ * @returns {string} HTML string
+ */
+export function emptyState({ icon, title, desc, actionLabel, actionOnClick }) {
+  let html = '<div class="empty-state">';
+  if (icon) html += '<div class="empty-state-icon">' + icon + '</div>';
+  html += '<div class="empty-state-title">' + esc(title) + '</div>';
+  if (desc) html += '<div class="empty-state-desc">' + esc(desc) + '</div>';
+  if (actionLabel) {
+    html += '<div class="empty-state-action"><button class="form-btn" ' +
+      (actionOnClick ? 'onclick="' + esc(actionOnClick) + '"' : '') +
+      '>' + esc(actionLabel) + '</button></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+window.emptyState = emptyState;
+
+/**
+ * Trigger a file download from the given URL.
+ * @param {string} url - The URL to download from
+ */
+export function downloadExport(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+window.downloadExport = downloadExport;
+
+export function copyToClipboard(text, label) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (typeof showToast === 'function') showToast((label || 'Kopiert') + ': ' + text, 'success', 2000);
+  }).catch(() => {
+    // Fallback for non-secure contexts
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    if (typeof showToast === 'function') showToast((label || 'Kopiert') + ': ' + text, 'success', 2000);
+  });
+}
+window.copyToClipboard = copyToClipboard;
+
 // Expose globally for non-module scripts
 window.esc = esc;

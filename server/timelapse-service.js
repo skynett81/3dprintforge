@@ -4,6 +4,9 @@ import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, rmSync } from
 import { join } from 'node:path';
 import { addTimelapseRecording, updateTimelapseRecording, deleteTimelapseRecording } from './database.js';
 import { DATA_DIR } from './config.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('timelapse');
 
 const TIMELAPSE_DIR = join(DATA_DIR, 'timelapse');
 
@@ -92,7 +95,7 @@ export class TimelapseService {
     try {
       const files = readdirSync(entry.framesDir).filter(f => f.endsWith('.jpg'));
       frameCount = files.length;
-    } catch (_) {}
+    } catch (e) { log.warn('Failed to count timelapse frames', e.message); }
 
     if (frameCount < 2) {
       console.log(`[timelapse:${printerId}] Only ${frameCount} frames, skipping assembly`);
@@ -178,7 +181,7 @@ export class TimelapseService {
   _cleanupFrames(framesDir) {
     try {
       if (existsSync(framesDir)) rmSync(framesDir, { recursive: true, force: true });
-    } catch (_) {}
+    } catch (e) { log.warn('Failed to cleanup timelapse frames', e.message); }
   }
 
   shutdown() {

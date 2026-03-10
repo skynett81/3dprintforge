@@ -3,6 +3,9 @@
 
 import { inflateRawSync } from 'node:zlib';
 import { getPrinters } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('thumbnail');
 
 // In-memory cache: printerId → { subtask, buffer, contentType }
 const _cache = new Map();
@@ -301,7 +304,7 @@ function parseSliceInfo(zipBuf) {
       if (plate.weight) info.estimated_weight_g = info.estimated_weight_g || parseFloat(plate.weight);
       if (plate.prediction) info.estimated_time_s = info.estimated_time_s || parseInt(plate.prediction);
       if (plate.filament_type) info.filament_type = info.filament_type || plate.filament_type;
-    } catch (_) {}
+    } catch (e) { log.warn('Failed to parse plate.json', e.message); }
   }
 
   // Filter out null/empty values

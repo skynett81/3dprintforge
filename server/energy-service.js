@@ -2,6 +2,9 @@
 // Fetches hourly electricity prices and integrates with cost calculator
 
 import { getInventorySetting, setInventorySetting } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('energy');
 
 const TIBBER_API = 'https://api.tibber.com/v1-beta/gql';
 const NORDPOOL_API = 'https://www.hvakosterstrommen.no/api/v1/prices';
@@ -267,10 +270,10 @@ function _scheduleFetch() {
   if (_fetchTimer) clearInterval(_fetchTimer);
 
   // Fetch immediately
-  fetchPrices().catch(() => {});
+  fetchPrices().catch(e => log.warn('Initial price fetch failed', e.message));
 
   // Then every hour (prices update ~13:00 for next day)
-  _fetchTimer = setInterval(() => fetchPrices().catch(() => {}), 3600000);
+  _fetchTimer = setInterval(() => fetchPrices().catch(e => log.warn('Periodic price fetch failed', e.message)), 3600000);
 }
 
 export function restartService() {

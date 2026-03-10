@@ -1,4 +1,4 @@
-import { getHistory, getHistoryById, addHistory, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings } from './database.js';
+import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings, getProfiles, getProfileById, addProfile, updateProfile, deleteProfile, incrementProfileUse } from './database.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
 import { saveConfig, config, DATA_DIR } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -20,8 +20,46 @@ import { getMilestones, getMilestoneFile, getArchivedMilestones, getArchivedMile
 import { generateReport, sendReportEmail, restartReportService } from './report-service.js';
 import { restartHaDiscovery, getHaDiscoveryStatus } from './ha-discovery.js';
 import { getRemoteNodeStates, restartRemoteNodes, testRemoteNode } from './remote-nodes.js';
-import { getRemoteNodes, getRemoteNode, addRemoteNode, updateRemoteNode, deleteRemoteNode, getScheduledPrints, getScheduledPrint, addScheduledPrint, updateScheduledPrint, deleteScheduledPrint, getFileLibrary, getFileLibraryItem, addFileLibraryItem, updateFileLibraryItem, deleteFileLibraryItem, getFileLibraryCategories, incrementFileLibraryPrintCount, getWidgetLayouts, getActiveWidgetLayout, saveWidgetLayout, setActiveWidgetLayout, deleteWidgetLayout, getTimeTracking, addTimeTracking, getTimeTrackingStats, saveCostEstimate, getCostEstimates, getCostEstimate, deleteCostEstimate } from './database.js';
+import { getRemoteNodes, getRemoteNode, addRemoteNode, updateRemoteNode, deleteRemoteNode, getScheduledPrints, getScheduledPrint, addScheduledPrint, updateScheduledPrint, deleteScheduledPrint, getFileLibrary, getFileLibraryItem, addFileLibraryItem, updateFileLibraryItem, deleteFileLibraryItem, getFileLibraryCategories, incrementFileLibraryPrintCount, getWidgetLayouts, getActiveWidgetLayout, saveWidgetLayout, setActiveWidgetLayout, deleteWidgetLayout, getTimeTracking, addTimeTracking, getTimeTrackingStats, saveCostEstimate, getCostEstimates, getCostEstimate, deleteCostEstimate, getScreenshots, getScreenshotById, addScreenshot, deleteScreenshot, deleteScreenshotsBulk } from './database.js';
 import { readFileSync as _readPkg } from 'node:fs';
+import { createLogger } from './logger.js';
+import { withBreaker, getAllBreakerStatus } from './circuit-breaker.js';
+import { validate } from './validate.js';
+const log = createLogger('api');
+
+// ---- Validation schemas ----
+const PRINTER_SCHEMA = {
+  name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+  ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
+  serial: { type: 'string', maxLength: 200 },
+  access_code: { type: 'string', maxLength: 200 },
+  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'X1', 'X1C', 'X1E'] }
+};
+
+const PRINTER_UPDATE_SCHEMA = {
+  name: { type: 'string', minLength: 1, maxLength: 100 },
+  ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
+  serial: { type: 'string', maxLength: 200 },
+  access_code: { type: 'string', maxLength: 200 },
+  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'X1', 'X1C', 'X1E'] }
+};
+
+const PROFILE_SCHEMA = {
+  name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+  filament_type: { type: 'string', maxLength: 50 },
+  nozzle_temp: { type: 'number', min: 0, max: 500 },
+  bed_temp: { type: 'number', min: 0, max: 150 },
+  speed: { type: 'number', min: 0 }
+};
+
+const WEBHOOK_SCHEMA = {
+  name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
+  url: { type: 'url', required: true },
+  events: { type: 'string' }
+};
+
+// Server start time (ISO)
+const _serverStartTime = new Date().toISOString();
 
 // API version from package.json
 const _pkgVersion = (() => { try { return JSON.parse(_readPkg(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf-8')).version; } catch { return '0.0.0'; } })();
@@ -426,6 +464,29 @@ export async function handleApiRequest(req, res) {
     return sendJson(res, _getPublicStatus());
   }
 
+  // Health check — no auth required (useful for monitoring tools and Docker health checks)
+  if (method === 'GET' && path === '/api/health') {
+    const health = {
+      status: 'ok',
+      uptime: Math.round(process.uptime()),
+      memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      version: _pkgVersion,
+      node: process.version,
+      timestamp: new Date().toISOString()
+    };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(health));
+    return;
+  }
+
+  // Prometheus-compatible metrics endpoint — no auth required
+  if (method === 'GET' && path === '/api/metrics') {
+    const metrics = _collectMetrics();
+    res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+    res.end(metrics);
+    return;
+  }
+
   // Centralized permission check for all API routes
   if (isAuthEnabled()) {
     const perm = getRoutePermission(method, path);
@@ -633,6 +694,8 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/printers') {
       return readBody(req, (body) => {
+        const vr = validate(PRINTER_SCHEMA, body);
+        if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         body.id = body.id || body.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
         addPrinter(body);
         if (_onPrinterAdded) _onPrinterAdded(body);
@@ -644,6 +707,8 @@ export async function handleApiRequest(req, res) {
     const printerMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)$/);
     if (printerMatch && method === 'PUT') {
       return readBody(req, (body) => {
+        const vr = validate(PRINTER_UPDATE_SCHEMA, body);
+        if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         const id = printerMatch[1];
         // Preserve existing access code if masked
         if (body.accessCode === '***') {
@@ -687,29 +752,132 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, rows);
     }
 
-    // ---- CSV Export ----
+    // ---- Update history notes ----
+    const histUpdateMatch = path.match(/^\/api\/history\/(\d+)$/);
+    if (histUpdateMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        try {
+          const data = JSON.parse(body);
+          const id = parseInt(histUpdateMatch[1]);
+          const existing = getHistoryById(id);
+          if (!existing) return sendJson(res, { error: 'Not found' }, 404);
+          const notes = data.notes != null ? String(data.notes) : existing.notes;
+          const updated = updateHistoryNotes(id, notes);
+          return sendJson(res, updated);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 400);
+        }
+      });
+    }
+
+    // ---- CSV/JSON Export ----
     if (method === 'GET' && path === '/api/history/export') {
       const printerId = url.searchParams.get('printer_id') || null;
       const format = url.searchParams.get('format') || 'csv';
       const rows = getHistory(10000, 0, printerId);
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      // Enrich rows with printer name
+      let printerMap = {};
+      try {
+        const printers = getPrinters();
+        for (const p of printers) printerMap[p.id] = p.name;
+      } catch { /* ignore */ }
+      for (const row of rows) {
+        row._printer_name = printerMap[row.printer_id] || row.printer_id || '';
+      }
 
       if (format === 'json') {
+        const jsonRows = rows.map(r => ({
+          date: r.started_at || '',
+          printer: r._printer_name,
+          filename: r.filename || '',
+          status: r.status || '',
+          duration_min: r.duration_seconds ? Math.round(r.duration_seconds / 60) : 0,
+          filament_used_g: r.filament_used_g || 0,
+          filament_type: r.filament_type || '',
+          color: r.filament_color || '',
+          layers: r.layer_count || 0,
+          notes: r.notes || ''
+        }));
         res.writeHead(200, {
           'Content-Type': 'application/json; charset=utf-8',
-          'Content-Disposition': 'attachment; filename="print-history.json"'
+          'Content-Disposition': `attachment; filename="print-history-${dateStr}.json"`
         });
-        res.end(JSON.stringify(rows, null, 2));
+        res.end(JSON.stringify(jsonRows, null, 2));
         return;
       }
 
-      const header = 'Dato;Filnavn;Status;Varighet (s);Filament (g);Type;Farge;Lag;Notater\n';
+      // CSV format (default)
+      function csvEscape(val) {
+        const s = String(val == null ? '' : val);
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }
+      const header = 'Date,Printer,Filename,Status,Duration (min),Filament Used (g),Filament Type,Color,Layers,Notes\n';
       const csv = header + rows.map(r =>
-        `${r.started_at};${r.filename || ''};${r.status || ''};${r.duration_seconds || ''};${r.filament_used_g || ''};${r.filament_type || ''};${r.filament_color || ''};${r.layer_count || ''};${(r.notes || '').replace(/;/g, ',')}`
+        [
+          r.started_at || '',
+          r._printer_name,
+          r.filename || '',
+          r.status || '',
+          r.duration_seconds ? Math.round(r.duration_seconds / 60) : 0,
+          r.filament_used_g || 0,
+          r.filament_type || '',
+          r.filament_color || '',
+          r.layer_count || 0,
+          (r.notes || '')
+        ].map(csvEscape).join(',')
       ).join('\n');
 
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="utskriftshistorikk.csv"'
+        'Content-Disposition': `attachment; filename="print-history-${dateStr}.csv"`
+      });
+      res.end(csv);
+      return;
+    }
+
+    // ---- Statistics Export ----
+    if (method === 'GET' && path === '/api/stats/export') {
+      const printerId = url.searchParams.get('printer_id') || null;
+      const from = url.searchParams.get('from') || null;
+      const to = url.searchParams.get('to') || null;
+      const format = url.searchParams.get('format') || 'csv';
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      const stats = getStatistics(printerId, from, to);
+      const totalPrints = stats.total_prints || 0;
+      const completed = stats.completed_prints || 0;
+      const failed = stats.failed_prints || 0;
+      const totalFilament = stats.total_filament_g || 0;
+      const totalHours = stats.total_hours || 0;
+      const avgPrintMin = stats.avg_print_minutes || 0;
+      const successRate = stats.success_rate || 0;
+
+      const metrics = [
+        { metric: 'Total Prints', value: totalPrints },
+        { metric: 'Successful Prints', value: completed },
+        { metric: 'Failed Prints', value: failed },
+        { metric: 'Total Filament Used (g)', value: Math.round(totalFilament) },
+        { metric: 'Total Print Time (hours)', value: totalHours },
+        { metric: 'Average Print Time (min)', value: avgPrintMin },
+        { metric: 'Success Rate (%)', value: successRate }
+      ];
+
+      if (format === 'json') {
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Disposition': `attachment; filename="print-statistics-${dateStr}.json"`
+        });
+        res.end(JSON.stringify(metrics, null, 2));
+        return;
+      }
+
+      const csv = 'Metric,Value\n' + metrics.map(m => `${m.metric},${m.value}`).join('\n');
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="print-statistics-${dateStr}.csv"`
       });
       res.end(csv);
       return;
@@ -738,6 +906,32 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/statistics/hardware') {
       const printerId = url.searchParams.get('printer_id') || null;
       return sendJson(res, getHardwareStats(printerId));
+    }
+
+    // ---- Print Activity Calendar ----
+    if (method === 'GET' && path === '/api/stats/calendar') {
+      const history = getHistory(9999, 0);
+      const calendar = {};
+      const now = new Date();
+      // Initialize last 365 days with 0
+      for (let i = 364; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        calendar[key] = { date: key, prints: 0, completed: 0, failed: 0, hours: 0 };
+      }
+      // Fill in actual data
+      for (const h of history) {
+        if (!h.started_at) continue;
+        const key = h.started_at.split('T')[0];
+        if (calendar[key]) {
+          calendar[key].prints++;
+          if (h.status === 'completed') calendar[key].completed++;
+          if (h.status === 'failed') calendar[key].failed++;
+          calendar[key].hours += (h.duration_seconds || 0) / 3600;
+        }
+      }
+      return sendJson(res, Object.values(calendar));
     }
 
     // ---- Filament ----
@@ -1556,7 +1750,7 @@ export async function handleApiRequest(req, res) {
         if (!filename) return sendJson(res, { error: 'filename required' }, 400);
         const link = getModelLink(printerId, filename);
         if (link && link.print_settings && typeof link.print_settings === 'string') {
-          try { link.print_settings = JSON.parse(link.print_settings); } catch (_) {}
+          try { link.print_settings = JSON.parse(link.print_settings); } catch (e) { log.warn('Failed to parse print_settings JSON', e.message); }
         }
         return sendJson(res, link || null);
       }
@@ -2466,29 +2660,11 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, estimatePrintCost(filamentG, durationS, spoolId, printerId));
     }
 
-    // ---- Prometheus Metrics ----
-    if (method === 'GET' && (path === '/api/metrics' || path === '/metrics')) {
-      const stats = getInventoryStats();
-      const printers = getPrinters();
-      let m = '';
-      m += '# HELP bambu_spools_total Total number of active spools\n# TYPE bambu_spools_total gauge\n';
-      m += `bambu_spools_total ${stats.total_spools}\n`;
-      m += '# HELP bambu_filament_remaining_grams Total remaining filament in grams\n# TYPE bambu_filament_remaining_grams gauge\n';
-      m += `bambu_filament_remaining_grams ${stats.total_remaining_g}\n`;
-      m += '# HELP bambu_filament_used_grams Total used filament in grams\n# TYPE bambu_filament_used_grams gauge\n';
-      m += `bambu_filament_used_grams ${stats.total_used_g}\n`;
-      m += '# HELP bambu_low_stock_count Spools below 20%\n# TYPE bambu_low_stock_count gauge\n';
-      m += `bambu_low_stock_count ${stats.low_stock_count}\n`;
-      m += '# HELP bambu_inventory_cost_total Total inventory cost\n# TYPE bambu_inventory_cost_total gauge\n';
-      m += `bambu_inventory_cost_total ${stats.total_cost}\n`;
-      m += '# HELP bambu_usage_30d_grams Filament used in last 30 days\n# TYPE bambu_usage_30d_grams gauge\n';
-      m += `bambu_usage_30d_grams ${stats.usage_last_30d_g}\n`;
-      m += '# HELP bambu_filament_by_material_grams Remaining filament by material\n# TYPE bambu_filament_by_material_grams gauge\n';
-      for (const mt of stats.by_material) m += `bambu_filament_by_material_grams{material="${(mt.material || 'unknown').replace(/"/g, '')}"} ${mt.remaining_g}\n`;
-      m += '# HELP bambu_printers_total Total configured printers\n# TYPE bambu_printers_total gauge\n';
-      m += `bambu_printers_total ${printers.length}\n`;
-      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' });
-      return res.end(m);
+    // ---- Prometheus Metrics (legacy path, handled before auth at /api/metrics) ----
+    if (method === 'GET' && path === '/metrics') {
+      const metrics = _collectMetrics();
+      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+      return res.end(metrics);
     }
 
     // ---- Database Backup ----
@@ -2559,15 +2735,22 @@ export async function handleApiRequest(req, res) {
       const dbPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'dashboard.db');
       const dbSize = existsSync(dbPath) ? statSync(dbPath).size : 0;
       const uptime = process.uptime();
+      const mem = process.memoryUsage();
       return sendJson(res, {
+        uptime: uptime,
         uptime_seconds: Math.floor(uptime),
+        memoryUsage: { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal },
         node_version: process.version,
+        nodeVersion: process.version,
         platform: `${process.platform} ${process.arch}`,
+        printerCount: getPrinters().length,
+        printer_count: getPrinters().length,
+        dbSize: dbSize,
         db_size: dbSize,
         db_version: 76,
-        printer_count: getPrinters().length,
+        startedAt: _serverStartTime,
         pid: process.pid,
-        memory_mb: Math.round(process.memoryUsage().rss / 1024 / 1024)
+        memory_mb: Math.round(mem.rss / 1024 / 1024)
       });
     }
 
@@ -3320,7 +3503,8 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/webhooks') {
       return readBody(req, (body) => {
-        if (!body.name || !body.url) return sendJson(res, { error: 'name and url required' }, 400);
+        const vr = validate(WEBHOOK_SCHEMA, body);
+        if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         try {
           const id = addWebhookConfig(body);
           return sendJson(res, { ok: true, id }, 201);
@@ -3357,7 +3541,7 @@ export async function handleApiRequest(req, res) {
         const payload = JSON.stringify({ event: 'test', title: 'Webhook Test', message: 'This is a test from Bambu Dashboard', timestamp: new Date().toISOString(), data: {} });
         const deliveryId = addWebhookDelivery({ webhook_id: wh.id, event_type: 'test', payload, status: 'pending' });
         // Fire and forget — the webhook dispatcher will handle retry
-        _dispatchWebhook(wh, payload, deliveryId).catch(() => {});
+        _dispatchWebhook(wh, payload, deliveryId).catch(e => log.warn('Webhook test dispatch failed', e.message));
         return sendJson(res, { ok: true, delivery_id: deliveryId });
       } catch (e) { return sendJson(res, { error: e.message }, 500); }
     }
@@ -3417,6 +3601,11 @@ export async function handleApiRequest(req, res) {
         const result = _energy.calculateSpotCost(body.started_at, body.duration_seconds, body.wattage || 200);
         return sendJson(res, result || { error: 'Could not calculate' });
       });
+    }
+
+    // ---- Circuit Breakers ----
+    if (method === 'GET' && path === '/api/circuit-breakers') {
+      return sendJson(res, getAllBreakerStatus());
     }
 
     // ---- Reports ----
@@ -3641,6 +3830,65 @@ export async function handleApiRequest(req, res) {
     }
     if (method === 'GET' && path === '/api/activity/streaks') {
       return sendJson(res, getActivityStreaks());
+    }
+
+    // ---- Achievements ----
+    if (method === 'GET' && path === '/api/achievements') {
+      return sendJson(res, calculateAchievements());
+    }
+
+    // ---- Settings Export / Import ----
+    if (method === 'GET' && path === '/api/settings/export') {
+      const exported = {
+        _meta: { type: 'bambu-dashboard-settings', version: 1, exported_at: new Date().toISOString() },
+        widget_layouts: getWidgetLayouts(),
+        custom_fields: getCustomFieldDefs(null),
+        notification_config: (() => { try { return config.notifications || {}; } catch { return {}; } })(),
+        inventory_settings: getAllInventorySettings(),
+      };
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Content-Disposition': 'attachment; filename=bambu-dashboard-settings.json',
+        'X-API-Version': _pkgVersion
+      });
+      return res.end(JSON.stringify(exported, null, 2));
+    }
+
+    if (method === 'POST' && path === '/api/settings/import') {
+      return readBody(req, (body) => {
+        if (!body || !body._meta || body._meta.type !== 'bambu-dashboard-settings') {
+          return sendJson(res, { error: 'Invalid settings file. Missing _meta or wrong type.' }, 400);
+        }
+        let applied = 0;
+
+        // Import widget layouts
+        if (Array.isArray(body.widget_layouts)) {
+          for (const wl of body.widget_layouts) {
+            if (wl.name && wl.layout) {
+              saveWidgetLayout(wl.name, typeof wl.layout === 'string' ? JSON.parse(wl.layout) : wl.layout);
+              applied++;
+            }
+          }
+        }
+
+        // Import custom field definitions
+        if (Array.isArray(body.custom_fields)) {
+          for (const cf of body.custom_fields) {
+            if (cf.entity_type && cf.field_name && cf.field_label) {
+              try { addCustomFieldDef(cf); applied++; } catch { /* skip duplicates */ }
+            }
+          }
+        }
+
+        // Import inventory settings
+        if (body.inventory_settings && typeof body.inventory_settings === 'object') {
+          for (const [key, value] of Object.entries(body.inventory_settings)) {
+            try { setInventorySetting(key, typeof value === 'string' ? value : JSON.stringify(value)); applied++; } catch { /* skip */ }
+          }
+        }
+
+        return sendJson(res, { ok: true, applied });
+      });
     }
 
     // ---- Widget Layouts ----
@@ -4126,7 +4374,7 @@ export async function handleApiRequest(req, res) {
                 try {
                   const qiId = addQueueItem({ queue_id: ecomConfig.target_queue_id, filename, notes: `Order #${order.orderId} — ${item.name}` });
                   queueItemIds.push(qiId);
-                } catch (_) {}
+                } catch (e) { log.warn('Failed to add ecom queue item', e.message); }
               }
             }
           }
@@ -4151,7 +4399,7 @@ export async function handleApiRequest(req, res) {
       if (method === 'GET') return sendJson(res, getTimelapseRecording(id) || { error: 'Not found' });
       if (method === 'DELETE') {
         const rec = getTimelapseRecording(id);
-        if (rec && rec.file_path) { try { const { unlinkSync: ul } = await import('node:fs'); ul(rec.file_path); } catch (_) {} }
+        if (rec && rec.file_path) { try { const { unlinkSync: ul } = await import('node:fs'); ul(rec.file_path); } catch (e) { log.warn('Failed to delete timelapse file', e.message); } }
         deleteTimelapseRecording(id);
         return sendJson(res, { ok: true });
       }
@@ -4215,6 +4463,9 @@ export async function handleApiRequest(req, res) {
       if (url.searchParams.get('search')) filters.search = url.searchParams.get('search');
       if (url.searchParams.get('has_k_value')) filters.has_k_value = true;
       if (url.searchParams.get('has_td')) filters.has_td = true;
+      if (url.searchParams.get('translucent')) filters.translucent = true;
+      if (url.searchParams.get('glow')) filters.glow = true;
+      if (url.searchParams.get('multi_color')) filters.multi_color = true;
       if (url.searchParams.get('temp_min')) filters.temp_min = parseInt(url.searchParams.get('temp_min'));
       if (url.searchParams.get('temp_max')) filters.temp_max = parseInt(url.searchParams.get('temp_max'));
       if (url.searchParams.get('sort')) filters.sort = url.searchParams.get('sort');
@@ -5505,6 +5756,92 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true });
     }
 
+    // Bed Mesh — Trigger calibration via G-code
+    const bedMeshCalMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh\/calibrate$/);
+    if (bedMeshCalMatch && method === 'POST') {
+      const pid = bedMeshCalMatch[1];
+      const printer = _printerManager?.printers?.get(pid);
+      if (!printer?.client) return sendJson(res, { error: 'Printer not connected' }, 400);
+      const { buildGcodeCommand } = await import('./mqtt-commands.js');
+      // Send G28 (home) then G29 (auto bed level)
+      printer.client.sendCommand(buildGcodeCommand('G28'));
+      setTimeout(() => {
+        printer.client.sendCommand(buildGcodeCommand('G29'));
+      }, 2000);
+      return sendJson(res, { ok: true, message: 'Calibration started — printer will home and auto-level' });
+    }
+
+    // Bed Mesh — Scan printer FTP for calibration files
+    const bedMeshScanMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh\/scan$/);
+    if (bedMeshScanMatch && method === 'POST') {
+      const pid = bedMeshScanMatch[1];
+      const printer = _printerManager?.printers?.get(pid);
+      if (!printer?.config?.ip) return sendJson(res, { error: 'Printer not found or no IP' }, 404);
+      const ftp = await _getFtp();
+      if (!ftp) return sendJson(res, { error: 'FTP module not available' }, 500);
+      const client = new ftp.Client();
+      client.ftp.verbose = false;
+      try {
+        await client.access({ host: printer.config.ip, port: 990, user: 'bblp', password: printer.config.accessCode || printer.config.access_code, secure: 'implicit', secureOptions: { rejectUnauthorized: false } });
+        const found = [];
+        const scanPaths = ['/cache/', '/sdcard/'];
+        for (const basePath of scanPaths) {
+          try {
+            const list = await client.list(basePath);
+            for (const item of list) {
+              found.push({ name: item.name, path: basePath + item.name, size: item.size || 0, type: item.isDirectory ? 'dir' : 'file' });
+            }
+          } catch { /* path might not exist */ }
+        }
+        // Look for mesh/calibration files
+        const meshFiles = found.filter(f =>
+          /mesh|level|calib|probe/i.test(f.name) && !f.name.endsWith('.gcode') && !f.name.endsWith('.3mf')
+        );
+        // Try to download and parse mesh files
+        for (const mf of meshFiles) {
+          try {
+            const chunks = [];
+            const { Writable } = await import('node:stream');
+            const writable = new Writable({ write(chunk, _enc, cb) { chunks.push(chunk); cb(); } });
+            await client.downloadTo(writable, mf.path);
+            const content = Buffer.concat(chunks).toString('utf8');
+            // Try JSON parse
+            try {
+              const parsed = JSON.parse(content);
+              if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
+                const flat = parsed.flat();
+                const mean = flat.reduce((s, v) => s + v, 0) / flat.length;
+                const id = addBedMesh(pid, parsed, {
+                  rows: parsed.length, cols: parsed[0].length,
+                  zMin: Math.min(...flat), zMax: Math.max(...flat), zMean: mean,
+                  zStdDev: Math.sqrt(flat.reduce((s, v) => s + (v - mean) ** 2, 0) / flat.length),
+                  source: 'ftp_scan'
+                });
+                return sendJson(res, { ok: true, id, source: mf.path });
+              }
+            } catch { /* not valid JSON mesh */ }
+            // Try space/newline separated values
+            const lines = content.trim().split('\n').filter(l => l.trim());
+            const mesh = lines.map(l => l.trim().split(/[\s,]+/).map(Number));
+            if (mesh.length > 1 && mesh.every(r => r.length > 1 && r.every(v => !isNaN(v)))) {
+              const flat = mesh.flat();
+              const mean = flat.reduce((s, v) => s + v, 0) / flat.length;
+              const id = addBedMesh(pid, mesh, {
+                rows: mesh.length, cols: mesh[0].length,
+                zMin: Math.min(...flat), zMax: Math.max(...flat), zMean: mean,
+                zStdDev: Math.sqrt(flat.reduce((s, v) => s + (v - mean) ** 2, 0) / flat.length),
+                source: 'ftp_scan'
+              });
+              return sendJson(res, { ok: true, id, source: mf.path });
+            }
+          } catch { /* download failed */ }
+        }
+        return sendJson(res, { ok: false, message: 'No mesh files found', files: found.map(f => f.name) });
+      } catch (e) {
+        return sendJson(res, { error: 'FTP scan failed: ' + e.message }, 500);
+      } finally { client.close(); }
+    }
+
     // ---- Bed Check AI ----
     const bedCheckMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-check$/);
     if (bedCheckMatch && method === 'POST') {
@@ -5774,6 +6111,55 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true, name, removed: true });
     }
 
+    // ---- Print Profiles ----
+    if (method === 'GET' && path === '/api/profiles') {
+      return sendJson(res, getProfiles());
+    }
+    if (method === 'POST' && path === '/api/profiles') {
+      return readBody(req, (body) => {
+        const vr = validate(PROFILE_SCHEMA, body);
+        if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
+        addProfile(body);
+        sendJson(res, { ok: true });
+      });
+    }
+    const profileMatch = path.match(/^\/api\/profiles\/(\d+)$/);
+    if (profileMatch && method === 'PUT') {
+      return readBody(req, (body) => {
+        updateProfile(parseInt(profileMatch[1]), body);
+        sendJson(res, { ok: true });
+      });
+    }
+    if (profileMatch && method === 'DELETE') {
+      deleteProfile(parseInt(profileMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
+    // ---- Screenshots ----
+    if (method === 'GET' && path === '/api/screenshots') {
+      const printerId = url.searchParams.get('printer_id') || null;
+      const limit = parseInt(url.searchParams.get('limit')) || 50;
+      const offset = parseInt(url.searchParams.get('offset')) || 0;
+      return sendJson(res, getScreenshots(printerId, limit, offset));
+    }
+    const screenshotMatch = path.match(/^\/api\/screenshots\/(\d+)$/);
+    if (screenshotMatch && method === 'GET') {
+      const shot = getScreenshotById(parseInt(screenshotMatch[1]));
+      if (!shot) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, shot);
+    }
+    if (method === 'POST' && path === '/api/screenshots') {
+      return readBody(req, (body) => {
+        if (!body.data || !body.filename) return sendJson(res, { error: 'data and filename required' }, 400);
+        addScreenshot(body);
+        sendJson(res, { ok: true });
+      });
+    }
+    if (screenshotMatch && method === 'DELETE') {
+      deleteScreenshot(parseInt(screenshotMatch[1]));
+      return sendJson(res, { ok: true });
+    }
+
     // 404
     sendJson(res, { error: 'Ikke funnet' }, 404);
 
@@ -5842,6 +6228,88 @@ function _getPublicStatus() {
   return { printers: result, timestamp: new Date().toISOString() };
 }
 
+function _collectMetrics() {
+  const lines = [];
+  const now = Date.now();
+
+  // Printer metrics
+  const printers = getPrinters();
+  lines.push('# HELP bambu_printers_total Total number of configured printers');
+  lines.push('# TYPE bambu_printers_total gauge');
+  lines.push(`bambu_printers_total ${printers.length}`);
+
+  // Print history metrics
+  try {
+    const history = getHistory(9999, 0);
+    const completed = history.filter(h => h.status === 'completed').length;
+    const failed = history.filter(h => h.status === 'failed').length;
+    const cancelled = history.filter(h => h.status === 'cancelled').length;
+
+    lines.push('# HELP bambu_prints_total Total number of prints by status');
+    lines.push('# TYPE bambu_prints_total counter');
+    lines.push(`bambu_prints_total{status="completed"} ${completed}`);
+    lines.push(`bambu_prints_total{status="failed"} ${failed}`);
+    lines.push(`bambu_prints_total{status="cancelled"} ${cancelled}`);
+
+    // Filament usage
+    const totalFilamentG = history.reduce((sum, h) => sum + (h.filament_used_g || 0), 0);
+    lines.push('# HELP bambu_filament_used_grams_total Total filament used in grams');
+    lines.push('# TYPE bambu_filament_used_grams_total counter');
+    lines.push(`bambu_filament_used_grams_total ${Math.round(totalFilamentG)}`);
+
+    // Print hours
+    const totalSeconds = history.reduce((sum, h) => sum + (h.duration_seconds || 0), 0);
+    lines.push('# HELP bambu_print_seconds_total Total print time in seconds');
+    lines.push('# TYPE bambu_print_seconds_total counter');
+    lines.push(`bambu_print_seconds_total ${totalSeconds}`);
+
+    // Success rate
+    const total = history.length;
+    const rate = total > 0 ? (completed / total) : 0;
+    lines.push('# HELP bambu_success_rate Print success rate');
+    lines.push('# TYPE bambu_success_rate gauge');
+    lines.push(`bambu_success_rate ${Math.round(rate * 10000) / 10000}`);
+  } catch (_) {}
+
+  // Filament inventory
+  try {
+    const spools = getFilament();
+    lines.push('# HELP bambu_spools_total Total spools in inventory');
+    lines.push('# TYPE bambu_spools_total gauge');
+    lines.push(`bambu_spools_total ${spools.length}`);
+
+    const totalWeightG = spools.reduce((sum, s) => sum + (s.remaining_weight_g || s.weight_g || 0), 0);
+    lines.push('# HELP bambu_inventory_weight_grams Total filament weight in inventory');
+    lines.push('# TYPE bambu_inventory_weight_grams gauge');
+    lines.push(`bambu_inventory_weight_grams ${Math.round(totalWeightG)}`);
+  } catch (_) {}
+
+  // Uptime
+  lines.push('# HELP bambu_uptime_seconds Server uptime in seconds');
+  lines.push('# TYPE bambu_uptime_seconds gauge');
+  lines.push(`bambu_uptime_seconds ${Math.round(process.uptime())}`);
+
+  // Memory usage
+  const mem = process.memoryUsage();
+  lines.push('# HELP bambu_memory_heap_bytes Heap memory usage in bytes');
+  lines.push('# TYPE bambu_memory_heap_bytes gauge');
+  lines.push(`bambu_memory_heap_bytes ${mem.heapUsed}`);
+
+  // Node.js version info
+  lines.push('# HELP bambu_info Dashboard info');
+  lines.push('# TYPE bambu_info gauge');
+  lines.push(`bambu_info{version="${_pkgVersion}",node="${process.version}"} 1`);
+
+  // Circuit breaker states (if available)
+  try {
+    for (const b of getAllBreakerStatus()) {
+      lines.push(`bambu_circuit_breaker{service="${b.name}",state="${b.state}"} ${b.failures}`);
+    }
+  } catch (_) {}
+
+  return lines.join('\n') + '\n';
+}
+
 function _getApiDocs() {
   return {
     openapi: '3.0.3',
@@ -5884,6 +6352,7 @@ function _getApiDocs() {
     ],
     endpoints: [
       // Public Status
+      { method: 'GET', path: '/api/health', tag: 'Status', summary: 'Health check (no auth required)', permission: null },
       { method: 'GET', path: '/api/status/public', tag: 'Status', summary: 'Get public printer status (no auth required, must be enabled)', permission: null },
       // Auth
       { method: 'GET', path: '/api/auth/status', tag: 'Auth', summary: 'Get auth status', permission: null },
@@ -6176,12 +6645,72 @@ function _escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ---- Achievements calculator ----
+function calculateAchievements() {
+  const history = getHistory(9999, 0);
+  const spools = getFilament();
+
+  const totalPrints = history.length;
+  const completedPrints = history.filter(h => h.status === 'completed').length;
+  const totalFilamentG = history.reduce((sum, h) => sum + (h.filament_used_g || 0), 0);
+  const totalHours = history.reduce((sum, h) => sum + (h.duration_seconds || 0), 0) / 3600;
+  const uniqueFilaments = new Set(history.map(h => h.filament_type).filter(Boolean)).size;
+  const successRate = totalPrints > 0 ? (completedPrints / totalPrints * 100) : 0;
+  const longestPrint = Math.max(0, ...history.map(h => h.duration_seconds || 0));
+  const consecutiveSuccess = _longestStreak(history.filter(h => h.status).sort((a, b) => new Date(a.started_at) - new Date(b.started_at)));
+
+  const all = [
+    { id: 'first_print', icon: '\u{1F3AF}', title: 'First Print', desc: 'Complete your first print', target: 1, current: completedPrints, category: 'prints' },
+    { id: 'prints_10', icon: '\u2B50', title: 'Getting Started', desc: 'Complete 10 prints', target: 10, current: completedPrints, category: 'prints' },
+    { id: 'prints_50', icon: '\u{1F525}', title: 'On a Roll', desc: 'Complete 50 prints', target: 50, current: completedPrints, category: 'prints' },
+    { id: 'prints_100', icon: '\u{1F4AF}', title: 'Centurion', desc: 'Complete 100 prints', target: 100, current: completedPrints, category: 'prints' },
+    { id: 'prints_500', icon: '\u{1F3C6}', title: 'Print Master', desc: 'Complete 500 prints', target: 500, current: completedPrints, category: 'prints' },
+    { id: 'prints_1000', icon: '\u{1F451}', title: 'Print Legend', desc: 'Complete 1000 prints', target: 1000, current: completedPrints, category: 'prints' },
+    { id: 'filament_1kg', icon: '\u{1F9F5}', title: '1 kg Club', desc: 'Use 1 kg of filament', target: 1000, current: Math.round(totalFilamentG), category: 'filament' },
+    { id: 'filament_10kg', icon: '\u{1F3A8}', title: 'Filament Enthusiast', desc: 'Use 10 kg of filament', target: 10000, current: Math.round(totalFilamentG), category: 'filament' },
+    { id: 'filament_50kg', icon: '\u{1F3ED}', title: 'Production Line', desc: 'Use 50 kg of filament', target: 50000, current: Math.round(totalFilamentG), category: 'filament' },
+    { id: 'hours_24', icon: '\u23F0', title: 'Full Day', desc: 'Print for 24 total hours', target: 24, current: Math.round(totalHours * 10) / 10, category: 'time' },
+    { id: 'hours_100', icon: '\u23F1\uFE0F', title: 'Time Invested', desc: 'Print for 100 total hours', target: 100, current: Math.round(totalHours * 10) / 10, category: 'time' },
+    { id: 'hours_500', icon: '\u{1F550}', title: 'Dedicated Maker', desc: 'Print for 500 total hours', target: 500, current: Math.round(totalHours * 10) / 10, category: 'time' },
+    { id: 'marathon', icon: '\u{1F3C3}', title: 'Marathon Print', desc: 'Complete a print over 12 hours', target: 43200, current: longestPrint, category: 'time' },
+    { id: 'ultramarathon', icon: '\u{1F9BE}', title: 'Ultra Marathon', desc: 'Complete a print over 24 hours', target: 86400, current: longestPrint, category: 'time' },
+    { id: 'materials_3', icon: '\u{1F3AD}', title: 'Material Explorer', desc: 'Use 3 different filament types', target: 3, current: uniqueFilaments, category: 'filament' },
+    { id: 'materials_6', icon: '\u{1F308}', title: 'Rainbow Maker', desc: 'Use 6 different filament types', target: 6, current: uniqueFilaments, category: 'filament' },
+    { id: 'streak_5', icon: '\u{1F517}', title: 'Winning Streak', desc: '5 successful prints in a row', target: 5, current: consecutiveSuccess, category: 'quality' },
+    { id: 'streak_20', icon: '\u{1F48E}', title: 'Flawless Run', desc: '20 successful prints in a row', target: 20, current: consecutiveSuccess, category: 'quality' },
+    { id: 'success_95', icon: '\u{1F3AF}', title: 'Sharpshooter', desc: 'Maintain 95%+ success rate (min 20 prints)', target: 95, current: totalPrints >= 20 ? Math.round(successRate * 10) / 10 : 0, category: 'quality' },
+    { id: 'spools_10', icon: '\u{1F4E6}', title: 'Stocked Up', desc: 'Have 10+ spools in inventory', target: 10, current: spools.length, category: 'filament' },
+    { id: 'zero_fails', icon: '\u2728', title: 'Perfect Week', desc: '0 failed prints this week', target: 1, current: _noFailsThisWeek(history) ? 1 : 0, category: 'quality' },
+  ];
+
+  return all.map(a => ({
+    ...a,
+    earned: a.current >= a.target,
+    progress: Math.min(1, a.current / a.target)
+  }));
+}
+
+function _longestStreak(sorted) {
+  let max = 0, cur = 0;
+  for (const h of sorted) {
+    if (h.status === 'completed') { cur++; max = Math.max(max, cur); }
+    else cur = 0;
+  }
+  return max;
+}
+
+function _noFailsThisWeek(history) {
+  const weekAgo = new Date(Date.now() - 7 * 86400000);
+  const thisWeek = history.filter(h => new Date(h.started_at) >= weekAgo);
+  return thisWeek.length > 0 && thisWeek.every(h => h.status !== 'failed');
+}
+
 function sendJson(res, data, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'X-API-Version': _pkgVersion });
   res.end(JSON.stringify(data));
 }
 
-const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
+const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB (screenshots can be large)
 
 function readBody(req, callback) {
   let body = '';
@@ -6635,13 +7164,13 @@ async function handleModelSearch(query, source, res) {
   const searches = [];
 
   if (source === 'all' || source === 'makerworld') {
-    searches.push(searchMakerWorld(encodedQuery).catch(() => []));
+    searches.push(searchMakerWorld(encodedQuery).catch(e => { log.debug('MakerWorld search failed', e.message); return []; }));
   }
   if (source === 'all' || source === 'printables') {
-    searches.push(searchPrintables(encodedQuery).catch(() => []));
+    searches.push(searchPrintables(encodedQuery).catch(e => { log.debug('Printables search failed', e.message); return []; }));
   }
   if (source === 'all' || source === 'thingiverse') {
-    searches.push(searchThingiverse(encodedQuery).catch(() => []));
+    searches.push(searchThingiverse(encodedQuery).catch(e => { log.debug('Thingiverse search failed', e.message); return []; }));
   }
 
   const results = (await Promise.all(searches)).flat();
@@ -6649,7 +7178,7 @@ async function handleModelSearch(query, source, res) {
 }
 
 async function searchMakerWorld(query) {
-  try {
+  return withBreaker('makerworld', async () => {
     const json = await fetchJson(`https://api.bambulab.com/v1/design-service/design/search?keyword=${query}&limit=5`, 8000);
     if (json.code && json.code !== 200) return []; // API error
     const hits = json.hits || json.designs || [];
@@ -6663,11 +7192,11 @@ async function searchMakerWorld(query) {
       likes: d.likeCount || 0,
       downloads: d.downloadCount || 0
     }));
-  } catch { return []; }
+  }, []);
 }
 
 async function searchPrintables(query) {
-  try {
+  return withBreaker('printables', async () => {
     const html = await fetchHtml(`https://www.printables.com/search/models?q=${query}`, 8000);
 
     // Build image map: model ID → thumbnail URL
@@ -6698,11 +7227,11 @@ async function searchPrintables(query) {
       }
     }
     return results;
-  } catch { return []; }
+  }, []);
 }
 
 async function searchThingiverse(query) {
-  try {
+  return withBreaker('thingiverse', async () => {
     const json = await fetchJson(`https://api.thingiverse.com/search/${query}?type=things&per_page=5`, 8000);
     const hits = json.hits || [];
     return hits.slice(0, 5).map(d => ({
@@ -6715,7 +7244,7 @@ async function searchThingiverse(query) {
       likes: d.like_count || 0,
       downloads: d.download_count || 0
     }));
-  } catch { return []; }
+  }, []);
 }
 
 // ---- TOTP Helpers ----
@@ -6796,7 +7325,7 @@ async function _dispatchWebhook(whConfig, payload, deliveryId) {
             response_code: res.statusCode,
             response_body: data.substring(0, 500)
           });
-        } catch (_) {}
+        } catch (e) { log.warn('Failed to log webhook delivery', e.message); }
         resolve(success);
       });
     });
@@ -6809,7 +7338,7 @@ async function _dispatchWebhook(whConfig, payload, deliveryId) {
           last_attempt: new Date().toISOString(),
           response_body: err.message
         });
-      } catch (_) {}
+      } catch (e) { log.warn('Failed to log webhook failure', e.message); }
       resolve(false);
     });
 
@@ -6859,7 +7388,7 @@ export function dispatchWebhooksForEvent(eventType, title, message, data) {
       }
 
       const deliveryId = addWebhookDelivery({ webhook_id: wh.id, event_type: eventType, payload, status: 'pending' });
-      _dispatchWebhook(wh, payload, deliveryId).catch(() => {});
+      _dispatchWebhook(wh, payload, deliveryId).catch(e => log.warn('Webhook dispatch failed', e.message));
     }
   } catch (e) {
     console.error('[webhook] Dispatch error:', e.message);

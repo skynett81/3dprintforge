@@ -3,9 +3,9 @@
   let _activeTab = 'knowledge';
   const _origLoad = window.loadKnowledgePanel;
   const TABS = [
-    { id: 'knowledge', labelKey: 'tabs.knowledge', fallback: 'Kunnskapsbase' },
-    { id: 'learning', labelKey: 'tabs.learning', fallback: 'Læringssenter' },
-    { id: 'modelinfo', labelKey: 'tabs.modelinfo', fallback: 'Modell Info' }
+    { id: 'knowledge', labelKey: 'nav.knowledge', fallback: 'Knowledge Base' },
+    { id: 'learning', labelKey: 'tabs.learning', fallback: 'Learning Center' },
+    { id: 'modelinfo', labelKey: 'tabs.model_info', fallback: 'Model Info' }
   ];
   function _tabBarHtml() {
     return '<div class="tabs _wrapper-tabs">' + TABS.map(tab => {

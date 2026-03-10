@@ -392,7 +392,11 @@
     }
 
     if (!filtered.length) {
-      container.innerHTML = `<p class="text-muted" style="text-align:center;padding:24px 0">${t('errors.no_match')}</p>`;
+      container.innerHTML = emptyState({
+        icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        title: t('errors.no_match'),
+        desc: t('errors.no_match_desc') || 'No errors found matching your filters. That\'s a good thing!'
+      });
       return;
     }
 

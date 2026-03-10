@@ -5,6 +5,8 @@
   let _filter = { category: '', type: '', search: '' };
   let _offset = 0;
   const PAGE = 24;
+  let _fileSelectMode = false;
+  let _selectedFiles = new Set();
 
   window.loadLibraryPanel = function() {
     const el = document.getElementById('overlay-panel-body');
@@ -64,10 +66,17 @@
         <option value="step">STEP</option>
       </select>
       <button class="lib-upload-btn" onclick="_libShowUpload()">+ ${t('library.upload')}</button>
+      <button class="form-btn form-btn-secondary" onclick="_toggleFileSelectMode()" id="file-select-toggle" style="padding:4px 10px;font-size:0.75rem">${_fileSelectMode ? '\u2713 Done' : '\u2610 Select'}</button>
     </div>
     <div class="lib-cat-pills" id="lib-cats"></div>
     <div class="lib-grid" id="lib-grid"></div>
-    <div id="lib-load-more-wrap"></div>`;
+    <div id="lib-load-more-wrap"></div>
+    <div class="batch-bar" id="file-batch-bar" style="display:none">
+      <span id="file-batch-count">0 selected</span>
+      <button class="form-btn form-btn-secondary" onclick="_batchAddToQueue()" style="padding:4px 10px;font-size:0.75rem">Add to Queue</button>
+      <button class="form-btn form-btn-danger" onclick="_batchDeleteFiles()" style="padding:4px 10px;font-size:0.75rem">Delete</button>
+      <button class="form-btn form-btn-secondary" onclick="_clearFileSelection()" style="padding:4px 10px;font-size:0.75rem">Clear</button>
+    </div>`;
 
     _offset = 0;
     _filter = { category: '', type: '', search: '' };
@@ -130,7 +139,9 @@
         : `<div class="lib-thumb-placeholder">${_typeIcon(f.file_type)}</div>`;
       const size = _fmtSize(f.file_size);
       const tags = f.tags ? f.tags.split(',').map(t => `<span class="lib-tag">${_esc(t.trim())}</span>`).join('') : '';
-      html += `<div class="lib-card" onclick="_libDetail(${f.id})">
+      const checked = _selectedFiles.has(String(f.id)) ? ' checked' : '';
+      html += `<div class="lib-card" style="position:relative" onclick="${_fileSelectMode ? `_toggleFileCheck(${f.id})` : `_libDetail(${f.id})`}">
+        ${_fileSelectMode ? `<input type="checkbox" class="file-select-check" data-file-id="${f.id}" style="position:absolute;top:8px;left:8px;width:18px;height:18px;z-index:2;cursor:pointer"${checked} onclick="event.stopPropagation();_onFileSelect()">` : ''}
         <div class="lib-thumb">${thumb}</div>
         <div class="lib-card-body">
           <div class="lib-card-name" title="${_esc(f.original_name)}">${_esc(f.original_name)}</div>
@@ -348,4 +359,75 @@
   }
 
   function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  // ── Batch file management ──
+
+  window._toggleFileSelectMode = function() {
+    _fileSelectMode = !_fileSelectMode;
+    _selectedFiles.clear();
+    _renderGrid();
+    _updateBatchBar();
+    const toggle = document.getElementById('file-select-toggle');
+    if (toggle) toggle.textContent = _fileSelectMode ? '\u2713 Done' : '\u2610 Select';
+  };
+
+  window._toggleFileCheck = function(id) {
+    const key = String(id);
+    if (_selectedFiles.has(key)) _selectedFiles.delete(key);
+    else _selectedFiles.add(key);
+    _renderGrid();
+    _updateBatchBar();
+  };
+
+  window._onFileSelect = function() {
+    _selectedFiles.clear();
+    document.querySelectorAll('.file-select-check:checked').forEach(cb => {
+      _selectedFiles.add(cb.dataset.fileId);
+    });
+    _updateBatchBar();
+  };
+
+  function _updateBatchBar() {
+    const bar = document.getElementById('file-batch-bar');
+    const count = document.getElementById('file-batch-count');
+    if (bar) bar.style.display = (_fileSelectMode && _selectedFiles.size > 0) ? 'flex' : 'none';
+    if (count) count.textContent = `${_selectedFiles.size} selected`;
+  }
+
+  window._clearFileSelection = function() {
+    _selectedFiles.clear();
+    document.querySelectorAll('.file-select-check').forEach(cb => cb.checked = false);
+    _updateBatchBar();
+  };
+
+  window._batchDeleteFiles = function() {
+    if (_selectedFiles.size === 0) return;
+    if (typeof confirmAction === 'function') {
+      confirmAction(`Delete ${_selectedFiles.size} file${_selectedFiles.size > 1 ? 's' : ''}?`, async () => {
+        let deleted = 0;
+        for (const fileId of _selectedFiles) {
+          try {
+            const r = await fetch(`/api/library/${fileId}`, { method: 'DELETE' });
+            if (r.ok) deleted++;
+          } catch (_) {}
+        }
+        if (typeof showToast === 'function') showToast(`Deleted ${deleted} file${deleted > 1 ? 's' : ''}`, 'success');
+        _selectedFiles.clear();
+        _fileSelectMode = false;
+        const toggle = document.getElementById('file-select-toggle');
+        if (toggle) toggle.textContent = '\u2610 Select';
+        _loadFiles(true);
+        _loadCategories();
+      }, { danger: true });
+    }
+  };
+
+  window._batchAddToQueue = function() {
+    if (_selectedFiles.size === 0) return;
+    if (typeof showToast === 'function') {
+      showToast(`${_selectedFiles.size} file${_selectedFiles.size > 1 ? 's' : ''} ready to queue \u2014 select a queue in the Queue panel`, 'info', 0, [
+        { label: 'Open Queue', onClick: () => { if (typeof openPanel === 'function') openPanel('queue'); } }
+      ]);
+    }
+  };
 })();

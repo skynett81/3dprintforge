@@ -17,6 +17,9 @@
 
     let html = '<div class="info-grid">';
 
+    const ipAddr = meta.ip || '';
+    const serialNum = meta.serial || '';
+
     html += `
       <div class="info-item">
         <span class="info-label">${t('printer_info.model')}</span>
@@ -27,11 +30,27 @@
         <span class="info-value">${state.wifi_signal || '--'}</span>
       </div>`;
 
+    if (ipAddr) {
+      html += `
+        <div class="info-item">
+          <span class="info-label">IP</span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${ipAddr}', 'IP')" data-tooltip="Klikk for å kopiere">${ipAddr}</span></span>
+        </div>`;
+    }
+
+    if (serialNum) {
+      html += `
+        <div class="info-item">
+          <span class="info-label">Serial</span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${serialNum}', 'Serial')" data-tooltip="Klikk for å kopiere">${serialNum}</span></span>
+        </div>`;
+    }
+
     if (firmware) {
       html += `
         <div class="info-item">
           <span class="info-label">${t('printer_info.firmware')}</span>
-          <span class="info-value">${firmware}</span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${firmware}', 'Firmware')" data-tooltip="Klikk for å kopiere">${firmware}</span></span>
         </div>`;
     }
 

@@ -1,5 +1,8 @@
 import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('queue');
 
 export class QueueManager {
   constructor(printerManager, notifier, broadcastFn, failureDetector) {
@@ -162,7 +165,7 @@ export class QueueManager {
         try {
           const targets = typeof item.target_printers === 'string' ? JSON.parse(item.target_printers) : item.target_printers;
           if (Array.isArray(targets) && targets.length > 0 && !targets.includes(id)) continue;
-        } catch (_) {}
+        } catch (e) { log.warn('Failed to parse target_printers', e.message); }
       }
 
       // Tag-based matching — printer must have ALL required tags
@@ -173,7 +176,7 @@ export class QueueManager {
             const printerTags = getEntityTags('printer', id).map(t => t.id);
             if (!requiredTags.every(tagId => printerTags.includes(tagId))) continue;
           }
-        } catch (_) {}
+        } catch (e) { log.warn('Failed to parse required_tags', e.message); }
       }
 
       // Build volume check — skip if model won't fit
@@ -229,7 +232,7 @@ export class QueueManager {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) { log.warn('Failed to count active jobs', e.message); }
 
     // Score each candidate: lower is better (job count minus enclosure bonus)
     let bestId = candidates[0].id, bestScore = Infinity;

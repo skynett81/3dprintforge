@@ -113,10 +113,30 @@
 
     _mode = _trackingData.length > 0 ? 'tracking' : 'history';
 
+    // Merge history entries that are missing from tracking data
+    if (_mode === 'tracking' && _historyData.length > _trackingData.length) {
+      const trackedIds = new Set(_trackingData.map(d => d.print_history_id));
+      for (const h of _historyData) {
+        if (!trackedIds.has(h.id)) {
+          _trackingData.push({
+            print_history_id: h.id,
+            printer_id: h.printer_id,
+            filename: h.filename,
+            estimated_s: null,
+            actual_s: h.duration_seconds,
+            accuracy_pct: null,
+            filament_type: h.filament_type,
+            finished_at: h.finished_at
+          });
+        }
+      }
+      // Sort by finished_at descending
+      _trackingData.sort((a, b) => (b.finished_at || '').localeCompare(a.finished_at || ''));
+    }
+
     // Populate filter from available data
     const sourceData = _mode === 'tracking' ? _trackingData : _historyData;
-    const typeKey = _mode === 'tracking' ? 'filament_type' : 'filament_type';
-    const types = [...new Set(sourceData.map(d => d[typeKey]).filter(Boolean))].sort();
+    const types = [...new Set(sourceData.map(d => d.filament_type).filter(Boolean))].sort();
     const sel = document.getElementById('tt-filter-type');
     if (sel) {
       types.forEach(ft => {
@@ -174,27 +194,31 @@
     if (!el) return;
     if (!data.length) { el.innerHTML = ''; return; }
 
-    const accs = data.map(d => d.accuracy_pct);
-    const avg = accs.reduce((s, v) => s + v, 0) / accs.length;
-    const best = Math.max(...accs);
-    const worst = Math.min(...accs);
+    const withAcc = data.filter(d => d.accuracy_pct != null);
+    const accs = withAcc.map(d => d.accuracy_pct);
+    const avg = accs.length > 0 ? accs.reduce((s, v) => s + v, 0) / accs.length : 0;
+    const best = accs.length > 0 ? Math.max(...accs) : 0;
+    const worst = accs.length > 0 ? Math.min(...accs) : 0;
+    const totalActual = data.reduce((s, d) => s + (d.actual_s || 0), 0);
 
     el.innerHTML = `
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.avg_accuracy'))}</div>
-        <div class="tt-card-value" style="color:${accColor(avg)}">${avg.toFixed(1)}%</div>
+        <div class="tt-card-value" style="color:${accs.length > 0 ? accColor(avg) : 'var(--text-muted)'}">${accs.length > 0 ? avg.toFixed(1) + '%' : '--'}</div>
+        <div class="tt-card-sub">${withAcc.length} ${_esc(t('timetracker.prints'))} ${_esc(t('timetracker.with_estimate') || 'med estimat')}</div>
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.total_tracked'))}</div>
         <div class="tt-card-value" style="color:var(--accent-blue)">${data.length}</div>
+        <div class="tt-card-sub">${fmtTime(totalActual)} ${_esc(t('timetracker.total_print_time') || 'total')}</div>
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.best'))}</div>
-        <div class="tt-card-value" style="color:var(--accent-green)">${best.toFixed(1)}%</div>
+        <div class="tt-card-value" style="color:var(--accent-green)">${accs.length > 0 ? best.toFixed(1) + '%' : '--'}</div>
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.worst'))}</div>
-        <div class="tt-card-value" style="color:var(--accent-red)">${worst.toFixed(1)}%</div>
+        <div class="tt-card-value" style="color:var(--accent-red)">${accs.length > 0 ? worst.toFixed(1) + '%' : '--'}</div>
       </div>`;
   }
 
@@ -236,10 +260,12 @@
 
     const chartW = containerW - labelW - valueW - 20;
 
+    // Show entries with accuracy on the chart; also show duration-only entries
+    const maxDur = Math.max(...data.map(d => d.actual_s || 0), 1);
+
     data.forEach((item, i) => {
       const y = padTop + i * (barH + gap);
-      const pct = Math.min(item.accuracy_pct, 120);
-      const w = Math.max(2, (pct / 120) * chartW);
+      const hasAcc = item.accuracy_pct != null;
 
       ctx.fillStyle = _css('--text-primary', '#ccc');
       ctx.font = '11px sans-serif';
@@ -252,18 +278,30 @@
       ctx.fillStyle = 'rgba(128,128,128,0.1)';
       ctx.beginPath(); ctx.roundRect(labelW, y, chartW, barH, 4); ctx.fill();
 
-      const color = item.accuracy_pct >= 95
-        ? (_css('--accent-green', '#22c55e'))
-        : item.accuracy_pct >= 85
-          ? (_css('--accent-orange', '#f59e0b'))
-          : (_css('--accent-red', '#ef4444'));
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.roundRect(labelW, y, w, barH, 4); ctx.fill();
-
-      ctx.fillStyle = _css('--text-primary', '#ccc');
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${item.accuracy_pct.toFixed(1)}%`, labelW + chartW + 8, y + barH / 2);
+      if (hasAcc) {
+        const pct = Math.min(item.accuracy_pct, 120);
+        const w = Math.max(2, (pct / 120) * chartW);
+        const color = item.accuracy_pct >= 95
+          ? (_css('--accent-green', '#22c55e'))
+          : item.accuracy_pct >= 85
+            ? (_css('--accent-orange', '#f59e0b'))
+            : (_css('--accent-red', '#ef4444'));
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.roundRect(labelW, y, w, barH, 4); ctx.fill();
+        ctx.fillStyle = _css('--text-primary', '#ccc');
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${item.accuracy_pct.toFixed(1)}%`, labelW + chartW + 8, y + barH / 2);
+      } else {
+        // Duration-only bar
+        const w = Math.max(2, ((item.actual_s || 0) / maxDur) * chartW);
+        ctx.fillStyle = _css('--accent-blue', '#1279ff') + '80';
+        ctx.beginPath(); ctx.roundRect(labelW, y, w, barH, 4); ctx.fill();
+        ctx.fillStyle = _css('--text-muted', '#888');
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(fmtTime(item.actual_s), labelW + chartW + 8, y + barH / 2);
+      }
     });
   }
 
@@ -286,14 +324,15 @@
     }
 
     tbody.innerHTML = data.map(d => {
+      const hasAcc = d.accuracy_pct != null && d.estimated_s;
       const acc = d.accuracy_pct;
-      const color = accColor(acc);
-      const label = accLabel(acc);
+      const color = hasAcc ? accColor(acc) : 'var(--text-muted)';
+      const label = hasAcc ? accLabel(acc) : '';
       return `<tr>
         <td>${_esc(d.filename)}</td>
-        <td>${fmtTime(d.estimated_s)}</td>
+        <td>${hasAcc ? fmtTime(d.estimated_s) : '<span style="color:var(--text-muted)">--</span>'}</td>
         <td>${fmtTime(d.actual_s)}</td>
-        <td><span class="tt-acc-badge" style="background:${color}18;color:${color}">${acc.toFixed(1)}%</span>${label ? ` <span style="font-size:0.7rem;color:var(--text-muted)">${_esc(label)}</span>` : ''}</td>
+        <td>${hasAcc ? `<span class="tt-acc-badge" style="background:${color}18;color:${color}">${acc.toFixed(1)}%</span>${label ? ` <span style="font-size:0.7rem;color:var(--text-muted)">${_esc(label)}</span>` : ''}` : '<span style="color:var(--text-muted)">--</span>'}</td>
         <td>${fmtDate(d.finished_at)}</td>
       </tr>`;
     }).join('');

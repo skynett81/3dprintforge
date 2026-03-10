@@ -8,6 +8,9 @@ import {
   getEcomLicense, setEcomLicense,
   addEcomFee, getUnreportedFees, markFeesReported, getEcomFeesTotal, getEcomFeesSummary
 } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('ecom');
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const FEE_PCT = 5.0;
@@ -87,7 +90,7 @@ export class EcomLicenseManager {
       }
     }
     // Start daily fee reporting
-    this._reportInterval = setInterval(() => this.reportFees().catch(() => {}), 24 * 60 * 60 * 1000);
+    this._reportInterval = setInterval(() => this.reportFees().catch(e => log.warn('Fee reporting failed', e.message)), 24 * 60 * 60 * 1000);
     console.log('[ecom-license] Initialized (status: ' + (this._license.status || 'inactive') + ')');
   }
 

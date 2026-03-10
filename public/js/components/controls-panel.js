@@ -335,6 +335,41 @@
       </div>
     </div>`;
 
+    // ===== CARD: Quick Commands =====
+    const quickCmds = [
+      { label: 'Home All', gcode: 'G28', group: 'motion' },
+      { label: 'Home X', gcode: 'G28 X', group: 'motion' },
+      { label: 'Home Y', gcode: 'G28 Y', group: 'motion' },
+      { label: 'Home Z', gcode: 'G28 Z', group: 'motion' },
+      { label: 'Auto Level', gcode: 'G29', group: 'motion' },
+      { label: 'Motors Off', gcode: 'M18', group: 'motion' },
+      { label: 'Fan 100%', gcode: 'M106 S255', group: 'cooling' },
+      { label: 'Fan 50%', gcode: 'M106 S127', group: 'cooling' },
+      { label: 'Fan Off', gcode: 'M107', group: 'cooling' },
+      { label: 'PLA Preheat', gcode: 'M104 S200\\nM140 S60', group: 'temp' },
+      { label: 'PETG Preheat', gcode: 'M104 S240\\nM140 S80', group: 'temp' },
+      { label: 'ABS Preheat', gcode: 'M104 S250\\nM140 S100', group: 'temp' },
+      { label: 'Cool Down', gcode: 'M104 S0\\nM140 S0', group: 'temp' },
+      { label: 'Extrude 10mm', gcode: 'G91\\nG1 E10 F300\\nG90', group: 'filament' },
+      { label: 'Retract 10mm', gcode: 'G91\\nG1 E-10 F300\\nG90', group: 'filament' },
+      { label: 'Report Temps', gcode: 'M105', group: 'info' },
+      { label: 'Report Position', gcode: 'M114', group: 'info' },
+    ];
+
+    html += `<div class="ctrl-card ctrl-area-quickcmds">
+      <div class="ctrl-card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+        ${t('controls.quick_commands') || 'Quick Commands'}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+
+    for (const cmd of quickCmds) {
+      html += `<button class="form-btn form-btn-secondary" style="padding:4px 8px;font-size:0.7rem" onclick="_quickGcode('${cmd.gcode}')" data-tooltip="${cmd.gcode.replace(/\\\\n/g, ' → ')}">${cmd.label}</button>`;
+    }
+
+    html += `</div>
+    </div>`;
+
     // ===== CARD: G-Code Macros =====
     html += `<div class="ctrl-card ctrl-area-macros">
       <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -512,7 +547,7 @@
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:1rem"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="4" y="10" width="16" height="10" rx="1"/><circle cx="8" cy="15" r="1"/><line x1="12" y1="15" x2="18" y2="15"/></svg>
         <h3 style="margin:0 0 0.5rem;color:var(--text-primary)">${t('common.no_printers_title')}</h3>
         <p class="text-muted" style="margin:0 0 1rem">${t('common.no_printers_desc')}</p>
-        <button class="btn btn-primary" onclick="location.hash='#settings'">${t('common.add_printer_btn')}</button>
+        <button class="form-btn" onclick="location.hash='#settings'">${t('common.add_printer_btn')}</button>
       </div>`;
     }
   };
@@ -570,6 +605,16 @@
   window.sendGcode = function(gcode) {
     sendCommand('gcode', { gcode });
     appendGcodeHistory(gcode, false);
+  };
+
+  window._quickGcode = function(cmds) {
+    const lines = cmds.split('\\n');
+    for (const line of lines) {
+      if (line.trim()) {
+        sendCommand('gcode', { gcode: line.trim() });
+      }
+    }
+    appendGcodeHistory(cmds.replace(/\\n/g, ' → '), false);
   };
 
   window.sendGcodeInput = function() {
@@ -949,8 +994,9 @@
     try {
       const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/bed-mesh`);
       const data = await res.json();
-      if (!data.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.no_bed_mesh')}</span>`; return; }
-      _meshHistory = data;
+      const history = data.history || data;
+      if (!history.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.no_bed_mesh')}</span>`; return; }
+      _meshHistory = history;
       _meshSelectedIdx = 0;
       _meshDiffMode = false;
       _renderMeshView();

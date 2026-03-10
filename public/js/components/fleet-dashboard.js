@@ -2,6 +2,58 @@
 (function() {
   let _updateTimer = null;
   let _cameraIntervals = {};
+  let _sortMode = 'name';
+
+  window._sortFleet = function(mode) {
+    _sortMode = mode;
+    _renderAll();
+  };
+
+  window._fleetPauseAll = function() {
+    confirmAction(t('fleet.pause_all_confirm') || 'Pause all running printers?', () => {
+      const ids = window.printerState.getPrinterIds();
+      for (const id of ids) {
+        const s = window.printerState._printers[id] || {};
+        const state = (s.print?.gcode_state || s.gcode_state || '').toUpperCase();
+        if (state === 'RUNNING') {
+          sendCommand('pause', { printer_id: id });
+        }
+      }
+      showToast(t('fleet.pausing_all') || 'Pausing all printers...', 'info');
+    });
+  };
+
+  window._fleetResumeAll = function() {
+    confirmAction(t('fleet.resume_all_confirm') || 'Resume all paused printers?', () => {
+      const ids = window.printerState.getPrinterIds();
+      for (const id of ids) {
+        const s = window.printerState._printers[id] || {};
+        const state = (s.print?.gcode_state || s.gcode_state || '').toUpperCase();
+        if (state === 'PAUSE') {
+          sendCommand('resume', { printer_id: id });
+        }
+      }
+      showToast(t('fleet.resuming_all') || 'Resuming all printers...', 'info');
+    });
+  };
+
+  function _sortPrinterData(data) {
+    return [...data].sort((a, b) => {
+      if (_sortMode === 'name') {
+        return (a.meta.name || a.id).localeCompare(b.meta.name || b.id);
+      }
+      if (_sortMode === 'status') {
+        const statusOrder = { RUNNING: 0, PAUSE: 1, IDLE: 2, FINISH: 3, FAILED: 4, OFFLINE: 5 };
+        return (statusOrder[a.gcodeState] ?? 99) - (statusOrder[b.gcodeState] ?? 99);
+      }
+      if (_sortMode === 'progress') {
+        const pa = parseInt(a.printState.mc_percent || a.ps.mc_percent) || 0;
+        const pb = parseInt(b.printState.mc_percent || b.ps.mc_percent) || 0;
+        return pb - pa;
+      }
+      return 0;
+    });
+  }
 
   window.loadFleetPanel = function() {
     const el = document.getElementById('overlay-panel-body');
@@ -48,6 +100,16 @@
       @media (max-width:700px) { .fleet-grid { grid-template-columns:1fr; } }
     </style>
     <div class="fleet-summary" id="fleet-summary"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap">
+      <span style="font-size:0.75rem;color:var(--text-muted)">${t('fleet.sort_by') || 'Sort:'}</span>
+      <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('name')">${t('fleet.sort_name') || 'Name'}</button>
+      <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('status')">${t('fleet.sort_status') || 'Status'}</button>
+      <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('progress')">${t('fleet.sort_progress') || 'Progress'}</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetPauseAll()" data-tooltip="Pause all printing">${t('fleet.pause_all') || 'Pause All'}</button>
+        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetResumeAll()" data-tooltip="Resume all paused">${t('fleet.resume_all') || 'Resume All'}</button>
+      </div>
+    </div>
     <div class="fleet-grid" id="fleet-grid"></div>`;
 
     _renderAll();
@@ -98,17 +160,33 @@
       summary.innerHTML = sh;
     }
 
+    // Sort printer data
+    const sortedData = _sortPrinterData(printerData);
+
     // Build/update cards
-    for (const p of printerData) {
+    for (const p of sortedData) {
       let card = grid.querySelector(`[data-fleet-id="${p.id}"]`);
       if (!card) {
         card = document.createElement('div');
         card.className = 'fleet-card';
         card.dataset.fleetId = p.id;
         card.onclick = () => { _goToPrinter(p.id); };
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof showContextMenu === 'function' && typeof buildPrinterContextMenuItems === 'function') {
+            showContextMenu(e.clientX, e.clientY, buildPrinterContextMenuItems(p.id));
+          }
+        });
         grid.appendChild(card);
       }
       _updateCard(card, p);
+    }
+
+    // Reorder DOM to match sort order
+    for (const p of sortedData) {
+      const card = grid.querySelector(`[data-fleet-id="${p.id}"]`);
+      if (card) grid.appendChild(card);
     }
 
     // Remove cards for printers that no longer exist

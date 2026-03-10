@@ -58,15 +58,29 @@
     </div>`;
   }
 
-  // ═══ Tab config ═══
-  const TAB_CONFIG = {
-    inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'] },
+  // ═══ Tab config (alphabetically sorted by translated label at render time) ═══
+  const TAB_CONFIG_UNSORTED = {
+    inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
     database:  { label: 'filament.tab_database',  modules: ['db-hero', 'db-browser'] },
     drying:    { label: 'filament.tab_drying',    modules: ['drying-dashboard'] },
+    forecast:  { label: 'tabs.forecast',          modules: ['forecast-panel'], external: true },
+    multicolor:{ label: 'tabs.multicolor',        modules: ['multicolor-panel'], external: true },
     tools:     { label: 'filament.tab_tools',     modules: ['tools-dashboard'] },
     manage:    { label: 'filament.tab_manage',    modules: ['manage-dashboard'] },
     stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
+  // Sort tabs: inventory always first, rest alphabetically by translated label
+  function _getSortedTabs() {
+    const entries = Object.entries(TAB_CONFIG_UNSORTED);
+    return entries.sort((a, b) => {
+      if (a[1].order === 0) return -1;
+      if (b[1].order === 0) return 1;
+      const la = t(a[1].label) || a[0];
+      const lb = t(b[1].label) || b[0];
+      return la.localeCompare(lb);
+    });
+  }
+  const TAB_CONFIG = TAB_CONFIG_UNSORTED;
   const MODULE_SIZE = {
     'spool-summary': 'full', 'active-filament': 'full',
     'low-stock-alert': 'full', 'spool-grid': 'full',
@@ -130,6 +144,9 @@
   let _dbFilterCategory = '';
   let _dbFilterHasK = false;
   let _dbFilterHasTd = false;
+  let _dbFilterTranslucent = false;
+  let _dbFilterGlow = false;
+  let _dbFilterMultiColor = false;
   let _dbSort = 'manufacturer';
   let _dbSortDir = 'ASC';
   let _dbViewMode = localStorage.getItem('db-view-mode') || 'cards';
@@ -482,7 +499,13 @@
       const pageSpools = filtered.slice(pageStart, pageStart + _pageSize);
 
       if (filtered.length === 0) {
-        h += `<p class="text-muted" style="font-size:0.85rem;text-align:center;padding:20px 0">${_searchQuery ? t('filament.no_search_results') : t('filament.no_spools')}</p>`;
+        h += emptyState({
+          icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>',
+          title: _searchQuery ? t('filament.no_search_results') : t('filament.no_spools'),
+          desc: _searchQuery ? '' : (t('filament.no_spools_desc') || 'Add your first spool to start tracking filament usage.'),
+          actionLabel: _searchQuery ? '' : (t('filament.add_spool') || 'Add Spool'),
+          actionOnClick: _searchQuery ? '' : 'document.querySelector(\'.fil-add-btn\')?.click()'
+        });
       } else if (_viewMode === 'groups') {
         h += _renderSpoolGroups(filtered);
       } else if (_viewMode === 'table') {
@@ -758,6 +781,9 @@
         ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', _dbStats.materials.toLocaleString(), t('filament.db_materials'), '#f0883e')}
         ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', _dbStats.with_k_value.toLocaleString(), t('filament.db_with_k'), '#9b4dff')}
         ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>', _dbStats.with_td.toLocaleString(), t('filament.db_with_td'), '#e3b341')}
+        ${_dbStats.translucent ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10"/></svg>', _dbStats.translucent.toLocaleString(), t('filament.translucent') || 'Transparent', '#67e8f9') : ''}
+        ${_dbStats.glow_in_dark ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 009 9 9 9 0 11-9-9z"/></svg>', _dbStats.glow_in_dark.toLocaleString(), t('filament.glow') || 'Glow', '#bef264') : ''}
+        ${_dbStats.multi_color ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><circle cx="15" cy="15" r="6"/></svg>', _dbStats.multi_color.toLocaleString(), t('filament.multi_color') || 'Flerfarge', '#f9a8d4') : ''}
       </div>`;
       return h;
     },
@@ -784,6 +810,9 @@
       h += '</select>';
       h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterHasK?'checked':''} onchange="window._dbToggleK(this.checked)"> K-Value</label>`;
       h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterHasTd?'checked':''} onchange="window._dbToggleTd(this.checked)"> TD</label>`;
+      h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterTranslucent?'checked':''} onchange="window._dbToggleTranslucent(this.checked)"> ${t('filament.translucent') || 'Transparent'}</label>`;
+      h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterGlow?'checked':''} onchange="window._dbToggleGlow(this.checked)"> ${t('filament.glow') || 'Glow'}</label>`;
+      h += `<label class="db-filter-check"><input type="checkbox" ${_dbFilterMultiColor?'checked':''} onchange="window._dbToggleMultiColor(this.checked)"> ${t('filament.multi_color') || 'Multi'}</label>`;
       h += '</div>';
       // Toolbar
       h += '<div class="db-toolbar">';
@@ -1358,14 +1387,31 @@
     document.querySelectorAll('.filament-tab-panel').forEach(p => {
       const isActive = p.id === `filament-tab-${tabId}`;
       p.classList.toggle('active', isActive);
-      p.style.display = isActive ? 'grid' : 'none';
+      p.style.display = isActive ? (TAB_CONFIG[tabId]?.external ? 'block' : 'grid') : 'none';
       if (isActive) {
         p.classList.add('ix-tab-panel');
         p.addEventListener('animationend', () => p.classList.remove('ix-tab-panel'), { once: true });
       }
     });
+    // Load external panel content into tab container
+    _loadExternalTab(tabId);
     const slug = tabId === 'inventory' ? 'filament' : `filament/${tabId}`;
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+  }
+
+  function _loadExternalTab(tabId) {
+    const cfg = TAB_CONFIG[tabId];
+    if (!cfg?.external) return;
+    const container = document.getElementById(`filament-tab-${tabId}`);
+    if (!container) return;
+    // Temporarily swap id so external panels render into our tab container
+    const realBody = document.getElementById('overlay-panel-body');
+    if (realBody) realBody.removeAttribute('id');
+    container.id = 'overlay-panel-body';
+    if (tabId === 'forecast' && typeof loadForecastPanel === 'function') loadForecastPanel();
+    else if (tabId === 'multicolor' && typeof loadMulticolorPanel === 'function') loadMulticolorPanel();
+    container.id = `filament-tab-${tabId}`;
+    if (realBody) realBody.id = 'overlay-panel-body';
   }
 
   // ═══ Module Drag & Drop ═══
@@ -1400,9 +1446,14 @@
   }
 
   // ═══ Main render ═══
-  async function loadFilament() {
+  async function loadFilament(initialTab) {
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
+
+    // Accept explicit tab from caller (e.g. loadFilamentPanel('forecast'))
+    if (initialTab && TAB_CONFIG[initialTab]) {
+      _activeTab = initialTab;
+    }
 
     const hashFull = location.hash.replace('#', '');
     const [hashPath, hashQuery] = hashFull.split('?');
@@ -1521,9 +1572,9 @@
       const filteredSpools = _filterPrinter === 'all'
         ? _spools : _spools.filter(s => s.printer_id === _filterPrinter);
 
-      // ── Tab bar ──
+      // ── Tab bar (sorted alphabetically, inventory first) ──
       html += '<div class="tabs">';
-      for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
+      for (const [id, cfg] of _getSortedTabs()) {
         html += `<button class="tab-btn filament-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')">${t(cfg.label)}</button>`;
       }
       html += '</div>';
@@ -1541,7 +1592,12 @@
       }
 
       // ── Tab panels ──
-      for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
+      for (const [tabId, cfg] of _getSortedTabs()) {
+        if (cfg.external) {
+          // External tabs (forecast, multicolor) — render empty container, loaded after render
+          html += `<div class="tab-panel filament-tab-panel" id="filament-tab-${tabId}" style="display:${tabId === _activeTab ? 'block' : 'none'}"></div>`;
+          continue;
+        }
         const order = getOrder(tabId);
         html += `<div class="tab-panel filament-tab-panel stats-tab-panel ${tabId === _activeTab ? 'active' : ''}" id="filament-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
         for (const modId of order) {
@@ -1561,6 +1617,9 @@
       }
 
       panel.innerHTML = html;
+
+      // Load external tab content (forecast/multicolor) if active
+      _loadExternalTab(_activeTab);
 
       for (const tabId of Object.keys(TAB_CONFIG)) {
         const cont = document.getElementById(`filament-tab-${tabId}`);
@@ -4028,7 +4087,23 @@
         container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.restock_none')}</p>`;
         return;
       }
-      let h = `<table class="fil-drying-presets-table"><thead><tr>
+
+      // Hero summary
+      const critical = data.filter(s => s.urgency === 'critical').length;
+      const high = data.filter(s => s.urgency === 'high').length;
+      const medium = data.filter(s => s.urgency === 'medium').length;
+      const totalCost = data.reduce((s, d) => s + (d.est_cost || 0), 0);
+      const totalSpools = data.reduce((s, d) => s + (d.spools_to_order || 0), 0);
+
+      let h = '<div class="fil-hero-grid" style="margin-bottom:12px">';
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', critical, t('filament.restock_critical') || 'Kritisk', '#f85149');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>', high, t('filament.restock_high') || 'Haster', '#f0883e');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', medium, t('filament.restock_medium') || 'Middels', '#d29922');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>', totalSpools + ' ' + (t('filament.spools') || 'spoler'), t('filament.restock_to_order') || 'Bestilles', '#58a6ff');
+      if (totalCost > 0) h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', '~' + Math.round(totalCost), t('filament.restock_est_cost') || 'Est. kostnad', '#a371f7');
+      h += '</div>';
+
+      h += `<table class="fil-drying-presets-table"><thead><tr>
         <th></th>
         <th>${t('filament.profile_name')}</th>
         <th>${t('filament.filter_material')}</th>
@@ -4041,14 +4116,20 @@
         const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
         const urgencyColors = { critical: '#f85149', high: '#f0883e', medium: '#d29922', low: '#58a6ff' };
         const uColor = urgencyColors[s.urgency] || '#8b949e';
+        // Progress bar showing remaining stock vs needed
+        const stockPct = s.needed_g > 0 ? Math.min(100, Math.round(s.current_stock_g / s.needed_g * 100)) : 100;
+        const barColor = stockPct > 60 ? 'var(--accent-green)' : stockPct > 30 ? '#d29922' : '#f85149';
         h += `<tr>
           <td>${colorDot}</td>
           <td>${esc(s.profile_name || '?')} ${s.vendor_name ? '<span class="text-muted">(' + esc(s.vendor_name) + ')</span>' : ''}</td>
           <td>${esc(s.material || '')}</td>
-          <td>${s.current_stock_g}g <span class="text-muted">(${s.current_spool_count} ${s.current_spool_count === 1 ? 'spool' : 'spools'})</span></td>
+          <td>
+            <div style="font-size:0.78rem">${s.current_stock_g}g <span class="text-muted">(${s.current_spool_count})</span></div>
+            <div style="width:60px;height:4px;background:var(--bg-tertiary);border-radius:2px;margin-top:2px"><div style="width:${stockPct}%;height:100%;background:${barColor};border-radius:2px"></div></div>
+          </td>
           <td style="color:${s.days_until_out != null && s.days_until_out <= 14 ? uColor : ''};font-weight:${s.days_until_out != null && s.days_until_out <= 7 ? '700' : '400'}">${s.days_until_out != null ? s.days_until_out + 'd' : '-'}</td>
-          <td>${s.spools_to_order > 0 ? `<strong>${s.spools_to_order}</strong> ${s.spools_to_order === 1 ? 'spool' : 'spools'}${s.est_cost ? ` <span class="text-muted">(~${s.est_cost})</span>` : ''}` : '-'}</td>
-          <td><span style="background:${uColor};color:#fff;padding:1px 8px;border-radius:4px;font-size:0.7rem;text-transform:uppercase">${s.urgency}</span></td>
+          <td>${s.spools_to_order > 0 ? `<strong>${s.spools_to_order}</strong> ${t('filament.spools') || 'spoler'}${s.est_cost ? ` <span class="text-muted">(~${Math.round(s.est_cost)})</span>` : ''}` : '-'}</td>
+          <td><span style="background:${uColor};color:#fff;padding:1px 8px;border-radius:4px;font-size:0.7rem;text-transform:uppercase">${t('filament.urgency_' + s.urgency) || s.urgency}</span></td>
         </tr>`;
       }
       h += '</tbody></table>';
@@ -4066,13 +4147,48 @@
         container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
         return;
       }
-      // Only show spools with actual usage data
       const active = data.per_spool.filter(s => s.avg_daily_g > 0);
       if (active.length === 0) {
         container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
         return;
       }
-      let h = `<table class="fil-drying-presets-table"><thead><tr>
+
+      // Hero summary
+      const totalRemaining = active.reduce((s, d) => s + d.remaining_weight_g, 0);
+      const totalDailyUsage = data.by_material?.reduce((s, m) => s + m.avg_daily_g, 0) || 0;
+      const needsReorder = active.filter(s => s.needs_reorder).length;
+      const avgDaysLeft = active.length > 0 ? Math.round(active.reduce((s, d) => s + (d.days_until_empty || 0), 0) / active.length) : 0;
+      const closestEmpty = active.reduce((min, s) => s.days_until_empty != null && s.days_until_empty < min ? s.days_until_empty : min, 999);
+
+      let h = '<div class="fil-hero-grid" style="margin-bottom:12px">';
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>', Math.round(totalDailyUsage) + 'g/d', t('filament.daily_usage') || 'Daglig forbruk', '#1279ff');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', closestEmpty < 999 ? closestEmpty + 'd' : '--', t('filament.next_empty') || 'Tidligst tom', closestEmpty <= 7 ? '#f85149' : closestEmpty <= 14 ? '#f0883e' : '#00e676');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>', Math.round(totalRemaining) + 'g', t('filament.total_remaining') || 'Totalt igjen', '#00e676');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', needsReorder, t('filament.needs_reorder_count') || 'Trenger bestilling', needsReorder > 0 ? '#f0883e' : '#8b949e');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>', active.length, t('filament.active_spools') || 'Aktive spoler', '#a371f7');
+      h += '</div>';
+
+      // Material usage summary cards
+      if (data.by_material && data.by_material.length > 0) {
+        h += '<div class="auto-grid auto-grid--md" style="margin-bottom:12px">';
+        for (const m of data.by_material) {
+          const matColor = m.material === 'PLA' ? '#4ade80' : m.material === 'PETG' ? '#60a5fa' : m.material === 'ABS' ? '#f97316' : m.material === 'TPU' ? '#c084fc' : '#8b949e';
+          h += `<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;color:${matColor}">${esc(m.material)}</div>
+              <div class="text-muted" style="font-size:0.7rem">${m.active_days} ${t('filament.active_days') || 'aktive dager'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700;font-size:0.9rem">${m.avg_daily_g}g/d</div>
+              <div class="text-muted" style="font-size:0.7rem">${Math.round(m.total_used_g)}g ${t('filament.total_used') || 'totalt brukt'}</div>
+            </div>
+          </div>`;
+        }
+        h += '</div>';
+      }
+
+      // Per-spool table
+      h += `<table class="fil-drying-presets-table"><thead><tr>
         <th></th>
         <th>${t('filament.profile_name')}</th>
         <th>${t('filament.filter_material')}</th>
@@ -4082,27 +4198,35 @@
         <th></th>
       </tr></thead><tbody>`;
       for (const s of active) {
-        const daysColor = s.days_until_empty != null && s.days_until_empty < 14 ? 'var(--accent-orange,#f0883e)' : '';
-        const reorderBadge = s.needs_reorder ? `<span style="background:var(--accent-orange,#f0883e);color:#fff;padding:1px 6px;border-radius:4px;font-size:0.7rem">${t('filament.needs_reorder')}</span>` : '';
+        const daysColor = s.days_until_empty != null && s.days_until_empty <= 7 ? '#f85149' : s.days_until_empty != null && s.days_until_empty <= 14 ? '#f0883e' : '';
+        const reorderBadge = s.needs_reorder ? `<span style="background:${s.days_until_empty <= 7 ? '#f85149' : '#f0883e'};color:#fff;padding:1px 6px;border-radius:4px;font-size:0.7rem">${s.days_until_empty <= 7 ? (t('filament.urgency_critical') || 'Kritisk') : (t('filament.needs_reorder') || 'Bestill')}</span>` : '';
         const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
+        // Weight bar
+        const maxW = Math.max(...active.map(a => a.remaining_weight_g));
+        const wPct = Math.round(s.remaining_weight_g / maxW * 100);
         h += `<tr>
           <td>${colorDot}</td>
           <td>${esc(s.profile_name || '?')} ${s.vendor_name ? '<span class="text-muted">(' + esc(s.vendor_name) + ')</span>' : ''}</td>
           <td>${esc(s.material || '')}</td>
-          <td>${Math.round(s.remaining_weight_g)}g</td>
-          <td>${s.avg_daily_g}g/d</td>
+          <td>
+            <div style="font-size:0.78rem">${Math.round(s.remaining_weight_g)}g</div>
+            <div style="width:50px;height:3px;background:var(--bg-tertiary);border-radius:2px;margin-top:2px"><div style="width:${wPct}%;height:100%;background:var(--accent-blue);border-radius:2px"></div></div>
+          </td>
+          <td style="font-weight:600">${s.avg_daily_g}g/d</td>
           <td style="color:${daysColor};font-weight:${s.needs_reorder ? '700' : '400'}">${s.days_until_empty != null ? s.days_until_empty + 'd' : '-'}</td>
           <td>${reorderBadge}</td>
         </tr>`;
       }
       h += '</tbody></table>';
-      // Material summary
-      if (data.by_material && data.by_material.length > 0) {
-        h += `<div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted)">`;
-        h += data.by_material.map(m => `${m.material}: ${m.avg_daily_g}g/d`).join(' · ');
-        h += '</div>';
-      }
+
+      // Forecast chart
+      h += '<div class="card" style="margin-top:12px">';
+      h += `<div class="card-title">${t('forecast.chart_title') || '30-dagers prognose'}</div>`;
+      h += '<div id="forecast-chart-container"></div>';
+      h += '</div>';
+
       container.innerHTML = h;
+      setTimeout(() => _renderForecastChart(data), 50);
     } catch (e) { container.innerHTML = `<p class="text-muted">Error: ${e.message}</p>`; }
   }
 
@@ -5861,6 +5985,9 @@
     if (_dbFilterCategory) params.set('category', _dbFilterCategory);
     if (_dbFilterHasK) params.set('has_k_value', '1');
     if (_dbFilterHasTd) params.set('has_td', '1');
+    if (_dbFilterTranslucent) params.set('translucent', '1');
+    if (_dbFilterGlow) params.set('glow', '1');
+    if (_dbFilterMultiColor) params.set('multi_color', '1');
     params.set('sort', _dbSort);
     params.set('sort_dir', _dbSortDir);
     params.set('limit', _dbPageSize);
@@ -5919,14 +6046,31 @@
       if (f.flow_ratio && f.flow_ratio !== 1) badges.push(`<span class="fil-badge" style="background:#1a3a2a;color:#6ee7b7;font-size:0.65rem">${t('filament.flow_ratio')} ${f.flow_ratio}</span>`);
       if (f.max_volumetric_speed) badges.push(`<span class="fil-badge" style="background:#1a2a3a;color:#93c5fd;font-size:0.65rem">${f.max_volumetric_speed} mm³/s</span>`);
       if (f.retraction_distance) badges.push(`<span class="fil-badge" style="background:#3a2a1a;color:#fcd34d;font-size:0.65rem">${t('filament.retraction')} ${f.retraction_distance}mm</span>`);
+      // Visual properties
+      if (f.finish) badges.push(`<span class="fil-badge" style="background:#2a2a3a;color:#a5b4fc;font-size:0.65rem">${f.finish}</span>`);
+      if (f.translucent) badges.push(`<span class="fil-badge" style="background:#1a2a3a;color:#67e8f9;font-size:0.65rem">${t('filament.translucent') || 'Transparent'}</span>`);
+      if (f.glow) badges.push(`<span class="fil-badge" style="background:#2a3a1a;color:#bef264;font-size:0.65rem">${t('filament.glow') || 'Glow'}</span>`);
+      if (f.multi_color_direction) badges.push(`<span class="fil-badge" style="background:#3a1a2a;color:#f9a8d4;font-size:0.65rem">${t('filament.multi_color') || 'Multi'}: ${f.multi_color_direction}</span>`);
+      if (f.pattern) badges.push(`<span class="fil-badge" style="background:#2a3a2a;color:#86efac;font-size:0.65rem">${f.pattern}</span>`);
       // Rating
       const ratingAvg = f.rating_count > 0 ? (f.rating_sum / f.rating_count).toFixed(1) : null;
       const stars = ratingAvg ? '★'.repeat(Math.round(ratingAvg)) + '☆'.repeat(5 - Math.round(ratingAvg)) : '';
       const inCompare = _dbCompare.includes(f.id);
       const isOwned = _dbOwnedIds.has(f.id);
 
+      // Multi-color gradient support
+      let colorStyle = `background:${color}`;
+      if (f.color_hexes) {
+        try {
+          const hexes = typeof f.color_hexes === 'string' ? JSON.parse(f.color_hexes) : f.color_hexes;
+          if (Array.isArray(hexes) && hexes.length > 1) {
+            const stops = hexes.map(h => '#' + h.replace('#', '')).join(', ');
+            colorStyle = `background:linear-gradient(135deg, ${stops})`;
+          }
+        } catch { /* ignore */ }
+      }
       h += `<div class="db-filament-card" onclick="window._dbShowDetail(${f.id})">
-        <div class="db-card-color" style="background:${color}">${isOwned ? `<span style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#4ade80;font-size:0.6rem;padding:1px 5px;border-radius:8px">✓ ${t('filament.owned')}</span>` : ''}</div>
+        <div class="db-card-color" style="${colorStyle}">${isOwned ? `<span style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#4ade80;font-size:0.6rem;padding:1px 5px;border-radius:8px">✓ ${t('filament.owned')}</span>` : ''}</div>
         <div class="db-card-body">
           <div class="db-card-brand">${esc(f.manufacturer || '')}${ratingAvg ? ` <span style="color:#fbbf24;font-size:0.7rem">${stars} (${ratingAvg})</span>` : ''}</div>
           <div class="db-card-name">${esc(f.name || f.material)}</div>
@@ -5981,8 +6125,8 @@
     const fields = [
       ['Material', f.material + (f.material_type ? ' ' + f.material_type : '')],
       ['Category', f.category || '--'],
-      [t('filament.db_nozzle_temp'), f.extruder_temp ? f.extruder_temp + '°C' : '--'],
-      [t('filament.db_bed_temp'), f.bed_temp ? f.bed_temp + '°C' : '--'],
+      [t('filament.db_nozzle_temp'), f.extruder_temp ? f.extruder_temp + '°C' + (f.extruder_temp_min || f.extruder_temp_max ? ` (${f.extruder_temp_min || '?'}–${f.extruder_temp_max || '?'}°C)` : '') : '--'],
+      [t('filament.db_bed_temp'), f.bed_temp ? f.bed_temp + '°C' + (f.bed_temp_min || f.bed_temp_max ? ` (${f.bed_temp_min || '?'}–${f.bed_temp_max || '?'}°C)` : '') : '--'],
       [t('filament.db_chamber_temp'), f.chamber_temp ? f.chamber_temp + '°C' : '--'],
       [t('filament.db_k_value'), f.pressure_advance_k != null ? f.pressure_advance_k : '--'],
       [t('filament.db_td_value'), f.td_value && f.td_value > 0 ? f.td_value + (f.total_td_votes ? ` (${f.total_td_votes} votes)` : '') : '--'],
@@ -5992,9 +6136,19 @@
       [t('filament.db_retraction'), f.retraction_distance != null ? f.retraction_distance + ' mm' + (f.retraction_speed ? ' @ ' + f.retraction_speed + ' mm/s' : '') : '--'],
       ['Density', f.density ? f.density + ' g/cm\u00B3' : '--'],
       ['Diameter', f.diameter ? f.diameter + ' mm' : '1.75 mm'],
+      [t('filament.db_finish') || 'Finish', f.finish || '--'],
+      [t('filament.db_spool_type') || 'Spooltype', f.spool_type || '--'],
+      [t('filament.db_spool_weight') || 'Spoolvekt', f.spool_weight ? f.spool_weight + 'g' : '--'],
+    ];
+    // Only show visual properties if they have values
+    if (f.translucent) fields.push([t('filament.translucent') || 'Transparent', 'Ja']);
+    if (f.glow) fields.push([t('filament.glow') || 'Glow-in-dark', 'Ja']);
+    if (f.pattern) fields.push([t('filament.db_pattern') || 'Mønster', f.pattern]);
+    if (f.multi_color_direction) fields.push([t('filament.multi_color') || 'Flerfarge', f.multi_color_direction]);
+    fields.push(
       [t('filament.db_price'), f.price ? '$' + f.price + (f.price_currency && f.price_currency !== 'USD' ? ' ' + f.price_currency : '') : '--'],
       [t('filament.db_source'), f.source || '--']
-    ];
+    );
 
     let html = `<div class="inv-modal-backdrop" onclick="if(event.target===this)this.remove()">
       <div class="inv-modal" style="max-width:520px">
@@ -6147,6 +6301,9 @@
   window._dbSetCategory = function(v) { _dbFilterCategory = v; _dbPage = 0; _loadDbFilaments(); };
   window._dbToggleK = function(v) { _dbFilterHasK = v; _dbPage = 0; _loadDbFilaments(); };
   window._dbToggleTd = function(v) { _dbFilterHasTd = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleTranslucent = function(v) { _dbFilterTranslucent = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleGlow = function(v) { _dbFilterGlow = v; _dbPage = 0; _loadDbFilaments(); };
+  window._dbToggleMultiColor = function(v) { _dbFilterMultiColor = v; _dbPage = 0; _loadDbFilaments(); };
   window._dbSetSort = function(v) { _dbSort = v; _dbPage = 0; _loadDbFilaments(); };
   window._dbToggleSortDir = function() { _dbSortDir = _dbSortDir === 'ASC' ? 'DESC' : 'ASC'; _loadDbFilaments(); };
   window._dbSetView = function(v) { _dbViewMode = v; localStorage.setItem('db-view-mode', v); _refreshDbBrowser(); };
@@ -6261,6 +6418,77 @@
       document.body.insertAdjacentHTML('beforeend', html);
     } catch (e) { showToast(e.message, 'error'); }
   };
+
+  // ═══ Forecast Chart ═══
+  function _renderForecastChart(predictions) {
+    const container = document.getElementById('forecast-chart-container');
+    if (!container || !predictions?.per_spool?.length) {
+      if (container) container.innerHTML = '<p class="text-muted" style="text-align:center;padding:16px;font-size:0.8rem">No usage data to forecast</p>';
+      return;
+    }
+
+    const spools = predictions.per_spool
+      .filter(s => s.avg_daily_g > 0 && s.remaining_weight_g > 0)
+      .slice(0, 5); // Top 5 most active spools
+
+    if (spools.length === 0) {
+      container.innerHTML = '<p class="text-muted" style="text-align:center;padding:16px;font-size:0.8rem">No active spools to forecast</p>';
+      return;
+    }
+
+    const days = 30;
+    const W = 600, H = 200, PAD = 40;
+    const colors = ['var(--accent-blue)', 'var(--accent-green)', 'var(--accent-orange)', 'var(--accent-red)', 'var(--accent-purple)'];
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-height:200px">`;
+
+    // Grid lines
+    for (let i = 0; i <= 4; i++) {
+      const y = PAD + (H - 2 * PAD) * i / 4;
+      svg += `<line x1="${PAD}" y1="${y}" x2="${W - 10}" y2="${y}" stroke="var(--border-color)" stroke-width="0.5"/>`;
+    }
+
+    // X-axis labels (days)
+    for (let d = 0; d <= days; d += 5) {
+      const x = PAD + (W - PAD - 10) * d / days;
+      svg += `<text x="${x}" y="${H - 5}" font-size="9" fill="var(--text-muted)" text-anchor="middle">${d}d</text>`;
+    }
+
+    // Max weight for Y scale
+    const maxWeight = Math.max(...spools.map(s => s.remaining_weight_g));
+
+    // Y-axis labels
+    for (let i = 0; i <= 4; i++) {
+      const val = Math.round(maxWeight * (4 - i) / 4);
+      const y = PAD + (H - 2 * PAD) * i / 4;
+      svg += `<text x="${PAD - 4}" y="${y + 3}" font-size="9" fill="var(--text-muted)" text-anchor="end">${val}g</text>`;
+    }
+
+    // Draw lines for each spool
+    spools.forEach((spool, idx) => {
+      let points = [];
+      for (let d = 0; d <= days; d++) {
+        const remaining = Math.max(0, spool.remaining_weight_g - spool.avg_daily_g * d);
+        const x = PAD + (W - PAD - 10) * d / days;
+        const y = PAD + (H - 2 * PAD) * (1 - remaining / maxWeight);
+        points.push(`${x},${y}`);
+      }
+      svg += `<polyline points="${points.join(' ')}" fill="none" stroke="${colors[idx]}" stroke-width="2" stroke-linecap="round"/>`;
+    });
+
+    svg += '</svg>';
+
+    // Legend
+    svg += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:0.7rem">';
+    spools.forEach((spool, idx) => {
+      const name = spool.name || spool.material || `Spool ${spool.id}`;
+      const daysLeft = spool.avg_daily_g > 0 ? Math.round(spool.remaining_weight_g / spool.avg_daily_g) : '\u221E';
+      svg += `<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:${colors[idx]}"></span>${esc(name)} (${daysLeft}d)</span>`;
+    });
+    svg += '</div>';
+
+    container.innerHTML = svg;
+  }
 
   // ═══ Legacy compat: old /api/filament still works for backward compat ═══
   window.showAddFilamentForm = window.showAddSpoolForm;

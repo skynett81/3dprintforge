@@ -58,14 +58,18 @@
         <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('queue.total_queues')}</div></div>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px">
-        <button class="btn btn-primary" data-ripple onclick="window._queueShowCreate()">${t('queue.create')}</button>
-        <button class="btn btn-ghost" data-ripple onclick="window._queueForceDispatch()">${t('queue.dispatch_now')}</button>
+        <button class="form-btn" data-ripple onclick="window._queueShowCreate()">${t('queue.create')}</button>
+        <button class="form-btn form-btn-secondary" data-ripple onclick="window._queueForceDispatch()">${t('queue.dispatch_now')}</button>
       </div>`;
     },
 
     'queue-list': () => {
       const activeQueues = _queues.filter(q => q.status === 'active' || q.status === 'paused');
-      if (activeQueues.length === 0) return `<div class="stats-empty">${t('queue.no_queues')}</div>`;
+      if (activeQueues.length === 0) return emptyState({
+        icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>',
+        title: t('queue.no_queues'),
+        desc: t('queue.no_queues_desc') || 'Create a print queue to manage and schedule your print jobs.'
+      });
 
       return activeQueues.map(q => {
         const progressPct = q.item_count > 0 ? Math.round((q.completed_count / q.item_count) * 100) : 0;
@@ -83,10 +87,12 @@
             <span>${q.priority_mode}</span>
             ${q.target_printer_id ? `<span>${printerName(q.target_printer_id)}</span>` : ''}
           </div>
-          <div style="margin-top:8px;display:flex;gap:6px">
-            ${q.status === 'active' ? `<button class="btn btn-ghost btn-sm" data-ripple data-tooltip="${t('queue.pause_queue')}" onclick="event.stopPropagation();window._queuePause(${q.id})">${t('queue.pause_queue')}</button>` :
-              q.status === 'paused' ? `<button class="btn btn-ghost btn-sm" data-ripple data-tooltip="${t('queue.resume_queue')}" onclick="event.stopPropagation();window._queueResume(${q.id})">${t('queue.resume_queue')}</button>` : ''}
-            <button class="btn btn-ghost btn-sm" data-ripple onclick="event.stopPropagation();window._queueAddItem(${q.id})">${t('queue.add_item')}</button>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+            ${q.status === 'active' ? `<button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queuePause(${q.id})">${t('queue.pause_queue')}</button>` :
+              q.status === 'paused' ? `<button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueResume(${q.id})">${t('queue.resume_queue')}</button>` : ''}
+            <button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueAddItem(${q.id})">${t('queue.add_item')}</button>
+            <button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueEditDialog(${q.id})">${t('common.edit') || 'Rediger'}</button>
+            <button class="form-btn form-btn-danger form-btn-sm" onclick="event.stopPropagation();window._queueDelete(${q.id})">${t('common.delete') || 'Slett'}</button>
           </div>
         </div>`;
       }).join('');
@@ -105,7 +111,14 @@
     },
 
     'queue-settings': () => {
-      return `<div class="stats-empty">${t('queue.select_queue_settings')}</div>`;
+      if (_queues.length === 0) {
+        return emptyState({
+          icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>',
+          title: t('queue.no_queues'),
+          desc: t('queue.no_queues_desc') || 'Opprett en kø først for å endre innstillinger.'
+        });
+      }
+      return _queues.map(q => _renderQueueSettings(q)).join('');
     }
   };
 
@@ -121,7 +134,11 @@
 
       const items = queue.items || [];
       if (items.length === 0) {
-        container.innerHTML = `<div class="stats-empty">${t('queue.no_items')}</div>`;
+        container.innerHTML = emptyState({
+          icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+          title: t('queue.no_items'),
+          desc: t('queue.no_items_desc') || 'No items in this queue yet. Add files to start printing.'
+        });
         return;
       }
 
@@ -141,7 +158,7 @@
           </div>
           ${statusBadge(item.status)}
           <div style="display:flex;gap:4px">
-            ${item.status === 'pending' ? `<button class="btn btn-ghost btn-sm" data-ripple data-tooltip="${t('queue.skip')}" onclick="window._queueSkipItem(${item.id})" title="${t('queue.skip')}">&times;</button>` : ''}
+            ${item.status === 'pending' ? `<button class="form-btn form-btn-secondary form-btn-sm" data-ripple data-tooltip="${t('queue.skip')}" onclick="window._queueSkipItem(${item.id})" title="${t('queue.skip')}">&times;</button>` : ''}
           </div>
         </div>`).join('');
 
@@ -174,6 +191,25 @@
   }
 
   // ═══ Load completed history ═══
+  const EVENT_COLORS = {
+    queue_created: 'var(--accent-blue, #1279ff)',
+    queue_paused: 'var(--accent-orange, #f59e0b)',
+    queue_resumed: 'var(--accent-green, #00ae42)',
+    queue_completed: 'var(--accent-green, #00ae42)',
+    queue_deleted: 'var(--accent-red, #e53935)',
+    item_added: 'var(--accent-blue, #1279ff)',
+    item_started: 'var(--accent-blue, #1279ff)',
+    item_completed: 'var(--accent-green, #00ae42)',
+    item_failed: 'var(--accent-red, #e53935)',
+    item_skipped: 'var(--text-muted)',
+    item_cancelled: 'var(--text-muted)',
+    dispatch: 'var(--accent-blue, #1279ff)'
+  };
+
+  function _eventLabel(event) {
+    return t('queue.event_' + event) || event.replace(/_/g, ' ');
+  }
+
   async function _loadCompletedItems() {
     try {
       const resp = await fetch('/api/queue/log?limit=100');
@@ -182,17 +218,24 @@
       if (!container) return;
 
       if (!log.length) {
-        container.innerHTML = `<div class="stats-empty">${t('queue.no_history')}</div>`;
+        container.innerHTML = emptyState({
+          icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+          title: t('queue.no_history'),
+          desc: t('queue.no_history_desc') || 'Fullførte køhendelser vises her.'
+        });
         return;
       }
 
-      container.innerHTML = log.map(entry => `
-        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:0.75rem;color:var(--text-muted);min-width:110px">${fmtDate(entry.timestamp)}</span>
-          <span style="flex:1">${entry.event}</span>
-          ${entry.printer_id ? `<span style="font-size:0.75rem;color:var(--text-secondary)">${printerName(entry.printer_id)}</span>` : ''}
-          ${entry.details ? `<span style="font-size:0.75rem;color:var(--text-muted)">${entry.details}</span>` : ''}
-        </div>`).join('');
+      container.innerHTML = log.map(entry => {
+        const color = EVENT_COLORS[entry.event] || 'var(--text-muted)';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border-subtle);transition:background 0.1s" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
+          <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>
+          <span style="font-size:0.8rem;font-weight:600;color:var(--text-primary);flex:1">${_eventLabel(entry.event)}</span>
+          ${entry.details ? `<span style="font-size:0.8rem;color:var(--text-secondary)">${entry.details}</span>` : ''}
+          ${entry.printer_id ? `<span style="font-size:0.75rem;color:var(--text-muted)">${printerName(entry.printer_id)}</span>` : ''}
+          <span style="font-size:0.7rem;color:var(--text-muted);min-width:100px;text-align:right">${fmtDate(entry.timestamp)}</span>
+        </div>`;
+      }).join('');
     } catch (e) {
       console.error('[queue] Failed to load log:', e);
     }
@@ -224,8 +267,8 @@
       </div>
       <div class="form-group"><label>${t('queue.bed_clear_gcode')}</label><textarea id="qc-gcode" class="form-input" rows="3" placeholder="G28\nG1 Z50"></textarea></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-        <button class="btn btn-ghost" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
-        <button class="btn btn-primary" data-ripple onclick="window._queueDoCreate()">${t('queue.create')}</button>
+        <button class="form-btn form-btn-secondary" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
+        <button class="form-btn" data-ripple onclick="window._queueDoCreate()">${t('queue.create')}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -287,13 +330,13 @@
       ${tagsHtml}
       ${printers.length > 0 ? `<div class="form-group">
         <label style="display:flex;align-items:center;gap:6px">${t('queue.select_printers')}
-          <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:1px 6px" onclick="document.querySelectorAll('.qi-printer-check').forEach(c=>c.checked=!c.checked)">${t('queue.all_printers')}</button>
+          <button class="form-btn form-btn-secondary form-btn-sm" style="font-size:0.7rem;padding:1px 6px" onclick="document.querySelectorAll('.qi-printer-check').forEach(c=>c.checked=!c.checked)">${t('queue.all_printers')}</button>
         </label>
         <div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:4px">${printerChecks}</div>
       </div>` : ''}
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-        <button class="btn btn-ghost" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
-        <button class="btn btn-primary" data-ripple onclick="window._queueDoAddItem(${queueId})">${t('queue.add_item')}</button>
+        <button class="form-btn form-btn-secondary" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
+        <button class="form-btn" data-ripple onclick="window._queueDoAddItem(${queueId})">${t('queue.add_item')}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -318,6 +361,145 @@
 
     await fetch(`/api/queue/${queueId}/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     document.querySelector('.modal-overlay')?.remove();
+    _reload();
+  };
+
+  // ═══ Queue settings renderer ═══
+  function _renderQueueSettings(q) {
+    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
+    const printerOpts = `<option value="">${t('queue.any_printer')}</option>` +
+      printers.map(p => `<option value="${p.id}"${p.id === q.target_printer_id ? ' selected' : ''}>${p.name}</option>`).join('');
+
+    return `<div class="queue-settings-card" style="background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <strong style="font-size:0.95rem">${q.name}</strong>
+        <div style="display:flex;gap:6px">
+          <button class="form-btn form-btn-sm" onclick="window._queueSaveSettings(${q.id})">${t('common.save') || 'Lagre'}</button>
+          <button class="form-btn form-btn-danger form-btn-sm" onclick="window._queueDelete(${q.id})">${t('common.delete') || 'Slett'}</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="form-label">${t('queue.name')}</label>
+          <input class="form-input" id="qs-name-${q.id}" value="${q.name || ''}">
+        </div>
+        <div>
+          <label class="form-label">${t('queue.description')}</label>
+          <input class="form-input" id="qs-desc-${q.id}" value="${q.description || ''}">
+        </div>
+        <div>
+          <label class="form-label">${t('queue.priority_mode')}</label>
+          <select class="form-input" id="qs-pmode-${q.id}">
+            <option value="fifo"${q.priority_mode === 'fifo' ? ' selected' : ''}>${t('queue.fifo')}</option>
+            <option value="priority"${q.priority_mode === 'priority' ? ' selected' : ''}>${t('queue.priority')}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">${t('queue.target_printer')}</label>
+          <select class="form-input" id="qs-printer-${q.id}">${printerOpts}</select>
+        </div>
+        <div>
+          <label class="form-label">${t('queue.cooldown')}</label>
+          <input class="form-input" type="number" id="qs-cooldown-${q.id}" value="${q.cooldown_seconds || 60}" min="0">
+        </div>
+        <div>
+          <label class="form-label">${t('queue.stagger')}</label>
+          <input class="form-input" type="number" id="qs-stagger-${q.id}" value="${q.stagger_seconds || 0}" min="0" title="${t('queue.stagger_hint')}">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-top:20px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="qs-auto-${q.id}" ${q.auto_start ? 'checked' : ''}> ${t('queue.auto_start')}
+          </label>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="form-label">${t('queue.bed_clear_gcode')}</label>
+        <textarea class="form-input" id="qs-gcode-${q.id}" rows="2" placeholder="G28\nG1 Z50">${q.bed_clear_gcode || ''}</textarea>
+      </div>
+    </div>`;
+  }
+
+  window._queueSaveSettings = async function(id) {
+    const body = {
+      name: document.getElementById(`qs-name-${id}`)?.value?.trim(),
+      description: document.getElementById(`qs-desc-${id}`)?.value?.trim() || null,
+      priority_mode: document.getElementById(`qs-pmode-${id}`)?.value || 'fifo',
+      target_printer_id: document.getElementById(`qs-printer-${id}`)?.value || null,
+      cooldown_seconds: parseInt(document.getElementById(`qs-cooldown-${id}`)?.value) || 60,
+      stagger_seconds: parseInt(document.getElementById(`qs-stagger-${id}`)?.value) || 0,
+      auto_start: document.getElementById(`qs-auto-${id}`)?.checked ? 1 : 0,
+      bed_clear_gcode: document.getElementById(`qs-gcode-${id}`)?.value?.trim() || null
+    };
+    try {
+      await fetch(`/api/queue/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (typeof showToast === 'function') showToast(t('common.saved') || 'Lagret', 'success');
+      _reload();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(t('common.save_error') || 'Feil ved lagring', 'error');
+    }
+  };
+
+  window._queueDelete = async function(id) {
+    if (typeof confirmAction === 'function') {
+      confirmAction(t('queue.delete_confirm') || 'Slette denne køen?', async () => {
+        await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+        if (typeof showToast === 'function') showToast(t('common.deleted') || 'Slettet', 'success');
+        _reload();
+      }, { danger: true });
+    }
+  };
+
+  // ═══ Edit queue dialog ═══
+  window._queueEditDialog = function(id) {
+    const q = _queues.find(x => x.id === id);
+    if (!q) return;
+    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([pid, m]) => ({ id: pid, name: m.name }));
+    const printerOpts = `<option value="">${t('queue.any_printer')}</option>` +
+      printers.map(p => `<option value="${p.id}"${p.id === q.target_printer_id ? ' selected' : ''}>${p.name}</option>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-content" style="max-width:500px">
+      <h3>${t('common.edit') || 'Rediger'} — ${q.name}</h3>
+      <div class="form-group"><label class="form-label">${t('queue.name')}</label><input class="form-input" id="qe-name" value="${q.name || ''}" /></div>
+      <div class="form-group"><label class="form-label">${t('queue.description')}</label><input class="form-input" id="qe-desc" value="${q.description || ''}" /></div>
+      <div style="display:flex;gap:12px">
+        <div class="form-group" style="flex:1"><label class="form-label">${t('queue.priority_mode')}</label>
+          <select class="form-input" id="qe-pmode"><option value="fifo"${q.priority_mode === 'fifo' ? ' selected' : ''}>${t('queue.fifo')}</option><option value="priority"${q.priority_mode === 'priority' ? ' selected' : ''}>${t('queue.priority')}</option></select>
+        </div>
+        <div class="form-group" style="flex:1"><label class="form-label">${t('queue.target_printer')}</label>
+          <select class="form-input" id="qe-printer">${printerOpts}</select>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="qe-auto" ${q.auto_start ? 'checked' : ''} /> ${t('queue.auto_start')}</label>
+        <div class="form-group" style="flex:1"><label class="form-label">${t('queue.cooldown')}</label><input class="form-input" type="number" id="qe-cooldown" value="${q.cooldown_seconds || 60}" min="0" /></div>
+        <div class="form-group" style="flex:1"><label class="form-label">${t('queue.stagger')}</label><input class="form-input" type="number" id="qe-stagger" value="${q.stagger_seconds || 0}" min="0" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">${t('queue.bed_clear_gcode')}</label><textarea class="form-input" id="qe-gcode" rows="3" placeholder="G28\nG1 Z50">${q.bed_clear_gcode || ''}</textarea></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="form-btn form-btn-secondary" onclick="this.closest('.modal-overlay').remove()">${t('common.cancel') || 'Avbryt'}</button>
+        <button class="form-btn" onclick="window._queueDoEdit(${q.id})">${t('common.save') || 'Lagre'}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  };
+
+  window._queueDoEdit = async function(id) {
+    const body = {
+      name: document.getElementById('qe-name')?.value?.trim(),
+      description: document.getElementById('qe-desc')?.value?.trim() || null,
+      priority_mode: document.getElementById('qe-pmode')?.value || 'fifo',
+      target_printer_id: document.getElementById('qe-printer')?.value || null,
+      auto_start: document.getElementById('qe-auto')?.checked ? 1 : 0,
+      cooldown_seconds: parseInt(document.getElementById('qe-cooldown')?.value) || 60,
+      stagger_seconds: parseInt(document.getElementById('qe-stagger')?.value) || 0,
+      bed_clear_gcode: document.getElementById('qe-gcode')?.value?.trim() || null
+    };
+    await fetch(`/api/queue/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    document.querySelector('.modal-overlay')?.remove();
+    if (typeof showToast === 'function') showToast(t('common.saved') || 'Lagret', 'success');
     _reload();
   };
 
@@ -351,11 +533,16 @@
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
+    const switcherHtml = '<div class="tabs" style="margin-bottom:12px">' +
+      '<button class="tab-btn active" onclick="openPanel(\'queue\')">' + (t('queue.title') || 'Utskriftskø') + '</button>' +
+      '<button class="tab-btn" onclick="openPanel(\'scheduler\')">' + (t('tabs.scheduler') || 'Planlegger') + '</button>' +
+      '</div>';
+
     const tabBar = Object.entries(TAB_CONFIG).map(([id, cfg]) =>
-      `<button class="tab-btn${id === _activeTab ? ' active' : ''}" data-tab="${id}" data-ripple>${t(cfg.label)}</button>`
+      `<button class="tab-btn${id === _activeTab ? ' active' : ''}" data-tab="${id}" data-ripple>${t(cfg.label) || id}</button>`
     ).join('');
 
-    let html = `<div class="tab-bar" id="queue-tab-bar">${tabBar}</div>`;
+    let html = switcherHtml + `<div class="tabs" id="queue-tab-bar">${tabBar}</div>`;
     for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
       const display = tabId === _activeTab ? '' : 'display:none';
       const order = getOrder(tabId);
@@ -373,8 +560,8 @@
     }
     panel.innerHTML = html;
 
-    // Tab click handlers
-    panel.querySelectorAll('.tab-btn').forEach(btn => {
+    // Tab click handlers (only queue's own tabs, not panel switcher)
+    panel.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => {
         _activeTab = btn.dataset.tab;
         _renderTabs();

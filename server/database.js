@@ -4,6 +4,8 @@ import { join, dirname } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { DATA_DIR } from './config.js';
+import { createLogger } from './logger.js';
+const log = createLogger('db');
 
 const __filename_db = fileURLToPath(import.meta.url);
 const __dirname_db = dirname(__filename_db);
@@ -13,6 +15,11 @@ let db;
 
 export function initDatabase() {
   db = new DatabaseSync(DB_PATH);
+
+  // Enable WAL mode for better concurrent read performance
+  db.exec(`PRAGMA journal_mode=WAL`);
+  db.exec(`PRAGMA busy_timeout=5000`);
+  db.exec(`PRAGMA foreign_keys=ON`);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_version (
@@ -254,6 +261,10 @@ function _runMigrations() {
     { version: 87, up: _mig087_error_patterns },
     { version: 88, up: _mig088_order_management },
     { version: 89, up: _mig089_plugins },
+    { version: 90, up: _mig090_print_profiles },
+    { version: 91, up: _mig091_screenshots },
+    { version: 92, up: _mig092_filament_enrichment },
+    { version: 93, up: _mig093_reseed_spoolmandb },
   ];
 
   for (const m of migrations) {
@@ -959,7 +970,7 @@ function _mig029_macros() {
   ];
   const stmt = db.prepare('INSERT OR IGNORE INTO gcode_macros (name, description, gcode, category, sort_order) VALUES (?, ?, ?, ?, ?)');
   presets.forEach(([name, desc, gcode, cat], i) => {
-    try { stmt.run(name, desc, gcode, cat, i + 1); } catch (_) {}
+    try { stmt.run(name, desc, gcode, cat, i + 1); } catch (e) { log.warn('Failed to insert default macro', e.message); }
   });
 }
 
@@ -1075,7 +1086,7 @@ function _mig032_materials() {
      tips, nozzle_recommendation, abrasive, food_safe, uv_resistant)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   for (const m of materials) {
-    try { stmt.run(...m); } catch (_) {}
+    try { stmt.run(...m); } catch (e) { log.warn('Failed to insert default material', e.message); }
   }
 }
 
@@ -1134,7 +1145,7 @@ function _mig034_permissions() {
   ];
   const stmt = db.prepare('INSERT OR IGNORE INTO user_roles (name, permissions, description, is_default) VALUES (?, ?, ?, ?)');
   for (const r of roles) {
-    try { stmt.run(...r); } catch (_) {}
+    try { stmt.run(...r); } catch (e) { log.warn('Failed to insert default role', e.message); }
   }
 }
 
@@ -3317,6 +3328,11 @@ export function getHistoryById(id) {
   return db.prepare('SELECT * FROM print_history WHERE id = ?').get(id) || null;
 }
 
+export function updateHistoryNotes(id, notes) {
+  db.prepare('UPDATE print_history SET notes = ? WHERE id = ?').run(notes, id);
+  return db.prepare('SELECT * FROM print_history WHERE id = ?').get(id) || null;
+}
+
 export function addHistory(record) {
   const result = db.prepare(`
     INSERT INTO print_history (printer_id, started_at, finished_at, filename, status,
@@ -3500,7 +3516,7 @@ export function getHardwareStats(printerId = null) {
         const status = getMaintenanceStatus(pid);
         totalHours += status.total_print_hours || 0;
         for (const c of status.components) allComponents.push({ ...c, printer_id: pid });
-      } catch (_) {}
+      } catch (e) { log.warn('Maintenance status calc failed', e.message); }
     }
     result.maintenance = allComponents;
     result.total_print_hours = Math.round(totalHours * 10) / 10;
@@ -4569,7 +4585,7 @@ export function addSpool(s) {
     s.comment || null, s.extra_fields ? JSON.stringify(s.extra_fields) : null,
     s.spool_weight ?? null, s.storage_method || null, shortId);
   const newId = Number(result.lastInsertRowid);
-  try { addSpoolEvent(newId, 'created', null, null); } catch (_) {}
+  try { addSpoolEvent(newId, 'created', null, null); } catch (e) { log.warn('Failed to log spool created event', e.message); }
   return { id: newId, short_id: shortId };
 }
 
@@ -4592,7 +4608,7 @@ export function updateSpool(id, s) {
     s.archived ?? 0, s.comment || null,
     s.extra_fields ? JSON.stringify(s.extra_fields) : null, s.spool_weight ?? null,
     s.storage_method || null, id);
-  try { addSpoolEvent(id, 'edited', null, null); } catch (_) {}
+  try { addSpoolEvent(id, 'edited', null, null); } catch (e) { log.warn('Failed to log spool edit event', e.message); }
 }
 
 export function deleteSpool(id) {
@@ -4601,7 +4617,7 @@ export function deleteSpool(id) {
 
 export function archiveSpool(id, archived = true) {
   db.prepare('UPDATE spools SET archived = ? WHERE id = ?').run(archived ? 1 : 0, id);
-  try { addSpoolEvent(id, archived ? 'archived' : 'unarchived', null, null); } catch (_) {}
+  try { addSpoolEvent(id, archived ? 'archived' : 'unarchived', null, null); } catch (e) { log.warn('Failed to log spool archive event', e.message); }
 }
 
 export function refillSpool(id, newWeightG) {
@@ -4610,7 +4626,7 @@ export function refillSpool(id, newWeightG) {
   const refillCount = (spool.refill_count || 0) + 1;
   db.prepare('UPDATE spools SET is_refill = 1, refill_count = ?, remaining_weight_g = ?, used_weight_g = 0, initial_weight_g = ? WHERE id = ?')
     .run(refillCount, newWeightG, newWeightG, id);
-  try { addSpoolEvent(id, 'refilled', `Refill #${refillCount}, ${newWeightG}g`, null); } catch (_) {}
+  try { addSpoolEvent(id, 'refilled', `Refill #${refillCount}, ${newWeightG}g`, null); } catch (e) { log.warn('Failed to log spool refill event', e.message); }
   return { id, refill_count: refillCount };
 }
 
@@ -4657,7 +4673,7 @@ export function useSpoolWeight(spoolId, weightG, source = 'auto', printHistoryId
 
   db.prepare(`INSERT INTO spool_usage_log (spool_id, print_history_id, printer_id, used_weight_g, source)
     VALUES (?, ?, ?, ?, ?)`).run(spoolId, printHistoryId || null, printerId || null, weightG, source);
-  try { addSpoolEvent(spoolId, 'used', JSON.stringify({ weight_g: weightG, source }), null); } catch (_) {}
+  try { addSpoolEvent(spoolId, 'used', JSON.stringify({ weight_g: weightG, source }), null); } catch (e) { log.warn('Failed to log spool usage event', e.message); }
 }
 
 export function assignSpoolToSlot(spoolId, printerId, amsUnit, amsTray) {
@@ -4671,7 +4687,7 @@ export function assignSpoolToSlot(spoolId, printerId, amsUnit, amsTray) {
   try {
     const evt = printerId ? 'assigned' : 'unassigned';
     addSpoolEvent(spoolId, evt, JSON.stringify({ printer_id: printerId, ams_unit: amsUnit, ams_tray: amsTray }), null);
-  } catch (_) {}
+  } catch (e) { log.warn('Failed to log spool assignment event', e.message); }
 }
 
 export function getSpoolBySlot(printerId, amsUnit, amsTray) {
@@ -4994,10 +5010,10 @@ export function mergeSpools(targetId, sourceIds, actor = null) {
     WHERE id = ?`).run(addRemaining, addUsed, addInitial, totalCost || null, targetId);
 
   const sourceInfo = sources.map(s => ({ id: s.id, remaining_g: s.remaining_weight_g, profile: s.profile_name }));
-  try { addSpoolEvent(targetId, 'merged', JSON.stringify({ absorbed: sourceInfo }), actor); } catch (_) {}
+  try { addSpoolEvent(targetId, 'merged', JSON.stringify({ absorbed: sourceInfo }), actor); } catch (e) { log.warn('Failed to log spool merge event', e.message); }
 
   for (const src of sources) {
-    try { addSpoolEvent(src.id, 'merged_into', JSON.stringify({ target_id: targetId }), actor); } catch (_) {}
+    try { addSpoolEvent(src.id, 'merged_into', JSON.stringify({ target_id: targetId }), actor); } catch (e) { log.warn('Failed to log spool merged_into event', e.message); }
     db.prepare('UPDATE spools SET archived = 1, remaining_weight_g = 0 WHERE id = ?').run(src.id);
   }
 
@@ -6113,7 +6129,7 @@ export function recalculateAllCosts() {
         );
         updated++;
       }
-    } catch (_) {}
+    } catch (e) { log.warn('Failed to update print cost', e.message); }
   }
   return { total: rows.length, updated };
 }
@@ -6601,6 +6617,9 @@ export function getCommunityFilaments(filters = {}) {
   if (filters.color_hex) { where += ' AND color_hex = ?'; params.push(filters.color_hex.replace('#', '')); }
   if (filters.has_k_value) { where += ' AND pressure_advance_k IS NOT NULL'; }
   if (filters.has_td) { where += ' AND td_value IS NOT NULL AND td_value > 0'; }
+  if (filters.translucent) { where += ' AND translucent = 1'; }
+  if (filters.glow) { where += ' AND glow = 1'; }
+  if (filters.multi_color) { where += ' AND multi_color_direction IS NOT NULL'; }
   if (filters.temp_min) { where += ' AND extruder_temp >= ?'; params.push(filters.temp_min); }
   if (filters.temp_max) { where += ' AND extruder_temp <= ?'; params.push(filters.temp_max); }
   if (filters.search) { where += ' AND (name LIKE ? OR manufacturer LIKE ? OR color_name LIKE ? OR material LIKE ?)'; params.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`); }
@@ -6651,7 +6670,7 @@ export function getCommunityMaterials() {
   return db.prepare('SELECT DISTINCT material FROM community_filaments ORDER BY material').all().map(r => r.material);
 }
 
-const CF_COLUMNS = ['manufacturer', 'name', 'material', 'density', 'diameter', 'weight', 'spool_weight', 'extruder_temp', 'bed_temp', 'color_name', 'color_hex', 'td_value', 'shore_hardness', 'source', 'pressure_advance_k', 'max_volumetric_speed', 'flow_ratio', 'retraction_distance', 'retraction_speed', 'fan_speed_min', 'fan_speed_max', 'chamber_temp', 'material_type', 'category', 'difficulty', 'image_url', 'purchase_url', 'price', 'price_currency', 'brand_key', 'external_source_id', 'total_td_votes', 'tips', 'updated_at'];
+const CF_COLUMNS = ['manufacturer', 'name', 'material', 'density', 'diameter', 'weight', 'spool_weight', 'extruder_temp', 'bed_temp', 'color_name', 'color_hex', 'td_value', 'shore_hardness', 'source', 'pressure_advance_k', 'max_volumetric_speed', 'flow_ratio', 'retraction_distance', 'retraction_speed', 'fan_speed_min', 'fan_speed_max', 'chamber_temp', 'material_type', 'category', 'difficulty', 'image_url', 'purchase_url', 'price', 'price_currency', 'brand_key', 'external_source_id', 'total_td_votes', 'tips', 'updated_at', 'finish', 'pattern', 'translucent', 'glow', 'multi_color_direction', 'spool_type', 'extruder_temp_min', 'extruder_temp_max', 'bed_temp_min', 'bed_temp_max', 'color_hexes'];
 
 export function addCommunityFilament(f) {
   const cols = CF_COLUMNS.filter(c => f[c] !== undefined);
@@ -6691,8 +6710,13 @@ export function getCommunityFilamentStats() {
     materials: db.prepare('SELECT COUNT(DISTINCT material) as c FROM community_filaments').get().c,
     with_k_value: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE pressure_advance_k IS NOT NULL').get().c,
     with_td: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE td_value IS NOT NULL AND td_value > 0').get().c,
+    with_finish: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE finish IS NOT NULL').get().c,
+    translucent: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE translucent = 1').get().c,
+    glow_in_dark: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE glow = 1').get().c,
+    multi_color: db.prepare('SELECT COUNT(*) as c FROM community_filaments WHERE multi_color_direction IS NOT NULL').get().c,
     top_brands: db.prepare('SELECT manufacturer, COUNT(*) as count FROM community_filaments GROUP BY manufacturer ORDER BY count DESC LIMIT 20').all(),
-    material_breakdown: db.prepare('SELECT material, COUNT(*) as count FROM community_filaments GROUP BY material ORDER BY count DESC').all()
+    material_breakdown: db.prepare('SELECT material, COUNT(*) as count FROM community_filaments GROUP BY material ORDER BY count DESC').all(),
+    finish_breakdown: db.prepare("SELECT COALESCE(finish, 'unknown') as finish, COUNT(*) as count FROM community_filaments WHERE finish IS NOT NULL GROUP BY finish ORDER BY count DESC").all()
   };
 }
 
@@ -8349,4 +8373,172 @@ export function getPluginSettings(pluginId) {
 export function setPluginSettings(pluginId, settings) {
   const val = typeof settings === 'string' ? settings : JSON.stringify(settings);
   db.prepare("INSERT INTO plugin_state (plugin_id, key, value) VALUES (?, '_settings', ?) ON CONFLICT(plugin_id, key) DO UPDATE SET value = excluded.value").run(pluginId, val);
+}
+
+// ---- Print Profiles (v90) ----
+
+function _mig090_print_profiles() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS print_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      filament_type TEXT,
+      filament_brand TEXT,
+      printer_model TEXT,
+      nozzle_diameter REAL DEFAULT 0.4,
+      nozzle_type TEXT DEFAULT 'stainless_steel',
+      bed_temp INTEGER,
+      nozzle_temp INTEGER,
+      speed_level INTEGER DEFAULT 2,
+      fan_speed INTEGER,
+      layer_height REAL,
+      infill_percent INTEGER,
+      wall_count INTEGER,
+      notes TEXT DEFAULT '',
+      use_count INTEGER DEFAULT 0,
+      last_used_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+}
+
+export function getProfiles() {
+  return db.prepare('SELECT * FROM print_profiles ORDER BY use_count DESC, name ASC').all();
+}
+
+export function getProfileById(id) {
+  return db.prepare('SELECT * FROM print_profiles WHERE id = ?').get(id);
+}
+
+export function addProfile(p) {
+  return db.prepare(
+    `INSERT INTO print_profiles (name, description, filament_type, filament_brand, printer_model, nozzle_diameter, nozzle_type, bed_temp, nozzle_temp, speed_level, fan_speed, layer_height, infill_percent, wall_count, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(p.name, p.description || '', p.filament_type || null, p.filament_brand || null, p.printer_model || null, p.nozzle_diameter || 0.4, p.nozzle_type || 'stainless_steel', p.bed_temp || null, p.nozzle_temp || null, p.speed_level || 2, p.fan_speed || null, p.layer_height || null, p.infill_percent || null, p.wall_count || null, p.notes || '');
+}
+
+export function updateProfile(id, p) {
+  return db.prepare(
+    `UPDATE print_profiles SET name=?, description=?, filament_type=?, filament_brand=?, printer_model=?, nozzle_diameter=?, nozzle_type=?, bed_temp=?, nozzle_temp=?, speed_level=?, fan_speed=?, layer_height=?, infill_percent=?, wall_count=?, notes=?, updated_at=datetime('now') WHERE id=?`
+  ).run(p.name, p.description || '', p.filament_type || null, p.filament_brand || null, p.printer_model || null, p.nozzle_diameter || 0.4, p.nozzle_type || 'stainless_steel', p.bed_temp || null, p.nozzle_temp || null, p.speed_level || 2, p.fan_speed || null, p.layer_height || null, p.infill_percent || null, p.wall_count || null, p.notes || '', id);
+}
+
+export function deleteProfile(id) {
+  return db.prepare('DELETE FROM print_profiles WHERE id = ?').run(id);
+}
+
+export function incrementProfileUse(id) {
+  return db.prepare('UPDATE print_profiles SET use_count = use_count + 1, last_used_at = datetime(\'now\') WHERE id = ?').run(id);
+}
+
+function _mig091_screenshots() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS screenshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id TEXT,
+      filename TEXT NOT NULL,
+      data TEXT NOT NULL,
+      print_file TEXT,
+      thumbnail_data TEXT,
+      notes TEXT DEFAULT '',
+      captured_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_screenshots_printer ON screenshots(printer_id);
+    CREATE INDEX IF NOT EXISTS idx_screenshots_captured ON screenshots(captured_at DESC);
+  `);
+}
+
+function _mig092_filament_enrichment() {
+  // Add new SpoolmanDB fields to community_filaments
+  const cols = [
+    'finish TEXT',
+    'pattern TEXT',
+    'translucent INTEGER DEFAULT 0',
+    'glow INTEGER DEFAULT 0',
+    'multi_color_direction TEXT',
+    'spool_type TEXT',
+    'extruder_temp_min INTEGER',
+    'extruder_temp_max INTEGER',
+    'bed_temp_min INTEGER',
+    'bed_temp_max INTEGER',
+    'color_hexes TEXT'
+  ];
+  for (const col of cols) {
+    try { db.exec(`ALTER TABLE community_filaments ADD COLUMN ${col}`); } catch { /* exists */ }
+  }
+  // Delete old spoolmandb entries and re-import with enriched data
+  try {
+    db.exec("DELETE FROM community_filaments WHERE source = 'spoolmandb'");
+    const dataPath = join(__dirname_db, 'spoolmandb.json');
+    const raw = readFileSync(dataPath, 'utf8');
+    const items = JSON.parse(raw);
+    const stmt = db.prepare(`INSERT INTO community_filaments
+      (manufacturer, name, material, density, diameter, weight, spool_weight,
+       extruder_temp, bed_temp, color_name, color_hex, source, finish, pattern,
+       translucent, glow, multi_color_direction, spool_type,
+       extruder_temp_min, extruder_temp_max, bed_temp_min, bed_temp_max,
+       color_hexes, external_source_id, brand_key, category, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'spoolmandb', ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`);
+    let count = 0;
+    for (const item of items) {
+      const m = (item.material || '').toUpperCase();
+      const cat = ['TPU','TPE','TPC'].some(x => m.startsWith(x)) ? 'flexible' :
+        (m.includes('-CF') || m.includes('-GF') || m.includes('CARBON')) ? 'composite' :
+        ['PA','PC','PCTG','PCABS','PEEK','PEI'].some(x => m === x || m.startsWith(x + '-') || m.startsWith(x + '+')) ? 'engineering' :
+        ['PVA','HIPS','BVOH'].some(x => m === x) ? 'support' :
+        ['PP','EVA','WOOD','METAL','PEARL','PVDF','FLAX'].some(x => m === x || m.startsWith(x + '+')) ? 'specialty' : 'standard';
+      const brandKey = (item.manufacturer || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const extId = `smdb:${brandKey}:${(item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-')}:${item.material}`;
+      const tempRange = item.extruder_temp_range || [];
+      const bedRange = item.bed_temp_range || [];
+      stmt.run(
+        item.manufacturer || null, item.name || null, item.material || 'PLA',
+        item.density || null, item.diameter || 1.75, item.weight || 1000, item.spool_weight || null,
+        item.extruder_temp || null, item.bed_temp || null,
+        item.name || null, (item.color_hex || '').replace('#', '') || null,
+        item.finish || null, item.pattern || null,
+        item.translucent ? 1 : 0, item.glow ? 1 : 0,
+        item.multi_color_direction || null, item.spool_type || null,
+        tempRange[0] || null, tempRange[1] || null,
+        bedRange[0] || null, bedRange[1] || null,
+        item.color_hexes ? JSON.stringify(item.color_hexes) : null,
+        extId, brandKey, cat
+      );
+      count++;
+    }
+    console.log(`[db] Re-seeded ${count} community filaments with enriched data`);
+  } catch (e) {
+    console.warn('[db] Could not re-seed community filaments:', e.message);
+  }
+}
+
+function _mig093_reseed_spoolmandb() {
+  // Re-run the enrichment import (fixes v92 INSERT OR REPLACE issue)
+  _mig092_filament_enrichment();
+}
+
+export function getScreenshots(printerId = null, limit = 50, offset = 0) {
+  if (printerId) {
+    return db.prepare('SELECT id, printer_id, filename, print_file, notes, captured_at FROM screenshots WHERE printer_id = ? ORDER BY captured_at DESC LIMIT ? OFFSET ?').all(printerId, limit, offset);
+  }
+  return db.prepare('SELECT id, printer_id, filename, print_file, notes, captured_at FROM screenshots ORDER BY captured_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+}
+
+export function getScreenshotById(id) {
+  return db.prepare('SELECT * FROM screenshots WHERE id = ?').get(id);
+}
+
+export function addScreenshot(data) {
+  return db.prepare('INSERT INTO screenshots (printer_id, filename, data, print_file, thumbnail_data, notes) VALUES (?, ?, ?, ?, ?, ?)').run(data.printer_id || null, data.filename, data.data, data.print_file || null, data.thumbnail_data || null, data.notes || '');
+}
+
+export function deleteScreenshot(id) {
+  return db.prepare('DELETE FROM screenshots WHERE id = ?').run(id);
+}
+
+export function deleteScreenshotsBulk(ids) {
+  const placeholders = ids.map(() => '?').join(',');
+  return db.prepare(`DELETE FROM screenshots WHERE id IN (${placeholders})`).run(...ids);
 }

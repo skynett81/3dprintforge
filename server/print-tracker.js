@@ -2,10 +2,12 @@ import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveN
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createLogger } from './logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const log = createLogger('tracker');
 let HMS_CODES = {};
-try { HMS_CODES = JSON.parse(readFileSync(join(__dirname, 'hms-codes.json'), 'utf8')); } catch (_) {}
+try { HMS_CODES = JSON.parse(readFileSync(join(__dirname, 'hms-codes.json'), 'utf8')); } catch (e) { log.warn('Failed to load HMS codes', e.message); }
 
 export function hmsAttrToHex(attr) {
   if (!attr) return null;
@@ -65,6 +67,7 @@ export class PrintTracker {
     this.previousState = null;
     this.currentPrint = null;
     this.amsSnapshot = null;
+    this.amsTrayWeights = {};
     this.colorChanges = 0;
     this.lastTrayId = null;
     this.wastePerChangeG = wastePerChangeG;
@@ -294,6 +297,7 @@ export class PrintTracker {
     this._lastPrintError = null; // Reset print_error dedup for new print
     this._milestonesTriggered = new Set(); // Reset milestones for new print
     this.amsSnapshot = this._getAmsRemaining(data);
+    this.amsTrayWeights = this._getAmsTrayWeights(data);
     this.colorChanges = 0;
     this.lastTrayId = data.ams?.tray_now != null ? String(data.ams.tray_now) : null;
     const filamentInfo = this._getActiveFilament(data);
@@ -350,7 +354,8 @@ export class PrintTracker {
         const endRemain = currentAms[trayId] ?? startRemain;
         const diff = startRemain - endRemain;
         if (diff > 0) {
-          filamentUsedG += (diff / 100) * 1000;
+          const trayWeight = this.amsTrayWeights[trayId] || 1000;
+          filamentUsedG += (diff / 100) * trayWeight;
         }
       }
     }
@@ -435,7 +440,7 @@ export class PrintTracker {
             filament_type: record.filament_type,
             finished_at: record.finished_at
           });
-        } catch (_) {}
+        } catch (e) { log.warn('Failed to save time tracking data', e.message); }
       }
 
       // Auto-save print cost (include waste in filament cost)
@@ -462,10 +467,11 @@ export class PrintTracker {
     }
 
     // Deactivate any layer pauses for this printer
-    try { deactivateLayerPauses(this.printerId); } catch (_) {}
+    try { deactivateLayerPauses(this.printerId); } catch (e) { log.warn('Failed to deactivate layer pauses', e.message); }
 
     this.currentPrint = null;
     this.amsSnapshot = null;
+    this.amsTrayWeights = {};
     this.colorChanges = 0;
     this.lastTrayId = null;
   }
@@ -678,6 +684,31 @@ export class PrintTracker {
     return remaining;
   }
 
+  _getAmsTrayWeights(data) {
+    const weights = {};
+    if (!data.ams?.ams) return weights;
+
+    for (const unit of data.ams.ams) {
+      for (const tray of (unit.tray || [])) {
+        if (!tray) continue;
+        const key = `${unit.id}_${tray.id}`;
+        // 1. Use linked inventory spool weight if available
+        const [unitId, trayId] = [parseInt(unit.id) || 0, parseInt(tray.id) || 0];
+        const spool = getSpoolBySlot(this.printerId, unitId, trayId);
+        if (spool && spool.initial_weight_g > 0) {
+          weights[key] = spool.initial_weight_g;
+        } else if (tray.tray_weight && parseFloat(tray.tray_weight) > 0) {
+          // 2. Fallback to MQTT-reported tray weight
+          weights[key] = parseFloat(tray.tray_weight);
+        } else {
+          // 3. Default 1000g
+          weights[key] = 1000;
+        }
+      }
+    }
+    return weights;
+  }
+
   _captureRetroactivePrint(currState, data) {
     const filename = data.subtask_name || data.gcode_file || 'Unknown';
     if (!filename || filename === 'Unknown') return;
@@ -797,7 +828,8 @@ export class PrintTracker {
         const diff = startRemain - endRemain;
         if (diff > 0) {
           const [unitId, trayId] = key.split('_').map(Number);
-          const usedG = (diff / 100) * 1000;
+          const trayWeight = this.amsTrayWeights[key] || 1000;
+          const usedG = (diff / 100) * trayWeight;
           // Look up spool assigned to this AMS slot
           const spool = getSpoolBySlot(this.printerId, unitId, trayId);
           if (spool) {

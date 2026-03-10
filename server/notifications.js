@@ -7,6 +7,9 @@ import {
   addNotificationLog, addNotificationQueue, getNotificationQueue,
   clearNotificationQueue, getMaintenanceSchedule
 } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('notify');
 
 // ---- HTTP helper (zero dependencies) ----
 
@@ -370,7 +373,7 @@ export class NotificationManager {
       try {
         const { title: whTitle, message: whMsg } = this._formatMessage(eventType, data);
         this._webhookDispatcher(eventType, whTitle, whMsg, data);
-      } catch (_) {}
+      } catch (e) { log.warn('Webhook dispatch failed', e.message); }
     }
 
     // Always dispatch to Web Push subscribers
@@ -378,7 +381,7 @@ export class NotificationManager {
       try {
         const { title: pushTitle, message: pushMsg } = this._formatMessage(eventType, data);
         this._pushDispatcher(eventType, pushTitle, pushMsg, data);
-      } catch (_) {}
+      } catch (e) { log.warn('Web Push dispatch failed', e.message); }
     }
 
     if (!this.config.enabled) return;

@@ -37,6 +37,20 @@
                 </span>
               </button>`;
     }).join('');
+
+    // Attach context menu listeners to each printer tab
+    if (typeof showContextMenu === 'function') {
+      container.querySelectorAll('.printer-tab').forEach(tab => {
+        tab.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const pid = tab.getAttribute('data-printer-id');
+          if (pid && typeof buildPrinterContextMenuItems === 'function') {
+            showContextMenu(e.clientX, e.clientY, buildPrinterContextMenuItems(pid));
+          }
+        });
+      });
+    }
   };
 
   function getMiniStatus(ps) {
@@ -61,14 +75,14 @@
     const gcodeState = printerState.gcode_state || 'IDLE';
     let color, dotClass = '';
     switch(gcodeState) {
-      case 'RUNNING': color = 'var(--accent-green)'; dotClass = 'dot-running'; break;
-      case 'PAUSE': color = 'var(--accent-orange)'; break;
-      case 'FAILED': color = 'var(--accent-red)'; dotClass = 'dot-error'; break;
-      case 'PREPARE': case 'HEATING': color = 'var(--accent-blue)'; dotClass = 'dot-running'; break;
-      case 'FINISH': color = 'var(--accent-green)'; dotClass = 'dot-idle'; break;
-      default: color = 'var(--text-muted)';
+      case 'RUNNING': color = 'var(--accent-green)'; dotClass = 'dot-running status-dot-running'; break;
+      case 'PAUSE': color = 'var(--accent-orange)'; dotClass = 'status-dot-paused'; break;
+      case 'FAILED': color = 'var(--accent-red)'; dotClass = 'dot-error status-dot-error'; break;
+      case 'PREPARE': case 'HEATING': color = 'var(--accent-blue)'; dotClass = 'dot-running status-dot-running'; break;
+      case 'FINISH': color = 'var(--accent-green)'; dotClass = 'dot-idle status-dot-finished'; break;
+      default: color = 'var(--text-muted)'; dotClass = 'status-dot-idle';
     }
-    return `<span class="printer-status-dot ${dotClass}" style="background:${color}"></span>`;
+    return `<span class="printer-status-dot status-dot ${dotClass}" style="background:${color}"></span>`;
   }
 
   window.selectPrinter = function(id) {

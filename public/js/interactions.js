@@ -75,14 +75,30 @@
     if (!_toastContainer) {
       _toastContainer = document.createElement('div');
       _toastContainer.id = 'ix-toast-container';
+      _toastContainer.setAttribute('aria-live', 'polite');
+      _toastContainer.setAttribute('aria-atomic', 'false');
+      _toastContainer.setAttribute('role', 'status');
       document.body.appendChild(_toastContainer);
     }
     return _toastContainer;
   }
 
-  window.showToast = function(message, type, duration) {
+  /**
+   * Show a toast notification.
+   * @param {string} message - The message to display
+   * @param {'info'|'success'|'warning'|'error'} [type='info'] - Toast type
+   * @param {number} [duration=3500] - Auto-dismiss duration in ms (0 = manual dismiss only)
+   * @param {Array<{label: string, onClick: Function}>} [actions] - Optional action buttons
+   */
+  window.showToast = function(message, type, duration, actions) {
     type = type || 'info';
-    duration = duration || 3500;
+    duration = (duration === undefined || duration === null) ? 3500 : duration;
+
+    // Play notification sound for error toasts
+    if (type === 'error' && typeof notificationSound !== 'undefined') notificationSound.error();
+
+    // Feed notification center
+    if (typeof addNotification === 'function') addNotification(message, '', type);
 
     const container = _ensureToastContainer();
 
@@ -93,15 +109,42 @@
 
     const toast = document.createElement('div');
     toast.className = 'ix-toast ix-toast--' + type;
-    toast.innerHTML = (TOAST_ICONS[type] || TOAST_ICONS.info) + '<span>' + _escHtml(message) + '</span>';
+    let html = (TOAST_ICONS[type] || TOAST_ICONS.info) + '<span>' + _escHtml(message) + '</span>';
 
-    // Click to dismiss
-    toast.addEventListener('click', () => _dismissToast(toast));
+    // Add action buttons
+    if (actions && actions.length > 0) {
+      html += '<div class="ix-toast-actions">';
+      for (let i = 0; i < actions.length; i++) {
+        html += '<button class="ix-toast-action" data-action-idx="' + i + '">' + _escHtml(actions[i].label) + '</button>';
+      }
+      html += '</div>';
+    }
+
+    toast.innerHTML = html;
+
+    // Wire up action button clicks
+    if (actions && actions.length > 0) {
+      toast.querySelectorAll('.ix-toast-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.actionIdx);
+          if (actions[idx] && actions[idx].onClick) actions[idx].onClick();
+          _dismissToast(toast);
+        });
+      });
+    }
+
+    // Click to dismiss (but not on action buttons)
+    toast.addEventListener('click', (e) => {
+      if (!e.target.closest('.ix-toast-action')) _dismissToast(toast);
+    });
 
     container.appendChild(toast);
 
-    // Auto-dismiss
-    setTimeout(() => _dismissToast(toast), duration);
+    // Auto-dismiss (skip if duration is 0)
+    if (duration > 0) {
+      setTimeout(() => _dismissToast(toast), duration);
+    }
   };
 
   function _dismissToast(toast) {
@@ -121,6 +164,8 @@
 
     const overlay = document.createElement('div');
     overlay.className = 'ix-confirm-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
     overlay.innerHTML = `
       <div class="ix-confirm-modal">
         <div class="ix-confirm-title">${_escHtml(title)}</div>
@@ -228,12 +273,55 @@
     'settings'    // Ctrl+7
   ];
 
+  const ALL_SHORTCUTS = [
+    { keys: ['Ctrl', '1'], desc: 'Dashboard' },
+    { keys: ['Ctrl', '2'], desc: 'Controls' },
+    { keys: ['Ctrl', '3'], desc: 'Queue' },
+    { keys: ['Ctrl', '4'], desc: 'History' },
+    { keys: ['Ctrl', '5'], desc: 'Statistics' },
+    { keys: ['Ctrl', '6'], desc: 'Filament' },
+    { keys: ['Ctrl', '7'], desc: 'Settings' },
+    { keys: ['Esc'], desc: 'Back to Dashboard / Close' },
+    { keys: ['?'], desc: 'Show shortcuts' },
+    { keys: ['P'], desc: 'Pause / Resume print' },
+    { keys: ['F'], desc: 'Toggle fullscreen' },
+    { keys: ['T'], desc: 'Toggle theme' },
+    { keys: ['['], desc: 'Previous printer' },
+    { keys: [']'], desc: 'Next printer' },
+    { keys: ['Ctrl', 'K'], desc: 'Command palette' },
+    { keys: ['Alt', '↑'], desc: 'Previous panel' },
+    { keys: ['Alt', '↓'], desc: 'Next panel' },
+  ];
+
+  function _showShortcutsHelp() {
+    let html = '<div style="margin-bottom:16px"><h3 style="margin:0 0 4px">Keyboard Shortcuts</h3><p style="color:var(--text-muted);font-size:0.8rem;margin:0">Quick navigation and controls</p></div>';
+    html += '<div class="shortcut-grid">';
+    for (const s of ALL_SHORTCUTS) {
+      html += '<div class="shortcut-row"><span>' + _escHtml(s.desc) + '</span><span class="shortcut-keys">';
+      for (const k of s.keys) html += '<kbd class="kbd">' + _escHtml(k) + '</kbd>';
+      html += '</span></div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:16px;text-align:right"><button class="form-btn form-btn-secondary" data-close-modal>Close</button></div>';
+    if (typeof openModal === 'function') openModal(html, { style: 'max-width:520px;width:90%;padding:24px' });
+  }
+
+  window.showShortcutsHelp = _showShortcutsHelp;
+
   function _initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
       // Skip when in input fields
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      // Ctrl+K — command palette
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (typeof window.openCommandPalette === 'function') window.openCommandPalette();
+        return;
+      }
+
+      // Ctrl+number navigation
       if (e.ctrlKey && !e.shiftKey && !e.altKey) {
         const num = parseInt(e.key);
         if (num >= 1 && num <= 7 && SHORTCUT_PANELS[num]) {
@@ -244,9 +332,77 @@
           } else {
             if (typeof openPanel === 'function') openPanel(panel);
           }
+          return;
+        }
+      }
+
+      // Alt+Up/Down — navigate sidebar panels
+      if (e.altKey && !e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const btns = [...document.querySelectorAll('.sidebar-btn[data-panel]')];
+        const activePanel = window._activePanel;
+        const idx = btns.findIndex(b => b.dataset.panel === activePanel);
+        const dir = e.key === 'ArrowUp' ? -1 : 1;
+        const next = (idx + dir + btns.length) % btns.length;
+        const panel = btns[next]?.dataset.panel;
+        if (panel) {
+          if (panel === 'dashboard' && typeof showDashboard === 'function') showDashboard();
+          else if (typeof openPanel === 'function') openPanel(panel);
+        }
+      }
+
+      // Single-key shortcuts (no modifier)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        switch (e.key) {
+          case '?':
+            e.preventDefault();
+            _showShortcutsHelp();
+            break;
+          case 'p':
+          case 'P':
+            if (typeof sendCommand === 'function') {
+              const ps = window.printerState?.getActivePrinterState?.();
+              const gcodeState = ps?.print?.gcode_state || ps?.gcode_state;
+              if (gcodeState === 'RUNNING') sendCommand('pause');
+              else if (gcodeState === 'PAUSE') sendCommand('resume');
+            }
+            break;
+          case 'f':
+          case 'F':
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen?.();
+            } else {
+              document.exitFullscreen?.();
+            }
+            break;
+          case 't':
+          case 'T':
+            if (typeof toggleTheme === 'function') toggleTheme();
+            break;
+          case '[':
+            _switchPrinter(-1);
+            break;
+          case ']':
+            _switchPrinter(1);
+            break;
         }
       }
     });
+  }
+
+  function _switchPrinter(direction) {
+    const ids = window.printerState?.getPrinterIds?.() || [];
+    if (ids.length < 2) return;
+    const active = window.printerState.getActivePrinterId();
+    const idx = ids.indexOf(active);
+    const next = (idx + direction + ids.length) % ids.length;
+    if (typeof window.printerState.setActivePrinter === 'function') {
+      window.printerState.setActivePrinter(ids[next]);
+      if (typeof window.reloadActiveTab === 'function') window.reloadActiveTab();
+      if (typeof updatePrinterSelector === 'function') updatePrinterSelector();
+      const meta = window.printerState.getPrinterMeta?.(ids[next]);
+      if (typeof showToast === 'function') showToast(meta?.name || ids[next], 'info', 1500);
+    }
   }
 
   // ---- Loading Button Helper ----
@@ -305,6 +461,8 @@
     options = options || {};
     const overlay = document.createElement('div');
     overlay.className = 'ix-modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
     overlay.innerHTML = '<div class="ix-modal-panel" style="' + (options.style || 'max-width:600px;width:90%;padding:24px') + '">' + html + '</div>';
 
     function close() {
