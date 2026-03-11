@@ -365,7 +365,7 @@
 
         html += `<div class="fc-mat-card">
           <div class="fc-mat-header">
-            <span class="fc-mat-name"><span class="fc-mat-dot" style="background:${color}"></span>${_esc(type)}</span>
+            <span class="fc-mat-name">${typeof miniSpool === 'function' ? miniSpool(color, 14) : `<span class="fc-mat-dot" style="background:${color}"></span>`}${_esc(type)}</span>
             <span class="fc-mat-badge ${badgeClass}">${badgeText}</span>
           </div>
           <div class="fc-bar-dual">

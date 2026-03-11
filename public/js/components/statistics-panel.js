@@ -679,7 +679,7 @@
       const mxT = sortedTypes[0]?.[1].count || 1;
       h += `<div class="card-subtitle">${t('stats.per_type') || 'Per type'}</div><div class="chart-bars">`;
       for (const [tp, d] of sortedTypes) {
-        const swatches = [...d.colors].map(cc => `<span class="color-dot" style="background:#${cc}"></span>`).join('');
+        const swatches = [...d.colors].map(cc => typeof miniSpool === 'function' ? miniSpool('#' + cc, 12) : `<span class="color-dot" style="background:#${cc}"></span>`).join('');
         h += `<div class="chart-bar-row"><span class="chart-bar-label">${swatches} ${esc(tp)}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(d.count/mxT)*100}%;background:var(--accent-blue)"></div></div><span class="chart-bar-value">${d.count} \u00B7 ${fmtW(d.weight)}</span></div>`;
       }
       h += '</div>';

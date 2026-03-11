@@ -1,20 +1,7 @@
 (function() {
   'use strict';
 
-  let _lastHtml = '';
-
-  function createRing(percent, color, size) {
-    const r = (size - 8) / 2;
-    const circ = 2 * Math.PI * r;
-    const clamped = Math.max(0, Math.min(100, percent || 0));
-    const dash = circ * (clamped / 100);
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--bg-tertiary)" stroke-width="8"/>
-      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="8"
-        stroke-dasharray="${dash} ${circ - dash}" stroke-linecap="round"
-        transform="rotate(-90 ${size/2} ${size/2})" style="transition: stroke-dasharray 0.5s ease"/>
-    </svg>`;
-  }
+  let _lastFp = '';
 
   function parseColor(trayColor) {
     if (!trayColor || trayColor.length < 6) return '#888888';
@@ -63,7 +50,6 @@
   }
 
   function _getTrayPercent(tray, amsUnitIdx, amsTrayIdx, isActive, data) {
-    // Use same data source as AMS panel: inventory first, then MQTT
     const printerId = window.printerState?.getActivePrinterId?.() || null;
     const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, amsTrayIdx);
     let remain;
@@ -77,7 +63,6 @@
       return 0;
     }
 
-    // Adjust for in-progress filament consumption (same logic as AMS panel)
     if (isActive && data) {
       const gcodeState = data.gcode_state || 'IDLE';
       const isPrinting = gcodeState === 'RUNNING' || gcodeState === 'PAUSE';
@@ -97,14 +82,60 @@
     return remain;
   }
 
+  // Inline spool SVG for the filament-ring card (reuses same visual style as _spoolSvg)
+  function _spoolVisual(color, pct, id) {
+    const hubR = 13;
+    const maxR = 38;
+    const filR = pct > 0 ? hubR + (maxR - hubR) * Math.max(5, pct) / 100 : hubR;
+
+    let windings = '';
+    if (pct > 8) {
+      const gap = (filR - hubR) / Math.min(5, Math.max(2, Math.round((filR - hubR) / 4)));
+      for (let r = hubR + gap; r < filR - 1; r += gap) {
+        windings += `<circle cx="50" cy="50" r="${r.toFixed(1)}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.6"/>`;
+      }
+    }
+
+    const notches = [0, 90, 180, 270].map(deg => {
+      const rad = deg * Math.PI / 180;
+      const x1 = 50 + 40 * Math.cos(rad), y1 = 50 + 40 * Math.sin(rad);
+      const x2 = 50 + 44 * Math.cos(rad), y2 = 50 + 44 * Math.sin(rad);
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--border-color)" stroke-width="1.2" opacity="0.4"/>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 100 100" style="width:100%;height:100%" class="spool-svg">
+      <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,0.06)"/>
+      <circle cx="50" cy="50" r="42" class="spool-flange"/>
+      ${notches}
+      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${color}" class="spool-filament"/>
+      ${windings}
+      <circle cx="50" cy="50" r="${hubR}" class="spool-hub"/>
+      <circle cx="50" cy="50" r="5" class="spool-hole"/>
+    </svg>`;
+  }
+
+  // Small spool for tray grid
+  function _miniSpool(color, pct) {
+    const hubR = 13;
+    const maxR = 38;
+    const filR = pct > 0 ? hubR + (maxR - hubR) * Math.max(5, pct) / 100 : hubR;
+
+    return `<svg viewBox="0 0 100 100" style="width:100%;height:100%" class="spool-svg">
+      <circle cx="50" cy="50" r="42" class="spool-flange"/>
+      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${color}" class="spool-filament"/>
+      <circle cx="50" cy="50" r="${hubR}" class="spool-hub"/>
+      <circle cx="50" cy="50" r="5" class="spool-hole"/>
+    </svg>`;
+  }
+
   window.updateFilamentRing = function(data) {
     const container = document.getElementById('filament-ring');
     if (!container) return;
 
     // Skip if data hasn't changed (avoid flicker)
     const fp = _fingerprint(data);
-    if (fp === _lastHtml) return;
-    _lastHtml = fp;
+    if (fp === _lastFp) return;
+    _lastFp = fp;
 
     const ams = data.ams;
     if (!ams || !ams.ams || !ams.ams.length) {
@@ -112,7 +143,7 @@
       return;
     }
 
-    // Collect trays with their unit/tray indices (use array position like AMS panel)
+    // Collect trays
     const trays = [];
     for (let u = 0; u < ams.ams.length; u++) {
       const unit = ams.ams[u];
@@ -137,29 +168,34 @@
     const activePercent = _getTrayPercent(activeTray, activeEntry.unitIdx, activeEntry.trayIdx, true, data);
     const activeType = activeTray.tray_type || '??';
     const colorName = getColorName(activeColor);
+    const isActive = activeEntry.globalIdx === activeIdx;
 
     let html = '<div class="card-title">Filament</div>';
+
+    // Main spool visual
     html += '<div class="filament-ring-main">';
-    html += createRing(activePercent, activeColor, 140);
-    html += '<div class="filament-ring-center">';
+    html += _spoolVisual(activeColor, activePercent, 'fr-main');
+    html += '<div class="filament-ring-overlay">';
     html += `<span class="filament-ring-percent">${activePercent}%</span>`;
-    html += `<span class="filament-ring-type">${activeType}</span>`;
     html += '</div></div>';
 
-    html += '<div style="margin-bottom:8px">';
-    html += `<span class="filament-ring-color" style="background:${activeColor}"></span>`;
-    html += `<span style="font-size:0.8rem;color:var(--text-secondary)">${colorName}</span>`;
+    // Active filament info
+    html += '<div class="filament-ring-info">';
+    html += `<span class="filament-ring-type-label">${activeType}</span>`;
+    if (colorName) html += `<span class="filament-ring-color-name">${colorName}</span>`;
     html += '</div>';
 
+    // Tray grid — small spools
     if (trays.length > 1) {
       html += '<div class="filament-ring-trays">';
       for (const entry of trays) {
         const c = parseColor(entry.tray.tray_color);
-        const isActive = entry.globalIdx === activeIdx;
-        const p = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isActive, data);
-        html += `<div class="filament-ring-tray${isActive ? ' filament-ring-tray-active' : ''}">`;
-        html += createRing(p, c, 40);
-        html += `<div class="filament-ring-tray-label">${entry.tray.tray_type || '?'} ${p}%</div>`;
+        const isAct = entry.globalIdx === activeIdx;
+        const p = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isAct, data);
+        html += `<div class="filament-ring-tray${isAct ? ' filament-ring-tray-active' : ''}">`;
+        html += `<div class="filament-ring-tray-spool">${_miniSpool(c, p)}</div>`;
+        html += `<div class="filament-ring-tray-label">${entry.tray.tray_type || '?'}</div>`;
+        html += `<div class="filament-ring-tray-pct">${p}%</div>`;
         html += '</div>';
       }
       html += '</div>';
@@ -167,7 +203,7 @@
 
     container.innerHTML = html;
 
-    // Low-stock alert (using consistent inventory-aware percentages)
+    // Low-stock alert
     const lowTrays = trays.filter(e => {
       const isAct = e.globalIdx === activeIdx;
       const p = _getTrayPercent(e.tray, e.unitIdx, e.trayIdx, isAct, data);

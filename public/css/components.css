@@ -12262,17 +12262,92 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 .countdown-finish { color: var(--accent-green); font-weight: 600; margin-top: 8px; }
 
 /* ═══ Filament Ring Chart Widget ═══ */
-.filament-ring-card { text-align: center; padding: 16px; }
-.filament-ring-main { position: relative; width: 140px; height: 140px; margin: 0 auto 12px; }
-.filament-ring-main svg { position: absolute; inset: 0; }
-.filament-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.filament-ring-percent { font-size: 1.5rem; font-weight: 700; }
-.filament-ring-type { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-.filament-ring-trays { display: flex; justify-content: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-.filament-ring-tray { text-align: center; }
+.filament-ring-card {
+  text-align: center;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  container-type: inline-size;
+}
+.filament-ring-main {
+  position: relative;
+  width: clamp(100px, 55cqi, 200px);
+  aspect-ratio: 1;
+  margin: 0 auto 8px;
+}
+.filament-ring-main .spool-svg {
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+  transition: filter 0.3s ease;
+}
+.filament-ring-card:hover .filament-ring-main .spool-svg {
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.4));
+}
+.filament-ring-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.filament-ring-percent {
+  font-size: clamp(1rem, 7cqi, 1.8rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.filament-ring-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.filament-ring-type-label {
+  font-size: clamp(0.7rem, 3.5cqi, 0.9rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+.filament-ring-color-name {
+  font-size: clamp(0.6rem, 3cqi, 0.8rem);
+  color: var(--text-muted);
+}
+.filament-ring-trays {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 3cqi, 14px);
+  flex-wrap: wrap;
+  width: 100%;
+}
+.filament-ring-tray {
+  text-align: center;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+  cursor: default;
+}
+.filament-ring-tray:hover { opacity: 1; transform: scale(1.1); }
 .filament-ring-tray-active { opacity: 1; }
-.filament-ring-tray-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
-.filament-ring-color { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; border: 1px solid var(--border-color); }
+.filament-ring-tray-spool {
+  width: clamp(30px, 12cqi, 48px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+.filament-ring-tray-label {
+  font-size: clamp(0.5rem, 2.2cqi, 0.65rem);
+  color: var(--text-muted);
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.filament-ring-tray-pct {
+  font-size: clamp(0.5rem, 2cqi, 0.6rem);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
 
 /* ═══ Notification Center ═══ */
 .notif-bell-btn { position: relative; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.2s; }

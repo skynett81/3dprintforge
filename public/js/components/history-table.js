@@ -38,7 +38,8 @@
   }
   function colorSwatch(hex) {
     if (!hex || hex.length < 6) return '';
-    return `<span class="history-color-swatch" style="background:#${hex.substring(0, 6)}"></span>`;
+    const c = '#' + hex.substring(0, 6);
+    return typeof miniSpool === 'function' ? miniSpool(c, 16) : `<span class="history-color-swatch" style="background:${c}"></span>`;
   }
   function speedLabel(level) {
     const map = { 1: 'speed.silent', 2: 'speed.standard', 3: 'speed.sport', 4: 'speed.ludicrous' };
@@ -595,7 +596,7 @@
       const mxT = sortedTypes[0]?.[1].count || 1;
       h += '<div class="card-subtitle">Per type</div><div class="chart-bars">';
       for (const [tp, d] of sortedTypes) {
-        const swatches = [...d.colors].map(c => `<span class="color-dot" style="background:#${c}"></span>`).join('');
+        const swatches = [...d.colors].map(c => typeof miniSpool === 'function' ? miniSpool('#' + c, 12) : `<span class="color-dot" style="background:#${c}"></span>`).join('');
         h += `<div class="chart-bar-row"><span class="chart-bar-label">${swatches} ${esc(tp)}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(d.count/mxT)*100}%;background:var(--accent-blue)"></div></div><span class="chart-bar-value">${d.count} · ${fmtW(d.weight)}</span></div>`;
       }
       h += '</div>';
@@ -806,7 +807,7 @@
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">Filamenttype</span>
-              <span class="ph-detail-value">${filColorHex ? `<span class="color-dot" style="background:${filColorHex}"></span> ` : ''}${esc(filType)}</span>
+              <span class="ph-detail-value">${filColorHex ? (typeof miniSpool === 'function' ? miniSpool(filColorHex, 14) + ' ' : `<span class="color-dot" style="background:${filColorHex}"></span> `) : ''}${esc(filType)}</span>
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">Vekt brukt</span>

@@ -28,8 +28,8 @@
 
   function colorSwatch(hex, size = 10) {
     if (!hex) return '';
-    const c = hex.substring(0, 6);
-    return `<span style="display:inline-block;width:${size}px;height:${size}px;border-radius:50%;background:#${c};border:1px solid rgba(255,255,255,0.15);vertical-align:middle;flex-shrink:0"></span>`;
+    const c = '#' + hex.substring(0, 6);
+    return typeof miniSpool === 'function' ? miniSpool(c, size) : `<span style="display:inline-block;width:${size}px;height:${size}px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.15);vertical-align:middle;flex-shrink:0"></span>`;
   }
 
   function miniDonut(segments, size = 64, thickness = 8) {

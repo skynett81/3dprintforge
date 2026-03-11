@@ -106,7 +106,7 @@
     container.innerHTML = `
       <div class="filament-status">
         <div class="filament-status-header">
-          <div class="filament-color-dot" style="background:${color};${isLight ? 'border:2px solid var(--border-color)' : ''}"></div>
+          ${typeof spoolIcon === 'function' ? spoolIcon(color, 32, displayRemain) : `<div class="filament-color-dot" style="background:${color}"></div>`}
           <div>
             <div class="filament-status-type">${tray.tray_type} <span class="filament-status-brand">${brand}</span></div>
             <div class="filament-status-name">${name}</div>

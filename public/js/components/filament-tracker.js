@@ -861,7 +861,10 @@
     return name;
   }
 
-  function renderColorSwatch(s) {
+  function renderColorSwatch(s, size) {
+    const color = hexToRgb(s.color_hex);
+    const pct = s.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 80;
+    if (typeof miniSpool === 'function') return miniSpool(color, size || 16, pct);
     const bg = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
     return `<span class="filament-color-swatch" style="background:${bg}"></span>`;
   }
@@ -1123,7 +1126,7 @@
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">${t('filament.type', 'Materiale')}</span>
-              <span class="ph-detail-value"><span class="color-dot" style="background:${hexToRgb(s.color_hex)}"></span> ${esc(s.material || '--')}</span>
+              <span class="ph-detail-value">${typeof miniSpool === 'function' ? miniSpool(hexToRgb(s.color_hex), 14) : `<span class="color-dot" style="background:${hexToRgb(s.color_hex)}"></span>`} ${esc(s.material || '--')}</span>
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">${t('filament.color', 'Farge')}</span>
@@ -3763,7 +3766,7 @@
       const remainH = Math.floor(remainMin / 60);
       const remainM = remainMin % 60;
       const pct = Math.min(100, Math.round((elapsed / (ds.duration_minutes * 60000)) * 100));
-      const colorDot = ds.color_hex ? `<span class="fil-color-dot" style="background:#${ds.color_hex}"></span>` : '';
+      const colorDot = ds.color_hex ? (typeof miniSpool === 'function' ? miniSpool('#' + ds.color_hex, 14) : `<span class="fil-color-dot" style="background:#${ds.color_hex}"></span>`) : '';
       const methodLabel = t('filament.drying_method_' + (ds.method || 'dryer_box'));
       h += `<div class="fil-drying-card active" data-drying-id="${ds.id}">
         ${colorDot}
@@ -4682,9 +4685,9 @@
         h += `<div class="fil-color-group"><div class="fil-color-group-title">${esc(mat)}</div><div class="fil-color-swatches">`;
         for (const s of grouped[mat]) {
           const c = hexToRgb(s.color_hex);
-          const border = isLightColor(s.color_hex) ? 'border:1px solid var(--border-color)' : '';
+          const pct = s.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 80;
           h += `<div class="fil-color-swatch-card" title="${esc(s.vendor_name || '')} ${esc(s.name || '')}\n${esc(s.color_name || '')}">
-            <div class="fil-color-swatch-big" style="background:${c};${border}"></div>
+            ${typeof spoolIcon === 'function' ? spoolIcon(c, 48, pct) : `<div class="fil-color-swatch-big" style="background:${c}"></div>`}
             <div class="fil-color-swatch-name">${esc(s.color_name || s.name || '')}</div>
           </div>`;
         }
@@ -4954,7 +4957,7 @@
         const color = tag.color_hex ? hexToRgb(tag.color_hex) : '#888';
         resultEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-            <span class="filament-color-swatch" style="background:${color};width:24px;height:24px"></span>
+            ${typeof spoolIcon === 'function' ? spoolIcon(color, 28) : `<span class="filament-color-swatch" style="background:${color};width:24px;height:24px"></span>`}
             <div>
               <strong>${esc(tag.spool_name || 'Unknown')}</strong><br>
               <span class="text-muted text-sm">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span>
@@ -6080,7 +6083,7 @@
       const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
       const owned = _dbOwnedIds.has(f.id);
       h += `<tr style="cursor:pointer" onclick="window._dbShowDetail(${f.id})">
-        <td><span class="filament-color-swatch" style="background:${color};width:14px;height:14px;display:inline-block;border-radius:50%"></span>${owned ? ' <span style="color:#4ade80;font-size:0.65rem">✓</span>' : ''}</td>
+        <td>${typeof miniSpool === 'function' ? miniSpool(color, 16) : `<span class="filament-color-swatch" style="background:${color};width:14px;height:14px;display:inline-block;border-radius:50%"></span>`}${owned ? ' <span style="color:#4ade80;font-size:0.65rem">✓</span>' : ''}</td>
         <td>${esc(f.manufacturer || '')}</td>
         <td>${esc(f.name || '--')}</td>
         <td>${esc(f.material || '')}${f.material_type ? ' <span class="text-muted">' + esc(f.material_type) + '</span>' : ''}</td>
@@ -6232,7 +6235,7 @@
           <table class="data-table"><thead><tr><th></th>`;
     for (const f of items) {
       const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
-      html += `<th><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span class="filament-color-swatch" style="background:${color};width:20px;height:20px;border-radius:50%;display:inline-block"></span><span style="font-size:0.75rem">${esc(f.manufacturer||'')}</span><span style="font-size:0.7rem" class="text-muted">${esc(f.name||f.material)}</span></div></th>`;
+      html += `<th><div style="display:flex;flex-direction:column;align-items:center;gap:4px">${typeof spoolIcon === 'function' ? spoolIcon(color, 24) : `<span class="filament-color-swatch" style="background:${color};width:20px;height:20px;border-radius:50%;display:inline-block"></span>`}<span style="font-size:0.75rem">${esc(f.manufacturer||'')}</span><span style="font-size:0.7rem" class="text-muted">${esc(f.name||f.material)}</span></div></th>`;
     }
     html += '</tr></thead><tbody>';
     for (let i = 0; i < fields.length; i++) {
