@@ -110,37 +110,16 @@
     'recent-events': 'full'
   };
 
-  const STORAGE_PREFIX = 'waste-module-order-';
-  const LOCK_KEY = 'waste-layout-locked';
-
   let _selectedWastePrinter = null;
   let _activeTab = 'overview';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
+  const _locked = true;
   let _stats = null;
-  let _draggedMod = null;
   let _historySortField = 'timestamp';
   let _historySortDir = 'desc';
 
   // ═══ Persistence ═══
   function getOrder(tabId) {
-    const defaults = TAB_CONFIG[tabId]?.modules || [];
-    try {
-      const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId));
-      if (Array.isArray(o)) {
-        // Only use saved order if it contains current modules
-        const valid = o.filter(id => defaults.includes(id));
-        if (valid.length >= defaults.length - 1) return valid;
-        // Saved order is stale, clear it
-        localStorage.removeItem(STORAGE_PREFIX + tabId);
-      }
-    } catch (_) {}
-    return defaults;
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`waste-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
+    return TAB_CONFIG[tabId]?.modules || [];
   }
 
   // ═══ Computed trend data ═══
@@ -580,37 +559,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
   }
 
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
-  }
-
   // ═══ Main render ═══
   async function loadWaste() {
     const panel = document.getElementById('overlay-panel-body');
@@ -650,16 +598,10 @@
       html += buildPrinterSelector('changeWastePrinter', _selectedWastePrinter);
 
       // Toolbar
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="stats-toolbar">
         <button class="form-btn" data-ripple onclick="showGlobalWasteForm()" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>${t('waste.add_manual')}</span>
-        </button>
-        <button class="speed-btn ${_locked ? '' : 'active'}" data-ripple onclick="toggleWasteLock()" title="${_locked ? t('waste.layout_locked') : t('waste.layout_unlocked')}">
-          ${lockIcon} <span>${_locked ? t('waste.layout_locked') : t('waste.layout_unlocked')}</span>
         </button>
         <button class="form-btn form-btn-sm" data-ripple onclick="exportWasteCsv()">${t('waste.download_csv')}</button>
       </div>`;
@@ -691,11 +633,8 @@
           if (!builder) continue;
           const content = builder(_stats);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable} style="--i:${_si++}">`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" style="--i:${_si++}">`;
           html += content;
           html += '</div>';
         }
@@ -704,11 +643,6 @@
 
       panel.innerHTML = html;
 
-      // Attach module DnD
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`waste-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
     } catch (e) {
       console.error('[waste] Load failed:', e);
       panel.innerHTML = `<p class="text-muted">${t('waste.load_failed')}</p>`;
@@ -762,12 +696,6 @@
   window.loadWastePanel = loadWaste;
   window.changeWastePrinter = function(value) { _selectedWastePrinter = value || null; loadWaste(); };
   window.switchWasteTab = switchTab;
-  window.toggleWasteLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadWaste();
-  };
-
   window.saveWastePerChange = function(val) {
     localStorage.setItem('wastePerChange', val);
     fetch('/api/inventory/settings/waste_per_change_g', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: val }) }).catch(() => {});
@@ -807,9 +735,8 @@
     if (_stats) {
       const mod = document.querySelector('[data-module-id="recent-events"]');
       if (mod) {
-        const handle = mod.querySelector('.stats-module-handle');
         const content = BUILDERS['recent-events'](_stats);
-        mod.innerHTML = (handle ? handle.outerHTML : '') + content;
+        mod.innerHTML = content;
       }
     }
   };

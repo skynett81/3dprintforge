@@ -20,7 +20,7 @@
     if (old) old.remove();
     body.insertAdjacentHTML('afterbegin', _tabBarHtml());
   }
-  window._switchLibraryTab = function(tab) { _activeTab = tab; _render(); };
+  window._switchLibraryTab = function(tab) { _activeTab = tab; history.replaceState(null, '', '#' + tab); window._activePanel = tab; _render(); };
   async function _render() {
     if (_activeTab === 'library' && _origLoad) await _origLoad();
     else if (_activeTab === 'gcode' && typeof loadGcodePanel === 'function') await loadGcodePanel();

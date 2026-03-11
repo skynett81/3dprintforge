@@ -1,4 +1,4 @@
-// Maintenance & Wear Tracking Panel — Modular with Tabs and Drag-and-Drop
+// Maintenance & Wear Tracking Panel — Modular with Tabs
 (function() {
 
   // ═══ Helpers ═══
@@ -33,27 +33,16 @@
     'log-form': 'half', 'recent-events': 'half'
   };
 
-  const STORAGE_PREFIX = 'maint-module-order-';
-  const LOCK_KEY = 'maint-layout-locked';
-
   let _selectedMaintPrinter = null;
   let _activeTab = 'nozzle';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
+  const _locked = true;
   let _status = null;
   let _log = [];
   let _wear = [];
-  let _draggedMod = null;
 
-  // ═══ Persistence ═══
+  // ═══ Module order ═══
   function getOrder(tabId) {
-    try { const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId)); if (Array.isArray(o)) return o; } catch (_) {}
     return TAB_CONFIG[tabId]?.modules || [];
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`maint-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
   }
 
   // ═══ Module builders ═══
@@ -234,37 +223,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
   }
 
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
-  }
-
   // ═══ Main render ═══
   async function loadMaintenance() {
     const panel = document.getElementById('overlay-panel-body');
@@ -309,9 +267,6 @@
       html += buildPrinterSelector('changeMaintPrinter', _selectedMaintPrinter, false);
 
       // Toolbar
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="stats-toolbar">
         <button class="form-btn" data-ripple data-tooltip="${t('maintenance.log_nozzle_change')}" onclick="showGlobalNozzleChange()" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -320,9 +275,6 @@
         <button class="form-btn" data-ripple data-tooltip="${t('maintenance.log_event')}" onclick="showGlobalMaintEvent()" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>${t('maintenance.log_event')}</span>
-        </button>
-        <button class="speed-btn ${_locked ? '' : 'active'}" data-ripple onclick="toggleMaintLock()" title="${_locked ? t('maintenance.layout_locked') : t('maintenance.layout_unlocked')}">
-          ${lockIcon} <span>${_locked ? t('maintenance.layout_locked') : t('maintenance.layout_unlocked')}</span>
         </button>
       </div>`;
 
@@ -346,11 +298,8 @@
           if (!builder) continue;
           const content = builder(_status, _log, _wear);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable} style="--i:${_si++}">`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" style="--i:${_si++}">`;
           html += content;
           html += '</div>';
         }
@@ -358,12 +307,6 @@
       }
 
       panel.innerHTML = html;
-
-      // Attach module DnD
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`maint-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('maintenance.load_failed')}</p>`;
     }
@@ -468,12 +411,6 @@
   window.loadMaintenancePanel = loadMaintenance;
   window.changeMaintPrinter = function(value) { _selectedMaintPrinter = value || null; loadMaintenance(); };
   window.switchMaintTab = switchTab;
-  window.toggleMaintLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadMaintenance();
-  };
-
   window.toggleNozzleChangeForm = function() {
     const f = document.getElementById('nozzle-change-form');
     if (f) f.style.display = f.style.display === 'none' ? '' : 'none';

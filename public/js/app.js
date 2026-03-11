@@ -384,54 +384,8 @@ window.openPanel = function(name, skipHash) {
   // Persist last panel to localStorage
   try { localStorage.setItem('lastPanel', name); } catch (_) {}
 
-  // Breadcrumb navigation
   if (titleEl) {
-    const _sectionMap = {
-      printing: ['controls', 'scheduler', 'queue', 'fleet', 'profiles'],
-      history: ['history', 'activity', 'gallery'],
-      analysis: ['stats', 'comparison', 'printermatrix', 'timetracker', 'waste', 'calendar', 'erroranalysis'],
-      monitoring: ['diagnostics', 'bedmesh', 'health', 'telemetry', 'protection', 'errors'],
-      materials: ['filament', 'multicolor', 'forecast', 'materialrec', 'maintenance'],
-      library: ['library', 'gcode', 'modelinfo', 'knowledge', 'screenshots'],
-      tools: ['costestimator', 'labels', 'widgets', 'playground', 'learning', 'achievements'],
-      system: ['wearprediction', 'plugins', 'backup', 'settings', 'logs']
-    };
-    const _sectionLabels = {
-      printing: 'Utskrift', history: 'Historikk', analysis: 'Analyse',
-      monitoring: 'Overvåking', materials: 'Materialer', library: 'Bibliotek',
-      tools: 'Verktøy', system: 'System'
-    };
-    let sectionKey = null;
-    for (const [key, panels] of Object.entries(_sectionMap)) {
-      if (panels.includes(name)) { sectionKey = key; break; }
-    }
-    const sectionLabel = sectionKey ? _sectionLabels[sectionKey] : null;
-    const panelLabel = t(PANEL_TITLES[name] || name);
-
-    let breadcrumbHtml = '<nav class="breadcrumb">';
-    breadcrumbHtml += '<a href="#" onclick="showDashboard();return false;">Dashboard</a>';
-    if (sectionLabel) {
-      breadcrumbHtml += '<span class="breadcrumb-sep">/</span>';
-      breadcrumbHtml += `<span>${sectionLabel}</span>`;
-    }
-    breadcrumbHtml += '<span class="breadcrumb-sep">/</span>';
-    breadcrumbHtml += `<span class="breadcrumb-current">${panelLabel}</span>`;
-    breadcrumbHtml += '</nav>';
-    titleEl.innerHTML = breadcrumbHtml;
-
-    // Add favorite toggle star button next to breadcrumb
-    if (typeof window.isFavorite === 'function') {
-      const isFav = window.isFavorite(name);
-      const starBtn = document.createElement('button');
-      starBtn.className = 'fav-toggle-btn' + (isFav ? ' is-fav' : '');
-      starBtn.dataset.panel = name;
-      starBtn.title = isFav ? 'Fjern fra favoritter' : 'Legg til favoritter';
-      starBtn.innerHTML = isFav
-        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
-        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
-      starBtn.onclick = function() { window.toggleFavorite(name); };
-      titleEl.appendChild(starBtn);
-    }
+    titleEl.textContent = t(PANEL_TITLES[name] || name);
   }
 
   // Update URL hash

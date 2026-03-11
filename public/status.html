@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,20 +10,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #f5f5f5;
-      --bg-secondary: #ffffff;
-      --border-color: rgba(0, 0, 0, 0.08);
-      --text-primary: #1a1a1a;
-      --text-secondary: #555555;
-      --text-muted: #999999;
+      --bg-primary: #06080e;
+      --bg-secondary: rgba(12, 15, 24, 0.6);
+      --bg-card: rgba(12, 15, 24, 0.55);
+      --bg-tertiary: rgba(20, 24, 36, 0.5);
+      --border-color: rgba(0, 200, 80, 0.12);
+      --border-glow: rgba(0, 200, 80, 0.5);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
       --accent-green: #00AE42;
-      --accent-blue: #1279ff;
+      --accent-blue: #3b82f6;
       --accent-orange: #f59e0b;
-      --accent-red: #e53935;
-      --radius: 12px;
-      --radius-sm: 8px;
+      --accent-red: #ef4444;
+      --accent-cyan: #22d3ee;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --glow-green: rgba(0, 174, 66, 0.08);
+      --card-glow: 0 0 40px rgba(0, 174, 66, 0.12), 0 0 80px rgba(0, 174, 66, 0.05);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg-primary);
@@ -31,153 +40,226 @@
       min-height: 100vh;
       padding: 24px;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: -0.01em;
+      position: relative;
+      overflow-x: hidden;
     }
-    .status-container {
-      max-width: 900px;
-      margin: 0 auto;
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%; left: -20%; right: -20%; bottom: -20%;
+      background:
+        radial-gradient(ellipse 800px 600px at 10% 10%, rgba(0, 200, 80, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 800px at 90% 80%, rgba(0, 100, 255, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 50% 50%, rgba(0, 174, 66, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: meshFloat 25s ease-in-out infinite alternate;
     }
-    .status-header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .status-header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .status-header .subtitle {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-    .status-summary {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .summary-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-    }
-    .summary-dot {
-      width: 8px;
-      height: 8px;
+
+    body::after {
+      content: '';
+      position: fixed;
+      width: 500px; height: 500px;
       border-radius: 50%;
+      background: radial-gradient(circle, var(--glow-green) 0%, transparent 70%);
+      top: 20%; right: 10%;
+      pointer-events: none;
+      z-index: 0;
+      animation: orbFloat 20s ease-in-out infinite;
+      opacity: 0.6;
+      filter: blur(60px);
     }
-    .dot-idle { background: var(--accent-green); }
-    .dot-printing { background: var(--accent-blue); animation: pulse 2s infinite; }
+
+    @keyframes meshFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(3%, -2%) scale(1.02); }
+      66% { transform: translate(-2%, 3%) scale(0.98); }
+      100% { transform: translate(1%, 1%) scale(1.01); }
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-60px, 40px); }
+      50% { transform: translate(30px, -50px); }
+      75% { transform: translate(-40px, -20px); }
+    }
+
+    .status-container {
+      max-width: 960px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-header { text-align: center; margin-bottom: 32px; }
+    .status-header h1 {
+      font-size: 1.5rem; font-weight: 700; margin-bottom: 4px;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 30px rgba(0, 174, 66, 0.15);
+    }
+    .status-header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
+
+    .status-summary {
+      display: flex; gap: 12px; justify-content: center;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+
+    .summary-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.8rem; font-weight: 600;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
+      border: 1px solid var(--border-color);
+      transition: all 0.3s var(--ease-out);
+    }
+    .summary-badge:hover { border-color: rgba(0,200,80,0.3); box-shadow: 0 0 20px rgba(0,174,66,0.1); }
+
+    .summary-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-idle { background: var(--accent-green); box-shadow: 0 0 8px rgba(0,174,66,0.5); }
+    .dot-printing { background: var(--accent-blue); box-shadow: 0 0 8px rgba(59,130,246,0.5); animation: pulse 2s infinite; }
     .dot-offline { background: var(--text-muted); }
-    .dot-error { background: var(--accent-red); }
+    .dot-error { background: var(--accent-red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
     .printer-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
       gap: 16px;
     }
+
     .printer-card {
-      background: var(--bg-secondary);
+      background: var(--bg-card);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
       padding: 20px;
-      transition: box-shadow 0.2s;
+      transition: all 0.4s var(--ease-out);
+      position: relative; overflow: hidden;
     }
-    .printer-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .printer-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+      opacity: 0.6; transition: opacity 0.4s, left 0.4s, right 0.4s;
+      pointer-events: none; z-index: 2;
+    }
+    .printer-card:hover { box-shadow: var(--card-glow); transform: translateY(-3px) scale(1.005); border-color: rgba(0,200,80,0.3); }
+    .printer-card:hover::before { opacity: 1; left: 5%; right: 5%; }
+
     .printer-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
     }
-    .printer-name {
-      font-weight: 600;
-      font-size: 1rem;
-    }
-    .printer-model {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
+    .printer-name { font-weight: 600; font-size: 1rem; }
+    .printer-model { font-size: 0.75rem; color: var(--text-muted); }
+
     .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
     }
-    .badge-idle { background: rgba(0,174,66,0.1); color: var(--accent-green); }
-    .badge-printing { background: rgba(18,121,255,0.1); color: var(--accent-blue); }
-    .badge-pause { background: rgba(245,158,11,0.1); color: var(--accent-orange); }
-    .badge-finish { background: rgba(0,174,66,0.1); color: var(--accent-green); }
-    .badge-offline { background: rgba(153,153,153,0.1); color: var(--text-muted); }
-    .badge-error { background: rgba(229,57,53,0.1); color: var(--accent-red); }
-    .badge-prepare { background: rgba(18,121,255,0.1); color: var(--accent-blue); }
+    .badge-idle { background: rgba(0,174,66,0.15); color: var(--accent-green); box-shadow: 0 0 12px rgba(0,174,66,0.1); text-shadow: 0 0 6px rgba(0,174,66,0.3); }
+    .badge-printing { background: rgba(59,130,246,0.15); color: var(--accent-blue); box-shadow: 0 0 12px rgba(59,130,246,0.1); text-shadow: 0 0 6px rgba(59,130,246,0.3); }
+    .badge-pause { background: rgba(245,158,11,0.15); color: var(--accent-orange); box-shadow: 0 0 12px rgba(245,158,11,0.1); }
+    .badge-finish { background: rgba(0,174,66,0.15); color: var(--accent-green); box-shadow: 0 0 12px rgba(0,174,66,0.1); }
+    .badge-offline { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+    .badge-error { background: rgba(239,68,68,0.15); color: var(--accent-red); box-shadow: 0 0 12px rgba(239,68,68,0.1); }
+    .badge-prepare { background: rgba(59,130,246,0.15); color: var(--accent-blue); box-shadow: 0 0 12px rgba(59,130,246,0.1); }
+
+    /* Progress */
     .progress-section { margin-top: 12px; }
-    .progress-bar-bg {
-      width: 100%;
-      height: 6px;
-      background: rgba(0,0,0,0.06);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-bottom: 8px;
+    .progress-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), #60a5fa); border-radius: 3px; transition: width 0.5s ease; box-shadow: 0 0 10px rgba(59,130,246,0.4); }
+    .progress-details { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); }
+    .progress-pct { font-weight: 600; color: var(--accent-blue); text-shadow: 0 0 8px rgba(59,130,246,0.3); }
+
+    .print-info { margin-top: 10px; font-size: 0.78rem; color: var(--text-secondary); }
+    .print-info .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; margin-bottom: 4px; }
+
+    /* Info rows */
+    .info-section {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 14px;
+      padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);
     }
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--accent-blue);
-      border-radius: 3px;
-      transition: width 0.5s ease;
+
+    .info-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.76rem; color: var(--text-muted);
+      transition: color 0.2s;
     }
-    .progress-details {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
+    .info-item:hover { color: var(--text-secondary); }
+    .info-item svg { flex-shrink: 0; opacity: 0.6; }
+    .info-val { color: var(--text-secondary); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .info-val-hot { color: var(--accent-orange); text-shadow: 0 0 6px rgba(245,158,11,0.3); }
+    .info-target { color: var(--text-muted); font-size: 0.68rem; }
+
+    /* Fans */
+    .fans-row {
+      display: flex; gap: 12px; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
     }
-    .progress-pct {
-      font-weight: 600;
-      color: var(--accent-blue);
+    .fan-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.74rem; color: var(--text-muted);
     }
-    .print-info {
-      margin-top: 10px;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
+    .fan-item svg { opacity: 0.5; }
+    .fan-val { color: var(--text-secondary); font-weight: 500; }
+    .fan-active { color: var(--accent-cyan); }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .fan-spinning svg { animation: spin 1s linear infinite; }
+
+    /* AMS */
+    .ams-row {
+      display: flex; gap: 8px; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+      flex-wrap: wrap; align-items: center;
     }
-    .print-info .file-name {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-      display: block;
-      margin-bottom: 4px;
+    .ams-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-right: 4px; }
+    .ams-spool {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 0.72rem; font-weight: 500;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    .temp-row {
-      display: flex;
-      gap: 16px;
-      margin-top: 10px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
+    .ams-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); }
+    .ams-type { color: var(--text-secondary); }
+    .ams-pct { color: var(--text-muted); font-size: 0.68rem; }
+
+    /* Lights & WiFi indicator row */
+    .meta-row {
+      display: flex; gap: 14px; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+      align-items: center; flex-wrap: wrap;
     }
-    .temp-row span { display: flex; align-items: center; gap: 4px; }
-    .disabled-msg {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-      font-size: 1.1rem;
-    }
+    .meta-item { display: flex; align-items: center; gap: 5px; font-size: 0.74rem; color: var(--text-muted); }
+    .meta-item svg { opacity: 0.5; }
+    .wifi-good { color: var(--accent-green); }
+    .wifi-ok { color: var(--accent-orange); }
+    .wifi-bad { color: var(--accent-red); }
+    .light-on { color: var(--accent-orange); }
+    .light-off { color: var(--text-muted); }
+
+    .disabled-msg { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 1.1rem; }
     .auto-refresh { text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 0.75rem; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,174,66,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,174,66,0.3); }
+    ::selection { background: rgba(0,174,66,0.2); color: inherit; }
+
     @media (max-width: 600px) {
       body { padding: 12px; }
       .printer-grid { grid-template-columns: 1fr; }
+      .info-section { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -196,6 +278,16 @@
   </div>
 
   <script>
+    const SVG = {
+      nozzle: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>',
+      bed: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>',
+      chamber: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M12 8v8M8 12h8"/></svg>',
+      fan: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12c-1 -4 -2 -7 2 -10c4 3 3 6 2 10m0 0c4 -1 7 -2 10 2c-3 4 -6 3 -10 2m0 0c1 4 2 7 -2 10c-4 -3 -3 -6 -2 -10m0 0c-4 1 -7 2 -10 -2c3 -4 6 -3 10 -2"/><circle cx="12" cy="12" r="2"/></svg>',
+      wifi: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>',
+      speed: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+      light: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+    };
+
     const STATUS_MAP = {
       'IDLE': { label: 'Idle', badge: 'badge-idle', dot: 'dot-idle' },
       'RUNNING': { label: 'Printing', badge: 'badge-printing', dot: 'dot-printing' },
@@ -217,6 +309,30 @@
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
+    function tempStr(temp, target) {
+      if (temp == null) return null;
+      const t = Math.round(temp);
+      const isHot = t > 40;
+      let s = `<span class="info-val${isHot ? ' info-val-hot' : ''}">${t}&deg;C</span>`;
+      if (target != null && target > 0) s += `<span class="info-target">/ ${Math.round(target)}&deg;</span>`;
+      return s;
+    }
+
+    function wifiClass(dbm) {
+      if (dbm == null) return '';
+      const s = parseInt(dbm);
+      if (s >= -50) return 'wifi-good';
+      if (s >= -70) return 'wifi-ok';
+      return 'wifi-bad';
+    }
+
+    function wifiLabel(dbm) {
+      if (dbm == null) return null;
+      const s = parseInt(dbm);
+      const pct = Math.min(100, Math.max(0, 2 * (s + 100)));
+      return `${pct}%`;
+    }
+
     function renderCard(p) {
       const info = getStatusInfo(p.status);
       const isPrinting = ['RUNNING', 'PREPARE', 'PAUSE'].includes(p.status);
@@ -229,6 +345,7 @@
           <span class="status-badge ${info.badge}">${info.label}</span>
         </div>`;
 
+      // Progress bar
       if (isPrinting && p.progress != null) {
         html += `<div class="progress-section">
           <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${p.progress}%"></div></div>
@@ -245,14 +362,74 @@
         }
       }
 
-      if (p.nozzle_temp != null || p.bed_temp != null) {
-        html += `<div class="temp-row">`;
-        if (p.nozzle_temp != null) html += `<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>${Math.round(p.nozzle_temp)}&deg;C</span>`;
-        if (p.bed_temp != null) html += `<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>${Math.round(p.bed_temp)}&deg;C</span>`;
-        html += `</div>`;
+      // Temperatures
+      const nozzle = tempStr(p.nozzle_temp, p.nozzle_target);
+      const bed = tempStr(p.bed_temp, p.bed_target);
+      const chamber = tempStr(p.chamber_temp, null);
+      const hasSpeed = p.speed_percent != null;
+
+      if (nozzle || bed || chamber || hasSpeed) {
+        html += '<div class="info-section">';
+        if (nozzle) html += `<div class="info-item">${SVG.nozzle} Nozzle ${nozzle}</div>`;
+        if (bed) html += `<div class="info-item">${SVG.bed} Bed ${bed}</div>`;
+        if (chamber) html += `<div class="info-item">${SVG.chamber} Chamber ${chamber}</div>`;
+        if (hasSpeed) html += `<div class="info-item">${SVG.speed} <span class="info-val">${p.speed_percent}%</span> speed</div>`;
+        html += '</div>';
       }
 
-      html += `</div>`;
+      // Fans
+      const hasFans = p.fan_part != null || p.fan_aux != null || p.fan_chamber != null;
+      if (hasFans) {
+        html += '<div class="fans-row">';
+        if (p.fan_part != null) {
+          const active = p.fan_part > 0;
+          html += `<div class="fan-item${active ? ' fan-spinning' : ''}">${SVG.fan} <span class="fan-val${active ? ' fan-active' : ''}">Part ${p.fan_part}%</span></div>`;
+        }
+        if (p.fan_aux != null) {
+          const active = p.fan_aux > 0;
+          html += `<div class="fan-item${active ? ' fan-spinning' : ''}">${SVG.fan} <span class="fan-val${active ? ' fan-active' : ''}">Aux ${p.fan_aux}%</span></div>`;
+        }
+        if (p.fan_chamber != null) {
+          const active = p.fan_chamber > 0;
+          html += `<div class="fan-item${active ? ' fan-spinning' : ''}">${SVG.fan} <span class="fan-val${active ? ' fan-active' : ''}">Chamber ${p.fan_chamber}%</span></div>`;
+        }
+        html += '</div>';
+      }
+
+      // AMS
+      if (p.ams && p.ams.length > 0) {
+        html += '<div class="ams-row"><span class="ams-label">AMS</span>';
+        for (const unit of p.ams) {
+          for (const tray of unit.trays) {
+            const color = tray.color ? '#' + tray.color.substring(0, 6) : '#555';
+            html += `<div class="ams-spool">
+              <span class="ams-dot" style="background:${color}"></span>
+              <span class="ams-type">${esc(tray.type || '?')}</span>
+              ${tray.remaining != null ? `<span class="ams-pct">${tray.remaining}%</span>` : ''}
+            </div>`;
+          }
+        }
+        html += '</div>';
+      }
+
+      // WiFi + Lights + Speed
+      const wifiVal = wifiLabel(p.wifi_signal);
+      const hasLights = p.lights && (p.lights.chamber != null || p.lights.work != null);
+      if (wifiVal || hasLights) {
+        html += '<div class="meta-row">';
+        if (wifiVal) {
+          html += `<div class="meta-item ${wifiClass(p.wifi_signal)}">${SVG.wifi} ${wifiVal} <span style="font-size:0.65rem;opacity:0.6">(${p.wifi_signal} dBm)</span></div>`;
+        }
+        if (p.lights?.chamber != null) {
+          html += `<div class="meta-item ${p.lights.chamber ? 'light-on' : 'light-off'}">${SVG.light} Chamber ${p.lights.chamber ? 'On' : 'Off'}</div>`;
+        }
+        if (p.lights?.work != null) {
+          html += `<div class="meta-item ${p.lights.work ? 'light-on' : 'light-off'}">${SVG.light} Work ${p.lights.work ? 'On' : 'Off'}</div>`;
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
       return html;
     }
 

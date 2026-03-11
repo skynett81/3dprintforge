@@ -1,12 +1,11 @@
-// Telemetry Panel — Modular with Tabs and Drag-and-Drop
+// Telemetry Panel — Modular with Tabs
 (function() {
 
   // ═══ State ═══
   let currentRange = '1h';
   let _selectedTelePrinter = null;
   let _activeTab = 'overview';
-  let _locked = localStorage.getItem('tele-layout-locked') !== '0';
-  let _draggedMod = null;
+  const _locked = true;
   let _data = [];
   let _printerId = null;
 
@@ -29,26 +28,9 @@
     'progress-chart': 'half', 'layer-chart': 'half', 'wifi-chart': 'full'
   };
 
-  const STORAGE_PREFIX = 'tele-module-order-';
-  const LOCK_KEY = 'tele-layout-locked';
-
-  // Clear stale saved orders when module set changes
-  const _MOD_VER = 3;
-  if (localStorage.getItem('tele-mod-ver') !== String(_MOD_VER)) {
-    for (const tab of Object.keys(TAB_CONFIG)) localStorage.removeItem(STORAGE_PREFIX + tab);
-    localStorage.setItem('tele-mod-ver', String(_MOD_VER));
-  }
-
   // ═══ Persistence ═══
   function getOrder(tabId) {
-    try { const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId)); if (Array.isArray(o)) return o; } catch (_) {}
     return TAB_CONFIG[tabId]?.modules || [];
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`tele-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
   }
 
   // ═══ Helpers ═══
@@ -442,37 +424,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
   }
 
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
-  }
-
   // ═══ Main render ═══
   async function loadTelemetry() {
     const panel = document.getElementById('overlay-panel-body');
@@ -507,7 +458,7 @@
 
       let html = '';
 
-      // ── Top bar: Printer selector + Range + Lock ──
+      // ── Top bar: Printer selector + Range ──
       html += '<div class="tele-top-bar">';
       html += buildPrinterSelector('changeTelePrinter', _selectedTelePrinter, false);
       html += '<div class="tele-range-group">';
@@ -515,10 +466,6 @@
         html += `<button class="tele-range-btn ${key === currentRange ? 'active' : ''}" data-ripple onclick="setTelemetryRange('${key}')">${key}</button>`;
       }
       html += '</div>';
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
-      html += `<button class="tele-lock-btn ${_locked ? '' : 'active'}" data-ripple onclick="toggleTeleLock()" title="${_locked ? t('telemetry.layout_locked') : t('telemetry.layout_unlocked')}">${lockIcon}</button>`;
       html += '</div>';
 
       // ── Tab bar ──
@@ -537,11 +484,8 @@
           if (!builder) continue;
           const content = builder(_data);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable}>`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}">`;
           html += content;
           html += '</div>';
         }
@@ -549,11 +493,6 @@
       }
 
       panel.innerHTML = html;
-
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`tele-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('telemetry.load_failed')}</p>`;
     }
@@ -563,11 +502,6 @@
   window.loadTelemetryPanel = loadTelemetry;
   window.changeTelePrinter = function(value) { _selectedTelePrinter = value || null; loadTelemetry(); };
   window.switchTeleTab = switchTab;
-  window.toggleTeleLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadTelemetry();
-  };
   window.setTelemetryRange = function(range) {
     currentRange = range;
     loadTelemetry();

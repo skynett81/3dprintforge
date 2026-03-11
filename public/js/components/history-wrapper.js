@@ -21,7 +21,7 @@
     if (old) old.remove();
     body.insertAdjacentHTML('afterbegin', _tabBarHtml());
   }
-  window._switchHistoryTab = function(tab) { _activeTab = tab; _render(); };
+  window._switchHistoryTab = function(tab) { _activeTab = tab; history.replaceState(null, '', '#' + tab); window._activePanel = tab; _render(); };
   async function _render() {
     if (_activeTab === 'history' && _origLoad) await _origLoad();
     else if (_activeTab === 'gallery' && typeof loadGalleryPanel === 'function') await loadGalleryPanel();

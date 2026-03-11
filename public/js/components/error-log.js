@@ -1,4 +1,4 @@
-// Error Log — Modular with Tabs and Drag-and-Drop
+// Error Log — Modular with Tabs
 (function() {
 
   // ═══ Helpers ═══
@@ -77,28 +77,17 @@
     'severity-breakdown': 'half', 'printer-breakdown': 'half', 'common-errors': 'full'
   };
 
-  const STORAGE_PREFIX = 'error-module-order-';
-  const LOCK_KEY = 'error-layout-locked';
-
   let _allErrors = [];
   let _activeSeverity = 'all';
   let _searchTerm = '';
   let _selectedErrorPrinter = null;
   let _activeTab = 'log';
   let _showAcknowledged = false;
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
-  let _draggedMod = null;
+  const _locked = true;
 
   // ═══ Persistence ═══
   function getOrder(tabId) {
-    try { const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId)); if (Array.isArray(o)) return o; } catch (_) {}
     return TAB_CONFIG[tabId]?.modules || [];
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`error-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
   }
 
   // ═══ Severity counts ═══
@@ -238,37 +227,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
   }
 
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
-  }
-
   // ═══ Main render ═══
   async function loadErrors() {
     const panel = document.getElementById('overlay-panel-body');
@@ -309,16 +267,6 @@
       // Printer selector
       html += buildPrinterSelector('changeErrorPrinter', _selectedErrorPrinter);
 
-      // Toolbar
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
-      html += `<div class="stats-toolbar">
-        <button class="speed-btn ${_locked ? '' : 'active'}" onclick="toggleErrorLock()" title="${_locked ? t('errors.layout_locked') : t('errors.layout_unlocked')}">
-          ${lockIcon} <span>${_locked ? t('errors.layout_locked') : t('errors.layout_unlocked')}</span>
-        </button>
-      </div>`;
-
       // Tab bar
       html += '<div class="tabs">';
       for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
@@ -336,11 +284,8 @@
           if (!builder) continue;
           const content = builder(_allErrors);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable} style="--i:${_si++}">`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" style="--i:${_si++}">`;
           html += content;
           html += '</div>';
         }
@@ -348,12 +293,6 @@
       }
 
       panel.innerHTML = html;
-
-      // Attach module DnD
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`error-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
 
       // Render error list
       renderFilteredErrors();
@@ -495,12 +434,6 @@
   window.loadErrorsPanel = loadErrors;
   window.changeErrorPrinter = function(value) { _selectedErrorPrinter = value || null; loadErrors(); };
   window.switchErrorTab = switchTab;
-  window.toggleErrorLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadErrors();
-  };
-
   window.filterErrorSeverity = function(severity) {
     _activeSeverity = severity;
     const slug = severity === 'all' ? 'errors' : `errors/${severity}`;
@@ -531,9 +464,7 @@
       // Update summary counts
       const summaryMod = document.querySelector('[data-module-id="error-summary"]');
       if (summaryMod) {
-        const handle = summaryMod.querySelector('.stats-module-handle');
-        const content = BUILDERS['error-summary'](_allErrors);
-        summaryMod.innerHTML = (handle ? handle.outerHTML : '') + content;
+        summaryMod.innerHTML = BUILDERS['error-summary'](_allErrors);
       }
     } catch (e) {
       console.error('Failed to acknowledge error:', e);
@@ -548,9 +479,7 @@
       // Update summary counts
       const summaryMod = document.querySelector('[data-module-id="error-summary"]');
       if (summaryMod) {
-        const handle = summaryMod.querySelector('.stats-module-handle');
-        const content = BUILDERS['error-summary'](_allErrors);
-        summaryMod.innerHTML = (handle ? handle.outerHTML : '') + content;
+        summaryMod.innerHTML = BUILDERS['error-summary'](_allErrors);
       }
     } catch (e) {
       console.error('Failed to delete error:', e);

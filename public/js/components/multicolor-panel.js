@@ -12,6 +12,25 @@
     return isNaN(n) ? '#808080' : `rgb(${(n>>16)&255},${(n>>8)&255},${n&255})`;
   }
 
+  // Mini spool SVG — uses global _spoolSvg if available, else simple fallback
+  function _miniSpool(colorHex, pct, id, size) {
+    if (typeof window._spoolSvg === 'function') {
+      return window._spoolSvg(colorHex, null, null, pct != null ? pct : 80, id || 0, size || 32);
+    }
+    // Fallback: simple spool
+    const sz = size || 32;
+    const hubR = 13, maxR = 38;
+    const filR = pct > 0 ? hubR + (maxR - hubR) * Math.max(5, pct) / 100 : hubR;
+    const fill = colorHex ? (colorHex.startsWith('#') ? colorHex : '#' + colorHex.substring(0, 6)) : '#808080';
+    return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" class="spool-svg">
+      <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,0.06)"/>
+      <circle cx="50" cy="50" r="42" class="spool-flange"/>
+      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${fill}" class="spool-filament"/>
+      <circle cx="50" cy="50" r="${hubR}" class="spool-hub"/>
+      <circle cx="50" cy="50" r="5" class="spool-hole"/>
+    </svg>`;
+  }
+
   function _readAmsTrays() {
     _amsTrays = [];
     try {
@@ -70,8 +89,12 @@
       .mc-slots { display:flex; flex-direction:column; gap:10px; }
       .mc-slot { display:flex; align-items:center; gap:12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:12px 14px; }
       .mc-slot-num { font-size:0.75rem; font-weight:800; color:var(--text-muted); min-width:24px; }
-      .mc-slot-color { width:32px; height:32px; border-radius:50%; border:2px solid var(--border-color); cursor:pointer; transition:transform 0.15s; flex-shrink:0; }
-      .mc-slot-color:hover { transform:scale(1.15); }
+      .mc-slot-spool { width:40px; height:40px; cursor:pointer; transition:transform 0.15s; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+      .mc-slot-spool:hover { transform:scale(1.1) rotate(8deg); }
+      .mc-slot-spool .spool-svg { width:40px; height:40px; }
+      .mc-slot-empty { width:40px; height:40px; border-radius:50%; border:2px dashed var(--border-color); cursor:pointer; transition:border-color 0.15s; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+      .mc-slot-empty:hover { border-color:var(--accent-blue); }
+      .mc-slot-empty svg { opacity:0.3; }
       .mc-slot-info { flex:1; }
       .mc-slot-name { font-size:0.82rem; font-weight:600; }
       .mc-slot-meta { font-size:0.7rem; color:var(--text-muted); }
@@ -81,9 +104,10 @@
       .mc-sidebar { }
       .mc-preview { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
       .mc-preview h4 { margin:0 0 12px; font-size:0.85rem; }
-      .mc-preview-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; }
-      .mc-preview-swatch { aspect-ratio:1; border-radius:6px; position:relative; }
-      .mc-preview-swatch span { position:absolute; bottom:2px; right:4px; font-size:0.55rem; font-weight:700; color:rgba(255,255,255,0.8); text-shadow:0 1px 2px rgba(0,0,0,0.5); }
+      .mc-preview-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+      .mc-preview-spool { position:relative; display:flex; align-items:center; justify-content:center; }
+      .mc-preview-spool .spool-svg { width:100%; height:auto; }
+      .mc-preview-spool-num { position:absolute; bottom:2px; right:4px; font-size:0.55rem; font-weight:700; color:var(--text-muted); }
       .mc-compat { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:16px; }
       .mc-compat h4 { margin:0 0 10px; font-size:0.85rem; }
       .mc-compat-row { display:flex; justify-content:space-between; padding:5px 0; font-size:0.78rem; border-bottom:1px solid rgba(0,0,0,0.03); }
@@ -95,7 +119,8 @@
       .mc-picker-section { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); padding:10px 8px 4px; }
       .mc-picker-item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:var(--radius); cursor:pointer; transition:background 0.1s; }
       .mc-picker-item:hover { background:var(--bg-secondary); }
-      .mc-picker-dot { width:28px; height:28px; border-radius:50%; border:1px solid var(--border-color); flex-shrink:0; }
+      .mc-picker-spool { width:36px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+      .mc-picker-spool .spool-svg { width:36px; height:36px; }
       .mc-picker-name { font-size:0.82rem; font-weight:600; }
       .mc-picker-meta { font-size:0.68rem; color:var(--text-muted); }
       .mc-export-btn { margin-top:12px; padding:8px 16px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:0.8rem; font-weight:600; width:100%; }
@@ -149,24 +174,32 @@
       const s = _slots[i];
       const color = s?.color_hex || '#444';
       const name = s ? (_esc(s.name || s.material || 'Spool')) : t('multicolor.empty_slot');
+      const remainPct = s?.remaining_weight_g != null ? s.remaining_weight_g : 80;
       const remainStr = s?.remaining_weight_g != null ? `${s.remaining_weight_g}%` : '';
       const loc = s?._label ? `${_esc(s._label)} · ` : '';
       const meta = s ? `${loc}${_esc(s.material || '')}${remainStr ? ' — ' + remainStr : ''}` : t('multicolor.click_assign');
+
+      const spoolVisual = s
+        ? `<div class="mc-slot-spool" onclick="_mcPickSpool(${i})">${_miniSpool(color, remainPct, 'mc-' + i, 40)}</div>`
+        : `<div class="mc-slot-empty" onclick="_mcPickSpool(${i})"><svg viewBox="0 0 100 100" width="28" height="28" class="spool-svg"><circle cx="50" cy="50" r="42" class="spool-flange"/><circle cx="50" cy="50" r="13" class="spool-hub"/><circle cx="50" cy="50" r="5" class="spool-hole"/></svg></div>`;
+
       html += `<div class="mc-slot">
         <span class="mc-slot-num">${i + 1}</span>
-        <div class="mc-slot-color" style="background:${color}" onclick="_mcPickSpool(${i})"></div>
+        ${spoolVisual}
         <div class="mc-slot-info"><div class="mc-slot-name">${name}</div><div class="mc-slot-meta">${meta}</div></div>
         ${s ? `<button class="mc-slot-remove" onclick="_mcRemoveSlot(${i})">\u2715</button>` : ''}
       </div>`;
     }
     slotsEl.innerHTML = html;
 
-    // Preview
+    // Preview — mini spools in grid
     if (previewEl) {
       let ph = '';
       for (let i = 0; i < _slots.length; i++) {
-        const color = _slots[i]?.color_hex || '#333';
-        ph += `<div class="mc-preview-swatch" style="background:${color}"><span>${i + 1}</span></div>`;
+        const s = _slots[i];
+        const color = s?.color_hex || '#333';
+        const remainPct = s?.remaining_weight_g != null ? s.remaining_weight_g : (s ? 80 : 0);
+        ph += `<div class="mc-preview-spool">${_miniSpool(color, s ? remainPct : 0, 'mcp-' + i, 60)}<span class="mc-preview-spool-num">${i + 1}</span></div>`;
       }
       previewEl.innerHTML = ph || `<div style="color:var(--text-muted);font-size:0.75rem">${t('multicolor.no_colors')}</div>`;
     }
@@ -217,8 +250,9 @@
       items += `<div class="mc-picker-section">${t('multicolor.ams_loaded') || 'AMS'}</div>`;
       for (let ai = 0; ai < _amsTrays.length; ai++) {
         const tr = _amsTrays[ai];
+        const pct = tr.remaining_weight_g != null ? tr.remaining_weight_g : 80;
         items += `<div class="mc-picker-item" onclick="_mcAssignAms(${index}, ${ai})">
-          <div class="mc-picker-dot" style="background:${tr.color_hex}"></div>
+          <div class="mc-picker-spool">${_miniSpool(tr.color_hex, pct, 'mca-' + ai, 36)}</div>
           <div><div class="mc-picker-name">${_esc(tr.name || tr.material)}</div>
           <div class="mc-picker-meta">${_esc(tr._label)} · ${_esc(tr.material)}${tr.remaining_weight_g != null ? ' — ' + tr.remaining_weight_g + '%' : ''}</div></div>
         </div>`;
@@ -230,8 +264,9 @@
       items += `<div class="mc-picker-section">${t('multicolor.inventory') || 'Inventory'}</div>`;
       for (const sp of _spools) {
         const color = sp.color_hex || '#888';
+        const pct = sp.initial_weight_g > 0 ? Math.round((sp.remaining_weight_g / sp.initial_weight_g) * 100) : 80;
         items += `<div class="mc-picker-item" onclick="_mcAssignSpool(${index}, ${sp.id})">
-          <div class="mc-picker-dot" style="background:${color}"></div>
+          <div class="mc-picker-spool">${_miniSpool(color, pct, 'mci-' + sp.id, 36)}</div>
           <div><div class="mc-picker-name">${_esc(sp.name || sp.material || 'Spool #' + sp.id)}</div>
           <div class="mc-picker-meta">${_esc(sp.material || '')} — ${(sp.remaining_weight_g || 0).toFixed(0)}g</div></div>
         </div>`;

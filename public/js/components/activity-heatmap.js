@@ -83,40 +83,43 @@
 
       let h = '<div class="act-panel">';
 
-      // ── Stats strip ──
-      h += `<div class="stats-strip act-stats">
-        <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Totalt')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
-        <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Aktive dager')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
-        <div class="spark-panel"><span class="spark-label">${_tl('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
-        <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Lengste')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
-        <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Suksessrate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
+      // ── Stats strip (full width) ──
+      h += `<div class="act-full">
+        <div class="stats-strip act-stats">
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Totalt')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Aktive dager')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Lengste')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
+          <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Suksessrate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
+        </div>
       </div>`;
 
-      // ── Secondary stats ──
-      h += `<div class="auto-grid auto-grid--md act-cards">`;
-      h += _statCard(_tl('activity.print_hours', 'Utskriftstimer'), Math.round(totalHours) + 'h', 'var(--accent-blue)');
-      h += _statCard(_tl('activity.filament_used', 'Filament brukt'), totalFilament >= 1000 ? (totalFilament / 1000).toFixed(1) + 'kg' : Math.round(totalFilament) + 'g', 'var(--accent-orange)');
-      h += _statCard(_tl('activity.completed', 'Fullført'), totalCompleted, 'var(--accent-green)');
-      h += _statCard(_tl('activity.failed', 'Feilet'), totalFailed, 'var(--accent-red)');
-      h += _statCard(_tl('activity.avg_per_day', 'Snitt per dag'), avgPerDay, 'var(--accent-purple)');
-      h += `</div>`;
-
-      // ── Year heatmap ──
-      h += `<div class="card act-heatmap-card">
-        <div class="card-title">${_tl('activity.year_heatmap', 'Utskriftsaktivitet — siste 12 måneder')}</div>
-        ${_renderHeatmap(dayMap, maxPrints)}
+      // ── 2-column body ──
+      // Left: stat cards + busiest days
+      h += `<div class="act-col-left">
+        <div class="act-cards-grid">
+          ${_statCard(_tl('activity.print_hours', 'Utskriftstimer'), Math.round(totalHours) + 'h', 'var(--accent-blue)')}
+          ${_statCard(_tl('activity.filament_used', 'Filament brukt'), totalFilament >= 1000 ? (totalFilament / 1000).toFixed(1) + 'kg' : Math.round(totalFilament) + 'g', 'var(--accent-orange)')}
+          ${_statCard(_tl('activity.completed', 'Fullført'), totalCompleted, 'var(--accent-green)')}
+          ${_statCard(_tl('activity.failed', 'Feilet'), totalFailed, 'var(--accent-red)')}
+          ${_statCard(_tl('activity.avg_per_day', 'Snitt per dag'), avgPerDay, 'var(--accent-purple)')}
+        </div>
+        <div class="card act-busiest-card">
+          <div class="card-title">${_tl('activity.busiest_days', 'Travleste dager')}</div>
+          ${_renderBusiestDays(daily)}
+        </div>
       </div>`;
 
-      // ── Monthly breakdown ──
-      h += `<div class="card act-monthly-card">
-        <div class="card-title">${_tl('activity.monthly_breakdown', 'Månedlig oversikt')}</div>
-        ${_renderMonthlyBars(daily)}
-      </div>`;
-
-      // ── Busiest days ──
-      h += `<div class="card act-busiest-card">
-        <div class="card-title">${_tl('activity.busiest_days', 'Travleste dager')}</div>
-        ${_renderBusiestDays(daily)}
+      // Right: heatmap + monthly
+      h += `<div class="act-col-right">
+        <div class="card act-heatmap-card">
+          <div class="card-title">${_tl('activity.year_heatmap', 'Utskriftsaktivitet — siste 12 måneder')}</div>
+          ${_renderHeatmap(dayMap, maxPrints)}
+        </div>
+        <div class="card act-monthly-card">
+          <div class="card-title">${_tl('activity.monthly_breakdown', 'Månedlig oversikt')}</div>
+          ${_renderMonthlyBars(daily)}
+        </div>
       </div>`;
 
       h += '</div>';

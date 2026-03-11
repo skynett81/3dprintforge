@@ -21,7 +21,7 @@
     if (old) old.remove();
     body.insertAdjacentHTML('afterbegin', _tabBarHtml());
   }
-  window._switchKnowledgeTab = function(tab) { _activeTab = tab; _render(); };
+  window._switchKnowledgeTab = function(tab) { _activeTab = tab; history.replaceState(null, '', '#' + tab); window._activePanel = tab; _render(); };
   async function _render() {
     if (_activeTab === 'knowledge' && _origLoad) await _origLoad();
     else if (_activeTab === 'learning' && typeof loadLearningPanel === 'function') await loadLearningPanel();

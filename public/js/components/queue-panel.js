@@ -1,35 +1,10 @@
 // Print Queue Panel
 (function() {
 
-  const TAB_CONFIG = {
-    active:   { label: 'queue.tab_active',   modules: ['queue-hero', 'queue-list', 'active-jobs'] },
-    history:  { label: 'queue.tab_history',   modules: ['completed-items'] },
-    settings: { label: 'queue.tab_settings',  modules: ['queue-settings'] }
-  };
-  const MODULE_SIZE = {
-    'queue-hero': 'full', 'queue-list': 'full', 'active-jobs': 'full',
-    'completed-items': 'full', 'queue-settings': 'full'
-  };
-
-  const STORAGE_PREFIX = 'queue-module-order-';
-  const LOCK_KEY = 'queue-layout-locked';
-
-  let _activeTab = 'active';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _queues = [];
   let _selectedQueue = null;
-  let _draggedMod = null;
-
-  function getOrder(tabId) {
-    try { const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId)); if (Array.isArray(o)) return o; } catch {}
-    return TAB_CONFIG[tabId]?.modules || [];
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`queue-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
-  }
+  let _historyOpen = false;
+  let _settingsOpen = false;
 
   function printerName(id) {
     return window.printerState?._printerMeta?.[id]?.name || id || '--';
@@ -52,14 +27,36 @@
       const active = _queues.filter(q => q.status === 'active').length;
       const total = _queues.length;
       const printing = _queues.reduce((s, q) => s + (q.printing_count || 0), 0);
-      return `<div class="stat-grid">
-        <div class="stat-card"><div class="stat-value">${active}</div><div class="stat-label">${t('queue.active_queues')}</div></div>
-        <div class="stat-card"><div class="stat-value" style="color:var(--accent-blue)">${printing}</div><div class="stat-label">${t('queue.active_jobs')}</div></div>
-        <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('queue.total_queues')}</div></div>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button class="form-btn" data-ripple onclick="window._queueShowCreate()">${t('queue.create')}</button>
-        <button class="form-btn form-btn-secondary" data-ripple onclick="window._queueForceDispatch()">${t('queue.dispatch_now')}</button>
+      const pending = _queues.reduce((s, q) => s + ((q.item_count || 0) - (q.completed_count || 0)), 0);
+      return `<div class="q-hero">
+        <div class="q-hero-stats">
+          <div class="q-hero-stat">
+            <div class="q-hero-val">${active}</div>
+            <div class="q-hero-label">${t('queue.active_queues')}</div>
+          </div>
+          <div class="q-hero-stat">
+            <div class="q-hero-val" style="color:var(--accent-blue)">${printing}</div>
+            <div class="q-hero-label">${t('queue.active_jobs')}</div>
+          </div>
+          <div class="q-hero-stat">
+            <div class="q-hero-val" style="color:var(--accent-orange)">${pending}</div>
+            <div class="q-hero-label">${t('queue.pending') || 'Venter'}</div>
+          </div>
+          <div class="q-hero-stat">
+            <div class="q-hero-val">${total}</div>
+            <div class="q-hero-label">${t('queue.total_queues')}</div>
+          </div>
+        </div>
+        <div class="q-hero-actions">
+          <button class="form-btn" data-ripple onclick="window._queueShowCreate()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ${t('queue.create')}
+          </button>
+          <button class="form-btn form-btn-secondary" data-ripple onclick="window._queueForceDispatch()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+            ${t('queue.dispatch_now')}
+          </button>
+        </div>
       </div>`;
     },
 
@@ -71,31 +68,40 @@
         desc: t('queue.no_queues_desc') || 'Create a print queue to manage and schedule your print jobs.'
       });
 
-      return activeQueues.map(q => {
+      return `<div class="q-grid">${activeQueues.map(q => {
         const progressPct = q.item_count > 0 ? Math.round((q.completed_count / q.item_count) * 100) : 0;
-        return `<div class="queue-card" data-queue-id="${q.id}" onclick="window._queueSelect(${q.id})">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <strong>${q.name}</strong>
-            <div style="display:flex;gap:6px;align-items:center">
-              ${statusBadge(q.status)}
-              <span style="font-size:0.8rem;color:var(--text-secondary)">${q.completed_count}/${q.item_count}</span>
-            </div>
+        const isSelected = q.id === _selectedQueue;
+        return `<div class="q-card${isSelected ? ' q-card-selected' : ''}" data-queue-id="${q.id}" onclick="window._queueSelect(${q.id})">
+          <div class="q-card-header">
+            <strong class="q-card-name">${q.name}</strong>
+            ${statusBadge(q.status)}
           </div>
-          <div class="chart-bar-track" style="height:6px;margin-bottom:6px"><div class="chart-bar-fill" style="width:${progressPct}%;background:var(--accent-green)"></div></div>
-          <div style="display:flex;gap:8px;font-size:0.75rem;color:var(--text-secondary)">
+          <div class="q-card-progress">
+            <div class="q-card-bar-track"><div class="q-card-bar-fill" style="width:${progressPct}%"></div></div>
+            <span class="q-card-count">${q.completed_count}/${q.item_count}</span>
+          </div>
+          <div class="q-card-meta">
             <span>${q.auto_start ? t('queue.auto_start') : t('queue.manual')}</span>
-            <span>${q.priority_mode}</span>
+            <span>${q.priority_mode === 'fifo' ? 'FIFO' : t('queue.priority')}</span>
             ${q.target_printer_id ? `<span>${printerName(q.target_printer_id)}</span>` : ''}
           </div>
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-            ${q.status === 'active' ? `<button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queuePause(${q.id})">${t('queue.pause_queue')}</button>` :
-              q.status === 'paused' ? `<button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueResume(${q.id})">${t('queue.resume_queue')}</button>` : ''}
-            <button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueAddItem(${q.id})">${t('queue.add_item')}</button>
-            <button class="form-btn form-btn-secondary form-btn-sm" onclick="event.stopPropagation();window._queueEditDialog(${q.id})">${t('common.edit') || 'Rediger'}</button>
-            <button class="form-btn form-btn-danger form-btn-sm" onclick="event.stopPropagation();window._queueDelete(${q.id})">${t('common.delete') || 'Slett'}</button>
+          <div class="q-card-actions">
+            ${q.status === 'active' ? `<button class="q-action-btn" onclick="event.stopPropagation();window._queuePause(${q.id})" data-ripple>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              ${t('queue.pause_queue')}</button>` :
+              q.status === 'paused' ? `<button class="q-action-btn q-action-resume" onclick="event.stopPropagation();window._queueResume(${q.id})" data-ripple>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              ${t('queue.resume_queue')}</button>` : ''}
+            <button class="q-action-btn" onclick="event.stopPropagation();window._queueAddItem(${q.id})" data-ripple>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              ${t('queue.add_item')}</button>
+            <button class="q-action-btn" onclick="event.stopPropagation();window._queueEditDialog(${q.id})" data-ripple>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="q-action-btn q-action-danger" onclick="event.stopPropagation();window._queueDelete(${q.id})" data-ripple>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
           </div>
         </div>`;
-      }).join('');
+      }).join('')}</div>`;
     },
 
     'active-jobs': () => {
@@ -142,52 +148,33 @@
         return;
       }
 
-      container.innerHTML = `<div class="queue-items-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>${queue.name} — ${t('queue.items_count', { count: items.length })}</strong>
-      </div>` + items.map(item => `
-        <div class="queue-item q-item" data-item-id="${item.id}" draggable="true" style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--card-bg)">
-          <span class="queue-item-drag" style="cursor:grab;color:var(--text-muted)">⠿</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.filename}</div>
-            <div style="font-size:0.75rem;color:var(--text-secondary);display:flex;gap:8px;margin-top:2px">
+      container.innerHTML = `<div class="q-items-header">
+        <strong>${queue.name}</strong>
+        <span class="q-items-count">${items.length} ${t('queue.items_count', { count: items.length }) || 'elementer'}</span>
+      </div>
+      <div class="q-items-list">${items.map(item => `
+        <div class="q-item" data-item-id="${item.id}">
+          <div class="q-item-info">
+            <div class="q-item-filename">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              ${item.filename}
+            </div>
+            <div class="q-item-meta">
               ${item.printer_id ? `<span>${printerName(item.printer_id)}</span>` : ''}
               ${item.target_printers ? (() => { try { const tp = JSON.parse(item.target_printers); return tp.length > 0 ? `<span title="${tp.map(p => printerName(p)).join(', ')}">${tp.length} ${t('queue.multiprint')}</span>` : ''; } catch(_) { return ''; } })() : ''}
               ${item.copies > 1 ? `<span>${item.copies_completed}/${item.copies} copies</span>` : ''}
-              ${item.required_material ? `<span>${item.required_material}</span>` : ''}
+              ${item.required_material ? `<span class="q-item-material">${item.required_material}</span>` : ''}
             </div>
           </div>
           ${statusBadge(item.status)}
-          <div style="display:flex;gap:4px">
-            ${item.status === 'pending' ? `<button class="form-btn form-btn-secondary form-btn-sm" data-ripple data-tooltip="${t('queue.skip')}" onclick="window._queueSkipItem(${item.id})" title="${t('queue.skip')}">&times;</button>` : ''}
-          </div>
-        </div>`).join('');
+          ${item.status === 'pending' ? `<button class="q-action-btn q-action-danger" data-ripple onclick="window._queueSkipItem(${item.id})" title="${t('queue.skip')}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>` : ''}
+        </div>`).join('')}</div>`;
 
-      // Setup drag-and-drop for reordering
-      _setupItemDrag(container, queueId);
     } catch (e) {
       console.error('[queue] Failed to load items:', e);
     }
-  }
-
-  function _setupItemDrag(container, queueId) {
-    let dragItem = null;
-    container.querySelectorAll('.queue-item').forEach(el => {
-      el.addEventListener('dragstart', (e) => { dragItem = el; el.style.opacity = '0.5'; });
-      el.addEventListener('dragend', () => { if (dragItem) dragItem.style.opacity = '1'; dragItem = null; });
-      el.addEventListener('dragover', (e) => { e.preventDefault(); });
-      el.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (!dragItem || dragItem === el) return;
-        const items = [...container.querySelectorAll('.queue-item')];
-        const fromIdx = items.indexOf(dragItem);
-        const toIdx = items.indexOf(el);
-        if (fromIdx < toIdx) el.after(dragItem);
-        else el.before(dragItem);
-        // Save new order
-        const newOrder = [...container.querySelectorAll('.queue-item')].map(i => parseInt(i.dataset.itemId));
-        fetch(`/api/queue/${queueId}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_ids: newOrder }) });
-      });
-    });
   }
 
   // ═══ Load completed history ═══
@@ -226,16 +213,16 @@
         return;
       }
 
-      container.innerHTML = log.map(entry => {
+      container.innerHTML = `<div class="q-log-list">${log.map(entry => {
         const color = EVENT_COLORS[entry.event] || 'var(--text-muted)';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border-subtle);transition:background 0.1s" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
-          <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>
-          <span style="font-size:0.8rem;font-weight:600;color:var(--text-primary);flex:1">${_eventLabel(entry.event)}</span>
-          ${entry.details ? `<span style="font-size:0.8rem;color:var(--text-secondary)">${entry.details}</span>` : ''}
-          ${entry.printer_id ? `<span style="font-size:0.75rem;color:var(--text-muted)">${printerName(entry.printer_id)}</span>` : ''}
-          <span style="font-size:0.7rem;color:var(--text-muted);min-width:100px;text-align:right">${fmtDate(entry.timestamp)}</span>
+        return `<div class="q-log-row">
+          <span class="q-log-dot" style="background:${color}"></span>
+          <span class="q-log-event">${_eventLabel(entry.event)}</span>
+          ${entry.details ? `<span class="q-log-details">${entry.details}</span>` : '<span></span>'}
+          ${entry.printer_id ? `<span class="q-log-printer">${printerName(entry.printer_id)}</span>` : '<span></span>'}
+          <span class="q-log-time">${fmtDate(entry.timestamp)}</span>
         </div>`;
-      }).join('');
+      }).join('')}</div>`;
     } catch (e) {
       console.error('[queue] Failed to load log:', e);
     }
@@ -528,8 +515,8 @@
     if (_selectedQueue) _loadQueueItems(_selectedQueue);
   };
 
-  // ═══ Render engine ═══
-  function _renderTabs() {
+  // ═══ Render — single page, no tabs ═══
+  function _render() {
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
@@ -538,36 +525,86 @@
       '<button class="tab-btn" onclick="openPanel(\'scheduler\')">' + (t('tabs.scheduler') || 'Planlegger') + '</button>' +
       '</div>';
 
-    const tabBar = Object.entries(TAB_CONFIG).map(([id, cfg]) =>
-      `<button class="tab-btn${id === _activeTab ? ' active' : ''}" data-tab="${id}" data-ripple>${t(cfg.label) || id}</button>`
-    ).join('');
+    // Hero
+    const heroContent = BUILDERS['queue-hero']();
+    // Queue list
+    const listContent = BUILDERS['queue-list']();
+    // Active jobs
+    const jobsContent = BUILDERS['active-jobs']();
 
-    let html = switcherHtml + `<div class="tabs" id="queue-tab-bar">${tabBar}</div>`;
-    for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
-      const display = tabId === _activeTab ? '' : 'display:none';
-      const order = getOrder(tabId);
-      const mods = order.filter(m => cfg.modules.includes(m));
-      html += `<div class="tab-content module-grid ix-tab-panel" id="queue-tab-${tabId}" style="${display}">`;
-      for (const modId of mods) {
-        const size = MODULE_SIZE[modId] || 'full';
-        const content = BUILDERS[modId] ? BUILDERS[modId]() : '';
-        html += `<div class="stats-module module-${size}" data-module-id="${modId}">
-          <div class="module-header"><h3 class="module-title">${t('queue.mod_' + modId.replace(/-/g, '_')) || modId}</h3></div>
-          <div class="module-body">${content}</div>
-        </div>`;
-      }
-      html += '</div>';
-    }
+    let html = switcherHtml + `<div class="q-panel-layout">`;
+
+    // ── Row 1: Hero (full width) ──
+    html += `<div class="q-section q-col-full">
+      <div class="q-section-body">${heroContent}</div>
+    </div>`;
+
+    // ── Left column: Queues ──
+    html += `<div class="q-col-left">
+      <div class="q-section">
+        <div class="q-section-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+          ${t('queue.mod_queue_list') || 'Køer'}
+        </div>
+        <div class="q-section-body">${listContent}</div>
+      </div>
+
+      <div class="q-section">
+        <div class="q-section-title q-section-toggle" id="q-toggle-settings">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.2s;${_settingsOpen ? 'transform:rotate(90deg)' : ''}"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          ${t('queue.tab_settings') || 'Innstillinger'}
+        </div>
+        <div class="q-section-body" id="q-settings-body" style="${_settingsOpen ? '' : 'display:none'}">
+          ${BUILDERS['queue-settings']()}
+        </div>
+      </div>
+    </div>`;
+
+    // ── Right column: Items + History ──
+    html += `<div class="q-col-right">
+      <div class="q-section">
+        <div class="q-section-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          ${t('queue.mod_active_jobs') || 'Køelementer'}
+        </div>
+        <div class="q-section-body">${jobsContent || `<div class="q-empty-hint">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>${t('queue.select_queue_hint') || 'Velg en kø for å se elementer'}</span>
+        </div>`}</div>
+      </div>
+
+      <div class="q-section">
+        <div class="q-section-title q-section-toggle" id="q-toggle-history">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.2s;${_historyOpen ? 'transform:rotate(90deg)' : ''}"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ${t('queue.tab_history') || 'Historikk'}
+        </div>
+        <div class="q-section-body" id="q-history-body" style="${_historyOpen ? '' : 'display:none'}">
+          <div id="queue-completed-container"><div class="stats-empty">${t('queue.loading')}</div></div>
+        </div>
+      </div>
+    </div>`;
+
+    html += '</div>';
     panel.innerHTML = html;
 
-    // Tab click handlers (only queue's own tabs, not panel switcher)
-    panel.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        _activeTab = btn.dataset.tab;
-        _renderTabs();
-        if (_activeTab === 'history') _loadCompletedItems();
-        if (_activeTab === 'active' && _selectedQueue) _loadQueueItems(_selectedQueue);
-      });
+    // Collapsible toggle handlers
+    document.getElementById('q-toggle-history')?.addEventListener('click', () => {
+      _historyOpen = !_historyOpen;
+      const body = document.getElementById('q-history-body');
+      const arrow = document.querySelector('#q-toggle-history svg');
+      if (body) body.style.display = _historyOpen ? '' : 'none';
+      if (arrow) arrow.style.transform = _historyOpen ? 'rotate(90deg)' : '';
+      if (_historyOpen) _loadCompletedItems();
+    });
+
+    document.getElementById('q-toggle-settings')?.addEventListener('click', () => {
+      _settingsOpen = !_settingsOpen;
+      const body = document.getElementById('q-settings-body');
+      const arrow = document.querySelector('#q-toggle-settings svg');
+      if (body) body.style.display = _settingsOpen ? '' : 'none';
+      if (arrow) arrow.style.transform = _settingsOpen ? 'rotate(90deg)' : '';
     });
   }
 
@@ -576,9 +613,9 @@
       const resp = await fetch('/api/queue');
       _queues = await resp.json();
     } catch { _queues = []; }
-    _renderTabs();
-    if (_activeTab === 'active' && _selectedQueue) _loadQueueItems(_selectedQueue);
-    if (_activeTab === 'history') _loadCompletedItems();
+    _render();
+    if (_selectedQueue) _loadQueueItems(_selectedQueue);
+    if (_historyOpen) _loadCompletedItems();
   }
 
   window.loadQueuePanel = function() {

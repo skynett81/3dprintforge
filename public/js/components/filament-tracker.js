@@ -94,7 +94,6 @@
   };
 
   const STORAGE_PREFIX = 'filament-module-order-';
-  const LOCK_KEY = 'filament-layout-locked';
 
   const _MOD_VER = 13;
   if (localStorage.getItem('filament-mod-ver') !== String(_MOD_VER)) {
@@ -103,12 +102,11 @@
   }
 
   let _activeTab = 'inventory';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
+  const _locked = true;
   let _spools = [];        // New enriched spools from /api/inventory/spools
   let _vendors = [];
   let _profiles = [];
   let _locations = [];
-  let _draggedMod = null;
   let _showArchived = false;
   let _dryingSessions = [];
   let _dryingPresets = [];
@@ -255,16 +253,9 @@
   let _lowStockPct = 20;
   let _lowStockGrams = 0;
 
-  // ═══ Persistence ═══
+  // ═══ Module order ═══
   function getOrder(tabId) {
-    try { const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId)); if (Array.isArray(o)) return o; } catch (_) {}
     return TAB_CONFIG[tabId]?.modules || [];
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`filament-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
   }
 
   // ═══ Cascade filter options ═══
@@ -543,7 +534,7 @@
       ];
       let h = `<div class="drying-sub-tabs">`;
       for (const tab of tabs) {
-        h += `<button class="drying-sub-tab${_manageSubTab === tab.id ? ' active' : ''}" data-manage-tab="${tab.id}" onclick="window._switchManageSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        h += `<button class="drying-sub-tab${_manageSubTab === tab.id ? ' active' : ''}" data-manage-tab="${tab.id}" onclick="window._switchManageSubTab('${tab.id}')" class="drying-sub-tab-inner">${tab.icon} ${tab.label}</button>`;
       }
       h += `</div>`;
       h += `<div id="manage-sub-content"></div>`;
@@ -675,7 +666,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         ${t('filament.restock_title')}
       </div>`;
-      h += `<div id="restock-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      h += `<div id="restock-container"><span class="text-muted text-sm">Loading...</span></div>`;
       setTimeout(() => _loadRestockSuggestions(), 0);
       return h;
     },
@@ -685,7 +676,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         ${t('filament.usage_predictions')}
       </div>`;
-      h += `<div id="usage-predictions-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      h += `<div id="usage-predictions-container"><span class="text-muted text-sm">Loading...</span></div>`;
       setTimeout(() => _loadUsagePredictions(), 0);
       return h;
     },
@@ -695,7 +686,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         ${t('filament.cost_estimate')}
       </div>`;
-      h += `<div id="cost-estimation-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      h += `<div id="cost-estimation-container"><span class="text-muted text-sm">Loading...</span></div>`;
       setTimeout(() => _loadCostEstimation(), 0);
       return h;
     },
@@ -705,7 +696,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         ${t('filament.usage_history')}
       </div>`;
-      h += `<div id="usage-history-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      h += `<div id="usage-history-container"><span class="text-muted text-sm">Loading...</span></div>`;
       setTimeout(() => loadUsageHistory(), 0);
       return h;
     },
@@ -756,7 +747,7 @@
       ];
       let h = `<div class="drying-sub-tabs">`;
       for (const tab of tabs) {
-        h += `<button class="drying-sub-tab${_toolsSubTab === tab.id ? ' active' : ''}" onclick="window._switchToolsSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        h += `<button class="drying-sub-tab${_toolsSubTab === tab.id ? ' active' : ''}" onclick="window._switchToolsSubTab('${tab.id}')" class="drying-sub-tab-inner">${tab.icon} ${tab.label}</button>`;
       }
       h += `</div>`;
       h += `<div id="tools-sub-content"></div>`;
@@ -771,7 +762,7 @@
         ${t('filament.tab_database')}
       </div>`;
       if (!_dbStats) {
-        h += '<div id="db-hero-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>';
+        h += '<div id="db-hero-container"><span class="text-muted text-sm">Loading...</span></div>';
         setTimeout(() => _loadDbStats(), 0);
         return h;
       }
@@ -832,7 +823,7 @@
       // Results
       h += '<div id="db-results-container">';
       if (!_dbLoaded) {
-        h += '<span class="text-muted" style="font-size:0.8rem">Loading...</span>';
+        h += '<span class="text-muted text-sm">Loading...</span>';
         setTimeout(() => _loadDbFilaments(), 0);
       } else if (_dbFilaments.length === 0) {
         h += `<p class="text-muted" style="font-size:0.85rem;padding:20px 0;text-align:center">${t('filament.db_no_results')}</p>`;
@@ -984,28 +975,71 @@
   }
 
   // ═══ Visual spool card (history-style) ═══
+  // Build SVG spool visual — front view with filament wound around hub
+  // Exposed globally so other panels (multicolor, etc.) can reuse
+  window._spoolSvg = _spoolSvg;
+  function _spoolSvg(colorHex, multiColorHexes, multiColorDir, pct, spoolId, size) {
+    const sz = size || 80;
+    const hubR = 13;
+    const maxR = 38;
+    const filR = pct > 0 ? hubR + (maxR - hubR) * Math.max(5, pct) / 100 : hubR;
+
+    // Determine fill — solid color or SVG gradient for multi-color
+    let defs = '';
+    let fillAttr = hexToRgb(colorHex);
+    let hexes;
+    try { hexes = multiColorHexes ? (typeof multiColorHexes === 'string' ? JSON.parse(multiColorHexes) : multiColorHexes) : null; } catch { hexes = null; }
+    if (hexes && hexes.length > 1) {
+      const gid = 'sg' + spoolId;
+      const horiz = multiColorDir === 'longitudinal';
+      defs = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="${horiz?1:0}" y2="${horiz?0:1}">`;
+      hexes.forEach((h, i) => { defs += `<stop offset="${(i/(hexes.length-1)).toFixed(2)}" stop-color="${hexToRgb(h)}"/>`; });
+      defs += '</linearGradient></defs>';
+      fillAttr = `url(#${gid})`;
+    }
+
+    // Winding texture lines
+    let windings = '';
+    if (pct > 8) {
+      const gap = (filR - hubR) / Math.min(5, Math.max(2, Math.round((filR - hubR) / 4)));
+      for (let r = hubR + gap; r < filR - 1; r += gap) {
+        windings += `<circle cx="50" cy="50" r="${r.toFixed(1)}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.6"/>`;
+      }
+    }
+
+    // Flange notches (4 small marks on outer edge)
+    const notches = [0, 90, 180, 270].map(deg => {
+      const rad = deg * Math.PI / 180;
+      const x1 = 50 + 40 * Math.cos(rad), y1 = 50 + 40 * Math.sin(rad);
+      const x2 = 50 + 44 * Math.cos(rad), y2 = 50 + 44 * Math.sin(rad);
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--border-color)" stroke-width="1.2" opacity="0.4"/>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" class="spool-svg">
+      ${defs}
+      <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,0.06)"/>
+      <circle cx="50" cy="50" r="42" class="spool-flange"/>
+      ${notches}
+      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${fillAttr}" class="spool-filament"/>
+      ${windings}
+      <circle cx="50" cy="50" r="${hubR}" class="spool-hub"/>
+      <circle cx="50" cy="50" r="5" class="spool-hole"/>
+    </svg>`;
+  }
+
   function _renderSpoolVisualCard(s) {
     const pct = s.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 0;
-    const colorStyle = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
-    const isLight = isLightColor(s.color_hex);
-    const textColor = isLight ? '#333' : '#fff';
     const cleanName = _cleanProfileName(s);
     const vendorName = s.vendor_name || '--';
     const remaining = `${Math.round(s.remaining_weight_g)}g / ${Math.round(s.initial_weight_g)}g`;
     const isLow = (pct > 0 && pct < _lowStockPct);
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
-    const statusText = isEmpty ? 'Tom' : isLow ? 'Lav' : `${pct}%`;
+    const statusText = isEmpty ? t('filament.status_empty', 'Tom') : isLow ? t('filament.status_low', 'Lav') : `${pct}%`;
 
     return `<div class="spool-vcard" onclick="window._showSpoolDetail(${s.id})">
-      <div class="spool-vcard-thumb" style="background:${colorStyle}">
-        <div class="spool-vcard-icon" style="color:${textColor}">
-          <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="32" cy="32" r="26"/>
-            <circle cx="32" cy="32" r="10"/>
-            <circle cx="32" cy="32" r="4" fill="currentColor"/>
-          </svg>
-        </div>
+      <div class="spool-vcard-thumb">
+        ${_spoolSvg(s.color_hex, s.multi_color_hexes, s.multi_color_direction, pct, s.id)}
         <span class="spool-vcard-badge">${esc(s.material || '--')}</span>
         ${s.is_favorite ? '<span class="spool-vcard-fav">♥</span>' : ''}
       </div>
@@ -1032,11 +1066,11 @@
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const isLow = (pct > 0 && pct < _lowStockPct);
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
-    const statusText = isEmpty ? 'Tom' : isLow ? 'Lav beholdning' : 'På lager';
+    const statusText = isEmpty ? t('filament.status_empty', 'Tom') : isLow ? t('filament.status_low_stock', 'Lav beholdning') : t('filament.status_in_stock', 'På lager');
 
     const daysAgo = s.last_used_at ? Math.floor((Date.now() - new Date(s.last_used_at).getTime()) / 86400000) : null;
-    const lastUsedText = daysAgo !== null ? (daysAgo < 1 ? 'I dag' : daysAgo + ' dager siden') : '--';
-    const amsText = s.ams_unit != null ? `AMS${s.ams_unit+1} spor ${(s.ams_tray||0)+1}` : '--';
+    const lastUsedText = daysAgo !== null ? (daysAgo < 1 ? t('filament.today', 'I dag') : daysAgo + ' ' + t('filament.days_ago', 'dager siden')) : '--';
+    const amsText = s.ams_unit != null ? `AMS${s.ams_unit+1} ${t('filament.slot', 'spor')} ${(s.ams_tray||0)+1}` : '--';
     const printerText = s.printer_id ? printerName(s.printer_id) : '--';
 
     // Fetch print stats
@@ -1058,26 +1092,22 @@
     overlay.className = 'ph-detail-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-    overlay.innerHTML = `<div class="ph-detail-panel" style="max-width:860px">
+    overlay.innerHTML = `<div class="ph-detail-panel spool-detail-panel">
       <button class="ph-detail-close" onclick="this.closest('.ph-detail-overlay').remove()">&times;</button>
       <div class="ph-detail-layout">
         <div class="ph-detail-left">
-          <div class="spool-detail-color" style="background:${colorStyle};min-height:200px;display:flex;align-items:center;justify-content:center;border-radius:12px 0 0 0">
-            <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="${textColor}" stroke-width="1.5" opacity="0.6">
-              <circle cx="32" cy="32" r="28"/>
-              <circle cx="32" cy="32" r="12"/>
-              <circle cx="32" cy="32" r="4" fill="${textColor}"/>
-            </svg>
+          <div class="spool-detail-color spool-detail-spool-bg">
+            ${_spoolSvg(s.color_hex, s.multi_color_hexes, s.multi_color_direction, pct, s.id, 140)}
           </div>
           <div class="ph-detail-status-banner" style="background:${statusColor}">
             <span>${statusText} · ${pct}%</span>
           </div>
-          <div style="padding:12px 16px">
+          <div class="spool-detail-bar-section">
             <div class="spool-detail-bar-wrap">
-              <div class="spool-vcard-bar" style="height:8px;border-radius:4px"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor};height:100%;border-radius:4px"></div></div>
-              <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-top:4px">
-                <span>${Math.round(s.remaining_weight_g)}g igjen</span>
-                <span>${Math.round(s.initial_weight_g)}g total</span>
+              <div class="spool-vcard-bar spool-detail-bar"><div class="spool-vcard-bar-fill spool-detail-bar-fill" style="width:${pct}%;background:${statusColor}"></div></div>
+              <div class="spool-detail-weight-row">
+                <span>${Math.round(s.remaining_weight_g)}g ${t('filament.remaining_short', 'igjen')}</span>
+                <span>${Math.round(s.initial_weight_g)}g ${t('filament.total_short', 'total')}</span>
               </div>
             </div>
           </div>
@@ -1088,92 +1118,92 @@
           </div>
           <div class="ph-detail-grid">
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Merke</span>
+              <span class="ph-detail-label">${t('filament.brand', 'Merke')}</span>
               <span class="ph-detail-value">${esc(s.vendor_name || '--')}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Materiale</span>
+              <span class="ph-detail-label">${t('filament.type', 'Materiale')}</span>
               <span class="ph-detail-value"><span class="color-dot" style="background:${hexToRgb(s.color_hex)}"></span> ${esc(s.material || '--')}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Farge</span>
+              <span class="ph-detail-label">${t('filament.color', 'Farge')}</span>
               <span class="ph-detail-value">${esc(s.color_name || '--')}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Diameter</span>
+              <span class="ph-detail-label">${t('filament.diameter', 'Diameter')}</span>
               <span class="ph-detail-value">${s.diameter || 1.75}mm</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Brukt</span>
+              <span class="ph-detail-label">${t('filament.used_weight', 'Brukt')}</span>
               <span class="ph-detail-value">${Math.round(s.used_weight_g || 0)}g</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Gjenstående</span>
+              <span class="ph-detail-label">${t('filament.remaining', 'Gjenstående')}</span>
               <span class="ph-detail-value">${Math.round(s.remaining_weight_g)}g (${pct}%)</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Printer</span>
+              <span class="ph-detail-label">${t('common.printer', 'Printer')}</span>
               <span class="ph-detail-value">${esc(printerText)}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">AMS-plassering</span>
+              <span class="ph-detail-label">${t('filament.ams_slot', 'AMS-plassering')}</span>
               <span class="ph-detail-value">${amsText}</span>
             </div>
             ${s.cost ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Spolpris</span>
+              <span class="ph-detail-label">${t('filament.spool_price', 'Spolpris')}</span>
               <span class="ph-detail-value">${formatCurrency(s.cost)}</span>
             </div>` : ''}
             ${costPerG > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Pris/gram</span>
+              <span class="ph-detail-label">${t('filament.price_per_gram', 'Pris/gram')}</span>
               <span class="ph-detail-value">${formatCurrency(costPerG, 3)}</span>
             </div>` : ''}
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Sist brukt</span>
+              <span class="ph-detail-label">${t('filament.last_used', 'Sist brukt')}</span>
               <span class="ph-detail-value">${lastUsedText}</span>
             </div>
             ${s.location ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Plassering</span>
+              <span class="ph-detail-label">${t('filament.location', 'Plassering')}</span>
               <span class="ph-detail-value">${esc(s.location)}</span>
             </div>` : ''}
             ${s.lot_number ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Lot-nummer</span>
+              <span class="ph-detail-label">${t('filament.lot_number', 'Lot-nummer')}</span>
               <span class="ph-detail-value">${esc(s.lot_number)}</span>
             </div>` : ''}
           </div>
           ${ps && ps.total_prints > 0 ? `
           <div class="ph-detail-divider"></div>
           <div class="ph-detail-field ph-detail-field-wide">
-            <span class="ph-detail-label">Bruksstatistikk</span>
+            <span class="ph-detail-label">${t('filament.usage_stats', 'Bruksstatistikk')}</span>
           </div>
           <div class="ph-detail-grid">
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Antall prints</span>
-              <span class="ph-detail-value">${ps.total_prints} (${ps.completed_prints} fullført${ps.failed_prints > 0 ? ', ' + ps.failed_prints + ' feilet' : ''})</span>
+              <span class="ph-detail-label">${t('filament.total_prints', 'Antall prints')}</span>
+              <span class="ph-detail-value">${ps.total_prints} (${ps.completed_prints} ${t('filament.detail_completed', 'fullført')}${ps.failed_prints > 0 ? ', ' + ps.failed_prints + ' ' + t('filament.detail_failed', 'feilet') : ''})</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Total printtid</span>
+              <span class="ph-detail-label">${t('filament.total_print_time', 'Total printtid')}</span>
               <span class="ph-detail-value">${fmtTime(ps.total_print_time_s)}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">Snitt per print</span>
+              <span class="ph-detail-label">${t('filament.avg_per_print', 'Snitt per print')}</span>
               <span class="ph-detail-value">${Math.round(ps.avg_per_print_g)}g</span>
             </div>
             ${ps.total_cost_used > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Filamentkostnad brukt</span>
+              <span class="ph-detail-label">${t('filament.cost_used', 'Filamentkostnad brukt')}</span>
               <span class="ph-detail-value">${formatCurrency(ps.total_cost_used)}</span>
             </div>` : ''}
             ${ps.remaining_value > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Gjenværende verdi</span>
+              <span class="ph-detail-label">${t('filament.remaining_value', 'Gjenværende verdi')}</span>
               <span class="ph-detail-value">${formatCurrency(ps.remaining_value)}</span>
             </div>` : ''}
             ${ps.waste_from_failed_g > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">Svinn (feilede)</span>
+              <span class="ph-detail-label">${t('filament.waste_failed', 'Svinn (feilede)')}</span>
               <span class="ph-detail-value">${Math.round(ps.waste_from_failed_g)}g (${formatCurrency(ps.waste_from_failed_g * costPerG)})</span>
             </div>` : ''}
           </div>
           <div class="ph-detail-divider"></div>
           <div class="ph-detail-field ph-detail-field-wide">
-            <span class="ph-detail-label">Siste prints</span>
+            <span class="ph-detail-label">${t('filament.recent_prints', 'Siste prints')}</span>
           </div>
           <div class="spool-print-list">
             ${ps.prints.slice(0, 8).map(p => `<div class="spool-print-row">
@@ -1184,27 +1214,27 @@
           </div>` : `
           <div class="ph-detail-divider"></div>
           <div class="ph-detail-field ph-detail-field-wide">
-            <span class="ph-detail-label">Bruksstatistikk</span>
-            <span class="ph-detail-value" style="color:var(--text-muted)">Ingen prints registrert for denne spolen</span>
+            <span class="ph-detail-label">${t('filament.usage_stats', 'Bruksstatistikk')}</span>
+            <span class="ph-detail-value spool-detail-muted">${t('filament.no_prints_recorded', 'Ingen prints registrert for denne spolen')}</span>
           </div>`}
-          ${s.comment ? `<div class="ph-detail-divider"></div><div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">Kommentar</span><span class="ph-detail-value">${esc(s.comment)}</span></div>` : ''}
+          ${s.comment ? `<div class="ph-detail-divider"></div><div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">${t('filament.comment', 'Kommentar')}</span><span class="ph-detail-value">${esc(s.comment)}</span></div>` : ''}
           <div class="ph-detail-divider"></div>
           <div class="spool-detail-actions">
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showEditSpoolForm(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Rediger
+              ${t('settings.edit', 'Rediger')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showMeasureDialog(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
-              Vei
+              ${t('filament.weigh', 'Vei')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showStartDryingDialog(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
-              Tørk
+              ${t('filament.dry', 'Tørk')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolTimeline(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Historikk
+              ${t('filament.history', 'Historikk')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolLabel(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1231,19 +1261,19 @@
       (groups[key] || (groups[key] = [])).push(s);
     }
     const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
-    let h = `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
-      <span class="text-muted" style="font-size:0.75rem">${t('filament.group_by')}:</span>
+    let h = `<div class="inv-group-bar">
+      <span class="inv-group-label">${t('filament.group_by')}:</span>
       ${[['material','material'],['brand','vendor'],['color','color'],['location','location']].map(([g, k]) =>
-        `<button class="form-btn form-btn-sm ${_groupBy === g ? '' : 'form-btn-ghost'}" data-ripple onclick="window._setGroupBy('${g}')" style="font-size:0.7rem;padding:2px 8px">${t('filament.group_by_' + k)}</button>`
+        `<button class="form-btn form-btn-sm inv-group-btn ${_groupBy === g ? '' : 'form-btn-ghost'}" data-ripple onclick="window._setGroupBy('${g}')">${t('filament.group_by_' + k)}</button>`
       ).join('')}
     </div>`;
     for (const key of sortedKeys) {
       const grp = groups[key];
       const totalWeight = grp.reduce((s, sp) => s + (sp.remaining_weight_g || 0), 0);
-      h += `<div style="margin-bottom:12px">
-        <div style="font-size:0.85rem;font-weight:600;padding:4px 0;border-bottom:1px solid var(--border-color);margin-bottom:6px;display:flex;justify-content:space-between">
+      h += `<div class="inv-group-section">
+        <div class="inv-group-header">
           <span>${key}</span>
-          <span class="text-muted" style="font-size:0.75rem">${grp.length} ${t('filament.total_spools').toLowerCase()} &middot; ${Math.round(totalWeight)}g</span>
+          <span class="inv-group-meta">${grp.length} ${t('filament.total_spools').toLowerCase()} &middot; ${Math.round(totalWeight)}g</span>
         </div>
         <div class="filament-grid">`;
       for (const s of grp) h += renderSpoolCard(s);
@@ -1281,7 +1311,7 @@
   }
 
   function _renderSpoolTable(spools) {
-    let h = `<div style="overflow-x:auto"><table class="data-table inv-table-view">
+    let h = `<div class="inv-table-wrap"><table class="data-table inv-table-view">
       <thead><tr>
         <th></th><th>${t('filament.profile_name')}</th><th>${t('filament.type')}</th>
         <th>${t('filament.brand')}</th><th>${t('filament.remaining')}</th><th>%</th>
@@ -1327,9 +1357,9 @@
   // ═══ Active filament display ═══
   function buildActiveFilamentContent() {
     const state = window.printerState;
-    if (!state) return `<p class="text-muted" style="font-size:0.8rem">${t('common.no_ams_data')}</p>`;
+    if (!state) return `<p class="text-muted text-sm">${t('common.no_ams_data')}</p>`;
     const ids = state.getPrinterIds();
-    if (ids.length === 0) return `<p class="text-muted" style="font-size:0.8rem">${t('common.no_ams_data')}</p>`;
+    if (ids.length === 0) return `<p class="text-muted text-sm">${t('common.no_ams_data')}</p>`;
 
     let html = '';
     let hasAny = false;
@@ -1376,7 +1406,7 @@
       }
       html += '</div></div>';
     }
-    if (!hasAny) html += `<p class="text-muted" style="font-size:0.8rem">${t('common.no_ams_data')}</p>`;
+    if (!hasAny) html += `<p class="text-muted text-sm">${t('common.no_ams_data')}</p>`;
     return html;
   }
 
@@ -1412,37 +1442,6 @@
     else if (tabId === 'multicolor' && typeof loadMulticolorPanel === 'function') loadMulticolorPanel();
     container.id = `filament-tab-${tabId}`;
     if (realBody) realBody.id = 'overlay-panel-body';
-  }
-
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
   }
 
   // ═══ Main render ═══
@@ -1510,9 +1509,6 @@
       let html = '';
 
       // ── Top bar ──
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="tele-top-bar">
         ${window._can && window._can('filament') ? `<div class="inv-export-dropdown" style="display:inline-block">
           <button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
@@ -1554,7 +1550,6 @@
         <button class="form-btn form-btn-sm" data-ripple onclick="showInventorySettings()" title="${t('filament.settings')}" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
-        <button class="tele-lock-btn ${_locked ? '' : 'active'}" onclick="toggleFilamentLock()" title="${_locked ? t('filament.layout_locked') : t('filament.layout_unlocked')}">${lockIcon}</button>
       </div>`;
 
       // ── Printer tabs ──
@@ -1605,11 +1600,8 @@
           if (!builder) continue;
           const content = builder(filteredSpools);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable}>`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}">`;
           html += content;
           html += '</div>';
         }
@@ -1620,11 +1612,6 @@
 
       // Load external tab content (forecast/multicolor) if active
       _loadExternalTab(_activeTab);
-
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`filament-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
 
       // Update URL hash with current filters
       _updateFilterHash();
@@ -1651,7 +1638,7 @@
       const res = await fetch('/api/inventory/usage?limit=50');
       const log = await res.json();
       if (!log || log.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_data')}</p>`;
+        container.innerHTML = `<p class="text-muted text-sm">${t('filament.no_data')}</p>`;
         return;
       }
       let html = '<table class="data-table"><thead><tr><th>' + t('history.date') + '</th><th>' + t('filament.profile_name') + '</th><th>' + t('filament.usage_weight') + '</th><th>' + t('filament.usage_source') + '</th></tr></thead><tbody>';
@@ -1668,7 +1655,7 @@
       html += '</tbody></table>';
       container.innerHTML = html;
     } catch (e) {
-      container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.load_failed')}</p>`;
+      container.innerHTML = `<p class="text-muted text-sm">${t('filament.load_failed')}</p>`;
     }
   }
 
@@ -1727,12 +1714,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
     loadFilament();
   };
-  window.toggleFilamentLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadFilament();
-  };
-
   // Filter callbacks
   window._invFilterMaterial = function(v) { _filterMaterial = v; _currentPage = 0; loadFilament(); };
   window._invFilterVendor = function(v) { _filterVendor = v; _currentPage = 0; loadFilament(); };
@@ -2030,10 +2011,10 @@
     } else if (_manageSubTab === 'tags') {
       el.innerHTML = _renderTagsList();
     } else if (_manageSubTab === 'prices') {
-      el.innerHTML = `<div id="price-watch-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      el.innerHTML = `<div id="price-watch-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadPriceWatch();
     } else if (_manageSubTab === 'insights') {
-      el.innerHTML = `<div id="insights-container"><span class="text-muted" style="font-size:0.8rem">${t('filament.ai_loading')}</span></div>`;
+      el.innerHTML = `<div id="insights-container"><span class="text-muted text-sm">${t('filament.ai_loading')}</span></div>`;
       _loadInsights();
     }
   }
@@ -3202,7 +3183,7 @@
       </div>
       <div style="padding:8px"><input class="form-input" id="spoolmandb-search" placeholder="${t('filament.search_placeholder')}" oninput="window._filterSpoolmanDb(this.value)"></div>
       <div id="spoolmandb-content" style="overflow-y:auto;flex:1;padding:8px">
-        <span class="text-muted" style="font-size:0.8rem">${t('filament.loading')}...</span>
+        <span class="text-muted text-sm">${t('filament.loading')}...</span>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -3241,7 +3222,7 @@
         <div class="inv-spoolmandb-filaments" style="display:none"></div>
       </div>`;
     }
-    if (manufacturers.length > 100) h += `<p class="text-muted" style="font-size:0.8rem">... ${manufacturers.length - 100} ${t('filament.more')}</p>`;
+    if (manufacturers.length > 100) h += `<p class="text-muted text-sm">... ${manufacturers.length - 100} ${t('filament.more')}</p>`;
     c.innerHTML = h;
   }
 
@@ -3250,7 +3231,7 @@
     const filDiv = el.querySelector('.inv-spoolmandb-filaments');
     if (!filDiv) return;
     filDiv.style.display = '';
-    filDiv.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('filament.loading')}...</span>`;
+    filDiv.innerHTML = `<span class="text-muted text-sm">${t('filament.loading')}...</span>`;
     try {
       const res = await fetch(`/api/inventory/spoolmandb/filaments?manufacturer=${encodeURIComponent(mfgId)}`);
       const filaments = await res.json();
@@ -3263,9 +3244,9 @@
           <button class="form-btn form-btn-sm" data-ripple onclick='importSpoolmanDbFilament(${JSON.stringify(f).replace(/'/g,"&#39;")})'>${t('filament.import')}</button>
         </div>`;
       }
-      filDiv.innerHTML = h || `<span class="text-muted" style="font-size:0.8rem">${t('filament.no_results')}</span>`;
+      filDiv.innerHTML = h || `<span class="text-muted text-sm">${t('filament.no_results')}</span>`;
     } catch {
-      filDiv.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('filament.load_failed')}</span>`;
+      filDiv.innerHTML = `<span class="text-muted text-sm">${t('filament.load_failed')}</span>`;
     }
   };
 
@@ -3827,7 +3808,7 @@
     if (_dryHistorySort === 'date_asc') filtered.reverse();
 
     if (filtered.length === 0) {
-      h += `<p class="text-muted" style="font-size:0.8rem">${t('filament.drying_no_history')}</p>`;
+      h += `<p class="text-muted text-sm">${t('filament.drying_no_history')}</p>`;
       el.innerHTML = h;
       return;
     }
@@ -4084,7 +4065,7 @@
       const res = await fetch('/api/inventory/restock?days=30');
       const data = await res.json();
       if (!data || data.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.restock_none')}</p>`;
+        container.innerHTML = `<p class="text-muted text-sm">${t('filament.restock_none')}</p>`;
         return;
       }
 
@@ -4144,12 +4125,12 @@
       const res = await fetch('/api/inventory/predictions');
       const data = await res.json();
       if (!data.per_spool || data.per_spool.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        container.innerHTML = `<p class="text-muted text-sm">${t('filament.no_usage_data')}</p>`;
         return;
       }
       const active = data.per_spool.filter(s => s.avg_daily_g > 0);
       if (active.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        container.innerHTML = `<p class="text-muted text-sm">${t('filament.no_usage_data')}</p>`;
         return;
       }
 
@@ -4238,7 +4219,7 @@
       const history = await res.json();
       const completed = history.filter(r => r.status === 'completed' && r.filament_used_g > 0);
       if (completed.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_usage_data')}</p>`;
+        container.innerHTML = `<p class="text-muted text-sm">${t('filament.no_usage_data')}</p>`;
         return;
       }
       let totalFilament = 0, totalElectricity = 0, totalDepreciation = 0, totalCost = 0;
@@ -4543,12 +4524,12 @@
           ${t('filament.checked_out_spools')}
         </span>
       </div>
-      <div id="checked-out-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>
+      <div id="checked-out-container"><span class="text-muted text-sm">Loading...</span></div>
       <div class="ctrl-card-title" style="margin-top:16px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         ${t('filament.spool_timeline')}
       </div>
-      <div id="timeline-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="timeline-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadCheckedOut();
       _loadTimeline();
     } else if (_toolsSubTab === 'colors') {
@@ -4565,7 +4546,7 @@
           </button>
         </div>
       </div>
-      <div id="color-card-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="color-card-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadColorCard();
     } else if (_toolsSubTab === 'tags') {
       el.innerHTML = `<div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -4575,7 +4556,7 @@
         </span>
         <button class="form-btn form-btn-sm" data-ripple onclick="openTagScanner()">${t('filament.tag_scan')}</button>
       </div>
-      <div id="nfc-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="nfc-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadNfcMappings();
     } else if (_toolsSubTab === 'reference') {
       el.innerHTML = `<div class="ctrl-card-title">
@@ -4594,21 +4575,21 @@
           <option value="high-performance">High Performance</option>
         </select>
       </div>
-      <div id="matref-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="matref-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadMaterials();
     } else if (_toolsSubTab === 'compat') {
       el.innerHTML = `<div class="ctrl-card-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         ${t('filament.compatibility')}
       </div>
-      <div id="compat-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="compat-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadCompatMatrix();
     } else if (_toolsSubTab === 'tempguide') {
       el.innerHTML = `<div class="ctrl-card-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
         ${t('filament.temp_guide')}
       </div>
-      <div id="tempguide-container"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>`;
+      <div id="tempguide-container"><span class="text-muted text-sm">Loading...</span></div>`;
       _loadTempGuide();
     }
   }
@@ -4976,7 +4957,7 @@
             <span class="filament-color-swatch" style="background:${color};width:24px;height:24px"></span>
             <div>
               <strong>${esc(tag.spool_name || 'Unknown')}</strong><br>
-              <span class="text-muted" style="font-size:0.8rem">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span>
+              <span class="text-muted text-sm">${esc(tag.material || '')} · ${esc(tag.vendor_name || '')}</span>
             </div>
           </div>
           <span class="text-muted" style="font-size:0.75rem">UID: ${esc(uid)}${tag.standard ? ` · ${esc(tag.standard)}` : ''}</span>
@@ -5820,7 +5801,7 @@
               ${availableTags.map(tg => `<option value="${tg.id}">${esc(tg.name)}</option>`).join('')}
             </select>
             <button class="form-btn form-btn-sm form-btn-primary" onclick="window._addSpoolTag(${spoolId})">${t('filament.tag_add_to_spool')}</button>
-          </div>` : `<p class="text-muted" style="font-size:0.8rem">${t('filament.no_tags')}</p>`}
+          </div>` : `<p class="text-muted text-sm">${t('filament.no_tags')}</p>`}
         </div>
         <div class="inv-modal-footer">
           <button class="form-btn" onclick="this.closest('.inv-modal-backdrop').remove()">${t('common.close')}</button>
@@ -6023,8 +6004,7 @@
     if (!mod) return;
     const builder = BUILDERS['db-browser'];
     if (builder) {
-      const handle = mod.querySelector('.stats-module-handle');
-      mod.innerHTML = (handle ? handle.outerHTML : '') + builder(_spools);
+      mod.innerHTML = builder(_spools);
     }
   }
 
@@ -6161,7 +6141,7 @@
             <div style="width:48px;height:48px;border-radius:8px;background:${color};border:2px solid var(--border-color);flex-shrink:0"></div>
             <div>
               <div style="font-weight:600;font-size:1rem">${esc(f.name || f.material)}</div>
-              <div class="text-muted" style="font-size:0.8rem">${esc(f.manufacturer || '')} &middot; ${esc(f.material)}${f.material_type ? ' ' + esc(f.material_type) : ''}</div>
+              <div class="text-muted text-sm">${esc(f.manufacturer || '')} &middot; ${esc(f.material)}${f.material_type ? ' ' + esc(f.material_type) : ''}</div>
               ${f.color_name ? '<div class="text-muted" style="font-size:0.75rem">' + esc(f.color_name) + (f.color_hex ? ' #' + f.color_hex : '') + '</div>' : ''}
             </div>
           </div>

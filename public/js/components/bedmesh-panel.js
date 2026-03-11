@@ -1,5 +1,6 @@
 // Bed Mesh Visualizer — 3D heatmap of printer bed leveling data
 (function() {
+  'use strict';
   let _meshData = null;
   let _latestEntry = null;
   let _history = [];
@@ -9,8 +10,10 @@
   let _dragging = false;
   let _lastMouse = { x: 0, y: 0 };
   let _scale = 1;
-  let _viewMode = '3d'; // 3d | heatmap
+  let _viewMode = '3d';
   let _printerId = null;
+
+  function _t(k, fb) { return (typeof t === 'function' ? t(k) : '') || fb; }
 
   window.loadBedMeshPanel = function() {
     const el = document.getElementById('overlay-panel-body');
@@ -18,53 +21,23 @@
 
     _printerId = window.printerState?.getActivePrinterId();
 
-    el.innerHTML = `<style>
-      .bm-container { display:grid; grid-template-columns:1fr 280px; gap:16px; }
-      @media (max-width:800px) { .bm-container { grid-template-columns:1fr; } }
-      .bm-canvas-wrap { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); overflow:hidden; position:relative; }
-      .bm-canvas { width:100%; aspect-ratio:4/3; display:block; cursor:grab; }
-      .bm-canvas:active { cursor:grabbing; }
-      .bm-toolbar { display:flex; gap:8px; padding:8px; background:rgba(0,0,0,0.03); border-top:1px solid var(--border-color); }
-      .bm-view-btn { padding:5px 12px; border-radius:var(--radius); font-size:0.75rem; font-weight:600; cursor:pointer; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); }
-      .bm-view-btn.active { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
-      .bm-sidebar { display:flex; flex-direction:column; gap:12px; }
-      .bm-stats { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:14px; }
-      .bm-stats h4 { margin:0 0 10px; font-size:0.85rem; }
-      .bm-stat-row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.78rem; border-bottom:1px solid rgba(0,0,0,0.04); }
-      .bm-stat-label { color:var(--text-muted); }
-      .bm-stat-value { font-weight:700; }
-      .bm-stat-good { color:var(--accent-green); }
-      .bm-stat-warn { color:#f59e0b; }
-      .bm-stat-bad { color:var(--accent-red); }
-      .bm-history { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:14px; }
-      .bm-history h4 { margin:0 0 10px; font-size:0.85rem; }
-      .bm-history-item { display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.75rem; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; }
-      .bm-history-item:hover { color:var(--accent-blue); }
-      .bm-history-item.active { color:var(--accent-blue); font-weight:700; }
-      .bm-empty { text-align:center; padding:40px 20px; color:var(--text-muted); }
-      .bm-empty-icon { font-size:3rem; margin-bottom:12px; opacity:0.3; }
-      .bm-empty p { font-size:0.85rem; margin:4px 0; }
-      .bm-legend { display:flex; align-items:center; gap:2px; padding:8px; font-size:0.65rem; color:var(--text-muted); }
-      .bm-legend-bar { height:12px; flex:1; border-radius:3px; background:linear-gradient(90deg, #1279ff, #00ae42, #f59e0b, #e53935); }
-      .bm-upload-btn { padding:6px 14px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:0.78rem; font-weight:600; }
-      .bm-action-btn { padding:6px 14px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); border-radius:var(--radius); cursor:pointer; font-size:0.78rem; font-weight:600; }
-      .bm-action-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
-      .bm-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
-      .bm-actions-bar { display:flex; gap:8px; align-items:center; padding:10px 0; }
-      .bm-scan-status { font-size:0.78rem; color:var(--text-muted); margin-left:8px; }
-    </style>
-    <div class="bm-container">
+    // Keep tab bar if present
+    const tabBar = el.querySelector('._wrapper-tabs');
+    el.innerHTML = '';
+    if (tabBar) el.appendChild(tabBar);
+
+    el.insertAdjacentHTML('beforeend', `<div class="bm-container">
       <div>
         <div class="bm-canvas-wrap">
           <canvas class="bm-canvas" id="bm-canvas"></canvas>
           <div class="bm-toolbar">
             <button class="bm-view-btn active" id="bm-btn-3d" onclick="_bmSetView('3d')">3D</button>
-            <button class="bm-view-btn" id="bm-btn-heatmap" onclick="_bmSetView('heatmap')">${t('bedmesh.heatmap')}</button>
-            <button class="bm-view-btn" onclick="_bmReset()">${t('bedmesh.reset_view')}</button>
+            <button class="bm-view-btn" id="bm-btn-heatmap" onclick="_bmSetView('heatmap')">${_t('bedmesh.heatmap', 'Heatmap')}</button>
+            <button class="bm-view-btn" onclick="_bmReset()">${_t('bedmesh.reset_view', 'Tilbakestill')}</button>
             <div style="flex:1"></div>
-            <button class="bm-action-btn" onclick="_bmScanPrinter()" id="bm-scan-btn">${t('bedmesh.scan_printer') || 'Skann printer'}</button>
-            <button class="bm-action-btn" onclick="_bmCalibrate()" id="bm-cal-btn">${t('bedmesh.calibrate') || 'Kalibrer seng'}</button>
-            <button class="bm-upload-btn" onclick="_bmUpload()">${t('bedmesh.upload_mesh')}</button>
+            <button class="bm-action-btn" onclick="_bmScanPrinter()" id="bm-scan-btn">${_t('bedmesh.scan_printer', 'Skann printer')}</button>
+            <button class="bm-action-btn" onclick="_bmCalibrate()" id="bm-cal-btn">${_t('bedmesh.calibrate', 'Kalibrer seng')}</button>
+            <button class="bm-upload-btn" onclick="_bmUpload()">${_t('bedmesh.upload_mesh', 'Last opp mesh')}</button>
           </div>
           <div class="bm-legend"><span>Low</span><div class="bm-legend-bar"></div><span>High</span></div>
         </div>
@@ -74,7 +47,7 @@
         <div class="bm-stats" id="bm-stats"></div>
         <div class="bm-history" id="bm-history"></div>
       </div>
-    </div>`;
+    </div>`);
 
     _canvas = document.getElementById('bm-canvas');
     _ctx = _canvas?.getContext('2d');
@@ -84,7 +57,7 @@
 
   async function _loadData() {
     if (!_printerId) {
-      _showEmpty(t('bedmesh.no_printer'));
+      _showEmpty(_t('bedmesh.no_printer', 'Ingen printer valgt'));
       return;
     }
     try {
@@ -98,25 +71,25 @@
       } else {
         _meshData = null;
         _latestEntry = null;
-        _showEmpty(t('bedmesh.no_data'));
+        _showEmpty(_t('bedmesh.no_data', 'Ingen mesh-data tilgjengelig'));
       }
       _renderHistory(data.latest?.id);
       _draw();
     } catch {
-      _showEmpty(t('bedmesh.load_error'));
+      _showEmpty(_t('bedmesh.load_error', 'Kunne ikke laste bed mesh data'));
     }
   }
 
   function _showEmpty(msg) {
-    const statsEl = document.getElementById('bm-stats');
-    if (statsEl) statsEl.innerHTML = `<div class="bm-empty"><div class="bm-empty-icon">\u25A6</div><p>${msg}</p></div>`;
+    const el = document.getElementById('bm-stats');
+    if (el) el.innerHTML = `<div class="bm-empty"><div class="bm-empty-icon">▦</div><p>${msg}</p></div>`;
   }
 
   function _setStatus(msg, type) {
     const el = document.getElementById('bm-status-bar');
     if (!el) return;
     const color = type === 'success' ? 'var(--accent-green)' : type === 'error' ? 'var(--accent-red)' : 'var(--text-muted)';
-    el.innerHTML = msg ? `<div class="bm-scan-status" style="color:${color};padding:8px 0">${msg}</div>` : '';
+    el.innerHTML = msg ? `<div class="bm-scan-status" style="color:${color}">${msg}</div>` : '';
   }
 
   function _renderStats(mesh) {
@@ -125,83 +98,82 @@
     const range = ((mesh.z_max || 0) - (mesh.z_min || 0)).toFixed(3);
     const rangeNum = parseFloat(range);
     const cls = rangeNum < 0.1 ? 'bm-stat-good' : rangeNum < 0.3 ? 'bm-stat-warn' : 'bm-stat-bad';
-    const quality = rangeNum < 0.1 ? (t('bedmesh.excellent') || 'Utmerket') : rangeNum < 0.2 ? (t('bedmesh.good') || 'Bra') : rangeNum < 0.3 ? (t('bedmesh.fair') || 'Ok') : (t('bedmesh.poor') || 'Dårlig');
-    el.innerHTML = `<h4>${t('bedmesh.stats')}</h4>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.grid')}</span><span class="bm-stat-value">${mesh.mesh_rows || '?'}x${mesh.mesh_cols || '?'}</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.z_min')}</span><span class="bm-stat-value">${(mesh.z_min || 0).toFixed(3)} mm</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.z_max')}</span><span class="bm-stat-value">${(mesh.z_max || 0).toFixed(3)} mm</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.z_range')}</span><span class="bm-stat-value ${cls}">${range} mm</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.z_mean')}</span><span class="bm-stat-value">${(mesh.z_mean || 0).toFixed(3)} mm</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.std_dev')}</span><span class="bm-stat-value">${(mesh.z_std_dev || 0).toFixed(3)} mm</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.quality')}</span><span class="bm-stat-value ${cls}">${quality}</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.source')}</span><span class="bm-stat-value">${mesh.source || '--'}</span></div>
-      <div class="bm-stat-row"><span class="bm-stat-label">${t('bedmesh.captured')}</span><span class="bm-stat-value">${mesh.captured_at ? new Date(mesh.captured_at).toLocaleString() : '--'}</span></div>`;
+    const quality = rangeNum < 0.1 ? _t('bedmesh.excellent', 'Utmerket') : rangeNum < 0.2 ? _t('bedmesh.good', 'Bra') : rangeNum < 0.3 ? _t('bedmesh.fair', 'Ok') : _t('bedmesh.poor', 'Dårlig');
+    el.innerHTML = `<h4>${_t('bedmesh.stats', 'Statistikk')}</h4>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.grid', 'Rutenett')}</span><span class="bm-stat-value">${mesh.mesh_rows || '?'}x${mesh.mesh_cols || '?'}</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.z_min', 'Z min')}</span><span class="bm-stat-value">${(mesh.z_min || 0).toFixed(3)} mm</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.z_max', 'Z maks')}</span><span class="bm-stat-value">${(mesh.z_max || 0).toFixed(3)} mm</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.z_range', 'Z range')}</span><span class="bm-stat-value ${cls}">${range} mm</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.z_mean', 'Z snitt')}</span><span class="bm-stat-value">${(mesh.z_mean || 0).toFixed(3)} mm</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.std_dev', 'Std avvik')}</span><span class="bm-stat-value">${(mesh.z_std_dev || 0).toFixed(3)} mm</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.quality', 'Kvalitet')}</span><span class="bm-stat-value ${cls}">${quality}</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.source', 'Kilde')}</span><span class="bm-stat-value">${mesh.source || '--'}</span></div>
+      <div class="bm-stat-row"><span class="bm-stat-label">${_t('bedmesh.captured', 'Fanget')}</span><span class="bm-stat-value">${mesh.captured_at ? new Date(mesh.captured_at).toLocaleString() : '--'}</span></div>`;
   }
 
   function _renderHistory(activeId) {
     const el = document.getElementById('bm-history');
     if (!el) return;
-    let html = `<h4>${t('bedmesh.history')} (${_history.length})</h4>`;
+    let html = `<h4>${_t('bedmesh.history', 'Historikk')} (${_history.length})</h4>`;
     if (!_history.length) {
-      html += `<div style="font-size:0.75rem;color:var(--text-muted)">${t('bedmesh.no_history')}</div>`;
+      html += `<div style="font-size:0.73rem;color:var(--text-muted)">${_t('bedmesh.no_history', 'Ingen historikk')}</div>`;
     }
     for (const h of _history) {
       const date = h.captured_at ? new Date(h.captured_at).toLocaleDateString() : '--';
       const range = ((h.z_max || 0) - (h.z_min || 0)).toFixed(3);
       const active = h.id === activeId ? ' active' : '';
       html += `<div class="bm-history-item${active}" onclick="_bmLoadHistory(${h.id})">
-        <span>${date} <span style="color:var(--text-muted);font-size:0.7rem">${h.source || ''}</span></span><span>${range} mm</span>
+        <span>${date} <span style="color:var(--text-muted);font-size:0.68rem">${h.source || ''}</span></span><span>${range} mm</span>
       </div>`;
     }
     el.innerHTML = html;
   }
 
-  // ── Scan printer FTP for mesh files ──
+  // ── Scan printer FTP ──
   window._bmScanPrinter = async function() {
-    if (!_printerId) { if (typeof showToast === 'function') showToast(t('bedmesh.no_printer'), 'error'); return; }
+    if (!_printerId) { if (typeof showToast === 'function') showToast(_t('bedmesh.no_printer', 'Ingen printer'), 'error'); return; }
     const btn = document.getElementById('bm-scan-btn');
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
-    _setStatus(t('bedmesh.scanning') || 'Skanner printer via FTP...', 'info');
+    _setStatus(_t('bedmesh.scanning', 'Skanner printer via FTP...'), 'info');
     try {
       const r = await fetch(`/api/printers/${_printerId}/bed-mesh/scan`, { method: 'POST' });
       const data = await r.json();
       if (data.ok && data.id) {
-        _setStatus((t('bedmesh.scan_found') || 'Mesh funnet') + ': ' + data.source, 'success');
-        if (typeof showToast === 'function') showToast(t('bedmesh.scan_found') || 'Mesh-data funnet og lagret!', 'success');
+        _setStatus((_t('bedmesh.scan_found', 'Mesh funnet') + ': ' + data.source), 'success');
+        if (typeof showToast === 'function') showToast(_t('bedmesh.scan_found', 'Mesh-data funnet og lagret!'), 'success');
         _loadData();
       } else if (data.files) {
-        const msg = (t('bedmesh.scan_no_mesh') || 'Ingen mesh-filer funnet') + '. ' + (t('bedmesh.files_found') || 'Filer') + ': ' + data.files.join(', ');
-        _setStatus(msg, 'info');
+        _setStatus((_t('bedmesh.scan_no_mesh', 'Ingen mesh-filer funnet') + '. Filer: ' + data.files.join(', ')), 'info');
       } else {
         _setStatus(data.error || data.message || 'Scan failed', 'error');
       }
     } catch (e) {
       _setStatus('FTP scan error: ' + e.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = t('bedmesh.scan_printer') || 'Skann printer'; }
+      if (btn) { btn.disabled = false; btn.textContent = _t('bedmesh.scan_printer', 'Skann printer'); }
     }
   };
 
-  // ── Trigger bed calibration via G-code ──
+  // ── Trigger bed calibration ──
   window._bmCalibrate = async function() {
-    if (!_printerId) { if (typeof showToast === 'function') showToast(t('bedmesh.no_printer'), 'error'); return; }
-    if (!confirm(t('bedmesh.calibrate_confirm') || 'Start auto bed leveling? Printeren vil kjøre homing (G28) og deretter bed leveling (G29). Sørg for at sengen er klar.')) return;
+    if (!_printerId) { if (typeof showToast === 'function') showToast(_t('bedmesh.no_printer', 'Ingen printer'), 'error'); return; }
+    if (!confirm(_t('bedmesh.calibrate_confirm', 'Start auto bed leveling? Printeren vil kjøre homing (G28) og deretter bed leveling (G29).'))) return;
     const btn = document.getElementById('bm-cal-btn');
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
-    _setStatus(t('bedmesh.calibrating') || 'Starter kalibrering...', 'info');
+    _setStatus(_t('bedmesh.calibrating', 'Starter kalibrering...'), 'info');
     try {
       const r = await fetch(`/api/printers/${_printerId}/bed-mesh/calibrate`, { method: 'POST' });
       const data = await r.json();
       if (data.ok) {
-        _setStatus(t('bedmesh.calibrate_started') || 'Kalibrering startet. Printeren kjører G28 + G29. Vent til den er ferdig, og bruk deretter "Skann printer" for å hente resultatene.', 'success');
-        if (typeof showToast === 'function') showToast(t('bedmesh.calibrate_started') || 'Kalibrering startet!', 'success');
+        _setStatus(_t('bedmesh.calibrate_started', 'Kalibrering startet. Bruk "Skann printer" etterpå for å hente resultatene.'), 'success');
+        if (typeof showToast === 'function') showToast(_t('bedmesh.calibrate_started', 'Kalibrering startet!'), 'success');
       } else {
         _setStatus(data.error || 'Failed', 'error');
       }
     } catch (e) {
       _setStatus('Error: ' + e.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = t('bedmesh.calibrate') || 'Kalibrer seng'; }
+      if (btn) { btn.disabled = false; btn.textContent = _t('bedmesh.calibrate', 'Kalibrer seng'); }
     }
   };
 
@@ -223,22 +195,19 @@
     _draw();
   };
 
-  window._bmReset = function() {
-    _rotX = 55; _rotZ = 45; _scale = 1;
-    _draw();
-  };
+  window._bmReset = function() { _rotX = 55; _rotZ = 45; _scale = 1; _draw(); };
 
   window._bmUpload = function() {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.innerHTML = `<div style="background:var(--bg-primary);border-radius:12px;padding:24px;width:min(500px,90vw);">
-      <h3 style="margin:0 0 12px;font-size:1rem">${t('bedmesh.upload_mesh')}</h3>
-      <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 10px">${t('bedmesh.paste_hint')}</p>
+      <h3 style="margin:0 0 12px;font-size:1rem">${_t('bedmesh.upload_mesh', 'Last opp mesh')}</h3>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 10px">${_t('bedmesh.paste_hint', 'Lim inn mesh-data (mellomrom- eller kommaseparerte verdier, én rad per linje)')}</p>
       <textarea id="bm-paste" style="width:100%;height:200px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px;font-family:monospace;font-size:0.75rem;color:var(--text-primary);box-sizing:border-box;resize:vertical" placeholder="0.01 0.02 0.03\n0.02 0.01 0.02\n0.03 0.02 0.01"></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="bm-action-btn" onclick="this.closest('div[style*=fixed]').remove()">${t('bedmesh.cancel') || 'Avbryt'}</button>
-        <button class="bm-upload-btn" onclick="_bmSubmitPaste()">${t('bedmesh.upload') || 'Last opp'}</button>
+        <button class="bm-action-btn" onclick="this.closest('div[style*=fixed]').remove()">${_t('bedmesh.cancel', 'Avbryt')}</button>
+        <button class="bm-upload-btn" onclick="_bmSubmitPaste()">${_t('bedmesh.upload', 'Last opp')}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -251,7 +220,7 @@
       const rows = text.split('\n').filter(l => l.trim());
       const mesh = rows.map(r => r.trim().split(/[\s,]+/).map(Number));
       if (!mesh.length || mesh.some(r => r.some(isNaN))) {
-        if (typeof showToast === 'function') showToast(t('bedmesh.parse_error'), 'error');
+        if (typeof showToast === 'function') showToast(_t('bedmesh.parse_error', 'Ugyldig format'), 'error');
         return;
       }
       if (!_printerId) return;
@@ -262,7 +231,7 @@
       });
       document.querySelector('div[style*="fixed"]')?.remove();
       _loadData();
-      if (typeof showToast === 'function') showToast(t('bedmesh.uploaded'), 'success');
+      if (typeof showToast === 'function') showToast(_t('bedmesh.uploaded', 'Mesh lastet opp'), 'success');
     } catch (e) {
       if (typeof showToast === 'function') showToast(e.message, 'error');
     }
@@ -279,14 +248,8 @@
       _lastMouse = { x: e.clientX, y: e.clientY };
       _draw();
     });
-    _canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      _scale = Math.max(0.5, Math.min(3, _scale - e.deltaY * 0.001));
-      _draw();
-    });
-    _canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) { _dragging = true; _lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
-    });
+    _canvas.addEventListener('wheel', (e) => { e.preventDefault(); _scale = Math.max(0.5, Math.min(3, _scale - e.deltaY * 0.001)); _draw(); });
+    _canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { _dragging = true; _lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; } });
     _canvas.addEventListener('touchmove', (e) => {
       if (!_dragging || e.touches.length !== 1) return;
       e.preventDefault();
@@ -311,9 +274,9 @@
       _ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#999';
       _ctx.font = '14px Inter, sans-serif';
       _ctx.textAlign = 'center';
-      _ctx.fillText(t('bedmesh.no_data_short') || 'Ingen mesh-data', rect.width / 2, rect.height / 2 - 20);
+      _ctx.fillText(_t('bedmesh.no_data_short', 'Ingen mesh-data'), rect.width / 2, rect.height / 2 - 20);
       _ctx.font = '12px Inter, sans-serif';
-      _ctx.fillText(t('bedmesh.use_actions') || 'Bruk knappene under for å hente eller laste opp data', rect.width / 2, rect.height / 2 + 5);
+      _ctx.fillText(_t('bedmesh.use_actions', 'Bruk knappene under for å hente eller laste opp data'), rect.width / 2, rect.height / 2 + 5);
       return;
     }
 
@@ -354,7 +317,6 @@
     const zMin = Math.min(...flat);
     const zMax = Math.max(...flat);
     const range = zMax - zMin || 0.001;
-
     const cx = w / 2, cy = h / 2;
     const size = Math.min(w, h) * 0.35 * _scale;
     const radX = _rotX * Math.PI / 180;

@@ -283,10 +283,6 @@
           </svg>
         </button>
         <div class="printer-selector" id="printer-selector"></div>
-        <button class="layout-lock-btn" id="layout-lock-btn" onclick="toggleLayoutLock()" data-tooltip="Lock/unlock layout" data-tooltip-pos="bottom">
-          <svg class="lock-icon lock-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <svg class="lock-icon lock-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
-        </button>
         <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotificationCenter()" data-tooltip="Varsler" data-tooltip-pos="bottom">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           <span class="notif-badge" id="notif-badge" style="display:none">0</span>
@@ -432,6 +428,8 @@
           <div class="model-meta-bar" id="model-meta-bar" style="display:none"></div>
         </div>
 
+        <div class="card filament-ring-card" id="filament-ring"></div>
+
         <div class="card" id="camera-card">
           <div class="card-title" data-i18n-key="camera.title">Kamera</div>
           <div id="camera-container" class="camera-container">
@@ -441,6 +439,24 @@
                 <path d="M17 10l4-2v8l-4-2z"/>
               </svg>
               <span data-i18n-key="camera.not_available">Kamera ikke tilgjengelig</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="temp-card">
+          <div class="card-title" data-i18n-key="temperature.title">Temperaturer</div>
+          <div class="temp-gauges">
+            <div class="gauge-wrapper">
+              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-nozzle"></svg>
+              <div class="gauge-label" data-i18n-key="temperature.nozzle">Dyse</div>
+            </div>
+            <div class="gauge-wrapper">
+              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-bed"></svg>
+              <div class="gauge-label" data-i18n-key="temperature.bed">Seng</div>
+            </div>
+            <div class="gauge-wrapper">
+              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-chamber"></svg>
+              <div class="gauge-label" data-i18n-key="temperature.chamber">Kammer</div>
             </div>
           </div>
         </div>
@@ -473,35 +489,16 @@
           </div>
         </div>
 
-        <!-- MakerWorld info — compact, under 3D preview, beside temperatures -->
-        <!-- Model Info strip (MakerWorld / Printables / Thingiverse) -->
-        <div class="model-info-strip" id="model-info" style="display:none"></div>
-
-        <div class="card" id="temp-card">
-          <div class="card-title" data-i18n-key="temperature.title">Temperaturer</div>
-          <div class="temp-gauges">
-            <div class="gauge-wrapper">
-              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-nozzle"></svg>
-              <div class="gauge-label" data-i18n-key="temperature.nozzle">Dyse</div>
-            </div>
-            <div class="gauge-wrapper">
-              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-bed"></svg>
-              <div class="gauge-label" data-i18n-key="temperature.bed">Seng</div>
-            </div>
-            <div class="gauge-wrapper">
-              <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-chamber"></svg>
-              <div class="gauge-label" data-i18n-key="temperature.chamber">Kammer</div>
-            </div>
-          </div>
-        </div>
-
         <div class="card" id="fans-card">
           <div class="card-title" data-i18n-key="quick_status.fans">Vifter</div>
           <div id="fans-card-content"></div>
         </div>
 
+        <!-- MakerWorld info — compact, under 3D preview, beside temperatures -->
+        <!-- Model Info strip (MakerWorld / Printables / Thingiverse) -->
+        <div class="model-info-strip" id="model-info" style="display:none"></div>
+
         <div class="card countdown-card" id="countdown-timer"></div>
-        <div class="card filament-ring-card" id="filament-ring"></div>
 
       </main>
 
@@ -568,7 +565,6 @@
   <script src="/js/state.js"></script>
   <script src="/js/lib/jsmpeg.min.js"></script>
   <script src="/js/lib/qrcode-generator.js"></script>
-  <script src="/js/components/favorites.js"></script>
   <script src="/js/components/panel-utils.js"></script>
   <script src="/js/components/context-menu.js"></script>
   <script src="/js/components/printer-selector.js"></script>
@@ -619,7 +615,6 @@
   <script src="/js/components/knowledge-panel.js"></script>
   <script src="/js/components/print-preview.js"></script>
   <script src="/js/components/quick-status.js"></script>
-  <script src="/js/components/dashboard-dnd.js"></script>
   <script src="/js/components/countdown-timer.js?v=14"></script>
   <script src="/js/components/sparkline-stats.js"></script>
   <script src="/js/components/cost-estimator-panel.js"></script>

@@ -63,7 +63,7 @@
 
     // ===== CARD: Layer Pauses (only during print) =====
     if (isPrinting && meta?.id) {
-      html += `<div class="ctrl-card">
+      html += `<div class="ctrl-card ctrl-area-layerpauses">
         <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
@@ -282,7 +282,7 @@
 
     // ===== CARD: Z-Offset Calibration Wizard (only when idle) =====
     if (!isPrinting) {
-      html += `<div class="ctrl-card">
+      html += `<div class="ctrl-card ctrl-area-zoffset">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6"/><path d="M2 12h6m8 0h6"/></svg>
           ${t('controls.z_wizard_title')}
@@ -356,19 +356,31 @@
       { label: 'Report Position', gcode: 'M114', group: 'info' },
     ];
 
+    const cmdGroups = {};
+    for (const cmd of quickCmds) {
+      if (!cmdGroups[cmd.group]) cmdGroups[cmd.group] = [];
+      cmdGroups[cmd.group].push(cmd);
+    }
+    const groupLabels = { motion: t('controls.motion'), cooling: t('controls.fans'), temp: t('controls.temperature'), filament: t('controls.filament_change'), info: 'Info' };
+
     html += `<div class="ctrl-card ctrl-area-quickcmds">
       <div class="ctrl-card-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
         ${t('controls.quick_commands') || 'Quick Commands'}
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+      <div class="ctrl-quickcmds-groups">`;
 
-    for (const cmd of quickCmds) {
-      html += `<button class="form-btn form-btn-secondary" style="padding:4px 8px;font-size:0.7rem" onclick="_quickGcode('${cmd.gcode}')" data-tooltip="${cmd.gcode.replace(/\\\\n/g, ' → ')}">${cmd.label}</button>`;
+    for (const [group, cmds] of Object.entries(cmdGroups)) {
+      html += `<div class="ctrl-quickcmds-group">
+        <div class="ctrl-quickcmds-label">${groupLabels[group] || group}</div>
+        <div class="ctrl-quickcmds-btns">`;
+      for (const cmd of cmds) {
+        html += `<button class="ctrl-quick-btn" onclick="_quickGcode('${cmd.gcode}')" data-ripple data-tooltip="${cmd.gcode.replace(/\\\\n/g, ' → ')}">${cmd.label}</button>`;
+      }
+      html += `</div></div>`;
     }
 
-    html += `</div>
-    </div>`;
+    html += `</div></div>`;
 
     // ===== CARD: G-Code Macros =====
     html += `<div class="ctrl-card ctrl-area-macros">
@@ -384,7 +396,7 @@
 
     // ===== CARD: Bed Level Mesh =====
     if (meta?.id) {
-      html += `<div class="ctrl-card">
+      html += `<div class="ctrl-card ctrl-area-bedmesh">
         <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
@@ -402,7 +414,7 @@
 
     // ===== CARD: Filament Change =====
     if (meta?.id) {
-      html += `<div class="ctrl-card">
+      html += `<div class="ctrl-card ctrl-area-filchange">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg>
           ${t('controls.filament_change')}

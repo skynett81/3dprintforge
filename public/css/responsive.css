@@ -2,19 +2,20 @@
 @media (max-width: 1024px) {
   .dashboard {
     grid-template-columns: 1fr 1fr;
-    padding: var(--gap) 14px;
+    padding: var(--gap) 16px;
   }
+
+  /* Reset explicit grid placements for 2-col responsive */
+  #progress-card, #camera-card, #temp-card, #ams-card, #fans-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  #progress-card, #camera-card { grid-row: span 4; }
+  #ams-card { grid-column: span 2; }
 
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .printer-selector { flex-wrap: wrap; }
   .info-grid { grid-template-columns: 1fr; }
-
-  /* Controls: 2-column layout between mobile and desktop */
-  .ctrl-layout {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .ctrl-area-objects,
-  .ctrl-area-gcode { grid-column: 1 / -1; }
 
   /* Settings tabs scroll horizontally */
   .settings-tabs {
@@ -43,9 +44,10 @@
 
   .sidebar {
     transform: translateX(-100%);
-    width: 250px;
-    min-width: 250px;
+    width: 260px;
+    min-width: 260px;
     z-index: 200;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
   }
 
   .sidebar.open {
@@ -61,13 +63,13 @@
 @media (max-width: 640px) {
   .dashboard {
     grid-template-columns: 1fr;
-    padding: 10px;
-    gap: 10px;
+    padding: 12px;
+    gap: 12px;
   }
 
   #progress-card { min-height: 380px; }
   .print-viewport { min-height: 280px; }
-  .card { padding: 14px; }
+  .card { padding: 16px; }
 
   .header {
     padding: 8px 12px;
@@ -87,10 +89,11 @@
   }
 
   .qs-grid { grid-template-columns: 1fr; }
-  .ams-cards-row { flex-wrap: wrap; }
-  .ams-card { min-width: calc(50% - 6px); }
-  .ams-visual-area { flex-direction: column; }
-  .ams-ext-section { flex-direction: row; border-left: none; border-top: 1px solid var(--border-color); padding-left: 0; padding-top: 10px; width: 100%; }
+  #progress-card, #camera-card, #temp-card, #ams-card, #fans-card { grid-column: auto; grid-row: auto; }
+  .ams-cards-row { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ams-visual-area { grid-template-columns: 1fr; padding: 10px 12px 6px; }
+  .ams-divider { display: none; }
+  .ams-ext-section { border-top: 1px solid var(--border-color); padding-top: 10px; width: 100%; min-width: auto; justify-content: center; }
   .stats-strip { flex-wrap: wrap; }
   .spark-panel { min-width: 90px; flex: 1 1 calc(33% - 1px); }
   .speed-buttons { flex-wrap: wrap; }
@@ -109,7 +112,7 @@
   .panel-content-body { padding: 12px; }
   .panel-content-header { padding: 8px 12px; }
 
-  .sidebar { width: 230px; min-width: 230px; }
+  .sidebar { width: 240px; min-width: 240px; }
 }
 
 /* ---- Responsive Tables → Card Layout ---- */

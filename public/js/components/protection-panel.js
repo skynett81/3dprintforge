@@ -1,4 +1,4 @@
-// Protection Panel — Print Guard with Tabs and Drag-and-Drop
+// Protection Panel — Print Guard with Tabs
 (function() {
   const TAB_CONFIG = {
     status:   { label: 'protection.tab_status',   modules: ['guard-overview','active-alerts','sensor-dashboard'] },
@@ -14,23 +14,17 @@
     'protection-log':       'full'
   };
 
-  const STORAGE_PREFIX = 'protection-module-order-';
-  const LOCK_KEY = 'protection-layout-locked';
-
   let _activeTab = 'status';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
+  const _locked = true;
   let _printers = [];
   let _alerts = [];
   let _settings = {};
   let _log = [];
-  let _draggedMod = null;
   let _logFilter = 'all';
 
   function getOrder(tabId) {
-    try { const s = localStorage.getItem(STORAGE_PREFIX + tabId); if (s) return JSON.parse(s); } catch {}
     return TAB_CONFIG[tabId].modules;
   }
-  function saveOrder(tabId, order) { localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(order)); }
 
   // XCam (camera) events
   const XCAM_EVENTS = ['spaghetti_detected', 'first_layer_issue', 'foreign_object', 'nozzle_clump'];
@@ -96,7 +90,7 @@
   const BUILDERS = {
     'guard-overview': () => {
       let h = `<div class="card-title">${t('protection.guard_overview')}</div>`;
-      if (!_printers.length) return h + `<div class="text-muted" style="font-size:0.8rem">${t('protection.no_alerts')}</div>`;
+      if (!_printers.length) return h + `<div class="text-muted pp-text-sm">${t('protection.no_alerts')}</div>`;
       h += '<div class="stats-detail-list">';
       for (const p of _printers) {
         const s = _settings[p.id];
@@ -105,11 +99,11 @@
         const statusColor = enabled ? 'var(--accent-green)' : 'var(--text-muted)';
         const statusText = enabled ? t('protection.enabled') : t('protection.disabled');
         h += `<div class="stats-detail-item">
-          <span class="stats-detail-item-label" style="display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${statusColor};display:inline-block"></span>
+          <span class="stats-detail-item-label pp-printer-label">
+            <span class="pp-status-dot" style="background:${statusColor}"></span>
             ${esc(p.name)}
           </span>
-          <span class="stats-detail-item-value">${statusText}${pAlerts.length ? ` <span style="color:var(--accent-red);margin-left:6px">${pAlerts.length} alert${pAlerts.length > 1 ? 's' : ''}</span>` : ''}</span>
+          <span class="stats-detail-item-value">${statusText}${pAlerts.length ? ` <span class="pp-alert-count">${pAlerts.length} alert${pAlerts.length > 1 ? 's' : ''}</span>` : ''}</span>
         </div>`;
       }
       h += '</div>';
@@ -118,20 +112,20 @@
 
     'active-alerts': () => {
       let h = `<div class="card-title">${t('protection.active_alerts')}</div>`;
-      if (!_alerts.length) return h + `<div class="text-muted" style="font-size:0.8rem">${t('protection.no_alerts')}</div>`;
-      h += '<div style="display:flex;flex-direction:column;gap:6px">';
+      if (!_alerts.length) return h + `<div class="text-muted pp-text-sm">${t('protection.no_alerts')}</div>`;
+      h += '<div class="pp-alert-list">';
       for (const a of _alerts) {
         const evLabel = t(EVENT_LABELS[a.event_type] || a.event_type);
         const actLabel = t(ACTION_LABELS[a.action_taken] || a.action_taken);
         const icon = EVENT_ICONS[a.event_type] || EVENT_ICONS.print_error;
         const isSensor = SENSOR_EVENTS.includes(a.event_type);
-        const borderColor = isSensor ? 'rgba(88,166,255,0.2)' : 'rgba(248,81,73,0.2)';
-        const iconColor = isSensor ? 'var(--accent-blue)' : 'var(--accent-red)';
-        h += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid ${borderColor}">
-          <span style="color:${iconColor};flex-shrink:0">${icon}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:0.8rem;font-weight:600">${esc(printerName(a.printer_id))} — ${evLabel}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted)">${actLabel} · ${fmtTime(a.timestamp)}${a.notes ? ` · ${esc(a.notes)}` : ''}</div>
+        const borderCls = isSensor ? 'pp-alert-sensor' : 'pp-alert-camera';
+        const iconCls = isSensor ? 'pp-icon-sensor' : 'pp-icon-camera';
+        h += `<div class="pp-alert-card ${borderCls}">
+          <span class="pp-alert-icon ${iconCls}">${icon}</span>
+          <div class="pp-alert-body">
+            <div class="pp-alert-title">${esc(printerName(a.printer_id))} — ${evLabel}</div>
+            <div class="pp-alert-meta">${actLabel} · ${fmtTime(a.timestamp)}${a.notes ? ` · ${esc(a.notes)}` : ''}</div>
           </div>
           <button class="form-btn form-btn-sm form-btn-secondary" data-ripple data-tooltip="${t('protection.resolve')}" onclick="resolveProtectionAlert(${a.id})">${t('protection.resolve')}</button>
         </div>`;
@@ -142,8 +136,8 @@
 
     'sensor-dashboard': () => {
       let h = `<div class="card-title">${t('protection.sensor_dashboard')}</div>`;
-      if (!_printers.length) return h + '<div class="text-muted" style="font-size:0.8rem">No printers</div>';
-      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">';
+      if (!_printers.length) return h + `<div class="text-muted pp-text-sm">${t('protection.no_printer', 'Ingen printere')}</div>`;
+      h += '<div class="pp-sensor-grid">';
 
       for (const p of _printers) {
         const s = _settings[p.id];
@@ -151,17 +145,16 @@
         const live = window.printerState?._printers?.[p.id] || {};
         const gcState = live.gcode_state || 'IDLE';
         const isPrinting = ['RUNNING', 'PAUSE', 'PREPARE', 'HEATING'].includes(gcState);
-        const stateColor = isPrinting ? 'var(--accent-green)' : 'var(--text-muted)';
         const _stateMap = { RUNNING: 'Printing', PAUSE: 'Paused', IDLE: 'Idle', PREPARE: 'Preparing', HEATING: 'Heating', FINISH: 'Finished' };
         const stateLabel = _stateMap[gcState] || gcState;
 
-        h += `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;border:1px solid var(--border-color)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:6px">
-              <span style="width:8px;height:8px;border-radius:50%;background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'};display:inline-block"></span>
+        h += `<div class="pp-printer-card">
+          <div class="pp-printer-header">
+            <div class="pp-printer-name">
+              <span class="pp-status-dot" style="background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'}"></span>
               ${esc(p.name)}
             </div>
-            <span class="pill ${isPrinting ? 'pill-success' : 'pill-info'}" style="font-size:0.6rem">${esc(stateLabel)}</span>
+            <span class="pill ${isPrinting ? 'pill-success' : 'pill-info'} pp-state-pill">${esc(stateLabel)}</span>
           </div>`;
 
         // Live sensor readings
@@ -174,53 +167,53 @@
         const threshold = s?.temp_deviation_threshold || 15;
 
         if (nTemp != null || bTemp != null) {
-          h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">`;
+          h += '<div class="pp-temp-grid">';
           if (nTemp != null) {
             const nDev = nTarget > 0 ? Math.abs(nTemp - nTarget) : 0;
             const nColor = nDev > threshold ? 'var(--accent-red)' : nTarget > 0 ? 'var(--accent-green)' : 'var(--text-muted)';
-            h += `<div style="background:var(--bg-secondary);border-radius:6px;padding:6px 8px;text-align:center">
-              <div style="font-size:0.6rem;color:var(--text-muted)">Nozzle</div>
-              <div style="font-size:0.95rem;font-weight:700;color:${nColor}">${nTemp}°C</div>
-              ${nTarget > 0 ? `<div style="font-size:0.6rem;color:var(--text-muted)">→ ${nTarget}°C</div>` : ''}
+            h += `<div class="pp-temp-cell">
+              <div class="pp-temp-label">${t('temperature.nozzle', 'Nozzle')}</div>
+              <div class="pp-temp-value" style="color:${nColor}">${nTemp}°C</div>
+              ${nTarget > 0 ? `<div class="pp-temp-target">→ ${nTarget}°C</div>` : ''}
             </div>`;
           }
           if (bTemp != null) {
             const bDev = bTarget > 0 ? Math.abs(bTemp - bTarget) : 0;
             const bColor = bDev > threshold ? 'var(--accent-red)' : bTarget > 0 ? 'var(--accent-green)' : 'var(--text-muted)';
-            h += `<div style="background:var(--bg-secondary);border-radius:6px;padding:6px 8px;text-align:center">
-              <div style="font-size:0.6rem;color:var(--text-muted)">Bed</div>
-              <div style="font-size:0.95rem;font-weight:700;color:${bColor}">${bTemp}°C</div>
-              ${bTarget > 0 ? `<div style="font-size:0.6rem;color:var(--text-muted)">→ ${bTarget}°C</div>` : ''}
+            h += `<div class="pp-temp-cell">
+              <div class="pp-temp-label">${t('temperature.bed', 'Bed')}</div>
+              <div class="pp-temp-value" style="color:${bColor}">${bTemp}°C</div>
+              ${bTarget > 0 ? `<div class="pp-temp-target">→ ${bTarget}°C</div>` : ''}
             </div>`;
           }
           h += '</div>';
         }
 
         if (hbFan != null || cFan != null) {
-          h += `<div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.7rem">`;
+          h += '<div class="pp-fan-row">';
           if (hbFan != null) {
             const hbPct = Math.min(100, Math.round((hbFan / (hbFan > 15 ? 255 : 15)) * 100));
-            const hbColor = isPrinting && hbPct === 0 ? 'var(--accent-red)' : 'var(--text-muted)';
-            h += `<span style="color:${hbColor}">Heatbreak: ${hbPct}%</span>`;
+            const hbCls = isPrinting && hbPct === 0 ? 'pp-fan-warn' : '';
+            h += `<span class="${hbCls}">Heatbreak: ${hbPct}%</span>`;
           }
           if (cFan != null) {
             const cPct = Math.min(100, Math.round((cFan / (cFan > 15 ? 255 : 15)) * 100));
-            h += `<span style="color:var(--text-muted)">Part fan: ${cPct}%</span>`;
+            h += `<span>Part fan: ${cPct}%</span>`;
           }
           h += '</div>';
         }
 
         // XCam section
-        h += `<div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_camera')}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">`;
+        h += `<div class="pp-section-label">${t('protection.section_camera')}</div>
+          <div class="pp-event-grid">`;
         for (const et of XCAM_EVENTS) {
           h += _sensorCell(s, et);
         }
         h += '</div>';
 
         // Sensor section
-        h += `<div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_sensors')}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">`;
+        h += `<div class="pp-section-label">${t('protection.section_sensors')}</div>
+          <div class="pp-event-grid">`;
         for (const et of SENSOR_EVENTS) {
           h += _sensorCell(s, et);
         }
@@ -233,21 +226,21 @@
     'protection-settings': () => {
       let h = `<div class="card-title">${t('protection.tab_settings')}</div>`;
       if (!_printers.length) return h + '<div class="text-muted">No printers</div>';
-      h += '<div style="display:flex;flex-direction:column;gap:16px">';
+      h += '<div class="pp-settings-list">';
       for (const p of _printers) {
         const s = _settings[p.id] || _defaultSettings();
-        h += `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:14px;border:1px solid var(--border-color)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <span style="font-size:0.85rem;font-weight:600">${esc(p.name)}</span>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
-              <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleProtection('${p.id}', this.checked)" style="accent-color:var(--accent-green)">
+        h += `<div class="pp-settings-card">
+          <div class="pp-settings-header">
+            <span class="pp-settings-name">${esc(p.name)}</span>
+            <label class="pp-toggle-label">
+              <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleProtection('${p.id}', this.checked)" class="pp-checkbox">
               ${t('protection.enabled')}
             </label>
           </div>`;
 
         // Camera AI section
-        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_camera')}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        h += `<div class="pp-section-label">${t('protection.section_camera')}</div>
+          <div class="pp-settings-grid">
             ${_settingsRow(p.id, 'spaghetti_action', 'protection.spaghetti', s.spaghetti_action)}
             ${_settingsRow(p.id, 'first_layer_action', 'protection.first_layer', s.first_layer_action)}
             ${_settingsRow(p.id, 'foreign_object_action', 'protection.foreign_object', s.foreign_object_action)}
@@ -255,8 +248,8 @@
           </div>`;
 
         // Sensor section
-        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.section_sensors')}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        h += `<div class="pp-section-label">${t('protection.section_sensors')}</div>
+          <div class="pp-settings-grid">
             ${_settingsRow(p.id, 'temp_deviation_action', 'protection.temp_deviation', s.temp_deviation_action)}
             ${_settingsRow(p.id, 'filament_runout_action', 'protection.filament_runout', s.filament_runout_action)}
             ${_settingsRow(p.id, 'print_error_action', 'protection.print_error', s.print_error_action)}
@@ -265,26 +258,26 @@
           </div>`;
 
         // Thresholds section
-        h += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${t('protection.thresholds')}</div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.temp_threshold')}:
-              <input type="number" value="${s.temp_deviation_threshold ?? 15}" min="5" max="50" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'temp_deviation_threshold', parseInt(this.value))">°C
+        h += `<div class="pp-section-label">${t('protection.thresholds')}</div>
+          <div class="pp-threshold-row">
+            <label class="pp-input-label">${t('protection.temp_threshold')}:
+              <input type="number" value="${s.temp_deviation_threshold ?? 15}" min="5" max="50" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'temp_deviation_threshold', parseInt(this.value))">°C
             </label>
-            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.filament_threshold')}:
-              <input type="number" value="${s.filament_low_pct ?? 5}" min="1" max="30" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'filament_low_pct', parseInt(this.value))">%
+            <label class="pp-input-label">${t('protection.filament_threshold')}:
+              <input type="number" value="${s.filament_low_pct ?? 5}" min="1" max="30" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'filament_low_pct', parseInt(this.value))">%
             </label>
-            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.stall_threshold')}:
-              <input type="number" value="${s.stall_minutes ?? 10}" min="3" max="60" style="width:55px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'stall_minutes', parseInt(this.value))">${t('time.m')}
+            <label class="pp-input-label">${t('protection.stall_threshold')}:
+              <input type="number" value="${s.stall_minutes ?? 10}" min="3" max="60" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'stall_minutes', parseInt(this.value))">${t('time.m')}
             </label>
           </div>`;
 
         // General settings
-        h += `<div style="display:flex;gap:12px;align-items:center">
-            <label style="font-size:0.75rem;color:var(--text-muted)">${t('protection.cooldown')}:
-              <input type="number" value="${s.cooldown_seconds}" min="10" max="600" style="width:60px;padding:3px 6px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;margin-left:4px" onchange="updateProtectionSetting('${p.id}', 'cooldown_seconds', parseInt(this.value))">
+        h += `<div class="pp-general-row">
+            <label class="pp-input-label">${t('protection.cooldown')}:
+              <input type="number" value="${s.cooldown_seconds}" min="10" max="600" class="pp-input-number pp-input-wide" onchange="updateProtectionSetting('${p.id}', 'cooldown_seconds', parseInt(this.value))">
             </label>
-            <label style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:4px">
-              <input type="checkbox" ${s.auto_resume ? 'checked' : ''} onchange="updateProtectionSetting('${p.id}', 'auto_resume', this.checked ? 1 : 0)" style="accent-color:var(--accent-green)">
+            <label class="pp-toggle-label">
+              <input type="checkbox" ${s.auto_resume ? 'checked' : ''} onchange="updateProtectionSetting('${p.id}', 'auto_resume', this.checked ? 1 : 0)" class="pp-checkbox">
               ${t('protection.auto_resume')}
             </label>
           </div>
@@ -303,24 +296,24 @@
       const typeCounts = {};
       for (const e of _log) { typeCounts[e.event_type] = (typeCounts[e.event_type] || 0) + 1; }
 
-      let h = `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-        <div class="card-title" style="margin:0">${t('protection.tab_log')}</div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">`;
+      let h = `<div class="pp-log-header">
+        <div class="card-title pp-log-title">${t('protection.tab_log')}</div>
+        <div class="pp-log-actions">`;
 
       // Filter buttons
       h += `<button class="form-btn form-btn-sm ${_logFilter === 'all' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('all')">${t('protection.filter_all') || 'Alle'} (${total})</button>`;
-      h += `<button class="form-btn form-btn-sm ${_logFilter === 'active' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('active')" style="${unresolved ? 'color:var(--accent-red)' : ''}">${t('protection.filter_active') || 'Aktive'} (${unresolved})</button>`;
+      h += `<button class="form-btn form-btn-sm ${_logFilter === 'active' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('active')"${unresolved ? ' style="color:var(--accent-red)"' : ''}>${t('protection.filter_active') || 'Aktive'} (${unresolved})</button>`;
       h += `<button class="form-btn form-btn-sm ${_logFilter === 'resolved' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('resolved')">${t('protection.filter_resolved') || 'Løst'} (${resolved})</button>`;
 
       // Clear buttons
       if (resolved > 0) {
-        h += `<button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="_clearProtectionLog(true)" style="margin-left:8px;color:var(--text-muted)" title="${t('protection.clear_resolved') || 'Tøm løste'}">
+        h += `<button class="form-btn form-btn-sm form-btn-secondary pp-clear-btn" data-ripple onclick="_clearProtectionLog(true)" title="${t('protection.clear_resolved') || 'Tøm løste'}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           ${t('protection.clear_resolved') || 'Tøm løste'}
         </button>`;
       }
       if (total > 0) {
-        h += `<button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="_clearProtectionLog(false)" style="color:var(--accent-red)" title="${t('protection.clear_all') || 'Tøm alt'}">
+        h += `<button class="form-btn form-btn-sm form-btn-secondary pp-clear-all-btn" data-ripple onclick="_clearProtectionLog(false)" title="${t('protection.clear_all') || 'Tøm alt'}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           ${t('protection.clear_all') || 'Tøm alt'}
         </button>`;
@@ -329,14 +322,14 @@
 
       // Event type summary chips
       if (total > 0) {
-        h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+        h += '<div class="pp-type-chips">';
         for (const [et, count] of Object.entries(typeCounts)) {
           const icon = EVENT_ICONS[et] || '';
           const label = t(EVENT_LABELS[et] || et);
           const isSensor = SENSOR_EVENTS.includes(et);
-          const chipColor = isSensor ? 'var(--accent-blue)' : 'var(--accent-red)';
-          h += `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:0.7rem;font-weight:600;background:rgba(0,0,0,0.04);border:1px solid var(--border-subtle);color:${chipColor};cursor:pointer" onclick="_setLogFilter('type:${et}')">
-            ${icon} ${label} <span style="opacity:0.6">${count}</span>
+          const chipCls = isSensor ? 'pp-chip-sensor' : 'pp-chip-camera';
+          h += `<span class="pp-type-chip ${chipCls}" onclick="_setLogFilter('type:${et}')">
+            ${icon} ${label} <span class="pp-chip-count">${count}</span>
           </span>`;
         }
         h += '</div>';
@@ -349,8 +342,8 @@
       else if (_logFilter.startsWith('type:')) { const ft = _logFilter.slice(5); filtered = _log.filter(e => e.event_type === ft); }
 
       if (!filtered.length) {
-        return h + `<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.85rem">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:8px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        return h + `<div class="pp-log-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
           <div>${t('protection.log_empty') || 'Ingen hendelser'}</div>
         </div>`;
       }
@@ -373,14 +366,14 @@
               <span class="protection-log-card-event">${evLabel}</span>
               <span class="pill ${actionPill}">${actLabel}</span>
               ${entry.resolved
-                ? `<span class="pill pill-completed" style="font-size:0.6rem;margin-left:auto">${t('protection.resolved_label') || 'Løst'}</span>`
-                : `<span class="pill pill-failed" style="font-size:0.6rem;margin-left:auto;animation:ams-warn-blink 1.5s infinite">${t('protection.active_label') || 'Aktiv'}</span>`}
+                ? `<span class="pill pill-completed pp-resolved-pill">${t('protection.resolved_label') || 'Løst'}</span>`
+                : `<span class="pill pill-failed pp-active-pill">${t('protection.active_label') || 'Aktiv'}</span>`}
             </div>
             <div class="protection-log-card-meta">
               <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(printerName(entry.printer_id))}</span>
               <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${fmtTime(entry.timestamp)}</span>
               ${entry.notes ? `<span class="protection-log-card-notes">${esc(entry.notes)}</span>` : ''}
-              ${entry.resolved_at ? `<span style="color:var(--accent-green)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${fmtTime(entry.resolved_at)}</span>` : ''}
+              ${entry.resolved_at ? `<span class="pp-resolved-time"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${fmtTime(entry.resolved_at)}</span>` : ''}
             </div>
             ${!entry.resolved ? `<div class="protection-log-card-footer">
               <button class="form-btn form-btn-sm" data-ripple onclick="resolveProtectionAlert(${entry.id})">${t('protection.resolve')}</button>
@@ -396,15 +389,15 @@
   function _sensorCell(s, et) {
     const actionKey = ACTION_KEY_MAP[et];
     const actualAction = s ? (s[actionKey] || 'notify') : 'notify';
-    const actColor = actualAction === 'pause' ? 'var(--accent-orange)' :
-                    actualAction === 'stop' ? 'var(--accent-red)' :
-                    actualAction === 'ignore' ? 'var(--text-muted)' : 'var(--accent-blue)';
+    const actCls = actualAction === 'pause' ? 'pp-act-pause' :
+                   actualAction === 'stop' ? 'pp-act-stop' :
+                   actualAction === 'ignore' ? 'pp-act-ignore' : 'pp-act-notify';
     const icon = EVENT_ICONS[et] || '';
     const label = t(EVENT_LABELS[et] || et);
-    return `<div style="font-size:0.65rem;padding:4px 6px;border-radius:6px;background:var(--bg-secondary);text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px">
-      <span style="color:var(--text-muted)">${icon}</span>
-      <div style="color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${label}</div>
-      <div style="color:${actColor};font-weight:600">${t(ACTION_LABELS[actualAction] || actualAction)}</div>
+    return `<div class="pp-event-cell">
+      <span class="pp-event-cell-icon">${icon}</span>
+      <div class="pp-event-cell-label">${label}</div>
+      <div class="pp-event-cell-action ${actCls}">${t(ACTION_LABELS[actualAction] || actualAction)}</div>
     </div>`;
   }
 
@@ -422,9 +415,9 @@
     const options = ['notify', 'pause', 'stop', 'ignore'].map(v =>
       `<option value="${v}" ${v === value ? 'selected' : ''}>${t(ACTION_LABELS[v])}</option>`
     ).join('');
-    return `<div style="display:flex;flex-direction:column;gap:3px">
-      <label style="font-size:0.7rem;color:var(--text-muted)">${t(labelKey)}</label>
-      <select onchange="updateProtectionSetting('${printerId}', '${field}', this.value)" style="padding:4px 8px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.78rem;cursor:pointer">${options}</select>
+    return `<div class="pp-setting-field">
+      <label class="pp-setting-label">${t(labelKey)}</label>
+      <select onchange="updateProtectionSetting('${printerId}', '${field}', this.value)" class="pp-select">${options}</select>
     </div>`;
   }
 
@@ -435,17 +428,11 @@
 
     // Toolbar
     let html = `<div class="stats-toolbar">
-      <div class="tabs" style="border-bottom:none;margin-bottom:0">`;
+      <div class="tabs pp-tabs">`;
     for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
       html += `<button class="tab-btn${id === _activeTab ? ' active' : ''}" data-ripple onclick="switchProtectionTab('${id}')">${t(cfg.label)}</button>`;
     }
     html += `</div>
-      <div class="stats-toolbar-actions">
-        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="toggleProtectionLock()" title="${_locked ? t('protection.layout_locked') : t('protection.layout_unlocked')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${_locked ? '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' : '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'}</svg>
-          ${_locked ? t('protection.layout_locked') : t('protection.layout_unlocked')}
-        </button>
-      </div>
     </div>`;
 
     // Tab panels
@@ -456,10 +443,8 @@
       for (const modId of order) {
         if (!BUILDERS[modId]) continue;
         const size = MODULE_SIZE[modId] || 'full';
-        const cls = `stats-module${_locked ? '' : ' stats-module-unlocked'}`;
         const fullCls = size === 'full' ? ' stats-module-full' : '';
-        html += `<div class="${cls}${fullCls}" data-module-id="${modId}" ${_locked ? '' : 'draggable="true"'}>
-          <span class="stats-module-handle">&#9776;</span>
+        html += `<div class="stats-module${fullCls}" data-module-id="${modId}">
           ${BUILDERS[modId]()}
         </div>`;
       }
@@ -467,38 +452,6 @@
     }
 
     body.innerHTML = html;
-    if (!_locked) initDrag();
-  }
-
-  // ═══ Drag and Drop ═══
-  function initDrag() {
-    const container = document.querySelector(`.protection-tab-panel.active`);
-    if (!container) return;
-    container.querySelectorAll('.stats-module').forEach(mod => {
-      mod.addEventListener('dragstart', e => {
-        _draggedMod = mod;
-        mod.classList.add('stats-module-dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      mod.addEventListener('dragend', () => {
-        if (_draggedMod) _draggedMod.classList.remove('stats-module-dragging');
-        container.querySelectorAll('.stats-module').forEach(m => m.classList.remove('stats-module-over'));
-        _draggedMod = null;
-      });
-      mod.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; mod.classList.add('stats-module-over'); });
-      mod.addEventListener('dragleave', () => mod.classList.remove('stats-module-over'));
-      mod.addEventListener('drop', e => {
-        e.preventDefault();
-        mod.classList.remove('stats-module-over');
-        if (!_draggedMod || _draggedMod === mod) return;
-        const mods = [...container.querySelectorAll('.stats-module')];
-        const fromIdx = mods.indexOf(_draggedMod);
-        const toIdx = mods.indexOf(mod);
-        if (fromIdx < toIdx) mod.after(_draggedMod); else mod.before(_draggedMod);
-        const order = [...container.querySelectorAll('.stats-module')].map(m => m.dataset.moduleId);
-        saveOrder(_activeTab, order);
-      });
-    });
   }
 
   // ═══ Public functions ═══
@@ -509,7 +462,6 @@
     if (el) { el.style.display = 'grid'; el.classList.add('active'); }
     document.querySelectorAll('.stats-toolbar .tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.stats-toolbar .tab-btn[onclick="switchProtectionTab('${tabId}')"]`)?.classList.add('active');
-    if (!_locked) initDrag();
     const base = location.hash.split('/')[0] || '#protection';
     history.replaceState(null, '', tabId === 'status' ? base : `${base}/${tabId}`);
   };
@@ -534,12 +486,6 @@
     } catch (e) {
       console.error('[protection] Clear log failed:', e);
     }
-  };
-
-  window.toggleProtectionLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    render();
   };
 
   window.resolveProtectionAlert = async function(logId) {

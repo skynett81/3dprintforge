@@ -14,7 +14,6 @@
   ];
 
   let _widgets = [];
-  let _draggedItem = null;
 
   function _tl(key, fb) { return (typeof t === 'function' ? t(key) : '') || fb; }
 
@@ -62,14 +61,12 @@
       <!-- Enabled section -->
       <div class="card wp-section">
         <div class="card-title">${_tl('widgets.enabled', 'Aktive widgets')}</div>
-        <p class="wp-hint">${_tl('widgets.drag_hint', 'Dra for å endre rekkefølge')}</p>
         <div class="wp-enabled-list" id="wp-enabled-list">
           ${enabledWidgets.length === 0
             ? `<div class="wp-empty-slot">${_tl('widgets.no_widgets', 'Ingen widgets aktivert')}</div>`
             : enabledWidgets.map(w => {
               const meta = getMeta(w.id);
-              return `<div class="wp-enabled-item" draggable="true" data-widget-id="${w.id}">
-                <span class="wp-grip"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="4" r="2"/><circle cx="16" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="20" r="2"/><circle cx="16" cy="20" r="2"/></svg></span>
+              return `<div class="wp-enabled-item" data-widget-id="${w.id}">
                 <span class="wp-item-icon">${meta.icon}</span>
                 <span class="wp-item-name">${_tl('widgets.' + w.id, w.id)}</span>
                 <button class="wp-remove-btn" data-remove="${w.id}" title="${_tl('widgets.remove', 'Fjern')}">
@@ -162,42 +159,6 @@
     document.getElementById('wp-save-btn')?.addEventListener('click', () => saveLayout());
     document.getElementById('wp-reset-btn')?.addEventListener('click', () => { _widgets = getDefaults(); render(); });
 
-    setupDragAndDrop();
-  }
-
-  function setupDragAndDrop() {
-    const list = document.getElementById('wp-enabled-list');
-    if (!list) return;
-
-    list.querySelectorAll('.wp-enabled-item').forEach(item => {
-      item.addEventListener('dragstart', (e) => {
-        _draggedItem = item;
-        item.classList.add('wp-dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', item.dataset.widgetId);
-      });
-      item.addEventListener('dragend', () => {
-        item.classList.remove('wp-dragging');
-        list.querySelectorAll('.wp-enabled-item').forEach(el => el.classList.remove('wp-drag-over'));
-        _draggedItem = null;
-      });
-      item.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
-      item.addEventListener('dragenter', (e) => { e.preventDefault(); if (item !== _draggedItem) item.classList.add('wp-drag-over'); });
-      item.addEventListener('dragleave', () => { item.classList.remove('wp-drag-over'); });
-      item.addEventListener('drop', (e) => {
-        e.preventDefault();
-        item.classList.remove('wp-drag-over');
-        if (!_draggedItem || _draggedItem === item) return;
-        const fromId = _draggedItem.dataset.widgetId;
-        const toId = item.dataset.widgetId;
-        const fromIdx = _widgets.findIndex(w => w.id === fromId);
-        const toIdx = _widgets.findIndex(w => w.id === toId);
-        if (fromIdx < 0 || toIdx < 0) return;
-        const [moved] = _widgets.splice(fromIdx, 1);
-        _widgets.splice(toIdx, 0, moved);
-        render();
-      });
-    });
   }
 
   window.loadWidgetsPanel = async function() {

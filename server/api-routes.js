@@ -910,16 +910,27 @@ export async function handleApiRequest(req, res) {
 
     // ---- Print Activity Calendar ----
     if (method === 'GET' && path === '/api/stats/calendar') {
-      const history = getHistory(9999, 0);
-      const calendar = {};
+      const history = getHistory(99999, 0);
+      const yearParam = url.searchParams.get('year');
       const now = new Date();
-      // Initialize last 365 days with 0
-      for (let i = 364; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
+      const year = yearParam ? parseInt(yearParam) : now.getFullYear();
+
+      // Find all years that have data
+      const yearsWithData = new Set();
+      for (const h of history) {
+        if (h.started_at) yearsWithData.add(parseInt(h.started_at.substring(0, 4)));
+      }
+      yearsWithData.add(now.getFullYear());
+
+      // Build calendar for the requested year
+      const calendar = {};
+      const startDate = new Date(year, 0, 1);
+      const endDate = year === now.getFullYear() ? now : new Date(year, 11, 31);
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
         const key = d.toISOString().split('T')[0];
         calendar[key] = { date: key, prints: 0, completed: 0, failed: 0, hours: 0 };
       }
+
       // Fill in actual data
       for (const h of history) {
         if (!h.started_at) continue;
@@ -931,7 +942,7 @@ export async function handleApiRequest(req, res) {
           calendar[key].hours += (h.duration_seconds || 0) / 3600;
         }
       }
-      return sendJson(res, Object.values(calendar));
+      return sendJson(res, { year, years: [...yearsWithData].sort(), days: Object.values(calendar) });
     }
 
     // ---- Filament ----
@@ -6208,9 +6219,37 @@ function _getPublicStatus() {
   const printers = getPrinters();
   const result = [];
   for (const p of printers) {
-    const state = _hub?.printerStates?.[p.id] || {};
+    const raw = _hub?.printerStates?.[p.id] || {};
+    const state = raw.print || raw;
     const gcodeState = state.gcode_state || 'OFFLINE';
     const isPrinting = ['RUNNING', 'PREPARE', 'PAUSE'].includes(gcodeState);
+    // Fan speeds (Bambu reports 0-15 range, convert to %)
+    const fanPct = (v) => v != null ? Math.round((parseInt(v) / 15) * 100) : null;
+
+    // AMS info
+    let ams = null;
+    if (state.ams?.ams) {
+      ams = state.ams.ams.map((unit, ui) => ({
+        id: ui,
+        trays: (unit.tray || []).map((tr, ti) => ({
+          slot: ti + 1,
+          color: tr.tray_color || null,
+          type: tr.tray_type || null,
+          remaining: tr.remain != null ? parseInt(tr.remain) : null
+        })).filter(tr => tr.color || tr.type)
+      })).filter(u => u.trays.length > 0);
+    }
+
+    // Lights
+    let lights = null;
+    if (Array.isArray(state.lights_report)) {
+      lights = {};
+      for (const l of state.lights_report) {
+        if (l.node === 'chamber_light') lights.chamber = l.mode === 'on';
+        if (l.node === 'work_light') lights.work = l.mode === 'on';
+      }
+    }
+
     result.push({
       id: p.id,
       name: p.name,
@@ -6222,7 +6261,17 @@ function _getPublicStatus() {
       layer: isPrinting ? (parseInt(state.layer_num) || 0) : null,
       total_layers: isPrinting ? (parseInt(state.total_layer_num) || 0) : null,
       nozzle_temp: state.nozzle_temper ?? null,
-      bed_temp: state.bed_temper ?? null
+      nozzle_target: state.nozzle_target_temper ?? null,
+      bed_temp: state.bed_temper ?? null,
+      bed_target: state.bed_target_temper ?? null,
+      chamber_temp: state.chamber_temper ?? null,
+      wifi_signal: state.wifi_signal ?? null,
+      speed_percent: state.spd_mag ?? null,
+      fan_part: fanPct(state.cooling_fan_speed),
+      fan_aux: fanPct(state.big_fan1_speed),
+      fan_chamber: fanPct(state.big_fan2_speed),
+      ams,
+      lights
     });
   }
   return { printers: result, timestamp: new Date().toISOString() };

@@ -111,16 +111,12 @@
     'print-timeline': 'full'
   };
 
-  const STORAGE_PREFIX = 'history-module-order-';
-  const LOCK_KEY = 'history-layout-locked';
-
   let _data = [];
   let _cloudTasks = null;
   let _activeFilter = 'all';
   let _activeTab = 'history';
   let _activePrinter = 'all';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
-  let _draggedMod = null;
+  const _locked = true;
   let _viewMode = localStorage.getItem('history-view-mode') || 'grid';
   let _sortField = localStorage.getItem('history-sort-field') || 'date';
   let _sortDir = localStorage.getItem('history-sort-dir') || 'desc';
@@ -146,24 +142,9 @@
     }) || null;
   }
 
-  // ═══ Persistence ═══
+  // ═══ Module order ═══
   function getOrder(tabId) {
-    const defaults = TAB_CONFIG[tabId]?.modules || [];
-    try {
-      const o = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId));
-      if (Array.isArray(o)) {
-        const valid = o.filter(id => defaults.includes(id));
-        if (valid.length >= defaults.length - 1) return valid;
-        localStorage.removeItem(STORAGE_PREFIX + tabId);
-      }
-    } catch (_) {}
-    return defaults;
-  }
-  function saveOrder(tabId) {
-    const cont = document.getElementById(`history-tab-${tabId}`);
-    if (!cont) return;
-    const ids = [...cont.querySelectorAll('.stats-module[data-module-id]')].map(m => m.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
+    return TAB_CONFIG[tabId]?.modules || [];
   }
 
   // ═══ Computed stats ═══
@@ -943,36 +924,6 @@
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
   }
 
-  // ═══ Module Drag & Drop ═══
-  function initModuleDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); saveOrder(tabId); _draggedMod = null; }
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) { _draggedMod.classList.remove('stats-module-dragging'); _draggedMod = null; }
-    });
-  }
 
   // ═══ Main render ═══
   async function loadHistory() {
@@ -1012,14 +963,6 @@
       let html = '<div class="history-layout">';
 
       // Toolbar
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
-      html += `<div class="stats-toolbar">
-        <button class="speed-btn ${_locked ? '' : 'active'}" onclick="toggleHistoryLock()" title="${_locked ? t('history.layout_locked') : t('history.layout_unlocked')}">
-          ${lockIcon} <span>${_locked ? t('history.layout_locked') : t('history.layout_unlocked')}</span>
-        </button>
-      </div>`;
 
       // Printer tab bar
       const printerIds = [...new Set(_data.map(r => r.printer_id))];
@@ -1032,52 +975,24 @@
         html += '</div>';
       }
 
-      // Tab bar (only show if more than one tab)
-      const tabKeys = Object.keys(TAB_CONFIG);
-      if (tabKeys.length > 1) {
-        html += '<div class="tabs">';
-        for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
-          html += `<button class="tab-btn history-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchHistoryTab('${id}')">${t(cfg.label)}</button>`;
-        }
-        html += '</div>';
-      }
+      // 2-column layout: left = summary + filters, right = list
+      const summaryContent = BUILDERS['history-summary'] ? BUILDERS['history-summary'](filteredData) : '';
+      const filtersContent = BUILDERS['history-filters'] ? BUILDERS['history-filters'](filteredData) : '';
+      const listContent = BUILDERS['history-list'] ? BUILDERS['history-list'](filteredData) : '';
 
-      // Tab panels
-      for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
-        const order = getOrder(tabId);
-        // Merge new modules
-        const allModules = cfg.modules;
-        const mergedOrder = [...order];
-        for (const mod of allModules) {
-          if (!mergedOrder.includes(mod)) mergedOrder.push(mod);
-        }
-
-        html += `<div class="tab-panel history-tab-panel stats-tab-panel stagger-in ${tabId === _activeTab ? 'active' : ''}" id="history-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
-        let _si = 0;
-        for (const modId of mergedOrder) {
-          const builder = BUILDERS[modId];
-          if (!builder) continue;
-          const content = builder(filteredData);
-          if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
-          const size = MODULE_SIZE[modId] || 'full';
-          const isFull = size === 'full';
-          html += `<div class="stats-module${unlocked}${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" ${draggable} style="--i:${_si++};">`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
-          html += content;
-          html += '</div>';
-        }
-        html += '</div>';
-      }
+      html += `<div class="hist-2col">
+        <div class="hist-sidebar">
+          ${summaryContent ? `<div class="stats-module">${summaryContent}</div>` : ''}
+          ${filtersContent ? `<div class="stats-module">${filtersContent}</div>` : ''}
+        </div>
+        <div class="hist-main">
+          ${listContent ? `<div class="stats-module">${listContent}</div>` : ''}
+        </div>
+      </div>`;
 
       html += '</div>';
       panel.innerHTML = html;
 
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`history-tab-${tabId}`);
-        if (cont) initModuleDrag(cont, tabId);
-      }
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('history.load_failed')}</p>`;
     }
@@ -1087,12 +1002,6 @@
   window.loadHistoryPanel = loadHistory;
   window.switchHistoryTab = switchTab;
   window.showHistoryDetail = showDetail;
-  window.toggleHistoryLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadHistory();
-  };
-
   window.toggleHistoryDetail = function(btn) {
     const card = btn.closest('.history-card-content') || btn.closest('.history-card');
     const detail = card.querySelector('.history-card-detail');

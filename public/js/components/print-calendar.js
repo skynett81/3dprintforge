@@ -1,4 +1,4 @@
-// Print Activity Calendar — GitHub-style contribution heatmap
+// Print Activity Calendar — GitHub-style contribution heatmap with year selector
 (function() {
   'use strict';
 
@@ -24,23 +24,37 @@
     return 'rgba(0, 230, 118, 0.95)';
   }
 
+  let _currentYear = new Date().getFullYear();
+  let _container = null;
+
   window.loadPrintCalendar = async function(container) {
     if (!container) container = document.getElementById('overlay-panel-body');
     if (!container) return;
+    _container = container;
+    _currentYear = new Date().getFullYear();
+    await _loadYear(_currentYear);
+  };
 
-    container.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div></div>';
+  async function _loadYear(year) {
+    if (!_container) return;
+    _currentYear = year;
 
-    let data;
+    _container.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div></div>';
+
+    let result;
     try {
-      const res = await fetch('/api/stats/calendar');
-      data = await res.json();
+      const res = await fetch('/api/stats/calendar?year=' + year);
+      result = await res.json();
     } catch (e) {
-      container.innerHTML = `<p class="text-muted">${_t('calendar.load_failed', 'Kunne ikke laste kalenderdata')}</p>`;
+      _container.innerHTML = `<p class="text-muted">${_t('calendar.load_failed', 'Kunne ikke laste kalenderdata')}</p>`;
       return;
     }
 
+    const data = result.days || result;
+    const years = result.years || [year];
+
     if (!data || !data.length) {
-      container.innerHTML = `<p class="text-muted">${_t('calendar.no_data', 'Ingen printdata tilgjengelig')}</p>`;
+      _container.innerHTML = _renderYearSelector(year, years) + `<p class="text-muted">${_t('calendar.no_data', 'Ingen printdata for dette året')}</p>`;
       return;
     }
 
@@ -64,7 +78,6 @@
     // Compute streaks
     let currentStreak = 0, longestStreak = 0, tempStreak = 0;
     const activeDates = data.filter(d => d.prints > 0).map(d => d.date).sort();
-    // Current streak — count back from today
     const today = _fmtDate(new Date());
     const yesterday = _fmtDate(new Date(Date.now() - 86400000));
     let checkDate = dayMap[today]?.prints > 0 ? new Date() : (dayMap[yesterday]?.prints > 0 ? new Date(Date.now() - 86400000) : null);
@@ -74,7 +87,6 @@
         checkDate.setDate(checkDate.getDate() - 1);
       }
     }
-    // Longest streak
     for (let i = 0; i < activeDates.length; i++) {
       if (i === 0) { tempStreak = 1; continue; }
       const diff = (new Date(activeDates[i]) - new Date(activeDates[i-1])) / 86400000;
@@ -84,6 +96,9 @@
     if (tempStreak > longestStreak) longestStreak = tempStreak;
 
     let h = '<div class="act-panel">';
+
+    // ── Year selector ──
+    h += _renderYearSelector(year, years);
 
     // ── Stats strip ──
     h += `<div class="stats-strip act-stats">
@@ -104,7 +119,7 @@
 
     // ── SVG Heatmap ──
     h += `<div class="card act-heatmap-card">
-      <div class="card-title">${_t('activity.year_heatmap', 'Utskriftsaktivitet — siste 12 måneder')}</div>
+      <div class="card-title">${_t('activity.year_heatmap', 'Utskriftsaktivitet')} — ${year}</div>
       ${_renderHeatmap(dayMap, maxPrints, data)}
     </div>`;
 
@@ -121,7 +136,22 @@
     </div>`;
 
     h += '</div>';
-    container.innerHTML = h;
+    _container.innerHTML = h;
+  }
+
+  function _renderYearSelector(currentYear, years) {
+    const sorted = [...years].sort((a, b) => b - a);
+    let h = '<div class="cal-year-selector">';
+    for (const y of sorted) {
+      const active = y === currentYear ? ' active' : '';
+      h += `<button class="tab-btn${active}" onclick="_calSelectYear(${y})">${y}</button>`;
+    }
+    h += '</div>';
+    return h;
+  }
+
+  window._calSelectYear = function(year) {
+    _loadYear(year);
   };
 
   function _statCard(label, value, color) {
@@ -132,10 +162,8 @@
   }
 
   function _renderHeatmap(dayMap, maxPrints, rawData) {
-    // Build weeks from data range
     const start = new Date(rawData[0].date + 'T00:00:00');
     const end = new Date(rawData[rawData.length - 1].date + 'T00:00:00');
-    // Align start to Monday
     while (start.getDay() !== 1) start.setDate(start.getDate() - 1);
 
     const cellSize = 13;
@@ -160,12 +188,10 @@
 
     let svg = `<div class="act-heatmap-scroll"><svg class="act-heatmap-svg" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
 
-    // Day labels (Mon, Wed, Fri, Sun)
     DAYS_FB.forEach((label, i) => {
       if (label) svg += `<text x="0" y="${i * step + cellSize + 18}" font-size="9" fill="var(--text-muted)" font-family="inherit">${label}</text>`;
     });
 
-    // Month labels
     let lastMonth = -1;
     weeks.forEach((week, wi) => {
       const month = week[0].getMonth();
@@ -175,14 +201,13 @@
       }
     });
 
-    // Cells
     weeks.forEach((week, wi) => {
       week.forEach(day => {
         const dayStr = _fmtDate(day);
         const entry = dayMap[dayStr];
         const count = entry?.prints || 0;
         const color = _colorForCount(count, maxPrints);
-        const dow = (day.getDay() + 6) % 7; // Mon=0
+        const dow = (day.getDay() + 6) % 7;
         const x = wi * step + 28;
         const y = dow * step + 15;
 
@@ -197,7 +222,6 @@
 
     svg += '</svg></div>';
 
-    // Legend
     svg += `<div class="act-heatmap-legend">
       <span>${_t('calendar.less', 'Mindre')}</span>
       <div class="act-legend-cell" style="background:var(--bg-tertiary);border:1px solid var(--border-color)"></div>

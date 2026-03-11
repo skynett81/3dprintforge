@@ -209,8 +209,8 @@
 
     // --- Filament cards for selected unit ---
     container.innerHTML = '';
-    const trays = amsUnits[_selectedUnit]?.tray;
-    if (!trays) return;
+    const trays = amsUnits[_selectedUnit]?.tray || [];
+    const slotCount = Math.max(4, trays.length);  // Always show at least 4 slots
 
     const printerId = meta?.id || window.printerState?.getActivePrinterId?.() || null;
     const gcodeState = data.gcode_state || 'IDLE';
@@ -218,8 +218,8 @@
     const est = window._printEstimates;
     const _warnings = [];  // collect low filament warnings for banner
 
-    for (let i = 0; i < trays.length; i++) {
-      const tray = trays[i];
+    for (let i = 0; i < slotCount; i++) {
+      const tray = trays[i] || null;
       const globalSlot = _selectedUnit * 4 + i;
       const isActive = String(globalSlot) === String(activeTray) && String(activeTray) !== '254' && String(activeTray) !== '255';
       const card = document.createElement('div');
@@ -227,9 +227,16 @@
       if (!tray || !tray.tray_type) {
         card.className = `ams-card ams-card-empty${isActive ? ' ams-card-active' : ''}`;
         card.innerHTML = `
-          <div class="ams-card-inner ams-card-empty-inner">
-            <span class="ams-card-type">${t('ams.empty')}</span>
-          </div>`;
+          <div class="ams-spool ams-spool-empty">
+            <svg class="ams-spool-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border-color)" stroke-width="2" stroke-dasharray="4 3"/>
+              <circle cx="50" cy="50" r="18" fill="none" stroke="var(--border-color)" stroke-width="1.5" stroke-dasharray="3 3"/>
+            </svg>
+            <div class="ams-spool-center">
+              <span class="ams-spool-type">${t('ams.empty')}</span>
+            </div>
+          </div>
+          <div class="ams-spool-label">A${i + 1}</div>`;
       } else {
         const color = tray.tray_color || '808080';
         const rgb = hexToRgb(color);
@@ -278,8 +285,6 @@
 
         const hasRfid = !!(tray.tag_uid || tray.tray_uuid);
 
-        const fillPct = remain !== null ? Math.max(8, Math.min(100, remain)) : 100;
-
         // Low filament warning levels
         const isCritical = remain !== null && remain <= 5;
         const isLow = remain !== null && remain <= 10;
@@ -303,24 +308,54 @@
           delete _lowAlerted[alertKey + '_crit'];
         }
 
+        // SVG spool ring parameters
+        const radius = 38;
+        const strokeW = 14;
+        const circumference = 2 * Math.PI * radius;
+        const fillPct = remain !== null ? Math.max(0, Math.min(100, remain)) : 100;
+        const dashLen = (fillPct / 100) * circumference;
+        const dashGap = circumference - dashLen;
+
         const warnIcon = isCritical
-          ? `<div class="ams-card-warn ams-card-warn-critical"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`
+          ? `<div class="ams-card-warn ams-card-warn-critical"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`
           : isLow
-            ? `<div class="ams-card-warn ams-card-warn-low"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`
+            ? `<div class="ams-card-warn ams-card-warn-low"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`
             : '';
 
         card.className = `ams-card${isActive ? ' ams-card-active' : ''}${warnClass}`;
         card.style.setProperty('--card-color', rgb);
         card.style.setProperty('--card-color-alpha', hexToRgba(color, 0.15));
         card.innerHTML = `
-          <div class="ams-card-inner" style="color:${textColor};${light ? 'border:1px solid rgba(0,0,0,0.15);' : ''}">
-            <div class="ams-card-fill" style="height:${fillPct}%;background:${rgb}"></div>
-            ${isActive ? '<div class="ams-card-active-border"></div>' : ''}
+          <div class="ams-spool">
+            <svg class="ams-spool-svg" viewBox="0 0 100 100">
+              <!-- Outer spool rim -->
+              <circle cx="50" cy="50" r="47" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="1.5"/>
+              <!-- Background track -->
+              <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="${strokeW}" stroke-linecap="round"/>
+              <!-- Filament ring -->
+              <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${rgb}" stroke-width="${strokeW}" stroke-linecap="round"
+                stroke-dasharray="${dashLen} ${dashGap}" transform="rotate(-90 50 50)"
+                class="ams-spool-ring" style="filter:drop-shadow(0 0 4px ${hexToRgba(color, 0.5)})"/>
+              <!-- Inner spool hub -->
+              <circle cx="50" cy="50" r="18" fill="${hexToRgba(color, 0.08)}" stroke="${hexToRgba(color, 0.25)}" stroke-width="1"/>
+              <!-- Hub spokes -->
+              <line x1="50" y1="32" x2="50" y2="24" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+              <line x1="50" y1="68" x2="50" y2="76" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+              <line x1="32" y1="50" x2="24" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+              <line x1="68" y1="50" x2="76" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+              <!-- Center dot -->
+              <circle cx="50" cy="50" r="4" fill="${hexToRgba(color, 0.3)}"/>
+            </svg>
+            ${isActive ? '<div class="ams-spool-active-ring"></div>' : ''}
             ${warnIcon}
-            <span class="ams-card-type">${tray.tray_type}</span>
-            ${remain !== null ? `<span class="ams-card-remain" style="color:${textColor}">${remain}%${displayGrams !== null ? `<span class="ams-card-grams">${Math.round(displayGrams)}g</span>` : ''}</span>` : ''}
-            ${hasRfid ? `<div class="ams-card-rfid" style="color:${textColor}"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3"/></svg></div>` : ''}
-          </div>`;
+            <div class="ams-spool-center">
+              <span class="ams-spool-type">${tray.tray_type}</span>
+              ${remain !== null ? `<span class="ams-spool-pct" style="color:${rgb}">${remain}%</span>` : ''}
+              ${displayGrams !== null ? `<span class="ams-spool-grams">${Math.round(displayGrams)}g</span>` : ''}
+            </div>
+            ${hasRfid ? `<div class="ams-spool-rfid"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="${rgb}" stroke-width="2"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M5 12c0-3.87 3.13-7 7-7s7 3.13 7 7"/><path d="M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.5" fill="${rgb}"/></svg></div>` : ''}
+          </div>
+          <div class="ams-spool-label">A${i + 1}</div>`;
       }
 
       container.appendChild(card);
@@ -349,20 +384,9 @@
       const vtTray = amsData.vt_tray;
       const isExtActive = String(activeTray) === '254' || String(activeTray) === '255';
 
-      // Printer wireframe SVG (Bambu Studio style)
-      const printerSvg = `<svg class="ams-ext-printer" viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="1.2">
-        <rect x="10" y="15" width="60" height="55" rx="4"/>
-        <rect x="14" y="19" width="52" height="35" rx="2" stroke-dasharray="2 2"/>
-        <circle cx="58" cy="62" r="5" fill="#00ae42" stroke="#00ae42"/>
-        <rect x="10" y="8" width="60" height="7" rx="2"/>
-        <line x1="25" y1="70" x2="55" y2="70"/>
-      </svg>`;
-
       if (vtTray && vtTray.tray_type) {
         const color = vtTray.tray_color || '808080';
         const rgb = hexToRgb(color);
-        const light = isLightColor(color);
-        const textColor = light ? '#333' : '#fff';
 
         const linkedSpool = _getLinkedSpool(printerId, 255, 0);
         let remain;
@@ -376,7 +400,7 @@
           remain = null;
         }
 
-        // Adjust for in-progress filament consumption (match active-filament.js)
+        // Adjust for in-progress filament consumption
         if (isExtActive && isPrinting && est && est.weight_g > 0 && remain !== null) {
           const pct = data.mc_percent || 0;
           const totalG = linkedSpool ? linkedSpool.initial_weight_g : (vtTray.tray_weight ? parseFloat(vtTray.tray_weight) : null);
@@ -388,29 +412,59 @@
           }
         }
 
+        let displayGrams = null;
+        if (linkedSpool && linkedSpool.remaining_weight_g > 0) {
+          displayGrams = linkedSpool.remaining_weight_g;
+        } else if (remain !== null) {
+          const tw = vtTray.tray_weight ? parseFloat(vtTray.tray_weight) : null;
+          if (tw > 0) displayGrams = Math.round(tw * remain / 100);
+        }
+
+        const radius = 38;
+        const strokeW = 14;
+        const circumference = 2 * Math.PI * radius;
+        const fillPct = remain !== null ? Math.max(0, Math.min(100, remain)) : 100;
+        const dashLen = (fillPct / 100) * circumference;
+        const dashGap = circumference - dashLen;
+
         extSection.innerHTML = `
-          <div class="ams-ext-label">Ext</div>
-          <div class="ams-ext-row">
-            <div class="ams-card ams-card-ext${isExtActive ? ' ams-card-active' : ''}">
-              <div class="ams-card-inner" style="background:${rgb};color:${textColor};${light ? 'border:1px solid rgba(0,0,0,0.15);' : ''}">
-                ${isExtActive ? '<div class="ams-card-active-border"></div>' : ''}
-                <span class="ams-card-type">${vtTray.tray_type}</span>
-                ${remain !== null ? `<div class="ams-card-remain" style="color:${textColor}">${remain}%</div>` : ''}
+          <div class="ams-card ams-card-ext${isExtActive ? ' ams-card-active' : ''}">
+            <div class="ams-spool">
+              <svg class="ams-spool-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="47" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="1.5"/>
+                <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="${strokeW}" stroke-linecap="round"/>
+                <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${rgb}" stroke-width="${strokeW}" stroke-linecap="round"
+                  stroke-dasharray="${dashLen} ${dashGap}" transform="rotate(-90 50 50)"
+                  class="ams-spool-ring" style="filter:drop-shadow(0 0 4px ${hexToRgba(color, 0.5)})"/>
+                <circle cx="50" cy="50" r="18" fill="${hexToRgba(color, 0.08)}" stroke="${hexToRgba(color, 0.25)}" stroke-width="1"/>
+                <line x1="50" y1="32" x2="50" y2="24" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+                <line x1="50" y1="68" x2="50" y2="76" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+                <line x1="32" y1="50" x2="24" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+                <line x1="68" y1="50" x2="76" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
+                <circle cx="50" cy="50" r="4" fill="${hexToRgba(color, 0.3)}"/>
+              </svg>
+              ${isExtActive ? '<div class="ams-spool-active-ring"></div>' : ''}
+              <div class="ams-spool-center">
+                <span class="ams-spool-type">${vtTray.tray_type}</span>
+                ${remain !== null ? `<span class="ams-spool-pct" style="color:${rgb}">${remain}%</span>` : ''}
+                ${displayGrams !== null ? `<span class="ams-spool-grams">${Math.round(displayGrams)}g</span>` : ''}
               </div>
             </div>
-            ${printerSvg}
+            <div class="ams-spool-label">Ext</div>
           </div>`;
       } else {
         extSection.innerHTML = `
-          <div class="ams-ext-label">Ext</div>
-          <div class="ams-ext-row">
-            <div class="ams-card ams-card-ext ams-card-empty${isExtActive ? ' ams-card-active' : ''}">
-              <div class="ams-card-inner ams-card-empty-inner">
-                <span class="ams-card-type">?</span>
-                <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" style="position:absolute;bottom:4px;right:4px;opacity:0.4"><path d="M4 12L12 4M12 4H6M12 4v6"/></svg>
+          <div class="ams-card ams-card-ext ams-card-empty${isExtActive ? ' ams-card-active' : ''}">
+            <div class="ams-spool ams-spool-empty">
+              <svg class="ams-spool-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border-color)" stroke-width="2" stroke-dasharray="4 3"/>
+                <circle cx="50" cy="50" r="18" fill="none" stroke="var(--border-color)" stroke-width="1.5" stroke-dasharray="3 3"/>
+              </svg>
+              <div class="ams-spool-center">
+                <span class="ams-spool-type">${t('ams.empty')}</span>
               </div>
             </div>
-            ${printerSvg}
+            <div class="ams-spool-label">Ext</div>
           </div>`;
       }
     }

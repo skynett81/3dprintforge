@@ -51,12 +51,8 @@
     'ps-filament-breakdown': 'full', 'ps-nozzle-models': 'full', 'ps-print-timeline': 'full'
   };
 
-  const STORAGE_PREFIX = 'stats-module-order-';
-  const LOCK_KEY = 'stats-layout-locked';
-
   let _printer = null;
   let _activeTab = 'overview';
-  let _locked = localStorage.getItem(LOCK_KEY) !== '0';
   let _data = null;
   let _xcam = null;
   let _costData = null;
@@ -64,8 +60,6 @@
   let _histData = null;
   let _dateFrom = null;
   let _dateTo = null;
-  let _draggedMod = null;
-
   // ═══ Print stats helpers ═══
   function _printerName(id) { return window.printerState?._printerMeta?.[id]?.name || id || '--'; }
   function _fmtDurLong(sec) { if (!sec) return '--'; const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; if (h>0) return `${h}${t('time.h')} ${m}${t('time.m')}`; if (m>0) return `${m}${t('time.m')} ${s}${t('time.s')}`; return `${s}${t('time.s')}`; }
@@ -783,24 +777,7 @@
 
   // ═══ Persistence ═══
   function getOrder(tabId) {
-    const defaults = TAB_CONFIG[tabId].modules;
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_PREFIX + tabId));
-      if (saved && Array.isArray(saved)) {
-        const known = new Set(defaults);
-        const result = saved.filter(id => known.has(id));
-        for (const id of defaults) { if (!result.includes(id)) result.push(id); }
-        return result;
-      }
-    } catch (_) {}
-    return [...defaults];
-  }
-
-  function saveOrder(tabId) {
-    const container = document.getElementById(`stats-tab-${tabId}`);
-    if (!container) return;
-    const ids = [...container.querySelectorAll('.stats-module')].map(el => el.dataset.moduleId);
-    localStorage.setItem(STORAGE_PREFIX + tabId, JSON.stringify(ids));
+    return [...TAB_CONFIG[tabId].modules];
   }
 
   // ═══ Tab switching ═══
@@ -818,40 +795,6 @@
     });
     const slug = tabId === 'overview' ? 'stats' : `stats/${tabId}`;
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
-  }
-
-  // ═══ Drag & Drop ═══
-  function initDrag(container, tabId) {
-    container.addEventListener('dragstart', e => {
-      const mod = e.target.closest('.stats-module');
-      if (!mod || _locked) { e.preventDefault(); return; }
-      _draggedMod = mod;
-      mod.classList.add('stats-module-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!_draggedMod || _locked) return;
-      e.dataTransfer.dropEffect = 'move';
-      const target = e.target.closest('.stats-module');
-      if (target && target !== _draggedMod) {
-        const rect = target.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        if (e.clientY < midY) container.insertBefore(_draggedMod, target);
-        else container.insertBefore(_draggedMod, target.nextSibling);
-      }
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      if (_draggedMod) saveOrder(tabId);
-    });
-    container.addEventListener('dragend', () => {
-      if (_draggedMod) {
-        _draggedMod.classList.remove('stats-module-dragging');
-        _draggedMod = null;
-      }
-    });
   }
 
   // ═══ Main render ═══
@@ -897,9 +840,6 @@
       html += buildPrinterSelector('changeStatsPrinter', _printer);
 
       // Toolbar
-      const lockIcon = _locked
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
       html += `<div class="stats-toolbar">
         <div class="stats-date-range">
           <input type="date" class="form-control form-control-sm" value="${_dateFrom || ''}" onchange="statsSetDateFrom(this.value)" title="${t('stats.date_from')}">
@@ -907,22 +847,20 @@
           <input type="date" class="form-control form-control-sm" value="${_dateTo || ''}" onchange="statsSetDateTo(this.value)" title="${t('stats.date_to')}">
           <button class="form-btn form-btn-sm" data-ripple onclick="statsResetDates()">${t('stats.all_time')}</button>
         </div>
-        <button class="speed-btn ${_locked ? '' : 'active'}" onclick="toggleStatsLock()" title="${_locked ? t('stats.layout_locked') : t('stats.layout_unlocked')}">
-          ${lockIcon} <span>${_locked ? t('stats.layout_locked') : t('stats.layout_unlocked')}</span>
-        </button>
         <button class="form-btn form-btn-sm" data-ripple onclick="exportCsv()">${t('stats.download_csv')}</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="exportJson()">${t('stats.download_json')}</button>
       </div>`;
 
       // Tab bar (sorted alphabetically, overview first)
+      const sortedTabs = _getSortedTabs();
       html += '<div class="tabs">';
-      for (const [id, cfg] of _getSortedTabs()) {
+      for (const [id, cfg] of sortedTabs) {
         html += `<button class="tab-btn stats-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchStatsTab('${id}')">${t(cfg.label)}</button>`;
       }
       html += '</div>';
 
       // Tab panels
-      for (const [tabId, cfg] of _getSortedTabs()) {
+      for (const [tabId, cfg] of sortedTabs) {
         const order = getOrder(tabId);
         const isActive = tabId === _activeTab;
         html += `<div class="tab-panel stats-tab-panel stagger-in ${isActive ? 'active' : ''}" id="stats-tab-${tabId}" style="display:${isActive ? 'grid' : 'none'}">`;
@@ -932,12 +870,9 @@
           if (!builder) continue;
           const content = builder(_data, _xcam, _costData, _hwData, _histData);
           if (!content) continue;
-          const draggable = _locked ? '' : 'draggable="true"';
-          const unlocked = _locked ? '' : ' stats-module-unlocked';
           const size = MODULE_SIZE[modId] || 'half';
           const span = size === 'full' ? ' stats-module-full' : '';
-          html += `<div class="stats-module${unlocked}${span}" data-module-id="${modId}" ${draggable} style="--i:${_si++}">`;
-          if (!_locked) html += '<div class="stats-module-handle" title="Drag to reorder">&#x2630;</div>';
+          html += `<div class="stats-module${span}" data-module-id="${modId}" style="--i:${_si++}">`;
           html += content;
           html += '</div>';
         }
@@ -947,11 +882,6 @@
       html += '</div>'; // close .stats-layout
       panel.innerHTML = html;
 
-      // Attach DnD
-      for (const tabId of Object.keys(TAB_CONFIG)) {
-        const cont = document.getElementById(`stats-tab-${tabId}`);
-        if (cont) initDrag(cont, tabId);
-      }
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('stats.load_failed')}</p>`;
     }
@@ -961,11 +891,6 @@
   window.loadStatsPanel = loadStatistics;
   window.changeStatsPrinter = function(v) { _printer = v || null; window._statsPanel_printer = _printer; loadStatistics(); };
   window.switchStatsTab = switchTab;
-  window.toggleStatsLock = function() {
-    _locked = !_locked;
-    localStorage.setItem(LOCK_KEY, _locked ? '1' : '0');
-    loadStatistics();
-  };
   window.exportCsv = function() {
     window.open(`/api/history/export${_printer ? '?printer_id='+_printer : ''}`);
   };
