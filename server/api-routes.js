@@ -33,7 +33,7 @@ const PRINTER_SCHEMA = {
   ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
   serial: { type: 'string', maxLength: 200 },
   access_code: { type: 'string', maxLength: 200 },
-  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'X1', 'X1C', 'X1E'] }
+  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'P2S', 'P2S Combo', 'X1', 'X1C', 'X1E', 'H2D'] }
 };
 
 const PRINTER_UPDATE_SCHEMA = {
@@ -41,7 +41,7 @@ const PRINTER_UPDATE_SCHEMA = {
   ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
   serial: { type: 'string', maxLength: 200 },
   access_code: { type: 'string', maxLength: 200 },
-  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'X1', 'X1C', 'X1E'] }
+  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'P2S', 'P2S Combo', 'X1', 'X1C', 'X1E', 'H2D'] }
 };
 
 const PROFILE_SCHEMA = {
@@ -408,7 +408,7 @@ export async function handleAuthApiRequest(req, res) {
 
     sendJson(res, { error: 'Not found' }, 404);
   } catch (e) {
-    console.error('[auth-api] Error:', e.message);
+    log.error('Auth-api error: ' + e.message);
     sendJson(res, { error: 'Server error' }, 500);
   }
 }
@@ -669,7 +669,7 @@ export async function handleApiRequest(req, res) {
             addHistory(record);
             imported.push({ filename, status, printer_id: printerId, started_at: startDate });
           } catch (e) {
-            console.error('[cloud-import] Failed to add:', filename, e.message);
+            log.error('Cloud-import failed to add: ' + filename + ' ' + e.message);
           }
         }
         return sendJson(res, { ok: true, imported, count: imported.length }, 201);
@@ -1615,7 +1615,7 @@ export async function handleApiRequest(req, res) {
 
         config.auth = { ...config.auth, ...body };
         saveConfig({ auth: config.auth });
-        console.log(`[auth] Config updated: enabled=${config.auth.enabled}, users=${config.auth.users?.length || 0}`);
+        log.info('Auth config updated: enabled=' + config.auth.enabled + ', users=' + (config.auth.users?.length || 0));
         sendJson(res, { ok: true });
       });
     }
@@ -1797,7 +1797,7 @@ export async function handleApiRequest(req, res) {
         if (!model) return sendJson(res, null, 404);
         return sendJson(res, model);
       } catch (err) {
-        console.warn('[api] Model error:', err.message);
+        log.warn('Model error: ' + err.message);
         return sendJson(res, { error: 'Model error' }, 500);
       }
     }
@@ -1820,7 +1820,7 @@ export async function handleApiRequest(req, res) {
         });
         res.end(result.buffer);
       } catch (err) {
-        console.warn('[api] Thumbnail error:', err.message);
+        log.warn('Thumbnail error: ' + err.message);
         res.writeHead(500);
         res.end();
       }
@@ -1877,7 +1877,7 @@ export async function handleApiRequest(req, res) {
                 }
               }
             } catch (e) {
-              console.warn('[api] Cloud thumb fetch error:', e.message);
+              log.warn('Cloud thumb fetch error: ' + e.message);
             }
           }
 
@@ -1908,7 +1908,7 @@ export async function handleApiRequest(req, res) {
           }
         }
       } catch (e) {
-        console.warn('[api] History thumb error:', e.message);
+        log.warn('History thumb error: ' + e.message);
       }
       // Return 1x1 transparent PNG placeholder to avoid 404 console noise
       const placeholder = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualIQAAAABJRU5ErkJggg==', 'base64');
@@ -3422,7 +3422,7 @@ export async function handleApiRequest(req, res) {
           sendJson(res, result, 201);
           // Auto-slice if needed
           if (result.needsSlicing) {
-            sliceFile(result.jobId, { quality, profile }).catch(e => console.error('[slicer] Slice failed:', e.message));
+            sliceFile(result.jobId, { quality, profile }).catch(e => log.error('Slice failed: ' + e.message));
           }
         } catch (e) { sendJson(res, { error: e.message }, 500); }
       });
@@ -5767,6 +5767,17 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true });
     }
 
+    // Format Storage (SD card / USB)
+    const formatStorageMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/storage\/format$/);
+    if (formatStorageMatch && method === 'POST') {
+      const pid = formatStorageMatch[1];
+      const printer = _printerManager?.printers?.get(pid);
+      if (!printer?.client) return sendJson(res, { error: 'Printer not connected' }, 400);
+      const { buildFormatStorageCommand } = await import('./mqtt-commands.js');
+      printer.client.sendCommand(buildFormatStorageCommand());
+      return sendJson(res, { ok: true, message: 'Format command sent' });
+    }
+
     // Bed Mesh — Trigger calibration via G-code
     const bedMeshCalMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh\/calibrate$/);
     if (bedMeshCalMatch && method === 'POST') {
@@ -6175,7 +6186,7 @@ export async function handleApiRequest(req, res) {
     sendJson(res, { error: 'Ikke funnet' }, 404);
 
   } catch (e) {
-    console.error('[api] Feil:', e.message);
+    log.error('Feil: ' + e.message);
     sendJson(res, { error: 'Serverfeil' }, 500);
   }
 }
@@ -7662,6 +7673,6 @@ export function dispatchWebhooksForEvent(eventType, title, message, data) {
       _dispatchWebhook(wh, payload, deliveryId).catch(e => log.warn('Webhook dispatch failed', e.message));
     }
   } catch (e) {
-    console.error('[webhook] Dispatch error:', e.message);
+    log.error('Webhook dispatch error: ' + e.message);
   }
 }

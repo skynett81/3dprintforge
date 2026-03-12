@@ -18,10 +18,10 @@ let _lastFetch = 0;
 export function initEnergyService() {
   const provider = getInventorySetting('energy_provider') || 'none';
   if (provider === 'none') {
-    console.log('[energy] Service disabled (no provider configured)');
+    log.info('Service disabled (no provider configured)');
     return;
   }
-  console.log(`[energy] Initialized with provider: ${provider}`);
+  log.info('Initialized with provider: ' + provider);
   _scheduleFetch();
 }
 
@@ -36,7 +36,7 @@ export async function fetchPrices() {
       return await _fetchNordpool();
     }
   } catch (e) {
-    console.error(`[energy] Fetch failed (${provider}):`, e.message);
+    log.error('Fetch failed (' + provider + '): ' + e.message);
     return { prices: _prices, provider, error: e.message };
   }
   return { prices: [], provider };
@@ -206,7 +206,7 @@ async function _fetchTibber() {
   }));
   _lastFetch = Date.now();
 
-  console.log(`[energy] Tibber: ${_prices.length} prices loaded (${sub.today?.length || 0} today, ${sub.tomorrow?.length || 0} tomorrow)`);
+  log.info('Tibber: ' + _prices.length + ' prices loaded (' + (sub.today?.length || 0) + ' today, ' + (sub.tomorrow?.length || 0) + ' tomorrow)');
   return { prices: _prices, provider: 'tibber', current: sub.current };
 }
 
@@ -260,7 +260,7 @@ async function _fetchNordpool() {
     }
   }
 
-  console.log(`[energy] Nordpool ${zone}: ${_prices.length} prices loaded`);
+  log.info('Nordpool ' + zone + ': ' + _prices.length + ' prices loaded');
   return { prices: _prices, provider: 'nordpool' };
 }
 
@@ -281,7 +281,7 @@ export function restartService() {
   if (provider === 'none') {
     if (_fetchTimer) { clearInterval(_fetchTimer); _fetchTimer = null; }
     _prices = [];
-    console.log('[energy] Service stopped');
+    log.info('Service stopped');
     return;
   }
   _scheduleFetch();

@@ -5,6 +5,9 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, unlinkSync, renameSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createLogger } from './logger.js';
+
+const log = createLogger('milestone');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', 'data');
@@ -59,12 +62,12 @@ export async function captureMilestone(printerId, printerIp, accessCode, milesto
       });
     });
 
-    console.log(`[milestone] Captured ${milestone}% for ${printerId}: ${filename}`);
+    log.info('Captured ' + milestone + '% for ' + printerId + ': ' + filename);
     _capturing.delete(captureKey);
 
     return { printerId, milestone, filename, filepath, timestamp: new Date().toISOString(), layer: meta.layer || 0, totalLayers: meta.totalLayers || 0 };
   } catch (e) {
-    console.error(`[milestone] Capture failed for ${printerId} at ${milestone}%:`, e.message);
+    log.error('Capture failed for ' + printerId + ' at ' + milestone + '%: ' + e.message);
     _capturing.delete(captureKey);
     return null;
   }
@@ -120,10 +123,10 @@ export function archivePrintMilestones(printerId, printHistoryId) {
         unlinkSync(join(printerDir, f));
       }
     }
-    console.log(`[milestone] Archived ${files.length} screenshots for print #${printHistoryId}`);
+    log.info('Archived ' + files.length + ' screenshots for print #' + printHistoryId);
     return files.length;
   } catch (e) {
-    console.error(`[milestone] Archive failed:`, e.message);
+    log.error('Archive failed: ' + e.message);
     return 0;
   }
 }

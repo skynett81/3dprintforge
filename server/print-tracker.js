@@ -255,14 +255,14 @@ export class PrintTracker {
         const triggered = JSON.parse(pause.triggered_layers || '[]');
         if (layers.includes(currentLayer) && !triggered.includes(currentLayer)) {
           markLayerTriggered(pause.id, currentLayer);
-          console.log(`[tracker:${this.printerId}] Layer pause triggered at layer ${currentLayer}: ${pause.reason || 'scheduled'}`);
+          log.info('Layer pause triggered at layer ' + currentLayer + ': ' + (pause.reason || 'scheduled'));
           if (this.onLayerPause) {
             this.onLayerPause({ printerId: this.printerId, layer: currentLayer, reason: pause.reason });
           }
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Layer pause check error:`, e.message);
+      log.error('Layer pause check error: ' + e.message);
     }
   }
 
@@ -291,7 +291,7 @@ export class PrintTracker {
   }
 
   _startPrint(data) {
-    console.log(`[tracker:${this.printerId}] Print startet: ${data.subtask_name || 'ukjent'}`);
+    log.info('Print startet: ' + (data.subtask_name || 'ukjent'));
 
     this._hmsLogged = new Set(); // Reset HMS dedup for new print
     this._lastPrintError = null; // Reset print_error dedup for new print
@@ -401,7 +401,7 @@ export class PrintTracker {
 
     try {
       const printHistoryId = addHistory(record);
-      console.log(`[tracker:${this.printerId}] Print ${status}: ${record.filename} (${Math.round(duration / 60)}m, ${filamentUsedG.toFixed(1)}g, ${this.colorChanges} fargebytter, ${wasteG}g waste)`);
+      log.info('Print ' + status + ': ' + record.filename + ' (' + Math.round(duration / 60) + 'm, ' + filamentUsedG.toFixed(1) + 'g, ' + this.colorChanges + ' fargebytter, ' + wasteG + 'g waste)');
 
       // Save thumbnail from cache if available
       this._saveHistoryThumbnail(printHistoryId);
@@ -463,7 +463,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Kunne ikke lagre print:`, e.message);
+      log.error('Kunne ikke lagre print: ' + e.message);
     }
 
     // Deactivate any layer pauses for this printer
@@ -493,11 +493,11 @@ export class PrintTracker {
         if (typeChanged || diaChanged) {
           retireNozzleSession(active.id);
           createNozzleSession(this.printerId, nType || active.nozzle_type, nDia || active.nozzle_diameter);
-          console.log(`[tracker:${this.printerId}] Dysebytte detektert: ${active.nozzle_type} ${active.nozzle_diameter}mm → ${nType} ${nDia}mm`);
+          log.info('Dysebytte detektert: ' + active.nozzle_type + ' ' + active.nozzle_diameter + 'mm → ' + nType + ' ' + nDia + 'mm');
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Nozzle check feil:`, e.message);
+      log.error('Nozzle check feil: ' + e.message);
     }
   }
 
@@ -509,7 +509,7 @@ export class PrintTracker {
       const abrasiveG = isAbrasiveFilament(filamentType) ? (filamentG || 0) : 0;
       updateNozzleSessionCounters(session.id, hours, filamentG || 0, abrasiveG);
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Nozzle update feil:`, e.message);
+      log.error('Nozzle update feil: ' + e.message);
     }
   }
 
@@ -555,7 +555,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] AMS snapshot feil:`, e.message);
+      log.error('AMS snapshot feil: ' + e.message);
     }
 
     // Auto-detect NFC tags from AMS trays
@@ -589,7 +589,7 @@ export class PrintTracker {
             const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
             if (!existing || existing.id !== mapping.spool_id) {
               assignSpoolToSlot(mapping.spool_id, this.printerId, amsUnit, trayId);
-              console.log(`[tracker:${this.printerId}] NFC auto-assigned spool #${mapping.spool_id} to AMS ${amsUnit}:${trayId} (tag ${tagUid})`);
+              log.info('NFC auto-assigned spool #' + mapping.spool_id + ' to AMS ' + amsUnit + ':' + trayId + ' (tag ' + tagUid + ')');
               if (this.onNfcAutoLinked) {
                 this.onNfcAutoLinked({
                   action: 'assigned',
@@ -607,7 +607,7 @@ export class PrintTracker {
             const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
             if (existing) {
               linkNfcTag(tagUid, existing.id, 'ams', null);
-              console.log(`[tracker:${this.printerId}] NFC auto-linked tag ${tagUid} to spool #${existing.id} in AMS ${amsUnit}:${trayId}`);
+              log.info('NFC auto-linked tag ' + tagUid + ' to spool #' + existing.id + ' in AMS ' + amsUnit + ':' + trayId);
               if (this.onNfcAutoLinked) {
                 this.onNfcAutoLinked({
                   action: 'linked',
@@ -633,7 +633,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] NFC auto-detect feil:`, e.message);
+      log.error('NFC auto-detect feil: ' + e.message);
     }
   }
 
@@ -716,7 +716,7 @@ export class PrintTracker {
     // Check if this print was already recorded (by filename + printer)
     const recent = getHistory(5, 0, this.printerId);
     if (recent.some(h => h.filename === filename)) {
-      console.log(`[tracker:${this.printerId}] Retroactive print already recorded: ${filename}`);
+      log.info('Retroactive print already recorded: ' + filename);
       return;
     }
 
@@ -754,9 +754,9 @@ export class PrintTracker {
 
     try {
       addHistory(record);
-      console.log(`[tracker:${this.printerId}] Retroactively captured ${status} print: ${filename}`);
+      log.info('Retroactively captured ' + status + ' print: ' + filename);
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Failed to capture retroactive print:`, e.message);
+      log.error('Failed to capture retroactive print: ' + e.message);
     }
   }
 
@@ -790,9 +790,9 @@ export class PrintTracker {
       if (!existsSync(thumbDir)) mkdirSync(thumbDir, { recursive: true });
       const ext = cached.contentType === 'image/svg+xml' ? 'svg' : 'png';
       writeFileSync(join(thumbDir, `${historyId}.${ext}`), cached.buffer);
-      console.log(`[tracker:${this.printerId}] Thumbnail lagret for history #${historyId}`);
+      log.info('Thumbnail lagret for history #' + historyId);
     } catch (e) {
-      console.warn(`[tracker:${this.printerId}] Thumbnail-lagring feilet:`, e.message);
+      log.warn('Thumbnail-lagring feilet: ' + e.message);
     }
   }
 
@@ -815,7 +815,7 @@ export class PrintTracker {
       if (parseInt(data?.heatbreak_fan_speed) > 0)
         upsertComponentWear(this.printerId, 'fan_heatbreak', hours, 0);
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Component wear update feilet:`, e.message);
+      log.error('Component wear update feilet: ' + e.message);
     }
   }
 
@@ -834,12 +834,12 @@ export class PrintTracker {
           const spool = getSpoolBySlot(this.printerId, unitId, trayId);
           if (spool) {
             useSpoolWeight(spool.id, usedG, 'auto', printHistoryId, this.printerId);
-            console.log(`[tracker:${this.printerId}] Spool #${spool.id} usage: ${usedG.toFixed(1)}g (AMS${unitId}:${trayId})`);
+            log.info('Spool #' + spool.id + ' usage: ' + usedG.toFixed(1) + 'g (AMS' + unitId + ':' + trayId + ')');
           }
         }
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Spool usage update feilet:`, e.message);
+      log.error('Spool usage update feilet: ' + e.message);
     }
   }
 
@@ -862,7 +862,7 @@ export class PrintTracker {
         savePrintCost(printHistoryId, costs);
       }
     } catch (e) {
-      console.error(`[tracker:${this.printerId}] Cost save feilet:`, e.message);
+      log.error('Cost save feilet: ' + e.message);
     }
   }
 

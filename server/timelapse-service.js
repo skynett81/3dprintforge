@@ -17,17 +17,17 @@ export class TimelapseService {
 
   init() {
     if (!existsSync(TIMELAPSE_DIR)) mkdirSync(TIMELAPSE_DIR, { recursive: true });
-    console.log('[timelapse] Service initialized');
+    log.info('Service initialized');
   }
 
   startRecording(printerId, printerIp, accessCode, printHistoryId = null) {
     if (this._active.has(printerId)) {
-      console.log(`[timelapse:${printerId}] Already recording`);
+      log.info('Already recording for ' + printerId);
       return null;
     }
 
     if (!printerIp || !accessCode) {
-      console.log(`[timelapse:${printerId}] No IP or access code, skipping`);
+      log.info('No IP or access code for ' + printerId + ', skipping');
       return null;
     }
 
@@ -61,13 +61,13 @@ export class TimelapseService {
     try {
       ffmpeg = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'ignore'] });
     } catch (e) {
-      console.error(`[timelapse:${printerId}] Failed to spawn ffmpeg:`, e.message);
+      log.error('Failed to spawn ffmpeg for ' + printerId + ': ' + e.message);
       updateTimelapseRecording(recordingId, { status: 'failed' });
       return null;
     }
 
     ffmpeg.on('error', (err) => {
-      console.error(`[timelapse:${printerId}] ffmpeg error:`, err.message);
+      log.error('ffmpeg error for ' + printerId + ': ' + err.message);
       this._active.delete(printerId);
     });
 
@@ -76,7 +76,7 @@ export class TimelapseService {
     });
 
     this._active.set(printerId, { ffmpeg, recordingId, framesDir, frameCount: 0, filename, printerDir, timestamp });
-    console.log(`[timelapse:${printerId}] Recording started (ID: ${recordingId})`);
+    log.info('Recording started for ' + printerId + ' (ID: ' + recordingId + ')');
     return recordingId;
   }
 
@@ -98,7 +98,7 @@ export class TimelapseService {
     } catch (e) { log.warn('Failed to count timelapse frames', e.message); }
 
     if (frameCount < 2) {
-      console.log(`[timelapse:${printerId}] Only ${frameCount} frames, skipping assembly`);
+      log.info('Only ' + frameCount + ' frames for ' + printerId + ', skipping assembly');
       updateTimelapseRecording(entry.recordingId, { status: 'failed', frame_count: frameCount });
       this._cleanupFrames(entry.framesDir);
       return null;
@@ -129,7 +129,7 @@ export class TimelapseService {
       try {
         assembler = spawn('ffmpeg', assembleArgs, { stdio: ['ignore', 'ignore', 'ignore'] });
       } catch (e) {
-        console.error(`[timelapse:${printerId}] Assembly spawn failed:`, e.message);
+        log.error('Assembly spawn failed for ' + printerId + ': ' + e.message);
         updateTimelapseRecording(entry.recordingId, { status: 'failed' });
         this._cleanupFrames(entry.framesDir);
         resolve(null);
@@ -148,17 +148,17 @@ export class TimelapseService {
             frame_count: frameCount,
             completed_at: new Date().toISOString()
           });
-          console.log(`[timelapse:${printerId}] Assembly complete: ${frameCount} frames, ${(stats.size / 1024 / 1024).toFixed(1)}MB`);
+          log.info('Assembly complete for ' + printerId + ': ' + frameCount + ' frames, ' + (stats.size / 1024 / 1024).toFixed(1) + 'MB');
         } else {
           updateTimelapseRecording(entry.recordingId, { status: 'failed' });
-          console.error(`[timelapse:${printerId}] Assembly failed (code: ${code})`);
+          log.error('Assembly failed for ' + printerId + ' (code: ' + code + ')');
         }
         this._cleanupFrames(entry.framesDir);
         resolve(entry.recordingId);
       });
 
       assembler.on('error', (err) => {
-        console.error(`[timelapse:${printerId}] Assembly error:`, err.message);
+        log.error('Assembly error for ' + printerId + ': ' + err.message);
         updateTimelapseRecording(entry.recordingId, { status: 'failed' });
         this._cleanupFrames(entry.framesDir);
         resolve(null);

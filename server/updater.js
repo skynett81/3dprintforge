@@ -4,6 +4,8 @@ import { join, relative } from 'node:path';
 import { execSync, spawn } from 'node:child_process';
 import { addUpdateEntry, updateUpdateEntry } from './database.js';
 import { ROOT_DIR, DATA_DIR } from './config.js';
+import { createLogger } from './logger.js';
+const log = createLogger('updater');
 
 const REPO = 'skynett81/bambu-dashboard';
 const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -56,7 +58,7 @@ export class Updater {
     const intervalMs = (this._config.checkIntervalHours || 6) * 3600000;
     this._timer = setInterval(() => this.checkForUpdate(), intervalMs);
     this._initialTimer = setTimeout(() => this.checkForUpdate(), 30000);
-    console.log(`[updater] Auto-check enabled (every ${this._config.checkIntervalHours || 6}h, env: ${this._environment})`);
+    log.info(`Auto-check enabled (every ${this._config.checkIntervalHours || 6}h, env: ${this._environment})`);
   }
 
   stop() {
@@ -120,12 +122,12 @@ export class Updater {
       }
 
       if (response.status === 403) {
-        console.warn('[updater] GitHub API rate limited');
+        log.warn('GitHub API rate limited');
         return this.getStatus();
       }
 
       if (!response.ok) {
-        console.warn(`[updater] GitHub API error: ${response.status}`);
+        log.warn(`GitHub API error: ${response.status}`);
         return this.getStatus();
       }
 
@@ -146,7 +148,7 @@ export class Updater {
       this._cache.lastCheck = new Date().toISOString();
 
       if (available) {
-        console.log(`[updater] New version available: ${latest} (current: ${this._currentVersion})`);
+        log.info(`New version available: ${latest} (current: ${this._currentVersion})`);
         this._broadcast('update_available', {
           current: this._currentVersion,
           latest,
@@ -165,7 +167,7 @@ export class Updater {
 
       return this.getStatus();
     } catch (e) {
-      console.error('[updater] Check failed:', e.message);
+      log.error('Check failed: ' + e.message);
       return this.getStatus();
     }
   }
@@ -226,7 +228,7 @@ export class Updater {
       // Success
       const durationMs = Date.now() - startTime;
       if (entryId) updateUpdateEntry(entryId, 'completed', null, durationMs);
-      console.log(`[updater] Update to v${latest} completed in ${Math.round(durationMs / 1000)}s`);
+      log.info(`Update to v${latest} completed in ${Math.round(durationMs / 1000)}s`);
 
       this._broadcast('update_status', { stage: 'restarting' });
 
@@ -237,7 +239,7 @@ export class Updater {
     } catch (e) {
       this._updateInProgress = false;
       if (entryId) updateUpdateEntry(entryId, 'failed', e.message, Date.now() - startTime);
-      console.error('[updater] Update failed:', e.message);
+      log.error('Update failed: ' + e.message);
       this._broadcast('update_status', { stage: 'failed', error: e.message });
       throw e;
     }
@@ -331,7 +333,7 @@ export class Updater {
       try {
         execSync('npm install --production', { cwd: ROOT_DIR, timeout: 120000, stdio: 'pipe' });
       } catch (e) {
-        console.warn('[updater] npm install warning:', e.message);
+        log.warn('npm install warning: ' + e.message);
       }
     }
   }
@@ -364,7 +366,7 @@ export class Updater {
       }
     } catch { /* ok */ }
 
-    console.log(`[updater] Backup created: ${backupName}`);
+    log.info(`Backup created: ${backupName}`);
     return backupPath;
   }
 
@@ -372,7 +374,7 @@ export class Updater {
     const isSystemd = !!process.env.INVOCATION_ID;
 
     if (isSystemd) {
-      console.log('[updater] Restarting via systemd...');
+      log.info('Restarting via systemd...');
       process.exit(0);
     } else {
       const cmd = `sleep 2 && cd "${ROOT_DIR}" && exec node --experimental-sqlite server/index.js`;
@@ -382,7 +384,7 @@ export class Updater {
         cwd: ROOT_DIR
       });
       child.unref();
-      console.log('[updater] Spawned restart process, exiting...');
+      log.info('Spawned restart process, exiting...');
       process.exit(0);
     }
   }

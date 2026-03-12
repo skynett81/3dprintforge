@@ -1,5 +1,7 @@
 import { getProtectionSettings, upsertProtectionSettings, addProtectionLog, getProtectionLog, resolveProtectionAlert, getActiveAlerts, clearProtectionLog } from './database.js';
 import { buildPauseCommand, buildStopCommand } from './mqtt-commands.js';
+import { createLogger } from './logger.js';
+const log = createLogger('guard');
 
 const ACTION_MAP = {
   spaghetti_detected: 'spaghetti_action',
@@ -285,7 +287,7 @@ export class PrintGuardService {
         });
       }
     } catch (e) {
-      console.error('[guard] Error handling event:', e.message);
+      log.error('Error handling event: ' + e.message);
     }
   }
 
@@ -294,7 +296,7 @@ export class PrintGuardService {
     if (!printer?.live || !printer.client) return;
     const cmd = buildPauseCommand();
     printer.client.sendCommand(cmd);
-    console.log(`[guard] Paused print on ${printerId}`);
+    log.info(`Paused print on ${printerId}`);
   }
 
   _stopPrint(printerId) {
@@ -302,7 +304,7 @@ export class PrintGuardService {
     if (!printer?.live || !printer.client) return;
     const cmd = buildStopCommand();
     printer.client.sendCommand(cmd);
-    console.log(`[guard] Stopped print on ${printerId}`);
+    log.info(`Stopped print on ${printerId}`);
   }
 
   getStatus(printerId) {

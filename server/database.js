@@ -161,7 +161,7 @@ export function initDatabase() {
   // Run versioned migrations
   _runMigrations();
 
-  console.log('[db] Database klar:', DB_PATH);
+  log.info('Database klar: ' + DB_PATH);
   return db;
 }
 
@@ -274,9 +274,9 @@ function _runMigrations() {
       try {
         m.up();
         db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(m.version);
-        console.log(`[db] Migrering v${m.version} fullført`);
+        log.info('Migrering v' + m.version + ' fullført');
       } catch (e) {
-        console.error(`[db] Migrering v${m.version} feilet:`, e.message);
+        log.error('Migrering v' + m.version + ' feilet: ' + e.message);
       }
     }
   }
@@ -613,7 +613,7 @@ function _migrateFilamentInventory() {
   const rows = db.prepare('SELECT * FROM filament_inventory').all();
   if (rows.length === 0) return;
 
-  console.log(`[db] Migrating ${rows.length} filament_inventory rows to new inventory system...`);
+  log.info('Migrating ' + rows.length + ' filament_inventory rows to new inventory system...');
 
   // Step 1: Extract unique vendors
   const vendorMap = new Map(); // brand -> vendor_id
@@ -660,7 +660,7 @@ function _migrateFilamentInventory() {
       row.cost_nok || null, row.purchase_date || null, row.printer_id || null, row.notes || null);
   }
 
-  console.log(`[db] Migrated: ${vendorMap.size} vendors, ${profileMap.size} profiles, ${rows.length} spools`);
+  log.info('Migrated: ' + vendorMap.size + ' vendors, ' + profileMap.size + ' profiles, ' + rows.length + ' spools');
 }
 
 function _mig016_inventory_enhancements() {
@@ -1269,9 +1269,9 @@ function _mig039_community_filaments() {
     for (const item of items) {
       stmt.run(item.manufacturer || null, item.name || null, item.material || 'PLA', item.density || null, item.diameter || 1.75, item.weight || 1000, item.spool_weight || null, item.extruder_temp || null, item.bed_temp || null, item.color_name || null, item.color_hex || null, 'spoolmandb');
     }
-    console.log(`[db] Seeded ${items.length} community filaments`);
+    log.info('Seeded ' + items.length + ' community filaments');
   } catch (e) {
-    console.warn('[db] Could not seed community filaments:', e.message);
+    log.warn('Could not seed community filaments: ' + e.message);
   }
 }
 
@@ -8934,9 +8934,9 @@ function _mig092_filament_enrichment() {
       );
       count++;
     }
-    console.log(`[db] Re-seeded ${count} community filaments with enriched data`);
+    log.info('Re-seeded ' + count + ' community filaments with enriched data');
   } catch (e) {
-    console.warn('[db] Could not re-seed community filaments:', e.message);
+    log.warn('Could not re-seed community filaments: ' + e.message);
   }
 }
 

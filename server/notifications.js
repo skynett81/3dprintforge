@@ -398,7 +398,7 @@ export class NotificationManager {
         printer_name: data.printerName,
         title, message, event_data: data
       });
-      console.log(`[notify] Queued during quiet hours: ${eventType}`);
+      log.info('Queued during quiet hours: ' + eventType);
       return;
     }
 
@@ -413,9 +413,9 @@ export class NotificationManager {
           event_type: eventType, channel: channelName,
           printer_id: data.printerId, title, message, status: 'sent'
         });
-        console.log(`[notify] Sent ${eventType} via ${channelName}`);
+        log.info('Sent ' + eventType + ' via ' + channelName);
       } catch (err) {
-        console.error(`[notify] ${channelName} failed:`, err.message);
+        log.error(channelName + ' failed: ' + err.message);
         addNotificationLog({
           event_type: eventType, channel: channelName,
           printer_id: data.printerId, title, message,
@@ -516,12 +516,12 @@ export class NotificationManager {
         await this._sendToChannel(channelName, channelConf, title, message, 'digest', {});
         addNotificationLog({ event_type: 'digest', channel: channelName, title, message, status: 'sent' });
       } catch (err) {
-        console.error(`[notify] Digest ${channelName} failed:`, err.message);
+        log.error('Digest ' + channelName + ' failed: ' + err.message);
       }
     }
 
     clearNotificationQueue();
-    console.log(`[notify] Digest sent: ${queued.length} queued events`);
+    log.info('Digest sent: ' + queued.length + ' queued events');
   }
 
   // ---- Maintenance checker ----

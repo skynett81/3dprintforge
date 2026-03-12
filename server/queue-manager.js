@@ -30,7 +30,7 @@ export class QueueManager {
     // Initial check after 5 seconds
     setTimeout(() => this._checkDispatch(), 5000);
 
-    console.log(`[queue] Initialized (${activeItems.length} active jobs resumed)`);
+    log.info('Initialized (' + activeItems.length + ' active jobs resumed)');
   }
 
   shutdown() {
@@ -255,10 +255,10 @@ export class QueueManager {
           if (!result.clear) {
             addQueueLog(queue.id, item.id, printerId, 'bed_not_clear', `Confidence: ${Math.round((result.confidence || 0) * 100)}%`);
             this._broadcast('queue_update', { action: 'bed_not_clear', queueId: queue.id, printerId });
-            console.log(`[queue] Bed not clear for ${printerId}, skipping dispatch`);
+            log.info('Bed not clear for ' + printerId + ', skipping dispatch');
             return;
           }
-        } catch (e) { console.warn(`[queue] Bed check failed for ${printerId}:`, e.message); }
+        } catch (e) { log.warn('Bed check failed for ' + printerId + ': ' + e.message); }
       }
     }
 
@@ -278,7 +278,7 @@ export class QueueManager {
               const msg = `Low filament: ${spool.profile_name || 'spool'} has ${Math.round(spool.remaining_weight_g)}g, job needs ~${Math.round(item.estimated_filament_g)}g`;
               addQueueLog(queue.id, item.id, printerId, 'filament_warning', msg);
               this._notifyEvent('queue_filament_warning', { printerId, filename: item.filename, message: msg });
-              console.log(`[queue] ${msg}`);
+              log.info(msg);
               insufficientFilament = true;
             }
           }
@@ -287,7 +287,7 @@ export class QueueManager {
       if (insufficientFilament && filamentCheckMode === 'block') {
         addQueueLog(queue.id, item.id, printerId, 'filament_blocked', 'Dispatch blocked: insufficient filament');
         this._broadcast('queue_update', { action: 'filament_blocked', queueId: queue.id, itemId: item.id, printerId });
-        console.log(`[queue] Dispatch blocked for "${item.filename}" — insufficient filament`);
+        log.info('Dispatch blocked for "' + item.filename + '" — insufficient filament');
         return;
       }
     }
@@ -307,7 +307,7 @@ export class QueueManager {
     this._broadcast('queue_update', { action: 'item_started', queueId: queue.id, itemId: item.id, printerId });
     this._notifyEvent('queue_item_started', { printerId, filename: item.filename, queueName: queue.name });
 
-    console.log(`[queue] Dispatched "${item.filename}" to ${printerId} (queue: ${queue.name})`);
+    log.info('Dispatched "' + item.filename + '" to ' + printerId + ' (queue: ' + queue.name + ')');
   }
 
   _sendGcode(printerId, gcode) {

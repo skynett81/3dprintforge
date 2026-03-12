@@ -2,6 +2,9 @@
 // Polls smart plugs for real-time power consumption and tracks per-print energy use
 
 import { getInventorySetting, getPowerReading, getPowerReadings, upsertPowerReading } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('power');
 
 const POLL_INTERVAL_ACTIVE = 10_000;   // 10s during print
 const POLL_INTERVAL_IDLE = 60_000;     // 60s when idle
@@ -18,15 +21,15 @@ let _totalReadings = 0;
 export function initPowerMonitor() {
   const plugType = getInventorySetting('power_plug_type') || 'none';
   if (plugType === 'none') {
-    console.log('[power] Monitor disabled (no smart plug configured)');
+    log.info('Monitor disabled (no smart plug configured)');
     return;
   }
   const ip = getInventorySetting('power_plug_ip') || '';
   if (!ip) {
-    console.log('[power] Monitor disabled (no plug IP)');
+    log.info('Monitor disabled (no plug IP)');
     return;
   }
-  console.log(`[power] Monitor initialized: ${plugType} @ ${ip}`);
+  log.info('Monitor initialized: ' + plugType + ' @ ' + ip);
   _startPolling(false);
 }
 
@@ -35,7 +38,7 @@ export function restartMonitor() {
   const plugType = getInventorySetting('power_plug_type') || 'none';
   if (plugType === 'none') {
     _latestPower = null;
-    console.log('[power] Monitor stopped');
+    log.info('Monitor stopped');
     return;
   }
   _startPolling(false);
@@ -48,7 +51,7 @@ export function onPrintStart(printId) {
   _activePrintId = printId;
   _readings = [];
   _totalReadings = 0;
-  console.log(`[power] Print started (id: ${printId}) — active polling`);
+  log.info('Print started (id: ' + printId + ') — active polling');
   _stopPolling();
   _startPolling(true);
 }
@@ -62,7 +65,7 @@ export function onPrintEnd(printId) {
     _activePrintId = null;
     _readings = [];
     _totalReadings = 0;
-    console.log(`[power] Print ended (id: ${printId}) — idle polling`);
+    log.info('Print ended (id: ' + printId + ') — idle polling');
     _stopPolling();
     _startPolling(false);
   }
@@ -176,7 +179,7 @@ async function _poll() {
 
     return _latestPower;
   } catch (e) {
-    console.error(`[power] Poll failed (${plugType} @ ${ip}):`, e.message);
+    log.error('Poll failed (' + plugType + ' @ ' + ip + '): ' + e.message);
     return null;
   }
 }
@@ -217,7 +220,7 @@ function _flushReadings(printId, partial = false) {
       _readings = [_readings[_readings.length - 1]];
     }
   } catch (e) {
-    console.error('[power] Flush failed:', e.message);
+    log.error('Flush failed: ' + e.message);
   }
 }
 

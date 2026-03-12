@@ -100,6 +100,10 @@ export function buildAmsTrayChangeCommand(trayId) {
   return { print: { sequence_id: nextSeq(), command: 'ams_change_filament', target: trayId } };
 }
 
+export function buildFormatStorageCommand() {
+  return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: 'M662' } };
+}
+
 export function buildCommandFromClientMessage(msg) {
   switch (msg.action) {
     case 'pause': return buildPauseCommand();
@@ -110,6 +114,7 @@ export function buildCommandFromClientMessage(msg) {
     case 'gcode': return buildGcodeCommand(msg.gcode);
     case 'skip_objects': return msg.obj_list ? buildSkipObjectsCommand(msg.obj_list) : null;
     case 'print_file': return msg.filename ? buildPrintCommand(msg.filename, msg.plate_id) : null;
+    case 'format_storage': return buildFormatStorageCommand();
     default: return null;
   }
 }

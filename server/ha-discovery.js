@@ -1,5 +1,8 @@
 import mqtt from 'mqtt';
 import { getPrinters, getInventorySetting, setInventorySetting } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('ha');
 
 let _client = null;
 let _hub = null;
@@ -14,7 +17,7 @@ export function initHaDiscovery(hub) {
   if (enabled === '1' || enabled === 'true') {
     _connect();
   } else {
-    console.log('[ha-mqtt] Service disabled');
+    log.info('Service disabled');
   }
 }
 
@@ -41,7 +44,7 @@ export function getHaDiscoveryStatus() {
 function _connect() {
   const broker = getInventorySetting('ha_mqtt_broker');
   if (!broker) {
-    console.log('[ha-mqtt] No broker configured');
+    log.info('No broker configured');
     return;
   }
   const username = getInventorySetting('ha_mqtt_username') || undefined;
@@ -59,7 +62,7 @@ function _connect() {
 
     _client.on('connect', () => {
       _connected = true;
-      console.log('[ha-mqtt] Connected to', broker);
+      log.info('Connected to ' + broker);
       _publishDiscoveryAll();
       _publishStateAll();
       // Publish state every 15 seconds
@@ -68,7 +71,7 @@ function _connect() {
     });
 
     _client.on('error', (err) => {
-      console.error('[ha-mqtt] Error:', err.message);
+      log.error('Error: ' + err.message);
     });
 
     _client.on('close', () => {
@@ -79,7 +82,7 @@ function _connect() {
       _connected = false;
     });
   } catch (e) {
-    console.error('[ha-mqtt] Connect failed:', e.message);
+    log.error('Connect failed: ' + e.message);
   }
 }
 
@@ -180,7 +183,7 @@ function _publishPrinterDiscovery(printer) {
     _client.publish(`${DISCOVERY_PREFIX}/binary_sensor/${deviceId}/${b.id}/config`, JSON.stringify(config), { retain: true });
   }
 
-  console.log(`[ha-mqtt] Published discovery for ${printer.name}`);
+  log.info('Published discovery for ' + printer.name);
 }
 
 function _publishStateAll() {

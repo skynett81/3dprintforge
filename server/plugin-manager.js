@@ -1,6 +1,9 @@
 import { getPlugins, getPlugin, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginById } from './database.js';
 import { readFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { createLogger } from './logger.js';
+
+const log = createLogger('plugin');
 
 // Hook names the system supports
 const HOOK_NAMES = [
@@ -55,7 +58,7 @@ export class PluginManager {
             });
           }
         } catch (e) {
-          console.error(`[plugins] Failed to read manifest for ${dir}:`, e.message);
+          log.error('Failed to read manifest for ' + dir + ': ' + e.message);
         }
       }
     }
@@ -68,7 +71,7 @@ export class PluginManager {
       }
     }
 
-    console.log(`[plugins] Loaded ${this._plugins.size} plugins`);
+    log.info('Loaded ' + this._plugins.size + ' plugins');
   }
 
   async _loadPlugin(dbPlugin) {
@@ -76,7 +79,7 @@ export class PluginManager {
     const entryPath = join(pluginDir, dbPlugin.entry_point);
 
     if (!existsSync(entryPath)) {
-      console.warn(`[plugins] Entry point not found for ${dbPlugin.name}: ${entryPath}`);
+      log.warn('Entry point not found for ' + dbPlugin.name + ': ' + entryPath);
       return;
     }
 
@@ -102,7 +105,7 @@ export class PluginManager {
 
       this._plugins.set(dbPlugin.name, { manifest: dbPlugin, module: mod, api: pluginApi });
     } catch (e) {
-      console.error(`[plugins] Failed to load ${dbPlugin.name}:`, e.message);
+      log.error('Failed to load ' + dbPlugin.name + ': ' + e.message);
     }
   }
 
@@ -110,9 +113,9 @@ export class PluginManager {
     const self = this;
     return {
       name: dbPlugin.name,
-      log: (...args) => console.log(`[plugin:${dbPlugin.name}]`, ...args),
-      warn: (...args) => console.warn(`[plugin:${dbPlugin.name}]`, ...args),
-      error: (...args) => console.error(`[plugin:${dbPlugin.name}]`, ...args),
+      log: (...args) => { const plog = createLogger('plugin:' + dbPlugin.name); plog.info(args.join(' ')); },
+      warn: (...args) => { const plog = createLogger('plugin:' + dbPlugin.name); plog.warn(args.join(' ')); },
+      error: (...args) => { const plog = createLogger('plugin:' + dbPlugin.name); plog.error(args.join(' ')); },
 
       // State management (plugin-scoped)
       state: {
@@ -145,7 +148,7 @@ export class PluginManager {
       try {
         await handler(data);
       } catch (e) {
-        console.error(`[plugins] Hook ${hookName} failed in ${pluginName}:`, e.message);
+        log.error('Hook ' + hookName + ' failed in ' + pluginName + ': ' + e.message);
       }
     }
   }

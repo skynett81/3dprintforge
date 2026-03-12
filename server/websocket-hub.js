@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { isAuthEnabled, getSessionToken, validateSession, getSessionUser, hasPermission } from './auth.js';
-import { onLog } from './logger.js';
+import { onLog, createLogger } from './logger.js';
+const log = createLogger('ws');
 
 export class WebSocketHub {
   constructor(server) {
@@ -27,7 +28,7 @@ export class WebSocketHub {
       }
 
       this.clients.add(ws);
-      console.log(`[ws] Klient tilkoblet (${this.clients.size} totalt)`);
+      log.info(`Klient tilkoblet (${this.clients.size} totalt)`);
 
       // Send all printer states + meta on connect
       ws.send(JSON.stringify({
@@ -58,17 +59,17 @@ export class WebSocketHub {
             this.onCommand(msg);
           }
         } catch (e) {
-          console.warn('[ws] Ugyldig melding:', e.message);
+          log.warn('Ugyldig melding: ' + e.message);
         }
       });
 
       ws.on('close', () => {
         this.clients.delete(ws);
-        console.log(`[ws] Klient frakoblet (${this.clients.size} totalt)`);
+        log.info(`Klient frakoblet (${this.clients.size} totalt)`);
       });
 
       ws.on('error', (err) => {
-        console.warn('[ws] Feil:', err.message);
+        log.warn('Feil: ' + err.message);
         this.clients.delete(ws);
       });
     });

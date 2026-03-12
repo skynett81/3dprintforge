@@ -68,19 +68,32 @@
         <span class="info-value ${hasAms ? 'text-green' : 'text-muted'}">${hasAms ? t('printer_info.connected') : t('printer_info.not_connected')}</span>
       </div>
       <div class="info-item">
-        <span class="info-label">${t('printer_info.sd_card')}</span>
+        ${(() => {
+          const isUsb = ['P2S', 'P2S Combo', 'H2D'].includes(meta.model);
+          const label = isUsb ? t('printer_info.usb_storage', 'USB') : t('printer_info.sd_card');
+          const accentColor = state.sdcard ? '#1279ff' : theme.getCSSVar('--text-muted');
+          const fillColor = state.sdcard ? '#1279ff' : theme.getCSSVar('--bg-tertiary');
+          const fillOpacity = state.sdcard ? '0.2' : '0.4';
+          const icon = isUsb
+            ? `<svg viewBox="0 0 24 30" fill="none">
+                <rect x="7" y="2" width="10" height="20" rx="2" fill="${fillColor}" opacity="${fillOpacity}" stroke="${accentColor}" stroke-width="1.5"/>
+                <rect x="9" y="0" width="2.5" height="4" rx="0.5" fill="${accentColor}" opacity="0.6"/>
+                <rect x="12.5" y="0" width="2.5" height="4" rx="0.5" fill="${accentColor}" opacity="0.6"/>
+                ${state.sdcard ? '<rect x="10" y="10" width="4" height="6" rx="1" fill="#1279ff" opacity="0.5"/>' : ''}
+              </svg>`
+            : `<svg viewBox="0 0 24 30" fill="none">
+                <path d="M4 2h10l6 6v20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="${fillColor}" opacity="${fillOpacity}" stroke="${accentColor}" stroke-width="1.5"/>
+                <path d="M14 2v6h6" fill="none" stroke="${accentColor}" stroke-width="1.5"/>
+                ${state.sdcard ? '<rect x="7" y="12" width="2" height="6" rx="0.5" fill="#1279ff" opacity="0.6"/><rect x="11" y="14" width="2" height="4" rx="0.5" fill="#1279ff" opacity="0.6"/><rect x="15" y="11" width="2" height="7" rx="0.5" fill="#1279ff" opacity="0.6"/>' : ''}
+              </svg>`;
+          return `<span class="info-label">${label}</span>
         <div class="sd-card-visual">
-          <div class="sd-card-icon">
-            <svg viewBox="0 0 24 30" fill="none">
-              <path d="M4 2h10l6 6v20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="${state.sdcard ? '#1279ff' : theme.getCSSVar('--bg-tertiary')}" opacity="${state.sdcard ? '0.2' : '0.4'}" stroke="${state.sdcard ? '#1279ff' : theme.getCSSVar('--text-muted')}" stroke-width="1.5"/>
-              <path d="M14 2v6h6" fill="none" stroke="${state.sdcard ? '#1279ff' : theme.getCSSVar('--text-muted')}" stroke-width="1.5"/>
-              ${state.sdcard ? '<rect x="7" y="12" width="2" height="6" rx="0.5" fill="#1279ff" opacity="0.6"/><rect x="11" y="14" width="2" height="4" rx="0.5" fill="#1279ff" opacity="0.6"/><rect x="15" y="11" width="2" height="7" rx="0.5" fill="#1279ff" opacity="0.6"/>' : ''}
-            </svg>
-          </div>
+          <div class="sd-card-icon">${icon}</div>
           <span class="sd-card-status ${state.sdcard ? 'sd-inserted' : 'sd-missing'}">
             <span class="sd-dot ${state.sdcard ? 'active' : 'inactive'}"></span>${state.sdcard ? t('printer_info.connected') : t('printer_info.not_connected')}
           </span>
-        </div>
+        </div>`;
+        })()}
       </div>
       <div class="info-item">
         <span class="info-label">${t('printer_info.resolution')}</span>

@@ -2,6 +2,9 @@ import { spawn } from 'node:child_process';
 import { connect as tlsConnect } from 'node:tls';
 import net from 'node:net';
 import { WebSocketServer } from 'ws';
+import { createLogger } from './logger.js';
+
+const log = createLogger('camera');
 
 /**
  * CameraStream — supports two protocols:
@@ -36,22 +39,22 @@ export class CameraStream {
 
   start() {
     if (!this.enabled) {
-      console.log('[kamera] Kamera deaktivert i konfig');
+      log.info('Kamera deaktivert i konfig');
       return;
     }
 
     this.wss = new WebSocketServer({ port: this.port });
 
     this.wss.on('error', (err) => {
-      console.warn(`[kamera] WebSocket-feil på port ${this.port}: ${err.message}`);
+      log.warn('WebSocket-feil på port ' + this.port + ': ' + err.message);
       this.wss = null;
     });
 
-    console.log(`[kamera] WebSocket server på port ${this.port}`);
+    log.info('WebSocket server på port ' + this.port);
 
     this.wss.on('connection', (ws) => {
       this.clients.add(ws);
-      console.log(`[kamera] Klient tilkoblet (${this.clients.size} totalt), modus: ${this.mode || 'detecting'}`);
+      log.info('Klient tilkoblet (' + this.clients.size + ' totalt), modus: ' + (this.mode || 'detecting'));
 
       if (this.stopTimer) {
         clearTimeout(this.stopTimer);
@@ -71,7 +74,7 @@ export class CameraStream {
 
       ws.on('close', () => {
         this.clients.delete(ws);
-        console.log(`[kamera] Klient frakoblet (${this.clients.size} totalt)`);
+        log.info('Klient frakoblet (' + this.clients.size + ' totalt)');
 
         if (this.clients.size === 0 && !this.stopTimer) {
           this.stopTimer = setTimeout(() => {
@@ -100,7 +103,7 @@ export class CameraStream {
    */
   _startStream() {
     if (!this.ip) {
-      console.warn('[kamera] Ingen IP-adresse konfigurert');
+      log.warn('Ingen IP-adresse konfigurert');
       return;
     }
 
@@ -110,21 +113,21 @@ export class CameraStream {
 
     probe.on('connect', () => {
       probe.destroy();
-      console.log(`[kamera] Port 6000 åpen — bruker JPEG-stream`);
+      log.info('Port 6000 åpen — bruker JPEG-stream');
       this.mode = 'jpeg';
       this._startJpegStream();
     });
 
     probe.on('error', () => {
       probe.destroy();
-      console.log(`[kamera] Port 6000 stengt — prøver RTSP (port 322)`);
+      log.info('Port 6000 stengt — prøver RTSP (port 322)');
       this.mode = 'rtsp';
       this._startFfmpeg();
     });
 
     probe.on('timeout', () => {
       probe.destroy();
-      console.log(`[kamera] Port 6000 timeout — prøver RTSP (port 322)`);
+      log.info('Port 6000 timeout — prøver RTSP (port 322)');
       this.mode = 'rtsp';
       this._startFfmpeg();
     });
@@ -137,7 +140,7 @@ export class CameraStream {
    * Protocol: 80-byte auth packet → auth response → repeating [16-byte header + JPEG data].
    */
   _startJpegStream() {
-    console.log(`[kamera] Kobler til JPEG-stream ${this.ip}:6000...`);
+    log.info('Kobler til JPEG-stream ' + this.ip + ':6000...');
 
     try {
       this.tlsSocket = tlsConnect({
@@ -146,13 +149,13 @@ export class CameraStream {
         rejectUnauthorized: false, // Printer uses self-signed cert
       });
     } catch (e) {
-      console.error('[kamera] TLS tilkobling feilet:', e.message);
+      log.error('TLS tilkobling feilet: ' + e.message);
       this._fallbackToRtsp();
       return;
     }
 
     this.tlsSocket.on('secureConnect', () => {
-      console.log('[kamera] TLS tilkoblet — sender autentisering');
+      log.info('TLS tilkoblet — sender autentisering');
 
       // Build 80-byte auth packet
       const authPacket = Buffer.alloc(80);
@@ -182,7 +185,7 @@ export class CameraStream {
     });
 
     this.tlsSocket.on('error', (err) => {
-      console.warn('[kamera] JPEG-stream feil:', err.message);
+      log.warn('JPEG-stream feil: ' + err.message);
       this._cleanupJpeg();
       if (!this._authDenied) {
         this._scheduleRestart();
@@ -190,7 +193,7 @@ export class CameraStream {
     });
 
     this.tlsSocket.on('close', () => {
-      console.log('[kamera] JPEG-stream lukket');
+      log.info('JPEG-stream lukket');
       this.tlsSocket = null;
       if (this.clients.size > 0 && !this._authDenied) {
         this._scheduleRestart();
@@ -224,14 +227,14 @@ export class CameraStream {
 
         // Check for error code 0xFFFFFFFF in payload
         if (payloadSize >= 4 && payload.readUInt32LE(0) === 0xFFFFFFFF) {
-          console.warn('[kamera] Autentisering avvist — LAN Live View er trolig deaktivert på printeren');
+          log.warn('Autentisering avvist — LAN Live View er trolig deaktivert på printeren');
           this._authDenied = true;
           this._broadcastError('auth_denied');
           this._cleanupJpeg();
           return;
         }
 
-        console.log('[kamera] Autentisering godkjent — starter JPEG-stream');
+        log.info('Autentisering godkjent — starter JPEG-stream');
         this._readState = 'header';
         continue;
       }
@@ -299,7 +302,7 @@ export class CameraStream {
   }
 
   _fallbackToRtsp() {
-    console.log('[kamera] JPEG feilet — fallback til RTSP');
+    log.info('JPEG feilet — fallback til RTSP');
     this._cleanupJpeg();
     this.mode = 'rtsp';
     this._startFfmpeg();
@@ -325,14 +328,14 @@ export class CameraStream {
       'pipe:1'
     ];
 
-    console.log(`[kamera] Starter ffmpeg (RTSP)...`);
+    log.info('Starter ffmpeg (RTSP)...');
 
     try {
       this.ffmpeg = spawn('ffmpeg', args, {
         stdio: ['ignore', 'pipe', 'ignore']
       });
     } catch (e) {
-      console.error('[kamera] Kunne ikke starte ffmpeg:', e.message);
+      log.error('Kunne ikke starte ffmpeg: ' + e.message);
       return;
     }
 
@@ -345,7 +348,7 @@ export class CameraStream {
     });
 
     this.ffmpeg.on('close', (code) => {
-      console.log(`[kamera] ffmpeg avsluttet (kode: ${code})`);
+      log.info('ffmpeg avsluttet (kode: ' + code + ')');
       this.ffmpeg = null;
       if (this.clients.size > 0) {
         this._scheduleRestart();
@@ -353,7 +356,7 @@ export class CameraStream {
     });
 
     this.ffmpeg.on('error', (err) => {
-      console.error('[kamera] ffmpeg feil:', err.message);
+      log.error('ffmpeg feil: ' + err.message);
       this.ffmpeg = null;
     });
 
@@ -366,7 +369,7 @@ export class CameraStream {
     if (this.restartCount >= 5) return;
     this.restartCount++;
     const delay = Math.min(2000 * this.restartCount, 15000);
-    console.log(`[kamera] Restarter om ${delay}ms (forsøk ${this.restartCount}/5)...`);
+    log.info('Restarter om ' + delay + 'ms (forsøk ' + this.restartCount + '/5)...');
     this.restartTimer = setTimeout(() => {
       this._startStream();
     }, delay);
@@ -378,7 +381,7 @@ export class CameraStream {
       this.restartTimer = null;
     }
     if (this.ffmpeg) {
-      console.log('[kamera] Stopper ffmpeg');
+      log.info('Stopper ffmpeg');
       this.ffmpeg.kill('SIGTERM');
       this.ffmpeg = null;
     }

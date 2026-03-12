@@ -3,6 +3,9 @@ import { TelemetrySampler } from './telemetry-sampler.js';
 import { CameraStream } from './camera-stream.js';
 import { getPrinters, addFirmwareEntry, addXcamEvent } from './database.js';
 import { PrintGuardService } from './print-guard.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('printer');
 
 export class PrinterManager {
   constructor(config, broadcastFn, hubSetMeta) {
@@ -55,7 +58,7 @@ export class PrinterManager {
     }
 
     if (dbPrinters.length === 0) {
-      console.log('[server] Ingen printere konfigurert. Legg til via Innstillinger.');
+      log.info('Ingen printere konfigurert. Legg til via Innstillinger.');
     }
   }
 
@@ -134,7 +137,7 @@ export class PrinterManager {
 
     camera.start();
     client.connect();
-    console.log(`[manager] Printer tilkoblet: ${printerConf.name} (${printerConf.ip})`);
+    log.info('Printer tilkoblet: ' + printerConf.name + ' (' + printerConf.ip + ')');
   }
 
   _addOfflinePrinter(printerConf, reusePort) {
@@ -143,7 +146,7 @@ export class PrinterManager {
 
     this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort });
     this.printers.set(id, { config: printerConf, client: null, tracker: null, camera: null, cameraPort, live: false });
-    console.log(`[manager] Printer registrert (ikke konfigurert): ${printerConf.name}`);
+    log.info('Printer registrert (ikke konfigurert): ' + printerConf.name);
   }
 
   // Called when a new printer is added via API - auto-connects if configured
@@ -206,7 +209,7 @@ export class PrinterManager {
     if (printer.client?.stop) printer.client.stop();
     if (printer.camera) printer.camera.stop();
     this.printers.delete(id);
-    console.log(`[manager] Printer fjernet: ${id}`);
+    log.info('Printer fjernet: ' + id);
   }
 
   getPrinterIds() {

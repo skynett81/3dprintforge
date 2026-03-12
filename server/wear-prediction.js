@@ -1,4 +1,7 @@
 import { getComponentWear, getMaintenanceLog, getPrinters, upsertWearPrediction, getWearPredictions, getAllWearPredictions, addWearAlert, getWearAlerts, acknowledgeWearAlert, getMaintenanceCosts, getTotalMaintenanceCost, addMaintenanceCost } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('wear');
 
 // Default component lifetimes in hours
 const DEFAULT_LIFETIMES = {
@@ -39,10 +42,10 @@ export class WearPredictionService {
 
   init() {
     // Recalculate on startup
-    try { this.recalculate(); } catch (e) { console.error('[wear-prediction] Init recalculate error:', e.message); }
+    try { this.recalculate(); } catch (e) { log.error('Init recalculate error: ' + e.message); }
     // Periodic recalculation every 6 hours
     this._interval = setInterval(() => {
-      try { this.recalculate(); } catch (e) { console.error('[wear-prediction] Periodic recalculate error:', e.message); }
+      try { this.recalculate(); } catch (e) { log.error('Periodic recalculate error: ' + e.message); }
     }, 6 * 60 * 60 * 1000);
   }
 
@@ -190,7 +193,7 @@ export class WearPredictionService {
     try {
       this.recalculatePrinter(printerId);
     } catch (e) {
-      console.error('[wear-prediction] onPrintEnd error:', e.message);
+      log.error('onPrintEnd error: ' + e.message);
     }
   }
 

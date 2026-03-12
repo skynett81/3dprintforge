@@ -133,7 +133,7 @@ async function getFtpModule() {
     return _ftpModule;
   } catch {
     _ftpModule = false;
-    console.log('[thumbnail] basic-ftp not installed — real printer thumbnails disabled. Run: npm install basic-ftp');
+    log.info('basic-ftp not installed — real printer thumbnails disabled. Run: npm install basic-ftp');
     return false;
   }
 }
@@ -172,7 +172,7 @@ async function fetchThumbnailFromPrinter(ip, accessCode, gcodeFile) {
     const png = extractFromZip(zipBuf, THUMBNAIL_PATHS);
     return png;
   } catch (err) {
-    console.warn(`[thumbnail] FTP error for ${ip}: ${err.message}`);
+    log.warn('FTP error for ' + ip + ': ' + err.message);
 
     // Try /cache/ path as fallback
     if (threeMfPath.startsWith('/sdcard/')) {

@@ -5583,6 +5583,29 @@ tr:hover .filament-delete-btn,
   color: var(--accent-cyan);
 }
 
+.qs-action-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: var(--radius-xs);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qs-item:hover .qs-action-btn {
+  opacity: 1;
+}
+.qs-action-btn:hover {
+  color: var(--accent-red);
+  background: var(--bg-secondary);
+}
+
 .qs-icon {
   flex-shrink: 0;
   color: var(--text-muted);

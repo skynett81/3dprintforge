@@ -1,11 +1,20 @@
-// Quick Status Card — WiFi, nozzle, SD, light, speed, errors
+// Quick Status Card — WiFi, nozzle, storage, light, speed, errors
 (function() {
   const SPEED_LABELS = { 1: 'speed.silent', 2: 'speed.standard', 3: 'speed.sport', 4: 'speed.ludicrous' };
+
+  // Models that use USB instead of SD card
+  const USB_MODELS = new Set(['P2S', 'P2S Combo', 'H2D']);
+
+  function _isUsb() {
+    const meta = window.printerState?.getActivePrinterMeta?.() || {};
+    return USB_MODELS.has(meta.model);
+  }
 
   const ICONS = {
     wifi: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>',
     nozzle: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
     sd: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="12" y1="6" x2="12" y2="10"/><line x1="16" y1="6" x2="16" y2="10"/></svg>',
+    usb: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v10"/><path d="M8 8l4-4 4 4"/><rect x="8" y="12" width="8" height="8" rx="1"/><line x1="10" y1="16" x2="14" y2="16"/></svg>',
     light: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
     speed: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
     error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
@@ -103,9 +112,12 @@
       ? `${nozzleType} \u00b7 ${nozzleDiam}mm`
       : nozzleType || nozzleDiam || t('quick_status.unknown');
 
-    // SD card
+    // Storage (SD card or USB depending on model)
     const sdInserted = data.sdcard;
-    const sdStr = sdInserted ? t('quick_status.sd_inserted') : t('quick_status.sd_none');
+    const useUsb = _isUsb();
+    const sdStr = sdInserted
+      ? (useUsb ? t('quick_status.usb_inserted', 'Tilkoblet') : t('quick_status.sd_inserted'))
+      : (useUsb ? t('quick_status.usb_none', 'Ikke tilkoblet') : t('quick_status.sd_none'));
     const sdColor = sdInserted ? 'var(--accent-green)' : 'var(--text-muted)';
 
     // Light
@@ -143,11 +155,26 @@
       guardColor = 'var(--accent-green)';
     }
 
+    // Storage row with format button
+    const storageIcon = useUsb ? 'usb' : 'sd';
+    const storageLabel = useUsb ? t('quick_status.usb_storage', 'USB') : t('quick_status.sd_card');
+    const formatTitle = useUsb ? t('controls.format_usb', 'Formater USB') : t('controls.format_sd', 'Formater SD-kort');
+    const storageItem = `<div class="qs-item">
+      <div class="qs-icon">${ICONS[storageIcon]}</div>
+      <div class="qs-text">
+        <span class="qs-label">${storageLabel}</span>
+        <span class="qs-value" style="color:${sdColor}">${sdStr}</span>
+      </div>
+      <button class="qs-action-btn" onclick="event.stopPropagation();formatStorage('${printerId}')" title="${formatTitle}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      </button>
+    </div>`;
+
     const isFirstRender = !container._lastHtml;
     container.innerHTML = `<div class="qs-grid${isFirstRender ? ' stagger-in' : ''}">
       ${item('wifi', t('quick_status.wifi'), wifiSig, wifiCol)}
       ${item('nozzle', t('quick_status.nozzle'), nozzleStr, '')}
-      ${item('sd', t('quick_status.sd_card'), sdStr, sdColor)}
+      ${storageItem}
       ${item('light', t('quick_status.light'), lightStr, lightColor)}
       ${item('speed', t('quick_status.speed'), speedStr, '')}
       ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}

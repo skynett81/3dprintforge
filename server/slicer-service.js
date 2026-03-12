@@ -31,13 +31,13 @@ export function detectSlicer() {
   // Check env override first
   if (process.env.SLICER_PATH && existsSync(process.env.SLICER_PATH)) {
     _detectedSlicer = { path: process.env.SLICER_PATH, name: basename(process.env.SLICER_PATH) };
-    console.log(`[slicer] Found slicer (env): ${_detectedSlicer.path}`);
+    log.info('Found slicer (env): ' + _detectedSlicer.path);
     return _detectedSlicer;
   }
   for (const p of SLICER_PATHS) {
     if (existsSync(p)) {
       _detectedSlicer = { path: p, name: basename(p) };
-      console.log(`[slicer] Found slicer: ${p}`);
+      log.info('Found slicer: ' + p);
       return _detectedSlicer;
     }
   }
@@ -108,7 +108,7 @@ export function saveUploadedFile(filename, buffer, printerId, autoQueue) {
     try {
       if (ext === '.3mf') parsed = parse3mf(buffer);
       else if (ext === '.gcode' || ext === '.g') parsed = parseGcode(buffer);
-    } catch (e) { console.warn(`[slicer] Auto-parse failed for ${filename}:`, e.message); }
+    } catch (e) { log.warn('Auto-parse failed for ' + filename + ': ' + e.message); }
   }
 
   const jobId = addSlicerJob({

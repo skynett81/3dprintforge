@@ -1,6 +1,9 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DATA_DIR } from './config.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('backup');
 
 const DB_PATH = join(DATA_DIR, 'dashboard.db');
 const BACKUP_DIR = join(DATA_DIR, 'backups');
@@ -13,7 +16,7 @@ export function restoreBackup(filename) {
   // Create a safety backup before restoring
   createBackup('pre-restore');
   copyFileSync(srcPath, DB_PATH);
-  console.log(`[backup] Database gjenopprettet fra: ${filename}`);
+  log.info('Database gjenopprettet fra: ' + filename);
   return { restored: filename };
 }
 
@@ -24,7 +27,7 @@ export function uploadBackup(buffer, originalName) {
   const destPath = join(BACKUP_DIR, filename);
   writeFileSync(destPath, buffer);
   const stat = statSync(destPath);
-  console.log(`[backup] Backup lastet opp: ${filename} (${Math.round(stat.size / 1024)}KB)`);
+  log.info('Backup lastet opp: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
   return { filename, size: stat.size, created_at: stat.mtime.toISOString() };
 }
 
@@ -36,7 +39,7 @@ export function createBackup(label = 'manual') {
   copyFileSync(DB_PATH, destPath);
   pruneOldBackups();
   const stat = statSync(destPath);
-  console.log(`[backup] Backup opprettet: ${filename} (${Math.round(stat.size / 1024)}KB)`);
+  log.info('Backup opprettet: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
   return { filename, size: stat.size, created_at: stat.mtime.toISOString() };
 }
 
@@ -72,10 +75,10 @@ export function startNightlyBackup() {
   const schedule = () => {
     _nightlyTimer = setTimeout(() => {
       try { createBackup('nightly'); }
-      catch (e) { console.error('[backup] Nattlig backup feilet:', e.message); }
+      catch (e) { log.error('Nattlig backup feilet: ' + e.message); }
       schedule();
     }, msUntil3AM());
   };
   schedule();
-  console.log('[backup] Nattlig backup aktivert (kl 03:00)');
+  log.info('Nattlig backup aktivert (kl 03:00)');
 }

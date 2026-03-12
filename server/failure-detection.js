@@ -3,6 +3,9 @@ import { mkdirSync, existsSync, unlinkSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DATA_DIR } from './config.js';
 import { addFailureDetection, getInventorySetting } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('failure');
 
 const FRAMES_DIR = join(DATA_DIR, 'detection_frames');
 
@@ -18,7 +21,7 @@ export class FailureDetectionService {
   init() {
     if (!existsSync(FRAMES_DIR)) mkdirSync(FRAMES_DIR, { recursive: true });
     this._enabled = getInventorySetting('ai_detection_enabled') === '1';
-    console.log(`[ai-detect] Service initialized (enabled: ${this._enabled})`);
+    log.info('Service initialized (enabled: ' + this._enabled + ')');
   }
 
   startMonitoring(printerId, printerIp, accessCode) {
@@ -32,7 +35,7 @@ export class FailureDetectionService {
       frameCount: 0
     };
     this._monitors.set(printerId, monitor);
-    console.log(`[ai-detect] Monitoring started for ${printerId} (interval: ${interval / 1000}s)`);
+    log.info('Monitoring started for ' + printerId + ' (interval: ' + (interval / 1000) + 's)');
   }
 
   stopMonitoring(printerId) {
@@ -40,7 +43,7 @@ export class FailureDetectionService {
     if (monitor) {
       clearInterval(monitor.timer);
       this._monitors.delete(printerId);
-      console.log(`[ai-detect] Monitoring stopped for ${printerId}`);
+      log.info('Monitoring stopped for ' + printerId);
     }
   }
 
@@ -160,7 +163,7 @@ export class FailureDetectionService {
       // Clean up frame if no detection
       try { unlinkSync(framePath); } catch {}
     } catch (e) {
-      console.warn(`[ai-detect] Analysis error for ${printerId}:`, e.message);
+      log.warn('Analysis error for ' + printerId + ': ' + e.message);
       try { unlinkSync(framePath); } catch {}
     }
   }

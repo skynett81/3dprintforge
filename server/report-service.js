@@ -2,6 +2,9 @@
 // Uses existing notification email infrastructure, zero external dependencies
 
 import { getStatistics, getHistory, getInventorySetting, setInventorySetting, getDailyActivity, getWasteStats } from './database.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('report');
 
 let _timer = null;
 
@@ -10,10 +13,10 @@ let _timer = null;
 export function initReportService() {
   const freq = getInventorySetting('report_frequency') || 'none';
   if (freq === 'none') {
-    console.log('[report] Service disabled');
+    log.info('Service disabled');
     return;
   }
-  console.log(`[report] Scheduled: ${freq}`);
+  log.info('Scheduled: ' + freq);
   _scheduleNext(freq);
 }
 
@@ -86,10 +89,10 @@ export async function sendReportEmail(report) {
       host: smtpHost, port: smtpPort, user: smtpUser, pass: smtpPass,
       from: smtpFrom, to: email, subject, html: report.html
     });
-    console.log(`[report] Email sent to ${email}`);
+    log.info('Email sent to ' + email);
     return { ok: true, to: email };
   } catch (e) {
-    console.error(`[report] Email failed:`, e.message);
+    log.error('Email failed: ' + e.message);
     return { error: e.message };
   }
 }
@@ -115,7 +118,7 @@ function _scheduleNext(freq) {
   }
 
   const ms = next.getTime() - now.getTime();
-  console.log(`[report] Next ${freq} report: ${next.toISOString()} (${Math.round(ms / 3600000)}h)`);
+  log.info('Next ' + freq + ' report: ' + next.toISOString() + ' (' + Math.round(ms / 3600000) + 'h)');
 
   _timer = setTimeout(async () => {
     try {
@@ -123,7 +126,7 @@ function _scheduleNext(freq) {
       const report = generateReport(period);
       await sendReportEmail(report);
     } catch (e) {
-      console.error('[report] Scheduled report failed:', e.message);
+      log.error('Scheduled report failed: ' + e.message);
     }
     _scheduleNext(freq);
   }, ms);

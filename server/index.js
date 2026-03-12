@@ -54,9 +54,9 @@ function ensureSSLCerts() {
     );
     chmodSync(keyPath, 0o600);
     chmodSync(certPath, 0o644);
-    console.log('[security] Auto-genererte SSL-sertifikater (gyldige i 365 dager)');
+    log.info('Auto-genererte SSL-sertifikater (gyldige i 365 dager)');
   } catch {
-    console.warn('[security] Kunne ikke generere SSL-sertifikater (openssl ikke tilgjengelig?)');
+    log.warn('Kunne ikke generere SSL-sertifikater (openssl ikke tilgjengelig?)');
   }
 }
 ensureSSLCerts();
@@ -71,8 +71,8 @@ initDatabase();
 startNightlyBackup();
 
 // Auto-trash empty spools (run on startup + every 24h)
-try { autoTrashEmptySpools(); } catch (e) { console.error('Auto-trash startup error:', e.message); }
-setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { console.error('Auto-trash error:', e.message); } }, 24 * 60 * 60 * 1000);
+try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash startup error: ' + e.message); }
+setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash error: ' + e.message); } }, 24 * 60 * 60 * 1000);
 
 // Initialize auth
 initAuth();
@@ -421,8 +421,8 @@ setBambuCloud(bambuCloud);
 const materialRecommender = new MaterialRecommenderService(broadcastAll);
 setMaterialRecommender(materialRecommender);
 // Initial calculation after a short delay, then every 12 hours
-setTimeout(() => { try { materialRecommender.recalculate(); console.log('[material-rec] Initial beregning fullført'); } catch (e) { console.error('[material-rec] Feil:', e.message); } }, 5000);
-setInterval(() => { try { materialRecommender.recalculate(); } catch (e) { console.error('[material-rec] Periodisk feil:', e.message); } }, 12 * 60 * 60 * 1000);
+setTimeout(() => { try { materialRecommender.recalculate(); log.info('Material-rec: initial beregning fullført'); } catch (e) { log.error('Material-rec feil: ' + e.message); } }, 5000);
+setInterval(() => { try { materialRecommender.recalculate(); } catch (e) { log.error('Material-rec periodisk feil: ' + e.message); } }, 12 * 60 * 60 * 1000);
 
 // Wear Prediction Service
 import { WearPredictionService } from './wear-prediction.js';
@@ -435,8 +435,8 @@ import { ErrorPatternAnalyzer } from './error-pattern-analyzer.js';
 const errorPatternAnalyzer = new ErrorPatternAnalyzer(broadcastAll);
 setErrorPatternAnalyzer(errorPatternAnalyzer);
 // Initial analysis after 10s delay, then daily recalculation
-setTimeout(() => { try { errorPatternAnalyzer.analyze(); console.log('[error-analysis] Initial analyse fullført'); } catch (e) { console.error('[error-analysis] Feil:', e.message); } }, 10000);
-setInterval(() => { try { errorPatternAnalyzer.analyze(); } catch (e) { console.error('[error-analysis] Periodisk feil:', e.message); } }, 24 * 60 * 60 * 1000);
+setTimeout(() => { try { errorPatternAnalyzer.analyze(); log.info('Error-analysis: initial analyse fullført'); } catch (e) { log.error('Error-analysis feil: ' + e.message); } }, 10000);
+setInterval(() => { try { errorPatternAnalyzer.analyze(); } catch (e) { log.error('Error-analysis periodisk feil: ' + e.message); } }, 24 * 60 * 60 * 1000);
 
 // Plugin Manager
 const pluginManager = new PluginManager({ broadcast: broadcastAll, dataDir: DATA_DIR, notifier });
@@ -452,9 +452,9 @@ if (!getInventorySetting('vapid_public_key')) {
     const privRaw = privateKey.export({ type: 'pkcs8', format: 'der' });
     setInventorySetting('vapid_public_key', pubRaw.subarray(-65).toString('base64url'));
     setInventorySetting('vapid_private_key', privRaw.subarray(-32).toString('base64url'));
-    console.log('[pwa] VAPID keys generated for Web Push');
+    log.info('VAPID keys generated for Web Push');
   } catch (e) {
-    console.warn('[pwa] Could not generate VAPID keys:', e.message);
+    log.warn('Could not generate VAPID keys: ' + e.message);
   }
 }
 
@@ -636,7 +636,7 @@ if (IS_DEMO) {
   for (const p of MOCK_PRINTERS) {
     if (!existing.includes(p.id)) {
       dbAddPrinter(p);
-      console.log(`[demo] Seeded printer: ${p.name}`);
+      log.info(`[demo] Seeded printer: ${p.name}`);
     }
   }
 
@@ -662,7 +662,7 @@ if (IS_DEMO) {
         color_changes: h.color_changes, waste_g: h.waste_g
       });
     }
-    console.log(`[demo] Seeded ${MOCK_HISTORY.length} history records across ${printerIds.length} printers`);
+    log.info(`[demo] Seeded ${MOCK_HISTORY.length} history records across ${printerIds.length} printers`);
   }
 
   // Seed filament inventory
@@ -671,7 +671,7 @@ if (IS_DEMO) {
     for (const f of MOCK_FILAMENT) {
       addFilament(f);
     }
-    console.log(`[demo] Seeded ${MOCK_FILAMENT.length} filament records`);
+    log.info(`[demo] Seeded ${MOCK_FILAMENT.length} filament records`);
   }
 
   // Seed errors — distribute across printers
@@ -686,7 +686,7 @@ if (IS_DEMO) {
         timestamp: new Date(Date.now() - (e.days_ago || 1) * 86400000).toISOString()
       });
     }
-    console.log(`[demo] Seeded ${MOCK_ERRORS.length} error records across ${printerIds.length} printers`);
+    log.info(`[demo] Seeded ${MOCK_ERRORS.length} error records across ${printerIds.length} printers`);
   }
 
   // Seed firmware entries for demo printers
@@ -712,7 +712,7 @@ if (IS_DEMO) {
       addFirmwareEntry({ printer_id: p.id, module: mod.module, sw_ver: mod.sw_ver, hw_ver: mod.hw_ver, sn: `${p.id}-${mod.module}` });
     }
   }
-  console.log('[demo] Seeded firmware entries');
+  log.info('[demo] Seeded firmware entries');
 
   // Seed protection settings for demo printers
   const { getProtectionSettings, upsertProtectionSettings, addProtectionLog } = await import('./database.js');
@@ -726,7 +726,7 @@ if (IS_DEMO) {
   if (getProtectionLog('demo-p2s', 1).length === 0) {
     addProtectionLog({ printer_id: 'demo-p2s', event_type: 'spaghetti_detected', action_taken: 'pause', notes: 'Demo event' });
     addProtectionLog({ printer_id: 'demo-x1c', event_type: 'first_layer_issue', action_taken: 'notify', notes: 'Demo event' });
-    console.log('[demo] Seeded protection data');
+    log.info('[demo] Seeded protection data');
   }
 
   // AMS data map per printer
@@ -791,7 +791,7 @@ if (IS_DEMO) {
     demoMockPrinters.push(mock);
   }
 
-  console.log(`[demo] ${MOCK_PRINTERS.length} mock-printere startet`);
+  log.info(`[demo] ${MOCK_PRINTERS.length} mock-printere startet`);
 }
 
 // When a printer is added via API, auto-connect via MQTT
@@ -822,7 +822,7 @@ setOnDemoPurge((printerIds) => {
     hub.removePrinterMeta(id);
     if (hubHttps) hubHttps.removePrinterMeta(id);
   }
-  console.log(`[demo] Purged ${printerIds.length} mock printers`);
+  log.info(`[demo] Purged ${printerIds.length} mock printers`);
 });
 
 // Command routing
@@ -887,6 +887,6 @@ httpServer.listen(PORT, () => {
 
 if (httpsServer) {
   httpsServer.listen(HTTPS_PORT, () => {
-    console.log(`[server] HTTPS aktiv på port ${HTTPS_PORT}`);
+    log.info(`HTTPS aktiv på port ${HTTPS_PORT}`);
   });
 }

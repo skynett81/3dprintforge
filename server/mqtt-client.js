@@ -1,4 +1,6 @@
 import mqtt from 'mqtt';
+import { createLogger } from './logger.js';
+const log = createLogger('mqtt');
 
 export class BambuMqttClient {
   constructor(config, hub) {
@@ -18,7 +20,7 @@ export class BambuMqttClient {
 
   connect() {
     const url = `mqtts://${this.ip}:8883`;
-    console.log(`[mqtt] Kobler til ${url}...`);
+    log.info(`Kobler til ${url}...`);
     // Bambu Lab printers use self-signed certificates — TLS verification
     // cannot be enabled without breaking connectivity. This is a known
     // limitation of the Bambu Lab protocol.
@@ -34,14 +36,14 @@ export class BambuMqttClient {
 
     this.client.on('connect', () => {
       this.connected = true;
-      console.log('[mqtt] Tilkoblet printer');
+      log.info('Tilkoblet printer');
 
       const topic = `device/${this.serial}/report`;
       this.client.subscribe(topic, (err) => {
         if (err) {
-          console.error('[mqtt] Feil ved abonnering:', err.message);
+          log.error('Feil ved abonnering: ' + err.message);
         } else {
-          console.log(`[mqtt] Abonnerer på ${topic}`);
+          log.info(`Abonnerer på ${topic}`);
           this._requestFullState();
         }
       });
@@ -59,19 +61,19 @@ export class BambuMqttClient {
     });
 
     this.client.on('error', (err) => {
-      console.error('[mqtt] Feil:', err.message);
+      log.error('Feil: ' + err.message);
     });
 
     this.client.on('close', () => {
       if (this.connected) {
-        console.log('[mqtt] Frakoblet - gjenkobler...');
+        log.info('Frakoblet - gjenkobler...');
         this.connected = false;
         this.hub.broadcast('connection', { status: 'disconnected' });
       }
     });
 
     this.client.on('reconnect', () => {
-      console.log('[mqtt] Gjenkobler...');
+      log.info('Gjenkobler...');
     });
   }
 
