@@ -343,16 +343,15 @@ export class Updater {
     const backupName = `backup-${this._currentVersion}-${Date.now()}`;
     const backupPath = join(backupDir, backupName);
 
-    cpSync(ROOT_DIR, backupPath, {
-      recursive: true,
-      filter: (src) => {
-        const rel = relative(ROOT_DIR, src);
-        if (!rel) return true; // root itself
-        const topLevel = rel.split('/')[0];
-        return !PRESERVE.has(topLevel) || topLevel === 'config.json';
-        // We DO backup config.json but not data/, node_modules/, certs/, .git/
-      }
-    });
+    // cpSync cannot copy a directory into its own subdirectory, so we
+    // iterate top-level entries manually and copy only non-preserved ones.
+    mkdirSync(backupPath, { recursive: true });
+    for (const entry of readdirSync(ROOT_DIR)) {
+      if (PRESERVE.has(entry) && entry !== 'config.json') continue;
+      try {
+        cpSync(join(ROOT_DIR, entry), join(backupPath, entry), { recursive: true });
+      } catch { /* skip unreadable entries */ }
+    }
 
     // Prune old backups (keep max 3)
     try {
