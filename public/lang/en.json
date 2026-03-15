@@ -124,7 +124,8 @@
     "empty": "Empty",
     "external": "External",
     "low_filament": "{{slot}}: {{pct}}% filament remaining",
-    "critical_filament": "{{slot}}: {{pct}}% filament — replace soon!"
+    "critical_filament": "{{slot}}: {{pct}}% filament — replace soon!",
+    "click_to_calibrate": "Click to calibrate"
   },
   "filament": {
     "no_data": "No filament data",
@@ -134,7 +135,7 @@
     "print_using": "Using",
     "est_remaining": "Est. remaining",
     "used_today": "today",
-    "days_ago": "{{n}}d ago",
+    "days_ago": "days ago",
     "months_ago": "{{n}}mo ago",
     "near_empty_grams": "Near empty (grams)",
     "near_empty_grams_hint": "Mark as low stock below this weight (0 = disabled)",
@@ -142,7 +143,7 @@
     "filament_check_warn": "Warn only",
     "filament_check_block": "Block dispatch",
     "filament_check_hint": "What to do when queue spool has insufficient filament for a job",
-    "slot": "Slot {{num}}",
+    "slot": "slot",
     "add_spool": "+ Add spool",
     "add_spool_title": "Add new spool",
     "brand": "Brand",
@@ -255,12 +256,9 @@
     "status_low_stock": "Low stock",
     "status_in_stock": "In stock",
     "today": "Today",
-    "days_ago": "days ago",
-    "slot": "slot",
     "spool_price": "Spool price",
     "price_per_gram": "Price/gram",
     "last_used": "Last used",
-    "lot_number": "Lot number",
     "usage_stats": "Usage statistics",
     "detail_completed": "completed",
     "detail_failed": "failed",
@@ -724,7 +722,8 @@
     "copy_dymo": "Copy DYMO",
     "copy_escpos": "Copy ESC/POS",
     "dymo_copied": "DYMO XML copied to clipboard!",
-    "escpos_copied": "ESC/POS data copied to clipboard!"
+    "escpos_copied": "ESC/POS data copied to clipboard!",
+    "remaining_g": "Remaining (g)"
   },
   "controls": {
     "title": "Controls",

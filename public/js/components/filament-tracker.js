@@ -1848,6 +1848,10 @@
               <label class="form-label">${t('filament.used_g')}</label>
               <input class="form-input" id="sp-used-${id}" type="number" value="${spool?.used_weight_g || 0}">
             </div>
+            <div class="form-group" style="width:100px">
+              <label class="form-label">${t('filament.remaining_g') || 'Igjen (g)'}</label>
+              <input class="form-input" id="sp-remaining-${id}" type="number" value="${spool?.remaining_weight_g ?? ''}" placeholder="Auto">
+            </div>
             <div class="form-group" style="width:80px">
               <label class="form-label">${t('filament.price')}</label>
               <input class="form-input" id="sp-cost-${id}" type="number" value="${spool?.cost || ''}" placeholder="219">
@@ -1930,7 +1934,13 @@
       storage_method: document.getElementById('sp-storage-new').value || null,
       extra_fields: _collectExtraFields('sp-new')
     };
-    data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
+    const manualRem = document.getElementById('sp-remaining-new')?.value;
+    if (manualRem !== '' && manualRem !== undefined) {
+      data.remaining_weight_g = Math.max(0, parseFloat(manualRem));
+      data.used_weight_g = Math.max(0, data.initial_weight_g - data.remaining_weight_g);
+    } else {
+      data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
+    }
     const quantity = parseInt(document.getElementById('sp-quantity-new')?.value) || 1;
     if (quantity > 1) {
       data.count = Math.min(quantity, 50);
@@ -1960,7 +1970,15 @@
       storage_method: document.getElementById(`sp-storage-${id}`).value || null,
       extra_fields: _collectExtraFields(`sp-${id}`)
     };
-    data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
+    // Manuelt remaining har prioritet, ellers beregn fra initial - used
+    const manualRemaining = document.getElementById(`sp-remaining-${id}`)?.value;
+    if (manualRemaining !== '' && manualRemaining !== undefined) {
+      data.remaining_weight_g = Math.max(0, parseFloat(manualRemaining));
+      // Oppdater used_weight_g til å matche
+      data.used_weight_g = Math.max(0, data.initial_weight_g - data.remaining_weight_g);
+    } else {
+      data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
+    }
     await fetch(`/api/inventory/spools/${spoolId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     // Close modal overlay if editing from visual card view
     const modal = document.getElementById(`spool-edit-modal-${spoolId}`);

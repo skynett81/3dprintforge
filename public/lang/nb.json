@@ -124,7 +124,8 @@
     "empty": "Tom",
     "external": "Ekstern",
     "low_filament": "{{slot}}: {{pct}}% filament igjen",
-    "critical_filament": "{{slot}}: {{pct}}% filament — bytt snart!"
+    "critical_filament": "{{slot}}: {{pct}}% filament — bytt snart!",
+    "click_to_calibrate": "Klikk for å kalibrere"
   },
   "filament": {
     "no_data": "Ingen filamentdata",
@@ -134,7 +135,7 @@
     "print_using": "Bruker",
     "est_remaining": "Est. gjenstår",
     "used_today": "i dag",
-    "days_ago": "{{n}}d siden",
+    "days_ago": "dager siden",
     "months_ago": "{{n}}mnd siden",
     "near_empty_grams": "Nesten tom (gram)",
     "near_empty_grams_hint": "Marker som lav beholdning under denne vekten (0 = deaktivert)",
@@ -142,7 +143,7 @@
     "filament_check_warn": "Bare advar",
     "filament_check_block": "Blokker utsending",
     "filament_check_hint": "Hva som skjer når spole i køen har utilstrekkelig filament for en jobb",
-    "slot": "Spor {{num}}",
+    "slot": "spor",
     "add_spool": "+ Legg til spole",
     "add_spool_title": "Legg til ny spole",
     "brand": "Merke",
@@ -240,7 +241,7 @@
     "spool_title": "Spoler",
     "initial_weight": "Startvekt (g)",
     "remaining_weight": "Gjenstående",
-    "lot_number": "Partinummer",
+    "lot_number": "Lot-nummer",
     "location": "Plassering",
     "archive": "Arkiver",
     "unarchive": "Gjenopprett",
@@ -255,12 +256,9 @@
     "status_low_stock": "Lav beholdning",
     "status_in_stock": "På lager",
     "today": "I dag",
-    "days_ago": "dager siden",
-    "slot": "spor",
     "spool_price": "Spolpris",
     "price_per_gram": "Pris/gram",
     "last_used": "Sist brukt",
-    "lot_number": "Lot-nummer",
     "usage_stats": "Bruksstatistikk",
     "detail_completed": "fullført",
     "detail_failed": "feilet",
@@ -724,7 +722,8 @@
     "copy_dymo": "Kopier DYMO",
     "copy_escpos": "Kopier ESC/POS",
     "dymo_copied": "DYMO XML kopiert!",
-    "escpos_copied": "ESC/POS-data kopiert!"
+    "escpos_copied": "ESC/POS-data kopiert!",
+    "remaining_g": "Igjen (g)"
   },
   "controls": {
     "title": "Kontroller",

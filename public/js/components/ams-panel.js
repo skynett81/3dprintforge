@@ -358,6 +358,13 @@
             ${hasRfid ? `<div class="ams-spool-rfid"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="${rgb}" stroke-width="2"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M5 12c0-3.87 3.13-7 7-7s7 3.13 7 7"/><path d="M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.5" fill="${rgb}"/></svg></div>` : ''}
           </div>
           <div class="ams-spool-label">A${i + 1}</div>`;
+
+        // Klikk på spool for å kalibrere
+        card.style.cursor = 'pointer';
+        card.title = t('ams.click_to_calibrate') || 'Klikk for å kalibrere';
+        const trayIdx = i;
+        const unitIdx = _selectedUnit;
+        card.addEventListener('click', () => _showCalibrationDialog(printerId, unitIdx, trayIdx, tray, linkedSpool, remain, displayGrams));
       }
 
       container.appendChild(card);
@@ -473,6 +480,84 @@
 
     // Draw tubes
     requestAnimationFrame(() => drawTubes(container, activeTray, amsUnits, _selectedUnit));
+  };
+
+  // Kalibreringsdialo for AMS-spole
+  function _showCalibrationDialog(printerId, amsUnit, amsTray, tray, linkedSpool, currentPct, currentGrams) {
+    // Fjern eksisterende dialog
+    document.querySelectorAll('.ams-calibrate-overlay').forEach(el => el.remove());
+
+    const initG = linkedSpool?.initial_weight_g || (tray.tray_weight ? parseFloat(tray.tray_weight) : 1000);
+    const remG = currentGrams || (currentPct !== null ? Math.round(initG * currentPct / 100) : 0);
+    const slotName = `A${amsTray + 1}`;
+    const color = tray.tray_color || '808080';
+    const rgb = hexToRgb(color);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ams-calibrate-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:24px;width:340px;max-width:90vw">
+        <h3 style="margin:0 0 16px;color:${rgb}">Kalibrer ${slotName} — ${tray.tray_type || 'Filament'}</h3>
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <div style="flex:1">
+            <label style="font-size:0.8rem;color:var(--text-muted)">Spool størrelse (g)</label>
+            <input type="number" id="cal-initial" value="${initG}" style="width:100%;padding:8px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary)">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:0.8rem;color:var(--text-muted)">Igjen (g)</label>
+            <input type="number" id="cal-remaining" value="${remG}" style="width:100%;padding:8px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary)">
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--text-muted)">Eller sett prosent</label>
+          <input type="range" id="cal-slider" min="0" max="100" value="${currentPct || 0}" style="width:100%"
+            oninput="document.getElementById('cal-remaining').value=Math.round(document.getElementById('cal-initial').value*this.value/100);document.getElementById('cal-pct-label').textContent=this.value+'%'">
+          <div style="text-align:center;font-size:1.2rem;font-weight:bold;color:${rgb}" id="cal-pct-label">${currentPct || 0}%</div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="this.closest('.ams-calibrate-overlay').remove()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);cursor:pointer">Avbryt</button>
+          <button onclick="window._saveCalibration('${printerId}',${amsUnit},${amsTray})" style="padding:8px 16px;border-radius:6px;border:none;background:${rgb};color:${isLightColor(color)?'#333':'#fff'};cursor:pointer;font-weight:bold">Lagre</button>
+        </div>
+      </div>`;
+
+    // Oppdater slider når gram endres
+    const remInput = overlay.querySelector('#cal-remaining');
+    const initInput = overlay.querySelector('#cal-initial');
+    const slider = overlay.querySelector('#cal-slider');
+    const pctLabel = overlay.querySelector('#cal-pct-label');
+    remInput.addEventListener('input', () => {
+      const pct = Math.round((parseFloat(remInput.value) / parseFloat(initInput.value)) * 100);
+      slider.value = pct;
+      pctLabel.textContent = pct + '%';
+    });
+
+    // Klikk utenfor lukker
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    document.body.appendChild(overlay);
+  }
+
+  window._saveCalibration = async function(printerId, amsUnit, amsTray) {
+    const initG = parseFloat(document.getElementById('cal-initial').value) || 1000;
+    const remG = parseFloat(document.getElementById('cal-remaining').value) || 0;
+    const usedG = Math.max(0, initG - remG);
+
+    const spool = _getLinkedSpool(printerId, amsUnit, amsTray);
+    if (spool) {
+      await fetch(`/api/inventory/spools/${spool.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initial_weight_g: initG, remaining_weight_g: remG, used_weight_g: usedG })
+      });
+      if (typeof showToast === 'function') showToast(`A${amsTray+1} kalibrert: ${Math.round(remG)}g igjen (${Math.round(remG/initG*100)}%)`, 'success');
+    } else {
+      if (typeof showToast === 'function') showToast('Ingen spoole koblet til denne AMS-plassen', 'warning');
+    }
+
+    document.querySelectorAll('.ams-calibrate-overlay').forEach(el => el.remove());
+    // Refresh AMS-visning
+    if (typeof window.updateAmsPanel === 'function') window.updateAmsPanel();
   };
 
   // Unload / Load button handlers
