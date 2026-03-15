@@ -76,6 +76,28 @@ const THUMBNAIL_PATHS = [
   'Thumbnails/thumbnail.png'
 ];
 
+// Build plate-specific thumbnail paths based on gcode filename
+function getThumbnailPaths(gcodeFile) {
+  // Extract plate number from gcode path: plate_2.gcode → 2
+  const plateMatch = gcodeFile?.match(/plate_(\d+)\.gcode/i);
+  const plateNum = plateMatch ? parseInt(plateMatch[1]) : 1;
+
+  // Prioritize the correct plate thumbnail
+  const paths = [
+    `Metadata/plate_${plateNum}.png`,
+    `Metadata/top_${plateNum}.png`,
+    `Metadata/plate_${plateNum}.jpg`,
+  ];
+  // Add fallbacks for other plates and generic
+  for (let i = 1; i <= 4; i++) {
+    if (i !== plateNum) {
+      paths.push(`Metadata/plate_${i}.png`);
+    }
+  }
+  paths.push('Metadata/thumbnail.png', 'Thumbnails/thumbnail.png');
+  return paths;
+}
+
 // ---- Demo thumbnails (SVG placeholders) ----
 
 const DEMO_COLORS = {
@@ -168,8 +190,9 @@ async function fetchThumbnailFromPrinter(ip, accessCode, gcodeFile) {
     await client.downloadTo(writable, threeMfPath);
     const zipBuf = Buffer.concat(chunks);
 
-    // Extract thumbnail
-    const png = extractFromZip(zipBuf, THUMBNAIL_PATHS);
+    // Extract thumbnail (plate-specific)
+    const thumbPaths = getThumbnailPaths(gcodeFile);
+    const png = extractFromZip(zipBuf, thumbPaths);
     return png;
   } catch (err) {
     log.warn('FTP error for ' + ip + ': ' + err.message);
@@ -184,7 +207,7 @@ async function fetchThumbnailFromPrinter(ip, accessCode, gcodeFile) {
         });
         await client.downloadTo(writable2, cachePath);
         const zipBuf2 = Buffer.concat(chunks2);
-        const png = extractFromZip(zipBuf2, THUMBNAIL_PATHS);
+        const png = extractFromZip(zipBuf2, getThumbnailPaths(gcodeFile));
         return png;
       } catch {
         // Both paths failed
