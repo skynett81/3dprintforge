@@ -105,6 +105,7 @@
       .fleet-badge-offline { background:rgba(153,153,153,0.1); color:var(--text-muted); }
       .fleet-badge-failed { background:rgba(229,57,53,0.1); color:var(--accent-red); }
       .fleet-badge-prepare { background:rgba(18,121,255,0.1); color:var(--accent-blue); }
+      .fleet-badge-maintenance { background:rgba(245,158,11,0.12); color:#f59e0b; }
       .fleet-camera { width:100%; aspect-ratio:16/9; background:var(--bg-tertiary); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
       .fleet-camera img { width:100%; height:100%; object-fit:cover; }
       .fleet-camera-placeholder { color:var(--text-muted); font-size:0.75rem; }
@@ -239,9 +240,10 @@
 
   function _updateCard(card, p) {
     const { id, meta, ps, printState, gcodeState } = p;
-    const isPrinting = ['RUNNING', 'PREPARE', 'PAUSE'].includes(gcodeState);
-    const badgeCls = `fleet-badge-${gcodeState.toLowerCase()}`;
-    const badgeLabel = _stateLabel(gcodeState);
+    const isMaintenance = meta.maintenance_mode === 1 || meta.maintenance_mode === true;
+    const isPrinting = !isMaintenance && ['RUNNING', 'PREPARE', 'PAUSE'].includes(gcodeState);
+    const badgeCls = isMaintenance ? 'fleet-badge-maintenance' : `fleet-badge-${gcodeState.toLowerCase()}`;
+    const badgeLabel = isMaintenance ? (t('fleet.maintenance') || 'Vedlikehold') : _stateLabel(gcodeState);
     const pct = isPrinting ? (parseInt(printState.mc_percent || ps.mc_percent) || 0) : 0;
     const remaining = isPrinting ? (parseInt(printState.mc_remaining_time || ps.mc_remaining_time) || 0) : 0;
     const file = isPrinting ? (printState.subtask_name || ps.subtask_name || '') : '';
@@ -251,6 +253,9 @@
     const bed = ps.bed_temper ?? printState.bed_temper ?? null;
     const chamber = ps.chamber_temper ?? printState.chamber_temper ?? null;
     const remoteLabel = meta.remote ? `<span class="fleet-remote-label">${_esc(meta.remoteNodeName || 'Remote')}</span>` : '';
+
+    if (isMaintenance) card.style.opacity = '0.6';
+    else card.style.opacity = '';
 
     let html = `<div class="fleet-card-header">
       <div>

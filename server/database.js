@@ -306,6 +306,7 @@ function _runMigrations() {
     { version: 100, up: _mig100_bambu_rfid_library },
     { version: 101, up: _mig101_print_stages },
     { version: 102, up: _mig102_bambuddy_features },
+    { version: 103, up: _mig103_printer_maintenance_mode },
   ];
 
   for (const m of migrations) {
@@ -10287,4 +10288,19 @@ export function checkFirmwareUpdate(printerId) {
   const modules = db.prepare(`SELECT module, MAX(sw_ver) as current_ver, latest_available, update_available
     FROM firmware_history WHERE printer_id = ? GROUP BY module ORDER BY module`).all(printerId);
   return modules;
+}
+
+function _mig103_printer_maintenance_mode() {
+  try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_mode INTEGER DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_note TEXT'); } catch {}
+  try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_since TEXT'); } catch {}
+}
+
+export function setMaintenanceMode(printerId, enabled, note) {
+  db.prepare('UPDATE printers SET maintenance_mode = ?, maintenance_note = ?, maintenance_since = ? WHERE id = ?')
+    .run(enabled ? 1 : 0, note || null, enabled ? new Date().toISOString() : null, printerId);
+}
+
+export function getMaintenanceModePrinters() {
+  return db.prepare('SELECT id, name, model, maintenance_note, maintenance_since FROM printers WHERE maintenance_mode = 1').all();
 }
