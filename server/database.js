@@ -161,8 +161,40 @@ export function initDatabase() {
   // Run versioned migrations
   _runMigrations();
 
+  // Async seed SpoolEase data (ESM dynamic import)
+  _seedSpoolEaseDataAsync();
+
   log.info('Database klar: ' + DB_PATH);
   return db;
+}
+
+async function _seedSpoolEaseDataAsync() {
+  try {
+    const existing = db.prepare('SELECT COUNT(*) as c FROM spool_core_weights').get();
+    if (existing.c > 20) return; // Already seeded
+
+    const { SPOOL_CORE_WEIGHTS, BAMBU_FILAMENT_CODES } = await import('./spoolease-data.js');
+
+    for (const [name, weight] of SPOOL_CORE_WEIGHTS) {
+      try {
+        db.prepare('INSERT OR IGNORE INTO spool_core_weights (brand_name, weight_g, spool_type) VALUES (?, ?, ?)')
+          .run(name, weight, name.toLowerCase().includes('cardboard') ? 'cardboard' : 'plastic');
+      } catch {}
+    }
+
+    for (const [code, name, tempMin, tempMax, material] of BAMBU_FILAMENT_CODES) {
+      try {
+        db.prepare('INSERT OR IGNORE INTO bambu_filament_codes (code, name, material, temp_min, temp_max) VALUES (?, ?, ?, ?, ?)')
+          .run(code, name, material, tempMin, tempMax);
+      } catch {}
+    }
+
+    const coreCount = db.prepare('SELECT COUNT(*) as c FROM spool_core_weights').get().c;
+    const codeCount = db.prepare('SELECT COUNT(*) as c FROM bambu_filament_codes').get().c;
+    log.info(`SpoolEase data: ${coreCount} core weights, ${codeCount} filament codes`);
+  } catch (e) {
+    log.warn('SpoolEase data seed: ' + e.message);
+  }
 }
 
 // ---- Migration System ----
@@ -267,6 +299,12 @@ function _runMigrations() {
     { version: 93, up: _mig093_reseed_spoolmandb },
     { version: 94, up: _mig094_reseed_knowledge_base },
     { version: 95, up: _mig095_reseed_learning_center },
+    { version: 96, up: _mig096_filament_tracker },
+    { version: 97, up: _mig097_filament_analytics },
+    { version: 98, up: _mig098_spoolman_features },
+    { version: 99, up: _mig099_spoolease_features },
+    { version: 100, up: _mig100_bambu_rfid_library },
+    { version: 101, up: _mig101_print_stages },
   ];
 
   for (const m of migrations) {
@@ -4483,12 +4521,12 @@ export function deleteRemoteNode(id) {
 
 export function insertTelemetryBatch(records) {
   const stmt = db.prepare(`INSERT INTO telemetry (printer_id, timestamp, nozzle_temp, bed_temp, chamber_temp,
-    nozzle_target, bed_target, fan_cooling, fan_aux, fan_chamber, fan_heatbreak, speed_mag, wifi_signal, print_progress, layer_num)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    nozzle_target, bed_target, fan_cooling, fan_aux, fan_chamber, fan_heatbreak, speed_mag, wifi_signal, print_progress, layer_num, print_stage)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   for (const r of records) {
     stmt.run(r.printer_id, r.timestamp, r.nozzle_temp, r.bed_temp, r.chamber_temp,
       r.nozzle_target, r.bed_target, r.fan_cooling, r.fan_aux, r.fan_chamber, r.fan_heatbreak,
-      r.speed_mag, r.wifi_signal, r.print_progress, r.layer_num);
+      r.speed_mag, r.wifi_signal, r.print_progress, r.layer_num, r.print_stage ?? null);
   }
 }
 
@@ -4906,8 +4944,8 @@ export function addFilamentProfile(p) {
      article_number, multi_color_hexes, multi_color_direction, extra_fields,
      finish, translucent, glow, weight_options, external_id, diameters, weights, price,
      pressure_advance_k, max_volumetric_speed, retraction_distance, retraction_speed, cooling_fan_speed, optimal_settings,
-     transmission_distance, modifiers)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     transmission_distance, modifiers, tray_id_name, chamber_temp_min, chamber_temp_max, diameter_tolerance, ral_code, pantone_code)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     p.vendor_id || null, p.name, p.material, p.color_name || null, p.color_hex || null,
     p.density ?? 1.24, p.diameter ?? 1.75, p.spool_weight_g ?? 1000,
     p.nozzle_temp_min || null, p.nozzle_temp_max || null, p.bed_temp_min || null, p.bed_temp_max || null,
@@ -4918,7 +4956,9 @@ export function addFilamentProfile(p) {
     p.price ?? null,
     p.pressure_advance_k ?? null, p.max_volumetric_speed ?? null, p.retraction_distance ?? null,
     p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings),
-    p.transmission_distance ?? null, _jsonCol(p.modifiers));
+    p.transmission_distance ?? null, _jsonCol(p.modifiers),
+    p.tray_id_name || null, p.chamber_temp_min || null, p.chamber_temp_max || null,
+    p.diameter_tolerance ?? null, p.ral_code || null, p.pantone_code || null);
   return { id: Number(result.lastInsertRowid) };
 }
 
@@ -4928,7 +4968,8 @@ export function updateFilamentProfile(id, p) {
     comment=?, article_number=?, multi_color_hexes=?, multi_color_direction=?, extra_fields=?,
     finish=?, translucent=?, glow=?, weight_options=?, external_id=?, diameters=?, weights=?, price=?,
     pressure_advance_k=?, max_volumetric_speed=?, retraction_distance=?, retraction_speed=?, cooling_fan_speed=?, optimal_settings=?,
-    transmission_distance=?, modifiers=?
+    transmission_distance=?, modifiers=?,
+    tray_id_name=?, chamber_temp_min=?, chamber_temp_max=?, diameter_tolerance=?, ral_code=?, pantone_code=?
     WHERE id=?`).run(
     p.vendor_id || null, p.name, p.material, p.color_name || null, p.color_hex || null,
     p.density ?? 1.24, p.diameter ?? 1.75, p.spool_weight_g ?? 1000,
@@ -4940,7 +4981,9 @@ export function updateFilamentProfile(id, p) {
     p.price ?? null,
     p.pressure_advance_k ?? null, p.max_volumetric_speed ?? null, p.retraction_distance ?? null,
     p.retraction_speed ?? null, p.cooling_fan_speed ?? null, _jsonCol(p.optimal_settings),
-    p.transmission_distance ?? null, _jsonCol(p.modifiers), id);
+    p.transmission_distance ?? null, _jsonCol(p.modifiers),
+    p.tray_id_name || null, p.chamber_temp_min || null, p.chamber_temp_max || null,
+    p.diameter_tolerance ?? null, p.ral_code || null, p.pantone_code || null, id);
 }
 
 export function deleteFilamentProfile(id) {
@@ -5002,14 +5045,14 @@ export function addSpool(s) {
   const result = db.prepare(`INSERT INTO spools
     (filament_profile_id, remaining_weight_g, used_weight_g, initial_weight_g, cost, lot_number,
      purchase_date, location, printer_id, ams_unit, ams_tray, comment, extra_fields, spool_weight,
-     storage_method, short_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     storage_method, short_id, tray_id_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     s.filament_profile_id || null, s.remaining_weight_g ?? s.initial_weight_g ?? 1000,
     s.used_weight_g ?? 0, s.initial_weight_g ?? 1000,
     s.cost || null, s.lot_number || null, s.purchase_date || null,
     s.location || null, s.printer_id || null, s.ams_unit ?? null, s.ams_tray ?? null,
     s.comment || null, s.extra_fields ? JSON.stringify(s.extra_fields) : null,
-    s.spool_weight ?? null, s.storage_method || null, shortId);
+    s.spool_weight ?? null, s.storage_method || null, shortId, s.tray_id_name || null);
   const newId = Number(result.lastInsertRowid);
   try { addSpoolEvent(newId, 'created', null, null); } catch (e) { log.warn('Failed to log spool created event', e.message); }
   return { id: newId, short_id: shortId };
@@ -5026,14 +5069,14 @@ export function updateSpool(id, s) {
   db.prepare(`UPDATE spools SET filament_profile_id=?, remaining_weight_g=?, used_weight_g=?,
     initial_weight_g=?, cost=?, lot_number=?, purchase_date=?, location=?,
     printer_id=?, ams_unit=?, ams_tray=?, archived=?, comment=?, extra_fields=?, spool_weight=?,
-    storage_method=?
+    storage_method=?, tray_id_name=?
     WHERE id=?`).run(
     s.filament_profile_id || null, s.remaining_weight_g, s.used_weight_g,
     s.initial_weight_g, s.cost || null, s.lot_number || null, s.purchase_date || null,
     s.location || null, s.printer_id || null, s.ams_unit ?? null, s.ams_tray ?? null,
     s.archived ?? 0, s.comment || null,
     s.extra_fields ? JSON.stringify(s.extra_fields) : null, s.spool_weight ?? null,
-    s.storage_method || null, id);
+    s.storage_method || null, s.tray_id_name || null, id);
   try { addSpoolEvent(id, 'edited', null, null); } catch (e) { log.warn('Failed to log spool edit event', e.message); }
 }
 
@@ -5087,6 +5130,491 @@ export function getLocationAlerts() {
     if (loc.max_weight_kg != null && loc.total_weight_kg > loc.max_weight_kg) alerts.push({ location: loc.name, type: 'max_weight', current: loc.total_weight_kg, threshold: loc.max_weight_kg });
   }
   return alerts;
+}
+
+// ---- Filament Usage History ----
+
+export function addFilamentUsageSnapshot(entry) {
+  return db.prepare(`INSERT INTO filament_usage_history
+    (printer_id, ams_unit, tray_id, tray_id_name, tray_type, tray_sub_brands, tray_color,
+     remain_pct, tray_weight, tag_uid, tray_uuid, spool_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    entry.printer_id, entry.ams_unit, entry.tray_id,
+    entry.tray_id_name || null, entry.tray_type || null, entry.tray_sub_brands || null,
+    entry.tray_color || null, entry.remain_pct ?? null, entry.tray_weight ?? null,
+    entry.tag_uid || null, entry.tray_uuid || null, entry.spool_id || null);
+}
+
+export function getFilamentUsageHistory(filters = {}) {
+  let sql = 'SELECT * FROM filament_usage_history WHERE 1=1';
+  const params = [];
+  if (filters.printer_id) { sql += ' AND printer_id = ?'; params.push(filters.printer_id); }
+  if (filters.tray_id_name) { sql += ' AND tray_id_name = ?'; params.push(filters.tray_id_name); }
+  if (filters.spool_id) { sql += ' AND spool_id = ?'; params.push(filters.spool_id); }
+  if (filters.from) { sql += ' AND timestamp >= ?'; params.push(filters.from); }
+  if (filters.to) { sql += ' AND timestamp <= ?'; params.push(filters.to); }
+  sql += ' ORDER BY timestamp DESC';
+  if (filters.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
+  return db.prepare(sql).all(...params);
+}
+
+export function getFilamentUsageTrend(trayIdName, days = 30) {
+  return db.prepare(`SELECT DATE(timestamp) as date,
+    MIN(remain_pct) as min_remain, MAX(remain_pct) as max_remain,
+    AVG(remain_pct) as avg_remain, COUNT(*) as samples
+    FROM filament_usage_history
+    WHERE tray_id_name = ? AND timestamp >= datetime('now', '-' || ? || ' days')
+    GROUP BY DATE(timestamp)
+    ORDER BY date`).all(trayIdName, days);
+}
+
+export function getSpoolByTrayIdName(trayIdName) {
+  return db.prepare(`SELECT s.*, fp.name as profile_name, fp.material, fp.color_hex, fp.color_name, v.name as vendor_name
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.tray_id_name = ? AND s.archived = 0
+    ORDER BY s.created_at DESC LIMIT 1`).get(trayIdName);
+}
+
+// ---- Purchased Spools Registry ----
+
+export function getPurchasedSpools() {
+  return db.prepare(`SELECT ps.*, s.remaining_weight_g, s.used_weight_g, s.initial_weight_g,
+    s.printer_id as assigned_printer, s.ams_unit, s.ams_tray
+    FROM purchased_spools ps
+    LEFT JOIN spools s ON ps.spool_id = s.id
+    ORDER BY ps.name, ps.purchase_order`).all();
+}
+
+export function addPurchasedSpool(p) {
+  const result = db.prepare(`INSERT INTO purchased_spools
+    (name, brand, form, color_hex, tray_id_name, spool_id, purchase_order, cost, purchase_date, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    p.name, p.brand || null, p.form || 'spool', p.color_hex || null,
+    p.tray_id_name || null, p.spool_id || null, p.purchase_order ?? 1,
+    p.cost || null, p.purchase_date || null, p.notes || null);
+  return { id: Number(result.lastInsertRowid) };
+}
+
+export function updatePurchasedSpool(id, p) {
+  db.prepare(`UPDATE purchased_spools SET name=?, brand=?, form=?, color_hex=?,
+    tray_id_name=?, spool_id=?, purchase_order=?, cost=?, purchase_date=?, notes=?
+    WHERE id=?`).run(
+    p.name, p.brand || null, p.form || 'spool', p.color_hex || null,
+    p.tray_id_name || null, p.spool_id || null, p.purchase_order ?? 1,
+    p.cost || null, p.purchase_date || null, p.notes || null, id);
+}
+
+export function deletePurchasedSpool(id) {
+  db.prepare('DELETE FROM purchased_spools WHERE id=?').run(id);
+}
+
+export function importPurchasedSpools(spools) {
+  let count = 0;
+  for (const s of spools) {
+    db.prepare(`INSERT INTO purchased_spools
+      (name, brand, form, color_hex, tray_id_name, purchase_order, cost, purchase_date, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(s.name, s.brand || null, s.form || 'spool', s.color_hex || null,
+        s.tray_id_name || null, s.purchase_order ?? s.order ?? 1,
+        s.cost || null, s.purchase_date || null, s.notes || null);
+    count++;
+  }
+  return { imported: count };
+}
+
+export function linkPurchasedToSpool(purchasedId, spoolId) {
+  db.prepare('UPDATE purchased_spools SET spool_id = ? WHERE id = ?').run(spoolId, purchasedId);
+}
+
+// ---- Auto-match AMS tray to spool by color + material ----
+
+export function autoMatchTrayToSpool(trayColor, trayMaterial, trayBrand, trayWeight, printerId, amsUnit, trayId) {
+  // 1. Check if already assigned by slot
+  const existing = getSpoolBySlot(printerId, amsUnit, trayId);
+  if (existing) return existing;
+
+  // 2. Match by tray_id_name if available
+  // (handled separately via getSpoolByTrayIdName)
+
+  // 3. Match by color + material from inventory
+  const colorHex = (trayColor || '').substring(0, 6).toUpperCase();
+  if (!colorHex || colorHex === '000000') return null;
+
+  const candidates = db.prepare(`
+    SELECT s.*, fp.material, fp.color_hex, fp.color_name, v.name as vendor_name
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.archived = 0
+      AND s.printer_id IS NULL
+      AND UPPER(SUBSTR(fp.color_hex, 1, 6)) = ?
+      AND (fp.material = ? OR fp.material = ?)
+    ORDER BY s.remaining_weight_g DESC
+    LIMIT 5`).all(colorHex, trayMaterial || '', trayBrand || '');
+
+  if (candidates.length === 0) return null;
+
+  // 4. Prefer weight match (within 15% tolerance like filamentstatus repo)
+  const weight = parseInt(trayWeight) || 1000;
+  for (const c of candidates) {
+    const tolerance = c.initial_weight_g * 0.15;
+    if (Math.abs(c.initial_weight_g - weight) <= tolerance) {
+      return c;
+    }
+  }
+
+  // 5. Return best candidate (highest remaining)
+  return candidates[0];
+}
+
+export function autoCreateSpoolFromTray(tray, printerId, amsUnit, trayId) {
+  const colorHex = (tray.tray_color || '').substring(0, 6);
+  const material = tray.tray_type || 'PLA';
+  const brand = tray.tray_sub_brands || null;
+  const weight = parseInt(tray.tray_weight) || 1000;
+  const trayIdName = tray.tray_id_name || null;
+
+  // Find or create filament profile
+  let profileId = null;
+  const profileName = `${brand ? brand + ' ' : ''}${material}${tray.tray_id_name ? ' ' + tray.tray_id_name : ''}`;
+
+  // Try to find existing profile by tray_id_name first
+  if (trayIdName) {
+    const byTrayId = db.prepare('SELECT id FROM filament_profiles WHERE tray_id_name = ? LIMIT 1').get(trayIdName);
+    if (byTrayId) profileId = byTrayId.id;
+  }
+
+  // Then by color+material
+  if (!profileId) {
+    const byColor = db.prepare(`SELECT id FROM filament_profiles
+      WHERE UPPER(SUBSTR(color_hex, 1, 6)) = UPPER(?) AND (material = ? OR material = ?)
+      LIMIT 1`).get(colorHex, material, brand || material);
+    if (byColor) profileId = byColor.id;
+  }
+
+  // Create profile if none exists
+  if (!profileId) {
+    let vendorId = null;
+    if (brand) {
+      const v = db.prepare('SELECT id FROM vendors WHERE LOWER(name) = LOWER(?) LIMIT 1').get(brand);
+      vendorId = v ? v.id : null;
+      if (!vendorId) {
+        const vr = db.prepare('INSERT INTO vendors (name) VALUES (?)').run(brand);
+        vendorId = Number(vr.lastInsertRowid);
+      }
+    }
+    const pr = db.prepare(`INSERT INTO filament_profiles (vendor_id, name, material, color_hex, spool_weight_g, tray_id_name)
+      VALUES (?, ?, ?, ?, ?, ?)`).run(vendorId, profileName, material, colorHex, weight, trayIdName);
+    profileId = Number(pr.lastInsertRowid);
+  }
+
+  // Compute remaining weight from AMS percentage
+  const remainPct = Math.max(0, Math.min(100, tray.remain || 0));
+  const remainG = correctRemainWeight(remainPct, weight);
+
+  const result = addSpool({
+    filament_profile_id: profileId,
+    remaining_weight_g: remainG,
+    used_weight_g: weight - remainG,
+    initial_weight_g: weight,
+    printer_id: printerId,
+    ams_unit: amsUnit,
+    ams_tray: trayId,
+    tray_id_name: trayIdName,
+    comment: 'Auto-created from AMS tray',
+  });
+
+  return result;
+}
+
+/** Correct remaining weight for non-1kg spools (ported from filamentstatus repo) */
+export function correctRemainWeight(remainPct, trayWeightG) {
+  const remain = parseFloat(remainPct);
+  const weight = parseFloat(trayWeightG);
+  if (weight <= 0 || isNaN(remain)) return 0;
+
+  if (weight < 1000) {
+    // AMS reports remain% based on 1000g — correct for actual spool weight
+    const gramsOn1kg = (remain / 100) * 1000;
+    let correctedPct = (gramsOn1kg / weight) * 100;
+    correctedPct = Math.min(100, Math.max(0, correctedPct));
+    return Math.round((correctedPct / 100) * weight);
+  }
+  return Math.round((remain / 100) * weight);
+}
+
+// ---- Filament Analytics ----
+
+export function aggregateDailyFilamentUsage(date) {
+  // Aggregate from print_history for a given date
+  const rows = db.prepare(`
+    SELECT COALESCE(printer_id, '') as printer_id,
+      COALESCE(filament_type, '') as material,
+      COALESCE(filament_brand, '') as brand,
+      COALESCE(filament_color, '') as color_hex,
+      SUM(CASE WHEN filament_used_g > 0 THEN filament_used_g ELSE 0 END) as filament_used_g,
+      SUM(CASE WHEN waste_g > 0 THEN waste_g ELSE 0 END) as waste_g,
+      COUNT(*) as print_count,
+      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success_count,
+      SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as fail_count,
+      SUM(CASE WHEN duration_seconds > 0 THEN duration_seconds ELSE 0 END) as total_print_seconds,
+      SUM(CASE WHEN color_changes > 0 THEN color_changes ELSE 0 END) as color_changes
+    FROM print_history
+    WHERE DATE(started_at) = ?
+    GROUP BY COALESCE(printer_id, ''), COALESCE(filament_type, ''), COALESCE(filament_brand, ''), COALESCE(filament_color, '')
+  `).all(date);
+
+  for (const r of rows) {
+    db.prepare('DELETE FROM daily_filament_usage WHERE date = ? AND printer_id = ? AND material = ? AND brand = ? AND color_hex = ?')
+      .run(date, r.printer_id, r.material, r.brand, r.color_hex);
+    db.prepare(`INSERT INTO daily_filament_usage
+      (date, printer_id, material, brand, color_hex, filament_used_g, waste_g, print_count,
+       success_count, fail_count, total_print_seconds, color_changes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(date, r.printer_id, r.material, r.brand, r.color_hex,
+        r.filament_used_g, r.waste_g, r.print_count, r.success_count, r.fail_count,
+        r.total_print_seconds, r.color_changes);
+  }
+  return rows.length;
+}
+
+export function backfillDailyUsage(days = 90) {
+  let count = 0;
+  for (let i = 0; i < days; i++) {
+    const date = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+    count += aggregateDailyFilamentUsage(date);
+  }
+  return count;
+}
+
+export function getDailyFilamentUsage(filters = {}) {
+  let sql = 'SELECT * FROM daily_filament_usage WHERE 1=1';
+  const params = [];
+  if (filters.from) { sql += ' AND date >= ?'; params.push(filters.from); }
+  if (filters.to) { sql += ' AND date <= ?'; params.push(filters.to); }
+  if (filters.material) { sql += ' AND material = ?'; params.push(filters.material); }
+  if (filters.printer_id) { sql += ' AND printer_id = ?'; params.push(filters.printer_id); }
+  if (filters.brand) { sql += ' AND brand = ?'; params.push(filters.brand); }
+  sql += ' ORDER BY date DESC';
+  if (filters.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
+  return db.prepare(sql).all(...params);
+}
+
+export function getFilamentConsumptionSummary(days = 30) {
+  return db.prepare(`
+    SELECT material, brand,
+      SUM(filament_used_g) as total_used_g,
+      SUM(waste_g) as total_waste_g,
+      SUM(print_count) as total_prints,
+      SUM(success_count) as total_success,
+      SUM(fail_count) as total_fails,
+      SUM(total_print_seconds) as total_seconds,
+      ROUND(SUM(waste_g) * 100.0 / NULLIF(SUM(filament_used_g + waste_g), 0), 1) as waste_pct,
+      ROUND(SUM(success_count) * 100.0 / NULLIF(SUM(print_count), 0), 1) as success_rate,
+      ROUND(SUM(filament_used_g) / NULLIF(COUNT(DISTINCT date), 0), 1) as avg_daily_g,
+      COUNT(DISTINCT date) as active_days
+    FROM daily_filament_usage
+    WHERE date >= DATE('now', '-' || ? || ' days')
+    GROUP BY material, brand
+    ORDER BY total_used_g DESC`).all(days);
+}
+
+export function getFilamentConsumptionByPrinter(days = 30) {
+  return db.prepare(`
+    SELECT printer_id, material,
+      SUM(filament_used_g) as total_used_g,
+      SUM(waste_g) as total_waste_g,
+      SUM(print_count) as total_prints,
+      ROUND(SUM(filament_used_g) / NULLIF(COUNT(DISTINCT date), 0), 1) as avg_daily_g
+    FROM daily_filament_usage
+    WHERE date >= DATE('now', '-' || ? || ' days')
+    GROUP BY printer_id, material
+    ORDER BY total_used_g DESC`).all(days);
+}
+
+export function getFilamentWeeklyTrend(weeks = 12) {
+  return db.prepare(`
+    SELECT strftime('%Y-W%W', date) as week,
+      material,
+      SUM(filament_used_g) as used_g,
+      SUM(waste_g) as waste_g,
+      SUM(print_count) as prints,
+      ROUND(SUM(success_count) * 100.0 / NULLIF(SUM(print_count), 0), 1) as success_rate
+    FROM daily_filament_usage
+    WHERE date >= DATE('now', '-' || ? || ' days')
+    GROUP BY week, material
+    ORDER BY week DESC, used_g DESC`).all(weeks * 7);
+}
+
+export function updateConsumptionRates() {
+  const materials = db.prepare(`
+    SELECT COALESCE(material, '') as material, COALESCE(brand, '') as brand,
+      ROUND(SUM(filament_used_g) / NULLIF(COUNT(DISTINCT date), 0), 2) as avg_daily_g,
+      ROUND(SUM(filament_used_g) / NULLIF(COUNT(DISTINCT date), 0) * 7, 2) as avg_weekly_g,
+      ROUND(SUM(filament_used_g) / NULLIF(COUNT(DISTINCT date), 0) * 30, 2) as avg_monthly_g,
+      ROUND(SUM(waste_g) * 1.0 / NULLIF(SUM(filament_used_g + waste_g), 0), 4) as waste_ratio,
+      ROUND(SUM(success_count) * 1.0 / NULLIF(SUM(print_count), 0), 4) as success_rate,
+      COUNT(DISTINCT date) as sample_days
+    FROM daily_filament_usage
+    WHERE date >= DATE('now', '-90 days')
+    GROUP BY COALESCE(material, ''), COALESCE(brand, '')`).all();
+
+  for (const m of materials) {
+    const costRow = db.prepare(`SELECT ROUND(AVG(s.cost / NULLIF(s.initial_weight_g, 0)), 4) as cpg
+      FROM spools s
+      LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+      WHERE fp.material = ? AND (? = '' OR EXISTS (
+        SELECT 1 FROM vendors v WHERE v.id = fp.vendor_id AND v.name = ?
+      )) AND s.cost > 0`).get(m.material, m.brand, m.brand);
+
+    db.prepare('DELETE FROM material_consumption_rate WHERE material = ? AND brand = ?').run(m.material, m.brand);
+    db.prepare(`INSERT INTO material_consumption_rate
+      (material, brand, avg_daily_g, avg_weekly_g, avg_monthly_g, waste_ratio, success_rate, avg_cost_per_g, sample_days, last_calculated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`)
+      .run(m.material, m.brand, m.avg_daily_g, m.avg_weekly_g, m.avg_monthly_g,
+        m.waste_ratio, m.success_rate, costRow?.cpg || 0, m.sample_days);
+  }
+  return materials.length;
+}
+
+export function getConsumptionRates() {
+  return db.prepare('SELECT * FROM material_consumption_rate ORDER BY avg_monthly_g DESC').all();
+}
+
+export function getSpoolDepletionForecast() {
+  // Get spools first, then enrich with consumption rates in JS
+  const spools = db.prepare(`
+    SELECT s.id, s.tray_id_name, s.remaining_weight_g, s.initial_weight_g, s.printer_id,
+      fp.name as profile_name, fp.material, fp.color_hex,
+      (SELECT v.name FROM vendors v WHERE v.id = fp.vendor_id) as vendor_name,
+      ROUND(s.remaining_weight_g * 100.0 / NULLIF(s.initial_weight_g, 0), 1) as remain_pct
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    WHERE s.archived = 0 AND s.remaining_weight_g > 0
+    ORDER BY s.remaining_weight_g ASC`).all();
+
+  const rates = db.prepare('SELECT material, brand, avg_daily_g FROM material_consumption_rate WHERE avg_daily_g > 0').all();
+
+  for (const s of spools) {
+    // Find best matching rate: prefer exact material match, then any material match
+    const exactMatch = rates.find(r => r.material === s.material && r.brand === s.vendor_name);
+    const materialMatch = rates.find(r => r.material === s.material);
+    const rate = exactMatch || materialMatch;
+
+    s.avg_daily_g = rate?.avg_daily_g || null;
+    if (s.avg_daily_g && s.avg_daily_g > 0) {
+      s.days_until_empty = Math.round(s.remaining_weight_g / s.avg_daily_g * 10) / 10;
+      const daysInt = Math.round(s.days_until_empty);
+      const d = new Date(); d.setDate(d.getDate() + daysInt);
+      s.estimated_empty_date = d.toISOString().split('T')[0];
+    } else {
+      s.days_until_empty = null;
+      s.estimated_empty_date = null;
+    }
+  }
+
+  // Sort: soonest depletion first, nulls last
+  spools.sort((a, b) => {
+    if (a.days_until_empty == null && b.days_until_empty == null) return 0;
+    if (a.days_until_empty == null) return 1;
+    if (b.days_until_empty == null) return -1;
+    return a.days_until_empty - b.days_until_empty;
+  });
+
+  return spools;
+}
+
+export function getWasteAnalysis(days = 30) {
+  return db.prepare(`
+    SELECT
+      filament_type as material,
+      filament_brand as brand,
+      status,
+      COUNT(*) as print_count,
+      SUM(CASE WHEN waste_g > 0 THEN waste_g ELSE 0 END) as total_waste_g,
+      SUM(CASE WHEN filament_used_g > 0 THEN filament_used_g ELSE 0 END) as total_used_g,
+      ROUND(SUM(CASE WHEN waste_g > 0 THEN waste_g ELSE 0 END) * 100.0 /
+        NULLIF(SUM(CASE WHEN filament_used_g + waste_g > 0 THEN filament_used_g + waste_g ELSE 0 END), 0), 1) as waste_ratio,
+      SUM(color_changes) as total_color_changes,
+      ROUND(AVG(CASE WHEN waste_g > 0 THEN waste_g ELSE NULL END), 1) as avg_waste_per_print
+    FROM print_history
+    WHERE started_at >= datetime('now', '-' || ? || ' days')
+    GROUP BY filament_type, filament_brand, status
+    ORDER BY total_waste_g DESC`).all(days);
+}
+
+export function getMaterialEfficiency(days = 30) {
+  return db.prepare(`
+    SELECT
+      filament_type as material,
+      filament_brand as brand,
+      COUNT(*) as print_count,
+      ROUND(AVG(filament_used_g), 1) as avg_g_per_print,
+      ROUND(SUM(filament_used_g) / NULLIF(SUM(duration_seconds) / 3600.0, 0), 1) as g_per_hour,
+      ROUND(AVG(CASE WHEN status='completed' THEN duration_seconds ELSE NULL END) / 60.0, 1) as avg_print_minutes,
+      ROUND(SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as success_rate,
+      ROUND(AVG(CASE WHEN nozzle_diameter > 0 THEN nozzle_diameter ELSE NULL END), 2) as avg_nozzle_mm,
+      ROUND(AVG(CASE WHEN speed_level > 0 THEN speed_level ELSE NULL END), 1) as avg_speed_level
+    FROM print_history
+    WHERE started_at >= datetime('now', '-' || ? || ' days')
+      AND filament_type IS NOT NULL
+    GROUP BY filament_type, filament_brand
+    ORDER BY g_per_hour DESC NULLS LAST`).all(days);
+}
+
+export function checkSpoolDepletionThresholds(spoolId, remainPct) {
+  const thresholds = [75, 50, 25, 10, 5];
+  const events = [];
+  for (const t of thresholds) {
+    if (remainPct <= t) {
+      const existing = db.prepare(
+        'SELECT id FROM spool_depletion_events WHERE spool_id = ? AND threshold_pct = ?'
+      ).get(spoolId, t);
+      if (!existing) {
+        db.prepare(`INSERT INTO spool_depletion_events (spool_id, threshold_pct, remain_pct)
+          VALUES (?, ?, ?)`).run(spoolId, t, remainPct);
+        events.push({ spool_id: spoolId, threshold_pct: t, remain_pct: remainPct });
+      }
+    }
+  }
+  return events;
+}
+
+export function getSpoolDepletionEvents(spoolId) {
+  if (spoolId) {
+    return db.prepare('SELECT * FROM spool_depletion_events WHERE spool_id = ? ORDER BY triggered_at DESC').all(spoolId);
+  }
+  return db.prepare(`SELECT sde.*, s.tray_id_name, fp.name as profile_name, fp.material
+    FROM spool_depletion_events sde
+    LEFT JOIN spools s ON sde.spool_id = s.id
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    WHERE sde.notified = 0
+    ORDER BY sde.triggered_at DESC`).all();
+}
+
+export function markDepletionNotified(eventId) {
+  db.prepare('UPDATE spool_depletion_events SET notified = 1 WHERE id = ?').run(eventId);
+}
+
+export function getFilamentCostAnalysis() {
+  return db.prepare(`
+    SELECT fp.material, v.name as vendor,
+      COUNT(s.id) as spool_count,
+      ROUND(AVG(s.cost / NULLIF(s.initial_weight_g, 0)), 4) as avg_cost_per_g,
+      ROUND(MIN(s.cost / NULLIF(s.initial_weight_g, 0)), 4) as min_cost_per_g,
+      ROUND(MAX(s.cost / NULLIF(s.initial_weight_g, 0)), 4) as max_cost_per_g,
+      SUM(s.cost) as total_spent,
+      SUM(s.used_weight_g) as total_consumed_g,
+      SUM(s.remaining_weight_g) as total_remaining_g,
+      ROUND(SUM(s.used_weight_g) * 100.0 / NULLIF(SUM(s.initial_weight_g), 0), 1) as utilization_pct
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.cost > 0
+    GROUP BY fp.material, v.name
+    ORDER BY total_spent DESC`).all();
 }
 
 export function useSpoolWeight(spoolId, weightG, source = 'auto', printHistoryId = null, printerId = null) {
@@ -8977,4 +9505,731 @@ function _mig094_reseed_knowledge_base() {
 function _mig095_reseed_learning_center() {
   // Re-seed learning center with expanded course library
   _mig054_learning_center_v2();
+}
+
+function _mig096_filament_tracker() {
+  // Add tray_id_name to filament_profiles for Bambu SKU matching (e.g. "A00-W0", "A06-Y1")
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN tray_id_name TEXT'); } catch {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_fp_tray_id_name ON filament_profiles(tray_id_name)'); } catch {}
+
+  // Add tray_id_name to spools for direct AMS↔spool matching
+  try { db.exec('ALTER TABLE spools ADD COLUMN tray_id_name TEXT'); } catch {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_spools_tray_id_name ON spools(tray_id_name)'); } catch {}
+
+  // Filament usage history — periodic AMS snapshots for trend tracking
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS filament_usage_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id TEXT NOT NULL,
+      ams_unit INTEGER NOT NULL,
+      tray_id INTEGER NOT NULL,
+      tray_id_name TEXT,
+      tray_type TEXT,
+      tray_sub_brands TEXT,
+      tray_color TEXT,
+      remain_pct INTEGER,
+      tray_weight INTEGER,
+      tag_uid TEXT,
+      tray_uuid TEXT,
+      spool_id INTEGER REFERENCES spools(id) ON DELETE SET NULL,
+      timestamp TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_fuh_printer ON filament_usage_history(printer_id);
+    CREATE INDEX IF NOT EXISTS idx_fuh_tray ON filament_usage_history(tray_id_name);
+    CREATE INDEX IF NOT EXISTS idx_fuh_time ON filament_usage_history(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_fuh_spool ON filament_usage_history(spool_id);
+  `);
+
+  // Purchased spools registry — tracks all bought filament (from filament-tracker concept)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS purchased_spools (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      brand TEXT,
+      form TEXT DEFAULT 'spool',
+      color_hex TEXT,
+      tray_id_name TEXT,
+      spool_id INTEGER REFERENCES spools(id) ON DELETE SET NULL,
+      purchase_order INTEGER DEFAULT 1,
+      cost REAL,
+      purchase_date TEXT,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_ps_tray ON purchased_spools(tray_id_name);
+    CREATE INDEX IF NOT EXISTS idx_ps_spool ON purchased_spools(spool_id);
+  `);
+}
+
+function _mig097_filament_analytics() {
+  // Daily filament consumption aggregation
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS daily_filament_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      printer_id TEXT,
+      material TEXT,
+      brand TEXT,
+      color_hex TEXT,
+      filament_used_g REAL DEFAULT 0,
+      waste_g REAL DEFAULT 0,
+      print_count INTEGER DEFAULT 0,
+      success_count INTEGER DEFAULT 0,
+      fail_count INTEGER DEFAULT 0,
+      total_print_seconds INTEGER DEFAULT 0,
+      color_changes INTEGER DEFAULT 0,
+      cost REAL DEFAULT 0,
+      UNIQUE(date, printer_id, material, brand, color_hex)
+    );
+    CREATE INDEX IF NOT EXISTS idx_dfu_date ON daily_filament_usage(date);
+    CREATE INDEX IF NOT EXISTS idx_dfu_material ON daily_filament_usage(material);
+    CREATE INDEX IF NOT EXISTS idx_dfu_printer ON daily_filament_usage(printer_id);
+  `);
+
+  // Material consumption rates (rolling averages)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS material_consumption_rate (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      material TEXT NOT NULL,
+      brand TEXT,
+      avg_daily_g REAL DEFAULT 0,
+      avg_weekly_g REAL DEFAULT 0,
+      avg_monthly_g REAL DEFAULT 0,
+      waste_ratio REAL DEFAULT 0,
+      success_rate REAL DEFAULT 0,
+      avg_cost_per_g REAL DEFAULT 0,
+      sample_days INTEGER DEFAULT 0,
+      last_calculated TEXT DEFAULT (datetime('now')),
+      UNIQUE(material, brand)
+    );
+    CREATE INDEX IF NOT EXISTS idx_mcr_material ON material_consumption_rate(material);
+  `);
+
+  // Spool depletion log — tracks when each spool crosses thresholds
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS spool_depletion_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spool_id INTEGER NOT NULL REFERENCES spools(id) ON DELETE CASCADE,
+      threshold_pct INTEGER NOT NULL,
+      remain_pct REAL,
+      remain_g REAL,
+      triggered_at TEXT DEFAULT (datetime('now')),
+      notified INTEGER DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_sde_spool ON spool_depletion_events(spool_id);
+  `);
+}
+
+function _mig098_spoolman_features() {
+  // 1. Expiry date on spools
+  try { db.exec('ALTER TABLE spools ADD COLUMN expiry_date TEXT'); } catch {}
+
+  // 2. Diameter tolerance on filament profiles
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN diameter_tolerance REAL'); } catch {}
+
+  // 3. Chamber temp range on filament profiles
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN chamber_temp_min INTEGER'); } catch {}
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN chamber_temp_max INTEGER'); } catch {}
+
+  // 4. Storage condition thresholds per location
+  try { db.exec('ALTER TABLE locations ADD COLUMN humidity_min REAL'); } catch {}
+  try { db.exec('ALTER TABLE locations ADD COLUMN humidity_max REAL'); } catch {}
+  try { db.exec('ALTER TABLE locations ADD COLUMN temp_min REAL'); } catch {}
+  try { db.exec('ALTER TABLE locations ADD COLUMN temp_max REAL'); } catch {}
+
+  // 5. RAL/Pantone color reference on filament profiles
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN ral_code TEXT'); } catch {}
+  try { db.exec('ALTER TABLE filament_profiles ADD COLUMN pantone_code TEXT'); } catch {}
+
+  // 6. Material substitution table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS material_substitutions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      material TEXT NOT NULL,
+      substitute_material TEXT NOT NULL,
+      compatibility_pct INTEGER DEFAULT 80,
+      notes TEXT,
+      conditions TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(material, substitute_material)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ms_material ON material_substitutions(material);
+  `);
+
+  // Seed common substitutions
+  const subs = [
+    ['PLA', 'PLA+', 95, 'PLA+ er sterkere PLA med bedre laghefting', 'Direkte erstatning'],
+    ['PLA', 'PLA Matte', 90, 'Samme egenskaper, matt overflate', 'Direkte erstatning'],
+    ['PLA', 'PLA Silk', 85, 'Skinnende overflate, litt svakere laghefting', 'Kun for dekorative deler'],
+    ['PETG', 'ASA', 75, 'ASA har bedre UV-motstand men trenger innhegning', 'Utendørs bruk'],
+    ['PETG', 'ABS', 70, 'Lignende styrke, ABS trenger innhegning', 'Krever lukket kammer'],
+    ['ABS', 'ASA', 90, 'ASA er UV-stabilt ABS', 'Direkte erstatning for utendørs'],
+    ['ABS', 'PETG', 70, 'PETG er enklere å printe, litt lavere varmetoleranse', 'Ikke for høy-temp bruk'],
+    ['TPU', 'TPE', 80, 'Lignende fleksibilitet, litt annen shore-hardhet', 'Sjekk shore-verdi'],
+    ['PA', 'PA-CF', 85, 'Sterkere men trenger herdet dyse', 'Krever hardened steel nozzle'],
+    ['PLA', 'PETG', 60, 'PETG er sterkere og mer varmebestandig', 'Annen printtemperatur'],
+  ];
+  for (const [m, s, pct, notes, cond] of subs) {
+    try {
+      db.prepare('INSERT OR IGNORE INTO material_substitutions (material, substitute_material, compatibility_pct, notes, conditions) VALUES (?, ?, ?, ?, ?)')
+        .run(m, s, pct, notes, cond);
+    } catch {}
+  }
+
+  // 7. RAL color lookup table (common RAL Classic colors)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ral_colors (
+      code TEXT PRIMARY KEY,
+      name_en TEXT NOT NULL,
+      name_no TEXT,
+      hex TEXT NOT NULL
+    );
+  `);
+
+  // Seed essential RAL colors
+  const rals = [
+    ['RAL 1000', 'Green beige', 'Grønnbeige', 'BEBD7F'],
+    ['RAL 1003', 'Signal yellow', 'Signalgul', 'E5BE01'],
+    ['RAL 1013', 'Oyster white', 'Perlemørhvit', 'EAE6CA'],
+    ['RAL 1021', 'Colza yellow', 'Rapsgul', 'F3DA0B'],
+    ['RAL 1023', 'Traffic yellow', 'Trafikkgul', 'FAD201'],
+    ['RAL 2004', 'Pure orange', 'Ren oransje', 'F44611'],
+    ['RAL 2011', 'Deep orange', 'Dyp oransje', 'EC7C26'],
+    ['RAL 3000', 'Flame red', 'Flammerød', 'AF2B1E'],
+    ['RAL 3001', 'Signal red', 'Signalrød', 'A52019'],
+    ['RAL 3020', 'Traffic red', 'Trafikkrød', 'CC0605'],
+    ['RAL 4006', 'Traffic purple', 'Trafikkfiolett', 'A03472'],
+    ['RAL 5002', 'Ultramarine blue', 'Ultramarin blå', '20214F'],
+    ['RAL 5005', 'Signal blue', 'Signalblå', '1E2460'],
+    ['RAL 5010', 'Gentian blue', 'Ensianblå', '0E294B'],
+    ['RAL 5015', 'Sky blue', 'Himmelblå', '2271B3'],
+    ['RAL 5024', 'Pastel blue', 'Pastellblå', '5B9BD5'],
+    ['RAL 6002', 'Leaf green', 'Bladgrønn', '2D572C'],
+    ['RAL 6005', 'Moss green', 'Mosegrønn', '2F4538'],
+    ['RAL 6018', 'Yellow green', 'Gulgrønn', '57A639'],
+    ['RAL 6024', 'Traffic green', 'Trafikkgrønn', '308446'],
+    ['RAL 7001', 'Silver grey', 'Sølvgrå', '8A9597'],
+    ['RAL 7011', 'Iron grey', 'Jerngrå', '4E5754'],
+    ['RAL 7016', 'Anthracite grey', 'Antrasittgrå', '293133'],
+    ['RAL 7035', 'Light grey', 'Lysgrå', 'D7D7D7'],
+    ['RAL 7040', 'Window grey', 'Vindusgrå', '9DA1AA'],
+    ['RAL 8003', 'Clay brown', 'Leirbrun', '734222'],
+    ['RAL 8017', 'Chocolate brown', 'Sjokoladebrun', '45322E'],
+    ['RAL 9001', 'Cream', 'Kremhvit', 'FDF4E3'],
+    ['RAL 9003', 'Signal white', 'Signalhvit', 'F4F4F4'],
+    ['RAL 9005', 'Jet black', 'Dyp svart', '0A0A0A'],
+    ['RAL 9010', 'Pure white', 'Ren hvit', 'FFFFFF'],
+    ['RAL 9016', 'Traffic white', 'Trafikkhvit', 'F6F6F6'],
+  ];
+  for (const [code, nameEn, nameNo, hex] of rals) {
+    try { db.prepare('INSERT OR IGNORE INTO ral_colors (code, name_en, name_no, hex) VALUES (?, ?, ?, ?)').run(code, nameEn, nameNo, hex); } catch {}
+  }
+}
+
+// ---- Spoolman-style features: functions ----
+
+export function getExpiredSpools() {
+  return db.prepare(`SELECT s.*, fp.name as profile_name, fp.material, v.name as vendor_name
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.expiry_date IS NOT NULL AND s.expiry_date != '' AND s.expiry_date < datetime('now')
+      AND s.archived = 0
+    ORDER BY s.expiry_date ASC`).all();
+}
+
+export function getExpiringSpools(daysAhead = 30) {
+  return db.prepare(`SELECT s.*, fp.name as profile_name, fp.material, v.name as vendor_name,
+    ROUND(julianday(s.expiry_date) - julianday('now')) as days_until_expiry
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.expiry_date IS NOT NULL AND s.expiry_date != ''
+      AND s.expiry_date >= datetime('now')
+      AND s.expiry_date <= datetime('now', '+' || ? || ' days')
+      AND s.archived = 0
+    ORDER BY s.expiry_date ASC`).all(daysAhead);
+}
+
+export function getMaterialSubstitutions(material) {
+  if (material) {
+    return db.prepare(`SELECT * FROM material_substitutions
+      WHERE material = ? OR substitute_material = ?
+      ORDER BY compatibility_pct DESC`).all(material, material);
+  }
+  return db.prepare('SELECT * FROM material_substitutions ORDER BY material, compatibility_pct DESC').all();
+}
+
+export function addMaterialSubstitution(sub) {
+  return db.prepare(`INSERT OR REPLACE INTO material_substitutions
+    (material, substitute_material, compatibility_pct, notes, conditions)
+    VALUES (?, ?, ?, ?, ?)`).run(
+    sub.material, sub.substitute_material, sub.compatibility_pct || 80,
+    sub.notes || null, sub.conditions || null);
+}
+
+export function deleteMaterialSubstitution(id) {
+  db.prepare('DELETE FROM material_substitutions WHERE id = ?').run(id);
+}
+
+export function findSubstitutesForMaterial(material) {
+  const subs = db.prepare(`SELECT ms.*, fp.name as available_profile, fp.color_hex,
+    (SELECT COUNT(*) FROM spools s WHERE s.filament_profile_id = fp.id AND s.archived = 0 AND s.remaining_weight_g > 50) as available_spools,
+    (SELECT SUM(s.remaining_weight_g) FROM spools s WHERE s.filament_profile_id = fp.id AND s.archived = 0) as available_weight_g
+    FROM material_substitutions ms
+    LEFT JOIN filament_profiles fp ON fp.material = ms.substitute_material
+    WHERE ms.material = ?
+    ORDER BY ms.compatibility_pct DESC`).all(material);
+  return subs.filter(s => s.available_spools > 0);
+}
+
+export function getRalColors() {
+  return db.prepare('SELECT * FROM ral_colors ORDER BY code').all();
+}
+
+export function findClosestRal(hexColor) {
+  if (!hexColor) return null;
+  const target = _hexToLab(hexColor);
+  const rals = db.prepare('SELECT * FROM ral_colors').all();
+  let best = null;
+  let bestDist = Infinity;
+  for (const ral of rals) {
+    const lab = _hexToLab(ral.hex);
+    const dist = Math.sqrt(
+      Math.pow(target.l - lab.l, 2) +
+      Math.pow(target.a - lab.a, 2) +
+      Math.pow(target.b - lab.b, 2)
+    );
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = { ...ral, delta_e: Math.round(dist * 10) / 10 };
+    }
+  }
+  return best;
+}
+
+function _hexToLab(hex) {
+  const h = hex.replace('#', '').substring(0, 6);
+  let r = parseInt(h.substring(0, 2), 16) / 255;
+  let g = parseInt(h.substring(2, 4), 16) / 255;
+  let b = parseInt(h.substring(4, 6), 16) / 255;
+
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+  let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+  let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+  x = x > 0.008856 ? Math.pow(x, 1 / 3) : (7.787 * x) + 16 / 116;
+  y = y > 0.008856 ? Math.pow(y, 1 / 3) : (7.787 * y) + 16 / 116;
+  z = z > 0.008856 ? Math.pow(z, 1 / 3) : (7.787 * z) + 16 / 116;
+
+  return { l: (116 * y) - 16, a: 500 * (x - y), b: 200 * (y - z) };
+}
+
+export function getStorageAlerts() {
+  // Check storage conditions against location thresholds
+  const alerts = [];
+
+  const locations = db.prepare(`SELECT * FROM locations
+    WHERE humidity_min IS NOT NULL OR humidity_max IS NOT NULL
+      OR temp_min IS NOT NULL OR temp_max IS NOT NULL`).all();
+
+  for (const loc of locations) {
+    // Get latest storage condition for spools in this location
+    const conditions = db.prepare(`SELECT sc.*, s.id as spool_id, fp.name as profile_name, fp.material
+      FROM storage_conditions sc
+      JOIN spools s ON sc.spool_id = s.id
+      LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+      WHERE (s.location = ? OR s.location_id = ?)
+        AND sc.recorded_at >= datetime('now', '-24 hours')
+      ORDER BY sc.recorded_at DESC`).all(loc.name, loc.id);
+
+    for (const c of conditions) {
+      if (loc.humidity_min != null && c.humidity != null && c.humidity < loc.humidity_min) {
+        alerts.push({ type: 'humidity_low', location: loc.name, spool_id: c.spool_id, profile: c.profile_name, material: c.material, value: c.humidity, threshold: loc.humidity_min });
+      }
+      if (loc.humidity_max != null && c.humidity != null && c.humidity > loc.humidity_max) {
+        alerts.push({ type: 'humidity_high', location: loc.name, spool_id: c.spool_id, profile: c.profile_name, material: c.material, value: c.humidity, threshold: loc.humidity_max });
+      }
+      if (loc.temp_min != null && c.temperature != null && c.temperature < loc.temp_min) {
+        alerts.push({ type: 'temp_low', location: loc.name, spool_id: c.spool_id, profile: c.profile_name, material: c.material, value: c.temperature, threshold: loc.temp_min });
+      }
+      if (loc.temp_max != null && c.temperature != null && c.temperature > loc.temp_max) {
+        alerts.push({ type: 'temp_high', location: loc.name, spool_id: c.spool_id, profile: c.profile_name, material: c.material, value: c.temperature, threshold: loc.temp_max });
+      }
+    }
+  }
+  return alerts;
+}
+
+export function getSpoolmanPerSpoolMetrics() {
+  return db.prepare(`SELECT s.id, s.remaining_weight_g, s.used_weight_g, s.initial_weight_g, s.cost,
+    fp.name as filament_name, fp.material, fp.density, fp.diameter, fp.color_hex,
+    v.name as vendor_name
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.archived = 0`).all();
+}
+
+function _mig099_spoolease_features() {
+  // 1. Consumed-since-weight tracking on spools
+  try { db.exec('ALTER TABLE spools ADD COLUMN consumed_since_weight REAL DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE spools ADD COLUMN last_weighed_at TEXT'); } catch {}
+
+  // 2. K-factor (pressure advance) per spool — extends per-profile to per-spool
+  try { db.exec('ALTER TABLE spools ADD COLUMN pressure_advance_k REAL'); } catch {}
+
+  // 3. Bambu filament code mapping table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bambu_filament_codes (
+      code TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      material TEXT NOT NULL,
+      temp_min INTEGER,
+      temp_max INTEGER
+    );
+  `);
+
+  // 4. Spool core weight catalog
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS spool_core_weights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      brand_name TEXT NOT NULL,
+      weight_g REAL NOT NULL,
+      spool_type TEXT DEFAULT 'plastic',
+      UNIQUE(brand_name)
+    );
+  `);
+
+  // 5. Per-spool K-factor calibration (SpoolEase KInfo model)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS spool_k_calibrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spool_id INTEGER NOT NULL REFERENCES spools(id) ON DELETE CASCADE,
+      printer_id TEXT NOT NULL,
+      extruder_id INTEGER DEFAULT 0,
+      nozzle_diameter REAL DEFAULT 0.4,
+      nozzle_type TEXT DEFAULT 'standard',
+      k_value REAL NOT NULL,
+      setting_id TEXT,
+      calibrated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(spool_id, printer_id, extruder_id, nozzle_diameter, nozzle_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_skc_spool ON spool_k_calibrations(spool_id);
+    CREATE INDEX IF NOT EXISTS idx_skc_printer ON spool_k_calibrations(printer_id);
+  `);
+
+  // 6. G-code filament estimates — pre-print predictions
+  try { db.exec('ALTER TABLE print_history ADD COLUMN estimated_filament_g REAL'); } catch {}
+  try { db.exec('ALTER TABLE print_history ADD COLUMN filament_accuracy_pct REAL'); } catch {}
+
+  // Seed Bambu filament codes from SpoolEase data
+  _seedBambuFilamentCodes();
+
+  // Seed spool core weights from SpoolEase data
+  _seedSpoolCoreWeights();
+}
+
+function _seedBambuFilamentCodes() {
+  // Seed is done via _seedSpoolEaseDataAsync() after DB init
+  {
+    // Fallback: import might fail in non-ESM context, seed inline
+    const codes = [
+      ['GFA00','Bambu PLA Basic','PLA',190,240], ['GFA01','Bambu PLA Matte','PLA',190,240],
+      ['GFB00','Bambu ABS','ABS',240,280], ['GFB01','Bambu ASA','ASA',240,280],
+      ['GFG00','Bambu PETG Basic','PETG',230,270], ['GFG50','Bambu PETG-CF','PETG-CF',240,270],
+      ['GFN03','Bambu PA-CF','PA-CF',260,300], ['GFU00','Bambu TPU 95A HF','TPU',200,250],
+      ['GFL99','Generic PLA','PLA',190,240], ['GFG99','Generic PETG','PETG',220,270],
+      ['GFB99','Generic ABS','ABS',240,280], ['GFU99','Generic TPU','TPU',200,250],
+    ];
+    for (const [code, name, material, tMin, tMax] of codes) {
+      try { db.prepare('INSERT OR IGNORE INTO bambu_filament_codes (code, name, material, temp_min, temp_max) VALUES (?, ?, ?, ?, ?)').run(code, name, material, tMin, tMax); } catch {}
+    }
+  }
+}
+
+function _seedSpoolCoreWeights() {
+  // Seed is done via _seedSpoolEaseDataAsync() after DB init
+  {
+    // Fallback inline data
+    const cores = [
+      ['Bambu Lab - High Temp Grey',216], ['Bambu Lab - Low Temp Clear',250],
+      ['Bambu Lab - Low Temp Light Grey',208], ['Bambu Lab - White',253],
+      ['eSUN - Plastic',240], ['Hatchbox - Plastic',225], ['Overture - Plastic',237],
+      ['PolyMaker - Plastic',220], ['Prusament - Plastic',201], ['Sunlu - Plastic',117],
+      ['Generic Cardboard',150], ['Generic Plastic',200],
+    ];
+    for (const [name, weight] of cores) {
+      try { db.prepare('INSERT OR IGNORE INTO spool_core_weights (brand_name, weight_g) VALUES (?, ?)').run(name, weight); } catch {}
+    }
+  }
+}
+
+// ---- SpoolEase features: functions ----
+
+export function getSpoolCoreWeights(search) {
+  if (search) {
+    return db.prepare('SELECT * FROM spool_core_weights WHERE brand_name LIKE ? ORDER BY brand_name')
+      .all('%' + search + '%');
+  }
+  return db.prepare('SELECT * FROM spool_core_weights ORDER BY brand_name').all();
+}
+
+export function addSpoolCoreWeight(name, weightG, type) {
+  return db.prepare('INSERT OR REPLACE INTO spool_core_weights (brand_name, weight_g, spool_type) VALUES (?, ?, ?)')
+    .run(name, weightG, type || 'plastic');
+}
+
+export function getBambuFilamentCodes(material) {
+  if (material) {
+    return db.prepare('SELECT * FROM bambu_filament_codes WHERE material = ? ORDER BY code').all(material);
+  }
+  return db.prepare('SELECT * FROM bambu_filament_codes ORDER BY code').all();
+}
+
+export function lookupBambuCode(code) {
+  if (!code) return null;
+  return db.prepare('SELECT * FROM bambu_filament_codes WHERE code = ?').get(code);
+}
+
+export function getSpoolKCalibrations(spoolId) {
+  return db.prepare(`SELECT skc.*, s.tray_id_name, fp.name as profile_name, fp.material
+    FROM spool_k_calibrations skc
+    LEFT JOIN spools s ON skc.spool_id = s.id
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    WHERE skc.spool_id = ?
+    ORDER BY skc.calibrated_at DESC`).all(spoolId);
+}
+
+export function upsertSpoolKCalibration(cal) {
+  return db.prepare(`INSERT INTO spool_k_calibrations
+    (spool_id, printer_id, extruder_id, nozzle_diameter, nozzle_type, k_value, setting_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(spool_id, printer_id, extruder_id, nozzle_diameter, nozzle_type) DO UPDATE SET
+      k_value = excluded.k_value, setting_id = excluded.setting_id, calibrated_at = datetime('now')`)
+    .run(cal.spool_id, cal.printer_id, cal.extruder_id || 0,
+      cal.nozzle_diameter || 0.4, cal.nozzle_type || 'standard',
+      cal.k_value, cal.setting_id || null);
+}
+
+export function getBestKValue(spoolId, printerId, nozzleDiameter, nozzleType) {
+  // 1. Exact match for this spool+printer+nozzle
+  const exact = db.prepare(`SELECT k_value FROM spool_k_calibrations
+    WHERE spool_id = ? AND printer_id = ? AND nozzle_diameter = ? AND nozzle_type = ?
+    ORDER BY calibrated_at DESC LIMIT 1`)
+    .get(spoolId, printerId, nozzleDiameter || 0.4, nozzleType || 'standard');
+  if (exact) return exact.k_value;
+
+  // 2. Same spool, same printer, any nozzle
+  const samePrinter = db.prepare(`SELECT k_value FROM spool_k_calibrations
+    WHERE spool_id = ? AND printer_id = ? ORDER BY calibrated_at DESC LIMIT 1`)
+    .get(spoolId, printerId);
+  if (samePrinter) return samePrinter.k_value;
+
+  // 3. Same spool, any printer
+  const anySpool = db.prepare(`SELECT k_value FROM spool_k_calibrations
+    WHERE spool_id = ? ORDER BY calibrated_at DESC LIMIT 1`).get(spoolId);
+  if (anySpool) return anySpool.k_value;
+
+  // 4. Fallback to filament profile
+  const spool = db.prepare('SELECT filament_profile_id FROM spools WHERE id = ?').get(spoolId);
+  if (spool?.filament_profile_id) {
+    const profile = db.prepare('SELECT pressure_advance_k FROM filament_profiles WHERE id = ?').get(spool.filament_profile_id);
+    if (profile?.pressure_advance_k) return profile.pressure_advance_k;
+  }
+
+  return null;
+}
+
+export function recordWeighing(spoolId, grossWeightG) {
+  const spool = db.prepare(`SELECT s.*, fp.density, fp.diameter,
+    COALESCE(s.spool_weight, v.empty_spool_weight_g, 200) as tare_weight
+    FROM spools s
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    LEFT JOIN vendors v ON fp.vendor_id = v.id
+    WHERE s.id = ?`).get(spoolId);
+  if (!spool) return null;
+
+  // Check spool_core_weights for better tare estimate
+  let tareWeight = spool.tare_weight;
+  if (!spool.spool_weight) {
+    const vendorName = db.prepare(`SELECT v.name FROM vendors v
+      JOIN filament_profiles fp ON fp.vendor_id = v.id
+      WHERE fp.id = ?`).get(spool.filament_profile_id);
+    if (vendorName?.name) {
+      const core = db.prepare('SELECT weight_g FROM spool_core_weights WHERE brand_name LIKE ? LIMIT 1')
+        .get('%' + vendorName.name + '%');
+      if (core) tareWeight = core.weight_g;
+    }
+  }
+
+  const netFilamentG = Math.max(0, grossWeightG - tareWeight);
+  const usedG = Math.max(0, (spool.initial_weight_g || 1000) - netFilamentG);
+
+  db.prepare(`UPDATE spools SET
+    remaining_weight_g = ?, used_weight_g = ?,
+    consumed_since_weight = 0, last_weighed_at = datetime('now'),
+    last_used_at = datetime('now')
+    WHERE id = ?`).run(netFilamentG, usedG, spoolId);
+
+  const remainPct = (spool.initial_weight_g || 1000) > 0
+    ? Math.round((netFilamentG / (spool.initial_weight_g || 1000)) * 100) : 0;
+
+  return {
+    gross_weight_g: grossWeightG,
+    tare_weight_g: Math.round(tareWeight),
+    net_filament_g: Math.round(netFilamentG),
+    used_g: Math.round(usedG),
+    remaining_pct: remainPct,
+    consumed_since_weight: 0,
+    remaining_length_m: weightToLength(netFilamentG, spool.density || 1.24, spool.diameter || 1.75),
+  };
+}
+
+export function trackConsumedSinceWeight(spoolId, weightG) {
+  db.prepare('UPDATE spools SET consumed_since_weight = consumed_since_weight + ? WHERE id = ?')
+    .run(weightG, spoolId);
+}
+
+export function saveFilamentEstimate(printHistoryId, estimatedG) {
+  db.prepare('UPDATE print_history SET estimated_filament_g = ? WHERE id = ?')
+    .run(estimatedG, printHistoryId);
+}
+
+export function updateFilamentAccuracy(printHistoryId, actualG) {
+  const record = db.prepare('SELECT estimated_filament_g FROM print_history WHERE id = ?').get(printHistoryId);
+  if (!record?.estimated_filament_g || !actualG) return;
+  const accuracy = Math.round((1 - Math.abs(record.estimated_filament_g - actualG) / record.estimated_filament_g) * 1000) / 10;
+  db.prepare('UPDATE print_history SET filament_accuracy_pct = ? WHERE id = ?').run(accuracy, printHistoryId);
+}
+
+export function getFilamentAccuracyStats() {
+  return db.prepare(`SELECT
+    filament_type as material,
+    COUNT(*) as sample_count,
+    ROUND(AVG(filament_accuracy_pct), 1) as avg_accuracy,
+    ROUND(MIN(filament_accuracy_pct), 1) as min_accuracy,
+    ROUND(MAX(filament_accuracy_pct), 1) as max_accuracy,
+    ROUND(AVG(estimated_filament_g), 1) as avg_estimated_g,
+    ROUND(AVG(filament_used_g), 1) as avg_actual_g
+    FROM print_history
+    WHERE estimated_filament_g IS NOT NULL AND filament_used_g IS NOT NULL AND filament_used_g > 0
+    GROUP BY filament_type
+    ORDER BY sample_count DESC`).all();
+}
+
+function _mig100_bambu_rfid_library() {
+  // Bambu Lab variant→color mapping (from RFID Library)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bambu_variants (
+      variant_id TEXT PRIMARY KEY,
+      product_code TEXT,
+      material_name TEXT NOT NULL,
+      color_name TEXT NOT NULL,
+      material_id TEXT,
+      color_hex TEXT,
+      drying_temp INTEGER,
+      drying_hours INTEGER,
+      spool_weight_g INTEGER DEFAULT 1000,
+      filament_length_m INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_bv_material ON bambu_variants(material_id);
+    CREATE INDEX IF NOT EXISTS idx_bv_product ON bambu_variants(product_code);
+    CREATE INDEX IF NOT EXISTS idx_bv_material_name ON bambu_variants(material_name);
+  `);
+
+  // Seed from RFID Library data (async, after DB init)
+  _seedBambuVariantsAsync();
+}
+
+async function _seedBambuVariantsAsync() {
+  try {
+    const existing = db.prepare('SELECT COUNT(*) as c FROM bambu_variants').get();
+    if (existing.c > 50) return; // Allerede seedet
+
+    const { BAMBU_VARIANTS, DRYING_RECOMMENDATIONS } = await import('./bambu-rfid-data.js');
+
+    // Build drying lookup
+    const dryingMap = {};
+    for (const [mat, temp, hours] of DRYING_RECOMMENDATIONS) {
+      dryingMap[mat.toLowerCase()] = { temp, hours };
+    }
+
+    for (const [variantId, productCode, matName, colorName, matId, colorHex] of BAMBU_VARIANTS) {
+      // Find drying recommendation for this material
+      const dryKey = Object.keys(dryingMap).find(k => matName.toLowerCase().includes(k));
+      const dry = dryKey ? dryingMap[dryKey] : null;
+
+      try {
+        db.prepare(`INSERT OR IGNORE INTO bambu_variants
+          (variant_id, product_code, material_name, color_name, material_id, color_hex, drying_temp, drying_hours)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .run(variantId, productCode, matName, colorName, matId, colorHex,
+            dry?.temp || null, dry?.hours || null);
+      } catch {}
+    }
+
+    const count = db.prepare('SELECT COUNT(*) as c FROM bambu_variants').get().c;
+    log.info(`Bambu RFID Library: ${count} varianter seedet`);
+  } catch (e) {
+    log.warn('Bambu RFID seed: ' + e.message);
+  }
+}
+
+// ── Bambu Variant Lookup Functions ──
+
+export function getBambuVariants(filters = {}) {
+  let sql = 'SELECT * FROM bambu_variants WHERE 1=1';
+  const params = [];
+  if (filters.material_id) { sql += ' AND material_id = ?'; params.push(filters.material_id); }
+  if (filters.material_name) { sql += ' AND material_name = ?'; params.push(filters.material_name); }
+  if (filters.search) { sql += ' AND (color_name LIKE ? OR material_name LIKE ? OR variant_id LIKE ?)'; params.push('%'+filters.search+'%', '%'+filters.search+'%', '%'+filters.search+'%'); }
+  sql += ' ORDER BY material_name, color_name';
+  return db.prepare(sql).all(...params);
+}
+
+export function lookupBambuVariant(variantId) {
+  if (!variantId) return null;
+  return db.prepare('SELECT * FROM bambu_variants WHERE variant_id = ?').get(variantId.trim()) || null;
+}
+
+export function lookupBambuByProductCode(productCode) {
+  if (!productCode) return null;
+  return db.prepare('SELECT * FROM bambu_variants WHERE product_code = ?').get(String(productCode)) || null;
+}
+
+export function enrichTrayWithVariant(trayIdName) {
+  if (!trayIdName) return null;
+  // tray_id_name format: "A00-W0" or "A00-W1" — try exact, then base
+  let variant = db.prepare('SELECT * FROM bambu_variants WHERE variant_id = ?').get(trayIdName);
+  if (!variant) {
+    // Try without trailing digit variations (A00-K00 → A00-K0)
+    const base = trayIdName.replace(/(\d)0$/, '$1');
+    variant = db.prepare('SELECT * FROM bambu_variants WHERE variant_id = ?').get(base);
+  }
+  if (!variant) {
+    // Fuzzy: match prefix (A00-K matches A00-K0, A00-K1, etc.)
+    variant = db.prepare('SELECT * FROM bambu_variants WHERE variant_id LIKE ? ORDER BY variant_id LIMIT 1')
+      .get(trayIdName.substring(0, 5) + '%');
+  }
+  return variant;
+}
+
+export function getBambuMaterialNames() {
+  return db.prepare('SELECT DISTINCT material_name FROM bambu_variants ORDER BY material_name').all()
+    .map(r => r.material_name);
+}
+
+export function getBambuColorsByMaterial(materialName) {
+  return db.prepare('SELECT variant_id, color_name, color_hex, product_code FROM bambu_variants WHERE material_name = ? ORDER BY color_name')
+    .all(materialName);
+}
+
+function _mig101_print_stages() {
+  // Add print_stage column to telemetry for historical stage tracking
+  try { db.exec('ALTER TABLE telemetry ADD COLUMN print_stage INTEGER'); } catch {}
 }

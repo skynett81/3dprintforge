@@ -96,6 +96,22 @@
     const finishEl = document.getElementById('ct-finish');
     if (finishEl) finishEl.textContent = finishText;
 
+    // Print stage badge
+    const stageEl = document.getElementById('ct-stage');
+    if (stageEl && typeof renderStageBadge === 'function') {
+      stageEl.innerHTML = renderStageBadge(data.stg_cur);
+    } else if (!stageEl && typeof renderStageBadge === 'function' && data.stg_cur != null) {
+      const fnContainer = document.getElementById('ct-filename')?.parentElement;
+      if (fnContainer && !fnContainer.querySelector('#ct-stage')) {
+        const el = document.createElement('div');
+        el.id = 'ct-stage';
+        el.style.marginTop = '4px';
+        el.style.textAlign = 'center';
+        el.innerHTML = renderStageBadge(data.stg_cur);
+        fnContainer.appendChild(el);
+      }
+    }
+
     const fnEl = document.getElementById('ct-filename');
     if (fnEl) {
       const truncated = _truncateFilename(filename, 35);

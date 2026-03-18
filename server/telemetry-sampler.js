@@ -41,7 +41,8 @@ export class TelemetrySampler {
       speed_mag: printData.spd_mag ?? null,
       wifi_signal: printData.wifi_signal || null,
       print_progress: printData.mc_percent ?? null,
-      layer_num: printData.layer_num ?? null
+      layer_num: printData.layer_num ?? null,
+      print_stage: printData.stg_cur ?? null
     });
 
     if (this.buffer.length >= this.batchSize) {

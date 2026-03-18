@@ -296,7 +296,7 @@ const PANEL_TITLES = {
   gcode: 'tabs.gcode',
   health: 'tabs.health',
   comparison: 'tabs.comparison',
-  forecast: 'tabs.forecast',
+  forecast: 'tabs.filament_analytics',
   multicolor: 'tabs.multicolor',
   diagnostics: 'tabs.diagnostics',
   labels: 'tabs.labels',
@@ -309,6 +309,7 @@ const PANEL_TITLES = {
   playground: 'tabs.playground',
   settings: 'tabs.settings',
   materialrec: 'material_rec.title',
+  filamentanalytics: 'tabs.filament_analytics',
   wearprediction: 'wear.title',
   erroranalysis: 'error_analysis.title',
   orders: 'orders.title',
@@ -340,6 +341,7 @@ const PANEL_LOADERS = {
   costestimator: () => { if (typeof loadCostEstimatorPanel === 'function') loadCostEstimatorPanel(); },
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); },
   materialrec: () => { if (typeof loadMaterialRecommendationsPanel === 'function') loadMaterialRecommendationsPanel(); },
+  filamentanalytics: () => { if (typeof loadFilamentAnalyticsPanel === 'function') loadFilamentAnalyticsPanel(); },
   wearprediction: () => { if (typeof loadWearPredictionPanel === 'function') loadWearPredictionPanel(); },
   erroranalysis: () => { if (typeof loadErrorAnalysisPanel === 'function') loadErrorAnalysisPanel(); },
   orders: () => { if (typeof loadOrderPanel === 'function') loadOrderPanel(); },
@@ -359,7 +361,7 @@ const PANEL_LOADERS = {
   bedmesh: () => { if (typeof loadDiagnosticsPanel === 'function') loadDiagnosticsPanel('bedmesh'); },
   health: () => { if (typeof loadDiagnosticsPanel === 'function') loadDiagnosticsPanel('health'); },
   gcode: () => { if (typeof loadLibraryPanel === 'function') loadLibraryPanel('gcode'); },
-  forecast: () => { if (typeof loadFilamentPanel === 'function') loadFilamentPanel('forecast'); },
+  forecast: () => { if (typeof loadFilamentAnalyticsPanel === 'function') loadFilamentAnalyticsPanel('forecast'); },
   multicolor: () => { if (typeof loadFilamentPanel === 'function') loadFilamentPanel('multicolor'); },
   learning: () => { if (typeof loadKnowledgePanel === 'function') loadKnowledgePanel('learning'); },
   modelinfo: () => { if (typeof loadKnowledgePanel === 'function') loadKnowledgePanel('modelinfo'); },
@@ -400,7 +402,7 @@ window.openPanel = function(name, skipHash) {
     stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
     telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
     gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
-    forecast: 'filament', multicolor: 'filament'
+    forecast: 'filamentanalytics', multicolor: 'filament'
   };
   const sidebarName = _panelParentMap[name] || name;
   document.querySelector(`.sidebar-btn[data-panel="${sidebarName}"]`)?.classList.add('active');
@@ -573,7 +575,7 @@ function _expandSectionForPanel(panelName) {
     stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
     telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
     gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
-    forecast: 'filament', multicolor: 'filament'
+    forecast: 'filamentanalytics', multicolor: 'filament'
   };
   const resolvedName = parentMap[panelName] || panelName;
   const btn = document.querySelector(`.sidebar-btn[data-panel="${resolvedName}"]`) || document.querySelector(`.sidebar-btn[data-panel="${panelName}"]`);

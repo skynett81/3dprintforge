@@ -925,7 +925,8 @@
     "stats": "Statistikk",
     "analysis": "Analyse",
     "costestimator": "Kostnadskalkulator",
-    "plugins": "Plugins"
+    "plugins": "Plugins",
+    "filament_analytics": "Filament Analyse"
   },
   "cost_estimator": {
     "estimate_tab": "Estimat",

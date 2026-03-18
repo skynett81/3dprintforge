@@ -71,7 +71,6 @@
     inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
     database:  { label: 'filament.tab_database',  modules: ['db-hero', 'db-browser'] },
     drying:    { label: 'filament.tab_drying',    modules: ['drying-dashboard'] },
-    forecast:  { label: 'tabs.forecast',          modules: ['forecast-panel'], external: true },
     multicolor:{ label: 'tabs.multicolor',        modules: ['multicolor-panel'], external: true },
     tools:     { label: 'filament.tab_tools',     modules: ['tools-dashboard'] },
     manage:    { label: 'filament.tab_manage',    modules: ['manage-dashboard'] },
@@ -1449,8 +1448,7 @@
     const realBody = document.getElementById('overlay-panel-body');
     if (realBody) realBody.removeAttribute('id');
     container.id = 'overlay-panel-body';
-    if (tabId === 'forecast' && typeof loadForecastPanel === 'function') loadForecastPanel();
-    else if (tabId === 'multicolor' && typeof loadMulticolorPanel === 'function') loadMulticolorPanel();
+    if (tabId === 'multicolor' && typeof loadMulticolorPanel === 'function') loadMulticolorPanel();
     container.id = `filament-tab-${tabId}`;
     if (realBody) realBody.id = 'overlay-panel-body';
   }
@@ -1600,7 +1598,7 @@
       // ── Tab panels ──
       for (const [tabId, cfg] of _getSortedTabs()) {
         if (cfg.external) {
-          // External tabs (forecast, multicolor) — render empty container, loaded after render
+          // External tabs (multicolor) — render empty container, loaded after render
           html += `<div class="tab-panel filament-tab-panel" id="filament-tab-${tabId}" style="display:${tabId === _activeTab ? 'block' : 'none'}"></div>`;
           continue;
         }
@@ -1621,7 +1619,7 @@
 
       panel.innerHTML = html;
 
-      // Load external tab content (forecast/multicolor) if active
+      // Load external tab content (multicolor) if active
       _loadExternalTab(_activeTab);
 
       // Update URL hash with current filters
@@ -2083,32 +2081,60 @@
       h += '<div class="filament-grid">';
       for (const p of _profiles) {
         const color = hexToRgb(p.color_hex);
+        const tempParts = [];
+        if (p.nozzle_temp_min || p.nozzle_temp_max) tempParts.push(`🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C`);
+        if (p.bed_temp_min || p.bed_temp_max) tempParts.push(`🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C`);
+        if (p.chamber_temp_min || p.chamber_temp_max) tempParts.push(`🏠 ${p.chamber_temp_min || '?'}–${p.chamber_temp_max || '?'}°C`);
+        const metaParts = [];
+        if (p.density && p.density !== 1.24) metaParts.push(p.density + ' g/cm³');
+        if (p.diameter && p.diameter !== 1.75) metaParts.push('⌀' + p.diameter + 'mm');
+        if (p.diameter_tolerance) metaParts.push('±' + p.diameter_tolerance + 'mm');
+        if (p.price) metaParts.push(formatCurrency(p.price));
+        const refParts = [];
+        if (p.tray_id_name) refParts.push(esc(p.tray_id_name));
+        if (p.ral_code) refParts.push(esc(p.ral_code));
+        if (p.pantone_code) refParts.push('Pantone ' + esc(p.pantone_code));
+        if (p.article_number) refParts.push(esc(p.article_number));
+        const tuneParts = [];
+        if (p.pressure_advance_k) tuneParts.push('PA:' + p.pressure_advance_k);
+        if (p.max_volumetric_speed) tuneParts.push('Vol:' + p.max_volumetric_speed + 'mm³/s');
+        if (p.retraction_distance) tuneParts.push('Ret:' + p.retraction_distance + 'mm');
+        if (p.cooling_fan_speed) tuneParts.push('Fan:' + p.cooling_fan_speed + '%');
+
         h += `<div class="filament-card inv-spool-card inv-profile-card ${_selectedProfiles.has(p.id) ? 'filament-card-selected' : ''}" data-profile-id="${p.id}">
           <div class="fil-spool-top">
             <div class="fil-spool-identity">
               ${canWrite ? `<input type="checkbox" class="fil-bulk-check fil-profile-check" ${_selectedProfiles.has(p.id) ? 'checked' : ''} onclick="window.toggleProfileSelect(${p.id}, this)">` : ''}
-              ${miniSpool(color, 16)}
+              ${miniSpool(color, 20)}
               <div>
-                <strong>${esc(p.name)}</strong>
-                <span class="text-muted" style="font-size:0.75rem">${esc(p.vendor_name || '--')}</span>
+                <strong style="font-size:0.9rem">${esc(p.name)}</strong>
+                <span class="text-muted" style="font-size:0.75rem;display:block">${esc(p.vendor_name || '--')}</span>
               </div>
             </div>
-            <div class="fil-spool-actions">
-              <button class="filament-edit-btn" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-tooltip="${t('filament.share_to_community')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-              <button class="filament-edit-btn" onclick="window._exportSlicerProfile(${p.id})" title="${t('filament.export_slicer')}" data-tooltip="${t('filament.export_slicer')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-              <button class="filament-edit-btn" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              <button class="filament-delete-btn" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
           </div>
-          <div class="fil-spool-meta">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g</div>
-          <div class="fil-spool-meta text-muted" style="font-size:0.7rem">${p.nozzle_temp_min || p.nozzle_temp_max ? `🌡 ${p.nozzle_temp_min || '?'}–${p.nozzle_temp_max || '?'}°C` : ''} ${p.bed_temp_min || p.bed_temp_max ? `🛏 ${p.bed_temp_min || '?'}–${p.bed_temp_max || '?'}°C` : ''}${p.price ? ` · ${formatCurrency(p.price)}` : ''}</div>
+          <div class="fil-spool-meta" style="margin-top:8px">${esc(p.material)}${p.color_name ? ' · ' + esc(p.color_name) : ''} · ${p.spool_weight_g}g${metaParts.length ? ' · ' + metaParts.join(' · ') : ''}</div>
+          ${tempParts.length ? `<div class="fil-spool-meta text-muted" style="font-size:0.7rem">${tempParts.join('  ')}</div>` : ''}
+          ${refParts.length ? `<div class="fil-spool-meta text-muted" style="font-size:0.7rem">${refParts.join(' · ')}</div>` : ''}
           ${p.finish || p.translucent || p.glow || p.modifiers ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}${_parseModifiers(p.modifiers).map(m => `<span class="modifier-badge">${m}</span>`).join('')}</div>` : ''}
-          ${p.pressure_advance_k || p.max_volumetric_speed || p.retraction_distance || p.cooling_fan_speed ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${[
-            p.pressure_advance_k ? 'PA:' + p.pressure_advance_k : '',
-            p.max_volumetric_speed ? 'Vol:' + p.max_volumetric_speed + 'mm³/s' : '',
-            p.retraction_distance ? 'Ret:' + p.retraction_distance + 'mm' : '',
-            p.cooling_fan_speed ? 'Fan:' + p.cooling_fan_speed + '%' : ''
-          ].filter(Boolean).join(' · ')}</div>` : ''}
+          ${tuneParts.length ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${tuneParts.join(' · ')}</div>` : ''}
+          <div class="fil-profile-toolbar">
+            <button class="fil-profile-action" onclick="window._shareProfile(${p.id})" data-tooltip="${t('filament.share_to_community')}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              ${t('filament.share_short', 'Del')}
+            </button>
+            <button class="fil-profile-action" onclick="window._exportSlicerProfile(${p.id})" data-tooltip="${t('filament.export_slicer')}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              ${t('filament.export_short', 'Eksporter')}
+            </button>
+            <button class="fil-profile-action" onclick="editProfile(${p.id})" data-tooltip="${t('settings.edit')}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              ${t('settings.edit', 'Rediger')}
+            </button>
+            <button class="fil-profile-action fil-profile-action-danger" onclick="deleteProfileItem(${p.id})" data-tooltip="${t('settings.delete')}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              ${t('settings.delete', 'Slett')}
+            </button>
+          </div>
         </div>`;
       }
       h += '</div>';
@@ -2442,7 +2468,13 @@
         <div class="form-group" style="width:80px"><label class="form-label">${t('filament.profile_nozzle_temp')} ${t('filament.temp_max')}</label><input class="form-input" id="${pfx}-nozzle-max" type="number" value="${profile?.nozzle_temp_max || ''}"></div>
         <div class="form-group" style="width:80px"><label class="form-label">${t('filament.profile_bed_temp')} ${t('filament.temp_min')}</label><input class="form-input" id="${pfx}-bed-min" type="number" value="${profile?.bed_temp_min || ''}"></div>
         <div class="form-group" style="width:80px"><label class="form-label">${t('filament.profile_bed_temp')} ${t('filament.temp_max')}</label><input class="form-input" id="${pfx}-bed-max" type="number" value="${profile?.bed_temp_max || ''}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">Kammer min</label><input class="form-input" id="${pfx}-chamber-min" type="number" value="${profile?.chamber_temp_min || ''}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">Kammer maks</label><input class="form-input" id="${pfx}-chamber-max" type="number" value="${profile?.chamber_temp_max || ''}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">⌀ toleranse</label><input class="form-input" id="${pfx}-dia-tolerance" type="number" step="0.001" value="${profile?.diameter_tolerance || ''}" placeholder="±mm"></div>
         <div class="form-group" style="width:100px"><label class="form-label">${t('filament.article_number')}</label><input class="form-input" id="${pfx}-article" value="${profile?.article_number || ''}"></div>
+        <div class="form-group" style="width:90px"><label class="form-label">Bambu SKU</label><input class="form-input" id="${pfx}-tray-id-name" value="${profile?.tray_id_name || ''}" placeholder="A00-W0"></div>
+        <div class="form-group" style="width:90px"><label class="form-label">RAL-kode</label><input class="form-input" id="${pfx}-ral-code" value="${profile?.ral_code || ''}" placeholder="RAL 9005"></div>
+        <div class="form-group" style="width:90px"><label class="form-label">Pantone</label><input class="form-input" id="${pfx}-pantone-code" value="${profile?.pantone_code || ''}" placeholder="PMS 123"></div>
         <div class="form-group" style="width:90px">
           <label class="form-label">${t('filament.finish')}</label>
           <select class="form-input" id="${pfx}-finish">
@@ -2531,6 +2563,12 @@
       nozzle_temp_max: parseInt(document.getElementById(`${pfx}-nozzle-max`)?.value) || null,
       bed_temp_min: parseInt(document.getElementById(`${pfx}-bed-min`)?.value) || null,
       bed_temp_max: parseInt(document.getElementById(`${pfx}-bed-max`)?.value) || null,
+      chamber_temp_min: parseInt(document.getElementById(`${pfx}-chamber-min`)?.value) || null,
+      chamber_temp_max: parseInt(document.getElementById(`${pfx}-chamber-max`)?.value) || null,
+      diameter_tolerance: parseFloat(document.getElementById(`${pfx}-dia-tolerance`)?.value) || null,
+      tray_id_name: document.getElementById(`${pfx}-tray-id-name`)?.value?.trim() || null,
+      ral_code: document.getElementById(`${pfx}-ral-code`)?.value?.trim() || null,
+      pantone_code: document.getElementById(`${pfx}-pantone-code`)?.value?.trim() || null,
       price: parseFloat(document.getElementById(`${pfx}-price`)?.value) || null,
       article_number: document.getElementById(`${pfx}-article`)?.value?.trim() || null,
       multi_color_hexes: isMultiColor ? _collectMultiColorHexes(pfx) : null,

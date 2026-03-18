@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting } from './database.js';
+import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, enrichTrayWithVariant } from './database.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -446,6 +446,11 @@ export class PrintTracker {
       // Auto-save print cost (include waste in filament cost)
       this._savePrintCost(printHistoryId, filamentUsedG, duration, data, status, wasteG);
 
+      // Update filament estimation accuracy (estimated vs actual)
+      if (status === 'completed' && filamentUsedG > 0) {
+        try { updateFilamentAccuracy(printHistoryId, filamentUsedG); } catch (e) { log.warn('Filament accuracy update failed', e.message); }
+      }
+
       // Update component wear
       this._updateComponentWear(duration, data);
 
@@ -468,6 +473,12 @@ export class PrintTracker {
 
     // Deactivate any layer pauses for this printer
     try { deactivateLayerPauses(this.printerId); } catch (e) { log.warn('Failed to deactivate layer pauses', e.message); }
+
+    // Aggregate daily filament usage for today
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      aggregateDailyFilamentUsage(today);
+    } catch (e) { log.warn('Failed to aggregate daily usage', e.message); }
 
     this.currentPrint = null;
     this.amsSnapshot = null;
@@ -551,6 +562,30 @@ export class PrintTracker {
               tray_id: parseInt(tray.id) || 0,
               tray_uuid: tray.tray_uuid || null
             });
+
+            // Record filament usage history for trend tracking
+            // Only record once per 5 minutes per tray to avoid flooding
+            const trayKey = `${this.printerId}_${unit.id}_${tray.id}`;
+            const now = Date.now();
+            if (!this._lastUsageSnapshot) this._lastUsageSnapshot = {};
+            if (!this._lastUsageSnapshot[trayKey] || now - this._lastUsageSnapshot[trayKey] > 5 * 60 * 1000) {
+              this._lastUsageSnapshot[trayKey] = now;
+              const matchedSpool = tray.tray_id_name ? getSpoolByTrayIdName(tray.tray_id_name) : null;
+              addFilamentUsageSnapshot({
+                printer_id: this.printerId,
+                ams_unit: parseInt(unit.id) || 0,
+                tray_id: parseInt(tray.id) || 0,
+                tray_id_name: tray.tray_id_name || null,
+                tray_type: tray.tray_type || null,
+                tray_sub_brands: tray.tray_sub_brands || null,
+                tray_color: tray.tray_color || null,
+                remain_pct: tray.remain >= 0 ? tray.remain : null,
+                tray_weight: tray.tray_weight ? parseInt(tray.tray_weight) : null,
+                tag_uid: tray.tag_uid || null,
+                tray_uuid: tray.tray_uuid || null,
+                spool_id: matchedSpool?.id || null,
+              });
+            }
           }
         }
       }
@@ -635,6 +670,71 @@ export class PrintTracker {
     } catch (e) {
       log.error('NFC auto-detect feil: ' + e.message);
     }
+
+    // Auto-match AMS trays to spools by color+material (fallback when no NFC tag)
+    this._autoMatchAmsTrays(data);
+  }
+
+  _autoMatchAmsTrays(data) {
+    if (!data.ams?.ams) return;
+    try {
+      for (const unit of data.ams.ams) {
+        for (const tray of (unit.tray || [])) {
+          if (!tray || !tray.tray_type) continue;
+          const tagUid = tray.tag_uid;
+          // Skip if has NFC tag (already handled)
+          if (tagUid && tagUid !== '0000000000000000') continue;
+          // Skip empty or invalid trays
+          if (!tray.tray_color || tray.tray_color === '00000000') continue;
+          if (tray.tray_uuid === '00000000000000000000000000000000') continue;
+
+          const amsUnit = parseInt(unit.id) || 0;
+          const trayId = parseInt(tray.id) || 0;
+
+          // Already assigned?
+          const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
+          if (existing) {
+            // Check depletion thresholds
+            const remainPct = tray.remain >= 0 ? tray.remain : 100;
+            const events = checkSpoolDepletionThresholds(existing.id, remainPct);
+            if (events.length > 0 && this.onSpoolDepleting) {
+              for (const evt of events) {
+                this.onSpoolDepleting({ ...evt, printer_id: this.printerId, ams_unit: amsUnit, tray_id: trayId });
+              }
+            }
+            continue;
+          }
+
+          // Try tray_id_name match first
+          let matched = null;
+          if (tray.tray_id_name) {
+            matched = getSpoolByTrayIdName(tray.tray_id_name);
+          }
+
+          // Try color+material match
+          if (!matched) {
+            matched = autoMatchTrayToSpool(
+              tray.tray_color, tray.tray_type, tray.tray_sub_brands,
+              tray.tray_weight, this.printerId, amsUnit, trayId
+            );
+          }
+
+          if (matched) {
+            assignSpoolToSlot(matched.id, this.printerId, amsUnit, trayId);
+            log.info('Auto-matched spool #' + matched.id + ' to AMS ' + amsUnit + ':' + trayId + ' by color+material');
+          } else {
+            // Auto-create spool if setting enabled
+            const autoCreate = getInventorySetting('auto_create_from_ams');
+            if (autoCreate === 'true' || autoCreate === '1') {
+              const result = autoCreateSpoolFromTray(tray, this.printerId, amsUnit, trayId);
+              log.info('Auto-created spool #' + result.id + ' from AMS ' + amsUnit + ':' + trayId);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      log.error('AMS auto-match feil: ' + e.message);
+    }
   }
 
   _getActiveFilament(data) {
@@ -653,6 +753,22 @@ export class PrintTracker {
         matchedTrayId = tray.id;
         break;
       }
+    }
+
+    // Enrich from Bambu RFID variant database (gives exact color name + material name)
+    if (matchedTrayId !== null) {
+      try {
+        const activeTrayObj = data.ams.ams.flatMap(u => u.tray || []).find(t => t && String(t.id) === String(activeTray));
+        if (activeTrayObj?.tray_id_name) {
+          const variant = enrichTrayWithVariant(activeTrayObj.tray_id_name);
+          if (variant) {
+            if (!result.brand || result.brand === activeTrayObj.tray_id_name) result.brand = variant.material_name;
+            if (!result.color) result.color = variant.color_hex;
+            result.colorName = variant.color_name;
+            result.materialName = variant.material_name;
+          }
+        }
+      } catch { /* ignore */ }
     }
 
     // Fallback: enrich from linked inventory spool if MQTT data is incomplete
@@ -834,6 +950,7 @@ export class PrintTracker {
           const spool = getSpoolBySlot(this.printerId, unitId, trayId);
           if (spool) {
             useSpoolWeight(spool.id, usedG, 'auto', printHistoryId, this.printerId);
+            trackConsumedSinceWeight(spool.id, usedG);
             log.info('Spool #' + spool.id + ' usage: ' + usedG.toFixed(1) + 'g (AMS' + unitId + ':' + trayId + ')');
           }
         }

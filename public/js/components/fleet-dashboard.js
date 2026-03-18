@@ -238,6 +238,7 @@
         </div>
         ${file ? `<div class="fleet-file" title="${_esc(file)}">${_esc(file.replace(/\.3mf$|\.gcode\.3mf$/i, ''))}</div>` : ''}
         ${layer && totalLayers ? `<div class="fleet-layer">${t('fleet.layer')} ${layer}/${totalLayers}</div>` : ''}
+        ${typeof renderStageBadge === 'function' ? renderStageBadge(printState.stg_cur ?? ps.stg_cur) : ''}
       </div>`;
     }
 

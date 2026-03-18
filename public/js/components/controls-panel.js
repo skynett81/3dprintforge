@@ -36,6 +36,7 @@
         ${t('controls.print_control')}
       </div>
       <div class="controls-grid" id="ctrl-print-grid">${printControlButtons(state, isPrinting)}</div>
+      <div id="ctrl-stage-badge" style="margin-top:6px">${typeof renderStageBadge === 'function' ? renderStageBadge(data.stg_cur) : ''}</div>
     </div>`;
 
     // ===== CARD: Objects (only during print) =====
@@ -467,6 +468,9 @@
 
     const printGrid = container.querySelector('#ctrl-print-grid');
     if (printGrid) printGrid.innerHTML = printControlButtons(state, isPrinting);
+
+    const stageBadge = container.querySelector('#ctrl-stage-badge');
+    if (stageBadge && typeof renderStageBadge === 'function') stageBadge.innerHTML = renderStageBadge(data.stg_cur);
 
     const spdLvl = data.spd_lvl || 2;
     const spdMag = data.spd_mag || 100;

@@ -1,4 +1,4 @@
-import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings, getProfiles, getProfileById, addProfile, updateProfile, deleteProfile, incrementProfileUse } from './database.js';
+import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings, getProfiles, getProfileById, addProfile, updateProfile, deleteProfile, incrementProfileUse, addFilamentUsageSnapshot, getFilamentUsageHistory, getFilamentUsageTrend, getSpoolByTrayIdName, getPurchasedSpools, addPurchasedSpool, updatePurchasedSpool, deletePurchasedSpool, importPurchasedSpools, linkPurchasedToSpool, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, aggregateDailyFilamentUsage, backfillDailyUsage, getDailyFilamentUsage, getFilamentConsumptionSummary, getFilamentConsumptionByPrinter, getFilamentWeeklyTrend, updateConsumptionRates, getConsumptionRates, getSpoolDepletionForecast, getWasteAnalysis, getMaterialEfficiency, checkSpoolDepletionThresholds, getSpoolDepletionEvents, markDepletionNotified, getFilamentCostAnalysis, getExpiredSpools, getExpiringSpools, getMaterialSubstitutions, addMaterialSubstitution, deleteMaterialSubstitution, findSubstitutesForMaterial, getRalColors, findClosestRal, getStorageAlerts, getSpoolmanPerSpoolMetrics, getSpoolCoreWeights, addSpoolCoreWeight, getBambuFilamentCodes, lookupBambuCode, getSpoolKCalibrations, upsertSpoolKCalibration, getBestKValue, recordWeighing, getFilamentAccuracyStats, saveFilamentEstimate, getBambuVariants, lookupBambuVariant, lookupBambuByProductCode, enrichTrayWithVariant, getBambuMaterialNames, getBambuColorsByMaterial } from './database.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
 import { saveConfig, config, DATA_DIR } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -681,6 +681,733 @@ export async function handleApiRequest(req, res) {
     if (method === 'POST' && path === '/api/bambu-cloud/logout') {
       if (_bambuCloud) _bambuCloud.logout();
       return sendJson(res, { ok: true });
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/refresh-token') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      try {
+        const result = await _bambuCloud.refreshToken();
+        return sendJson(res, result);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 401);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/printer-status') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getPrinterStatus();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/device-version') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getDeviceVersion();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'PATCH' && path === '/api/bambu-cloud/device-info') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      return readBody(req, async (body) => {
+        try {
+          const data = await _bambuCloud.updateDeviceInfo(body);
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu-cloud/task/')) {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const taskId = path.split('/api/bambu-cloud/task/')[1];
+      if (!taskId) return sendJson(res, { error: 'Task ID required' }, 400);
+      try {
+        const data = await _bambuCloud.getTask(taskId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/notification') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getNotification();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/projects') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getProjects();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu-cloud/project/')) {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const projectId = path.split('/api/bambu-cloud/project/')[1];
+      if (!projectId) return sendJson(res, { error: 'Project ID required' }, 400);
+      try {
+        const data = await _bambuCloud.getProject(projectId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/messages') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      try {
+        const data = await _bambuCloud.getMessages(
+          params.get('type') || 'all',
+          parseInt(params.get('limit')) || 20,
+          parseInt(params.get('offset')) || 0
+        );
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/message-count') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getMessageCount();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/messages/read') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      return readBody(req, async (body) => {
+        try {
+          const data = await _bambuCloud.markMessagesRead(body.messageIds || []);
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/slicer-settings') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const data = await _bambuCloud.getSlicerSettings();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu-cloud/slicer-setting/')) {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const settingId = path.split('/api/bambu-cloud/slicer-setting/')[1];
+      if (!settingId) return sendJson(res, { error: 'Setting ID required' }, 400);
+      try {
+        const data = await _bambuCloud.getSlicerSetting(settingId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/design-search') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const query = params.get('q');
+      if (!query) return sendJson(res, { error: 'Query parameter "q" required' }, 400);
+      try {
+        const data = await _bambuCloud.searchDesigns(
+          query,
+          parseInt(params.get('limit')) || 20,
+          parseInt(params.get('offset')) || 0
+        );
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu-cloud/design/')) {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      const parts = path.split('/');
+      const designId = parts[4];
+      if (!designId) return sendJson(res, { error: 'Design ID required' }, 400);
+      try {
+        // /api/bambu-cloud/design/:id/3mf
+        if (parts[5] === '3mf') {
+          const data = await _bambuCloud.getDesign3mf(designId);
+          return sendJson(res, data);
+        }
+        const data = await _bambuCloud.getDesign(designId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    // ---- Cloud File Upload & Print ----
+
+    if (method === 'POST' && path === '/api/bambu-cloud/upload') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const filename = params.get('filename');
+      if (!filename) return sendJson(res, { error: 'Filnavn paakrevd (?filename=)' }, 400);
+      // Collect raw body
+      const chunks = [];
+      req.on('data', c => chunks.push(c));
+      req.on('end', async () => {
+        try {
+          const buf = Buffer.concat(chunks);
+          if (buf.length === 0) return sendJson(res, { error: 'Tom fil' }, 400);
+          const result = await _bambuCloud.uploadFileToCloud(filename, buf);
+          sendJson(res, result, 201);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/upload-url') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const filename = params.get('filename');
+      if (!filename) return sendJson(res, { error: 'Filnavn paakrevd' }, 400);
+      try {
+        const data = await _bambuCloud.getUploadUrl(filename);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/cloud-print') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      return readBody(req, async (body) => {
+        const { device_id, filename, url, settings } = body;
+        if (!device_id || !filename) return sendJson(res, { error: 'device_id og filename paakrevd' }, 400);
+        try {
+          const data = await _bambuCloud.startCloudPrint(device_id, filename, url, settings || {});
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/create-task') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      return readBody(req, async (body) => {
+        try {
+          const data = await _bambuCloud.createTask(body);
+          sendJson(res, data, 201);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    // ---- Device Binding ----
+
+    if (method === 'POST' && path === '/api/bambu-cloud/bind') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      return readBody(req, async (body) => {
+        const { device_id, access_code } = body;
+        if (!device_id || !access_code) return sendJson(res, { error: 'device_id og access_code paakrevd' }, 400);
+        try {
+          const data = await _bambuCloud.bindDevice(device_id, access_code);
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    if (method === 'DELETE' && path === '/api/bambu-cloud/bind') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const deviceId = params.get('device_id');
+      if (!deviceId) return sendJson(res, { error: 'device_id paakrevd' }, 400);
+      try {
+        const data = await _bambuCloud.unbindDevice(deviceId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    // ---- Cloud Video & Profile ----
+
+    if (method === 'GET' && path === '/api/bambu-cloud/video-url') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const deviceId = params.get('device_id');
+      if (!deviceId) return sendJson(res, { error: 'device_id paakrevd' }, 400);
+      try {
+        const data = await _bambuCloud.getCloudVideoUrl(deviceId);
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/profile') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      try {
+        const data = await _bambuCloud.getUserProfile();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'PUT' && path === '/api/bambu-cloud/profile') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      return readBody(req, async (body) => {
+        try {
+          const data = await _bambuCloud.updateUserProfile(body);
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/preferences') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      try {
+        const data = await _bambuCloud.getUserPreferences();
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'GET' && path === '/api/bambu-cloud/files') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      try {
+        const data = await _bambuCloud.getCloudFiles(
+          parseInt(params.get('limit')) || 50,
+          parseInt(params.get('offset')) || 0
+        );
+        return sendJson(res, data);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/bambu-cloud/send-code') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud ikke tilgjengelig' }, 503);
+      return readBody(req, async (body) => {
+        const { email } = body;
+        if (!email) return sendJson(res, { error: 'E-post paakrevd' }, 400);
+        try {
+          const data = await _bambuCloud.sendVerificationEmail(email);
+          sendJson(res, data);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    // ---- Filament Usage History ----
+
+    if (method === 'GET' && path === '/api/filament-tracker/usage-history') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const data = getFilamentUsageHistory({
+        printer_id: params.get('printer_id'),
+        tray_id_name: params.get('tray_id_name'),
+        spool_id: params.get('spool_id') ? parseInt(params.get('spool_id')) : null,
+        from: params.get('from'),
+        to: params.get('to'),
+        limit: parseInt(params.get('limit')) || 500,
+      });
+      return sendJson(res, data);
+    }
+
+    if (method === 'GET' && path === '/api/filament-tracker/usage-trend') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const trayIdName = params.get('tray_id_name');
+      if (!trayIdName) return sendJson(res, { error: 'tray_id_name required' }, 400);
+      const data = getFilamentUsageTrend(trayIdName, parseInt(params.get('days')) || 30);
+      return sendJson(res, data);
+    }
+
+    if (method === 'GET' && path === '/api/filament-tracker/spool-by-tray') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const trayIdName = params.get('tray_id_name');
+      if (!trayIdName) return sendJson(res, { error: 'tray_id_name required' }, 400);
+      const spool = getSpoolByTrayIdName(trayIdName);
+      return sendJson(res, spool || { error: 'No spool matched' }, spool ? 200 : 404);
+    }
+
+    // ---- Purchased Spools ----
+
+    if (method === 'GET' && path === '/api/filament-tracker/purchased') {
+      return sendJson(res, getPurchasedSpools());
+    }
+
+    if (method === 'POST' && path === '/api/filament-tracker/purchased') {
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
+        const result = addPurchasedSpool(body);
+        _broadcastInventory('created', 'purchased_spool', result);
+        sendJson(res, result, 201);
+      });
+    }
+
+    if (method === 'PUT' && path.startsWith('/api/filament-tracker/purchased/')) {
+      const id = parseInt(path.split('/').pop());
+      if (!id) return sendJson(res, { error: 'Invalid ID' }, 400);
+      return readBody(req, (body) => {
+        if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
+        updatePurchasedSpool(id, body);
+        _broadcastInventory('updated', 'purchased_spool', { id });
+        sendJson(res, { ok: true });
+      });
+    }
+
+    if (method === 'DELETE' && path.startsWith('/api/filament-tracker/purchased/')) {
+      const id = parseInt(path.split('/').pop());
+      if (!id) return sendJson(res, { error: 'Invalid ID' }, 400);
+      deletePurchasedSpool(id);
+      _broadcastInventory('deleted', 'purchased_spool', { id });
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'POST' && path === '/api/filament-tracker/purchased/import') {
+      return readBody(req, (body) => {
+        const spools = body.spools || body;
+        if (!Array.isArray(spools)) return sendJson(res, { error: 'Array of spools required' }, 400);
+        const result = importPurchasedSpools(spools);
+        _broadcastInventory('imported', 'purchased_spool', result);
+        sendJson(res, result, 201);
+      });
+    }
+
+    if (method === 'POST' && path === '/api/filament-tracker/purchased/link') {
+      return readBody(req, (body) => {
+        const { purchased_id, spool_id } = body;
+        if (!purchased_id || !spool_id) return sendJson(res, { error: 'purchased_id and spool_id required' }, 400);
+        linkPurchasedToSpool(purchased_id, spool_id);
+        _broadcastInventory('linked', 'purchased_spool', { purchased_id, spool_id });
+        sendJson(res, { ok: true });
+      });
+    }
+
+    // ---- Filament Analytics ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/consumption') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const days = parseInt(params.get('days')) || 30;
+      return sendJson(res, getFilamentConsumptionSummary(days));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/consumption-by-printer') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getFilamentConsumptionByPrinter(parseInt(params.get('days')) || 30));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/daily') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getDailyFilamentUsage({
+        from: params.get('from'),
+        to: params.get('to'),
+        material: params.get('material'),
+        printer_id: params.get('printer_id'),
+        brand: params.get('brand'),
+        limit: parseInt(params.get('limit')) || 365,
+      }));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/weekly-trend') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getFilamentWeeklyTrend(parseInt(params.get('weeks')) || 12));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/consumption-rates') {
+      return sendJson(res, getConsumptionRates());
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/depletion-forecast') {
+      return sendJson(res, getSpoolDepletionForecast());
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/waste') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getWasteAnalysis(parseInt(params.get('days')) || 30));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/material-efficiency') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getMaterialEfficiency(parseInt(params.get('days')) || 30));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/cost') {
+      return sendJson(res, getFilamentCostAnalysis());
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/depletion-events') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const spoolId = params.get('spool_id') ? parseInt(params.get('spool_id')) : null;
+      return sendJson(res, getSpoolDepletionEvents(spoolId));
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/recalculate') {
+      try {
+        const daily = backfillDailyUsage(90);
+        const rates = updateConsumptionRates();
+        return sendJson(res, { ok: true, daily_rows: daily, rate_rows: rates });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/auto-match') {
+      return readBody(req, (body) => {
+        const { tray_color, tray_type, tray_sub_brands, tray_weight, printer_id, ams_unit, tray_id } = body;
+        if (!printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
+        const spool = autoMatchTrayToSpool(tray_color, tray_type, tray_sub_brands, tray_weight, printer_id, ams_unit ?? 0, tray_id ?? 0);
+        return sendJson(res, spool || { matched: false }, spool ? 200 : 404);
+      });
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/auto-create-spool') {
+      return readBody(req, (body) => {
+        const { tray, printer_id, ams_unit, tray_id } = body;
+        if (!tray || !printer_id) return sendJson(res, { error: 'tray and printer_id required' }, 400);
+        const result = autoCreateSpoolFromTray(tray, printer_id, ams_unit ?? 0, tray_id ?? 0);
+        _broadcastInventory('created', 'spool', result);
+        sendJson(res, result, 201);
+      });
+    }
+
+    // ---- Expiry & Substitution ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/expired') {
+      return sendJson(res, getExpiredSpools());
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/expiring') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getExpiringSpools(parseInt(params.get('days')) || 30));
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/substitutions') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getMaterialSubstitutions(params.get('material') || null));
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/substitutions') {
+      return readBody(req, (body) => {
+        if (!body.material || !body.substitute_material) return sendJson(res, { error: 'material and substitute_material required' }, 400);
+        addMaterialSubstitution(body);
+        sendJson(res, { ok: true }, 201);
+      });
+    }
+
+    if (method === 'DELETE' && path.startsWith('/api/filament-analytics/substitutions/')) {
+      const id = parseInt(path.split('/').pop());
+      if (!id) return sendJson(res, { error: 'Invalid ID' }, 400);
+      deleteMaterialSubstitution(id);
+      return sendJson(res, { ok: true });
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/find-substitutes') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const material = params.get('material');
+      if (!material) return sendJson(res, { error: 'material required' }, 400);
+      return sendJson(res, findSubstitutesForMaterial(material));
+    }
+
+    // ---- RAL/Color ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/ral-colors') {
+      return sendJson(res, getRalColors());
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/closest-ral') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const hex = params.get('hex');
+      if (!hex) return sendJson(res, { error: 'hex required' }, 400);
+      const result = findClosestRal(hex);
+      return sendJson(res, result || { error: 'No match' }, result ? 200 : 404);
+    }
+
+    // ---- Storage Alerts ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/storage-alerts') {
+      return sendJson(res, getStorageAlerts());
+    }
+
+    // ---- Spool Core Weights & Bambu Codes ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/core-weights') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getSpoolCoreWeights(params.get('search') || null));
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/core-weights') {
+      return readBody(req, (body) => {
+        if (!body.brand_name || !body.weight_g) return sendJson(res, { error: 'brand_name and weight_g required' }, 400);
+        addSpoolCoreWeight(body.brand_name, body.weight_g, body.spool_type);
+        sendJson(res, { ok: true }, 201);
+      });
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/bambu-codes') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getBambuFilamentCodes(params.get('material') || null));
+    }
+
+    if (method === 'GET' && path.startsWith('/api/filament-analytics/bambu-code/')) {
+      const code = path.split('/api/filament-analytics/bambu-code/')[1];
+      const result = lookupBambuCode(code);
+      return sendJson(res, result || { error: 'Code not found' }, result ? 200 : 404);
+    }
+
+    // ---- K-factor Calibrations ----
+
+    if (method === 'GET' && path.startsWith('/api/filament-analytics/k-calibrations/')) {
+      const spoolId = parseInt(path.split('/').pop());
+      if (!spoolId) return sendJson(res, { error: 'Invalid spool ID' }, 400);
+      return sendJson(res, getSpoolKCalibrations(spoolId));
+    }
+
+    if (method === 'POST' && path === '/api/filament-analytics/k-calibrations') {
+      return readBody(req, (body) => {
+        if (!body.spool_id || !body.printer_id || body.k_value == null) {
+          return sendJson(res, { error: 'spool_id, printer_id, and k_value required' }, 400);
+        }
+        upsertSpoolKCalibration(body);
+        sendJson(res, { ok: true }, 201);
+      });
+    }
+
+    if (method === 'GET' && path === '/api/filament-analytics/best-k') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const spoolId = parseInt(params.get('spool_id'));
+      const printerId = params.get('printer_id');
+      if (!spoolId || !printerId) return sendJson(res, { error: 'spool_id and printer_id required' }, 400);
+      const k = getBestKValue(spoolId, printerId,
+        parseFloat(params.get('nozzle_diameter')) || 0.4,
+        params.get('nozzle_type') || 'standard');
+      return sendJson(res, { k_value: k });
+    }
+
+    // ---- Enhanced Weighing ----
+
+    if (method === 'POST' && path === '/api/filament-analytics/weigh') {
+      return readBody(req, (body) => {
+        if (!body.spool_id || body.gross_weight_g == null) {
+          return sendJson(res, { error: 'spool_id and gross_weight_g required' }, 400);
+        }
+        try {
+          const result = recordWeighing(body.spool_id, body.gross_weight_g);
+          if (!result) return sendJson(res, { error: 'Spool not found' }, 404);
+          _broadcastInventory('weighed', 'spool', { spool_id: body.spool_id, ...result });
+          sendJson(res, result);
+        } catch (e) {
+          sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    // ---- Filament Estimation Accuracy ----
+
+    if (method === 'GET' && path === '/api/filament-analytics/accuracy') {
+      return sendJson(res, getFilamentAccuracyStats());
+    }
+
+    // ---- Bambu Lab RFID Variant Database ----
+
+    if (method === 'GET' && path === '/api/bambu/variants') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      return sendJson(res, getBambuVariants({
+        material_id: params.get('material_id'),
+        material_name: params.get('material_name'),
+        search: params.get('search'),
+      }));
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu/variant/')) {
+      const variantId = decodeURIComponent(path.split('/api/bambu/variant/')[1]);
+      const result = lookupBambuVariant(variantId);
+      return sendJson(res, result || { error: 'Variant ikke funnet' }, result ? 200 : 404);
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu/product/')) {
+      const code = path.split('/api/bambu/product/')[1];
+      const result = lookupBambuByProductCode(code);
+      return sendJson(res, result || { error: 'Produktkode ikke funnet' }, result ? 200 : 404);
+    }
+
+    if (method === 'GET' && path === '/api/bambu/enrich-tray') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const trayIdName = params.get('tray_id_name');
+      if (!trayIdName) return sendJson(res, { error: 'tray_id_name påkrevd' }, 400);
+      const result = enrichTrayWithVariant(trayIdName);
+      return sendJson(res, result || { error: 'Ingen match' }, result ? 200 : 404);
+    }
+
+    if (method === 'GET' && path === '/api/bambu/materials') {
+      return sendJson(res, getBambuMaterialNames());
+    }
+
+    if (method === 'GET' && path === '/api/bambu/colors') {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const materialName = params.get('material_name');
+      if (!materialName) return sendJson(res, { error: 'material_name påkrevd' }, 400);
+      return sendJson(res, getBambuColorsByMaterial(materialName));
+    }
+
+    // ---- Print Stage Codes ----
+    if (method === 'GET' && path === '/api/bambu/print-stages') {
+      // Returns all 36 stage codes with Norwegian and English labels
+      // This is served from the frontend's print-stages.js, but also available via API
+      const stages = {};
+      for (let i = 0; i <= 35; i++) {
+        stages[i] = {
+          nb: ['Printer','Auto bed-nivelering','Forvarmer varmeplate','Sveiper XY-mekanikk','Bytter filament',
+               'M400 pause','Pause — filament tom','Varmer opp dyse','Kalibrerer ekstrudering','Skanner sengoverflate',
+               'Inspiserer første lag','Identifiserer byggplate','Kalibrerer Micro Lidar','Homing av verktøyhode',
+               'Renser dysespiss','Sjekker ekstrudertemp','Pauset av bruker','Pause — frontdeksel falt',
+               'Kalibrerer Micro Lidar','Kalibrerer ekstruderingsflyt','Pause — dysetemp-feil','Pause — sengtemp-feil',
+               'Laster ut filament','Pause — hoppet over steg','Laster filament','Motorkalibrering (støy)',
+               'Pause — AMS mistet','Pause — heatbreak vifte lav','Pause — kammertemp-feil','Kjøler ned kammer',
+               'Pause fra G-kode','Motorstøy-demo','Pause — dyse dekket','Pause — kutterfeil',
+               'Pause — førstelagsfeil','Pause — dyse tettet'][i],
+          en: ['Printing','Auto bed leveling','Heatbed preheating','Sweeping XY mech mode','Changing filament',
+               'M400 pause','Paused: filament runout','Heating hotend','Calibrating extrusion','Scanning bed surface',
+               'Inspecting first layer','Identifying build plate','Calibrating Micro Lidar','Homing toolhead',
+               'Cleaning nozzle tip','Checking extruder temp','Paused by user','Paused: front cover falling',
+               'Calibrating Micro Lidar','Calibrating extrusion flow','Paused: nozzle temp malfunction',
+               'Paused: bed temp malfunction','Filament unloading','Skip step pause','Filament loading',
+               'Motor noise calibration','Paused: AMS lost','Paused: heatbreak fan low','Paused: chamber temp error',
+               'Cooling chamber','Paused by G-code','Motor noise showoff','Paused: nozzle filament covered',
+               'Paused: cutter error','Paused: first layer error','Paused: nozzle clog'][i]
+        };
+      }
+      return sendJson(res, stages);
     }
 
     // ---- Printers ----
@@ -6344,6 +7071,32 @@ function _collectMetrics() {
     lines.push(`bambu_inventory_weight_grams ${Math.round(totalWeightG)}`);
   } catch (_) {}
 
+  // Per-spool Prometheus metrics (Spoolman-compatible)
+  try {
+    const perSpool = getSpoolmanPerSpoolMetrics();
+    if (perSpool.length > 0) {
+      lines.push('# HELP bambu_spool_remaining_weight_grams Remaining filament weight per spool');
+      lines.push('# TYPE bambu_spool_remaining_weight_grams gauge');
+      lines.push('# HELP bambu_spool_used_weight_grams Used filament weight per spool');
+      lines.push('# TYPE bambu_spool_used_weight_grams gauge');
+      lines.push('# HELP bambu_spool_initial_weight_grams Initial filament weight per spool');
+      lines.push('# TYPE bambu_spool_initial_weight_grams gauge');
+      lines.push('# HELP bambu_spool_price Spool price');
+      lines.push('# TYPE bambu_spool_price gauge');
+      lines.push('# HELP bambu_filament_info Filament metadata');
+      lines.push('# TYPE bambu_filament_info gauge');
+      for (const s of perSpool) {
+        const labels = `spool_id="${s.id}",filament="${(s.filament_name || '').replace(/"/g, '')}"`;
+        const infoLabels = `spool_id="${s.id}",vendor="${(s.vendor_name || '').replace(/"/g, '')}",material="${s.material || ''}",color="${s.color_hex || ''}"`;
+        lines.push(`bambu_spool_remaining_weight_grams{${labels}} ${s.remaining_weight_g || 0}`);
+        lines.push(`bambu_spool_used_weight_grams{${labels}} ${s.used_weight_g || 0}`);
+        lines.push(`bambu_spool_initial_weight_grams{${labels}} ${s.initial_weight_g || 0}`);
+        if (s.cost) lines.push(`bambu_spool_price{${labels}} ${s.cost}`);
+        lines.push(`bambu_filament_info{${infoLabels}} 1`);
+      }
+    }
+  } catch (_) {}
+
   // Uptime
   lines.push('# HELP bambu_uptime_seconds Server uptime in seconds');
   lines.push('# TYPE bambu_uptime_seconds gauge');
@@ -6425,11 +7178,89 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/discovery/status', tag: 'Discovery', summary: 'Get discovery scan status and cached results', permission: 'admin' },
       { method: 'POST', path: '/api/discovery/test', tag: 'Discovery', summary: 'Test MQTT connection to a printer', permission: 'admin' },
       // Bambu Cloud
-      { method: 'GET', path: '/api/bambu-cloud/status', tag: 'Bambu Cloud', summary: 'Get cloud authentication status', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/status', tag: 'Bambu Cloud', summary: 'Get cloud authentication status (incl. token expiry)', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/login', tag: 'Bambu Cloud', summary: 'Login with Bambu Lab account (triggers 2FA)', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/verify', tag: 'Bambu Cloud', summary: 'Verify 2FA code', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/refresh-token', tag: 'Bambu Cloud', summary: 'Refresh access token (auto-refreshes every 12h)', permission: 'admin' },
       { method: 'GET', path: '/api/bambu-cloud/printers', tag: 'Bambu Cloud', summary: 'List printers from Bambu Lab account', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/logout', tag: 'Bambu Cloud', summary: 'Logout from Bambu Lab cloud', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/printer-status', tag: 'Bambu Cloud', summary: 'Get current printer status from cloud', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/device-version', tag: 'Bambu Cloud', summary: 'Get device firmware version info', permission: 'admin' },
+      { method: 'PATCH', path: '/api/bambu-cloud/device-info', tag: 'Bambu Cloud', summary: 'Update device info (name etc.)', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/task/:taskId', tag: 'Bambu Cloud', summary: 'Get print task details by ID', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/notification', tag: 'Bambu Cloud', summary: 'Get upload/mesh notification', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/projects', tag: 'Bambu Cloud', summary: 'List user projects from cloud', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/project/:id', tag: 'Bambu Cloud', summary: 'Get cloud project details', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/messages', tag: 'Bambu Cloud', summary: 'Get cloud messages (type, limit, offset)', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/message-count', tag: 'Bambu Cloud', summary: 'Get unread message count', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/messages/read', tag: 'Bambu Cloud', summary: 'Mark messages as read', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/slicer-settings', tag: 'Bambu Cloud', summary: 'Get slicer settings catalog', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/slicer-setting/:id', tag: 'Bambu Cloud', summary: 'Get slicer setting by ID', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/design-search', tag: 'Bambu Cloud', summary: 'Search MakerWorld designs (q, limit, offset)', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/design/:id', tag: 'Bambu Cloud', summary: 'Get design details', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/design/:id/3mf', tag: 'Bambu Cloud', summary: 'Get 3MF download URL for design', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/upload', tag: 'Bambu Cloud', summary: 'Last opp fil til Bambu Lab cloud (binary body + ?filename=)', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/upload-url', tag: 'Bambu Cloud', summary: 'Hent pre-signed S3 upload-URL', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/cloud-print', tag: 'Bambu Cloud', summary: 'Start cloud-print paa en printer', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/create-task', tag: 'Bambu Cloud', summary: 'Opprett printjobb i cloud', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/bind', tag: 'Bambu Cloud', summary: 'Bind ny printer til kontoen', permission: 'admin' },
+      { method: 'DELETE', path: '/api/bambu-cloud/bind', tag: 'Bambu Cloud', summary: 'Fjern printer fra kontoen', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/video-url', tag: 'Bambu Cloud', summary: 'Hent cloud video streaming URL', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Hent brukerprofil', permission: 'admin' },
+      { method: 'PUT', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Oppdater brukerprofil', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/preferences', tag: 'Bambu Cloud', summary: 'Hent brukerpreferanser', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/files', tag: 'Bambu Cloud', summary: 'List cloud-filer (prosjekter, opplastinger)', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/send-code', tag: 'Bambu Cloud', summary: 'Send 2FA-verifiseringskode til e-post', permission: 'admin' },
+      // Filament Tracker
+      { method: 'GET', path: '/api/filament-tracker/usage-history', tag: 'Filament Tracker', summary: 'Get AMS filament usage history (filterable)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-tracker/usage-trend', tag: 'Filament Tracker', summary: 'Get usage trend for a tray_id_name', permission: 'view' },
+      { method: 'GET', path: '/api/filament-tracker/spool-by-tray', tag: 'Filament Tracker', summary: 'Find spool by tray_id_name', permission: 'view' },
+      { method: 'GET', path: '/api/filament-tracker/purchased', tag: 'Filament Tracker', summary: 'List purchased spools registry', permission: 'view' },
+      { method: 'POST', path: '/api/filament-tracker/purchased', tag: 'Filament Tracker', summary: 'Add purchased spool', permission: 'filament' },
+      { method: 'PUT', path: '/api/filament-tracker/purchased/:id', tag: 'Filament Tracker', summary: 'Update purchased spool', permission: 'filament' },
+      { method: 'DELETE', path: '/api/filament-tracker/purchased/:id', tag: 'Filament Tracker', summary: 'Delete purchased spool', permission: 'filament' },
+      { method: 'POST', path: '/api/filament-tracker/purchased/import', tag: 'Filament Tracker', summary: 'Bulk import purchased spools (from tracker JSON)', permission: 'filament' },
+      { method: 'POST', path: '/api/filament-tracker/purchased/link', tag: 'Filament Tracker', summary: 'Link purchased spool to inventory spool', permission: 'filament' },
+      // Filament Analytics
+      { method: 'GET', path: '/api/filament-analytics/consumption', tag: 'Filament Analytics', summary: 'Consumption summary by material/brand (days param)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/consumption-by-printer', tag: 'Filament Analytics', summary: 'Consumption grouped by printer + material', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/daily', tag: 'Filament Analytics', summary: 'Daily usage data (filterable by date, material, printer)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/weekly-trend', tag: 'Filament Analytics', summary: 'Weekly consumption trend', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/consumption-rates', tag: 'Filament Analytics', summary: 'Rolling avg consumption rates per material', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/depletion-forecast', tag: 'Filament Analytics', summary: 'Spool depletion forecast (days until empty)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/waste', tag: 'Filament Analytics', summary: 'Waste analysis by material/status', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/material-efficiency', tag: 'Filament Analytics', summary: 'Material efficiency metrics (g/h, success rate)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/cost', tag: 'Filament Analytics', summary: 'Cost analysis by material/vendor', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/depletion-events', tag: 'Filament Analytics', summary: 'Spool depletion threshold events', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/recalculate', tag: 'Filament Analytics', summary: 'Recalculate daily aggregates + consumption rates (90 days)', permission: 'admin' },
+      { method: 'POST', path: '/api/filament-analytics/auto-match', tag: 'Filament Analytics', summary: 'Auto-match AMS tray to spool by color+material', permission: 'filament' },
+      { method: 'POST', path: '/api/filament-analytics/auto-create-spool', tag: 'Filament Analytics', summary: 'Auto-create spool from AMS tray data', permission: 'filament' },
+      { method: 'GET', path: '/api/filament-analytics/expired', tag: 'Filament Analytics', summary: 'List expired spools', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/expiring', tag: 'Filament Analytics', summary: 'List spools expiring within N days', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/substitutions', tag: 'Filament Analytics', summary: 'Get material substitution rules', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/substitutions', tag: 'Filament Analytics', summary: 'Add material substitution rule', permission: 'filament' },
+      { method: 'DELETE', path: '/api/filament-analytics/substitutions/:id', tag: 'Filament Analytics', summary: 'Delete substitution rule', permission: 'filament' },
+      { method: 'GET', path: '/api/filament-analytics/find-substitutes', tag: 'Filament Analytics', summary: 'Find available substitute materials with stock', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/ral-colors', tag: 'Filament Analytics', summary: 'List RAL Classic colors', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/closest-ral', tag: 'Filament Analytics', summary: 'Find closest RAL code for a hex color', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/storage-alerts', tag: 'Filament Analytics', summary: 'Get storage condition alerts (humidity/temp)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/core-weights', tag: 'Filament Analytics', summary: 'Spool core weight catalog (200+ brands)', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/core-weights', tag: 'Filament Analytics', summary: 'Add/update spool core weight entry', permission: 'filament' },
+      { method: 'GET', path: '/api/filament-analytics/bambu-codes', tag: 'Filament Analytics', summary: 'Bambu Lab filament code database (90+ codes)', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/bambu-code/:code', tag: 'Filament Analytics', summary: 'Look up specific Bambu filament code', permission: 'view' },
+      { method: 'GET', path: '/api/filament-analytics/k-calibrations/:spoolId', tag: 'Filament Analytics', summary: 'Get K-factor calibrations for a spool', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/k-calibrations', tag: 'Filament Analytics', summary: 'Save K-factor calibration (per spool/printer/nozzle)', permission: 'filament' },
+      { method: 'GET', path: '/api/filament-analytics/best-k', tag: 'Filament Analytics', summary: 'Get best K-factor for spool+printer combo', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/weigh', tag: 'Filament Analytics', summary: 'Record spool weighing with auto core weight lookup', permission: 'filament' },
+      { method: 'GET', path: '/api/filament-analytics/accuracy', tag: 'Filament Analytics', summary: 'Filament estimation vs actual accuracy stats', permission: 'view' },
+      // Bambu Lab RFID Variant Database
+      { method: 'GET', path: '/api/bambu/variants', tag: 'Bambu Lab', summary: 'Komplett Bambu Lab variant-database (228+ varianter)', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/variant/:id', tag: 'Bambu Lab', summary: 'Slå opp variant etter ID (f.eks. A00-K0)', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/product/:code', tag: 'Bambu Lab', summary: 'Slå opp variant etter produktkode', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/enrich-tray', tag: 'Bambu Lab', summary: 'Berik AMS-tray med fargenavn og hex fra variant-database', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/materials', tag: 'Bambu Lab', summary: 'Liste over alle Bambu Lab materialtyper', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/colors', tag: 'Bambu Lab', summary: 'Farger tilgjengelig for et materiale', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/print-stages', tag: 'Bambu Lab', summary: '36 print-stage koder med norske/engelske beskrivelser', permission: 'view' },
       // Printers
       { method: 'GET', path: '/api/printers', tag: 'Printers', summary: 'List all printers', permission: 'view' },
       { method: 'POST', path: '/api/printers', tag: 'Printers', summary: 'Add a printer', permission: 'admin' },

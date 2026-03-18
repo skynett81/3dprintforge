@@ -17,6 +17,44 @@
   let fullscreenPlayer = null;
   let currentPort = null;
   let streamActive = false;
+  let _reconnectTimer = null;
+  let _reconnectAttempt = 0;
+  const _maxReconnectAttempt = 15;
+  let _staleTimer = null;
+  let _lastFrameTs = 0;
+
+  function _clearReconnect() {
+    if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
+    _reconnectAttempt = 0;
+  }
+
+  function _clearStaleTimer() {
+    if (_staleTimer) { clearInterval(_staleTimer); _staleTimer = null; }
+  }
+
+  function _scheduleReconnect() {
+    if (_reconnectAttempt >= _maxReconnectAttempt) return;
+    _reconnectAttempt++;
+    const delay = Math.min(2000 * _reconnectAttempt, 30000);
+    console.log('[kamera] Reconnect om ' + (delay / 1000) + 's (forsøk ' + _reconnectAttempt + '/' + _maxReconnectAttempt + ')');
+    _reconnectTimer = setTimeout(() => {
+      initCamera(currentPort);
+    }, delay);
+  }
+
+  function _showReconnecting(container) {
+    let overlay = container.querySelector('.camera-reconnect-overlay');
+    if (overlay) return;
+    overlay = document.createElement('div');
+    overlay.className = 'camera-reconnect-overlay';
+    overlay.innerHTML = `<div class="camera-reconnect-pulse"></div><span>${t('camera.reconnecting') || 'Reconnecting...'}</span>`;
+    container.appendChild(overlay);
+  }
+
+  function _hideReconnecting(container) {
+    const overlay = container.querySelector('.camera-reconnect-overlay');
+    if (overlay) overlay.remove();
+  }
 
   function initCamera(port) {
     if (!port) {
@@ -29,10 +67,7 @@
 
     // No camera port configured — show placeholder, don't connect
     if (!port) {
-      if (player) {
-        try { player.destroy(); } catch(e) {}
-        player = null;
-      }
+      _cleanup();
       currentPort = null;
       streamActive = false;
       showPlaceholder(container);
@@ -40,49 +75,54 @@
     }
 
     if (port === currentPort && (player || _jpegWs)) return;
+    _cleanup();
     currentPort = port;
-
-    if (player) {
-      try { player.destroy(); } catch(e) {}
-      player = null;
-    }
-    if (_jpegWs) {
-      try { _jpegWs.close(); } catch(e) {}
-      _jpegWs = null;
-    }
     _streamMode = null;
     streamActive = false;
 
     const wsUrl = `ws://${location.hostname}:${port}`;
 
-    // Probe the WebSocket first — only create JSMpeg player if it connects
-    let probe;
-    try {
-      probe = new WebSocket(wsUrl);
-    } catch(e) {
-      showPlaceholder(container);
-      return;
-    }
+    // Single connection — detect mode from first message and keep playing
+    startPlayer(container, wsUrl);
+  }
 
-    const probeTimeout = setTimeout(() => {
-      probe.close();
-      showPlaceholder(container, 'probe_failed');
-    }, 3000);
-
-    probe.onopen = () => {
-      clearTimeout(probeTimeout);
-      probe.close();
-      startPlayer(container, wsUrl);
-    };
-
-    probe.onerror = () => {
-      clearTimeout(probeTimeout);
-      showPlaceholder(container, 'probe_failed');
-    };
+  function _cleanup() {
+    _clearReconnect();
+    _clearStaleTimer();
+    if (player) { try { player.destroy(); } catch(e) {} player = null; }
+    if (_jpegWs) { try { _jpegWs.close(); } catch(e) {} _jpegWs = null; }
   }
 
   let _streamMode = null; // 'jpeg' or 'mpeg'
   let _jpegWs = null;
+
+  function _buildOverlay(container) {
+    const overlay = document.createElement('div');
+    overlay.className = 'camera-overlay';
+    const fullscreenTitle = t('camera.fullscreen');
+    const screenshotTitle = t('camera.screenshot');
+    overlay.innerHTML = `
+      <button class="camera-screenshot-btn" title="${screenshotTitle}" aria-label="${screenshotTitle}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </button>
+      <button class="camera-fullscreen-btn" title="${fullscreenTitle}" aria-label="${fullscreenTitle}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+      </button>`;
+    overlay.querySelector('.camera-screenshot-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _takeScreenshot(container);
+    });
+    overlay.querySelector('.camera-fullscreen-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFullscreen();
+    });
+    return overlay;
+  }
 
   function startPlayer(container, wsUrl) {
     try {
@@ -94,88 +134,103 @@
       skeleton.innerHTML = `<div class="camera-skeleton-pulse"></div><span class="camera-skeleton-text">${t('camera.connecting')}</span>`;
       container.appendChild(skeleton);
 
-      // Fullscreen + screenshot button overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'camera-overlay';
-      const fullscreenTitle = t('camera.fullscreen');
-      const screenshotTitle = t('camera.screenshot');
-      overlay.innerHTML = `
-        <button class="camera-screenshot-btn" title="${screenshotTitle}" aria-label="${screenshotTitle}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-        </button>
-        <button class="camera-fullscreen-btn" title="${fullscreenTitle}" aria-label="${fullscreenTitle}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-          </svg>
-        </button>`;
-      overlay.querySelector('.camera-screenshot-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        _takeScreenshot(container);
-      });
-      overlay.querySelector('.camera-fullscreen-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openFullscreen();
-      });
+      const overlay = _buildOverlay(container);
 
       // Click anywhere on camera to open fullscreen
       container.style.cursor = 'pointer';
       container.onclick = () => { if (streamActive) openFullscreen(); };
 
-      // Detect stream type: first message determines JPEG vs MPEG-TS or error
+      // Single WebSocket — detect mode from first message, keep connection alive
       _streamMode = null;
-      const detectWs = new WebSocket(wsUrl);
+      let ws;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch(e) {
+        showPlaceholder(container, 'probe_failed');
+        _scheduleReconnect();
+        return;
+      }
+      ws.binaryType = 'arraybuffer';
 
-      detectWs.onmessage = (e) => {
+      let firstMessage = true;
+
+      ws.onopen = () => {
+        console.log('[kamera] WebSocket tilkoblet');
+        _reconnectAttempt = 0; // Reset on successful connect
+      };
+
+      ws.onmessage = (e) => {
         // Text message = JSON error from server
         if (typeof e.data === 'string') {
-          detectWs.close();
           try {
             const msg = JSON.parse(e.data);
             if (msg.error === 'auth_denied') {
               console.log('[kamera] Auth avvist — LAN Live View deaktivert');
               _streamMode = 'error';
+              ws.close();
               showPlaceholder(container, 'auth_denied');
+              // Auth denied auto-resets on server after 60s — schedule reconnect
+              _reconnectTimer = setTimeout(() => { initCamera(currentPort); }, 65000);
+              return;
+            }
+            if (msg.error === 'stream_unavailable') {
+              ws.close();
+              showPlaceholder(container, 'stream_unavailable');
+              _scheduleReconnect();
               return;
             }
           } catch {}
-          showPlaceholder(container, 'stream_unavailable');
           return;
         }
 
-        // Binary message = stream data
-        const data = new Uint8Array(e.data);
-        detectWs.close();
+        // First binary message — detect stream type
+        if (firstMessage) {
+          firstMessage = false;
+          const data = new Uint8Array(e.data);
 
-        if (data.length > 2 && data[0] === 0xFF && data[1] === 0xD8) {
-          console.log('[kamera] JPEG-modus detektert');
-          _streamMode = 'jpeg';
-          _startJpegPlayer(container, wsUrl, overlay);
-        } else {
-          console.log('[kamera] MPEG-modus detektert');
-          _streamMode = 'mpeg';
-          _startMpegPlayer(container, wsUrl, overlay);
+          if (data.length > 2 && data[0] === 0xFF && data[1] === 0xD8) {
+            console.log('[kamera] JPEG-modus detektert');
+            _streamMode = 'jpeg';
+            // Reuse this WS for JPEG playback — don't open a new one
+            _startJpegPlayerDirect(container, ws, overlay, e.data);
+          } else {
+            console.log('[kamera] MPEG-modus detektert');
+            _streamMode = 'mpeg';
+            // MPEG needs JSMpeg which manages its own WS — close this one
+            ws.close();
+            _startMpegPlayer(container, wsUrl, overlay);
+          }
+          return;
         }
       };
 
-      detectWs.binaryType = 'arraybuffer';
-
-      detectWs.onerror = () => {
-        showPlaceholder(container, 'probe_failed');
+      ws.onerror = () => {
+        if (!_streamMode) {
+          showPlaceholder(container, 'probe_failed');
+          _scheduleReconnect();
+        }
       };
 
-      // Timeout — no data in 10s means camera is not streaming
+      ws.onclose = () => {
+        if (!_streamMode) {
+          // Never got first message — connection lost before detection
+          showPlaceholder(container, 'probe_failed');
+          _scheduleReconnect();
+        }
+      };
+
+      // Timeout — no data in 8s means camera is not streaming
       setTimeout(() => {
-        if (!_streamMode && detectWs.readyState <= 1) {
-          detectWs.close();
+        if (!_streamMode && ws.readyState <= 1) {
+          ws.close();
           showPlaceholder(container, 'stream_unavailable');
+          _scheduleReconnect();
         }
-      }, 10000);
+      }, 8000);
     } catch (e) {
       console.warn('[kamera] Kunne ikke starte:', e.message);
       showPlaceholder(container);
+      _scheduleReconnect();
     }
   }
 

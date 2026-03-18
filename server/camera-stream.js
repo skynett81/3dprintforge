@@ -35,6 +35,9 @@ export class CameraStream {
     this.mode = null; // 'jpeg' or 'rtsp'
     this._headerBuf = Buffer.alloc(0);
     this._authDenied = false;
+    this._authDeniedTimer = null;
+    this._watchdogTimer = null;
+    this._lastFrameTime = 0;
   }
 
   start() {
@@ -99,7 +102,7 @@ export class CameraStream {
   }
 
   /**
-   * Auto-detect: probe port 6000 (JPEG), fallback to port 322 (RTSP).
+   * Auto-detect: TLS-probe port 6000 (JPEG) with auth test, fallback to port 322 (RTSP).
    */
   _startStream() {
     if (!this.ip) {
@@ -107,32 +110,50 @@ export class CameraStream {
       return;
     }
 
-    // Probe port 6000 first (JPEG stream)
-    const probe = new net.Socket();
-    probe.setTimeout(2000);
+    // TLS probe port 6000 — test actual TLS+auth, not just TCP
+    log.info('Prober TLS port 6000 på ' + this.ip + '...');
 
-    probe.on('connect', () => {
-      probe.destroy();
-      log.info('Port 6000 åpen — bruker JPEG-stream');
+    let probeTimedOut = false;
+    const probeTimeout = setTimeout(() => {
+      probeTimedOut = true;
+      if (probeSock) { try { probeSock.destroy(); } catch {} }
+      log.info('TLS-probe timeout — prøver RTSP (port 322)');
+      this.mode = 'rtsp';
+      this._startFfmpeg();
+    }, 3000);
+
+    let probeSock;
+    try {
+      probeSock = tlsConnect({
+        host: this.ip,
+        port: 6000,
+        rejectUnauthorized: false,
+      });
+    } catch {
+      clearTimeout(probeTimeout);
+      log.info('TLS-probe feilet — prøver RTSP (port 322)');
+      this.mode = 'rtsp';
+      this._startFfmpeg();
+      return;
+    }
+
+    probeSock.on('secureConnect', () => {
+      clearTimeout(probeTimeout);
+      probeSock.destroy();
+      if (probeTimedOut) return;
+      log.info('TLS port 6000 ok — bruker JPEG-stream');
       this.mode = 'jpeg';
       this._startJpegStream();
     });
 
-    probe.on('error', () => {
-      probe.destroy();
-      log.info('Port 6000 stengt — prøver RTSP (port 322)');
+    probeSock.on('error', () => {
+      clearTimeout(probeTimeout);
+      probeSock.destroy();
+      if (probeTimedOut) return;
+      log.info('TLS-probe feil — prøver RTSP (port 322)');
       this.mode = 'rtsp';
       this._startFfmpeg();
     });
-
-    probe.on('timeout', () => {
-      probe.destroy();
-      log.info('Port 6000 timeout — prøver RTSP (port 322)');
-      this.mode = 'rtsp';
-      this._startFfmpeg();
-    });
-
-    probe.connect(6000, this.ip);
   }
 
   /**
@@ -200,10 +221,10 @@ export class CameraStream {
       }
     });
 
-    // Reset restart counter after 5s of stable connection
+    // Reset restart counter after 10s of stable connection
     setTimeout(() => {
       if (this.tlsSocket) this.restartCount = 0;
-    }, 5000);
+    }, 10000);
   }
 
   /**
@@ -231,11 +252,23 @@ export class CameraStream {
           this._authDenied = true;
           this._broadcastError('auth_denied');
           this._cleanupJpeg();
+
+          // Auto-reset auth denied etter 60s — tillater ny tilkobling
+          if (this._authDeniedTimer) clearTimeout(this._authDeniedTimer);
+          this._authDeniedTimer = setTimeout(() => {
+            log.info('Nullstiller auth-denied — prøver på nytt');
+            this._authDenied = false;
+            if (this.clients.size > 0) {
+              this._startStream();
+            }
+          }, 60000);
           return;
         }
 
         log.info('Autentisering godkjent — starter JPEG-stream');
         this._readState = 'header';
+        this._lastFrameTime = Date.now();
+        this._startWatchdog();
         continue;
       }
 
@@ -246,9 +279,9 @@ export class CameraStream {
         this._headerBuf = this._headerBuf.subarray(16);
 
         if (this._payloadSize <= 0 || this._payloadSize > 10 * 1024 * 1024) {
-          // Invalid payload — skip and reset
-          this._headerBuf = Buffer.alloc(0);
-          this._readState = 'header';
+          // Invalid payload — try to resync by finding next valid header
+          log.warn('Ugyldig payload-størrelse: ' + this._payloadSize + ' — resynkroniserer');
+          this._resyncBuffer();
           return;
         }
 
@@ -264,6 +297,7 @@ export class CameraStream {
 
         // Validate JPEG markers (FFD8 start)
         if (frame.length > 2 && frame[0] === 0xFF && frame[1] === 0xD8) {
+          this._lastFrameTime = Date.now();
           this._broadcastJpeg(frame);
         }
       }
@@ -365,11 +399,60 @@ export class CameraStream {
     }, 5000);
   }
 
+  /**
+   * Resync buffer by scanning for a plausible 16-byte header boundary.
+   * Drops data until we find a reasonable payload size, or clears the buffer.
+   */
+  _resyncBuffer() {
+    // Scan forward byte by byte looking for a valid-looking header
+    for (let i = 1; i <= this._headerBuf.length - 16; i++) {
+      const candidate = this._headerBuf.readUInt32LE(i);
+      if (candidate > 0 && candidate < 2 * 1024 * 1024) {
+        // Looks like a valid payload size — resync here
+        this._headerBuf = this._headerBuf.subarray(i);
+        this._readState = 'header';
+        log.info('Buffer resynkronisert etter ' + i + ' bytes');
+        return;
+      }
+    }
+    // No valid header found — clear and wait for new data
+    this._headerBuf = Buffer.alloc(0);
+    this._readState = 'header';
+  }
+
+  /**
+   * Watchdog: restart stream if no frames received for 15 seconds.
+   */
+  _startWatchdog() {
+    this._stopWatchdog();
+    this._watchdogTimer = setInterval(() => {
+      if (this._lastFrameTime && Date.now() - this._lastFrameTime > 15000) {
+        log.warn('Watchdog: ingen frames på 15s — restarter stream');
+        this._stopWatchdog();
+        this._cleanupJpeg();
+        if (this.clients.size > 0) {
+          this._scheduleRestart();
+        }
+      }
+    }, 5000);
+  }
+
+  _stopWatchdog() {
+    if (this._watchdogTimer) {
+      clearInterval(this._watchdogTimer);
+      this._watchdogTimer = null;
+    }
+  }
+
   _scheduleRestart() {
-    if (this.restartCount >= 5) return;
+    if (this.restartCount >= 12) {
+      log.warn('Maks restart-forsøk nådd (12) — gir opp');
+      this._broadcastError('stream_unavailable');
+      return;
+    }
     this.restartCount++;
-    const delay = Math.min(2000 * this.restartCount, 15000);
-    log.info('Restarter om ' + delay + 'ms (forsøk ' + this.restartCount + '/5)...');
+    const delay = Math.min(1000 * this.restartCount, 30000);
+    log.info('Restarter om ' + (delay / 1000) + 's (forsøk ' + this.restartCount + '/12)...');
     this.restartTimer = setTimeout(() => {
       this._startStream();
     }, delay);
@@ -380,6 +463,11 @@ export class CameraStream {
       clearTimeout(this.restartTimer);
       this.restartTimer = null;
     }
+    if (this._authDeniedTimer) {
+      clearTimeout(this._authDeniedTimer);
+      this._authDeniedTimer = null;
+    }
+    this._stopWatchdog();
     if (this.ffmpeg) {
       log.info('Stopper ffmpeg');
       this.ffmpeg.kill('SIGTERM');

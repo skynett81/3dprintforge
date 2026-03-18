@@ -126,20 +126,42 @@ function parseGcodeString(content) {
     }
   }
 
+  // Extract density and diameter from gcode comments (BambuStudio/PrusaSlicer)
+  // ; filament_density = 1.24 (g/cm³)
+  const densityMatch = content.match(/;\s*filament_density\s*=\s*([\d.,]+)/i);
+  const densities = densityMatch ? densityMatch[1].split(',').map(d => parseFloat(d.trim())) : [];
+  // ; filament_diameter = 1.75 (mm)
+  const diameterMatch = content.match(/;\s*filament_diameter\s*=\s*([\d.,]+)/i);
+  const diameters = diameterMatch ? diameterMatch[1].split(',').map(d => parseFloat(d.trim())) : [];
+
   // ; filament used [mm] = 1234.5 (convert via density if no weight)
   if (result.filaments.length === 0) {
     const mmMatch = content.match(/;\s*filament used \[mm\]\s*=\s*([\d.,]+)/i);
     if (mmMatch) {
       const lengths = mmMatch[1].split(',').map(l => parseFloat(l.trim()));
-      for (const len of lengths) {
+      for (let i = 0; i < lengths.length; i++) {
+        const len = lengths[i];
         if (len > 0) {
-          // Estimate weight: 1.75mm diameter PLA (~1.24g/cm³), 1mm = π*(0.875)² mm³ = ~2.405mm³
-          const volumeCm3 = (len * Math.PI * 0.0875 * 0.0875) / 100;
-          const weightG = volumeCm3 * 1.24; // PLA density default
-          result.filaments.push({ weight_g: Math.round(weightG * 100) / 100, length_mm: len });
+          const diameter = diameters[i] || diameters[0] || 1.75;
+          const density = densities[i] || densities[0] || 1.24;
+          const radiusCm = (diameter / 10) / 2;
+          const volumeCm3 = (len / 10) * Math.PI * radiusCm * radiusCm;
+          const weightG = volumeCm3 * density;
+          result.filaments.push({
+            weight_g: Math.round(weightG * 100) / 100,
+            length_mm: len,
+            density,
+            diameter,
+          });
         }
       }
     }
+  }
+
+  // Enrich filaments with density/diameter if available
+  for (let i = 0; i < result.filaments.length; i++) {
+    if (!result.filaments[i].density && densities[i]) result.filaments[i].density = densities[i];
+    if (!result.filaments[i].diameter && diameters[i]) result.filaments[i].diameter = diameters[i];
   }
 
   // ; filament_type = PLA
@@ -165,9 +187,12 @@ function parseGcodeString(content) {
   if (curaMatch && result.filaments.length === 0) {
     const meters = parseFloat(curaMatch[1]);
     const mm = meters * 1000;
-    const volumeCm3 = (mm * Math.PI * 0.0875 * 0.0875) / 100;
-    const weightG = volumeCm3 * 1.24;
-    result.filaments.push({ weight_g: Math.round(weightG * 100) / 100, length_mm: mm });
+    const diameter = diameters[0] || 1.75;
+    const density = densities[0] || 1.24;
+    const radiusCm = (diameter / 10) / 2;
+    const volumeCm3 = (mm / 10) * Math.PI * radiusCm * radiusCm;
+    const weightG = volumeCm3 * density;
+    result.filaments.push({ weight_g: Math.round(weightG * 100) / 100, length_mm: mm, density, diameter });
   }
 
   result.total_weight_g = result.filaments.reduce((sum, f) => sum + (f.weight_g || 0), 0);
