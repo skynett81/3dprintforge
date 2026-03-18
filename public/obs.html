@@ -333,7 +333,8 @@
       if(!card||!img) return;
       const file = pd.gcode_file||pd.subtask_name||'';
       if(!file) { card.style.display='none'; return; }
-      const url = '/api/printers/'+encodeURIComponent(activePrinterId)+'/thumbnail?file='+encodeURIComponent(file);
+      // Use thumbnail endpoint: /api/thumbnail/:printerId (cached from MQTT/FTP)
+      const url = '/api/thumbnail/'+encodeURIComponent(activePrinterId);
       if(url!==lastThumbnailUrl) {
         lastThumbnailUrl=url;
         img.onload=()=>{ card.style.display=''; };
