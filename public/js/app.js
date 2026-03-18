@@ -310,7 +310,7 @@ const PANEL_TITLES = {
   settings: 'tabs.settings',
   materialrec: 'material_rec.title',
   filamentanalytics: 'tabs.filament_analytics',
-  wearprediction: 'wear.title',
+  wearprediction: 'tabs.maintenance',
   erroranalysis: 'error_analysis.title',
   orders: 'orders.title',
   achievements: 'achievements.title',
@@ -342,7 +342,7 @@ const PANEL_LOADERS = {
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); },
   materialrec: () => { if (typeof loadMaterialRecommendationsPanel === 'function') loadMaterialRecommendationsPanel(); },
   filamentanalytics: () => { if (typeof loadFilamentAnalyticsPanel === 'function') loadFilamentAnalyticsPanel(); },
-  wearprediction: () => { if (typeof loadWearPredictionPanel === 'function') loadWearPredictionPanel(); },
+  wearprediction: () => { if (typeof loadMaintenancePanel === 'function') loadMaintenancePanel('wearprediction'); },
   erroranalysis: () => { if (typeof loadErrorAnalysisPanel === 'function') loadErrorAnalysisPanel(); },
   orders: () => { if (typeof loadOrderPanel === 'function') loadOrderPanel(); },
   achievements: () => { if (typeof loadAchievementsPanel === 'function') loadAchievementsPanel(); },
@@ -402,7 +402,8 @@ window.openPanel = function(name, skipHash) {
     stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
     telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
     gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
-    forecast: 'filamentanalytics', multicolor: 'filament'
+    forecast: 'filamentanalytics', multicolor: 'filament',
+    wearprediction: 'maintenance'
   };
   const sidebarName = _panelParentMap[name] || name;
   document.querySelector(`.sidebar-btn[data-panel="${sidebarName}"]`)?.classList.add('active');
@@ -575,7 +576,8 @@ function _expandSectionForPanel(panelName) {
     stats: 'analysis', comparison: 'analysis', printermatrix: 'analysis', timetracker: 'analysis', waste: 'analysis',
     telemetry: 'diagnostics', bedmesh: 'diagnostics', health: 'diagnostics',
     gcode: 'library', modelinfo: 'knowledge', learning: 'knowledge',
-    forecast: 'filamentanalytics', multicolor: 'filament'
+    forecast: 'filamentanalytics', multicolor: 'filament',
+    wearprediction: 'maintenance'
   };
   const resolvedName = parentMap[panelName] || panelName;
   const btn = document.querySelector(`.sidebar-btn[data-panel="${resolvedName}"]`) || document.querySelector(`.sidebar-btn[data-panel="${panelName}"]`);

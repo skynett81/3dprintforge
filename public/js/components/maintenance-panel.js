@@ -23,14 +23,16 @@
   const TAB_CONFIG = {
     nozzle:     { label: 'maintenance.tab_nozzle',     modules: ['alerts', 'lifetime-stats', 'active-nozzle', 'nozzle-history'] },
     components: { label: 'maintenance.tab_components', modules: ['component-status', 'wear-tracking', 'schedule'] },
-    log:        { label: 'maintenance.tab_log',        modules: ['log-form', 'recent-events'] }
+    log:        { label: 'maintenance.tab_log',        modules: ['log-form', 'recent-events'] },
+    wearprediction: { label: 'wear.title', modules: ['wear-prediction-embed'], external: true }
   };
   const MODULE_SIZE = {
     'alerts': 'full', 'lifetime-stats': 'full',
     'active-nozzle': 'half', 'nozzle-history': 'half',
     'component-status': 'half', 'wear-tracking': 'half',
     'schedule': 'full',
-    'log-form': 'half', 'recent-events': 'half'
+    'log-form': 'half', 'recent-events': 'half',
+    'wear-prediction-embed': 'full'
   };
 
   let _selectedMaintPrinter = null;
@@ -221,10 +223,27 @@
     });
     const slug = tabId === 'nozzle' ? 'maintenance' : `maintenance/${tabId}`;
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    _loadExternalTab(tabId);
+  }
+
+  function _loadExternalTab(tabId) {
+    const cfg = TAB_CONFIG[tabId];
+    if (!cfg?.external) return;
+    const container = document.getElementById(`maint-ext-${tabId}`);
+    if (!container) return;
+    if (tabId === 'wearprediction' && typeof loadWearPredictionPanel === 'function') {
+      const realBody = document.getElementById('overlay-panel-body');
+      if (realBody) realBody.removeAttribute('id');
+      container.id = 'overlay-panel-body';
+      loadWearPredictionPanel();
+      container.id = `maint-ext-${tabId}`;
+      if (realBody) realBody.id = 'overlay-panel-body';
+    }
   }
 
   // ═══ Main render ═══
-  async function loadMaintenance() {
+  async function loadMaintenance(initialTab) {
+    if (initialTab && TAB_CONFIG[initialTab]) _activeTab = initialTab;
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
@@ -293,20 +312,28 @@
         const order = getOrder(tabId);
         html += `<div class="tab-panel maint-tab-panel stats-tab-panel stagger-in ix-tab-panel ${tabId === _activeTab ? 'active' : ''}" id="maint-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
         let _si = 0;
-        for (const modId of order) {
-          const builder = BUILDERS[modId];
-          if (!builder) continue;
-          const content = builder(_status, _log, _wear);
-          if (!content) continue;
-          const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
-          html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" style="--i:${_si++}">`;
-          html += content;
-          html += '</div>';
+        if (cfg.external) {
+          // External tab — render empty container, loaded after DOM insert
+          html += `<div class="stats-module stats-module-full" id="maint-ext-${tabId}" style="--i:0"></div>`;
+        } else {
+          for (const modId of order) {
+            const builder = BUILDERS[modId];
+            if (!builder) continue;
+            const content = builder(_status, _log, _wear);
+            if (!content) continue;
+            const isFull = (MODULE_SIZE[modId] || 'full') === 'full';
+            html += `<div class="stats-module${isFull ? ' stats-module-full' : ''}" data-module-id="${modId}" style="--i:${_si++}">`;
+            html += content;
+            html += '</div>';
+          }
         }
         html += '</div>';
       }
 
       panel.innerHTML = html;
+
+      // Load external panels after DOM insert
+      _loadExternalTab(_activeTab);
     } catch (e) {
       panel.innerHTML = `<p class="text-muted">${t('maintenance.load_failed')}</p>`;
     }
