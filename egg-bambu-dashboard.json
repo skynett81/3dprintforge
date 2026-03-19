@@ -4,7 +4,7 @@
     "version": "PTDL_v2",
     "update_url": null
   },
-  "exported_at": "2026-03-01T00:00:00+00:00",
+  "exported_at": "2026-03-19T00:00:00+00:00",
   "name": "Bambu Dashboard",
   "author": "skynett81@github.com",
   "description": "Self-hosted dashboard for monitoring and controlling Bambu Lab 3D printers. Real-time status, camera feeds, print history, print queue with load balancing, filament inventory, cloud slicer integration, and 7 notification channels (Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS) via MQTT.",

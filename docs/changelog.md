@@ -4,6 +4,85 @@ All notable changes to Bambu Dashboard.
 
 ---
 
+## v1.1.11 — Filament Analytics, Cloud API, RFID Library, OBS Redesign & Multi-Repo Integration (2026-03-19)
+
+### Bambu Lab Cloud API (42 metoder)
+- Full Cloud API-dekning: filopplasting, cloud print, enhetsbinding, brukerprofil, 2FA
+- Token auto-refresh hver 12. time med utløpsdeteksjon
+- MakerWorld designsøk og 3MF-nedlasting
+
+### Filament Analytics (8 faner)
+- Daglig/ukentlig/månedlig forbrukssporing med aggregering
+- Materialforbruksrater, svinnanalyse, effektivitetsmetrikker
+- Tømmeprognose med estimert tom-dato per spool
+- Kostnadsanalyse per leverandør med utnyttelsesgrad
+- Materialerstatningsregler (10 forhåndsdefinerte)
+- RAL-fargeoppslag (32 farger) med Delta-E matching
+- Lagringsalarmer med fuktighet/temperatur-terskler
+- Utløpsdato-sporing for spoler
+
+### SpoolEase-integrasjon
+- 109 spolvekter fra katalog for nøyaktig bruttovekt-måling
+- 75 Bambu Lab filament-koder med temperaturområder
+- K-faktor kalibrering per spool/printer/dyse
+- Forbrukt-siden-veiing med veie-arbeidsflyt
+- Forbedret G-code parser med densitet/diameter fra kommentarer
+
+### Bambu Lab RFID Library
+- 223 variant→farge-mappinger med hex-koder og norske fargenavn
+- 36 materialtyper med tørkeanbefalinger fra RFID-data
+- Auto-berikelse av AMS-trays med variant-database
+- Fuzzy matching for tray_id_name varianter
+
+### BambuBoard — 36 print-stager
+- Komplett `stg_cur` mapping med norske oversettelser og SVG-ikoner
+- Stage-badge i kontrollpanel, fleet dashboard og nedtellingstimer
+- Print-stage i telemetri historisk data
+
+### OBS Overlay redesign
+- Sidepanel-layout (320px) med transparent bakgrunn
+- SVG-spolvisualiseringer for AMS-trays med fyllingsgrad
+- Progress-ring, temperaturer, print-stage badges
+- Auto-deteksjon av kameramodus (fullskjerm vs overlay)
+- OBS-innstillinger oppdatert med posisjon, MJPEG og snapshot-URLer
+
+### Kamera
+- MJPEG HTTP-stream (`/api/printers/:id/stream.mjpeg`)
+- JPEG snapshot-endepunkt (`/api/printers/:id/frame.jpeg`)
+- Direkte kamera-URLer i OBS-innstillinger med kopier-knapp
+
+### Label Generator redesign
+- SVG-spolvisualisering med fyllingsgrad på hvert kort
+- Fargestripe, progress-bar, leverandør, temperaturer, RAL-kode
+- Filamentprofil-labels som ny type
+- Størrelsesvalgr (S/M/L) med grid-tilpasning
+
+### Fleet Dashboard
+- Grid-layout velger (Auto/1/2/3/4 kolonner) med localStorage-persistering
+- Printer vedlikeholdsmodus med oransje badge og nedtoning
+- Norske labels for sortering og handlinger
+
+### BamBuddy-funksjoner
+- AMS fjern-tørking via MQTT (start/stopp med temperatur og varighet)
+- Print historikk-foto kobling (screenshots → print)
+- MQTT debug-system med sanntids WebSocket-stream
+- Firmware-statussjekk per modul
+- Timelapse re-encoding med hastighet, kvalitet og trimming
+
+### Vedlikehold
+- Slitasjepredikasjon flyttet inn som fane i vedlikeholdspanelet
+- Overvåking-seksjonen ryddet (5 → 4 knapper)
+
+### Rettelser
+- Norske tegn (æøå) rettet i alle API-meldinger, print-stager og OBS
+- SVG lag-ikon fikset (manglet width/height, ble for stor)
+- Thumbnail-URL i OBS rettet til riktig API-rute
+
+### Database
+- Migrasjoner v96–v103 med auto-seeding av SpoolEase og RFID Library data
+
+---
+
 ## v1.1.10 — Spool Visuals, Learning Center, Knowledge Base & UI Overhaul (2026-03-12)
 
 ### Spool Visuals
