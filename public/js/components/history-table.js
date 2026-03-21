@@ -901,6 +901,21 @@
       }
     }
 
+    // Async: fetch designer from MakerWorld for model link
+    if (cloud?.designId) {
+      fetch(`/api/makerworld/${cloud.designId}`).then(r => r.json()).then(mw => {
+        if (mw.designer) {
+          const linkEl = overlay.querySelector('.ph-model-link');
+          if (linkEl) {
+            const designerSpan = document.createElement('span');
+            designerSpan.style.cssText = 'font-size:0.78rem;color:var(--text-muted);margin-left:8px';
+            designerSpan.textContent = 'av ' + mw.designer;
+            linkEl.parentElement.appendChild(designerSpan);
+          }
+        }
+      }).catch(() => {});
+    }
+
     // Load milestone album
     const albumEl = overlay.querySelector(`#ph-milestone-album-${id}`);
     if (albumEl) {

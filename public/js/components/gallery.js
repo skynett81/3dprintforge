@@ -5,13 +5,35 @@
   let _hasMore = true;
   let _loading = false;
   let _filter = 'completed';
+  let _cloudTasks = null;
   const PAGE_SIZE = 24;
+
+  async function _loadCloudTasks() {
+    if (_cloudTasks !== null) return;
+    try {
+      const res = await fetch('/api/bambu-cloud/tasks');
+      if (!res.ok) { _cloudTasks = []; return; }
+      const data = await res.json();
+      _cloudTasks = data.tasks || data || [];
+    } catch { _cloudTasks = []; }
+  }
+
+  function _getCloudMatch(filename) {
+    if (!_cloudTasks || !filename) return null;
+    const fn = filename.toLowerCase().trim();
+    return _cloudTasks.find(t => {
+      const tt = (t.title || '').toLowerCase().trim();
+      const dt = (t.designTitle || '').toLowerCase().trim();
+      return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+    }) || null;
+  }
 
   window.loadGalleryPanel = async function() {
     _prints = [];
     _offset = 0;
     _hasMore = true;
     _filter = 'completed';
+    _loadCloudTasks();
 
     const el = document.getElementById('overlay-panel-body');
     if (!el) return;
@@ -128,11 +150,14 @@
       const duration = _fmtDuration(p.duration_seconds);
       const date = _fmtDate(p.started_at);
       const name = (p.filename || '').replace(/\.3mf$|\.gcode\.3mf$/i, '');
+      const cloud = _getCloudMatch(p.filename);
+      const displayName = cloud?.designTitle || name;
+      const linkIcon = cloud?.designId ? `<a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Åpne på MakerWorld"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : '';
 
       card.innerHTML = `
         <img class="gallery-thumb" src="/api/history/${p.id}/thumbnail" loading="lazy" onerror="this.outerHTML='<div class=\\'gallery-thumb-placeholder\\'><svg width=\\'48\\' height=\\'48\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><path d=\\'M21 15l-5-5L5 21\\'/></svg></div>'">
         <div class="gallery-info">
-          <div class="gallery-name" title="${_esc(p.filename)}">${_esc(name)}</div>
+          <div class="gallery-name" title="${_esc(displayName)}">${linkIcon}${_esc(displayName)}</div>
           <div class="gallery-meta">
             <span><span class="gallery-status ${statusCls}"></span>${p.status || 'completed'}</span>
             <span>${duration}</span>
@@ -163,6 +188,8 @@
 
   async function _showDetail(p) {
     const name = (p.filename || '').replace(/\.3mf$|\.gcode\.3mf$/i, '');
+    const cloud = _getCloudMatch(p.filename);
+    const displayName = cloud?.designTitle || name;
     const duration = _fmtDuration(p.duration_seconds);
     const date = _fmtDate(p.started_at);
 
@@ -191,7 +218,13 @@
         <button class="gallery-detail-close" onclick="this.closest('.gallery-detail-overlay').remove()">&times;</button>
       </div>
       <div class="gallery-detail-body">
-        <div class="gallery-detail-title">${_esc(name)}</div>
+        <div class="gallery-detail-title">${_esc(displayName)}</div>
+        ${cloud?.designId ? `<div style="margin-bottom:12px">
+          <a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link" style="font-size:0.85rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Åpne på MakerWorld
+          </a>
+          <span class="gallery-designer" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px"></span>
+        </div>` : ''}
         <div class="gallery-detail-stats">
           <div class="gallery-stat"><div class="gallery-stat-label">${t('gallery.status')}</div><div class="gallery-stat-value">${p.status || '—'}</div></div>
           <div class="gallery-stat"><div class="gallery-stat-label">${t('gallery.duration')}</div><div class="gallery-stat-value">${duration}</div></div>
@@ -207,6 +240,16 @@
     </div>`;
 
     document.body.appendChild(overlay);
+
+    // Async: fetch designer from MakerWorld
+    if (cloud?.designId) {
+      fetch(`/api/makerworld/${cloud.designId}`).then(r => r.json()).then(mw => {
+        if (mw.designer) {
+          const designerEl = overlay.querySelector('.gallery-designer');
+          if (designerEl) designerEl.textContent = 'av ' + mw.designer;
+        }
+      }).catch(() => {});
+    }
   }
 
   window._galleryFullscreen = function(src) {
