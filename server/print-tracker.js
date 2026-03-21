@@ -78,6 +78,8 @@ export class PrintTracker {
     this.onMilestone = null;
     this.onError = null;
     this.onNfcAutoLinked = null;
+    // Cloud task provider: (filename) => { weight, costTime, designId, designTitle } | null
+    this.cloudTaskProvider = null;
     this._milestonesTriggered = new Set();
 
     // NFC auto-detection cache: tag_uid -> { spool_id, ams_unit, tray_id }
@@ -381,8 +383,24 @@ export class PrintTracker {
       nozzle_target: data.nozzle_target_temper || 0,
       ams_units_used: data.ams?.ams?.length || 0,
       tray_id: data.ams?.tray_now != null ? String(data.ams.tray_now) : null,
-      estimated_seconds: estimatedSeconds
+      estimated_seconds: estimatedSeconds,
+      cloud_weight_g: null,
+      cloud_time_s: null,
+      cloud_design_id: null
     };
+
+    // Fetch cloud estimate (weight + time) for this print
+    if (this.cloudTaskProvider) {
+      try {
+        const cloud = this.cloudTaskProvider(this.currentPrint.filename);
+        if (cloud) {
+          this.currentPrint.cloud_weight_g = cloud.weight || null;
+          this.currentPrint.cloud_time_s = cloud.costTime || null;
+          this.currentPrint.cloud_design_id = cloud.designId || null;
+          if (cloud.weight) log.info('Cloud-estimat: ' + cloud.weight.toFixed(1) + 'g, ' + Math.round((cloud.costTime || 0) / 60) + ' min');
+        }
+      } catch (e) { log.debug('Cloud-estimat feilet: ' + e.message); }
+    }
 
     // Check for nozzle change
     this._checkNozzleChange(data);
@@ -415,6 +433,14 @@ export class PrintTracker {
           filamentUsedG += (diff / 100) * trayWeight;
         }
       }
+    }
+
+    // Fallback: use cloud estimate if AMS diff is too low (e.g. after server restart)
+    const cloudWeight = this.currentPrint.cloud_weight_g;
+    if (filamentUsedG < 1 && cloudWeight && cloudWeight > 1 && status === 'completed') {
+      const pctDone = completionPct || 100;
+      filamentUsedG = cloudWeight * (pctDone / 100);
+      log.info('Bruker cloud-estimat for filament: ' + filamentUsedG.toFixed(1) + 'g (AMS-diff var 0)');
     }
 
     // Waste = startup purge + color change waste + failed print filament

@@ -4,6 +4,27 @@
   let _events = [];
   let _view = 'month'; // month | week
   let _printers = [];
+  let _cloudTasks = null;
+
+  async function _loadCloudTasks() {
+    if (_cloudTasks !== null) return;
+    try {
+      const res = await fetch('/api/bambu-cloud/tasks');
+      if (!res.ok) { _cloudTasks = []; return; }
+      const data = await res.json();
+      _cloudTasks = data.tasks || data || [];
+    } catch { _cloudTasks = []; }
+  }
+
+  function _getCloudMatch(filename) {
+    if (!_cloudTasks || !filename) return null;
+    const fn = filename.toLowerCase().trim();
+    return _cloudTasks.find(t2 => {
+      const tt = (t2.title || '').toLowerCase().trim();
+      const dt = (t2.designTitle || '').toLowerCase().trim();
+      return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+    }) || null;
+  }
 
   function _panelSwitcher() {
     return '<div class="tabs" style="margin-bottom:12px">' +
@@ -15,6 +36,7 @@
   window.loadSchedulerPanel = function() {
     const el = document.getElementById('overlay-panel-body');
     if (!el) return;
+    _loadCloudTasks();
 
     el.innerHTML = _panelSwitcher() + `<style>
       .sched-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
@@ -124,10 +146,13 @@
         const d = new Date(h.started_at);
         return d >= fromDate && d <= toDate;
       })
-      .map(h => ({
+      .map(h => {
+        const cloud = _getCloudMatch(h.filename);
+        return {
         id: 'h_' + h.id,
         _historyId: h.id,
-        title: _trimFilename(h.filename || t('scheduler.untitled')),
+        _cloud: cloud,
+        title: cloud?.designTitle || _trimFilename(h.filename || t('scheduler.untitled')),
         scheduled_at: h.started_at,
         finished_at: h.finished_at,
         status: h.status === 'completed' ? 'completed' : h.status === 'failed' ? 'failed' : 'running',
@@ -141,7 +166,7 @@
         notes: h.notes,
         printer_id: h.printer_id,
         _fromHistory: true
-      }));
+      };});
 
     // Add currently running prints from printer state
     const runningEvents = [];
@@ -484,9 +509,16 @@
     if (ev.layer_count) fields += `<div class="sched-field"><label>${t('history.layers') || 'Lag'}</label><div>${ev.layer_count}</div></div>`;
     if (ev.notes) fields += `<div class="sched-field"><label>${t('scheduler.notes') || 'Notater'}</label><div style="font-size:0.8rem;color:var(--text-muted)">${_esc(ev.notes)}</div></div>`;
 
+    // MakerWorld model link
+    let modelHtml = '';
+    if (ev._cloud?.designId) {
+      modelHtml = `<div class="sched-field"><label>Modellkilde</label><div><a href="https://makerworld.com/en/models/${ev._cloud.designId}" target="_blank" rel="noopener" class="ph-model-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Åpne på MakerWorld</a></div></div>`;
+    }
+
     overlay.innerHTML = `<div class="sched-dialog">
       ${thumbHtml}
       <h3 style="margin-top:0">${_esc(ev.title)}</h3>
+      ${modelHtml}
       ${fields}
       <div class="sched-dialog-actions">
         ${ev._fromHistory ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#history'">${t('history.view') || 'Vis historikk'}</button>` : ''}

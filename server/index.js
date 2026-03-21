@@ -559,11 +559,41 @@ async function _sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey) {
   }
 }
 
+// Cloud task matching helper
+function _matchCloudTask(tasks, filename) {
+  if (!tasks || !filename) return null;
+  const fn = filename.toLowerCase().trim();
+  return tasks.find(t => {
+    const tt = (t.title || '').toLowerCase().trim();
+    const dt = (t.designTitle || '').toLowerCase().trim();
+    return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+  }) || null;
+}
+
 // Wire print completion to queue manager + timelapse for all live printers
 for (const [id, entry] of manager.printers) {
   if (entry.tracker) {
     const origOnPrintEnd = entry.tracker.onPrintEnd;
     const origOnPrintStart = entry.tracker.onPrintStart;
+
+    // Cloud task provider — henter filament-estimat fra Bambu Cloud
+    let _cloudTaskCache = null;
+    let _cloudTaskCacheTs = 0;
+    entry.tracker.cloudTaskProvider = (filename) => {
+      if (!filename) return null;
+      // Return from cache if fresh (max 10 min)
+      if (_cloudTaskCache && Date.now() - _cloudTaskCacheTs < 600000) {
+        return _matchCloudTask(_cloudTaskCache, filename);
+      }
+      // Async refresh cache (non-blocking)
+      if (bambuCloud?.isAuthenticated()) {
+        bambuCloud.getTaskHistory().then(data => {
+          _cloudTaskCache = Array.isArray(data) ? data : (data.tasks || []);
+          _cloudTaskCacheTs = Date.now();
+        }).catch(() => {});
+      }
+      return _cloudTaskCache ? _matchCloudTask(_cloudTaskCache, filename) : null;
+    };
 
     // Timelapse + AI detection + power monitor start on print start
     entry.tracker.onPrintStart = (data) => {
