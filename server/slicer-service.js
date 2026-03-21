@@ -71,7 +71,7 @@ export function getSlicerProfiles() {
       for (const f of files) {
         profiles.push({ name: f.replace(/\.(json|ini)$/, ''), path: join(dir, f), source: dir });
       }
-    } catch {}
+    } catch (e) { log.debug('Kunne ikke lese slicer-profiler fra ' + dir + ': ' + e.message); }
   }
   return profiles;
 }

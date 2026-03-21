@@ -1,10 +1,11 @@
 // Milestone Screenshot Service — captures camera frames at 25/50/75/100% print progress
-// Uses ffmpeg to grab a single JPEG from the printer's RTSP stream
+// Strategy: 1) Use live camera frame buffer  2) TLS JPEG capture  3) ffmpeg RTSP fallback
 
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, unlinkSync, renameSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readdirSync, unlinkSync, renameSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { connect as tlsConnect } from 'node:tls';
 import { createLogger } from './logger.js';
 
 const log = createLogger('milestone');
@@ -17,8 +18,20 @@ if (!existsSync(MILESTONE_DIR)) mkdirSync(MILESTONE_DIR, { recursive: true });
 
 const _capturing = new Set();
 
+// Camera frame provider — set by index.js to access live camera frames
+let _frameProvider = null;
+
 /**
- * Capture a screenshot from the printer camera via RTSP/ffmpeg
+ * Register a function that returns the last JPEG frame for a printer.
+ * Signature: (printerId) => Buffer | null
+ */
+export function setFrameProvider(fn) {
+  _frameProvider = fn;
+}
+
+/**
+ * Capture a screenshot from the printer camera.
+ * Tries in order: 1) Live frame buffer  2) TLS JPEG port 6000  3) ffmpeg RTSP port 322
  */
 export async function captureMilestone(printerId, printerIp, accessCode, milestone, meta = {}) {
   const captureKey = `${printerId}_${milestone}`;
@@ -33,44 +46,218 @@ export async function captureMilestone(printerId, printerIp, accessCode, milesto
   const filepath = join(printerDir, filename);
 
   try {
-    const rtspUrl = `rtsps://bblp:${accessCode}@${printerIp}:322/streaming/live/1`;
+    // Strategy 1: Use live camera frame buffer (instant, zero cost)
+    if (_frameProvider) {
+      const frame = _frameProvider(printerId);
+      if (frame && frame.length > 100) {
+        writeFileSync(filepath, frame);
+        log.info('Captured ' + milestone + '% for ' + printerId + ' via live frame: ' + filename);
+        _capturing.delete(captureKey);
+        return _buildResult(printerId, milestone, filename, filepath, meta);
+      }
+    }
 
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        ff.kill('SIGKILL');
-        reject(new Error('Capture timeout'));
-      }, 15000);
+    // Strategy 2: TLS JPEG capture via port 6000 (direkte, uten ffmpeg)
+    const tlsFrame = await _captureTlsJpeg(printerIp, accessCode).catch(() => null);
+    if (tlsFrame && tlsFrame.length > 100) {
+      writeFileSync(filepath, tlsFrame);
+      log.info('Captured ' + milestone + '% for ' + printerId + ' via TLS: ' + filename);
+      _capturing.delete(captureKey);
+      return _buildResult(printerId, milestone, filename, filepath, meta);
+    }
 
-      const ff = spawn('ffmpeg', [
-        '-rtsp_transport', 'tcp',
-        '-i', rtspUrl,
-        '-frames:v', '1',
-        '-q:v', '2',
-        '-y',
-        filepath
-      ], { stdio: ['ignore', 'ignore', 'ignore'] });
-
-      ff.on('close', (code) => {
-        clearTimeout(timeout);
-        if (code === 0 && existsSync(filepath)) resolve();
-        else reject(new Error(`ffmpeg exit code ${code}`));
-      });
-
-      ff.on('error', (err) => {
-        clearTimeout(timeout);
-        reject(err);
-      });
-    });
-
-    log.info('Captured ' + milestone + '% for ' + printerId + ': ' + filename);
+    // Strategy 3: ffmpeg RTSP fallback (port 322)
+    await _captureRtsp(printerIp, accessCode, filepath);
+    log.info('Captured ' + milestone + '% for ' + printerId + ' via RTSP: ' + filename);
     _capturing.delete(captureKey);
+    return _buildResult(printerId, milestone, filename, filepath, meta);
 
-    return { printerId, milestone, filename, filepath, timestamp: new Date().toISOString(), layer: meta.layer || 0, totalLayers: meta.totalLayers || 0 };
   } catch (e) {
-    log.error('Capture failed for ' + printerId + ' at ' + milestone + '%: ' + e.message);
+    log.warn('Capture feilet for ' + printerId + ' ved ' + milestone + '%: ' + e.message);
     _capturing.delete(captureKey);
     return null;
   }
+}
+
+/**
+ * Build milestone result object.
+ */
+function _buildResult(printerId, milestone, filename, filepath, meta) {
+  return {
+    printerId,
+    milestone,
+    filename,
+    filepath,
+    timestamp: new Date().toISOString(),
+    layer: meta.layer || 0,
+    totalLayers: meta.totalLayers || 0
+  };
+}
+
+/**
+ * Capture a single JPEG frame via TLS port 6000 (Bambu JPEG protocol).
+ * Returns a Buffer with the JPEG data, or throws on failure.
+ */
+function _captureTlsJpeg(printerIp, accessCode) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      try { sock.destroy(); } catch (e) { log.debug('Feil ved lukking av TLS-socket ved timeout: ' + e.message); }
+      reject(new Error('TLS capture timeout'));
+    }, 8000);
+
+    let sock;
+    try {
+      sock = tlsConnect({
+        host: printerIp,
+        port: 6000,
+        rejectUnauthorized: false,
+      });
+    } catch (e) {
+      clearTimeout(timeout);
+      reject(e);
+      return;
+    }
+
+    let buf = Buffer.alloc(0);
+    let readState = 'auth_response';
+    let payloadSize = 0;
+    let gotFrame = false;
+
+    sock.on('secureConnect', () => {
+      // Build 80-byte auth packet (same as camera-stream.js)
+      const authPacket = Buffer.alloc(80);
+      authPacket.writeUInt32LE(0x40, 0);
+      authPacket.writeUInt32LE(0x3000, 4);
+      authPacket.writeUInt32LE(0, 8);
+      authPacket.writeUInt32LE(0, 12);
+
+      const user = Buffer.alloc(32, 0);
+      user.write('bblp', 'utf8');
+      user.copy(authPacket, 16);
+
+      const pass = Buffer.alloc(32, 0);
+      pass.write(accessCode || '', 'utf8');
+      pass.copy(authPacket, 48);
+
+      sock.write(authPacket);
+    });
+
+    sock.on('data', (chunk) => {
+      if (gotFrame) return;
+      buf = Buffer.concat([buf, chunk]);
+
+      while (buf.length > 0) {
+        if (readState === 'auth_response') {
+          if (buf.length < 16) return;
+          const pSize = buf.readUInt32LE(0);
+          if (buf.length < 16 + pSize) return;
+
+          const payload = buf.subarray(16, 16 + pSize);
+          buf = buf.subarray(16 + pSize);
+
+          // Check auth denied
+          if (pSize >= 4 && payload.readUInt32LE(0) === 0xFFFFFFFF) {
+            clearTimeout(timeout);
+            sock.destroy();
+            reject(new Error('Auth denied — LAN Live View deaktivert'));
+            return;
+          }
+          readState = 'header';
+          continue;
+        }
+
+        if (readState === 'header') {
+          if (buf.length < 16) return;
+          payloadSize = buf.readUInt32LE(0);
+          buf = buf.subarray(16);
+          if (payloadSize <= 0 || payloadSize > 10 * 1024 * 1024) {
+            clearTimeout(timeout);
+            sock.destroy();
+            reject(new Error('Ugyldig payload-størrelse: ' + payloadSize));
+            return;
+          }
+          readState = 'payload';
+        }
+
+        if (readState === 'payload') {
+          if (buf.length < payloadSize) return;
+          const frame = buf.subarray(0, payloadSize);
+
+          // Validate JPEG (starts with FFD8)
+          if (frame.length > 2 && frame[0] === 0xFF && frame[1] === 0xD8) {
+            gotFrame = true;
+            clearTimeout(timeout);
+            sock.destroy();
+            resolve(Buffer.from(frame));
+            return;
+          }
+
+          // Not a JPEG — skip and try next frame
+          buf = buf.subarray(payloadSize);
+          readState = 'header';
+        }
+      }
+    });
+
+    sock.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+
+    sock.on('close', () => {
+      clearTimeout(timeout);
+      if (!gotFrame) reject(new Error('TLS tilkobling lukket uten frame'));
+    });
+  });
+}
+
+/**
+ * Capture via ffmpeg RTSP (port 322) — last resort fallback.
+ */
+function _captureRtsp(printerIp, accessCode, filepath) {
+  return new Promise((resolve, reject) => {
+    const rtspUrl = `rtsps://bblp:${accessCode}@${printerIp}:322/streaming/live/1`;
+
+    const ff = spawn('ffmpeg', [
+      '-rtsp_transport', 'tcp',
+      '-stimeout', '8000000',
+      '-i', rtspUrl,
+      '-frames:v', '1',
+      '-q:v', '2',
+      '-y',
+      filepath
+    ], { stdio: ['ignore', 'ignore', 'pipe'] });
+
+    let stderrData = '';
+    ff.stderr.on('data', (chunk) => {
+      stderrData += chunk.toString();
+    });
+
+    const timeout = setTimeout(() => {
+      ff.kill('SIGTERM');
+      // Give ffmpeg 2s to clean up gracefully before SIGKILL
+      setTimeout(() => {
+        try { ff.kill('SIGKILL'); } catch (e) { log.debug('Kunne ikke drepe ffmpeg-prosess: ' + e.message); }
+      }, 2000);
+    }, 10000);
+
+    ff.on('close', (code) => {
+      clearTimeout(timeout);
+      if (code === 0 && existsSync(filepath)) {
+        resolve();
+      } else {
+        const reason = stderrData.includes('401') ? 'Autentisering avvist'
+          : stderrData.includes('Connection refused') ? 'Tilkobling nektet'
+          : `ffmpeg avsluttet med kode ${code}`;
+        reject(new Error(reason));
+      }
+    });
+
+    ff.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
 }
 
 /**
@@ -112,8 +299,7 @@ export function archivePrintMilestones(printerId, printHistoryId) {
     const files = readdirSync(printerDir).filter(f => f.startsWith('milestone_') && f.endsWith('.jpg'));
     if (!files.length) return 0;
 
-    if (!existsSync(join(MILESTONE_DIR, 'archive'))) mkdirSync(join(MILESTONE_DIR, 'archive'), { recursive: true });
-    if (!existsSync(archiveDir)) mkdirSync(archiveDir, { recursive: true });
+    mkdirSync(archiveDir, { recursive: true });
 
     for (const f of files) {
       try {
@@ -123,10 +309,10 @@ export function archivePrintMilestones(printerId, printHistoryId) {
         unlinkSync(join(printerDir, f));
       }
     }
-    log.info('Archived ' + files.length + ' screenshots for print #' + printHistoryId);
+    log.info('Arkivert ' + files.length + ' screenshots for print #' + printHistoryId);
     return files.length;
   } catch (e) {
-    log.error('Archive failed: ' + e.message);
+    log.error('Arkivering feilet: ' + e.message);
     return 0;
   }
 }

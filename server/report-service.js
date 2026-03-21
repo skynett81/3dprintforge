@@ -39,7 +39,7 @@ export function generateReport(period = 'week') {
   const daily = getDailyActivity(period === 'month' ? 30 : 7);
   const recent = getHistory(10, 0, null);
   let waste = null;
-  try { waste = getWasteStats(); } catch {}
+  try { waste = getWasteStats(); } catch (e) { log.warn('Kunne ikke hente avfallsstatistikk: ' + e.message); }
 
   const periodLabel = period === 'month' ? 'Monthly' : 'Weekly';
   const periodLabelNb = period === 'month' ? 'Månedlig' : 'Ukentlig';
@@ -268,7 +268,7 @@ async function _sendHtmlEmail(conf) {
     let socket;
 
     const done = (err) => {
-      if (socket) try { socket.destroy(); } catch {}
+      if (socket) try { socket.destroy(); } catch (e) { log.debug('Feil ved lukking av e-post-socket: ' + e.message); }
       if (err) reject(err); else resolve();
     };
 

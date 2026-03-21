@@ -58,7 +58,7 @@ function pruneOldBackups() {
   const backups = listBackups();
   if (backups.length > MAX_BACKUPS) {
     for (const old of backups.slice(MAX_BACKUPS)) {
-      try { unlinkSync(join(BACKUP_DIR, old.filename)); } catch {}
+      try { unlinkSync(join(BACKUP_DIR, old.filename)); } catch (e) { log.debug('Kunne ikke slette gammel backup ' + old.filename + ': ' + e.message); }
     }
   }
 }

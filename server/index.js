@@ -22,7 +22,7 @@ import { QueueManager } from './queue-manager.js';
 import { TimelapseService } from './timelapse-service.js';
 import { initEnergyService } from './energy-service.js';
 import { initPowerMonitor, onPrintStart, onPrintEnd } from './power-monitor.js';
-import { captureMilestone, archivePrintMilestones } from './milestone-service.js';
+import { captureMilestone, archivePrintMilestones, setFrameProvider } from './milestone-service.js';
 import { initReportService } from './report-service.js';
 import { FailureDetectionService } from './failure-detection.js';
 import { buildPauseCommand } from './mqtt-commands.js';
@@ -408,6 +408,12 @@ failureDetector.init();
 queueManager._failureDetector = failureDetector;
 setPrinterManager(manager);
 setFailureDetector(failureDetector);
+
+// Milestone frame provider — henter siste kamera-frame for instant screenshots
+setFrameProvider((printerId) => {
+  const entry = manager.printers.get(printerId);
+  return entry?.camera?.getLastFrame() || null;
+});
 
 // Printer Discovery (SSDP)
 const discovery = new PrinterDiscovery();

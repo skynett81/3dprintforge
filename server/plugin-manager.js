@@ -169,7 +169,7 @@ export class PluginManager {
     // Call destroy if exists
     const loaded = this._plugins.get(name);
     if (loaded?.module?.destroy) {
-      try { await loaded.module.destroy(); } catch {}
+      try { await loaded.module.destroy(); } catch (e) { log.debug('Feil ved destroy() for plugin ' + name + ': ' + e.message); }
     }
     this._plugins.delete(name);
   }

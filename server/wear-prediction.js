@@ -169,7 +169,7 @@ export class WearPredictionService {
     if (this.broadcast) {
       try {
         this.broadcast('wear_prediction_update', { printer_id: printerId });
-      } catch {}
+      } catch (e) { log.debug('Feil ved broadcast av wear_prediction_update: ' + e.message); }
     }
   }
 
@@ -184,7 +184,7 @@ export class WearPredictionService {
     if (this.broadcast) {
       try {
         this.broadcast('wear_alert', { printer_id: printerId, component, alert_type: alertType, message });
-      } catch {}
+      } catch (e) { log.debug('Feil ved broadcast av wear_alert: ' + e.message); }
     }
   }
 

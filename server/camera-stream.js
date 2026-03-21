@@ -118,7 +118,7 @@ export class CameraStream {
     let probeTimedOut = false;
     const probeTimeout = setTimeout(() => {
       probeTimedOut = true;
-      if (probeSock) { try { probeSock.destroy(); } catch {} }
+      if (probeSock) { try { probeSock.destroy(); } catch (e) { log.debug('Feil ved lukking av probe-socket: ' + e.message); } }
       log.info('TLS-probe timeout — prøver RTSP (port 322)');
       this.mode = 'rtsp';
       this._startFfmpeg();
@@ -380,7 +380,7 @@ export class CameraStream {
 
   _cleanupJpeg() {
     if (this.tlsSocket) {
-      try { this.tlsSocket.destroy(); } catch {}
+      try { this.tlsSocket.destroy(); } catch (e) { log.debug('Feil ved lukking av TLS-socket: ' + e.message); }
       this.tlsSocket = null;
     }
     this._headerBuf = Buffer.alloc(0);
