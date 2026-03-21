@@ -152,7 +152,7 @@
         id: 'h_' + h.id,
         _historyId: h.id,
         _cloud: cloud,
-        title: cloud?.designTitle || _trimFilename(h.filename || t('scheduler.untitled')),
+        title: h.model_name || cloud?.designTitle || _trimFilename(h.filename || t('scheduler.untitled')),
         scheduled_at: h.started_at,
         finished_at: h.finished_at,
         status: h.status === 'completed' ? 'completed' : h.status === 'failed' ? 'failed' : 'running',
@@ -336,14 +336,21 @@
     cal.innerHTML = html;
   }
 
+  // Convert ISO/UTC date to local YYYY-MM-DD string
+  function _toLocalDateStr(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
   function _eventsForDate(dateStr) {
-    return _events.filter(e => e.scheduled_at && e.scheduled_at.startsWith(dateStr));
+    return _events.filter(e => e.scheduled_at && _toLocalDateStr(e.scheduled_at) === dateStr);
   }
 
   function _eventsForDateHour(dateStr, hour) {
     return _events.filter(e => {
-      if (!e.scheduled_at || !e.scheduled_at.startsWith(dateStr)) return false;
-      const h = parseInt(e.scheduled_at.substring(11, 13)) || 0;
+      if (!e.scheduled_at || _toLocalDateStr(e.scheduled_at) !== dateStr) return false;
+      const h = new Date(e.scheduled_at).getHours();
       return h === hour;
     });
   }
@@ -402,11 +409,13 @@
     let listHtml = dayEvents.map(ev => {
       const color = _eventColor(ev);
       const statusText = statusLabels[ev.status] || ev.status || '';
-      const timeStr = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
+      const startStr = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
+      const endStr = ev.finished_at ? new Date(ev.finished_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
+      const timeStr = startStr && endStr ? `${startStr} → ${endStr}` : startStr;
       const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : '';
       const progress = ev._progress != null ? ` (${ev._progress}%)` : '';
       const thumbSrc = ev._historyId ? `/api/history/${ev._historyId}/thumbnail` : '';
-      const filamentInfo = ev.filament_used_g ? `<span>${ev.filament_used_g}g</span>` : '';
+      const filamentInfo = ev.filament_used_g ? `<span>${Math.round(ev.filament_used_g)}g</span>` : '';
       const colorSwatch = ev.filament_color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#${ev.filament_color.substring(0,6)};border:1px solid var(--border-subtle)"></span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.1s;border:1px solid var(--border-subtle);margin-bottom:6px" onclick="_schedEdit('${ev.id}')" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
         ${thumbSrc ? `<img src="${thumbSrc}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:4px;background:var(--bg-tertiary);flex-shrink:0" onerror="this.style.display='none'">` : `<span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></span>`}
