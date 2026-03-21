@@ -40,9 +40,9 @@ const DEFAULT_SETTINGS = {
   print_error_action: 'notify',
   fan_failure_action: 'notify',
   print_stall_action: 'notify',
-  cooldown_seconds: 60,
+  cooldown_seconds: 300,
   auto_resume: 0,
-  temp_deviation_threshold: 15,
+  temp_deviation_threshold: 25,
   filament_low_pct: 5,
   stall_minutes: 10
 };
@@ -96,34 +96,70 @@ export class PrintGuardService {
     if (settings.temp_deviation_action === 'ignore') return;
 
     // Only check temperature deviation when actively printing (RUNNING)
-    // During HEATING/PREPARE, large deviations are normal as the printer warms up
     const gcodeState = state.gcode_state;
     if (gcodeState !== 'RUNNING') return;
 
     const threshold = settings.temp_deviation_threshold || 15;
 
-    // Check nozzle temperature deviation
+    // Track target changes to detect ramp-up/ramp-down periods
+    // During filament changes or plate transitions, targets shift rapidly
+    const trackKey = `${printerId}_temp`;
+    const prev = this._tempTargets?.get(trackKey);
+    if (!this._tempTargets) this._tempTargets = new Map();
+
     const nozzleTemp = state.nozzle_temper;
     const nozzleTarget = state.nozzle_target_temper;
-    if (nozzleTemp != null && nozzleTarget != null && nozzleTarget > 0) {
+    const bedTemp = state.bed_temper;
+    const bedTarget = state.bed_target_temper;
+
+    // Detect if target has recently changed (ramping)
+    const now = Date.now();
+    const isRamping = prev && (
+      (prev.nozzleTarget !== nozzleTarget && now - prev.ts < 120000) ||
+      (prev.bedTarget !== bedTarget && now - prev.ts < 120000)
+    );
+
+    // Update tracking
+    if (!prev || prev.nozzleTarget !== nozzleTarget || prev.bedTarget !== bedTarget) {
+      this._tempTargets.set(trackKey, { nozzleTarget, bedTarget, ts: now });
+    }
+
+    // Skip alerts during temperature ramp (target just changed within 2 min)
+    if (isRamping) return;
+
+    // Skip if nozzle target is low (< 150°C) — typically standby/cooldown during print
+    if (nozzleTarget != null && nozzleTarget < 150) return;
+
+    // Check nozzle temperature — only alert if target is stable and temp is way off
+    if (nozzleTemp != null && nozzleTarget != null && nozzleTarget >= 150) {
       const diff = Math.abs(nozzleTemp - nozzleTarget);
       if (diff > threshold) {
-        this._processEvent(printerId, 'temp_deviation', printId,
-          `Nozzle: ${nozzleTemp}°C (target ${nozzleTarget}°C, deviation ${diff.toFixed(1)}°C)`);
-        return;
+        // Extra check: if temp is approaching target (moving in right direction), skip
+        const prevTemp = prev?.lastNozzleTemp;
+        const approaching = prevTemp != null && Math.abs(nozzleTemp - nozzleTarget) < Math.abs(prevTemp - nozzleTarget);
+        if (!approaching) {
+          this._processEvent(printerId, 'temp_deviation', printId,
+            `Nozzle: ${nozzleTemp}°C (mål ${nozzleTarget}°C, avvik ${diff.toFixed(1)}°C)`);
+        }
       }
     }
 
-    // Check bed temperature deviation
-    const bedTemp = state.bed_temper;
-    const bedTarget = state.bed_target_temper;
+    // Check bed temperature
     if (bedTemp != null && bedTarget != null && bedTarget > 0) {
       const diff = Math.abs(bedTemp - bedTarget);
       if (diff > threshold) {
-        this._processEvent(printerId, 'temp_deviation', printId,
-          `Bed: ${bedTemp}°C (target ${bedTarget}°C, deviation ${diff.toFixed(1)}°C)`);
+        const prevBed = prev?.lastBedTemp;
+        const approaching = prevBed != null && Math.abs(bedTemp - bedTarget) < Math.abs(prevBed - bedTarget);
+        if (!approaching) {
+          this._processEvent(printerId, 'temp_deviation', printId,
+            `Bed: ${bedTemp}°C (mål ${bedTarget}°C, avvik ${diff.toFixed(1)}°C)`);
+        }
       }
     }
+
+    // Store last temps for direction check
+    const entry = this._tempTargets.get(trackKey);
+    if (entry) { entry.lastNozzleTemp = nozzleTemp; entry.lastBedTemp = bedTemp; }
   }
 
   _checkFilament(printerId, state, settings, printId) {

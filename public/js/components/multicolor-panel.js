@@ -12,20 +12,32 @@
     return isNaN(n) ? '#808080' : `rgb(${(n>>16)&255},${(n>>8)&255},${n&255})`;
   }
 
-  // Mini spool SVG — uses global _spoolSvg if available, else simple fallback
+  // Spool SVG — full 3D-look, identical to filament-tracker
   function _miniSpool(colorHex, pct, id, size) {
-    if (typeof window._spoolSvg === 'function') {
-      return window._spoolSvg(colorHex, null, null, pct != null ? pct : 80, id || 0, size || 32);
-    }
-    // Fallback: simple spool
     const sz = size || 32;
     const hubR = 13, maxR = 38;
-    const filR = pct > 0 ? hubR + (maxR - hubR) * Math.max(5, pct) / 100 : hubR;
-    const fill = colorHex ? (colorHex.startsWith('#') ? colorHex : '#' + colorHex.substring(0, 6)) : '#808080';
+    const p = Math.max(0, Math.min(100, pct || 0));
+    const filR = p > 0 ? hubR + (maxR - hubR) * Math.max(5, p) / 100 : hubR;
+    const hex = colorHex ? (colorHex.startsWith('#') ? colorHex : '#' + colorHex.substring(0, 6)) : '#808080';
+    let windings = '';
+    if (p > 8) {
+      const gap = (filR - hubR) / Math.min(5, Math.max(2, Math.round((filR - hubR) / 4)));
+      for (let r = hubR + gap; r < filR - 1; r += gap) {
+        windings += `<circle cx="50" cy="50" r="${r.toFixed(1)}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.6"/>`;
+      }
+    }
+    const notches = [0, 90, 180, 270].map(deg => {
+      const rad = deg * Math.PI / 180;
+      const x1 = 50 + 40 * Math.cos(rad), y1 = 50 + 40 * Math.sin(rad);
+      const x2 = 50 + 44 * Math.cos(rad), y2 = 50 + 44 * Math.sin(rad);
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--border-color)" stroke-width="1.2" opacity="0.4"/>`;
+    }).join('');
     return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" class="spool-svg">
       <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,0.06)"/>
       <circle cx="50" cy="50" r="42" class="spool-flange"/>
-      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${fill}" class="spool-filament"/>
+      ${notches}
+      <circle cx="50" cy="50" r="${filR.toFixed(1)}" fill="${hex}" class="spool-filament"/>
+      ${windings}
       <circle cx="50" cy="50" r="${hubR}" class="spool-hub"/>
       <circle cx="50" cy="50" r="5" class="spool-hole"/>
     </svg>`;
@@ -197,8 +209,12 @@
       const s = _slots[i];
       const color = s?.color_hex || '#444';
       const name = s ? (_esc(s.name || s.material || 'Spool')) : t('multicolor.empty_slot');
-      const remainPct = s?.remaining_weight_g != null ? s.remaining_weight_g : 80;
-      const remainStr = s?.remaining_weight_g != null ? `${s.remaining_weight_g}%` : '';
+      const remainPct = s?._ams
+        ? (s.remaining_weight_g != null ? s.remaining_weight_g : 80)
+        : (s?.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : 80);
+      const remainStr = s?._ams
+        ? (s.remaining_weight_g != null ? `${s.remaining_weight_g}%` : '')
+        : (s?.remaining_weight_g != null ? `${Math.round(s.remaining_weight_g)}g` : '');
       const loc = s?._label ? `${_esc(s._label)} · ` : '';
       const meta = s ? `${loc}${_esc(s.material || '')}${remainStr ? ' — ' + remainStr : ''}` : t('multicolor.click_assign');
 
@@ -221,8 +237,10 @@
       for (let i = 0; i < _slots.length; i++) {
         const s = _slots[i];
         const color = s?.color_hex || '#333';
-        const remainPct = s?.remaining_weight_g != null ? s.remaining_weight_g : (s ? 80 : 0);
-        ph += `<div class="mc-preview-spool">${_miniSpool(color, s ? remainPct : 0, 'mcp-' + i, 60)}<span class="mc-preview-spool-num">${i + 1}</span></div>`;
+        const pct = s?._ams
+          ? (s.remaining_weight_g != null ? s.remaining_weight_g : 80)
+          : (s?.initial_weight_g > 0 ? Math.round((s.remaining_weight_g / s.initial_weight_g) * 100) : (s ? 80 : 0));
+        ph += `<div class="mc-preview-spool">${_miniSpool(color, s ? pct : 0, 'mcp-' + i, 60)}<span class="mc-preview-spool-num">${i + 1}</span></div>`;
       }
       previewEl.innerHTML = ph || `<div style="color:var(--text-muted);font-size:0.75rem">${t('multicolor.no_colors')}</div>`;
     }

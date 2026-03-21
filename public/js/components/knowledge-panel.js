@@ -477,6 +477,56 @@
     html += _specRow('Abrasive', f.abrasive ? t('kb.yes') : t('kb.no'));
     html += '</table></div></div>';
 
+    // Plate compatibility
+    if (f.plate_compatibility) {
+      try {
+        const plates = typeof f.plate_compatibility === 'string' ? JSON.parse(f.plate_compatibility) : f.plate_compatibility;
+        const plateNames = {
+          cool_plate: 'Cool Plate',
+          engineering_plate: 'Engineering Plate',
+          high_temp_plate: 'High Temp Plate',
+          textured_pei: 'Textured PEI'
+        };
+        const ratingColors = {
+          excellent: '#00c864',
+          good: '#4aa3df',
+          fair: '#f0883e',
+          poor: '#e53935',
+          not_recommended: '#888'
+        };
+        const ratingLabels = {
+          excellent: 'Utmerket',
+          good: 'Bra',
+          fair: 'Greit',
+          poor: 'Dårlig',
+          not_recommended: 'Ikke anbefalt'
+        };
+        const ratingIcons = {
+          excellent: '★★★',
+          good: '★★',
+          fair: '★',
+          poor: '✗',
+          not_recommended: '⊘'
+        };
+
+        html += '<div class="kb-detail-section"><div class="kb-detail-section-title">Plate-kompatibilitet</div>';
+        html += '<div class="kb-plate-grid">';
+        for (const [key, rating] of Object.entries(plates)) {
+          const name = plateNames[key] || key;
+          const color = ratingColors[rating] || '#888';
+          const label = ratingLabels[rating] || rating;
+          const icon = ratingIcons[rating] || '';
+          const best = rating === 'excellent';
+          html += '<div class="kb-plate-card' + (best ? ' kb-plate-best' : '') + '" style="border-color:' + color + '">';
+          html += '<div class="kb-plate-name">' + name + '</div>';
+          html += '<div class="kb-plate-rating" style="color:' + color + '">' + icon + ' ' + label + '</div>';
+          if (best) html += '<div class="kb-plate-rec">Anbefalt</div>';
+          html += '</div>';
+        }
+        html += '</div></div>';
+      } catch {}
+    }
+
     // Tips
     if (f.tips_print) html += '<div class="kb-detail-section"><div class="kb-detail-section-title">' + t('kb.tips_print') + '</div><div class="kb-tips-box">' + _esc(f.tips_print) + '</div></div>';
     if (f.tips_storage) html += '<div class="kb-detail-section"><div class="kb-detail-section-title">' + t('kb.tips_storage') + '</div><div class="kb-tips-box">' + _esc(f.tips_storage) + '</div></div>';

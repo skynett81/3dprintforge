@@ -10540,6 +10540,42 @@ input[type="range"]::-webkit-slider-thumb:active {
   color: var(--text-muted);
 }
 
+.kb-plate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.kb-plate-card {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 10px;
+  text-align: center;
+  transition: transform 0.15s;
+}
+.kb-plate-card:hover { transform: translateY(-1px); }
+.kb-plate-best {
+  background: rgba(0, 200, 100, 0.08);
+}
+.kb-plate-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.kb-plate-rating {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.kb-plate-rec {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
 .kb-detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
