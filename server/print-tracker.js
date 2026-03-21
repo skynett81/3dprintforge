@@ -274,7 +274,9 @@ export class PrintTracker {
     }
 
     if (currState === 'RUNNING' && prevState !== 'PAUSE') {
-      this._startPrint(data);
+      // Server restart mid-print: prevState is null, print already has progress
+      const isResume = !prevState && parseInt(data.mc_percent) > 0;
+      this._startPrint(data, isResume);
     }
     if (currState === 'PAUSE' && this.currentPrint) {
       this.currentPrint.pauseCount++;
@@ -290,13 +292,10 @@ export class PrintTracker {
     }
   }
 
-  _startPrint(data) {
-    log.info('Print startet: ' + (data.subtask_name || 'ukjent'));
-
-    this._hmsLogged = new Set(); // Reset HMS dedup for new print
-    this._lastPrintError = null; // Reset print_error dedup for new print
-    this._milestonesTriggered = new Set(); // Reset milestones for new print
-    this.amsSnapshot = this._getAmsRemaining(data);
+  _startPrint(data, isResume = false) {
+    this._hmsLogged = new Set();
+    this._lastPrintError = null;
+    this._milestonesTriggered = new Set();
     this.amsTrayWeights = this._getAmsTrayWeights(data);
     this.colorChanges = 0;
     this.lastTrayId = data.ams?.tray_now != null ? String(data.ams.tray_now) : null;
@@ -305,8 +304,66 @@ export class PrintTracker {
     // Capture estimated time from MQTT (mc_remaining_time is in minutes at print start)
     const estimatedSeconds = parseInt(data.mc_remaining_time) > 0 ? parseInt(data.mc_remaining_time) * 60 : null;
 
+    // Calculate actual start time when resuming after server restart
+    let startedAt = new Date().toISOString();
+    if (isResume) {
+      const pct = parseInt(data.mc_percent) || 0;
+      const remainMin = parseInt(data.mc_remaining_time) || 0;
+      if (pct > 0 && remainMin > 0) {
+        const totalMinutes = remainMin / (1 - pct / 100);
+        const elapsedMs = (totalMinutes * 60 * 1000) * (pct / 100);
+        startedAt = new Date(Date.now() - elapsedMs).toISOString();
+        log.info('Gjenopptatt print etter server-restart: ' + (data.subtask_name || 'ukjent') + ' (' + pct + '% ferdig, estimert start: ' + startedAt + ')');
+      } else {
+        log.info('Gjenopptatt print etter server-restart: ' + (data.subtask_name || 'ukjent') + ' (' + pct + '% ferdig)');
+      }
+      // Mark milestones already passed
+      for (const m of [25, 50, 75]) {
+        if (pct >= m) this._milestonesTriggered.add(m);
+      }
+
+      // Reconstruct original AMS snapshot: estimate start values from current + progress
+      // If print is X% done, the active tray has lost proportionally more filament
+      // We back-calculate: startRemain ≈ currentRemain + (currentRemain was higher at start)
+      const currentAms = this._getAmsRemaining(data);
+      const activeTray = data.ams?.tray_now;
+      if (pct > 0 && activeTray != null) {
+        // Find the active tray key and estimate its original remain%
+        for (const [key, remain] of Object.entries(currentAms)) {
+          const [, trayId] = key.split('_').map(Number);
+          if (trayId === activeTray) {
+            // Estimate: the tray dropped from X% to current remain% over pct% of print
+            // We know the spool weight and can estimate total filament for this print
+            // Conservative estimate: use total estimated time to gauge total usage
+            // remain_at_start ≈ remain_now + (usage_so_far)
+            // usage_so_far is unknown, but we know pct% of print is done
+            // Best approach: look at spool assigned to this slot for initial weight
+            const spool = getSpoolBySlot(this.printerId, parseInt(key.split('_')[0]), trayId);
+            const spoolWeight = spool?.initial_weight_g || this.amsTrayWeights[key] || 1000;
+            // If remain is 40% now and print is 95% done, the spool might have been ~full at start
+            // We can't know exactly, so we estimate: the remaining% at print start
+            // was higher by the amount consumed during pct% of this print
+            // Since we don't know total consumption, use a rough estimate:
+            // Assume linear consumption: totalUsage ≈ (100% - remain%) of spool was already used before
+            // Actually, simplest: just set start snapshot to 100% (full spool) for the active tray
+            // This over-estimates but ensures we capture AT LEAST the real diff at print end
+            // Better: use the spool's last known weight from DB as the start value
+            if (spool) {
+              const lastKnownPct = Math.round(spool.remaining_weight_g / spoolWeight * 100);
+              currentAms[key] = Math.min(100, lastKnownPct + Math.round((100 - lastKnownPct) * pct / 100));
+              log.info('AMS snapshot rekonstruert for tray ' + key + ': ' + currentAms[key] + '% (spool #' + spool.id + ' hadde ' + lastKnownPct + '%)');
+            }
+          }
+        }
+      }
+      this.amsSnapshot = currentAms;
+    } else {
+      log.info('Print startet: ' + (data.subtask_name || 'ukjent'));
+      this.amsSnapshot = this._getAmsRemaining(data);
+    }
+
     this.currentPrint = {
-      started_at: new Date().toISOString(),
+      started_at: startedAt,
       filename: data.subtask_name || data.gcode_file || 'Ukjent',
       gcode_file: data.gcode_file || null,
       filament_type: filamentInfo.type,

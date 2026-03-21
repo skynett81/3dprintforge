@@ -738,7 +738,7 @@
     const displayName = cloud?.designTitle || fname;
     const pName = printerName(row.printer_id);
     const speed = speedLabel(row.speed_level);
-    const filWeight = row.filament_used_g ? (cloud?.weight || row.filament_used_g) + 'g' : '--';
+    const filWeight = row.filament_used_g ? fmtW(row.filament_used_g) : '--';
     const filBrand = row.filament_brand || '--';
     const filType = row.filament_type || '--';
     const filColorHex = row.filament_color && row.filament_color.length >= 6 ? '#' + row.filament_color.substring(0, 6) : null;
