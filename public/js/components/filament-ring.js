@@ -74,8 +74,11 @@
         const remainG = linkedSpool ? linkedSpool.remaining_weight_g : (totalG ? totalG * (baseRemain / 100) : null);
         if (remainG !== null && totalG > 0) {
           const consumedG = Math.round(est.weight_g * pct / 100);
-          const currentRemainG = Math.max(0, remainG - consumedG);
-          const afterPrintG = Math.max(0, remainG - est.weight_g);
+          // remainG may already be reduced by server sync (syncAmsToSpool).
+          // Reconstruct start-of-print weight to avoid double subtraction.
+          const startOfPrintG = Math.min(totalG, remainG + consumedG);
+          const currentRemainG = Math.max(0, startOfPrintG - consumedG);
+          const afterPrintG = Math.max(0, startOfPrintG - est.weight_g);
           return {
             current: Math.max(0, Math.round((currentRemainG / totalG) * 100)),
             currentG: Math.round(currentRemainG),

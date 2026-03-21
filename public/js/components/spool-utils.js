@@ -148,8 +148,12 @@
       if (isPrinting && est && est.weight_g > 0) {
         const pct = data.mc_percent || 0;
         const consumedG = Math.round(est.weight_g * pct / 100);
-        const currentRemainG = Math.max(0, remainG - consumedG);
-        const afterPrintG = Math.max(0, remainG - est.weight_g);
+        // remainG may already be reduced by syncAmsToSpool (DB syncs tray.remain
+        // during printing). To avoid double-subtraction, reconstruct the weight
+        // at the START of this print by adding back what has been consumed so far.
+        const startOfPrintG = Math.min(totalG, remainG + consumedG);
+        const currentRemainG = Math.max(0, startOfPrintG - consumedG);
+        const afterPrintG = Math.max(0, startOfPrintG - est.weight_g);
         return {
           current: Math.max(0, Math.round((currentRemainG / totalG) * 100)),
           currentG: Math.round(currentRemainG),
