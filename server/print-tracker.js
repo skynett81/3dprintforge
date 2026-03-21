@@ -479,8 +479,23 @@ export class PrintTracker {
       ams_units_used: this.currentPrint.ams_units_used,
       tray_id: this.currentPrint.tray_id,
       gcode_file: this.currentPrint.gcode_file,
-      completion_pct: status === 'completed' ? 100 : completionPct
+      completion_pct: status === 'completed' ? 100 : completionPct,
+      model_name: null,
+      model_url: null
     };
+
+    // Enrich with cloud model info
+    if (this.currentPrint.cloud_design_id) {
+      if (this.cloudTaskProvider) {
+        try {
+          const cloud = this.cloudTaskProvider(record.filename);
+          if (cloud?.designTitle) {
+            record.model_name = cloud.designTitle;
+            record.model_url = 'https://makerworld.com/en/models/' + cloud.designId;
+          }
+        } catch {}
+      }
+    }
 
     try {
       const printHistoryId = addHistory(record);

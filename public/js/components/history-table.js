@@ -267,7 +267,7 @@
         for (const row of sorted) {
           const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
           const cloud = _getCloudMatch(row.filename);
-          const displayName = cloud?.designTitle || fname;
+          const displayName = row.model_name || cloud?.designTitle || fname;
           const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
           const pName = printerName(row.printer_id);
           const duration = formatDuration(row.duration_seconds);
@@ -283,7 +283,7 @@
               <span class="ph-badge">Gcode</span>
             </div>
             <div class="ph-card-info">
-              <div class="ph-card-name" title="${esc(displayName)}">${cloud?.designId ? `<a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Åpne på MakerWorld"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${esc(displayName)}</div>
+              <div class="ph-card-name" title="${esc(displayName)}">${(row.model_url || cloud?.designId) ? `<a href="${row.model_url || 'https://makerworld.com/en/models/' + cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Åpne modell"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${esc(displayName)}</div>
               <div class="ph-card-meta">
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
@@ -309,7 +309,7 @@
         for (const row of sorted) {
           const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
           const cloud = _getCloudMatch(row.filename);
-          const displayName = cloud?.designTitle || fname;
+          const displayName = row.model_name || cloud?.designTitle || fname;
           const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
           const pName = printerName(row.printer_id);
           const duration = formatDuration(row.duration_seconds);
@@ -735,7 +735,7 @@
 
     const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
     const cloud = _getCloudMatch(row.filename);
-    const displayName = cloud?.designTitle || fname;
+    const displayName = row.model_name || cloud?.designTitle || fname;
     const pName = printerName(row.printer_id);
     const speed = speedLabel(row.speed_level);
     const filWeight = row.filament_used_g ? fmtW(row.filament_used_g) : '--';
@@ -771,11 +771,12 @@
     if (row.max_bed_temp > 0) tempInfo.push(`Bed: ${row.max_bed_temp}°C`);
     const tempText = tempInfo.length ? tempInfo.join(' · ') : '--';
 
-    // Build model source link from cloud task data
+    // Build model source link from DB or cloud task data
     let modelLinkHtml = '';
-    if (cloud?.designId) {
-      const mwUrl = `https://makerworld.com/en/models/${cloud.designId}`;
-      const mwTitle = cloud.designTitle || displayName;
+    const modelUrl = row.model_url || (cloud?.designId ? `https://makerworld.com/en/models/${cloud.designId}` : null);
+    if (modelUrl) {
+      const mwUrl = modelUrl;
+      const mwTitle = displayName;
       modelLinkHtml = `<div class="ph-detail-field ph-detail-field-wide">
         <span class="ph-detail-label">Modellkilde</span>
         <span class="ph-detail-value"><a href="${mwUrl}" target="_blank" rel="noopener" class="ph-model-link" title="Åpne på MakerWorld">
