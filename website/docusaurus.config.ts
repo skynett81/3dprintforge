@@ -133,17 +133,17 @@ const config: Config = {
         {
           title: 'Dokumentasjon',
           items: [
-            { label: 'Kom i gang', to: '/kom-i-gang' },
-            { label: 'Funksjoner', to: '/funksjoner' },
-            { label: 'API-referanse', to: '/api' },
+            { label: 'Kom i gang', to: '/kom-i-gang/installasjon' },
+            { label: 'Funksjoner', to: '/funksjoner/oversikt' },
+            { label: 'API-referanse', to: '/avansert/api' },
           ],
         },
         {
           title: 'Kunnskapsbase',
           items: [
-            { label: 'Filamenter', to: '/kb/filamenter' },
-            { label: 'Byggplater', to: '/kb/byggplater' },
-            { label: 'Vedlikehold', to: '/kb/vedlikehold' },
+            { label: 'Filamenter', to: '/kb/filamenter/pla' },
+            { label: 'Byggplater', to: '/kb/byggplater/oversikt' },
+            { label: 'Vedlikehold', to: '/kb/vedlikehold/dyse' },
           ],
         },
         {
