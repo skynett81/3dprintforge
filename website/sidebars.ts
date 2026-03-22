@@ -11,7 +11,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Guider',
-      items: ['guider/foerste-print', 'guider/filament-oppsett', 'guider/daglig-bruk', 'guider/velge-rett-plate', 'guider/feilsoking-print', 'guider/multi-printer', 'guider/varsler-oppsett', 'guider/paneler', 'guider/backup-restore', 'guider/obs-streaming'],
+      items: ['guider/foerste-print', 'guider/filament-oppsett', 'guider/daglig-bruk', 'guider/velge-rett-plate', 'guider/feilsoking-print', 'guider/multi-printer', 'guider/varsler-oppsett', 'guider/paneler', 'guider/backup-restore', 'guider/obs-streaming', 'guider/produktprising'],
     },
     {
       type: 'category',
