@@ -1,75 +1,75 @@
 ---
 sidebar_position: 5
-title: Endringslogg
-description: Alle endringer og oppdateringer i Bambu Dashboard
+title: Changelog
+description: All changes and updates in Bambu Dashboard
 ---
 
-# Endringslogg
+# Changelog
 
-Alle vesentlige endringer i Bambu Dashboard.
+All notable changes to Bambu Dashboard.
 
 ---
 
-## v1.1.12 — Modulær arkitektur, dokumentasjon og e-handel (2026-03-22)
+## v1.1.12 — Modular Architecture, Documentation & E-Commerce (2026-03-22)
 
-### Modulær arkitektur
-- database.js (10 306 linjer) splittet til 16 domene-moduler under server/db/
-- api-routes.js gjenopprettet etter mislykket splitting (stabilitet prioritert)
-- 69 automatiske tester (Node.js built-in test runner)
-- 80 input-valideringspunkter på API-endepunkter
-- 37 stille catch-blokker fikset med riktig logging
+### Modular Architecture
+- database.js (10,306 lines) split into 16 domain modules under server/db/
+- api-routes.js restored after failed splitting attempt (stability prioritized)
+- 69 automated tests (Node.js built-in test runner)
+- 80 input validation points on API endpoints
+- 37 silent catch blocks fixed with proper logging
 
-### Printsporing forbedret
-- Server-restart under print: beregner riktig starttid og filamentforbruk
-- Cloud-estimat fra Bambu Cloud som fallback ved server-restart
-- Modellnavn og MakerWorld-link lagres i historikk, galleri og scheduler
-- Milestone-capture: 3-trinns fallback (live frame → TLS JPEG → RTSP)
-- Falske temp-varsler eliminert (Bambu standby 140°C ignoreres)
+### Print Tracking Improvements
+- Server restart during print: correctly calculates start time and filament usage
+- Cloud estimate from Bambu Cloud as fallback on server restart
+- Model name and MakerWorld link stored in history, gallery and scheduler
+- Milestone capture: 3-step fallback (live frame → TLS JPEG → RTSP)
+- False temperature alerts eliminated (Bambu standby 140°C ignored)
 
-### Plate-kompatibilitet og kunnskapsbase
-- 62/62 filamenter har plate-kompatibilitet (Cool/Engineering/HT/Textured PEI)
-- 62/62 filamenter har limstift-anbefaling (påkrevd/anbefalt/valgfritt)
-- Norske tips per materiale
-- Kompatibilitetsmatrise med legende, limstift og tips i filament-verktøy
+### Plate Compatibility & Knowledge Base
+- 62/62 filaments have plate compatibility (Cool/Engineering/HT/Textured PEI)
+- 62/62 filaments have glue stick recommendation (required/recommended/optional)
+- Tips per material
+- Compatibility matrix with legend, glue stick and tips in filament tool
 
-### Full prisingsmodell (Print Farm Academy)
-- Kostnadsberegner oppgradert: arbeid, avfall, påslag, salgspriser (2×/2.5×/3×)
-- Nye innstillinger: oppsett-tid, påslag, dysekostnad, avfallsfaktor
-- labor_rate_hour bug fikset (arbeidskostnad var alltid 0)
-- Prisingsmodell integrert i ordrepanelet
+### Full Pricing Model (Print Farm Academy)
+- Cost calculator upgraded: labor, waste, markup, sale prices (2×/2.5×/3×)
+- New settings: setup time, markup, nozzle cost, waste factor
+- labor_rate_hour bug fixed (labor cost was always 0)
+- Pricing model integrated in order panel
 
-### E-handel og lisens (GeekTech.no)
-- Lisensvalidering mot GeekTech API (POST /api/license/verify)
-- Støtter domene, IP, MAC og IP+MAC binding
-- 32-tegn hex lisensnøkkel med automatisk IP/MAC-deteksjon
-- Komplett CRUD for bestillinger (opprett, rediger, slett, dupliser)
-- Kostnadssammendrag med foreslåtte salgspriser per prosjekt
+### E-Commerce & Licensing (GeekTech.no)
+- License validation against GeekTech API (POST /api/license/verify)
+- Supports domain, IP, MAC and IP+MAC binding
+- 32-character hex license key with automatic IP/MAC detection
+- Full CRUD for orders (create, edit, delete, duplicate)
+- Cost summary with suggested sale prices per project
 
-### Docusaurus dokumentasjonsside
-- 82 dokumentasjonssider på norsk (72 docs + 10 guider)
-- Komplett oversatt til 17 språk (1400+ filer)
-- Guider: første print, filament-oppsett, daglig bruk, plate-valg, feilsøking, varsler, OBS
-- Kunnskapsbase: filamenter, byggplater, vedlikehold, feilsøking
-- GitHub Pages deploy med Actions workflow
-- Tilgjengelig på /docs/ fra dashboardet
+### Docusaurus Documentation Site
+- 82 documentation pages (72 docs + 10 guides)
+- Fully translated into 17 languages (1400+ files)
+- Guides: first print, filament setup, daily use, plate selection, troubleshooting, alerts, OBS
+- Knowledge base: filaments, build plates, maintenance, troubleshooting
+- GitHub Pages deploy with Actions workflow
+- Available at /docs/ from the dashboard
 
-### Sikkerhet og ytelse
-- Secure-flagg på session-cookies ved HTTPS
-- N+1 spørring i getSpools fikset med batch-query
-- Ny database-indeks på print_history.started_at
-- readBody returnerer 400 ved ugyldig JSON
-- Intervaller ryddes ved shutdown (ingen minnelekkasje)
-- Docker healthcheck fikset for HTTPS-modus
+### Security & Performance
+- Secure flag on session cookies with HTTPS
+- N+1 query in getSpools fixed with batch query
+- New database index on print_history.started_at
+- readBody returns 400 on invalid JSON
+- Intervals cleared on shutdown (no memory leak)
+- Docker healthcheck fixed for HTTPS mode
 
-### Oversettelser og visuell opprydding
-- 12 komponenter oversatt til norsk (Loading, Error, Quick Commands, etc.)
-- 25 døde filer slettet (13 frontend-split, 12 rute-split)
-- CSS-variabler fikset (var(--border) → var(--border-color))
-- PWA theme-color rettet (#00d4ff → #00AE42)
-- tabs.waste "Poop" → "Avfall"
-- Service worker bumped for cache-oppdatering
+### Translations & Visual Cleanup
+- 12 components translated to Norwegian (Loading, Error, Quick Commands, etc.)
+- 25 dead files deleted (13 frontend-split, 12 route-split)
+- CSS variables fixed (var(--border) → var(--border-color))
+- PWA theme-color corrected (#00d4ff → #00AE42)
+- tabs.waste "Poop" → "Waste"
+- Service worker bumped for cache update
 
-### Alle Bambu Lab printere støttet
+### All Bambu Lab Printers Supported
 - X1C, X1C Combo, X1E
 - P1S, P1S Combo, P1P
 - P2S, P2S Combo
@@ -80,80 +80,80 @@ Alle vesentlige endringer i Bambu Dashboard.
 
 ## v1.1.11 — Filament Analytics, Cloud API, RFID Library, OBS Redesign & Multi-Repo Integration (2026-03-19)
 
-### Bambu Lab Cloud API (42 metoder)
-- Full Cloud API-dekning: filopplasting, cloud print, enhetsbinding, brukerprofil, 2FA
-- Token auto-refresh hver 12. time med utløpsdeteksjon
-- MakerWorld designsøk og 3MF-nedlasting
+### Bambu Lab Cloud API (42 methods)
+- Full Cloud API coverage: file upload, cloud print, device binding, user profile, 2FA
+- Token auto-refresh every 12 hours with expiry detection
+- MakerWorld design search and 3MF download
 
-### Filament Analytics (8 faner)
-- Daglig/ukentlig/månedlig forbrukssporing med aggregering
-- Materialforbruksrater, svinnanalyse, effektivitetsmetrikker
-- Tømmeprognose med estimert tom-dato per spool
-- Kostnadsanalyse per leverandør med utnyttelsesgrad
-- Materialerstatningsregler (10 forhåndsdefinerte)
-- RAL-fargeoppslag (32 farger) med Delta-E matching
-- Lagringsalarmer med fuktighet/temperatur-terskler
-- Utløpsdato-sporing for spoler
+### Filament Analytics (8 tabs)
+- Daily/weekly/monthly consumption tracking with aggregation
+- Material consumption rates, waste analysis, efficiency metrics
+- Depletion forecast with estimated empty date per spool
+- Cost analysis per vendor with utilization rate
+- Material substitution rules (10 predefined)
+- RAL color lookup (32 colors) with Delta-E matching
+- Storage alerts with humidity/temperature thresholds
+- Expiry date tracking for spools
 
-### SpoolEase-integrasjon
-- 109 spolvekter fra katalog for nøyaktig bruttovekt-måling
-- 75 Bambu Lab filament-koder med temperaturområder
-- K-faktor kalibrering per spool/printer/dyse
-- Forbrukt-siden-veiing med veie-arbeidsflyt
-- Forbedret G-code parser med densitet/diameter fra kommentarer
+### SpoolEase Integration
+- 109 spool weights from catalog for accurate gross weight measurement
+- 75 Bambu Lab filament codes with temperature ranges
+- K-factor calibration per spool/printer/nozzle
+- Consumed-since-weighing with weighing workflow
+- Improved G-code parser with density/diameter from comments
 
 ### Bambu Lab RFID Library
-- 223 variant→farge-mappinger med hex-koder og norske fargenavn
-- 36 materialtyper med tørkeanbefalinger fra RFID-data
-- Auto-berikelse av AMS-trays med variant-database
-- Fuzzy matching for tray_id_name varianter
+- 223 variant→color mappings with hex codes and color names
+- 36 material types with drying recommendations from RFID data
+- Auto-enrichment of AMS trays with variant database
+- Fuzzy matching for tray_id_name variants
 
-### BambuBoard — 36 print-stager
-- Komplett `stg_cur` mapping med norske oversettelser og SVG-ikoner
-- Stage-badge i kontrollpanel, fleet dashboard og nedtellingstimer
-- Print-stage i telemetri historisk data
+### BambuBoard — 36 Print Stages
+- Complete `stg_cur` mapping with translations and SVG icons
+- Stage badge in control panel, fleet dashboard and countdown timer
+- Print stage in telemetry historical data
 
-### OBS Overlay redesign
-- Sidepanel-layout (320px) med transparent bakgrunn
-- SVG-spolvisualiseringer for AMS-trays med fyllingsgrad
-- Progress-ring, temperaturer, print-stage badges
-- Auto-deteksjon av kameramodus (fullskjerm vs overlay)
-- OBS-innstillinger oppdatert med posisjon, MJPEG og snapshot-URLer
+### OBS Overlay Redesign
+- Side panel layout (320px) with transparent background
+- SVG spool visualizations for AMS trays with fill level
+- Progress ring, temperatures, print stage badges
+- Auto-detection of camera mode (fullscreen vs overlay)
+- OBS settings updated with position, MJPEG and snapshot URLs
 
-### Kamera
-- MJPEG HTTP-stream (`/api/printers/:id/stream.mjpeg`)
-- JPEG snapshot-endepunkt (`/api/printers/:id/frame.jpeg`)
-- Direkte kamera-URLer i OBS-innstillinger med kopier-knapp
+### Camera
+- MJPEG HTTP stream (`/api/printers/:id/stream.mjpeg`)
+- JPEG snapshot endpoint (`/api/printers/:id/frame.jpeg`)
+- Direct camera URLs in OBS settings with copy button
 
-### Label Generator redesign
-- SVG-spolvisualisering med fyllingsgrad på hvert kort
-- Fargestripe, progress-bar, leverandør, temperaturer, RAL-kode
-- Filamentprofil-labels som ny type
-- Størrelsesvalgr (S/M/L) med grid-tilpasning
+### Label Generator Redesign
+- SVG spool visualization with fill level on each card
+- Color stripe, progress bar, vendor, temperatures, RAL code
+- Filament profile labels as new type
+- Size selection (S/M/L) with grid adjustment
 
 ### Fleet Dashboard
-- Grid-layout velger (Auto/1/2/3/4 kolonner) med localStorage-persistering
-- Printer vedlikeholdsmodus med oransje badge og nedtoning
-- Norske labels for sortering og handlinger
+- Grid layout selector (Auto/1/2/3/4 columns) with localStorage persistence
+- Printer maintenance mode with orange badge and dimming
+- Labels for sorting and actions
 
-### BamBuddy-funksjoner
-- AMS fjern-tørking via MQTT (start/stopp med temperatur og varighet)
-- Print historikk-foto kobling (screenshots → print)
-- MQTT debug-system med sanntids WebSocket-stream
-- Firmware-statussjekk per modul
-- Timelapse re-encoding med hastighet, kvalitet og trimming
+### BamBuddy Features
+- AMS remote drying via MQTT (start/stop with temperature and duration)
+- Print history photo linking (screenshots → print)
+- MQTT debug system with real-time WebSocket stream
+- Firmware status check per module
+- Timelapse re-encoding with speed, quality and trimming
 
-### Vedlikehold
-- Slitasjepredikasjon flyttet inn som fane i vedlikeholdspanelet
-- Overvåking-seksjonen ryddet (5 → 4 knapper)
+### Maintenance
+- Wear prediction moved as a tab into the maintenance panel
+- Monitoring section cleaned up (5 → 4 buttons)
 
-### Rettelser
-- Norske tegn (æøå) rettet i alle API-meldinger, print-stager og OBS
-- SVG lag-ikon fikset (manglet width/height, ble for stor)
-- Thumbnail-URL i OBS rettet til riktig API-rute
+### Bug Fixes
+- Special characters (æøå) corrected in all API messages, print stages and OBS
+- SVG layer icon fixed (missing width/height, was too large)
+- Thumbnail URL in OBS corrected to proper API route
 
 ### Database
-- Migrasjoner v96–v103 med auto-seeding av SpoolEase og RFID Library data
+- Migrations v96–v103 with auto-seeding of SpoolEase and RFID Library data
 
 ---
 

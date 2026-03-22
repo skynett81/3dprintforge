@@ -26,14 +26,14 @@ Firefox nepodporuje plnou instalaci PWA přímo. Pro nejlepší zážitek použi
 
 ### Mobil (Android – Chrome)
 
-1. Otevřete **https://IP-vašeho-serveru:3443** v Chrome
+1. Otevřete `https://your-server:3443` v Chrome
 2. Klepněte na tři tečky → **Přidat na plochu**
 3. Pojmenujte aplikaci a klepněte na **Přidat**
 4. Ikona se zobrazí na ploše — aplikace se otevírá na celou obrazovku bez prohlížečového uživatelského rozhraní
 
 ### Mobil (iOS – Safari)
 
-1. Otevřete **https://IP-vašeho-serveru:3443** v Safari
+1. Otevřete `https://your-server:3443` v Safari
 2. Klepněte na ikonu **Sdílet** (čtverec se šipkou nahoru)
 3. Scrollujte dolů a vyberte **Přidat na plochu**
 4. Klepněte na **Přidat**
