@@ -1,14 +1,74 @@
 ---
 sidebar_position: 5
 title: E-handel
-description: Administrer ordrer, kunder og fakturering for salg av 3D-prints med lisens og kostnadsberegning
+description: Administrer ordrer, kunder og fakturering for salg av 3D-prints — krever lisens fra geektech.no
 ---
 
 # E-handel
 
-E-handelmodulen gir deg et enkelt system for å administrere kunder, ordrer og fakturering — perfekt for de som selger 3D-prints profesjonelt eller semi-profesjonelt.
+E-handelmodulen gir deg et komplett system for å administrere kunder, ordrer og fakturering — perfekt for de som selger 3D-prints profesjonelt eller semi-profesjonelt.
 
 Gå til: **https://localhost:3443/#ecommerce**
+
+:::danger E-handelslisens påkrevd
+E-handelmodulen krever en gyldig lisens. Lisenser kan **kun kjøpes via [geektech.no](https://geektech.no)**. Uten aktiv lisens er modulen låst og utilgjengelig.
+:::
+
+## Lisens — kjøp og aktivering
+
+### Kjøpe lisens
+
+1. Gå til **[geektech.no](https://geektech.no)** og opprett en konto
+2. Velg **Bambu Dashboard — E-handelslisens**
+3. Velg lisenstype:
+
+| Lisenstype | Beskrivelse | Printere |
+|---|---|---|
+| **Hobby** | Én printer, personlig bruk og småsalg | 1 |
+| **Profesjonell** | Opptil 5 printere, kommersiell bruk | 1–5 |
+| **Enterprise** | Ubegrenset antall printere, full støtte | Ubegrenset |
+
+4. Fullfør betaling
+5. Du mottar en **lisensnøkkel** på e-post
+
+### Aktivere lisens
+
+1. Gå til **Innstillinger → E-handel** i dashboardet
+2. Lim inn **lisensnøkkelen** i feltet
+3. Klikk **Aktiver lisens**
+4. Dashboardet autentiserer nøkkelen mot geektech.no sine servere
+5. Ved vellykket aktivering vises lisenstype, utløpsdato og antall printere
+
+:::warning Lisensnøkkelen er knyttet til din installasjon
+Nøkkelen aktiveres for én Bambu Dashboard-installasjon. Kontakt [geektech.no](https://geektech.no) hvis du trenger å flytte lisensen til en ny server.
+:::
+
+### Lisensvalidering
+
+- Lisensen **valideres online** ved oppstart og deretter hver 24. time
+- Ved nettverksutfall fungerer lisensen i opptil **7 dager offline**
+- Utløpt lisens → modulen låses, men eksisterende data beholdes
+- Fornyelse skjer via **[geektech.no](https://geektech.no)** → Mine lisenser → Forny
+
+### Sjekke lisensstatus
+
+Gå til **Innstillinger → E-handel** eller kall API-et:
+
+```bash
+curl -sk https://localhost:3443/api/ecom-license/status
+```
+
+Svaret inneholder:
+```json
+{
+  "active": true,
+  "type": "professional",
+  "expires": "2027-03-22",
+  "printers": 5,
+  "licensee": "Firmanavn AS",
+  "provider": "geektech.no"
+}
+```
 
 ## Kunder
 
@@ -89,19 +149,16 @@ Sett opp fakturanummerserie under **Innstillinger → E-handel**:
 - **Startnummer**: f.eks. `1001`
 - Fakturanummer tildeles automatisk i stigende rekkefølge
 
-## Lisensiering
+## Rapportering og avgifter
 
-For kunder som kjøper rettigheter til modeller du har designet:
+### Gebyrrapportering
 
-1. Opprett en **Lisens**-ordrelinje
-2. Velg **Lisenstype**: Personlig / Kommersiell / Ubegrenset
-3. Systemet genererer et **lisensbevis** som vedlegges fakturaen
+Systemet sporer alle transaksjonsgebyrer:
+- Se gebyrer under **E-handel → Gebyrer**
+- Marker gebyrer som rapportert for regnskapsformål
+- Eksporter gebyrsammendrag per periode
 
-:::info Lisens gjelder kun dine egne modeller
-Bambu Dashboard støtter kun lisensiering av modeller du selv har laget. For MakerWorld/Printables-modeller, respekter originaldesignerens lisensvilkår.
-:::
-
-## Statistikk
+### Statistikk
 
 Under **E-handel → Statistikk**:
 - Månedlig omsetning (stolpediagram)
@@ -110,3 +167,11 @@ Under **E-handel → Statistikk**:
 - Gjennomsnittlig ordrestørrelse
 
 Eksporter til CSV for regnskapssystem.
+
+## Støtte og kontakt
+
+:::info Trenger du hjelp?
+- **Lisensspørsmål**: kontakt [geektech.no](https://geektech.no) support
+- **Tekniske problemer**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
+- **Funksjonsønsker**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+:::
