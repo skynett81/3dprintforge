@@ -123,6 +123,7 @@ export function runMigrations() {
     { version: 103, up: _mig103_printer_maintenance_mode },
     { version: 104, up: _mig104_model_links_in_history },
     { version: 105, up: _mig105_index_history_started_at },
+    { version: 106, up: _mig106_ecom_license_fields },
   ];
 
   for (const m of migrations) {
@@ -4337,6 +4338,17 @@ function _mig104_model_links_in_history(db) {
 
 function _mig105_index_history_started_at(db) {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_started ON print_history(started_at)'); } catch {}
+}
+
+function _mig106_ecom_license_fields(db) {
+  // Nye felt fra GeekTech lisensadministrasjon
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN domain TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN phone TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN max_printers INTEGER DEFAULT 1'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN pin_code TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN is_pinned INTEGER DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN notes TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN attachments TEXT'); } catch {}
 }
 
 function _mig103_printer_maintenance_mode(db) {

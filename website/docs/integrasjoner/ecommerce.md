@@ -34,39 +34,73 @@ E-handelmodulen krever en gyldig lisens. Lisenser kan **kun kjøpes via [geektec
 ### Aktivere lisens
 
 1. Gå til **Innstillinger → E-handel** i dashboardet
-2. Lim inn **lisensnøkkelen** i feltet
-3. Klikk **Aktiver lisens**
-4. Dashboardet autentiserer nøkkelen mot geektech.no sine servere
-5. Ved vellykket aktivering vises lisenstype, utløpsdato og antall printere
+2. Fyll inn følgende felt:
 
-:::warning Lisensnøkkelen er knyttet til din installasjon
-Nøkkelen aktiveres for én Bambu Dashboard-installasjon. Kontakt [geektech.no](https://geektech.no) hvis du trenger å flytte lisensen til en ny server.
+| Felt | Beskrivelse | Påkrevd |
+|------|-------------|---------|
+| **Lisensnøkkel** | Nøkkelen du mottok fra geektech.no | ✅ Ja |
+| **E-postadresse** | E-posten du brukte ved kjøp | ✅ Ja |
+| **Domene** | Domenet/IP-adressen dashboardet kjører på | Anbefalt |
+| **Telefon** | Kontakttelefon (med landkode, f.eks. +47) | Valgfritt |
+
+3. Klikk **Aktiver lisens**
+4. Dashboardet sender aktiveringsforespørsel til geektech.no
+5. Ved vellykket aktivering vises:
+   - **Lisenstype** (Hobby / Profesjonell / Enterprise)
+   - **Utløpsdato**
+   - **Maks antall printere**
+   - **Lisensinnehaver**
+   - **Instans-ID** (unik for din installasjon)
+
+:::warning Lisensnøkkelen er knyttet til domene og installasjon
+Nøkkelen aktiveres for én spesifikk Bambu Dashboard-installasjon og domene. Kontakt [geektech.no](https://geektech.no) support hvis du trenger å:
+- Flytte lisensen til en ny server
+- Endre domene
+- Øke antall printere
 :::
 
 ### Lisensvalidering
 
-- Lisensen **valideres online** ved oppstart og deretter hver 24. time
-- Ved nettverksutfall fungerer lisensen i opptil **7 dager offline**
-- Utløpt lisens → modulen låses, men eksisterende data beholdes
-- Fornyelse skjer via **[geektech.no](https://geektech.no)** → Mine lisenser → Forny
+Lisensen autentiseres og samkjøres med geektech.no:
+
+- **Validering ved oppstart** — lisensen sjekkes automatisk
+- **Løpende validering** — revalideres hver 24. time mot geektech.no
+- **Offline-modus** — ved nettverksutfall fungerer lisensen i opptil **7 dager** med cached validering
+- **Utløpt lisens** → modulen låses, men eksisterende data (ordrer, kunder) beholdes
+- **PIN-kode** — geektech.no kan låse/frigjøre lisensen via PIN-systemet
+- **Fornyelse** — via **[geektech.no](https://geektech.no)** → Mine lisenser → Forny
+
+### Lisenstyper og begrensninger
+
+| Plan | Printere | Plattformer | Gebyr | Pris |
+|------|----------|-------------|-------|------|
+| **Hobby** | 1 | 1 (Shopify ELLER WooCommerce) | 5% | Se geektech.no |
+| **Profesjonell** | 1–5 | Alle | 5% | Se geektech.no |
+| **Enterprise** | Ubegrenset | Alle + API | 3% | Se geektech.no |
 
 ### Sjekke lisensstatus
 
 Gå til **Innstillinger → E-handel** eller kall API-et:
 
 ```bash
-curl -sk https://localhost:3443/api/ecom-license/status
+curl -sk https://localhost:3443/api/ecommerce/license
 ```
 
 Svaret inneholder:
 ```json
 {
   "active": true,
-  "type": "professional",
-  "expires": "2027-03-22",
-  "printers": 5,
-  "licensee": "Firmanavn AS",
-  "provider": "geektech.no"
+  "status": "active",
+  "plan": "professional",
+  "holder": "Firmanavn AS",
+  "email": "firma@eksempel.no",
+  "domain": "dashboard.firmanavn.no",
+  "max_printers": 5,
+  "expires_at": "2027-03-22",
+  "provider": "geektech.no",
+  "fees_pending": 2,
+  "fees_this_month": 450.00,
+  "orders_this_month": 12
 }
 ```
 

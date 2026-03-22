@@ -122,9 +122,14 @@ export class EcomLicenseManager {
       holder: this._license?.holder_name || null,
       plan: this._license?.plan || null,
       email: this._license?.geektech_email || null,
+      domain: this._license?.domain || null,
+      phone: this._license?.phone || null,
+      max_printers: this._license?.max_printers || 1,
+      is_pinned: this._license?.is_pinned || 0,
       expires_at: this._license?.expires_at || null,
       last_validated: this._license?.last_validated || null,
       instance_id: this._license?.instance_id || null,
+      provider: 'geektech.no',
       fees_pending: fees?.pending_count || 0,
       fees_pending_total: fees?.pending_total || 0,
       fees_this_month: monthSummary?.[0]?.total_fees || 0,
@@ -154,7 +159,8 @@ export class EcomLicenseManager {
       const { status, data } = await _httpPost(`${apiUrl}/license/validate`, {
         license_key: this._license.license_key,
         product: 'bambu-dashboard-ecommerce',
-        instance_id: this._license.instance_id
+        instance_id: this._license.instance_id,
+        domain: this._license.domain || null
       });
 
       if (status >= 200 && status < 300 && data.valid) {
@@ -163,6 +169,7 @@ export class EcomLicenseManager {
           holder_name: data.holder || null,
           plan: data.plan || null,
           features: JSON.stringify(data.features || []),
+          max_printers: data.max_printers || data.units || 1,
           expires_at: data.expires_at || null,
           last_validated: new Date().toISOString(),
           cached_response: JSON.stringify(data)
@@ -187,10 +194,12 @@ export class EcomLicenseManager {
     }
   }
 
-  async activate(licenseKey, email) {
+  async activate(licenseKey, email, domain, phone) {
     setEcomLicense({
       license_key: licenseKey,
       geektech_email: email || null,
+      domain: domain || null,
+      phone: phone || null,
       status: 'inactive'
     });
     this._license = getEcomLicense();

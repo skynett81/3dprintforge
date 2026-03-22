@@ -5088,7 +5088,7 @@ export async function handleApiRequest(req, res) {
         if (!body.license_key) return sendJson(res, { error: 'license_key required' }, 400);
         if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
         try {
-          const result = await _ecomLicense.activate(body.license_key, body.email);
+          const result = await _ecomLicense.activate(body.license_key, body.email, body.domain, body.phone);
           return sendJson(res, result);
         } catch (e) { return sendJson(res, { error: e.message }, 500); }
       });
