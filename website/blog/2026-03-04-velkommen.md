@@ -1,28 +1,28 @@
 ---
-slug: velkommen
-title: "Velkommen til Bambu Dashboard"
+slug: welcome
+title: "Welcome to Bambu Dashboard"
 authors: [skynett81]
 tags: [guide]
 ---
 
-Bambu Dashboard er et selvhostet dashboard for Bambu Lab 3D-printere. Det kobler seg direkte til printeren via MQTT og gir deg full kontroll og oversikt.
+Bambu Dashboard is a self-hosted dashboard for Bambu Lab 3D printers. It connects directly to your printer via MQTT and gives you full control and overview.
 
 <!-- truncate -->
 
-## Hva kan du gjøre?
+## What can you do?
 
-- **Sanntids overvåking** — se temperatur, hastighet, fremgang og kamera i sanntid
-- **Filamentlager** — spor alle spoler med AMS-synk, tørking og forbruksstatistikk
-- **Printhistorikk** — full historikk med statistikk, modellnavn og MakerWorld-linker
-- **Printerkontroll** — temperatur, hastighet, vifter, G-code og makroer
-- **Planlegger** — kalendervisning med automatisk logg av gjennomførte prints
-- **OBS-overlay** — strøm printstatus til din livestream
+- **Real-time monitoring** — see temperature, speed, progress, and camera live
+- **Filament inventory** — track all spools with AMS sync, drying, and usage statistics
+- **Print history** — complete history with statistics, model names, and MakerWorld links
+- **Printer controls** — temperature, speed, fans, G-code, and macros
+- **Scheduler** — calendar view with automatic logging of completed prints
+- **OBS overlay** — stream print status to your livestream
 
-## Kom i gang
+## Getting started
 
-1. Installer Node.js 22+
-2. `git clone` og `npm install`
+1. Install Node.js 22+
+2. `git clone` and `npm install`
 3. `npm start`
-4. Åpne `https://localhost:3443` og koble til printeren
+4. Open `https://localhost:3443` and connect your printer
 
-Les mer i [dokumentasjonen](/docs/intro).
+Read more in the [documentation](/docs/intro).
