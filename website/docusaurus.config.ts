@@ -31,7 +31,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: 'docs',
+          routeBasePath: '/',
           editUrl: 'https://github.com/skynett81/bambu-dashboard/tree/main/website/',
         },
         blog: {

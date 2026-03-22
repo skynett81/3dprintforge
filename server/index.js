@@ -260,18 +260,15 @@ function handleRequest(req, res) {
       return true;
     };
 
-    // 1) Try build/{relative} first (assets, img, blog, 404.html, sitemap)
+    // Try build/{relative} — all docs and assets are directly in build root
     if (_tryServe(join(DOCS_BUILD, relative))) return;
 
-    // 2) Try build/docs/{relative} (actual doc pages)
-    if (_tryServe(join(DOCS_BUILD, 'docs', relative))) return;
-
-    // 3) /docs/ root → redirect to intro
-    if (!relative || relative === '/') {
-      if (_tryServe(join(DOCS_BUILD, 'docs', 'intro'))) return;
+    // /docs/ root → serve intro page
+    if (!relative) {
+      if (_tryServe(join(DOCS_BUILD, 'intro'))) return;
     }
 
-    // 4) SPA fallback — use 404.html for client-side routing
+    // SPA fallback — use 404.html for client-side routing
     const fallback = join(DOCS_BUILD, '404.html');
     if (existsSync(fallback)) {
       res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
