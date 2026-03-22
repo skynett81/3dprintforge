@@ -2413,12 +2413,27 @@
         if (badge) { badge.classList.add('active'); badge.textContent = t('settings.ecom_premium') + ' \u2713'; }
         const feeStr = formatCurrency(lic.fees_this_month || 0);
         licArea.innerHTML = `
-          <div class="ecom-license-info" style="display:flex;flex-wrap:wrap;gap:0.5rem 1.5rem;font-size:0.85rem;margin-bottom:0.5rem;padding:0.6rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid rgba(0,174,66,0.3)">
-            <span><strong>${t('settings.ecom_license_key')}:</strong> ${_esc(lic.license_key || '')}</span>
-            <span><strong>${t('settings.ecom_license_holder')}:</strong> ${_esc(lic.holder || '-')}</span>
-            <span><strong>${t('settings.ecom_license_expires')}:</strong> ${lic.expires_at ? new Date(lic.expires_at).toLocaleDateString() : '-'}</span>
-            <span><strong>${t('settings.ecom_fees_month')}:</strong> ${feeStr} (${lic.orders_this_month || 0} ${t('settings.ecom_fees_orders')})</span>
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.ecom_deactivate')}" onclick="deactivateEcomLicense()" style="margin-left:auto">${t('settings.ecom_deactivate')}</button>
+          <div class="ecom-license-info" style="font-size:0.85rem;margin-bottom:0.5rem;padding:0.8rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid rgba(0,174,66,0.3)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="color:var(--accent-green);font-weight:700;font-size:0.9rem">✓ Lisens aktiv</span>
+              <span style="background:var(--accent-green);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600">${_esc(lic.plan || 'Standard')}</span>
+              ${lic.license_type && lic.license_type !== 'none' ? '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;font-size:0.7rem">' + _esc(lic.license_type.toUpperCase()) + '</span>' : ''}
+              <button class="form-btn form-btn-sm form-btn-danger" data-ripple onclick="deactivateEcomLicense()" style="margin-left:auto">${t('settings.ecom_deactivate')}</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px">
+              <span><strong>Nøkkel:</strong> ${_esc(lic.license_key || '')}</span>
+              <span><strong>Domene:</strong> ${_esc(lic.domain || '-')}</span>
+              <span><strong>E-post:</strong> ${_esc(lic.email || '-')}</span>
+              <span><strong>Innehaver:</strong> ${_esc(lic.holder || '-')}</span>
+              <span><strong>Maks printere:</strong> ${lic.max_printers || 1}</span>
+              <span><strong>Utløper:</strong> ${lic.expires_at ? new Date(lic.expires_at).toLocaleDateString() : 'Evigvarende'}</span>
+              <span><strong>Verifiseringer:</strong> ${lic.verify_count || 0}</span>
+              <span><strong>Sist validert:</strong> ${lic.last_validated ? new Date(lic.last_validated).toLocaleString() : '-'}</span>
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);display:flex;gap:16px;font-size:0.8rem;color:var(--text-muted)">
+              <span>Gebyrer denne mnd: <strong>${feeStr}</strong> (${lic.orders_this_month || 0} ordrer)</span>
+              <span>Tilbyder: <a href="https://geektech.no" target="_blank" rel="noopener" style="color:var(--accent-green)">geektech.no</a></span>
+            </div>
           </div>`;
         if (ecomSection) ecomSection.style.display = '';
         if (addBtn) addBtn.style.display = '';
@@ -2432,17 +2447,27 @@
             <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 0.6rem">${t('settings.ecom_fee_notice')}</p>
             ${lic.status === 'expired' ? '<p style="font-size:0.8rem;color:#e91e63;margin:0 0 0.5rem">' + t('settings.ecom_license_expired') + '</p>' : ''}
             ${lic.status === 'invalid' ? '<p style="font-size:0.8rem;color:#e91e63;margin:0 0 0.5rem">' + t('settings.ecom_license_invalid') + '</p>' : ''}
-            <div class="form-group" style="margin-bottom:0.4rem">
-              <label class="form-label">${t('settings.ecom_license_key')}</label>
-              <input class="form-input" id="ecom-license-key" placeholder="${t('settings.ecom_license_key_ph')}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="form-group" style="margin-bottom:0.4rem">
+                <label class="form-label">${t('settings.ecom_license_key')} *</label>
+                <input class="form-input" id="ecom-license-key" placeholder="32-tegn hex nøkkel" style="font-family:monospace">
+              </div>
+              <div class="form-group" style="margin-bottom:0.4rem">
+                <label class="form-label">${t('settings.ecom_license_email') || 'E-post'} *</label>
+                <input class="form-input" id="ecom-license-email" type="email" placeholder="din@epost.no">
+              </div>
+              <div class="form-group" style="margin-bottom:0.4rem">
+                <label class="form-label">Domene</label>
+                <input class="form-input" id="ecom-license-domain" placeholder="dashboard.dittdomene.no">
+              </div>
+              <div class="form-group" style="margin-bottom:0.4rem">
+                <label class="form-label">Telefon</label>
+                <input class="form-input" id="ecom-license-phone" placeholder="+47 XXX XX XXX">
+              </div>
             </div>
-            <div class="form-group" style="margin-bottom:0.6rem">
-              <label class="form-label">${t('settings.ecom_license_email')}</label>
-              <input class="form-input" id="ecom-license-email" placeholder="${t('settings.ecom_license_email_ph') || 'din@epost.no'}">
-            </div>
-            <div style="display:flex;gap:0.5rem;align-items:center">
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-top:8px">
               <button class="form-btn form-btn-primary" data-ripple onclick="activateEcomLicense()">${t('settings.ecom_activate')}</button>
-              <a href="https://geektech.no/registrer" target="_blank" rel="noopener" style="font-size:0.85rem">${t('settings.ecom_create_account')}</a>
+              <a href="https://geektech.no" target="_blank" rel="noopener" style="font-size:0.85rem">Kjøp lisens på geektech.no →</a>
             </div>
           </div>`;
         if (ecomSection) ecomSection.style.display = 'none';
@@ -2454,12 +2479,14 @@
   window.activateEcomLicense = async function() {
     const key = document.getElementById('ecom-license-key')?.value?.trim();
     const email = document.getElementById('ecom-license-email')?.value?.trim();
+    const domain = document.getElementById('ecom-license-domain')?.value?.trim();
+    const phone = document.getElementById('ecom-license-phone')?.value?.trim();
     if (!key) { showToast(t('settings.ecom_license_invalid'), 'warning'); return; }
     try {
       const res = await fetch('/api/ecommerce/license/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ license_key: key, email })
+        body: JSON.stringify({ license_key: key, email, domain, phone })
       });
       const data = await res.json();
       if (data.valid) {
