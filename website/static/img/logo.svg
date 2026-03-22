@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Base / print bed -->
+  <rect x="15" y="72" width="70" height="8" rx="2" fill="#1a9e5c"/>
+  <!-- Printer frame left -->
+  <rect x="15" y="20" width="6" height="54" rx="2" fill="#1a9e5c"/>
+  <!-- Printer frame right -->
+  <rect x="79" y="20" width="6" height="54" rx="2" fill="#1a9e5c"/>
+  <!-- Top bar -->
+  <rect x="15" y="20" width="70" height="6" rx="2" fill="#1a9e5c"/>
+  <!-- Print head / gantry rail -->
+  <rect x="22" y="38" width="56" height="5" rx="2" fill="#0f7a43"/>
+  <!-- Print head body -->
+  <rect x="42" y="34" width="16" height="14" rx="3" fill="#0f7a43"/>
+  <!-- Nozzle -->
+  <polygon points="47,48 53,48 51,56 49,56" fill="#0f7a43"/>
+  <!-- Printed object layers -->
+  <rect x="35" y="62" width="30" height="5" rx="1" fill="#26c76e" opacity="0.9"/>
+  <rect x="38" y="57" width="24" height="5" rx="1" fill="#26c76e" opacity="0.85"/>
+  <rect x="41" y="52" width="18" height="5" rx="1" fill="#26c76e" opacity="0.8"/>
+  <!-- Z rod indicator dots -->
+  <circle cx="18" cy="45" r="2" fill="#26c76e"/>
+  <circle cx="82" cy="45" r="2" fill="#26c76e"/>
+</svg>

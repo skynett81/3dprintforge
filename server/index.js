@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { readFileSync, existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, chmodSync, createReadStream } from 'node:fs';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -231,6 +231,27 @@ function handleRequest(req, res) {
   // Print labels route (not under /api/)
   if (pathname.startsWith('/print/labels')) {
     return handleApiRequest(req, res);
+  }
+
+  // Serve Docusaurus docs from /docs/
+  const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'website', 'build');
+  if (pathname.startsWith('/docs')) {
+    let docsPath = pathname.replace(/^\/docs/, '') || '/index.html';
+    if (docsPath === '/' || docsPath === '') docsPath = '/index.html';
+    if (!extname(docsPath)) docsPath += '/index.html';
+    const docsFile = join(DOCS_DIR, docsPath);
+    if (existsSync(DOCS_DIR) && docsFile.startsWith(DOCS_DIR) && existsSync(docsFile)) {
+      const ext = extname(docsFile);
+      const ct = MIME_TYPES[ext] || 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=3600' });
+      return createReadStream(docsFile).pipe(res);
+    }
+    // Fallback: try without /index.html for SPA routing
+    const spaFallback = join(DOCS_DIR, 'index.html');
+    if (existsSync(spaFallback)) {
+      res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
+      return createReadStream(spaFallback).pipe(res);
+    }
   }
 
   let filePath = join(PUBLIC_DIR, req.url === '/' ? 'index.html' : pathname);

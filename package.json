@@ -28,7 +28,10 @@
     "dev": "node --watch server/index.js",
     "demo": "BAMBU_DEMO=true node --watch server/index.js",
     "setup": "node server/setup-wizard.js",
-    "test": "node --test --test-force-exit tests/**/*.test.js"
+    "test": "node --test --test-force-exit tests/**/*.test.js",
+    "docs:dev": "cd website && npm start",
+    "docs:build": "cd website && npm run build",
+    "docs:serve": "cd website && npm run serve"
   },
   "dependencies": {
     "basic-ftp": "^5.2.0",

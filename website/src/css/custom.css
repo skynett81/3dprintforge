@@ -1,0 +1,119 @@
+/**
+ * Bambu Dashboard — Docusaurus tema
+ * Matcher det mørke dashboardet med grønn aksent (#00AE42)
+ */
+
+:root {
+  --ifm-color-primary: #00AE42;
+  --ifm-color-primary-dark: #009D3B;
+  --ifm-color-primary-darker: #009438;
+  --ifm-color-primary-darkest: #007A2E;
+  --ifm-color-primary-light: #00BF49;
+  --ifm-color-primary-lighter: #00C84C;
+  --ifm-color-primary-lightest: #00E156;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ifm-heading-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ifm-font-size-base: 16px;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #00D94F;
+  --ifm-color-primary-dark: #00C447;
+  --ifm-color-primary-darker: #00B943;
+  --ifm-color-primary-darkest: #009837;
+  --ifm-color-primary-light: #00EE57;
+  --ifm-color-primary-lighter: #00F95B;
+  --ifm-color-primary-lightest: #1AFF6F;
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #161b22;
+  --ifm-navbar-background-color: #0d1117;
+  --ifm-footer-background-color: #0a0e14;
+  --ifm-card-background-color: #161b22;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Navbar styling */
+.navbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .navbar {
+  box-shadow: none;
+}
+
+/* Sidebar */
+[data-theme='dark'] .menu {
+  background: transparent;
+}
+
+/* Admonitions — norske titler via CSS */
+.admonition-heading .admonition-icon + span {
+  font-weight: 600;
+}
+
+/* Tabeller */
+table {
+  display: table;
+  width: 100%;
+}
+
+table th {
+  background: var(--ifm-background-surface-color);
+}
+
+/* Rating stars (brukt i KB) */
+.rating-excellent { color: #00c864; font-weight: 700; }
+.rating-good { color: #4aa3df; font-weight: 600; }
+.rating-fair { color: #f0883e; font-weight: 600; }
+.rating-poor { color: #e53935; font-weight: 600; }
+.rating-not-recommended { color: #888; font-weight: 600; }
+
+/* Plate compatibility grid */
+.plate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.plate-card {
+  border: 2px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.15s;
+}
+
+.plate-card:hover {
+  transform: translateY(-2px);
+}
+
+.plate-card.best {
+  border-color: var(--ifm-color-primary);
+  background: rgba(0, 174, 66, 0.06);
+}
+
+/* Glue card */
+.glue-card {
+  border-left: 4px solid;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: var(--ifm-background-surface-color);
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge--green { background: rgba(0, 174, 66, 0.15); color: #00AE42; }
+.badge--orange { background: rgba(240, 136, 62, 0.15); color: #f0883e; }
+.badge--red { background: rgba(229, 57, 53, 0.15); color: #e53935; }
+.badge--blue { background: rgba(74, 163, 223, 0.15); color: #4aa3df; }
