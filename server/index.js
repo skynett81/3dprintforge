@@ -98,7 +98,7 @@ const SECURITY_HEADERS = {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://*.bblmw.com https://public-cdn.bblmw.com",
+    "img-src 'self' data: blob: https:",
     "connect-src 'self' ws: wss: https://open.er-api.com",
     "font-src 'self' https://fonts.gstatic.com",
     "object-src 'none'",
@@ -147,7 +147,16 @@ function handleCors(req, res) {
 }
 
 function handleRequest(req, res) {
-  applySecurityHeaders(res);
+  const reqPath = req.url.split('?')[0];
+  // Skip dashboard CSP for docs pages — Docusaurus has its own CSP via meta tag
+  if (!reqPath.startsWith('/docs')) {
+    applySecurityHeaders(res);
+  } else {
+    // Minimal headers for docs (no CSP — let Docusaurus meta tag handle it)
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    applyHttpsHeaders(res);
+  }
 
   // Request logging
   const reqStart = Date.now();
