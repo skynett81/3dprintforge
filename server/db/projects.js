@@ -171,14 +171,17 @@ export function getProjectCostSummary(projectId) {
       COALESCE(SUM(pc.total_cost), 0) as actual_cost,
       COALESCE(SUM(pc.filament_cost), 0) as filament_cost,
       COALESCE(SUM(pc.energy_cost), 0) as energy_cost,
+      COALESCE(SUM(pc.depreciation_cost), 0) as wear_cost,
+      COALESCE(SUM(pc.labor_cost), 0) as labor_cost,
       COALESCE(SUM(ph.filament_used_g), 0) as total_filament_g,
+      COALESCE(SUM(ph.waste_g), 0) as total_waste_g,
       COALESCE(SUM(ph.duration_seconds), 0) as total_duration_s
     FROM project_prints pp
     LEFT JOIN print_history ph ON pp.print_history_id = ph.id
     LEFT JOIN print_costs pc ON ph.id = pc.print_history_id
     WHERE pp.project_id = ?
   `).get(projectId);
-  return row || { total_prints: 0, completed_prints: 0, actual_cost: 0, filament_cost: 0, energy_cost: 0, total_filament_g: 0, total_duration_s: 0 };
+  return row || { total_prints: 0, completed_prints: 0, actual_cost: 0, filament_cost: 0, energy_cost: 0, wear_cost: 0, labor_cost: 0, total_filament_g: 0, total_waste_g: 0, total_duration_s: 0 };
 }
 
 export function getOverdueProjects() {

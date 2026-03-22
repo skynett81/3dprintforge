@@ -222,26 +222,63 @@
       </button>
     </div>`;
 
-    // Cost summary
+    // Cost summary — full prisingsmodell (Print Farm Academy)
     html += `<div class="card ord-section">
       <div class="card-title">${_tl('orders.cost_summary', 'Kostnadssammendrag')}</div>`;
     if (costSummary) {
+      const filCost = costSummary.filament_cost || 0;
+      const energyCost = costSummary.energy_cost || 0;
+      const wearCost = costSummary.wear_cost || costSummary.depreciation_cost || 0;
+      const laborCost = costSummary.labor_cost || 0;
+      const wasteCost = costSummary.waste_cost || 0;
+      const subtotal = filCost + energyCost + wearCost + laborCost + wasteCost;
+      const actualCost = costSummary.actual_cost || subtotal;
+
       html += `<div class="ord-cost-list">
-        ${_costRow(_tl('orders.total_prints', 'Totalt utskrifter'), costSummary.total_prints)}
-        ${_costRow(_tl('orders.completed_prints', 'Fullførte'), costSummary.completed_prints)}
-        ${_costRow(_tl('orders.filament_cost', 'Filament'), formatCurrency(costSummary.filament_cost))}
-        ${_costRow(_tl('orders.energy_cost', 'Strøm'), formatCurrency(costSummary.energy_cost))}
-        ${_costRow(_tl('orders.actual_cost', 'Faktisk kostnad'), formatCurrency(costSummary.actual_cost))}
-        ${_costRow(_tl('orders.filament_used', 'Filament brukt'), (costSummary.total_filament_g || 0).toFixed(1) + ' g')}
+        ${_costRow(_tl('orders.total_prints', 'Utskrifter'), (costSummary.completed_prints || 0) + ' / ' + (costSummary.total_prints || 0))}
+        ${_costRow(_tl('orders.filament_used', 'Filament brukt'), (costSummary.total_filament_g || 0).toFixed(0) + ' g')}
+      </div>
+      <div style="margin:8px 0;border-top:1px solid var(--border-color);padding-top:8px">
+        <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Produksjonskostnader</div>
+        <div class="ord-cost-list">
+          ${_costBarRow('Filament', filCost, actualCost, 'var(--accent-green)')}
+          ${energyCost > 0 ? _costBarRow('Strøm', energyCost, actualCost, 'var(--accent-orange)') : ''}
+          ${wearCost > 0 ? _costBarRow('Slitasje', wearCost, actualCost, 'var(--accent-purple, #7b2ff2)') : ''}
+          ${laborCost > 0 ? _costBarRow('Arbeid', laborCost, actualCost, 'var(--accent-blue)') : ''}
+          ${wasteCost > 0 ? _costBarRow('Avfall', wasteCost, actualCost, 'var(--accent-red)') : ''}
+        </div>
+        <div class="ord-cost-row" style="font-weight:700;border-top:1px solid var(--border-color);padding-top:6px;margin-top:6px">
+          <span>Produksjonskostnad</span><span>${formatCurrency(actualCost)}</span>
+        </div>
       </div>`;
+
+      // Foreslåtte salgspriser
+      html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)">
+        <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">Foreslåtte salgspriser</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary)">
+            <div style="font-size:0.65rem;color:var(--text-muted)">2× margin</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 2))}</div>
+          </div>
+          <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary);border:2px solid var(--accent-green)">
+            <div style="font-size:0.65rem;color:var(--text-muted)">2.5× margin</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 2.5))}</div>
+          </div>
+          <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary)">
+            <div style="font-size:0.65rem;color:var(--text-muted)">3× margin</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 3))}</div>
+          </div>
+        </div>
+      </div>`;
+
       if (p.estimated_cost) {
-        const diff = (costSummary.actual_cost || 0) - p.estimated_cost;
-        html += `<div class="ord-cost-diff" style="color:${diff > 0 ? 'var(--accent-red)' : 'var(--accent-green)'}">
-          ${_tl('orders.cost_diff', 'Avvik')}: ${diff > 0 ? '+' : ''}${formatCurrency(diff)}
+        const diff = actualCost - p.estimated_cost;
+        html += `<div class="ord-cost-diff" style="margin-top:8px;color:${diff > 0 ? 'var(--accent-red)' : 'var(--accent-green)'}">
+          ${_tl('orders.cost_diff', 'Avvik fra estimat')}: ${diff > 0 ? '+' : ''}${formatCurrency(diff)}
         </div>`;
       }
     } else {
-      html += `<div class="ord-empty-note">${_tl('orders.no_cost_data', 'Ingen kostnadsdata')}</div>`;
+      html += `<div class="ord-empty-note">${_tl('orders.no_cost_data', 'Ingen kostnadsdata ennå. Koble utskrifter for å se kostnadsberegning.')}</div>`;
     }
     html += '</div></div>';
 
@@ -311,6 +348,16 @@
   }
   function _costRow(label, value) {
     return `<div class="ord-cost-row"><span>${_esc(label)}</span><span>${_esc(String(value))}</span></div>`;
+  }
+  function _costBarRow(label, cost, total, color) {
+    const pct = total > 0 ? Math.round(cost / total * 100) : 0;
+    return `<div class="ord-cost-row">
+      <span style="flex:1">${_esc(label)}</span>
+      <div style="flex:2;display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div></div>
+        <span style="min-width:70px;text-align:right;font-size:0.8rem">${formatCurrency(cost)}</span>
+      </div>
+    </div>`;
   }
 
   // Invoices
