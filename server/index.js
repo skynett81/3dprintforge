@@ -263,9 +263,11 @@ function handleRequest(req, res) {
     // Try build/{relative} — all docs and assets are directly in build root
     if (_tryServe(join(DOCS_BUILD, relative))) return;
 
-    // /docs/ root → serve intro page
+    // /docs/ root → redirect to /docs/intro
     if (!relative) {
-      if (_tryServe(join(DOCS_BUILD, 'intro'))) return;
+      res.writeHead(302, { 'Location': '/docs/intro' });
+      res.end();
+      return;
     }
 
     // SPA fallback — use 404.html for client-side routing
