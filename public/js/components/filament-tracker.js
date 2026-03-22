@@ -4738,7 +4738,7 @@
     } else if (_toolsSubTab === 'compat') {
       el.innerHTML = `<div class="ctrl-card-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        ${t('filament.compatibility')}
+        ${t('filament.compatibility')} — Plate &amp; limstift
       </div>
       <div id="compat-container"><span class="text-muted text-sm">${t('common.loading')}...</span></div>`;
       _loadCompatMatrix();
@@ -4789,35 +4789,87 @@
     } catch { el.innerHTML = `<span class="text-muted">${t('common.error')}</span>`; }
   }
 
-  // ═══ Compatibility Matrix ═══
+  // ═══ Compatibility Matrix (from Knowledge Base) ═══
   async function _loadCompatMatrix() {
     const el = document.getElementById('compat-container');
     if (!el) return;
     try {
-      const res = await fetch('/api/inventory/compatibility');
-      const rules = await res.json();
-      if (rules.length === 0) { el.innerHTML = `<p class="text-muted">${t('filament.compat_empty')}</p>`; return; }
-      const materials = [...new Set(rules.map(r => r.material))].sort();
-      const plates = [...new Set(rules.map(r => r.plate_type))].sort();
-      const icons = { good: '✅', fair: '⚠️', poor: '❌' };
-      let h = '<div style="overflow-x:auto"><table class="compat-matrix"><thead><tr><th>' + t('filament.filter_material') + '</th>';
-      for (const p of plates) h += `<th>${p.replace(/_/g, ' ')}</th>`;
+      const res = await fetch('/api/kb/filaments');
+      const kbFils = await res.json();
+      const withPlates = kbFils.filter(f => f.plate_compatibility);
+      if (withPlates.length === 0) { el.innerHTML = `<p class="text-muted">${t('filament.compat_empty')}</p>`; return; }
+
+      // Group by material (deduplicate)
+      const matMap = {};
+      for (const f of withPlates) {
+        if (!matMap[f.material]) matMap[f.material] = f;
+      }
+      const materials = Object.keys(matMap).sort();
+
+      const plateKeys = ['cool_plate', 'engineering_plate', 'high_temp_plate', 'textured_pei'];
+      const plateNames = { cool_plate: 'Cool Plate', engineering_plate: 'Engineering Plate', high_temp_plate: 'High Temp Plate', textured_pei: 'Textured PEI' };
+      const ratingIcons = { excellent: '★★★', good: '★★', fair: '★', poor: '✗', not_recommended: '⊘' };
+      const ratingColors = { excellent: '#00c864', good: '#4aa3df', fair: '#f0883e', poor: '#e53935', not_recommended: '#666' };
+      const ratingLabels = { excellent: 'Utmerket', good: 'Bra', fair: 'Greit', poor: 'Dårlig', not_recommended: 'Nei' };
+      const glueIcons = { required: '⚠️', recommended: '📌', optional: 'ℹ️', not_needed: '✅' };
+      const glueLabels = { required: 'Påkrevd', recommended: 'Anbefalt', optional: 'Valgfritt', not_needed: 'Nei' };
+      const glueColors = { required: '#e53935', recommended: '#f0883e', optional: '#4aa3df', not_needed: '#00c864' };
+
+      // Info box
+      let h = `<div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:0.8rem;color:var(--text-secondary);line-height:1.5">
+        <b>Plate-kompatibilitet</b> viser hvilken byggplate som gir best heft for hvert filamentmateriale.
+        Feil plate kan føre til at deler løsner under print, eller at PETG permanent binder seg til platen.
+        <b>Limstift</b>-kolonnen viser om du trenger limstift for å unngå problemer.
+      </div>`;
+
+      // Legend
+      h += `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:0.75rem">
+        <span><span style="color:${ratingColors.excellent}">★★★</span> Utmerket</span>
+        <span><span style="color:${ratingColors.good}">★★</span> Bra</span>
+        <span><span style="color:${ratingColors.fair}">★</span> Greit</span>
+        <span><span style="color:${ratingColors.not_recommended}">⊘</span> Ikke anbefalt</span>
+        <span style="margin-left:12px">⚠️ Limstift påkrevd</span>
+        <span>📌 Anbefalt</span>
+        <span>✅ Ikke nødvendig</span>
+      </div>`;
+
+      // Table
+      h += '<div style="overflow-x:auto"><table class="compat-matrix"><thead><tr>';
+      h += `<th style="text-align:left">${t('filament.filter_material')}</th>`;
+      for (const pk of plateKeys) h += `<th>${plateNames[pk]}</th>`;
+      h += '<th>Limstift</th>';
+      h += '<th style="max-width:250px;text-align:left">Tips</th>';
       h += '</tr></thead><tbody>';
+
       for (const mat of materials) {
-        h += `<tr><td><b>${mat}</b></td>`;
-        for (const plate of plates) {
-          const rule = rules.find(r => r.material === mat && r.plate_type === plate);
-          if (rule) {
-            h += `<td title="${rule.notes || ''}" class="compat-${rule.compatibility}">${icons[rule.compatibility] || '—'}</td>`;
-          } else {
-            h += '<td>—</td>';
-          }
+        const f = matMap[mat];
+        let plates = {};
+        try { plates = typeof f.plate_compatibility === 'string' ? JSON.parse(f.plate_compatibility) : f.plate_compatibility; } catch {}
+
+        h += `<tr><td><b>${esc(mat)}</b></td>`;
+        for (const pk of plateKeys) {
+          const rating = plates[pk] || 'unknown';
+          const icon = ratingIcons[rating] || '—';
+          const color = ratingColors[rating] || 'var(--text-muted)';
+          const label = ratingLabels[rating] || rating;
+          h += `<td style="text-align:center" title="${label}"><span style="color:${color};font-weight:600">${icon}</span></td>`;
         }
+
+        // Glue stick column
+        const glue = f.glue_stick || '';
+        const gIcon = glueIcons[glue] || '—';
+        const gColor = glueColors[glue] || 'var(--text-muted)';
+        const gLabel = glueLabels[glue] || '—';
+        h += `<td style="text-align:center" title="${gLabel}"><span style="color:${gColor}">${gIcon}</span></td>`;
+
+        // Tips column
+        const tips = f.plate_notes ? esc(f.plate_notes).substring(0, 100) + (f.plate_notes.length > 100 ? '...' : '') : '—';
+        h += `<td style="font-size:0.75rem;color:var(--text-secondary);max-width:250px">${tips}</td>`;
         h += '</tr>';
       }
       h += '</tbody></table></div>';
       el.innerHTML = h;
-    } catch { el.innerHTML = `<span class="text-muted">${t('common.error')}</span>`; }
+    } catch (e) { el.innerHTML = `<span class="text-muted">${t('common.error')}: ${e.message}</span>`; }
   }
 
   // ═══ Color Card ═══
