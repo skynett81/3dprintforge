@@ -22,7 +22,15 @@ const config: Config = {
 
   i18n: {
     defaultLocale: 'nb',
-    locales: ['nb'],
+    locales: ['nb', 'en', 'de', 'fr', 'es', 'sv'],
+    localeConfigs: {
+      nb: { label: 'Norsk', direction: 'ltr' },
+      en: { label: 'English', direction: 'ltr' },
+      de: { label: 'Deutsch', direction: 'ltr' },
+      fr: { label: 'Français', direction: 'ltr' },
+      es: { label: 'Español', direction: 'ltr' },
+      sv: { label: 'Svenska', direction: 'ltr' },
+    },
   },
 
   presets: [
@@ -78,6 +86,10 @@ const config: Config = {
           label: 'Kunnskapsbase',
         },
         {to: '/blog', label: 'Oppdateringer', position: 'left'},
+        {
+          type: 'localeDropdown',
+          position: 'right',
+        },
         {
           href: 'https://localhost:3443',
           label: '← Dashboard',
