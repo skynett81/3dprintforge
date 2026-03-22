@@ -24,11 +24,11 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "node --experimental-sqlite server/index.js",
-    "dev": "node --experimental-sqlite --watch server/index.js",
-    "demo": "BAMBU_DEMO=true node --experimental-sqlite --watch server/index.js",
-    "setup": "node --experimental-sqlite server/setup-wizard.js",
-    "test": "node --experimental-sqlite --test --test-force-exit tests/**/*.test.js"
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "demo": "BAMBU_DEMO=true node --watch server/index.js",
+    "setup": "node server/setup-wizard.js",
+    "test": "node --test --test-force-exit tests/**/*.test.js"
   },
   "dependencies": {
     "basic-ftp": "^5.2.0",

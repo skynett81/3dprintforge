@@ -73,7 +73,7 @@ export function runMigrations() {
     { version: 53, up: _mig053_ecom_license },
     { version: 54, up: _mig054_learning_center_v2 },
     { version: 55, up: _mig055_knowledge_base },
-    { version: 56, up: _mig054_learning_center_v2 },
+    { version: 56, up: _mig056_noop },
     { version: 57, up: _mig057_favorites_multiprint },
     { version: 58, up: _mig058_shared_palettes },
     { version: 59, up: _mig059_transmission_distance },
@@ -122,6 +122,7 @@ export function runMigrations() {
     { version: 102, up: _mig102_bambuddy_features },
     { version: 103, up: _mig103_printer_maintenance_mode },
     { version: 104, up: _mig104_model_links_in_history },
+    { version: 105, up: _mig105_index_history_started_at },
   ];
 
   for (const m of migrations) {
@@ -1497,6 +1498,8 @@ function _mig053_ecom_license(db) {
   });
   db.prepare('INSERT OR IGNORE INTO ecom_license (id, instance_id) VALUES (1, ?)').run(uuid);
 }
+
+function _mig056_noop() { /* v56 was a duplicate of v54 — intentional no-op */ }
 
 function _mig054_learning_center_v2(db) {
   // Add completed_steps column for tracking individual step completion
@@ -4328,6 +4331,10 @@ function _mig104_model_links_in_history(db) {
   try { db.exec('ALTER TABLE print_history ADD COLUMN model_url TEXT'); } catch {}
   try { db.exec('ALTER TABLE print_history ADD COLUMN plate_compatibility TEXT'); } catch {}
   try { db.exec('ALTER TABLE kb_filaments ADD COLUMN plate_compatibility TEXT'); } catch {}
+}
+
+function _mig105_index_history_started_at(db) {
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_started ON print_history(started_at)'); } catch {}
 }
 
 function _mig103_printer_maintenance_mode(db) {

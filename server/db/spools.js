@@ -87,9 +87,16 @@ export function getSpools(filters = {}) {
   if (filters.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
   if (filters.offset) { sql += ' OFFSET ?'; params.push(filters.offset); }
   const rows = _enrichSpoolRows(db.prepare(sql).all(...params));
-  // Enrich with tags
-  const tagStmt = db.prepare('SELECT t.* FROM tags t JOIN entity_tags et ON t.id = et.tag_id WHERE et.entity_type = ? AND et.entity_id = ? ORDER BY t.name');
-  for (const row of rows) { row.tags = tagStmt.all('spool', row.id); }
+  // Enrich with tags — single batch query to avoid N+1
+  if (rows.length > 0) {
+    const ids = rows.map(r => r.id);
+    const allTags = db.prepare(`SELECT et.entity_id, t.* FROM entity_tags et JOIN tags t ON et.tag_id = t.id WHERE et.entity_type = 'spool' AND et.entity_id IN (${ids.map(() => '?').join(',')}) ORDER BY t.name`).all(...ids);
+    const tagMap = {};
+    for (const t of allTags) { if (!tagMap[t.entity_id]) tagMap[t.entity_id] = []; tagMap[t.entity_id].push(t); }
+    for (const row of rows) { row.tags = tagMap[row.id] || []; }
+  } else {
+    for (const row of rows) { row.tags = []; }
+  }
   return { rows, total };
 }
 

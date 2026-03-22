@@ -10,11 +10,11 @@ function seedDefaultSchedule(printerId) {
   const existing = db.prepare('SELECT COUNT(*) as c FROM maintenance_schedule WHERE printer_id = ?').get(printerId);
   if (existing.c > 0) return;
   const defaults = [
-    ['nozzle', 100, 'Clean nozzle'],
-    ['ptfe_tube', 500, 'Check PTFE tube'],
-    ['linear_rods', 200, 'Lubricate linear rods'],
+    ['nozzle', 100, 'Rengjør dyse'],
+    ['ptfe_tube', 500, 'Sjekk PTFE-rør'],
+    ['linear_rods', 200, 'Smør stenger'],
     ['carbon_rods', 500, 'Inspect carbon rods'],
-    ['build_plate', 50, 'Clean build plate'],
+    ['build_plate', 50, 'Rengjør plate'],
     ['general', 1000, 'General maintenance']
   ];
   const stmt = db.prepare('INSERT INTO maintenance_schedule (printer_id, component, interval_hours, label) VALUES (?, ?, ?, ?)');

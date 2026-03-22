@@ -72,7 +72,7 @@ startNightlyBackup();
 
 // Auto-trash empty spools (run on startup + every 24h)
 try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash startup error: ' + e.message); }
-setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash error: ' + e.message); } }, 24 * 60 * 60 * 1000);
+const _autoTrashInterval = setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash error: ' + e.message); } }, 24 * 60 * 60 * 1000);
 
 // Initialize auth
 initAuth();
@@ -428,7 +428,7 @@ const materialRecommender = new MaterialRecommenderService(broadcastAll);
 setMaterialRecommender(materialRecommender);
 // Initial calculation after a short delay, then every 12 hours
 setTimeout(() => { try { materialRecommender.recalculate(); log.info('Material-rec: initial beregning fullført'); } catch (e) { log.error('Material-rec feil: ' + e.message); } }, 5000);
-setInterval(() => { try { materialRecommender.recalculate(); } catch (e) { log.error('Material-rec periodisk feil: ' + e.message); } }, 12 * 60 * 60 * 1000);
+const _materialRecInterval = setInterval(() => { try { materialRecommender.recalculate(); } catch (e) { log.error('Material-rec periodisk feil: ' + e.message); } }, 12 * 60 * 60 * 1000);
 
 // Wear Prediction Service
 import { WearPredictionService } from './wear-prediction.js';
@@ -442,7 +442,7 @@ const errorPatternAnalyzer = new ErrorPatternAnalyzer(broadcastAll);
 setErrorPatternAnalyzer(errorPatternAnalyzer);
 // Initial analysis after 10s delay, then daily recalculation
 setTimeout(() => { try { errorPatternAnalyzer.analyze(); log.info('Error-analysis: initial analyse fullført'); } catch (e) { log.error('Error-analysis feil: ' + e.message); } }, 10000);
-setInterval(() => { try { errorPatternAnalyzer.analyze(); } catch (e) { log.error('Error-analysis periodisk feil: ' + e.message); } }, 24 * 60 * 60 * 1000);
+const _errorPatternInterval = setInterval(() => { try { errorPatternAnalyzer.analyze(); } catch (e) { log.error('Error-analysis periodisk feil: ' + e.message); } }, 24 * 60 * 60 * 1000);
 
 // Plugin Manager
 const pluginManager = new PluginManager({ broadcast: broadcastAll, dataDir: DATA_DIR, notifier });
@@ -878,6 +878,9 @@ if (hubHttps) hubHttps.onCommand = commandHandler;
 
 // Graceful shutdown
 function shutdown() {
+  clearInterval(_autoTrashInterval);
+  clearInterval(_materialRecInterval);
+  clearInterval(_errorPatternInterval);
   shutdownAuth();
   ecomLicense.shutdown();
   for (const mock of demoMockPrinters) mock.stop();

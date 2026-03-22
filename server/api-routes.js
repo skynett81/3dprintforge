@@ -367,7 +367,7 @@ export async function handleAuthApiRequest(req, res) {
       if (!checkLoginRate(clientIp)) {
         return sendJson(res, { error: 'Too many login attempts. Try again later.' }, 429);
       }
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const { password, username } = body;
         // Try DB-backed auth first (returns user object with role/permissions)
         const dbUser = validateCredentialsDB(username, password);
@@ -376,7 +376,7 @@ export async function handleAuthApiRequest(req, res) {
           const maxAge = (config.auth?.sessionDurationHours || 24) * 3600;
           res.writeHead(200, {
             'Content-Type': 'application/json',
-            'Set-Cookie': `bambu_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`
+            'Set-Cookie': `bambu_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${config.server?.forceHttps !== false ? '; Secure' : ''}`
           });
           return res.end(JSON.stringify({ ok: true }));
         }
@@ -388,7 +388,7 @@ export async function handleAuthApiRequest(req, res) {
         const maxAge = (config.auth?.sessionDurationHours || 24) * 3600;
         res.writeHead(200, {
           'Content-Type': 'application/json',
-          'Set-Cookie': `bambu_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`
+          'Set-Cookie': `bambu_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${config.server?.forceHttps !== false ? '; Secure' : ''}`
         });
         res.end(JSON.stringify({ ok: true }));
       });
@@ -523,7 +523,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/discovery/test') {
       if (!_testMqttConnection) return sendJson(res, { error: 'Test not available' }, 503);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { ip, serial, accessCode } = body;
         if (!ip || !accessCode) return sendJson(res, { error: 'ip and accessCode required' }, 400);
         try {
@@ -543,7 +543,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/login') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { email, password } = body;
         if (!email || !password) return sendJson(res, { error: 'Email and password required' }, 400);
         try {
@@ -557,7 +557,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/verify') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { email, code } = body;
         if (!email || !code) return sendJson(res, { error: 'Email and code required' }, 400);
         try {
@@ -715,7 +715,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'PATCH' && path === '/api/bambu-cloud/device-info') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.updateDeviceInfo(body);
           sendJson(res, data);
@@ -796,7 +796,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/messages/read') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.markMessagesRead(body.messageIds || []);
           sendJson(res, data);
@@ -901,7 +901,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/cloud-print') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { device_id, filename, url, settings } = body;
         if (!device_id || !filename) return sendJson(res, { error: 'device_id og filename påkrevd' }, 400);
         try {
@@ -915,7 +915,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/create-task') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.createTask(body);
           sendJson(res, data, 201);
@@ -929,7 +929,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/bind') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { device_id, access_code } = body;
         if (!device_id || !access_code) return sendJson(res, { error: 'device_id og access_code påkrevd' }, 400);
         try {
@@ -981,7 +981,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'PUT' && path === '/api/bambu-cloud/profile') {
       if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.updateUserProfile(body);
           sendJson(res, data);
@@ -1017,7 +1017,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/send-code') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud ikke tilgjengelig' }, 503);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const { email } = body;
         if (!email) return sendJson(res, { error: 'E-post påkrevd' }, 400);
         try {
@@ -1067,7 +1067,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-tracker/purchased') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
         const result = addPurchasedSpool(body);
         _broadcastInventory('created', 'purchased_spool', result);
@@ -1078,7 +1078,7 @@ export async function handleApiRequest(req, res) {
     if (method === 'PUT' && path.startsWith('/api/filament-tracker/purchased/')) {
       const id = parseInt(path.split('/').pop());
       if (!id) return sendJson(res, { error: 'Invalid ID' }, 400);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
         updatePurchasedSpool(id, body);
         _broadcastInventory('updated', 'purchased_spool', { id });
@@ -1095,7 +1095,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-tracker/purchased/import') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const spools = body.spools || body;
         if (!Array.isArray(spools)) return sendJson(res, { error: 'Array of spools required' }, 400);
         const result = importPurchasedSpools(spools);
@@ -1105,7 +1105,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-tracker/purchased/link') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const { purchased_id, spool_id } = body;
         if (!purchased_id || !spool_id) return sendJson(res, { error: 'purchased_id and spool_id required' }, 400);
         linkPurchasedToSpool(purchased_id, spool_id);
@@ -1183,7 +1183,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-analytics/auto-match') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const { tray_color, tray_type, tray_sub_brands, tray_weight, printer_id, ams_unit, tray_id } = body;
         if (!printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
         const spool = autoMatchTrayToSpool(tray_color, tray_type, tray_sub_brands, tray_weight, printer_id, ams_unit ?? 0, tray_id ?? 0);
@@ -1192,7 +1192,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-analytics/auto-create-spool') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const { tray, printer_id, ams_unit, tray_id } = body;
         if (!tray || !printer_id) return sendJson(res, { error: 'tray and printer_id required' }, 400);
         const result = autoCreateSpoolFromTray(tray, printer_id, ams_unit ?? 0, tray_id ?? 0);
@@ -1218,7 +1218,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-analytics/substitutions') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.material || !body.substitute_material) return sendJson(res, { error: 'material and substitute_material required' }, 400);
         addMaterialSubstitution(body);
         sendJson(res, { ok: true }, 201);
@@ -1267,7 +1267,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-analytics/core-weights') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.brand_name || !body.weight_g) return sendJson(res, { error: 'brand_name and weight_g required' }, 400);
         addSpoolCoreWeight(body.brand_name, body.weight_g, body.spool_type);
         sendJson(res, { ok: true }, 201);
@@ -1294,7 +1294,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament-analytics/k-calibrations') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.spool_id || !body.printer_id || body.k_value == null) {
           return sendJson(res, { error: 'spool_id, printer_id, and k_value required' }, 400);
         }
@@ -1317,7 +1317,7 @@ export async function handleApiRequest(req, res) {
     // ---- Enhanced Weighing ----
 
     if (method === 'POST' && path === '/api/filament-analytics/weigh') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.spool_id || body.gross_weight_g == null) {
           return sendJson(res, { error: 'spool_id and gross_weight_g required' }, 400);
         }
@@ -1415,7 +1415,7 @@ export async function handleApiRequest(req, res) {
     // Screenshot → print history linking
     if (method === 'POST' && path.match(/^\/api\/screenshots\/\d+\/link$/)) {
       const screenshotId = parseInt(path.split('/')[3]);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.print_history_id) return sendJson(res, { error: 'print_history_id påkrevd' }, 400);
         linkScreenshotToPrint(screenshotId, body.print_history_id);
         sendJson(res, { ok: true });
@@ -1455,7 +1455,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path.match(/^\/api\/printers\/[^/]+\/maintenance$/)) {
       const printerId = decodeURIComponent(path.split('/')[3]);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         setMaintenanceMode(printerId, body.enabled !== false, body.note || null);
         if (_broadcastFn) _broadcastFn('printer_maintenance', { printer_id: printerId, maintenance: body.enabled !== false, note: body.note || null });
         sendJson(res, { ok: true });
@@ -1498,7 +1498,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/printers') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const vr = validate(PRINTER_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         body.id = body.id || body.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
@@ -1511,7 +1511,7 @@ export async function handleApiRequest(req, res) {
 
     const printerMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)$/);
     if (printerMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const vr = validate(PRINTER_UPDATE_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         const id = printerMatch[1];
@@ -1560,7 +1560,7 @@ export async function handleApiRequest(req, res) {
     // ---- Update history notes ----
     const histUpdateMatch = path.match(/^\/api\/history\/(\d+)$/);
     if (histUpdateMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           const data = JSON.parse(body);
           const id = parseInt(histUpdateMatch[1]);
@@ -1757,7 +1757,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/filament') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         addFilament(body);
         sendJson(res, { ok: true }, 201);
       });
@@ -1765,7 +1765,7 @@ export async function handleApiRequest(req, res) {
 
     const filamentMatch = path.match(/^\/api\/filament\/(\d+)$/);
     if (filamentMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateFilament(parseInt(filamentMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -1791,7 +1791,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/waste/backfill') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const startupPurgeG = parseFloat(body.startup_purge_g) || 1.0;
         const wastePerChangeG = parseFloat(body.waste_per_change_g) || 5;
         const updated = backfillWaste(startupPurgeG, wastePerChangeG);
@@ -1800,7 +1800,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/waste') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.waste_g || body.waste_g <= 0) {
           return sendJson(res, { error: 'waste_g required' }, 400);
         }
@@ -1854,7 +1854,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/maintenance/log') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.component || !body.action) {
           return sendJson(res, { error: 'component and action required' }, 400);
         }
@@ -1870,7 +1870,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'PUT' && path === '/api/maintenance/schedule') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id || !body.component || !body.interval_hours) {
           return sendJson(res, { error: 'printer_id, component, interval_hours required' }, 400);
         }
@@ -1880,7 +1880,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/maintenance/nozzle-change') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id || !body.nozzle_type || !body.nozzle_diameter) {
           return sendJson(res, { error: 'printer_id, nozzle_type, nozzle_diameter required' }, 400);
         }
@@ -1902,7 +1902,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getErrors(limit, printerId));
     }
     if (method === 'POST' && path === '/api/errors/acknowledge-all') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         acknowledgeAllErrors(body?.printer_id || null);
         return sendJson(res, { ok: true });
       });
@@ -1974,7 +1974,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'PUT' && path === '/api/protection/settings') {
       if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
         _guard.updateSettings(body.printer_id, body);
         return sendJson(res, { ok: true });
@@ -1999,7 +1999,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/protection/resolve') {
       if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.logId) return sendJson(res, { error: 'logId required' }, 400);
         _guard.resolve(body.logId);
         return sendJson(res, { ok: true });
@@ -2008,7 +2008,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/protection/test') {
       if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const printerId = body.printer_id;
         const eventType = body.event_type || 'spaghetti_detected';
         if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
@@ -2047,7 +2047,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/cost-estimator/calculate') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           const filaments = body.filaments || [];
           const printerId = body.printer_id || null;
@@ -2133,7 +2133,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/cost-estimator/save') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           const id = saveCostEstimate(body);
           return sendJson(res, { ok: true, id }, 201);
@@ -2142,7 +2142,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/cost-estimator/compare') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           const filaments = body.filaments || [];
           const estimatedTimeMin = body.estimated_time_min || 0;
@@ -2291,7 +2291,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/wear/costs') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id || !body.component || body.cost === undefined) {
           return sendJson(res, { error: 'printer_id, component and cost required' }, 400);
         }
@@ -2388,7 +2388,7 @@ export async function handleApiRequest(req, res) {
       if (process.env.BAMBU_AUTH_PASSWORD) {
         return sendJson(res, { error: 'Auth is managed via environment variables' }, 400);
       }
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         // Handle users array — preserve masked passwords, hash new ones
         if (Array.isArray(body.users)) {
           const existingUsers = config.auth?.users || [];
@@ -2437,7 +2437,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'PUT' && path === '/api/notifications/config') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         // Preserve existing secrets if masked
         const current = config.notifications || {};
         if (body.channels?.telegram?.botToken === '***') body.channels.telegram.botToken = current.channels?.telegram?.botToken || '';
@@ -2453,7 +2453,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/notifications/test') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         if (!body.channel || !body.config) {
           return sendJson(res, { error: 'channel and config required' }, 400);
         }
@@ -2572,7 +2572,7 @@ export async function handleApiRequest(req, res) {
       }
 
       if (method === 'PUT') {
-        return readBody(req, (body) => {
+        return readBody(req, res, (body) => {
           if (!body.filename || !body.source || !body.source_id) {
             return sendJson(res, { error: 'filename, source, source_id required' }, 400);
           }
@@ -2755,7 +2755,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getVendors());
     }
     if (method === 'POST' && path === '/api/inventory/vendors') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         try {
           const vendor = addVendor(body);
@@ -2766,7 +2766,7 @@ export async function handleApiRequest(req, res) {
     }
     const vendorMatch = path.match(/^\/api\/inventory\/vendors\/(\d+)$/);
     if (vendorMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         updateVendor(parseInt(vendorMatch[1]), body);
         _broadcastInventory('updated', 'vendor', { id: parseInt(vendorMatch[1]) });
@@ -2800,7 +2800,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, profile);
     }
     if (method === 'POST' && path === '/api/inventory/filaments') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name || !body.material) return sendJson(res, { error: 'name and material required' }, 400);
         const result = addFilamentProfile(body);
         _broadcastInventory('created', 'profile', { id: result.id });
@@ -2808,7 +2808,7 @@ export async function handleApiRequest(req, res) {
       });
     }
     if (fpMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name || !body.material) return sendJson(res, { error: 'name and material required' }, 400);
         updateFilamentProfile(parseInt(fpMatch[1]), body);
         _broadcastInventory('updated', 'profile', { id: parseInt(fpMatch[1]) });
@@ -2843,14 +2843,14 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, spool);
     }
     if (method === 'POST' && path === '/api/inventory/spools') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const result = addSpool(body);
         _broadcastInventory('created', 'spool', { id: result.id });
         sendJson(res, result, 201);
       });
     }
     if (spoolMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (body.used_weight_g_add) {
           const addG = parseFloat(body.used_weight_g_add);
           if (addG > 0) useSpoolWeight(parseInt(spoolMatch[1]), addG, 'manual');
@@ -2871,7 +2871,7 @@ export async function handleApiRequest(req, res) {
     // Spool actions
     const spoolUseMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/use$/);
     if (spoolUseMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         let weightG = body.weight_g;
         if (!weightG && body.use_length) {
           const spool = getSpool(parseInt(spoolUseMatch[1]));
@@ -2887,7 +2887,7 @@ export async function handleApiRequest(req, res) {
     }
     const spoolArchiveMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/archive$/);
     if (spoolArchiveMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         archiveSpool(parseInt(spoolArchiveMatch[1]), body.archived !== false);
         _broadcastInventory('archived', 'spool', { id: parseInt(spoolArchiveMatch[1]) });
         sendJson(res, { ok: true });
@@ -2895,7 +2895,7 @@ export async function handleApiRequest(req, res) {
     }
     const spoolRefillMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/refill$/);
     if (spoolRefillMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const newWeight = parseFloat(body.new_weight_g);
         if (!newWeight || newWeight <= 0) return sendJson(res, { error: 'new_weight_g required (positive number)' }, 400);
         const result = refillSpool(parseInt(spoolRefillMatch[1]), newWeight);
@@ -2906,7 +2906,7 @@ export async function handleApiRequest(req, res) {
     }
     const spoolAssignMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/assign$/);
     if (spoolAssignMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         assignSpoolToSlot(parseInt(spoolAssignMatch[1]), body.printer_id || null, body.ams_unit ?? null, body.ams_tray ?? null);
         _broadcastInventory('assigned', 'spool', { id: parseInt(spoolAssignMatch[1]) });
         sendJson(res, { ok: true });
@@ -2922,7 +2922,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/inventory/spools/batch-add') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const count = Math.min(Math.max(parseInt(body.count) || 1, 1), 50);
         const data = { ...body };
         delete data.count;
@@ -3065,7 +3065,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getLocations());
     }
     if (method === 'POST' && path === '/api/inventory/locations') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         try {
           const loc = addLocation(body);
@@ -3075,7 +3075,7 @@ export async function handleApiRequest(req, res) {
     }
     const locMatch = path.match(/^\/api\/inventory\/locations\/(\d+)$/);
     if (locMatch && (method === 'PATCH' || method === 'PUT')) {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const result = updateLocation(parseInt(locMatch[1]), body);
         if (!result) return sendJson(res, { error: 'Not found' }, 404);
@@ -3123,14 +3123,14 @@ export async function handleApiRequest(req, res) {
     }
     const compatMatch = path.match(/^\/api\/inventory\/compatibility\/(\d+)$/);
     if (method === 'POST' && path === '/api/inventory/compatibility') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.material) return sendJson(res, { error: 'material required' }, 400);
         const result = addCompatibilityRule(body);
         sendJson(res, result, 201);
       });
     }
     if (compatMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.material) return sendJson(res, { error: 'material required' }, 400);
         updateCompatibilityRule(parseInt(compatMatch[1]), body);
         sendJson(res, { ok: true });
@@ -3159,7 +3159,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Inventory: Merge Spools ----
     if (method === 'POST' && path === '/api/inventory/spools/merge') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.target_id || !Array.isArray(body.source_ids) || body.source_ids.length === 0) {
           return sendJson(res, { error: 'target_id and source_ids[] required' }, 400);
         }
@@ -3176,7 +3176,7 @@ export async function handleApiRequest(req, res) {
     // ---- Inventory: Measure Weight ----
     const spoolMeasureMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/measure$/);
     if (spoolMeasureMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.gross_weight_g || body.gross_weight_g <= 0) return sendJson(res, { error: 'gross_weight_g required' }, 400);
         const spoolId = parseInt(spoolMeasureMatch[1]);
         const result = measureSpoolWeight(spoolId, body.gross_weight_g);
@@ -3284,12 +3284,12 @@ export async function handleApiRequest(req, res) {
     if (settingMatch) {
       const key = settingMatch[1];
       if (method === 'GET') return sendJson(res, { key, value: getInventorySetting(key) });
-      if (method === 'POST') return readBody(req, (body) => { setInventorySetting(key, body.value); sendJson(res, { ok: true }); });
+      if (method === 'POST') return readBody(req, res, (body) => { setInventorySetting(key, body.value); sendJson(res, { ok: true }); });
     }
 
     // ---- Inventory: Import ----
     if (method === 'POST' && path === '/api/inventory/import/spools') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
         const count = importSpools(body);
         _broadcastInventory('import', 'spool', { count });
@@ -3297,7 +3297,7 @@ export async function handleApiRequest(req, res) {
       });
     }
     if (method === 'POST' && path === '/api/inventory/import/filaments') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
         const count = importFilamentProfiles(body);
         _broadcastInventory('import', 'profile', { count });
@@ -3305,7 +3305,7 @@ export async function handleApiRequest(req, res) {
       });
     }
     if (method === 'POST' && path === '/api/inventory/import/vendors') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!Array.isArray(body)) return sendJson(res, { error: 'Expected array' }, 400);
         const count = importVendors(body);
         _broadcastInventory('import', 'vendor', { count });
@@ -3320,7 +3320,7 @@ export async function handleApiRequest(req, res) {
       const fieldKey = fieldMatch[2];
       if (method === 'GET' && !fieldKey) return sendJson(res, getFieldSchemas(entityType));
       if (method === 'POST' && fieldKey) {
-        return readBody(req, (body) => {
+        return readBody(req, res, (body) => {
           try {
             const schema = addFieldSchema(entityType, fieldKey, body);
             sendJson(res, schema, 201);
@@ -3362,7 +3362,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, [...matSet].sort());
     }
     if (method === 'POST' && path === '/api/inventory/spoolmandb/import') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         // body is a flat filament object from _fetchSpoolmanDbManufacturer
         let vendorId = null;
         const mfgName = body.manufacturer;
@@ -3410,7 +3410,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getActiveDryingSessions());
     }
     if (method === 'POST' && path === '/api/inventory/drying/sessions') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.spool_id || !body.duration_minutes) return sendJson(res, { error: 'spool_id and duration_minutes required' }, 400);
         const result = startDryingSession(body);
         _broadcastInventory('drying_started', 'drying_session', { id: result.id, spool_id: body.spool_id });
@@ -3419,7 +3419,7 @@ export async function handleApiRequest(req, res) {
     }
     const dryingCompleteMatch = path.match(/^\/api\/inventory\/drying\/sessions\/(\d+)\/complete$/);
     if (dryingCompleteMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         completeDryingSession(parseInt(dryingCompleteMatch[1]), body.humidity_after || null);
         _broadcastInventory('drying_completed', 'drying_session', { id: parseInt(dryingCompleteMatch[1]) });
         sendJson(res, { ok: true });
@@ -3441,7 +3441,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, preset);
     }
     if (dryingPresetMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.temperature || !body.duration_minutes) return sendJson(res, { error: 'temperature and duration_minutes required' }, 400);
         upsertDryingPreset(decodeURIComponent(dryingPresetMatch[1]), body);
         _broadcastInventory('updated', 'drying_preset', { material: decodeURIComponent(dryingPresetMatch[1]) });
@@ -3586,7 +3586,7 @@ export async function handleApiRequest(req, res) {
       if (!config.spoolman?.enabled || !config.spoolman?.url) {
         return sendJson(res, { error: 'Spoolman not configured' }, 400);
       }
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         if (!body.id || !body.weight) return sendJson(res, { error: 'id and weight required' }, 400);
         try {
           const resp = await fetch(`${config.spoolman.url}/api/v1/spool/${body.id}/use`, {
@@ -3612,7 +3612,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'PUT' && path === '/api/spoolman/config') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         config.spoolman = { enabled: !!body.enabled, url: (body.url || '').replace(/\/+$/, '') };
         saveConfig({ spoolman: config.spoolman });
         return sendJson(res, { ok: true });
@@ -3627,7 +3627,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/queue') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
         const id = createQueue(body);
         addQueueLog(id, null, null, 'queue_created', body.name);
@@ -3645,7 +3645,7 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, queue);
       }
       if (method === 'PUT') {
-        return readBody(req, (body) => {
+        return readBody(req, res, (body) => {
           updateQueue(queueId, body);
           if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
           return sendJson(res, { ok: true });
@@ -3685,7 +3685,7 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, queue.items || []);
       }
       if (method === 'POST') {
-        return readBody(req, (body) => {
+        return readBody(req, res, (body) => {
           if (!body.filename) return sendJson(res, { error: 'Filename required' }, 400);
           // Auto-fill estimates from slicer_jobs if not provided
           if (!body.estimated_filament_g || !body.estimated_duration_s) {
@@ -3706,7 +3706,7 @@ export async function handleApiRequest(req, res) {
     const queueBatchAddMatch = path.match(/^\/api\/queue\/(\d+)\/batch-add$/);
     if (queueBatchAddMatch && method === 'POST') {
       const queueId = parseInt(queueBatchAddMatch[1]);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const items = body.items || [];
         const ids = [];
         for (const item of items) {
@@ -3723,7 +3723,7 @@ export async function handleApiRequest(req, res) {
     const queueReorderMatch = path.match(/^\/api\/queue\/(\d+)\/reorder$/);
     if (queueReorderMatch && method === 'POST') {
       const queueId = parseInt(queueReorderMatch[1]);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!Array.isArray(body.item_ids)) return sendJson(res, { error: 'item_ids array required' }, 400);
         reorderQueueItems(queueId, body.item_ids);
         if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId });
@@ -3734,7 +3734,7 @@ export async function handleApiRequest(req, res) {
     const queueMultiStartMatch = path.match(/^\/api\/queue\/(\d+)\/multi-start$/);
     if (queueMultiStartMatch && method === 'POST') {
       const queueId = parseInt(queueMultiStartMatch[1]);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const printerIds = body.printer_ids || [];
         const filename = body.filename;
         if (!filename || printerIds.length === 0) return sendJson(res, { error: 'filename and printer_ids required' }, 400);
@@ -3753,7 +3753,7 @@ export async function handleApiRequest(req, res) {
     if (itemMatch) {
       const itemId = parseInt(itemMatch[1]);
       if (method === 'PUT') {
-        return readBody(req, (body) => {
+        return readBody(req, res, (body) => {
           updateQueueItem(itemId, body);
           const item = getQueueItem(itemId);
           if (_broadcastFn) _broadcastFn('queue_update', { action: 'queue_changed', queueId: item?.queue_id });
@@ -3803,7 +3803,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/tags') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
         try {
           const id = createTag(body.name, body.category, body.color);
@@ -3816,7 +3816,7 @@ export async function handleApiRequest(req, res) {
 
     const tagIdMatch = path.match(/^\/api\/tags\/(\d+)$/);
     if (tagIdMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'Name required' }, 400);
         try {
           updateTag(parseInt(tagIdMatch[1]), body.name, body.category, body.color);
@@ -3833,7 +3833,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/tags/assign') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.entity_type || !body.entity_id || !body.tag_id) return sendJson(res, { error: 'entity_type, entity_id, tag_id required' }, 400);
         assignTag(body.entity_type, body.entity_id, body.tag_id);
         return sendJson(res, { ok: true });
@@ -3841,7 +3841,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'DELETE' && path === '/api/tags/unassign') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.entity_type || !body.entity_id || !body.tag_id) return sendJson(res, { error: 'entity_type, entity_id, tag_id required' }, 400);
         unassignTag(body.entity_type, body.entity_id, body.tag_id);
         return sendJson(res, { ok: true });
@@ -3867,7 +3867,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/nfc/link') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.tag_uid || !body.spool_id) return sendJson(res, { error: 'tag_uid and spool_id required' }, 400);
         try {
           const id = linkNfcTag(body.tag_uid, body.spool_id, body.standard, body.data ? JSON.stringify(body.data) : null);
@@ -3878,7 +3878,7 @@ export async function handleApiRequest(req, res) {
 
     // Auto-AMS: scan NFC tag and auto-assign spool to AMS slot
     if (method === 'POST' && path === '/api/nfc/scan') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.tag_uid) return sendJson(res, { error: 'tag_uid required' }, 400);
         const mapping = lookupNfcTag(body.tag_uid);
         if (!mapping) return sendJson(res, { error: 'Unknown NFC tag', tag_uid: body.tag_uid }, 404);
@@ -3906,7 +3906,7 @@ export async function handleApiRequest(req, res) {
     // ---- Spool Checkout ----
     const checkoutMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/(checkout|checkin)$/);
     if (checkoutMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const spoolId = parseInt(checkoutMatch[1]);
         if (checkoutMatch[2] === 'checkout') {
           checkoutSpool(spoolId, body.actor, body.from_location);
@@ -3963,7 +3963,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Bulk Operations ----
     if (method === 'POST' && path === '/api/inventory/spools/bulk') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.action || !Array.isArray(body.spool_ids) || body.spool_ids.length === 0) {
           return sendJson(res, { error: 'action and spool_ids[] required' }, 400);
         }
@@ -4017,7 +4017,7 @@ export async function handleApiRequest(req, res) {
 
     // Bulk profile operations
     if (method === 'POST' && path === '/api/inventory/profiles/bulk') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.action || !Array.isArray(body.profile_ids) || body.profile_ids.length === 0) {
           return sendJson(res, { error: 'action and profile_ids[] required' }, 400);
         }
@@ -4037,7 +4037,7 @@ export async function handleApiRequest(req, res) {
 
     // Bulk vendor operations
     if (method === 'POST' && path === '/api/inventory/vendors/bulk') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.action || !Array.isArray(body.vendor_ids) || body.vendor_ids.length === 0) {
           return sendJson(res, { error: 'action and vendor_ids[] required' }, 400);
         }
@@ -4055,7 +4055,7 @@ export async function handleApiRequest(req, res) {
 
     // Bulk tag assignment
     if (method === 'POST' && path === '/api/tags/bulk-assign') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.tag_id || !body.entity_type || !Array.isArray(body.entity_ids) || body.entity_ids.length === 0) {
           return sendJson(res, { error: 'tag_id, entity_type, and entity_ids[] required' }, 400);
         }
@@ -4079,7 +4079,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/inventory/labels/batch') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!Array.isArray(body.spool_ids)) return sendJson(res, { error: 'spool_ids[] required' }, 400);
         const spools = body.spool_ids.map(id => getSpool(Number(id))).filter(Boolean);
         return sendJson(res, { spools, format: body.format || 'swatch_40x30' });
@@ -4100,7 +4100,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Shared Palettes ----
     if (method === 'POST' && path === '/api/inventory/palette/share') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const token = createSharedPalette(body.title, body.filters);
         return sendJson(res, { ok: true, token, url: `/palette/${token}` }, 201);
       });
@@ -4175,7 +4175,7 @@ export async function handleApiRequest(req, res) {
 
     const filePrintMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/files\/print$/);
     if (filePrintMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.filename) return sendJson(res, { error: 'filename required' }, 400);
         // Send print command via WebSocket to client which forwards to MQTT
         if (_broadcastFn) {
@@ -4236,7 +4236,7 @@ export async function handleApiRequest(req, res) {
     // Trigger slicing for a pending job
     const sliceMatch = path.match(/^\/api\/slicer\/jobs\/(\d+)\/slice$/);
     if (sliceMatch && method === 'POST') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const id = parseInt(sliceMatch[1]);
         try {
           const result = await sliceFile(id, { quality: body.quality, profile: body.profile, layerHeight: body.layer_height });
@@ -4248,7 +4248,7 @@ export async function handleApiRequest(req, res) {
     // Upload sliced file to printer via FTPS
     const uploadMatch = path.match(/^\/api\/slicer\/jobs\/(\d+)\/upload-to-printer$/);
     if (uploadMatch && method === 'POST') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const id = parseInt(uploadMatch[1]);
         const printerId = body.printer_id;
         if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
@@ -4269,7 +4269,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/macros') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name || !body.gcode) return sendJson(res, { error: 'name and gcode required' }, 400);
         const id = addMacro(body);
         return sendJson(res, { ok: true, id }, 201);
@@ -4284,7 +4284,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (macroMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateMacro(parseInt(macroMatch[1]), body);
         return sendJson(res, { ok: true });
       });
@@ -4297,7 +4297,7 @@ export async function handleApiRequest(req, res) {
 
     const macroRunMatch = path.match(/^\/api\/macros\/(\d+)\/run$/);
     if (macroRunMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const macro = getMacro(parseInt(macroRunMatch[1]));
         if (!macro) return sendJson(res, { error: 'Macro not found' }, 404);
         if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
@@ -4318,7 +4318,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/webhooks') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const vr = validate(WEBHOOK_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         try {
@@ -4336,7 +4336,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (webhookMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           updateWebhookConfig(parseInt(webhookMatch[1]), body);
           return sendJson(res, { ok: true });
@@ -4387,7 +4387,7 @@ export async function handleApiRequest(req, res) {
 
     const costCalcMatch = path.match(/^\/api\/cost\/estimate$/);
     if (costCalcMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const result = estimatePrintCostAdvanced(body.filament_g || 0, body.duration_seconds || 0, body.spool_id || null, body.printer_id || null);
         return sendJson(res, result);
       });
@@ -4413,7 +4413,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, _energy.findCheapestWindow(minutes) || { error: 'No price data' });
     }
     if (method === 'POST' && path === '/api/energy/spot-cost') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const result = _energy.calculateSpotCost(body.started_at, body.duration_seconds, body.wattage || 200);
         return sendJson(res, result || { error: 'Could not calculate' });
       });
@@ -4439,7 +4439,7 @@ export async function handleApiRequest(req, res) {
       return res.end(report.html);
     }
     if (method === 'POST' && path === '/api/reports/send') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const period = body.period || 'week';
         const report = generateReport(period);
         const result = await sendReportEmail(report);
@@ -4456,7 +4456,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getRemoteNodeStates());
     }
     if (method === 'POST' && path === '/api/remote-nodes') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name || !body.base_url) return sendJson(res, { error: 'name and base_url required' }, 400);
         const id = addRemoteNode(body);
         restartRemoteNodes();
@@ -4470,7 +4470,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ...node, api_key: node.api_key ? '***' : null });
     }
     if (remoteNodeMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateRemoteNode(parseInt(remoteNodeMatch[1]), body);
         restartRemoteNodes();
         return sendJson(res, { ok: true });
@@ -4482,7 +4482,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true });
     }
     if (method === 'POST' && path === '/api/remote-nodes/test') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         if (!body.base_url) return sendJson(res, { error: 'base_url required' }, 400);
         try {
           const result = await testRemoteNode(body.base_url, body.api_key);
@@ -4510,7 +4510,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getScheduledPrints(from, to));
     }
     if (method === 'POST' && path === '/api/scheduler') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.title || !body.filename || !body.scheduled_at) return sendJson(res, { error: 'title, filename, scheduled_at required' }, 400);
         const id = addScheduledPrint(body);
         return sendJson(res, { id }, 201);
@@ -4523,7 +4523,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, sp);
     }
     if (method === 'PUT' && schedulerMatch) {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateScheduledPrint(parseInt(schedulerMatch[1]), body);
         return sendJson(res, { ok: true });
       });
@@ -4603,7 +4603,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, item);
     }
     if (method === 'PUT' && libMatch) {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateFileLibraryItem(parseInt(libMatch[1]), body);
         return sendJson(res, { ok: true });
       });
@@ -4671,7 +4671,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/settings/import') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body || !body._meta || body._meta.type !== 'bambu-dashboard-settings') {
           return sendJson(res, { error: 'Invalid settings file. Missing _meta or wrong type.' }, 400);
         }
@@ -4821,7 +4821,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/materials') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.material) return sendJson(res, { error: 'material name required' }, 400);
         try {
           const id = addMaterial(body);
@@ -4838,7 +4838,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (materialMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           updateMaterial(parseInt(materialMatch[1]), body);
           return sendJson(res, { ok: true });
@@ -4861,7 +4861,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/hardware') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.category || !body.name) return sendJson(res, { error: 'category and name required' }, 400);
         try {
           const id = addHardwareItem(body);
@@ -4878,7 +4878,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (hwMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           updateHardwareItem(parseInt(hwMatch[1]), body);
           return sendJson(res, { ok: true });
@@ -4893,7 +4893,7 @@ export async function handleApiRequest(req, res) {
 
     const hwAssignMatch = path.match(/^\/api\/hardware\/(\d+)\/assign$/);
     if (hwAssignMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
         try {
           assignHardware(parseInt(hwAssignMatch[1]), body.printer_id);
@@ -4904,7 +4904,7 @@ export async function handleApiRequest(req, res) {
 
     const hwUnassignMatch = path.match(/^\/api\/hardware\/(\d+)\/unassign$/);
     if (hwUnassignMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
         try {
           unassignHardware(parseInt(hwUnassignMatch[1]), body.printer_id);
@@ -4929,7 +4929,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/roles') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         try {
           const id = addRole(body);
@@ -4946,7 +4946,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (roleMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           updateRole(parseInt(roleMatch[1]), body);
           return sendJson(res, { ok: true });
@@ -4966,7 +4966,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/users') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.username || !body.password) return sendJson(res, { error: 'username and password required' }, 400);
         try {
           const id = addUser({
@@ -4988,7 +4988,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (userMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           const updates = {};
           if (body.username) updates.username = body.username;
@@ -5012,7 +5012,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/keys') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         try {
           const { key, hash, prefix } = generateApiKey();
@@ -5048,7 +5048,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/ecommerce/license/activate') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         if (!body.license_key) return sendJson(res, { error: 'license_key required' }, 400);
         if (!_ecomLicense) return sendJson(res, { error: 'License manager not initialized' }, 500);
         try {
@@ -5096,7 +5096,7 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/ecommerce/configs') {
       if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         try {
           const id = addEcommerceConfig(body);
@@ -5111,7 +5111,7 @@ export async function handleApiRequest(req, res) {
       if (method === 'GET') return sendJson(res, getEcommerceConfig(id) || { error: 'Not found' });
       if (method === 'PUT') {
         if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
-        return readBody(req, (body) => { updateEcommerceConfig(id, body); sendJson(res, { ok: true }); });
+        return readBody(req, res, (body) => { updateEcommerceConfig(id, body); sendJson(res, { ok: true }); });
       }
       if (method === 'DELETE') {
         if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
@@ -5128,7 +5128,7 @@ export async function handleApiRequest(req, res) {
     if (ecomOrderMatch) {
       const id = parseInt(ecomOrderMatch[1]);
       if (method === 'GET') return sendJson(res, getEcommerceOrder(id) || { error: 'Not found' });
-      if (method === 'PUT') return readBody(req, (body) => { updateEcommerceOrder(id, body); sendJson(res, { ok: true }); });
+      if (method === 'PUT') return readBody(req, res, (body) => { updateEcommerceOrder(id, body); sendJson(res, { ok: true }); });
     }
 
     const ecomFulfillMatch = path.match(/^\/api\/ecommerce\/orders\/(\d+)\/fulfill$/);
@@ -5246,7 +5246,7 @@ export async function handleApiRequest(req, res) {
     const timelapseEditMatch = path.match(/^\/api\/timelapse\/(\d+)\/reencode$/);
     if (timelapseEditMatch && method === 'POST') {
       const id = parseInt(timelapseEditMatch[1]);
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         const rec = getTimelapseRecording(id);
         if (!rec || !rec.file_path || !existsSync(rec.file_path)) return sendJson(res, { error: 'Video ikke funnet' }, 404);
         const { speed, quality, trim_start, trim_end } = body;
@@ -5276,7 +5276,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Push Subscriptions ----
     if (method === 'POST' && path === '/api/push/subscribe') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.endpoint) return sendJson(res, { error: 'endpoint required' }, 400);
         const id = addPushSubscription({
           endpoint: body.endpoint,
@@ -5289,7 +5289,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/push/unsubscribe') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.endpoint) return sendJson(res, { error: 'endpoint required' }, 400);
         deletePushSubscription(body.endpoint);
         return sendJson(res, { ok: true });
@@ -5350,7 +5350,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/community-filaments/import-to-inventory') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const cf = getCommunityFilament(body.id);
         if (!cf) return sendJson(res, { error: 'Not found' }, 404);
         let vendorId = null;
@@ -5387,7 +5387,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/community-filaments/seed') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         try {
           const { seedFilamentDatabase } = await import('./seed-filament-db.js');
           const result = await seedFilamentDatabase();
@@ -5406,7 +5406,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/community-filaments') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.manufacturer || !body.material) return sendJson(res, { error: 'manufacturer and material required' }, 400);
         const id = addCommunityFilament(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5414,7 +5414,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (cfMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateCommunityFilament(parseInt(cfMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -5439,7 +5439,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/brand-defaults') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.manufacturer) return sendJson(res, { error: 'manufacturer required' }, 400);
         const id = upsertBrandDefault(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5465,7 +5465,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/custom-fields') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.entity_type || !body.field_name || !body.field_label) return sendJson(res, { error: 'entity_type, field_name, field_label required' }, 400);
         const id = addCustomFieldDef(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5473,7 +5473,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (cfdMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateCustomFieldDef(parseInt(cfdMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -5490,7 +5490,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/custom-fields/values') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.field_id || !body.entity_type || !body.entity_id) return sendJson(res, { error: 'field_id, entity_type, entity_id required' }, 400);
         setCustomFieldValue(body.field_id, body.entity_type, body.entity_id, body.value || null);
         sendJson(res, { ok: true });
@@ -5513,7 +5513,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/printer-groups') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const id = addPrinterGroup(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5521,7 +5521,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (pgMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updatePrinterGroup(parseInt(pgMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -5534,7 +5534,7 @@ export async function handleApiRequest(req, res) {
 
     const pgMemberMatch = path.match(/^\/api\/printer-groups\/(\d+)\/members$/);
     if (pgMemberMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id) return sendJson(res, { error: 'printer_id required' }, 400);
         addPrinterToGroup(parseInt(pgMemberMatch[1]), body.printer_id);
         sendJson(res, { ok: true });
@@ -5591,7 +5591,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (projInvoicesMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         body.project_id = parseInt(projInvoicesMatch[1]);
         if (!body.invoice_number) {
           body.invoice_number = 'INV-' + Date.now();
@@ -5604,7 +5604,7 @@ export async function handleApiRequest(req, res) {
 
     const projShareMatch = path.match(/^\/api\/projects\/(\d+)\/share$/);
     if (projShareMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const projectId = parseInt(projShareMatch[1]);
         const p = getProject(projectId);
         if (!p) return sendJson(res, { error: 'Not found' }, 404);
@@ -5625,7 +5625,7 @@ export async function handleApiRequest(req, res) {
 
     const projLinkQueueMatch = path.match(/^\/api\/projects\/(\d+)\/link-queue$/);
     if (projLinkQueueMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const projectId = parseInt(projLinkQueueMatch[1]);
         if (!body.queue_item_id) return sendJson(res, { error: 'queue_item_id required' }, 400);
         const id = addProjectPrint({ project_id: projectId, queue_item_id: body.queue_item_id, filename: body.filename || null, status: 'pending' });
@@ -5642,7 +5642,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/projects') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const id = addProject(body);
         addTimelineEvent(id, 'project_created', 'Project "' + body.name + '" created');
@@ -5651,7 +5651,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (projMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const projectId = parseInt(projMatch[1]);
         updateProject(projectId, body);
         if (body.status) addTimelineEvent(projectId, 'status_changed', 'Status changed to ' + body.status);
@@ -5670,7 +5670,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (projPrintMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         body.project_id = parseInt(projPrintMatch[1]);
         const id = addProjectPrint(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5679,7 +5679,7 @@ export async function handleApiRequest(req, res) {
 
     const projPrintItemMatch = path.match(/^\/api\/projects\/prints\/(\d+)$/);
     if (projPrintItemMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateProjectPrint(parseInt(projPrintItemMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -5709,7 +5709,7 @@ export async function handleApiRequest(req, res) {
 
     const invoiceStatusMatch = path.match(/^\/api\/invoices\/(\d+)\/status$/);
     if (invoiceStatusMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.status) return sendJson(res, { error: 'status required' }, 400);
         const sentAt = body.status === 'sent' ? new Date().toISOString() : null;
         updateInvoiceStatus(parseInt(invoiceStatusMatch[1]), body.status, sentAt);
@@ -5724,7 +5724,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/export/templates') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name || !body.entity_type || !body.columns) return sendJson(res, { error: 'name, entity_type, columns required' }, 400);
         const id = addExportTemplate(body);
         sendJson(res, { ok: true, id }, 201);
@@ -5848,7 +5848,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (uqMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         try {
           upsertUserQuota(parseInt(uqMatch[1]), body);
           sendJson(res, { ok: true });
@@ -5863,7 +5863,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (utMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         body.user_id = parseInt(utMatch[1]);
         if (!body.type || !body.amount) return sendJson(res, { error: 'type and amount required' }, 400);
         try {
@@ -5906,7 +5906,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/price-history') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.filament_profile_id || !body.price) return sendJson(res, { error: 'filament_profile_id and price required' }, 400);
         try {
           const id = addPriceEntry(body);
@@ -5938,7 +5938,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/price-alerts') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.filament_profile_id || !body.target_price) return sendJson(res, { error: 'filament_profile_id and target_price required' }, 400);
         const id = addPriceAlert(body);
         return sendJson(res, { ok: true, id }, 201);
@@ -5947,7 +5947,7 @@ export async function handleApiRequest(req, res) {
 
     const paMatch = path.match(/^\/api\/price-alerts\/(\d+)$/);
     if (paMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updatePriceAlert(parseInt(paMatch[1]), body);
         return sendJson(res, { ok: true });
       });
@@ -6097,7 +6097,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/build-plates') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.printer_id || !body.name) return sendJson(res, { error: 'printer_id and name required' }, 400);
         const id = addBuildPlate(body);
         sendJson(res, { ok: true, id }, 201);
@@ -6105,7 +6105,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (bpMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateBuildPlate(parseInt(bpMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -6129,7 +6129,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/dryer-models') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.brand || !body.model) return sendJson(res, { error: 'brand and model required' }, 400);
         const id = addDryerModel(body);
         sendJson(res, { ok: true, id }, 201);
@@ -6137,7 +6137,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (dmMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateDryerModel(parseInt(dmMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -6155,7 +6155,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/storage-conditions') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.spool_id) return sendJson(res, { error: 'spool_id required' }, 400);
         try {
           const id = addStorageCondition(body);
@@ -6189,7 +6189,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/courses') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.title) return sendJson(res, { error: 'title required' }, 400);
         const id = addCourse(body);
         sendJson(res, { ok: true, id }, 201);
@@ -6197,7 +6197,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (courseMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateCourse(parseInt(courseMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -6215,7 +6215,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (cpMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const userId = body.user_id || 0;
         upsertCourseProgress(parseInt(cpMatch[1]), userId, body);
         sendJson(res, { ok: true });
@@ -6252,14 +6252,14 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, item);
     }
     if (method === 'POST' && path === '/api/kb/printers') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.model || !body.full_name) return sendJson(res, { error: 'model and full_name required' }, 400);
         const id = addKbPrinter(body);
         sendJson(res, { ok: true, id }, 201);
       });
     }
     if (kbPrinterMatch && method === 'PUT') {
-      return readBody(req, (body) => { updateKbPrinter(parseInt(kbPrinterMatch[1]), body); sendJson(res, { ok: true }); });
+      return readBody(req, res, (body) => { updateKbPrinter(parseInt(kbPrinterMatch[1]), body); sendJson(res, { ok: true }); });
     }
     if (kbPrinterMatch && method === 'DELETE') {
       deleteKbPrinter(parseInt(kbPrinterMatch[1]));
@@ -6278,14 +6278,14 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, item);
     }
     if (method === 'POST' && path === '/api/kb/accessories') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const id = addKbAccessory(body);
         sendJson(res, { ok: true, id }, 201);
       });
     }
     if (kbAccMatch && method === 'PUT') {
-      return readBody(req, (body) => { updateKbAccessory(parseInt(kbAccMatch[1]), body); sendJson(res, { ok: true }); });
+      return readBody(req, res, (body) => { updateKbAccessory(parseInt(kbAccMatch[1]), body); sendJson(res, { ok: true }); });
     }
     if (kbAccMatch && method === 'DELETE') {
       deleteKbAccessory(parseInt(kbAccMatch[1]));
@@ -6305,14 +6305,14 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, item);
     }
     if (method === 'POST' && path === '/api/kb/filaments') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.material) return sendJson(res, { error: 'material required' }, 400);
         const id = addKbFilament(body);
         sendJson(res, { ok: true, id }, 201);
       });
     }
     if (kbFilMatch && method === 'PUT') {
-      return readBody(req, (body) => { updateKbFilament(parseInt(kbFilMatch[1]), body); sendJson(res, { ok: true }); });
+      return readBody(req, res, (body) => { updateKbFilament(parseInt(kbFilMatch[1]), body); sendJson(res, { ok: true }); });
     }
     if (kbFilMatch && method === 'DELETE') {
       deleteKbFilament(parseInt(kbFilMatch[1]));
@@ -6332,14 +6332,14 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, item);
     }
     if (method === 'POST' && path === '/api/kb/profiles') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const id = addKbProfile(body);
         sendJson(res, { ok: true, id }, 201);
       });
     }
     if (kbProfMatch && method === 'PUT') {
-      return readBody(req, (body) => { updateKbProfile(parseInt(kbProfMatch[1]), body); sendJson(res, { ok: true }); });
+      return readBody(req, res, (body) => { updateKbProfile(parseInt(kbProfMatch[1]), body); sendJson(res, { ok: true }); });
     }
     if (kbProfMatch && method === 'DELETE') {
       deleteKbProfile(parseInt(kbProfMatch[1]));
@@ -6354,7 +6354,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getKbTags(type, eid));
     }
     if (method === 'POST' && path === '/api/kb/tags') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.entity_type || !body.entity_id || !body.tag) return sendJson(res, { error: 'entity_type, entity_id, tag required' }, 400);
         const id = addKbTag(body.entity_type, body.entity_id, body.tag);
         sendJson(res, { ok: true, id }, 201);
@@ -6383,7 +6383,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'PUT' && path === '/api/hub/settings') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (body.hub_mode !== undefined) setInventorySetting('hub_mode', body.hub_mode ? '1' : '0');
         if (body.kiosk_mode !== undefined) setInventorySetting('kiosk_mode', body.kiosk_mode ? '1' : '0');
         if (body.kiosk_panels !== undefined) setInventorySetting('kiosk_panels', Array.isArray(body.kiosk_panels) ? body.kiosk_panels.join(',') : body.kiosk_panels);
@@ -6394,7 +6394,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- TOTP 2FA ----
     if (method === 'POST' && path === '/api/auth/totp/setup') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const secret = _generateTotpSecret(randomBytes(20));
         const user = getSessionUser(req);
         if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
@@ -6406,7 +6406,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/auth/totp/verify') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const user = getSessionUser(req);
         if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
         if (!body.code) return sendJson(res, { error: 'code required' }, 400);
@@ -6422,7 +6422,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/auth/totp/disable') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const user = getSessionUser(req);
         if (!user) return sendJson(res, { error: 'Not authenticated' }, 401);
         updateUser(user.id, { totp_enabled: 0, totp_secret: null, totp_backup_codes: null });
@@ -6432,7 +6432,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Staggered Start ----
     if (method === 'POST' && path === '/api/printer-groups/staggered-start') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.group_id || !body.filename) return sendJson(res, { error: 'group_id and filename required' }, 400);
         const group = getPrinterGroup(body.group_id);
         if (!group) return sendJson(res, { error: 'Group not found' }, 404);
@@ -6583,7 +6583,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { latest: getLatestBedMesh(pid), history: getBedMeshHistory(pid, 10) });
     }
     if (bedMeshMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const pid = bedMeshMatch[1];
         if (!body.mesh_data || !Array.isArray(body.mesh_data)) return sendJson(res, { error: 'mesh_data (2D array) required' }, 400);
         const flat = body.mesh_data.flat();
@@ -6725,7 +6725,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getLayerPauses(layerPauseMatch[1]));
     }
     if (layerPauseMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const pid = layerPauseMatch[1];
         if (!body.layer_numbers || !Array.isArray(body.layer_numbers) || body.layer_numbers.length === 0) {
           return sendJson(res, { error: 'layer_numbers (non-empty array of integers) required' }, 400);
@@ -6749,7 +6749,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { active: getActiveFilamentChange(pid), history: getFilamentChangeHistory(pid) });
     }
     if (changeFilMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const pid = changeFilMatch[1];
         const printer = _printerManager?.printers?.get(pid);
         if (!printer?.client) return sendJson(res, { error: 'Printer not connected' }, 400);
@@ -6796,7 +6796,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- External Price Check ----
     if (method === 'POST' && path === '/api/inventory/price-check') {
-      return readBody(req, async (body) => {
+      return readBody(req, res, async (body) => {
         if (!body.url) return sendJson(res, { error: 'url required' }, 400);
         const { extractPriceFromUrl } = await import('./price-checker.js');
         const result = await extractPriceFromUrl(body.url);
@@ -6809,7 +6809,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- Community Sharing ----
     if (method === 'POST' && path === '/api/community-filaments/share') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.profile_id) return sendJson(res, { error: 'profile_id required' }, 400);
         const user = req._user;
         const id = shareFilamentProfile(body.profile_id, user?.username || 'anonymous');
@@ -6820,7 +6820,7 @@ export async function handleApiRequest(req, res) {
     }
     const cfRateMatch = path.match(/^\/api\/community-filaments\/(\d+)\/rate$/);
     if (cfRateMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const id = parseInt(cfRateMatch[1]);
         if (!body.rating || body.rating < 1 || body.rating > 5) return sendJson(res, { error: 'rating (1-5) required' }, 400);
         const user = req._user;
@@ -6834,7 +6834,7 @@ export async function handleApiRequest(req, res) {
     }
     const cfTdVoteMatch = path.match(/^\/api\/community-filaments\/(\d+)\/td-vote$/);
     if (cfTdVoteMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const id = parseInt(cfTdVoteMatch[1]);
         if (!body.td_value || body.td_value <= 0) return sendJson(res, { error: 'td_value required (positive number)' }, 400);
         const user = req._user;
@@ -6848,7 +6848,7 @@ export async function handleApiRequest(req, res) {
     }
     const cfImportMatch = path.match(/^\/api\/community-filaments\/(\d+)\/import$/);
     if (cfImportMatch && method === 'POST') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const profileId = importCommunityToInventory(parseInt(cfImportMatch[1]), body.vendor_id);
         if (!profileId) return sendJson(res, { error: 'Community filament not found' }, 404);
         if (_broadcastFn) _broadcastFn('inventory_update', { action: 'add', entity: 'profile', id: profileId });
@@ -6935,7 +6935,7 @@ export async function handleApiRequest(req, res) {
       const name = decodeURIComponent(pluginSettingsMatch[1]);
       const p = getPlugin(name);
       if (!p) return sendJson(res, { error: 'Plugin not found' }, 404);
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         setPluginSettings(p.id, body);
         sendJson(res, { ok: true, settings: body });
       });
@@ -6975,7 +6975,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getProfiles());
     }
     if (method === 'POST' && path === '/api/profiles') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         const vr = validate(PROFILE_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         addProfile(body);
@@ -6984,7 +6984,7 @@ export async function handleApiRequest(req, res) {
     }
     const profileMatch = path.match(/^\/api\/profiles\/(\d+)$/);
     if (profileMatch && method === 'PUT') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         updateProfile(parseInt(profileMatch[1]), body);
         sendJson(res, { ok: true });
       });
@@ -7008,7 +7008,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, shot);
     }
     if (method === 'POST' && path === '/api/screenshots') {
-      return readBody(req, (body) => {
+      return readBody(req, res, (body) => {
         if (!body.data || !body.filename) return sendJson(res, { error: 'data and filename required' }, 400);
         addScreenshot(body);
         sendJson(res, { ok: true });
@@ -7945,7 +7945,7 @@ function sendJson(res, data, status = 200) {
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB (screenshots can be large)
 
-function readBody(req, callback) {
+function readBody(req, res, callback) {
   let body = '';
   let size = 0;
   req.on('data', chunk => {
@@ -7962,7 +7962,8 @@ function readBody(req, callback) {
     try {
       parsed = JSON.parse(body);
     } catch (e) {
-      parsed = {};
+      sendJson(res, { error: 'Ugyldig JSON i forespørsel' }, 400);
+      return;
     }
     callback(parsed);
   });

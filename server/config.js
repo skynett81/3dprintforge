@@ -86,10 +86,6 @@ function migrateLegacyConfig(config) {
     config.server.cameraWsPortStart = config.server.cameraWsPort;
     delete config.server.cameraWsPort;
   }
-  // Migrate forceHttps: false -> true (security default change)
-  if (config.server && config.server.forceHttps === false) {
-    config.server.forceHttps = true;
-  }
   return config;
 }
 
