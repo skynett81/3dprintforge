@@ -1,0 +1,8 @@
+{
+  "link.label.Documentation": { "message": "Documentation" },
+  "link.label.Knowledge Base": { "message": "Base de connaissances" },
+  "link.label.Updates": { "message": "Mises à jour" },
+  "link.label.GitHub": { "message": "GitHub" },
+  "link.label.← Dashboard": { "message": "← Dashboard" },
+  "copyright": { "message": "Copyright © 2026 Bambu Dashboard" }
+}
