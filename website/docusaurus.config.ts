@@ -7,6 +7,16 @@ const config: Config = {
   tagline: '3D-printer dashboard for Bambu Lab printere',
   favicon: 'img/favicon.svg',
 
+  headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        'http-equiv': 'Content-Security-Policy',
+        content: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https:;",
+      },
+    },
+  ],
+
   future: {
     v4: true,
   },
