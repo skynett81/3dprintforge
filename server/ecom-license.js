@@ -125,6 +125,10 @@ export class EcomLicenseManager {
       domain: this._license?.domain || null,
       phone: this._license?.phone || null,
       max_printers: this._license?.max_printers || 1,
+      license_type: this._license?.license_type || 'domain',
+      allowed_ips: this._license?.allowed_ips || null,
+      allowed_macs: this._license?.allowed_macs || null,
+      verify_count: this._license?.verify_count || 0,
       is_pinned: this._license?.is_pinned || 0,
       expires_at: this._license?.expires_at || null,
       last_validated: this._license?.last_validated || null,
@@ -157,26 +161,36 @@ export class EcomLicenseManager {
     const apiUrl = this._license.geektech_api_url || 'https://geektech.no/api';
     try {
       // GeekTech API: POST /api/license/verify
-      // Sender license_key, domain og ip_address
+      // Lisenstype kan være: domene, IP, MAC, IP+MAC, eller kombinasjon
+      // Sender alle identifikatorer — serveren validerer basert på lisenstype
       const os = await import('node:os');
       const nets = os.networkInterfaces();
-      const ipAddress = Object.values(nets).flat().find(n => n.family === 'IPv4' && !n.internal)?.address || null;
+      const allInterfaces = Object.values(nets).flat().filter(n => !n.internal);
+      const ipAddress = allInterfaces.find(n => n.family === 'IPv4')?.address || null;
+      const macAddress = allInterfaces.find(n => n.mac && n.mac !== '00:00:00:00:00:00')?.mac?.toUpperCase() || null;
 
       const { status, data } = await _httpPost(`${apiUrl}/license/verify`, {
         license_key: this._license.license_key,
         domain: this._license.domain || null,
-        ip_address: ipAddress
+        ip_address: ipAddress,
+        mac_address: macAddress
       });
 
       if (status >= 200 && status < 300 && data.valid) {
+        // Oppdater verify_count
+        const currentCount = this._license.verify_count || 0;
         setEcomLicense({
           status: 'active',
-          holder_name: data.holder || null,
+          holder_name: data.holder || data.customer_name || null,
           plan: data.plan || null,
           features: JSON.stringify(data.features || []),
           max_printers: data.max_printers || data.units || 1,
+          license_type: data.license_type || this._license.license_type || 'domain',
+          allowed_ips: data.allowed_ips || null,
+          allowed_macs: data.allowed_macs || null,
           expires_at: data.expires_at || null,
           last_validated: new Date().toISOString(),
+          verify_count: currentCount + 1,
           cached_response: JSON.stringify(data)
         });
         this._license = getEcomLicense();

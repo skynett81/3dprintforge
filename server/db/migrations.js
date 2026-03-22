@@ -4349,6 +4349,11 @@ function _mig106_ecom_license_fields(db) {
   try { db.exec('ALTER TABLE ecom_license ADD COLUMN is_pinned INTEGER DEFAULT 0'); } catch {}
   try { db.exec('ALTER TABLE ecom_license ADD COLUMN notes TEXT'); } catch {}
   try { db.exec('ALTER TABLE ecom_license ADD COLUMN attachments TEXT'); } catch {}
+  // Lisenstype og identifikatorer (IP, MAC, domene, eller kombinasjon)
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN license_type TEXT DEFAULT \'domain\''); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN allowed_ips TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN allowed_macs TEXT'); } catch {}
+  try { db.exec('ALTER TABLE ecom_license ADD COLUMN verify_count INTEGER DEFAULT 0'); } catch {}
 }
 
 function _mig103_printer_maintenance_mode(db) {

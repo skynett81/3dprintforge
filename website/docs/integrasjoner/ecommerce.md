@@ -38,10 +38,27 @@ E-handelmodulen krever en gyldig lisens. Lisenser kan **kun kjøpes via [geektec
 
 | Felt | Beskrivelse | Påkrevd |
 |------|-------------|---------|
-| **Lisensnøkkel** | Nøkkelen du mottok fra geektech.no | ✅ Ja |
+| **Lisensnøkkel** | 32-tegn hex nøkkel fra geektech.no | ✅ Ja |
 | **E-postadresse** | E-posten du brukte ved kjøp | ✅ Ja |
-| **Domene** | Domenet/IP-adressen dashboardet kjører på | Anbefalt |
+| **Domene** | Domenet dashboardet kjører på (uten https://) | Anbefalt |
 | **Telefon** | Kontakttelefon (med landkode, f.eks. +47) | Valgfritt |
+
+### Lisenstype — identifikatorbinding
+
+geektech.no binder lisensen til én eller flere identifikatorer:
+
+| Type | Validerer mot | Bruksområde |
+|------|---------------|-------------|
+| **Domene** | Domenenavn (f.eks. `dashboard.firma.no`) | Fast server med eget domene |
+| **IP** | Public IP-adresse(r) | Server uten domene, fast IP |
+| **MAC** | MAC-adresse(r) på nettverkskortet | Maskinvare-binding |
+| **IP + MAC** | Både IP og MAC må matche | Høyeste sikkerhet |
+
+:::info Automatisk identifikasjon
+Dashboardet sender automatisk serverens IP-adresse og MAC-adresse ved hver validering. Du trenger ikke fylle inn disse manuelt — geektech.no registrerer dem ved første aktivering.
+:::
+
+Flere IP-adresser og MAC-adresser kan tillates (én per linje i geektech.no admin). Dette er nyttig for servere med flere nettverkskort eller dynamisk IP.
 
 3. Klikk **Aktiver lisens**
 4. Dashboardet sender aktiveringsforespørsel til geektech.no
