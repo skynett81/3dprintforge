@@ -17,6 +17,8 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **Filament Inventory** — favorites, color filters, bulk add, HueForge TD, CSV import, Spoolman sync
 - **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
+- **17 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
+- **Docusaurus documentation** — 82 pages in 17 languages, available at `/docs/` and on GitHub Pages
 - **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 3 npm packages
 
 ---
@@ -35,11 +37,11 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 All Bambu Lab printers with LAN mode enabled:
 
-- **P1 Series** — P1S, P1P
-- **P2 Series** — P2S Combo
-- **X1 Series** — X1 Carbon, X1E
-- **A1 Series** — A1, A1 Mini
-- **H2D Series** — H2D
+- **P1 Series** — P1S, P1S Combo, P1P
+- **P2 Series** — P2S, P2S Combo
+- **X1 Series** — X1 Carbon, X1 Carbon Combo, X1E
+- **A1 Series** — A1, A1 Combo, A1 Mini
+- **H2 Series** — H2S, H2D, H2C (toolchanger)
 
 ## Supported Platforms
 
@@ -249,8 +251,9 @@ docker compose pull && docker compose up -d
 
 - **[Features](docs/features.md)** — complete feature list
 - **[Architecture](docs/architecture.md)** — stack, modules, components, project structure, systemd, Pterodactyl
-- **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.11
+- **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.12
 - **[Installation Guide](INSTALL.md)** — detailed step-by-step install instructions
+- **[Docusaurus Docs](website/)** — full documentation site in 17 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/bambu-dashboard/)
 
 ---
 

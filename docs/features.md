@@ -1,6 +1,6 @@
 # Features
 
-Complete feature list for Bambu Dashboard v1.1.6.
+Complete feature list for Bambu Dashboard v1.1.12.
 
 ---
 
@@ -20,7 +20,7 @@ Complete feature list for Bambu Dashboard v1.1.6.
 
 - Manage multiple printers from a single dashboard
 - Instant printer switching with per-printer data across all panels
-- Supports P1, P2, X1, A1, and H2D series
+- Supports all Bambu Lab printers: P1S/P1S Combo/P1P, P2S/P2S Combo, X1C/X1C Combo/X1E, A1/A1 Combo/A1 Mini, H2S/H2D/H2C
 
 ## Controls
 

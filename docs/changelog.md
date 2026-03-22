@@ -4,6 +4,74 @@ All notable changes to Bambu Dashboard.
 
 ---
 
+## v1.1.12 — Modulær arkitektur, dokumentasjon og e-handel (2026-03-22)
+
+### Modulær arkitektur
+- database.js (10 306 linjer) splittet til 16 domene-moduler under server/db/
+- api-routes.js gjenopprettet etter mislykket splitting (stabilitet prioritert)
+- 69 automatiske tester (Node.js built-in test runner)
+- 80 input-valideringspunkter på API-endepunkter
+- 37 stille catch-blokker fikset med riktig logging
+
+### Printsporing forbedret
+- Server-restart under print: beregner riktig starttid og filamentforbruk
+- Cloud-estimat fra Bambu Cloud som fallback ved server-restart
+- Modellnavn og MakerWorld-link lagres i historikk, galleri og scheduler
+- Milestone-capture: 3-trinns fallback (live frame → TLS JPEG → RTSP)
+- Falske temp-varsler eliminert (Bambu standby 140°C ignoreres)
+
+### Plate-kompatibilitet og kunnskapsbase
+- 62/62 filamenter har plate-kompatibilitet (Cool/Engineering/HT/Textured PEI)
+- 62/62 filamenter har limstift-anbefaling (påkrevd/anbefalt/valgfritt)
+- Norske tips per materiale
+- Kompatibilitetsmatrise med legende, limstift og tips i filament-verktøy
+
+### Full prisingsmodell (Print Farm Academy)
+- Kostnadsberegner oppgradert: arbeid, avfall, påslag, salgspriser (2×/2.5×/3×)
+- Nye innstillinger: oppsett-tid, påslag, dysekostnad, avfallsfaktor
+- labor_rate_hour bug fikset (arbeidskostnad var alltid 0)
+- Prisingsmodell integrert i ordrepanelet
+
+### E-handel og lisens (GeekTech.no)
+- Lisensvalidering mot GeekTech API (POST /api/license/verify)
+- Støtter domene, IP, MAC og IP+MAC binding
+- 32-tegn hex lisensnøkkel med automatisk IP/MAC-deteksjon
+- Komplett CRUD for bestillinger (opprett, rediger, slett, dupliser)
+- Kostnadssammendrag med foreslåtte salgspriser per prosjekt
+
+### Docusaurus dokumentasjonsside
+- 82 dokumentasjonssider på norsk (72 docs + 10 guider)
+- Komplett oversatt til 17 språk (1400+ filer)
+- Guider: første print, filament-oppsett, daglig bruk, plate-valg, feilsøking, varsler, OBS
+- Kunnskapsbase: filamenter, byggplater, vedlikehold, feilsøking
+- GitHub Pages deploy med Actions workflow
+- Tilgjengelig på /docs/ fra dashboardet
+
+### Sikkerhet og ytelse
+- Secure-flagg på session-cookies ved HTTPS
+- N+1 spørring i getSpools fikset med batch-query
+- Ny database-indeks på print_history.started_at
+- readBody returnerer 400 ved ugyldig JSON
+- Intervaller ryddes ved shutdown (ingen minnelekkasje)
+- Docker healthcheck fikset for HTTPS-modus
+
+### Oversettelser og visuell opprydding
+- 12 komponenter oversatt til norsk (Loading, Error, Quick Commands, etc.)
+- 25 døde filer slettet (13 frontend-split, 12 rute-split)
+- CSS-variabler fikset (var(--border) → var(--border-color))
+- PWA theme-color rettet (#00d4ff → #00AE42)
+- tabs.waste "Poop" → "Avfall"
+- Service worker bumped for cache-oppdatering
+
+### Alle Bambu Lab printere støttet
+- X1C, X1C Combo, X1E
+- P1S, P1S Combo, P1P
+- P2S, P2S Combo
+- A1, A1 Combo, A1 mini
+- H2S, H2D (dual nozzle), H2C (toolchanger)
+
+---
+
 ## v1.1.11 — Filament Analytics, Cloud API, RFID Library, OBS Redesign & Multi-Repo Integration (2026-03-19)
 
 ### Bambu Lab Cloud API (42 metoder)
