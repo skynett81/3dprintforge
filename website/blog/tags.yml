@@ -1,19 +1,19 @@
-facebook:
-  label: Facebook
-  permalink: /facebook
-  description: Facebook tag description
+release:
+  label: Release
+  permalink: /release
+  description: Nye versjoner og oppdateringer
 
-hello:
-  label: Hello
-  permalink: /hello
-  description: Hello tag description
+funksjon:
+  label: Ny funksjon
+  permalink: /funksjon
+  description: Nye funksjoner i dashboardet
 
-docusaurus:
-  label: Docusaurus
-  permalink: /docusaurus
-  description: Docusaurus tag description
+fix:
+  label: Feilretting
+  permalink: /fix
+  description: Feilrettinger og forbedringer
 
-hola:
-  label: Hola
-  permalink: /hola
-  description: Hola tag description
+guide:
+  label: Guide
+  permalink: /guide
+  description: Guider og tips
