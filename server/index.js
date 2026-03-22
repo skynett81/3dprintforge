@@ -233,21 +233,30 @@ function handleRequest(req, res) {
     return handleApiRequest(req, res);
   }
 
-  // Serve Docusaurus docs from /docs/
-  const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'website', 'build');
-  if (pathname.startsWith('/docs')) {
-    let docsPath = pathname.replace(/^\/docs/, '') || '/index.html';
-    if (docsPath === '/' || docsPath === '') docsPath = '/index.html';
-    if (!extname(docsPath)) docsPath += '/index.html';
-    const docsFile = join(DOCS_DIR, docsPath);
-    if (existsSync(DOCS_DIR) && docsFile.startsWith(DOCS_DIR) && existsSync(docsFile)) {
+  // Serve Docusaurus documentation from /docs/
+  const DOCS_BUILD = join(dirname(fileURLToPath(import.meta.url)), '..', 'website', 'build');
+  if (pathname.startsWith('/docs') && existsSync(DOCS_BUILD)) {
+    // Map URL path directly to build directory (Docusaurus uses baseUrl: '/docs/')
+    let docsPath = pathname;
+    // Try exact file first (for assets like .js, .css, .png)
+    let docsFile = join(DOCS_BUILD, docsPath);
+    if (!docsFile.startsWith(DOCS_BUILD)) { res.writeHead(403); res.end(); return; }
+
+    // If no extension, try as directory with index.html
+    if (!extname(docsFile) && existsSync(join(docsFile, 'index.html'))) {
+      docsFile = join(docsFile, 'index.html');
+    }
+
+    if (existsSync(docsFile) && !docsFile.endsWith('/')) {
       const ext = extname(docsFile);
       const ct = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=3600' });
+      const cache = ['.js', '.css', '.woff2', '.png', '.svg'].includes(ext) ? 'public, max-age=86400' : 'no-cache';
+      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': cache });
       return createReadStream(docsFile).pipe(res);
     }
-    // Fallback: try without /index.html for SPA routing
-    const spaFallback = join(DOCS_DIR, 'index.html');
+
+    // SPA fallback for client-side routing
+    const spaFallback = join(DOCS_BUILD, 'docs', 'intro', 'index.html');
     if (existsSync(spaFallback)) {
       res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
       return createReadStream(spaFallback).pipe(res);
