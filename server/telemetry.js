@@ -1,10 +1,11 @@
-// Anonymous telemetry — sends a lightweight ping to track active installations
-// No personal data is collected. Only: install ID, version, platform, node version, and aggregate counts.
+// Anonymous telemetry — sends a lightweight ping to track active installations.
+// No personal data is collected. Only: install ID, version, platform, and aggregate counts.
+// Users can disable telemetry by setting DISABLE_TELEMETRY=true environment variable.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { platform, arch, totalmem } from 'node:os';
+import { platform, arch, totalmem, cpus, uptime as osUptime, hostname } from 'node:os';
 import { config, ROOT_DIR, DATA_DIR } from './config.js';
 import { getPrinters, getSpools, getFilamentProfiles, getInventorySetting } from './database.js';
 import { getDb } from './db/connection.js';
@@ -52,6 +53,8 @@ function getEnabledFeatures() {
   if (config.notifications?.enabled) flags.push('notifications');
   if (config.spoolman?.enabled) flags.push('spoolman');
   if (config.server?.forceHttps !== false) flags.push('https');
+  if (config.energy?.provider) flags.push('energy_' + config.energy.provider);
+  if (config.homeAssistant?.enabled) flags.push('homeassistant');
 
   // Enabled notification channels
   const channels = config.notifications?.channels || {};
@@ -64,35 +67,95 @@ function getEnabledFeatures() {
 
 function getAggregateStats() {
   try {
+    const db = getDb();
     const printers = getPrinters();
     const spools = getSpools({});
     const profiles = getFilamentProfiles({});
     const language = getInventorySetting('language');
 
-    // Count printer models
+    // Printer models
     const models = {};
     for (const p of printers) {
       const m = p.model || 'unknown';
       models[m] = (models[m] || 0) + 1;
     }
 
-    // Count prints
-    let totalPrints = 0;
-    let completedPrints = 0;
+    // Print statistics
+    let printStats = { total: 0, completed: 0, failed: 0, cancelled: 0, totalDurationH: 0, totalFilamentG: 0 };
     try {
-      const db = getDb();
-      const counts = db.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed FROM print_history").get();
-      totalPrints = counts.total || 0;
-      completedPrints = counts.completed || 0;
+      const row = db.prepare(`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+          COALESCE(SUM(duration_seconds), 0) as total_duration_s,
+          COALESCE(SUM(filament_used_g), 0) as total_filament_g
+        FROM print_history
+      `).get();
+      printStats = {
+        total: row.total || 0,
+        completed: row.completed || 0,
+        failed: row.failed || 0,
+        cancelled: row.cancelled || 0,
+        totalDurationH: Math.round((row.total_duration_s || 0) / 3600),
+        totalFilamentKg: Math.round((row.total_filament_g || 0) / 100) / 10
+      };
+    } catch {}
+
+    // Database version
+    let dbVersion = 0;
+    try {
+      const v = db.prepare('SELECT MAX(version) as v FROM schema_version').get();
+      dbVersion = v?.v || 0;
+    } catch {}
+
+    // Material types in use
+    let materialTypes = [];
+    try {
+      materialTypes = db.prepare("SELECT DISTINCT material FROM filament_profiles WHERE material IS NOT NULL AND material != '' ORDER BY material").all().map(r => r.material);
+    } catch {}
+
+    // Active queue items
+    let queueItems = 0;
+    try {
+      const q = db.prepare("SELECT COUNT(*) as c FROM queue_items WHERE status = 'pending'").get();
+      queueItems = q?.c || 0;
+    } catch {}
+
+    // E-commerce license
+    let ecomActive = false;
+    try {
+      const lic = db.prepare("SELECT status FROM ecom_license WHERE id = 1").get();
+      ecomActive = lic?.status === 'active';
+    } catch {}
+
+    // Days since first print (installation age)
+    let installAgeDays = 0;
+    try {
+      const first = db.prepare('SELECT MIN(started_at) as first FROM print_history').get();
+      if (first?.first) {
+        installAgeDays = Math.floor((Date.now() - new Date(first.first).getTime()) / 86400000);
+      }
     } catch {}
 
     return {
       printerCount: printers.length,
       printerModels: models,
       totalSpools: spools.length || 0,
-      totalPrints,
-      completedPrints,
       totalProfiles: profiles.length || 0,
+      totalPrints: printStats.total,
+      completedPrints: printStats.completed,
+      failedPrints: printStats.failed,
+      cancelledPrints: printStats.cancelled,
+      successRate: printStats.total > 0 ? Math.round(printStats.completed / printStats.total * 100) : 0,
+      totalPrintHours: printStats.totalDurationH,
+      totalFilamentKg: printStats.totalFilamentKg,
+      materialTypes,
+      queueItems,
+      ecomActive,
+      dbVersion,
+      installAgeDays,
       language: language || null
     };
   } catch {
@@ -101,8 +164,12 @@ function getAggregateStats() {
 }
 
 export function sendTelemetryPing() {
+  // Respect opt-out
+  if (process.env.DISABLE_TELEMETRY === 'true' || config.telemetry?.disabled) return;
+
   const isDemo = process.env.BAMBU_DEMO === 'true';
   const stats = getAggregateStats();
+  const cpu = cpus();
 
   const payload = {
     id: getInstallId(),
@@ -110,7 +177,11 @@ export function sendTelemetryPing() {
     platform: detectPlatform(),
     nodeVersion: process.versions.node,
     arch: arch(),
+    cpuModel: cpu[0]?.model || null,
+    cpuCores: cpu.length || 0,
     ramGb: Math.round(totalmem() / (1024 ** 3)),
+    uptimeH: Math.round(osUptime() / 3600),
+    processUptimeH: Math.round(process.uptime() / 3600),
     demo: isDemo,
     features: getEnabledFeatures(),
     ...stats
