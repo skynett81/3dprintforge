@@ -6,6 +6,8 @@ description: En kraftig, selvdriftet dashboard for Bambu Lab 3D-printere
 
 # Velkommen til Bambu Dashboard
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
+
 **Bambu Dashboard** er et selvdriftet, fullverdig kontrollpanel for Bambu Lab 3D-printere. Det gir deg full oversikt og kontroll over printer, filamentlager, printhistorikk og mer — alt fra én nettleser-fane.
 
 ## Hva er Bambu Dashboard?

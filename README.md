@@ -4,6 +4,8 @@
 
 Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
+
 ![Bambu Dashboard](docs/dashboard.png)
 
 ---

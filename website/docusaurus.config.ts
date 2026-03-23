@@ -125,6 +125,11 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
+        {
+          href: 'https://ko-fi.com/V7V21NRKM7',
+          label: '☕ Ko-fi',
+          position: 'right',
+        },
       ],
     },
     footer: {
@@ -152,6 +157,7 @@ const config: Config = {
             { label: 'Dashboard', href: 'https://localhost:3443' },
             { label: 'GitHub', href: 'https://github.com/skynett81/bambu-dashboard' },
             { label: 'MakerWorld', href: 'https://makerworld.com' },
+            { label: '☕ Support on Ko-fi', href: 'https://ko-fi.com/V7V21NRKM7' },
           ],
         },
       ],
