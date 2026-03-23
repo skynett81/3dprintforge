@@ -105,12 +105,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Filamenter',
-      items: ['kb/filamenter/pla', 'kb/filamenter/petg', 'kb/filamenter/abs', 'kb/filamenter/tpu', 'kb/filamenter/nylon', 'kb/filamenter/kompositt'],
+      items: ['kb/filamenter/pla', 'kb/filamenter/petg', 'kb/filamenter/abs', 'kb/filamenter/tpu', 'kb/filamenter/nylon', 'kb/filamenter/kompositt', 'kb/filamenter/spesial'],
     },
     {
       type: 'category',
       label: 'Byggplater',
-      items: ['kb/byggplater/oversikt', 'kb/byggplater/cool-plate', 'kb/byggplater/engineering-plate', 'kb/byggplater/high-temp-plate', 'kb/byggplater/textured-pei'],
+      items: ['kb/byggplater/oversikt', 'kb/byggplater/cool-plate', 'kb/byggplater/engineering-plate', 'kb/byggplater/high-temp-plate', 'kb/byggplater/textured-pei', 'kb/byggplater/spesialplater'],
     },
     {
       type: 'category',

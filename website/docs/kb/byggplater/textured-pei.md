@@ -65,3 +65,79 @@ Textured PEI er robust og enkel å vedlikeholde:
 Den grove teksturen gir en distinkt mønstret underside på alle prints. Dette er:
 - Ønskelig for prototyper og funksjonelle deler (bedre grep)
 - Uønsket for dekorative/visuelle prints (bruk Cool Plate for glatt overflate)
+
+---
+
+## Dobbeltsidig plate
+
+Textured PEI Plate er ofte **dobbeltsidig** — de to sidene har ulike teksturer:
+
+- **Fin side:** Finere, jevnere tekstur — gir en diskret mønstret overflate, nesten semi-glatt
+- **Grov side:** Grovere, mer markert tekstur — gir sterkere mekanisk heft og tydelig mønster
+
+Snu platen for å bytte mellom de to sidene — magneten holder begge sider like godt.
+
+:::tip Riktig side for riktig materiale
+- **Grov side** → best for ABS, ASA og materialer som trenger ekstra mekanisk heft
+- **Fin side** → best for PLA og PETG der du ønsker litt mindre markert tekstur på undersiden
+:::
+
+---
+
+## Universalplate for de fleste materialer
+
+Textured PEI fungerer som en "universalplate" for hverdagsbruk:
+
+- **PLA / PLA+** — utmerket heft, enkel fjerning, fin teksturert underside
+- **PETG** — god heft uten permanent binding, litt limstift anbefales for store flater
+- **TPU** — beste plate for fleksible materialer
+- **ABS / ASA** — bruk grov side og limstift, god heft
+- **PLA-CF** — uten limstift, god heft
+
+Platen er spesielt nyttig som "standardplate" for brukere som printer mange ulike materialer og ikke ønsker å bytte plate mellom hver jobb.
+
+---
+
+## TPU — vær forsiktig med store flate prints
+
+TPU hefter **ekstra godt** på Textured PEI, noe som er en fordel for de fleste prints — men kan skape utfordringer for store, flate objekter:
+
+:::warning TPU med stor flatbunn
+Store flate TPU-prints (for eksempel bunnplater, pads, flate deksler) kan hekte seg godt fast i teksturen og bli vanskelig å fjerne. Risikoen er at du river i printen eller skader platen.
+
+**Løsning:**
+- Vent til platen er helt kald (20–25 °C) — gjerne la den stå 10–15 minutter
+- Bøy platen kraftig i begge retninger
+- Vurder å bruke et tynt lag limstift som separatorlag for veldig store flate TPU-prints
+:::
+
+For normale TPU-prints (kanter, lister, fleksible deler) er dette ikke et problem.
+
+---
+
+## ABS og ASA — bruk grov side
+
+For ABS og ASA anbefales den grove siden av Textured PEI:
+
+1. Snu til grov side
+2. Påfør limstift (tynt, jevnt lag)
+3. Print med sengtemperatur 90–110 °C
+4. La avkjøle til under 50 °C før fjerning
+
+Den grove teksturen i kombinasjon med limstift gir svært god heft — warping er sjeldent et problem med innelukket kammer.
+
+---
+
+## Levetid
+
+Textured PEI er en av de mer holdbare platene takket være den robuste mekaniske teksturen:
+
+| Vedlikeholdsadferd | Forventet levetid |
+|-------------------|-------------------|
+| God (IPA + regelmessig vask) | 500–700 prints |
+| Gjennomsnittlig | 300–500 prints |
+| Dårlig (metallskrape, slurvet rengjøring) | Under 200 prints |
+
+:::tip Forleng levetiden
+Platen er dobbeltsidig — når én side begynner å slite, snu den og bruk den andre siden. Du dobler effektivt platens totale levetid.
+:::

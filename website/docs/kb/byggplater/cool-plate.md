@@ -60,3 +60,75 @@ Platen er slitt når:
 - Overflaten er ujevn og gir dårlig første lag
 
 En Cool Plate varer typisk 200–500 prints ved normal bruk og god vedlikehold.
+
+---
+
+## Overflateresultat
+
+Smooth PEI gir en **blank og speilende underside** på printen. Dette er en av hovedgrunnene til å velge Cool Plate fremfor Engineering Plate: der du ønsker en estetisk, glatt bunn — for eksempel på dekorative objekter, figuriner, smykker og displayer — er Cool Plate det naturlige valget.
+
+Sammenligning:
+- **Cool Plate** → blank, speilende underside
+- **Engineering Plate** → matt, teksturert underside
+- **Textured PEI** → grov, markert teksturert underside
+
+---
+
+## Fjerning av print
+
+:::warning Vent til platen er helt kald
+Cool Plate kan være vanskelig å fjerne prints fra hvis den fortsatt er varm. PEI-belegget er "klebrig" ved forhøyet temperatur. Vent alltid til platen er helt avkjølt — helst ned mot 20–25 °C — før du forsøker å fjerne printen.
+:::
+
+**Riktig fremgangsmåte:**
+1. La platen avkjøle til romtemperatur (20–25 °C)
+2. Ta platen av printeren
+3. Bøy platen forsiktig i begge retninger — printen slipper uten å måtte bruke kraft
+4. Hvis printen sitter fast: legg platen i fryseren i 5–10 minutter, dette kontraherer materialet og løsner heften
+
+Unngå å dra, vri eller bruke kraft — dette øker risikoen for å rive av PEI-belegget.
+
+---
+
+## PETG-advarsel — utvidet
+
+:::danger PETG kan ødelegge platen permanent
+PETG hefter så sterkt på glatt PEI at fjerning av printen kan rive av selve PEI-belegget fra stålplaten. Dette er en **irreversibel skade** — platen kan ikke repareres.
+
+- **Alltid bruk limstift** som barriere mellom PETG og PEI-overflaten
+- Et tynt lag limstift hindrer direkte kontakt mellom PETG og PEI
+- Etter print: vask av limstiftrester med lunkent vann og oppvaskmiddel
+
+**Alternativ:** Bruk Engineering Plate for PETG — den er designet for nettopp dette materialet og krever ikke limstift.
+:::
+
+---
+
+## Vedlikehold — riper og skraping
+
+:::danger Bruk ALDRI metallskrape på Cool Plate
+En metallskrape riper PEI-belegget umiddelbart og permanent. Selv en enkelt bruk kan gjøre platen ubrukelig ved å lage dype riper som svekker heften.
+:::
+
+**Godkjente verktøy for å fjerne prints:**
+- **Plastskrape** — trygt, anbefalt ved gjenstridige prints
+- **Bøy platen** — det beste alternativet i de fleste tilfeller
+- **Frysemetoden** — fryser løsner heften uten mekanisk kraft
+
+Hvis du oppdager riper i PEI-belegget, vurder om platen bør byttes — dype riper fanger smuss og gir ujevn heft.
+
+---
+
+## Levetid
+
+Ved godt vedlikehold kan en Cool Plate holde i **300–500 prints**:
+
+| Vedlikeholdsadferd | Forventet levetid |
+|-------------------|-------------------|
+| God (IPA + riktig håndtering) | 400–500 prints |
+| Gjennomsnittlig | 200–300 prints |
+| Dårlig (metallskrape, PETG uten limstift) | Under 100 prints |
+
+:::tip Forleng levetiden
+Roter utskriftsposisjonen mellom prints. Prints plassert alltid i midten sliter ut midtsonen av belegget langt raskere enn resten av platen.
+:::
