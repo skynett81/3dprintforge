@@ -258,7 +258,12 @@ function handleRequest(req, res) {
           filePath = join(filePath, 'index.html');
           if (!existsSync(filePath)) return false;
         } else if (!stat) {
-          return false;
+          // Try with .html extension (trailingSlash: false generates .html files)
+          if (!extname(filePath) && existsSync(filePath + '.html')) {
+            filePath = filePath + '.html';
+          } else {
+            return false;
+          }
         }
       } catch { return false; }
       const ext = extname(filePath);
