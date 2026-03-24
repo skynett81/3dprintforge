@@ -245,11 +245,18 @@
         const linkedSpool = _getLinkedSpool(printerId, _selectedUnit, i);
 
         let remain;
-        // Prioritet: 1) Printer RFID/sensor, 2) linked spool beregning
-        if (tray.remain >= 0 && tray.remain <= 100) {
-          remain = Math.round(tray.remain);
-        } else if (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0) {
-          remain = Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100));
+        // Bruk den laveste av AMS-sensor og spoldatabasen
+        // AMS-sensor kan vise for høyt etter feilede prints der filament ble kastet
+        const amsRemain = (tray.remain >= 0 && tray.remain <= 100) ? Math.round(tray.remain) : null;
+        const spoolRemain = (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0)
+          ? Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100)) : null;
+
+        if (amsRemain !== null && spoolRemain !== null) {
+          remain = Math.min(amsRemain, spoolRemain);
+        } else if (amsRemain !== null) {
+          remain = amsRemain;
+        } else if (spoolRemain !== null) {
+          remain = spoolRemain;
         } else {
           remain = null;
         }
