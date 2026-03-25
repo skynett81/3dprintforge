@@ -449,14 +449,36 @@ export class PrintTracker {
 
     // Fallback: use cloud estimate if AMS diff is too low
     // This covers: server restart (no snapshot), EXT on P2S/A1 (no vt_tray sensor data)
-    const cloudWeight = this.currentPrint.cloud_weight_g;
+    let cloudWeight = this.currentPrint.cloud_weight_g;
     const isExt = this.currentPrint.is_ext;
+
+    // If cloud estimate was not available at print start (e.g. server restart, cache empty),
+    // try fetching it now at print end
+    if (!cloudWeight && this.cloudTaskProvider) {
+      try {
+        const cloud = this.cloudTaskProvider(this.currentPrint.filename);
+        if (cloud?.weight) {
+          cloudWeight = cloud.weight;
+          this.currentPrint.cloud_weight_g = cloudWeight;
+          log.info('Cloud-estimat hentet ved print-slutt: ' + cloudWeight.toFixed(1) + 'g');
+        }
+      } catch {}
+    }
+
     if (filamentUsedG < 1 && cloudWeight && cloudWeight > 1) {
       const pctDone = completionPct || (status === 'completed' ? 100 : 0);
       if (pctDone > 0) {
         filamentUsedG = cloudWeight * (pctDone / 100);
         log.info('Bruker cloud-estimat for filament: ' + filamentUsedG.toFixed(1) + 'g ved ' + pctDone + '% (' + status + ', AMS-diff var 0)');
       }
+    }
+
+    // Last resort: if still no filament data, estimate from print duration
+    // Average consumption ~25-35g/hour for typical prints
+    if (filamentUsedG < 1 && duration > 60 && status === 'completed') {
+      const hours = duration / 3600;
+      filamentUsedG = Math.round(hours * 30);  // ~30g/hour conservative estimate
+      log.warn('Ingen filamentdata — estimerer fra varighet: ' + filamentUsedG + 'g (' + hours.toFixed(1) + 'h × 30g/h)');
     }
 
     // Waste = startup purge + color change waste (mechanical waste, always present)
@@ -1101,9 +1123,27 @@ export class PrintTracker {
 
   _updateSpoolUsage(data, printHistoryId, filamentUsedG = 0) {
     let spoolUpdated = false;
+    const isExt = this.currentPrint?.is_ext;
 
-    // Method 1: AMS snapshot diff (most accurate)
-    if (this.amsSnapshot) {
+    // Method 0: For EXT on P2S/A1 (no vt_tray sensor), always use filamentUsedG
+    if (isExt && filamentUsedG > 0) {
+      try {
+        const spool = getSpoolBySlot(this.printerId, 255, 0);
+        if (spool) {
+          useSpoolWeight(spool.id, filamentUsedG, 'ext-estimate', printHistoryId, this.printerId);
+          trackConsumedSinceWeight(spool.id, filamentUsedG);
+          log.info('EXT Spool #' + spool.id + ' usage: ' + filamentUsedG.toFixed(1) + 'g (cloud/duration estimate)');
+          spoolUpdated = true;
+        } else {
+          log.warn('EXT print men ingen spool koblet til EXT (unit=255, tray=0)');
+        }
+      } catch (e) {
+        log.error('EXT spool usage feilet: ' + e.message);
+      }
+    }
+
+    // Method 1: AMS snapshot diff (most accurate) — skip for EXT (handled above)
+    if (!spoolUpdated && this.amsSnapshot) {
       try {
         const currentAms = this._getAmsRemaining(data);
         for (const [key, startRemain] of Object.entries(this.amsSnapshot)) {
