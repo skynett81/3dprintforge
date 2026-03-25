@@ -1808,7 +1808,7 @@
   "makerworld": {
     "loading": "MakerWorld info betoltese...",
     "view_on_mw": "Megnezes a MakerWorldon",
-    "by": ""
+    "by": "by"
   },
   "model_info": {
     "loading": "Modell információ betöltése...",
@@ -1825,7 +1825,7 @@
     "no_active_model": "Nincs aktív modell.",
     "recent_links": "Legutóbbi Linkek",
     "no_recent": "Még nincsenek összekapcsolt modellek.",
-    "by": "",
+    "by": "by",
     "view_on": "Megtekintés itt:",
     "link": "Összekapcsolás",
     "description": "Leírás",

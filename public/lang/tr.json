@@ -1809,7 +1809,7 @@
   "makerworld": {
     "loading": "MakerWorld bilgisi yukleniyor...",
     "view_on_mw": "MakerWorld'de gor",
-    "by": ""
+    "by": "by"
   },
   "model_info": {
     "loading": "Model bilgisi yükleniyor...",
@@ -1826,7 +1826,7 @@
     "no_active_model": "Aktif model yok.",
     "recent_links": "Son Bağlantılar",
     "no_recent": "Henüz bağlı model yok.",
-    "by": "",
+    "by": "by",
     "view_on": "Görüntüle:",
     "link": "Bağla",
     "description": "Açıklama",

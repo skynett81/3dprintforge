@@ -116,7 +116,7 @@
     "title": "AMS",
     "humidity": "Wilgotność AMS",
     "temp": "Temp",
-    "slot": "Slot AMS",
+    "slot": "Slot {{num}}",
     "slot_multi": "AMS{{unit}} Slot {{num}}",
     "empty": "Pusty",
     "external": "External",

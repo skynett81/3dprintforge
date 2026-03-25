@@ -1809,7 +1809,7 @@
   "makerworld": {
     "loading": "MakerWorld 정보 로딩 중...",
     "view_on_mw": "MakerWorld에서 보기",
-    "by": ""
+    "by": "by"
   },
   "model_info": {
     "loading": "모델 정보 로딩 중...",
@@ -1826,7 +1826,7 @@
     "no_active_model": "활성 모델이 없습니다.",
     "recent_links": "최근 링크",
     "no_recent": "아직 연결된 모델이 없습니다.",
-    "by": "",
+    "by": "by",
     "view_on": "에서 보기",
     "link": "연결",
     "description": "설명",
