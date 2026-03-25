@@ -859,9 +859,33 @@ export class PrintTracker {
 
   _getActiveFilament(data) {
     const result = { type: null, color: null, brand: null };
-    if (!data.ams?.ams) return result;
+    if (!data.ams) return result;
 
-    const activeTray = data.ams.tray_now;
+    // Detect EXT from mapping field (P2S/A1 AMS Lite don't report vt_tray)
+    const isExtFromMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
+    const activeTrayRaw = data.ams.tray_now;
+    const isExt = isExtFromMapping || (activeTrayRaw != null && parseInt(activeTrayRaw) >= 254);
+
+    // For EXT: use vt_tray data or linked inventory spool
+    if (isExt) {
+      if (data.ams.vt_tray) {
+        result.type = data.ams.vt_tray.tray_type || null;
+        result.color = data.ams.vt_tray.tray_color || null;
+        result.brand = data.ams.vt_tray.tray_sub_brands || data.ams.vt_tray.tray_id_name || null;
+      }
+      // Enrich from linked EXT spool in inventory
+      const extSpool = getSpoolBySlot(this.printerId, 255, 0);
+      if (extSpool) {
+        if (!result.type) result.type = extSpool.material || null;
+        if (!result.color) result.color = extSpool.color_hex || null;
+        if (!result.brand) result.brand = extSpool.profile_name || extSpool.vendor_name || null;
+      }
+      return result;
+    }
+
+    if (!data.ams.ams) return result;
+
+    const activeTray = activeTrayRaw;
     let matchedUnit = null, matchedTrayId = null;
     for (const unit of data.ams.ams) {
       const tray = (unit.tray || []).find(t => t && String(t.id) === String(activeTray));
