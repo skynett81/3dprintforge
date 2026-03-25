@@ -143,7 +143,10 @@
 
     const amsData = data.ams;
     const amsUnits = amsData.ams;
-    const activeTray = amsData.tray_now;
+    // Detect EXT from mapping field (P2S/A1 AMS Lite don't send vt_tray/tray_now=254)
+    const _mapping = data.mapping;
+    const _isExtFromMapping = Array.isArray(_mapping) && _mapping.length > 0 && ((_mapping[0] >> 8) & 0xFF) === 0xFF;
+    const activeTray = _isExtFromMapping ? '254' : amsData.tray_now;
     if (!amsUnits || amsUnits.length === 0) return;
 
     const meta = window.printerState.getActivePrinterMeta();
@@ -384,15 +387,19 @@
       const vtTray = amsData.vt_tray;
       const isExtActive = String(activeTray) === '254' || String(activeTray) === '255';
 
-      if (vtTray && vtTray.tray_type) {
-        const color = vtTray.tray_color || '808080';
+      // For P2S/A1 AMS Lite: vt_tray may not exist, but linked EXT spool might
+      const extLinkedSpool = _getLinkedSpool(printerId, 255, 0);
+      const hasExtData = (vtTray && vtTray.tray_type) || (isExtActive && extLinkedSpool);
+
+      if (hasExtData) {
+        const color = vtTray?.tray_color || extLinkedSpool?.color_hex?.replace('#','') || '808080';
         const rgb = hexToRgb(color);
 
-        const linkedSpool = _getLinkedSpool(printerId, 255, 0);
+        const linkedSpool = extLinkedSpool || _getLinkedSpool(printerId, 255, 0);
         let remain;
         if (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g > 0) {
           remain = Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100);
-        } else if (vtTray.remain >= 0) {
+        } else if (vtTray?.remain >= 0) {
           remain = Math.round(vtTray.remain);
         } else if (linkedSpool && linkedSpool.initial_weight_g > 0) {
           remain = Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100);
@@ -401,7 +408,7 @@
         }
 
         // Real-time filament calculation
-        const _vtTotalG = linkedSpool ? linkedSpool.initial_weight_g : (vtTray.tray_weight ? parseFloat(vtTray.tray_weight) : null);
+        const _vtTotalG = linkedSpool ? linkedSpool.initial_weight_g : (vtTray?.tray_weight ? parseFloat(vtTray.tray_weight) : null);
         const _vtRemainG = linkedSpool ? linkedSpool.remaining_weight_g : (_vtTotalG ? _vtTotalG * (remain / 100) : null);
         let displayGrams = null;
         if (remain !== null && typeof window.realtimeFilament === 'function') {
@@ -411,7 +418,7 @@
         } else if (linkedSpool && linkedSpool.remaining_weight_g > 0) {
           displayGrams = linkedSpool.remaining_weight_g;
         } else if (remain !== null) {
-          const tw = vtTray.tray_weight ? parseFloat(vtTray.tray_weight) : null;
+          const tw = vtTray?.tray_weight ? parseFloat(vtTray.tray_weight) : null;
           if (tw > 0) displayGrams = Math.round(tw * remain / 100);
         }
 
@@ -440,7 +447,7 @@
               </svg>
               ${isExtActive ? '<div class="ams-spool-active-ring"></div>' : ''}
               <div class="ams-spool-center">
-                <span class="ams-spool-type">${vtTray.tray_type}</span>
+                <span class="ams-spool-type">${vtTray?.tray_type || linkedSpool?.material || linkedSpool?.profile_name || 'EXT'}</span>
                 ${remain !== null ? `<span class="ams-spool-pct" style="color:${rgb}">${remain}%</span>` : ''}
                 ${displayGrams !== null ? `<span class="ams-spool-grams">${Math.round(displayGrams)}g</span>` : ''}
               </div>

@@ -13,8 +13,11 @@
       return;
     }
 
+    // Detect EXT: mapping[0] high byte 0xFF = external spool (P2S/A1 AMS Lite)
+    const _mapping = data.mapping;
+    const _isExtFromMapping = Array.isArray(_mapping) && _mapping.length > 0 && ((_mapping[0] >> 8) & 0xFF) === 0xFF;
     const activeTrayIdx = amsData.tray_now;
-    const isExternal = String(activeTrayIdx) === '254' || String(activeTrayIdx) === '255';
+    const isExternal = _isExtFromMapping || String(activeTrayIdx) === '254' || String(activeTrayIdx) === '255';
 
     // Find active tray — search all AMS units, or use vt_tray for external
     let tray = null;
@@ -25,6 +28,15 @@
       tray = amsData.vt_tray;
       amsUnitIdx = 255;
       amsTrayIdx = 0;
+    } else if (isExternal) {
+      // P2S/A1 AMS Lite: no vt_tray but mapping says EXT — use linked spool data
+      amsUnitIdx = 255;
+      amsTrayIdx = 0;
+      const _extPid = window.printerState?.getActivePrinterId?.();
+      const _extSpool = window.getLinkedSpool?.(_extPid, 255, 0);
+      if (_extSpool) {
+        tray = { tray_type: _extSpool.material || _extSpool.profile_name || 'PLA', tray_color: (_extSpool.color_hex || '808080').replace('#',''), tray_sub_brands: _extSpool.profile_name || '', tray_id_name: _extSpool.profile_name, remain: _extSpool.initial_weight_g > 0 ? Math.round(_extSpool.remaining_weight_g / _extSpool.initial_weight_g * 100) : -1, nozzle_temp_min: _extSpool.nozzle_temp_min || '190', nozzle_temp_max: _extSpool.nozzle_temp_max || '230' };
+      }
     } else if (amsData.ams) {
       const idx = parseInt(activeTrayIdx);
       // Global index: 0-3 = unit 0, 4-7 = unit 1, 8-11 = unit 2, 12-15 = unit 3

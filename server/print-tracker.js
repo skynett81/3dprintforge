@@ -360,9 +360,20 @@ export class PrintTracker {
       }
       this.amsSnapshot = currentAms;
     } else {
-      log.info('Print startet: ' + (data.subtask_name || 'ukjent'));
+      // Detect EXT spool: mapping[0] high byte = 0xFF means external spool
+      // P2S/A1 with AMS Lite don't report vt_tray, but mapping indicates EXT
+      const isExtFromMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
+      const trayNow = data.ams?.tray_now;
+      const isExt = isExtFromMapping || (trayNow != null && parseInt(trayNow) >= 254);
+      const effectiveTrayId = isExt ? '254' : (trayNow != null ? String(trayNow) : null);
+      log.info('Print startet: ' + (data.subtask_name || 'ukjent') + ' (tray: ' + (isExt ? 'EXT' : trayNow) + (isExtFromMapping ? ' [mapping]' : '') + ')');
       this.amsSnapshot = this._getAmsRemaining(data);
     }
+
+    // Detect EXT from mapping field (P2S/A1 AMS Lite don't send vt_tray)
+    const _isExtFromMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
+    const _isExt = _isExtFromMapping || (data.ams?.tray_now != null && parseInt(data.ams.tray_now) >= 254);
+    const _effectiveTrayId = _isExt ? '254' : (data.ams?.tray_now != null ? String(data.ams.tray_now) : null);
 
     this.currentPrint = {
       started_at: startedAt,
@@ -382,7 +393,8 @@ export class PrintTracker {
       bed_target: data.bed_target_temper || 0,
       nozzle_target: data.nozzle_target_temper || 0,
       ams_units_used: data.ams?.ams?.length || 0,
-      tray_id: data.ams?.tray_now != null ? String(data.ams.tray_now) : null,
+      tray_id: _effectiveTrayId,
+      is_ext: _isExt,
       estimated_seconds: estimatedSeconds,
       cloud_weight_g: null,
       cloud_time_s: null,
@@ -893,39 +905,59 @@ export class PrintTracker {
 
   _getAmsRemaining(data) {
     const remaining = {};
-    if (!data.ams?.ams) return remaining;
+    if (!data.ams) return remaining;
 
-    for (const unit of data.ams.ams) {
-      for (const tray of (unit.tray || [])) {
-        if (!tray) continue;
-        if (tray.remain >= 0) {
-          remaining[`${unit.id}_${tray.id}`] = tray.remain;
+    // AMS trays
+    if (data.ams.ams) {
+      for (const unit of data.ams.ams) {
+        for (const tray of (unit.tray || [])) {
+          if (!tray) continue;
+          if (tray.remain >= 0) {
+            remaining[`${unit.id}_${tray.id}`] = tray.remain;
+          }
         }
       }
+    }
+
+    // External spool (vt_tray) — tray_now 254/255
+    if (data.ams.vt_tray && data.ams.vt_tray.remain >= 0) {
+      remaining['255_0'] = data.ams.vt_tray.remain;
     }
     return remaining;
   }
 
   _getAmsTrayWeights(data) {
     const weights = {};
-    if (!data.ams?.ams) return weights;
+    if (!data.ams) return weights;
 
-    for (const unit of data.ams.ams) {
-      for (const tray of (unit.tray || [])) {
-        if (!tray) continue;
-        const key = `${unit.id}_${tray.id}`;
-        // 1. Use linked inventory spool weight if available
-        const [unitId, trayId] = [parseInt(unit.id) || 0, parseInt(tray.id) || 0];
-        const spool = getSpoolBySlot(this.printerId, unitId, trayId);
-        if (spool && spool.initial_weight_g > 0) {
-          weights[key] = spool.initial_weight_g;
-        } else if (tray.tray_weight && parseFloat(tray.tray_weight) > 0) {
-          // 2. Fallback to MQTT-reported tray weight
-          weights[key] = parseFloat(tray.tray_weight);
-        } else {
-          // 3. Default 1000g
-          weights[key] = 1000;
+    // AMS trays
+    if (data.ams.ams) {
+      for (const unit of data.ams.ams) {
+        for (const tray of (unit.tray || [])) {
+          if (!tray) continue;
+          const key = `${unit.id}_${tray.id}`;
+          const [unitId, trayId] = [parseInt(unit.id) || 0, parseInt(tray.id) || 0];
+          const spool = getSpoolBySlot(this.printerId, unitId, trayId);
+          if (spool && spool.initial_weight_g > 0) {
+            weights[key] = spool.initial_weight_g;
+          } else if (tray.tray_weight && parseFloat(tray.tray_weight) > 0) {
+            weights[key] = parseFloat(tray.tray_weight);
+          } else {
+            weights[key] = 1000;
+          }
         }
+      }
+    }
+
+    // External spool (vt_tray) — mapped as unit 255, tray 0
+    if (data.ams.vt_tray) {
+      const extSpool = getSpoolBySlot(this.printerId, 255, 0);
+      if (extSpool && extSpool.initial_weight_g > 0) {
+        weights['255_0'] = extSpool.initial_weight_g;
+      } else if (data.ams.vt_tray.tray_weight && parseFloat(data.ams.vt_tray.tray_weight) > 0) {
+        weights['255_0'] = parseFloat(data.ams.vt_tray.tray_weight);
+      } else {
+        weights['255_0'] = 1000;
       }
     }
     return weights;
@@ -1073,15 +1105,19 @@ export class PrintTracker {
     if (!spoolUpdated && filamentUsedG > 0 && data.ams?.tray_now != null) {
       try {
         const activeTray = parseInt(data.ams.tray_now);
-        if (activeTray >= 0 && activeTray < 254) {
+        let spool = null;
+        if (activeTray >= 254) {
+          // External spool (EXT) — mapped as unit 255, tray 0
+          spool = getSpoolBySlot(this.printerId, 255, 0);
+        } else if (activeTray >= 0) {
           const unitId = Math.floor(activeTray / 4);
           const trayId = activeTray % 4;
-          const spool = getSpoolBySlot(this.printerId, unitId, trayId);
-          if (spool) {
-            useSpoolWeight(spool.id, filamentUsedG, 'estimate', printHistoryId, this.printerId);
-            trackConsumedSinceWeight(spool.id, filamentUsedG);
-            log.info('Spool #' + spool.id + ' usage (cloud-estimat): ' + filamentUsedG.toFixed(1) + 'g (aktiv tray ' + activeTray + ')');
-          }
+          spool = getSpoolBySlot(this.printerId, unitId, trayId);
+        }
+        if (spool) {
+          useSpoolWeight(spool.id, filamentUsedG, 'estimate', printHistoryId, this.printerId);
+          trackConsumedSinceWeight(spool.id, filamentUsedG);
+          log.info('Spool #' + spool.id + ' usage (cloud-estimat): ' + filamentUsedG.toFixed(1) + 'g (aktiv tray ' + activeTray + (activeTray >= 254 ? ' EXT' : '') + ')');
         }
       } catch (e) {
         log.error('Spool fallback usage update feilet: ' + e.message);
@@ -1093,13 +1129,20 @@ export class PrintTracker {
     try {
       // Find the spool used for cost-per-gram calculation
       let spoolId = null;
-      if (this.amsSnapshot && data.ams?.tray_now != null) {
-        const activeTray = String(data.ams.tray_now);
-        for (const key of Object.keys(this.amsSnapshot)) {
-          const [unitId, trayId] = key.split('_').map(Number);
-          if (String(trayId) === activeTray) {
-            const spool = getSpoolBySlot(this.printerId, unitId, trayId);
-            if (spool) { spoolId = spool.id; break; }
+      if (data.ams?.tray_now != null) {
+        const activeTray = parseInt(data.ams.tray_now);
+        if (activeTray >= 254) {
+          // External spool
+          const spool = getSpoolBySlot(this.printerId, 255, 0);
+          if (spool) spoolId = spool.id;
+        } else if (this.amsSnapshot) {
+          for (const key of Object.keys(this.amsSnapshot)) {
+            const [unitId, trayId] = key.split('_').map(Number);
+            const globalIdx = unitId * 4 + trayId;
+            if (globalIdx === activeTray) {
+              const spool = getSpoolBySlot(this.printerId, unitId, trayId);
+              if (spool) { spoolId = spool.id; break; }
+            }
           }
         }
       }

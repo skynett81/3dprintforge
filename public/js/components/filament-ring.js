@@ -31,7 +31,10 @@
   function _fingerprint(data) {
     const ams = data.ams;
     if (!ams || !ams.ams) return 'none';
-    const activeIdx = ams.tray_now != null ? parseInt(ams.tray_now) : -1;
+    // Include mapping in fingerprint for EXT detection (P2S/A1 AMS Lite)
+    const _m = data.mapping;
+    const _isExt = Array.isArray(_m) && _m.length > 0 && ((_m[0] >> 8) & 0xFF) === 0xFF;
+    const activeIdx = _isExt ? 254 : (ams.tray_now != null ? parseInt(ams.tray_now) : -1);
     let fp = String(activeIdx) + '_' + (data.mc_percent || 0);
     for (let u = 0; u < ams.ams.length; u++) {
       const unit = ams.ams[u];
@@ -227,7 +230,7 @@
       return;
     }
 
-    // Collect trays
+    // Collect trays (AMS + external)
     const trays = [];
     for (let u = 0; u < ams.ams.length; u++) {
       const unit = ams.ams[u];
@@ -238,14 +241,41 @@
         }
       }
     }
+    // Include external spool (vt_tray) — globalIdx 254/255 for EXT
+    // P2S/A1 AMS Lite may not send vt_tray — detect from mapping field
+    const __mapping = data.mapping;
+    const __isExtFromMapping = Array.isArray(__mapping) && __mapping.length > 0 && ((__mapping[0] >> 8) & 0xFF) === 0xFF;
+    if (ams.vt_tray && ams.vt_tray.tray_type) {
+      trays.push({ tray: ams.vt_tray, unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true });
+    } else if (__isExtFromMapping) {
+      // P2S/A1: no vt_tray, but mapping says EXT — create virtual EXT entry from linked spool or AMS tray 0
+      const _extPid = window.printerState?.getActivePrinterId?.();
+      const _extSpool = window.getLinkedSpool?.(_extPid, 255, 0);
+      if (_extSpool) {
+        trays.push({
+          tray: { tray_type: _extSpool.material || _extSpool.profile_name || 'PLA', tray_color: (_extSpool.color_hex || '808080').replace('#',''), tray_sub_brands: _extSpool.profile_name || '', remain: _extSpool.initial_weight_g > 0 ? Math.round(_extSpool.remaining_weight_g / _extSpool.initial_weight_g * 100) : -1 },
+          unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true
+        });
+      } else {
+        // Fallback: show generic EXT entry
+        trays.push({
+          tray: { tray_type: 'EXT', tray_color: '808080', remain: -1 },
+          unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true
+        });
+      }
+    }
 
     if (!trays.length) {
       container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">Ingen filament lastet</div>';
       return;
     }
 
-    const activeIdx = ams.tray_now != null ? parseInt(ams.tray_now) : -1;
-    const activeEntry = trays.find(e => e.globalIdx === activeIdx) || trays[0];
+    // Detect EXT: mapping[0] high byte 0xFF = external spool (P2S/A1 AMS Lite)
+    const _mapping = data.mapping;
+    const _isExtFromMapping = Array.isArray(_mapping) && _mapping.length > 0 && ((_mapping[0] >> 8) & 0xFF) === 0xFF;
+    const rawActiveIdx = ams.tray_now != null ? parseInt(ams.tray_now) : -1;
+    const activeIdx = _isExtFromMapping ? 254 : rawActiveIdx;
+    const activeEntry = trays.find(e => e.globalIdx === activeIdx || (activeIdx >= 254 && e.isExternal)) || trays[0];
     const activeTray = activeEntry.tray;
 
     const activeColor = parseColor(activeTray.tray_color);
@@ -253,9 +283,9 @@
     const activeType = activeTray.tray_type || '??';
     const activeBrand = activeTray.tray_sub_brands || '';
     const colorName = getColorName(activeColor);
-    const isActive = activeEntry.globalIdx === activeIdx;
-    const slotNum = activeEntry.trayIdx + 1;
-    const amsNum = activeEntry.unitIdx + 1;
+    const isActive = activeEntry.globalIdx === activeIdx || (activeIdx >= 254 && activeEntry.isExternal);
+    const slotNum = activeEntry.isExternal ? 0 : activeEntry.trayIdx + 1;
+    const amsNum = activeEntry.isExternal ? 0 : activeEntry.unitIdx + 1;
 
     // Build display name: prefer brand (e.g. "PLA Basic"), fall back to type
     const displayName = activeBrand || activeType;
@@ -280,7 +310,7 @@
     html += '<div class="filament-ring-info">';
     if (colorName) html += `<span>${colorName}</span>`;
     if (activeInfo.currentG != null) html += `<span>${activeInfo.currentG}g</span>`;
-    html += `<span>AMS${amsNum} S${slotNum}</span>`;
+    html += `<span>${activeEntry.isExternal ? 'EXT' : `AMS${amsNum} S${slotNum}`}</span>`;
     html += '</div>';
 
     // Data source indicator
@@ -319,7 +349,7 @@
       html += '<div class="filament-ring-trays">';
       for (const entry of trays) {
         const c = parseColor(entry.tray.tray_color);
-        const isAct = entry.globalIdx === activeIdx;
+        const isAct = entry.globalIdx === activeIdx || (activeIdx >= 254 && entry.isExternal);
         const info = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isAct, data);
         html += `<div class="filament-ring-tray${isAct ? ' filament-ring-tray-active' : ''}">`;
         html += `<div class="filament-ring-tray-spool">${_miniSpool(c, info.current)}</div>`;
