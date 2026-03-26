@@ -1,9 +1,9 @@
-// Browser Notifications for print events
+// Browser Notifications for print events + sound integration
 (function() {
   let previousStates = {};
   let enabled = false;
   let recentNotifs = {};
-  const COOLDOWN_MS = 60000; // Don't repeat same notification within 60s
+  const COOLDOWN_MS = 60000;
 
   function requestPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -14,7 +14,6 @@
 
   function notify(key, title, body) {
     if (!enabled) return;
-    // Debounce: skip if same notification was sent recently
     const now = Date.now();
     if (recentNotifs[key] && now - recentNotifs[key] < COOLDOWN_MS) return;
     recentNotifs[key] = now;
@@ -30,23 +29,33 @@
     const prev = previousStates[printerId];
     previousStates[printerId] = curr;
 
-    // Skip first update (initialization) — no previous state to compare
+    const name = data.subtask_name || t('notify.print');
+    const ns = typeof notificationSound !== 'undefined' ? notificationSound : null;
+
+    // Countdown check — play sound when ≤1 min remaining
+    if (curr === 'RUNNING' && ns) {
+      const remainSec = parseInt(data.mc_remaining_time) * 60;
+      if (remainSec > 0) ns.checkCountdown(printerId, remainSec);
+    }
+
+    // Skip first update (initialization)
     if (!prev) return;
-    // Skip if state didn't change
     if (prev === curr) return;
 
-    const name = data.subtask_name || t('notify.print');
     const key = `${printerId}:${curr}`;
 
     if (prev === 'RUNNING' && curr === 'FINISH') {
       notify(key, t('notify.print_finished'), t('notify.print_finished_body', { name }));
-      if (typeof notificationSound !== 'undefined') notificationSound.printComplete();
+      if (ns) ns.play('print_complete');
     } else if (prev === 'RUNNING' && curr === 'FAILED') {
       notify(key, t('notify.print_failed'), t('notify.print_failed_body', { name }));
-      if (typeof notificationSound !== 'undefined') notificationSound.printFailed();
+      if (ns) ns.play('print_failed');
     } else if (prev !== 'RUNNING' && curr === 'RUNNING') {
       notify(key, t('notify.print_started'), t('notify.print_started_body', { name }));
-      if (typeof notificationSound !== 'undefined') notificationSound.info();
+      if (ns) ns.play('print_started');
+    } else if (prev === 'RUNNING' && curr === 'PAUSE') {
+      notify(key, t('notify.print_paused') || 'Print paused', name);
+      if (ns) ns.play('print_paused');
     }
   };
 

@@ -1678,7 +1678,16 @@
     "power_avg_w": "Genomsnitt",
     "power_peak_w": "Toppvärde",
     "power_total": "Totalt",
-    "power_readings": "Avläsningar"
+    "power_readings": "Avläsningar",
+    "sound_title": "Ljudnotifikationer",
+    "sound_enable": "Aktivera ljud",
+    "sound_upload": "Ladda upp eget ljud (max 10s, 500KB)",
+    "sound_hint": "Ladda upp MP3/OGG/WAV-filer (max 10 sekunder, 500 KB). Klicka ▶ för att testa, ♪ för att ladda upp.",
+    "sound_unsupported": "Ljud stöds inte i denna webbläsare",
+    "buzzer_title": "Skrivarhögtalare",
+    "buzzer_enable": "Spela ljud på skrivarens högtalare",
+    "buzzer_desc": "Använder M300 G-kod för att spela melodier på skrivarens inbyggda summer",
+    "buzzer_test": "Testa summer"
   },
   "notify": {
     "print": "Utskrift",
@@ -1687,7 +1696,8 @@
     "print_failed": "Utskriften misslyckades",
     "print_failed_body": "{{name}} har misslyckats.",
     "print_started": "Utskriften har startat",
-    "print_started_body": "{{name}} har startat."
+    "print_started_body": "{{name}} har startat.",
+    "print_paused": "Utskrift pausad"
   },
   "time": {
     "h": "t",

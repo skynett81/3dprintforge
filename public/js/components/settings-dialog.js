@@ -417,12 +417,50 @@
       h += '<button class="form-btn form-btn-secondary" onclick="localStorage.removeItem(\'onboarding-completed\'); startTour(); document.querySelector(\'.ix-modal-overlay\')?.remove();">' + (t('settings.restart_tour') || 'Restart Tour') + '</button>';
       h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">' + (t('settings.restart_tour_desc') || 'Show the guided introduction again') + '</span>';
       h += '</div></div></div>';
-      // Notification sounds toggle
-      h += '<div class="settings-card mt-md"><div class="settings-row">';
-      h += '<div class="settings-label">' + (t('settings.notification_sounds') || 'Notification Sounds') + '</div>';
-      h += '<div class="settings-control">';
-      h += '<label class="settings-checkbox"><input type="checkbox" id="sound-toggle" ' + (typeof notificationSound !== 'undefined' && notificationSound.isEnabled() ? 'checked' : '') + ' onchange="if(typeof notificationSound!==\'undefined\'){notificationSound.setEnabled(this.checked);if(this.checked)notificationSound.info();}"><span>' + (t('settings.notification_sounds_desc') || 'Play sounds for print events') + '</span></label>';
-      h += '</div></div></div>';
+      // Notification sounds — full configuration
+      h += '<div class="settings-card mt-md">';
+      h += '<div class="card-title">' + (t('settings.sound_title') || 'Sound Notifications') + '</div>';
+      if (typeof notificationSound !== 'undefined') {
+        const ns = notificationSound;
+        // Master toggle + volume
+        h += '<div class="settings-row" style="margin-bottom:8px">';
+        h += '<label class="settings-checkbox"><input type="checkbox" id="sound-toggle" ' + (ns.isEnabled() ? 'checked' : '') + ' onchange="notificationSound.setEnabled(this.checked);if(this.checked)notificationSound.play(\'print_started\')"><span>' + (t('settings.sound_enable') || 'Enable sounds') + '</span></label>';
+        h += '<div style="display:flex;align-items:center;gap:6px;margin-left:auto">';
+        h += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>';
+        h += '<input type="range" id="sound-volume" min="0" max="100" value="' + Math.round(ns.getVolume() * 100) + '" style="width:80px" oninput="notificationSound.setVolume(this.value/100);document.getElementById(\'vol-pct\').textContent=this.value+\'%\'">';
+        h += '<span id="vol-pct" style="font-size:0.7rem;min-width:28px">' + Math.round(ns.getVolume() * 100) + '%</span>';
+        h += '</div></div>';
+        // Per-event configuration
+        h += '<div class="sound-events-grid">';
+        for (const event of ns.EVENTS) {
+          const label = ns.EVENT_LABELS[event] || event;
+          const isOn = ns.isEventEnabled(event);
+          const custom = ns.getCustomSound(event);
+          h += '<div class="sound-event-row">';
+          h += '<label class="settings-checkbox" style="flex:1"><input type="checkbox" ' + (isOn ? 'checked' : '') + ' onchange="notificationSound.setEventEnabled(\'' + event + '\',this.checked)"><span style="font-size:0.8rem">' + label + '</span></label>';
+          h += '<div style="display:flex;gap:4px;align-items:center">';
+          if (custom) {
+            h += '<span class="pill pill-completed" style="font-size:0.6rem" title="' + (custom.name || 'Custom') + '">' + (custom.name || 'Custom').slice(0, 15) + '</span>';
+            h += '<button class="form-btn form-btn-sm" style="padding:2px 4px;font-size:0.65rem" onclick="notificationSound.removeCustomSound(\'' + event + '\');loadSettings()">✕</button>';
+          }
+          h += '<button class="form-btn form-btn-sm" style="padding:2px 6px;font-size:0.65rem" onclick="notificationSound.play(\'' + event + '\')" title="Test">▶</button>';
+          h += '<label class="form-btn form-btn-sm" style="padding:2px 6px;font-size:0.65rem;cursor:pointer" title="' + (t('settings.sound_upload') || 'Upload custom sound (max 10s, 500KB)') + '"><input type="file" accept="audio/*" style="display:none" onchange="uploadEventSound(\'' + event + '\',this.files[0])">♪</label>';
+          h += '</div></div>';
+        }
+        h += '</div>';
+        h += '<div class="text-muted" style="font-size:0.65rem;margin-top:6px">' + (t('settings.sound_hint') || 'Upload custom MP3/OGG/WAV files (max 10 seconds, 500 KB). Click ▶ to test, ♪ to upload.') + '</div>';
+      } else {
+        h += '<div class="text-muted">' + (t('settings.sound_unsupported') || 'Audio not supported in this browser') + '</div>';
+      }
+      h += '</div>';
+      // Printer buzzer / speaker
+      h += '<div class="settings-card mt-md">';
+      h += '<div class="card-title">' + (t('settings.buzzer_title') || 'Printer Speaker') + '</div>';
+      h += '<p class="text-muted" style="font-size:0.8rem;margin-bottom:8px">' + (t('settings.buzzer_desc') || 'Uses M300 G-code to play melodies on the printer\'s built-in buzzer') + '</p>';
+      h += '<div class="settings-row" style="margin-bottom:8px">';
+      h += '<label class="settings-checkbox"><input type="checkbox" id="buzzer-enabled" onchange="window._toggleBuzzer(this.checked)"><span>' + (t('settings.buzzer_enable') || 'Play sounds on printer speaker') + '</span></label>';
+      h += '<button class="form-btn form-btn-sm" style="margin-left:auto;padding:2px 8px;font-size:0.75rem" onclick="window._testBuzzer()">' + (t('settings.buzzer_test') || 'Test buzzer') + '</button>';
+      h += '</div></div>';
       // Auto-refresh setting
       var _arVal = parseInt(localStorage.getItem('autoRefreshMs')) || 0;
       h += '<div class="settings-card mt-md"><div class="settings-row">';
@@ -439,6 +477,7 @@
       h += '</div></div></div>';
       h += '</div></div>';
       el.innerHTML = h;
+      _loadBuzzerSetting();
 
     } else if (_generalSubTab === 'auth') {
       el.innerHTML = `<div id="auth-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div></div>`;
@@ -1392,6 +1431,17 @@
   window.toggleNotificationsPerm = function(checked) {
     if (checked && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
       Notification.requestPermission();
+    }
+  };
+
+  window.uploadEventSound = async function(event, file) {
+    if (!file || typeof notificationSound === 'undefined') return;
+    try {
+      const result = await notificationSound.uploadSound(event, file);
+      if (typeof showToast === 'function') showToast(result.name + ' (' + result.duration + 's)', 'success');
+      loadSettings(); // Refresh UI
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(e.message, 'error');
     }
   };
 
@@ -3136,6 +3186,35 @@
     } else {
       window.showToast?.(result.error || t('settings.report_send_fail'), 'error');
     }
+  };
+
+  // ═══ Buzzer / Printer Speaker Settings ═══
+
+  async function _loadBuzzerSetting() {
+    try {
+      const res = await fetch('/api/inventory/settings/buzzer_enabled').then(r => r.json());
+      const enabled = res.value === '1' || res.value === 'true';
+      const cb = document.getElementById('buzzer-enabled');
+      if (cb) cb.checked = enabled;
+    } catch {}
+  }
+
+  window._toggleBuzzer = async function(enabled) {
+    await fetch('/api/inventory/settings/buzzer_enabled', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: enabled ? '1' : '0' }) });
+    window.showToast?.(t('common.saved'), 'success');
+  };
+
+  window._testBuzzer = async function() {
+    try {
+      const printersRes = await fetch('/api/printers').then(r => r.json());
+      const printers = Array.isArray(printersRes) ? printersRes : (printersRes.printers || []);
+      const online = printers.find(p => p.state && p.state !== 'OFFLINE');
+      if (!online) { window.showToast?.('No online printer found', 'error'); return; }
+      const res = await fetch('/api/printers/' + online.id + '/buzzer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ melody: 'alert' }) });
+      const data = await res.json();
+      if (data.ok) window.showToast?.('Buzzer test sent to ' + (online.name || online.id), 'success');
+      else window.showToast?.(data.error || 'Buzzer test failed', 'error');
+    } catch (e) { window.showToast?.('Buzzer test failed: ' + e.message, 'error'); }
   };
 
   // ═══ Milestone Settings ═══

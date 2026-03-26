@@ -1678,7 +1678,16 @@
     "power_avg_w": "Ortalama",
     "power_peak_w": "Tepe",
     "power_total": "Toplam",
-    "power_readings": "Okumalar"
+    "power_readings": "Okumalar",
+    "sound_title": "Ses Bildirimleri",
+    "sound_enable": "Sesleri etkinleştir",
+    "sound_upload": "Özel ses yükle (maks. 10sn, 500KB)",
+    "sound_hint": "MP3/OGG/WAV dosyaları yükleyin (maks. 10 saniye, 500 KB). Test etmek için ▶, yüklemek için ♪ tıklayın.",
+    "sound_unsupported": "Bu tarayıcıda ses desteklenmiyor",
+    "buzzer_title": "Yazıcı Hoparlörü",
+    "buzzer_enable": "Yazıcı hoparlöründe ses çal",
+    "buzzer_desc": "Yazıcının dahili buzzer'ında melodi çalmak için M300 G-code kullanır",
+    "buzzer_test": "Buzzer'ı test et"
   },
   "notify": {
     "print": "Baskı",
@@ -1687,7 +1696,8 @@
     "print_failed": "Baskı başarısız",
     "print_failed_body": "{{name}} başarısız oldu.",
     "print_started": "Baskı başladı",
-    "print_started_body": "{{name}} başlatıldı."
+    "print_started_body": "{{name}} başlatıldı.",
+    "print_paused": "Yazdırma duraklatıldı"
   },
   "time": {
     "h": "sa",

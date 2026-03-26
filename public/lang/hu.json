@@ -1677,7 +1677,16 @@
     "power_avg_w": "Átlag",
     "power_peak_w": "Csúcs",
     "power_total": "Összesen",
-    "power_readings": "Leolvasások"
+    "power_readings": "Leolvasások",
+    "sound_title": "Hangértesítések",
+    "sound_enable": "Hangok engedélyezése",
+    "sound_upload": "Egyéni hang feltöltése (max 10mp, 500KB)",
+    "sound_hint": "Töltsön fel MP3/OGG/WAV fájlokat (max 10 másodperc, 500 KB). Kattintson a ▶ gombra a teszteléshez, ♪ a feltöltéshez.",
+    "sound_unsupported": "A hang nem támogatott ebben a böngészőben",
+    "buzzer_title": "Nyomtató hangszóró",
+    "buzzer_enable": "Hangok lejátszása a nyomtató hangszóróján",
+    "buzzer_desc": "M300 G-kódot használ dallamok lejátszásához a nyomtató beépített csipogóján",
+    "buzzer_test": "Csipogó tesztelése"
   },
   "notify": {
     "print": "Nyomtatás",
@@ -1686,7 +1695,8 @@
     "print_failed": "Nyomtatás sikertelen",
     "print_failed_body": "{{name}} sikertelen.",
     "print_started": "Nyomtatás elindult",
-    "print_started_body": "{{name}} elindult."
+    "print_started_body": "{{name}} elindult.",
+    "print_paused": "Nyomtatás szüneteltetve"
   },
   "time": {
     "h": "ó",

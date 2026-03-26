@@ -1678,7 +1678,16 @@
     "power_avg_w": "평균",
     "power_peak_w": "최대",
     "power_total": "합계",
-    "power_readings": "읽기 값"
+    "power_readings": "읽기 값",
+    "sound_title": "소리 알림",
+    "sound_enable": "소리 활성화",
+    "sound_upload": "사용자 정의 소리 업로드 (최대 10초, 500KB)",
+    "sound_hint": "MP3/OGG/WAV 파일 업로드 (최대 10초, 500 KB). ▶ 클릭하여 테스트, ♪ 클릭하여 업로드.",
+    "sound_unsupported": "이 브라우저에서는 오디오가 지원되지 않습니다",
+    "buzzer_title": "프린터 스피커",
+    "buzzer_enable": "프린터 스피커에서 소리 재생",
+    "buzzer_desc": "M300 G코드를 사용하여 프린터 내장 버저에서 멜로디를 재생합니다",
+    "buzzer_test": "버저 테스트"
   },
   "notify": {
     "print": "인쇄",
@@ -1687,7 +1696,8 @@
     "print_failed": "인쇄 실패",
     "print_failed_body": "{{name}} 실패했습니다.",
     "print_started": "인쇄 시작",
-    "print_started_body": "{{name}} 시작되었습니다."
+    "print_started_body": "{{name}} 시작되었습니다.",
+    "print_paused": "인쇄 일시 중지됨"
   },
   "time": {
     "h": "시",

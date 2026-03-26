@@ -1678,7 +1678,16 @@
     "power_avg_w": "Durchschnitt",
     "power_peak_w": "Spitze",
     "power_total": "Gesamt",
-    "power_readings": "Messwerte"
+    "power_readings": "Messwerte",
+    "sound_title": "Tonbenachrichtigungen",
+    "sound_enable": "Töne aktivieren",
+    "sound_upload": "Eigenen Ton hochladen (max. 10s, 500KB)",
+    "sound_hint": "Laden Sie MP3/OGG/WAV-Dateien hoch (max. 10 Sekunden, 500 KB). Klicken Sie ▶ zum Testen, ♪ zum Hochladen.",
+    "sound_unsupported": "Audio wird in diesem Browser nicht unterstützt",
+    "buzzer_title": "Drucker-Lautsprecher",
+    "buzzer_enable": "Töne über Drucker-Lautsprecher abspielen",
+    "buzzer_desc": "Verwendet M300 G-Code, um Melodien über den eingebauten Buzzer des Druckers abzuspielen",
+    "buzzer_test": "Buzzer testen"
   },
   "notify": {
     "print": "Druck",
@@ -1687,7 +1696,8 @@
     "print_failed": "Druck fehlgeschlagen",
     "print_failed_body": "{{name}} ist fehlgeschlagen.",
     "print_started": "Druck gestartet",
-    "print_started_body": "{{name}} wurde gestartet."
+    "print_started_body": "{{name}} wurde gestartet.",
+    "print_paused": "Druck pausiert"
   },
   "time": {
     "h": "Std",

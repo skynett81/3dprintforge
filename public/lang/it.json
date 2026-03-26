@@ -1678,7 +1678,16 @@
     "power_avg_w": "Media",
     "power_peak_w": "Picco",
     "power_total": "Totale",
-    "power_readings": "Letture"
+    "power_readings": "Letture",
+    "sound_title": "Notifiche sonore",
+    "sound_enable": "Attiva suoni",
+    "sound_upload": "Carica suono personalizzato (max 10s, 500KB)",
+    "sound_hint": "Carica file MP3/OGG/WAV (max 10 secondi, 500 KB). Clicca ▶ per testare, ♪ per caricare.",
+    "sound_unsupported": "Audio non supportato in questo browser",
+    "buzzer_title": "Altoparlante della stampante",
+    "buzzer_enable": "Riproduci suoni sull'altoparlante della stampante",
+    "buzzer_desc": "Usa il G-code M300 per riprodurre melodie sul buzzer integrato della stampante",
+    "buzzer_test": "Testa buzzer"
   },
   "notify": {
     "print": "Stampa",
@@ -1687,7 +1696,8 @@
     "print_failed": "Stampa fallita",
     "print_failed_body": "{{name}} è fallita.",
     "print_started": "Stampa avviata",
-    "print_started_body": "{{name}} è stata avviata."
+    "print_started_body": "{{name}} è stata avviata.",
+    "print_paused": "Stampa in pausa"
   },
   "time": {
     "h": "h",

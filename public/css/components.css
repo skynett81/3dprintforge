@@ -4868,6 +4868,24 @@
   color: var(--text-primary);
 }
 
+.sound-events-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.sound-event-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  gap: 8px;
+}
+.sound-event-row:hover {
+  background: rgba(255,255,255,0.05);
+}
 .settings-checkbox input {
   accent-color: var(--accent-green);
 }

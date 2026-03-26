@@ -104,6 +104,49 @@ export function buildFormatStorageCommand() {
   return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: 'M662' } };
 }
 
+/** Predefined buzzer melodies using M300 G-code (S=frequency Hz, P=duration ms). */
+export const BUZZER_MELODIES = {
+  print_complete: [
+    { freq: 523, duration: 150 },  // C5
+    { freq: 659, duration: 150 },  // E5
+    { freq: 784, duration: 150 },  // G5
+    { freq: 1047, duration: 300 }, // C6
+  ],
+  print_failed: [
+    { freq: 784, duration: 200 },  // G5
+    { freq: 659, duration: 200 },  // E5
+    { freq: 523, duration: 200 },  // C5
+    { freq: 392, duration: 400 },  // G4
+  ],
+  countdown: [
+    { freq: 880, duration: 100 },  // A5
+    { freq: 0, duration: 80 },     // pause
+    { freq: 880, duration: 100 },  // A5
+    { freq: 0, duration: 80 },     // pause
+    { freq: 880, duration: 100 },  // A5
+    { freq: 0, duration: 80 },     // pause
+    { freq: 1175, duration: 300 }, // D6
+  ],
+  alert: [
+    { freq: 1000, duration: 150 },
+    { freq: 0, duration: 100 },
+    { freq: 1000, duration: 150 },
+    { freq: 0, duration: 100 },
+    { freq: 1000, duration: 150 },
+  ],
+};
+
+/** Build G-code commands for buzzer melody. Returns array of gcode command objects. */
+export function buildBuzzerCommands(melody, customTones) {
+  const tones = melody && BUZZER_MELODIES[melody]
+    ? BUZZER_MELODIES[melody]
+    : Array.isArray(customTones) ? customTones : [];
+  if (tones.length === 0) return [];
+  return tones
+    .filter(t => typeof t.freq === 'number' && typeof t.duration === 'number' && t.duration > 0)
+    .map(t => buildGcodeCommand(`M300 S${Math.round(t.freq)} P${Math.round(t.duration)}`));
+}
+
 /** Start AMS tørking — sender tørkeparametre via MQTT. */
 export function buildAmsDryCommand(amsId, tempC, durationMin) {
   return {

@@ -2063,7 +2063,16 @@
     "webhook_name_url_required": "Name and URL are required.",
     "webhook_test_sent": "Test webhook sent!",
     "username_required": "Username is required.",
-    "password_required_new": "Password is required for new users."
+    "password_required_new": "Password is required for new users.",
+    "sound_title": "Sound Notifications",
+    "sound_enable": "Enable sounds",
+    "sound_upload": "Upload custom sound (max 10s, 500KB)",
+    "sound_hint": "Upload custom MP3/OGG/WAV files (max 10 seconds, 500 KB). Click ▶ to test, ♪ to upload.",
+    "sound_unsupported": "Audio not supported in this browser",
+    "buzzer_title": "Printer Speaker",
+    "buzzer_enable": "Play sounds on printer speaker",
+    "buzzer_desc": "Uses M300 G-code to play melodies on the printer's built-in buzzer",
+    "buzzer_test": "Test buzzer"
   },
   "notify": {
     "print": "Print",
@@ -2072,7 +2081,8 @@
     "print_failed": "Print failed",
     "print_failed_body": "{{name}} has failed.",
     "print_started": "Print started",
-    "print_started_body": "{{name}} has started."
+    "print_started_body": "{{name}} has started.",
+    "print_paused": "Print paused"
   },
   "time": {
     "h": "h",

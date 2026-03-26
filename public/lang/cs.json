@@ -1677,7 +1677,16 @@
     "power_avg_w": "Průměrný",
     "power_peak_w": "Špičkový",
     "power_total": "Celkem",
-    "power_readings": "Odečty"
+    "power_readings": "Odečty",
+    "sound_title": "Zvuková upozornění",
+    "sound_enable": "Povolit zvuky",
+    "sound_upload": "Nahrát vlastní zvuk (max 10s, 500KB)",
+    "sound_hint": "Nahrajte soubory MP3/OGG/WAV (max 10 sekund, 500 KB). Klikněte ▶ pro test, ♪ pro nahrání.",
+    "sound_unsupported": "Zvuk není v tomto prohlížeči podporován",
+    "buzzer_title": "Reproduktor tiskárny",
+    "buzzer_enable": "Přehrávat zvuky na reproduktoru tiskárny",
+    "buzzer_desc": "Používá G-code M300 k přehrávání melodií na vestavěném bzučáku tiskárny",
+    "buzzer_test": "Otestovat bzučák"
   },
   "notify": {
     "print": "Tisk",
@@ -1686,7 +1695,8 @@
     "print_failed": "Tisk selhal",
     "print_failed_body": "{{name}} selhal.",
     "print_started": "Tisk zahájen",
-    "print_started_body": "{{name}} byl zahájen."
+    "print_started_body": "{{name}} byl zahájen.",
+    "print_paused": "Tisk pozastaven"
   },
   "time": {
     "h": "h",

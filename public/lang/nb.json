@@ -2063,7 +2063,16 @@
     "webhook_name_url_required": "Navn og URL er påkrevd.",
     "webhook_test_sent": "Test-webhook sendt!",
     "username_required": "Brukernavn er påkrevd.",
-    "password_required_new": "Passord er påkrevd for nye brukere."
+    "password_required_new": "Passord er påkrevd for nye brukere.",
+    "sound_title": "Lydvarsler",
+    "sound_enable": "Aktiver lyder",
+    "sound_upload": "Last opp egen lyd (maks 10s, 500KB)",
+    "sound_hint": "Last opp MP3/OGG/WAV-filer (maks 10 sekunder, 500 KB). Klikk ▶ for å teste, ♪ for å laste opp.",
+    "sound_unsupported": "Lyd støttes ikke i denne nettleseren",
+    "buzzer_title": "Printerhøyttaler",
+    "buzzer_enable": "Spill lyder på printerens høyttaler",
+    "buzzer_desc": "Bruker M300 G-code for å spille melodier på printerens innebygde buzzer",
+    "buzzer_test": "Test buzzer"
   },
   "notify": {
     "print": "Utskrift",
@@ -2072,7 +2081,8 @@
     "print_failed": "Utskrift feilet",
     "print_failed_body": "{{name}} har feilet.",
     "print_started": "Utskrift startet",
-    "print_started_body": "{{name}} er startet."
+    "print_started_body": "{{name}} er startet.",
+    "print_paused": "Print pauset"
   },
   "time": {
     "h": "t",

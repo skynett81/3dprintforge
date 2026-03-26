@@ -25,7 +25,7 @@ import { initPowerMonitor, onPrintStart, onPrintEnd } from './power-monitor.js';
 import { captureMilestone, archivePrintMilestones, setFrameProvider } from './milestone-service.js';
 import { initReportService } from './report-service.js';
 import { FailureDetectionService } from './failure-detection.js';
-import { buildPauseCommand } from './mqtt-commands.js';
+import { buildPauseCommand, buildBuzzerCommands } from './mqtt-commands.js';
 import { initHaDiscovery, onPrinterStateUpdate, shutdownHaDiscovery } from './ha-discovery.js';
 import { initRemoteNodes, shutdownRemoteNodes } from './remote-nodes.js';
 import { MaterialRecommenderService } from './material-recommender.js';
@@ -687,6 +687,17 @@ for (const [id, entry] of manager.printers) {
       if (data.printHistoryId) archivePrintMilestones(id, data.printHistoryId);
       // Recalculate wear predictions after print
       wearPrediction.onPrintEnd(id, data);
+      // Play buzzer melody on printer if enabled
+      try {
+        const buzzerEnabled = getInventorySetting('buzzer_enabled');
+        if (buzzerEnabled === '1' || buzzerEnabled === 'true') {
+          const melody = data.status === 'completed' ? 'print_complete' : 'print_failed';
+          const cmds = buildBuzzerCommands(melody);
+          if (entry.client && cmds.length > 0) {
+            for (const cmd of cmds) entry.client.sendCommand(cmd);
+          }
+        }
+      } catch (e) { log.warn('Buzzer on print end failed', e.message); }
       // Dispatch plugin hook
       pluginManager.dispatch('onPrintEnd', { printerId: id, ...data }).catch(e => log.warn('Plugin onPrintEnd dispatch failed', e.message));
     };

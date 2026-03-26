@@ -1678,7 +1678,16 @@
     "power_avg_w": "Média",
     "power_peak_w": "Pico",
     "power_total": "Total",
-    "power_readings": "Leituras"
+    "power_readings": "Leituras",
+    "sound_title": "Notificações sonoras",
+    "sound_enable": "Ativar sons",
+    "sound_upload": "Enviar som personalizado (máx. 10s, 500KB)",
+    "sound_hint": "Envie arquivos MP3/OGG/WAV (máx. 10 segundos, 500 KB). Clique ▶ para testar, ♪ para enviar.",
+    "sound_unsupported": "Áudio não suportado neste navegador",
+    "buzzer_title": "Alto-falante da impressora",
+    "buzzer_enable": "Reproduzir sons no alto-falante da impressora",
+    "buzzer_desc": "Usa G-code M300 para reproduzir melodias no buzzer integrado da impressora",
+    "buzzer_test": "Testar buzzer"
   },
   "notify": {
     "print": "Impressão",
@@ -1687,7 +1696,8 @@
     "print_failed": "Impressão falhou",
     "print_failed_body": "{{name}} falhou.",
     "print_started": "Impressão iniciada",
-    "print_started_body": "{{name}} foi iniciada."
+    "print_started_body": "{{name}} foi iniciada.",
+    "print_paused": "Impressão pausada"
   },
   "time": {
     "h": "h",

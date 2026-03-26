@@ -1678,7 +1678,16 @@
     "power_avg_w": "平均",
     "power_peak_w": "峰值",
     "power_total": "总计",
-    "power_readings": "读数"
+    "power_readings": "读数",
+    "sound_title": "声音通知",
+    "sound_enable": "启用声音",
+    "sound_upload": "上传自定义声音（最大10秒，500KB）",
+    "sound_hint": "上传 MP3/OGG/WAV 文件（最大10秒，500 KB）。点击 ▶ 测试，♪ 上传。",
+    "sound_unsupported": "此浏览器不支持音频",
+    "buzzer_title": "打印机扬声器",
+    "buzzer_enable": "在打印机扬声器上播放声音",
+    "buzzer_desc": "使用 M300 G代码在打印机内置蜂鸣器上播放旋律",
+    "buzzer_test": "测试蜂鸣器"
   },
   "notify": {
     "print": "打印",
@@ -1687,7 +1696,8 @@
     "print_failed": "打印失败",
     "print_failed_body": "{{name}} 打印失败。",
     "print_started": "打印已开始",
-    "print_started_body": "{{name}} 已开始打印。"
+    "print_started_body": "{{name}} 已开始打印。",
+    "print_paused": "打印已暂停"
   },
   "time": {
     "h": "时",

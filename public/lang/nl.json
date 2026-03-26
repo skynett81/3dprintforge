@@ -1678,7 +1678,16 @@
     "power_avg_w": "Gemiddeld",
     "power_peak_w": "Piek",
     "power_total": "Totaal",
-    "power_readings": "Metingen"
+    "power_readings": "Metingen",
+    "sound_title": "Geluidsmeldingen",
+    "sound_enable": "Geluiden inschakelen",
+    "sound_upload": "Eigen geluid uploaden (max 10s, 500KB)",
+    "sound_hint": "Upload MP3/OGG/WAV-bestanden (max 10 seconden, 500 KB). Klik ▶ om te testen, ♪ om te uploaden.",
+    "sound_unsupported": "Audio wordt niet ondersteund in deze browser",
+    "buzzer_title": "Printer-luidspreker",
+    "buzzer_enable": "Geluiden afspelen op de printer-luidspreker",
+    "buzzer_desc": "Gebruikt M300 G-code om melodieën af te spelen op de ingebouwde buzzer van de printer",
+    "buzzer_test": "Buzzer testen"
   },
   "notify": {
     "print": "Print",
@@ -1687,7 +1696,8 @@
     "print_failed": "Print mislukt",
     "print_failed_body": "{{name}} is mislukt.",
     "print_started": "Print gestart",
-    "print_started_body": "{{name}} is gestart."
+    "print_started_body": "{{name}} is gestart.",
+    "print_paused": "Print gepauzeerd"
   },
   "time": {
     "h": "u",

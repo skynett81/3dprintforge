@@ -1823,7 +1823,16 @@
     "power_avg_w": "Średnia",
     "power_peak_w": "Szczyt",
     "power_total": "Łącznie",
-    "power_readings": "Odczyty"
+    "power_readings": "Odczyty",
+    "sound_title": "Powiadomienia dźwiękowe",
+    "sound_enable": "Włącz dźwięki",
+    "sound_upload": "Prześlij własny dźwięk (maks. 10s, 500KB)",
+    "sound_hint": "Prześlij pliki MP3/OGG/WAV (maks. 10 sekund, 500 KB). Kliknij ▶ aby przetestować, ♪ aby przesłać.",
+    "sound_unsupported": "Dźwięk nie jest obsługiwany w tej przeglądarce",
+    "buzzer_title": "Głośnik drukarki",
+    "buzzer_enable": "Odtwarzaj dźwięki przez głośnik drukarki",
+    "buzzer_desc": "Używa G-code M300 do odtwarzania melodii na wbudowanym buzzerze drukarki",
+    "buzzer_test": "Testuj buzzer"
   },
   "notify": {
     "print": "Druk",
@@ -1832,7 +1841,8 @@
     "print_failed": "Druk nieudany",
     "print_failed_body": "{{name}} zakończył się niepowodzeniem.",
     "print_started": "Druk rozpoczęty",
-    "print_started_body": "{{name}} został rozpoczęty."
+    "print_started_body": "{{name}} został rozpoczęty.",
+    "print_paused": "Druk wstrzymany"
   },
   "time": {
     "h": "godz",

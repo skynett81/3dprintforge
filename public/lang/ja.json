@@ -1678,7 +1678,16 @@
     "power_avg_w": "平均",
     "power_peak_w": "ピーク",
     "power_total": "合計",
-    "power_readings": "読み取り値"
+    "power_readings": "読み取り値",
+    "sound_title": "サウンド通知",
+    "sound_enable": "サウンドを有効にする",
+    "sound_upload": "カスタムサウンドをアップロード（最大10秒、500KB）",
+    "sound_hint": "MP3/OGG/WAVファイルをアップロード（最大10秒、500 KB）。▶ でテスト、♪ でアップロード。",
+    "sound_unsupported": "このブラウザではオーディオがサポートされていません",
+    "buzzer_title": "プリンタースピーカー",
+    "buzzer_enable": "プリンターのスピーカーで音を鳴らす",
+    "buzzer_desc": "M300 Gコードを使用してプリンター内蔵ブザーでメロディーを再生します",
+    "buzzer_test": "ブザーテスト"
   },
   "notify": {
     "print": "印刷",
@@ -1687,7 +1696,8 @@
     "print_failed": "印刷失敗",
     "print_failed_body": "{{name}} が失敗しました。",
     "print_started": "印刷開始",
-    "print_started_body": "{{name}} が開始されました。"
+    "print_started_body": "{{name}} が開始されました。",
+    "print_paused": "印刷一時停止"
   },
   "time": {
     "h": "時",

@@ -6652,6 +6652,26 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true, message: 'Format command sent' });
     }
 
+    // Buzzer — Play melody on printer speaker via M300 G-code
+    const buzzerMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/buzzer$/);
+    if (buzzerMatch && method === 'POST') {
+      return readBody(req, res, async (body) => {
+        const pid = buzzerMatch[1];
+        const printer = _printerManager?.printers?.get(pid);
+        if (!printer?.client) return sendJson(res, { error: 'Printer not connected' }, 400);
+        const { buildBuzzerCommands, BUZZER_MELODIES } = await import('./mqtt-commands.js');
+        const melody = body.melody || null;
+        const tones = body.tones || null;
+        if (melody && !BUZZER_MELODIES[melody] && !tones) {
+          return sendJson(res, { error: 'Unknown melody. Available: ' + Object.keys(BUZZER_MELODIES).join(', ') }, 400);
+        }
+        const cmds = buildBuzzerCommands(melody, tones);
+        if (cmds.length === 0) return sendJson(res, { error: 'No valid tones provided' }, 400);
+        for (const cmd of cmds) printer.client.sendCommand(cmd);
+        return sendJson(res, { ok: true, message: 'Buzzer command sent', tones: cmds.length });
+      });
+    }
+
     // Bed Mesh — Trigger calibration via G-code
     const bedMeshCalMatch = path.match(/^\/api\/printers\/([^/]+)\/bed-mesh\/calibrate$/);
     if (bedMeshCalMatch && method === 'POST') {
