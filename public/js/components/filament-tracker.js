@@ -1290,6 +1290,15 @@
 
     document.body.appendChild(overlay);
 
+    // Render material info card (from filament-materials reference DB)
+    if (s.material && typeof window.renderMaterialInfo === 'function') {
+      const matInfoDiv = document.createElement('div');
+      matInfoDiv.id = 'mat-info-' + s.id;
+      const actionsDiv = overlay.querySelector('.spool-detail-actions');
+      if (actionsDiv) actionsDiv.insertAdjacentElement('beforebegin', matInfoDiv);
+      window.renderMaterialInfo(matInfoDiv, s.material);
+    }
+
     // Async: load plate compatibility from KB for this material
     if (s.material) {
       fetch('/api/kb/filaments?material=' + encodeURIComponent(s.material))

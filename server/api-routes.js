@@ -25,6 +25,7 @@ import { readFileSync as _readPkg } from 'node:fs';
 import { createLogger } from './logger.js';
 import { withBreaker, getAllBreakerStatus } from './circuit-breaker.js';
 import { validate } from './validate.js';
+import * as _filamentMaterials from './filament-materials.js';
 const log = createLogger('api');
 
 // ---- Validation schemas ----
@@ -6269,6 +6270,22 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/courses/user-progress') {
       const userId = parseInt(url.searchParams.get('user_id') || '0');
       return sendJson(res, getUserCourseProgress(userId));
+    }
+
+    // ---- Filament Materials Reference ----
+    if (method === 'GET' && path === '/api/filament-materials') {
+      const category = url.searchParams.get('category') || null;
+      const materials = category
+        ? _filamentMaterials.getMaterialsByCategory(category)
+        : _filamentMaterials.getAllMaterials();
+      return sendJson(res, materials);
+    }
+    const filMatMatch = path.match(/^\/api\/filament-materials\/([a-z0-9-]+)$/);
+    if (filMatMatch && method === 'GET') {
+      const mat = _filamentMaterials.getMaterialById(filMatMatch[1])
+        || _filamentMaterials.getMaterialByName(filMatMatch[1]);
+      if (!mat) return sendJson(res, { error: 'Material not found' }, 404);
+      return sendJson(res, mat);
     }
 
     // ---- Knowledge Base ----
