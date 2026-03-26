@@ -4,6 +4,44 @@ All notable changes to Bambu Dashboard.
 
 ---
 
+## v1.1.13 — Filament Tracking Accuracy & Complete i18n (2026-03-26)
+
+### Filament Tracking
+- Consistent `Math.min(AMS sensor, spool database)` across all filament displays (filament-ring, active-filament, filament-tracker, multicolor-panel, ams-panel)
+- EXT spool detection for P2S/A1 AMS Lite via MQTT `mapping` field (firmware doesn't report `vt_tray`)
+- 4-tier filament tracking fallback: AMS diff → EXT direct → cloud estimate → duration estimate
+- Cloud estimate fetched at both print start and end (fixes server restart race condition)
+- Waste double-counting fix for failed/cancelled prints
+- Cost calculation properly handles failed prints without double-counting
+- Waste statistics now include filament from failed prints
+
+### AMS & Dashboard
+- LIVE badge with pulse animation on filament card
+- Data source indicator showing AMS sensor vs database values
+- EXT spool shown correctly in filament ring, active filament panel, and AMS panel
+- `_getActiveFilament()` correctly reads EXT spool data from inventory instead of AMS tray 0
+
+### Maintenance Panel
+- New nozzle types: Brass (standard), HS01 (Bambu) with correct lifespans from knowledge base
+- New components: Z-axis, linear bearings, AMS, AMS sensors, filament drying
+- New actions: dried, calibrated
+- New "Guide" tab with maintenance cards linking to `/docs/kb/vedlikehold/`
+- Recommended intervals table aligned with KB documentation
+- Nozzle lifespan table (brass 200–500h, hardened steel 300–600h, HS01 500–1000h)
+- Build plate lifespan table (Cool, Engineering, High Temp, Textured PEI)
+
+### Internationalization
+- Complete i18n: all 17 languages now have 100% coverage (2,944 keys each)
+- 1,174+ missing keys translated per language across 45+ sections
+- Languages: nb, en, de, fr, es, it, ja, ko, nl, pl, pt-BR, sv, tr, uk, zh-CN, cs, hu
+- Fixed broken placeholder in Polish, empty values in Japanese/Korean/Turkish/Hungarian
+
+### Other
+- Ko-fi donation button in dashboard sidebar and documentation
+- Service worker cache versioning (v17→v25)
+
+---
+
 ## v1.1.12 — Modular Architecture, Documentation & E-Commerce (2026-03-22)
 
 ### Modular Architecture
