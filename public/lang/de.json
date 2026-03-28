@@ -2439,7 +2439,8 @@
     "delete": "Löschen",
     "unknown": "Unbekannt",
     "settings": "Berechnungseinstellungen",
-    "rate_info": "Strompreis: {{rate}} /kWh, Druckerleistung: {{wattage}}W"
+    "rate_info": "Strompreis: {{rate}} /kWh, Druckerleistung: {{wattage}}W",
+    "color_changes": "Farbwechsel"
   },
   "fleet": {
     "printing": "Druckt",

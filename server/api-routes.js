@@ -2061,13 +2061,17 @@ export async function handleApiRequest(req, res) {
           const printerId = body.printer_id || null;
           const spoolIds = body.spool_ids || [];
           const estimatedTimeMin = body.estimated_time_min || 0;
+          const colorChanges = body.color_changes || 0;
+          const changeTimeSec = body.change_time_s || 0;
           const wattageOverride = body.wattage || null;
 
           const cs = getPrinterCostSettings(printerId);
           const wattage = wattageOverride || cs.printer_wattage || 150;
           const electricityRate = cs.electricity_rate_kwh || 0;
           const currency = getInventorySetting('cost_currency') || 'NOK';
-          const durationH = estimatedTimeMin / 60;
+          // Add color change time if not already included in slicer estimate
+          const changeTimeMin = Math.round(changeTimeSec / 60);
+          const durationH = (estimatedTimeMin + changeTimeMin) / 60;
 
           // Calculate filament cost per color/spool
           let totalFilamentCost = 0;

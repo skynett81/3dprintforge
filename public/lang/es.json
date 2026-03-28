@@ -2439,7 +2439,8 @@
     "delete": "Eliminar",
     "unknown": "Desconocido",
     "settings": "Configuración de cálculo",
-    "rate_info": "Tarifa eléctrica: {{rate}} /kWh, Potencia impresora: {{wattage}}W"
+    "rate_info": "Tarifa eléctrica: {{rate}} /kWh, Potencia impresora: {{wattage}}W",
+    "color_changes": "Cambios de color"
   },
   "fleet": {
     "printing": "Imprimiendo",

@@ -2438,7 +2438,8 @@
     "delete": "Törlés",
     "unknown": "Ismeretlen",
     "settings": "Számítási beállítások",
-    "rate_info": "Villamosenergia-ár: {{rate}} kr/kWh, Nyomtató teljesítménye: {{wattage}} W"
+    "rate_info": "Villamosenergia-ár: {{rate}} kr/kWh, Nyomtató teljesítménye: {{wattage}} W",
+    "color_changes": "Színváltások"
   },
   "fleet": {
     "printing": "Nyomtat",

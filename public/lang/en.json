@@ -1026,7 +1026,8 @@
     "delete": "Delete",
     "unknown": "Unknown",
     "settings": "Calculation settings",
-    "rate_info": "Electricity rate: {{rate}} /kWh, Printer power: {{wattage}}W"
+    "rate_info": "Electricity rate: {{rate}} /kWh, Printer power: {{wattage}}W",
+    "color_changes": "Color changes"
   },
   "fleet": {
     "printing": "Printing",

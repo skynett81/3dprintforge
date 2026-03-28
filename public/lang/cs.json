@@ -2438,7 +2438,8 @@
     "delete": "Smazat",
     "unknown": "Neznámý",
     "settings": "Nastavení výpočtu",
-    "rate_info": "Cena elektřiny: {{rate}} kr/kWh, Příkon tiskárny: {{wattage}} W"
+    "rate_info": "Cena elektřiny: {{rate}} kr/kWh, Příkon tiskárny: {{wattage}} W",
+    "color_changes": "Změny barev"
   },
   "fleet": {
     "printing": "Tiskne",

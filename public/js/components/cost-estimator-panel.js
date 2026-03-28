@@ -185,9 +185,13 @@
             <span class="spark-label">${_tl('cost_estimator.total_weight', 'Vekt')}</span>
             <span class="spark-value">${_fileData.total_weight_g ? _fileData.total_weight_g.toFixed(1) + ' g' : '--'}</span>
           </div>
-          <div class="spark-panel" style="border-right:none">
+          <div class="spark-panel">
             <span class="spark-label">${_tl('cost_estimator.colors', 'Farger')}</span>
             <span class="spark-value">${filaments.length}</span>
+          </div>
+          <div class="spark-panel" style="border-right:none">
+            <span class="spark-label">${_tl('cost_estimator.color_changes', 'Filamentbytter')}</span>
+            <span class="spark-value">${filaments.length > 1 ? '~' + _fileData._estimated_changes + 'x' : '0'}</span>
           </div>
         </div>`;
 

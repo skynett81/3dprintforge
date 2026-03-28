@@ -1026,7 +1026,8 @@
     "delete": "Slett",
     "unknown": "Ukjent",
     "settings": "Beregningsinnstillinger",
-    "rate_info": "Strømpris: {{rate}} kr/kWh, Printereffekt: {{wattage}}W"
+    "rate_info": "Strømpris: {{rate}} kr/kWh, Printereffekt: {{wattage}}W",
+    "color_changes": "Filamentbytter"
   },
   "fleet": {
     "printing": "Skriver ut",

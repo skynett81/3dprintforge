@@ -2439,7 +2439,8 @@
     "delete": "Verwijderen",
     "unknown": "Onbekend",
     "settings": "Berekeningsinstellingen",
-    "rate_info": "Elektriciteitstarief: {{rate}} /kWh, Printervermogen: {{wattage}}W"
+    "rate_info": "Elektriciteitstarief: {{rate}} /kWh, Printervermogen: {{wattage}}W",
+    "color_changes": "Kleurwisselingen"
   },
   "fleet": {
     "printing": "Bezig met afdrukken",

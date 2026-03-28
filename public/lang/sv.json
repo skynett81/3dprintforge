@@ -2439,7 +2439,8 @@
     "delete": "Ta bort",
     "unknown": "Okänd",
     "settings": "Beräkningsinställningar",
-    "rate_info": "Elpris: {{rate}} kr/kWh, Skrivareffekt: {{wattage}}W"
+    "rate_info": "Elpris: {{rate}} kr/kWh, Skrivareffekt: {{wattage}}W",
+    "color_changes": "Färgbyten"
   },
   "fleet": {
     "printing": "Skriver ut",

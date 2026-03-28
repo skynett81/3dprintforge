@@ -2439,7 +2439,8 @@
     "delete": "Sil",
     "unknown": "Bilinmiyor",
     "settings": "Hesaplama Ayarları",
-    "rate_info": "Elektrik tarihi: {{rate}} kr/kWh, Yazıcı gücü: {{wattage}}W"
+    "rate_info": "Elektrik tarihi: {{rate}} kr/kWh, Yazıcı gücü: {{wattage}}W",
+    "color_changes": "Renk değişimi"
   },
   "fleet": {
     "printing": "Yazdırılıyor",

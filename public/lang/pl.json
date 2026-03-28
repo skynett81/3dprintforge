@@ -2765,7 +2765,8 @@
     "delete": "Usuń",
     "unknown": "Nieznany",
     "settings": "Ustawienia kalkulacji",
-    "rate_info": "Stawka za energię: {{rate}} /kWh, Moc drukarki: {{wattage}}W"
+    "rate_info": "Stawka za energię: {{rate}} /kWh, Moc drukarki: {{wattage}}W",
+    "color_changes": "Zmiany koloru"
   },
   "fleet": {
     "printing": "Drukowanie",

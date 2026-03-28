@@ -2439,7 +2439,8 @@
     "delete": "삭제",
     "unknown": "알 수 없음",
     "settings": "계산 설정",
-    "rate_info": "전기 요금: {{rate}} kr/kWh, 프린터 소비 전력: {{wattage}}W"
+    "rate_info": "전기 요금: {{rate}} kr/kWh, 프린터 소비 전력: {{wattage}}W",
+    "color_changes": "색상 변경"
   },
   "fleet": {
     "printing": "인쇄 중",

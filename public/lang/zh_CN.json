@@ -2439,7 +2439,8 @@
     "delete": "删除",
     "unknown": "未知",
     "settings": "计算设置",
-    "rate_info": "电价：{{rate}} kr/kWh，打印机功率：{{wattage}}W"
+    "rate_info": "电价：{{rate}} kr/kWh，打印机功率：{{wattage}}W",
+    "color_changes": "换色次数"
   },
   "fleet": {
     "printing": "打印中",

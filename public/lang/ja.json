@@ -2439,7 +2439,8 @@
     "delete": "削除",
     "unknown": "不明",
     "settings": "計算設定",
-    "rate_info": "電力料金: {{rate}} kr/kWh、プリンター消費電力: {{wattage}}W"
+    "rate_info": "電力料金: {{rate}} kr/kWh、プリンター消費電力: {{wattage}}W",
+    "color_changes": "カラーチェンジ"
   },
   "fleet": {
     "printing": "印刷中",

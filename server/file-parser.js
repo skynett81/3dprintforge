@@ -107,6 +107,23 @@ export function parse3mf(buffer) {
   }
 
   result.total_weight_g = result.filaments.reduce((sum, f) => sum + (f.weight_g || 0), 0);
+
+  // Estimate color/tool changes for multi-color prints
+  if (result.filaments.length > 1) {
+    let toolChanges = 0;
+    for (const entry of entries) {
+      if (entry.name.match(/\.gcode$/i)) {
+        const matches = entry.data.match(/^T\d+$/gm);
+        if (matches) toolChanges = Math.max(toolChanges, matches.length);
+      }
+    }
+    result._estimated_changes = toolChanges || (result.filaments.length - 1);
+    result._change_time_s = toolChanges > 0 ? toolChanges * 35 : 0;
+  } else {
+    result._estimated_changes = 0;
+    result._change_time_s = 0;
+  }
+
   return result;
 }
 
