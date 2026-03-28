@@ -86,9 +86,10 @@
         const remainG = linkedSpool ? linkedSpool.remaining_weight_g : (totalG ? totalG * (baseRemain / 100) : null);
         if (remainG !== null && totalG > 0) {
           const consumedG = Math.round(est.weight_g * pct / 100);
-          // remainG may already be reduced by server sync (syncAmsToSpool).
-          // Reconstruct start-of-print weight to avoid double subtraction.
-          const startOfPrintG = Math.min(totalG, remainG + consumedG);
+          // For AMS: remainG syncs during print → reconstruct start = remainG + consumed
+          // For EXT (no sync): remainG is fixed at start value → use directly
+          const _isExtM = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
+          const startOfPrintG = _isExtM ? Math.min(totalG, remainG) : Math.min(totalG, remainG + consumedG);
           const currentRemainG = Math.max(0, startOfPrintG - consumedG);
           const afterPrintG = Math.max(0, startOfPrintG - est.weight_g);
           return {
@@ -220,10 +221,13 @@
     const container = document.getElementById('filament-ring');
     if (!container) return;
 
-    // Skip if data hasn't changed (avoid flicker)
-    const fp = _fingerprint(data);
-    if (fp === _lastFp) return;
-    _lastFp = fp;
+    // Skip if data hasn't changed (avoid flicker) — but always render during printing
+    const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
+    if (!isPrinting) {
+      const fp = _fingerprint(data);
+      if (fp === _lastFp) return;
+      _lastFp = fp;
+    }
 
     const ams = data.ams;
     if (!ams || !ams.ams || !ams.ams.length) {

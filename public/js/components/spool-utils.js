@@ -148,10 +148,14 @@
       if (isPrinting && est && est.weight_g > 0) {
         const pct = data.mc_percent || 0;
         const consumedG = Math.round(est.weight_g * pct / 100);
-        // remainG may already be reduced by syncAmsToSpool (DB syncs tray.remain
-        // during printing). To avoid double-subtraction, reconstruct the weight
-        // at the START of this print by adding back what has been consumed so far.
-        const startOfPrintG = Math.min(totalG, remainG + consumedG);
+        // For AMS trays: remainG is continuously synced during printing (decreasing),
+        // so we reconstruct start weight: startOfPrintG = remainG + consumedG
+        // For EXT (no AMS sync): remainG is fixed at print-start value,
+        // so we use it directly as start weight
+        const _isExtMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
+        const startOfPrintG = _isExtMapping
+          ? Math.min(totalG, remainG)  // EXT: remainG IS the start value (not synced during print)
+          : Math.min(totalG, remainG + consumedG);  // AMS: reconstruct start from synced value
         const currentRemainG = Math.max(0, startOfPrintG - consumedG);
         const afterPrintG = Math.max(0, startOfPrintG - est.weight_g);
         return {
