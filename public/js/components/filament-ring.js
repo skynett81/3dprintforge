@@ -35,7 +35,8 @@
     const _m = data.mapping;
     const _isExt = Array.isArray(_m) && _m.length > 0 && ((_m[0] >> 8) & 0xFF) === 0xFF;
     const activeIdx = _isExt ? 254 : (ams.tray_now != null ? parseInt(ams.tray_now) : -1);
-    let fp = String(activeIdx) + '_' + (data.mc_percent || 0);
+    const _estKey = window._printEstimates ? String(window._printEstimates.weight_g) : '0';
+    let fp = String(activeIdx) + '_' + (data.mc_percent || 0) + '_e' + _estKey;
     for (let u = 0; u < ams.ams.length; u++) {
       const unit = ams.ams[u];
       if (unit.tray) {

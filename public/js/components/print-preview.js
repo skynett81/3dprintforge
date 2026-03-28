@@ -226,6 +226,13 @@
             filament_type: match.filament_type || null,
             title: match.title || match.name || subtask
           };
+          // Trigger re-render of filament displays with new estimates
+          const _state = window.printerState?.getActivePrinterState?.();
+          if (_state) {
+            const _pd = _state.print || _state;
+            if (typeof updateFilamentRing === 'function') updateFilamentRing(_pd);
+            if (typeof updateActiveFilament === 'function') updateActiveFilament(_pd);
+          }
         }
       }).catch(() => {});
     }
