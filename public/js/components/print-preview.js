@@ -211,6 +211,24 @@
     } else {
       _loadModel(printerId, canvas, data);
     }
+
+    // Fallback: if no MakerWorld data, try cloud task history for print estimates
+    if (!window._printEstimates && subtask) {
+      fetch('/api/bambu-cloud/tasks').then(r => r.ok ? r.json() : null).then(tasks => {
+        if (!tasks || window._printEstimates) return;
+        const list = Array.isArray(tasks) ? tasks : (tasks.tasks || []);
+        // Match by filename
+        const match = list.find(t => (t.title || t.name || '') === subtask);
+        if (match && (match.weight || match.costTime)) {
+          window._printEstimates = {
+            weight_g: match.weight || 0,
+            time_s: match.costTime || 0,
+            filament_type: match.filament_type || null,
+            title: match.title || match.name || subtask
+          };
+        }
+      }).catch(() => {});
+    }
   };
 
   function _loadModel(printerId, canvas, data) {
