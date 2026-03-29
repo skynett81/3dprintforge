@@ -317,27 +317,40 @@
       html += '</div>';
     }
 
-    // All trays — same visual style as AMS panel (large spools in grid)
+    // All trays — large spools with full info
     html += '<div class="fr-spools-grid">';
     for (const entry of trays) {
-      const c = parseColor(entry.tray.tray_color);
+      const tr = entry.tray;
+      const c = parseColor(tr.tray_color);
       const isAct = entry.globalIdx === activeIdx || (activeIdx >= 254 && entry.isExternal);
-      const info = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isAct, data);
-      const tBrand = entry.tray.tray_sub_brands || '';
-      const tType = entry.tray.tray_type || '?';
-      const slotLabel = entry.isExternal ? 'Ext' : `A${entry.trayIdx + 1}`;
+      const info = _getTrayPercent(tr, entry.unitIdx, entry.trayIdx, isAct, data);
+      const brand = tr.tray_sub_brands || '';
+      const tType = tr.tray_type || '?';
+      const slotLabel = entry.isExternal ? 'EXT' : `A${entry.trayIdx + 1}`;
       const weightG = info.currentG != null ? info.currentG + 'g' : '';
+      const totalG = tr.tray_weight ? parseInt(tr.tray_weight) + 'g' : '';
+      const nozzleRange = (tr.nozzle_temp_min && tr.nozzle_temp_max) ? tr.nozzle_temp_min + '-' + tr.nozzle_temp_max + '°C' : '';
+      const hasRfid = !!(tr.tag_uid || tr.tray_uuid);
+      const colorName = getColorName(c);
+      const idName = tr.tray_id_name || '';
 
-      html += `<div class="fr-spool-item${isAct ? ' fr-spool-active' : ''}">`;
+      // Warn if low
+      const isLow = info.current <= 10;
+      const isCritical = info.current <= 5;
+      let warnClass = isCritical ? ' fr-spool-critical' : isLow ? ' fr-spool-low' : '';
+
+      html += `<div class="fr-spool-item${isAct ? ' fr-spool-active' : ''}${warnClass}">`;
       html += `<div class="fr-spool-ring">${_spoolVisual(c, info.current, 'fr-' + entry.globalIdx)}</div>`;
       html += `<div class="fr-spool-overlay"><span class="fr-spool-pct">${info.current}%</span></div>`;
       html += `<div class="fr-spool-meta">`;
-      html += `<span class="fr-spool-type">${tType}</span>`;
-      html += `<span class="fr-spool-weight">${weightG}</span>`;
-      html += `<span class="fr-spool-slot">${slotLabel}</span>`;
+      html += `<span class="fr-spool-brand">${brand || tType}</span>`;
+      html += `<span class="fr-spool-weight-row">${weightG}${totalG ? ' / ' + totalG : ''}</span>`;
+      html += `<span class="fr-spool-slot">${slotLabel}${colorName ? ' · ' + colorName : ''}</span>`;
+      if (nozzleRange) html += `<span class="fr-spool-temp">${nozzleRange}</span>`;
+      if (hasRfid) html += `<span class="fr-spool-rfid" title="RFID${idName ? ': ' + idName : ''}">📡</span>`;
       html += `</div>`;
       if (isAct && info.isPrinting && info.afterPrint != null) {
-        html += `<div class="fr-spool-after">→${info.afterPrint}%</div>`;
+        html += `<div class="fr-spool-after">→ ${info.afterPrint}% (${info.afterPrintG}g)</div>`;
       }
       html += '</div>';
     }
