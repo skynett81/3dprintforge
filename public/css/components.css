@@ -1143,7 +1143,7 @@
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: start;
-  padding: 12px 16px 8px;
+  padding: 8px 12px 6px;
   gap: 0;
 }
 
@@ -12579,7 +12579,7 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 /* ═══ Filament Ring Chart Widget ═══ */
 .filament-ring-card {
   text-align: center;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12588,9 +12588,9 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 }
 .filament-ring-main {
   position: relative;
-  width: clamp(100px, 55cqi, 200px);
+  width: clamp(90px, 45cqi, 170px);
   aspect-ratio: 1;
-  margin: 0 auto 8px;
+  margin: 0 auto 6px;
 }
 .filament-ring-main .spool-svg {
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
