@@ -298,84 +298,50 @@
 
     let html = '<div class="card-title">Filament <span class="ams-live-badge" title="Live data fra AMS via MQTT">LIVE</span></div>';
 
-    // Horizontal layout: spool on left, info on right
-    html += '<div class="fr-layout">';
-
-    // Left: main spool visual
-    html += '<div class="fr-spool-col">';
-    html += '<div class="filament-ring-main">';
-    html += _spoolVisual(activeColor, activeInfo.current, 'fr-main');
-    html += '<div class="filament-ring-overlay">';
-    html += `<span class="filament-ring-percent">${activeInfo.current}%</span>`;
-    html += '</div></div>';
-    html += '</div>';
-
-    // Right: info panel
-    html += '<div class="fr-info-col">';
-
-    // Filament identity
-    html += '<div class="filament-ring-identity">';
-    html += `<span class="filament-ring-brand">${displayName}</span>`;
+    // Active spool info bar
+    html += '<div class="fr-active-bar">';
+    html += `<div class="fr-active-dot" style="background:${activeColor}"></div>`;
+    html += `<span class="fr-active-name">${displayName}</span>`;
     if (showType) html += `<span class="filament-ring-type-badge">${activeType}</span>`;
+    html += `<span class="fr-active-slot">${activeEntry.isExternal ? 'EXT' : `AMS${amsNum}:${slotNum}`}</span>`;
+    if (activeInfo.currentG != null) html += `<span class="fr-active-weight">${activeInfo.currentG}g</span>`;
     html += '</div>';
 
-    // Details: color · weight · slot
-    html += '<div class="filament-ring-info">';
-    if (colorName) html += `<span>${colorName}</span>`;
-    if (activeInfo.currentG != null) html += `<span>${activeInfo.currentG}g</span>`;
-    html += `<span>${activeEntry.isExternal ? 'EXT' : `AMS${amsNum} S${slotNum}`}</span>`;
-    html += '</div>';
-
-    // Print usage stats — always visible when printing
+    // Print stats bar (when printing)
     if (activeInfo.isPrinting) {
-      html += '<div class="filament-ring-stats">';
-      html += `<div class="filament-ring-stat-row"><span class="filament-ring-stat-label">${t('filament.after_print') || 'After print'}</span><span class="filament-ring-stat-value">${activeInfo.afterPrint}% · ${activeInfo.afterPrintG}g</span></div>`;
-      html += `<div class="filament-ring-stat-row"><span class="filament-ring-stat-label">${t('filament.usage') || 'Usage'}</span><span class="filament-ring-stat-value">${activeInfo.usedG}g / ${activeInfo.totalPrintG}g</span></div>`;
-      // Progress bar for filament consumption
       const usePct = activeInfo.totalPrintG > 0 ? Math.round(activeInfo.usedG / activeInfo.totalPrintG * 100) : 0;
+      html += '<div class="fr-print-stats">';
+      html += `<span>${t('filament.usage') || 'Usage'}: ${activeInfo.usedG}g / ${activeInfo.totalPrintG}g</span>`;
+      html += `<span>${t('filament.after_print') || 'After'}: ${activeInfo.afterPrint}% (${activeInfo.afterPrintG}g)</span>`;
       html += `<div class="fr-usage-bar"><div class="fr-usage-bar-fill" style="width:${usePct}%;background:${activeColor}"></div></div>`;
       html += '</div>';
-    } else {
-      // Not printing — show total weight info
-      if (activeInfo.totalG > 0) {
-        html += `<div class="filament-ring-stats">`;
-        html += `<div class="filament-ring-stat-row"><span class="filament-ring-stat-label">${t('filament.remaining') || 'Remaining'}</span><span class="filament-ring-stat-value">${activeInfo.currentG || 0}g / ${activeInfo.totalG}g</span></div>`;
-        html += '</div>';
-      }
     }
 
-    // Data source
-    const _srcAmsPct = (activeTray.remain >= 0 && activeTray.remain <= 100) ? Math.round(activeTray.remain) : null;
-    const _srcLinked = window.getLinkedSpool?.(window.printerState?.getActivePrinterId?.(), activeEntry.unitIdx, activeEntry.trayIdx);
-    const _srcDbPct = (_srcLinked && _srcLinked.initial_weight_g > 0 && _srcLinked.remaining_weight_g >= 0)
-      ? Math.max(0, Math.round((_srcLinked.remaining_weight_g / _srcLinked.initial_weight_g) * 100)) : null;
-    if (_srcAmsPct !== null || _srcDbPct !== null) {
-      const parts = [];
-      if (_srcAmsPct !== null) parts.push('AMS: ' + _srcAmsPct + '%');
-      if (_srcDbPct !== null) parts.push('DB: ' + _srcDbPct + '%');
-      html += `<div class="filament-ring-source">${parts.join(' · ')}</div>`;
-    }
+    // All trays — same visual style as AMS panel (large spools in grid)
+    html += '<div class="fr-spools-grid">';
+    for (const entry of trays) {
+      const c = parseColor(entry.tray.tray_color);
+      const isAct = entry.globalIdx === activeIdx || (activeIdx >= 254 && entry.isExternal);
+      const info = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isAct, data);
+      const tBrand = entry.tray.tray_sub_brands || '';
+      const tType = entry.tray.tray_type || '?';
+      const slotLabel = entry.isExternal ? 'Ext' : `A${entry.trayIdx + 1}`;
+      const weightG = info.currentG != null ? info.currentG + 'g' : '';
 
-    html += '</div>'; // end fr-info-col
-    html += '</div>'; // end fr-layout
-
-    // Tray grid — compact row
-    if (trays.length > 1) {
-      html += '<div class="filament-ring-trays">';
-      for (const entry of trays) {
-        const c = parseColor(entry.tray.tray_color);
-        const isAct = entry.globalIdx === activeIdx || (activeIdx >= 254 && entry.isExternal);
-        const info = _getTrayPercent(entry.tray, entry.unitIdx, entry.trayIdx, isAct, data);
-        html += `<div class="filament-ring-tray${isAct ? ' filament-ring-tray-active' : ''}">`;
-        html += `<div class="filament-ring-tray-spool">${_miniSpool(c, info.current)}</div>`;
-        html += `<div class="filament-ring-tray-pct">${info.current}%</div>`;
-        if (isAct && info.isPrinting && info.afterPrint != null) {
-          html += `<div class="filament-ring-tray-after">↓${info.afterPrint}%</div>`;
-        }
-        html += '</div>';
+      html += `<div class="fr-spool-item${isAct ? ' fr-spool-active' : ''}">`;
+      html += `<div class="fr-spool-ring">${_spoolVisual(c, info.current, 'fr-' + entry.globalIdx)}</div>`;
+      html += `<div class="fr-spool-overlay"><span class="fr-spool-pct">${info.current}%</span></div>`;
+      html += `<div class="fr-spool-meta">`;
+      html += `<span class="fr-spool-type">${tType}</span>`;
+      html += `<span class="fr-spool-weight">${weightG}</span>`;
+      html += `<span class="fr-spool-slot">${slotLabel}</span>`;
+      html += `</div>`;
+      if (isAct && info.isPrinting && info.afterPrint != null) {
+        html += `<div class="fr-spool-after">→${info.afterPrint}%</div>`;
       }
       html += '</div>';
     }
+    html += '</div>'; // end fr-spools-grid
 
     container.innerHTML = html;
 
