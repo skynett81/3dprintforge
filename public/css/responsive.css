@@ -47,7 +47,7 @@
     width: 260px;
     min-width: 260px;
     z-index: 200;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
   }
 
   .sidebar.open {
