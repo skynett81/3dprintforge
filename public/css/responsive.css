@@ -1,3 +1,9 @@
+/* ============================================================
+ * responsive.css — Responsive overrides
+ * AdminLTE handles sidebar collapse. We only adjust
+ * dashboard grid, stats strip, and app-specific components.
+ * ============================================================ */
+
 /* ---- Tablet (<=1024px) ---- */
 @media (max-width: 1024px) {
   .dashboard {
@@ -36,29 +42,6 @@
   .panel-content-body { padding: 14px; }
 }
 
-/* ---- Mobile (<=768px) — sidebar collapses ---- */
-@media (max-width: 768px) {
-  .hamburger-btn {
-    display: flex;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-    width: 260px;
-    min-width: 260px;
-    z-index: 200;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .main-wrapper {
-    margin-left: 0;
-  }
-}
-
 /* ---- Small mobile (<=640px) ---- */
 @media (max-width: 640px) {
   .dashboard {
@@ -69,13 +52,6 @@
 
   #progress-card { min-height: 380px; }
   .print-viewport { min-height: 280px; }
-  .card { padding: 16px; }
-
-  .header {
-    padding: 8px 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
 
   .printer-selector {
     order: 3;
@@ -93,7 +69,7 @@
   .ams-cards-row { grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .ams-visual-area { grid-template-columns: 1fr; padding: 10px 12px 6px; }
   .ams-divider { display: none; }
-  .ams-ext-section { border-top: 1px solid var(--border-color); padding-top: 10px; width: 100%; min-width: auto; justify-content: center; }
+  .ams-ext-section { border-top: 1px solid var(--bs-border-color, var(--border-color)); padding-top: 10px; width: 100%; min-width: auto; justify-content: center; }
   .stats-strip { flex-wrap: wrap; }
   .spark-panel { min-width: 90px; flex: 1 1 calc(33% - 1px); }
   .speed-buttons { flex-wrap: wrap; }
@@ -111,18 +87,25 @@
 
   .panel-content-body { padding: 12px; }
   .panel-content-header { padding: 8px 12px; }
-
-  .sidebar { width: 240px; min-width: 240px; }
 }
 
-/* ---- Responsive Tables → Card Layout ---- */
+/* ---- Mobile sidebar toggle (bridges custom JS .open class to AdminLTE) ---- */
+@media (max-width: 991.98px) {
+  /* When JS adds .open to the sidebar, make it visible */
+  .app-sidebar.open {
+    transform: translateX(0) !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* ---- Responsive Tables -> Card Layout ---- */
 @media (max-width: 768px) {
   .resp-table { border: none; }
   .resp-table thead { display: none; }
   .resp-table tbody tr {
     display: block;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: var(--bs-body-bg, var(--bg-card));
+    border: 1px solid var(--bs-border-color, var(--border-color));
     border-radius: var(--radius);
     margin-bottom: 8px;
     padding: 12px;
@@ -146,17 +129,17 @@
     font-weight: 600;
     font-size: 0.85rem;
     padding-bottom: 6px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bs-border-color, var(--border-color));
     margin-bottom: 4px;
   }
 }
 
-/* ---- History List → Card Layout on mobile ---- */
+/* ---- History List -> Card Layout on mobile ---- */
 @media (max-width: 768px) {
   .ph-list .ph-list-row {
     display: block;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: var(--bs-body-bg, var(--bg-card));
+    border: 1px solid var(--bs-border-color, var(--border-color));
     border-radius: var(--radius);
     margin-bottom: 8px;
     padding: 12px;
@@ -179,7 +162,7 @@
     font-weight: 600;
     font-size: 0.85rem;
     padding-bottom: 6px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bs-border-color, var(--border-color));
     margin-bottom: 4px;
   }
 }

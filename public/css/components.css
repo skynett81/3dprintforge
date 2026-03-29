@@ -9476,31 +9476,27 @@ html[data-theme="light"] .ix-ripple {
 }
 
 /* ---- Sidebar Collapse (Desktop) ---- */
-.sidebar {
+.app-sidebar {
   transition: width 0.15s ease,
               min-width 0.15s ease,
               transform 0.15s ease;
 }
 
-.main-wrapper {
-  transition: margin-left 0.15s ease;
-}
-
-.sidebar.collapsed {
+.app-sidebar.collapsed {
   width: 70px;
   min-width: 70px;
 }
 
-.sidebar.collapsed .sidebar-title,
-.sidebar.collapsed .sidebar-by,
-.sidebar.collapsed .sidebar-btn span,
-.sidebar.collapsed .sidebar-section-toggle,
-.sidebar.collapsed .sidebar-status-title,
-.sidebar.collapsed .sidebar-credits,
-.sidebar.collapsed .sidebar-version,
-.sidebar.collapsed .sidebar-links,
-.sidebar.collapsed #pwa-install-btn span,
-.sidebar.collapsed #sidebar-status-content {
+.app-sidebar.collapsed .sidebar-title,
+.app-sidebar.collapsed .sidebar-by,
+.app-sidebar.collapsed .sidebar-btn span,
+.app-sidebar.collapsed .sidebar-section-toggle,
+.app-sidebar.collapsed .sidebar-status-title,
+.app-sidebar.collapsed .sidebar-credits,
+.app-sidebar.collapsed .sidebar-version,
+.app-sidebar.collapsed .sidebar-links,
+.app-sidebar.collapsed #pwa-install-btn span,
+.app-sidebar.collapsed #sidebar-status-content {
   opacity: 0;
   width: 0;
   overflow: hidden;
@@ -9508,7 +9504,7 @@ html[data-theme="light"] .ix-ripple {
   transition: opacity 0.2s, width 0.2s;
 }
 
-.sidebar.collapsed .sidebar-section.collapsed .sidebar-section-items {
+.app-sidebar.collapsed .sidebar-section.collapsed .sidebar-section-items {
   max-height: 500px;
   opacity: 1;
   pointer-events: auto;
@@ -9516,38 +9512,30 @@ html[data-theme="light"] .ix-ripple {
   margin-bottom: 4px;
 }
 
-.sidebar.collapsed .sidebar-section-items {
+.app-sidebar.collapsed .sidebar-section-items {
   border-left: none;
   margin-left: 0;
   padding-left: 0;
 }
 
-.sidebar.collapsed .sidebar-section::before {
+.app-sidebar.collapsed .sidebar-section::before {
   left: 4px;
   right: 4px;
 }
 
-.sidebar.collapsed .sidebar-btn {
+.app-sidebar.collapsed .sidebar-btn {
   justify-content: center;
   padding: 10px;
 }
 
-.sidebar.collapsed .sidebar-header {
+.app-sidebar.collapsed .sidebar-header {
   justify-content: center;
   padding: 12px 8px;
 }
 
-.sidebar.collapsed .sidebar-nav {
+.app-sidebar.collapsed .sidebar-nav {
   padding: 12px 4px;
   align-items: center;
-}
-
-.sidebar.collapsed + .sidebar-backdrop + .main-wrapper {
-  margin-left: 70px;
-}
-
-.sidebar.collapsed ~ .main-wrapper {
-  margin-left: 70px;
 }
 
 .sidebar-collapse-btn {
@@ -9567,7 +9555,7 @@ html[data-theme="light"] .ix-ripple {
   background: var(--bg-tertiary);
 }
 
-.sidebar.collapsed .sidebar-collapse-btn svg {
+.app-sidebar.collapsed .sidebar-collapse-btn svg {
   transform: rotate(180deg);
 }
 
@@ -9577,7 +9565,7 @@ html[data-theme="light"] .ix-ripple {
 
 /* ---- Responsive Overrides ---- */
 @media (max-width: 768px) {
-  .sidebar.collapsed {
+  .app-sidebar.collapsed {
     width: 250px;
     min-width: 250px;
   }
@@ -11539,7 +11527,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 .lbl-grid-small .lbl-card-details { padding: 4px 10px 8px; }
 
 @media print {
-  .sidebar, .header, .stats-strip, .panel-content-header, .lbl-toolbar, ._wrapper-tabs { display: none !important; }
+  .app-sidebar, .app-header, .stats-strip, .panel-content-header, .lbl-toolbar, ._wrapper-tabs { display: none !important; }
   .panel-content { margin: 0 !important; padding: 0 !important; }
   .lbl-grid { gap: 8px; }
   .lbl-card { border: 1px solid #ccc; break-inside: avoid; box-shadow: none !important; transform: none !important; }
@@ -12125,7 +12113,7 @@ body.compact-mode .card { padding: 12px; }
 body.compact-mode .stats-strip { gap: 6px; }
 body.compact-mode .spark-panel { padding: 6px 10px; }
 body.compact-mode .spark-value { font-size: 1.1rem; }
-body.compact-mode .sidebar { width: 180px; }
+body.compact-mode .app-sidebar { width: 180px; }
 body.compact-mode .sidebar-btn { padding: 6px 12px; font-size: 0.78rem; }
 body.compact-mode .gauge-wrapper { max-width: 80px; }
 body.compact-mode .auto-grid { --grid-gap: 8px; }
