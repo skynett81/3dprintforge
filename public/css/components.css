@@ -1140,9 +1140,8 @@
 
 /* ── Visual area: spools grid + ext ── */
 .ams-visual-area {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
   padding: 8px 12px 6px;
   gap: 0;
 }
@@ -1156,7 +1155,7 @@
 
 .ams-cards-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 8px;
   justify-items: center;
   padding: 4px 0;
@@ -1363,18 +1362,15 @@
 
 /* ── Divider between AMS and Ext ── */
 .ams-divider {
-  width: 1px;
-  background: linear-gradient(180deg, transparent 10%, var(--border-color) 50%, transparent 90%);
-  margin: 0 16px;
-  align-self: stretch;
+  display: none;
 }
 
-/* ── External spool section ── */
+/* ── External spool section — inline with AMS slots ── */
 .ams-ext-section {
   display: flex;
   align-items: start;
   justify-content: center;
-  padding-top: 4px;
+  padding: 0;
 }
 
 .ams-ext-label {

@@ -382,32 +382,27 @@
       }
     }
 
-    // --- External spool ---
-    if (extSection) {
+    // --- External spool — rendered inline with AMS slots ---
+    {
       const vtTray = amsData.vt_tray;
       const isExtActive = String(activeTray) === '254' || String(activeTray) === '255';
-
-      // For P2S/A1 AMS Lite: vt_tray may not exist, but linked EXT spool might
       const extLinkedSpool = _getLinkedSpool(printerId, 255, 0);
-      const hasExtData = (vtTray && vtTray.tray_type) || (isExtActive && extLinkedSpool);
+      const hasExtData = (vtTray && vtTray.tray_type) || extLinkedSpool;
 
+      const extCard = document.createElement('div');
       if (hasExtData) {
         const color = vtTray?.tray_color || extLinkedSpool?.color_hex?.replace('#','') || '808080';
         const rgb = hexToRgb(color);
-
-        const linkedSpool = extLinkedSpool || _getLinkedSpool(printerId, 255, 0);
+        const linkedSpool = extLinkedSpool;
         let remain;
-        if (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g > 0) {
+        if (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0) {
           remain = Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100);
         } else if (vtTray?.remain >= 0) {
           remain = Math.round(vtTray.remain);
-        } else if (linkedSpool && linkedSpool.initial_weight_g > 0) {
-          remain = Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100);
         } else {
           remain = null;
         }
 
-        // Real-time filament calculation
         const _vtTotalG = linkedSpool ? linkedSpool.initial_weight_g : (vtTray?.tray_weight ? parseFloat(vtTray.tray_weight) : null);
         const _vtRemainG = linkedSpool ? linkedSpool.remaining_weight_g : (_vtTotalG ? _vtTotalG * (remain / 100) : null);
         let displayGrams = null;
@@ -417,58 +412,49 @@
           displayGrams = rt.currentG;
         } else if (linkedSpool && linkedSpool.remaining_weight_g > 0) {
           displayGrams = linkedSpool.remaining_weight_g;
-        } else if (remain !== null) {
-          const tw = vtTray?.tray_weight ? parseFloat(vtTray.tray_weight) : null;
-          if (tw > 0) displayGrams = Math.round(tw * remain / 100);
         }
 
-        const radius = 38;
-        const strokeW = 14;
+        const radius = 38, strokeW = 14;
         const circumference = 2 * Math.PI * radius;
         const fillPct = remain !== null ? Math.max(0, Math.min(100, remain)) : 100;
         const dashLen = (fillPct / 100) * circumference;
         const dashGap = circumference - dashLen;
 
-        extSection.innerHTML = `
-          <div class="ams-card ams-card-ext${isExtActive ? ' ams-card-active' : ''}">
-            <div class="ams-spool">
-              <svg class="ams-spool-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="47" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="1.5"/>
-                <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="${strokeW}" stroke-linecap="round"/>
-                <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${rgb}" stroke-width="${strokeW}" stroke-linecap="round"
-                  stroke-dasharray="${dashLen} ${dashGap}" transform="rotate(-90 50 50)"
-                  class="ams-spool-ring" style="filter:drop-shadow(0 0 4px ${hexToRgba(color, 0.5)})"/>
-                <circle cx="50" cy="50" r="18" fill="${hexToRgba(color, 0.08)}" stroke="${hexToRgba(color, 0.25)}" stroke-width="1"/>
-                <line x1="50" y1="32" x2="50" y2="24" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
-                <line x1="50" y1="68" x2="50" y2="76" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
-                <line x1="32" y1="50" x2="24" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
-                <line x1="68" y1="50" x2="76" y2="50" stroke="${hexToRgba(color, 0.2)}" stroke-width="1"/>
-                <circle cx="50" cy="50" r="4" fill="${hexToRgba(color, 0.3)}"/>
-              </svg>
-              ${isExtActive ? '<div class="ams-spool-active-ring"></div>' : ''}
-              <div class="ams-spool-center">
-                <span class="ams-spool-type">${vtTray?.tray_type || linkedSpool?.material || linkedSpool?.profile_name || 'EXT'}</span>
-                ${remain !== null ? `<span class="ams-spool-pct" style="color:${rgb}">${remain}%</span>` : ''}
-                ${displayGrams !== null ? `<span class="ams-spool-grams">${Math.round(displayGrams)}g</span>` : ''}
-              </div>
+        extCard.className = `ams-card${isExtActive ? ' ams-card-active' : ''}`;
+        extCard.innerHTML = `
+          <div class="ams-spool">
+            <svg class="ams-spool-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="47" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="1.5"/>
+              <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${hexToRgba(color, 0.15)}" stroke-width="${strokeW}" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${rgb}" stroke-width="${strokeW}" stroke-linecap="round"
+                stroke-dasharray="${dashLen} ${dashGap}" transform="rotate(-90 50 50)"
+                class="ams-spool-ring" style="filter:drop-shadow(0 0 4px ${hexToRgba(color, 0.5)})"/>
+              <circle cx="50" cy="50" r="18" fill="${hexToRgba(color, 0.08)}" stroke="${hexToRgba(color, 0.25)}" stroke-width="1"/>
+              <circle cx="50" cy="50" r="4" fill="${hexToRgba(color, 0.3)}"/>
+            </svg>
+            ${isExtActive ? '<div class="ams-spool-active-ring"></div>' : ''}
+            <div class="ams-spool-center">
+              <span class="ams-spool-type">${vtTray?.tray_type || linkedSpool?.material || linkedSpool?.profile_name || 'PLA'}</span>
+              ${remain !== null ? `<span class="ams-spool-pct" style="color:${rgb}">${remain}%</span>` : ''}
+              ${displayGrams !== null ? `<span class="ams-spool-grams">${Math.round(displayGrams)}g</span>` : ''}
             </div>
-            <div class="ams-spool-label">Ext</div>
-          </div>`;
+          </div>
+          <div class="ams-spool-label">Ext</div>`;
       } else {
-        extSection.innerHTML = `
-          <div class="ams-card ams-card-ext ams-card-empty${isExtActive ? ' ams-card-active' : ''}">
-            <div class="ams-spool ams-spool-empty">
-              <svg class="ams-spool-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border-color)" stroke-width="2" stroke-dasharray="4 3"/>
-                <circle cx="50" cy="50" r="18" fill="none" stroke="var(--border-color)" stroke-width="1.5" stroke-dasharray="3 3"/>
-              </svg>
-              <div class="ams-spool-center">
-                <span class="ams-spool-type">${t('ams.empty')}</span>
-              </div>
-            </div>
-            <div class="ams-spool-label">Ext</div>
-          </div>`;
+        extCard.className = `ams-card ams-card-empty${isExtActive ? ' ams-card-active' : ''}`;
+        extCard.innerHTML = `
+          <div class="ams-spool ams-spool-empty">
+            <svg class="ams-spool-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border-color)" stroke-width="2" stroke-dasharray="4 3"/>
+              <circle cx="50" cy="50" r="18" fill="none" stroke="var(--border-color)" stroke-width="1.5" stroke-dasharray="3 3"/>
+            </svg>
+            <div class="ams-spool-center"><span class="ams-spool-type">${t('ams.empty')}</span></div>
+          </div>
+          <div class="ams-spool-label">Ext</div>`;
       }
+      container.appendChild(extCard);
+      // Hide the separate ext section since EXT is now inline
+      if (extSection) extSection.style.display = 'none';
     }
 
     // Draw tubes
