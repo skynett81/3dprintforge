@@ -246,28 +246,25 @@
         }
       }
     }
-    // Include external spool (vt_tray) — globalIdx 254/255 for EXT
-    // P2S/A1 AMS Lite may not send vt_tray — detect from mapping field
-    const __mapping = data.mapping;
-    const __isExtFromMapping = Array.isArray(__mapping) && __mapping.length > 0 && ((__mapping[0] >> 8) & 0xFF) === 0xFF;
+    // Include external spool — always show if vt_tray exists or linked spool exists
+    const _extPid = window.printerState?.getActivePrinterId?.();
+    const _extSpool = window.getLinkedSpool?.(_extPid, 255, 0);
     if (ams.vt_tray && ams.vt_tray.tray_type) {
       trays.push({ tray: ams.vt_tray, unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true });
-    } else if (__isExtFromMapping) {
-      // P2S/A1: no vt_tray, but mapping says EXT — create virtual EXT entry from linked spool or AMS tray 0
-      const _extPid = window.printerState?.getActivePrinterId?.();
-      const _extSpool = window.getLinkedSpool?.(_extPid, 255, 0);
-      if (_extSpool) {
-        trays.push({
-          tray: { tray_type: _extSpool.material || _extSpool.profile_name || 'PLA', tray_color: (_extSpool.color_hex || '808080').replace('#',''), tray_sub_brands: _extSpool.profile_name || '', remain: _extSpool.initial_weight_g > 0 ? Math.round(_extSpool.remaining_weight_g / _extSpool.initial_weight_g * 100) : -1 },
-          unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true
-        });
-      } else {
-        // Fallback: show generic EXT entry
-        trays.push({
-          tray: { tray_type: 'EXT', tray_color: '808080', remain: -1 },
-          unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true
-        });
-      }
+    } else if (_extSpool) {
+      // P2S/A1 or any printer with an EXT spool in inventory
+      trays.push({
+        tray: {
+          tray_type: _extSpool.material || _extSpool.profile_name || 'PLA',
+          tray_color: (_extSpool.color_hex || '808080').replace('#',''),
+          tray_sub_brands: _extSpool.profile_name || '',
+          remain: _extSpool.initial_weight_g > 0 ? Math.round(_extSpool.remaining_weight_g / _extSpool.initial_weight_g * 100) : -1,
+          tray_weight: _extSpool.initial_weight_g ? String(_extSpool.initial_weight_g) : null,
+          nozzle_temp_min: _extSpool.nozzle_temp_min || null,
+          nozzle_temp_max: _extSpool.nozzle_temp_max || null
+        },
+        unitIdx: 255, trayIdx: 0, globalIdx: 254, isExternal: true
+      });
     }
 
     if (!trays.length) {
@@ -340,8 +337,7 @@
       let warnClass = isCritical ? ' fr-spool-critical' : isLow ? ' fr-spool-low' : '';
 
       html += `<div class="fr-spool-item${isAct ? ' fr-spool-active' : ''}${warnClass}">`;
-      html += `<div class="fr-spool-ring">${_spoolVisual(c, info.current, 'fr-' + entry.globalIdx)}</div>`;
-      html += `<div class="fr-spool-overlay"><span class="fr-spool-pct">${info.current}%</span></div>`;
+      html += `<div class="fr-spool-ring">${_spoolVisual(c, info.current, 'fr-' + entry.globalIdx)}<div class="fr-spool-overlay"><span class="fr-spool-pct">${info.current}%</span></div></div>`;
       html += `<div class="fr-spool-meta">`;
       html += `<span class="fr-spool-brand">${brand || tType}</span>`;
       html += `<span class="fr-spool-weight-row">${weightG}${totalG ? ' / ' + totalG : ''}</span>`;
