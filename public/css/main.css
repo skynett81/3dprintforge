@@ -491,29 +491,6 @@
   font-weight: 600;
 }
 
-/* Sidebar section collapse/expand (custom JS-driven treeview) */
-.sidebar-section.collapsed .sidebar-section-items {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-  margin-bottom: 0;
-  pointer-events: none;
-}
-
-.sidebar-section-items {
-  max-height: 500px;
-  transition: max-height 0.15s ease,
-              opacity 0.15s ease,
-              margin 0.15s ease;
-  opacity: 1;
-}
-
-.sidebar-section.collapsed .sidebar-section-count {
-  opacity: 0.4;
-  transform: scale(0.85);
-}
-
 
 /* Sidebar backdrop (mobile) */
 .sidebar-backdrop {

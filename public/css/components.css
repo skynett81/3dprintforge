@@ -9504,15 +9504,7 @@ html[data-theme="light"] .ix-ripple {
   transition: opacity 0.2s, width 0.2s;
 }
 
-.app-sidebar.collapsed .sidebar-section.collapsed .sidebar-section-items {
-  max-height: 500px;
-  opacity: 1;
-  pointer-events: auto;
-  margin-top: 2px;
-  margin-bottom: 4px;
-}
-
-.app-sidebar.collapsed .sidebar-section-items {
+.app-sidebar.collapsed .nav-treeview {
   border-left: none;
   margin-left: 0;
   padding-left: 0;

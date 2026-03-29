@@ -535,22 +535,22 @@ window.toggleSidebarCollapse = function() {
   try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed ? '1' : '0'); } catch (_) {}
 };
 
-// ---- Sidebar Sections (collapsible groups) ----
+// ---- Sidebar Sections (collapsible groups via AdminLTE treeview) ----
 
 window.toggleSidebarSection = function(name) {
   const section = document.querySelector(`.sidebar-section[data-section="${name}"]`);
   if (!section) return;
-  section.classList.toggle('collapsed');
-  _saveSidebarSections();
+  const link = section.querySelector(':scope > .nav-link');
+  if (link) link.click();
 };
 
 function _saveSidebarSections() {
   try {
-    const state = {};
+    const sectionState = {};
     document.querySelectorAll('.sidebar-section').forEach(s => {
-      state[s.dataset.section] = s.classList.contains('collapsed') ? 0 : 1;
+      sectionState[s.dataset.section] = s.classList.contains('menu-open') ? 1 : 0;
     });
-    localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(state));
+    localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(sectionState));
   } catch (_) {}
 }
 
@@ -558,12 +558,17 @@ function _restoreSidebarSections() {
   try {
     const raw = localStorage.getItem(SIDEBAR_SECTIONS_KEY);
     if (!raw) return;
-    const state = JSON.parse(raw);
-    for (const [name, open] of Object.entries(state)) {
+    const saved = JSON.parse(raw);
+    for (const [name, open] of Object.entries(saved)) {
       const section = document.querySelector(`.sidebar-section[data-section="${name}"]`);
-      if (section) {
-        if (open) section.classList.remove('collapsed');
-        else section.classList.add('collapsed');
+      if (!section) continue;
+      const treeview = section.querySelector(':scope > .nav-treeview');
+      if (open) {
+        section.classList.add('menu-open');
+        if (treeview) treeview.style.display = 'block';
+      } else {
+        section.classList.remove('menu-open');
+        if (treeview) treeview.style.display = 'none';
       }
     }
   } catch (_) {}
@@ -584,8 +589,10 @@ function _expandSectionForPanel(panelName) {
   const btn = document.querySelector(`.sidebar-btn[data-panel="${resolvedName}"]`) || document.querySelector(`.sidebar-btn[data-panel="${panelName}"]`);
   if (!btn) return;
   const section = btn.closest('.sidebar-section');
-  if (section && section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
+  if (section && !section.classList.contains('menu-open')) {
+    section.classList.add('menu-open');
+    const treeview = section.querySelector(':scope > .nav-treeview');
+    if (treeview) treeview.style.display = 'block';
     _saveSidebarSections();
   }
 }
@@ -629,6 +636,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Restore sidebar section collapse state
   _restoreSidebarSections();
+
+  // Listen for AdminLTE treeview events to persist sidebar section state
+  document.querySelectorAll('.sidebar-section').forEach(section => {
+    section.addEventListener('expanded.lte.treeview', () => _saveSidebarSections());
+    section.addEventListener('collapsed.lte.treeview', () => _saveSidebarSections());
+  });
 
   // Fetch version for sidebar
   fetch('/api/update/status').then(r => r.json()).then(d => {
