@@ -643,15 +643,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => openPanel(initHash), 200);
   } else if (initBase && PANEL_TITLES[initBase]) {
     setTimeout(() => openPanel(initBase), 200);
-  } else {
-    // No hash — try restoring last panel from localStorage
-    try {
-      const lastPanel = localStorage.getItem('lastPanel');
-      if (lastPanel && PANEL_TITLES[lastPanel]) {
-        setTimeout(() => openPanel(lastPanel), 200);
-      }
-    } catch (_) {}
   }
+  // No hash = stay on dashboard (don't redirect to lastPanel)
 
   // ESC key handler
   document.addEventListener('keydown', (e) => {
