@@ -100,14 +100,15 @@
   };
 
   // Check for low filament and show persistent alert
+  let _filamentAlertDismissed = false;
+  let _filamentAlertShown = false;
+
   window.checkFilamentAlerts = function(data) {
-    if (!data.ams?.ams) return;
+    if (!data.ams?.ams || _filamentAlertDismissed) return;
     const bar = document.getElementById('global-alert-bar');
     if (!bar) return;
 
-    // Remove old filament alerts
-    bar.querySelectorAll('.ga-filament').forEach(el => el.remove());
-
+    // Only update if not already showing (avoid flicker from re-creating every tick)
     const lowTrays = [];
     for (const unit of data.ams.ams) {
       for (const tray of (unit.tray || [])) {
@@ -117,19 +118,26 @@
       }
     }
 
-    // Also check EXT from linked spool
     const extSpool = typeof getLinkedSpool === 'function' ? getLinkedSpool(window.printerState?.getActivePrinterId?.(), 255, 0) : null;
     if (extSpool && extSpool.initial_weight_g > 0) {
       const extPct = Math.round(extSpool.remaining_weight_g / extSpool.initial_weight_g * 100);
       if (extPct <= 10) lowTrays.push({ slot: 'EXT', pct: extPct, type: extSpool.material || 'PLA' });
     }
 
-    if (lowTrays.length > 0) {
+    // Remove old filament alerts if status changed
+    if (lowTrays.length === 0 || _filamentAlertShown) {
+      bar.querySelectorAll('.ga-filament').forEach(el => el.remove());
+      if (!bar.children.length) bar.style.display = 'none';
+      if (lowTrays.length === 0) { _filamentAlertShown = false; return; }
+    }
+
+    if (!_filamentAlertShown && lowTrays.length > 0) {
+      _filamentAlertShown = true;
       const msg = lowTrays.map(t => t.slot + ': ' + t.pct + '% ' + t.type).join(' · ');
       const alertType = lowTrays.some(t => t.pct <= 5) ? 'error' : 'warn';
       const el = document.createElement('div');
       el.className = 'global-alert-item global-alert-' + alertType + ' ga-filament';
-      el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>' + (t('ams.low_filament_alert') || 'Low filament') + ': ' + msg + '</span>';
+      el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>' + (t('ams.low_filament_alert') || 'Low filament') + ': ' + msg + '</span><span class="global-alert-item-dismiss" onclick="_filamentAlertDismissed=true;this.closest(\'.ga-filament\').remove();var b=document.getElementById(\'global-alert-bar\');if(b&&!b.children.length)b.style.display=\'none\'">×</span>';
       bar.appendChild(el);
       bar.style.display = 'flex';
     }

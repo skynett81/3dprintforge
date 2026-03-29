@@ -2419,16 +2419,22 @@
   display: flex;
   flex-direction: column;
 }
+#camera-card .card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0;
+}
 .camera-container {
   background: #000;
-  border-radius: var(--radius);
+  border-radius: 0 0 var(--bs-card-inner-border-radius, 6px) var(--bs-card-inner-border-radius, 6px);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
+  min-height: 280px;
   position: relative;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .camera-placeholder {
@@ -13026,13 +13032,13 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 /* ═══ Global Alert Bar ═══ */
 .global-alert-bar {
   position: fixed;
-  top: 8px;
-  right: 8px;
-  z-index: 9998;
+  top: 60px;
+  right: 16px;
+  z-index: 1040;
   display: none;
   flex-direction: column;
   gap: 4px;
-  max-width: 420px;
+  max-width: 380px;
   pointer-events: none;
 }
 .global-alert-item {
