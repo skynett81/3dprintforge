@@ -667,12 +667,13 @@ body {
 }
 
 /* ── Default: 2-column layout (optimal for 24-27" monitors) ── */
+/* Temp & fans data is already shown in stats-strip at the top */
 #progress-card  { grid-column: 1; grid-row: 1; }
 #camera-card    { grid-column: 2; grid-row: 1; }
 #filament-ring  { grid-column: 1; grid-row: 2; }
 #ams-card       { grid-column: 2; grid-row: 2; }
-#temp-card      { grid-column: 1; grid-row: 3; align-self: start; }
-#fans-card      { grid-column: 2; grid-row: 3; align-self: start; }
+#temp-card      { display: none; }
+#fans-card      { display: none; }
 
 /* Hide standalone countdown — it's now embedded in progress-card */
 #countdown-timer { display: none; }
@@ -685,19 +686,8 @@ body {
 .dashboard-cols-3 #filament-ring  { grid-column: 1; grid-row: auto; }
 .dashboard-cols-3 #camera-card    { grid-column: 2; grid-row: 1 / span 3; }
 .dashboard-cols-3 #ams-card       { grid-column: 2; grid-row: auto; }
-.dashboard-cols-3 #temp-card      { grid-column: 3; grid-row: 1; align-self: start; }
-.dashboard-cols-3 #fans-card      { grid-column: 3; grid-row: auto; align-self: start; }
-
-/* Legacy class name support */
-.dashboard-cols-2 {
-  grid-template-columns: 1fr 1fr !important;
-}
-.dashboard-cols-2 #progress-card  { grid-column: 1; grid-row: 1; }
-.dashboard-cols-2 #camera-card    { grid-column: 2; grid-row: 1; }
-.dashboard-cols-2 #filament-ring  { grid-column: 1; grid-row: 2; }
-.dashboard-cols-2 #ams-card       { grid-column: 2; grid-row: 2; }
-.dashboard-cols-2 #temp-card      { grid-column: 1; grid-row: 3; align-self: start; }
-.dashboard-cols-2 #fans-card      { grid-column: 2; grid-row: 3; align-self: start; }
+.dashboard-cols-3 #temp-card      { display: block !important; grid-column: 3; grid-row: 1; align-self: start; }
+.dashboard-cols-3 #fans-card      { display: block !important; grid-column: 3; grid-row: auto; align-self: start; }
 
 /* ---- Cards — glass morphism with glow ---- */
 .card {
