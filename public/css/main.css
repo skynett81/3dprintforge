@@ -318,10 +318,19 @@
 
 /* ---- Panel Content (inline panel overlay) ---- */
 .panel-content {
+  display: none;
   flex: 1;
-  display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
+}
+.panel-content.panel-active {
+  display: flex;
+}
+
+/* Hide dashboard when panel is open */
+.view-hidden {
+  display: none !important;
 }
 
 .panel-content-header {
