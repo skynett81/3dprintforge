@@ -9359,14 +9359,14 @@ html.theme-transitioning *::after {
 /* ---- Toast Notifications ---- */
 #ix-toast-container {
   position: fixed;
-  top: 60px;
+  bottom: 20px;
   right: 20px;
-  z-index: 10001;
+  z-index: 1050;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 8px;
   pointer-events: none;
-  max-width: 400px;
+  max-width: 360px;
 }
 
 .ix-toast {
@@ -9408,11 +9408,12 @@ html.theme-transitioning *::after {
 .ix-toast--info svg    { color: #1279ff; }
 
 @keyframes toastIn {
+  from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes toastOut {
-  to { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(20px); opacity: 0; }
 }
 
 /* ---- Confirm Modal ---- */
