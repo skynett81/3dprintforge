@@ -12591,19 +12591,43 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 
 /* ═══ Filament Ring Chart Widget ═══ */
 .filament-ring-card {
-  text-align: center;
   padding: 12px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   container-type: inline-size;
+}
+/* Horizontal layout: spool left, info right */
+.fr-layout {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.fr-spool-col {
+  flex-shrink: 0;
+}
+.fr-info-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fr-usage-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.fr-usage-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
 }
 .filament-ring-main {
   position: relative;
-  width: clamp(90px, 45cqi, 170px);
+  width: clamp(80px, 35cqi, 130px);
   aspect-ratio: 1;
-  margin: 0 auto 6px;
 }
 .filament-ring-main .spool-svg {
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
@@ -12663,9 +12687,8 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 .filament-ring-identity {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .filament-ring-brand {
   font-size: clamp(0.85rem, 4cqi, 1.1rem);
@@ -12685,9 +12708,8 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 .filament-ring-info {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   font-size: clamp(0.65rem, 3cqi, 0.78rem);
   color: var(--text-muted);
 }
