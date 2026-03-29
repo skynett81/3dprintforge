@@ -342,20 +342,8 @@
         if (isCritical) warnClass = ' ams-card-critical';
         else if (isLow) warnClass = ' ams-card-low';
 
-        // Toast notification for low filament (once per tray per threshold)
-        const alertKey = `${printerId}_${_selectedUnit}_${i}`;
-        if (isCritical && !_lowAlerted[alertKey + '_crit']) {
-          _lowAlerted[alertKey + '_crit'] = true;
-          if (typeof showToast === 'function') showToast(t('ams.critical_filament', { slot: `A${i + 1}`, pct: remain }) || `A${i + 1}: ${remain}% filament — bytt snart!`, 'error', 8000);
-        } else if (isLow && !isCritical && !_lowAlerted[alertKey + '_low']) {
-          _lowAlerted[alertKey + '_low'] = true;
-          if (typeof showToast === 'function') showToast(t('ams.low_filament', { slot: `A${i + 1}`, pct: remain }) || `A${i + 1}: ${remain}% filament igjen`, 'warning', 6000);
-        }
-        // Reset alerts when filament is replenished
-        if (remain !== null && remain > 10) {
-          delete _lowAlerted[alertKey + '_low'];
-          delete _lowAlerted[alertKey + '_crit'];
-        }
+        // Low filament shown visually via spool warning outline + AMS low banner
+        // No toast — avoids overflow on every refresh
 
         // SVG spool ring parameters
         const radius = 38;

@@ -376,10 +376,7 @@
         filBtn.appendChild(dot);
       }
 
-      if (!window._lowStockAlerted) {
-        window._lowStockAlerted = true;
-        if (typeof showToast === 'function') showToast('Lite filament igjen i AMS!', 'warning', 5000);
-      }
+      // Low filament shown visually in spool rings + AMS panel — no toast needed
     } else {
       const filBtn = document.querySelector('.sidebar-btn[data-panel="filament"]');
       if (filBtn) {
