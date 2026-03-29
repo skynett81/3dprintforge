@@ -1,4 +1,5 @@
 import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings, getProfiles, getProfileById, addProfile, updateProfile, deleteProfile, incrementProfileUse, addFilamentUsageSnapshot, getFilamentUsageHistory, getFilamentUsageTrend, getSpoolByTrayIdName, getPurchasedSpools, addPurchasedSpool, updatePurchasedSpool, deletePurchasedSpool, importPurchasedSpools, linkPurchasedToSpool, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, aggregateDailyFilamentUsage, backfillDailyUsage, getDailyFilamentUsage, getFilamentConsumptionSummary, getFilamentConsumptionByPrinter, getFilamentWeeklyTrend, updateConsumptionRates, getConsumptionRates, getSpoolDepletionForecast, getWasteAnalysis, getMaterialEfficiency, checkSpoolDepletionThresholds, getSpoolDepletionEvents, markDepletionNotified, getFilamentCostAnalysis, getExpiredSpools, getExpiringSpools, getMaterialSubstitutions, addMaterialSubstitution, deleteMaterialSubstitution, findSubstitutesForMaterial, getRalColors, findClosestRal, getStorageAlerts, getSpoolmanPerSpoolMetrics, getSpoolCoreWeights, addSpoolCoreWeight, getBambuFilamentCodes, lookupBambuCode, getSpoolKCalibrations, upsertSpoolKCalibration, getBestKValue, recordWeighing, getFilamentAccuracyStats, saveFilamentEstimate, getBambuVariants, lookupBambuVariant, lookupBambuByProductCode, enrichTrayWithVariant, getBambuMaterialNames, getBambuColorsByMaterial, linkScreenshotToPrint, getScreenshotsForPrint, addMqttDebugEntry, getMqttDebugLog, clearMqttDebugLog, checkFirmwareUpdate, setMaintenanceMode, getMaintenanceModePrinters, getActivityLog } from './database.js';
+import { getCrmCustomers, getCrmCustomer, createCrmCustomer, updateCrmCustomer, deleteCrmCustomer, getCrmOrders, getCrmOrder, createCrmOrder, updateCrmOrder, updateCrmOrderStatus, createCrmOrderFromHistory, addCrmOrderItem, updateCrmOrderItem, removeCrmOrderItem, createCrmInvoice, getCrmInvoice, getCrmInvoices, updateCrmInvoiceStatus, getCrmDashboard } from './database.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
 import { saveConfig, config, DATA_DIR } from './config.js';
 import { getThumbnail, getModel } from './thumbnail-service.js';
@@ -5251,6 +5252,167 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- CRM ----
+    if (path.startsWith('/api/crm/')) {
+      if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
+
+      // Dashboard
+      if (method === 'GET' && path === '/api/crm/dashboard') {
+        try { return sendJson(res, getCrmDashboard()); }
+        catch (e) { log.error('CRM dashboard error', e.message); return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Customers list + create
+      if (path === '/api/crm/customers' && !path.includes('/api/crm/customers/')) {
+        if (method === 'GET') {
+          const search = url.searchParams.get('search');
+          const limit = parseInt(url.searchParams.get('limit') || '50');
+          const offset = parseInt(url.searchParams.get('offset') || '0');
+          try { return sendJson(res, getCrmCustomers(search, limit, offset)); }
+          catch (e) { return sendJson(res, { error: e.message }, 500); }
+        }
+        if (method === 'POST') {
+          return readBody(req, res, (body) => {
+            if (!body.name) return sendJson(res, { error: 'name is required' }, 400);
+            try {
+              const id = createCrmCustomer(body);
+              return sendJson(res, { ok: true, id }, 201);
+            } catch (e) { return sendJson(res, { error: e.message }, 500); }
+          });
+        }
+      }
+
+      // Customer detail
+      const crmCustomerMatch = path.match(/^\/api\/crm\/customers\/(\d+)$/);
+      if (crmCustomerMatch) {
+        const id = parseInt(crmCustomerMatch[1]);
+        if (method === 'GET') {
+          const customer = getCrmCustomer(id);
+          if (!customer) return sendJson(res, { error: 'Not found' }, 404);
+          return sendJson(res, customer);
+        }
+        if (method === 'PUT') {
+          return readBody(req, res, (body) => {
+            try { updateCrmCustomer(id, body); return sendJson(res, { ok: true }); }
+            catch (e) { return sendJson(res, { error: e.message }, 500); }
+          });
+        }
+        if (method === 'DELETE') {
+          try { deleteCrmCustomer(id); return sendJson(res, { ok: true }); }
+          catch (e) { return sendJson(res, { error: e.message }, 500); }
+        }
+      }
+
+      // Orders list + create
+      if (path === '/api/crm/orders' && !path.includes('/api/crm/orders/')) {
+        if (method === 'GET') {
+          const filters = {
+            status: url.searchParams.get('status') || undefined,
+            customer_id: url.searchParams.get('customer_id') ? parseInt(url.searchParams.get('customer_id')) : undefined,
+            limit: parseInt(url.searchParams.get('limit') || '50'),
+            offset: parseInt(url.searchParams.get('offset') || '0')
+          };
+          try { return sendJson(res, getCrmOrders(filters)); }
+          catch (e) { return sendJson(res, { error: e.message }, 500); }
+        }
+        if (method === 'POST') {
+          return readBody(req, res, (body) => {
+            try {
+              const result = createCrmOrder(body);
+              return sendJson(res, { ok: true, ...result }, 201);
+            } catch (e) { return sendJson(res, { error: e.message }, 500); }
+          });
+        }
+      }
+
+      // Order from print history
+      const crmFromHistoryMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/from-history\/(\d+)$/);
+      if (crmFromHistoryMatch && method === 'POST') {
+        const customerId = parseInt(crmFromHistoryMatch[1]);
+        const printId = parseInt(crmFromHistoryMatch[2]);
+        try {
+          const result = createCrmOrderFromHistory(printId, customerId);
+          return sendJson(res, { ok: true, ...result }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Order status update
+      const crmOrderStatusMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/status$/);
+      if (crmOrderStatusMatch && method === 'PATCH') {
+        const id = parseInt(crmOrderStatusMatch[1]);
+        return readBody(req, res, (body) => {
+          if (!body.status) return sendJson(res, { error: 'status is required' }, 400);
+          try { updateCrmOrderStatus(id, body.status); return sendJson(res, { ok: true }); }
+          catch (e) { return sendJson(res, { error: e.message }, 400); }
+        });
+      }
+
+      // Order items
+      const crmOrderItemsMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/items$/);
+      if (crmOrderItemsMatch && method === 'POST') {
+        const orderId = parseInt(crmOrderItemsMatch[1]);
+        return readBody(req, res, (body) => {
+          try {
+            const itemId = addCrmOrderItem(orderId, body);
+            return sendJson(res, { ok: true, id: itemId }, 201);
+          } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        });
+      }
+
+      const crmOrderItemDeleteMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/items\/(\d+)$/);
+      if (crmOrderItemDeleteMatch && method === 'DELETE') {
+        const itemId = parseInt(crmOrderItemDeleteMatch[2]);
+        try { removeCrmOrderItem(itemId); return sendJson(res, { ok: true }); }
+        catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Order invoice
+      const crmOrderInvoiceMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/invoice$/);
+      if (crmOrderInvoiceMatch && method === 'POST') {
+        const orderId = parseInt(crmOrderInvoiceMatch[1]);
+        try {
+          const result = createCrmInvoice(orderId);
+          return sendJson(res, { ok: true, ...result }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Order detail
+      const crmOrderMatch = path.match(/^\/api\/crm\/orders\/(\d+)$/);
+      if (crmOrderMatch) {
+        const id = parseInt(crmOrderMatch[1]);
+        if (method === 'GET') {
+          const order = getCrmOrder(id);
+          if (!order) return sendJson(res, { error: 'Not found' }, 404);
+          return sendJson(res, order);
+        }
+        if (method === 'PUT') {
+          return readBody(req, res, (body) => {
+            try { updateCrmOrder(id, body); return sendJson(res, { ok: true }); }
+            catch (e) { return sendJson(res, { error: e.message }, 500); }
+          });
+        }
+      }
+
+      // Invoices list
+      if (method === 'GET' && path === '/api/crm/invoices') {
+        const limit = parseInt(url.searchParams.get('limit') || '50');
+        const offset = parseInt(url.searchParams.get('offset') || '0');
+        try { return sendJson(res, getCrmInvoices(limit, offset)); }
+        catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Invoice status
+      const crmInvoiceStatusMatch = path.match(/^\/api\/crm\/invoices\/(\d+)\/status$/);
+      if (crmInvoiceStatusMatch && method === 'PATCH') {
+        const id = parseInt(crmInvoiceStatusMatch[1]);
+        return readBody(req, res, (body) => {
+          if (!body.status) return sendJson(res, { error: 'status is required' }, 400);
+          try { updateCrmInvoiceStatus(id, body.status); return sendJson(res, { ok: true }); }
+          catch (e) { return sendJson(res, { error: e.message }, 400); }
+        });
+      }
+    }
+
     // ---- Timelapse ----
     if (method === 'GET' && path === '/api/timelapse') {
       const printerId = url.searchParams.get('printer_id');
@@ -7351,6 +7513,7 @@ function _getApiDocs() {
       { name: 'Hardware', description: 'Hardware inventory' },
       { name: 'Materials', description: 'Material database' },
       { name: 'Ecommerce', description: 'E-commerce integration' },
+      { name: 'CRM', description: 'Customer Relationship Management' },
       { name: 'Slicer', description: 'Cloud slicer service' },
       { name: 'NFC', description: 'NFC tag mapping' },
       { name: 'Community', description: 'Community filament database' },
@@ -7605,6 +7768,24 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/ecommerce/configs', tag: 'Ecommerce', summary: 'List e-commerce configs', permission: 'admin' },
       { method: 'POST', path: '/api/ecommerce/configs', tag: 'Ecommerce', summary: 'Create e-commerce config', permission: 'admin' },
       { method: 'GET', path: '/api/ecommerce/orders', tag: 'Ecommerce', summary: 'List orders', permission: 'view' },
+      // CRM
+      { method: 'GET', path: '/api/crm/dashboard', tag: 'CRM', summary: 'CRM dashboard stats', permission: 'view' },
+      { method: 'GET', path: '/api/crm/customers', tag: 'CRM', summary: 'List customers', permission: 'view' },
+      { method: 'POST', path: '/api/crm/customers', tag: 'CRM', summary: 'Create customer', permission: 'admin' },
+      { method: 'GET', path: '/api/crm/customers/:id', tag: 'CRM', summary: 'Get customer', permission: 'view' },
+      { method: 'PUT', path: '/api/crm/customers/:id', tag: 'CRM', summary: 'Update customer', permission: 'admin' },
+      { method: 'DELETE', path: '/api/crm/customers/:id', tag: 'CRM', summary: 'Archive customer', permission: 'admin' },
+      { method: 'GET', path: '/api/crm/orders', tag: 'CRM', summary: 'List CRM orders', permission: 'view' },
+      { method: 'POST', path: '/api/crm/orders', tag: 'CRM', summary: 'Create CRM order', permission: 'admin' },
+      { method: 'GET', path: '/api/crm/orders/:id', tag: 'CRM', summary: 'Get CRM order', permission: 'view' },
+      { method: 'PUT', path: '/api/crm/orders/:id', tag: 'CRM', summary: 'Update CRM order', permission: 'admin' },
+      { method: 'PATCH', path: '/api/crm/orders/:id/status', tag: 'CRM', summary: 'Update order status', permission: 'admin' },
+      { method: 'POST', path: '/api/crm/orders/:id/items', tag: 'CRM', summary: 'Add order item', permission: 'admin' },
+      { method: 'DELETE', path: '/api/crm/orders/:id/items/:itemId', tag: 'CRM', summary: 'Remove order item', permission: 'admin' },
+      { method: 'POST', path: '/api/crm/orders/:id/from-history/:printId', tag: 'CRM', summary: 'Create order from print history', permission: 'admin' },
+      { method: 'POST', path: '/api/crm/orders/:id/invoice', tag: 'CRM', summary: 'Generate invoice from order', permission: 'admin' },
+      { method: 'GET', path: '/api/crm/invoices', tag: 'CRM', summary: 'List invoices', permission: 'view' },
+      { method: 'PATCH', path: '/api/crm/invoices/:id/status', tag: 'CRM', summary: 'Update invoice status', permission: 'admin' },
       // Slicer
       { method: 'GET', path: '/api/slicer/status', tag: 'Slicer', summary: 'Get slicer status + quality presets', permission: 'view' },
       { method: 'GET', path: '/api/slicer/profiles', tag: 'Slicer', summary: 'List detected slicer profiles', permission: 'view' },

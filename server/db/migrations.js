@@ -125,6 +125,7 @@ export function runMigrations() {
     { version: 105, up: _mig105_index_history_started_at },
     { version: 106, up: _mig106_ecom_license_fields },
     { version: 107, up: _mig107_ecom_license_identifiers },
+    { version: 108, up: _mig108_crm_system },
   ];
 
   for (const m of migrations) {
@@ -4364,6 +4365,102 @@ function _mig107_ecom_license_identifiers(db) {
   try { db.exec('ALTER TABLE ecom_license ADD COLUMN verify_count INTEGER DEFAULT 0'); } catch {}
   // Fiks API-URL fra /api/v1 til /api (GeekTech endret endepunkt)
   try { db.exec("UPDATE ecom_license SET geektech_api_url = 'https://geektech.no/api' WHERE geektech_api_url = 'https://geektech.no/api/v1'"); } catch {}
+}
+
+function _mig108_crm_system(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      company TEXT,
+      address TEXT,
+      city TEXT,
+      postal_code TEXT,
+      country TEXT,
+      notes TEXT,
+      tags TEXT,
+      total_orders INTEGER DEFAULT 0,
+      total_revenue REAL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      archived INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS crm_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER REFERENCES crm_customers(id),
+      order_number TEXT UNIQUE NOT NULL,
+      status TEXT DEFAULT 'draft',
+      items_json TEXT DEFAULT '[]',
+      subtotal REAL DEFAULT 0,
+      discount_pct REAL DEFAULT 0,
+      tax_pct REAL DEFAULT 0,
+      total_cost REAL DEFAULT 0,
+      currency TEXT DEFAULT 'NOK',
+      notes TEXT,
+      due_date TEXT,
+      assigned_printer_id TEXT,
+      shipping_method TEXT,
+      tracking_number TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS crm_order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER REFERENCES crm_orders(id) ON DELETE CASCADE,
+      description TEXT,
+      filename TEXT,
+      file_hash TEXT,
+      quantity INTEGER DEFAULT 1,
+      filament_type TEXT,
+      filament_color TEXT,
+      filament_weight_g REAL,
+      estimated_time_min REAL,
+      material_cost REAL DEFAULT 0,
+      labor_cost REAL DEFAULT 0,
+      electricity_cost REAL DEFAULT 0,
+      wear_cost REAL DEFAULT 0,
+      markup_pct REAL DEFAULT 0,
+      item_cost REAL DEFAULT 0,
+      total_cost REAL DEFAULT 0,
+      print_history_id INTEGER,
+      status TEXT DEFAULT 'pending',
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS crm_invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER REFERENCES crm_orders(id),
+      invoice_number TEXT UNIQUE NOT NULL,
+      status TEXT DEFAULT 'draft',
+      subtotal REAL DEFAULT 0,
+      tax REAL DEFAULT 0,
+      total REAL DEFAULT 0,
+      currency TEXT DEFAULT 'NOK',
+      due_date TEXT,
+      sent_at TEXT,
+      paid_at TEXT,
+      pdf_path TEXT,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS crm_order_files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      order_item_id INTEGER,
+      filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size INTEGER,
+      uploaded_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_crm_orders_customer ON crm_orders(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_crm_orders_status ON crm_orders(status);
+  `);
 }
 
 function _mig103_printer_maintenance_mode(db) {

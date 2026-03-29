@@ -19,3 +19,4 @@ export * from './projects.js';
 export * from './ecommerce.js';
 export * from './misc.js';
 export * from './activity-log.js';
+export * from './crm.js';
