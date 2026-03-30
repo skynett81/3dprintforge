@@ -62,10 +62,14 @@ const SPOOL_SELECT = `SELECT s.*,
   fp.pressure_advance_k, fp.max_volumetric_speed, fp.retraction_distance, fp.retraction_speed, fp.cooling_fan_speed, fp.optimal_settings,
   fp.external_id as profile_external_id, fp.diameters, fp.weights,
   v.name as vendor_name, v.id as vendor_id, v.empty_spool_weight_g as vendor_empty_spool_weight_g,
-  v.external_id as vendor_external_id
+  v.external_id as vendor_external_id,
+  bv.color_name as bambu_color_name, bv.variant_id as bambu_variant_id,
+  bv.drying_temp as bambu_drying_temp, bv.drying_hours as bambu_drying_hours,
+  bv.spool_weight_g as bambu_spool_weight_g
   FROM spools s
   LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
-  LEFT JOIN vendors v ON fp.vendor_id = v.id`;
+  LEFT JOIN vendors v ON fp.vendor_id = v.id
+  LEFT JOIN bambu_variants bv ON fp.color_name = bv.variant_id`;
 
 // ---- Spools CRUD ----
 

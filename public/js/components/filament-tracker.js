@@ -898,8 +898,9 @@
     if (s.vendor_name && name.startsWith(s.vendor_name + ' ')) {
       name = name.substring(s.vendor_name.length + 1);
     }
-    // Append color name for a more descriptive label
-    if (s.color_name) name += ' — ' + s.color_name;
+    // Use real Bambu color name if available, otherwise fall back to color_name
+    const colorDisplay = s.bambu_color_name || s.color_name;
+    if (colorDisplay) name += ' — ' + colorDisplay;
     return name;
   }
 
@@ -920,8 +921,10 @@
     const archivedClass = s.archived ? 'filament-card-archived' : '';
     const cleanName = _cleanProfileName(s);
     const subtitleParts = [s.vendor_name];
-    if (s.nozzle_temp_min && s.nozzle_temp_max) subtitleParts.push(`🔥 ${s.nozzle_temp_min}–${s.nozzle_temp_max}°C`);
-    if (s.bed_temp_min && s.bed_temp_max) subtitleParts.push(`🛏 ${s.bed_temp_min}–${s.bed_temp_max}°C`);
+    if (s.bambu_variant_id) subtitleParts.push(s.bambu_variant_id);
+    if (s.nozzle_temp_min && s.nozzle_temp_max) subtitleParts.push(`🔥${s.nozzle_temp_min}–${s.nozzle_temp_max}°C`);
+    if (s.bed_temp_min && s.bed_temp_max) subtitleParts.push(`🛏${s.bed_temp_min}–${s.bed_temp_max}°C`);
+    if (s.bambu_drying_temp) subtitleParts.push(`💨${s.bambu_drying_temp}°C/${s.bambu_drying_hours}t`);
     if (s.diameter && s.diameter !== 1.75) subtitleParts.push(s.diameter + 'mm');
     const subtitle = subtitleParts.filter(Boolean).join(' · ');
     // Drying status indicator
