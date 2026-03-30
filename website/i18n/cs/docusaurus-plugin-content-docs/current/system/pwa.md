@@ -67,7 +67,7 @@ PWA může odesílat push oznámení i když aplikace není otevřena:
 4. Přijměte dialog oprávnění
 5. Oznámení jsou doručována do centra oznámení operačního systému
 
-Push oznámení fungují pro všechny události nakonfigurované v [Upozorněních](../funksjoner/notifications).
+Push oznámení fungují pro všechny události nakonfigurované v [Upozorněních](../features/notifications).
 
 :::info Service Worker
 Push oznámení vyžadují, aby prohlížeč běžel na pozadí (ne plné vypnutí systému). PWA používá Service Worker pro příjem.

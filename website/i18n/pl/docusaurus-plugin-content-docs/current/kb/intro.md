@@ -13,36 +13,36 @@ Baza wiedzy zawiera praktyczne przewodniki pozwalające uzyskać najlepsze wynik
 ### Filamenty
 Szczegółowe przewodniki dla każdego typu materiału — ustawienia temperatury, wybór płyty, czasy suszenia i wskazówki do udanego drukowania.
 
-- [PLA](./filamenter/pla) — Najłatwiejszy do drukowania, zalecany dla początkujących
-- [PETG](./filamenter/petg) — Mocniejszy niż PLA, dobra odporność chemiczna
-- [ABS](./filamenter/abs) — Stabilny termicznie, wymaga obudowy
-- [TPU](./filamenter/tpu) — Elastyczny materiał, wymaga niskiej prędkości
-- [PA/Nylon](./filamenter/nylon) — Bardzo odporny na zużycie, wymagający w druku
-- [Kompozyt (CF/GF)](./filamenter/kompositt) — Wysoka sztywność, zużywa dyszę
+- [PLA](./filaments/pla) — Najłatwiejszy do drukowania, zalecany dla początkujących
+- [PETG](./filaments/petg) — Mocniejszy niż PLA, dobra odporność chemiczna
+- [ABS](./filaments/abs) — Stabilny termicznie, wymaga obudowy
+- [TPU](./filaments/tpu) — Elastyczny materiał, wymaga niskiej prędkości
+- [PA/Nylon](./filaments/nylon) — Bardzo odporny na zużycie, wymagający w druku
+- [Kompozyt (CF/GF)](./filaments/composite) — Wysoka sztywność, zużywa dyszę
 
 ### Płyty robocze
 Wybierz odpowiednią płytę dla każdego materiału i naucz się jej konserwacji.
 
-- [Przegląd i macierz kompatybilności](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Przegląd i macierz kompatybilności](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Konserwacja
 Utrzymaj drukarkę w dobrej kondycji dzięki regularnej konserwacji.
 
-- [Konserwacja dyszy](./vedlikehold/dyse) — Czyszczenie, cold pull i wymiana
-- [Konserwacja płyty](./vedlikehold/plate) — Czyszczenie IPA i zapobieganie uszkodzeniom
-- [Konserwacja AMS](./vedlikehold/ams) — Rury PTFE i droga filamentu
-- [Smarowanie](./vedlikehold/smoring) — Pręty, łożyska i interwały
+- [Konserwacja dyszy](./maintenance/nozzle) — Czyszczenie, cold pull i wymiana
+- [Konserwacja płyty](./maintenance/plate) — Czyszczenie IPA i zapobieganie uszkodzeniom
+- [Konserwacja AMS](./maintenance/ams) — Rury PTFE i droga filamentu
+- [Smarowanie](./maintenance/lubrication) — Pręty, łożyska i interwały
 
 ### Rozwiązywanie problemów
 Typowe problemy i praktyczne rozwiązania.
 
-- [Słaba przyczepność](./feilsoking/heft) — Pierwsza warstwa nie przylega
-- [Warping](./feilsoking/warping) — Narożniki się podnoszą
-- [Stringing](./feilsoking/stringing) — Cienkie nitki między obiektami
+- [Słaba przyczepność](./troubleshooting/adhesion) — Pierwsza warstwa nie przylega
+- [Warping](./troubleshooting/warping) — Narożniki się podnoszą
+- [Stringing](./troubleshooting/stringing) — Cienkie nitki między obiektami
 
 ## Dla kogo?
 

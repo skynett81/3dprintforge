@@ -48,13 +48,13 @@ Bambu Dashboard connects directly to your printer via MQTT over LAN, with no dep
 
 | Task | Link |
 |------|------|
-| Install the dashboard | [Installation](./kom-i-gang/installasjon) |
-| Configure first printer | [Setup](./kom-i-gang/oppsett) |
-| Connect to Bambu Cloud | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Explore all features | [Features](./funksjoner/oversikt) |
-| Filament guide | [Material guide](./kb/filamenter/guide) |
-| Maintenance guide | [Maintenance](./kb/vedlikehold/dyse) |
-| API documentation | [API](./avansert/api) |
+| Install the dashboard | [Installation](./getting-started/installation) |
+| Configure first printer | [Setup](./getting-started/setup) |
+| Connect to Bambu Cloud | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Explore all features | [Features](./features/overview) |
+| Filament guide | [Material guide](./kb/filaments/guide) |
+| Maintenance guide | [Maintenance](./kb/maintenance/nozzle) |
+| API documentation | [API](./advanced/api) |
 
 :::tip Demo mode
 You can try the dashboard without a physical printer by running `npm run demo`. This starts 3 simulated printers with live print cycles.
@@ -119,4 +119,4 @@ Bambu Dashboard is built with Node.js 22 and vanilla HTML/CSS/JS — no heavy fr
 - **Documentation**: Docusaurus with 17 languages, automatically built at installation
 - **API**: 177+ endpoints, OpenAPI documentation at `/api/docs`
 
-See [Architecture](./avansert/arkitektur) for details.
+See [Architecture](./advanced/architecture) for details.

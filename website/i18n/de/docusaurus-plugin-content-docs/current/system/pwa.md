@@ -67,7 +67,7 @@ Die PWA kann Push-Benachrichtigungen senden, auch wenn die App nicht geöffnet i
 4. Berechtigungsdialog akzeptieren
 5. Benachrichtigungen werden an die Benachrichtigungszentrale des Betriebssystems geliefert
 
-Push-Benachrichtigungen funktionieren für alle unter [Benachrichtigungen](../funksjoner/notifications) konfigurierten Ereignisse.
+Push-Benachrichtigungen funktionieren für alle unter [Benachrichtigungen](../features/notifications) konfigurierten Ereignisse.
 
 :::info Service Worker
 Push-Benachrichtigungen erfordern, dass der Browser im Hintergrund läuft (kein vollständiges Herunterfahren des Systems). Die PWA verwendet einen Service Worker für den Empfang.

@@ -67,7 +67,7 @@ A PWA képes push értesítéseket küldeni, még ha az alkalmazás nincs is nyi
 4. Fogadd el az engedélykérő párbeszédablakot
 5. Az értesítések az operációs rendszer értesítési központjába érkeznek
 
-A push értesítések az [Értesítések](../funksjoner/notifications) részben konfigurált összes eseményhez működnek.
+A push értesítések az [Értesítések](../features/notifications) részben konfigurált összes eseményhez működnek.
 
 :::info Service Worker
 A push értesítések megkövetelik, hogy a böngésző a háttérben fusson (nem teljes rendszerleállítás). A PWA Service Workert használ a fogadáshoz.

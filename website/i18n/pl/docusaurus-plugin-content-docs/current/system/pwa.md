@@ -67,7 +67,7 @@ PWA może wysyłać powiadomienia push nawet gdy aplikacja nie jest otwarta:
 4. Zaakceptuj okno dialogowe uprawnień
 5. Powiadomienia są dostarczane do centrum powiadomień systemu operacyjnego
 
-Powiadomienia push działają dla wszystkich zdarzeń skonfigurowanych w [Powiadomieniach](../funksjoner/notifications).
+Powiadomienia push działają dla wszystkich zdarzeń skonfigurowanych w [Powiadomieniach](../features/notifications).
 
 :::info Service Worker
 Powiadomienia push wymagają, aby przeglądarka działała w tle (bez pełnego zamknięcia systemu). PWA używa Service Worker do odbierania.

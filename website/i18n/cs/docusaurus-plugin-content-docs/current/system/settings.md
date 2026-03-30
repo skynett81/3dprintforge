@@ -24,11 +24,11 @@ Správa registrovaných tiskáren:
 | IP adresa | Pro lokální (LAN) režim |
 | Nastavení kamery | Aktivovat/deaktivovat, rozlišení |
 
-Viz [Začínáme](../kom-i-gang/oppsett) pro nastavení první tiskárny krok za krokem.
+Viz [Začínáme](../getting-started/setup) pro nastavení první tiskárny krok za krokem.
 
 ## Upozornění
 
-Viz kompletní dokumentaci v [Upozornění](../funksjoner/notifications).
+Viz kompletní dokumentaci v [Upozornění](../features/notifications).
 
 Rychlý přehled:
 - Aktivovat/deaktivovat kanály upozornění (Telegram, Discord, e-mail atd.)
@@ -56,7 +56,7 @@ Konfigurace pro OBS overlay:
 | Výchozí měřítko | Škálování (0,5–2,0) |
 | Zobrazit QR kód | Zobrazit QR kód k dashboardu v overlay |
 
-Viz [OBS Overlay](../funksjoner/obs-overlay) pro kompletní syntaxi URL a nastavení.
+Viz [OBS Overlay](../features/obs-overlay) pro kompletní syntaxi URL a nastavení.
 
 ## Energie a výkon
 

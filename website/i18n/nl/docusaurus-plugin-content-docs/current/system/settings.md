@@ -24,11 +24,11 @@ Beheer geregistreerde printers:
 | IP-adres | Voor lokale (LAN) modus |
 | Camera-instellingen | In-/uitschakelen, resolutie |
 
-Zie [Aan de slag](../kom-i-gang/oppsett) voor stap-voor-stap configuratie van de eerste printer.
+Zie [Aan de slag](../getting-started/setup) voor stap-voor-stap configuratie van de eerste printer.
 
 ## Meldingen
 
-Zie volledige documentatie in [Meldingen](../funksjoner/notifications).
+Zie volledige documentatie in [Meldingen](../features/notifications).
 
 Kort overzicht:
 - Meldingskanalen in-/uitschakelen (Telegram, Discord, e-mail, enz.)
@@ -56,7 +56,7 @@ Configuratie voor OBS-overlay:
 | Standaardschaal | Schaling (0.5–2.0) |
 | QR-code weergeven | QR-code naar het dashboard weergeven in de overlay |
 
-Zie [OBS-overlay](../funksjoner/obs-overlay) voor volledige URL-syntaxis en configuratie.
+Zie [OBS-overlay](../features/obs-overlay) voor volledige URL-syntaxis en configuratie.
 
 ## Energie en stroom
 

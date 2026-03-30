@@ -13,36 +13,36 @@ La Knowledge Base contiene guide pratiche per ottenere i migliori risultati con 
 ### Filamenti
 Guide dettagliate per ogni tipo di materiale — impostazioni temperatura, scelta del piano, tempi di essiccazione e consigli per una stampa di successo.
 
-- [PLA](./filamenter/pla) — Il più semplice da stampare, consigliato per principianti
-- [PETG](./filamenter/petg) — Più resistente del PLA, buona resistenza chimica
-- [ABS](./filamenter/abs) — Termicamente stabile, richiede camera chiusa
-- [TPU](./filamenter/tpu) — Materiale flessibile, richiede bassa velocità
-- [PA/Nylon](./filamenter/nylon) — Molto resistente all'usura, impegnativo da stampare
-- [Compositi (CF/GF)](./filamenter/kompositt) — Alta rigidità, consuma l'ugello
+- [PLA](./filaments/pla) — Il più semplice da stampare, consigliato per principianti
+- [PETG](./filaments/petg) — Più resistente del PLA, buona resistenza chimica
+- [ABS](./filaments/abs) — Termicamente stabile, richiede camera chiusa
+- [TPU](./filaments/tpu) — Materiale flessibile, richiede bassa velocità
+- [PA/Nylon](./filaments/nylon) — Molto resistente all'usura, impegnativo da stampare
+- [Compositi (CF/GF)](./filaments/composite) — Alta rigidità, consuma l'ugello
 
 ### Piani di stampa
 Scegli il piano giusto per ogni materiale e impara a mantenerlo.
 
-- [Panoramica e matrice di compatibilità](./byggplater/oversikt)
-- [Cool Plate (PEI liscio)](./byggplater/cool-plate)
-- [Engineering Plate (PEI testurizzato)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Panoramica e matrice di compatibilità](./build-plates/overview)
+- [Cool Plate (PEI liscio)](./build-plates/cool-plate)
+- [Engineering Plate (PEI testurizzato)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Manutenzione
 Mantieni la stampante in perfette condizioni con manutenzione regolare.
 
-- [Manutenzione ugello](./vedlikehold/dyse) — Pulizia, cold pull e sostituzione
-- [Manutenzione piano](./vedlikehold/plate) — Pulizia con IPA e prevenzione danni
-- [Manutenzione AMS](./vedlikehold/ams) — Tubi PTFE e percorso filamento
-- [Lubrificazione](./vedlikehold/smoring) — Guide, cuscinetti e intervalli
+- [Manutenzione ugello](./maintenance/nozzle) — Pulizia, cold pull e sostituzione
+- [Manutenzione piano](./maintenance/plate) — Pulizia con IPA e prevenzione danni
+- [Manutenzione AMS](./maintenance/ams) — Tubi PTFE e percorso filamento
+- [Lubrificazione](./maintenance/lubrication) — Guide, cuscinetti e intervalli
 
 ### Risoluzione dei problemi
 Problemi comuni e soluzioni pratiche.
 
-- [Scarsa adesione](./feilsoking/heft) — Il primo strato non aderisce
-- [Warping](./feilsoking/warping) — Gli angoli si sollevano
-- [Stringing](./feilsoking/stringing) — Fili sottili tra gli oggetti
+- [Scarsa adesione](./troubleshooting/adhesion) — Il primo strato non aderisce
+- [Warping](./troubleshooting/warping) — Gli angoli si sollevano
+- [Stringing](./troubleshooting/stringing) — Fili sottili tra gli oggetti
 
 ## Per chi?
 

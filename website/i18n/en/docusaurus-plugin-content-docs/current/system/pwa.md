@@ -67,7 +67,7 @@ The PWA can send push notifications even when the app is not open:
 4. Accept the permission dialog
 5. Notifications are delivered to the operating system's notification center
 
-Push notifications work for all events configured in [Notifications](../funksjoner/notifications).
+Push notifications work for all events configured in [Notifications](../features/notifications).
 
 :::info Service Worker
 Push notifications require the browser to be running in the background (not fully shut down). The PWA uses a Service Worker for reception.

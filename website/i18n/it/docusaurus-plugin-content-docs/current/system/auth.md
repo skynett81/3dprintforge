@@ -79,7 +79,7 @@ Aggiungi nell'intestazione HTTP per tutte le chiamate API:
 Authorization: Bearer LA_TUA_CHIAVE_API
 ```
 
-Vedi [API Playground](../verktoy/playground) per i test.
+Vedi [API Playground](../tools/playground) per i test.
 
 :::danger Conservazione sicura
 Le chiavi API hanno lo stesso accesso dell'utente a cui sono associate. Conservale in modo sicuro e ruotale regolarmente.

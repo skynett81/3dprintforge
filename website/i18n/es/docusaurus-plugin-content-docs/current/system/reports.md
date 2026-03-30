@@ -12,7 +12,7 @@ Ir a: **https://localhost:3443/#settings** → **Sistema → Informes**
 
 ## Requisitos previos
 
-Los informes requieren que las alertas por correo electrónico estén configuradas. Configura SMTP en **Configuración → Alertas → Correo electrónico** antes de activar los informes. Consulta [Alertas](../funksjoner/notifications).
+Los informes requieren que las alertas por correo electrónico estén configuradas. Configura SMTP en **Configuración → Alertas → Correo electrónico** antes de activar los informes. Consulta [Alertas](../features/notifications).
 
 ## Activar informes automáticos
 

@@ -24,11 +24,11 @@ Administrer registrerte printere:
 | IP-adresse | For lokal (LAN) modus |
 | Kamerainnstillinger | Aktiver/deaktiver, oppløsning |
 
-Se [Kom i gang](../kom-i-gang/oppsett) for steg-for-steg-oppsett av første printer.
+Se [Kom i gang](../getting-started/setup) for steg-for-steg-oppsett av første printer.
 
 ## Varsler
 
-Se fullstendig dokumentasjon i [Varsler](../funksjoner/notifications).
+Se fullstendig dokumentasjon i [Varsler](../features/notifications).
 
 Rask oversikt:
 - Aktiver/deaktiver varselkanaler (Telegram, Discord, e-post, osv.)
@@ -56,7 +56,7 @@ Konfigurasjon for OBS-overlay:
 | Standardskala | Skalering (0.5–2.0) |
 | Vis QR-kode | Vis QR-kode til dashboardet i overlayen |
 
-Se [OBS-overlay](../funksjoner/obs-overlay) for full URL-syntaks og oppsett.
+Se [OBS-overlay](../features/obs-overlay) for full URL-syntaks og oppsett.
 
 ## Energi og strøm
 

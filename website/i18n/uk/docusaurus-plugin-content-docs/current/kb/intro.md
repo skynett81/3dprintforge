@@ -13,36 +13,36 @@ description: Практичні посібники з філаментів, пл
 ### Філаменти
 Детальні посібники для кожного типу матеріалу — температурні налаштування, вибір платформи, час сушіння та поради для успішного друку.
 
-- [PLA](./filamenter/pla) — Найпростіший у друку, рекомендований для початківців
-- [PETG](./filamenter/petg) — Міцніший за PLA, хороша хімічна стійкість
-- [ABS](./filamenter/abs) — Термічно стабільний, потребує закритого корпусу
-- [TPU](./filamenter/tpu) — Гнучкий матеріал, потребує низької швидкості
-- [PA/Nylon](./filamenter/nylon) — Дуже зносостійкий, складний у друку
-- [Композит (CF/GF)](./filamenter/kompositt) — Висока жорсткість, зношує сопло
+- [PLA](./filaments/pla) — Найпростіший у друку, рекомендований для початківців
+- [PETG](./filaments/petg) — Міцніший за PLA, хороша хімічна стійкість
+- [ABS](./filaments/abs) — Термічно стабільний, потребує закритого корпусу
+- [TPU](./filaments/tpu) — Гнучкий матеріал, потребує низької швидкості
+- [PA/Nylon](./filaments/nylon) — Дуже зносостійкий, складний у друку
+- [Композит (CF/GF)](./filaments/composite) — Висока жорсткість, зношує сопло
 
 ### Платформи друку
 Вибирайте правильну платформу для кожного матеріалу та вчіться їх обслуговувати.
 
-- [Огляд та матриця сумісності](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Огляд та матриця сумісності](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Обслуговування
 Підтримуйте принтер у хорошому стані завдяки регулярному обслуговуванню.
 
-- [Обслуговування сопла](./vedlikehold/dyse) — Очищення, холодний pull та заміна
-- [Обслуговування платформи](./vedlikehold/plate) — Очищення IPA та запобігання пошкодженням
-- [Обслуговування AMS](./vedlikehold/ams) — Трубки PTFE та шлях філаменту
-- [Змащення](./vedlikehold/smoring) — Напрямні, підшипники та інтервали
+- [Обслуговування сопла](./maintenance/nozzle) — Очищення, холодний pull та заміна
+- [Обслуговування платформи](./maintenance/plate) — Очищення IPA та запобігання пошкодженням
+- [Обслуговування AMS](./maintenance/ams) — Трубки PTFE та шлях філаменту
+- [Змащення](./maintenance/lubrication) — Напрямні, підшипники та інтервали
 
 ### Усунення несправностей
 Типові проблеми та практичні рішення.
 
-- [Погана адгезія](./feilsoking/heft) — Перший шар не тримається
-- [Warping](./feilsoking/warping) — Кути піднімаються
-- [Stringing](./feilsoking/stringing) — Тонкі нитки між об'єктами
+- [Погана адгезія](./troubleshooting/adhesion) — Перший шар не тримається
+- [Warping](./troubleshooting/warping) — Кути піднімаються
+- [Stringing](./troubleshooting/stringing) — Тонкі нитки між об'єктами
 
 ## Для кого?
 

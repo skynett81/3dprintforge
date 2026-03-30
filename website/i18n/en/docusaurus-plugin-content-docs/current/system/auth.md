@@ -79,7 +79,7 @@ Add to the HTTP header for all API calls:
 Authorization: Bearer YOUR_API_KEY
 ```
 
-See [API Playground](../verktoy/playground) for testing.
+See [API Playground](../tools/playground) for testing.
 
 :::danger Secure storage
 API keys have the same access as the user they are linked to. Store them securely and rotate them regularly.

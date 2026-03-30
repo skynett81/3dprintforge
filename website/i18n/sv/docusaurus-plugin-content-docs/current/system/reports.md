@@ -12,7 +12,7 @@ Gå till: **https://localhost:3443/#settings** → **System → Rapporter**
 
 ## Förutsättningar
 
-Rapporter kräver att e-postaviseringar är konfigurerade. Ställ in SMTP under **Inställningar → Aviseringar → E-post** innan du aktiverar rapporter. Se [Aviseringar](../funksjoner/notifications).
+Rapporter kräver att e-postaviseringar är konfigurerade. Ställ in SMTP under **Inställningar → Aviseringar → E-post** innan du aktiverar rapporter. Se [Aviseringar](../features/notifications).
 
 ## Aktivera automatiska rapporter
 

@@ -48,13 +48,13 @@ Bambu Dashboard se připojuje přímo k vaší tiskárně přes MQTT přes LAN, 
 
 | Úkol | Odkaz |
 |------|-------|
-| Nainstalovat dashboard | [Instalace](./kom-i-gang/installasjon) |
-| Nakonfigurovat první tiskárnu | [Nastavení](./kom-i-gang/oppsett) |
-| Připojit k Bambu Cloud | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Prozkoumat všechny funkce | [Funkce](./funksjoner/oversikt) |
-| Průvodce filamenty | [Průvodce materiály](./kb/filamenter/guide) |
-| Průvodce údržbou | [Údržba](./kb/vedlikehold/dyse) |
-| Dokumentace API | [API](./avansert/api) |
+| Nainstalovat dashboard | [Instalace](./getting-started/installation) |
+| Nakonfigurovat první tiskárnu | [Nastavení](./getting-started/setup) |
+| Připojit k Bambu Cloud | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Prozkoumat všechny funkce | [Funkce](./features/overview) |
+| Průvodce filamenty | [Průvodce materiály](./kb/filaments/guide) |
+| Průvodce údržbou | [Údržba](./kb/maintenance/nozzle) |
+| Dokumentace API | [API](./advanced/api) |
 
 :::tip Demo režim
 Můžete vyzkoušet dashboard bez fyzické tiskárny spuštěním `npm run demo`. Tím se spustí 3 simulované tiskárny s živými tiskovými cykly.
@@ -119,4 +119,4 @@ Bambu Dashboard je postaven na Node.js 22 a vanilla HTML/CSS/JS — žádné tě
 - **Dokumentace**: Docusaurus se 17 jazyky, automaticky sestavená při instalaci
 - **API**: 177+ endpointů, dokumentace OpenAPI na `/api/docs`
 
-Viz [Architektura](./avansert/arkitektur) pro podrobnosti.
+Viz [Architektura](./advanced/architecture) pro podrobnosti.

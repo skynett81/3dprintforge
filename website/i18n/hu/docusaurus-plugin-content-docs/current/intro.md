@@ -48,13 +48,13 @@ A Bambu Dashboard közvetlenül csatlakozik a nyomtatójához MQTT-n keresztül 
 
 | Feladat | Hivatkozás |
 |---------|-----------|
-| Dashboard telepítése | [Telepítés](./kom-i-gang/installasjon) |
-| Első nyomtató konfigurálása | [Beállítás](./kom-i-gang/oppsett) |
-| Csatlakozás a Bambu Cloud-hoz | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Az összes funkció felfedezése | [Funkciók](./funksjoner/oversikt) |
-| Filament útmutató | [Anyagútmutató](./kb/filamenter/guide) |
-| Karbantartási útmutató | [Karbantartás](./kb/vedlikehold/dyse) |
-| API dokumentáció | [API](./avansert/api) |
+| Dashboard telepítése | [Telepítés](./getting-started/installation) |
+| Első nyomtató konfigurálása | [Beállítás](./getting-started/setup) |
+| Csatlakozás a Bambu Cloud-hoz | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Az összes funkció felfedezése | [Funkciók](./features/overview) |
+| Filament útmutató | [Anyagútmutató](./kb/filaments/guide) |
+| Karbantartási útmutató | [Karbantartás](./kb/maintenance/nozzle) |
+| API dokumentáció | [API](./advanced/api) |
 
 :::tip Demo mód
 Kipróbálhatja a dashboardot fizikai nyomtató nélkül az `npm run demo` futtatásával. Ez 3 szimulált nyomtatót indít élő nyomtatási ciklusokkal.
@@ -119,4 +119,4 @@ A Bambu Dashboard Node.js 22-vel és vanilla HTML/CSS/JS-sel készült — nincs
 - **Dokumentáció**: Docusaurus 17 nyelvvel, telepítéskor automatikusan felépítve
 - **API**: 177+ végpont, OpenAPI dokumentáció a `/api/docs` címen
 
-Lásd az [Architektúra](./avansert/arkitektur) oldalt a részletekért.
+Lásd az [Architektúra](./advanced/architecture) oldalt a részletekért.

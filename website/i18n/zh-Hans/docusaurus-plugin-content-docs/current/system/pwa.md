@@ -67,7 +67,7 @@ PWA 缓存必要资源以支持有限的离线使用：
 4. 接受权限请求
 5. 通知将发送到操作系统的通知中心
 
-推送通知适用于[通知](../funksjoner/notifications)中配置的所有事件。
+推送通知适用于[通知](../features/notifications)中配置的所有事件。
 
 :::info Service Worker
 推送通知需要浏览器在后台运行（不能完全关闭系统）。PWA 使用 Service Worker 接收通知。

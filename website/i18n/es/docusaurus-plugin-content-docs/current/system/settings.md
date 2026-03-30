@@ -24,11 +24,11 @@ Administra las impresoras registradas:
 | Dirección IP | Para el modo local (LAN) |
 | Configuración de cámara | Activar/desactivar, resolución |
 
-Consulta [Comenzar](../kom-i-gang/oppsett) para la configuración paso a paso de la primera impresora.
+Consulta [Comenzar](../getting-started/setup) para la configuración paso a paso de la primera impresora.
 
 ## Alertas
 
-Consulta la documentación completa en [Alertas](../funksjoner/notifications).
+Consulta la documentación completa en [Alertas](../features/notifications).
 
 Resumen rápido:
 - Activar/desactivar canales de alerta (Telegram, Discord, correo electrónico, etc.)
@@ -56,7 +56,7 @@ Configuración del OBS overlay:
 | Escala predeterminada | Escala (0.5–2.0) |
 | Mostrar código QR | Mostrar código QR al panel en el overlay |
 
-Consulta [OBS overlay](../funksjoner/obs-overlay) para la sintaxis completa de URL y configuración.
+Consulta [OBS overlay](../features/obs-overlay) para la sintaxis completa de URL y configuración.
 
 ## Energía y electricidad
 

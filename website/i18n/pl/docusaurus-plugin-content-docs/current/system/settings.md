@@ -24,11 +24,11 @@ Zarządzaj zarejestrowanymi drukarkami:
 | Adres IP | Dla trybu lokalnego (LAN) |
 | Ustawienia kamery | Aktywuj/dezaktywuj, rozdzielczość |
 
-Zobacz [Pierwsze kroki](../kom-i-gang/oppsett) dla konfiguracji krok po kroku pierwszej drukarki.
+Zobacz [Pierwsze kroki](../getting-started/setup) dla konfiguracji krok po kroku pierwszej drukarki.
 
 ## Powiadomienia
 
-Pełna dokumentacja w [Powiadomieniach](../funksjoner/notifications).
+Pełna dokumentacja w [Powiadomieniach](../features/notifications).
 
 Szybki przegląd:
 - Aktywuj/dezaktywuj kanały powiadomień (Telegram, Discord, e-mail itp.)
@@ -56,7 +56,7 @@ Konfiguracja nakładki OBS:
 | Domyślna skala | Skalowanie (0,5–2,0) |
 | Pokaż kod QR | Wyświetl kod QR do dashboardu w nakładce |
 
-Zobacz [Nakładkę OBS](../funksjoner/obs-overlay) dla pełnej składni URL i konfiguracji.
+Zobacz [Nakładkę OBS](../features/obs-overlay) dla pełnej składni URL i konfiguracji.
 
 ## Energia i prąd
 

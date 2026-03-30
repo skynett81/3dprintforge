@@ -12,7 +12,7 @@ Navigálj ide: **https://localhost:3443/#settings** → **Rendszer → Jelentés
 
 ## Előfeltételek
 
-A jelentések megkövetelik az e-mail értesítések konfigurálását. Állítsd be az SMTP-t a **Beállítások → Értesítések → E-mail** menüponton, mielőtt aktiválnád a jelentéseket. Lásd: [Értesítések](../funksjoner/notifications).
+A jelentések megkövetelik az e-mail értesítések konfigurálását. Állítsd be az SMTP-t a **Beállítások → Értesítések → E-mail** menüponton, mielőtt aktiválnád a jelentéseket. Lásd: [Értesítések](../features/notifications).
 
 ## Automatikus jelentések aktiválása
 

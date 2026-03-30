@@ -13,36 +13,36 @@ description: 耗材、打印平台、维护和故障排查的实用指南
 ### 耗材
 每种材料类型的详细指南——温度设置、平台选择、干燥时间和打印技巧。
 
-- [PLA](./filamenter/pla) — 最易打印，推荐新手入门
-- [PETG](./filamenter/petg) — 比 PLA 更强，耐化学品
-- [ABS](./filamenter/abs) — 热稳定性好，需要密闭腔室
-- [TPU](./filamenter/tpu) — 柔性材料，需要低速打印
-- [PA/尼龙](./filamenter/nylon) — 极耐磨，打印难度较高
-- [复合材料（CF/GF）](./filamenter/kompositt) — 高刚性，磨损喷嘴
+- [PLA](./filaments/pla) — 最易打印，推荐新手入门
+- [PETG](./filaments/petg) — 比 PLA 更强，耐化学品
+- [ABS](./filaments/abs) — 热稳定性好，需要密闭腔室
+- [TPU](./filaments/tpu) — 柔性材料，需要低速打印
+- [PA/尼龙](./filaments/nylon) — 极耐磨，打印难度较高
+- [复合材料（CF/GF）](./filaments/composite) — 高刚性，磨损喷嘴
 
 ### 打印平台
 为每种材料选择合适的平台，并学习日常维护方法。
 
-- [平台概览与兼容性矩阵](./byggplater/oversikt)
-- [光滑 PEI 板（Cool Plate）](./byggplater/cool-plate)
-- [工程板（Engineering Plate）](./byggplater/engineering-plate)
-- [高温板（High Temp Plate）](./byggplater/high-temp-plate)
-- [纹理 PEI 板（Textured PEI）](./byggplater/textured-pei)
+- [平台概览与兼容性矩阵](./build-plates/overview)
+- [光滑 PEI 板（Cool Plate）](./build-plates/cool-plate)
+- [工程板（Engineering Plate）](./build-plates/engineering-plate)
+- [高温板（High Temp Plate）](./build-plates/high-temp-plate)
+- [纹理 PEI 板（Textured PEI）](./build-plates/textured-pei)
 
 ### 维护
 通过定期维护保持打印机良好状态。
 
-- [喷嘴维护](./vedlikehold/dyse) — 清洁、冷拔和更换
-- [平台维护](./vedlikehold/plate) — IPA 清洁和防损保护
-- [AMS 维护](./vedlikehold/ams) — PTFE 管和耗材通道
-- [润滑](./vedlikehold/smoring) — 导轨、轴承和维护周期
+- [喷嘴维护](./maintenance/nozzle) — 清洁、冷拔和更换
+- [平台维护](./maintenance/plate) — IPA 清洁和防损保护
+- [AMS 维护](./maintenance/ams) — PTFE 管和耗材通道
+- [润滑](./maintenance/lubrication) — 导轨、轴承和维护周期
 
 ### 故障排查
 常见问题及实用解决方案。
 
-- [粘附不良](./feilsoking/heft) — 首层不粘
-- [翘边（Warping）](./feilsoking/warping) — 角落翘起
-- [拉丝（Stringing）](./feilsoking/stringing) — 部件之间出现细丝
+- [粘附不良](./troubleshooting/adhesion) — 首层不粘
+- [翘边（Warping）](./troubleshooting/warping) — 角落翘起
+- [拉丝（Stringing）](./troubleshooting/stringing) — 部件之间出现细丝
 
 ## 适合哪些用户？
 

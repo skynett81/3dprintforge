@@ -2,6 +2,9 @@
   "sidebar.guideSidebar.category.Kom i gang": {
     "message": "Premiers pas"
   },
+  "sidebar.guideSidebar.category.Guider": {
+    "message": "Guides"
+  },
   "sidebar.guideSidebar.category.Funksjoner": {
     "message": "Fonctionnalités"
   },

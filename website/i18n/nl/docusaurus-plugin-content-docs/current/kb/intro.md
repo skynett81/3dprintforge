@@ -13,36 +13,36 @@ De kennisbank bevat praktische handleidingen voor de beste resultaten met uw Bam
 ### Filamenten
 Gedetailleerde handleidingen voor elk materiaaltype — temperatuurinstellingen, bedkeuze, droogtijden en tips voor succesvol printen.
 
-- [PLA](./filamenter/pla) — Het eenvoudigst te printen, aanbevolen voor beginners
-- [PETG](./filamenter/petg) — Sterker dan PLA, goede chemische bestendigheid
-- [ABS](./filamenter/abs) — Thermisch stabiel, gesloten behuizing vereist
-- [TPU](./filamenter/tpu) — Flexibel materiaal, lage snelheid vereist
-- [PA/Nylon](./filamenter/nylon) — Zeer slijtvast, uitdagend te printen
-- [Composiet (CF/GF)](./filamenter/kompositt) — Hoge stijfheid, slijt de spuit
+- [PLA](./filaments/pla) — Het eenvoudigst te printen, aanbevolen voor beginners
+- [PETG](./filaments/petg) — Sterker dan PLA, goede chemische bestendigheid
+- [ABS](./filaments/abs) — Thermisch stabiel, gesloten behuizing vereist
+- [TPU](./filaments/tpu) — Flexibel materiaal, lage snelheid vereist
+- [PA/Nylon](./filaments/nylon) — Zeer slijtvast, uitdagend te printen
+- [Composiet (CF/GF)](./filaments/composite) — Hoge stijfheid, slijt de spuit
 
 ### Printbedden
 Kies het juiste bed voor elk materiaal en leer hoe u ze onderhoudt.
 
-- [Overzicht en compatibiliteitsmatrix](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Overzicht en compatibiliteitsmatrix](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Onderhoud
 Houd uw printer in goede staat met regelmatig onderhoud.
 
-- [Spuitonderhoud](./vedlikehold/dyse) — Reinigen, cold pull en verwisselen
-- [Bedonderhoud](./vedlikehold/plate) — IPA-reiniging en schadevoorkoming
-- [AMS-onderhoud](./vedlikehold/ams) — PTFE-buizen en filamentpad
-- [Smering](./vedlikehold/smoring) — Geleiders, lagers en intervallen
+- [Spuitonderhoud](./maintenance/nozzle) — Reinigen, cold pull en verwisselen
+- [Bedonderhoud](./maintenance/plate) — IPA-reiniging en schadevoorkoming
+- [AMS-onderhoud](./maintenance/ams) — PTFE-buizen en filamentpad
+- [Smering](./maintenance/lubrication) — Geleiders, lagers en intervallen
 
 ### Probleemoplossing
 Veelvoorkomende problemen en praktische oplossingen.
 
-- [Slechte hechting](./feilsoking/heft) — Eerste laag hecht niet
-- [Warping](./feilsoking/warping) — Hoeken lichten op
-- [Stringing](./feilsoking/stringing) — Dunne draden tussen objecten
+- [Slechte hechting](./troubleshooting/adhesion) — Eerste laag hecht niet
+- [Warping](./troubleshooting/warping) — Hoeken lichten op
+- [Stringing](./troubleshooting/stringing) — Dunne draden tussen objecten
 
 ## Voor wie?
 

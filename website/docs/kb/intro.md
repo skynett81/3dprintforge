@@ -13,36 +13,36 @@ Kunnskapsbasen inneholder praktiske guider for å få best mulig resultat med Ba
 ### Filamenter
 Detaljerte guider for hvert materialtype — temperaturinnstillinger, platevalg, tørketider og tips for vellykket printing.
 
-- [PLA](./filamenter/pla) — Det enkleste å printe, anbefalt for nybegynnere
-- [PETG](./filamenter/petg) — Sterkere enn PLA, god kjemisk motstand
-- [ABS](./filamenter/abs) — Termisk stabilt, krever innelukke
-- [TPU](./filamenter/tpu) — Fleksibelt materiale, krever lav hastighet
-- [PA/Nylon](./filamenter/nylon) — Svært slitesterkt, krevende å printe
-- [Kompositt (CF/GF)](./filamenter/kompositt) — Høy stivhet, sliter dysen
+- [PLA](./filaments/pla) — Det enkleste å printe, anbefalt for nybegynnere
+- [PETG](./filaments/petg) — Sterkere enn PLA, god kjemisk motstand
+- [ABS](./filaments/abs) — Termisk stabilt, krever innelukke
+- [TPU](./filaments/tpu) — Fleksibelt materiale, krever lav hastighet
+- [PA/Nylon](./filaments/nylon) — Svært slitesterkt, krevende å printe
+- [Kompositt (CF/GF)](./filaments/composite) — Høy stivhet, sliter dysen
 
 ### Byggplater
 Velg riktig plate for hvert materiale og lær å vedlikeholde dem.
 
-- [Oversikt og kompatibilitetsmatrise](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Oversikt og kompatibilitetsmatrise](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Vedlikehold
 Hold printeren i god stand med jevnlig vedlikehold.
 
-- [Dysevedlikehold](./vedlikehold/dyse) — Rengjøring, cold pull og bytte
-- [Platevedlikehold](./vedlikehold/plate) — IPA-rengjøring og skade-forebygging
-- [AMS-vedlikehold](./vedlikehold/ams) — PTFE-rør og filament-vei
-- [Smøring](./vedlikehold/smoring) — Stenger, leiere og intervaller
+- [Dysevedlikehold](./maintenance/nozzle) — Rengjøring, cold pull og bytte
+- [Platevedlikehold](./maintenance/plate) — IPA-rengjøring og skade-forebygging
+- [AMS-vedlikehold](./maintenance/ams) — PTFE-rør og filament-vei
+- [Smøring](./maintenance/lubrication) — Stenger, leiere og intervaller
 
 ### Feilsøking
 Vanlige problemer og praktiske løsninger.
 
-- [Dårlig heft](./feilsoking/heft) — Første lag sitter ikke
-- [Warping](./feilsoking/warping) — Hjørner løfter seg
-- [Stringing](./feilsoking/stringing) — Tynne tråder mellom objekter
+- [Dårlig heft](./troubleshooting/adhesion) — Første lag sitter ikke
+- [Warping](./troubleshooting/warping) — Hjørner løfter seg
+- [Stringing](./troubleshooting/stringing) — Tynne tråder mellom objekter
 
 ## For hvem?
 

@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#settings** → **Systeem → Rapporten**
 
 ## Vereisten
 
-Rapporten vereisen dat e-mailmeldingen zijn geconfigureerd. Stel SMTP in via **Instellingen → Meldingen → E-mail** vóór u rapporten activeert. Zie [Meldingen](../funksjoner/notifications).
+Rapporten vereisen dat e-mailmeldingen zijn geconfigureerd. Stel SMTP in via **Instellingen → Meldingen → E-mail** vóór u rapporten activeert. Zie [Meldingen](../features/notifications).
 
 ## Automatische rapporten activeren
 

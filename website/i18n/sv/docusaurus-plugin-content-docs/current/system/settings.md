@@ -24,11 +24,11 @@ Hantera registrerade skrivare:
 | IP-adress | För lokalt (LAN) läge |
 | Kamerainställningar | Aktivera/inaktivera, upplösning |
 
-Se [Kom igång](../kom-i-gang/oppsett) för steg-för-steg-installation av första skrivare.
+Se [Kom igång](../getting-started/setup) för steg-för-steg-installation av första skrivare.
 
 ## Aviseringar
 
-Se fullständig dokumentation i [Aviseringar](../funksjoner/notifications).
+Se fullständig dokumentation i [Aviseringar](../features/notifications).
 
 Snabböversikt:
 - Aktivera/inaktivera aviseringskanaler (Telegram, Discord, e-post, osv.)
@@ -56,7 +56,7 @@ Konfiguration för OBS-overlay:
 | Standardskala | Skalning (0.5–2.0) |
 | Visa QR-kod | Visa QR-kod till dashboardet i overlayen |
 
-Se [OBS-overlay](../funksjoner/obs-overlay) för fullständig URL-syntax och installation.
+Se [OBS-overlay](../features/obs-overlay) för fullständig URL-syntax och installation.
 
 ## Energi och el
 

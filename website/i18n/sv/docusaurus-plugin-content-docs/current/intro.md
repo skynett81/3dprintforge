@@ -48,13 +48,13 @@ Bambu Dashboard ansluter direkt till din skrivare via MQTT över LAN, utan beroe
 
 | Uppgift | Länk |
 |---------|------|
-| Installera instrumentpanelen | [Installation](./kom-i-gang/installasjon) |
-| Konfigurera första skrivaren | [Inställning](./kom-i-gang/oppsett) |
-| Anslut Bambu Cloud | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Utforska alla funktioner | [Funktioner](./funksjoner/oversikt) |
-| Filamentguide | [Materialguide](./kb/filamenter/guide) |
-| Underhållsguide | [Underhåll](./kb/vedlikehold/dyse) |
-| API-dokumentation | [API](./avansert/api) |
+| Installera instrumentpanelen | [Installation](./getting-started/installation) |
+| Konfigurera första skrivaren | [Inställning](./getting-started/setup) |
+| Anslut Bambu Cloud | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Utforska alla funktioner | [Funktioner](./features/overview) |
+| Filamentguide | [Materialguide](./kb/filaments/guide) |
+| Underhållsguide | [Underhåll](./kb/maintenance/nozzle) |
+| API-dokumentation | [API](./advanced/api) |
 
 :::tip Demo-läge
 Du kan prova instrumentpanelen utan en fysisk skrivare genom att köra `npm run demo`. Detta startar 3 simulerade skrivare med live-utskriftscykler.
@@ -119,4 +119,4 @@ Bambu Dashboard är byggt med Node.js 22 och vanlig HTML/CSS/JS — inga tunga r
 - **Dokumentation**: Docusaurus med 17 språk, automatiskt byggd vid installation
 - **API**: 177+ endpoints, OpenAPI-dokumentation på `/api/docs`
 
-Se [Arkitektur](./avansert/arkitektur) för detaljer.
+Se [Arkitektur](./advanced/architecture) för detaljer.

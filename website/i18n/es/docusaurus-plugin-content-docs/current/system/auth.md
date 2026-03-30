@@ -79,7 +79,7 @@ Agrega en el encabezado HTTP para todas las llamadas a la API:
 Authorization: Bearer TU_CLAVE_API
 ```
 
-Consulta el [Área de pruebas de API](../verktoy/playground) para pruebas.
+Consulta el [Área de pruebas de API](../tools/playground) para pruebas.
 
 :::danger Almacenamiento seguro
 Las claves API tienen el mismo acceso que el usuario al que están vinculadas. Guárdalas de forma segura y rótarlas regularmente.

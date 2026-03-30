@@ -79,7 +79,7 @@ Add hozzá a HTTP fejléchez az összes API hívásban:
 Authorization: Bearer AZ_TE_API_KULCSOD
 ```
 
-A teszteléshez lásd az [API játszóteret](../verktoy/playground).
+A teszteléshez lásd az [API játszóteret](../tools/playground).
 
 :::danger Biztonságos tárolás
 Az API kulcsok ugyanolyan hozzáféréssel rendelkeznek, mint az a felhasználó, akihez kapcsolódnak. Tárold őket biztonságosan, és rendszeresen forgasd.

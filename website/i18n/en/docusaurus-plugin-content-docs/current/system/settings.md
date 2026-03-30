@@ -24,11 +24,11 @@ Manage registered printers:
 | IP address | For local (LAN) mode |
 | Camera settings | Enable/disable, resolution |
 
-See [Getting Started](../kom-i-gang/oppsett) for step-by-step setup of your first printer.
+See [Getting Started](../getting-started/setup) for step-by-step setup of your first printer.
 
 ## Notifications
 
-See full documentation in [Notifications](../funksjoner/notifications).
+See full documentation in [Notifications](../features/notifications).
 
 Quick overview:
 - Enable/disable notification channels (Telegram, Discord, email, etc.)
@@ -56,7 +56,7 @@ Configuration for OBS overlay:
 | Default scale | Scaling (0.5–2.0) |
 | Show QR code | Show QR code to dashboard in overlay |
 
-See [OBS Overlay](../funksjoner/obs-overlay) for full URL syntax and setup.
+See [OBS Overlay](../features/obs-overlay) for full URL syntax and setup.
 
 ## Energy and power
 

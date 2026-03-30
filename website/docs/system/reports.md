@@ -12,7 +12,7 @@ Gå til: **https://localhost:3443/#settings** → **System → Rapporter**
 
 ## Forutsetninger
 
-Rapporter krever at e-postvarsler er konfigurert. Sett opp SMTP under **Innstillinger → Varsler → E-post** før du aktiverer rapporter. Se [Varsler](../funksjoner/notifications).
+Rapporter krever at e-postvarsler er konfigurert. Sett opp SMTP under **Innstillinger → Varsler → E-post** før du aktiverer rapporter. Se [Varsler](../features/notifications).
 
 ## Aktivere automatiske rapporter
 

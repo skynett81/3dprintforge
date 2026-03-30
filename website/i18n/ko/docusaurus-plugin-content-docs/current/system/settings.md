@@ -24,11 +24,11 @@ Bambu Dashboard의 모든 설정은 명확한 분류가 있는 한 페이지에 
 | IP 주소 | 로컬 (LAN) 모드용 |
 | 카메라 설정 | 활성화/비활성화, 해상도 |
 
-첫 번째 프린터 단계별 설정은 [시작하기](../kom-i-gang/oppsett)를 참조하세요.
+첫 번째 프린터 단계별 설정은 [시작하기](../getting-started/setup)를 참조하세요.
 
 ## 알림
 
-전체 문서는 [알림](../funksjoner/notifications)을 참조하세요.
+전체 문서는 [알림](../features/notifications)을 참조하세요.
 
 빠른 개요:
 - 알림 채널 활성화/비활성화 (Telegram, Discord, 이메일 등)
@@ -56,7 +56,7 @@ OBS 오버레이 구성:
 | 기본 배율 | 크기 조정 (0.5–2.0) |
 | QR 코드 표시 | 오버레이에 대시보드 QR 코드 표시 |
 
-전체 URL 구문 및 설정은 [OBS 오버레이](../funksjoner/obs-overlay)를 참조하세요.
+전체 URL 구문 및 설정은 [OBS 오버레이](../features/obs-overlay)를 참조하세요.
 
 ## 에너지 및 전력
 

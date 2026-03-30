@@ -13,36 +13,36 @@ La base de conocimientos contiene guías prácticas para obtener los mejores res
 ### Filamentos
 Guías detalladas para cada tipo de material — ajustes de temperatura, selección de placa, tiempos de secado y consejos para una impresión exitosa.
 
-- [PLA](./filamenter/pla) — El más fácil de imprimir, recomendado para principiantes
-- [PETG](./filamenter/petg) — Más resistente que el PLA, buena resistencia química
-- [ABS](./filamenter/abs) — Térmicamente estable, requiere cámara cerrada
-- [TPU](./filamenter/tpu) — Material flexible, requiere baja velocidad
-- [PA/Nylon](./filamenter/nylon) — Muy resistente al desgaste, difícil de imprimir
-- [Compuestos (CF/GF)](./filamenter/kompositt) — Alta rigidez, desgasta la boquilla
+- [PLA](./filaments/pla) — El más fácil de imprimir, recomendado para principiantes
+- [PETG](./filaments/petg) — Más resistente que el PLA, buena resistencia química
+- [ABS](./filaments/abs) — Térmicamente estable, requiere cámara cerrada
+- [TPU](./filaments/tpu) — Material flexible, requiere baja velocidad
+- [PA/Nylon](./filaments/nylon) — Muy resistente al desgaste, difícil de imprimir
+- [Compuestos (CF/GF)](./filaments/composite) — Alta rigidez, desgasta la boquilla
 
 ### Placas de impresión
 Elija la placa correcta para cada material y aprenda a mantenerlas.
 
-- [Descripción general y matriz de compatibilidad](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Descripción general y matriz de compatibilidad](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Mantenimiento
 Mantenga su impresora en buen estado con un mantenimiento regular.
 
-- [Mantenimiento de la boquilla](./vedlikehold/dyse) — Limpieza, cold pull y reemplazo
-- [Mantenimiento de la placa](./vedlikehold/plate) — Limpieza con IPA y prevención de daños
-- [Mantenimiento del AMS](./vedlikehold/ams) — Tubo PTFE y ruta del filamento
-- [Lubricación](./vedlikehold/smoring) — Varillas, rodamientos e intervalos
+- [Mantenimiento de la boquilla](./maintenance/nozzle) — Limpieza, cold pull y reemplazo
+- [Mantenimiento de la placa](./maintenance/plate) — Limpieza con IPA y prevención de daños
+- [Mantenimiento del AMS](./maintenance/ams) — Tubo PTFE y ruta del filamento
+- [Lubricación](./maintenance/lubrication) — Varillas, rodamientos e intervalos
 
 ### Resolución de problemas
 Problemas comunes y soluciones prácticas.
 
-- [Mala adhesión](./feilsoking/heft) — La primera capa no se adhiere
-- [Warping](./feilsoking/warping) — Las esquinas se levantan
-- [Stringing](./feilsoking/stringing) — Hilos finos entre objetos
+- [Mala adhesión](./troubleshooting/adhesion) — La primera capa no se adhiere
+- [Warping](./troubleshooting/warping) — Las esquinas se levantan
+- [Stringing](./troubleshooting/stringing) — Hilos finos entre objetos
 
 ## ¿Para quién?
 

@@ -79,7 +79,7 @@ Voeg toe aan de HTTP-header voor alle API-aanroepen:
 Authorization: Bearer UW_API_SLEUTEL
 ```
 
-Zie [API-speeltuin](../verktoy/playground) voor testen.
+Zie [API-speeltuin](../tools/playground) voor testen.
 
 :::danger Veilige opslag
 API-sleutels hebben dezelfde toegang als de gebruiker waaraan ze zijn gekoppeld. Bewaar ze veilig en roteer ze regelmatig.

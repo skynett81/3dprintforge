@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#settings** → **System → Bericht
 
 ## Voraussetzungen
 
-Berichte erfordern, dass E-Mail-Benachrichtigungen konfiguriert sind. Richten Sie SMTP unter **Einstellungen → Benachrichtigungen → E-Mail** ein, bevor Sie Berichte aktivieren. Siehe [Benachrichtigungen](../funksjoner/notifications).
+Berichte erfordern, dass E-Mail-Benachrichtigungen konfiguriert sind. Richten Sie SMTP unter **Einstellungen → Benachrichtigungen → E-Mail** ein, bevor Sie Berichte aktivieren. Siehe [Benachrichtigungen](../features/notifications).
 
 ## Automatische Berichte aktivieren
 

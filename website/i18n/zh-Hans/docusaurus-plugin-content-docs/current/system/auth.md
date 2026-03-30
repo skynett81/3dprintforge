@@ -79,7 +79,7 @@ API 密钥提供无需登录的程序化访问方式。
 Authorization: Bearer 您的API密钥
 ```
 
-参阅 [API 试验场](../verktoy/playground) 进行测试。
+参阅 [API 试验场](../tools/playground) 进行测试。
 
 :::danger 安全存储
 API 密钥与关联用户具有相同的访问权限。请妥善保管，并定期轮换。

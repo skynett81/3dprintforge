@@ -79,7 +79,7 @@ Ajoutez-la dans l'en-tête HTTP pour tous les appels API :
 Authorization: Bearer VOTRE_CLÉ_API
 ```
 
-Consultez le [Terrain de jeu API](../verktoy/playground) pour les tests.
+Consultez le [Terrain de jeu API](../tools/playground) pour les tests.
 
 :::danger Conservation sécurisée
 Les clés API ont le même accès que l'utilisateur auquel elles sont liées. Conservez-les en lieu sûr et faites-les tourner régulièrement.

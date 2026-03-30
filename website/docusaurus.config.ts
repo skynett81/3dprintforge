@@ -138,17 +138,17 @@ const config: Config = {
         {
           title: 'Dokumentasjon',
           items: [
-            { label: 'Kom i gang', to: '/kom-i-gang/installasjon' },
-            { label: 'Funksjoner', to: '/funksjoner/oversikt' },
-            { label: 'API-referanse', to: '/avansert/api' },
+            { label: 'Kom i gang', to: '/getting-started/installation' },
+            { label: 'Funksjoner', to: '/features/overview' },
+            { label: 'API-referanse', to: '/advanced/api' },
           ],
         },
         {
           title: 'Kunnskapsbase',
           items: [
-            { label: 'Filamenter', to: '/kb/filamenter/pla' },
-            { label: 'Byggplater', to: '/kb/byggplater/oversikt' },
-            { label: 'Vedlikehold', to: '/kb/vedlikehold/dyse' },
+            { label: 'Filamenter', to: '/kb/filaments/pla' },
+            { label: 'Byggplater', to: '/kb/build-plates/overview' },
+            { label: 'Vedlikehold', to: '/kb/maintenance/nozzle' },
           ],
         },
         {

@@ -24,11 +24,11 @@ Gestisci le stampanti registrate:
 | Indirizzo IP | Per la modalità locale (LAN) |
 | Impostazioni camera | Abilita/disabilita, risoluzione |
 
-Vedi [Primi passi](../kom-i-gang/oppsett) per la configurazione passo per passo della prima stampante.
+Vedi [Primi passi](../getting-started/setup) per la configurazione passo per passo della prima stampante.
 
 ## Notifiche
 
-Vedi la documentazione completa in [Notifiche](../funksjoner/notifications).
+Vedi la documentazione completa in [Notifiche](../features/notifications).
 
 Riepilogo rapido:
 - Abilita/disabilita canali di notifica (Telegram, Discord, email, ecc.)
@@ -56,7 +56,7 @@ Configurazione per l'overlay OBS:
 | Scala predefinita | Ridimensionamento (0,5–2,0) |
 | Mostra QR code | Mostra QR code del dashboard nell'overlay |
 
-Vedi [Overlay OBS](../funksjoner/obs-overlay) per la sintassi URL completa e la configurazione.
+Vedi [Overlay OBS](../features/obs-overlay) per la sintassi URL completa e la configurazione.
 
 ## Energia ed elettricità
 

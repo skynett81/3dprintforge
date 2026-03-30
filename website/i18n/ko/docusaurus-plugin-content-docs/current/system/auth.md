@@ -79,7 +79,7 @@ API 키는 로그인 없이 프로그래밍 방식의 접근을 제공합니다.
 Authorization: Bearer API_키
 ```
 
-테스트는 [API 플레이그라운드](../verktoy/playground)를 참조하세요.
+테스트는 [API 플레이그라운드](../tools/playground)를 참조하세요.
 
 :::danger 안전한 보관
 API 키는 연결된 사용자와 동일한 접근 권한을 갖습니다. 안전하게 보관하고 정기적으로 교체하세요.

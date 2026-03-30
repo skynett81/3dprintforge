@@ -24,11 +24,11 @@ Gérez les imprimantes enregistrées :
 | Adresse IP | Pour le mode local (LAN) |
 | Paramètres caméra | Activer/désactiver, résolution |
 
-Consultez [Démarrage](../kom-i-gang/oppsett) pour la configuration étape par étape de la première imprimante.
+Consultez [Démarrage](../getting-started/setup) pour la configuration étape par étape de la première imprimante.
 
 ## Notifications
 
-Consultez la documentation complète dans [Notifications](../funksjoner/notifications).
+Consultez la documentation complète dans [Notifications](../features/notifications).
 
 Aperçu rapide :
 - Activer/désactiver les canaux de notification (Telegram, Discord, e-mail, etc.)
@@ -56,7 +56,7 @@ Configuration de l'overlay OBS :
 | Échelle par défaut | Mise à l'échelle (0.5–2.0) |
 | Afficher le QR code | Afficher le QR code du tableau de bord dans l'overlay |
 
-Consultez [Overlay OBS](../funksjoner/obs-overlay) pour la syntaxe URL complète et la configuration.
+Consultez [Overlay OBS](../features/obs-overlay) pour la syntaxe URL complète et la configuration.
 
 ## Énergie et électricité
 

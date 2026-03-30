@@ -67,7 +67,7 @@ De PWA kan pushnotificaties sturen ook als de app niet geopend is:
 4. Accepteer het toestemmingsdialoogvenster
 5. Notificaties worden bezorgd in het notificatiecentrum van het besturingssysteem
 
-Pushnotificaties werken voor alle gebeurtenissen die zijn geconfigureerd in [Meldingen](../funksjoner/notifications).
+Pushnotificaties werken voor alle gebeurtenissen die zijn geconfigureerd in [Meldingen](../features/notifications).
 
 :::info Service Worker
 Pushnotificaties vereisen dat de browser op de achtergrond actief is (geen volledig afsluiten). De PWA gebruikt een Service Worker voor ontvangst.

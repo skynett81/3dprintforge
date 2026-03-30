@@ -13,36 +13,36 @@ The Knowledge Base contains practical guides for getting the best results with y
 ### Filaments
 Detailed guides for each material type — temperature settings, plate selection, drying times, and tips for successful printing.
 
-- [PLA](./filamenter/pla) — The easiest to print, recommended for beginners
-- [PETG](./filamenter/petg) — Stronger than PLA, good chemical resistance
-- [ABS](./filamenter/abs) — Thermally stable, requires enclosure
-- [TPU](./filamenter/tpu) — Flexible material, requires low speed
-- [PA/Nylon](./filamenter/nylon) — Extremely wear-resistant, demanding to print
-- [Composite (CF/GF)](./filamenter/kompositt) — High stiffness, wears the nozzle
+- [PLA](./filaments/pla) — The easiest to print, recommended for beginners
+- [PETG](./filaments/petg) — Stronger than PLA, good chemical resistance
+- [ABS](./filaments/abs) — Thermally stable, requires enclosure
+- [TPU](./filaments/tpu) — Flexible material, requires low speed
+- [PA/Nylon](./filaments/nylon) — Extremely wear-resistant, demanding to print
+- [Composite (CF/GF)](./filaments/composite) — High stiffness, wears the nozzle
 
 ### Build plates
 Choose the right plate for each material and learn how to maintain them.
 
-- [Overview and compatibility matrix](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Overview and compatibility matrix](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Maintenance
 Keep your printer in good shape with regular maintenance.
 
-- [Nozzle maintenance](./vedlikehold/dyse) — Cleaning, cold pull, and replacement
-- [Plate maintenance](./vedlikehold/plate) — IPA cleaning and damage prevention
-- [AMS maintenance](./vedlikehold/ams) — PTFE tubing and filament path
-- [Lubrication](./vedlikehold/smoring) — Rods, bearings, and intervals
+- [Nozzle maintenance](./maintenance/nozzle) — Cleaning, cold pull, and replacement
+- [Plate maintenance](./maintenance/plate) — IPA cleaning and damage prevention
+- [AMS maintenance](./maintenance/ams) — PTFE tubing and filament path
+- [Lubrication](./maintenance/lubrication) — Rods, bearings, and intervals
 
 ### Troubleshooting
 Common problems and practical solutions.
 
-- [Poor adhesion](./feilsoking/heft) — First layer won't stick
-- [Warping](./feilsoking/warping) — Corners lifting
-- [Stringing](./feilsoking/stringing) — Thin threads between objects
+- [Poor adhesion](./troubleshooting/adhesion) — First layer won't stick
+- [Warping](./troubleshooting/warping) — Corners lifting
+- [Stringing](./troubleshooting/stringing) — Thin threads between objects
 
 ## Who is this for?
 

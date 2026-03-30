@@ -67,7 +67,7 @@ La PWA puede enviar notificaciones push incluso cuando la app no está abierta:
 4. Acepta el diálogo de permisos
 5. Las notificaciones se entregan al centro de notificaciones del sistema operativo
 
-Las notificaciones push funcionan para todos los eventos configurados en [Alertas](../funksjoner/notifications).
+Las notificaciones push funcionan para todos los eventos configurados en [Alertas](../features/notifications).
 
 :::info Service Worker
 Las notificaciones push requieren que el navegador esté ejecutándose en segundo plano (sin cierre completo del sistema). La PWA usa un Service Worker para recibirlas.

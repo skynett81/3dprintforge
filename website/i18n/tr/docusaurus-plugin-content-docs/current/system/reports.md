@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#settings** → **Sistem → Raporlar**
 
 ## Ön Koşullar
 
-Raporlar, yapılandırılmış e-posta bildirimlerini gerektirir. Raporları etkinleştirmeden önce **Ayarlar → Bildirimler → E-posta** altında SMTP'yi ayarlayın. [Bildirimler](../funksjoner/notifications) sayfasına bakın.
+Raporlar, yapılandırılmış e-posta bildirimlerini gerektirir. Raporları etkinleştirmeden önce **Ayarlar → Bildirimler → E-posta** altında SMTP'yi ayarlayın. [Bildirimler](../features/notifications) sayfasına bakın.
 
 ## Otomatik Raporları Etkinleştirme
 

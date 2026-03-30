@@ -67,7 +67,7 @@ PWA:n kan skicka push-aviseringar även när appen inte är öppen:
 4. Godkänn behörighetsdialogen
 5. Aviseringarna levereras till operativsystemets aviseringscenter
 
-Push-aviseringar fungerar för alla händelser som konfigurerats i [Aviseringar](../funksjoner/notifications).
+Push-aviseringar fungerar för alla händelser som konfigurerats i [Aviseringar](../features/notifications).
 
 :::info Service Worker
 Push-aviseringar kräver att webbläsaren körs i bakgrunden (ingen fullständig systemavstängning). PWA:n använder en Service Worker för mottagning.

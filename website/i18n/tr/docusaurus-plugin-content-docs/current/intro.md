@@ -48,13 +48,13 @@ Bambu Dashboard, Bambu Lab'ın sunucularına bağımlı olmaksızın LAN üzerin
 
 | Görev | Bağlantı |
 |-------|----------|
-| Dashboard'u yükleyin | [Kurulum](./kom-i-gang/installasjon) |
-| İlk yazıcıyı yapılandırın | [Ayarlar](./kom-i-gang/oppsett) |
-| Bambu Cloud'a bağlanın | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Tüm özellikleri keşfedin | [Özellikler](./funksjoner/oversikt) |
-| Filament kılavuzu | [Malzeme kılavuzu](./kb/filamenter/guide) |
-| Bakım kılavuzu | [Bakım](./kb/vedlikehold/dyse) |
-| API belgeleri | [API](./avansert/api) |
+| Dashboard'u yükleyin | [Kurulum](./getting-started/installation) |
+| İlk yazıcıyı yapılandırın | [Ayarlar](./getting-started/setup) |
+| Bambu Cloud'a bağlanın | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Tüm özellikleri keşfedin | [Özellikler](./features/overview) |
+| Filament kılavuzu | [Malzeme kılavuzu](./kb/filaments/guide) |
+| Bakım kılavuzu | [Bakım](./kb/maintenance/nozzle) |
+| API belgeleri | [API](./advanced/api) |
 
 :::tip Demo modu
 `npm run demo` çalıştırarak fiziksel bir yazıcı olmadan dashboard'u deneyebilirsiniz. Bu, canlı baskı döngüleri ile 3 simüle edilmiş yazıcı başlatır.
@@ -119,4 +119,4 @@ Bambu Dashboard, Node.js 22 ve saf HTML/CSS/JS ile oluşturulmuştur — ağır 
 - **Belgeler**: 17 dilli Docusaurus, kurulumda otomatik derlenir
 - **API**: 177+ endpoint, `/api/docs`'ta OpenAPI belgeleri
 
-Ayrıntılar için [Mimari](./avansert/arkitektur) sayfasına bakın.
+Ayrıntılar için [Mimari](./advanced/architecture) sayfasına bakın.

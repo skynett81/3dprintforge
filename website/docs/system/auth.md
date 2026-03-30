@@ -79,7 +79,7 @@ Legg til i HTTP-header for alle API-kall:
 Authorization: Bearer DIN_API_NØKKEL
 ```
 
-Se [API-lekeplassen](../verktoy/playground) for testing.
+Se [API-lekeplassen](../tools/playground) for testing.
 
 :::danger Sikker oppbevaring
 API-nøkler har samme tilgang som brukeren de er knyttet til. Oppbevar dem sikkert og roter dem regelmessig.

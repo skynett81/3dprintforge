@@ -79,7 +79,7 @@ Zu allen API-Aufrufen als HTTP-Header hinzufügen:
 Authorization: Bearer IHR_API_SCHLÜSSEL
 ```
 
-Siehe [API-Spielwiese](../verktoy/playground) zum Testen.
+Siehe [API-Spielwiese](../tools/playground) zum Testen.
 
 :::danger Sichere Aufbewahrung
 API-Schlüssel haben denselben Zugriff wie der Benutzer, dem sie zugeordnet sind. Bewahren Sie sie sicher auf und rotieren Sie sie regelmäßig.

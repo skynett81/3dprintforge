@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#settings** → **System → Raporty**
 
 ## Wymagania wstępne
 
-Raporty wymagają skonfigurowanych powiadomień e-mail. Skonfiguruj SMTP w **Ustawienia → Powiadomienia → E-mail** przed aktywowaniem raportów. Zobacz [Powiadomienia](../funksjoner/notifications).
+Raporty wymagają skonfigurowanych powiadomień e-mail. Skonfiguruj SMTP w **Ustawienia → Powiadomienia → E-mail** przed aktywowaniem raportów. Zobacz [Powiadomienia](../features/notifications).
 
 ## Aktywowanie automatycznych raportów
 

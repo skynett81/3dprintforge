@@ -12,7 +12,7 @@ Acesse em: **https://localhost:3443/#settings** → **Sistema → Relatórios**
 
 ## Pré-requisitos
 
-Os relatórios requerem que os alertas por e-mail estejam configurados. Configure o SMTP em **Configurações → Alertas → E-mail** antes de ativar os relatórios. Veja [Alertas](../funksjoner/notifications).
+Os relatórios requerem que os alertas por e-mail estejam configurados. Configure o SMTP em **Configurações → Alertas → E-mail** antes de ativar os relatórios. Veja [Alertas](../features/notifications).
 
 ## Ativar relatórios automáticos
 

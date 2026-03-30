@@ -24,11 +24,11 @@ Regisztrált nyomtatók kezelése:
 | IP-cím | Helyi (LAN) módhoz |
 | Kamerabeállítások | Engedélyezés/letiltás, felbontás |
 
-Lásd [Első lépések](../kom-i-gang/oppsett) az első nyomtató lépésenkénti beállításához.
+Lásd [Első lépések](../getting-started/setup) az első nyomtató lépésenkénti beállításához.
 
 ## Értesítések
 
-Teljes dokumentáció az [Értesítések](../funksjoner/notifications) oldalon.
+Teljes dokumentáció az [Értesítések](../features/notifications) oldalon.
 
 Gyors áttekintés:
 - Értesítési csatornák engedélyezése/letiltása (Telegram, Discord, e-mail stb.)
@@ -56,7 +56,7 @@ OBS-overlay konfigurálása:
 | Alapértelmezett skála | Méretezés (0,5–2,0) |
 | QR-kód megjelenítése | QR-kód megjelenítése a dashboardhoz az overlayen |
 
-Lásd [OBS-overlay](../funksjoner/obs-overlay) a teljes URL-szintaxisért és beállításért.
+Lásd [OBS-overlay](../features/obs-overlay) a teljes URL-szintaxisért és beállításért.
 
 ## Energia és áram
 

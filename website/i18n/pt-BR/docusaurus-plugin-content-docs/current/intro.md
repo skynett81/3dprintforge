@@ -48,13 +48,13 @@ O Bambu Dashboard conecta-se diretamente à sua impressora via MQTT pela LAN, se
 
 | Tarefa | Link |
 |--------|------|
-| Instalar o dashboard | [Instalação](./kom-i-gang/installasjon) |
-| Configurar a primeira impressora | [Configuração](./kom-i-gang/oppsett) |
-| Conectar ao Bambu Cloud | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| Explorar todos os recursos | [Funcionalidades](./funksjoner/oversikt) |
-| Guia de filamentos | [Guia de materiais](./kb/filamenter/guide) |
-| Guia de manutenção | [Manutenção](./kb/vedlikehold/dyse) |
-| Documentação da API | [API](./avansert/api) |
+| Instalar o dashboard | [Instalação](./getting-started/installation) |
+| Configurar a primeira impressora | [Configuração](./getting-started/setup) |
+| Conectar ao Bambu Cloud | [Bambu Cloud](./getting-started/bambu-cloud) |
+| Explorar todos os recursos | [Funcionalidades](./features/overview) |
+| Guia de filamentos | [Guia de materiais](./kb/filaments/guide) |
+| Guia de manutenção | [Manutenção](./kb/maintenance/nozzle) |
+| Documentação da API | [API](./advanced/api) |
 
 :::tip Modo demo
 Você pode experimentar o dashboard sem uma impressora física executando `npm run demo`. Isso inicia 3 impressoras simuladas com ciclos de impressão ao vivo.
@@ -119,4 +119,4 @@ O Bambu Dashboard é construído com Node.js 22 e HTML/CSS/JS puro — sem frame
 - **Documentação**: Docusaurus com 17 idiomas, construído automaticamente na instalação
 - **API**: 177+ endpoints, documentação OpenAPI em `/api/docs`
 
-Veja [Arquitetura](./avansert/arkitektur) para detalhes.
+Veja [Arquitetura](./advanced/architecture) para detalhes.

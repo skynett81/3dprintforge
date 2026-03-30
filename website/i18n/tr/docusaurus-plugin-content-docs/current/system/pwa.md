@@ -67,7 +67,7 @@ PWA, uygulama açık olmasa bile anlık bildirimler gönderebilir:
 4. İzin iletişim kutusunu kabul edin
 5. Bildirimler işletim sisteminin bildirim merkezine iletilir
 
-Anlık bildirimler, [Bildirimler](../funksjoner/notifications) bölümünde yapılandırılan tüm olaylar için çalışır.
+Anlık bildirimler, [Bildirimler](../features/notifications) bölümünde yapılandırılan tüm olaylar için çalışır.
 
 :::info Service Worker
 Anlık bildirimler, tarayıcının arka planda çalışmasını gerektirir (tam sistem kapatma yok). PWA, alma için bir Service Worker kullanır.

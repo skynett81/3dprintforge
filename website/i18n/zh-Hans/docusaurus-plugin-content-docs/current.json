@@ -2,6 +2,9 @@
   "sidebar.guideSidebar.category.Kom i gang": {
     "message": "入门"
   },
+  "sidebar.guideSidebar.category.Guider": {
+    "message": "指南"
+  },
   "sidebar.guideSidebar.category.Funksjoner": {
     "message": "功能"
   },

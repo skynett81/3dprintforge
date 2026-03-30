@@ -79,7 +79,7 @@ Tüm API çağrıları için HTTP başlığına ekleyin:
 Authorization: Bearer API_ANAHTARINIZ
 ```
 
-Test için [API Oyun Alanı](../verktoy/playground) sayfasına bakın.
+Test için [API Oyun Alanı](../tools/playground) sayfasına bakın.
 
 :::danger Güvenli Depolama
 API anahtarları bağlı oldukları kullanıcıyla aynı erişime sahiptir. Bunları güvenle saklayın ve düzenli olarak değiştirin.

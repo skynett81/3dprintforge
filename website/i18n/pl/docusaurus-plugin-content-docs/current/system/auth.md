@@ -79,7 +79,7 @@ Dodaj do nagłówka HTTP dla wszystkich wywołań API:
 Authorization: Bearer TWÓJ_KLUCZ_API
 ```
 
-Zobacz [Plac zabaw API](../verktoy/playground) do testowania.
+Zobacz [Plac zabaw API](../tools/playground) do testowania.
 
 :::danger Bezpieczne przechowywanie
 Klucze API mają taki sam dostęp jak użytkownik, z którym są powiązane. Przechowuj je bezpiecznie i regularnie je rotuj.

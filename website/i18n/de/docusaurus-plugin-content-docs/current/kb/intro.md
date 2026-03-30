@@ -13,36 +13,36 @@ Die Wissensdatenbank enthält praktische Anleitungen, um mit Ihrem Bambu Lab-Dru
 ### Filamente
 Detaillierte Anleitungen für jeden Materialtyp — Temperatureinstellungen, Plattenauswahl, Trocknungszeiten und Tipps für erfolgreiches Drucken.
 
-- [PLA](./filamenter/pla) — Am einfachsten zu drucken, empfohlen für Einsteiger
-- [PETG](./filamenter/petg) — Stärker als PLA, gute chemische Beständigkeit
-- [ABS](./filamenter/abs) — Thermisch stabil, erfordert eine geschlossene Kammer
-- [TPU](./filamenter/tpu) — Flexibles Material, erfordert niedrige Geschwindigkeit
-- [PA/Nylon](./filamenter/nylon) — Sehr verschleißfest, anspruchsvoll im Druck
-- [Verbundwerkstoffe (CF/GF)](./filamenter/kompositt) — Hohe Steifigkeit, verschleißt die Düse
+- [PLA](./filaments/pla) — Am einfachsten zu drucken, empfohlen für Einsteiger
+- [PETG](./filaments/petg) — Stärker als PLA, gute chemische Beständigkeit
+- [ABS](./filaments/abs) — Thermisch stabil, erfordert eine geschlossene Kammer
+- [TPU](./filaments/tpu) — Flexibles Material, erfordert niedrige Geschwindigkeit
+- [PA/Nylon](./filaments/nylon) — Sehr verschleißfest, anspruchsvoll im Druck
+- [Verbundwerkstoffe (CF/GF)](./filaments/composite) — Hohe Steifigkeit, verschleißt die Düse
 
 ### Druckplatten
 Wählen Sie die richtige Platte für jedes Material und lernen Sie, sie zu pflegen.
 
-- [Übersicht und Kompatibilitätsmatrix](./byggplater/oversikt)
-- [Cool Plate (Smooth PEI)](./byggplater/cool-plate)
-- [Engineering Plate (Textured PEI)](./byggplater/engineering-plate)
-- [High Temp Plate](./byggplater/high-temp-plate)
-- [Textured PEI Plate](./byggplater/textured-pei)
+- [Übersicht und Kompatibilitätsmatrix](./build-plates/overview)
+- [Cool Plate (Smooth PEI)](./build-plates/cool-plate)
+- [Engineering Plate (Textured PEI)](./build-plates/engineering-plate)
+- [High Temp Plate](./build-plates/high-temp-plate)
+- [Textured PEI Plate](./build-plates/textured-pei)
 
 ### Wartung
 Halten Sie Ihren Drucker mit regelmäßiger Wartung in gutem Zustand.
 
-- [Düsenwartung](./vedlikehold/dyse) — Reinigung, Cold Pull und Wechsel
-- [Plattenwartung](./vedlikehold/plate) — IPA-Reinigung und Schadensvorbeugung
-- [AMS-Wartung](./vedlikehold/ams) — PTFE-Schlauch und Filamentweg
-- [Schmierung](./vedlikehold/smoring) — Stangen, Lager und Intervalle
+- [Düsenwartung](./maintenance/nozzle) — Reinigung, Cold Pull und Wechsel
+- [Plattenwartung](./maintenance/plate) — IPA-Reinigung und Schadensvorbeugung
+- [AMS-Wartung](./maintenance/ams) — PTFE-Schlauch und Filamentweg
+- [Schmierung](./maintenance/lubrication) — Stangen, Lager und Intervalle
 
 ### Fehlerbehebung
 Häufige Probleme und praktische Lösungen.
 
-- [Schlechte Haftung](./feilsoking/heft) — Erste Schicht haftet nicht
-- [Warping](./feilsoking/warping) — Ecken lösen sich
-- [Stringing](./feilsoking/stringing) — Dünne Fäden zwischen Objekten
+- [Schlechte Haftung](./troubleshooting/adhesion) — Erste Schicht haftet nicht
+- [Warping](./troubleshooting/warping) — Ecken lösen sich
+- [Stringing](./troubleshooting/stringing) — Dünne Fäden zwischen Objekten
 
 ## Für wen?
 

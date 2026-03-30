@@ -2,6 +2,9 @@
   "sidebar.guideSidebar.category.Kom i gang": {
     "message": "시작하기"
   },
+  "sidebar.guideSidebar.category.Guider": {
+    "message": "가이드"
+  },
   "sidebar.guideSidebar.category.Funksjoner": {
     "message": "기능"
   },

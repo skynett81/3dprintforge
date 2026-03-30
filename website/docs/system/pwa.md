@@ -67,7 +67,7 @@ PWA-en kan sende push-varsler selv om appen ikke er åpen:
 4. Godta tillatelsesdialogen
 5. Varslene leveres til operativsystemets varselsentral
 
-Push-varsler fungerer for alle hendelser konfigurert i [Varsler](../funksjoner/notifications).
+Push-varsler fungerer for alle hendelser konfigurert i [Varsler](../features/notifications).
 
 :::info Service Worker
 Push-varsler krever at nettleseren kjører i bakgrunnen (ingen full systemavslutning). PWA-en bruker en Service Worker for mottak.

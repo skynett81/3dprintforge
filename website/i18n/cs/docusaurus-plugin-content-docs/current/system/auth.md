@@ -79,7 +79,7 @@ Přidejte do HTTP hlavičky pro všechna volání API:
 Authorization: Bearer VÁŠ_API_KLÍČ
 ```
 
-Viz [API lekárna](../verktoy/playground) pro testování.
+Viz [API lekárna](../tools/playground) pro testování.
 
 :::danger Bezpečné uložení
 API klíče mají stejný přístup jako uživatel, se kterým jsou spojeny. Uchovávejte je bezpečně a pravidelně je obměňujte.

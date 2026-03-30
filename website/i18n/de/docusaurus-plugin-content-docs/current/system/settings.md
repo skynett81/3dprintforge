@@ -24,11 +24,11 @@ Registrierte Drucker verwalten:
 | IP-Adresse | Für lokalen (LAN) Modus |
 | Kameraeinstellungen | Aktivieren/Deaktivieren, Auflösung |
 
-Siehe [Erste Schritte](../kom-i-gang/oppsett) für die schrittweise Einrichtung des ersten Druckers.
+Siehe [Erste Schritte](../getting-started/setup) für die schrittweise Einrichtung des ersten Druckers.
 
 ## Benachrichtigungen
 
-Vollständige Dokumentation unter [Benachrichtigungen](../funksjoner/notifications).
+Vollständige Dokumentation unter [Benachrichtigungen](../features/notifications).
 
 Schnellübersicht:
 - Benachrichtigungskanäle aktivieren/deaktivieren (Telegram, Discord, E-Mail usw.)
@@ -56,7 +56,7 @@ Konfiguration für OBS-Overlay:
 | Standardskalierung | Skalierung (0,5–2,0) |
 | QR-Code anzeigen | QR-Code zum Dashboard im Overlay anzeigen |
 
-Siehe [OBS-Overlay](../funksjoner/obs-overlay) für vollständige URL-Syntax und Einrichtung.
+Siehe [OBS-Overlay](../features/obs-overlay) für vollständige URL-Syntax und Einrichtung.
 
 ## Energie und Strom
 

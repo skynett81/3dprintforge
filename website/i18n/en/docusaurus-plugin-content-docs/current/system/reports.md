@@ -12,7 +12,7 @@ Go to: **https://localhost:3443/#settings** → **System → Reports**
 
 ## Prerequisites
 
-Reports require email notifications to be configured. Set up SMTP under **Settings → Notifications → Email** before enabling reports. See [Notifications](../funksjoner/notifications).
+Reports require email notifications to be configured. Set up SMTP under **Settings → Notifications → Email** before enabling reports. See [Notifications](../features/notifications).
 
 ## Enabling automatic reports
 

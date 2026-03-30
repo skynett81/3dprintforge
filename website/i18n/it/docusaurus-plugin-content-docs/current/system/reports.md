@@ -12,7 +12,7 @@ Vai a: **https://localhost:3443/#settings** → **Sistema → Report**
 
 ## Prerequisiti
 
-I report richiedono che le notifiche email siano configurate. Configura SMTP in **Impostazioni → Notifiche → Email** prima di abilitare i report. Vedi [Notifiche](../funksjoner/notifications).
+I report richiedono che le notifiche email siano configurate. Configura SMTP in **Impostazioni → Notifiche → Email** prima di abilitare i report. Vedi [Notifiche](../features/notifications).
 
 ## Abilitare i report automatici
 

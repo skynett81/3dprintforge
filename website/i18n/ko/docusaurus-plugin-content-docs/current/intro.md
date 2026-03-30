@@ -48,13 +48,13 @@ Bambu Dashboard는 LAN을 통한 MQTT로 프린터에 직접 연결하며, Bambu
 
 | 작업 | 링크 |
 |------|------|
-| 대시보드 설치 | [설치](./kom-i-gang/installasjon) |
-| 첫 번째 프린터 설정 | [설정](./kom-i-gang/oppsett) |
-| Bambu Cloud에 연결 | [Bambu Cloud](./kom-i-gang/bambu-cloud) |
-| 모든 기능 탐색 | [기능](./funksjoner/oversikt) |
-| 필라멘트 가이드 | [소재 가이드](./kb/filamenter/guide) |
-| 유지보수 가이드 | [유지보수](./kb/vedlikehold/dyse) |
-| API 문서 | [API](./avansert/api) |
+| 대시보드 설치 | [설치](./getting-started/installation) |
+| 첫 번째 프린터 설정 | [설정](./getting-started/setup) |
+| Bambu Cloud에 연결 | [Bambu Cloud](./getting-started/bambu-cloud) |
+| 모든 기능 탐색 | [기능](./features/overview) |
+| 필라멘트 가이드 | [소재 가이드](./kb/filaments/guide) |
+| 유지보수 가이드 | [유지보수](./kb/maintenance/nozzle) |
+| API 문서 | [API](./advanced/api) |
 
 :::tip 데모 모드
 `npm run demo`를 실행하여 물리적 프린터 없이 대시보드를 사용해볼 수 있습니다. 라이브 인쇄 사이클이 있는 3개의 시뮬레이션 프린터가 시작됩니다.
@@ -119,4 +119,4 @@ Bambu Dashboard는 Node.js 22와 바닐라 HTML/CSS/JS로 구축되었습니다 
 - **문서**: 17개 언어를 지원하는 Docusaurus, 설치 시 자동 빌드
 - **API**: 177개 이상의 엔드포인트, `/api/docs`에 OpenAPI 문서
 
-자세한 내용은 [아키텍처](./avansert/arkitektur)를 참조하세요.
+자세한 내용은 [아키텍처](./advanced/architecture)를 참조하세요.

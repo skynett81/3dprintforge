@@ -79,7 +79,7 @@ Adicione no header HTTP para todas as chamadas de API:
 Authorization: Bearer SUA_CHAVE_DE_API
 ```
 
-Veja o [Playground da API](../verktoy/playground) para testes.
+Veja o [Playground da API](../tools/playground) para testes.
 
 :::danger Armazenamento seguro
 As chaves de API têm o mesmo acesso que o usuário ao qual estão vinculadas. Armazene-as com segurança e rotacione-as regularmente.

@@ -12,7 +12,7 @@ Accédez à : **https://localhost:3443/#settings** → **Système → Rapports**
 
 ## Prérequis
 
-Les rapports nécessitent que les notifications par e-mail soient configurées. Configurez SMTP sous **Paramètres → Notifications → E-mail** avant d'activer les rapports. Consultez [Notifications](../funksjoner/notifications).
+Les rapports nécessitent que les notifications par e-mail soient configurées. Configurez SMTP sous **Paramètres → Notifications → E-mail** avant d'activer les rapports. Consultez [Notifications](../features/notifications).
 
 ## Activer les rapports automatiques
 

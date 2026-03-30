@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#settings** → **Systém → Zprávy**
 
 ## Předpoklady
 
-Zprávy vyžadují nakonfigurovaná e-mailová upozornění. Nastavte SMTP v části **Nastavení → Upozornění → E-mail** před aktivací zpráv. Viz [Upozornění](../funksjoner/notifications).
+Zprávy vyžadují nakonfigurovaná e-mailová upozornění. Nastavte SMTP v části **Nastavení → Upozornění → E-mail** před aktivací zpráv. Viz [Upozornění](../features/notifications).
 
 ## Aktivace automatických zpráv
 

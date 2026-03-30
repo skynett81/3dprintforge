@@ -25,4 +25,4 @@ Bambu Dashboard is a self-hosted dashboard for Bambu Lab 3D printers. It connect
 3. `npm start`
 4. Open `https://localhost:3443` and connect your printer
 
-Read more in the [documentation](/docs/intro).
+Read more in the [documentation](/intro).

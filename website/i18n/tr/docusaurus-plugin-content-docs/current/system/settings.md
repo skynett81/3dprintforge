@@ -24,11 +24,11 @@ Kayıtlı yazıcıları yönetin:
 | IP adresi | Yerel (LAN) mod için |
 | Kamera ayarları | Etkinleştir/devre dışı bırak, çözünürlük |
 
-İlk yazıcının adım adım kurulumu için [Başlangıç](../kom-i-gang/oppsett) sayfasına bakın.
+İlk yazıcının adım adım kurulumu için [Başlangıç](../getting-started/setup) sayfasına bakın.
 
 ## Bildirimler
 
-Tam dokümantasyon için [Bildirimler](../funksjoner/notifications) sayfasına bakın.
+Tam dokümantasyon için [Bildirimler](../features/notifications) sayfasına bakın.
 
 Hızlı genel bakış:
 - Bildirim kanallarını etkinleştir/devre dışı bırak (Telegram, Discord, e-posta vb.)
@@ -56,7 +56,7 @@ OBS örtüsü yapılandırması:
 | Varsayılan ölçek | Ölçekleme (0,5–2,0) |
 | QR kodu göster | Örtüde panoya QR kodu göster |
 
-Tam URL sözdizimi ve kurulum için [OBS Örtüsü](../funksjoner/obs-overlay) sayfasına bakın.
+Tam URL sözdizimi ve kurulum için [OBS Örtüsü](../features/obs-overlay) sayfasına bakın.
 
 ## Enerji ve Güç
 
