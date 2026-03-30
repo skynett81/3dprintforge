@@ -33,16 +33,22 @@ A Bambu Dashboard közvetlenül csatlakozik a nyomtatójához MQTT-n keresztül 
 - **17 nyelv** — norvég, angol, német, francia, spanyol, olasz, japán, koreai, holland, lengyel, portugál, svéd, török, ukrán, kínai, cseh, magyar
 - **Önállóan üzemeltetett** — nincs felhő-függőség, az adatai a saját gépén
 
-### Újdonságok a v1.1.13-ban
+### Újdonságok a v1.1.14-ban
 
-- **EXT orsó észlelés** P2S/A1-hez MQTT leképezési mezőn keresztül — a külső orsó filamentfelhasználása helyesen követett
-- **Filament anyagadatbázis** 15 anyaggal, lemezkompatibilitással, szárítási útmutatóval és tulajdonságokkal
-- **Karbantartási panel** KB-alapú intervallumokkal, 4 új fúvókatípussal, dokumentációs hivatkozásokkal ellátott útmutató lappal
-- **Hangriasztások** 9 eseménnyel, egyéni feltöltéssel (MP3/OGG/WAV, max. 10 mp), hangerő-szabályozással és nyomtató hangszóróval
-- **Tevékenységnapló** — állandó idővonal az összes adatbázisból, függetlenül attól, hogy az oldal meg volt-e nyitva
-- **HMS hibakódok** olvasható leírásokkal 270+ kódhoz
-- **Teljes i18n** — mind a 2944 kulcs lefordítva 17 nyelvre
-- **Automatikus dokumentáció-build** — a dokumentáció automatikusan épül fel telepítéskor és szerver indításakor
+- **AdminLTE 4 integráció** — teljes HTML átstrukturálás treeview oldalsávval, modern elrendezéssel és CSP támogatással CDN-hez
+- **CRM rendszer** — teljes ügyfélkezelés 4 panellel: ügyfelek, megrendelések, számlák és előzményintegrációval ellátott vállalati beállítások
+- **Modern UI** — teal kiemelés, színátmenetes címek, lebegtetés fény, lebegő gömbök és továbbfejlesztett sötét téma
+- **Eredmények: 18 nevezetesség** — viking hajó, Szabadság-szobor, Eiffel Tower, Big Ben, Brandenburgi kapu, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, holland szélmalom, Wawel-sárkány, Cristo Redentor, Turning Torso, Hagia Sophia, Az Anyaföld, Kínai Nagy Fal, Prágai csillagászati óra, Budapesti Parlament — részletes felugró ablakkal, XP-vel és ritkaságszinttel
+- **AMS páratartalom/hőmérséklet** — 5 szintű értékelés tárolási és szárítási ajánlásokkal
+- **Élő filament követés** — valós idejű frissítés nyomtatás közben cloud becslés tartalékon keresztül
+- **Filament szekció újratervezés** — nagy orsók teljes információval (márka, súly, hőmérséklet, RFID, szín), vízszintes elrendezés és kattintás a részletekért
+- **EXT orsó inline** — külső orsó az AMS orsók mellett megjelenítve jobb helykihasználással
+- **Dashboard elrendezés optimalizálva** — 2 oszlopos alapértelmezés 24–27" monitorokhoz, nagy 3D/kamera, kompakt filament/AMS
+- **Filamentcsere idő** a költségbecslőben látható csereszámlálóval
+- **Globális riasztási rendszer** — riasztási sáv toast értesítésekkel a jobb alsó sarokban, nem blokkolja a navigációs sávot
+- **Vezetett túra i18n** — mind a 14 túra kulcs lefordítva 17 nyelvre
+- **5 új KB oldal** — kompatibilitási mátrix és új filament útmutatók lefordítva 17 nyelvre
+- **Teljes i18n** — mind a 3252 kulcs lefordítva 17 nyelvre, beleértve a CRM-et és a nevezetesség-eredményeket
 
 ## Gyors kezdés
 

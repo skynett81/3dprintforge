@@ -33,16 +33,22 @@ Bambu Dashboard verbindet sich direkt über MQTT per LAN mit Ihrem Drucker, ohne
 - **17 Sprachen** — Norwegisch, Englisch, Deutsch, Französisch, Spanisch, Italienisch, Japanisch, Koreanisch, Niederländisch, Polnisch, Portugiesisch, Schwedisch, Türkisch, Ukrainisch, Chinesisch, Tschechisch, Ungarisch
 - **Selbst gehostet** — Keine Cloud-Abhängigkeit, Ihre Daten auf Ihrer Maschine
 
-### Neu in v1.1.13
+### Neu in v1.1.14
 
-- **EXT-Spulenerkennung** für P2S/A1 über MQTT-Mapping-Feld — Filamentverbrauch wird für externe Spule korrekt erfasst
-- **Filament-Materialdatenbank** mit 15 Materialien, Plattenkompatibilität, Trocknungsanleitung und Eigenschaften
-- **Wartungspanel** mit KB-basierten Intervallen, 4 neuen Düsentypen, Anleitungs-Tab mit Links zur Dokumentation
-- **Tonbenachrichtigungen** mit 9 Events, benutzerdefiniertem Upload (MP3/OGG/WAV, max. 10 s), Lautstärkeregelung und Druckerlautsprecher
-- **Aktivitätsprotokoll** — Persistente Zeitleiste aus allen Datenbanken, unabhängig davon, ob die Seite geöffnet war
-- **HMS-Fehlercodes** mit lesbaren Beschreibungen aus 270+ Codes
-- **Vollständiges i18n** — Alle 2944 Schlüssel in 17 Sprachen übersetzt
-- **Auto-Build-Docs** — Dokumentation wird automatisch bei Installation und Server-Start erstellt
+- **AdminLTE 4-Integration** — komplette HTML-Umstrukturierung mit Treeview-Sidebar, modernem Layout und CSP-Unterstützung für CDN
+- **CRM-System** — vollständige Kundenverwaltung mit 4 Panels: Kunden, Aufträge, Rechnungen und Unternehmenseinstellungen mit Verlaufsintegration
+- **Modernes UI** — Teal-Akzent, Verlaufstitel, Hover-Glow, schwebende Orbs und verbessertes dunkles Theme
+- **Achievements: 18 Wahrzeichen** — Wikingerschiff, Freiheitsstatue, Eiffel Tower, Big Ben, Brandenburger Tor, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, niederländische Windmühle, Wawel-Drache, Cristo Redentor, Turning Torso, Hagia Sophia, Mutter Heimat, Chinesische Mauer, Prager Rathausuhr, Budapester Parlament — mit Detail-Popup, XP und Seltenheit
+- **AMS-Feuchtigkeit/Temperatur** — 5-Stufen-Bewertung mit Empfehlungen für Lagerung und Trocknung
+- **Live-Filament-Tracking** — Echtzeit-Aktualisierung während des Drucks über Cloud-Schätzungs-Fallback
+- **Filament-Bereich Redesign** — große Spulen mit vollständigen Infos (Marke, Gewicht, Temperatur, RFID, Farbe), horizontales Layout und Klick-für-Details
+- **EXT-Spule inline** — externe Spule wird zusammen mit AMS-Spulen angezeigt, bessere Platznutzung
+- **Dashboard-Layout optimiert** — 2-Spalten-Standard für 24–27"-Monitore, großes 3D/Kamera, kompaktes Filament/AMS
+- **Filamentwechselzeit** im Kostenkalkulator mit sichtbarem Wechselzähler
+- **Globales Warnsystem** — Warnleiste mit Toast-Benachrichtigungen unten rechts, blockiert nicht die Navbar
+- **Guided Tour i18n** — alle 14 Tour-Schlüssel in 17 Sprachen übersetzt
+- **5 neue KB-Seiten** — Kompatibilitätsmatrix und neue Filament-Anleitungen in 17 Sprachen übersetzt
+- **Vollständiges i18n** — alle 3252 Schlüssel in 17 Sprachen übersetzt, einschließlich CRM und Wahrzeichen-Achievements
 
 ## Schnellstart
 

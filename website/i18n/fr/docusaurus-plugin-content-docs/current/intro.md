@@ -33,16 +33,22 @@ Bambu Dashboard se connecte directement à votre imprimante via MQTT sur le rés
 - **17 langues** — norvégien, anglais, allemand, français, espagnol, italien, japonais, coréen, néerlandais, polonais, portugais, suédois, turc, ukrainien, chinois, tchèque, hongrois
 - **Auto-hébergé** — aucune dépendance au cloud, vos données sur votre machine
 
-### Nouveautés de la v1.1.13
+### Nouveautés de la v1.1.14
 
-- **Détection de bobine EXT** pour P2S/A1 via le champ de mapping MQTT — consommation de filament correctement suivie pour la bobine externe
-- **Base de données des matériaux filament** avec 15 matériaux, compatibilité plateau, guide de séchage et propriétés
-- **Panneau de maintenance** avec intervalles basés sur la KB, 4 nouveaux types de buses, onglet guide avec liens vers la documentation
-- **Alertes sonores** avec 9 événements, téléchargement personnalisé (MP3/OGG/WAV, max 10 s), contrôle du volume et haut-parleur d'imprimante
-- **Journal d'activité** — chronologie persistante de toutes les bases de données, que la page soit ouverte ou non
-- **Codes d'erreur HMS** avec des descriptions lisibles parmi 270+ codes
-- **i18n complet** — toutes les 2944 clés traduites en 17 langues
-- **Docs auto-générées** — la documentation est générée automatiquement lors de l'installation et du démarrage du serveur
+- **Intégration AdminLTE 4** — restructuration HTML complète avec sidebar treeview, mise en page moderne et support CSP pour CDN
+- **Système CRM** — gestion complète des clients avec 4 panneaux : clients, commandes, factures et paramètres d'entreprise avec intégration de l'historique
+- **UI moderne** — accent teal, titres en dégradé, lueur au survol, orbes flottants et thème sombre amélioré
+- **Achievements : 18 monuments** — drakkar viking, Statue de la Liberté, Eiffel Tower, Big Ben, Porte de Brandebourg, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, moulin à vent néerlandais, Dragon de Wawel, Cristo Redentor, Turning Torso, Hagia Sophia, La Mère Patrie, Grande Muraille de Chine, Horloge astronomique de Prague, Parlement de Budapest — avec popup de détails, XP et rareté
+- **Humidité/température AMS** — évaluation à 5 niveaux avec recommandations de stockage et de séchage
+- **Suivi de filament en direct** — mise à jour en temps réel pendant l'impression via le fallback d'estimation cloud
+- **Redesign de la section filament** — grandes bobines avec infos complètes (marque, poids, température, RFID, couleur), disposition horizontale et clic pour les détails
+- **Bobine EXT en ligne** — bobine externe affichée aux côtés des bobines AMS avec meilleure utilisation de l'espace
+- **Disposition du dashboard optimisée** — 2 colonnes par défaut pour les écrans 24–27", grande vue 3D/caméra, filament/AMS compact
+- **Temps de changement de filament** dans l'estimateur de coût avec compteur de changement visible
+- **Système d'alertes global** — barre d'alerte avec notifications toast en bas à droite, ne bloque pas la navbar
+- **Visite guidée i18n** — les 14 clés de la visite traduites en 17 langues
+- **5 nouvelles pages KB** — matrice de compatibilité et nouveaux guides de filament traduits en 17 langues
+- **i18n complet** — toutes les 3252 clés traduites en 17 langues, y compris CRM et achievements de monuments
 
 ## Démarrage rapide
 

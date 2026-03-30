@@ -33,16 +33,22 @@ Bambu Dashboard łączy się bezpośrednio z drukarką przez MQTT przez LAN, bez
 - **17 języków** — norweski, angielski, niemiecki, francuski, hiszpański, włoski, japoński, koreański, holenderski, polski, portugalski, szwedzki, turecki, ukraiński, chiński, czeski, węgierski
 - **Samodzielnie hostowany** — brak zależności od chmury, twoje dane na twoim komputerze
 
-### Nowości w v1.1.13
+### Nowości w v1.1.14
 
-- **Wykrywanie szpuli EXT** dla P2S/A1 przez pole mapowania MQTT — zużycie filamentu śledzone poprawnie dla zewnętrznej szpuli
-- **Baza danych materiałów filamentów** z 15 materiałami, zgodnością z płytą, przewodnikiem suszenia i właściwościami
-- **Panel konserwacji** z interwałami opartymi na KB, 4 nowymi typami dysz, kartą przewodnika z linkami do dokumentacji
-- **Alerty dźwiękowe** z 9 zdarzeniami, niestandardowym przesyłaniem (MP3/OGG/WAV, maks. 10 s), kontrolą głośności i głośnikiem drukarki
-- **Dziennik aktywności** — trwała oś czasu ze wszystkich baz danych, niezależnie od tego, czy strona była otwarta
-- **Kody błędów HMS** z czytelnymi opisami z ponad 270 kodów
-- **Pełne i18n** — wszystkie 2944 klucze przetłumaczone na 17 języków
-- **Automatyczne tworzenie dokumentacji** — dokumentacja jest tworzona automatycznie podczas instalacji i uruchamiania serwera
+- **Integracja AdminLTE 4** — kompletna restrukturyzacja HTML z paskiem bocznym treeview, nowoczesnym layoutem i obsługą CSP dla CDN
+- **System CRM** — pełne zarządzanie klientami z 4 panelami: klienci, zamówienia, faktury i ustawienia firmy z integracją historii
+- **Nowoczesny UI** — akcent teal, tytuły gradientowe, efekt hover glow, unoszące się sfery i ulepszony ciemny motyw
+- **Osiągnięcia: 18 zabytków** — statek wikingów, Statua Wolności, Eiffel Tower, Big Ben, Brama Brandenburska, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, holenderski wiatrak, Smok Wawelski, Cristo Redentor, Turning Torso, Hagia Sophia, Matka Ojczyzna, Wielki Mur Chiński, Zegar Astronomiczny w Pradze, Parlament w Budapeszcie — z oknem szczegółów, XP i rzadkością
+- **Wilgotność/temperatura AMS** — 5-poziomowa ocena z zaleceniami przechowywania i suszenia
+- **Śledzenie filamentu na żywo** — aktualizacja w czasie rzeczywistym podczas druku przez fallback szacowania cloud
+- **Przeprojektowanie sekcji filamentów** — duże szpule z pełnymi informacjami (marka, waga, temperatura, RFID, kolor), układ poziomy i kliknij po szczegóły
+- **Szpula EXT inline** — zewnętrzna szpula wyświetlana obok szpul AMS z lepszym wykorzystaniem przestrzeni
+- **Układ dashboardu zoptymalizowany** — domyślnie 2 kolumny dla monitorów 24–27", duży widok 3D/kamera, kompaktowy filament/AMS
+- **Czas wymiany filamentu** w kalkulatorze kosztów z widocznym licznikiem wymian
+- **Globalny system alertów** — pasek alertów z powiadomieniami toast w prawym dolnym rogu, nie blokuje paska nawigacji
+- **Przewodnik i18n** — wszystkie 14 kluczy przewodnika przetłumaczone na 17 języków
+- **5 nowych stron KB** — matryca kompatybilności i nowe przewodniki po filamentach przetłumaczone na 17 języków
+- **Pełne i18n** — wszystkie 3252 klucze przetłumaczone na 17 języków, w tym CRM i osiągnięcia zabytków
 
 ## Szybki start
 

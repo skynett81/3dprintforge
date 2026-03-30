@@ -33,16 +33,22 @@ Bambu Dashboard verbindt rechtstreeks met je printer via MQTT over LAN, zonder a
 - **17 talen** — Noors, Engels, Duits, Frans, Spaans, Italiaans, Japans, Koreaans, Nederlands, Pools, Portugees, Zweeds, Turks, Oekraïens, Chinees, Tsjechisch, Hongaars
 - **Zelf-gehost** — geen cloudafhankelijkheid, jouw gegevens op jouw machine
 
-### Nieuw in v1.1.13
+### Nieuw in v1.1.14
 
-- **EXT-spoeldetectie** voor P2S/A1 via MQTT-mappingveld — filamentverbruik correct bijgehouden voor externe spoel
-- **Filamentmateriaal-database** met 15 materialen, plaatcompatibiliteit, drooggids en eigenschappen
-- **Onderhoudspaneel** met KB-gebaseerde intervallen, 4 nieuwe nozzletypen, handleidingtab met links naar documentatie
-- **Geluidsalarmen** met 9 events, aangepaste upload (MP3/OGG/WAV, max. 10 s), volumeregeling en printerluidspreker
-- **Activiteitenlogboek** — persistente tijdlijn van alle databases, ongeacht of de pagina open was
-- **HMS-foutcodes** met leesbare beschrijvingen van 270+ codes
-- **Volledig i18n** — alle 2944 sleutels vertaald naar 17 talen
-- **Auto-build docs** — documentatie wordt automatisch gegenereerd bij installatie en serverstart
+- **AdminLTE 4-integratie** — volledige HTML-herstructurering met treeview-sidebar, modern layout en CSP-ondersteuning voor CDN
+- **CRM-systeem** — volledige klantbeheer met 4 panelen: klanten, bestellingen, facturen en bedrijfsinstellingen met geschiedenisintegratie
+- **Modern UI** — teal accent, gradiënttitels, hover glow, zwevende orbs en verbeterd donker thema
+- **Achievements: 18 monumenten** — Vikingschip, Vrijheidsbeeld, Eiffel Tower, Big Ben, Brandenburger Tor, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, Nederlandse windmolen, Wawel-draak, Cristo Redentor, Turning Torso, Hagia Sophia, Het Moederland, Chinese Muur, Praagse Astronomische Klok, Parlement van Boedapest — met detail-popup, XP en zeldzaamheid
+- **AMS-vochtigheid/temperatuur** — 5-niveaubeoordeling met aanbevelingen voor opslag en drogen
+- **Live filamenttracking** — realtime updates tijdens het printen via cloud-schatting-fallback
+- **Filament-sectie herontwerp** — grote spoelen met volledige info (merk, gewicht, temperatuur, RFID, kleur), horizontaal layout en klik-voor-details
+- **EXT-spoel inline** — externe spoel weergegeven naast AMS-spoelen met beter ruimtegebruik
+- **Dashboard-layout geoptimaliseerd** — 2-kolommen standaard voor 24–27" monitoren, grote 3D/camera, compact filament/AMS
+- **Filamentwisseltijd** in de kostenschatter met zichtbare wisselteller
+- **Globaal waarschuwingssysteem** — waarschuwingsbalk met toast-meldingen rechtsonder, blokkeert de navigatiebalk niet
+- **Rondleiding i18n** — alle 14 rondleidingssleutels vertaald naar 17 talen
+- **5 nieuwe KB-pagina's** — compatibiliteitsmatrix en nieuwe filamentgidsen vertaald naar 17 talen
+- **Volledig i18n** — alle 3252 sleutels vertaald naar 17 talen, inclusief CRM en monument-achievements
 
 ## Snel aan de slag
 

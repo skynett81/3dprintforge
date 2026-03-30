@@ -33,16 +33,22 @@ Bambu Dashboard ansluter direkt till din skrivare via MQTT över LAN, utan beroe
 - **17 språk** — norska, engelska, tyska, franska, spanska, italienska, japanska, koreanska, nederländska, polska, portugisiska, svenska, turkiska, ukrainska, kinesiska, tjeckiska, ungerska
 - **Självhostad** — inget molnberoende, dina data på din maskin
 
-### Nytt i v1.1.13
+### Nytt i v1.1.14
 
-- **EXT-spoldetektering** för P2S/A1 via MQTT-mappningsfält — filamentförbrukning spåras korrekt för extern spole
-- **Filamentmaterialdatabas** med 15 material, plattkompatibilitet, torkguide och egenskaper
-- **Underhållspanel** med KB-baserade intervall, 4 nya munstyckstyper, guideflik med länkar till dokumentation
-- **Ljudvarningar** med 9 events, anpassad uppladdning (MP3/OGG/WAV, max 10 s), volymkontroll och skrivarens högtalare
-- **Aktivitetslogg** — beständig tidslinje från alla databaser, oavsett om sidan var öppen
-- **HMS-felkoder** med läsbara beskrivningar från 270+ koder
-- **Komplett i18n** — alla 2944 nycklar översatta till 17 språk
-- **Auto-bygg docs** — dokumentation byggs automatiskt vid installation och serverstart
+- **AdminLTE 4-integration** — komplett HTML-omstrukturering med treeview-sidebar, modernt layout och CSP-stöd för CDN
+- **CRM-system** — fullständig kundhantering med 4 paneler: kunder, ordrar, fakturor och företagsinställningar med historikintegration
+- **Modernt UI** — teal-accent, gradienttitlar, hover glow, svävande orbar och förbättrat mörkt tema
+- **Achievements: 18 landmärken** — vikingaskepp, Frihetsgudinnan, Eiffel Tower, Big Ben, Brandenburger Tor, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, nederländsk väderkvarn, Wawel-draken, Cristo Redentor, Turning Torso, Hagia Sophia, Moderlandet, Kinesiska muren, Pragklockan, Budapests parlament — med detaljpopup, XP och sällsynthet
+- **AMS-fuktighet/temperatur** — 5-nivåbedömning med rekommendationer för förvaring och torkning
+- **Live filamentspårning** — realtidsuppdatering under utskrift via cloud-uppskattning-fallback
+- **Filamentsektion omdesignad** — stora spolar med fullständig info (märke, vikt, temperatur, RFID, färg), horisontellt layout och klicka-för-detaljer
+- **EXT-spole inline** — extern spole visas tillsammans med AMS-spolar med bättre platsanvändning
+- **Instrumentpanel-layout optimerad** — 2-kolumners standard för 24–27"-skärmar, stor 3D/kamera, kompakt filament/AMS
+- **Filamentbytestid** i kostnadsberäknaren med synlig bytesräknare
+- **Globalt varningssystem** — varningsfält med toast-aviseringar i nedre högra hörnet, blockerar inte navigeringsfältet
+- **Guidad tur i18n** — alla 14 turnycklar översatta till 17 språk
+- **5 nya KB-sidor** — kompatibilitetsmatris och nya filamentguider översatta till 17 språk
+- **Komplett i18n** — alla 3252 nycklar översatta till 17 språk inklusive CRM och landmärkes-achievements
 
 ## Snabbstart
 

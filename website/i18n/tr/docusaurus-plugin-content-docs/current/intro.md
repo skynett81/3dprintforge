@@ -33,16 +33,22 @@ Bambu Dashboard, Bambu Lab'ın sunucularına bağımlı olmaksızın LAN üzerin
 - **17 dil** — Norveççe, İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Japonca, Korece, Hollandaca, Lehçe, Portekizce, İsveççe, Türkçe, Ukraynaca, Çince, Çekçe, Macarca
 - **Kendi kendine barındırılan** — bulut bağımlılığı yok, verileriniz kendi makinenizde
 
-### v1.1.13'teki yenilikler
+### v1.1.14'teki yenilikler
 
-- **EXT makara tespiti** MQTT eşleme alanı üzerinden P2S/A1 için — harici makara için filament tüketimi doğru şekilde izlenir
-- **Filament malzeme veritabanı** 15 malzeme, tabla uyumluluğu, kurutma kılavuzu ve özelliklerle
-- **Bakım paneli** KB tabanlı aralıklar, 4 yeni nozul tipi, belge bağlantılarıyla kılavuz sekmesi
-- **Ses uyarıları** 9 olay, özel yükleme (MP3/OGG/WAV, maks. 10sn), ses kontrolü ve yazıcı hoparlörü
-- **Etkinlik günlüğü** — sayfa açık olmasa bile tüm veritabanlarından kalıcı zaman çizelgesi
-- **HMS hata kodları** 270'den fazla koddan okunabilir açıklamalarla
-- **Tam i18n** — 17 dile çevrilmiş 2944 anahtarın tamamı
-- **Otomatik derleme belgeleri** — kurulum ve sunucu başlangıcında belgeler otomatik olarak derlenir
+- **AdminLTE 4 entegrasyonu** — treeview kenar çubuğu, modern düzen ve CDN için CSP desteğiyle eksiksiz HTML yeniden yapılandırması
+- **CRM sistemi** — 4 panelli tam müşteri yönetimi: müşteriler, siparişler, faturalar ve geçmiş entegrasyonlu şirket ayarları
+- **Modern UI** — teal vurgu, gradyan başlıklar, hover ışıması, yüzen küreler ve geliştirilmiş karanlık tema
+- **Başarılar: 18 simge yapı** — Viking gemisi, Özgürlük Heykeli, Eiffel Tower, Big Ben, Brandenburg Kapısı, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, Hollanda yel değirmeni, Wawel Ejderhası, Cristo Redentor, Turning Torso, Hagia Sophia, Anavatan, Çin Seddi, Prag Astronomik Saati, Budapeşte Parlamentosu — detay açılır penceresi, XP ve nadirlik ile
+- **AMS nem/sıcaklık** — depolama ve kurutma önerileriyle 5 seviyeli değerlendirme
+- **Canlı filament takibi** — cloud tahmin yedekleme ile baskı sırasında gerçek zamanlı güncelleme
+- **Filament bölümü yeniden tasarımı** — tam bilgili büyük makaralar (marka, ağırlık, sıcaklık, RFID, renk), yatay düzen ve detaylar için tıklama
+- **EXT makara satır içi** — harici makara AMS makaralarıyla birlikte daha iyi alan kullanımıyla gösterilir
+- **Dashboard düzeni optimize edildi** — 24–27" monitörler için varsayılan 2 sütun, büyük 3D/kamera, kompakt filament/AMS
+- **Filament değişim süresi** maliyet tahmincisinde görünür değişim sayacıyla
+- **Global uyarı sistemi** — sağ altta toast bildirimlerle uyarı çubuğu, gezinme çubuğunu engellemez
+- **Rehberli tur i18n** — 14 tur anahtarının tamamı 17 dile çevrildi
+- **5 yeni KB sayfası** — uyumluluk matrisi ve yeni filament kılavuzları 17 dile çevrildi
+- **Tam i18n** — CRM ve simge yapı başarıları dahil 3252 anahtarın tamamı 17 dile çevrildi
 
 ## Hızlı başlangıç
 

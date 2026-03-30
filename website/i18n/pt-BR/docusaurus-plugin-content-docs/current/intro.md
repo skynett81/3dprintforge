@@ -33,16 +33,22 @@ O Bambu Dashboard conecta-se diretamente à sua impressora via MQTT pela LAN, se
 - **17 idiomas** — norueguês, inglês, alemão, francês, espanhol, italiano, japonês, coreano, holandês, polonês, português, sueco, turco, ucraniano, chinês, tcheco, húngaro
 - **Auto-hospedado** — sem dependência de nuvem, seus dados na sua máquina
 
-### Novidades na v1.1.13
+### Novidades na v1.1.14
 
-- **Detecção de EXT spool** para P2S/A1 via campo de mapeamento MQTT — consumo de filamento rastreado corretamente para spool externo
-- **Banco de dados de materiais de filamento** com 15 materiais, compatibilidade de placa, guia de secagem e propriedades
-- **Painel de manutenção** com intervalos baseados em KB, 4 novos tipos de bico, aba de guia com links para documentação
-- **Alertas sonoros** com 9 eventos, upload personalizado (MP3/OGG/WAV, máx. 10s), controle de volume e alto-falante da impressora
-- **Log de atividades** — linha do tempo persistente de todos os bancos de dados, independentemente de a página estar aberta
-- **Códigos de erro HMS** com descrições legíveis de 270+ códigos
-- **i18n completo** — todas as 2944 chaves traduzidas para 17 idiomas
-- **Docs com build automático** — documentação construída automaticamente na instalação e ao iniciar o servidor
+- **Integração AdminLTE 4** — reestruturação HTML completa com sidebar treeview, layout moderno e suporte CSP para CDN
+- **Sistema CRM** — gerenciamento completo de clientes com 4 painéis: clientes, pedidos, faturas e configurações da empresa com integração de histórico
+- **UI moderna** — acento teal, títulos em gradiente, brilho hover, orbes flutuantes e tema escuro aprimorado
+- **Conquistas: 18 marcos** — navio viking, Estátua da Liberdade, Eiffel Tower, Big Ben, Portão de Brandemburgo, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, moinho de vento holandês, Dragão de Wawel, Cristo Redentor, Turning Torso, Hagia Sophia, A Mãe Pátria, Grande Muralha da China, Relógio Astronômico de Praga, Parlamento de Budapeste — com popup de detalhes, XP e raridade
+- **Umidade/temperatura AMS** — avaliação de 5 níveis com recomendações de armazenamento e secagem
+- **Rastreamento de filamento ao vivo** — atualização em tempo real durante a impressão via fallback de estimativa cloud
+- **Redesign da seção de filamento** — carretéis grandes com informações completas (marca, peso, temperatura, RFID, cor), layout horizontal e clique para detalhes
+- **EXT spool inline** — carretel externo exibido ao lado dos carretéis AMS com melhor uso do espaço
+- **Layout do dashboard otimizado** — 2 colunas padrão para monitores de 24–27", grande visualização 3D/câmera, filamento/AMS compacto
+- **Tempo de troca de filamento** no estimador de custos com contador de trocas visível
+- **Sistema global de alertas** — barra de alerta com notificações toast no canto inferior direito, não bloqueia a barra de navegação
+- **Tour guiado i18n** — todas as 14 chaves do tour traduzidas para 17 idiomas
+- **5 novas páginas KB** — matriz de compatibilidade e novos guias de filamento traduzidos para 17 idiomas
+- **i18n completo** — todas as 3252 chaves traduzidas para 17 idiomas, incluindo CRM e conquistas de marcos
 
 ## Início rápido
 

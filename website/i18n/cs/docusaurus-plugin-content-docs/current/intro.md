@@ -33,16 +33,22 @@ Bambu Dashboard se připojuje přímo k vaší tiskárně přes MQTT přes LAN, 
 - **17 jazyků** — norština, angličtina, němčina, francouzština, španělština, italština, japonština, korejština, nizozemština, polština, portugalština, švédština, turečtina, ukrajinština, čínština, čeština, maďarština
 - **Samostatně hostovaný** — žádná závislost na cloudu, vaše data na vašem stroji
 
-### Novinky ve v1.1.13
+### Novinky ve v1.1.14
 
-- **Detekce EXT cívky** pro P2S/A1 prostřednictvím mapovacího pole MQTT — spotřeba filamentu je správně sledována pro externí cívku
-- **Databáze materiálů filamentů** s 15 materiály, kompatibilitou podložky, průvodcem sušením a vlastnostmi
-- **Panel údržby** s intervaly na základě KB, 4 novými typy trysek, záložkou průvodce s odkazy na dokumentaci
-- **Zvuková upozornění** s 9 událostmi, vlastním nahráváním (MP3/OGG/WAV, max. 10 s), ovládáním hlasitosti a reproduktorem tiskárny
-- **Protokol aktivit** — trvalá časová osa ze všech databází, bez ohledu na to, zda byla stránka otevřena
-- **Chybové kódy HMS** s čitelnými popisy pro 270+ kódů
-- **Kompletní i18n** — všech 2944 klíčů přeloženo do 17 jazyků
-- **Automatické sestavení dokumentace** — dokumentace je automaticky sestavena při instalaci a spuštění serveru
+- **Integrace AdminLTE 4** — kompletní restrukturalizace HTML s treeview postranním panelem, moderním rozložením a podporou CSP pro CDN
+- **CRM systém** — kompletní správa zákazníků se 4 panely: zákazníci, objednávky, faktury a nastavení firmy s integrací historie
+- **Moderní UI** — teal akcent, přechodové titulky, hover záře, plovoucí koule a vylepšený tmavý motiv
+- **Úspěchy: 18 památek** — vikingská loď, Socha svobody, Eiffel Tower, Big Ben, Braniborská brána, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, holandský větrný mlýn, Wawelský drak, Cristo Redentor, Turning Torso, Hagia Sophia, Matka vlast, Velká čínská zeď, Pražský orloj, Budapeštský parlament — s vyskakovacím oknem podrobností, XP a vzácností
+- **Vlhkost/teplota AMS** — 5stupňové hodnocení s doporučeními pro skladování a sušení
+- **Živé sledování filamentu** — aktualizace v reálném čase během tisku přes cloudový odhad jako zálohu
+- **Redesign sekce filamentů** — velké cívky s úplnými informacemi (značka, hmotnost, teplota, RFID, barva), horizontální rozložení a kliknutí pro podrobnosti
+- **EXT cívka inline** — externí cívka zobrazena společně s AMS cívkami s lepším využitím prostoru
+- **Rozložení dashboardu optimalizováno** — výchozí 2 sloupce pro monitory 24–27", velký 3D/kamera, kompaktní filament/AMS
+- **Čas výměny filamentu** v odhadci nákladů s viditelným počítadlem výměn
+- **Globální systém upozornění** — lišta upozornění s toast notifikacemi vpravo dole, neblokuje navigační lištu
+- **Průvodce i18n** — všech 14 klíčů průvodce přeloženo do 17 jazyků
+- **5 nových KB stránek** — matice kompatibility a nové průvodce filamenty přeložené do 17 jazyků
+- **Kompletní i18n** — všech 3252 klíčů přeloženo do 17 jazyků včetně CRM a úspěchů památek
 
 ## Rychlý start
 

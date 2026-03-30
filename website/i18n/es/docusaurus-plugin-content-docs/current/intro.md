@@ -33,16 +33,22 @@ Bambu Dashboard se conecta directamente a su impresora mediante MQTT sobre la re
 - **17 idiomas** — noruego, inglés, alemán, francés, español, italiano, japonés, coreano, neerlandés, polaco, portugués, sueco, turco, ucraniano, chino, checo, húngaro
 - **Auto-alojado** — sin dependencia de la nube, sus datos en su máquina
 
-### Novedades en v1.1.13
+### Novedades en v1.1.14
 
-- **Detección de bobina EXT** para P2S/A1 mediante campo de mapeo MQTT — consumo de filamento rastreado correctamente para bobina externa
-- **Base de datos de materiales de filamento** con 15 materiales, compatibilidad de placa, guía de secado y propiedades
-- **Panel de mantenimiento** con intervalos basados en KB, 4 nuevos tipos de boquillas, pestaña de guía con enlaces a la documentación
-- **Alertas de sonido** con 9 eventos, carga personalizada (MP3/OGG/WAV, máx. 10 s), control de volumen y altavoz de impresora
-- **Registro de actividad** — línea de tiempo persistente de todas las bases de datos, independientemente de si la página estaba abierta
-- **Códigos de error HMS** con descripciones legibles de más de 270 códigos
-- **i18n completo** — todas las 2944 claves traducidas a 17 idiomas
-- **Documentación de compilación automática** — la documentación se genera automáticamente durante la instalación y el inicio del servidor
+- **Integración AdminLTE 4** — reestructuración HTML completa con sidebar treeview, diseño moderno y soporte CSP para CDN
+- **Sistema CRM** — gestión completa de clientes con 4 paneles: clientes, pedidos, facturas y configuración de empresa con integración de historial
+- **UI moderna** — acento teal, títulos en degradado, brillo hover, orbes flotantes y tema oscuro mejorado
+- **Logros: 18 monumentos** — barco vikingo, Estatua de la Libertad, Eiffel Tower, Big Ben, Puerta de Brandeburgo, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, molino de viento holandés, Dragón de Wawel, Cristo Redentor, Turning Torso, Hagia Sophia, La Madre Patria, Gran Muralla China, Reloj Astronómico de Praga, Parlamento de Budapest — con popup de detalles, XP y rareza
+- **Humedad/temperatura AMS** — valoración de 5 niveles con recomendaciones de almacenamiento y secado
+- **Seguimiento de filamento en vivo** — actualización en tiempo real durante la impresión mediante fallback de estimación cloud
+- **Rediseño de la sección de filamento** — bobinas grandes con información completa (marca, peso, temperatura, RFID, color), diseño horizontal y clic para detalles
+- **Bobina EXT en línea** — bobina externa mostrada junto a las bobinas AMS con mejor uso del espacio
+- **Diseño del dashboard optimizado** — 2 columnas por defecto para monitores de 24–27", vista 3D/cámara grande, filamento/AMS compacto
+- **Tiempo de cambio de filamento** en el estimador de costos con contador de cambios visible
+- **Sistema global de alertas** — barra de alertas con notificaciones toast en la esquina inferior derecha, no bloquea la barra de navegación
+- **Tour guiado i18n** — las 14 claves del tour traducidas a 17 idiomas
+- **5 nuevas páginas KB** — matriz de compatibilidad y nuevas guías de filamento traducidas a 17 idiomas
+- **i18n completo** — todas las 3252 claves traducidas a 17 idiomas, incluyendo CRM y logros de monumentos
 
 ## Inicio rápido
 

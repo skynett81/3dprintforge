@@ -33,16 +33,22 @@ Bambu Dashboard connects directly to your printer via MQTT over LAN, with no dep
 - **17 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
 - **Self-hosted** — no cloud dependency, your data on your machine
 
-### New in v1.1.13
+### New in v1.1.14
 
-- **EXT spool detection** for P2S/A1 via MQTT mapping field — filament consumption tracked correctly for external spool
-- **Filament material database** with 15 materials, plate compatibility, drying guide, and properties
-- **Maintenance panel** with KB-based intervals, 4 new nozzle types, guide tab with links to documentation
-- **Sound alerts** with 9 events, custom upload (MP3/OGG/WAV, max 10s), volume control, and printer speaker
-- **Activity log** — persistent timeline from all databases, regardless of whether the page was open
-- **HMS error codes** with human-readable descriptions from 270+ codes
-- **Complete i18n** — all 2944 keys translated into 17 languages
-- **Auto-build docs** — documentation is built automatically at installation and server start
+- **AdminLTE 4 integration** — complete HTML restructuring with treeview sidebar, modern layout and CSP support for CDN
+- **CRM system** — full customer management with 4 panels: customers, orders, invoices and company settings with history integration
+- **Modern UI** — teal accent, gradient titles, hover glow, floating orbs and improved dark theme
+- **Achievements: 18 landmarks** — Viking ship, Statue of Liberty, Eiffel Tower, Big Ben, Brandenburg Gate, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, Dutch windmill, Wawel Dragon, Cristo Redentor, Turning Torso, Hagia Sophia, The Motherland, Great Wall of China, Prague Astronomical Clock, Budapest Parliament — with detail popup, XP and rarity
+- **AMS humidity/temperature** — 5-level rating with recommendations for storage and drying
+- **Live filament tracking** — real-time updates during printing via cloud estimate fallback
+- **Filament section redesign** — large spools with full info (brand, weight, temp, RFID, colour), horizontal layout and click-for-details
+- **EXT spool inline** — external spool displayed alongside AMS spools with better space usage
+- **Dashboard layout optimised** — 2-column default for 24-27" monitors, large 3D/camera, compact filament/AMS
+- **Filament change time** in cost estimator with visible change counter
+- **Global alert system** — alert bar with toast notifications in bottom-right, does not block navbar
+- **Guided tour i18n** — all 14 tour keys translated into 17 languages
+- **5 new KB pages** — compatibility matrix and new filament guides translated into 17 languages
+- **Complete i18n** — all 3252 keys translated into 17 languages including CRM and landmark achievements
 
 ## Quick start
 
