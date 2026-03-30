@@ -898,6 +898,8 @@
     if (s.vendor_name && name.startsWith(s.vendor_name + ' ')) {
       name = name.substring(s.vendor_name.length + 1);
     }
+    // Append color name for a more descriptive label
+    if (s.color_name) name += ' — ' + s.color_name;
     return name;
   }
 
@@ -917,8 +919,11 @@
     const lowClass = isEmpty ? 'filament-card-empty' : isLow ? 'filament-card-low' : '';
     const archivedClass = s.archived ? 'filament-card-archived' : '';
     const cleanName = _cleanProfileName(s);
-    const colorLabel = s.color_name || '';
-    const subtitle = [s.vendor_name, colorLabel, s.material && s.material !== cleanName ? s.material : '', s.diameter && s.diameter !== 1.75 ? s.diameter + 'mm' : ''].filter(Boolean).join(' · ');
+    const subtitleParts = [s.vendor_name];
+    if (s.nozzle_temp_min && s.nozzle_temp_max) subtitleParts.push(`🔥 ${s.nozzle_temp_min}–${s.nozzle_temp_max}°C`);
+    if (s.bed_temp_min && s.bed_temp_max) subtitleParts.push(`🛏 ${s.bed_temp_min}–${s.bed_temp_max}°C`);
+    if (s.diameter && s.diameter !== 1.75) subtitleParts.push(s.diameter + 'mm');
+    const subtitle = subtitleParts.filter(Boolean).join(' · ');
     // Drying status indicator
     const dryStatus = _dryingStatus.find(d => d.id === s.id);
     const dryIcon = dryStatus?.drying_status === 'overdue' ? `<span class="fil-dry-badge fil-dry-overdue" title="${t('filament.drying_status_overdue')}">&#x1F534;</span>`
@@ -1080,6 +1085,7 @@
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
     const statusText = isEmpty ? t('filament.status_empty', 'Tom') : isLow ? t('filament.status_low', 'Lav') : `${pct}%`;
+    const tempInfo = (s.nozzle_temp_min && s.nozzle_temp_max) ? `🔥${s.nozzle_temp_min}–${s.nozzle_temp_max}°C` : '';
 
     return `<div class="spool-vcard" onclick="window._showSpoolDetail(${s.id})">
       <div class="spool-vcard-thumb">
@@ -1089,7 +1095,8 @@
       </div>
       <div class="spool-vcard-info">
         <div class="spool-vcard-name" title="${esc(cleanName)}">${esc(cleanName)}</div>
-        <div class="spool-vcard-meta">${esc(vendorName)}${s.color_name ? ' · ' + esc(s.color_name) : ''} · ${remaining}</div>
+        <div class="spool-vcard-meta">${esc(vendorName)} · ${remaining}</div>
+        ${tempInfo ? `<div class="spool-vcard-meta" style="font-size:0.7rem;opacity:0.7">${tempInfo}</div>` : ''}
         <div class="spool-vcard-bottom">
           <span class="spool-vcard-pct" style="color:${statusColor}">${statusText}</span>
           <div class="spool-vcard-bar"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor}"></div></div>
