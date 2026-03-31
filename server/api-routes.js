@@ -31,12 +31,16 @@ import * as _filamentMaterials from './filament-materials.js';
 const log = createLogger('api');
 
 // ---- Validation schemas ----
+// model is now free-text (maxLength 100) — no enum restriction for multi-brand support
+const PRINTER_TYPES = ['bambu', 'moonraker', 'klipper'];
+
 const PRINTER_SCHEMA = {
   name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
   ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
   serial: { type: 'string', maxLength: 200 },
   access_code: { type: 'string', maxLength: 200 },
-  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'P2S', 'P2S Combo', 'X1', 'X1C', 'X1E', 'H2D'] }
+  model: { type: 'string', maxLength: 100 },
+  type: { type: 'string', enum: PRINTER_TYPES }
 };
 
 const PRINTER_UPDATE_SCHEMA = {
@@ -44,7 +48,8 @@ const PRINTER_UPDATE_SCHEMA = {
   ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
   serial: { type: 'string', maxLength: 200 },
   access_code: { type: 'string', maxLength: 200 },
-  model: { type: 'string', enum: ['A1', 'A1 Mini', 'P1P', 'P1S', 'P2S', 'P2S Combo', 'X1', 'X1C', 'X1E', 'H2D'] }
+  model: { type: 'string', maxLength: 100 },
+  type: { type: 'string', enum: PRINTER_TYPES }
 };
 
 const PROFILE_SCHEMA = {

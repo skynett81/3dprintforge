@@ -126,6 +126,7 @@ export function runMigrations() {
     { version: 106, up: _mig106_ecom_license_fields },
     { version: 107, up: _mig107_ecom_license_identifiers },
     { version: 108, up: _mig108_crm_system },
+    { version: 109, up: _mig109_printer_type_column },
   ];
 
   for (const m of migrations) {
@@ -4467,4 +4468,9 @@ function _mig103_printer_maintenance_mode(db) {
   try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_mode INTEGER DEFAULT 0'); } catch {}
   try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_note TEXT'); } catch {}
   try { db.exec('ALTER TABLE printers ADD COLUMN maintenance_since TEXT'); } catch {}
+}
+
+// v109: Add printer type column for multi-protocol support (bambu/moonraker)
+function _mig109_printer_type_column(db) {
+  try { db.exec("ALTER TABLE printers ADD COLUMN type TEXT DEFAULT NULL"); } catch {}
 }
