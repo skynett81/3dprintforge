@@ -1,8 +1,0 @@
-{
-  "title": { "message": "3DPrintForge" },
-  "item.label.Dokumentasjon": { "message": "Documentation" },
-  "item.label.Kunnskapsbase": { "message": "Base de connaissances" },
-  "item.label.Oppdateringer": { "message": "Mises à jour" },
-  "item.label.← Dashboard": { "message": "← Dashboard" },
-  "item.label.GitHub": { "message": "GitHub" }
-}

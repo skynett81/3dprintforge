@@ -30,7 +30,7 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **Activity log** — persistent timeline from all events (prints, errors, maintenance, filament)
 - **Notifications** — 7 channels (Telegram, Discord, email, ntfy, Pushover, SMS, webhook)
 - **Multi-printer** — supports the entire Bambu Lab range
-- **17 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
+- **2 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
 - **Self-hosted** — no cloud dependency, your data on your machine
 
 ### New in v1.1.14
@@ -46,9 +46,9 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **Dashboard layout optimised** — 2-column default for 24-27" monitors, large 3D/camera, compact filament/AMS
 - **Filament change time** in cost estimator with visible change counter
 - **Global alert system** — alert bar with toast notifications in bottom-right, does not block navbar
-- **Guided tour i18n** — all 14 tour keys translated into 17 languages
-- **5 new KB pages** — compatibility matrix and new filament guides translated into 17 languages
-- **Complete i18n** — all 3252 keys translated into 17 languages including CRM and landmark achievements
+- **Guided tour i18n** — all 14 tour keys translated into 2 languages
+- **5 new KB pages** — compatibility matrix and new filament guides translated into 2 languages
+- **Complete i18n** — all 3252 keys translated into 2 languages including CRM and landmark achievements
 
 ## Quick start
 
@@ -122,7 +122,7 @@ Complete maintenance system with:
 - **Backend**: Node.js 22 with only 3 npm packages (mqtt, ws, basic-ftp)
 - **Frontend**: Vanilla HTML/CSS/JS, no build step
 - **Database**: SQLite via Node.js 22 built-in `--experimental-sqlite`
-- **Documentation**: Docusaurus with 17 languages, automatically built at installation
+- **Documentation**: Docusaurus with 2 languages, automatically built at installation
 - **API**: 177+ endpoints, OpenAPI documentation at `/api/docs`
 
 See [Architecture](./advanced/architecture) for details.

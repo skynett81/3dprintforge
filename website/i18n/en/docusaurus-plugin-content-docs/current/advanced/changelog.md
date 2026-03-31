@@ -47,7 +47,7 @@ All notable changes to 3DPrintForge.
 
 ### Docusaurus Documentation Site
 - 82 documentation pages (72 docs + 10 guides)
-- Fully translated into 17 languages (1400+ files)
+- Fully translated into 2 languages (1400+ files)
 - Guides: first print, filament setup, daily use, plate selection, troubleshooting, alerts, OBS
 - Knowledge base: filaments, build plates, maintenance, troubleshooting
 - GitHub Pages deploy with Actions workflow
@@ -335,7 +335,7 @@ All notable changes to 3DPrintForge.
 ### Technical
 - Database migrations 57–60
 - New module: `server/slicer-service.js`
-- ~80 new i18n keys across all 17 languages
+- ~80 new i18n keys across all 2 languages
 
 ---
 
@@ -377,7 +377,7 @@ All notable changes to 3DPrintForge.
 ### Improvements
 - Enhanced thumbnail service with better 3MF parsing
 - Sparkline stats strip with rolling 60-sample mini-charts
-- i18n strings for all new features across 17 languages
+- i18n strings for all new features across 2 languages
 
 ---
 

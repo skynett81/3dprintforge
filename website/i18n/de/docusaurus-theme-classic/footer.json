@@ -1,8 +1,0 @@
-{
-  "link.label.Documentation": { "message": "Dokumentation" },
-  "link.label.Knowledge Base": { "message": "Wissensdatenbank" },
-  "link.label.Updates": { "message": "Aktualisierungen" },
-  "link.label.GitHub": { "message": "GitHub" },
-  "link.label.← Dashboard": { "message": "← Dashboard" },
-  "copyright": { "message": "Copyright © 2026 3DPrintForge" }
-}

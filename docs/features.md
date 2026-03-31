@@ -124,7 +124,7 @@ Quiet hours support — no notifications during specified time window.
 ## Infrastructure
 
 - **Authentication** — optional password protection with session management (username + password or simple password)
-- **17 languages** — English, Norwegian, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian
+- **2 languages** — English, Norwegian, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese (Simplified), Czech, Hungarian
 - **HTTPS by default** — auto-generated self-signed SSL certificates, forced HTTPS redirect, HSTS headers
 - **Content Security Policy** — CSP headers to prevent XSS and code injection
 - **Theme system** — Light/Dark/Auto modes, 6 color presets, custom accent color, border radius slider

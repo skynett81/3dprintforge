@@ -18,7 +18,7 @@ All notable changes to 3DPrintForge.
 - Phase 2: Complete frontend with 4 panels (customers, orders, invoices, business settings)
 - Phase 3: Print history integration with customer selection dialog
 - Phase 4: Invoice generation, business settings, improved CRM dashboard
-- Phase 5: Complete i18n — 107 CRM keys translated to all 17 languages
+- Phase 5: Complete i18n — 107 CRM keys translated to all 2 languages
 
 ### Achievement Landmarks (18 World Landmarks)
 - 18 landmark achievements from all supported language regions:
@@ -29,7 +29,7 @@ All notable changes to 3DPrintForge.
   Prague Orloj (CS), Budapest Parliament (HU)
 - Legendary achievements: Statue of Liberty and Eiffel Tower at 1:1 scale
 - Click on achievement shows detail popup with XP, rarity, and progress
-- Achievement i18n: rarity, category, completed_msg, keep_going translated to 17 languages
+- Achievement i18n: rarity, category, completed_msg, keep_going translated to 2 languages
 
 ### Modern UI & Dark Theme
 - Teal accent color, gradient titles, hover glow effects, floating orbs
@@ -67,18 +67,18 @@ All notable changes to 3DPrintForge.
 - Filament change time added to cost estimator with visible change counter
 
 ### Guided Tour
-- All 14 guided tour keys translated to 17 languages
+- All 14 guided tour keys translated to 2 languages
 - Tour tooltip positioning fix — removed translateY, uses direct calculation
 - Tour tooltip stays within viewport — measures height and clamps top
 
 ### Knowledge Base
-- 5 new KB pages + compatibility matrix, translated to 17 languages
-- Material tips/warnings translated to all 17 languages
+- 5 new KB pages + compatibility matrix, translated to 2 languages
+- Material tips/warnings translated to all 2 languages
 
 ### Internationalization
-- Complete i18n audit: all 3,252 keys translated to 17 languages
+- Complete i18n audit: all 3,252 keys translated to 2 languages
 - 18 landmark achievement descriptions translated to all 15 non-English/non-Norwegian languages
-- CRM system: 107 keys translated to all 17 languages
+- CRM system: 107 keys translated to all 2 languages
 
 ### Bug Fixes
 - Sidebar works with AdminLTE 4 treeview — thorough cleanup
@@ -116,7 +116,7 @@ All notable changes to 3DPrintForge.
 - Build plate lifespan table (Cool, Engineering, High Temp, Textured PEI)
 
 ### Internationalization
-- Complete i18n: all 17 languages now have 100% coverage (2,944 keys each)
+- Complete i18n: all 2 languages now have 100% coverage (2,944 keys each)
 - 1,174+ missing keys translated per language across 45+ sections
 - Languages: nb, en, de, fr, es, it, ja, ko, nl, pl, pt-BR, sv, tr, uk, zh-CN, cs, hu
 - Fixed broken placeholder in Polish, empty values in Japanese/Korean/Turkish/Hungarian
@@ -164,7 +164,7 @@ All notable changes to 3DPrintForge.
 
 ### Docusaurus Documentation Site
 - 82 documentation pages (72 docs + 10 guides)
-- Fully translated into 17 languages (1400+ files)
+- Fully translated into 2 languages (1400+ files)
 - Guides: first print, filament setup, daily use, plate selection, troubleshooting, alerts, OBS
 - Knowledge base: filaments, build plates, maintenance, troubleshooting
 - GitHub Pages deploy with Actions workflow
@@ -452,7 +452,7 @@ All notable changes to 3DPrintForge.
 ### Technical
 - Database migrations 57–60
 - New module: `server/slicer-service.js`
-- ~80 new i18n keys across all 17 languages
+- ~80 new i18n keys across all 2 languages
 
 ---
 
@@ -494,7 +494,7 @@ All notable changes to 3DPrintForge.
 ### Improvements
 - Enhanced thumbnail service with better 3MF parsing
 - Sparkline stats strip with rolling 60-sample mini-charts
-- i18n strings for all new features across 17 languages
+- i18n strings for all new features across 2 languages
 
 ---
 

@@ -34,7 +34,7 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Achievements** — 18 verdens landemerker som milepæler for filamentforbruk med XP-progresjon
 - **Varsler** — 7 kanaler (Telegram, Discord, e-post, ntfy, Pushover, SMS, webhook)
 - **Multi-printer** — støtter hele Bambu Lab-serien
-- **17 språk** — norsk, engelsk, tysk, fransk, spansk, italiensk, japansk, koreansk, nederlandsk, polsk, portugisisk, svensk, tyrkisk, ukrainsk, kinesisk, tsjekkisk, ungarsk
+- **2 språk** — norsk og engelsk
 - **Selvdriftet** — ingen sky-avhengighet, dine data på din maskin
 
 ### Nytt i v1.1.14
@@ -50,9 +50,9 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Dashboard-layout optimalisert** — 2-kolonne standard for 24–27" skjermer, stor 3D/kamera, kompakt filament/AMS
 - **Filamentbytte-tid** i kostnadsestimator med synlig bytte-teller
 - **Global varselsystem** — alert bar med toast-varsler i bottom-right, blokkerer ikke navbar
-- **Guided tour i18n** — alle 14 tour-nøkler oversatt til 17 språk
-- **5 nye KB-sider** — kompatibilitetsmatrise og nye filamentguider oversatt til 17 språk
-- **Komplett i18n** — alle 3252 nøkler oversatt til 17 språk inkludert CRM og landemerke-achievements
+- **Guided tour i18n** — alle 14 tour-nøkler oversatt til 2 språk
+- **5 nye KB-sider** — kompatibilitetsmatrise og nye filamentguider oversatt til 2 språk
+- **Komplett i18n** — alle 3252 nøkler oversatt til 2 språk inkludert CRM og landemerke-achievements
 
 ## Hurtigstart
 
@@ -126,7 +126,7 @@ Komplett vedlikeholdssystem med:
 - **Backend**: Node.js 22 med kun 3 npm-pakker (mqtt, ws, basic-ftp)
 - **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS, ingen build-steg
 - **Database**: SQLite via Node.js 22 built-in `--experimental-sqlite`
-- **Dokumentasjon**: Docusaurus med 17 språk, automatisk bygget ved installasjon
+- **Dokumentasjon**: Docusaurus med 2 språk, automatisk bygget ved installasjon
 - **API**: 177+ endepunkter, OpenAPI-dokumentasjon på `/api/docs`
 
 Se [Arkitektur](./advanced/architecture) for detaljer.

@@ -19,8 +19,8 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **Filament Inventory** — favorites, color filters, bulk add, HueForge TD, CSV import, Spoolman sync
 - **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
-- **17 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
-- **Docusaurus documentation** — 82 pages in 17 languages, available at `/docs/` and on GitHub Pages
+- **2 languages** — Norwegian, English, German, French, Spanish, Italian, Japanese, Korean, Dutch, Polish, Portuguese (BR), Swedish, Turkish, Ukrainian, Chinese, Czech, Hungarian
+- **Docusaurus documentation** — 82 pages in 2 languages, available at `/docs/` and on GitHub Pages
 - **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 3 npm packages
 
 ---
@@ -255,7 +255,7 @@ docker compose pull && docker compose up -d
 - **[Architecture](docs/architecture.md)** — stack, modules, components, project structure, systemd, Pterodactyl
 - **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.14
 - **[Installation Guide](INSTALL.md)** — detailed step-by-step install instructions
-- **[Docusaurus Docs](website/)** — full documentation site in 17 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/3dprintforge/)
+- **[Docusaurus Docs](website/)** — full documentation site in 2 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/3dprintforge/)
 
 ---
 

@@ -1,34 +1,15 @@
 // i18n - Lightweight internationalization module
 (function() {
   const DEFAULT_LOCALE = 'nb';
-  const SUPPORTED_LOCALES = [
-    'nb', 'en', 'de', 'fr', 'es', 'it', 'ja', 'ko',
-    'nl', 'pl', 'pt_BR', 'sv', 'tr', 'uk', 'zh_CN',
-    'cs', 'hu'
-  ];
+  const SUPPORTED_LOCALES = ['nb', 'en'];
 
   const LOCALE_NAMES = {
-    nb: 'Norsk Bokmål', en: 'English', de: 'Deutsch', fr: 'Français',
-    es: 'Español', it: 'Italiano', ja: '日本語', ko: '한국어',
-    nl: 'Nederlands', pl: 'Polski', pt_BR: 'Português (Brasil)',
-    sv: 'Svenska', tr: 'Türkçe', uk: 'Українська',
-    zh_CN: '简体中文', cs: 'Čeština', hu: 'Magyar'
+    nb: 'Norsk Bokmål', en: 'English'
   };
 
-  const LOCALE_CURRENCY = {
-    nb: 'NOK', en: 'USD', de: 'EUR', fr: 'EUR', es: 'EUR', it: 'EUR',
-    ja: 'JPY', ko: 'KRW', nl: 'EUR', pl: 'PLN', pt_BR: 'BRL',
-    sv: 'SEK', tr: 'TRY', uk: 'UAH', zh_CN: 'CNY', cs: 'CZK', hu: 'HUF'
-  };
-  const LOCALE_TAG = {
-    nb: 'nb-NO', en: 'en-US', de: 'de-DE', fr: 'fr-FR', es: 'es-ES', it: 'it-IT',
-    ja: 'ja-JP', ko: 'ko-KR', nl: 'nl-NL', pl: 'pl-PL', pt_BR: 'pt-BR',
-    sv: 'sv-SE', tr: 'tr-TR', uk: 'uk-UA', zh_CN: 'zh-CN', cs: 'cs-CZ', hu: 'hu-HU'
-  };
-  const FALLBACK_RATES = {
-    EUR: 0.85, NOK: 9.6, JPY: 157, KRW: 1460, PLN: 3.6, BRL: 5.2,
-    SEK: 9.2, TRY: 44, UAH: 43, CNY: 6.9, CZK: 20.7, HUF: 325
-  };
+  const LOCALE_CURRENCY = { nb: 'NOK', en: 'USD' };
+  const LOCALE_TAG = { nb: 'nb-NO', en: 'en-US' };
+  const FALLBACK_RATES = { NOK: 9.6 };
 
   let _locale = localStorage.getItem('bambu-lang') || DEFAULT_LOCALE;
   let _translations = {};
