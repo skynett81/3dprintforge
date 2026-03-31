@@ -139,7 +139,16 @@
     const tabsEl = document.getElementById('ams-tabs');
     const humidityEl = document.getElementById('ams-humidity-info');
     const extSection = document.getElementById('ams-ext-section');
-    if (!container || !data.ams) return;
+    const amsCard = document.getElementById('ams-card');
+
+    // Hide AMS card entirely for non-AMS printers (Moonraker/Klipper)
+    if (!data.ams || !data.ams.ams || data.ams.ams.length === 0) {
+      if (amsCard) amsCard.style.display = 'none';
+      return;
+    }
+    if (amsCard) amsCard.style.display = '';
+
+    if (!container) return;
 
     const amsData = data.ams;
     const amsUnits = amsData.ams;
@@ -147,7 +156,6 @@
     const _mapping = data.mapping;
     const _isExtFromMapping = Array.isArray(_mapping) && _mapping.length > 0 && ((_mapping[0] >> 8) & 0xFF) === 0xFF;
     const activeTray = _isExtFromMapping ? '254' : amsData.tray_now;
-    if (!amsUnits || amsUnits.length === 0) return;
 
     const meta = window.printerState.getActivePrinterMeta();
     const amsType = typeof getAmsType === 'function' ? getAmsType(meta?.model) : 'full';
