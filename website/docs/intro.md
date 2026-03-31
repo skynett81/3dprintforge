@@ -1,14 +1,14 @@
 ---
 sidebar_position: 1
 title: Velkommen til 3DPrintForge
-description: En kraftig, selvdriftet dashboard for Bambu Lab 3D-printere
+description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 ---
 
 # Velkommen til 3DPrintForge
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**3DPrintForge** er et selvdriftet, fullverdig kontrollpanel for Bambu Lab 3D-printere. Det gir deg full oversikt og kontroll over printer, filamentlager, printhistorikk og mer — alt fra én nettleser-fane.
+**3DPrintForge** er et selvdriftet, fullverdig kontrollpanel for alle dine 3D-printere. Det gir deg full oversikt og kontroll over printer, filamentlager, printhistorikk og mer — alt fra én nettleser-fane.
 
 ## Hva er 3DPrintForge?
 

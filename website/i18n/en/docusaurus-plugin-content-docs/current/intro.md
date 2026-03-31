@@ -1,14 +1,14 @@
 ---
 sidebar_position: 1
 title: Welcome to 3DPrintForge
-description: A powerful, self-hosted dashboard for Bambu Lab 3D printers
+description: A powerful, self-hosted dashboard for all your 3D printers
 ---
 
 # Welcome to 3DPrintForge
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**3DPrintForge** is a self-hosted, full-featured control panel for Bambu Lab 3D printers. It gives you complete visibility and control over your printer, filament inventory, print history, and more — all from a single browser tab.
+**3DPrintForge** is a self-hosted, full-featured control panel for all your 3D printers. It gives you complete visibility and control over your printer, filament inventory, print history, and more — all from a single browser tab.
 
 ## What is 3DPrintForge?
 
