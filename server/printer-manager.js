@@ -1,6 +1,7 @@
 import { PrintTracker } from './print-tracker.js';
 import { TelemetrySampler } from './telemetry-sampler.js';
 import { CameraStream } from './camera-stream.js';
+import { MoonrakerCamera } from './moonraker-camera.js';
 import { getPrinters, addFirmwareEntry, addXcamEvent } from './database.js';
 import { PrintGuardService } from './print-guard.js';
 import { createLogger } from './logger.js';
@@ -145,10 +146,15 @@ export class PrinterManager {
       } catch (e) { /* ignore */ }
     };
 
-    // Camera: only start Bambu camera stream for Bambu printers
-    // Moonraker printers use webcam snapshot/MJPEG via HTTP proxy
+    // Camera: Bambu uses TLS/RTSP stream, Moonraker uses HTTP snapshot polling
     let camera = null;
-    if (connectorType !== 'moonraker') {
+    let moonCamera = null;
+    if (connectorType === 'moonraker') {
+      moonCamera = new MoonrakerCamera({
+        ...this.config,
+        printer: printerConf
+      });
+    } else {
       camera = new CameraStream({
         ...this.config,
         printer: printerConf,
@@ -158,9 +164,10 @@ export class PrinterManager {
 
     this._wireTrackerNotifications(id, printerConf.name, tracker);
     this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort, type: connectorType });
-    this.printers.set(id, { config: printerConf, client, tracker, sampler, camera, cameraPort, live: true });
+    this.printers.set(id, { config: printerConf, client, tracker, sampler, camera, moonCamera, cameraPort, live: true });
 
     if (camera) camera.start();
+    if (moonCamera) moonCamera.start();
     client.connect();
     log.info('Printer tilkoblet: ' + printerConf.name + ' (' + printerConf.ip + ')');
   }
@@ -217,7 +224,14 @@ export class PrinterManager {
     if (printer.client?.disconnect) printer.client.disconnect();
     if (printer.sampler) printer.sampler.stop();
     if (printer.camera) printer.camera.stop();
+    if (printer.moonCamera) printer.moonCamera.stop();
     this.printers.delete(id);
+  }
+
+  /** Get camera snapshot for Moonraker printers. Returns Buffer or null. */
+  getMoonrakerSnapshot(printerId) {
+    const printer = this.printers.get(printerId);
+    return printer?.moonCamera?.getSnapshot() || null;
   }
 
   handleCommand(msg) {

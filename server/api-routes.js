@@ -1485,8 +1485,8 @@ export async function handleApiRequest(req, res) {
     if (frameMatch && method === 'GET') {
       const pid = decodeURIComponent(frameMatch[1]);
       const entry = _printerManager?.printers?.get(pid);
-      if (!entry?.camera) return sendJson(res, { error: 'Kamera ikke tilgjengelig' }, 404);
-      const frame = entry.camera.getLastFrame();
+      // Support both Bambu camera and Moonraker camera
+      const frame = entry?.camera?.getLastFrame() || entry?.moonCamera?.getSnapshot();
       if (!frame) return sendJson(res, { error: 'Ingen frame tilgjengelig ennå' }, 503);
       res.writeHead(200, {
         'Content-Type': 'image/jpeg',

@@ -493,7 +493,8 @@ setFailureDetector(failureDetector);
 // Milestone frame provider — henter siste kamera-frame for instant screenshots
 setFrameProvider((printerId) => {
   const entry = manager.printers.get(printerId);
-  return entry?.camera?.getLastFrame() || null;
+  // Bambu camera or Moonraker camera snapshot
+  return entry?.camera?.getLastFrame() || entry?.moonCamera?.getSnapshot() || null;
 });
 
 // Printer Discovery (SSDP)
