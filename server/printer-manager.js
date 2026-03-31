@@ -145,17 +145,22 @@ export class PrinterManager {
       } catch (e) { /* ignore */ }
     };
 
-    const camera = new CameraStream({
-      ...this.config,
-      printer: printerConf,
-      server: { ...this.config.server, cameraWsPort: cameraPort }
-    });
+    // Camera: only start Bambu camera stream for Bambu printers
+    // Moonraker printers use webcam snapshot/MJPEG via HTTP proxy
+    let camera = null;
+    if (connectorType !== 'moonraker') {
+      camera = new CameraStream({
+        ...this.config,
+        printer: printerConf,
+        server: { ...this.config.server, cameraWsPort: cameraPort }
+      });
+    }
 
     this._wireTrackerNotifications(id, printerConf.name, tracker);
-    this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort });
+    this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort, type: connectorType });
     this.printers.set(id, { config: printerConf, client, tracker, sampler, camera, cameraPort, live: true });
 
-    camera.start();
+    if (camera) camera.start();
     client.connect();
     log.info('Printer tilkoblet: ' + printerConf.name + ' (' + printerConf.ip + ')');
   }
