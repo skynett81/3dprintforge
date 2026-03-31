@@ -1,12 +1,20 @@
 {
   "printers": [
     {
-      "id": "my-printer",
+      "id": "my-bambu",
       "name": "P2S Combo",
       "ip": "192.168.1.100",
       "serial": "01S00A000000000",
       "accessCode": "your-access-code",
-      "model": "P2S Combo"
+      "model": "P2S Combo",
+      "type": "bambu"
+    },
+    {
+      "id": "my-snapmaker",
+      "name": "Snapmaker U1",
+      "ip": "192.168.1.101",
+      "model": "Snapmaker U1",
+      "type": "moonraker"
     }
   ],
   "auth": {

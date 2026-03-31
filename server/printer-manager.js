@@ -50,7 +50,7 @@ export class PrinterManager {
   async init() {
     const dbPrinters = getPrinters();
     for (const p of dbPrinters) {
-      if (p.ip && p.serial && p.accessCode) {
+      if (this._canConnect(p)) {
         await this._addLivePrinter(p);
       } else {
         this._addOfflinePrinter(p);
@@ -70,16 +70,25 @@ export class PrinterManager {
     return port;
   }
 
+  // Detect connector type from printer config
+  _getConnectorType(printerConf) {
+    // Explicit type in config takes priority
+    if (printerConf.type === 'moonraker' || printerConf.type === 'klipper') return 'moonraker';
+    if (printerConf.type === 'bambu' || printerConf.type === 'mqtt') return 'bambu';
+    // Auto-detect: Bambu printers use serial + accessCode, Moonraker printers don't need serial
+    if (printerConf.serial && printerConf.accessCode) return 'bambu';
+    if (printerConf.ip && !printerConf.serial) return 'moonraker';
+    return 'bambu'; // fallback
+  }
+
   async _addLivePrinter(printerConf, reusePort) {
     const id = printerConf.id;
     const cameraPort = reusePort || this._allocCameraPort();
     const tracker = new PrintTracker(id);
     const sampler = new TelemetrySampler(id);
+    const connectorType = this._getConnectorType(printerConf);
 
-    const { BambuMqttClient } = await import('./mqtt-client.js');
-    const { buildCommandFromClientMessage } = await import('./mqtt-commands.js');
-
-    const mqttHub = {
+    const connectorHub = {
       broadcast: (type, data) => {
         const enriched = type === 'status' ? { printer_id: id, ...data } : data;
         this.broadcast(type, enriched);
@@ -94,8 +103,19 @@ export class PrinterManager {
       printerState: {}
     };
 
-    const client = new BambuMqttClient({ printer: printerConf }, mqttHub);
-    client._buildCommand = buildCommandFromClientMessage;
+    let client;
+    if (connectorType === 'moonraker') {
+      const { MoonrakerClient, buildMoonrakerCommand } = await import('./moonraker-client.js');
+      client = new MoonrakerClient({ printer: printerConf }, connectorHub);
+      client._buildCommand = buildMoonrakerCommand;
+      log.info(`Bruker Moonraker-connector for ${printerConf.name}`);
+    } else {
+      const { BambuMqttClient } = await import('./mqtt-client.js');
+      const { buildCommandFromClientMessage } = await import('./mqtt-commands.js');
+      client = new BambuMqttClient({ printer: printerConf }, connectorHub);
+      client._buildCommand = buildCommandFromClientMessage;
+      log.info(`Bruker Bambu MQTT-connector for ${printerConf.name}`);
+    }
 
     // Firmware change detection
     client.onFirmwareInfo = (mod) => {
@@ -155,11 +175,19 @@ export class PrinterManager {
       return this.updatePrinter(printerConf.id, printerConf);
     }
 
-    if (printerConf.ip && printerConf.serial && printerConf.accessCode) {
+    const canConnect = this._canConnect(printerConf);
+    if (canConnect) {
       await this._addLivePrinter(printerConf);
     } else {
       this._addOfflinePrinter(printerConf);
     }
+  }
+
+  // Check if printer has enough config to connect
+  _canConnect(printerConf) {
+    const type = this._getConnectorType(printerConf);
+    if (type === 'moonraker') return !!printerConf.ip;
+    return !!(printerConf.ip && printerConf.serial && printerConf.accessCode);
   }
 
   // Called when a printer is updated via API - reconnects if config changed
@@ -171,7 +199,7 @@ export class PrinterManager {
     this._teardown(id);
 
     // Reconnect with updated config
-    if (printerConf.ip && printerConf.serial && printerConf.accessCode) {
+    if (this._canConnect(printerConf)) {
       await this._addLivePrinter(printerConf, reusePort);
     } else {
       this._addOfflinePrinter(printerConf, reusePort);
