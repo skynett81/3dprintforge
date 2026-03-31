@@ -104,6 +104,9 @@
     if (typeof updateActiveFilament === 'function') updateActiveFilament(printData);
     if (typeof updatePrinterInfo === 'function') updatePrinterInfo(printData);
     if (typeof updateStatusBar === 'function') updateStatusBar(printData);
+    // Reset filament ring cache and update for new printer
+    if (typeof resetFilamentRingCache === 'function') resetFilamentRingCache();
+    if (typeof updateFilamentRing === 'function') updateFilamentRing(printData);
 
     // Update selector appearance with selection pop
     window.updatePrinterSelector();

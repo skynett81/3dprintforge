@@ -3,6 +3,98 @@
 
   let _lastFp = '';
 
+  // ── Klipper/Moonraker extruder display (Snapmaker U1 etc.) ──
+  function _renderKlipperExtruders(container, data) {
+    const extruders = [];
+    // Primary extruder
+    if (data.nozzle_temper !== undefined) {
+      extruders.push({
+        index: 0,
+        temp: Math.round(data.nozzle_temper),
+        target: Math.round(data.nozzle_target_temper || 0),
+        active: data._active_extruder === 'extruder' || data._active_extruder === undefined,
+      });
+    }
+    // Additional extruders (Snapmaker U1 has up to 4)
+    if (data._extra_extruders) {
+      for (let i = 0; i < data._extra_extruders.length; i++) {
+        const ex = data._extra_extruders[i];
+        extruders.push({
+          index: i + 1,
+          temp: ex.temperature,
+          target: ex.target,
+          active: data._active_extruder === `extruder${i + 1}`,
+        });
+      }
+    }
+
+    if (extruders.length === 0) {
+      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">Ingen data</div>';
+      return;
+    }
+
+    // Assign colors to each extruder slot
+    const slotColors = ['#4a9eff', '#ff6b6b', '#ffd93d', '#6bcb77', '#c084fc', '#f97316'];
+
+    let html = '<div class="card-title">Extruders <span class="ams-live-badge" title="Live data via Moonraker">LIVE</span></div>';
+
+    // State bar
+    const state = data.gcode_state || 'IDLE';
+    const stateLabel = { RUNNING: 'Printing', PAUSE: 'Paused', IDLE: 'Idle', FINISH: 'Done', FAILED: 'Error' }[state] || state;
+    const progress = data.mc_percent || 0;
+    const filename = data.subtask_name || '';
+
+    if (state === 'RUNNING' || state === 'PAUSE') {
+      html += `<div class="fr-active-bar">
+        <span class="fr-active-name">${_esc(filename)}</span>
+        <span class="fr-active-slot">${progress}%</span>
+      </div>`;
+    }
+
+    // Extruder grid
+    html += '<div class="fr-spools-grid">';
+    for (const ext of extruders) {
+      const color = slotColors[ext.index % slotColors.length];
+      const isHeating = ext.target > 0;
+      const tempColor = ext.temp > 50 ? (ext.temp > 180 ? 'var(--accent-red)' : 'var(--accent-orange)') : 'var(--text-muted)';
+      const activeCls = ext.active ? ' fr-spool-active' : '';
+
+      // Simple nozzle visual
+      const pct = isHeating && ext.target > 0 ? Math.min(100, Math.round(ext.temp / ext.target * 100)) : 0;
+      html += `<div class="fr-spool-item${activeCls}">`;
+      html += `<div class="fr-spool-ring">`;
+      html += `<svg viewBox="0 0 100 100" width="80" height="80">
+        <circle cx="50" cy="50" r="38" fill="none" stroke="var(--border-color)" stroke-width="6"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="6"
+          stroke-dasharray="${pct * 2.39} 239" stroke-dashoffset="0" stroke-linecap="round"
+          transform="rotate(-90 50 50)" opacity="${isHeating ? 1 : 0.3}"/>
+        <text x="50" y="46" text-anchor="middle" fill="${tempColor}" font-size="14" font-weight="600">${ext.temp}°</text>
+        <text x="50" y="62" text-anchor="middle" fill="var(--text-muted)" font-size="10">${isHeating ? ext.target + '°' : 'OFF'}</text>
+      </svg>`;
+      html += `</div>`;
+      html += `<div class="fr-spool-meta">`;
+      html += `<span class="fr-spool-brand">T${ext.index}${ext.active ? ' ●' : ''}</span>`;
+      html += `<span class="fr-spool-slot">${isHeating ? 'Heating' : 'Standby'}</span>`;
+      html += `</div></div>`;
+    }
+    html += '</div>';
+
+    // Position info if available
+    if (data._position) {
+      const p = data._position;
+      html += `<div style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin-top:6px">
+        X:${p.x} Y:${p.y} Z:${p.z}${data.spd_mag ? ' · Speed: ' + data.spd_mag + '%' : ''}${data.cooling_fan_speed ? ' · Fan: ' + data.cooling_fan_speed + '%' : ''}
+      </div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  function _esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // Reset fingerprint cache — called when switching printers
+  window.resetFilamentRingCache = function() { _lastFp = ''; };
+
   function parseColor(trayColor) {
     if (!trayColor || trayColor.length < 6) return '#888888';
     return '#' + trayColor.substring(0, 6);
@@ -230,6 +322,16 @@
     }
 
     const ams = data.ams;
+
+    // Moonraker/Klipper printers: show extruder temps instead of AMS trays
+    if ((!ams || !ams.ams || !ams.ams.length) && data._extra_extruders) {
+      _renderKlipperExtruders(container, data);
+      return;
+    }
+    if ((!ams || !ams.ams || !ams.ams.length) && data.nozzle_temper !== undefined && !data.ams) {
+      _renderKlipperExtruders(container, data);
+      return;
+    }
     if (!ams || !ams.ams || !ams.ams.length) {
       container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">Ingen AMS-data</div>';
       return;
