@@ -6,7 +6,7 @@ description: Visão geral em tempo real da impressora ativa com visualização 3
 
 # Painel principal
 
-O painel principal é o centro de controle do Bambu Dashboard. Exibe o status em tempo real da impressora selecionada e permite monitorar, controlar e personalizar a visualização conforme necessário.
+O painel principal é o centro de controle do 3DPrintForge. Exibe o status em tempo real da impressora selecionada e permite monitorar, controlar e personalizar a visualização conforme necessário.
 
 Acesse em: **https://localhost:3443/**
 

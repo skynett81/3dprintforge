@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Streamelés OBS-sel
-description: A Bambu Dashboard beállítása OBS Studio overlay-ként professzionális 3D nyomtatási streamhez
+description: A 3DPrintForge beállítása OBS Studio overlay-ként professzionális 3D nyomtatási streamhez
 ---
 
 # 3D nyomtatás streamelése OBS-sel
 
-A Bambu Dashboard beépített OBS-overlayt tartalmaz, amely a nyomtató állapotát, az előrehaladást, a hőmérsékleteket és a kameraképet közvetlenül a streamedbe jeleníti meg.
+A 3DPrintForge beépített OBS-overlayt tartalmaz, amely a nyomtató állapotát, az előrehaladást, a hőmérsékleteket és a kameraképet közvetlenül a streamedbe jeleníti meg.
 
 ## Előfeltételek
 
 - OBS Studio telepítve ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard fut és csatlakoztatott nyomtatóval rendelkezik
+- 3DPrintForge fut és csatlakoztatott nyomtatóval rendelkezik
 - (Opcionális) Bambu kamera engedélyezve az élő képhez
 
 ## 1. lépés — OBS Browser Source
@@ -63,7 +63,7 @@ Az overlay ezután csak magát a widgetet jeleníti meg — fehér vagy fekete h
 
 ## 3. lépés — Az overlay testreszabása
 
-A Bambu Dashboardban konfigurálhatod, mit jelenítsen meg az overlay:
+A 3DPrintForgeban konfigurálhatod, mit jelenítsen meg az overlay:
 
 1. Menj a **Funkciók → OBS-overlay** menüpontra
 2. Konfiguráld:
@@ -171,5 +171,5 @@ A 3D nyomtatók zajosak — különösen az AMS és a hűtés. Vedd figyelembe:
 - Vagy használj háttérzenét / chat hangot helyette
 
 :::tip Automatikus jelenetváltás
-Az OBS támogatja a jelenetváltást eseményalapú logikával. Kombináld egy bővítménnyel (pl. obs-websocket) és a Bambu Dashboard API-val, hogy a jelenet automatikusan váltson, amikor a nyomtatás elindul vagy leáll.
+Az OBS támogatja a jelenetváltást eseményalapú logikával. Kombináld egy bővítménnyel (pl. obs-websocket) és a 3DPrintForge API-val, hogy a jelenet automatikusan váltson, amikor a nyomtatás elindul vagy leáll.
 :::

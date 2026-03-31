@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Dépannage d'une impression échouée
-description: Diagnostiquez et résolvez les erreurs d'impression courantes à l'aide des journaux d'erreurs et des outils de Bambu Dashboard
+description: Diagnostiquez et résolvez les erreurs d'impression courantes à l'aide des journaux d'erreurs et des outils de 3DPrintForge
 ---
 
 # Dépannage d'une impression échouée
 
-Quelque chose a mal tourné ? Ne vous inquiétez pas — la plupart des erreurs d'impression ont des solutions simples. Bambu Dashboard vous aide à trouver la cause rapidement.
+Quelque chose a mal tourné ? Ne vous inquiétez pas — la plupart des erreurs d'impression ont des solutions simples. 3DPrintForge vous aide à trouver la cause rapidement.
 
 ## Étape 1 — Vérifier les codes d'erreur HMS
 

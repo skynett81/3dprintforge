@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Funkciók áttekintése
-description: A Bambu Dashboard összes funkciójának teljes áttekintése
+description: A 3DPrintForge összes funkciójának teljes áttekintése
 ---
 
 # Funkciók áttekintése
 
-A Bambu Dashboard mindent egy helyre gyűjt, amire szükséged van a Bambu Lab nyomtatóid figyeléséhez és vezérléséhez.
+A 3DPrintForge mindent egy helyre gyűjt, amire szükséged van a Bambu Lab nyomtatóid figyeléséhez és vezérléséhez.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ A teljes dokumentációért lásd a [Vezérlés](./controls) oldalt.
 
 ## Értesítések
 
-A Bambu Dashboard 7 értesítési csatornát támogat:
+A 3DPrintForge 7 értesítési csatornát támogat:
 
 | Csatorna | Események |
 |----------|-----------|

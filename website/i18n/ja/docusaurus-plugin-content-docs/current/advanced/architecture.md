@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: 技術アーキテクチャ
-description: Bambu Dashboardのアーキテクチャ概要 — スタック、モジュール、データベース、WebSocket
+description: 3DPrintForgeのアーキテクチャ概要 — スタック、モジュール、データベース、WebSocket
 ---
 
 # 技術アーキテクチャ

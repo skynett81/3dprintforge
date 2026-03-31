@@ -6,7 +6,7 @@ description: Sanntidsoversikt over aktiv printer med 3D-modellvisning, AMS-statu
 
 # Hovedpanel
 
-Hovedpanelet er det sentrale kontrollsenteret i Bambu Dashboard. Det viser sanntidsstatus for den valgte printeren og lar deg overvåke, styre og tilpasse visningen etter behov.
+Hovedpanelet er det sentrale kontrollsenteret i 3DPrintForge. Det viser sanntidsstatus for den valgte printeren og lar deg overvåke, styre og tilpasse visningen etter behov.
 
 Gå til: **https://localhost:3443/**
 

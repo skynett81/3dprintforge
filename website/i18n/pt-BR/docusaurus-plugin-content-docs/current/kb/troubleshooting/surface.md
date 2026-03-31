@@ -287,4 +287,4 @@ antes de iniciar a impressão — não abra a porta durante a impressão
 2. **Seque o filamento primeiro** — muitos defeitos de superfície são na verdade sintomas de umidade
 3. **Limpe o bico** — obstrução parcial cria defeitos de superfície inconsistentes difíceis de diagnosticar
 4. **Execute calibração completa** no menu de manutenção do Bambu Studio após grandes ajustes
-5. **Use o Bambu Dashboard** para rastrear quais configurações deram o melhor resultado ao longo do tempo
+5. **Use o 3DPrintForge** para rastrear quais configurações deram o melhor resultado ao longo do tempo

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Externe servers
-description: Verbind meerdere Bambu Dashboard-instanties om alle printers vanuit één centraal dashboard te bekijken en te beheren
+description: Verbind meerdere 3DPrintForge-instanties om alle printers vanuit één centraal dashboard te bekijken en te beheren
 ---
 
 # Externe servers (Remote Nodes)
 
-De functie voor externe servers stelt u in staat meerdere Bambu Dashboard-instanties te koppelen, zodat u alle printers vanuit één centrale interface kunt bekijken en besturen — ongeacht of ze zich in hetzelfde netwerk of op verschillende locaties bevinden.
+De functie voor externe servers stelt u in staat meerdere 3DPrintForge-instanties te koppelen, zodat u alle printers vanuit één centrale interface kunt bekijken en besturen — ongeacht of ze zich in hetzelfde netwerk of op verschillende locaties bevinden.
 
 Ga naar: **https://localhost:3443/#settings** → **Integraties → Externe servers**
 

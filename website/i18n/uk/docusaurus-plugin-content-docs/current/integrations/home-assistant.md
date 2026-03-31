@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Home Assistant
-description: Інтегруйте Bambu Dashboard з Home Assistant через MQTT Discovery, автоматизовані пристрої та приклади автоматизацій
+description: Інтегруйте 3DPrintForge з Home Assistant через MQTT Discovery, автоматизовані пристрої та приклади автоматизацій
 ---
 
 # Home Assistant
@@ -14,7 +14,7 @@ description: Інтегруйте Bambu Dashboard з Home Assistant через M
 
 - Home Assistant працює в мережі
 - MQTT-брокер (Mosquitto) встановлений та налаштований в Home Assistant
-- Bambu Dashboard та Home Assistant використовують один і той же MQTT-брокер
+- 3DPrintForge та Home Assistant використовують один і той же MQTT-брокер
 
 ## Увімкнення MQTT Discovery
 
@@ -27,7 +27,7 @@ description: Інтегруйте Bambu Dashboard з Home Assistant через M
 4. Встановіть **Префікс Discovery**: стандарт `homeassistant`
 5. Натисніть **Зберегти та увімкнути**
 
-Bambu Dashboard тепер публікує повідомлення Discovery для всіх зареєстрованих принтерів.
+3DPrintForge тепер публікує повідомлення Discovery для всіх зареєстрованих принтерів.
 
 ## Пристрої в Home Assistant
 
@@ -63,7 +63,7 @@ ID сутностей відповідають шаблону `sensor.{printer_n
 | `{slug}_online` | `on` / `off` |
 
 :::info Примітка
-Кнопки (пауза/відновлення/зупинка) не публікуються через MQTT Discovery. Використовуйте API Bambu Dashboard для надсилання команд з автоматизацій.
+Кнопки (пауза/відновлення/зупинка) не публікуються через MQTT Discovery. Використовуйте API 3DPrintForge для надсилання команд з автоматизацій.
 :::
 
 ## Приклади автоматизацій

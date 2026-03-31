@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Více tiskáren
-description: Nastavení a správa více tiskáren Bambu v Bambu Dashboard — přehled parku, fronta a postupné spouštění
+description: Nastavení a správa více tiskáren Bambu v 3DPrintForge — přehled parku, fronta a postupné spouštění
 ---
 
 # Více tiskáren
 
-Máte více než jednu tiskárnu? Bambu Dashboard je navržen pro správu parku tiskáren — můžete monitorovat, řídit a koordinovat všechny tiskárny z jednoho místa.
+Máte více než jednu tiskárnu? 3DPrintForge je navržen pro správu parku tiskáren — můžete monitorovat, řídit a koordinovat všechny tiskárny z jednoho místa.
 
 ## Přidání nové tiskárny
 

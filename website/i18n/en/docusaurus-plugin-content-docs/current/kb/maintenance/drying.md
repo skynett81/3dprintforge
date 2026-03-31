@@ -148,6 +148,6 @@ A cheap digital hygrometer shows current humidity in the box:
 - **Label dried spools** with the date of drying
 - **Dedicated PTFE tube** from dryer to printer minimizes exposure during printing
 
-## Bambu Dashboard and Drying Status
+## 3DPrintForge and Drying Status
 
-Bambu Dashboard lets you log filament information including the last drying date under filament profiles. Use this to keep track of which spools are freshly dried and which ones need another round.
+3DPrintForge lets you log filament information including the last drying date under filament profiles. Use this to keep track of which spools are freshly dried and which ones need another round.

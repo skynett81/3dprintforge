@@ -95,7 +95,7 @@ Use "Save as new" to keep a working profile while experimenting with changes.
 
 ### Import
 1. Click **Import profiles**
-2. Select a `.json` file exported from another Bambu Dashboard
+2. Select a `.json` file exported from another 3DPrintForge
 3. Existing profiles with the same name can be overwritten or both kept
 
 ## Sharing profiles

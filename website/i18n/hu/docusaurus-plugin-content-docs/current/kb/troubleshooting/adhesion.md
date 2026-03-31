@@ -38,7 +38,7 @@ A Z-eltolás a fúvóka és a lemez közötti magasság az első rétegnél. Tú
 Állítsd be a Z-eltolást a **Vezérlés → Élő Z-állítás** menüponton keresztül nyomtatás közben.
 
 :::tip Élő beállítás nyomtatás közben
-A Bambu Dashboard Z-eltolás-állítási gombokat mutat aktív nyomtatás közben. Állítsd be ±0,02 mm-es lépésekben, miközben figyeled az első réteget.
+A 3DPrintForge Z-eltolás-állítási gombokat mutat aktív nyomtatás közben. Állítsd be ±0,02 mm-es lépésekben, miközben figyeled az első réteget.
 :::
 
 ### 3. Ellenőrizd az ágy hőmérsékletét

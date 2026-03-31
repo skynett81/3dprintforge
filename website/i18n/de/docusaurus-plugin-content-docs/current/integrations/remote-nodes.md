@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Remote-Server
-description: Verbinden Sie mehrere Bambu Dashboard-Instanzen, um alle Drucker von einem zentralen Dashboard aus anzuzeigen
+description: Verbinden Sie mehrere 3DPrintForge-Instanzen, um alle Drucker von einem zentralen Dashboard aus anzuzeigen
 ---
 
 # Remote-Server (Remote Nodes)
 
-Die Remote-Server-Funktion ermöglicht es Ihnen, mehrere Bambu Dashboard-Instanzen zu verbinden, sodass Sie alle Drucker über eine zentrale Benutzeroberfläche anzeigen und steuern können — unabhängig davon, ob sie sich im selben Netzwerk oder an verschiedenen Standorten befinden.
+Die Remote-Server-Funktion ermöglicht es Ihnen, mehrere 3DPrintForge-Instanzen zu verbinden, sodass Sie alle Drucker über eine zentrale Benutzeroberfläche anzeigen und steuern können — unabhängig davon, ob sie sich im selben Netzwerk oder an verschiedenen Standorten befinden.
 
 Navigieren Sie zu: **https://localhost:3443/#settings** → **Integrationen → Remote-Server**
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Flera skrivare
-description: Ställ in och hantera flera Bambu-skrivare i Bambu Dashboard — flottaöversikt, kö och förskjuten start
+description: Ställ in och hantera flera Bambu-skrivare i 3DPrintForge — flottaöversikt, kö och förskjuten start
 ---
 
 # Flera skrivare
 
-Har du fler än en skrivare? Bambu Dashboard är byggt för flottahantering — du kan övervaka, styra och koordinera alla skrivare från ett ställe.
+Har du fler än en skrivare? 3DPrintForge är byggt för flottahantering — du kan övervaka, styra och koordinera alla skrivare från ett ställe.
 
 ## Lägga till en ny skrivare
 

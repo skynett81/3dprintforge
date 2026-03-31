@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#waste**
 
 ## Kategorie odpadów
 
-Bambu Dashboard rozróżnia trzy rodzaje odpadów:
+3DPrintForge rozróżnia trzy rodzaje odpadów:
 
 | Kategoria | Źródło | Typowy udział |
 |---|---|---|

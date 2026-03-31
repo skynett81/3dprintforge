@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#wear**
 
 ## Bewaakt componenten
 
-Bambu Dashboard houdt de slijtage bij van 8 componenten per printer:
+3DPrintForge houdt de slijtage bij van 8 componenten per printer:
 
 | Component | Primaire slijtageactor | Typische levensduur |
 |---|---|---|

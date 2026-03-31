@@ -12,7 +12,7 @@ Gå til: **https://localhost:3443/#wear**
 
 ## Overvåkede komponenter
 
-Bambu Dashboard sporer slitasje på 8 komponenter per printer:
+3DPrintForge sporer slitasje på 8 komponenter per printer:
 
 | Komponent | Primær slitasjefaktor | Typisk levetid |
 |---|---|---|

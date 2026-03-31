@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: 원격 서버
-description: 여러 Bambu Dashboard 인스턴스를 연결하여 하나의 중앙 대시보드에서 모든 프린터를 볼 수 있습니다
+description: 여러 3DPrintForge 인스턴스를 연결하여 하나의 중앙 대시보드에서 모든 프린터를 볼 수 있습니다
 ---
 
 # 원격 서버 (Remote Nodes)
 
-원격 서버 기능을 사용하면 여러 Bambu Dashboard 인스턴스를 연결하여 동일한 네트워크에 있든 다른 위치에 있든 관계없이 하나의 중앙 인터페이스에서 모든 프린터를 보고 제어할 수 있습니다.
+원격 서버 기능을 사용하면 여러 3DPrintForge 인스턴스를 연결하여 동일한 네트워크에 있든 다른 위치에 있든 관계없이 하나의 중앙 인터페이스에서 모든 프린터를 보고 제어할 수 있습니다.
 
 이동: **https://localhost:3443/#settings** → **통합 → 원격 서버**
 

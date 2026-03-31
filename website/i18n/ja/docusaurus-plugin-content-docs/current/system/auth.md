@@ -6,7 +6,7 @@ description: TOTPによる2要素認証でユーザー、ロール、権限、AP
 
 # 認証
 
-Bambu Dashboardはロールベースのアクセス制御、APIキー、オプションのTOTPによる2要素認証（2FA）を備えたマルチユーザーをサポートします。
+3DPrintForgeはロールベースのアクセス制御、APIキー、オプションのTOTPによる2要素認証（2FA）を備えたマルチユーザーをサポートします。
 
 アクセス先：**https://localhost:3443/#settings** → **ユーザーとアクセス**
 

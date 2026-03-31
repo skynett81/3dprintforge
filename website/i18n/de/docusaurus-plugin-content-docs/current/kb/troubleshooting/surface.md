@@ -287,4 +287,4 @@ bevor der Druck startet — Tür während des Druckens nicht öffnen
 2. **Filament zuerst trocknen** — viele Oberflächenfehler sind eigentlich Feuchtigkeitssymptome
 3. **Düse reinigen** — teilweise Verstopfung führt zu inkonsistenten Oberflächenfehlern, die schwer zu diagnostizieren sind
 4. **Vollständige Kalibrierung ausführen** über das Bambu Studio Wartungsmenü nach größeren Anpassungen
-5. **Bambu Dashboard nutzen**, um zu verfolgen, welche Einstellungen im Laufe der Zeit die besten Ergebnisse erzielt haben
+5. **3DPrintForge nutzen**, um zu verfolgen, welche Einstellungen im Laufe der Zeit die besten Ergebnisse erzielt haben

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Navegar por el panel de control
-description: Aprende a navegar por Bambu Dashboard — barra lateral, paneles, atajos de teclado y personalización
+description: Aprende a navegar por 3DPrintForge — barra lateral, paneles, atajos de teclado y personalización
 ---
 
 # Navegar por el panel de control
@@ -148,7 +148,7 @@ Para una navegación eficiente sin ratón:
 
 ## PWA — instalar como aplicación
 
-Bambu Dashboard puede instalarse como Progressive Web App (PWA) y ejecutarse como una aplicación independiente sin menús de navegador:
+3DPrintForge puede instalarse como Progressive Web App (PWA) y ejecutarse como una aplicación independiente sin menús de navegador:
 
 1. Abre el panel de control en Chrome, Edge o Safari
 2. Haz clic en el icono **Instalar aplicación** en la barra de direcciones

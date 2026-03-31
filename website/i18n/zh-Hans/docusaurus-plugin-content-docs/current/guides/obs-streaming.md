@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: 用OBS进行直播
-description: 在OBS Studio中将Bambu Dashboard设置为叠加层，实现专业的3D打印直播
+description: 在OBS Studio中将3DPrintForge设置为叠加层，实现专业的3D打印直播
 ---
 
 # 将3D打印直播到OBS
 
-Bambu Dashboard内置OBS叠加层，可以直接在你的直播中显示打印机状态、进度、温度和摄像头画面。
+3DPrintForge内置OBS叠加层，可以直接在你的直播中显示打印机状态、进度、温度和摄像头画面。
 
 ## 前提条件
 
 - 安装OBS Studio（[obsproject.com](https://obsproject.com)）
-- Bambu Dashboard运行中并已连接打印机
+- 3DPrintForge运行中并已连接打印机
 - （可选）Bambu摄像头已启用以获取实时画面
 
 ## 第1步 — OBS浏览器源
@@ -63,7 +63,7 @@ body {
 
 ## 第3步 — 自定义叠加层
 
-在Bambu Dashboard中你可以配置叠加层显示什么：
+在3DPrintForge中你可以配置叠加层显示什么：
 
 1. 进入**功能 → OBS叠加层**
 2. 配置：
@@ -171,5 +171,5 @@ Bambu摄像头有时可能会冻结。在仪表板**系统 → 摄像头**下：
 - 或使用背景音乐/聊天声音
 
 :::tip 自动切换场景
-OBS内置基于标题的场景切换支持。结合插件（例如obs-websocket）和Bambu Dashboard API，在打印开始和停止时自动切换场景。
+OBS内置基于标题的场景切换支持。结合插件（例如obs-websocket）和3DPrintForge API，在打印开始和停止时自动切换场景。
 :::

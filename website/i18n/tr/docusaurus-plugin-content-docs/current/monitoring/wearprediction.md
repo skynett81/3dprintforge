@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#wear**
 
 ## İzlenen Bileşenler
 
-Bambu Dashboard, yazıcı başına 8 bileşendeki aşınmayı takip eder:
+3DPrintForge, yazıcı başına 8 bileşendeki aşınmayı takip eder:
 
 | Bileşen | Birincil Aşınma Faktörü | Tipik Ömür |
 |---|---|---|

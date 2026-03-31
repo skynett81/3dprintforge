@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Server Log
-description: View the server log in real time, filter by level and module, and troubleshoot issues with Bambu Dashboard
+description: View the server log in real time, filter by level and module, and troubleshoot issues with 3DPrintForge
 ---
 
 # Server Log
 
-The server log gives you insight into what is happening inside Bambu Dashboard — useful for troubleshooting, monitoring, and diagnostics.
+The server log gives you insight into what is happening inside 3DPrintForge — useful for troubleshooting, monitoring, and diagnostics.
 
 Go to: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Log files are stored on the server:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (active log)
-├── bambu-dashboard.log.1.gz     (rotated)
-├── bambu-dashboard.log.2.gz     (rotated)
+├── 3dprintforge.log          (active log)
+├── 3dprintforge.log.1.gz     (rotated)
+├── 3dprintforge.log.2.gz     (rotated)
 └── ...
 ```
 
 :::tip SSH access
 To read logs directly on the server via SSH:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

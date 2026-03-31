@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Záloha
-description: Vytvářejte, obnovujte a plánujte automatické zálohy dat Bambu Dashboard
+description: Vytvářejte, obnovujte a plánujte automatické zálohy dat 3DPrintForge
 ---
 
 # Záloha
 
-Bambu Dashboard může zálohovat veškerou konfiguraci, historii a data, takže je možné snadno obnovit v případě selhání systému, přesunu serveru nebo problémů s aktualizací.
+3DPrintForge může zálohovat veškerou konfiguraci, historii a data, takže je možné snadno obnovit v případě selhání systému, přesunu serveru nebo problémů s aktualizací.
 
 Přejděte na: **https://localhost:3443/#settings** → **Systém → Záloha**
 
@@ -36,7 +36,7 @@ Přejděte na: **https://localhost:3443/#settings** → **Systém → Záloha**
 
 Záloha se uloží jako soubor `.zip` s časovým razítkem v názvu:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Stažení zálohy
@@ -89,7 +89,7 @@ Obnova nahradí veškerá existující data obsahem záložního souboru. Nejprv
 
 ## Ověření zálohy
 
-Bambu Dashboard ověřuje všechny záložní soubory před obnovením:
+3DPrintForge ověřuje všechny záložní soubory před obnovením:
 
 - Kontroluje, zda je formát ZIP platný
 - Ověřuje, zda je schéma databáze kompatibilní s aktuální verzí

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Serverový protokol
-description: Zobrazujte serverový protokol v reálném čase, filtrujte podle úrovně a modulu a řešte problémy s Bambu Dashboard
+description: Zobrazujte serverový protokol v reálném čase, filtrujte podle úrovně a modulu a řešte problémy s 3DPrintForge
 ---
 
 # Serverový protokol
 
-Serverový protokol vám poskytuje přehled o tom, co se děje uvnitř Bambu Dashboardu — užitečné pro odstraňování problémů, monitorování a diagnostiku.
+Serverový protokol vám poskytuje přehled o tom, co se děje uvnitř 3DPrintForgeu — užitečné pro odstraňování problémů, monitorování a diagnostiku.
 
 Přejděte na: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Soubory protokolu jsou uloženy na serveru:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (aktivní protokol)
-├── bambu-dashboard.log.1.gz     (rotovaný)
-├── bambu-dashboard.log.2.gz     (rotovaný)
+├── 3dprintforge.log          (aktivní protokol)
+├── 3dprintforge.log.1.gz     (rotovaný)
+├── 3dprintforge.log.2.gz     (rotovaný)
 └── ...
 ```
 
 :::tip SSH přístup
 Pro čtení protokolů přímo na serveru přes SSH:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

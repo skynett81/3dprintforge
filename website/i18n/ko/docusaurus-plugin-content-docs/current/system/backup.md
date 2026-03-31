@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: 백업
-description: Bambu Dashboard 데이터의 자동 백업 생성, 복원 및 예약
+description: 3DPrintForge 데이터의 자동 백업 생성, 복원 및 예약
 ---
 
 # 백업
 
-Bambu Dashboard는 모든 구성, 기록 및 데이터를 백업하여 시스템 오류, 서버 이전 또는 업데이트 문제 발생 시 쉽게 복원할 수 있습니다.
+3DPrintForge는 모든 구성, 기록 및 데이터를 백업하여 시스템 오류, 서버 이전 또는 업데이트 문제 발생 시 쉽게 복원할 수 있습니다.
 
 이동: **https://localhost:3443/#settings** → **시스템 → 백업**
 
@@ -36,7 +36,7 @@ Bambu Dashboard는 모든 구성, 기록 및 데이터를 백업하여 시스템
 
 백업은 파일명에 타임스탬프가 있는 `.zip` 파일로 저장됩니다:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## 백업 다운로드
@@ -89,7 +89,7 @@ bambu-dashboard-backup-2026-03-22T14-30-00.zip
 
 ## 백업 유효성 검사
 
-Bambu Dashboard는 복원 전에 모든 백업 파일을 검증합니다:
+3DPrintForge는 복원 전에 모든 백업 파일을 검증합니다:
 
 - ZIP 형식이 유효한지 확인
 - 데이터베이스 스키마가 현재 버전과 호환되는지 확인

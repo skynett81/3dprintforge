@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Wiele drukarek
-description: Konfiguracja wielu drukarek Bambu i zarządzanie nimi w Bambu Dashboard — przegląd floty, kolejka i rozłożony start
+description: Konfiguracja wielu drukarek Bambu i zarządzanie nimi w 3DPrintForge — przegląd floty, kolejka i rozłożony start
 ---
 
 # Wiele drukarek
 
-Masz więcej niż jedną drukarkę? Bambu Dashboard jest zbudowany do zarządzania flotą — możesz monitorować, sterować i koordynować wszystkie drukarki z jednego miejsca.
+Masz więcej niż jedną drukarkę? 3DPrintForge jest zbudowany do zarządzania flotą — możesz monitorować, sterować i koordynować wszystkie drukarki z jednego miejsca.
 
 ## Dodawanie nowej drukarki
 

@@ -287,4 +287,4 @@ před zahájením tisku — neotvírejte dveře během tisku
 2. **Nejprve vysušte filament** — mnoho povrchových vad jsou ve skutečnosti příznaky vlhkosti
 3. **Vyčistěte trysku** — částečné ucpání dává nekonzistentní povrchové vady, které jsou obtížně diagnostikovatelné
 4. **Spusťte úplnou kalibraci** z nabídky údržby Bambu Studio po větších úpravách
-5. **Používejte Bambu Dashboard** ke sledování toho, která nastavení dávala nejlepší výsledky v průběhu času
+5. **Používejte 3DPrintForge** ke sledování toho, která nastavení dávala nejlepší výsledky v průběhu času

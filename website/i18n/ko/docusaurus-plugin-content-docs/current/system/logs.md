@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: 서버 로그
-description: Bambu Dashboard의 문제를 실시간으로 서버 로그를 확인하고, 수준 및 모듈로 필터링하며 문제를 해결합니다
+description: 3DPrintForge의 문제를 실시간으로 서버 로그를 확인하고, 수준 및 모듈로 필터링하며 문제를 해결합니다
 ---
 
 # 서버 로그
 
-서버 로그는 Bambu Dashboard 내부에서 일어나는 일에 대한 통찰력을 제공합니다 — 문제 해결, 모니터링 및 진단에 유용합니다.
+서버 로그는 3DPrintForge 내부에서 일어나는 일에 대한 통찰력을 제공합니다 — 문제 해결, 모니터링 및 진단에 유용합니다.
 
 이동: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ WARN [auth] IP 192.168.1.x에서 admin 사용자에 대한 로그인 실패
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (활성 로그)
-├── bambu-dashboard.log.1.gz     (순환됨)
-├── bambu-dashboard.log.2.gz     (순환됨)
+├── 3dprintforge.log          (활성 로그)
+├── 3dprintforge.log.1.gz     (순환됨)
+├── 3dprintforge.log.2.gz     (순환됨)
 └── ...
 ```
 
 :::tip SSH 접근
 SSH를 통해 서버에서 직접 로그를 읽으려면:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

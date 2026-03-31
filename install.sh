@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Bambu Dashboard - Install Script
+# 3DPrintForge - Install Script
 # Supports two modes:
 #   ./install.sh       → Web-based setup wizard (recommended)
 #   ./install.sh --cli → Classic terminal-based installer
@@ -16,7 +16,7 @@ NC='\033[0m'
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo -e "${BOLD}========================================${NC}"
-echo -e "${BOLD}  Bambu Dashboard - Installer${NC}"
+echo -e "${BOLD}  3DPrintForge - Installer${NC}"
 echo -e "${BOLD}========================================${NC}"
 echo ""
 
@@ -167,13 +167,13 @@ run_cli() {
   read -p "  Create systemd service for auto-start? [y/N] " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    SERVICE_FILE="/etc/systemd/system/bambu-dashboard.service"
+    SERVICE_FILE="/etc/systemd/system/3dprintforge.service"
     NODE_PATH=$(which node)
     CURRENT_USER=$(whoami)
 
     sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
-Description=Bambu Dashboard
+Description=3DPrintForge
 After=network.target
 
 [Service]
@@ -190,10 +190,10 @@ WantedBy=multi-user.target
 EOF
 
     sudo systemctl daemon-reload
-    sudo systemctl enable bambu-dashboard
-    sudo systemctl start bambu-dashboard
+    sudo systemctl enable 3dprintforge
+    sudo systemctl start 3dprintforge
     echo -e "  ${GREEN}Service created and started${NC}"
-    echo -e "  Manage with: ${YELLOW}sudo systemctl {start|stop|restart|status} bambu-dashboard${NC}"
+    echo -e "  Manage with: ${YELLOW}sudo systemctl {start|stop|restart|status} 3dprintforge${NC}"
   fi
 
   # Done

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: 多台打印机
-description: 在Bambu Dashboard中设置和管理多台Bambu打印机 — 机群概览、队列和交错启动
+description: 在3DPrintForge中设置和管理多台Bambu打印机 — 机群概览、队列和交错启动
 ---
 
 # 多台打印机
 
-你有不止一台打印机吗？Bambu Dashboard专为机群管理而设计——你可以从一个地方监控、控制和协调所有打印机。
+你有不止一台打印机吗？3DPrintForge专为机群管理而设计——你可以从一个地方监控、控制和协调所有打印机。
 
 ## 添加新打印机
 

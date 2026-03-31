@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: 打印失败排查
-description: 使用Bambu Dashboard的错误日志和工具诊断并解决常见打印问题
+description: 使用3DPrintForge的错误日志和工具诊断并解决常见打印问题
 ---
 
 # 打印失败排查
 
-出了问题？不要担心——大多数打印问题都有简单的解决方案。Bambu Dashboard帮助你快速找到原因。
+出了问题？不要担心——大多数打印问题都有简单的解决方案。3DPrintForge帮助你快速找到原因。
 
 ## 第1步 — 检查HMS错误代码
 

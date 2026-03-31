@@ -6,7 +6,7 @@ description: 管理用户、角色、权限、API 密钥以及基于 TOTP 的双
 
 # 身份验证
 
-Bambu Dashboard 支持多用户访问，具备基于角色的访问控制、API 密钥以及可选的 TOTP 双因素验证（2FA）。
+3DPrintForge 支持多用户访问，具备基于角色的访问控制、API 密钥以及可选的 TOTP 双因素验证（2FA）。
 
 访问地址：**https://localhost:3443/#settings** → **用户与访问**
 

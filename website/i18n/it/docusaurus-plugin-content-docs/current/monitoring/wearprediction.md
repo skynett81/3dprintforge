@@ -12,7 +12,7 @@ Vai a: **https://localhost:3443/#wear**
 
 ## Componenti monitorati
 
-Bambu Dashboard traccia l'usura di 8 componenti per stampante:
+3DPrintForge traccia l'usura di 8 componenti per stampante:
 
 | Componente | Fattore di usura primario | Durata tipica |
 |---|---|---|

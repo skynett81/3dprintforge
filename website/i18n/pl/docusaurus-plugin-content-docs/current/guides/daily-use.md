@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Codzienne użytkowanie
-description: Praktyczny przewodnik po codziennym użytkowaniu Bambu Dashboard — ranna rutyna, monitorowanie, po wydruku i konserwacja
+description: Praktyczny przewodnik po codziennym użytkowaniu 3DPrintForge — ranna rutyna, monitorowanie, po wydruku i konserwacja
 ---
 
 # Codzienne użytkowanie
 
-Ten przewodnik opisuje, jak efektywnie używać Bambu Dashboard na co dzień — od początku dnia do końca.
+Ten przewodnik opisuje, jak efektywnie używać 3DPrintForge na co dzień — od początku dnia do końca.
 
 ## Ranna rutyna
 

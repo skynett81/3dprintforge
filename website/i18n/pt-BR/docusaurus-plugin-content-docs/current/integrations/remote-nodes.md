@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Servidor remoto
-description: Conecte várias instâncias do Bambu Dashboard para ver todas as impressoras em um painel central
+description: Conecte várias instâncias do 3DPrintForge para ver todas as impressoras em um painel central
 ---
 
 # Servidor remoto (Remote Nodes)
 
-A funcionalidade de servidor remoto permite conectar várias instâncias do Bambu Dashboard para que você possa ver e controlar todas as impressoras em uma única interface centralizada — seja na mesma rede ou em locais diferentes.
+A funcionalidade de servidor remoto permite conectar várias instâncias do 3DPrintForge para que você possa ver e controlar todas as impressoras em uma única interface centralizada — seja na mesma rede ou em locais diferentes.
 
 Acesse em: **https://localhost:3443/#settings** → **Integrações → Servidores remotos**
 

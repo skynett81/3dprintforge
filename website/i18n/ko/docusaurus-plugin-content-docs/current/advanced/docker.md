@@ -1,18 +1,18 @@
 ---
 sidebar_position: 3
 title: Docker 설정
-description: Docker 및 docker-compose로 Bambu Dashboard 실행
+description: Docker 및 docker-compose로 3DPrintForge 실행
 ---
 
 # Docker 설정
 
-Bambu Dashboard에는 간편한 컨테이너화를 위한 `Dockerfile`과 `docker-compose.yml`이 포함되어 있습니다.
+3DPrintForge에는 간편한 컨테이너화를 위한 `Dockerfile`과 `docker-compose.yml`이 포함되어 있습니다.
 
 ## 빠른 시작
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 docker-compose up -d
 ```
 
@@ -24,9 +24,9 @@ docker-compose up -d
 version: '3.8'
 
 services:
-  bambu-dashboard:
+  3dprintforge:
     build: .
-    container_name: bambu-dashboard
+    container_name: 3dprintforge
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -116,13 +116,13 @@ docker-compose pull
 docker-compose up -d --build
 
 # 데이터베이스 백업
-docker cp bambu-dashboard:/app/data/database.db ./backup-$(date +%Y%m%d).db
+docker cp 3dprintforge:/app/data/database.db ./backup-$(date +%Y%m%d).db
 ```
 
 ## 상태 확인
 
 ```bash
-docker inspect --format='{{.State.Health.Status}}' bambu-dashboard
+docker inspect --format='{{.State.Health.Status}}' 3dprintforge
 ```
 
 서버가 실행 중이고 `/api/health`에 응답하면 컨테이너가 `healthy`를 보고합니다.

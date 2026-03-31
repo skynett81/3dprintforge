@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Sikertelen nyomtatás hibaelhárítása
-description: Diagnosztizáld és oldd meg a gyakori nyomtatási hibákat a Bambu Dashboard hibanaplói és eszközei segítségével
+description: Diagnosztizáld és oldd meg a gyakori nyomtatási hibákat a 3DPrintForge hibanaplói és eszközei segítségével
 ---
 
 # Sikertelen nyomtatás hibaelhárítása
 
-Valami rosszul sült el? Ne aggódj — a legtöbb nyomtatási hibának egyszerű megoldása van. A Bambu Dashboard segít gyorsan megtalálni az okot.
+Valami rosszul sült el? Ne aggódj — a legtöbb nyomtatási hibának egyszerű megoldása van. A 3DPrintForge segít gyorsan megtalálni az okot.
 
 ## 1. lépés — Ellenőrizd a HMS-hibakódokat
 

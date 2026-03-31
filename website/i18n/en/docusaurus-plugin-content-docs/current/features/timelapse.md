@@ -6,7 +6,7 @@ description: Enable automatic timelapse recording of 3D prints, manage videos, a
 
 # Timelapse
 
-Bambu Dashboard can automatically take photos during printing and compile them into a timelapse video. Videos are stored locally and can be played back directly in the dashboard.
+3DPrintForge can automatically take photos during printing and compile them into a timelapse video. Videos are stored locally and can be played back directly in the dashboard.
 
 Go to: **https://localhost:3443/#timelapse**
 
@@ -43,7 +43,7 @@ A timelapse with 500 images at 1080p uses approx. 200–400 MB before merging. T
 Images and finished videos are stored in the folder configured under **Settings → Timelapse → Storage folder**:
 
 ```
-/media/skynett81/Stuff/bambu-dashboard/timelapse/
+/media/skynett81/Stuff/3dprintforge/timelapse/
 ├── PRINTER_ID/
 │   ├── 2026-03-22_benchy/
 │   │   ├── frame_001.jpg
@@ -58,7 +58,7 @@ You can change the storage folder to an external drive to save space on the syst
 
 When the print is done, images are automatically compiled into a video with ffmpeg:
 
-1. Bambu Dashboard receives the "print complete" event from MQTT
+1. 3DPrintForge receives the "print complete" event from MQTT
 2. ffmpeg is called with the collected images
 3. The video is saved in the storage folder
 4. The Timelapse page is updated with the new video

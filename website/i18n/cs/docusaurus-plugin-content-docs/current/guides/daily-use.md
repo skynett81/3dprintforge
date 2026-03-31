@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Každodenní použití
-description: Praktický průvodce každodenním používáním Bambu Dashboard — ranní rutina, monitorování, po tisku a údržba
+description: Praktický průvodce každodenním používáním 3DPrintForge — ranní rutina, monitorování, po tisku a údržba
 ---
 
 # Každodenní použití
 
-Tento průvodce popisuje, jak efektivně používat Bambu Dashboard v každodenním životě — od začátku do konce dne.
+Tento průvodce popisuje, jak efektivně používat 3DPrintForge v každodenním životě — od začátku do konce dne.
 
 ## Ranní rutina
 

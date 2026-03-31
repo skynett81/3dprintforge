@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#waste**
 
 ## Atık Kategorileri
 
-Bambu Dashboard üç tür atığı birbirinden ayırır:
+3DPrintForge üç tür atığı birbirinden ayırır:
 
 | Kategori | Kaynak | Tipik Miktar |
 |---|---|---|

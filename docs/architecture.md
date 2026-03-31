@@ -1,6 +1,6 @@
 # Architecture
 
-Technical architecture of Bambu Dashboard.
+Technical architecture of 3DPrintForge.
 
 ---
 
@@ -126,7 +126,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 ## Project Structure
 
 ```
-bambu-dashboard/
+3dprintforge/
 ├── server/                    # Backend (24 modules)
 │   ├── index.js               # Entry point (auto-SSL, CSP, HSTS)
 │   ├── config.js              # Configuration
@@ -174,7 +174,7 @@ bambu-dashboard/
 │   ├── lang/                  # 17 language files
 │   └── assets/                # Icons and fonts
 ├── config.example.json        # Configuration template
-├── egg-bambu-dashboard.json   # Pterodactyl egg
+├── egg-3dprintforge.json      # Pterodactyl egg
 ├── package.json
 ├── Dockerfile
 ├── docker-compose.yml
@@ -207,9 +207,9 @@ bambu-dashboard/
 The `--cli` installer can create a systemd service automatically. To set it up manually:
 
 ```bash
-sudo tee /etc/systemd/system/bambu-dashboard.service > /dev/null <<EOF
+sudo tee /etc/systemd/system/3dprintforge.service > /dev/null <<EOF
 [Unit]
-Description=Bambu Dashboard
+Description=3DPrintForge
 After=network.target
 
 [Service]
@@ -226,14 +226,14 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now bambu-dashboard
+sudo systemctl enable --now 3dprintforge
 ```
 
 Manage with:
 ```bash
-sudo systemctl status bambu-dashboard
-sudo systemctl restart bambu-dashboard
-sudo journalctl -u bambu-dashboard -f
+sudo systemctl status 3dprintforge
+sudo systemctl restart 3dprintforge
+sudo journalctl -u 3dprintforge -f
 ```
 
 ---
@@ -243,7 +243,7 @@ sudo journalctl -u bambu-dashboard -f
 A ready-made egg file is included for Pterodactyl Panel, Pelican, and wisp.gg:
 
 1. In your panel, go to **Nests** > **Import Egg**
-2. Upload `egg-bambu-dashboard.json` from the project root
+2. Upload `egg-3dprintforge.json` from the project root
 3. Create a server using the egg
 4. Configure the **Server Port**, **Auth Password**, and other variables
 5. Start the server

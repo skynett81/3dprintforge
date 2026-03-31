@@ -287,4 +287,4 @@ før print starter — ikke åpne dør under printing
 2. **Tørk filamentet først** — mange overflatefeil er egentlig fuktsymptomer
 3. **Rens dysen** — delvis blokkering gir inkonsistente overflatefeil som er vanskelige å diagnostisere
 4. **Kjør fullstendig kalibrering** fra Bambu Studios vedlikeholdsmeny etter større justeringer
-5. **Bruk Bambu Dashboard** for å spore hvilke innstillinger som ga best resultat over tid
+5. **Bruk 3DPrintForge** for å spore hvilke innstillinger som ga best resultat over tid

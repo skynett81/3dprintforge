@@ -12,7 +12,7 @@ Vai a: **https://localhost:3443/#gallery**
 
 ## Screenshot Milestone
 
-Bambu Dashboard acquisisce automaticamente uno screenshot dalla videocamera alle seguenti milestone:
+3DPrintForge acquisisce automaticamente uno screenshot dalla videocamera alle seguenti milestone:
 
 | Milestone | Momento |
 |---|---|

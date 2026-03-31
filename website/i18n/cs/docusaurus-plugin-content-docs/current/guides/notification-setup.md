@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Nastavení upozornění
-description: Nakonfigurujte Telegram, Discord, e-mail a push upozornění v Bambu Dashboard
+description: Nakonfigurujte Telegram, Discord, e-mail a push upozornění v 3DPrintForge
 ---
 
 # Nastavení upozornění
 
-Bambu Dashboard vás může upozorňovat na vše — od dokončených tisků po kritické chyby — prostřednictvím Telegramu, Discordu, e-mailu nebo push upozornění prohlížeče.
+3DPrintForge vás může upozorňovat na vše — od dokončených tisků po kritické chyby — prostřednictvím Telegramu, Discordu, e-mailu nebo push upozornění prohlížeče.
 
 ## Přehled kanálů upozornění
 
@@ -59,7 +59,7 @@ Chcete upozorňovat celou skupinu? Přidejte bota do skupiny Telegram, najděte 
 2. Pravým tlačítkem klikněte na kanál, kde chcete dostávat upozornění → **Upravit kanál**
 3. Přejděte do **Integrace → Webhooky**
 4. Klikněte na **Nový Webhook**
-5. Dejte mu jméno (např. "Bambu Dashboard")
+5. Dejte mu jméno (např. "3DPrintForge")
 6. Zvolte avatar (volitelné)
 7. Klikněte na **Kopírovat URL Webhooku**
 

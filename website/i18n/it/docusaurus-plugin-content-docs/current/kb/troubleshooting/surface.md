@@ -287,4 +287,4 @@ prima che la stampa inizi — non aprire lo sportello durante la stampa
 2. **Asciugare prima il filamento** — molti difetti superficiali sono in realtà sintomi di umidità
 3. **Pulire l'ugello** — un'ostruzione parziale produce difetti superficiali inconsistenti difficili da diagnosticare
 4. **Eseguire una calibrazione completa** dal menu manutenzione di Bambu Studio dopo modifiche importanti
-5. **Usare Bambu Dashboard** per tracciare quali impostazioni hanno dato i migliori risultati nel tempo
+5. **Usare 3DPrintForge** per tracciare quali impostazioni hanno dato i migliori risultati nel tempo

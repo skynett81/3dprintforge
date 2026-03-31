@@ -12,7 +12,7 @@ Accédez à : **https://localhost:3443/#wear**
 
 ## Composants surveillés
 
-Bambu Dashboard suit l'usure de 8 composants par imprimante :
+3DPrintForge suit l'usure de 8 composants par imprimante :
 
 | Composant | Facteur d'usure principal | Durée de vie typique |
 |-----------|--------------------------|---------------------|

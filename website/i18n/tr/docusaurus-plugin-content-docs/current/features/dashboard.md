@@ -6,7 +6,7 @@ description: 3D model görüntüleme, AMS durumu, kamera ve özelleştirilebilir
 
 # Ana Panel
 
-Ana panel, Bambu Dashboard'un merkezi kontrol merkezidir. Seçilen yazıcının gerçek zamanlı durumunu gösterir ve ihtiyaca göre izlemenize, yönetmenize ve görünümü özelleştirmenize olanak tanır.
+Ana panel, 3DPrintForge'un merkezi kontrol merkezidir. Seçilen yazıcının gerçek zamanlı durumunu gösterir ve ihtiyaca göre izlemenize, yönetmenize ve görünümü özelleştirmenize olanak tanır.
 
 Gidin: **https://localhost:3443/**
 

@@ -64,7 +64,7 @@ A színkártya-nézet vizuálisan rendezi az orsókat szín szerint. Hasznos a m
 
 ## NFC-cimkék
 
-A Bambu Dashboard NFC-cimkéket támogat az orsók gyors azonosításához:
+A 3DPrintForge NFC-cimkéket támogat az orsók gyors azonosításához:
 
 1. Írd be az NFC-cimke azonosítóját az orsóhoz a raktárban
 2. Olvasd be a cimkét a telefonnal

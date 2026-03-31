@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "Broker-URL is vereist",
     "settings_sub_nodes": "Knooppunten",
     "nodes_title": "Externe knooppunten",
-    "nodes_desc": "Verbind met andere Bambu Dashboard-instanties om hun printers naast de jouwe te bekijken. Externe printers verschijnen in de printerselector met realtime status.",
+    "nodes_desc": "Verbind met andere 3DPrintForge-instanties om hun printers naast de jouwe te bekijken. Externe printers verschijnen in de printerselector met realtime status.",
     "nodes_add": "Extern knooppunt toevoegen",
     "nodes_none": "Geen externe knooppunten geconfigureerd",
     "nodes_printers": "printers",

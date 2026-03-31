@@ -6,7 +6,7 @@ description: Alle 177 API-eindpunten rechtstreeks in de browser testen met ingeb
 
 # API-speeltuin
 
-De API-speeltuin stelt u in staat alle 177 API-eindpunten in Bambu Dashboard rechtstreeks in de browser te verkennen en te testen — zonder code te schrijven.
+De API-speeltuin stelt u in staat alle 177 API-eindpunten in 3DPrintForge rechtstreeks in de browser te verkennen en te testen — zonder code te schrijven.
 
 Ga naar: **https://localhost:3443/api/docs**
 

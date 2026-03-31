@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Téma
-description: Přizpůsobte vzhled Bambu Dashboard světlým/tmavým/automatickým režimem, 6 barevnými paletami a vlastní akcentovou barvou
+description: Přizpůsobte vzhled 3DPrintForge světlým/tmavým/automatickým režimem, 6 barevnými paletami a vlastní akcentovou barvou
 ---
 
 # Téma
 
-Bambu Dashboard má flexibilní systém témat, který umožňuje přizpůsobit vzhled podle vašeho vkusu a situace použití.
+3DPrintForge má flexibilní systém témat, který umožňuje přizpůsobit vzhled podle vašeho vkusu a situace použití.
 
 Přejděte na: **https://localhost:3443/#settings** → **Téma**
 
@@ -102,5 +102,5 @@ Pro kiosk zobrazení aktivujte **Kompaktní** + **Tmavý** + **Redukované anima
 Sdílejte své téma s ostatními:
 
 1. Klikněte na **Exportovat téma** — stáhne soubor `.json`
-2. Sdílejte soubor s ostatními uživateli Bambu Dashboard
+2. Sdílejte soubor s ostatními uživateli 3DPrintForge
 3. Ti importují přes **Importovat téma** → vyberte soubor

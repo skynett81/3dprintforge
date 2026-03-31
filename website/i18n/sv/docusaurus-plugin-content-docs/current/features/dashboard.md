@@ -6,7 +6,7 @@ description: Realtidsöversikt över aktiv skrivare med 3D-modellvisning, AMS-st
 
 # Huvudpanel
 
-Huvudpanelen är det centrala kontrollcentret i Bambu Dashboard. Den visar realtidsstatus för den valda skrivaren och låter dig övervaka, styra och anpassa visningen efter behov.
+Huvudpanelen är det centrala kontrollcentret i 3DPrintForge. Den visar realtidsstatus för den valda skrivaren och låter dig övervaka, styra och anpassa visningen efter behov.
 
 Gå till: **https://localhost:3443/**
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Meldingen instellen
-description: Configureer Telegram, Discord, e-mail en pushmeldingen in Bambu Dashboard
+description: Configureer Telegram, Discord, e-mail en pushmeldingen in 3DPrintForge
 ---
 
 # Meldingen instellen
 
-Bambu Dashboard kan je op de hoogte stellen van alles, van voltooide prints tot kritieke fouten — via Telegram, Discord, e-mail of browser-pushmeldingen.
+3DPrintForge kan je op de hoogte stellen van alles, van voltooide prints tot kritieke fouten — via Telegram, Discord, e-mail of browser-pushmeldingen.
 
 ## Overzicht van meldingskanalen
 
@@ -59,7 +59,7 @@ Wil je een hele groep melden? Voeg de bot toe aan een Telegram-groep, vind de gr
 2. Klik rechts op het kanaal waar je meldingen wilt → **Kanaal bewerken**
 3. Ga naar **Integraties → Webhooks**
 4. Klik **Nieuwe Webhook**
-5. Geef het een naam (bijv. "Bambu Dashboard")
+5. Geef het een naam (bijv. "3DPrintForge")
 6. Kies een avatar (optioneel)
 7. Klik **Webhook URL kopiëren**
 

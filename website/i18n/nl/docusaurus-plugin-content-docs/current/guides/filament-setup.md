@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Filamentbeheer instellen
-description: Hoe je filamentspolen aanmaakt, configureert en bijhoudt in Bambu Dashboard
+description: Hoe je filamentspolen aanmaakt, configureert en bijhoudt in 3DPrintForge
 ---
 
 # Filamentbeheer instellen
 
-Het filamentbeheer in Bambu Dashboard geeft je volledig overzicht over al je spoelen — wat er nog is, wat je hebt verbruikt, en welke spoelen momenteel in de AMS zitten.
+Het filamentbeheer in 3DPrintForge geeft je volledig overzicht over al je spoelen — wat er nog is, wat je hebt verbruikt, en welke spoelen momenteel in de AMS zitten.
 
 ## Automatisch aanmaken vanuit AMS
 

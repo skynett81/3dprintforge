@@ -6,7 +6,7 @@ description: Bläddra bland delade filamentprofiler från communityn, bidra med 
 
 # Community-filamenter
 
-Community-filamenter är en delad databas med filamentprofiler som bidragits av Bambu Dashboard-användare från hela världen. Hitta de bästa inställningarna för ditt filament och dela dina egna erfarenheter.
+Community-filamenter är en delad databas med filamentprofiler som bidragits av 3DPrintForge-användare från hela världen. Hitta de bästa inställningarna för ditt filament och dela dina egna erfarenheter.
 
 Gå till: **https://localhost:3443/#community**
 

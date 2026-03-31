@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: 服务器日志
-description: 实时查看服务器日志，按级别和模块筛选，排查 Bambu Dashboard 问题
+description: 实时查看服务器日志，按级别和模块筛选，排查 3DPrintForge 问题
 ---
 
 # 服务器日志
 
-服务器日志让您深入了解 Bambu Dashboard 内部发生的情况——对故障排查、监控和诊断非常有用。
+服务器日志让您深入了解 3DPrintForge 内部发生的情况——对故障排查、监控和诊断非常有用。
 
 访问地址：**https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ WARN [auth] 用户 admin 从 IP 192.168.1.x 登录失败
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          （活动日志）
-├── bambu-dashboard.log.1.gz     （已轮转）
-├── bambu-dashboard.log.2.gz     （已轮转）
+├── 3dprintforge.log          （活动日志）
+├── 3dprintforge.log.1.gz     （已轮转）
+├── 3dprintforge.log.2.gz     （已轮转）
 └── ...
 ```
 
 :::tip SSH 访问
 通过 SSH 直接在服务器上读取日志：
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

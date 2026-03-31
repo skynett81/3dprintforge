@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: 插件系统
-description: 创建和安装插件以扩展 Bambu Dashboard 的功能
+description: 创建和安装插件以扩展 3DPrintForge 的功能
 ---
 
 # 插件系统
 
-Bambu Dashboard 支持插件系统，允许您在不修改源代码的情况下扩展功能。
+3DPrintForge 支持插件系统，允许您在不修改源代码的情况下扩展功能。
 
 :::info 实验性功能
 插件系统正在积极开发中。API 可能在不同版本之间发生变化。

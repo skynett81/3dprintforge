@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: バックアップと復元
-description: Bambu Dashboardの自動・手動バックアップ、復元、新しいサーバーへの移行
+description: 3DPrintForgeの自動・手動バックアップ、復元、新しいサーバーへの移行
 ---
 
 # バックアップと復元
 
-Bambu Dashboardはすべてのデータをローカルに保存します — 印刷履歴、フィラメント在庫、設定、ユーザーなど。定期的なバックアップにより、サーバー障害や移行時にデータを失わないようにできます。
+3DPrintForgeはすべてのデータをローカルに保存します — 印刷履歴、フィラメント在庫、設定、ユーザーなど。定期的なバックアップにより、サーバー障害や移行時にデータを失わないようにできます。
 
 ## バックアップに含まれるものは？
 
@@ -40,7 +40,7 @@ Bambu Dashboardはすべてのデータをローカルに保存します — 印
 
 :::info バックアップファイルはデフォルトでここに保存されます
 ```
-/path/to/bambu-dashboard/data/backups/
+/path/to/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ backup-2025-03-21-030000.tar.gz
 
 **ターミナル経由の代替方法：**
 ```bash
-cd /sti/til/bambu-dashboard
+cd /sti/til/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ node scripts/backup.js
 ### ターミナル経由
 
 ```bash
-cd /sti/til/bambu-dashboard
+cd /sti/til/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 復元後、ダッシュボードを再起動します：
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # または
 npm start
 ```
@@ -117,7 +117,7 @@ npm start
 
 ## 新しいサーバーへの移行
 
-すべてのデータを新しいマシンにBambu Dashboardと共に移行する方法：
+すべてのデータを新しいマシンに3DPrintForgeと共に移行する方法：
 
 ### ステップ1 — 古いサーバーでバックアップを取る
 
@@ -128,8 +128,8 @@ npm start
 ### ステップ2 — 新しいサーバーにインストール
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

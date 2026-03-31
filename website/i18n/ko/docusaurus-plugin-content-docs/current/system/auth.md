@@ -6,7 +6,7 @@ description: TOTP를 통한 사용자, 역할, 권한, API 키 및 이중 인증
 
 # 인증
 
-Bambu Dashboard는 역할 기반 접근 제어, API 키 및 TOTP를 통한 선택적 이중 인증 (2FA)을 갖춘 다중 사용자를 지원합니다.
+3DPrintForge는 역할 기반 접근 제어, API 키 및 TOTP를 통한 선택적 이중 인증 (2FA)을 갖춘 다중 사용자를 지원합니다.
 
 이동: **https://localhost:3443/#settings** → **사용자 및 접근**
 

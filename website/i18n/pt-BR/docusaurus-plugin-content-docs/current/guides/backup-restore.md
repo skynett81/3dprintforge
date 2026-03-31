@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Backup e restauração
-description: Backup automático e manual do Bambu Dashboard, restauração e migração para novo servidor
+description: Backup automático e manual do 3DPrintForge, restauração e migração para novo servidor
 ---
 
 # Backup e restauração
 
-O Bambu Dashboard armazena todos os dados localmente — histórico de impressões, estoque de filamentos, configurações, usuários e mais. Backups regulares garantem que você não perca nada em caso de falha do servidor ou ao migrar.
+O 3DPrintForge armazena todos os dados localmente — histórico de impressões, estoque de filamentos, configurações, usuários e mais. Backups regulares garantem que você não perca nada em caso de falha do servidor ou ao migrar.
 
 ## O que está incluído no backup?
 
@@ -40,7 +40,7 @@ Por padrão, um backup automático é executado toda noite às 03:00.
 
 :::info Os arquivos de backup são armazenados aqui por padrão
 ```
-/caminho/para/bambu-dashboard/data/backups/
+/caminho/para/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ Faça um backup a qualquer momento:
 
 **Alternativo via terminal:**
 ```bash
-cd /caminho/para/bambu-dashboard
+cd /caminho/para/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ Todos os dados existentes são substituídos pelo conteúdo do arquivo de backup
 ### Pelo terminal
 
 ```bash
-cd /caminho/para/bambu-dashboard
+cd /caminho/para/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Após a restauração, reinicie o painel:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # ou
 npm start
 ```
@@ -117,7 +117,7 @@ As configurações exportadas são práticas para levar a um novo servidor. Impo
 
 ## Migrar para novo servidor
 
-Como mover o Bambu Dashboard com todos os dados para uma nova máquina:
+Como mover o 3DPrintForge com todos os dados para uma nova máquina:
 
 ### Passo 1 — Faça backup no servidor antigo
 
@@ -128,8 +128,8 @@ Como mover o Bambu Dashboard com todos os dados para uma nova máquina:
 ### Passo 2 — Instale no novo servidor
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

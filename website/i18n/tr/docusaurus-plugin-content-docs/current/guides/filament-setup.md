@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Filament deposu kurulumu
-description: Bambu Dashboard'da filament makaralarınızı nasıl oluşturacağınız, yapılandıracağınız ve takip edeceğiniz
+description: 3DPrintForge'da filament makaralarınızı nasıl oluşturacağınız, yapılandıracağınız ve takip edeceğiniz
 ---
 
 # Filament deposu kurulumu
 
-Bambu Dashboard'daki filament deposu, tüm makaralarınıza tam bir genel bakış sunar — ne kaldığını, ne kullandığınızı ve şu anda AMS'de hangi makaraların bulunduğunu.
+3DPrintForge'daki filament deposu, tüm makaralarınıza tam bir genel bakış sunar — ne kaldığını, ne kullandığınızı ve şu anda AMS'de hangi makaraların bulunduğunu.
 
 ## AMS'den otomatik oluşturma
 

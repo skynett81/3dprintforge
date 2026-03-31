@@ -181,7 +181,7 @@ Många ledande leverantörer erbjuder färdiga Bambu Studio-profiler optimerade 
 :::info Var hittar man profiler?
 - **Bambu Studio:** Inbyggda profiler för Bambu Lab-material och många tredjeparts
 - **Leverantörens webbplats:** Sök efter «Bambu Studio profile» eller «JSON profile» under nedladdningar
-- **Bambu Dashboard:** Under Utskriftsprofiler-panelen i Verktyg-sektionen
+- **3DPrintForge:** Under Utskriftsprofiler-panelen i Verktyg-sektionen
 - **MakerWorld:** Profiler delas ofta tillsammans med modeller av andra användare
 :::
 

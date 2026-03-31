@@ -12,7 +12,7 @@ Acesse em: **https://localhost:3443/#maintenance**
 
 ## Plano de manutenção
 
-O Bambu Dashboard vem com intervalos de manutenção pré-configurados para todos os modelos de impressoras Bambu Lab:
+O 3DPrintForge vem com intervalos de manutenção pré-configurados para todos os modelos de impressoras Bambu Lab:
 
 | Tarefa | Intervalo (padrão) | Modelo |
 |--------|-------------------|--------|

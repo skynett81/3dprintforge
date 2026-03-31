@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#gallery**
 
 ## Milestone Ekran Görüntüleri
 
-Bambu Dashboard, aşağıdaki kilometre taşlarında kameradan otomatik olarak bir ekran görüntüsü alır:
+3DPrintForge, aşağıdaki kilometre taşlarında kameradan otomatik olarak bir ekran görüntüsü alır:
 
 | Kilometre Taşı | Zaman |
 |---|---|

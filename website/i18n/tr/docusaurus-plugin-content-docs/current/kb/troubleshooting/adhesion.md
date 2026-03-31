@@ -38,7 +38,7 @@ Z-offset, ilk katmanda nozül ile tabla arasındaki yüksekliktir. Çok yüksek 
 Z-offset'i baskı sırasında **Kontrol → Z Canlı Ayarı** üzerinden yapın.
 
 :::tip Baskı Sırasında Canlı Ayar
-Bambu Dashboard, aktif baskı sırasında Z-offset ayar düğmelerini gösterir. İlk katmanı izlerken ±0.02 mm adımlarla ayarlayın.
+3DPrintForge, aktif baskı sırasında Z-offset ayar düğmelerini gösterir. İlk katmanı izlerken ±0.02 mm adımlarla ayarlayın.
 :::
 
 ### 3. Tabla Sıcaklığını Kontrol Edin

@@ -6,7 +6,7 @@ description: Automatyczne cotygodniowe i miesięczne raporty e-mail ze statystyk
 
 # Raporty
 
-Bambu Dashboard może wysyłać automatyczne raporty e-mail ze statystykami i podsumowaniem aktywności — co tydzień, co miesiąc lub oba.
+3DPrintForge może wysyłać automatyczne raporty e-mail ze statystykami i podsumowaniem aktywności — co tydzień, co miesiąc lub oba.
 
 Przejdź do: **https://localhost:3443/#settings** → **System → Raporty**
 
@@ -83,7 +83,7 @@ Raport miesięczny obejmuje ostatnie 30 dni i zawiera wszystko z raportu tygodni
 1. Przejdź do **Ustawienia → Raporty → Dostosowanie**
 2. Zaznacz / odznacz sekcje, które chcesz uwzględnić
 3. Wybierz **Filtr drukarek**: wszystkie drukarki lub wybór
-4. Wybierz **Wyświetlanie logo**: pokaż logo Bambu Dashboard w nagłówku lub wyłącz
+4. Wybierz **Wyświetlanie logo**: pokaż logo 3DPrintForge w nagłówku lub wyłącz
 5. Kliknij **Zapisz**
 
 ## Archiwum raportów

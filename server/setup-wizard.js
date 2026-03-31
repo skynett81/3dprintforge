@@ -1,5 +1,5 @@
 /**
- * Bambu Dashboard — Setup Wizard Server
+ * 3DPrintForge — Setup Wizard Server
  * Standalone lightweight HTTP server for first-time configuration.
  *
  * Security:
@@ -212,7 +212,7 @@ function createSystemdService() {
   const nodePath = process.execPath;
   const user = process.env.USER || 'nobody';
   const service = `[Unit]
-Description=Bambu Dashboard
+Description=3DPrintForge
 After=network.target
 
 [Service]
@@ -228,10 +228,10 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 `;
   try {
-    const servicePath = '/etc/systemd/system/bambu-dashboard.service';
+    const servicePath = '/etc/systemd/system/3dprintforge.service';
     execSync(`sudo tee ${servicePath} > /dev/null`, { input: service, timeout: 10000 });
     execSync('sudo systemctl daemon-reload', { timeout: 10000, stdio: 'pipe' });
-    execSync('sudo systemctl enable bambu-dashboard', { timeout: 10000, stdio: 'pipe' });
+    execSync('sudo systemctl enable 3dprintforge', { timeout: 10000, stdio: 'pipe' });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -380,7 +380,7 @@ server.listen(PORT, BIND_HOST, () => {
   const ip = (() => { try { return execSync("hostname -I 2>/dev/null | awk '{print $1}'", { timeout: 3000 }).toString().trim(); } catch { return 'localhost'; } })();
   console.log('');
   console.log('  ╔══════════════════════════════════════════════════════╗');
-  console.log('  ║   Bambu Dashboard — Setup Wizard                      ║');
+  console.log('  ║   3DPrintForge — Setup Wizard                          ║');
   console.log(`  ║   http://${BIND_HOST === '0.0.0.0' ? ip : 'localhost'}:${PORT}                          ║`);
   console.log('  ╠══════════════════════════════════════════════════════╣');
   console.log(`  ║   Setup token: ${SETUP_TOKEN}    ║`);

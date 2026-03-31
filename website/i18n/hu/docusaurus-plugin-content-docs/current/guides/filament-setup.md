@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Filamentkészlet beállítása
-description: Hogyan hozd létre, konfiguráld és kövesd nyomon a filamenttekercseidet a Bambu Dashboardban
+description: Hogyan hozd létre, konfiguráld és kövesd nyomon a filamenttekercseidet a 3DPrintForgeban
 ---
 
 # Filamentkészlet beállítása
 
-A Bambu Dashboard filamentkészlete teljes áttekintést nyújt az összes tekercsedről — mennyi maradt, mennyit használtál el, és melyik tekercsek vannak éppen az AMS-ben.
+A 3DPrintForge filamentkészlete teljes áttekintést nyújt az összes tekercsedről — mennyi maradt, mennyit használtál el, és melyik tekercsek vannak éppen az AMS-ben.
 
 ## Automatikus létrehozás az AMS-ből
 

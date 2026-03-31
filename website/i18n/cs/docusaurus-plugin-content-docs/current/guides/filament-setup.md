@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Nastavení skladu filamentů
-description: Jak vytvářet, konfigurovat a sledovat cívky filamentů v Bambu Dashboard
+description: Jak vytvářet, konfigurovat a sledovat cívky filamentů v 3DPrintForge
 ---
 
 # Nastavení skladu filamentů
 
-Sklad filamentů v Bambu Dashboard vám poskytuje úplný přehled o všech vašich cívkách — co zbývá, co jste spotřebovali a které cívky jsou právě v AMS.
+Sklad filamentů v 3DPrintForge vám poskytuje úplný přehled o všech vašich cívkách — co zbývá, co jste spotřebovali a které cívky jsou právě v AMS.
 
 ## Automatické vytváření z AMS
 

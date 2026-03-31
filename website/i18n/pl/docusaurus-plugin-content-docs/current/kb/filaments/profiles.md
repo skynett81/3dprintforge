@@ -181,7 +181,7 @@ Wielu wiodących dostawców oferuje gotowe profile Bambu Studio zoptymalizowane 
 :::info Gdzie znaleźć profile?
 - **Bambu Studio:** Wbudowane profile dla materiałów Bambu Lab i wielu firm zewnętrznych
 - **Strona dostawcy:** Szukaj "Bambu Studio profile" lub "JSON profile" w sekcji pobrań
-- **Bambu Dashboard:** W panelu Profili druku w sekcji Narzędzia
+- **3DPrintForge:** W panelu Profili druku w sekcji Narzędzia
 - **MakerWorld:** Profile są często udostępniane wraz z modelami przez innych użytkowników
 :::
 

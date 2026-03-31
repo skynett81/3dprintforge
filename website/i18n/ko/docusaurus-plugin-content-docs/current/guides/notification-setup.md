@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: 알림 설정
-description: Bambu Dashboard에서 Telegram, Discord, 이메일, 브라우저 푸시 알림 구성하기
+description: 3DPrintForge에서 Telegram, Discord, 이메일, 브라우저 푸시 알림 구성하기
 ---
 
 # 알림 설정
 
-Bambu Dashboard는 출력 완료부터 중요한 오류까지 모든 것을 Telegram, Discord, 이메일 또는 브라우저 푸시 알림으로 알려줄 수 있습니다.
+3DPrintForge는 출력 완료부터 중요한 오류까지 모든 것을 Telegram, Discord, 이메일 또는 브라우저 푸시 알림으로 알려줄 수 있습니다.
 
 ## 알림 채널 개요
 
@@ -59,7 +59,7 @@ Bambu Dashboard는 출력 완료부터 중요한 오류까지 모든 것을 Tele
 2. 알림을 받고 싶은 채널을 우클릭 → **채널 편집**
 3. **연동 → 웹후크**로 이동합니다
 4. **새 웹후크**를 클릭합니다
-5. 이름을 붙입니다 (예: "Bambu Dashboard")
+5. 이름을 붙입니다 (예: "3DPrintForge")
 6. 아바타를 선택합니다 (선택 사항)
 7. **웹후크 URL 복사**를 클릭합니다
 

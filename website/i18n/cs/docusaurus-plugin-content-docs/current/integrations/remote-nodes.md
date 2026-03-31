@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Vzdálený server
-description: Propojte více instancí Bambu Dashboard pro zobrazení všech tiskáren z jednoho centrálního dashboardu
+description: Propojte více instancí 3DPrintForge pro zobrazení všech tiskáren z jednoho centrálního dashboardu
 ---
 
 # Vzdálený server (Remote Nodes)
 
-Funkce vzdáleného serveru umožňuje propojit více instancí Bambu Dashboard tak, aby bylo možné zobrazit a ovládat všechny tiskárny z jediného centrálního rozhraní — bez ohledu na to, zda se nacházejí ve stejné síti nebo na různých místech.
+Funkce vzdáleného serveru umožňuje propojit více instancí 3DPrintForge tak, aby bylo možné zobrazit a ovládat všechny tiskárny z jediného centrálního rozhraní — bez ohledu na to, zda se nacházejí ve stejné síti nebo na různých místech.
 
 Přejděte na: **https://localhost:3443/#settings** → **Integrace → Vzdálené servery**
 

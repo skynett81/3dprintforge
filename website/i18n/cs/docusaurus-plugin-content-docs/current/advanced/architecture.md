@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Technická architektura
-description: Přehled architektury Bambu Dashboard — stack, moduly, databáze a WebSocket
+description: Přehled architektury 3DPrintForge — stack, moduly, databáze a WebSocket
 ---
 
 # Technická architektura

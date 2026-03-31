@@ -6,7 +6,7 @@ description: 3D baskıların otomatik timelapse kaydını etkinleştirin, videol
 
 # Timelapse
 
-Bambu Dashboard, baskı sırasında otomatik olarak fotoğraf çekebilir ve bunları bir timelapse videosuna dönüştürebilir. Videolar yerel olarak saklanır ve doğrudan dashboard'da oynatılabilir.
+3DPrintForge, baskı sırasında otomatik olarak fotoğraf çekebilir ve bunları bir timelapse videosuna dönüştürebilir. Videolar yerel olarak saklanır ve doğrudan dashboard'da oynatılabilir.
 
 Gidin: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ Dashboard sembolik bağlantıyı otomatik olarak takip eder. Herhangi bir disk v
 
 Baskı tamamlandığında, fotoğraflar ffmpeg ile otomatik olarak bir videoya birleştirilir:
 
-1. Bambu Dashboard, MQTT'den "baskı tamamlandı" olayını alır
+1. 3DPrintForge, MQTT'den "baskı tamamlandı" olayını alır
 2. ffmpeg toplanan fotoğraflarla çağrılır
 3. Video depolama klasörüne kaydedilir
 4. Timelapse sayfası yeni videoyla güncellenir

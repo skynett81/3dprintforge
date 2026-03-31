@@ -27,7 +27,7 @@ Shelly Plug S Plus üretici yazılımı 1.0+ ile test edilmiş ve önerilmiştir
 
 ### Ön Koşullar
 
-- Shelly fişi Bambu Dashboard ile aynı ağa bağlı
+- Shelly fişi 3DPrintForge ile aynı ağa bağlı
 - Shelly, statik IP veya DHCP rezervasyonuyla yapılandırılmış
 
 ### Yapılandırma
@@ -50,11 +50,11 @@ Varsayılan yoklama aralığı 10 saniyedir. Daha doğru ölçümler için 5'e d
 ## Tasmota ile Kurulum
 
 1. Tasmota cihazını MQTT ile yapılandırın (Tasmota belgelerine bakın)
-2. Bambu Dashboard'da: **Tür** olarak Tasmota seçin
+2. 3DPrintForge'da: **Tür** olarak Tasmota seçin
 3. Cihaz için MQTT topic'ini girin: örn. `tasmota/power-plug-1`
 4. Yazıcıya bağlayın ve **Kaydet**'e tıklayın
 
-Bambu Dashboard, güç ölçümleri için `{topic}/SENSOR`'a otomatik olarak abone olur.
+3DPrintForge, güç ölçümleri için `{topic}/SENSOR`'a otomatik olarak abone olur.
 
 ## Ne Ölçülür
 

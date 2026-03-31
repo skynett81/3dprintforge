@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Server Remoti
-description: Collega più istanze di Bambu Dashboard per vedere tutte le stampanti da un'unica interfaccia centrale
+description: Collega più istanze di 3DPrintForge per vedere tutte le stampanti da un'unica interfaccia centrale
 ---
 
 # Server Remoti (Remote Nodes)
 
-La funzione Server Remoti ti consente di collegare più istanze di Bambu Dashboard per vedere e controllare tutte le stampanti da un'unica interfaccia — indipendentemente che si trovino nella stessa rete o in sedi diverse.
+La funzione Server Remoti ti consente di collegare più istanze di 3DPrintForge per vedere e controllare tutte le stampanti da un'unica interfaccia — indipendentemente che si trovino nella stessa rete o in sedi diverse.
 
 Vai a: **https://localhost:3443/#settings** → **Integrazioni → Server Remoti**
 

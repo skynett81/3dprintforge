@@ -18,7 +18,7 @@ Tibber 是一家提供现货价格开放 API 的电力供应商。
 
 1. 登录 [developer.tibber.com](https://developer.tibber.com)
 2. 生成**个人访问令牌**
-3. 在 Bambu Dashboard 中：在 **Tibber API Token** 下粘贴令牌
+3. 在 3DPrintForge 中：在 **Tibber API Token** 下粘贴令牌
 4. 选择**住所**（如果您有多个住所，请选择要获取价格的住所）
 5. 点击**测试连接**
 6. 点击**保存**

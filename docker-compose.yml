@@ -1,7 +1,7 @@
 services:
-  bambu-dashboard:
+  3dprintforge:
     build: .
-    container_name: bambu-dashboard
+    container_name: 3dprintforge
     # network_mode: host is required for LAN access to printers via MQTT (port 8883)
     # and for camera RTSPS streams (port 322).
     # This means EXPOSE in Dockerfile is informational only — all ports are accessible.

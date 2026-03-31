@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#waste**
 
 ## Kategorie odpadu
 
-Bambu Dashboard rozlišuje tři typy odpadu:
+3DPrintForge rozlišuje tři typy odpadu:
 
 | Kategorie | Zdroj | Typické množství |
 |---|---|---|

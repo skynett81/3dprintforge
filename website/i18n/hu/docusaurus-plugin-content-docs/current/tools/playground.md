@@ -6,7 +6,7 @@ description: Az összes 177 API-végpont tesztelése közvetlenül a böngésző
 
 # API-játszótér
 
-Az API-játszótér lehetővé teszi a Bambu Dashboard mind a 177 API-végpontjának felfedezését és tesztelését közvetlenül a böngészőben — kódírás nélkül.
+Az API-játszótér lehetővé teszi a 3DPrintForge mind a 177 API-végpontjának felfedezését és tesztelését közvetlenül a böngészőben — kódírás nélkül.
 
 Menj ide: **https://localhost:3443/api/docs**
 

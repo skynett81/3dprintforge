@@ -6,7 +6,7 @@ description: Aktiválj automatikus időköz-felvételt a 3D nyomtatásokhoz, kez
 
 # Időköz-felvétel
 
-A Bambu Dashboard automatikusan képeket készíthet nyomtatás közben, és összefűzi azokat egy időköz-felvétel videóvá. A videók helyben tárolódnak, és közvetlenül a dashboardban lejátszhatók.
+A 3DPrintForge automatikusan képeket készíthet nyomtatás közben, és összefűzi azokat egy időköz-felvétel videóvá. A videók helyben tárolódnak, és közvetlenül a dashboardban lejátszhatók.
 
 Navigálj ide: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ A dashboard automatikusan követi a szimlinket. Bármilyen lemezt vagy hálózat
 
 Amikor a nyomtatás kész, a képek automatikusan összefűzésre kerülnek videóvá ffmpeg segítségével:
 
-1. A Bambu Dashboard fogadja a „print complete" eseményt az MQTT-ről
+1. A 3DPrintForge fogadja a „print complete" eseményt az MQTT-ről
 2. Az ffmpeg meghívódik az összegyűjtött képekkel
 3. A videó a tárolási mappába kerül
 4. Az időköz-felvétel oldal frissül az új videóval

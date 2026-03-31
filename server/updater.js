@@ -7,7 +7,7 @@ import { ROOT_DIR, DATA_DIR } from './config.js';
 import { createLogger } from './logger.js';
 const log = createLogger('updater');
 
-const REPO = 'skynett81/bambu-dashboard';
+const REPO = 'skynett81/3dprintforge';
 const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
 const PRESERVE = new Set(['config.json', 'data', 'certs', 'node_modules', '.git']);
 const MAX_BACKUPS = 3;
@@ -106,7 +106,7 @@ export class Updater {
     try {
       const headers = {
         'Accept': 'application/vnd.github+json',
-        'User-Agent': 'bambu-dashboard'
+        'User-Agent': '3dprintforge'
       };
       if (this._cache.etag) headers['If-None-Match'] = this._cache.etag;
 
@@ -276,7 +276,7 @@ export class Updater {
     try {
       // Download
       const response = await fetch(downloadUrl, {
-        headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'bambu-dashboard' },
+        headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': '3dprintforge' },
         redirect: 'follow'
       });
       if (!response.ok) throw new Error(`Download failed: HTTP ${response.status}`);

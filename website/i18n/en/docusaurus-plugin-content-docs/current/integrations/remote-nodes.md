@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Remote Nodes
-description: Connect multiple Bambu Dashboard instances to view all printers from one central dashboard
+description: Connect multiple 3DPrintForge instances to view all printers from one central dashboard
 ---
 
 # Remote Nodes
 
-The Remote Nodes feature lets you connect multiple Bambu Dashboard instances together so you can view and control all printers from one central interface — regardless of whether they are on the same network or at different locations.
+The Remote Nodes feature lets you connect multiple 3DPrintForge instances together so you can view and control all printers from one central interface — regardless of whether they are on the same network or at different locations.
 
 Go to: **https://localhost:3443/#settings** → **Integrations → Remote Nodes**
 

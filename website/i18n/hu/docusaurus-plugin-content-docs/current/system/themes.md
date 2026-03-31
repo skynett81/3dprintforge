@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Téma
-description: Szabd személyre a Bambu Dashboard megjelenését világos/sötét/automatikus móddal, 6 színpalettával és egyedi kiemelőszínnel
+description: Szabd személyre a 3DPrintForge megjelenését világos/sötét/automatikus móddal, 6 színpalettával és egyedi kiemelőszínnel
 ---
 
 # Téma
 
-A Bambu Dashboard rugalmas témarendszerrel rendelkezik, amely lehetővé teszi a megjelenés ízlés és felhasználási eset szerint való személyre szabását.
+A 3DPrintForge rugalmas témarendszerrel rendelkezik, amely lehetővé teszi a megjelenés ízlés és felhasználási eset szerint való személyre szabását.
 
 Navigálj ide: **https://localhost:3443/#settings** → **Téma**
 
@@ -102,5 +102,5 @@ Kioszk nézethez aktiváld a **Kompakt** + **Sötét** + **Csökkentett animáci
 Oszd meg a témádat másokkal:
 
 1. Kattints a **Téma exportálása** gombra — letölt egy `.json` fájlt
-2. Oszd meg a fájlt más Bambu Dashboard-felhasználókkal
+2. Oszd meg a fájlt más 3DPrintForge-felhasználókkal
 3. Importálják a **Téma importálása** → fájl kiválasztása lehetőséggel

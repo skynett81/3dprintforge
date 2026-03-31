@@ -58,7 +58,7 @@ function connect() {
           const activeState = state.getActivePrinterState();
           const printData = activeState.print || activeState;
           updateDashboard(printData);
-          document.title = `${state.getActivePrinterMeta().name || state.getActivePrinterId()} - Bambu Dashboard`;
+          document.title = `${state.getActivePrinterMeta().name || state.getActivePrinterId()} - 3DPrintForge`;
         }
         return;
       }

@@ -1,18 +1,18 @@
 ---
 sidebar_position: 3
 title: Docker-beállítás
-description: Futtasd a Bambu Dashboardot Docker és docker-compose segítségével
+description: Futtasd a 3DPrintForgeot Docker és docker-compose segítségével
 ---
 
 # Docker-beállítás
 
-A Bambu Dashboard tartalmaz egy `Dockerfile`-t és `docker-compose.yml`-t az egyszerű konténerizációhoz.
+A 3DPrintForge tartalmaz egy `Dockerfile`-t és `docker-compose.yml`-t az egyszerű konténerizációhoz.
 
 ## Gyors kezdés
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 docker-compose up -d
 ```
 
@@ -24,9 +24,9 @@ Nyisd meg a `https://localhost:3443` címet a böngészőben.
 version: '3.8'
 
 services:
-  bambu-dashboard:
+  3dprintforge:
     build: .
-    container_name: bambu-dashboard
+    container_name: 3dprintforge
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -116,13 +116,13 @@ docker-compose pull
 docker-compose up -d --build
 
 # Adatbázis mentése
-docker cp bambu-dashboard:/app/data/database.db ./backup-$(date +%Y%m%d).db
+docker cp 3dprintforge:/app/data/database.db ./backup-$(date +%Y%m%d).db
 ```
 
 ## Állapotellenőrzés
 
 ```bash
-docker inspect --format='{{.State.Health.Status}}' bambu-dashboard
+docker inspect --format='{{.State.Health.Status}}' 3dprintforge
 ```
 
 A konténer `healthy` állapotot jelent, amikor a szerver fut és válaszol a `/api/health` végponton.

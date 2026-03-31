@@ -12,7 +12,7 @@ Gå till: **https://localhost:3443/#waste**
 
 ## Avfallskategorier
 
-Bambu Dashboard skiljer mellan tre typer av avfall:
+3DPrintForge skiljer mellan tre typer av avfall:
 
 | Kategori | Källa | Typisk andel |
 |---|---|---|

@@ -287,4 +287,4 @@ before print starts — do not open door during printing
 2. **Dry the filament first** — many surface defects are actually moisture symptoms
 3. **Clean the nozzle** — partial blockage gives inconsistent surface defects that are difficult to diagnose
 4. **Run a full calibration** from the Bambu Studio maintenance menu after major adjustments
-5. **Use Bambu Dashboard** to track which settings produced the best results over time
+5. **Use 3DPrintForge** to track which settings produced the best results over time

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Thema
-description: Passen Sie das Erscheinungsbild von Bambu Dashboard mit Hell-/Dunkel-/Auto-Modus, 6 Farbpaletten und einer benutzerdefinierten Akzentfarbe an
+description: Passen Sie das Erscheinungsbild von 3DPrintForge mit Hell-/Dunkel-/Auto-Modus, 6 Farbpaletten und einer benutzerdefinierten Akzentfarbe an
 ---
 
 # Thema
 
-Bambu Dashboard verfügt über ein flexibles Themasystem, mit dem Sie das Erscheinungsbild nach Ihrem Geschmack und Verwendungszweck anpassen können.
+3DPrintForge verfügt über ein flexibles Themasystem, mit dem Sie das Erscheinungsbild nach Ihrem Geschmack und Verwendungszweck anpassen können.
 
 Navigieren Sie zu: **https://localhost:3443/#settings** → **Thema**
 
@@ -102,5 +102,5 @@ Für Kiosk-Ansicht aktivieren Sie **Kompakt** + **Dunkel** + **Reduzierte Animat
 Teilen Sie Ihr Thema mit anderen:
 
 1. Klicken Sie auf **Thema exportieren** — lädt eine `.json`-Datei herunter
-2. Datei mit anderen Bambu Dashboard-Benutzern teilen
+2. Datei mit anderen 3DPrintForge-Benutzern teilen
 3. Diese importieren über **Thema importieren** → Datei auswählen

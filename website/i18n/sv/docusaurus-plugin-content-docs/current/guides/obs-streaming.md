@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Strömma med OBS
-description: Ställ in Bambu Dashboard som overlay i OBS Studio för professionell 3D-utskriftsströmning
+description: Ställ in 3DPrintForge som overlay i OBS Studio för professionell 3D-utskriftsströmning
 ---
 
 # Strömma 3D-utskrift till OBS
 
-Bambu Dashboard har ett inbyggt OBS-overlay som visar skrivarstatus, förlopp, temperaturer och kameraflöde direkt i din ström.
+3DPrintForge har ett inbyggt OBS-overlay som visar skrivarstatus, förlopp, temperaturer och kameraflöde direkt i din ström.
 
 ## Förutsättningar
 
 - OBS Studio installerat ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard körs och är anslutet till skrivare
+- 3DPrintForge körs och är anslutet till skrivare
 - (Valfritt) Bambu-kameran aktiverad för direktsändning
 
 ## Steg 1 — OBS Browser Source
@@ -63,7 +63,7 @@ Overlayet visar nu bara själva widgeten — utan vit eller svart bakgrund.
 
 ## Steg 3 — Anpassa overlayet
 
-I Bambu Dashboard kan du konfigurera vad overlayet visar:
+I 3DPrintForge kan du konfigurera vad overlayet visar:
 
 1. Gå till **Funktioner → OBS-overlay**
 2. Konfigurera:
@@ -171,5 +171,5 @@ Bambu-kameran kan ibland frysa. I instrumentpanelen under **System → Kamera**:
 - Eller använd bakgrundsmusik / chatt-ljud istället
 
 :::tip Automatiskt scenbyte
-OBS har inbyggt stöd för scenbyte baserat på titlar. Kombinera med ett plugin (t.ex. obs-websocket) och Bambu Dashboard API för att byta scen automatiskt när utskrift startar och slutar.
+OBS har inbyggt stöd för scenbyte baserat på titlar. Kombinera med ett plugin (t.ex. obs-websocket) och 3DPrintForge API för att byta scen automatiskt när utskrift startar och slutar.
 :::

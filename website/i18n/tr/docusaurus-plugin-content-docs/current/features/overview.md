@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Özellikler Genel Bakış
-description: Bambu Dashboard'daki tüm özelliklerin tam genel bakışı
+description: 3DPrintForge'daki tüm özelliklerin tam genel bakışı
 ---
 
 # Özellikler Genel Bakış
 
-Bambu Dashboard, Bambu Lab yazıcılarınızı izlemek ve yönetmek için ihtiyacınız olan her şeyi tek bir yerde toplar.
+3DPrintForge, Bambu Lab yazıcılarınızı izlemek ve yönetmek için ihtiyacınız olan her şeyi tek bir yerde toplar.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ Tam dokümantasyon için [Kontrol](./controls) sayfasına bakın.
 
 ## Bildirimler
 
-Bambu Dashboard 7 bildirim kanalını destekler:
+3DPrintForge 7 bildirim kanalını destekler:
 
 | Kanal | Olaylar |
 |-------|----------|

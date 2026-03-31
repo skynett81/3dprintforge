@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Daglig användning
-description: En praktisk guide till daglig användning av Bambu Dashboard — morgonrutin, övervakning, efter utskrift och underhåll
+description: En praktisk guide till daglig användning av 3DPrintForge — morgonrutin, övervakning, efter utskrift och underhåll
 ---
 
 # Daglig användning
 
-Den här guiden tar upp hur du använder Bambu Dashboard effektivt i vardagen — från att du börjar dagen till att du stänger av ljuset.
+Den här guiden tar upp hur du använder 3DPrintForge effektivt i vardagen — från att du börjar dagen till att du stänger av ljuset.
 
 ## Morgonrutin
 

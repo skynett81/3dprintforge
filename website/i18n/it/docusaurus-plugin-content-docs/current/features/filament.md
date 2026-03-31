@@ -64,7 +64,7 @@ La visualizzazione schede colore organizza visivamente le bobine per colore. Uti
 
 ## Tag NFC
 
-Bambu Dashboard supporta tag NFC per l'identificazione rapida delle bobine:
+3DPrintForge supporta tag NFC per l'identificazione rapida delle bobine:
 
 1. Scrivi l'ID del tag NFC sulla bobina nel magazzino
 2. Scansiona il tag con il cellulare

@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#maintenance**
 
 ## Bakım Planı
 
-Bambu Dashboard, tüm Bambu Lab yazıcı modelleri için önceden yapılandırılmış bakım aralıklarıyla birlikte gelir:
+3DPrintForge, tüm Bambu Lab yazıcı modelleri için önceden yapılandırılmış bakım aralıklarıyla birlikte gelir:
 
 | Görev | Aralık (standart) | Model |
 |---|---|---|

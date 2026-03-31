@@ -38,7 +38,7 @@ Der Z-Offset ist der Abstand zwischen Düse und Platte bei der ersten Schicht. Z
 Z-Offset über **Steuerung → Live Z-Offset anpassen** während des Drucks einstellen.
 
 :::tip Live-Anpassung während des Drucks
-Bambu Dashboard zeigt Z-Offset-Einstellungsschaltflächen während eines aktiven Drucks an. In Schritten von ±0,02 mm einstellen, während die erste Schicht beobachtet wird.
+3DPrintForge zeigt Z-Offset-Einstellungsschaltflächen während eines aktiven Drucks an. In Schritten von ±0,02 mm einstellen, während die erste Schicht beobachtet wird.
 :::
 
 ### 3. Betttemperatur prüfen

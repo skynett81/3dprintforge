@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#waste**
 
 ## Abfallkategorien
 
-Bambu Dashboard unterscheidet zwischen drei Arten von Abfall:
+3DPrintForge unterscheidet zwischen drei Arten von Abfall:
 
 | Kategorie | Quelle | Typischer Anteil |
 |---|---|---|

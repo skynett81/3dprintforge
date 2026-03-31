@@ -2011,7 +2011,7 @@
     "ha_mqtt_broker_required": "Broker URL is required",
     "settings_sub_nodes": "Nodes",
     "nodes_title": "External nodes",
-    "nodes_desc": "Connect to other Bambu Dashboard instances to view their printers alongside your local ones. External printers appear in the printer selector with real-time status.",
+    "nodes_desc": "Connect to other 3DPrintForge instances to view their printers alongside your local ones. External printers appear in the printer selector with real-time status.",
     "nodes_add": "Add external node",
     "nodes_none": "No external nodes configured",
     "nodes_printers": "printers",

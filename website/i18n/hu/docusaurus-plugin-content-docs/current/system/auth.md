@@ -6,7 +6,7 @@ description: Felhasználók, szerepek, engedélyek, API kulcsok és kétfaktoros
 
 # Hitelesítés
 
-A Bambu Dashboard több felhasználót támogat szerepalapú hozzáférés-vezérléssel, API kulcsokkal és opcionális kétfaktoros hitelesítéssel (2FA) TOTP segítségével.
+A 3DPrintForge több felhasználót támogat szerepalapú hozzáférés-vezérléssel, API kulcsokkal és opcionális kétfaktoros hitelesítéssel (2FA) TOTP segítségével.
 
 Navigálj ide: **https://localhost:3443/#settings** → **Felhasználók és hozzáférés**
 

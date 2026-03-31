@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: System wtyczek
-description: Twórz i instaluj wtyczki, aby rozszerzyć Bambu Dashboard
+description: Twórz i instaluj wtyczki, aby rozszerzyć 3DPrintForge
 ---
 
 # System wtyczek
 
-Bambu Dashboard obsługuje system wtyczek, który pozwala rozszerzyć funkcjonalność bez modyfikowania kodu źródłowego.
+3DPrintForge obsługuje system wtyczek, który pozwala rozszerzyć funkcjonalność bez modyfikowania kodu źródłowego.
 
 :::info Eksperymentalne
 System wtyczek jest aktywnie rozwijany. API może się zmieniać między wersjami.

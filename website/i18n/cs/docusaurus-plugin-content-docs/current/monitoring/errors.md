@@ -6,13 +6,13 @@ description: Kompletní přehled HMS kódů chyb z tiskáren se závažností, v
 
 # Protokol chyb
 
-Protokol chyb shromažďuje všechny chyby a HMS výstrahy (Health, Maintenance, Safety) z vašich tiskáren. Bambu Dashboard má vestavěnou databázi s 269+ HMS kódy pro tiskárny Bambu Lab.
+Protokol chyb shromažďuje všechny chyby a HMS výstrahy (Health, Maintenance, Safety) z vašich tiskáren. 3DPrintForge má vestavěnou databázi s 269+ HMS kódy pro tiskárny Bambu Lab.
 
 Přejděte na: **https://localhost:3443/#errors**
 
 ## HMS kódy
 
-Tiskárny Bambu Lab odesílají HMS kódy přes MQTT při výskytu problémů. Bambu Dashboard je automaticky překládá na čitelné chybové zprávy:
+Tiskárny Bambu Lab odesílají HMS kódy přes MQTT při výskytu problémů. 3DPrintForge je automaticky překládá na čitelné chybové zprávy:
 
 | Kód | Příklad | Kategorie |
 |---|---|---|
@@ -59,7 +59,7 @@ Pro každý HMS kód se zobrazuje odkaz na Bambu Lab Wiki s:
 Klikněte na **Otevřít wiki** u záznamu chyby pro otevření příslušné stránky wiki v nové záložce.
 
 :::tip Lokální kopie
-Bambu Dashboard ukládá obsah wiki lokálně pro offline použití. Obsah se automaticky aktualizuje týdně.
+3DPrintForge ukládá obsah wiki lokálně pro offline použití. Obsah se automaticky aktualizuje týdně.
 :::
 
 ## Potvrzení chyb

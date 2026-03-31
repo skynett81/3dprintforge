@@ -6,13 +6,13 @@ description: A nyomtatók HMS hibakódjainak teljes áttekintése súlyossági f
 
 # Hibanapló
 
-A hibanapló összegyűjti az összes hibát és HMS riasztást (Health, Maintenance, Safety) a nyomtatóidból. A Bambu Dashboard beépített adatbázissal rendelkezik 269+ HMS kóddal a Bambu Lab nyomtatókhoz.
+A hibanapló összegyűjti az összes hibát és HMS riasztást (Health, Maintenance, Safety) a nyomtatóidból. A 3DPrintForge beépített adatbázissal rendelkezik 269+ HMS kóddal a Bambu Lab nyomtatókhoz.
 
 Navigálj ide: **https://localhost:3443/#errors**
 
 ## HMS kódok
 
-A Bambu Lab nyomtatók HMS kódokat küldenek MQTT-n keresztül, amikor valami nem stimmel. A Bambu Dashboard ezeket automatikusan olvasható hibaüzenetekre fordítja:
+A Bambu Lab nyomtatók HMS kódokat küldenek MQTT-n keresztül, amikor valami nem stimmel. A 3DPrintForge ezeket automatikusan olvasható hibaüzenetekre fordítja:
 
 | Kód | Példa | Kategória |
 |---|---|---|
@@ -59,7 +59,7 @@ Minden HMS kódhoz hivatkozás jelenik meg a Bambu Lab Wikire:
 Kattints a **Wiki megnyitása** gombra egy hibabejegyzésnél a releváns wiki oldal új lapon való megnyitásához.
 
 :::tip Helyi másolat
-A Bambu Dashboard gyorsítótárban tárolja a wiki tartalmát helyi offline használathoz. A tartalom automatikusan hetente frissül.
+A 3DPrintForge gyorsítótárban tárolja a wiki tartalmát helyi offline használathoz. A tartalom automatikusan hetente frissül.
 :::
 
 ## Hibák nyugtázása

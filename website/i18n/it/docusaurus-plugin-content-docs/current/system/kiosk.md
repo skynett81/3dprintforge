@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Modalità Kiosk
-description: Configura Bambu Dashboard come schermo a parete o hub con modalità kiosk e rotazione automatica
+description: Configura 3DPrintForge come schermo a parete o hub con modalità kiosk e rotazione automatica
 ---
 
 # Modalità Kiosk
@@ -96,7 +96,7 @@ Aggiungi il comando all'autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Account dedicato
-Crea un account Bambu Dashboard dedicato con ruolo **Ospite** per il dispositivo kiosk. In questo modo il dispositivo ha solo accesso in lettura e non può modificare le impostazioni anche se qualcuno accede allo schermo.
+Crea un account 3DPrintForge dedicato con ruolo **Ospite** per il dispositivo kiosk. In questo modo il dispositivo ha solo accesso in lettura e non può modificare le impostazioni anche se qualcuno accede allo schermo.
 :::
 
 ## Impostazioni hub

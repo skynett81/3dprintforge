@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Panoda gezinme
-description: Bambu Dashboard'da gezinmeyi öğrenin — kenar çubuğu, paneller, klavye kısayolları ve özelleştirme
+description: 3DPrintForge'da gezinmeyi öğrenin — kenar çubuğu, paneller, klavye kısayolları ve özelleştirme
 ---
 
 # Panoda gezinme
@@ -148,7 +148,7 @@ Fare kullanmadan verimli gezinme için:
 
 ## PWA — uygulama olarak yükleyin
 
-Bambu Dashboard, ilerici web uygulaması (PWA) olarak yüklenebilir ve tarayıcı menüleri olmadan bağımsız bir uygulama olarak çalışabilir:
+3DPrintForge, ilerici web uygulaması (PWA) olarak yüklenebilir ve tarayıcı menüleri olmadan bağımsız bir uygulama olarak çalışabilir:
 
 1. Chrome, Edge veya Safari'de panoya gidin
 2. Adres çubuğundaki **Uygulamayı yükle** simgesine tıklayın

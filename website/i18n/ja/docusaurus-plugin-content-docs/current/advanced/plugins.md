@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: プラグインシステム
-description: Bambu Dashboardを拡張するプラグインを作成・インストールする
+description: 3DPrintForgeを拡張するプラグインを作成・インストールする
 ---
 
 # プラグインシステム
 
-Bambu Dashboardはソースコードを変更せずに機能を拡張できるプラグインシステムをサポートしています。
+3DPrintForgeはソースコードを変更せずに機能を拡張できるプラグインシステムをサポートしています。
 
 :::info 実験的
 プラグインシステムは活発に開発中です。APIはバージョン間で変更される場合があります。

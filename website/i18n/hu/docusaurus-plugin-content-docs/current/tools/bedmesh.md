@@ -12,7 +12,7 @@ Menj ide: **https://localhost:3443/#bedmesh**
 
 ## Mi az a bed mesh?
 
-A Bambu Lab nyomtatók egy szondával letapogatják az építőlemez felületét, és egy térképet (mesh) készítenek a magasságeltérésekről. A nyomtató firmware-je nyomtatás közben automatikusan kompenzálja az eltéréseket. A Bambu Dashboard ezt a térképet vizualizálja számodra.
+A Bambu Lab nyomtatók egy szondával letapogatják az építőlemez felületét, és egy térképet (mesh) készítenek a magasságeltérésekről. A nyomtató firmware-je nyomtatás közben automatikusan kompenzálja az eltéréseket. A 3DPrintForge ezt a térképet vizualizálja számodra.
 
 ## Vizualizáció
 

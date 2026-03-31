@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Bambu Dashboard에 오신 것을 환영합니다
+title: 3DPrintForge에 오신 것을 환영합니다
 description: Bambu Lab 3D 프린터를 위한 강력한 셀프 호스팅 대시보드
 ---
 
-# Bambu Dashboard에 오신 것을 환영합니다
+# 3DPrintForge에 오신 것을 환영합니다
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**Bambu Dashboard**는 Bambu Lab 3D 프린터를 위한 셀프 호스팅 완전 기능 제어판입니다. 프린터, 필라멘트 재고, 인쇄 기록 등 모든 것을 하나의 브라우저 탭에서 완전히 파악하고 제어할 수 있습니다.
+**3DPrintForge**는 Bambu Lab 3D 프린터를 위한 셀프 호스팅 완전 기능 제어판입니다. 프린터, 필라멘트 재고, 인쇄 기록 등 모든 것을 하나의 브라우저 탭에서 완전히 파악하고 제어할 수 있습니다.
 
-## Bambu Dashboard란?
+## 3DPrintForge란?
 
-Bambu Dashboard는 LAN을 통한 MQTT로 프린터에 직접 연결하며, Bambu Lab 서버에 의존하지 않습니다. 모델 및 인쇄 기록 동기화를 위해 Bambu Cloud에도 연결할 수 있습니다.
+3DPrintForge는 LAN을 통한 MQTT로 프린터에 직접 연결하며, Bambu Lab 서버에 의존하지 않습니다. 모델 및 인쇄 기록 동기화를 위해 Bambu Cloud에도 연결할 수 있습니다.
 
 ### 주요 기능
 
@@ -117,7 +117,7 @@ LAN 모드를 지원하는 모든 Bambu Lab 프린터:
 
 ## 기술 개요
 
-Bambu Dashboard는 Node.js 22와 바닐라 HTML/CSS/JS로 구축되었습니다 — 무거운 프레임워크 없음, 빌드 단계 없음. 데이터베이스는 Node.js 22에 내장된 SQLite입니다.
+3DPrintForge는 Node.js 22와 바닐라 HTML/CSS/JS로 구축되었습니다 — 무거운 프레임워크 없음, 빌드 단계 없음. 데이터베이스는 Node.js 22에 내장된 SQLite입니다.
 
 - **백엔드**: Node.js 22, npm 패키지 3개만 사용 (mqtt, ws, basic-ftp)
 - **프론트엔드**: 바닐라 HTML/CSS/JS, 빌드 단계 없음

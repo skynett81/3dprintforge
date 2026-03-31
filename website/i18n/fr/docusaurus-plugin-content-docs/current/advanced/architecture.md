@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Architecture technique
-description: Vue d'ensemble de l'architecture de Bambu Dashboard — stack, modules, base de données et WebSocket
+description: Vue d'ensemble de l'architecture de 3DPrintForge — stack, modules, base de données et WebSocket
 ---
 
 # Architecture technique

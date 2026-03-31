@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Funksjoner oversikt
-description: Komplett oversikt over alle funksjoner i Bambu Dashboard
+description: Komplett oversikt over alle funksjoner i 3DPrintForge
 ---
 
 # Funksjoner oversikt
 
-Bambu Dashboard samler alt du trenger for å overvåke og styre Bambu Lab-printerne dine på ett sted.
+3DPrintForge samler alt du trenger for å overvåke og styre Bambu Lab-printerne dine på ett sted.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ Se [Kontroll](./controls) for full dokumentasjon.
 
 ## Varsler
 
-Bambu Dashboard støtter 7 varslingskanaler:
+3DPrintForge støtter 7 varslingskanaler:
 
 | Kanal | Hendelser |
 |-------|----------|

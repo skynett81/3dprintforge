@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Múltiplas impressoras
-description: Configure e gerencie várias impressoras Bambu no Bambu Dashboard — visão geral da frota, fila e início escalonado
+description: Configure e gerencie várias impressoras Bambu no 3DPrintForge — visão geral da frota, fila e início escalonado
 ---
 
 # Múltiplas impressoras
 
-Tem mais de uma impressora? O Bambu Dashboard foi construído para gerenciamento de frota — você pode monitorar, controlar e coordenar todas as impressoras de um só lugar.
+Tem mais de uma impressora? O 3DPrintForge foi construído para gerenciamento de frota — você pode monitorar, controlar e coordenar todas as impressoras de um só lugar.
 
 ## Adicionando uma nova impressora
 

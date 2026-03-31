@@ -6,7 +6,7 @@ description: Nastavte oznámení přes Telegram, Discord, e-mail, webhook, ntfy,
 
 # Oznámení
 
-Bambu Dashboard podporuje oznámení prostřednictvím řady kanálů, takže vždy víte, co se děje s vašimi tiskárnami — ať jste doma nebo na cestách.
+3DPrintForge podporuje oznámení prostřednictvím řady kanálů, takže vždy víte, co se děje s vašimi tiskárnami — ať jste doma nebo na cestách.
 
 Přejděte na: **https://localhost:3443/#settings** → záložka **Oznámení**
 
@@ -31,7 +31,7 @@ Přejděte na: **https://localhost:3443/#settings** → záložka **Oznámení**
 2. Zkopírujte **bot token** (formát: `123456789:ABC-def...`)
 3. Začněte konverzaci s botem a odešlete `/start`
 4. Najděte své **Chat-ID**: přejděte na `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. V Bambu Dashboard: vložte token a Chat-ID, klikněte na **Test**
+5. V 3DPrintForge: vložte token a Chat-ID, klikněte na **Test**
 
 :::tip Skupinový kanál
 Jako příjemce můžete použít skupinu Telegram. Chat-ID skupin začíná `-`.
@@ -43,7 +43,7 @@ Jako příjemce můžete použít skupinu Telegram. Chat-ID skupin začíná `-`
 2. Přejděte na nastavení kanálu → **Integrace → Webhooks**
 3. Klikněte na **Nový webhook**, pojmenujte ho a vyberte kanál
 4. Zkopírujte webhook URL
-5. Vložte URL do Bambu Dashboard a klikněte na **Test**
+5. Vložte URL do 3DPrintForge a klikněte na **Test**
 
 ### E-mail
 
@@ -69,11 +69,11 @@ Použijte **Heslo aplikace** pro Gmail, ne běžné heslo. Nejprve aktivujte dvo
 1. Vytvořte účet na [pushover.net](https://pushover.net)
 2. Vytvořte novou aplikaci — zkopírujte **API Token**
 3. Najděte svůj **User Key** v dashboardu Pushover
-4. Vyplňte obě hodnoty v Bambu Dashboard a klikněte na **Test**
+4. Vyplňte obě hodnoty v 3DPrintForge a klikněte na **Test**
 
 ### Webhook (vlastní)
 
-Bambu Dashboard odesílá HTTP POST s JSON payload:
+3DPrintForge odesílá HTTP POST s JSON payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Dostávejte oznámení přímo v prohlížeči bez aplikace:
 4. Oznámení fungují i když je dashboard minimalizován (vyžaduje otevřenou záložku)
 
 :::info PWA
-Nainstalujte Bambu Dashboard jako PWA pro push oznámení na pozadí bez otevřené záložky. Viz [PWA](../system/pwa).
+Nainstalujte 3DPrintForge jako PWA pro push oznámení na pozadí bez otevřené záložky. Viz [PWA](../system/pwa).
 :::

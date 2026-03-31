@@ -60,7 +60,7 @@ Trascina e rilascia i lavori nella coda per cambiare manualmente l'ordine all'in
 
 ## Dispatch Automatico
 
-Quando il **Dispatch automatico** è attivato, Bambu Dashboard monitora tutte le stampanti e invia automaticamente il lavoro successivo:
+Quando il **Dispatch automatico** è attivato, 3DPrintForge monitora tutte le stampanti e invia automaticamente il lavoro successivo:
 
 1. Vai a **Impostazioni → Coda**
 2. Attiva **Dispatch automatico**

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Szerverlnapló
-description: Valós idejű szervernapló megtekintése, szűrés szint és modul szerint, valamint problémák elhárítása a Bambu Dashboardban
+description: Valós idejű szervernapló megtekintése, szűrés szint és modul szerint, valamint problémák elhárítása a 3DPrintForgeban
 ---
 
 # Szervernapló
 
-A szervernapló betekintést nyújt a Bambu Dashboard belső működésébe — hasznos hibaelhárításhoz, figyeléshez és diagnosztikához.
+A szervernapló betekintést nyújt a 3DPrintForge belső működésébe — hasznos hibaelhárításhoz, figyeléshez és diagnosztikához.
 
 Navigálj ide: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ A naplófájlok a szerveren tárolódnak:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (aktív napló)
-├── bambu-dashboard.log.1.gz     (rotált)
-├── bambu-dashboard.log.2.gz     (rotált)
+├── 3dprintforge.log          (aktív napló)
+├── 3dprintforge.log.1.gz     (rotált)
+├── 3dprintforge.log.2.gz     (rotált)
 └── ...
 ```
 
 :::tip SSH hozzáférés
 Naplók közvetlen olvasásához a szerveren SSH-n keresztül:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

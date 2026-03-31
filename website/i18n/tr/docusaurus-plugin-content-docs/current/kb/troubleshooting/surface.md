@@ -287,4 +287,4 @@ Bambu Lab X1C/P1S: Baskı başlamadan önce kabini 40–60 °C'ye ısınmaya bı
 2. **Önce filamenti kurulayın** — birçok yüzey hatası aslında nem belirtisidir
 3. **Nozzle'ı temizleyin** — kısmi tıkanma, teşhis edilmesi zor tutarsız yüzey hatalarına neden olur
 4. **Büyük ayarlamalardan sonra** Bambu Studio bakım menüsünden tam kalibrasyon çalıştırın
-5. **Bambu Dashboard'u kullanın** zamanla hangi ayarların en iyi sonucu verdiğini takip etmek için
+5. **3DPrintForge'u kullanın** zamanla hangi ayarların en iyi sonucu verdiğini takip etmek için

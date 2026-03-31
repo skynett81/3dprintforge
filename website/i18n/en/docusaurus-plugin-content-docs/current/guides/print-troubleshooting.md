@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Troubleshooting a failed print
-description: Diagnose and resolve common print failures using Bambu Dashboard's error logs and tools
+description: Diagnose and resolve common print failures using 3DPrintForge's error logs and tools
 ---
 
 # Troubleshooting a failed print
 
-Something went wrong? Don't worry — most print failures have simple solutions. Bambu Dashboard helps you find the cause quickly.
+Something went wrong? Don't worry — most print failures have simple solutions. 3DPrintForge helps you find the cause quickly.
 
 ## Step 1 — Check the HMS error codes
 

@@ -6,7 +6,7 @@ description: Testujte všech 177 API endpointů přímo v prohlížeči s vestav
 
 # API lekárna
 
-API lekárna vám umožňuje prozkoumat a testovat všech 177 API endpointů v Bambu Dashboard přímo v prohlížeči — bez psaní kódu.
+API lekárna vám umožňuje prozkoumat a testovat všech 177 API endpointů v 3DPrintForge přímo v prohlížeči — bez psaní kódu.
 
 Přejděte na: **https://localhost:3443/api/docs**
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kiosk-modus
-description: Sett opp Bambu Dashboard som en veggmontert skjerm eller hub-visning med kiosk-modus og automatisk rotasjon
+description: Sett opp 3DPrintForge som en veggmontert skjerm eller hub-visning med kiosk-modus og automatisk rotasjon
 ---
 
 # Kiosk-modus
@@ -96,7 +96,7 @@ Legg inn kommandoen i autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Dedikert brukerkonto
-Opprett en dedikert Bambu Dashboard-brukerkonto med **Gjest**-rolle for kiosk-enheten. Da har enheten kun lesetilgang og kan ikke endre innstillinger selv om noen får tilgang til skjermen.
+Opprett en dedikert 3DPrintForge-brukerkonto med **Gjest**-rolle for kiosk-enheten. Da har enheten kun lesetilgang og kan ikke endre innstillinger selv om noen får tilgang til skjermen.
 :::
 
 ## Hub-innstillinger

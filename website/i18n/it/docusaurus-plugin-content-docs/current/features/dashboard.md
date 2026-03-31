@@ -6,7 +6,7 @@ description: Panoramica in tempo reale della stampante attiva con visualizzazion
 
 # Pannello Principale
 
-Il pannello principale è il centro di controllo centrale di Bambu Dashboard. Mostra lo stato in tempo reale della stampante selezionata e ti permette di monitorare, controllare e personalizzare la visualizzazione secondo le tue esigenze.
+Il pannello principale è il centro di controllo centrale di 3DPrintForge. Mostra lo stato in tempo reale della stampante selezionata e ti permette di monitorare, controllare e personalizzare la visualizzazione secondo le tue esigenze.
 
 Vai a: **https://localhost:3443/**
 

@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#gallery**
 
 ## Milestone-Screenshots
 
-Bambu Dashboard nimmt automatisch einen Screenshot von der Kamera bei folgenden Meilensteinen auf:
+3DPrintForge nimmt automatisch einen Screenshot von der Kamera bei folgenden Meilensteinen auf:
 
 | Meilenstein | Zeitpunkt |
 |---|---|

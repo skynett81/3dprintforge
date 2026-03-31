@@ -6,7 +6,7 @@ description: Automatisk övervakning med XCam-händelsedetektering, sensoröverv
 
 # Print Guard
 
-Print Guard är Bambu Dashboards realtidsövervakningssystem. Det övervakar kamera, sensorer och skrivardata kontinuerligt och utför konfigurerbara åtgärder när något är fel.
+Print Guard är 3DPrintForges realtidsövervakningssystem. Det övervakar kamera, sensorer och skrivardata kontinuerligt och utför konfigurerbara åtgärder när något är fel.
 
 Gå till: **https://localhost:3443/#protection**
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: 플러그인 시스템
-description: Bambu Dashboard를 확장하는 플러그인 만들기 및 설치
+description: 3DPrintForge를 확장하는 플러그인 만들기 및 설치
 ---
 
 # 플러그인 시스템
 
-Bambu Dashboard는 소스 코드를 변경하지 않고 기능을 확장할 수 있는 플러그인 시스템을 지원합니다.
+3DPrintForge는 소스 코드를 변경하지 않고 기능을 확장할 수 있는 플러그인 시스템을 지원합니다.
 
 :::info 실험적 기능
 플러그인 시스템은 활발히 개발 중입니다. API는 버전 간에 변경될 수 있습니다.

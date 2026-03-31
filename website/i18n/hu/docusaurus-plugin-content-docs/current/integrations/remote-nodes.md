@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Távoli csomópontok
-description: Köss össze több Bambu Dashboard példányt, hogy az összes nyomtatót egy központi dashboardból lásd
+description: Köss össze több 3DPrintForge példányt, hogy az összes nyomtatót egy központi dashboardból lásd
 ---
 
 # Távoli csomópontok (Remote Nodes)
 
-A távoli csomópontok funkció lehetővé teszi több Bambu Dashboard példány összekapcsolását, hogy az összes nyomtatót egy központi felületből lássad és irányítsd — függetlenül attól, hogy ugyanabban a hálózatban vagy különböző helyszíneken találhatók.
+A távoli csomópontok funkció lehetővé teszi több 3DPrintForge példány összekapcsolását, hogy az összes nyomtatót egy központi felületből lássad és irányítsd — függetlenül attól, hogy ugyanabban a hálózatban vagy különböző helyszíneken találhatók.
 
 Navigálj ide: **https://localhost:3443/#settings** → **Integrációk → Távoli szerverek**
 

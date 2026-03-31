@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Säkerhetskopiering och återställning
-description: Automatisk och manuell säkerhetskopiering av Bambu Dashboard, återställning och flytt till ny server
+description: Automatisk och manuell säkerhetskopiering av 3DPrintForge, återställning och flytt till ny server
 ---
 
 # Säkerhetskopiering och återställning
 
-Bambu Dashboard lagrar all data lokalt — utskriftshistorik, filamentlager, inställningar, användare och mer. Regelbunden säkerhetskopiering säkerställer att du inte förlorar något vid serverfel eller vid flytt.
+3DPrintForge lagrar all data lokalt — utskriftshistorik, filamentlager, inställningar, användare och mer. Regelbunden säkerhetskopiering säkerställer att du inte förlorar något vid serverfel eller vid flytt.
 
 ## Vad ingår i en säkerhetskopia?
 
@@ -40,7 +40,7 @@ Som standard körs en automatisk säkerhetskopiering varje natt kl. 03:00.
 
 :::info Säkerhetskopieringsfiler lagras som standard här
 ```
-/sökväg/till/bambu-dashboard/data/backups/
+/sökväg/till/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ Ta en säkerhetskopia när som helst:
 
 **Alternativt via terminal:**
 ```bash
-cd /sökväg/till/bambu-dashboard
+cd /sökväg/till/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ All befintlig data ersätts av innehållet i säkerhetskopieringsfilen. Se till 
 ### Via terminal
 
 ```bash
-cd /sökväg/till/bambu-dashboard
+cd /sökväg/till/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Efter återställning, starta om instrumentpanelen:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # eller
 npm start
 ```
@@ -117,7 +117,7 @@ Exporterade inställningar är praktiskt att ha med till ny server. Importera de
 
 ## Flytta till ny server
 
-Så här flyttar du Bambu Dashboard med all data till en ny maskin:
+Så här flyttar du 3DPrintForge med all data till en ny maskin:
 
 ### Steg 1 — Ta säkerhetskopia på gammal server
 
@@ -128,8 +128,8 @@ Så här flyttar du Bambu Dashboard med all data till en ny maskin:
 ### Steg 2 — Installera på ny server
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

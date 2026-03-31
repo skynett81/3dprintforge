@@ -64,7 +64,7 @@ Widok kart kolorów organizuje szpule wizualnie według koloru. Przydatne do szy
 
 ## Tagi NFC
 
-Bambu Dashboard obsługuje tagi NFC do szybkiej identyfikacji szpul:
+3DPrintForge obsługuje tagi NFC do szybkiej identyfikacji szpul:
 
 1. Wpisz ID tagu NFC do szpuli w magazynie
 2. Zeskanuj tag telefonem

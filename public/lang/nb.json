@@ -2011,7 +2011,7 @@
     "ha_mqtt_broker_required": "Broker-URL er pakrevd",
     "settings_sub_nodes": "Noder",
     "nodes_title": "Eksterne noder",
-    "nodes_desc": "Koble til andre Bambu Dashboard-instanser for a se deres skrivere sammen med dine lokale. Eksterne skrivere vises i skrivervelgeren med sanntidsstatus.",
+    "nodes_desc": "Koble til andre 3DPrintForge-instanser for a se deres skrivere sammen med dine lokale. Eksterne skrivere vises i skrivervelgeren med sanntidsstatus.",
     "nodes_add": "Legg til ekstern node",
     "nodes_none": "Ingen eksterne noder konfigurert",
     "nodes_printers": "skrivere",

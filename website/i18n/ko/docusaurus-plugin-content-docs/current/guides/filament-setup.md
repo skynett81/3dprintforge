@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: 필라멘트 재고 설정
-description: Bambu Dashboard에서 필라멘트 스풀을 생성, 구성 및 관리하는 방법
+description: 3DPrintForge에서 필라멘트 스풀을 생성, 구성 및 관리하는 방법
 ---
 
 # 필라멘트 재고 설정
 
-Bambu Dashboard의 필라멘트 재고는 모든 스풀에 대한 완전한 개요를 제공합니다 — 남은 양, 사용한 양, 현재 AMS에 있는 스풀 등.
+3DPrintForge의 필라멘트 재고는 모든 스풀에 대한 완전한 개요를 제공합니다 — 남은 양, 사용한 양, 현재 AMS에 있는 스풀 등.
 
 ## AMS에서 자동 생성
 

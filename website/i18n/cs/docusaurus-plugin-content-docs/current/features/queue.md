@@ -60,7 +60,7 @@ Přetažením úloh ve frontě lze ručně změnit pořadí ve stejné úrovni p
 
 ## Automatické odesílání
 
-Když je aktivováno **Automatické odesílání**, Bambu Dashboard monitoruje všechny tiskárny a automaticky odesílá další úlohu:
+Když je aktivováno **Automatické odesílání**, 3DPrintForge monitoruje všechny tiskárny a automaticky odesílá další úlohu:
 
 1. Přejděte na **Nastavení → Fronta**
 2. Zapněte **Automatické odesílání**

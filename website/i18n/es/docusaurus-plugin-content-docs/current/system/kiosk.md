@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Modo quiosco
-description: Configura Bambu Dashboard como una pantalla montada en pared o vista de hub con modo quiosco y rotación automática
+description: Configura 3DPrintForge como una pantalla montada en pared o vista de hub con modo quiosco y rotación automática
 ---
 
 # Modo quiosco
@@ -96,7 +96,7 @@ Agrega el comando al autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Cuenta de usuario dedicada
-Crea una cuenta de usuario de Bambu Dashboard dedicada con rol de **Invitado** para el dispositivo quiosco. Así el dispositivo tiene solo acceso de lectura y no puede cambiar la configuración incluso si alguien accede a la pantalla.
+Crea una cuenta de usuario de 3DPrintForge dedicada con rol de **Invitado** para el dispositivo quiosco. Así el dispositivo tiene solo acceso de lectura y no puede cambiar la configuración incluso si alguien accede a la pantalla.
 :::
 
 ## Configuración de hub

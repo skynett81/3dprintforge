@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Sauvegarde
-description: Créez, restaurez et planifiez des sauvegardes automatiques des données de Bambu Dashboard
+description: Créez, restaurez et planifiez des sauvegardes automatiques des données de 3DPrintForge
 ---
 
 # Sauvegarde
 
-Bambu Dashboard peut sauvegarder toute la configuration, l'historique et les données pour vous permettre de restaurer facilement en cas de panne système, de migration de serveur ou de problèmes de mise à jour.
+3DPrintForge peut sauvegarder toute la configuration, l'historique et les données pour vous permettre de restaurer facilement en cas de panne système, de migration de serveur ou de problèmes de mise à jour.
 
 Accédez à : **https://localhost:3443/#settings** → **Système → Sauvegarde**
 
@@ -36,7 +36,7 @@ Accédez à : **https://localhost:3443/#settings** → **Système → Sauvegarde
 
 La sauvegarde est enregistrée sous forme de fichier `.zip` avec un horodatage dans le nom :
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Télécharger une sauvegarde
@@ -89,7 +89,7 @@ La restauration remplace toutes les données existantes par le contenu du fichie
 
 ## Validation des sauvegardes
 
-Bambu Dashboard valide tous les fichiers de sauvegarde avant la restauration :
+3DPrintForge valide tous les fichiers de sauvegarde avant la restauration :
 
 - Vérifie que le format ZIP est valide
 - Vérifie que le schéma de base de données est compatible avec la version actuelle

@@ -6,7 +6,7 @@ description: Automatiska vecko- och månadsrapporter via e-post med statistik, a
 
 # Rapporter
 
-Bambu Dashboard kan skicka automatiska e-postrapporter med statistik och aktivitetssammanfattningar — veckovis, månadsvis eller båda.
+3DPrintForge kan skicka automatiska e-postrapporter med statistik och aktivitetssammanfattningar — veckovis, månadsvis eller båda.
 
 Gå till: **https://localhost:3443/#settings** → **System → Rapporter**
 
@@ -83,7 +83,7 @@ Månadsrapporten täcker de senaste 30 dagarna och innehåller allt från veckor
 1. Gå till **Inställningar → Rapporter → Anpassning**
 2. Kryssa av/på avsnitt du vill inkludera
 3. Välj **Skrivarfilter**: alla skrivare eller ett urval
-4. Välj **Logovisning**: visa Bambu Dashboard-logotyp i header eller stäng av
+4. Välj **Logovisning**: visa 3DPrintForge-logotyp i header eller stäng av
 5. Klicka **Spara**
 
 ## Rapportarkiv

@@ -181,7 +181,7 @@ Mnoho předních dodavatelů nabízí hotové profily Bambu Studio optimalizovan
 :::info Kde najít profily?
 - **Bambu Studio:** Vestavěné profily pro materiály Bambu Lab a mnoho třetích stran
 - **Web dodavatele:** Hledejte „Bambu Studio profile" nebo „JSON profile" v části ke stažení
-- **Bambu Dashboard:** V panelu Tiskových profilů v části Nástroje
+- **3DPrintForge:** V panelu Tiskových profilů v části Nástroje
 - **MakerWorld:** Profily jsou často sdíleny spolu s modely jinými uživateli
 :::
 

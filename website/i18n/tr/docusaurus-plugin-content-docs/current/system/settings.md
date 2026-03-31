@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Ayarlar
-description: Bambu Dashboard'daki tüm ayarlara kapsamlı genel bakış — yazıcı, bildirimler, tema, OBS, enerji, webhook'lar ve daha fazlası
+description: 3DPrintForge'daki tüm ayarlara kapsamlı genel bakış — yazıcı, bildirimler, tema, OBS, enerji, webhook'lar ve daha fazlası
 ---
 
 # Ayarlar
 
-Bambu Dashboard'daki tüm ayarlar, açık kategorilerle tek bir sayfada toplanmıştır. Her kategoride neler bulunduğuna ilişkin genel bir bakış sunulmaktadır.
+3DPrintForge'daki tüm ayarlar, açık kategorilerle tek bir sayfada toplanmıştır. Her kategoride neler bulunduğuna ilişkin genel bir bakış sunulmaktadır.
 
 Gidin: **https://localhost:3443/#settings**
 

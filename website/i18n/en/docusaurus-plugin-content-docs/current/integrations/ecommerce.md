@@ -19,7 +19,7 @@ The E-commerce module requires a valid license. Licenses can **only be purchased
 ### Purchasing a license
 
 1. Go to **[geektech.no](https://geektech.no)** and create an account
-2. Select **Bambu Dashboard — E-commerce License**
+2. Select **3DPrintForge — E-commerce License**
 3. Choose license type:
 
 | License type | Description | Printers |
@@ -70,7 +70,7 @@ Multiple IP addresses and MAC addresses can be allowed (one per line in the geek
    - **Instance ID** (unique to your installation)
 
 :::warning The license key is tied to your domain and installation
-The key is activated for one specific Bambu Dashboard installation and domain. Contact [geektech.no](https://geektech.no) support if you need to:
+The key is activated for one specific 3DPrintForge installation and domain. Contact [geektech.no](https://geektech.no) support if you need to:
 - Move the license to a new server
 - Change domain
 - Increase number of printers
@@ -223,6 +223,6 @@ Export to CSV for accounting systems.
 
 :::info Need help?
 - **License questions**: contact [geektech.no](https://geektech.no) support
-- **Technical issues**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Feature requests**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Technical issues**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Feature requests**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

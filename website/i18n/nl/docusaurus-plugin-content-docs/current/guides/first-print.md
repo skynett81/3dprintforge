@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Je eerste print
-description: Stap-voor-stap handleiding om je eerste 3D-print te starten en te bewaken in Bambu Dashboard
+description: Stap-voor-stap handleiding om je eerste 3D-print te starten en te bewaken in 3DPrintForge
 ---
 
 # Je eerste print
 
-Deze handleiding neemt je mee door het hele proces — van een aangesloten printer naar een voltooide print — met Bambu Dashboard als controlecentrum.
+Deze handleiding neemt je mee door het hele proces — van een aangesloten printer naar een voltooide print — met 3DPrintForge als controlecentrum.
 
 ## Stap 1 — Controleer of de printer is verbonden
 
@@ -32,7 +32,7 @@ LAN-modus biedt lagere vertraging dan cloud-modus. Activeer dit in de printerins
 
 ## Stap 2 — Upload je model
 
-Bambu Dashboard start geen prints rechtstreeks — dat is de taak van Bambu Studio of MakerWorld. Het dashboard neemt het over zodra de print begint.
+3DPrintForge start geen prints rechtstreeks — dat is de taak van Bambu Studio of MakerWorld. Het dashboard neemt het over zodra de print begint.
 
 **Via Bambu Studio:**
 1. Open Bambu Studio op je pc
@@ -83,7 +83,7 @@ De eerste 3–5 lagen zijn kritiek. Slechte hechting nu betekent een mislukte pr
 :::
 
 ### Print Guard
-Bambu Dashboard heeft een AI-aangedreven **Print Guard** die automatisch spaghetti-fouten detecteert en de print kan pauzeren. Activeer dit onder **Bewaking → Print Guard**.
+3DPrintForge heeft een AI-aangedreven **Print Guard** die automatisch spaghetti-fouten detecteert en de print kan pauzeren. Activeer dit onder **Bewaking → Print Guard**.
 
 ## Stap 5 — Na de print
 

@@ -95,7 +95,7 @@ Bruk «Lagre som ny» for å beholde en fungerende profil mens du eksperimentere
 
 ### Import
 1. Klikk **Importer profiler**
-2. Velg en `.json`-fil eksportert fra et annet Bambu Dashboard
+2. Velg en `.json`-fil eksportert fra et annet 3DPrintForge
 3. Eksisterende profiler med samme navn kan overskrives eller beholdes begge
 
 ## Dele profiler

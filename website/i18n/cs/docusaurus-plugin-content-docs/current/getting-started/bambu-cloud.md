@@ -6,7 +6,7 @@ description: Propojte dashboard s Bambu Lab Cloud pro synchronizaci modelů a hi
 
 # Bambu Cloud integrace
 
-Bambu Dashboard se může připojit k **Bambu Lab Cloud** pro načítání obrázků modelů, historie tisku a dat o filamentech. Dashboard funguje zcela bez cloudového připojení, ale cloud integrace přináší další výhody.
+3DPrintForge se může připojit k **Bambu Lab Cloud** pro načítání obrázků modelů, historie tisku a dat o filamentech. Dashboard funguje zcela bez cloudového připojení, ale cloud integrace přináší další výhody.
 
 ## Výhody cloud integrace
 

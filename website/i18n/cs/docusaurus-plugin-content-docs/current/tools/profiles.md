@@ -95,7 +95,7 @@ Použijte „Uložit jako nový" pro zachování funkčního profilu při experi
 
 ### Import
 1. Klikněte na **Importovat profily**
-2. Vyberte soubor `.json` exportovaný z jiného Bambu Dashboard
+2. Vyberte soubor `.json` exportovaný z jiného 3DPrintForge
 3. Existující profily se stejným názvem lze přepsat nebo ponechat oba
 
 ## Sdílení profilů

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Navigera i instrumentpanelen
-description: Lär dig navigera i Bambu Dashboard — sidopanel, paneler, tangentbordsgenvägar och anpassning
+description: Lär dig navigera i 3DPrintForge — sidopanel, paneler, tangentbordsgenvägar och anpassning
 ---
 
 # Navigera i instrumentpanelen
@@ -148,7 +148,7 @@ För effektiv navigering utan mus:
 
 ## PWA — installera som app
 
-Bambu Dashboard kan installeras som en progressiv webbapp (PWA) och köras som en fristående app utan webbläsarmenyer:
+3DPrintForge kan installeras som en progressiv webbapp (PWA) och köras som en fristående app utan webbläsarmenyer:
 
 1. Gå till instrumentpanelen i Chrome, Edge eller Safari
 2. Klicka på **Installera app**-ikonen i adressfältet

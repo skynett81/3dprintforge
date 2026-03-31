@@ -60,7 +60,7 @@ Faites glisser les tâches dans la file pour modifier manuellement l'ordre au se
 
 ## Dispatch automatique
 
-Lorsque le **Dispatch automatique** est activé, Bambu Dashboard surveille toutes les imprimantes et envoie la prochaine tâche automatiquement :
+Lorsque le **Dispatch automatique** est activé, 3DPrintForge surveille toutes les imprimantes et envoie la prochaine tâche automatiquement :
 
 1. Accédez à **Paramètres → File**
 2. Activez le **Dispatch automatique**

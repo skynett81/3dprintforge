@@ -6,7 +6,7 @@ description: Sfoglia i profili filamento condivisi dalla community, contribuisci
 
 # Filamenti della Community
 
-I Filamenti della Community sono un database condiviso di profili filamento contribuiti da utenti di Bambu Dashboard da tutto il mondo. Trova le migliori impostazioni per il tuo filamento e condividi le tue esperienze.
+I Filamenti della Community sono un database condiviso di profili filamento contribuiti da utenti di 3DPrintForge da tutto il mondo. Trova le migliori impostazioni per il tuo filamento e condividi le tue esperienze.
 
 Vai a: **https://localhost:3443/#community**
 

@@ -148,6 +148,6 @@ Un higrómetro digital barato muestra la humedad actual en la caja:
 - **Etiquetar bobinas secadas** con la fecha de secado
 - **Tubo PTFE dedicado** desde la secadora hasta la impresora minimiza la exposición durante la impresión
 
-## Bambu Dashboard y estado de secado
+## 3DPrintForge y estado de secado
 
-Bambu Dashboard te permite registrar información del filamento incluyendo la última fecha de secado en los perfiles de filamento. Úsalo para hacer un seguimiento de qué bobinas están recién secadas y cuáles necesitan otra ronda.
+3DPrintForge te permite registrar información del filamento incluyendo la última fecha de secado en los perfiles de filamento. Úsalo para hacer un seguimiento de qué bobinas están recién secadas y cuáles necesitan otra ronda.

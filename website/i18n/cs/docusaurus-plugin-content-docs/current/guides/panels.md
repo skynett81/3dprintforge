@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Navigace v panelu
-description: Naučte se navigovat v Bambu Dashboard — postranní panel, panely, klávesové zkratky a přizpůsobení
+description: Naučte se navigovat v 3DPrintForge — postranní panel, panely, klávesové zkratky a přizpůsobení
 ---
 
 # Navigace v panelu
@@ -148,7 +148,7 @@ Pro efektivní navigaci bez myši:
 
 ## PWA — instalace jako aplikace
 
-Bambu Dashboard lze nainstalovat jako progresivní webovou aplikaci (PWA) a spouštět jako samostatnou aplikaci bez nabídek prohlížeče:
+3DPrintForge lze nainstalovat jako progresivní webovou aplikaci (PWA) a spouštět jako samostatnou aplikaci bez nabídek prohlížeče:
 
 1. Přejděte na panel v Chrome, Edge nebo Safari
 2. Klikněte na ikonu **Nainstalovat aplikaci** v adresním řádku

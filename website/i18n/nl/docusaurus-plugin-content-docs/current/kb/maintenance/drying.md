@@ -148,6 +148,6 @@ Een goedkope digitale hygrometer toont de actuele luchtvochtigheid in de box:
 - **Markeer gedroogde spoelen** met de droogdatum
 - **Speciale PTFE-buis** van droger naar printer minimaliseert blootstelling tijdens het printen
 
-## Bambu Dashboard en droogstatus
+## 3DPrintForge en droogstatus
 
-Bambu Dashboard laat je filamentinformatie bijhouden, inclusief de laatste droogdatum, onder filamentprofielen. Gebruik dit om bij te houden welke spoelen vers gedroogd zijn en welke een nieuwe ronde nodig hebben.
+3DPrintForge laat je filamentinformatie bijhouden, inclusief de laatste droogdatum, onder filamentprofielen. Gebruik dit om bij te houden welke spoelen vers gedroogd zijn en welke een nieuwe ronde nodig hebben.

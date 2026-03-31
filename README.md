@@ -1,4 +1,4 @@
-# Bambu Dashboard
+# 3DPrintForge
 
 > Self-hosted web dashboard for monitoring and controlling Bambu Lab 3D printers over your local network.
 
@@ -6,7 +6,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-![Bambu Dashboard](docs/dashboard.png)
+![3DPrintForge](docs/dashboard.png)
 
 ---
 
@@ -64,8 +64,8 @@ For a detailed step-by-step guide, see **[INSTALL.md](INSTALL.md)**.
 ### Option 1: Install Script (Recommended)
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -84,8 +84,8 @@ For a terminal-based install instead:
 ### Option 2: Manual Install
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 npm install
 cp config.example.json config.json
 ```
@@ -101,8 +101,8 @@ Open `https://localhost:3443` in your browser (HTTP on port 3000 redirects autom
 ### Option 3: Docker
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 cp config.example.json config.json
 # Edit config.json with your printer details
 docker compose up -d
@@ -115,8 +115,8 @@ docker compose up -d
 Try the dashboard without a real printer:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 npm install
 npm run demo
 ```
@@ -255,7 +255,7 @@ docker compose pull && docker compose up -d
 - **[Architecture](docs/architecture.md)** — stack, modules, components, project structure, systemd, Pterodactyl
 - **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.14
 - **[Installation Guide](INSTALL.md)** — detailed step-by-step install instructions
-- **[Docusaurus Docs](website/)** — full documentation site in 17 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/bambu-dashboard/)
+- **[Docusaurus Docs](website/)** — full documentation site in 17 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/3dprintforge/)
 
 ---
 

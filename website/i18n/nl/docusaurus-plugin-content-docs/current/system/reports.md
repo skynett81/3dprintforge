@@ -6,7 +6,7 @@ description: Automatische wekelijkse en maandelijkse e-mailrapporten met statist
 
 # Rapporten
 
-Bambu Dashboard kan automatische e-mailrapporten sturen met statistieken en activiteitssamenvatting — wekelijks, maandelijks of beide.
+3DPrintForge kan automatische e-mailrapporten sturen met statistieken en activiteitssamenvatting — wekelijks, maandelijks of beide.
 
 Ga naar: **https://localhost:3443/#settings** → **Systeem → Rapporten**
 
@@ -83,7 +83,7 @@ Het maandelijkse rapport dekt de afgelopen 30 dagen en bevat alles uit het wekel
 1. Ga naar **Instellingen → Rapporten → Aanpassen**
 2. Vink secties aan/uit die u wilt opnemen
 3. Kies **Printerfilter**: alle printers of een selectie
-4. Kies **Logo weergeven**: Bambu Dashboard-logo in de koptekst weergeven of uitschakelen
+4. Kies **Logo weergeven**: 3DPrintForge-logo in de koptekst weergeven of uitschakelen
 5. Klik **Opslaan**
 
 ## Rapportarchief

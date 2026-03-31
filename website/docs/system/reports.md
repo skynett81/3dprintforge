@@ -6,7 +6,7 @@ description: Automatiske ukentlige og månedlige e-postrapporter med statistikk,
 
 # Rapporter
 
-Bambu Dashboard kan sende automatiske e-postrapporter med statistikk og aktivitetssammendrag — ukentlig, månedlig eller begge deler.
+3DPrintForge kan sende automatiske e-postrapporter med statistikk og aktivitetssammendrag — ukentlig, månedlig eller begge deler.
 
 Gå til: **https://localhost:3443/#settings** → **System → Rapporter**
 
@@ -83,7 +83,7 @@ Den månedlige rapporten dekker siste 30 dager og inneholder alt fra ukesrapport
 1. Gå til **Innstillinger → Rapporter → Tilpasning**
 2. Huk av / fra seksjoner du vil inkludere
 3. Velg **Printer-filter**: alle printere eller et utvalg
-4. Velg **Logovisning**: vis Bambu Dashboard-logo i header eller slå av
+4. Velg **Logovisning**: vis 3DPrintForge-logo i header eller slå av
 5. Klikk **Lagre**
 
 ## Rapport-arkiv

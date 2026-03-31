@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Functieoverzicht
-description: Volledig overzicht van alle functies in Bambu Dashboard
+description: Volledig overzicht van alle functies in 3DPrintForge
 ---
 
 # Functieoverzicht
 
-Bambu Dashboard bundelt alles wat u nodig heeft om uw Bambu Lab-printers te monitoren en te besturen op één plek.
+3DPrintForge bundelt alles wat u nodig heeft om uw Bambu Lab-printers te monitoren en te besturen op één plek.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ Zie [Besturing](./controls) voor volledige documentatie.
 
 ## Meldingen
 
-Bambu Dashboard ondersteunt 7 meldingskanalen:
+3DPrintForge ondersteunt 7 meldingskanalen:
 
 | Kanaal | Gebeurtenissen |
 |-------|----------|

@@ -6,13 +6,13 @@ description: Complete overview of HMS error codes from the printers with severit
 
 # Error Log
 
-The error log collects all errors and HMS alerts (Health, Maintenance, Safety) from your printers. Bambu Dashboard has a built-in database of 268 HMS codes for Bambu Lab printers.
+The error log collects all errors and HMS alerts (Health, Maintenance, Safety) from your printers. 3DPrintForge has a built-in database of 268 HMS codes for Bambu Lab printers.
 
 Go to: **https://localhost:3443/#errors**
 
 ## HMS codes
 
-Bambu Lab printers send HMS codes via MQTT when something is wrong. Bambu Dashboard automatically translates these into readable error messages:
+Bambu Lab printers send HMS codes via MQTT when something is wrong. 3DPrintForge automatically translates these into readable error messages:
 
 | Code | Example | Category |
 |------|---------|----------|
@@ -59,7 +59,7 @@ For each HMS code a link to the Bambu Lab Wiki is displayed with:
 Click **Open wiki** on an error entry to open the relevant wiki page in a new tab.
 
 :::tip Local copy
-Bambu Dashboard caches wiki content locally for offline use. Content is updated automatically weekly.
+3DPrintForge caches wiki content locally for offline use. Content is updated automatically weekly.
 :::
 
 ## Acknowledging errors

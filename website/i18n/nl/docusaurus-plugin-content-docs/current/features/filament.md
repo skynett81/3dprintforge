@@ -64,7 +64,7 @@ De kleurkaartweergave organiseert spoelen visueel op kleur. Handig om snel de ju
 
 ## NFC-tags
 
-Bambu Dashboard ondersteunt NFC-tags voor snelle identificatie van spoelen:
+3DPrintForge ondersteunt NFC-tags voor snelle identificatie van spoelen:
 
 1. Schrijf de NFC-tag-ID naar de spoel in de opslag
 2. Scan de tag met de telefoon

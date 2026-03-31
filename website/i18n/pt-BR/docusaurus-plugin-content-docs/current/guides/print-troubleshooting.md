@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Solução de problemas em impressões com falha
-description: Diagnostique e resolva erros de impressão comuns usando os logs de erros e ferramentas do Bambu Dashboard
+description: Diagnostique e resolva erros de impressão comuns usando os logs de erros e ferramentas do 3DPrintForge
 ---
 
 # Solução de problemas em impressões com falha
 
-Algo deu errado? Não se preocupe — a maioria dos erros de impressão tem soluções simples. O Bambu Dashboard ajuda você a encontrar a causa rapidamente.
+Algo deu errado? Não se preocupe — a maioria dos erros de impressão tem soluções simples. O 3DPrintForge ajuda você a encontrar a causa rapidamente.
 
 ## Passo 1 — Verifique os códigos de erro HMS
 

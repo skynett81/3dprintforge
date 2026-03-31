@@ -6,7 +6,7 @@ description: Ative a gravação automática de timelapse de impressões 3D, gere
 
 # Timelapse
 
-O Bambu Dashboard pode tirar fotos automaticamente durante a impressão e combiná-las em um vídeo timelapse. Os vídeos são salvos localmente e podem ser reproduzidos diretamente no dashboard.
+O 3DPrintForge pode tirar fotos automaticamente durante a impressão e combiná-las em um vídeo timelapse. Os vídeos são salvos localmente e podem ser reproduzidos diretamente no dashboard.
 
 Acesse em: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ O dashboard segue o link simbólico automaticamente. Você pode usar qualquer di
 
 Quando a impressão termina, as imagens são automaticamente compiladas em um vídeo com ffmpeg:
 
-1. O Bambu Dashboard recebe o evento "print complete" do MQTT
+1. O 3DPrintForge recebe o evento "print complete" do MQTT
 2. O ffmpeg é chamado com as imagens coletadas
 3. O vídeo é salvo na pasta de armazenamento
 4. A página de timelapse é atualizada com o novo vídeo

@@ -1,6 +1,6 @@
 # Features
 
-Complete feature list for Bambu Dashboard v1.1.12.
+Complete feature list for 3DPrintForge v1.1.12.
 
 ---
 

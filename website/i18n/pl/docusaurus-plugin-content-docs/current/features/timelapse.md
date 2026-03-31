@@ -6,7 +6,7 @@ description: Aktywuj automatyczne nagrywanie timelapse wydruków 3D, zarządzaj 
 
 # Timelapse
 
-Bambu Dashboard może automatycznie robić zdjęcia podczas drukowania i łączyć je w film timelapse. Filmy są przechowywane lokalnie i można je odtwarzać bezpośrednio w dashboardzie.
+3DPrintForge może automatycznie robić zdjęcia podczas drukowania i łączyć je w film timelapse. Filmy są przechowywane lokalnie i można je odtwarzać bezpośrednio w dashboardzie.
 
 Przejdź do: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ Dashboard automatycznie podąża za dowiązaniem symbolicznym. Możesz używać 
 
 Po zakończeniu wydruku, zdjęcia są automatycznie składane w film za pomocą ffmpeg:
 
-1. Bambu Dashboard otrzymuje zdarzenie „print complete" z MQTT
+1. 3DPrintForge otrzymuje zdarzenie „print complete" z MQTT
 2. ffmpeg jest wywoływany ze zebranymi zdjęciami
 3. Film jest zapisywany w folderze przechowywania
 4. Strona timelapse jest aktualizowana o nowy film

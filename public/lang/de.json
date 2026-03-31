@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "Broker-URL ist erforderlich",
     "settings_sub_nodes": "Knoten",
     "nodes_title": "Externe Knoten",
-    "nodes_desc": "Mit anderen Bambu-Dashboard-Instanzen verbinden, um deren Drucker neben Ihren lokalen anzuzeigen. Externe Drucker erscheinen im Druckerauswahlmenü mit Echtzeit-Status.",
+    "nodes_desc": "Mit anderen 3DPrintForge-Instanzen verbinden, um deren Drucker neben Ihren lokalen anzuzeigen. Externe Drucker erscheinen im Druckerauswahlmenü mit Echtzeit-Status.",
     "nodes_add": "Externen Knoten hinzufügen",
     "nodes_none": "Keine externen Knoten konfiguriert",
     "nodes_printers": "Drucker",

@@ -18,7 +18,7 @@ Tibber är en nordisk elleverantör med öppet API för spotpriser.
 
 1. Logga in på [developer.tibber.com](https://developer.tibber.com)
 2. Generera en **Personal Access Token**
-3. I Bambu Dashboard: klistra in token under **Tibber API Token**
+3. I 3DPrintForge: klistra in token under **Tibber API Token**
 4. Välj **Hem** (varifrån priserna ska hämtas, om du har flera hem)
 5. Klicka **Testa anslutning**
 6. Klicka **Spara**

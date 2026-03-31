@@ -6,7 +6,7 @@ description: Yerleşik OpenAPI belgeleri ve kimlik doğrulamasıyla tarayıcıda
 
 # API Oyun Alanı
 
-API oyun alanı, Bambu Dashboard'daki tüm 177 API uç noktasını doğrudan tarayıcıda — kod yazmadan — keşfetmenizi ve test etmenizi sağlar.
+API oyun alanı, 3DPrintForge'daki tüm 177 API uç noktasını doğrudan tarayıcıda — kod yazmadan — keşfetmenizi ve test etmenizi sağlar.
 
 Gidin: **https://localhost:3443/api/docs**
 

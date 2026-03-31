@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Sette opp varsler
-description: Konfigurer Telegram, Discord, e-post og push-varsler i Bambu Dashboard
+description: Konfigurer Telegram, Discord, e-post og push-varsler i 3DPrintForge
 ---
 
 # Sette opp varsler
 
-Bambu Dashboard kan varsle deg om alt fra fullførte prints til kritiske feil — via Telegram, Discord, e-post eller browser push-varsler.
+3DPrintForge kan varsle deg om alt fra fullførte prints til kritiske feil — via Telegram, Discord, e-post eller browser push-varsler.
 
 ## Oversikt over varslingskanaler
 
@@ -59,7 +59,7 @@ Vil du varsle en hel gruppe? Legg boten til i en Telegram-gruppe, finn gruppe-Ch
 2. Høyreklikk på kanalen du vil ha varsler i → **Rediger kanal**
 3. Gå til **Integrasjoner → Webhooks**
 4. Klikk **Ny Webhook**
-5. Gi den et navn (f.eks. "Bambu Dashboard")
+5. Gi den et navn (f.eks. "3DPrintForge")
 6. Velg en avatar (valgfritt)
 7. Klikk **Kopier Webhook URL**
 

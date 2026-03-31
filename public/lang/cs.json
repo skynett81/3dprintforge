@@ -1743,7 +1743,7 @@
     "ha_mqtt_broker_required": "URL brokeru je povinná",
     "settings_sub_nodes": "Uzly",
     "nodes_title": "Vzdálené uzly",
-    "nodes_desc": "Propojte další instance Bambu Dashboard a zobrazte jejich tiskárny vedle svých lokálních. Vzdálené tiskárny se zobrazí ve výběru tiskáren s aktualizacemi stavu v reálném čase.",
+    "nodes_desc": "Propojte další instance 3DPrintForge a zobrazte jejich tiskárny vedle svých lokálních. Vzdálené tiskárny se zobrazí ve výběru tiskáren s aktualizacemi stavu v reálném čase.",
     "nodes_add": "Přidat vzdálený uzel",
     "nodes_none": "Žádné vzdálené uzly nejsou nakonfigurovány",
     "nodes_printers": "tiskáren",

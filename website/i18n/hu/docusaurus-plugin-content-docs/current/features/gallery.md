@@ -12,7 +12,7 @@ Navigálj ide: **https://localhost:3443/#gallery**
 
 ## Mérföldkő-képernyőképek
 
-A Bambu Dashboard automatikusan képernyőképet készít a kameráról a következő mérföldkőknél:
+A 3DPrintForge automatikusan képernyőképet készít a kameráról a következő mérföldkőknél:
 
 | Mérföldkő | Időpont |
 |---|---|

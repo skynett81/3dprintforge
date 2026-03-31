@@ -12,7 +12,7 @@ Navigálj ide: **https://localhost:3443/#wear**
 
 ## Figyelt komponensek
 
-A Bambu Dashboard nyomtatónként 8 komponens kopását követi:
+A 3DPrintForge nyomtatónként 8 komponens kopását követi:
 
 | Komponens | Elsődleges kopási tényező | Tipikus élettartam |
 |---|---|---|

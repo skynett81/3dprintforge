@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Резервне копіювання та відновлення
-description: Автоматичне та ручне резервне копіювання Bambu Dashboard, відновлення та перенесення на новий сервер
+description: Автоматичне та ручне резервне копіювання 3DPrintForge, відновлення та перенесення на новий сервер
 ---
 
 # Резервне копіювання та відновлення
 
-Bambu Dashboard зберігає всі дані локально — історія друку, сховище філаменту, налаштування, користувачі тощо. Регулярне резервне копіювання гарантує, що ви нічого не втратите при збої сервера або переїзді.
+3DPrintForge зберігає всі дані локально — історія друку, сховище філаменту, налаштування, користувачі тощо. Регулярне резервне копіювання гарантує, що ви нічого не втратите при збої сервера або переїзді.
 
 ## Що включено до резервної копії?
 
@@ -40,7 +40,7 @@ Bambu Dashboard зберігає всі дані локально — істор
 
 :::info Файли резервних копій зберігаються тут за замовчуванням
 ```
-/шлях/до/bambu-dashboard/data/backups/
+/шлях/до/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ backup-2025-03-21-030000.tar.gz
 
 **Альтернативно через термінал:**
 ```bash
-cd /шлях/до/bambu-dashboard
+cd /шлях/до/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ node scripts/backup.js
 ### Через термінал
 
 ```bash
-cd /шлях/до/bambu-dashboard
+cd /шлях/до/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Після відновлення перезапустіть панель управління:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # або
 npm start
 ```
@@ -117,7 +117,7 @@ npm start
 
 ## Перенесення на новий сервер
 
-Як перенести Bambu Dashboard з усіма даними на нову машину:
+Як перенести 3DPrintForge з усіма даними на нову машину:
 
 ### Крок 1 — Створіть резервну копію на старому сервері
 
@@ -128,8 +128,8 @@ npm start
 ### Крок 2 — Встановіть на новому сервері
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

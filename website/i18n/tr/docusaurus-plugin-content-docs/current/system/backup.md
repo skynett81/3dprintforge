@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Yedekleme
-description: Bambu Dashboard verilerinin yedeklerini oluşturun, geri yükleyin ve otomatik yedeklemeler planlayın
+description: 3DPrintForge verilerinin yedeklerini oluşturun, geri yükleyin ve otomatik yedeklemeler planlayın
 ---
 
 # Yedekleme
 
-Bambu Dashboard, sistem arızası, sunucu taşıma veya güncelleme sorunlarında kolayca geri yüklemenizi sağlamak için tüm yapılandırma, geçmiş ve verilerin yedeklerini alabilir.
+3DPrintForge, sistem arızası, sunucu taşıma veya güncelleme sorunlarında kolayca geri yüklemenizi sağlamak için tüm yapılandırma, geçmiş ve verilerin yedeklerini alabilir.
 
 Gidin: **https://localhost:3443/#settings** → **Sistem → Yedekleme**
 
@@ -36,7 +36,7 @@ Gidin: **https://localhost:3443/#settings** → **Sistem → Yedekleme**
 
 Yedekleme, dosya adında zaman damgasıyla bir `.zip` dosyası olarak kaydedilir:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Yedeklemeyi İndirme
@@ -89,7 +89,7 @@ Geri yükleme, tüm mevcut verileri yedekleme dosyasının içeriğiyle değişt
 
 ## Yedekleme Doğrulama
 
-Bambu Dashboard geri yüklemeden önce tüm yedekleme dosyalarını doğrular:
+3DPrintForge geri yüklemeden önce tüm yedekleme dosyalarını doğrular:
 
 - ZIP formatının geçerli olduğunu kontrol eder
 - Veritabanı şemasının mevcut sürümle uyumlu olduğunu doğrular

@@ -60,7 +60,7 @@ Dra og slipp jobber i køen for å endre rekkefølgen manuelt innenfor samme pri
 
 ## Automatisk dispatch
 
-Når **Automatisk dispatch** er aktivert, overvåker Bambu Dashboard alle printere og sender neste jobb automatisk:
+Når **Automatisk dispatch** er aktivert, overvåker 3DPrintForge alle printere og sender neste jobb automatisk:
 
 1. Gå til **Innstillinger → Kø**
 2. Slå på **Automatisk dispatch**

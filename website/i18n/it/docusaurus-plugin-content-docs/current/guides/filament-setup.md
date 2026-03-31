@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Configurare il magazzino filamenti
-description: Come creare, configurare e tenere traccia delle bobine di filamento in Bambu Dashboard
+description: Come creare, configurare e tenere traccia delle bobine di filamento in 3DPrintForge
 ---
 
 # Configurare il magazzino filamenti
 
-Il magazzino filamenti in Bambu Dashboard ti offre una panoramica completa di tutte le tue bobine — quanto rimane, quanto hai usato e quali bobine sono nell'AMS in questo momento.
+Il magazzino filamenti in 3DPrintForge ti offre una panoramica completa di tutte le tue bobine — quanto rimane, quanto hai usato e quali bobine sono nell'AMS in questo momento.
 
 ## Creazione automatica dall'AMS
 

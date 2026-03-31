@@ -12,7 +12,7 @@ Navigálj ide: **https://localhost:3443/#waste**
 
 ## Hulladékkategóriák
 
-A Bambu Dashboard háromféle hulladékot különböztet meg:
+A 3DPrintForge háromféle hulladékot különböztet meg:
 
 | Kategória | Forrás | Tipikus mennyiség |
 |---|---|---|

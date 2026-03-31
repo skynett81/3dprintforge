@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Технічна архітектура
-description: Огляд архітектури Bambu Dashboard — стек, модулі, база даних та WebSocket
+description: Огляд архітектури 3DPrintForge — стек, модулі, база даних та WebSocket
 ---
 
 # Технічна архітектура

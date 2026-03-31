@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: OBSでストリーミング
-description: Bambu DashboardをOBS Studioのオーバーレイとして設定し、プロフェッショナルな3D印刷ストリーミングを実現する
+description: 3DPrintForgeをOBS Studioのオーバーレイとして設定し、プロフェッショナルな3D印刷ストリーミングを実現する
 ---
 
 # 3D印刷のOBSストリーミング
 
-Bambu Dashboardには、プリンターのステータス、進捗状況、温度、カメラフィードを直接ストリームに表示するOBSオーバーレイが内蔵されています。
+3DPrintForgeには、プリンターのステータス、進捗状況、温度、カメラフィードを直接ストリームに表示するOBSオーバーレイが内蔵されています。
 
 ## 前提条件
 
 - OBS Studioのインストール（[obsproject.com](https://obsproject.com)）
-- Bambu Dashboardが実行中でプリンターに接続済み
+- 3DPrintForgeが実行中でプリンターに接続済み
 - （任意）ライブフィード用のBambuカメラが有効
 
 ## ステップ1 — OBS Browser Source
@@ -63,7 +63,7 @@ body {
 
 ## ステップ3 — オーバーレイのカスタマイズ
 
-Bambu Dashboardでオーバーレイが何を表示するかを設定できます：
+3DPrintForgeでオーバーレイが何を表示するかを設定できます：
 
 1. **機能 → OBSオーバーレイ**に移動します
 2. 設定します：
@@ -171,5 +171,5 @@ Bambuカメラが時々フリーズすることがあります。ダッシュボ
 - または背景音楽/チャット音声を使用します
 
 :::tip 自動シーン切り替え
-OBSにはタイトルに基づくシーン切り替えの内蔵サポートがあります。プラグイン（例：obs-websocket）とBambu Dashboard APIを組み合わせて、印刷が開始・停止したときに自動的にシーンを切り替えます。
+OBSにはタイトルに基づくシーン切り替えの内蔵サポートがあります。プラグイン（例：obs-websocket）と3DPrintForge APIを組み合わせて、印刷が開始・停止したときに自動的にシーンを切り替えます。
 :::

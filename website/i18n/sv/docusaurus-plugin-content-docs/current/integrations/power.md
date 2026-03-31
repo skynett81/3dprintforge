@@ -27,7 +27,7 @@ Shelly Plug S Plus med firmware 1.0+ är testad och rekommenderad. Stöder Wi-Fi
 
 ### Förutsättningar
 
-- Shelly-pluggen är ansluten till samma nätverk som Bambu Dashboard
+- Shelly-pluggen är ansluten till samma nätverk som 3DPrintForge
 - Shelly är konfigurerad med statisk IP eller DHCP-reservation
 
 ### Konfiguration
@@ -50,11 +50,11 @@ Standard polling-intervall är 10 sekunder. Minska till 5 för noggrannare mätn
 ## Installation med Tasmota
 
 1. Konfigurera Tasmota-enheten med MQTT (se Tasmota-dokumentationen)
-2. I Bambu Dashboard: välj **Typ**: Tasmota
+2. I 3DPrintForge: välj **Typ**: Tasmota
 3. Fyll i MQTT-ämne för enheten: t.ex. `tasmota/power-plug-1`
 4. Koppla till skrivare och klicka **Spara**
 
-Bambu Dashboard prenumererar automatiskt på `{topic}/SENSOR` för effektmätningar.
+3DPrintForge prenumererar automatiskt på `{topic}/SENSOR` för effektmätningar.
 
 ## Vad mäts
 

@@ -27,7 +27,7 @@ description: ShellyまたはTasmotaスマートプラグで実際の電力消費
 
 ### 前提条件
 
-- ShellyプラグがBambu Dashboardと同じネットワークに接続されている
+- Shellyプラグが3DPrintForgeと同じネットワークに接続されている
 - Shellyが静的IPまたはDHCP予約で設定されている
 
 ### 設定
@@ -50,11 +50,11 @@ description: ShellyまたはTasmotaスマートプラグで実際の電力消費
 ## Tasmotaによるセットアップ
 
 1. TasmotaデバイスをMQTTで設定します（Tasmotaドキュメントを参照）
-2. Bambu Dashboardで：**タイプ**：Tasmotaを選択
+2. 3DPrintForgeで：**タイプ**：Tasmotaを選択
 3. デバイスのMQTTトピックを入力：例 `tasmota/power-plug-1`
 4. プリンターにリンクして**保存**をクリックします
 
-Bambu Dashboardが電力測定のために`{topic}/SENSOR`を自動的にサブスクライブします。
+3DPrintForgeが電力測定のために`{topic}/SENSOR`を自動的にサブスクライブします。
 
 ## 何が測定されるか
 

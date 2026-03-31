@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Registro del servidor
-description: Ve el registro del servidor en tiempo real, filtra por nivel y módulo, y diagnostica problemas con Bambu Dashboard
+description: Ve el registro del servidor en tiempo real, filtra por nivel y módulo, y diagnostica problemas con 3DPrintForge
 ---
 
 # Registro del servidor
 
-El registro del servidor te da información sobre lo que ocurre dentro de Bambu Dashboard — útil para diagnóstico, monitoreo y resolución de problemas.
+El registro del servidor te da información sobre lo que ocurre dentro de 3DPrintForge — útil para diagnóstico, monitoreo y resolución de problemas.
 
 Ir a: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Los archivos de registro se guardan en el servidor:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (registro activo)
-├── bambu-dashboard.log.1.gz     (rotado)
-├── bambu-dashboard.log.2.gz     (rotado)
+├── 3dprintforge.log          (registro activo)
+├── 3dprintforge.log.1.gz     (rotado)
+├── 3dprintforge.log.2.gz     (rotado)
 └── ...
 ```
 
 :::tip Acceso SSH
 Para leer los registros directamente en el servidor mediante SSH:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

@@ -60,7 +60,7 @@ Arraste e solte trabalhos na fila para alterar a ordem manualmente dentro do mes
 
 ## Despacho automático
 
-Quando o **Despacho automático** está ativado, o Bambu Dashboard monitora todas as impressoras e envia o próximo trabalho automaticamente:
+Quando o **Despacho automático** está ativado, o 3DPrintForge monitora todas as impressoras e envia o próximo trabalho automaticamente:
 
 1. Vá em **Configurações → Fila**
 2. Ative **Despacho automático**

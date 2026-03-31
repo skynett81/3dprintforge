@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "URL do broker é obrigatória",
     "settings_sub_nodes": "Nós",
     "nodes_title": "Nós Remotos",
-    "nodes_desc": "Vincule outras instâncias do Bambu Dashboard para ver suas impressoras ao lado das suas locais. As impressoras remotas aparecem no seletor de impressoras com atualizações de status ao vivo.",
+    "nodes_desc": "Vincule outras instâncias do 3DPrintForge para ver suas impressoras ao lado das suas locais. As impressoras remotas aparecem no seletor de impressoras com atualizações de status ao vivo.",
     "nodes_add": "Adicionar Nó Remoto",
     "nodes_none": "Nenhum nó remoto configurado",
     "nodes_printers": "impressoras",

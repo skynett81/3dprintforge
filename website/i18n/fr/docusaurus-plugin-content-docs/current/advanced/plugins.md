@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Système de plugins
-description: Créez et installez des plugins pour étendre Bambu Dashboard
+description: Créez et installez des plugins pour étendre 3DPrintForge
 ---
 
 # Système de plugins
 
-Bambu Dashboard prend en charge un système de plugins qui vous permet d'étendre les fonctionnalités sans modifier le code source.
+3DPrintForge prend en charge un système de plugins qui vous permet d'étendre les fonctionnalités sans modifier le code source.
 
 :::info Expérimental
 Le système de plugins est en cours de développement actif. L'API peut changer entre les versions.

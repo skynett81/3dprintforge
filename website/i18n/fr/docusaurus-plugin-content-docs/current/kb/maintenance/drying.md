@@ -148,6 +148,6 @@ Un hygromètre numérique bon marché affiche l'humidité actuelle dans la boît
 - **Étiqueter les bobines séchées** avec la date de séchage
 - **Tube PTFE dédié** du séchoir à l'imprimante minimise l'exposition pendant l'impression
 
-## Bambu Dashboard et statut de séchage
+## 3DPrintForge et statut de séchage
 
-Bambu Dashboard vous permet d'enregistrer les informations sur le filament, y compris la dernière date de séchage dans les profils de filament. Utilisez cela pour savoir quelles bobines sont fraîchement séchées et lesquelles ont besoin d'un nouveau cycle.
+3DPrintForge vous permet d'enregistrer les informations sur le filament, y compris la dernière date de séchage dans les profils de filament. Utilisez cela pour savoir quelles bobines sont fraîchement séchées et lesquelles ont besoin d'un nouveau cycle.

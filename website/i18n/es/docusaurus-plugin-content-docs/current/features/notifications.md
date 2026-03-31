@@ -6,7 +6,7 @@ description: Configura alertas mediante Telegram, Discord, correo electrónico, 
 
 # Alertas
 
-Bambu Dashboard soporta alertas a través de múltiples canales para que siempre sepas qué está pasando con tus impresoras, ya sea en casa o fuera de ella.
+3DPrintForge soporta alertas a través de múltiples canales para que siempre sepas qué está pasando con tus impresoras, ya sea en casa o fuera de ella.
 
 Ir a: **https://localhost:3443/#settings** → pestaña **Alertas**
 
@@ -31,7 +31,7 @@ Ir a: **https://localhost:3443/#settings** → pestaña **Alertas**
 2. Copia el **token del bot** (formato: `123456789:ABC-def...`)
 3. Inicia una conversación con el bot y envía `/start`
 4. Encuentra tu **Chat-ID**: ve a `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. En Bambu Dashboard: pega el token y el Chat-ID, haz clic en **Probar**
+5. En 3DPrintForge: pega el token y el Chat-ID, haz clic en **Probar**
 
 :::tip Canal de grupo
 Puedes usar un grupo de Telegram como destinatario. El Chat-ID de los grupos empieza con `-`.
@@ -43,7 +43,7 @@ Puedes usar un grupo de Telegram como destinatario. El Chat-ID de los grupos emp
 2. Ve a la configuración del canal → **Integraciones → Webhooks**
 3. Haz clic en **Nuevo webhook**, dale un nombre y selecciona el canal
 4. Copia la URL del webhook
-5. Pega la URL en Bambu Dashboard y haz clic en **Probar**
+5. Pega la URL en 3DPrintForge y haz clic en **Probar**
 
 ### Correo electrónico
 
@@ -69,11 +69,11 @@ Usa una **Contraseña de aplicación** para Gmail, no la contraseña normal. Act
 1. Crea una cuenta en [pushover.net](https://pushover.net)
 2. Crea una nueva aplicación — copia el **Token API**
 3. Encuentra tu **User Key** en el panel de Pushover
-4. Completa ambos en Bambu Dashboard y haz clic en **Probar**
+4. Completa ambos en 3DPrintForge y haz clic en **Probar**
 
 ### Webhook (personalizado)
 
-Bambu Dashboard envía un HTTP POST con payload JSON:
+3DPrintForge envía un HTTP POST con payload JSON:
 
 ```json
 {
@@ -128,5 +128,5 @@ Recibe alertas directamente en el navegador sin app:
 4. Las alertas funcionan incluso cuando el panel está minimizado (requiere que la pestaña esté abierta)
 
 :::info PWA
-Instala Bambu Dashboard como PWA para recibir notificaciones push en segundo plano sin pestaña abierta. Ver [PWA](../system/pwa).
+Instala 3DPrintForge como PWA para recibir notificaciones push en segundo plano sin pestaña abierta. Ver [PWA](../system/pwa).
 :::

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Nawigacja w panelu
-description: Naucz się nawigować w Bambu Dashboard — pasek boczny, panele, skróty klawiszowe i dostosowanie
+description: Naucz się nawigować w 3DPrintForge — pasek boczny, panele, skróty klawiszowe i dostosowanie
 ---
 
 # Nawigacja w panelu
@@ -148,7 +148,7 @@ Do efektywnej nawigacji bez myszy:
 
 ## PWA — instalacja jako aplikacja
 
-Bambu Dashboard można zainstalować jako progresywną aplikację webową (PWA) i uruchamiać jako samodzielną aplikację bez menu przeglądarki:
+3DPrintForge można zainstalować jako progresywną aplikację webową (PWA) i uruchamiać jako samodzielną aplikację bez menu przeglądarki:
 
 1. Przejdź do panelu w Chrome, Edge lub Safari
 2. Kliknij ikonę **Zainstaluj aplikację** w pasku adresu

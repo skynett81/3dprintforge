@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Bambu Dashboard'a Hoş Geldiniz
+title: 3DPrintForge'a Hoş Geldiniz
 description: Bambu Lab 3D yazıcılar için güçlü, kendi kendine barındırılan bir dashboard
 ---
 
-# Bambu Dashboard'a Hoş Geldiniz
+# 3DPrintForge'a Hoş Geldiniz
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**Bambu Dashboard**, Bambu Lab 3D yazıcılar için kendi kendine barındırılan, tam özellikli bir kontrol panelidir. Yazıcınız, filament envanteriniz, baskı geçmişiniz ve daha fazlası üzerinde tam görünürlük ve kontrol sağlar — hepsi tek bir tarayıcı sekmesinden.
+**3DPrintForge**, Bambu Lab 3D yazıcılar için kendi kendine barındırılan, tam özellikli bir kontrol panelidir. Yazıcınız, filament envanteriniz, baskı geçmişiniz ve daha fazlası üzerinde tam görünürlük ve kontrol sağlar — hepsi tek bir tarayıcı sekmesinden.
 
-## Bambu Dashboard nedir?
+## 3DPrintForge nedir?
 
-Bambu Dashboard, Bambu Lab'ın sunucularına bağımlı olmaksızın LAN üzerinden MQTT aracılığıyla yazıcınıza doğrudan bağlanır. Model ve baskı geçmişi senkronizasyonu için Bambu Cloud'a da bağlanabilirsiniz.
+3DPrintForge, Bambu Lab'ın sunucularına bağımlı olmaksızın LAN üzerinden MQTT aracılığıyla yazıcınıza doğrudan bağlanır. Model ve baskı geçmişi senkronizasyonu için Bambu Cloud'a da bağlanabilirsiniz.
 
 ### Temel özellikler
 
@@ -117,7 +117,7 @@ Kapsamlı bakım sistemi:
 
 ## Teknik genel bakış
 
-Bambu Dashboard, Node.js 22 ve saf HTML/CSS/JS ile oluşturulmuştur — ağır çerçeveler yok, derleme adımı yok. Veritabanı, Node.js 22'ye entegre edilmiş SQLite'dır.
+3DPrintForge, Node.js 22 ve saf HTML/CSS/JS ile oluşturulmuştur — ağır çerçeveler yok, derleme adımı yok. Veritabanı, Node.js 22'ye entegre edilmiş SQLite'dır.
 
 - **Backend**: yalnızca 3 npm paketiyle Node.js 22 (mqtt, ws, basic-ftp)
 - **Frontend**: Saf HTML/CSS/JS, derleme adımı yok

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Naviguer dans le tableau de bord
-description: Apprenez à naviguer dans Bambu Dashboard — barre latérale, panneaux, raccourcis clavier et personnalisation
+description: Apprenez à naviguer dans 3DPrintForge — barre latérale, panneaux, raccourcis clavier et personnalisation
 ---
 
 # Naviguer dans le tableau de bord
@@ -148,7 +148,7 @@ Pour une navigation efficace sans souris :
 
 ## PWA — installer comme application
 
-Bambu Dashboard peut être installé comme Progressive Web App (PWA) et fonctionner comme une application autonome sans menus de navigateur :
+3DPrintForge peut être installé comme Progressive Web App (PWA) et fonctionner comme une application autonome sans menus de navigateur :
 
 1. Ouvrez le tableau de bord dans Chrome, Edge ou Safari
 2. Cliquez sur l'icône **Installer l'application** dans la barre d'adresse

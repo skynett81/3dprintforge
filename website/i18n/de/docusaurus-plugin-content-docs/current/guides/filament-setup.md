@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Filamentlager einrichten
-description: So erstellen, konfigurieren und verwalten Sie Ihre Filamentspulen im Bambu Dashboard
+description: So erstellen, konfigurieren und verwalten Sie Ihre Filamentspulen im 3DPrintForge
 ---
 
 # Filamentlager einrichten
 
-Das Filamentlager im Bambu Dashboard gibt Ihnen einen vollständigen Überblick über alle Ihre Spulen — was noch übrig ist, was verbraucht wurde und welche Spulen sich gerade im AMS befinden.
+Das Filamentlager im 3DPrintForge gibt Ihnen einen vollständigen Überblick über alle Ihre Spulen — was noch übrig ist, was verbraucht wurde und welche Spulen sich gerade im AMS befinden.
 
 ## Automatische Erstellung aus dem AMS
 

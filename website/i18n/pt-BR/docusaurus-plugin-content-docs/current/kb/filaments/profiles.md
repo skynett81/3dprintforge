@@ -181,7 +181,7 @@ Muitos fornecedores líderes oferecem perfis prontos do Bambu Studio otimizados 
 :::info Onde encontrar perfis?
 - **Bambu Studio:** Perfis integrados para materiais Bambu Lab e muitos terceiros
 - **Site do fornecedor:** Procure "Bambu Studio profile" ou "JSON profile" em downloads
-- **Bambu Dashboard:** No painel de Perfis de Impressão na seção Ferramentas
+- **3DPrintForge:** No painel de Perfis de Impressão na seção Ferramentas
 - **MakerWorld:** Perfis são frequentemente compartilhados junto com modelos por outros usuários
 :::
 

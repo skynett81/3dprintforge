@@ -19,7 +19,7 @@ De e-commercemodule vereist een geldige licentie. Licenties kunnen **uitsluitend
 ### Licentie kopen
 
 1. Ga naar **[geektech.no](https://geektech.no)** en maak een account aan
-2. Selecteer **Bambu Dashboard — E-commercelicentie**
+2. Selecteer **3DPrintForge — E-commercelicentie**
 3. Kies het licentietype:
 
 | Licentietype | Beschrijving | Printers |
@@ -70,7 +70,7 @@ Meerdere IP-adressen en MAC-adressen kunnen worden toegestaan (één per regel i
    - **Instantie-ID** (uniek voor uw installatie)
 
 :::warning De licentiesleutel is gekoppeld aan uw domein en installatie
-De sleutel wordt geactiveerd voor één specifieke Bambu Dashboard-installatie en domein. Neem contact op met [geektech.no](https://geektech.no) support als u:
+De sleutel wordt geactiveerd voor één specifieke 3DPrintForge-installatie en domein. Neem contact op met [geektech.no](https://geektech.no) support als u:
 - De licentie naar een nieuwe server wilt verplaatsen
 - Het domein wilt wijzigen
 - Het aantal printers wilt verhogen
@@ -223,6 +223,6 @@ Exporteer naar CSV voor boekhoudprogramma's.
 
 :::info Hulp nodig?
 - **Licentievragen**: neem contact op met [geektech.no](https://geektech.no) support
-- **Technische problemen**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Functieverzoeken**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Technische problemen**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Functieverzoeken**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

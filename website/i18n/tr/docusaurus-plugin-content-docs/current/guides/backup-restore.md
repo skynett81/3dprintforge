@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Yedekleme ve geri yükleme
-description: Bambu Dashboard'un otomatik ve manuel yedeklemesi, geri yükleme ve yeni sunucuya taşıma
+description: 3DPrintForge'un otomatik ve manuel yedeklemesi, geri yükleme ve yeni sunucuya taşıma
 ---
 
 # Yedekleme ve geri yükleme
 
-Bambu Dashboard tüm verileri yerel olarak depolar — baskı geçmişi, filament deposu, ayarlar, kullanıcılar ve daha fazlası. Düzenli yedekleme, sunucu arızası veya taşıma sırasında hiçbir şey kaybetmemenizi sağlar.
+3DPrintForge tüm verileri yerel olarak depolar — baskı geçmişi, filament deposu, ayarlar, kullanıcılar ve daha fazlası. Düzenli yedekleme, sunucu arızası veya taşıma sırasında hiçbir şey kaybetmemenizi sağlar.
 
 ## Yedeklemede neler bulunur?
 
@@ -40,7 +40,7 @@ Varsayılan olarak her gece saat 03:00'te otomatik yedekleme çalışır.
 
 :::info Yedekleme dosyaları varsayılan olarak burada saklanır
 ```
-/bambu-dashboard/yolu/data/backups/
+/3dprintforge/yolu/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ backup-2025-03-21-030000.tar.gz
 
 **Alternatif olarak terminal aracılığıyla:**
 ```bash
-cd /bambu-dashboard/yolu
+cd /3dprintforge/yolu
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ Tüm mevcut veriler yedekleme dosyasının içeriğiyle değiştirilir. Doğru d
 ### Terminal aracılığıyla
 
 ```bash
-cd /bambu-dashboard/yolu
+cd /3dprintforge/yolu
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Geri yüklemeden sonra panoyu yeniden başlatın:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # veya
 npm start
 ```
@@ -117,7 +117,7 @@ Dışa aktarılan ayarlar, yeni bir sunucuya taşırken kullanışlıdır. Yeni 
 
 ## Yeni sunucuya taşıma
 
-Bambu Dashboard'u tüm verilerle yeni bir makineye nasıl taşırsınız:
+3DPrintForge'u tüm verilerle yeni bir makineye nasıl taşırsınız:
 
 ### Adım 1 — Eski sunucuda yedek alın
 
@@ -128,8 +128,8 @@ Bambu Dashboard'u tüm verilerle yeni bir makineye nasıl taşırsınız:
 ### Adım 2 — Yeni sunucuya yükleyin
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

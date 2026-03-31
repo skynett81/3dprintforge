@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Günlük kullanım
-description: Bambu Dashboard'un günlük kullanımına yönelik pratik bir rehber — sabah rutini, izleme, baskı sonrası ve bakım
+description: 3DPrintForge'un günlük kullanımına yönelik pratik bir rehber — sabah rutini, izleme, baskı sonrası ve bakım
 ---
 
 # Günlük kullanım
 
-Bu rehber, günlük yaşamda Bambu Dashboard'u nasıl verimli kullanacağınızı anlatır — günün başından sonuna kadar.
+Bu rehber, günlük yaşamda 3DPrintForge'u nasıl verimli kullanacağınızı anlatır — günün başından sonuna kadar.
 
 ## Sabah rutini
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Changelog
-description: All changes and updates in Bambu Dashboard
+description: All changes and updates in 3DPrintForge
 ---
 
 # Changelog
 
-All notable changes to Bambu Dashboard.
+All notable changes to 3DPrintForge.
 
 ---
 

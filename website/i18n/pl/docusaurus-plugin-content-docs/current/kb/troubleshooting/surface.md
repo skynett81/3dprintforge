@@ -287,4 +287,4 @@ przed rozpoczęciem druku — nie otwieraj drzwi podczas drukowania
 2. **Najpierw wysusz filament** — wiele wad powierzchni to w rzeczywistości objawy wilgoci
 3. **Wyczyść dyszę** — częściowe zatkanie daje niespójne wady powierzchni, które są trudne do zdiagnozowania
 4. **Przeprowadź pełną kalibrację** z menu konserwacji Bambu Studio po większych zmianach
-5. **Użyj Bambu Dashboard** do śledzenia, jakie ustawienia dawały najlepsze wyniki w czasie
+5. **Użyj 3DPrintForge** do śledzenia, jakie ustawienia dawały najlepsze wyniki w czasie

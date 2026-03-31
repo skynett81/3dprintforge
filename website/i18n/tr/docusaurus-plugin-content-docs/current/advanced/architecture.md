@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Teknik Mimari
-description: Bambu Dashboard için mimari genel bakış — yığın, modüller, veritabanı ve WebSocket
+description: 3DPrintForge için mimari genel bakış — yığın, modüller, veritabanı ve WebSocket
 ---
 
 # Teknik Mimari

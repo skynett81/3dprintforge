@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "Broker-URL krävs",
     "settings_sub_nodes": "Noder",
     "nodes_title": "Externa noder",
-    "nodes_desc": "Anslut till andra Bambu Dashboard-instanser för att visa deras skrivare tillsammans med dina lokala. Externa skrivare visas i skrivarväljaren med realtidsstatus.",
+    "nodes_desc": "Anslut till andra 3DPrintForge-instanser för att visa deras skrivare tillsammans med dina lokala. Externa skrivare visas i skrivarväljaren med realtidsstatus.",
     "nodes_add": "Lägg till extern nod",
     "nodes_none": "Inga externa noder konfigurerade",
     "nodes_printers": "skrivare",

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Biztonsági mentés
-description: Bambu Dashboard adatok biztonsági mentésének létrehozása, visszaállítása és automatikus ütemezése
+description: 3DPrintForge adatok biztonsági mentésének létrehozása, visszaállítása és automatikus ütemezése
 ---
 
 # Biztonsági mentés
 
-A Bambu Dashboard az összes konfigurációt, előzményt és adatot biztonsági mentésbe tudja helyezni, hogy egyszerűen visszaállítható legyen rendszerhiba, szervermigráció vagy frissítési problémák esetén.
+A 3DPrintForge az összes konfigurációt, előzményt és adatot biztonsági mentésbe tudja helyezni, hogy egyszerűen visszaállítható legyen rendszerhiba, szervermigráció vagy frissítési problémák esetén.
 
 Navigálj ide: **https://localhost:3443/#settings** → **Rendszer → Biztonsági mentés**
 
@@ -36,7 +36,7 @@ Navigálj ide: **https://localhost:3443/#settings** → **Rendszer → Biztonsá
 
 A mentés `.zip` fájlként kerül mentésre időbélyeggel a fájlnévben:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Biztonsági mentés letöltése
@@ -89,7 +89,7 @@ A visszaállítás az összes meglévő adatot a mentési fájl tartalmával hel
 
 ## Biztonsági mentés érvényesítése
 
-A Bambu Dashboard visszaállítás előtt érvényesíti az összes mentési fájlt:
+A 3DPrintForge visszaállítás előtt érvényesíti az összes mentési fájlt:
 
 - Ellenőrzi, hogy a ZIP formátum érvényes-e
 - Ellenőrzi, hogy az adatbázis séma kompatibilis-e az aktuális verzióval

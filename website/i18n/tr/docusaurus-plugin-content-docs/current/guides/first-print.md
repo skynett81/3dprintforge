@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: İlk baskınız
-description: İlk 3D baskınızı başlatmak ve Bambu Dashboard'da izlemek için adım adım rehber
+description: İlk 3D baskınızı başlatmak ve 3DPrintForge'da izlemek için adım adım rehber
 ---
 
 # İlk baskınız
 
-Bu rehber, bağlı yazıcıdan tamamlanmış baskıya kadar tüm süreci — Bambu Dashboard'ı kontrol merkezi olarak kullanarak — anlatmaktadır.
+Bu rehber, bağlı yazıcıdan tamamlanmış baskıya kadar tüm süreci — 3DPrintForge'ı kontrol merkezi olarak kullanarak — anlatmaktadır.
 
 ## Adım 1 — Yazıcının bağlı olduğunu kontrol edin
 
@@ -32,7 +32,7 @@ LAN modu, bulut moduna göre daha düşük gecikme sağlar. Yazıcı ve pano ayn
 
 ## Adım 2 — Modelinizi yükleyin
 
-Bambu Dashboard baskıları doğrudan başlatmaz — bu Bambu Studio veya MakerWorld'ün işidir. Pano, baskı başlar başlamaz devreye girer.
+3DPrintForge baskıları doğrudan başlatmaz — bu Bambu Studio veya MakerWorld'ün işidir. Pano, baskı başlar başlamaz devreye girer.
 
 **Bambu Studio aracılığıyla:**
 1. Bilgisayarınızda Bambu Studio'yu açın
@@ -83,7 +83,7 @@ Panoda doğrudan canlı görüntü izlemek için yazıcı kartındaki kamera sim
 :::
 
 ### Print Guard
-Bambu Dashboard, otomatik olarak spagetti hatalarını algılayan ve baskıyı duraklatabilecek yapay zeka destekli bir **Print Guard** özelliğine sahiptir. **İzleme → Print Guard** bölümünden etkinleştirin.
+3DPrintForge, otomatik olarak spagetti hatalarını algılayan ve baskıyı duraklatabilecek yapay zeka destekli bir **Print Guard** özelliğine sahiptir. **İzleme → Print Guard** bölümünden etkinleştirin.
 
 ## Adım 5 — Baskı bittikten sonra
 

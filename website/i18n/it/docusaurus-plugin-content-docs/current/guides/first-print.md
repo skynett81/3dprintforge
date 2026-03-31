@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: La tua prima stampa
-description: Guida passo dopo passo per avviare la tua prima stampa 3D e monitorarla in Bambu Dashboard
+description: Guida passo dopo passo per avviare la tua prima stampa 3D e monitorarla in 3DPrintForge
 ---
 
 # La tua prima stampa
 
-Questa guida ti accompagna attraverso l'intero processo — da una stampante connessa a una stampa completata — con Bambu Dashboard come centro di controllo.
+Questa guida ti accompagna attraverso l'intero processo — da una stampante connessa a una stampa completata — con 3DPrintForge come centro di controllo.
 
 ## Passo 1 — Verifica che la stampante sia connessa
 
@@ -32,7 +32,7 @@ La modalità LAN offre latenza inferiore rispetto alla modalità cloud. Abilital
 
 ## Passo 2 — Carica il tuo modello
 
-Bambu Dashboard non avvia stampe direttamente — è compito di Bambu Studio o MakerWorld. Il dashboard subentra non appena la stampa inizia.
+3DPrintForge non avvia stampe direttamente — è compito di Bambu Studio o MakerWorld. Il dashboard subentra non appena la stampa inizia.
 
 **Tramite Bambu Studio:**
 1. Apri Bambu Studio sul tuo PC
@@ -83,7 +83,7 @@ I primi 3–5 strati sono critici. Una cattiva adesione adesso significa una sta
 :::
 
 ### Print Guard
-Bambu Dashboard dispone di un **Print Guard** basato sull'IA che rileva automaticamente gli errori spaghetti e può mettere in pausa la stampa. Abilitalo sotto **Monitoraggio → Print Guard**.
+3DPrintForge dispone di un **Print Guard** basato sull'IA che rileva automaticamente gli errori spaghetti e può mettere in pausa la stampa. Abilitalo sotto **Monitoraggio → Print Guard**.
 
 ## Passo 5 — Dopo che la stampa è completata
 

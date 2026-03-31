@@ -287,4 +287,4 @@ antes de que comience la impresión — no abrir la puerta durante la impresión
 2. **Secar el filamento primero** — muchos defectos de superficie son en realidad síntomas de humedad
 3. **Limpiar la boquilla** — una obstrucción parcial produce defectos de superficie inconsistentes difíciles de diagnosticar
 4. **Ejecutar una calibración completa** desde el menú de mantenimiento de Bambu Studio después de ajustes importantes
-5. **Usar Bambu Dashboard** para rastrear qué configuraciones produjeron los mejores resultados a lo largo del tiempo
+5. **Usar 3DPrintForge** para rastrear qué configuraciones produjeron los mejores resultados a lo largo del tiempo

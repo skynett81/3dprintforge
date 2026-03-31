@@ -6,7 +6,7 @@ description: Tüm yazıcı olayları için Telegram, Discord, e-posta, webhook, 
 
 # Bildirimler
 
-Bambu Dashboard, evde ya da hareket halinde yazıcılarınızla ilgili her zaman haberdar olmanızı sağlayan çok sayıda kanal aracılığıyla bildirimleri destekler.
+3DPrintForge, evde ya da hareket halinde yazıcılarınızla ilgili her zaman haberdar olmanızı sağlayan çok sayıda kanal aracılığıyla bildirimleri destekler.
 
 Gidin: **https://localhost:3443/#settings** → **Bildirimler** sekmesi
 
@@ -31,7 +31,7 @@ Gidin: **https://localhost:3443/#settings** → **Bildirimler** sekmesi
 2. **Bot token**'ı kopyalayın (format: `123456789:ABC-def...`)
 3. Botle bir konuşma başlatın ve `/start` gönderin
 4. **Chat ID**'nizi bulun: `https://api.telegram.org/bot<TOKEN>/getUpdates` adresine gidin
-5. Bambu Dashboard'da: token ve Chat ID'yi yapıştırın, **Test**'e tıklayın
+5. 3DPrintForge'da: token ve Chat ID'yi yapıştırın, **Test**'e tıklayın
 
 :::tip Grup kanalı
 Telegram grubunu alıcı olarak kullanabilirsiniz. Grupların Chat ID'leri `-` ile başlar.
@@ -43,7 +43,7 @@ Telegram grubunu alıcı olarak kullanabilirsiniz. Grupların Chat ID'leri `-` i
 2. Kanal ayarları → **Entegrasyonlar → Webhooks**'a gidin
 3. **Yeni Webhook**'a tıklayın, bir ad verin ve kanal seçin
 4. Webhook URL'sini kopyalayın
-5. URL'yi Bambu Dashboard'a yapıştırın ve **Test**'e tıklayın
+5. URL'yi 3DPrintForge'a yapıştırın ve **Test**'e tıklayın
 
 ### E-posta
 
@@ -69,11 +69,11 @@ Gmail için normal şifre değil **Uygulama şifresi** kullanın. Önce Google h
 1. [pushover.net](https://pushover.net)'de bir hesap oluşturun
 2. Yeni bir uygulama oluşturun — **API Token**'ı kopyalayın
 3. Pushover dashboard'unuzda **User Key**'inizi bulun
-4. Her ikisini de Bambu Dashboard'a doldurun ve **Test**'e tıklayın
+4. Her ikisini de 3DPrintForge'a doldurun ve **Test**'e tıklayın
 
 ### Webhook (özel)
 
-Bambu Dashboard, JSON yüküyle bir HTTP POST gönderir:
+3DPrintForge, JSON yüküyle bir HTTP POST gönderir:
 
 ```json
 {
@@ -128,5 +128,5 @@ Uygulama olmadan doğrudan tarayıcıda bildirim alın:
 4. Dashboard simge durumuna küçültülmüş olsa bile bildirimler çalışır (sekmenin açık olmasını gerektirir)
 
 :::info PWA
-Arka planda açık sekme olmadan push bildirimleri için Bambu Dashboard'u PWA olarak yükleyin. [PWA](../system/pwa) sayfasına bakın.
+Arka planda açık sekme olmadan push bildirimleri için 3DPrintForge'u PWA olarak yükleyin. [PWA](../system/pwa) sayfasına bakın.
 :::

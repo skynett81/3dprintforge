@@ -6,7 +6,7 @@ description: 組み込みのOpenAPIドキュメントと認証を使用して、
 
 # APIプレイグラウンド
 
-APIプレイグラウンドでは、Bambu Dashboardの177のAPIエンドポイントをすべてコードを書かずにブラウザから直接探索・テストできます。
+APIプレイグラウンドでは、3DPrintForgeの177のAPIエンドポイントをすべてコードを書かずにブラウザから直接探索・テストできます。
 
 アクセス先：**https://localhost:3443/api/docs**
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Teknisk arkitektur
-description: Arkitekturoversikt for Bambu Dashboard — stack, moduler, database og WebSocket
+description: Arkitekturoversikt for 3DPrintForge — stack, moduler, database og WebSocket
 ---
 
 # Teknisk arkitektur

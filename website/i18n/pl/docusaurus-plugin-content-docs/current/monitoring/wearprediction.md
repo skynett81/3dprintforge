@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#wear**
 
 ## Monitorowane komponenty
 
-Bambu Dashboard śledzi zużycie 8 komponentów na drukarkę:
+3DPrintForge śledzi zużycie 8 komponentów na drukarkę:
 
 | Komponent | Główny czynnik zużycia | Typowy czas życia |
 |---|---|---|

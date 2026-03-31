@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: 여러 프린터
-description: Bambu Dashboard에서 여러 Bambu 프린터 설정 및 관리 — 플리트 개요, 큐, 스태거드 스타트
+description: 3DPrintForge에서 여러 Bambu 프린터 설정 및 관리 — 플리트 개요, 큐, 스태거드 스타트
 ---
 
 # 여러 프린터
 
-프린터가 두 대 이상 있나요? Bambu Dashboard는 플리트 관리를 위해 만들어졌습니다 — 한 곳에서 모든 프린터를 모니터링, 제어, 조율할 수 있습니다.
+프린터가 두 대 이상 있나요? 3DPrintForge는 플리트 관리를 위해 만들어졌습니다 — 한 곳에서 모든 프린터를 모니터링, 제어, 조율할 수 있습니다.
 
 ## 새 프린터 추가하기
 

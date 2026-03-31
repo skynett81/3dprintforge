@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Konfiguracja magazynu filamentów
-description: Jak tworzyć, konfigurować i śledzić szpule filamentów w Bambu Dashboard
+description: Jak tworzyć, konfigurować i śledzić szpule filamentów w 3DPrintForge
 ---
 
 # Konfiguracja magazynu filamentów
 
-Magazyn filamentów w Bambu Dashboard daje Ci pełny przegląd wszystkich Twoich szpul — co pozostało, co zużyłeś i które szpule są aktualnie w AMS.
+Magazyn filamentów w 3DPrintForge daje Ci pełny przegląd wszystkich Twoich szpul — co pozostało, co zużyłeś i które szpule są aktualnie w AMS.
 
 ## Automatyczne tworzenie z AMS
 

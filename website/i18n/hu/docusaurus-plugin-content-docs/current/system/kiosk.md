@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kioszk mód
-description: Bambu Dashboard beállítása falra szerelt képernyőként vagy hub nézetként kioszk móddal és automatikus rotációval
+description: 3DPrintForge beállítása falra szerelt képernyőként vagy hub nézetként kioszk móddal és automatikus rotációval
 ---
 
 # Kioszk mód
@@ -96,7 +96,7 @@ Helyezd el a parancsot az autostart mappában (`~/.config/autostart/bambu-kiosk.
    ```
 
 :::tip Dedikált felhasználói fiók
-Hozz létre egy dedikált Bambu Dashboard felhasználói fiókot **Vendég** szerepkörrel a kioszk eszközhöz. Az eszköz csak olvasási hozzáféréssel rendelkezik, és nem módosíthatja a beállításokat, még ha valaki hozzáfér is a képernyőhöz.
+Hozz létre egy dedikált 3DPrintForge felhasználói fiókot **Vendég** szerepkörrel a kioszk eszközhöz. Az eszköz csak olvasási hozzáféréssel rendelkezik, és nem módosíthatja a beállításokat, még ha valaki hozzáfér is a képernyőhöz.
 :::
 
 ## Hub beállítások

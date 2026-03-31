@@ -6,7 +6,7 @@ description: Gerencie usuários, funções, permissões, chaves de API e autenti
 
 # Autenticação
 
-O Bambu Dashboard suporta múltiplos usuários com controle de acesso baseado em funções, chaves de API e autenticação de dois fatores (2FA) opcional via TOTP.
+O 3DPrintForge suporta múltiplos usuários com controle de acesso baseado em funções, chaves de API e autenticação de dois fatores (2FA) opcional via TOTP.
 
 Acesse em: **https://localhost:3443/#settings** → **Usuários e acesso**
 

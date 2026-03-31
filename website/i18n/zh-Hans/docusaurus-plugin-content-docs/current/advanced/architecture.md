@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: 技术架构
-description: Bambu Dashboard 的架构概述——技术栈、模块、数据库和 WebSocket
+description: 3DPrintForge 的架构概述——技术栈、模块、数据库和 WebSocket
 ---
 
 # 技术架构

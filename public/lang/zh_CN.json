@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "需要Broker URL",
     "settings_sub_nodes": "节点",
     "nodes_title": "远程节点",
-    "nodes_desc": "链接其他Bambu Dashboard实例，在本地打印机旁边查看其打印机。远程打印机将在打印机选择器中显示并提供实时状态更新。",
+    "nodes_desc": "链接其他3DPrintForge实例，在本地打印机旁边查看其打印机。远程打印机将在打印机选择器中显示并提供实时状态更新。",
     "nodes_add": "添加远程节点",
     "nodes_none": "未配置远程节点",
     "nodes_printers": "台打印机",

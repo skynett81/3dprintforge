@@ -95,7 +95,7 @@ Değişikliklerle denemeler yaparken çalışan bir profili korumak için «Yeni
 
 ### İçe Aktarma
 1. **Profilleri İçe Aktar**'a tıklayın
-2. Başka bir Bambu Dashboard'dan dışa aktarılmış bir `.json` dosyası seçin
+2. Başka bir 3DPrintForge'dan dışa aktarılmış bir `.json` dosyası seçin
 3. Aynı ada sahip mevcut profiller üzerine yazılabilir veya her ikisi de tutulabilir
 
 ## Profil Paylaşma

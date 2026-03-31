@@ -6,7 +6,7 @@ description: 包含 284+ 端点的 REST API，支持身份验证和速率限制
 
 # API 参考
 
-Bambu Dashboard 提供功能完整的 REST API，包含 284+ 个端点。API 文档可直接在仪表板中查阅。
+3DPrintForge 提供功能完整的 REST API，包含 284+ 个端点。API 文档可直接在仪表板中查阅。
 
 ## 交互式文档
 

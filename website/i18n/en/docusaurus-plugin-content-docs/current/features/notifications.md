@@ -6,7 +6,7 @@ description: Configure notifications via Telegram, Discord, email, webhook, ntfy
 
 # Notifications
 
-Bambu Dashboard supports notifications through a range of channels so you always know what is happening with your printers — whether you are home or on the go.
+3DPrintForge supports notifications through a range of channels so you always know what is happening with your printers — whether you are home or on the go.
 
 Go to: **https://localhost:3443/#settings** → the **Notifications** tab
 
@@ -31,7 +31,7 @@ Go to: **https://localhost:3443/#settings** → the **Notifications** tab
 2. Copy the **bot token** (format: `123456789:ABC-def...`)
 3. Start a conversation with the bot and send `/start`
 4. Find your **Chat ID**: go to `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. In Bambu Dashboard: paste token and Chat ID, click **Test**
+5. In 3DPrintForge: paste token and Chat ID, click **Test**
 
 :::tip Group channel
 You can use a Telegram group as the recipient. Chat IDs for groups start with `-`.
@@ -43,7 +43,7 @@ You can use a Telegram group as the recipient. Chat IDs for groups start with `-
 2. Go to channel settings → **Integrations → Webhooks**
 3. Click **New webhook**, give it a name and select a channel
 4. Copy the webhook URL
-5. Paste the URL in Bambu Dashboard and click **Test**
+5. Paste the URL in 3DPrintForge and click **Test**
 
 ### Email
 
@@ -69,11 +69,11 @@ Use an **App password** for Gmail, not your regular password. Enable 2-factor au
 1. Create an account at [pushover.net](https://pushover.net)
 2. Create a new application — copy the **API Token**
 3. Find your **User Key** on the Pushover dashboard
-4. Fill in both in Bambu Dashboard and click **Test**
+4. Fill in both in 3DPrintForge and click **Test**
 
 ### Webhook (custom)
 
-Bambu Dashboard sends an HTTP POST with a JSON payload:
+3DPrintForge sends an HTTP POST with a JSON payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Receive notifications directly in the browser without an app:
 4. Notifications work even when the dashboard is minimized (requires the tab to be open)
 
 :::info PWA
-Install Bambu Dashboard as a PWA for background push notifications without an open tab. See [PWA](../system/pwa).
+Install 3DPrintForge as a PWA for background push notifications without an open tab. See [PWA](../system/pwa).
 :::

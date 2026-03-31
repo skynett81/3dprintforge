@@ -18,7 +18,7 @@ Tibber is een Noorse energieleverancier met een open API voor spotprijzen.
 
 1. Log in op [developer.tibber.com](https://developer.tibber.com)
 2. Genereer een **Personal Access Token**
-3. In Bambu Dashboard: plak het token onder **Tibber API Token**
+3. In 3DPrintForge: plak het token onder **Tibber API Token**
 4. Selecteer **Woning** (waarvan de prijzen moeten worden opgehaald, als u meerdere woningen heeft)
 5. Klik op **Verbinding testen**
 6. Klik op **Opslaan**

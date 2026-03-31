@@ -6,7 +6,7 @@ description: REST API with 284+ endpoints, authentication, and rate limiting
 
 # API Reference
 
-Bambu Dashboard exposes a full REST API with 284+ endpoints. The API documentation is available directly in the dashboard.
+3DPrintForge exposes a full REST API with 284+ endpoints. The API documentation is available directly in the dashboard.
 
 ## Interactive documentation
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Serveurs distants
-description: Connectez plusieurs instances de Bambu Dashboard pour voir toutes les imprimantes depuis un tableau de bord central
+description: Connectez plusieurs instances de 3DPrintForge pour voir toutes les imprimantes depuis un tableau de bord central
 ---
 
 # Serveurs distants (Remote Nodes)
 
-La fonction Serveurs distants vous permet de connecter plusieurs instances de Bambu Dashboard afin de voir et de contrôler toutes les imprimantes depuis une interface centrale — que celles-ci se trouvent sur le même réseau ou sur des sites différents.
+La fonction Serveurs distants vous permet de connecter plusieurs instances de 3DPrintForge afin de voir et de contrôler toutes les imprimantes depuis une interface centrale — que celles-ci se trouvent sur le même réseau ou sur des sites différents.
 
 Accédez à : **https://localhost:3443/#settings** → **Intégrations → Serveurs distants**
 

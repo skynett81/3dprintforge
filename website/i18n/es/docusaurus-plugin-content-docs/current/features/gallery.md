@@ -12,7 +12,7 @@ Ir a: **https://localhost:3443/#gallery**
 
 ## Capturas en hitos
 
-Bambu Dashboard toma automáticamente una captura de la cámara en los siguientes hitos:
+3DPrintForge toma automáticamente una captura de la cámara en los siguientes hitos:
 
 | Hito | Momento |
 |---|---|

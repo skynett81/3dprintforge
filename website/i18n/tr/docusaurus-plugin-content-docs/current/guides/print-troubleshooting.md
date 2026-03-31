@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Başarısız baskılarda sorun giderme
-description: Bambu Dashboard'un hata günlükleri ve araçlarıyla yaygın baskı hatalarını teşhis edin ve çözün
+description: 3DPrintForge'un hata günlükleri ve araçlarıyla yaygın baskı hatalarını teşhis edin ve çözün
 ---
 
 # Başarısız baskılarda sorun giderme
 
-Bir şeyler mi yanlış gitti? Paniklemeyın — çoğu baskı hatasının basit çözümleri vardır. Bambu Dashboard, nedeni hızlıca bulmanıza yardımcı olur.
+Bir şeyler mi yanlış gitti? Paniklemeyın — çoğu baskı hatasının basit çözümleri vardır. 3DPrintForge, nedeni hızlıca bulmanıza yardımcı olur.
 
 ## Adım 1 — HMS hata kodlarını kontrol edin
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: 기술 아키텍처
-description: Bambu Dashboard의 아키텍처 개요 — 스택, 모듈, 데이터베이스 및 WebSocket
+description: 3DPrintForge의 아키텍처 개요 — 스택, 모듈, 데이터베이스 및 WebSocket
 ---
 
 # 기술 아키텍처

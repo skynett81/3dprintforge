@@ -148,6 +148,6 @@ Ein günstiges digitales Hygrometer zeigt die aktuelle Luftfeuchtigkeit in der B
 - **Getrocknete Spulen beschriften** mit dem Trocknungsdatum
 - **Dediziertes PTFE-Rohr** vom Trockner zum Drucker minimiert die Exposition während des Druckens
 
-## Bambu Dashboard und Trocknungsstatus
+## 3DPrintForge und Trocknungsstatus
 
-Bambu Dashboard ermöglicht das Protokollieren von Filamentinformationen, einschließlich des letzten Trocknungsdatums unter Filamentprofilen. Damit behält man den Überblick, welche Spulen frisch getrocknet sind und welche eine neue Runde benötigen.
+3DPrintForge ermöglicht das Protokollieren von Filamentinformationen, einschließlich des letzten Trocknungsdatums unter Filamentprofilen. Damit behält man den Überblick, welche Spulen frisch getrocknet sind und welche eine neue Runde benötigen.

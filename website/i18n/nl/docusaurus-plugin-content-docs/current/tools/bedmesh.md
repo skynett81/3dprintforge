@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#bedmesh**
 
 ## Wat is bed mesh?
 
-Bambu Lab-printers scannen het oppervlak van het printbed met een probe en maken een kaart (mesh) van hoogteverschillen. De firmware van de printer compenseert deze afwijkingen automatisch tijdens het printen. Bambu Dashboard visualiseert deze kaart voor u.
+Bambu Lab-printers scannen het oppervlak van het printbed met een probe en maken een kaart (mesh) van hoogteverschillen. De firmware van de printer compenseert deze afwijkingen automatisch tijdens het printen. 3DPrintForge visualiseert deze kaart voor u.
 
 ## Visualisatie
 

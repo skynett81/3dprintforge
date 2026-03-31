@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Configurar el stock de filamento
-description: Cómo crear, configurar y hacer seguimiento de tus carretes de filamento en Bambu Dashboard
+description: Cómo crear, configurar y hacer seguimiento de tus carretes de filamento en 3DPrintForge
 ---
 
 # Configurar el stock de filamento
 
-El stock de filamento en Bambu Dashboard te da una visión completa de todos tus carretes — qué queda, qué se ha consumido y qué carretes están en el AMS ahora mismo.
+El stock de filamento en 3DPrintForge te da una visión completa de todos tus carretes — qué queda, qué se ha consumido y qué carretes están en el AMS ahora mismo.
 
 ## Creación automática desde el AMS
 

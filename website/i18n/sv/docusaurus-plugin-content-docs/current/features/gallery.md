@@ -12,7 +12,7 @@ Gå till: **https://localhost:3443/#gallery**
 
 ## Milestone-skärmdumpar
 
-Bambu Dashboard tar automatiskt en skärmdump från kameran vid följande milstolpar:
+3DPrintForge tar automatiskt en skärmdump från kameran vid följande milstolpar:
 
 | Milstolpe | Tidpunkt |
 |---|---|

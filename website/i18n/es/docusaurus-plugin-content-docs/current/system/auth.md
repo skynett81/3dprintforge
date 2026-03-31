@@ -6,7 +6,7 @@ description: Administra usuarios, roles, permisos, claves API y autenticación d
 
 # Autenticación
 
-Bambu Dashboard admite múltiples usuarios con control de acceso basado en roles, claves API y autenticación de dos factores (2FA) opcional mediante TOTP.
+3DPrintForge admite múltiples usuarios con control de acceso basado en roles, claves API y autenticación de dos factores (2FA) opcional mediante TOTP.
 
 Ir a: **https://localhost:3443/#settings** → **Usuarios y acceso**
 

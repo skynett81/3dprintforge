@@ -12,7 +12,7 @@ Vai a: **https://localhost:3443/#waste**
 
 ## Categorie di Spreco
 
-Bambu Dashboard distingue tre tipi di spreco:
+3DPrintForge distingue tre tipi di spreco:
 
 | Categoria | Fonte | Quantità tipica |
 |---|---|---|

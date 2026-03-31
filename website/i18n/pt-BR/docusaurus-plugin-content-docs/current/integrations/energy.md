@@ -18,7 +18,7 @@ O Tibber é um fornecedor de energia com API aberta para preços spot.
 
 1. Faça login em [developer.tibber.com](https://developer.tibber.com)
 2. Gere um **Personal Access Token**
-3. No Bambu Dashboard: cole o token em **Token da API Tibber**
+3. No 3DPrintForge: cole o token em **Token da API Tibber**
 4. Selecione **Casa** (de onde os preços serão obtidos, se você tiver várias casas)
 5. Clique em **Testar conexão**
 6. Clique em **Salvar**

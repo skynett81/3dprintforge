@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: 设置耗材库存
-description: 如何在Bambu Dashboard中创建、配置和跟踪耗材线轴
+description: 如何在3DPrintForge中创建、配置和跟踪耗材线轴
 ---
 
 # 设置耗材库存
 
-Bambu Dashboard中的耗材库存让你全面掌握所有线轴的情况——剩余多少、已使用多少，以及哪些线轴正在AMS中。
+3DPrintForge中的耗材库存让你全面掌握所有线轴的情况——剩余多少、已使用多少，以及哪些线轴正在AMS中。
 
 ## 从AMS自动创建
 

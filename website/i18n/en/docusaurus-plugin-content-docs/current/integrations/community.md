@@ -6,7 +6,7 @@ description: Browse shared filament profiles from the community, contribute your
 
 # Community Filaments
 
-Community Filaments is a shared database of filament profiles contributed by Bambu Dashboard users from around the world. Find the best settings for your filament, and share your own experiences.
+Community Filaments is a shared database of filament profiles contributed by 3DPrintForge users from around the world. Find the best settings for your filament, and share your own experiences.
 
 Go to: **https://localhost:3443/#community**
 

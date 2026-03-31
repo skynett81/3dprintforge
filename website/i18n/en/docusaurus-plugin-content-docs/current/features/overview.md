@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Features Overview
-description: Complete overview of all features in Bambu Dashboard
+description: Complete overview of all features in 3DPrintForge
 ---
 
 # Features Overview
 
-Bambu Dashboard brings everything you need to monitor and control your Bambu Lab printers together in one place.
+3DPrintForge brings everything you need to monitor and control your Bambu Lab printers together in one place.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ See [Controls](./controls) for full documentation.
 
 ## Notifications
 
-Bambu Dashboard supports 7 notification channels:
+3DPrintForge supports 7 notification channels:
 
 | Channel | Events |
 |---------|--------|

@@ -148,6 +148,6 @@ Levný digitální hygrometr zobrazuje aktuální vlhkost vzduchu v boxu:
 - **Označte sušené cívky** datem sušení
 - **Dedikovaná PTFE trubice** od sušičky k tiskárně minimalizuje expozici během tisku
 
-## Bambu Dashboard a stav sušení
+## 3DPrintForge a stav sušení
 
-Bambu Dashboard umožňuje zaznamenávat informace o filamentu včetně data posledního sušení v profilech filamentu. Použijte to ke sledování, které cívky jsou čerstvě vysušené a které potřebují nové kolo.
+3DPrintForge umožňuje zaznamenávat informace o filamentu včetně data posledního sušení v profilech filamentu. Použijte to ke sledování, které cívky jsou čerstvě vysušené a které potřebují nové kolo.

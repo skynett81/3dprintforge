@@ -12,7 +12,7 @@ Go to: **https://localhost:3443/#waste**
 
 ## Waste categories
 
-Bambu Dashboard distinguishes between three types of waste:
+3DPrintForge distinguishes between three types of waste:
 
 | Category | Source | Typical amount |
 |---|---|---|

@@ -38,7 +38,7 @@ Z-offset är höjden mellan munstycket och plattan vid första lagret. För hög
 Justera Z-offset via **Kontroll → Livejustera Z** under utskrift.
 
 :::tip Livejustera under utskrift
-Bambu Dashboard visar Z-offsetjusteringsknappar under aktiv utskrift. Justera i steg om ±0.02 mm medan du tittar på första lagret.
+3DPrintForge visar Z-offsetjusteringsknappar under aktiv utskrift. Justera i steg om ±0.02 mm medan du tittar på första lagret.
 :::
 
 ### 3. Kontrollera bäddtemperatur

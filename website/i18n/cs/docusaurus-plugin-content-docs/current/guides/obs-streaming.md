@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Streamování s OBS
-description: Nastavte Bambu Dashboard jako overlay v OBS Studio pro profesionální streamování 3D tisku
+description: Nastavte 3DPrintForge jako overlay v OBS Studio pro profesionální streamování 3D tisku
 ---
 
 # Streamování 3D tisku do OBS
 
-Bambu Dashboard má vestavěný OBS overlay, který zobrazuje stav tiskárny, průběh, teploty a kamerový přenos přímo ve vašem streamu.
+3DPrintForge má vestavěný OBS overlay, který zobrazuje stav tiskárny, průběh, teploty a kamerový přenos přímo ve vašem streamu.
 
 ## Předpoklady
 
 - Nainstalovaný OBS Studio ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard běžící a připojený k tiskárně
+- 3DPrintForge běžící a připojený k tiskárně
 - (Volitelné) Kamera Bambu aktivovaná pro živý přenos
 
 ## Krok 1 — OBS Browser Source
@@ -63,7 +63,7 @@ Overlay nyní zobrazuje pouze samotný widget — bez bílého nebo černého po
 
 ## Krok 3 — Přizpůsobení overlaye
 
-V Bambu Dashboard můžete nakonfigurovat, co overlay zobrazuje:
+V 3DPrintForge můžete nakonfigurovat, co overlay zobrazuje:
 
 1. Přejděte do **Funkce → OBS overlay**
 2. Nakonfigurujte:
@@ -171,5 +171,5 @@ Kamera Bambu může někdy zamrznout. V panelu v části **Systém → Kamera**:
 - Nebo použijte místo toho hudbu na pozadí / zvuk z chatu
 
 :::tip Automatické přepínání scén
-OBS má vestavěnou podporu přepínání scén na základě názvů. Kombinujte s pluginem (např. obs-websocket) a API Bambu Dashboard pro automatické přepnutí scény při zahájení a ukončení tisku.
+OBS má vestavěnou podporu přepínání scén na základě názvů. Kombinujte s pluginem (např. obs-websocket) a API 3DPrintForge pro automatické přepnutí scény při zahájení a ukončení tisku.
 :::

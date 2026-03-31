@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Plug-insysteem
-description: Maak en installeer plug-ins om Bambu Dashboard uit te breiden
+description: Maak en installeer plug-ins om 3DPrintForge uit te breiden
 ---
 
 # Plug-insysteem
 
-Bambu Dashboard ondersteunt een plug-insysteem waarmee u de functionaliteit kunt uitbreiden zonder de broncode te wijzigen.
+3DPrintForge ondersteunt een plug-insysteem waarmee u de functionaliteit kunt uitbreiden zonder de broncode te wijzigen.
 
 :::info Experimenteel
 Het plug-insysteem is in actieve ontwikkeling. De API kan wijzigen tussen versies.

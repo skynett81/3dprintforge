@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Több nyomtató
-description: Több Bambu nyomtató beállítása és kezelése a Bambu Dashboardban — flottaáttekintés, sor és lépcsőzetes indítás
+description: Több Bambu nyomtató beállítása és kezelése a 3DPrintForgeban — flottaáttekintés, sor és lépcsőzetes indítás
 ---
 
 # Több nyomtató
 
-Van egynél több nyomtatód? A Bambu Dashboard flottakezelésre lett tervezve — egyetlen helyről figyelheted, irányíthatod és koordinálhatod az összes nyomtatót.
+Van egynél több nyomtatód? A 3DPrintForge flottakezelésre lett tervezve — egyetlen helyről figyelheted, irányíthatod és koordinálhatod az összes nyomtatót.
 
 ## Új nyomtató hozzáadása
 

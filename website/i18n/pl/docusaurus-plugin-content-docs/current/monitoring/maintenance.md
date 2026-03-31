@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#maintenance**
 
 ## Plan konserwacji
 
-Bambu Dashboard jest dostarczany z wstępnie skonfigurowanymi interwałami konserwacji dla wszystkich modeli drukarek Bambu Lab:
+3DPrintForge jest dostarczany z wstępnie skonfigurowanymi interwałami konserwacji dla wszystkich modeli drukarek Bambu Lab:
 
 | Zadanie | Interwał (standardowy) | Model |
 |---|---|---|

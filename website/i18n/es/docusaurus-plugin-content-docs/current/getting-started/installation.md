@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Instalación
-description: Instale Bambu Dashboard en su servidor o máquina local
+description: Instale 3DPrintForge en su servidor o máquina local
 ---
 
 # Instalación
@@ -16,7 +16,7 @@ description: Instale Bambu Dashboard en su servidor o máquina local
 | Sistema operativo | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 es obligatorio
-Bambu Dashboard utiliza `--experimental-sqlite` que está integrado en Node.js 22. Las versiones anteriores no son compatibles.
+3DPrintForge utiliza `--experimental-sqlite` que está integrado en Node.js 22. Las versiones anteriores no son compatibles.
 :::
 
 ## Instalación con install.sh (recomendado)
@@ -24,8 +24,8 @@ Bambu Dashboard utiliza `--experimental-sqlite` que está integrado en Node.js 2
 La forma más sencilla es usar el script de instalación interactivo:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ El script le guiará a través de la configuración en el navegador. Para una in
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Instalar dependencias
 npm install
@@ -75,13 +75,13 @@ Para ejecutar el panel como un servicio en segundo plano:
 O manualmente:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Actualización
 
-Bambu Dashboard tiene una actualización automática integrada a través de GitHub Releases. Puede actualizar desde el panel en **Configuración → Actualización**, o manualmente:
+3DPrintForge tiene una actualización automática integrada a través de GitHub Releases. Puede actualizar desde el panel en **Configuración → Actualización**, o manualmente:
 
 ```bash
 git pull

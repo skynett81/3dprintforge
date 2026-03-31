@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Più stampanti
-description: Configura e gestisci più stampanti Bambu in Bambu Dashboard — panoramica fleet, coda e avvio sfalsato
+description: Configura e gestisci più stampanti Bambu in 3DPrintForge — panoramica fleet, coda e avvio sfalsato
 ---
 
 # Più stampanti
 
-Hai più di una stampante? Bambu Dashboard è costruito per la gestione della flotta — puoi monitorare, controllare e coordinare tutte le stampanti da un unico posto.
+Hai più di una stampante? 3DPrintForge è costruito per la gestione della flotta — puoi monitorare, controllare e coordinare tutte le stampanti da un unico posto.
 
 ## Aggiungere una nuova stampante
 

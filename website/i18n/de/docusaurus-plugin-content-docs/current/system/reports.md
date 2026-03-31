@@ -6,7 +6,7 @@ description: Automatische wöchentliche und monatliche E-Mail-Berichte mit Stati
 
 # Berichte
 
-Bambu Dashboard kann automatische E-Mail-Berichte mit Statistiken und Aktivitätszusammenfassungen senden — wöchentlich, monatlich oder beides.
+3DPrintForge kann automatische E-Mail-Berichte mit Statistiken und Aktivitätszusammenfassungen senden — wöchentlich, monatlich oder beides.
 
 Navigieren Sie zu: **https://localhost:3443/#settings** → **System → Berichte**
 
@@ -83,7 +83,7 @@ Der monatliche Bericht deckt die letzten 30 Tage ab und enthält alles aus dem W
 1. Gehen Sie zu **Einstellungen → Berichte → Anpassung**
 2. Abschnitte ein-/ausschalten, die Sie einschließen möchten
 3. **Druckerfilter** auswählen: alle Drucker oder eine Auswahl
-4. **Logodarstellung** auswählen: Bambu Dashboard-Logo in der Kopfzeile anzeigen oder deaktivieren
+4. **Logodarstellung** auswählen: 3DPrintForge-Logo in der Kopfzeile anzeigen oder deaktivieren
 5. Klicken Sie auf **Speichern**
 
 ## Berichtsarchiv

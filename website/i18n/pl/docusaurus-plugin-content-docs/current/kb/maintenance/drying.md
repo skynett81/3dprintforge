@@ -148,6 +148,6 @@ Tani cyfrowy higrometr pokazuje aktualną wilgotność powietrza w pojemniku:
 - **Oznacz suszone szpule** datą suszenia
 - **Specjalna rurka PTFE** od suszarki do drukarki minimalizuje ekspozycję podczas drukowania
 
-## Bambu Dashboard i status suszenia
+## 3DPrintForge i status suszenia
 
-Bambu Dashboard pozwala rejestrować informacje o filamencie, w tym ostatnią datę suszenia, w profilach filamentów. Użyj tego, aby śledzić które szpule są świeżo wysuszone, a które wymagają kolejnej rundy.
+3DPrintForge pozwala rejestrować informacje o filamencie, w tym ostatnią datę suszenia, w profilach filamentów. Użyj tego, aby śledzić które szpule są świeżo wysuszone, a które wymagają kolejnej rundy.

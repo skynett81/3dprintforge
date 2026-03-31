@@ -12,7 +12,7 @@ Gå til: **https://localhost:3443/#gallery**
 
 ## Milestone-screenshots
 
-Bambu Dashboard tar automatisk et screenshot fra kameraet ved følgende milepæler:
+3DPrintForge tar automatisk et screenshot fra kameraet ved følgende milepæler:
 
 | Milepæl | Tidspunkt |
 |---|---|

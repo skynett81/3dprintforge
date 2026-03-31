@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Dagelijks gebruik
-description: Een praktische handleiding voor dagelijks gebruik van Bambu Dashboard — ochtendroutine, bewaking, na het printen en onderhoud
+description: Een praktische handleiding voor dagelijks gebruik van 3DPrintForge — ochtendroutine, bewaking, na het printen en onderhoud
 ---
 
 # Dagelijks gebruik
 
-Deze handleiding behandelt hoe je Bambu Dashboard efficiënt gebruikt in je dagelijkse routine — van het begin van de dag tot het einde.
+Deze handleiding behandelt hoe je 3DPrintForge efficiënt gebruikt in je dagelijkse routine — van het begin van de dag tot het einde.
 
 ## Ochtendroutine
 

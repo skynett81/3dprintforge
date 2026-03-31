@@ -1,18 +1,18 @@
 ---
 sidebar_position: 3
 title: Configurazione Docker
-description: Esegui Bambu Dashboard con Docker e docker-compose
+description: Esegui 3DPrintForge con Docker e docker-compose
 ---
 
 # Configurazione Docker
 
-Bambu Dashboard include un `Dockerfile` e `docker-compose.yml` per una containerizzazione semplice.
+3DPrintForge include un `Dockerfile` e `docker-compose.yml` per una containerizzazione semplice.
 
 ## Avvio Rapido
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 docker-compose up -d
 ```
 
@@ -24,9 +24,9 @@ Apri `https://localhost:3443` nel browser.
 version: '3.8'
 
 services:
-  bambu-dashboard:
+  3dprintforge:
     build: .
-    container_name: bambu-dashboard
+    container_name: 3dprintforge
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -116,13 +116,13 @@ docker-compose pull
 docker-compose up -d --build
 
 # Backup database
-docker cp bambu-dashboard:/app/data/database.db ./backup-$(date +%Y%m%d).db
+docker cp 3dprintforge:/app/data/database.db ./backup-$(date +%Y%m%d).db
 ```
 
 ## Stato di Salute
 
 ```bash
-docker inspect --format='{{.State.Health.Status}}' bambu-dashboard
+docker inspect --format='{{.State.Health.Status}}' 3dprintforge
 ```
 
 Il container riporta `healthy` quando il server è attivo e risponde su `/api/health`.

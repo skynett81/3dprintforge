@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kiosk Modu
-description: Bambu Dashboard'u kiosk modu ve otomatik döndürme ile duvara monte ekran veya hub görünümü olarak ayarlayın
+description: 3DPrintForge'u kiosk modu ve otomatik döndürme ile duvara monte ekran veya hub görünümü olarak ayarlayın
 ---
 
 # Kiosk Modu
@@ -96,7 +96,7 @@ Komutu otomatik başlatmaya ekleyin (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Özel Kullanıcı Hesabı
-Kiosk cihazı için **Misafir** rolüyle özel bir Bambu Dashboard kullanıcı hesabı oluşturun. Bu sayede cihaz yalnızca okuma erişimine sahip olur ve biri ekrana erişse bile ayarları değiştiremez.
+Kiosk cihazı için **Misafir** rolüyle özel bir 3DPrintForge kullanıcı hesabı oluşturun. Bu sayede cihaz yalnızca okuma erişimine sahip olur ve biri ekrana erişse bile ayarları değiştiremez.
 :::
 
 ## Hub Ayarları

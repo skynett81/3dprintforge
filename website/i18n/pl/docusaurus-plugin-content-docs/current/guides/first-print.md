@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Twój pierwszy wydruk
-description: Przewodnik krok po kroku, jak rozpocząć pierwszy wydruk 3D i monitorować go w Bambu Dashboard
+description: Przewodnik krok po kroku, jak rozpocząć pierwszy wydruk 3D i monitorować go w 3DPrintForge
 ---
 
 # Twój pierwszy wydruk
 
-Ten przewodnik przeprowadzi Cię przez cały proces — od podłączonej drukarki do gotowego wydruku — z Bambu Dashboard jako centrum sterowania.
+Ten przewodnik przeprowadzi Cię przez cały proces — od podłączonej drukarki do gotowego wydruku — z 3DPrintForge jako centrum sterowania.
 
 ## Krok 1 — Sprawdź połączenie z drukarką
 
@@ -32,7 +32,7 @@ Tryb LAN zapewnia mniejsze opóźnienia niż tryb chmurowy. Włącz go w ustawie
 
 ## Krok 2 — Prześlij swój model
 
-Bambu Dashboard nie uruchamia wydruków bezpośrednio — to zadanie Bambu Studio lub MakerWorld. Panel przejmuje kontrolę, gdy tylko wydruk się rozpocznie.
+3DPrintForge nie uruchamia wydruków bezpośrednio — to zadanie Bambu Studio lub MakerWorld. Panel przejmuje kontrolę, gdy tylko wydruk się rozpocznie.
 
 **Przez Bambu Studio:**
 1. Otwórz Bambu Studio na swoim komputerze
@@ -83,7 +83,7 @@ Pierwsze 3–5 warstw to moment krytyczny. Słaba przyczepność teraz oznacza n
 :::
 
 ### Print Guard
-Bambu Dashboard posiada oparty na AI **Print Guard**, który automatycznie wykrywa błędy spaghetti i może wstrzymać wydruk. Włącz go w **Monitorowanie → Print Guard**.
+3DPrintForge posiada oparty na AI **Print Guard**, który automatycznie wykrywa błędy spaghetti i może wstrzymać wydruk. Włącz go w **Monitorowanie → Print Guard**.
 
 ## Krok 5 — Po zakończeniu wydruku
 

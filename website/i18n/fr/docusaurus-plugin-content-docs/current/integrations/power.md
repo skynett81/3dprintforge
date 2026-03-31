@@ -27,7 +27,7 @@ Le Shelly Plug S Plus avec firmware 1.0+ est testé et recommandé. Compatible W
 
 ### Prérequis
 
-- La prise Shelly est connectée au même réseau que Bambu Dashboard
+- La prise Shelly est connectée au même réseau que 3DPrintForge
 - Le Shelly est configuré avec une IP statique ou une réservation DHCP
 
 ### Configuration
@@ -50,11 +50,11 @@ L'intervalle de scrutation par défaut est de 10 secondes. Réduisez à 5 pour d
 ## Configuration avec Tasmota
 
 1. Configurez l'appareil Tasmota avec MQTT (voir la documentation Tasmota)
-2. Dans Bambu Dashboard : sélectionnez **Type** : Tasmota
+2. Dans 3DPrintForge : sélectionnez **Type** : Tasmota
 3. Renseignez le topic MQTT de l'appareil : ex. `tasmota/power-plug-1`
 4. Liez à l'imprimante et cliquez sur **Enregistrer**
 
-Bambu Dashboard s'abonne automatiquement à `{topic}/SENSOR` pour les mesures de puissance.
+3DPrintForge s'abonne automatiquement à `{topic}/SENSOR` pour les mesures de puissance.
 
 ## Ce qui est mesuré
 

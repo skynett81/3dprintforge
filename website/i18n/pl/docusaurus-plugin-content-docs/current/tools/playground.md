@@ -6,7 +6,7 @@ description: Testuj wszystkie 177 endpointów API bezpośrednio w przeglądarce 
 
 # Plac zabaw API
 
-Plac zabaw API pozwala eksplorować i testować wszystkie 177 endpointów API Bambu Dashboard bezpośrednio w przeglądarce — bez pisania kodu.
+Plac zabaw API pozwala eksplorować i testować wszystkie 177 endpointów API 3DPrintForge bezpośrednio w przeglądarce — bez pisania kodu.
 
 Przejdź do: **https://localhost:3443/api/docs**
 

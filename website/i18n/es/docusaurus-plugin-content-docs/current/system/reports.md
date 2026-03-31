@@ -6,7 +6,7 @@ description: Informes automáticos semanales y mensuales por correo electrónico
 
 # Informes
 
-Bambu Dashboard puede enviar informes automáticos por correo electrónico con estadísticas y resúmenes de actividad — semanales, mensuales o ambos.
+3DPrintForge puede enviar informes automáticos por correo electrónico con estadísticas y resúmenes de actividad — semanales, mensuales o ambos.
 
 Ir a: **https://localhost:3443/#settings** → **Sistema → Informes**
 
@@ -83,7 +83,7 @@ El informe mensual cubre los últimos 30 días e incluye todo del informe semana
 1. Ve a **Configuración → Informes → Personalización**
 2. Marca / desmarca las secciones que deseas incluir
 3. Selecciona el **Filtro de impresoras**: todas las impresoras o una selección
-4. Selecciona **Mostrar logo**: mostrar el logo de Bambu Dashboard en el encabezado o desactivarlo
+4. Selecciona **Mostrar logo**: mostrar el logo de 3DPrintForge en el encabezado o desactivarlo
 5. Haz clic en **Guardar**
 
 ## Archivo de informes

@@ -6,7 +6,7 @@ description: Test alle 177 API-endepunkter direkte i nettleseren med innebygd Op
 
 # API-lekeplass
 
-API-lekeplassen lar deg utforske og teste alle 177 API-endepunkter i Bambu Dashboard direkte i nettleseren — uten å skrive kode.
+API-lekeplassen lar deg utforske og teste alle 177 API-endepunkter i 3DPrintForge direkte i nettleseren — uten å skrive kode.
 
 Gå til: **https://localhost:3443/api/docs**
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Setting up notifications
-description: Configure Telegram, Discord, email, and push notifications in Bambu Dashboard
+description: Configure Telegram, Discord, email, and push notifications in 3DPrintForge
 ---
 
 # Setting up notifications
 
-Bambu Dashboard can notify you about everything from completed prints to critical errors — via Telegram, Discord, email, or browser push notifications.
+3DPrintForge can notify you about everything from completed prints to critical errors — via Telegram, Discord, email, or browser push notifications.
 
 ## Overview of notification channels
 
@@ -59,7 +59,7 @@ Want to notify an entire group? Add the bot to a Telegram group, find the group 
 2. Right-click on the channel you want alerts in → **Edit channel**
 3. Go to **Integrations → Webhooks**
 4. Click **New Webhook**
-5. Give it a name (e.g. "Bambu Dashboard")
+5. Give it a name (e.g. "3DPrintForge")
 6. Select an avatar (optional)
 7. Click **Copy Webhook URL**
 

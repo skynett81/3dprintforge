@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: フィラメント在庫の設定
-description: Bambu Dashboardでフィラメントスプールを作成、設定、管理する方法
+description: 3DPrintForgeでフィラメントスプールを作成、設定、管理する方法
 ---
 
 # フィラメント在庫の設定
 
-Bambu Dashboardのフィラメント在庫では、すべてのスプールの完全な概要が確認できます — 残量、使用量、現在AMSに入っているスプールなど。
+3DPrintForgeのフィラメント在庫では、すべてのスプールの完全な概要が確認できます — 残量、使用量、現在AMSに入っているスプールなど。
 
 ## AMSからの自動作成
 

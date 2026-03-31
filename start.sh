@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start Bambu Dashboard
+# Start 3DPrintForge
 # Usage: ./start.sh           — normal mode
 #        ./start.sh --demo    — demo mode with 3 mock printers
 cd "$(dirname "$0")"

@@ -19,7 +19,7 @@ Az e-kereskedelmi modul érvényes licencet igényel. A licencek **kizárólag a
 ### Licenc vásárlása
 
 1. Menj a **[geektech.no](https://geektech.no)** oldalra, és hozz létre fiókot
-2. Válaszd a **Bambu Dashboard — E-kereskedelmi licenc** lehetőséget
+2. Válaszd a **3DPrintForge — E-kereskedelmi licenc** lehetőséget
 3. Válassz licenctípust:
 
 | Licenctípus | Leírás | Nyomtatók |
@@ -70,7 +70,7 @@ Több IP-cím és MAC-cím is engedélyezhető (soronként egy a geektech.no adm
    - **Példány-azonosító** (egyedi a telepítésedhez)
 
 :::warning A licenckulcs a domainhez és a telepítéshez van kötve
-A kulcs egy adott Bambu Dashboard telepítéshez és domainhez aktiválódik. Vedd fel a kapcsolatot a [geektech.no](https://geektech.no) támogatással, ha szükséges:
+A kulcs egy adott 3DPrintForge telepítéshez és domainhez aktiválódik. Vedd fel a kapcsolatot a [geektech.no](https://geektech.no) támogatással, ha szükséges:
 - A licenc áthelyezése új szerverre
 - Domain módosítása
 - Nyomtatószám növelése
@@ -223,6 +223,6 @@ Exportálj CSV-be könyvelési rendszerekhez.
 
 :::info Segítségre van szükséged?
 - **Licenckérdések**: vedd fel a kapcsolatot a [geektech.no](https://geektech.no) támogatással
-- **Műszaki problémák**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Funkciókérések**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Műszaki problémák**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Funkciókérések**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

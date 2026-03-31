@@ -1,6 +1,6 @@
 # Installation Guide
 
-Step-by-step guide for installing Bambu Dashboard on your system.
+Step-by-step guide for installing 3DPrintForge on your system.
 
 ---
 
@@ -66,8 +66,8 @@ brew install ffmpeg
 The easiest way to get started. Works on Linux and macOS.
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -96,8 +96,8 @@ The CLI installer will:
 ## Method 2: Manual Install
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 npm install
 ```
 
@@ -150,8 +150,8 @@ Open `https://localhost:3443` in your browser (HTTP on port 3000 redirects autom
 ## Method 3: Docker
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 cp config.example.json config.json
 ```
 
@@ -189,7 +189,7 @@ docker compose down
 ## Method 4: Pterodactyl / wisp.gg
 
 1. In your panel, go to **Nests** > **Import Egg**
-2. Upload `egg-bambu-dashboard.json` from the project root
+2. Upload `egg-3dprintforge.json` from the project root
 3. Create a new server using the imported egg
 4. Configure the startup variables:
    - **Server Port** — must match the allocation port
@@ -208,8 +208,8 @@ The egg automatically installs Node.js 22 and ffmpeg. Reinstalling the server fr
 Try the full dashboard without a real printer:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 npm install
 npm run demo
 ```
@@ -273,9 +273,9 @@ If you have **OrcaSlicer** or **PrusaSlicer** installed, the dashboard can auto-
 If you didn't use `./install.sh --cli` (which offers this automatically):
 
 ```bash
-sudo tee /etc/systemd/system/bambu-dashboard.service > /dev/null <<EOF
+sudo tee /etc/systemd/system/3dprintforge.service > /dev/null <<EOF
 [Unit]
-Description=Bambu Dashboard
+Description=3DPrintForge
 After=network.target
 
 [Service]
@@ -292,13 +292,13 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now bambu-dashboard
+sudo systemctl enable --now 3dprintforge
 ```
 
 Check status:
 ```bash
-sudo systemctl status bambu-dashboard
-sudo journalctl -u bambu-dashboard -f
+sudo systemctl status 3dprintforge
+sudo journalctl -u 3dprintforge -f
 ```
 
 ---
@@ -345,11 +345,11 @@ The dashboard checks for updates every 6 hours. When a new version is available,
 ### Manual (git)
 
 ```bash
-cd bambu-dashboard
+cd 3dprintforge
 git pull
 npm install
 # Restart the server or service
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 ```
 
 ### Docker
@@ -391,4 +391,4 @@ This will:
 | Dashboard blank after update | Clear browser cache (Ctrl+Shift+R) |
 | Cannot write to database | Check file permissions on the `data/` directory |
 
-For more help, open an issue: https://github.com/skynett81/bambu-dashboard/issues
+For more help, open an issue: https://github.com/skynett81/3dprintforge/issues

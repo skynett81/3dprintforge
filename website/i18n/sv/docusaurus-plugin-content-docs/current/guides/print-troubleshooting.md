@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Felsökning av misslyckad utskrift
-description: Diagnostisera och lös vanliga utskriftsfel med hjälp av Bambu Dashboards felloggar och verktyg
+description: Diagnostisera och lös vanliga utskriftsfel med hjälp av 3DPrintForges felloggar och verktyg
 ---
 
 # Felsökning av misslyckad utskrift
 
-Gick något fel? Oroa dig inte — de flesta utskriftsfel har enkla lösningar. Bambu Dashboard hjälper dig att hitta orsaken snabbt.
+Gick något fel? Oroa dig inte — de flesta utskriftsfel har enkla lösningar. 3DPrintForge hjälper dig att hitta orsaken snabbt.
 
 ## Steg 1 — Kontrollera HMS-felkoderna
 

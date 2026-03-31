@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: PWA
-description: Nainstalujte Bambu Dashboard jako Progressive Web App pro zážitek podobný aplikaci, offline režim a oznámení na pozadí
+description: Nainstalujte 3DPrintForge jako Progressive Web App pro zážitek podobný aplikaci, offline režim a oznámení na pozadí
 ---
 
 # PWA (Progressive Web App)
 
-Bambu Dashboard lze nainstalovat jako Progressive Web App (PWA) — zážitek podobný aplikaci přímo z prohlížeče bez obchodu s aplikacemi. Získáte rychlejší přístup, push oznámení na pozadí a omezenou offline funkčnost.
+3DPrintForge lze nainstalovat jako Progressive Web App (PWA) — zážitek podobný aplikaci přímo z prohlížeče bez obchodu s aplikacemi. Získáte rychlejší přístup, push oznámení na pozadí a omezenou offline funkčnost.
 
 ## Instalace jako aplikace
 
@@ -16,9 +16,9 @@ Bambu Dashboard lze nainstalovat jako Progressive Web App (PWA) — zážitek po
 2. Hledejte ikonu **Instalovat** v adresním řádku (šipka dolů s ikonou monitoru)
 3. Klikněte na ni
 4. Klikněte na **Instalovat** v dialogu
-5. Bambu Dashboard se otevře jako samostatné okno bez prohlížečového uživatelského rozhraní
+5. 3DPrintForge se otevře jako samostatné okno bez prohlížečového uživatelského rozhraní
 
-Alternativně: Klikněte na tři tečky (⋮) → **Instalovat Bambu Dashboard...**
+Alternativně: Klikněte na tři tečky (⋮) → **Instalovat 3DPrintForge...**
 
 ### Desktop (Firefox)
 
@@ -75,7 +75,7 @@ Push oznámení vyžadují, aby prohlížeč běžel na pozadí (ne plné vypnut
 
 ## Ikona aplikace a vzhled
 
-PWA automaticky používá ikonu Bambu Dashboard. Pro přizpůsobení:
+PWA automaticky používá ikonu 3DPrintForge. Pro přizpůsobení:
 
 1. Přejděte na **Nastavení → Systém → PWA**
 2. Nahrajte vlastní ikonu (minimálně 512×512 px PNG)

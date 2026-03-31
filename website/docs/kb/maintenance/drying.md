@@ -148,6 +148,6 @@ Et billig digitalt hygrometer viser aktuell luftfuktighet i boksen:
 - **Merk tørkede spoler** med dato for tørking
 - **Dedikert PTFE-rør** fra tørker til printer minimerer eksponering under printing
 
-## Bambu Dashboard og tørkestatus
+## 3DPrintForge og tørkestatus
 
-Bambu Dashboard lar deg logge filamentinformasjon inkludert siste tørkingsdato under filamentprofiler. Bruk dette til å holde oversikt over hvilke spoler som er fersk-tørket og hvilke som trenger en ny runde.
+3DPrintForge lar deg logge filamentinformasjon inkludert siste tørkingsdato under filamentprofiler. Bruk dette til å holde oversikt over hvilke spoler som er fersk-tørket og hvilke som trenger en ny runde.

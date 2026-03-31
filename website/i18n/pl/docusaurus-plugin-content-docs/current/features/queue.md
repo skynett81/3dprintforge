@@ -60,7 +60,7 @@ Przeciągnij i upuść zadania w kolejce, aby ręcznie zmienić kolejność w ra
 
 ## Automatyczne wysyłanie
 
-Gdy **Automatyczne wysyłanie** jest aktywowane, Bambu Dashboard monitoruje wszystkie drukarki i automatycznie wysyła następne zadanie:
+Gdy **Automatyczne wysyłanie** jest aktywowane, 3DPrintForge monitoruje wszystkie drukarki i automatycznie wysyła następne zadanie:
 
 1. Przejdź do **Ustawienia → Kolejka**
 2. Włącz **Automatyczne wysyłanie**

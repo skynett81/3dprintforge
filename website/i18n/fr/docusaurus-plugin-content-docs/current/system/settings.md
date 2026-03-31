@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Paramètres
-description: Vue d'ensemble complète de tous les paramètres de Bambu Dashboard — imprimantes, notifications, thème, OBS, énergie, webhooks et plus
+description: Vue d'ensemble complète de tous les paramètres de 3DPrintForge — imprimantes, notifications, thème, OBS, énergie, webhooks et plus
 ---
 
 # Paramètres
 
-Tous les paramètres de Bambu Dashboard sont regroupés sur une seule page avec des catégories claires. Voici un aperçu de ce qui se trouve dans chaque catégorie.
+Tous les paramètres de 3DPrintForge sont regroupés sur une seule page avec des catégories claires. Voici un aperçu de ce qui se trouve dans chaque catégorie.
 
 Accédez à : **https://localhost:3443/#settings**
 

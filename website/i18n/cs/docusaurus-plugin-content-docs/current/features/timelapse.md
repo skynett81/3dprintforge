@@ -6,7 +6,7 @@ description: Aktivujte automatické záznamy časosběrných videí 3D tisků, s
 
 # Časosběrné video
 
-Bambu Dashboard může automaticky pořizovat snímky během tisku a skládat je do časosběrného videa. Videa se ukládají lokálně a lze je přehrávat přímo v dashboardu.
+3DPrintForge může automaticky pořizovat snímky během tisku a skládat je do časosběrného videa. Videa se ukládají lokálně a lze je přehrávat přímo v dashboardu.
 
 Přejděte na: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ Dashboard automaticky sleduje symlink. Lze použít jakýkoliv disk nebo síťov
 
 Po dokončení tisku se snímky automaticky sloučí do videa pomocí ffmpeg:
 
-1. Bambu Dashboard obdrží událost „tisk dokončen" z MQTT
+1. 3DPrintForge obdrží událost „tisk dokončen" z MQTT
 2. Zavolá se ffmpeg se shromážděnými snímky
 3. Video se uloží do složky úložiště
 4. Stránka časosběrného záznamu se aktualizuje s novým videem

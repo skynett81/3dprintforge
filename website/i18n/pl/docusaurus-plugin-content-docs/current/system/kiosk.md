@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Tryb kiosku
-description: Skonfiguruj Bambu Dashboard jako ekran ścienny lub widok centrum z trybem kiosku i automatyczną rotacją
+description: Skonfiguruj 3DPrintForge jako ekran ścienny lub widok centrum z trybem kiosku i automatyczną rotacją
 ---
 
 # Tryb kiosku
@@ -96,7 +96,7 @@ Dodaj polecenie do autostartu (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Dedykowane konto użytkownika
-Utwórz dedykowane konto Bambu Dashboard z rolą **Gość** dla urządzenia kiosku. Wtedy urządzenie ma tylko dostęp do odczytu i nie może zmieniać ustawień, nawet jeśli ktoś uzyska dostęp do ekranu.
+Utwórz dedykowane konto 3DPrintForge z rolą **Gość** dla urządzenia kiosku. Wtedy urządzenie ma tylko dostęp do odczytu i nie może zmieniać ustawień, nawet jeśli ktoś uzyska dostęp do ekranu.
 :::
 
 ## Ustawienia centrum

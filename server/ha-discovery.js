@@ -9,7 +9,7 @@ let _hub = null;
 let _publishTimer = null;
 let _connected = false;
 const DISCOVERY_PREFIX = 'homeassistant';
-const STATE_PREFIX = 'bambu_dashboard';
+const STATE_PREFIX = 'printforge';
 
 export function initHaDiscovery(hub) {
   _hub = hub;
@@ -57,7 +57,7 @@ function _connect() {
       reconnectPeriod: 10000,
       connectTimeout: 10000,
       clean: true,
-      clientId: `bambu_dashboard_${Date.now().toString(36)}`
+      clientId: `printforge_${Date.now().toString(36)}`
     });
 
     _client.on('connect', () => {
@@ -119,7 +119,7 @@ function _publishPrinterDiscovery(printer) {
     name: printer.name,
     manufacturer: 'Bambu Lab',
     model: printer.model || 'Unknown',
-    via_device: 'bambu_dashboard'
+    via_device: 'printforge'
   };
 
   const sensors = [

@@ -38,7 +38,7 @@ O Z-offset é a altura entre o bico e a chapa na primeira camada. Muito alto = o
 Ajuste o Z-offset via **Controle → Ajuste ao vivo do Z** durante a impressão.
 
 :::tip Ajuste ao vivo durante a impressão
-O Bambu Dashboard exibe botões de ajuste do Z-offset durante a impressão ativa. Ajuste em passos de ±0,02 mm enquanto observa a primeira camada.
+O 3DPrintForge exibe botões de ajuste do Z-offset durante a impressão ativa. Ajuste em passos de ±0,02 mm enquanto observa a primeira camada.
 :::
 
 ### 3. Verifique a temperatura da mesa

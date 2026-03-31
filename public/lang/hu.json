@@ -1743,7 +1743,7 @@
     "ha_mqtt_broker_required": "A közvetítő URL kötelező",
     "settings_sub_nodes": "Csomópontok",
     "nodes_title": "Távoli csomópontok",
-    "nodes_desc": "Kapcsoljon össze más Bambu Dashboard példányokat, hogy helyi nyomtatói mellett lássa az övéiket is. A távoli nyomtatók a nyomtatóválasztóban jelennek meg valós idejű állapotfrissítéssel.",
+    "nodes_desc": "Kapcsoljon össze más 3DPrintForge példányokat, hogy helyi nyomtatói mellett lássa az övéiket is. A távoli nyomtatók a nyomtatóválasztóban jelennek meg valós idejű állapotfrissítéssel.",
     "nodes_add": "Távoli csomópont hozzáadása",
     "nodes_none": "Nincs konfigurált távoli csomópont",
     "nodes_printers": "nyomtató",

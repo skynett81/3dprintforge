@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: 远程服务器
-description: 将多个 Bambu Dashboard 实例连接在一起，从一个中央仪表板查看所有打印机
+description: 将多个 3DPrintForge 实例连接在一起，从一个中央仪表板查看所有打印机
 ---
 
 # 远程服务器（Remote Nodes）
 
-远程服务器功能允许您将多个 Bambu Dashboard 实例连接在一起，从一个统一的界面查看和控制所有打印机——无论它们位于同一网络还是不同地点。
+远程服务器功能允许您将多个 3DPrintForge 实例连接在一起，从一个统一的界面查看和控制所有打印机——无论它们位于同一网络还是不同地点。
 
 访问地址：**https://localhost:3443/#settings** → **集成 → 远程服务器**
 

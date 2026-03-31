@@ -6,7 +6,7 @@ description: Configura notifiche tramite Telegram, Discord, email, webhook, ntfy
 
 # Notifiche
 
-Bambu Dashboard supporta le notifiche attraverso numerosi canali in modo che tu sappia sempre cosa sta succedendo con le tue stampanti — che tu sia a casa o in giro.
+3DPrintForge supporta le notifiche attraverso numerosi canali in modo che tu sappia sempre cosa sta succedendo con le tue stampanti — che tu sia a casa o in giro.
 
 Vai a: **https://localhost:3443/#settings** → scheda **Notifiche**
 
@@ -31,7 +31,7 @@ Vai a: **https://localhost:3443/#settings** → scheda **Notifiche**
 2. Copia il **token bot** (formato: `123456789:ABC-def...`)
 3. Avvia una conversazione con il bot e invia `/start`
 4. Trova il tuo **Chat-ID**: vai a `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. In Bambu Dashboard: incolla il token e il Chat-ID, clicca su **Test**
+5. In 3DPrintForge: incolla il token e il Chat-ID, clicca su **Test**
 
 :::tip Canale di gruppo
 Puoi usare un gruppo Telegram come destinatario. Il Chat-ID per i gruppi inizia con `-`.
@@ -43,7 +43,7 @@ Puoi usare un gruppo Telegram come destinatario. Il Chat-ID per i gruppi inizia 
 2. Vai alle impostazioni del canale → **Integrazioni → Webhook**
 3. Clicca su **Nuovo webhook**, assegnagli un nome e seleziona il canale
 4. Copia l'URL del webhook
-5. Incolla l'URL in Bambu Dashboard e clicca su **Test**
+5. Incolla l'URL in 3DPrintForge e clicca su **Test**
 
 ### Email
 
@@ -69,11 +69,11 @@ Usa una **Password app** per Gmail, non la password normale. Prima attiva l'aute
 1. Crea un account su [pushover.net](https://pushover.net)
 2. Crea una nuova applicazione — copia il **Token API**
 3. Trova la tua **User Key** nel dashboard di Pushover
-4. Inserisci entrambi in Bambu Dashboard e clicca su **Test**
+4. Inserisci entrambi in 3DPrintForge e clicca su **Test**
 
 ### Webhook (personalizzato)
 
-Bambu Dashboard invia una HTTP POST con payload JSON:
+3DPrintForge invia una HTTP POST con payload JSON:
 
 ```json
 {
@@ -128,5 +128,5 @@ Ricevi notifiche direttamente nel browser senza app:
 4. Le notifiche funzionano anche con il dashboard ridotto a icona (richiede la scheda aperta)
 
 :::info PWA
-Installa Bambu Dashboard come PWA per notifiche push in background senza scheda aperta. Vedi [PWA](../system/pwa).
+Installa 3DPrintForge come PWA per notifiche push in background senza scheda aperta. Vedi [PWA](../system/pwa).
 :::

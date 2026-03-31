@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#gallery**
 
 ## Milníkové snímky
 
-Bambu Dashboard automaticky pořizuje snímek z kamery při následujících milnících:
+3DPrintForge automaticky pořizuje snímek z kamery při následujících milnících:
 
 | Milník | Čas |
 |---|---|

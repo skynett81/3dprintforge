@@ -6,7 +6,7 @@ description: Konfigurer varsler via Telegram, Discord, e-post, webhook, ntfy, Pu
 
 # Varsler
 
-Bambu Dashboard støtter varsler gjennom en rekke kanaler slik at du alltid vet hva som skjer med printerne dine — enten du er hjemme eller på farten.
+3DPrintForge støtter varsler gjennom en rekke kanaler slik at du alltid vet hva som skjer med printerne dine — enten du er hjemme eller på farten.
 
 Gå til: **https://localhost:3443/#settings** → fanen **Varsler**
 
@@ -31,7 +31,7 @@ Gå til: **https://localhost:3443/#settings** → fanen **Varsler**
 2. Kopier **bot-token** (format: `123456789:ABC-def...`)
 3. Start en samtale med boten og send `/start`
 4. Finn din **Chat-ID**: gå til `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. I Bambu Dashboard: lim inn token og Chat-ID, klikk **Test**
+5. I 3DPrintForge: lim inn token og Chat-ID, klikk **Test**
 
 :::tip Gruppekanal
 Du kan bruke en Telegram-gruppe som mottaker. Chat-ID for grupper starter med `-`.
@@ -43,7 +43,7 @@ Du kan bruke en Telegram-gruppe som mottaker. Chat-ID for grupper starter med `-
 2. Gå til kanalinnstillinger → **Integrasjoner → Webhooks**
 3. Klikk **Ny webhook**, gi den et navn og velg kanal
 4. Kopier webhook-URL
-5. Lim inn URL i Bambu Dashboard og klikk **Test**
+5. Lim inn URL i 3DPrintForge og klikk **Test**
 
 ### E-post
 
@@ -69,11 +69,11 @@ Bruk **App-passord** for Gmail, ikke vanlig passord. Aktiver 2-faktor-autentiser
 1. Opprett en konto på [pushover.net](https://pushover.net)
 2. Opprett en ny applikasjon — kopier **API Token**
 3. Finn din **User Key** på Pushover-dashboardet
-4. Fyll inn begge i Bambu Dashboard og klikk **Test**
+4. Fyll inn begge i 3DPrintForge og klikk **Test**
 
 ### Webhook (egendefinert)
 
-Bambu Dashboard sender en HTTP POST med JSON-payload:
+3DPrintForge sender en HTTP POST med JSON-payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Motta varsler direkte i nettleseren uten app:
 4. Varsler fungerer selv om dashboardet er minimert (krever at fanen er åpen)
 
 :::info PWA
-Installer Bambu Dashboard som PWA for push-varsler i bakgrunnen uten åpen fane. Se [PWA](../system/pwa).
+Installer 3DPrintForge som PWA for push-varsler i bakgrunnen uten åpen fane. Se [PWA](../system/pwa).
 :::

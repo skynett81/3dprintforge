@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Biztonsági másolat és visszaállítás
-description: A Bambu Dashboard automatikus és manuális biztonsági másolata, visszaállítása és áthelyezése új szerverre
+description: A 3DPrintForge automatikus és manuális biztonsági másolata, visszaállítása és áthelyezése új szerverre
 ---
 
 # Biztonsági másolat és visszaállítás
 
-A Bambu Dashboard az összes adatot helyileg tárolja — nyomtatási előzmények, filamentkészlet, beállítások, felhasználók és egyebek. A rendszeres biztonsági mentés gondoskodik arról, hogy szerverhiba vagy költözés esetén se veszítsünk el semmit.
+A 3DPrintForge az összes adatot helyileg tárolja — nyomtatási előzmények, filamentkészlet, beállítások, felhasználók és egyebek. A rendszeres biztonsági mentés gondoskodik arról, hogy szerverhiba vagy költözés esetén se veszítsünk el semmit.
 
 ## Mit tartalmaznak a biztonsági másolatok?
 
@@ -40,7 +40,7 @@ Alapértelmezés szerint a biztonsági másolat minden éjszaka 03:00-kor fut.
 
 :::info A biztonsági másolat alapértelmezés szerint itt van
 ```
-/path/to/bambu-dashboard/data/backups/
+/path/to/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ Bármikor tegyünk biztonsági másolatot:
 
 **Alternatívul terminálon keresztül:**
 ```bash
-cd /path/to/bambu-dashboard
+cd /path/to/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ Az összes meglévő adat helyébe a biztonsági másolat tartalma kerül. Győz
 ### Terminál által
 
 ```bash
-cd /path/to/bambu-dashboard
+cd /path/to/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Visszaállítás után indítsa újra az irányítópultot:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # vagy
 npm start
 ```
@@ -117,7 +117,7 @@ Az exportált beállítások kényelmessé teszik az új szerverre való átáll
 
 ## Áthelyezés új szerverre
 
-Így helyezheti át a Bambu Dashboard-ot a teljes adatokkal egy új gépre:
+Így helyezheti át a 3DPrintForge-ot a teljes adatokkal egy új gépre:
 
 ### 1. lépés — Biztonsági másolat a régi szerveren
 
@@ -128,8 +128,8 @@ Az exportált beállítások kényelmessé teszik az új szerverre való átáll
 ### 2. lépés — Telepítés az új szerveren
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

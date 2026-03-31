@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Flere printere
-description: Sett opp og administrer flere Bambu-printere i Bambu Dashboard — flåteoversikt, kø og staggered start
+description: Sett opp og administrer flere Bambu-printere i 3DPrintForge — flåteoversikt, kø og staggered start
 ---
 
 # Flere printere
 
-Har du mer enn én printer? Bambu Dashboard er bygget for flåtehåndtering — du kan overvåke, styre og koordinere alle printerene fra ett sted.
+Har du mer enn én printer? 3DPrintForge er bygget for flåtehåndtering — du kan overvåke, styre og koordinere alle printerene fra ett sted.
 
 ## Legge til en ny printer
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: 信息亭模式
-description: 将 Bambu Dashboard 设置为壁挂显示屏或 Hub 视图，支持信息亭模式和自动轮播
+description: 将 3DPrintForge 设置为壁挂显示屏或 Hub 视图，支持信息亭模式和自动轮播
 ---
 
 # 信息亭模式
@@ -96,7 +96,7 @@ chromium-browser \
    ```
 
 :::tip 专用账户
-为信息亭设备创建一个专用 Bambu Dashboard 账户，赋予**访客**角色。这样设备只有只读访问权限，即使有人接触屏幕也无法修改设置。
+为信息亭设备创建一个专用 3DPrintForge 账户，赋予**访客**角色。这样设备只有只读访问权限，即使有人接触屏幕也无法修改设置。
 :::
 
 ## Hub 设置

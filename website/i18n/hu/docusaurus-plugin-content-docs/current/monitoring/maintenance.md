@@ -12,7 +12,7 @@ Navigálj ide: **https://localhost:3443/#maintenance**
 
 ## Karbantartási terv
 
-A Bambu Dashboard előre konfigurált karbantartási intervallumokkal érkezik az összes Bambu Lab nyomtatómodellhez:
+A 3DPrintForge előre konfigurált karbantartási intervallumokkal érkezik az összes Bambu Lab nyomtatómodellhez:
 
 | Feladat | Intervallum (alap) | Modell |
 |---|---|---|

@@ -11,7 +11,7 @@
 
 ### Purpose
 
-A built-in CRM and order management system for 3D print service businesses using Bambu Dashboard. This replaces and extends the existing project/order system (`projects` + `project_invoices` + `project_prints` tables) with a dedicated, customer-centric workflow designed for commercial print farms.
+A built-in CRM and order management system for 3D print service businesses using 3DPrintForge. This replaces and extends the existing project/order system (`projects` + `project_invoices` + `project_prints` tables) with a dedicated, customer-centric workflow designed for commercial print farms.
 
 ### Target Users
 
@@ -1304,7 +1304,7 @@ CRM endpoints should inherit the existing global rate limiting (200 req/min per 
 | Generated invoice PDFs | `data/crm/invoices/{YYYY}/{invoice_number}.pdf` |
 | Company logo | `data/crm/logo.{ext}` |
 
-The `data/` directory is the existing data storage root used by the Bambu Dashboard.
+The `data/` directory is the existing data storage root used by the 3DPrintForge.
 
 ---
 

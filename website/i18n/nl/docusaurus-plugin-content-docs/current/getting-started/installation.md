@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Installatie
-description: Installeer Bambu Dashboard op uw server of lokale computer
+description: Installeer 3DPrintForge op uw server of lokale computer
 ---
 
 # Installatie
@@ -16,7 +16,7 @@ description: Installeer Bambu Dashboard op uw server of lokale computer
 | OS | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 is vereist
-Bambu Dashboard gebruikt `--experimental-sqlite`, ingebouwd in Node.js 22. Oudere versies worden niet ondersteund.
+3DPrintForge gebruikt `--experimental-sqlite`, ingebouwd in Node.js 22. Oudere versies worden niet ondersteund.
 :::
 
 ## Installatie met install.sh (aanbevolen)
@@ -24,8 +24,8 @@ Bambu Dashboard gebruikt `--experimental-sqlite`, ingebouwd in Node.js 22. Ouder
 De eenvoudigste methode is het interactieve installatiescript:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Het script begeleidt u door de installatie in de browser. Voor een terminalgebas
 
 ```bash
 # 1. Kloon de repository
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Installeer afhankelijkheden
 npm install
@@ -75,13 +75,13 @@ Om het dashboard als achtergrondservice te draaien:
 Of handmatig:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Bijwerken
 
-Bambu Dashboard heeft ingebouwde automatische updates via GitHub Releases. U kunt bijwerken vanuit het dashboard onder **Instellingen → Updates**, of handmatig:
+3DPrintForge heeft ingebouwde automatische updates via GitHub Releases. U kunt bijwerken vanuit het dashboard onder **Instellingen → Updates**, of handmatig:
 
 ```bash
 git pull

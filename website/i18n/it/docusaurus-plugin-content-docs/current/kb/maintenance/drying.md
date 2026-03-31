@@ -148,6 +148,6 @@ Un economico igrometro digitale mostra l'umidità relativa attuale nella scatola
 - **Etichettare le bobine essiccate** con la data di essiccazione
 - **Tubo PTFE dedicato** dall'essiccatore alla stampante minimizza l'esposizione durante la stampa
 
-## Bambu Dashboard e stato essiccazione
+## 3DPrintForge e stato essiccazione
 
-Bambu Dashboard consente di registrare informazioni sul filamento, inclusa la data dell'ultima essiccazione, nei profili filamento. Usare questa funzione per tenere traccia di quali bobine sono state essiccate di recente e quali necessitano di un nuovo ciclo.
+3DPrintForge consente di registrare informazioni sul filamento, inclusa la data dell'ultima essiccazione, nei profili filamento. Usare questa funzione per tenere traccia di quali bobine sono state essiccate di recente e quali necessitano di un nuovo ciclo.

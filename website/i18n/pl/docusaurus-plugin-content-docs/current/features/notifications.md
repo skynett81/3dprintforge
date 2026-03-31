@@ -6,7 +6,7 @@ description: Konfiguruj powiadomienia przez Telegram, Discord, e-mail, webhook, 
 
 # Powiadomienia
 
-Bambu Dashboard obsługuje powiadomienia przez wiele kanałów, dzięki czemu zawsze wiesz, co dzieje się z Twoimi drukarkami — czy jesteś w domu, czy w trasie.
+3DPrintForge obsługuje powiadomienia przez wiele kanałów, dzięki czemu zawsze wiesz, co dzieje się z Twoimi drukarkami — czy jesteś w domu, czy w trasie.
 
 Przejdź do: **https://localhost:3443/#settings** → zakładka **Powiadomienia**
 
@@ -31,7 +31,7 @@ Przejdź do: **https://localhost:3443/#settings** → zakładka **Powiadomienia*
 2. Skopiuj **token bota** (format: `123456789:ABC-def...`)
 3. Rozpocznij rozmowę z botem i wyślij `/start`
 4. Znajdź swój **Chat-ID**: przejdź do `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. W Bambu Dashboard: wklej token i Chat-ID, kliknij **Test**
+5. W 3DPrintForge: wklej token i Chat-ID, kliknij **Test**
 
 :::tip Kanał grupowy
 Możesz używać grupy Telegram jako odbiorcy. Chat-ID dla grup zaczyna się od `-`.
@@ -43,7 +43,7 @@ Możesz używać grupy Telegram jako odbiorcy. Chat-ID dla grup zaczyna się od 
 2. Przejdź do ustawień kanału → **Integracje → Webhooks**
 3. Kliknij **Nowy webhook**, nadaj mu nazwę i wybierz kanał
 4. Skopiuj URL webhooka
-5. Wklej URL w Bambu Dashboard i kliknij **Test**
+5. Wklej URL w 3DPrintForge i kliknij **Test**
 
 ### E-mail
 
@@ -69,11 +69,11 @@ Używaj **Hasła aplikacji** dla Gmail, nie zwykłego hasła. Najpierw aktywuj u
 1. Utwórz konto na [pushover.net](https://pushover.net)
 2. Utwórz nową aplikację — skopiuj **token API**
 3. Znajdź swój **User Key** na dashboardzie Pushover
-4. Wypełnij oba pola w Bambu Dashboard i kliknij **Test**
+4. Wypełnij oba pola w 3DPrintForge i kliknij **Test**
 
 ### Webhook (niestandardowy)
 
-Bambu Dashboard wysyła HTTP POST z payloadem JSON:
+3DPrintForge wysyła HTTP POST z payloadem JSON:
 
 ```json
 {
@@ -128,5 +128,5 @@ Otrzymuj powiadomienia bezpośrednio w przeglądarce bez aplikacji:
 4. Powiadomienia działają nawet gdy dashboard jest zminimalizowany (wymaga otwartej karty)
 
 :::info PWA
-Zainstaluj Bambu Dashboard jako PWA, aby otrzymywać powiadomienia push w tle bez otwartej karty. Zobacz [PWA](../system/pwa).
+Zainstaluj 3DPrintForge jako PWA, aby otrzymywać powiadomienia push w tle bez otwartej karty. Zobacz [PWA](../system/pwa).
 :::

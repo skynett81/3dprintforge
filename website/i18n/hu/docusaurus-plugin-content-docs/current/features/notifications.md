@@ -6,7 +6,7 @@ description: Konfiguráld az értesítéseket Telegram, Discord, e-mail, webhook
 
 # Értesítések
 
-A Bambu Dashboard számos csatornán keresztül támogatja az értesítéseket, hogy mindig tudd, mi történik a nyomtatóiddal — akár otthon vagy, akár úton.
+A 3DPrintForge számos csatornán keresztül támogatja az értesítéseket, hogy mindig tudd, mi történik a nyomtatóiddal — akár otthon vagy, akár úton.
 
 Navigálj ide: **https://localhost:3443/#settings** → **Értesítések** fül
 
@@ -31,7 +31,7 @@ Navigálj ide: **https://localhost:3443/#settings** → **Értesítések** fül
 2. Másold a **bot tokent** (formátum: `123456789:ABC-def...`)
 3. Indíts el egy beszélgetést a bottal, és küldd a `/start` parancsot
 4. Keresd meg a **Chat ID-t**: menj a `https://api.telegram.org/bot<TOKEN>/getUpdates` oldalra
-5. A Bambu Dashboardban: illeszd be a tokent és a Chat ID-t, kattints a **Teszt** gombra
+5. A 3DPrintForgeban: illeszd be a tokent és a Chat ID-t, kattints a **Teszt** gombra
 
 :::tip Csoportcsatorna
 Telegram csoportot is használhatsz fogadóként. A csoportok Chat ID-ja `-` jellel kezdődik.
@@ -43,7 +43,7 @@ Telegram csoportot is használhatsz fogadóként. A csoportok Chat ID-ja `-` jel
 2. Navigálj a csatornabeállításokhoz → **Integráció → Webhookok**
 3. Kattints az **Új webhook** gombra, adj neki nevet, és válassz csatornát
 4. Másold a webhook URL-t
-5. Illeszd be az URL-t a Bambu Dashboardba, és kattints a **Teszt** gombra
+5. Illeszd be az URL-t a 3DPrintForgeba, és kattints a **Teszt** gombra
 
 ### E-mail
 
@@ -69,11 +69,11 @@ Használj **Alkalmazásjelszót** a Gmailhez, ne normál jelszót. Először akt
 1. Hozz létre fiókot a [pushover.net](https://pushover.net) oldalon
 2. Hozz létre egy új alkalmazást — másold az **API Token**-t
 3. Keresd meg a **User Key**-t a Pushover dashboardon
-4. Töltsd ki mindkettőt a Bambu Dashboardban, és kattints a **Teszt** gombra
+4. Töltsd ki mindkettőt a 3DPrintForgeban, és kattints a **Teszt** gombra
 
 ### Webhook (egyedi)
 
-A Bambu Dashboard HTTP POST kérést küld JSON-payloaddal:
+A 3DPrintForge HTTP POST kérést küld JSON-payloaddal:
 
 ```json
 {
@@ -128,5 +128,5 @@ Az éjszakai értesítések elkerülése:
 4. Az értesítések működnek, ha a dashboard minimálva van (a fülnek nyitva kell lennie)
 
 :::info PWA
-Telepítsd a Bambu Dashboardot PWA-ként a háttérben futó push értesítésekhez nyitott fül nélkül. Lásd [PWA](../system/pwa).
+Telepítsd a 3DPrintForgeot PWA-ként a háttérben futó push értesítésekhez nyitott fül nélkül. Lásd [PWA](../system/pwa).
 :::

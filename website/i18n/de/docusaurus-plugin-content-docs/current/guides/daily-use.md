@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Tägliche Nutzung
-description: Ein praktischer Leitfaden zur täglichen Nutzung des Bambu Dashboards — Morgenroutine, Überwachung, nach dem Druck und Wartung
+description: Ein praktischer Leitfaden zur täglichen Nutzung des 3DPrintForges — Morgenroutine, Überwachung, nach dem Druck und Wartung
 ---
 
 # Tägliche Nutzung
 
-Dieser Leitfaden beschreibt, wie Sie das Bambu Dashboard effektiv im Alltag nutzen — von Tagesbeginn bis zum Abschalten des Lichts.
+Dieser Leitfaden beschreibt, wie Sie das 3DPrintForge effektiv im Alltag nutzen — von Tagesbeginn bis zum Abschalten des Lichts.
 
 ## Morgenroutine
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Theme
-description: Customize the appearance of Bambu Dashboard with light/dark/auto mode, 6 color palettes, and custom accent color
+description: Customize the appearance of 3DPrintForge with light/dark/auto mode, 6 color palettes, and custom accent color
 ---
 
 # Theme
 
-Bambu Dashboard has a flexible theme system that lets you customize the appearance to your taste and use case.
+3DPrintForge has a flexible theme system that lets you customize the appearance to your taste and use case.
 
 Go to: **https://localhost:3443/#settings** → **Theme**
 
@@ -102,5 +102,5 @@ For kiosk viewing, enable **Compact** + **Dark** + **Reduced animations** for op
 Share your theme with others:
 
 1. Click **Export theme** — downloads a `.json` file
-2. Share the file with other Bambu Dashboard users
+2. Share the file with other 3DPrintForge users
 3. They import it via **Import theme** → select the file

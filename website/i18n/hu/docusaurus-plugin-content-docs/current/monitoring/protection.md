@@ -6,7 +6,7 @@ description: Automatikus figyelés XCam esemény-detektálással, érzékelőfig
 
 # Print Guard
 
-A Print Guard a Bambu Dashboard valós idejű figyelőrendszere. Folyamatosan figyeli a kamerát, érzékelőket és nyomtatóadatokat, és konfigurálható műveleteket hajt végre, ha valami nem stimmel.
+A Print Guard a 3DPrintForge valós idejű figyelőrendszere. Folyamatosan figyeli a kamerát, érzékelőket és nyomtatóadatokat, és konfigurálható műveleteket hajt végre, ha valami nem stimmel.
 
 Navigálj ide: **https://localhost:3443/#protection**
 

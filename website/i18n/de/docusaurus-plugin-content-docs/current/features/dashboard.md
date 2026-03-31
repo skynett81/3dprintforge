@@ -6,7 +6,7 @@ description: Echtzeit-Übersicht des aktiven Druckers mit 3D-Modellansicht, AMS-
 
 # Hauptpanel
 
-Das Hauptpanel ist die zentrale Steuerzentrale im Bambu Dashboard. Es zeigt den Echtzeitstatus des ausgewählten Druckers und ermöglicht das Überwachen, Steuern und Anpassen der Ansicht nach Bedarf.
+Das Hauptpanel ist die zentrale Steuerzentrale im 3DPrintForge. Es zeigt den Echtzeitstatus des ausgewählten Druckers und ermöglicht das Überwachen, Steuern und Anpassen der Ansicht nach Bedarf.
 
 Navigieren Sie zu: **https://localhost:3443/**
 

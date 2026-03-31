@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#wear**
 
 ## Monitorované komponenty
 
-Bambu Dashboard sleduje opotřebení 8 komponent na tiskárnu:
+3DPrintForge sleduje opotřebení 8 komponent na tiskárnu:
 
 | Komponenta | Primární faktor opotřebení | Typická životnost |
 |---|---|---|

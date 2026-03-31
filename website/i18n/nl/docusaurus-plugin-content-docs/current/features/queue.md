@@ -60,7 +60,7 @@ Sleep taken in de wachtrij om de volgorde handmatig te wijzigen binnen hetzelfde
 
 ## Automatische verzending
 
-Wanneer **Automatische verzending** is ingeschakeld, bewaakt Bambu Dashboard alle printers en stuurt de volgende taak automatisch:
+Wanneer **Automatische verzending** is ingeschakeld, bewaakt 3DPrintForge alle printers en stuurt de volgende taak automatisch:
 
 1. Ga naar **Instellingen → Wachtrij**
 2. Schakel **Automatische verzending** in

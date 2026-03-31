@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Configurer le stock de filament
-description: Comment créer, configurer et suivre vos bobines de filament dans Bambu Dashboard
+description: Comment créer, configurer et suivre vos bobines de filament dans 3DPrintForge
 ---
 
 # Configurer le stock de filament
 
-Le stock de filament dans Bambu Dashboard vous donne une vue d'ensemble complète de toutes vos bobines — ce qu'il reste, ce qui a été consommé et quelles bobines sont actuellement dans l'AMS.
+Le stock de filament dans 3DPrintForge vous donne une vue d'ensemble complète de toutes vos bobines — ce qu'il reste, ce qui a été consommé et quelles bobines sont actuellement dans l'AMS.
 
 ## Création automatique depuis l'AMS
 

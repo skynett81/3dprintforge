@@ -6,7 +6,7 @@ description: REST API s 284+ koncovými body, autentizací a omezením počtu po
 
 # Reference API
 
-Bambu Dashboard zpřístupňuje plnohodnotné REST API s 284+ koncovými body. Dokumentace API je dostupná přímo v dashboardu.
+3DPrintForge zpřístupňuje plnohodnotné REST API s 284+ koncovými body. Dokumentace API je dostupná přímo v dashboardu.
 
 ## Interaktivní dokumentace
 

@@ -6,7 +6,7 @@ description: Csatlakoztasd a dashboardot a Bambu Lab Cloudhoz modellek és nyomt
 
 # Bambu Cloud integráció
 
-A Bambu Dashboard csatlakozhat a **Bambu Lab Cloudhoz** modellképek, nyomtatási előzmények és filamentadatok lekéréséhez. A dashboard tökéletesen működik felhőkapcsolat nélkül is, de a cloud integráció extra előnyöket nyújt.
+A 3DPrintForge csatlakozhat a **Bambu Lab Cloudhoz** modellképek, nyomtatási előzmények és filamentadatok lekéréséhez. A dashboard tökéletesen működik felhőkapcsolat nélkül is, de a cloud integráció extra előnyöket nyújt.
 
 ## A cloud integráció előnyei
 

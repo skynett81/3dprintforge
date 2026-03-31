@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Eklenti Sistemi
-description: Bambu Dashboard'u genişletmek için eklentiler oluşturun ve yükleyin
+description: 3DPrintForge'u genişletmek için eklentiler oluşturun ve yükleyin
 ---
 
 # Eklenti Sistemi
 
-Bambu Dashboard, kaynak kodunu değiştirmeden işlevselliği genişletmenize olanak tanıyan bir eklenti sistemini destekler.
+3DPrintForge, kaynak kodunu değiştirmeden işlevselliği genişletmenize olanak tanıyan bir eklenti sistemini destekler.
 
 :::info Deneysel
 Eklenti sistemi aktif geliştirme aşamasındadır. API sürümler arasında değişebilir.

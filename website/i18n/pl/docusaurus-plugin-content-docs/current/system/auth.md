@@ -6,7 +6,7 @@ description: Zarządzaj użytkownikami, rolami, uprawnieniami, kluczami API i uw
 
 # Uwierzytelnianie
 
-Bambu Dashboard obsługuje wielu użytkowników z kontrolą dostępu opartą na rolach, kluczami API i opcjonalnym uwierzytelnianiem dwuskładnikowym (2FA) przez TOTP.
+3DPrintForge obsługuje wielu użytkowników z kontrolą dostępu opartą na rolach, kluczami API i opcjonalnym uwierzytelnianiem dwuskładnikowym (2FA) przez TOTP.
 
 Przejdź do: **https://localhost:3443/#settings** → **Użytkownicy i dostęp**
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Installation
-description: Installieren Sie Bambu Dashboard auf Ihrem Server oder lokalen Computer
+description: Installieren Sie 3DPrintForge auf Ihrem Server oder lokalen Computer
 ---
 
 # Installation
@@ -16,7 +16,7 @@ description: Installieren Sie Bambu Dashboard auf Ihrem Server oder lokalen Comp
 | Betriebssystem | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 ist erforderlich
-Bambu Dashboard verwendet `--experimental-sqlite`, das in Node.js 22 integriert ist. Ältere Versionen werden nicht unterstützt.
+3DPrintForge verwendet `--experimental-sqlite`, das in Node.js 22 integriert ist. Ältere Versionen werden nicht unterstützt.
 :::
 
 ## Installation mit install.sh (empfohlen)
@@ -24,8 +24,8 @@ Bambu Dashboard verwendet `--experimental-sqlite`, das in Node.js 22 integriert 
 Die einfachste Methode ist die Verwendung des interaktiven Installationsskripts:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Das Skript führt Sie durch die Einrichtung im Browser. Für eine terminalbasier
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Abhängigkeiten installieren
 npm install
@@ -75,13 +75,13 @@ So führen Sie das Dashboard als Hintergrunddienst aus:
 Oder manuell:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Aktualisierung
 
-Bambu Dashboard verfügt über eine integrierte Auto-Aktualisierung über GitHub Releases. Sie können das Dashboard unter **Einstellungen → Aktualisierung** aktualisieren oder manuell:
+3DPrintForge verfügt über eine integrierte Auto-Aktualisierung über GitHub Releases. Sie können das Dashboard unter **Einstellungen → Aktualisierung** aktualisieren oder manuell:
 
 ```bash
 git pull

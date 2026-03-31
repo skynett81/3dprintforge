@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Uso diário
-description: Um guia prático para o uso diário do Bambu Dashboard — rotina matinal, monitoramento, após a impressão e manutenção
+description: Um guia prático para o uso diário do 3DPrintForge — rotina matinal, monitoramento, após a impressão e manutenção
 ---
 
 # Uso diário
 
-Este guia cobre como usar o Bambu Dashboard de forma eficiente no dia a dia — do início ao fim do dia.
+Este guia cobre como usar o 3DPrintForge de forma eficiente no dia a dia — do início ao fim do dia.
 
 ## Rotina matinal
 

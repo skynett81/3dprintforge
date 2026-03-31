@@ -48,7 +48,7 @@ function ensureSSLCerts() {
     if (!existsSync(CERTS_DIR)) mkdirSync(CERTS_DIR, { recursive: true });
     execSync(
       `openssl req -x509 -newkey rsa:2048 -keyout "${keyPath}" -out "${certPath}" ` +
-      `-days 365 -nodes -subj "/CN=Bambu Dashboard/O=Local" ` +
+      `-days 365 -nodes -subj "/CN=3DPrintForge/O=Local" ` +
       `-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"`,
       { stdio: 'pipe' }
     );
@@ -579,7 +579,7 @@ async function _sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey) {
   const claims = Buffer.from(JSON.stringify({
     aud: audience,
     exp: Math.floor(Date.now() / 1000) + 3600,
-    sub: 'mailto:noreply@bambu-dashboard.local'
+    sub: 'mailto:noreply@3dprintforge.local'
   })).toString('base64url');
 
   const unsignedToken = `${header}.${claims}`;
@@ -993,7 +993,7 @@ httpServer.listen(PORT, () => {
   const printerCount = manager.getPrinterIds().length + (IS_DEMO ? demoMockPrinters.length : 0);
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
-  console.log(`  ║   Bambu Dashboard v${updater.currentVersion.padEnd(26)}║`);
+  console.log(`  ║   3DPrintForge v${updater.currentVersion.padEnd(26)}║`);
   if (forceHttps) {
     console.log(`  ║   HTTPS: https://localhost:${HTTPS_PORT}                ║`);
     console.log(`  ║   HTTP → HTTPS redirect aktiv               ║`);

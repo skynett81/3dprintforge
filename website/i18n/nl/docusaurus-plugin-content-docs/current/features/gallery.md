@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#gallery**
 
 ## Milestone-screenshots
 
-Bambu Dashboard maakt automatisch een screenshot van de camera bij de volgende mijlpalen:
+3DPrintForge maakt automatisch een screenshot van de camera bij de volgende mijlpalen:
 
 | Mijlpaal | Tijdstip |
 |---|---|

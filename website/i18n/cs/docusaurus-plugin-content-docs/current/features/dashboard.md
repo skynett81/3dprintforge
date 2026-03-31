@@ -6,7 +6,7 @@ description: Přehled aktivní tiskárny v reálném čase se zobrazením 3D mod
 
 # Hlavní panel
 
-Hlavní panel je centrálním řídicím centrem Bambu Dashboard. Zobrazuje stav vybrané tiskárny v reálném čase a umožňuje monitorování, řízení a přizpůsobení zobrazení podle potřeby.
+Hlavní panel je centrálním řídicím centrem 3DPrintForge. Zobrazuje stav vybrané tiskárny v reálném čase a umožňuje monitorování, řízení a přizpůsobení zobrazení podle potřeby.
 
 Přejděte na: **https://localhost:3443/**
 

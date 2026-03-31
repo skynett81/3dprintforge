@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Bambu Dashboard - Uninstaller
+# 3DPrintForge - Uninstaller
 # Removes systemd service, Docker container, and optionally cleans up data/config/certs.
 # Project source files are always kept.
 
@@ -17,7 +17,7 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   echo "Usage: ./uninstall.sh"
   echo ""
   echo "Interactively removes:"
-  echo "  - systemd service (bambu-dashboard)"
+  echo "  - systemd service (3dprintforge)"
   echo "  - Docker container (if running)"
   echo "  - node_modules/"
   echo "  - data/ (database, logs, uploads)"
@@ -29,16 +29,16 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
 fi
 
 echo -e "${BOLD}========================================${NC}"
-echo -e "${BOLD}  Bambu Dashboard - Uninstaller${NC}"
+echo -e "${BOLD}  3DPrintForge - Uninstaller${NC}"
 echo -e "${BOLD}========================================${NC}"
 echo ""
 
 # 1. Stop and remove systemd service
-if [ -f /etc/systemd/system/bambu-dashboard.service ]; then
+if [ -f /etc/systemd/system/3dprintforge.service ]; then
   echo -e "${BOLD}Stopping systemd service...${NC}"
-  sudo systemctl stop bambu-dashboard 2>/dev/null || true
-  sudo systemctl disable bambu-dashboard 2>/dev/null || true
-  sudo rm /etc/systemd/system/bambu-dashboard.service
+  sudo systemctl stop 3dprintforge 2>/dev/null || true
+  sudo systemctl disable 3dprintforge 2>/dev/null || true
+  sudo rm /etc/systemd/system/3dprintforge.service
   sudo systemctl daemon-reload
   echo -e "  ${GREEN}Service removed${NC}"
 else
@@ -49,10 +49,10 @@ echo ""
 
 # 2. Stop Docker container if running
 if command -v docker &>/dev/null; then
-  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^bambu-dashboard$'; then
+  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^3dprintforge$'; then
     echo -e "${BOLD}Stopping Docker container...${NC}"
-    docker stop bambu-dashboard 2>/dev/null || true
-    docker rm bambu-dashboard 2>/dev/null || true
+    docker stop 3dprintforge 2>/dev/null || true
+    docker rm 3dprintforge 2>/dev/null || true
     echo -e "  ${GREEN}Docker container removed${NC}"
     echo ""
   fi

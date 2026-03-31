@@ -12,7 +12,7 @@ Vai a: **https://localhost:3443/#bedmesh**
 
 ## Cos'è il bed mesh?
 
-Le stampanti Bambu Lab eseguono la scansione della superficie del piano con una sonda e creano una mappa (mesh) delle variazioni di altezza. Il firmware della stampante compensa automaticamente le variazioni durante la stampa. Bambu Dashboard visualizza questa mappa per te.
+Le stampanti Bambu Lab eseguono la scansione della superficie del piano con una sonda e creano una mappa (mesh) delle variazioni di altezza. Il firmware della stampante compensa automaticamente le variazioni durante la stampa. 3DPrintForge visualizza questa mappa per te.
 
 ## Visualizzazione
 

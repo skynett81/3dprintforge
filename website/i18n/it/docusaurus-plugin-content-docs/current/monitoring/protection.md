@@ -6,7 +6,7 @@ description: Monitoraggio automatico con rilevamento eventi XCam, monitoraggio s
 
 # Print Guard
 
-Print Guard è il sistema di monitoraggio in tempo reale di Bambu Dashboard. Monitora continuamente la camera, i sensori e i dati della stampante ed esegue azioni configurabili quando qualcosa non va.
+Print Guard è il sistema di monitoraggio in tempo reale di 3DPrintForge. Monitora continuamente la camera, i sensori e i dati della stampante ed esegue azioni configurabili quando qualcosa non va.
 
 Vai a: **https://localhost:3443/#protection**
 

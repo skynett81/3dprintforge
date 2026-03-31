@@ -6,7 +6,7 @@ description: Real-time overview of the active printer with 3D model view, AMS st
 
 # Main Panel
 
-The main panel is the central control center in Bambu Dashboard. It shows real-time status for the selected printer and lets you monitor, control, and customize the view as needed.
+The main panel is the central control center in 3DPrintForge. It shows real-time status for the selected printer and lets you monitor, control, and customize the view as needed.
 
 Go to: **https://localhost:3443/**
 

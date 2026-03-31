@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Home Assistant
-description: Integráld a Bambu Dashboardot a Home Assistanttal MQTT felderítésen, automatizált entitásokon és automatizálási példákon keresztül
+description: Integráld a 3DPrintForgeot a Home Assistanttal MQTT felderítésen, automatizált entitásokon és automatizálási példákon keresztül
 ---
 
 # Home Assistant
@@ -14,7 +14,7 @@ Navigálj ide: **https://localhost:3443/#settings** → **Integrációk → Home
 
 - A Home Assistant fut a hálózatban
 - MQTT broker (Mosquitto) telepítve és konfigurálva a Home Assistantban
-- A Bambu Dashboard és a Home Assistant ugyanazt az MQTT brokert használja
+- A 3DPrintForge és a Home Assistant ugyanazt az MQTT brokert használja
 
 ## MQTT Discovery aktiválása
 
@@ -27,7 +27,7 @@ Navigálj ide: **https://localhost:3443/#settings** → **Integrációk → Home
 4. Állítsd be a **Discovery előtagot**: alapértelmezett `homeassistant`
 5. Kattints a **Mentés és aktiválás** gombra
 
-A Bambu Dashboard most discovery üzeneteket tesz közzé az összes regisztrált nyomtatóhoz.
+A 3DPrintForge most discovery üzeneteket tesz közzé az összes regisztrált nyomtatóhoz.
 
 ## Entitások a Home Assistantban
 
@@ -63,7 +63,7 @@ Az entitás azonosítók a `sensor.{printer_name_slug}_{sensor_id}` mintát köv
 | `{slug}_online` | `on` / `off` |
 
 :::info Megjegyzés
-A gombok (szünet/folytatás/leállítás) nem kerülnek közzétételre MQTT Discovery-n keresztül. Használd a Bambu Dashboard API-t parancsok küldéséhez automatizálásokból.
+A gombok (szünet/folytatás/leállítás) nem kerülnek közzétételre MQTT Discovery-n keresztül. Használd a 3DPrintForge API-t parancsok küldéséhez automatizálásokból.
 :::
 
 ## Automatizálási példák

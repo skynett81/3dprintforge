@@ -6,7 +6,7 @@ description: Test all 177 API endpoints directly in the browser with built-in Op
 
 # API Playground
 
-The API Playground lets you explore and test all 177 API endpoints in Bambu Dashboard directly in the browser — without writing code.
+The API Playground lets you explore and test all 177 API endpoints in 3DPrintForge directly in the browser — without writing code.
 
 Go to: **https://localhost:3443/api/docs**
 

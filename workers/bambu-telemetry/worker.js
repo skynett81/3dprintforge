@@ -1,4 +1,4 @@
-// Bambu Dashboard Telemetry Worker
+// 3DPrintForge Telemetry Worker
 // Cloudflare Worker + D1 — anonymous installation tracking
 
 const CORS_HEADERS = {
@@ -222,7 +222,7 @@ async function handleStatsPage(env) {
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bambu Dashboard — Telemetry</title>
+<title>3DPrintForge — Telemetry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -559,9 +559,9 @@ tr:hover td { background: rgba(18,121,255,0.05); }
 <!-- Header -->
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="header-logo">Bambu Dashboard</a>
+    <a href="/" class="header-logo">3DPrintForge</a>
     <nav class="header-nav">
-      <a href="https://github.com/skynett81/bambu-dashboard">GitHub</a>
+      <a href="https://github.com/skynett81/3dprintforge">GitHub</a>
       <a href="/stats" class="active">Telemetry</a>
       <a href="https://geektech.no">GeekTech</a>
     </nav>
@@ -712,11 +712,11 @@ tr:hover td { background: rgba(18,121,255,0.05); }
 <footer class="footer">
   <div class="footer-inner">
     <div class="footer-links">
-      <a href="https://github.com/skynett81/bambu-dashboard">GitHub</a>
+      <a href="https://github.com/skynett81/3dprintforge">GitHub</a>
       <a href="/stats">JSON API</a>
       <a href="https://geektech.no">GeekTech</a>
     </div>
-    <p class="footer-text">Bambu Dashboard by <a href="https://github.com/skynett81">SkyNett81</a> &middot; Powered by <a href="https://workers.cloudflare.com">Cloudflare Workers</a></p>
+    <p class="footer-text">3DPrintForge by <a href="https://github.com/skynett81">SkyNett81</a> &middot; Powered by <a href="https://workers.cloudflare.com">Cloudflare Workers</a></p>
   </div>
 </footer>
 

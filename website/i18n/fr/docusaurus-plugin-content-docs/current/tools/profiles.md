@@ -95,7 +95,7 @@ Utilisez « Enregistrer comme nouveau » pour conserver un profil fonctionnel pe
 
 ### Import
 1. Cliquez sur **Importer des profils**
-2. Sélectionnez un fichier `.json` exporté depuis un autre Bambu Dashboard
+2. Sélectionnez un fichier `.json` exporté depuis un autre 3DPrintForge
 3. Les profils existants avec le même nom peuvent être écrasés ou conservés tous les deux
 
 ## Partager des profils

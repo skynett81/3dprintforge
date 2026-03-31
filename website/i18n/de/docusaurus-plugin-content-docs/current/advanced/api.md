@@ -6,7 +6,7 @@ description: REST API mit 284+ Endpunkten, Authentifizierung und Rate Limiting
 
 # API-Referenz
 
-Bambu Dashboard stellt ein vollständiges REST API mit 284+ Endpunkten bereit. Die API-Dokumentation ist direkt im Dashboard verfügbar.
+3DPrintForge stellt ein vollständiges REST API mit 284+ Endpunkten bereit. Die API-Dokumentation ist direkt im Dashboard verfügbar.
 
 ## Interaktive Dokumentation
 

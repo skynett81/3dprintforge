@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Streaming com OBS
-description: Configure o Bambu Dashboard como overlay no OBS Studio para streaming profissional de impressão 3D
+description: Configure o 3DPrintForge como overlay no OBS Studio para streaming profissional de impressão 3D
 ---
 
 # Streaming de impressão 3D para o OBS
 
-O Bambu Dashboard tem um overlay OBS integrado que exibe o status da impressora, progresso, temperaturas e feed da câmera diretamente na sua transmissão.
+O 3DPrintForge tem um overlay OBS integrado que exibe o status da impressora, progresso, temperaturas e feed da câmera diretamente na sua transmissão.
 
 ## Pré-requisitos
 
 - OBS Studio instalado ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard rodando e conectado à impressora
+- 3DPrintForge rodando e conectado à impressora
 - (Opcional) Câmera Bambu ativada para feed ao vivo
 
 ## Passo 1 — OBS Browser Source
@@ -63,7 +63,7 @@ O overlay agora exibe apenas o próprio widget — sem fundo branco ou preto.
 
 ## Passo 3 — Personalizar o overlay
 
-No Bambu Dashboard você pode configurar o que o overlay exibe:
+No 3DPrintForge você pode configurar o que o overlay exibe:
 
 1. Vá em **Funcionalidades → Overlay OBS**
 2. Configure:
@@ -171,5 +171,5 @@ Impressoras 3D fazem barulho — especialmente o AMS e o resfriamento. Considere
 - Ou use música de fundo / áudio do chat no lugar
 
 :::tip Troca automática de cena
-O OBS tem suporte integrado para troca de cena com base em títulos. Combine com um plugin (ex.: obs-websocket) e a API do Bambu Dashboard para trocar de cena automaticamente quando uma impressão começa e termina.
+O OBS tem suporte integrado para troca de cena com base em títulos. Combine com um plugin (ex.: obs-websocket) e a API do 3DPrintForge para trocar de cena automaticamente quando uma impressão começa e termina.
 :::

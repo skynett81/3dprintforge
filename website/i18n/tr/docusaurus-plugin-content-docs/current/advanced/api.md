@@ -6,7 +6,7 @@ description: 284+ uç nokta, kimlik doğrulama ve hız sınırlamasıyla REST AP
 
 # API Referansı
 
-Bambu Dashboard, 284'ten fazla uç noktayla tam özellikli bir REST API sunar. API belgeleri doğrudan panoda mevcuttur.
+3DPrintForge, 284'ten fazla uç noktayla tam özellikli bir REST API sunar. API belgeleri doğrudan panoda mevcuttur.
 
 ## İnteraktif Belgeleme
 

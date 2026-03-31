@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Impostazioni
-description: Panoramica completa di tutte le impostazioni di Bambu Dashboard — stampanti, notifiche, tema, OBS, energia, webhook e altro
+description: Panoramica completa di tutte le impostazioni di 3DPrintForge — stampanti, notifiche, tema, OBS, energia, webhook e altro
 ---
 
 # Impostazioni
 
-Tutte le impostazioni di Bambu Dashboard sono raccolte in un'unica pagina con categorie chiare. Ecco una panoramica di cosa si trova in ogni categoria.
+Tutte le impostazioni di 3DPrintForge sono raccolte in un'unica pagina con categorie chiare. Ecco una panoramica di cosa si trova in ogni categoria.
 
 Vai a: **https://localhost:3443/#settings**
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: PWA
-description: Bambu Dashboard'u uygulama benzeri deneyim, çevrimdışı mod ve arka plan bildirimleri için Progresif Web Uygulaması olarak yükleyin
+description: 3DPrintForge'u uygulama benzeri deneyim, çevrimdışı mod ve arka plan bildirimleri için Progresif Web Uygulaması olarak yükleyin
 ---
 
 # PWA (Progresif Web Uygulaması)
 
-Bambu Dashboard, bir Progresif Web Uygulaması (PWA) olarak yüklenebilir — uygulama mağazası olmadan doğrudan tarayıcıdan uygulama benzeri bir deneyim. Daha hızlı erişim, arka planda anlık bildirimler ve sınırlı çevrimdışı işlevsellik elde edersiniz.
+3DPrintForge, bir Progresif Web Uygulaması (PWA) olarak yüklenebilir — uygulama mağazası olmadan doğrudan tarayıcıdan uygulama benzeri bir deneyim. Daha hızlı erişim, arka planda anlık bildirimler ve sınırlı çevrimdışı işlevsellik elde edersiniz.
 
 ## Uygulama Olarak Yükleme
 
@@ -16,9 +16,9 @@ Bambu Dashboard, bir Progresif Web Uygulaması (PWA) olarak yüklenebilir — uy
 2. Adres çubuğunda **Yükle** simgesini arayın (ekran simgeli aşağı ok)
 3. Üzerine tıklayın
 4. İletişim kutusunda **Yükle**'ye tıklayın
-5. Bambu Dashboard tarayıcı arayüzü olmadan ayrı bir pencerede açılır
+5. 3DPrintForge tarayıcı arayüzü olmadan ayrı bir pencerede açılır
 
-Alternatif olarak: Üç noktaya (⋮) tıklayın → **Bambu Dashboard'u yükle...**
+Alternatif olarak: Üç noktaya (⋮) tıklayın → **3DPrintForge'u yükle...**
 
 ### Masaüstü (Firefox)
 
@@ -75,7 +75,7 @@ Anlık bildirimler, tarayıcının arka planda çalışmasını gerektirir (tam 
 
 ## Uygulama Simgesi ve Görünüm
 
-PWA, Bambu Dashboard simgesini otomatik olarak kullanır. Özelleştirmek için:
+PWA, 3DPrintForge simgesini otomatik olarak kullanır. Özelleştirmek için:
 
 1. **Ayarlar → Sistem → PWA**'ya gidin
 2. Özel bir simge yükleyin (minimum 512×512 piksel PNG)

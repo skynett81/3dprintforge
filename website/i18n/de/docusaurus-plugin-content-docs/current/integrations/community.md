@@ -6,7 +6,7 @@ description: Durchsuchen Sie geteilte Filamentprofile der Community, tragen Sie 
 
 # Community-Filamente
 
-Community-Filamente sind eine gemeinsam genutzte Datenbank mit Filamentprofilen, die von Bambu Dashboard-Benutzern aus der ganzen Welt beigetragen wurden. Finden Sie die besten Einstellungen für Ihr Filament und teilen Sie Ihre eigenen Erfahrungen.
+Community-Filamente sind eine gemeinsam genutzte Datenbank mit Filamentprofilen, die von 3DPrintForge-Benutzern aus der ganzen Welt beigetragen wurden. Finden Sie die besten Einstellungen für Ihr Filament und teilen Sie Ihre eigenen Erfahrungen.
 
 Navigieren Sie zu: **https://localhost:3443/#community**
 

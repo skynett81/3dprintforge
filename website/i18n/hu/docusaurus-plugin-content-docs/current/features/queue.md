@@ -60,7 +60,7 @@ Húzd és ejtsd a feladatokat a sorban a sorrend manuális megváltoztatásához
 
 ## Automatikus kiadás
 
-Ha az **Automatikus kiadás** aktiválva van, a Bambu Dashboard figyeli az összes nyomtatót, és automatikusan elküldi a következő feladatot:
+Ha az **Automatikus kiadás** aktiválva van, a 3DPrintForge figyeli az összes nyomtatót, és automatikusan elküldi a következő feladatot:
 
 1. Navigálj a **Beállítások → Sor** menüpontra
 2. Kapcsold be az **Automatikus kiadás** opciót

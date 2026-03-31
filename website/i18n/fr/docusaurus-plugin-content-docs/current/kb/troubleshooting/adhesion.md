@@ -38,7 +38,7 @@ Le décalage Z est la hauteur entre la buse et le plateau pour la première couc
 Ajustez le décalage Z via **Contrôle → Ajuster Z en direct** pendant l'impression.
 
 :::tip Ajustez en direct pendant l'impression
-Bambu Dashboard affiche des boutons d'ajustement du décalage Z pendant une impression active. Ajustez par paliers de ±0,02 mm tout en observant la première couche.
+3DPrintForge affiche des boutons d'ajustement du décalage Z pendant une impression active. Ajustez par paliers de ±0,02 mm tout en observant la première couche.
 :::
 
 ### 3. Vérifiez la température du plateau

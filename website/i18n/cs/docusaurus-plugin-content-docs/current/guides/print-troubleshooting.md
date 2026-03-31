@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Řešení problémů s neúspěšným tiskem
-description: Diagnostikujte a řešte běžné tiskové chyby pomocí protokolů chyb a nástrojů Bambu Dashboard
+description: Diagnostikujte a řešte běžné tiskové chyby pomocí protokolů chyb a nástrojů 3DPrintForge
 ---
 
 # Řešení problémů s neúspěšným tiskem
 
-Něco se pokazilo? Nepanikujte — většina tiskových chyb má jednoduché řešení. Bambu Dashboard vám pomůže rychle najít příčinu.
+Něco se pokazilo? Nepanikujte — většina tiskových chyb má jednoduché řešení. 3DPrintForge vám pomůže rychle najít příčinu.
 
 ## Krok 1 — Zkontrolujte chybové kódy HMS
 

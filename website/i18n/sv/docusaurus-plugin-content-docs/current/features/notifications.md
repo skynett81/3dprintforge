@@ -6,7 +6,7 @@ description: Konfigurera aviseringar via Telegram, Discord, e-post, webhook, ntf
 
 # Aviseringar
 
-Bambu Dashboard stödjer aviseringar via ett antal kanaler så att du alltid vet vad som händer med dina skrivare — oavsett om du är hemma eller på språng.
+3DPrintForge stödjer aviseringar via ett antal kanaler så att du alltid vet vad som händer med dina skrivare — oavsett om du är hemma eller på språng.
 
 Gå till: **https://localhost:3443/#settings** → fliken **Aviseringar**
 
@@ -31,7 +31,7 @@ Gå till: **https://localhost:3443/#settings** → fliken **Aviseringar**
 2. Kopiera **bot-token** (format: `123456789:ABC-def...`)
 3. Starta ett samtal med boten och skicka `/start`
 4. Hitta ditt **Chat-ID**: gå till `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. I Bambu Dashboard: klistra in token och Chat-ID, klicka **Test**
+5. I 3DPrintForge: klistra in token och Chat-ID, klicka **Test**
 
 :::tip Gruppkanal
 Du kan använda en Telegram-grupp som mottagare. Chat-ID för grupper börjar med `-`.
@@ -43,7 +43,7 @@ Du kan använda en Telegram-grupp som mottagare. Chat-ID för grupper börjar me
 2. Gå till kanalinställningar → **Integrationer → Webhooks**
 3. Klicka **Ny webhook**, ge den ett namn och välj kanal
 4. Kopiera webhook-URL
-5. Klistra in URL i Bambu Dashboard och klicka **Test**
+5. Klistra in URL i 3DPrintForge och klicka **Test**
 
 ### E-post
 
@@ -69,11 +69,11 @@ Använd **App-lösenord** för Gmail, inte vanligt lösenord. Aktivera tvåfakto
 1. Skapa ett konto på [pushover.net](https://pushover.net)
 2. Skapa en ny applikation — kopiera **API Token**
 3. Hitta din **User Key** på Pushover-dashboardet
-4. Fyll i båda i Bambu Dashboard och klicka **Test**
+4. Fyll i båda i 3DPrintForge och klicka **Test**
 
 ### Webhook (anpassad)
 
-Bambu Dashboard skickar en HTTP POST med JSON-payload:
+3DPrintForge skickar en HTTP POST med JSON-payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Ta emot aviseringar direkt i webbläsaren utan app:
 4. Aviseringar fungerar även om dashboardet är minimerat (kräver att fliken är öppen)
 
 :::info PWA
-Installera Bambu Dashboard som PWA för push-aviseringar i bakgrunden utan öppen flik. Se [PWA](../system/pwa).
+Installera 3DPrintForge som PWA för push-aviseringar i bakgrunden utan öppen flik. Se [PWA](../system/pwa).
 :::

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Nastavení
-description: Kompletní přehled všech nastavení v Bambu Dashboard — tiskárna, upozornění, téma, OBS, energie, webhooks a další
+description: Kompletní přehled všech nastavení v 3DPrintForge — tiskárna, upozornění, téma, OBS, energie, webhooks a další
 ---
 
 # Nastavení
 
-Všechna nastavení v Bambu Dashboard jsou shromážděna na jedné stránce s přehlednými kategoriemi. Zde je přehled toho, co se nachází v každé kategorii.
+Všechna nastavení v 3DPrintForge jsou shromážděna na jedné stránce s přehlednými kategoriemi. Zde je přehled toho, co se nachází v každé kategorii.
 
 Přejděte na: **https://localhost:3443/#settings**
 

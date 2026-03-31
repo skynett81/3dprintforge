@@ -6,7 +6,7 @@ description: REST API z 284+ endpointami, uwierzytelnianiem i ograniczaniem szyb
 
 # Dokumentacja API
 
-Bambu Dashboard udostępnia kompletne REST API z 284+ endpointami. Dokumentacja API jest dostępna bezpośrednio w dashboardzie.
+3DPrintForge udostępnia kompletne REST API z 284+ endpointami. Dokumentacja API jest dostępna bezpośrednio w dashboardzie.
 
 ## Interaktywna dokumentacja
 

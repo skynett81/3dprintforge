@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Telepítés
-description: Telepítsd a Bambu Dashboardot a szerveredre vagy helyi gépedre
+description: Telepítsd a 3DPrintForgeot a szerveredre vagy helyi gépedre
 ---
 
 # Telepítés
@@ -16,7 +16,7 @@ description: Telepítsd a Bambu Dashboardot a szerveredre vagy helyi gépedre
 | Operációs rendszer | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 szükséges
-A Bambu Dashboard a Node.js 22-be beépített `--experimental-sqlite` parancsot használja. A régebbi verziók nem támogatottak.
+A 3DPrintForge a Node.js 22-be beépített `--experimental-sqlite` parancsot használja. A régebbi verziók nem támogatottak.
 :::
 
 ## Telepítés install.sh segítségével (ajánlott)
@@ -24,8 +24,8 @@ A Bambu Dashboard a Node.js 22-be beépített `--experimental-sqlite` parancsot 
 A legegyszerűbb módszer az interaktív telepítőszkript használata:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ A szkript a böngészőben vezet végig a beállításon. Terminál alapú telep
 
 ```bash
 # 1. Klónozd a repozitóriumot
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Telepítsd a függőségeket
 npm install
@@ -75,13 +75,13 @@ A dashboard háttérszolgáltatásként való futtatásához:
 Vagy manuálisan:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Frissítés
 
-A Bambu Dashboard beépített automatikus frissítéssel rendelkezik a GitHub Releaseseken keresztül. Frissíthetsz a dashboardból a **Beállítások → Frissítés** menüponton, vagy manuálisan:
+A 3DPrintForge beépített automatikus frissítéssel rendelkezik a GitHub Releaseseken keresztül. Frissíthetsz a dashboardból a **Beállítások → Frissítés** menüponton, vagy manuálisan:
 
 ```bash
 git pull

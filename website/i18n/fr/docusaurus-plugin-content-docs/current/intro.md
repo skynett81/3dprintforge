@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Bienvenue sur Bambu Dashboard
+title: Bienvenue sur 3DPrintForge
 description: Un tableau de bord puissant et auto-hébergé pour les imprimantes 3D Bambu Lab
 ---
 
-# Bienvenue sur Bambu Dashboard
+# Bienvenue sur 3DPrintForge
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**Bambu Dashboard** est un panneau de contrôle complet et auto-hébergé pour les imprimantes 3D Bambu Lab. Il vous offre une vue d'ensemble et un contrôle total sur votre imprimante, le stock de filaments, l'historique d'impression et bien plus — le tout depuis un seul onglet de navigateur.
+**3DPrintForge** est un panneau de contrôle complet et auto-hébergé pour les imprimantes 3D Bambu Lab. Il vous offre une vue d'ensemble et un contrôle total sur votre imprimante, le stock de filaments, l'historique d'impression et bien plus — le tout depuis un seul onglet de navigateur.
 
-## Qu'est-ce que Bambu Dashboard ?
+## Qu'est-ce que 3DPrintForge ?
 
-Bambu Dashboard se connecte directement à votre imprimante via MQTT sur le réseau local, sans dépendance aux serveurs Bambu Lab. Vous pouvez également vous connecter à Bambu Cloud pour synchroniser les modèles et l'historique d'impression.
+3DPrintForge se connecte directement à votre imprimante via MQTT sur le réseau local, sans dépendance aux serveurs Bambu Lab. Vous pouvez également vous connecter à Bambu Cloud pour synchroniser les modèles et l'historique d'impression.
 
 ### Fonctionnalités principales
 
@@ -117,7 +117,7 @@ Système de maintenance complet avec :
 
 ## Aperçu technique
 
-Bambu Dashboard est construit avec Node.js 22 et du HTML/CSS/JS natif — pas de frameworks lourds, pas d'étape de compilation. La base de données est SQLite, intégrée à Node.js 22.
+3DPrintForge est construit avec Node.js 22 et du HTML/CSS/JS natif — pas de frameworks lourds, pas d'étape de compilation. La base de données est SQLite, intégrée à Node.js 22.
 
 - **Backend** : Node.js 22 avec seulement 3 paquets npm (mqtt, ws, basic-ftp)
 - **Frontend** : Vanilla HTML/CSS/JS, pas d'étape de compilation

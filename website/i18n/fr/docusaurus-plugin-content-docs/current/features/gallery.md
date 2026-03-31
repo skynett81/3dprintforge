@@ -12,7 +12,7 @@ Accédez à : **https://localhost:3443/#gallery**
 
 ## Captures d'écran aux jalons
 
-Bambu Dashboard prend automatiquement une capture d'écran depuis la caméra aux jalons suivants :
+3DPrintForge prend automatiquement une capture d'écran depuis la caméra aux jalons suivants :
 
 | Jalon | Moment |
 |-------|--------|

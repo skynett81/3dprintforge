@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Datensicherung
-description: Erstellen, wiederherstellen und planen Sie automatische Datensicherungen von Bambu Dashboard-Daten
+description: Erstellen, wiederherstellen und planen Sie automatische Datensicherungen von 3DPrintForge-Daten
 ---
 
 # Datensicherung
 
-Bambu Dashboard kann alle Konfigurationen, den Verlauf und die Daten sichern, sodass Sie bei Systemfehlern, Serverumzügen oder Update-Problemen problemlos wiederherstellen können.
+3DPrintForge kann alle Konfigurationen, den Verlauf und die Daten sichern, sodass Sie bei Systemfehlern, Serverumzügen oder Update-Problemen problemlos wiederherstellen können.
 
 Navigieren Sie zu: **https://localhost:3443/#settings** → **System → Datensicherung**
 
@@ -36,7 +36,7 @@ Navigieren Sie zu: **https://localhost:3443/#settings** → **System → Datensi
 
 Die Sicherung wird als `.zip`-Datei mit Zeitstempel im Dateinamen gespeichert:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Datensicherung herunterladen
@@ -89,7 +89,7 @@ Die Wiederherstellung ersetzt alle vorhandenen Daten durch den Inhalt der Sicher
 
 ## Sicherungsvalidierung
 
-Bambu Dashboard validiert alle Sicherungsdateien vor der Wiederherstellung:
+3DPrintForge validiert alle Sicherungsdateien vor der Wiederherstellung:
 
 - Prüft, ob das ZIP-Format gültig ist
 - Verifiziert, dass das Datenbankschema mit der aktuellen Version kompatibel ist

@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Üdvözöljük a Bambu Dashboard-ban
+title: Üdvözöljük a 3DPrintForge-ban
 description: Egy erőteljes, önállóan üzemeltetett dashboard Bambu Lab 3D nyomtatókhoz
 ---
 
-# Üdvözöljük a Bambu Dashboard-ban
+# Üdvözöljük a 3DPrintForge-ban
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-A **Bambu Dashboard** egy önállóan üzemeltetett, teljes funkcionalitású vezérlőpanel Bambu Lab 3D nyomtatókhoz. Teljes áttekintést és irányítást biztosít a nyomtatója, filament készlete, nyomtatási előzményei és egyebek felett — mindezt egyetlen böngészőlapból.
+A **3DPrintForge** egy önállóan üzemeltetett, teljes funkcionalitású vezérlőpanel Bambu Lab 3D nyomtatókhoz. Teljes áttekintést és irányítást biztosít a nyomtatója, filament készlete, nyomtatási előzményei és egyebek felett — mindezt egyetlen böngészőlapból.
 
-## Mi az a Bambu Dashboard?
+## Mi az a 3DPrintForge?
 
-A Bambu Dashboard közvetlenül csatlakozik a nyomtatójához MQTT-n keresztül LAN-on, a Bambu Lab szervereinek függősége nélkül. Csatlakozhat a Bambu Cloud-hoz is a modellek és a nyomtatási előzmények szinkronizálásához.
+A 3DPrintForge közvetlenül csatlakozik a nyomtatójához MQTT-n keresztül LAN-on, a Bambu Lab szervereinek függősége nélkül. Csatlakozhat a Bambu Cloud-hoz is a modellek és a nyomtatási előzmények szinkronizálásához.
 
 ### Főbb funkciók
 
@@ -117,7 +117,7 @@ Teljes karbantartási rendszer:
 
 ## Technikai áttekintés
 
-A Bambu Dashboard Node.js 22-vel és vanilla HTML/CSS/JS-sel készült — nincsenek nehéz keretrendszerek, nincs build lépés. Az adatbázis SQLite, beépítve a Node.js 22-be.
+A 3DPrintForge Node.js 22-vel és vanilla HTML/CSS/JS-sel készült — nincsenek nehéz keretrendszerek, nincs build lépés. Az adatbázis SQLite, beépítve a Node.js 22-be.
 
 - **Backend**: Node.js 22 mindössze 3 npm csomaggal (mqtt, ws, basic-ftp)
 - **Frontend**: Vanilla HTML/CSS/JS, build lépés nélkül

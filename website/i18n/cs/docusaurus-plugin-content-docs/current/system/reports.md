@@ -6,7 +6,7 @@ description: Automatické týdenní a měsíční e-mailové zprávy se statisti
 
 # Zprávy
 
-Bambu Dashboard může odesílat automatické e-mailové zprávy se statistikami a shrnutím aktivit — týdně, měsíčně nebo obojí.
+3DPrintForge může odesílat automatické e-mailové zprávy se statistikami a shrnutím aktivit — týdně, měsíčně nebo obojí.
 
 Přejděte na: **https://localhost:3443/#settings** → **Systém → Zprávy**
 
@@ -83,7 +83,7 @@ Měsíční zpráva pokrývá posledních 30 dní a obsahuje vše z týdenní zp
 1. Přejděte na **Nastavení → Zprávy → Přizpůsobení**
 2. Zaškrtněte / odškrtněte sekce, které chcete zahrnout
 3. Vyberte **Filtr tiskáren**: všechny tiskárny nebo výběr
-4. Vyberte **Zobrazení loga**: zobrazit logo Bambu Dashboard v záhlaví nebo vypnout
+4. Vyberte **Zobrazení loga**: zobrazit logo 3DPrintForge v záhlaví nebo vypnout
 5. Klikněte na **Uložit**
 
 ## Archiv zpráv

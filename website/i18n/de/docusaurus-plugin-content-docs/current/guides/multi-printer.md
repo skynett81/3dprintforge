@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Mehrere Drucker
-description: Mehrere Bambu-Drucker im Bambu Dashboard einrichten und verwalten — Flottenübersicht, Warteschlange und gestaffelter Start
+description: Mehrere Bambu-Drucker im 3DPrintForge einrichten und verwalten — Flottenübersicht, Warteschlange und gestaffelter Start
 ---
 
 # Mehrere Drucker
 
-Haben Sie mehr als einen Drucker? Bambu Dashboard ist für das Flottenmanagement gebaut — Sie können alle Drucker von einem Ort aus überwachen, steuern und koordinieren.
+Haben Sie mehr als einen Drucker? 3DPrintForge ist für das Flottenmanagement gebaut — Sie können alle Drucker von einem Ort aus überwachen, steuern und koordinieren.
 
 ## Einen neuen Drucker hinzufügen
 

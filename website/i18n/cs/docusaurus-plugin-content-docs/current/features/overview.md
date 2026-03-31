@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Přehled funkcí
-description: Kompletní přehled všech funkcí Bambu Dashboard
+description: Kompletní přehled všech funkcí 3DPrintForge
 ---
 
 # Přehled funkcí
 
-Bambu Dashboard shromažďuje vše, co potřebujete pro monitorování a správu vašich tiskáren Bambu Lab, na jednom místě.
+3DPrintForge shromažďuje vše, co potřebujete pro monitorování a správu vašich tiskáren Bambu Lab, na jednom místě.
 
 ## Dashboard
 
@@ -61,7 +61,7 @@ Viz [Ovládání](./controls) pro úplnou dokumentaci.
 
 ## Oznámení
 
-Bambu Dashboard podporuje 7 kanálů oznámení:
+3DPrintForge podporuje 7 kanálů oznámení:
 
 | Kanál | Události |
 |-------|----------|

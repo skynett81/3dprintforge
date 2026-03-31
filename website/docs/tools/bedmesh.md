@@ -12,7 +12,7 @@ Gå til: **https://localhost:3443/#bedmesh**
 
 ## Hva er bed mesh?
 
-Bambu Lab-printere scanner byggplatens overflate med en probe og lager et kart (mesh) over høydeavvik. Printerens firmware kompenserer automatisk for avvik under printing. Bambu Dashboard visualiserer dette kartet for deg.
+Bambu Lab-printere scanner byggplatens overflate med en probe og lager et kart (mesh) over høydeavvik. Printerens firmware kompenserer automatisk for avvik under printing. 3DPrintForge visualiserer dette kartet for deg.
 
 ## Visualisering
 

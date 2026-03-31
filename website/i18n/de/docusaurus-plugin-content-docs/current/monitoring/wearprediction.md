@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#wear**
 
 ## Überwachte Komponenten
 
-Bambu Dashboard verfolgt den Verschleiß von 8 Komponenten pro Drucker:
+3DPrintForge verfolgt den Verschleiß von 8 Komponenten pro Drucker:
 
 | Komponente | Primärer Verschleißfaktor | Typische Lebensdauer |
 |---|---|---|

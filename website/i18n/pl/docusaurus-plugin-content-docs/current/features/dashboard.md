@@ -6,7 +6,7 @@ description: Przegląd w czasie rzeczywistym aktywnej drukarki z podglądem mode
 
 # Panel główny
 
-Panel główny jest centralnym centrum sterowania w Bambu Dashboard. Wyświetla status w czasie rzeczywistym dla wybranej drukarki i pozwala monitorować, sterować i dostosowywać widok według potrzeb.
+Panel główny jest centralnym centrum sterowania w 3DPrintForge. Wyświetla status w czasie rzeczywistym dla wybranej drukarki i pozwala monitorować, sterować i dostosowywać widok według potrzeb.
 
 Przejdź do: **https://localhost:3443/**
 

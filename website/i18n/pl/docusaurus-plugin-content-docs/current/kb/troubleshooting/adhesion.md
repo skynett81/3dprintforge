@@ -38,7 +38,7 @@ Przesunięcie Z to wysokość między dyszą a płytą przy pierwszej warstwie. 
 Dostosuj przesunięcie Z przez **Sterowanie → Dostosuj Z na żywo** podczas drukowania.
 
 :::tip Dostosuj na żywo podczas drukowania
-Bambu Dashboard pokazuje przyciski dostosowania przesunięcia Z podczas aktywnego drukowania. Dostosuj krokami ±0,02 mm obserwując pierwszą warstwę.
+3DPrintForge pokazuje przyciski dostosowania przesunięcia Z podczas aktywnego drukowania. Dostosuj krokami ±0,02 mm obserwując pierwszą warstwę.
 :::
 
 ### 3. Sprawdź temperaturę stołu

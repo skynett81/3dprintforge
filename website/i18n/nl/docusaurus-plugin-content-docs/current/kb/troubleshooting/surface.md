@@ -287,4 +287,4 @@ voordat de print start — open de deur niet tijdens het printen
 2. **Droog eerst het filament** — veel oppervlaktefouten zijn eigenlijk vochtproblemen
 3. **Reinig de nozzle** — gedeeltelijke verstopping geeft inconsistente oppervlaktefouten die moeilijk te diagnosticeren zijn
 4. **Voer een volledige kalibrering uit** via het onderhoudsmenu van Bambu Studio na grote aanpassingen
-5. **Gebruik Bambu Dashboard** om bij te houden welke instellingen het beste resultaat gaven over tijd
+5. **Gebruik 3DPrintForge** om bij te houden welke instellingen het beste resultaat gaven over tijd

@@ -12,7 +12,7 @@ Accédez à : **https://localhost:3443/#bedmesh**
 
 ## Qu'est-ce que le bed mesh ?
 
-Les imprimantes Bambu Lab scannent la surface du plateau avec une sonde et créent une carte (mesh) des écarts de hauteur. Le firmware de l'imprimante compense automatiquement ces écarts pendant l'impression. Bambu Dashboard visualise cette carte pour vous.
+Les imprimantes Bambu Lab scannent la surface du plateau avec une sonde et créent une carte (mesh) des écarts de hauteur. Le firmware de l'imprimante compense automatiquement ces écarts pendant l'impression. 3DPrintForge visualise cette carte pour vous.
 
 ## Visualisation
 

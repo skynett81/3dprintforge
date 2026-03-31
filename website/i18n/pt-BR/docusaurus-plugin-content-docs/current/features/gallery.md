@@ -12,7 +12,7 @@ Acesse em: **https://localhost:3443/#gallery**
 
 ## Capturas de tela de marcos
 
-O Bambu Dashboard tira automaticamente uma captura de tela da câmera nos seguintes marcos:
+O 3DPrintForge tira automaticamente uma captura de tela da câmera nos seguintes marcos:
 
 | Marco | Momento |
 |-------|---------|

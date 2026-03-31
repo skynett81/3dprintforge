@@ -287,4 +287,4 @@ a nyomtatás megkezdése előtt — ne nyissa ki az ajtót nyomtatás közben
 2. **Először szárítsa meg a filamentet** — sok felületi hiba valójában nedvesség tünete
 3. **Tisztítsa meg a fúvókát** — a részleges eltömődés következetlen felületi hibákat okoz, amelyek nehezen diagnosztizálhatók
 4. **Futtasson teljes kalibrálást** a Bambu Studio karbantartási menüjéből nagyobb beállítások után
-5. **Használja a Bambu Dashboard-ot** annak nyomon követéséhez, hogy mely beállítások adták a legjobb eredményt idővel
+5. **Használja a 3DPrintForge-ot** annak nyomon követéséhez, hogy mely beállítások adták a legjobb eredményt idővel

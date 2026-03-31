@@ -287,4 +287,4 @@ innan utskrift startar — öppna inte dörren under utskrift
 2. **Torka filamenten först** — många ytfel är egentligen fuktsymptom
 3. **Rensa munstycket** — delvis blockering ger inkonsekvent ytfel som är svåra att diagnostisera
 4. **Kör fullständig kalibrering** från Bambu Studios underhållsmeny efter större justeringar
-5. **Använd Bambu Dashboard** för att spåra vilka inställningar som gav bäst resultat över tid
+5. **Använd 3DPrintForge** för att spåra vilka inställningar som gav bäst resultat över tid

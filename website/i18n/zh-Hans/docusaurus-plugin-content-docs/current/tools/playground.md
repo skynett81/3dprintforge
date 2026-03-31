@@ -6,7 +6,7 @@ description: 直接在浏览器中测试所有 177 个 API 端点，内置 OpenA
 
 # API 试验场
 
-API 试验场让您直接在浏览器中探索和测试 Bambu Dashboard 的所有 177 个 API 端点——无需编写代码。
+API 试验场让您直接在浏览器中探索和测试 3DPrintForge 的所有 177 个 API 端点——无需编写代码。
 
 访问地址：**https://localhost:3443/api/docs**
 

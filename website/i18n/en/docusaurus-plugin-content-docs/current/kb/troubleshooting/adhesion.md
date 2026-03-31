@@ -38,7 +38,7 @@ Z-offset is the height between the nozzle and the plate at the first layer. Too 
 Adjust Z-offset via **Controls → Live Adjust Z** during printing.
 
 :::tip Live-adjust while printing
-Bambu Dashboard shows Z-offset adjustment buttons during an active print. Adjust in steps of ±0.02 mm while watching the first layer.
+3DPrintForge shows Z-offset adjustment buttons during an active print. Adjust in steps of ±0.02 mm while watching the first layer.
 :::
 
 ### 3. Check bed temperature

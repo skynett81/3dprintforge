@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#bedmesh**
 
 ## Czym jest bed mesh?
 
-Drukarki Bambu Lab skanują powierzchnię płyty roboczej sondą i tworzą mapę (mesh) odchyleń wysokości. Oprogramowanie drukarki automatycznie kompensuje odchylenia podczas drukowania. Bambu Dashboard wizualizuje tę mapę.
+Drukarki Bambu Lab skanują powierzchnię płyty roboczej sondą i tworzą mapę (mesh) odchyleń wysokości. Oprogramowanie drukarki automatycznie kompensuje odchylenia podczas drukowania. 3DPrintForge wizualizuje tę mapę.
 
 ## Wizualizacja
 

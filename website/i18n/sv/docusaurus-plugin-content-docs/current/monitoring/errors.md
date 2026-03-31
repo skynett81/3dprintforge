@@ -6,13 +6,13 @@ description: Komplett översikt över HMS-felkoder från skrivarna med allvarlig
 
 # Fellogg
 
-Fellogggen samlar alla fel och HMS-varningar (Health, Maintenance, Safety) från dina skrivare. Bambu Dashboard har en inbyggd databas med 269+ HMS-koder för Bambu Lab-skrivare.
+Fellogggen samlar alla fel och HMS-varningar (Health, Maintenance, Safety) från dina skrivare. 3DPrintForge har en inbyggd databas med 269+ HMS-koder för Bambu Lab-skrivare.
 
 Gå till: **https://localhost:3443/#errors**
 
 ## HMS-koder
 
-Bambu Lab-skrivare skickar HMS-koder via MQTT när något är fel. Bambu Dashboard översätter dessa automatiskt till läsbara felmeddelanden:
+Bambu Lab-skrivare skickar HMS-koder via MQTT när något är fel. 3DPrintForge översätter dessa automatiskt till läsbara felmeddelanden:
 
 | Kod | Exempel | Kategori |
 |---|---|---|
@@ -59,7 +59,7 @@ För varje HMS-kod visas en länk till Bambu Lab Wiki med:
 Klicka **Öppna wiki** på en felpost för att öppna den relevanta wiki-sidan i en ny flik.
 
 :::tip Lokal kopia
-Bambu Dashboard cachar wiki-innehållet lokalt för offlineanvändning. Innehållet uppdateras veckovis automatiskt.
+3DPrintForge cachar wiki-innehållet lokalt för offlineanvändning. Innehållet uppdateras veckovis automatiskt.
 :::
 
 ## Kvittera fel

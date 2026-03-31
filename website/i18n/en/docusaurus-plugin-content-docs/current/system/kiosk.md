@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kiosk Mode
-description: Set up Bambu Dashboard as a wall-mounted display or hub view with kiosk mode and automatic rotation
+description: Set up 3DPrintForge as a wall-mounted display or hub view with kiosk mode and automatic rotation
 ---
 
 # Kiosk Mode
@@ -96,7 +96,7 @@ Add the command to autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Dedicated user account
-Create a dedicated Bambu Dashboard user account with the **Guest** role for the kiosk device. This gives the device read-only access and it cannot change settings even if someone gains access to the screen.
+Create a dedicated 3DPrintForge user account with the **Guest** role for the kiosk device. This gives the device read-only access and it cannot change settings even if someone gains access to the screen.
 :::
 
 ## Hub settings

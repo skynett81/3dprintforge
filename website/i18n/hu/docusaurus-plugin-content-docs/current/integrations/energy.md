@@ -18,7 +18,7 @@ A Tibber egy norvég energiaszolgáltató nyílt API-val a spot árakhoz.
 
 1. Jelentkezz be a [developer.tibber.com](https://developer.tibber.com) oldalon
 2. Generálj egy **Personal Access Token**-t
-3. A Bambu Dashboardban: illeszd be a tokent a **Tibber API Token** mezőbe
+3. A 3DPrintForgeban: illeszd be a tokent a **Tibber API Token** mezőbe
 4. Válassz **Otthont** (ahonnan az árakat lekéred, ha több otthonod van)
 5. Kattints a **Kapcsolat tesztelése** gombra
 6. Kattints a **Mentés** gombra

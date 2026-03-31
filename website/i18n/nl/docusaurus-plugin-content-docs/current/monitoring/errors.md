@@ -6,13 +6,13 @@ description: Volledig overzicht van HMS-foutcodes van de printers met ernstnivea
 
 # Foutlogboek
 
-Het foutlogboek verzamelt alle fouten en HMS-meldingen (Health, Maintenance, Safety) van uw printers. Bambu Dashboard heeft een ingebouwde database met 269+ HMS-codes voor Bambu Lab-printers.
+Het foutlogboek verzamelt alle fouten en HMS-meldingen (Health, Maintenance, Safety) van uw printers. 3DPrintForge heeft een ingebouwde database met 269+ HMS-codes voor Bambu Lab-printers.
 
 Ga naar: **https://localhost:3443/#errors**
 
 ## HMS-codes
 
-Bambu Lab-printers sturen HMS-codes via MQTT wanneer er iets mis is. Bambu Dashboard vertaalt deze automatisch naar leesbare foutmeldingen:
+Bambu Lab-printers sturen HMS-codes via MQTT wanneer er iets mis is. 3DPrintForge vertaalt deze automatisch naar leesbare foutmeldingen:
 
 | Code | Voorbeeld | Categorie |
 |---|---|---|
@@ -59,7 +59,7 @@ Voor elke HMS-code wordt een koppeling naar de Bambu Lab Wiki getoond met:
 Klik **Wiki openen** bij een foutvermelding om de betreffende wiki-pagina in een nieuw tabblad te openen.
 
 :::tip Lokale kopie
-Bambu Dashboard slaat de wiki-inhoud lokaal op voor offline gebruik. De inhoud wordt wekelijks automatisch bijgewerkt.
+3DPrintForge slaat de wiki-inhoud lokaal op voor offline gebruik. De inhoud wordt wekelijks automatisch bijgewerkt.
 :::
 
 ## Fouten bevestigen

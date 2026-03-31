@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "L'URL du broker est requise",
     "settings_sub_nodes": "Nœuds",
     "nodes_title": "Nœuds externes",
-    "nodes_desc": "Connectez-vous à d'autres instances de Bambu Dashboard pour afficher leurs imprimantes avec les vôtres. Les imprimantes externes apparaissent dans le sélecteur avec le statut en temps réel.",
+    "nodes_desc": "Connectez-vous à d'autres instances de 3DPrintForge pour afficher leurs imprimantes avec les vôtres. Les imprimantes externes apparaissent dans le sélecteur avec le statut en temps réel.",
     "nodes_add": "Ajouter un nœud externe",
     "nodes_none": "Aucun nœud externe configuré",
     "nodes_printers": "imprimantes",

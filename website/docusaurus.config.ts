@@ -3,8 +3,8 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Bambu Dashboard',
-  tagline: '3D-printer dashboard for Bambu Lab printere',
+  title: '3DPrintForge',
+  tagline: 'Self-hosted dashboard for all 3D printers',
   favicon: 'img/favicon.svg',
 
   headTags: [
@@ -27,7 +27,7 @@ const config: Config = {
   baseUrl: process.env.DOCUSAURUS_BASE_URL || '/docs/',
 
   organizationName: 'skynett81',
-  projectName: 'bambu-dashboard',
+  projectName: '3dprintforge',
   trailingSlash: false,
   deploymentBranch: 'gh-pages',
 
@@ -65,12 +65,12 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',
-          editUrl: 'https://github.com/skynett81/bambu-dashboard/tree/main/website/',
+          editUrl: 'https://github.com/skynett81/3dprintforge/tree/main/website/',
         },
         blog: {
           showReadingTime: true,
           blogTitle: 'Oppdateringer',
-          blogDescription: 'Siste nytt fra Bambu Dashboard',
+          blogDescription: 'Siste nytt fra 3DPrintForge',
           blogSidebarTitle: 'Siste innlegg',
           feedOptions: {
             type: ['rss', 'atom'],
@@ -92,9 +92,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Bambu Dashboard',
+      title: '3DPrintForge',
       logo: {
-        alt: 'Bambu Dashboard',
+        alt: '3DPrintForge',
         src: 'img/logo.svg',
       },
       items: [
@@ -121,7 +121,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/skynett81/bambu-dashboard',
+          href: 'https://github.com/skynett81/3dprintforge',
           label: 'GitHub',
           position: 'right',
         },
@@ -155,13 +155,13 @@ const config: Config = {
           title: 'Lenker',
           items: [
             { label: 'Dashboard', href: 'https://localhost:3443' },
-            { label: 'GitHub', href: 'https://github.com/skynett81/bambu-dashboard' },
+            { label: 'GitHub', href: 'https://github.com/skynett81/3dprintforge' },
             { label: 'MakerWorld', href: 'https://makerworld.com' },
             { label: '☕ Support on Ko-fi', href: 'https://ko-fi.com/V7V21NRKM7' },
           ],
         },
       ],
-      copyright: `Bambu Dashboard v1.1.14 — ${new Date().getFullYear()}`,
+      copyright: `3DPrintForge v1.1.14 — ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

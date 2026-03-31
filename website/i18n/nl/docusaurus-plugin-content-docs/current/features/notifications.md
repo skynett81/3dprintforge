@@ -6,7 +6,7 @@ description: Configureer meldingen via Telegram, Discord, e-mail, webhook, ntfy,
 
 # Meldingen
 
-Bambu Dashboard ondersteunt meldingen via verschillende kanalen, zodat u altijd weet wat er met uw printers gebeurt — of u nu thuis bent of onderweg.
+3DPrintForge ondersteunt meldingen via verschillende kanalen, zodat u altijd weet wat er met uw printers gebeurt — of u nu thuis bent of onderweg.
 
 Ga naar: **https://localhost:3443/#settings** → tabblad **Meldingen**
 
@@ -31,7 +31,7 @@ Ga naar: **https://localhost:3443/#settings** → tabblad **Meldingen**
 2. Kopieer het **bot-token** (formaat: `123456789:ABC-def...`)
 3. Start een gesprek met de bot en stuur `/start`
 4. Zoek uw **Chat-ID**: ga naar `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. In Bambu Dashboard: plak het token en de Chat-ID, klik op **Test**
+5. In 3DPrintForge: plak het token en de Chat-ID, klik op **Test**
 
 :::tip Groepskanaal
 U kunt een Telegram-groep als ontvanger gebruiken. Chat-ID's voor groepen beginnen met `-`.
@@ -43,7 +43,7 @@ U kunt een Telegram-groep als ontvanger gebruiken. Chat-ID's voor groepen beginn
 2. Ga naar kanalinstellingen → **Integraties → Webhooks**
 3. Klik op **Nieuwe webhook**, geef deze een naam en kies het kanaal
 4. Kopieer de webhook-URL
-5. Plak de URL in Bambu Dashboard en klik op **Test**
+5. Plak de URL in 3DPrintForge en klik op **Test**
 
 ### E-mail
 
@@ -69,11 +69,11 @@ Gebruik **App-wachtwoord** voor Gmail, niet het gewone wachtwoord. Activeer eers
 1. Maak een account aan op [pushover.net](https://pushover.net)
 2. Maak een nieuwe applicatie aan — kopieer het **API Token**
 3. Zoek uw **User Key** op het Pushover-dashboard
-4. Vul beide in in Bambu Dashboard en klik op **Test**
+4. Vul beide in in 3DPrintForge en klik op **Test**
 
 ### Webhook (aangepast)
 
-Bambu Dashboard stuurt een HTTP POST met JSON-payload:
+3DPrintForge stuurt een HTTP POST met JSON-payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Ontvang meldingen direct in de browser zonder app:
 4. Meldingen werken ook als het dashboard geminimaliseerd is (vereist dat het tabblad open is)
 
 :::info PWA
-Installeer Bambu Dashboard als PWA voor push-meldingen op de achtergrond zonder open tabblad. Zie [PWA](../system/pwa).
+Installeer 3DPrintForge als PWA voor push-meldingen op de achtergrond zonder open tabblad. Zie [PWA](../system/pwa).
 :::

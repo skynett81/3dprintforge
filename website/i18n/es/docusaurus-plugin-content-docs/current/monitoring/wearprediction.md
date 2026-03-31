@@ -12,7 +12,7 @@ Ir a: **https://localhost:3443/#wear**
 
 ## Componentes monitoreados
 
-Bambu Dashboard rastrea el desgaste de 8 componentes por impresora:
+3DPrintForge rastrea el desgaste de 8 componentes por impresora:
 
 | Componente | Factor principal de desgaste | Vida útil típica |
 |---|---|---|

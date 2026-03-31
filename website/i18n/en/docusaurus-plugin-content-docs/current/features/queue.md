@@ -60,7 +60,7 @@ Drag and drop jobs in the queue to change the order manually within the same pri
 
 ## Automatic dispatch
 
-When **Automatic dispatch** is enabled, Bambu Dashboard monitors all printers and sends the next job automatically:
+When **Automatic dispatch** is enabled, 3DPrintForge monitors all printers and sends the next job automatically:
 
 1. Go to **Settings → Queue**
 2. Enable **Automatic dispatch**

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Bambu Dashboard.
+All notable changes to 3DPrintForge.
 
 ---
 

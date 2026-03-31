@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Installation
-description: Installez Bambu Dashboard sur votre serveur ou votre machine locale
+description: Installez 3DPrintForge sur votre serveur ou votre machine locale
 ---
 
 # Installation
@@ -16,7 +16,7 @@ description: Installez Bambu Dashboard sur votre serveur ou votre machine locale
 | Système d'exploitation | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 est requis
-Bambu Dashboard utilise `--experimental-sqlite` qui est intégré à Node.js 22. Les versions antérieures ne sont pas prises en charge.
+3DPrintForge utilise `--experimental-sqlite` qui est intégré à Node.js 22. Les versions antérieures ne sont pas prises en charge.
 :::
 
 ## Installation avec install.sh (recommandé)
@@ -24,8 +24,8 @@ Bambu Dashboard utilise `--experimental-sqlite` qui est intégré à Node.js 22.
 La méthode la plus simple consiste à utiliser le script d'installation interactif :
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Le script vous guide à travers la configuration dans le navigateur. Pour une in
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Installer les dépendances
 npm install
@@ -75,13 +75,13 @@ Pour exécuter le tableau de bord en tant que service en arrière-plan :
 Ou manuellement :
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Mise à jour
 
-Bambu Dashboard dispose d'une mise à jour automatique intégrée via GitHub Releases. Vous pouvez mettre à jour depuis le tableau de bord sous **Paramètres → Mise à jour**, ou manuellement :
+3DPrintForge dispose d'une mise à jour automatique intégrée via GitHub Releases. Vous pouvez mettre à jour depuis le tableau de bord sous **Paramètres → Mise à jour**, ou manuellement :
 
 ```bash
 git pull

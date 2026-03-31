@@ -148,6 +148,6 @@ Um higrômetro digital barato mostra a umidade atual do ar na caixa:
 - **Marque os carretéis secos** com a data de secagem
 - **Tubo PTFE dedicado** do secador à impressora minimiza a exposição durante a impressão
 
-## Bambu Dashboard e status de secagem
+## 3DPrintForge e status de secagem
 
-O Bambu Dashboard permite registrar informações de filamento incluindo a data da última secagem nos perfis de filamento. Use isso para acompanhar quais carretéis estão recém-secos e quais precisam de uma nova rodada.
+O 3DPrintForge permite registrar informações de filamento incluindo a data da última secagem nos perfis de filamento. Use isso para acompanhar quais carretéis estão recém-secos e quais precisam de uma nova rodada.

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Sunucu Günlüğü
-description: Sunucu günlüğünü gerçek zamanlı görüntüleyin, seviye ve modüle göre filtreleyin ve Bambu Dashboard sorunlarını giderin
+description: Sunucu günlüğünü gerçek zamanlı görüntüleyin, seviye ve modüle göre filtreleyin ve 3DPrintForge sorunlarını giderin
 ---
 
 # Sunucu Günlüğü
 
-Sunucu günlüğü, Bambu Dashboard'un içinde neler olduğuna ilişkin içgörü sağlar — sorun giderme, izleme ve tanılama için kullanışlıdır.
+Sunucu günlüğü, 3DPrintForge'un içinde neler olduğuna ilişkin içgörü sağlar — sorun giderme, izleme ve tanılama için kullanışlıdır.
 
 Gidin: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Günlük dosyaları sunucuda saklanır:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (aktif günlük)
-├── bambu-dashboard.log.1.gz     (döndürülmüş)
-├── bambu-dashboard.log.2.gz     (döndürülmüş)
+├── 3dprintforge.log          (aktif günlük)
+├── 3dprintforge.log.1.gz     (döndürülmüş)
+├── 3dprintforge.log.2.gz     (döndürülmüş)
 └── ...
 ```
 
 :::tip SSH Erişimi
 Sunucudaki günlükleri doğrudan SSH aracılığıyla okumak için:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

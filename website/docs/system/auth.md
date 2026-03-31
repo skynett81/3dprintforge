@@ -6,7 +6,7 @@ description: Administrer brukere, roller, tillatelser, API-nøkler og tofaktorau
 
 # Autentisering
 
-Bambu Dashboard støtter flerbrukere med rollebasert tilgangskontroll, API-nøkler og valgfri tofaktorautentisering (2FA) via TOTP.
+3DPrintForge støtter flerbrukere med rollebasert tilgangskontroll, API-nøkler og valgfri tofaktorautentisering (2FA) via TOTP.
 
 Gå til: **https://localhost:3443/#settings** → **Brukere og tilgang**
 

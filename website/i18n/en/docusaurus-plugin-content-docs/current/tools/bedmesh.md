@@ -12,7 +12,7 @@ Go to: **https://localhost:3443/#bedmesh**
 
 ## What is bed mesh?
 
-Bambu Lab printers scan the build plate surface with a probe and create a map (mesh) of height deviations. The printer's firmware automatically compensates for deviations during printing. Bambu Dashboard visualizes this map for you.
+Bambu Lab printers scan the build plate surface with a probe and create a map (mesh) of height deviations. The printer's firmware automatically compensates for deviations during printing. 3DPrintForge visualizes this map for you.
 
 ## Visualization
 

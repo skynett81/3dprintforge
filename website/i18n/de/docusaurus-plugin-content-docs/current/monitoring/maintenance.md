@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#maintenance**
 
 ## Wartungsplan
 
-Bambu Dashboard wird mit vorkonfigurierten Wartungsintervallen für alle Bambu Lab-Druckermodelle geliefert:
+3DPrintForge wird mit vorkonfigurierten Wartungsintervallen für alle Bambu Lab-Druckermodelle geliefert:
 
 | Aufgabe | Intervall (Standard) | Modell |
 |---|---|---|

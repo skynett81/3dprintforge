@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#bedmesh**
 
 ## Co je bed mesh?
 
-Tiskárny Bambu Lab skenují povrch podložky sondou a vytváří mapu (mesh) výškových odchylek. Firmware tiskárny automaticky kompenzuje odchylky při tisku. Bambu Dashboard tuto mapu vizualizuje.
+Tiskárny Bambu Lab skenují povrch podložky sondou a vytváří mapu (mesh) výškových odchylek. Firmware tiskárny automaticky kompenzuje odchylky při tisku. 3DPrintForge tuto mapu vizualizuje.
 
 ## Vizualizace
 

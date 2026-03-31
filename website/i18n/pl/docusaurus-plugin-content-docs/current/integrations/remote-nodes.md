@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Serwer zdalny
-description: Połącz wiele instancji Bambu Dashboard, aby zobaczyć wszystkie drukarki z jednego centralnego dashboardu
+description: Połącz wiele instancji 3DPrintForge, aby zobaczyć wszystkie drukarki z jednego centralnego dashboardu
 ---
 
 # Serwer zdalny (Remote Nodes)
 
-Funkcja serwera zdalnego pozwala połączyć wiele instancji Bambu Dashboard, abyś mógł widzieć i sterować wszystkimi drukarkami z jednego centralnego interfejsu — niezależnie od tego, czy znajdują się w tej samej sieci czy w różnych lokalizacjach.
+Funkcja serwera zdalnego pozwala połączyć wiele instancji 3DPrintForge, abyś mógł widzieć i sterować wszystkimi drukarkami z jednego centralnego interfejsu — niezależnie od tego, czy znajdują się w tej samej sieci czy w różnych lokalizacjach.
 
 Przejdź do: **https://localhost:3443/#settings** → **Integracje → Serwery zdalne**
 

@@ -60,7 +60,7 @@ Arrastra y suelta trabajos en la cola para cambiar el orden manualmente dentro d
 
 ## Despacho automático
 
-Cuando el **Despacho automático** está activado, Bambu Dashboard monitorea todas las impresoras y envía el siguiente trabajo automáticamente:
+Cuando el **Despacho automático** está activado, 3DPrintForge monitorea todas las impresoras y envía el siguiente trabajo automáticamente:
 
 1. Ve a **Configuración → Cola**
 2. Activa **Despacho automático**

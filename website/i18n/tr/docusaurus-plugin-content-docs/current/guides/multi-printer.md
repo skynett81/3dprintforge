@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Birden fazla yazıcı
-description: Bambu Dashboard'da birden fazla Bambu yazıcısını kurun ve yönetin — filo genel bakışı, kuyruk ve kademeli başlatma
+description: 3DPrintForge'da birden fazla Bambu yazıcısını kurun ve yönetin — filo genel bakışı, kuyruk ve kademeli başlatma
 ---
 
 # Birden fazla yazıcı
 
-Birden fazla yazıcınız mı var? Bambu Dashboard, filo yönetimi için tasarlanmıştır — tüm yazıcıları tek bir yerden izleyebilir, kontrol edebilir ve koordine edebilirsiniz.
+Birden fazla yazıcınız mı var? 3DPrintForge, filo yönetimi için tasarlanmıştır — tüm yazıcıları tek bir yerden izleyebilir, kontrol edebilir ve koordine edebilirsiniz.
 
 ## Yeni yazıcı ekleme
 

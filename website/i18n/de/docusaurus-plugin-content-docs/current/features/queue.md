@@ -60,7 +60,7 @@ Ziehen Sie Aufträge in der Warteschlange, um die Reihenfolge innerhalb derselbe
 
 ## Automatischer Versand
 
-Wenn der **Automatische Versand** aktiviert ist, überwacht Bambu Dashboard alle Drucker und sendet den nächsten Auftrag automatisch:
+Wenn der **Automatische Versand** aktiviert ist, überwacht 3DPrintForge alle Drucker und sendet den nächsten Auftrag automatisch:
 
 1. Gehen Sie zu **Einstellungen → Warteschlange**
 2. Aktivieren Sie **Automatischer Versand**

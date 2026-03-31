@@ -1450,7 +1450,7 @@ function _mig052_courses(db) {
   `);
   // Seed intro courses
   const courses = [
-    ['Getting Started with Bambu Dashboard', 'Learn the basics of your dashboard', 'general', 1, null, '["Navigate the dashboard","Add your first printer","Check printer status","View print history"]', 10],
+    ['Getting Started with 3DPrintForge', 'Learn the basics of your dashboard', 'general', 1, null, '["Navigate the dashboard","Add your first printer","Check printer status","View print history"]', 10],
     ['Filament Management 101', 'How to track and manage your filaments', 'filament', 1, null, '["Add a vendor","Create filament profiles","Add spools to inventory","Track usage"]', 15],
     ['Print Queue Basics', 'Learn to use the print queue system', 'printing', 2, null, '["Create a queue","Add items to queue","Start printing","Monitor progress"]', 10],
     ['Advanced Cost Tracking', 'Master print cost estimation', 'printing', 3, null, '["Configure electricity rates","Set labor costs","Track per-print costs","Generate reports"]', 20],
@@ -1514,7 +1514,7 @@ function _mig054_learning_center_v2(db) {
 
   const courses = [
     {
-      title: 'Getting Started with Bambu Dashboard',
+      title: 'Getting Started with 3DPrintForge',
       description: 'Learn the basics of navigating and using your dashboard.',
       category: 'getting_started', difficulty: 1, estimated_minutes: 10,
       steps: [
@@ -1614,7 +1614,7 @@ function _mig054_learning_center_v2(db) {
         { title: 'Create user accounts', description: 'Go to Settings > System and add new user accounts with usernames, passwords, and assigned roles.', action: '#settings/system' },
         { title: 'Configure roles and permissions', description: 'Define roles that control access levels: which panels users can see and what actions they can perform.', action: '#settings/system' },
         { title: 'Enable authentication', description: 'Enable the authentication system in Settings > System so users must log in to access the dashboard.', action: '#settings/system' },
-        { title: 'Generate API keys', description: 'Create API keys for external applications to interact with Bambu Dashboard programmatically via the REST API.', action: '#settings/system' },
+        { title: 'Generate API keys', description: 'Create API keys for external applications to interact with 3DPrintForge programmatically via the REST API.', action: '#settings/system' },
         { title: 'Test API access', description: 'Use the generated API key as a Bearer token to make authenticated requests to any API endpoint.', action: '#settings/system' }
       ]
     },
@@ -1950,10 +1950,10 @@ function _mig054_learning_center_v2(db) {
     },
     {
       title: 'Dashboard API & Integrations',
-      description: 'Use the REST API to integrate Bambu Dashboard with Home Assistant, Node-RED, custom scripts, and automation workflows.',
+      description: 'Use the REST API to integrate 3DPrintForge with Home Assistant, Node-RED, custom scripts, and automation workflows.',
       category: 'automation', difficulty: 3, estimated_minutes: 15,
       steps: [
-        { title: 'API overview', description: 'Bambu Dashboard exposes a comprehensive REST API at /api/*. Full OpenAPI documentation is available at /api/docs in your browser. The API covers: printer status, print history, filament inventory, queue management, statistics, and more. All responses are JSON.', action: null },
+        { title: 'API overview', description: '3DPrintForge exposes a comprehensive REST API at /api/*. Full OpenAPI documentation is available at /api/docs in your browser. The API covers: printer status, print history, filament inventory, queue management, statistics, and more. All responses are JSON.', action: null },
         { title: 'Authentication', description: 'If authentication is enabled: generate an API key in Settings > System. Include it as a Bearer token in the Authorization header: "Authorization: Bearer YOUR_KEY". Without auth enabled, all endpoints are open (suitable for local network use only).', action: '#settings/system' },
         { title: 'Key API endpoints', description: 'GET /api/status — all printer statuses. GET /api/printers — printer list and details. GET /api/history — print history with filters. GET /api/spools — filament inventory. POST /api/queue/items — add to print queue. GET /api/stats/summary — statistics overview. Full list at /api/docs.', action: null },
         { title: 'Home Assistant integration', description: 'Use Home Assistant\'s REST sensor integration to pull printer status data. Create sensors for: print progress, temperatures, filament remaining, active print name. Trigger automations based on print events: lights on when printing, notifications when done, fan control for ventilation.', action: null },
@@ -1997,11 +1997,11 @@ function _mig054_learning_center_v2(db) {
       ]
     },
     {
-      title: 'Bambu Dashboard Setup Guide',
-      description: 'Install and configure Bambu Dashboard to monitor, control, and manage your 3D printing workflow from one central interface.',
+      title: '3DPrintForge Setup Guide',
+      description: 'Install and configure 3DPrintForge to monitor, control, and manage your 3D printing workflow from one central interface.',
       category: 'getting_started', difficulty: 1, estimated_minutes: 15,
       steps: [
-        { title: 'Installation', description: 'Bambu Dashboard runs on Node.js 22+. Download or clone from GitHub. Run the install script or start with "node server/index.js". The dashboard starts on https://localhost:3443 by default. Access from any device on your local network.', action: null },
+        { title: 'Installation', description: '3DPrintForge runs on Node.js 22+. Download or clone from GitHub. Run the install script or start with "node server/index.js". The dashboard starts on https://localhost:3443 by default. Access from any device on your local network.', action: null },
         { title: 'Add your printers', description: 'Go to Settings > Printers and click Add Printer. You need: printer IP address (find in printer WiFi settings), serial number (printed on the printer or in Bambu Studio), access code (generated in printer network settings). The dashboard connects via MQTT for real-time data.', action: '#settings/printers' },
         { title: 'Configure dashboard settings', description: 'Set your preferred language (English, Norwegian). Configure electricity rates for cost tracking. Set your currency and units. Choose between light and dark theme. Configure notification preferences for print events.', action: '#settings/general' },
         { title: 'Set up filament tracking', description: 'Add your filament vendors and profiles in the Filament panel. Register physical spools with weights and colors. The dashboard automatically tracks filament usage from each print, deducting weight from active spools.', action: '#filament/manage' },

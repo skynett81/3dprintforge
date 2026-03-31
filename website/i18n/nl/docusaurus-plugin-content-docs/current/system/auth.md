@@ -6,7 +6,7 @@ description: Gebruikers, rollen, rechten, API-sleutels en tweefactorauthenticati
 
 # Authenticatie
 
-Bambu Dashboard ondersteunt meerdere gebruikers met rolgebaseerde toegangscontrole, API-sleutels en optionele tweefactorauthenticatie (2FA) via TOTP.
+3DPrintForge ondersteunt meerdere gebruikers met rolgebaseerde toegangscontrole, API-sleutels en optionele tweefactorauthenticatie (2FA) via TOTP.
 
 Ga naar: **https://localhost:3443/#settings** → **Gebruikers en toegang**
 

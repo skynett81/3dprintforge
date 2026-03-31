@@ -19,7 +19,7 @@ description: 管理 3D 打印销售的订单、客户和开票 — 需要来自 
 ### 购买许可证
 
 1. 访问 **[geektech.no](https://geektech.no)** 并创建账户
-2. 选择 **Bambu Dashboard — 电商许可证**
+2. 选择 **3DPrintForge — 电商许可证**
 3. 选择许可证类型：
 
 | 许可证类型 | 说明 | 打印机数量 |
@@ -70,7 +70,7 @@ geektech.no 将许可证绑定到一个或多个标识符：
    - **实例 ID**（您的安装唯一标识）
 
 :::warning 许可证密钥与域名和安装绑定
-密钥针对特定的 Bambu Dashboard 安装和域名激活。如需以下操作，请联系 [geektech.no](https://geektech.no) 支持：
+密钥针对特定的 3DPrintForge 安装和域名激活。如需以下操作，请联系 [geektech.no](https://geektech.no) 支持：
 - 将许可证迁移到新服务器
 - 更改域名
 - 增加打印机数量
@@ -223,6 +223,6 @@ curl -sk https://localhost:3443/api/ecommerce/license
 
 :::info 需要帮助？
 - **许可证问题**：联系 [geektech.no](https://geektech.no) 支持
-- **技术问题**：[GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **功能请求**：[GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **技术问题**：[GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **功能请求**：[GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

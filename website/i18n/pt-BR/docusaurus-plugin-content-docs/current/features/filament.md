@@ -64,7 +64,7 @@ A visualização de cartela de cores organiza as bobinas visualmente por cor. Ú
 
 ## Etiquetas NFC
 
-O Bambu Dashboard suporta etiquetas NFC para identificação rápida de bobinas:
+O 3DPrintForge suporta etiquetas NFC para identificação rápida de bobinas:
 
 1. Grave o ID da etiqueta NFC na bobina no estoque
 2. Escaneie a etiqueta com o celular

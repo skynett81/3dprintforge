@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Navigere i dashboardet
-description: Lær å navigere i Bambu Dashboard — sidepanel, paneler, tastatursnarvei og tilpasning
+description: Lær å navigere i 3DPrintForge — sidepanel, paneler, tastatursnarvei og tilpasning
 ---
 
 # Navigere i dashboardet
@@ -148,7 +148,7 @@ For effektiv navigasjon uten mus:
 
 ## PWA — installer som app
 
-Bambu Dashboard kan installeres som en progressiv web-app (PWA) og kjøre som en selvstendig app uten nettlesermenyer:
+3DPrintForge kan installeres som en progressiv web-app (PWA) og kjøre som en selvstendig app uten nettlesermenyer:
 
 1. Gå til dashboardet i Chrome, Edge eller Safari
 2. Klikk på **Installer app**-ikonet i adressefeltet

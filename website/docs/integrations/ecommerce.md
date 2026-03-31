@@ -19,7 +19,7 @@ E-handelmodulen krever en gyldig lisens. Lisenser kan **kun kjøpes via [geektec
 ### Kjøpe lisens
 
 1. Gå til **[geektech.no](https://geektech.no)** og opprett en konto
-2. Velg **Bambu Dashboard — E-handelslisens**
+2. Velg **3DPrintForge — E-handelslisens**
 3. Velg lisenstype:
 
 | Lisenstype | Beskrivelse | Printere |
@@ -70,7 +70,7 @@ Flere IP-adresser og MAC-adresser kan tillates (én per linje i geektech.no admi
    - **Instans-ID** (unik for din installasjon)
 
 :::warning Lisensnøkkelen er knyttet til domene og installasjon
-Nøkkelen aktiveres for én spesifikk Bambu Dashboard-installasjon og domene. Kontakt [geektech.no](https://geektech.no) support hvis du trenger å:
+Nøkkelen aktiveres for én spesifikk 3DPrintForge-installasjon og domene. Kontakt [geektech.no](https://geektech.no) support hvis du trenger å:
 - Flytte lisensen til en ny server
 - Endre domene
 - Øke antall printere
@@ -223,6 +223,6 @@ Eksporter til CSV for regnskapssystem.
 
 :::info Trenger du hjelp?
 - **Lisensspørsmål**: kontakt [geektech.no](https://geektech.no) support
-- **Tekniske problemer**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Funksjonsønsker**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Tekniske problemer**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Funksjonsønsker**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

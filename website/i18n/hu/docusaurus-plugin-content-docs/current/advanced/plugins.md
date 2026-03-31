@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Plugin-rendszer
-description: Hozz létre és telepíts plugineket a Bambu Dashboard bővítéséhez
+description: Hozz létre és telepíts plugineket a 3DPrintForge bővítéséhez
 ---
 
 # Plugin-rendszer
 
-A Bambu Dashboard támogat egy plugin-rendszert, amely lehetővé teszi a funkcionalitás bővítését a forráskód módosítása nélkül.
+A 3DPrintForge támogat egy plugin-rendszert, amely lehetővé teszi a funkcionalitás bővítését a forráskód módosítása nélkül.
 
 :::info Kísérleti
 A plugin-rendszer aktív fejlesztés alatt áll. Az API verziók között változhat.

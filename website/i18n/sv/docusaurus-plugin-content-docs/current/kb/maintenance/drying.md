@@ -148,6 +148,6 @@ En billig digital hygrometer visar aktuell luftfuktighet i lådan:
 - **Märk torkade spoler** med datum för torkning
 - **Dedikerat PTFE-rör** från tork till skrivare minimerar exponering under utskrift
 
-## Bambu Dashboard och torkningsstatus
+## 3DPrintForge och torkningsstatus
 
-Bambu Dashboard låter dig logga filamentinformation inklusive senaste torkningsdatum under filamentprofiler. Använd detta för att hålla koll på vilka spoler som är nyss torkade och vilka som behöver en ny omgång.
+3DPrintForge låter dig logga filamentinformation inklusive senaste torkningsdatum under filamentprofiler. Använd detta för att hålla koll på vilka spoler som är nyss torkade och vilka som behöver en ny omgång.

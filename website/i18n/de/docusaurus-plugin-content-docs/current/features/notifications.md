@@ -6,7 +6,7 @@ description: Konfigurieren Sie Benachrichtigungen über Telegram, Discord, E-Mai
 
 # Benachrichtigungen
 
-Bambu Dashboard unterstützt Benachrichtigungen über eine Reihe von Kanälen, damit Sie immer wissen, was mit Ihren Druckern passiert — ob Sie zu Hause oder unterwegs sind.
+3DPrintForge unterstützt Benachrichtigungen über eine Reihe von Kanälen, damit Sie immer wissen, was mit Ihren Druckern passiert — ob Sie zu Hause oder unterwegs sind.
 
 Navigieren Sie zu: **https://localhost:3443/#settings** → Registerkarte **Benachrichtigungen**
 
@@ -31,7 +31,7 @@ Navigieren Sie zu: **https://localhost:3443/#settings** → Registerkarte **Bena
 2. Kopieren Sie das **Bot-Token** (Format: `123456789:ABC-def...`)
 3. Starten Sie eine Unterhaltung mit dem Bot und senden Sie `/start`
 4. Finden Sie Ihre **Chat-ID**: gehen Sie zu `https://api.telegram.org/bot<TOKEN>/getUpdates`
-5. In Bambu Dashboard: fügen Sie Token und Chat-ID ein, klicken Sie auf **Test**
+5. In 3DPrintForge: fügen Sie Token und Chat-ID ein, klicken Sie auf **Test**
 
 :::tip Gruppenkanal
 Sie können eine Telegram-Gruppe als Empfänger verwenden. Chat-IDs für Gruppen beginnen mit `-`.
@@ -43,7 +43,7 @@ Sie können eine Telegram-Gruppe als Empfänger verwenden. Chat-IDs für Gruppen
 2. Gehen Sie zu Kanaleinstellungen → **Integrationen → Webhooks**
 3. Klicken Sie auf **Neuen Webhook**, geben Sie ihm einen Namen und wählen Sie den Kanal
 4. Kopieren Sie die Webhook-URL
-5. Fügen Sie die URL in Bambu Dashboard ein und klicken Sie auf **Test**
+5. Fügen Sie die URL in 3DPrintForge ein und klicken Sie auf **Test**
 
 ### E-Mail
 
@@ -69,11 +69,11 @@ Verwenden Sie für Gmail ein **App-Passwort**, kein normales Passwort. Aktiviere
 1. Erstellen Sie ein Konto auf [pushover.net](https://pushover.net)
 2. Erstellen Sie eine neue Anwendung — kopieren Sie das **API-Token**
 3. Finden Sie Ihren **User Key** auf dem Pushover-Dashboard
-4. Geben Sie beide in Bambu Dashboard ein und klicken Sie auf **Test**
+4. Geben Sie beide in 3DPrintForge ein und klicken Sie auf **Test**
 
 ### Webhook (benutzerdefiniert)
 
-Bambu Dashboard sendet ein HTTP POST mit JSON-Payload:
+3DPrintForge sendet ein HTTP POST mit JSON-Payload:
 
 ```json
 {
@@ -128,5 +128,5 @@ Erhalten Sie Benachrichtigungen direkt im Browser ohne App:
 4. Benachrichtigungen funktionieren auch wenn das Dashboard minimiert ist (Tab muss offen sein)
 
 :::info PWA
-Installieren Sie Bambu Dashboard als PWA für Hintergrund-Push-Benachrichtigungen ohne offenen Tab. Siehe [PWA](../system/pwa).
+Installieren Sie 3DPrintForge als PWA für Hintergrund-Push-Benachrichtigungen ohne offenen Tab. Siehe [PWA](../system/pwa).
 :::

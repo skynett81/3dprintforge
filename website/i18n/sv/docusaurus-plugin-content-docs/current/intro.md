@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Välkommen till Bambu Dashboard
+title: Välkommen till 3DPrintForge
 description: En kraftfull, självhostad instrumentpanel för Bambu Lab 3D-skrivare
 ---
 
-# Välkommen till Bambu Dashboard
+# Välkommen till 3DPrintForge
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**Bambu Dashboard** är en självhostad, fullständig kontrollpanel för Bambu Lab 3D-skrivare. Den ger dig full överblick och kontroll över skrivare, filamentlager, utskriftshistorik och mer — allt från en enda webbläsarflik.
+**3DPrintForge** är en självhostad, fullständig kontrollpanel för Bambu Lab 3D-skrivare. Den ger dig full överblick och kontroll över skrivare, filamentlager, utskriftshistorik och mer — allt från en enda webbläsarflik.
 
-## Vad är Bambu Dashboard?
+## Vad är 3DPrintForge?
 
-Bambu Dashboard ansluter direkt till din skrivare via MQTT över LAN, utan beroende av Bambu Labs servrar. Du kan även ansluta till Bambu Cloud för synkronisering av modeller och utskriftshistorik.
+3DPrintForge ansluter direkt till din skrivare via MQTT över LAN, utan beroende av Bambu Labs servrar. Du kan även ansluta till Bambu Cloud för synkronisering av modeller och utskriftshistorik.
 
 ### Viktigaste funktioner
 
@@ -117,7 +117,7 @@ Komplett underhållssystem med:
 
 ## Teknisk översikt
 
-Bambu Dashboard är byggt med Node.js 22 och vanlig HTML/CSS/JS — inga tunga ramverk, inget byggsteg. Databasen är SQLite, inbyggd i Node.js 22.
+3DPrintForge är byggt med Node.js 22 och vanlig HTML/CSS/JS — inga tunga ramverk, inget byggsteg. Databasen är SQLite, inbyggd i Node.js 22.
 
 - **Backend**: Node.js 22 med endast 3 npm-paket (mqtt, ws, basic-ftp)
 - **Frontend**: Vanilla HTML/CSS/JS, inget byggsteg

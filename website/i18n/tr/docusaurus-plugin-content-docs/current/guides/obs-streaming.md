@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: OBS ile yayın yapma
-description: Profesyonel 3D baskı yayını için Bambu Dashboard'u OBS Studio'da overlay olarak kurun
+description: Profesyonel 3D baskı yayını için 3DPrintForge'u OBS Studio'da overlay olarak kurun
 ---
 
 # 3D baskıyı OBS'ye yayınlama
 
-Bambu Dashboard, yazıcı durumunu, ilerlemeyi, sıcaklıkları ve kamera akışını doğrudan yayınınızda gösteren yerleşik bir OBS overlay'e sahiptir.
+3DPrintForge, yazıcı durumunu, ilerlemeyi, sıcaklıkları ve kamera akışını doğrudan yayınınızda gösteren yerleşik bir OBS overlay'e sahiptir.
 
 ## Ön koşullar
 
 - OBS Studio yüklü ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard çalışıyor ve yazıcıya bağlı
+- 3DPrintForge çalışıyor ve yazıcıya bağlı
 - (İsteğe bağlı) Canlı akış için Bambu kamerası etkin
 
 ## Adım 1 — OBS Tarayıcı Kaynağı
@@ -63,7 +63,7 @@ Overlay artık yalnızca widget'ın kendisini gösterir — beyaz veya siyah ark
 
 ## Adım 3 — Overlay'i özelleştirme
 
-Bambu Dashboard'da overlay'in ne göstereceğini yapılandırabilirsiniz:
+3DPrintForge'da overlay'in ne göstereceğini yapılandırabilirsiniz:
 
 1. **Özellikler → OBS Overlay**'e gidin
 2. Yapılandırın:
@@ -171,5 +171,5 @@ Bambu kamerası bazen donabilir. **Sistem → Kamera** altındaki panoda:
 - Veya bunun yerine arka plan müziği / sohbet sesi kullanın
 
 :::tip Otomatik sahne değiştirme
-OBS'de başlıklara dayalı sahne değiştirme için yerleşik destek bulunmaktadır. Bir baskı başladığında ve durduğunda otomatik olarak sahne değiştirmek için bir eklentiyle (örn. obs-websocket) ve Bambu Dashboard API'siyle birleştirin.
+OBS'de başlıklara dayalı sahne değiştirme için yerleşik destek bulunmaktadır. Bir baskı başladığında ve durduğunda otomatik olarak sahne değiştirmek için bir eklentiyle (örn. obs-websocket) ve 3DPrintForge API'siyle birleştirin.
 :::

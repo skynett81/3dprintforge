@@ -6,13 +6,13 @@ description: Descripción completa de los códigos de error HMS de las impresora
 
 # Registro de errores
 
-El registro de errores recopila todos los errores y alertas HMS (Health, Maintenance, Safety) de tus impresoras. Bambu Dashboard tiene una base de datos integrada con más de 269 códigos HMS para impresoras Bambu Lab.
+El registro de errores recopila todos los errores y alertas HMS (Health, Maintenance, Safety) de tus impresoras. 3DPrintForge tiene una base de datos integrada con más de 269 códigos HMS para impresoras Bambu Lab.
 
 Ir a: **https://localhost:3443/#errors**
 
 ## Códigos HMS
 
-Las impresoras Bambu Lab envían códigos HMS vía MQTT cuando algo va mal. Bambu Dashboard los traduce automáticamente a mensajes de error legibles:
+Las impresoras Bambu Lab envían códigos HMS vía MQTT cuando algo va mal. 3DPrintForge los traduce automáticamente a mensajes de error legibles:
 
 | Código | Ejemplo | Categoría |
 |---|---|---|
@@ -59,7 +59,7 @@ Para cada código HMS se muestra un enlace a la wiki de Bambu Lab con:
 Haz clic en **Abrir wiki** en una entrada de error para abrir la página de la wiki correspondiente en una nueva pestaña.
 
 :::tip Copia local
-Bambu Dashboard almacena en caché el contenido de la wiki localmente para uso sin conexión. El contenido se actualiza automáticamente cada semana.
+3DPrintForge almacena en caché el contenido de la wiki localmente para uso sin conexión. El contenido se actualiza automáticamente cada semana.
 :::
 
 ## Reconocer errores

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Systém pluginů
-description: Vytvářejte a instalujte pluginy pro rozšíření Bambu Dashboard
+description: Vytvářejte a instalujte pluginy pro rozšíření 3DPrintForge
 ---
 
 # Systém pluginů
 
-Bambu Dashboard podporuje systém pluginů, který vám umožňuje rozšířit funkčnost bez změny zdrojového kódu.
+3DPrintForge podporuje systém pluginů, který vám umožňuje rozšířit funkčnost bez změny zdrojového kódu.
 
 :::info Experimentální
 Systém pluginů je aktivně vyvíjen. API se může měnit mezi verzemi.

@@ -6,7 +6,7 @@ description: Activeer automatische timelapse-opname van 3D-prints, beheer video'
 
 # Timelapse
 
-Bambu Dashboard kan automatisch foto's maken tijdens het printen en deze samenvoegen tot een timelapse-video. De video's worden lokaal opgeslagen en kunnen direct in het dashboard worden afgespeeld.
+3DPrintForge kan automatisch foto's maken tijdens het printen en deze samenvoegen tot een timelapse-video. De video's worden lokaal opgeslagen en kunnen direct in het dashboard worden afgespeeld.
 
 Ga naar: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ Het dashboard volgt de symlink automatisch. U kunt elke schijf of netwerkaandeel
 
 Wanneer de print klaar is, worden de foto's automatisch samengevoegd tot een video met ffmpeg:
 
-1. Bambu Dashboard ontvangt de "print complete"-gebeurtenis van MQTT
+1. 3DPrintForge ontvangt de "print complete"-gebeurtenis van MQTT
 2. ffmpeg wordt aangeroepen met de verzamelde foto's
 3. De video wordt opgeslagen in de opslagmap
 4. De timelapse-pagina wordt bijgewerkt met de nieuwe video

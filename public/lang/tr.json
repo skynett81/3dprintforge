@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "Broker URL gereklidir",
     "settings_sub_nodes": "Düğümler",
     "nodes_title": "Uzak Düğümler",
-    "nodes_desc": "Yerel yazıcılarınızın yanında görmek için diğer Bambu Dashboard örneklerini bağlayın. Uzak yazıcılar canlı durum güncellemeleriyle yazıcı seçicisinde görünür.",
+    "nodes_desc": "Yerel yazıcılarınızın yanında görmek için diğer 3DPrintForge örneklerini bağlayın. Uzak yazıcılar canlı durum güncellemeleriyle yazıcı seçicisinde görünür.",
     "nodes_add": "Uzak Düğüm Ekle",
     "nodes_none": "Uzak düğüm yapılandırılmamış",
     "nodes_printers": "yazıcı",

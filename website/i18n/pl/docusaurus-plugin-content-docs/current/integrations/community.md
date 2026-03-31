@@ -6,7 +6,7 @@ description: Przeglądaj udostępniane profile filamentów od społeczności, wn
 
 # Filamenty społeczności
 
-Filamenty społeczności to wspólna baza danych profili filamentów wnoszona przez użytkowników Bambu Dashboard z całego świata. Znajdź najlepsze ustawienia dla swojego filamentu i podziel się własnym doświadczeniem.
+Filamenty społeczności to wspólna baza danych profili filamentów wnoszona przez użytkowników 3DPrintForge z całego świata. Znajdź najlepsze ustawienia dla swojego filamentu i podziel się własnym doświadczeniem.
 
 Przejdź do: **https://localhost:3443/#community**
 

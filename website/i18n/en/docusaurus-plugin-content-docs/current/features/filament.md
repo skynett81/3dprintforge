@@ -64,7 +64,7 @@ The color card view organizes spools visually by color. Useful for quickly findi
 
 ## NFC tags
 
-Bambu Dashboard supports NFC tags for quick identification of spools:
+3DPrintForge supports NFC tags for quick identification of spools:
 
 1. Write the NFC tag ID to the spool in the inventory
 2. Scan the tag with your phone

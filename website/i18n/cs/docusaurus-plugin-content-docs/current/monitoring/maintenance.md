@@ -12,7 +12,7 @@ Přejděte na: **https://localhost:3443/#maintenance**
 
 ## Plán údržby
 
-Bambu Dashboard přichází s předkonfigurovanými intervaly údržby pro všechny modely tiskáren Bambu Lab:
+3DPrintForge přichází s předkonfigurovanými intervaly údržby pro všechny modely tiskáren Bambu Lab:
 
 | Úloha | Interval (výchozí) | Model |
 |---|---|---|

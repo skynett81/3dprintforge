@@ -125,6 +125,6 @@
 
     // Update page title
     const meta = state.getActivePrinterMeta();
-    document.title = `${meta.name || id} - Bambu Dashboard`;
+    document.title = `${meta.name || id} - 3DPrintForge`;
   };
 })();

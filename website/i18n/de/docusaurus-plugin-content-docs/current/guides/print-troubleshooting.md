@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Fehlerbehebung bei fehlgeschlagenen Drucken
-description: Diagnostizieren und lösen Sie häufige Druckfehler mithilfe der Fehlerprotokolle und Werkzeuge des Bambu Dashboards
+description: Diagnostizieren und lösen Sie häufige Druckfehler mithilfe der Fehlerprotokolle und Werkzeuge des 3DPrintForges
 ---
 
 # Fehlerbehebung bei fehlgeschlagenen Drucken
 
-Etwas ist schiefgelaufen? Keine Sorge — die meisten Druckfehler haben einfache Lösungen. Bambu Dashboard hilft Ihnen, die Ursache schnell zu finden.
+Etwas ist schiefgelaufen? Keine Sorge — die meisten Druckfehler haben einfache Lösungen. 3DPrintForge hilft Ihnen, die Ursache schnell zu finden.
 
 ## Schritt 1 — HMS-Fehlercodes prüfen
 

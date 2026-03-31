@@ -1,18 +1,18 @@
 ---
 sidebar_position: 1
-title: Bambu Dashboardへようこそ
+title: 3DPrintForgeへようこそ
 description: Bambu Lab 3Dプリンター向けの強力なセルフホスト型ダッシュボード
 ---
 
-# Bambu Dashboardへようこそ
+# 3DPrintForgeへようこそ
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-**Bambu Dashboard**は、Bambu Lab 3Dプリンター向けのセルフホスト型フル機能コントロールパネルです。プリンター、フィラメント在庫、印刷履歴などをすべてひとつのブラウザタブから完全に把握・管理できます。
+**3DPrintForge**は、Bambu Lab 3Dプリンター向けのセルフホスト型フル機能コントロールパネルです。プリンター、フィラメント在庫、印刷履歴などをすべてひとつのブラウザタブから完全に把握・管理できます。
 
-## Bambu Dashboardとは？
+## 3DPrintForgeとは？
 
-Bambu DashboardはMQTT over LANを通じてプリンターに直接接続し、Bambu Labのサーバーに依存しません。モデルや印刷履歴の同期のためにBambu Cloudに接続することも可能です。
+3DPrintForgeはMQTT over LANを通じてプリンターに直接接続し、Bambu Labのサーバーに依存しません。モデルや印刷履歴の同期のためにBambu Cloudに接続することも可能です。
 
 ### 主な機能
 
@@ -117,7 +117,7 @@ LANモード対応のすべてのBambu Labプリンター：
 
 ## 技術概要
 
-Bambu DashboardはNode.js 22とバニラHTML/CSS/JSで構築されており、重いフレームワークやビルドステップは不要です。データベースはNode.js 22に組み込まれたSQLiteです。
+3DPrintForgeはNode.js 22とバニラHTML/CSS/JSで構築されており、重いフレームワークやビルドステップは不要です。データベースはNode.js 22に組み込まれたSQLiteです。
 
 - **バックエンド**: Node.js 22、npmパッケージは3つのみ（mqtt、ws、basic-ftp）
 - **フロントエンド**: バニラHTML/CSS/JS、ビルドステップなし

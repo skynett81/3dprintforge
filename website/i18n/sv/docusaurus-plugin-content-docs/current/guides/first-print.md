@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Din första utskrift
-description: Steg-för-steg-guide för att starta din första 3D-utskrift och övervaka den i Bambu Dashboard
+description: Steg-för-steg-guide för att starta din första 3D-utskrift och övervaka den i 3DPrintForge
 ---
 
 # Din första utskrift
 
-Den här guiden tar dig igenom hela processen — från en ansluten skrivare till en färdig utskrift — med Bambu Dashboard som kontrollcentral.
+Den här guiden tar dig igenom hela processen — från en ansluten skrivare till en färdig utskrift — med 3DPrintForge som kontrollcentral.
 
 ## Steg 1 — Kontrollera att skrivaren är ansluten
 
@@ -32,7 +32,7 @@ LAN-läge ger lägre fördröjning än molnläge. Aktivera det under skrivarinst
 
 ## Steg 2 — Ladda upp din modell
 
-Bambu Dashboard startar inte utskrifter direkt — det är Bambu Studios eller MakerWorlds uppgift. Instrumentpanelen tar över så snart utskriften börjar.
+3DPrintForge startar inte utskrifter direkt — det är Bambu Studios eller MakerWorlds uppgift. Instrumentpanelen tar över så snart utskriften börjar.
 
 **Via Bambu Studio:**
 1. Öppna Bambu Studio på din dator
@@ -83,7 +83,7 @@ De första 3–5 lagren är avgörande. Dålig vidhäftning nu innebär misslyck
 :::
 
 ### Print Guard
-Bambu Dashboard har en AI-driven **Print Guard** som automatiskt upptäcker spaghetti-fel och kan pausa utskriften. Aktivera det under **Övervakning → Print Guard**.
+3DPrintForge har en AI-driven **Print Guard** som automatiskt upptäcker spaghetti-fel och kan pausa utskriften. Aktivera det under **Övervakning → Print Guard**.
 
 ## Steg 5 — Efter att utskriften är klar
 

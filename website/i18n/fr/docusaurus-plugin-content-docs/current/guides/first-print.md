@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Votre première impression
-description: Guide étape par étape pour démarrer votre première impression 3D et la surveiller dans Bambu Dashboard
+description: Guide étape par étape pour démarrer votre première impression 3D et la surveiller dans 3DPrintForge
 ---
 
 # Votre première impression
 
-Ce guide vous accompagne tout au long du processus — d'une imprimante connectée à une impression terminée — avec le Bambu Dashboard comme centre de contrôle.
+Ce guide vous accompagne tout au long du processus — d'une imprimante connectée à une impression terminée — avec le 3DPrintForge comme centre de contrôle.
 
 ## Étape 1 — Vérifier que l'imprimante est connectée
 
@@ -32,7 +32,7 @@ Le mode LAN offre une latence plus faible que le mode cloud. Activez-le dans les
 
 ## Étape 2 — Télécharger votre modèle
 
-Bambu Dashboard ne démarre pas les impressions directement — c'est le rôle de Bambu Studio ou MakerWorld. Le tableau de bord prend le relais dès que l'impression commence.
+3DPrintForge ne démarre pas les impressions directement — c'est le rôle de Bambu Studio ou MakerWorld. Le tableau de bord prend le relais dès que l'impression commence.
 
 **Via Bambu Studio :**
 1. Ouvrez Bambu Studio sur votre PC
@@ -83,7 +83,7 @@ Les 3 à 5 premières couches sont critiques. Une mauvaise adhérence maintenant
 :::
 
 ### Print Guard
-Bambu Dashboard dispose d'un **Print Guard** piloté par l'IA qui détecte automatiquement les erreurs de type spaghetti et peut mettre l'impression en pause. Activez-le dans **Surveillance → Print Guard**.
+3DPrintForge dispose d'un **Print Guard** piloté par l'IA qui détecte automatiquement les erreurs de type spaghetti et peut mettre l'impression en pause. Activez-le dans **Surveillance → Print Guard**.
 
 ## Étape 5 — Après la fin de l'impression
 

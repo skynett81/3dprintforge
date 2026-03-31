@@ -64,7 +64,7 @@ Färgkortsvisningen organiserar spolar visuellt efter färg. Användbart för at
 
 ## NFC-taggar
 
-Bambu Dashboard stödjer NFC-taggar för snabb identifiering av spolar:
+3DPrintForge stödjer NFC-taggar för snabb identifiering av spolar:
 
 1. Skriv NFC-tagg-ID till spolen i lagret
 2. Skanna taggen med mobilen

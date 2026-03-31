@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Plugin-System
-description: Plugins erstellen und installieren, um Bambu Dashboard zu erweitern
+description: Plugins erstellen und installieren, um 3DPrintForge zu erweitern
 ---
 
 # Plugin-System
 
-Bambu Dashboard unterstützt ein Plugin-System, mit dem Sie die Funktionalität erweitern können, ohne den Quellcode zu ändern.
+3DPrintForge unterstützt ein Plugin-System, mit dem Sie die Funktionalität erweitern können, ohne den Quellcode zu ändern.
 
 :::info Experimentell
 Das Plugin-System befindet sich in aktiver Entwicklung. Die API kann sich zwischen Versionen ändern.

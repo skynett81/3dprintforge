@@ -6,13 +6,13 @@ description: Yazıcılardan gelen tüm HMS hata kodlarının önem derecesi, ara
 
 # Hata Kaydı
 
-Hata kaydı, yazıcılarınızdan gelen tüm hataları ve HMS uyarılarını (Sağlık, Bakım, Güvenlik) toplar. Bambu Dashboard, Bambu Lab yazıcıları için 269+ HMS koduyla yerleşik bir veritabanına sahiptir.
+Hata kaydı, yazıcılarınızdan gelen tüm hataları ve HMS uyarılarını (Sağlık, Bakım, Güvenlik) toplar. 3DPrintForge, Bambu Lab yazıcıları için 269+ HMS koduyla yerleşik bir veritabanına sahiptir.
 
 Gidin: **https://localhost:3443/#errors**
 
 ## HMS Kodları
 
-Bambu Lab yazıcıları, bir sorun olduğunda MQTT üzerinden HMS kodları gönderir. Bambu Dashboard bunları otomatik olarak okunabilir hata mesajlarına çevirir:
+Bambu Lab yazıcıları, bir sorun olduğunda MQTT üzerinden HMS kodları gönderir. 3DPrintForge bunları otomatik olarak okunabilir hata mesajlarına çevirir:
 
 | Kod | Örnek | Kategori |
 |---|---|---|
@@ -59,7 +59,7 @@ Her HMS kodu için şunlarla Bambu Lab Wiki'ye bir bağlantı gösterilir:
 İlgili wiki sayfasını yeni sekmede açmak için hata kaydında **Wiki'yi Aç**'a tıklayın.
 
 :::tip Yerel Kopya
-Bambu Dashboard, wiki içeriğini çevrimdışı kullanım için yerel olarak önbelleğe alır. İçerik haftalık olarak otomatik güncellenir.
+3DPrintForge, wiki içeriğini çevrimdışı kullanım için yerel olarak önbelleğe alır. İçerik haftalık olarak otomatik güncellenir.
 :::
 
 ## Hataları Onaylama

@@ -1,7 +1,7 @@
 {
-  "name": "Bambu Dashboard",
-  "short_name": "Bambu",
-  "description": "3D Printer Dashboard for Bambu Lab printers",
+  "name": "3DPrintForge",
+  "short_name": "3DPrintForge",
+  "description": "Self-hosted dashboard for all 3D printers",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0e27",

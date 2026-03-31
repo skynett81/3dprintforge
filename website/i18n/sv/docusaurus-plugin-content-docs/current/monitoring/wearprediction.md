@@ -12,7 +12,7 @@ Gå till: **https://localhost:3443/#wear**
 
 ## Övervakade komponenter
 
-Bambu Dashboard spårar slitage på 8 komponenter per skrivare:
+3DPrintForge spårar slitage på 8 komponenter per skrivare:
 
 | Komponent | Primär slitagefaktor | Typisk livslängd |
 |---|---|---|

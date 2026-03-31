@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Fjernserver
-description: Koble sammen flere Bambu Dashboard-instanser for å se alle printere fra ett sentralt dashbord
+description: Koble sammen flere 3DPrintForge-instanser for å se alle printere fra ett sentralt dashbord
 ---
 
 # Fjernserver (Remote Nodes)
 
-Fjernserver-funksjonen lar deg koble flere Bambu Dashboard-instanser sammen slik at du kan se og styre alle printere fra ett sentralt grensesnitt — uansett om de befinner seg i samme nettverk eller på ulike lokasjoner.
+Fjernserver-funksjonen lar deg koble flere 3DPrintForge-instanser sammen slik at du kan se og styre alle printere fra ett sentralt grensesnitt — uansett om de befinner seg i samme nettverk eller på ulike lokasjoner.
 
 Gå til: **https://localhost:3443/#settings** → **Integrasjoner → Fjernservere**
 

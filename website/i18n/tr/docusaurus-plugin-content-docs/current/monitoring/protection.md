@@ -6,7 +6,7 @@ description: XCam olay algılama, sensör izleme ve sapmalarda yapılandırılab
 
 # Print Guard
 
-Print Guard, Bambu Dashboard'un gerçek zamanlı izleme sistemidir. Kamera, sensörler ve yazıcı verilerini sürekli olarak izler ve bir şeyler yanlış gittiğinde yapılandırılmış eylemleri gerçekleştirir.
+Print Guard, 3DPrintForge'un gerçek zamanlı izleme sistemidir. Kamera, sensörler ve yazıcı verilerini sürekli olarak izler ve bir şeyler yanlış gittiğinde yapılandırılmış eylemleri gerçekleştirir.
 
 Gidin: **https://localhost:3443/#protection**
 

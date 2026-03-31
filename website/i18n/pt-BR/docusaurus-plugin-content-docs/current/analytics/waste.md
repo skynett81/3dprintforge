@@ -12,7 +12,7 @@ Acesse em: **https://localhost:3443/#waste**
 
 ## Categorias de desperdício
 
-O Bambu Dashboard distingue três tipos de desperdício:
+O 3DPrintForge distingue três tipos de desperdício:
 
 | Categoria | Fonte | Proporção típica |
 |-----------|-------|-----------------|

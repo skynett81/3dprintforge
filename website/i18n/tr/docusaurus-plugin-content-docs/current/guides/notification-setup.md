@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Bildirimleri ayarlama
-description: Bambu Dashboard'da Telegram, Discord, e-posta ve push bildirimlerini yapılandırın
+description: 3DPrintForge'da Telegram, Discord, e-posta ve push bildirimlerini yapılandırın
 ---
 
 # Bildirimleri ayarlama
 
-Bambu Dashboard, tamamlanan baskılardan kritik hatalara kadar her şey için sizi bilgilendirebilir — Telegram, Discord, e-posta veya tarayıcı push bildirimleri aracılığıyla.
+3DPrintForge, tamamlanan baskılardan kritik hatalara kadar her şey için sizi bilgilendirebilir — Telegram, Discord, e-posta veya tarayıcı push bildirimleri aracılığıyla.
 
 ## Bildirim kanallarına genel bakış
 
@@ -59,7 +59,7 @@ Tüm bir grubu bilgilendirmek mi istiyorsunuz? Botu bir Telegram grubuna ekleyin
 2. Bildirimlerin gelmesini istediğiniz kanala sağ tıklayın → **Kanalı düzenle**
 3. **Entegrasyonlar → Webhook'lar**'a gidin
 4. **Yeni Webhook**'a tıklayın
-5. Bir isim verin (örn. "Bambu Dashboard")
+5. Bir isim verin (örn. "3DPrintForge")
 6. Bir avatar seçin (isteğe bağlı)
 7. **Webhook URL'sini kopyala**'ya tıklayın
 

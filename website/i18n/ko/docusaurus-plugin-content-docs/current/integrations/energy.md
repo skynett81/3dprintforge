@@ -18,7 +18,7 @@ Tibber는 스팟 가격을 위한 개방형 API를 제공하는 노르웨이 전
 
 1. [developer.tibber.com](https://developer.tibber.com)에 로그인합니다
 2. **Personal Access Token** 생성
-3. Bambu Dashboard에서: **Tibber API 토큰** 아래에 토큰 붙여넣기
+3. 3DPrintForge에서: **Tibber API 토큰** 아래에 토큰 붙여넣기
 4. **홈** 선택 (여러 홈이 있는 경우 요금을 가져올 홈)
 5. **연결 테스트** 클릭
 6. **저장** 클릭

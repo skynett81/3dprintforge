@@ -12,7 +12,7 @@ Przejdź do: **https://localhost:3443/#gallery**
 
 ## Zrzuty ekranu przy kamieniach milowych
 
-Bambu Dashboard automatycznie robi zrzut ekranu z kamery przy następujących kamieniach milowych:
+3DPrintForge automatycznie robi zrzut ekranu z kamery przy następujących kamieniach milowych:
 
 | Kamień milowy | Czas |
 |---|---|

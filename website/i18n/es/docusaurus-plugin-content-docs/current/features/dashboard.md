@@ -6,7 +6,7 @@ description: Vista en tiempo real de la impresora activa con visualización 3D d
 
 # Panel principal
 
-El panel principal es el centro de control central de Bambu Dashboard. Muestra el estado en tiempo real de la impresora seleccionada y te permite monitorear, controlar y personalizar la vista según tus necesidades.
+El panel principal es el centro de control central de 3DPrintForge. Muestra el estado en tiempo real de la impresora seleccionada y te permite monitorear, controlar y personalizar la vista según tus necesidades.
 
 Ir a: **https://localhost:3443/**
 

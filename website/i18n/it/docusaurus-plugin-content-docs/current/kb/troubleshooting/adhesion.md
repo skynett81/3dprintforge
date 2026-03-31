@@ -38,7 +38,7 @@ Il Z-offset è l'altezza tra l'ugello e il piano al primo strato. Troppo alto = 
 Regola il Z-offset tramite **Controllo → Regola Z in diretta** durante la stampa.
 
 :::tip Regola in diretta mentre stampi
-Bambu Dashboard mostra i pulsanti di regolazione Z-offset durante una stampa attiva. Regola in passi di ±0,02 mm mentre osservi il primo strato.
+3DPrintForge mostra i pulsanti di regolazione Z-offset durante una stampa attiva. Regola in passi di ±0,02 mm mentre osservi il primo strato.
 :::
 
 ### 3. Controlla la temperatura del piano

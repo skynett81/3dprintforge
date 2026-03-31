@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Configurar o estoque de filamentos
-description: Como criar, configurar e acompanhar seus carretéis de filamento no Bambu Dashboard
+description: Como criar, configurar e acompanhar seus carretéis de filamento no 3DPrintForge
 ---
 
 # Configurar o estoque de filamentos
 
-O estoque de filamentos no Bambu Dashboard te dá visão completa de todos os seus carretéis — o que resta, o que você usou e quais carretéis estão no AMS agora.
+O estoque de filamentos no 3DPrintForge te dá visão completa de todos os seus carretéis — o que resta, o que você usou e quais carretéis estão no AMS agora.
 
 ## Criação automática do AMS
 

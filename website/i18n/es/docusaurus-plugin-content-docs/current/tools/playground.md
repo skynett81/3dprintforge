@@ -6,7 +6,7 @@ description: Prueba los 177 endpoints de la API directamente en el navegador con
 
 # Área de pruebas de API
 
-El área de pruebas de API te permite explorar y probar los 177 endpoints de la API de Bambu Dashboard directamente en el navegador — sin escribir código.
+El área de pruebas de API te permite explorar y probar los 177 endpoints de la API de 3DPrintForge directamente en el navegador — sin escribir código.
 
 Ir a: **https://localhost:3443/api/docs**
 

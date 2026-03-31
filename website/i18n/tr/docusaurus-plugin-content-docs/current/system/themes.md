@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Tema
-description: Bambu Dashboard'un görünümünü açık/koyu/otomatik mod, 6 renk paleti ve özel vurgu rengiyle özelleştirin
+description: 3DPrintForge'un görünümünü açık/koyu/otomatik mod, 6 renk paleti ve özel vurgu rengiyle özelleştirin
 ---
 
 # Tema
 
-Bambu Dashboard, görünümü zevkinize ve kullanım durumunuza göre özelleştirmenize olanak tanıyan esnek bir tema sistemine sahiptir.
+3DPrintForge, görünümü zevkinize ve kullanım durumunuza göre özelleştirmenize olanak tanıyan esnek bir tema sistemine sahiptir.
 
 Gidin: **https://localhost:3443/#settings** → **Tema**
 
@@ -102,5 +102,5 @@ Kiosk görünümü için uzaktan optimal performans ve okunabilirlik için **Kom
 Temanızı başkalarıyla paylaşın:
 
 1. **Temayı Dışa Aktar**'a tıklayın — bir `.json` dosyası indirir
-2. Dosyayı diğer Bambu Dashboard kullanıcılarıyla paylaşın
+2. Dosyayı diğer 3DPrintForge kullanıcılarıyla paylaşın
 3. Onlar **Temayı İçe Aktar** → dosyayı seç ile içe aktarır

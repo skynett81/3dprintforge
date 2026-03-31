@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Meerdere printers
-description: Stel meerdere Bambu-printers in en beheer ze in Bambu Dashboard — vlootoverzicht, wachtrij en gespreide start
+description: Stel meerdere Bambu-printers in en beheer ze in 3DPrintForge — vlootoverzicht, wachtrij en gespreide start
 ---
 
 # Meerdere printers
 
-Heb je meer dan één printer? Bambu Dashboard is gebouwd voor vlootbeheer — je kunt alle printers vanaf één plek bewaken, besturen en coördineren.
+Heb je meer dan één printer? 3DPrintForge is gebouwd voor vlootbeheer — je kunt alle printers vanaf één plek bewaken, besturen en coördineren.
 
 ## Een nieuwe printer toevoegen
 

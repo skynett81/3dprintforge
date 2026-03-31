@@ -1,18 +1,18 @@
 ---
 sidebar_position: 3
 title: Nastavení Docker
-description: Spusťte Bambu Dashboard s Docker a docker-compose
+description: Spusťte 3DPrintForge s Docker a docker-compose
 ---
 
 # Nastavení Docker
 
-Bambu Dashboard obsahuje `Dockerfile` a `docker-compose.yml` pro snadnou kontejnerizaci.
+3DPrintForge obsahuje `Dockerfile` a `docker-compose.yml` pro snadnou kontejnerizaci.
 
 ## Rychlý start
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 docker-compose up -d
 ```
 
@@ -24,9 +24,9 @@ Otevřete `https://localhost:3443` v prohlížeči.
 version: '3.8'
 
 services:
-  bambu-dashboard:
+  3dprintforge:
     build: .
-    container_name: bambu-dashboard
+    container_name: 3dprintforge
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -116,13 +116,13 @@ docker-compose pull
 docker-compose up -d --build
 
 # Záloha databáze
-docker cp bambu-dashboard:/app/data/database.db ./backup-$(date +%Y%m%d).db
+docker cp 3dprintforge:/app/data/database.db ./backup-$(date +%Y%m%d).db
 ```
 
 ## Stav zdraví
 
 ```bash
-docker inspect --format='{{.State.Health.Status}}' bambu-dashboard
+docker inspect --format='{{.State.Health.Status}}' 3dprintforge
 ```
 
 Kontejner hlásí `healthy`, když server běží a odpovídá na `/api/health`.

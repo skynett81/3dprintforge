@@ -6,7 +6,7 @@ description: Automatic weekly and monthly email reports with statistics, activit
 
 # Reports
 
-Bambu Dashboard can send automatic email reports with statistics and activity summaries — weekly, monthly, or both.
+3DPrintForge can send automatic email reports with statistics and activity summaries — weekly, monthly, or both.
 
 Go to: **https://localhost:3443/#settings** → **System → Reports**
 
@@ -83,7 +83,7 @@ The monthly report covers the last 30 days and includes everything from the week
 1. Go to **Settings → Reports → Customization**
 2. Check / uncheck sections to include
 3. Select **Printer filter**: all printers or a selection
-4. Select **Logo display**: show Bambu Dashboard logo in header or disable
+4. Select **Logo display**: show 3DPrintForge logo in header or disable
 5. Click **Save**
 
 ## Report archive

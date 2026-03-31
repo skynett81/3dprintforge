@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Kopia zapasowa
-description: Twórz, przywracaj i planuj automatyczne kopie zapasowe danych Bambu Dashboard
+description: Twórz, przywracaj i planuj automatyczne kopie zapasowe danych 3DPrintForge
 ---
 
 # Kopia zapasowa
 
-Bambu Dashboard może tworzyć kopie zapasowe całej konfiguracji, historii i danych, abyś mógł łatwo przywrócić je w przypadku awarii systemu, przeniesienia serwera lub problemów z aktualizacją.
+3DPrintForge może tworzyć kopie zapasowe całej konfiguracji, historii i danych, abyś mógł łatwo przywrócić je w przypadku awarii systemu, przeniesienia serwera lub problemów z aktualizacją.
 
 Przejdź do: **https://localhost:3443/#settings** → **System → Kopia zapasowa**
 
@@ -36,7 +36,7 @@ Przejdź do: **https://localhost:3443/#settings** → **System → Kopia zapasow
 
 Kopia zapasowa jest zapisywana jako plik `.zip` z znacznikiem czasu w nazwie:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Pobieranie kopii zapasowej
@@ -89,7 +89,7 @@ Przywracanie zastępuje wszystkie istniejące dane zawartością pliku kopii zap
 
 ## Walidacja kopii zapasowej
 
-Bambu Dashboard waliduje wszystkie pliki kopii zapasowych przed przywróceniem:
+3DPrintForge waliduje wszystkie pliki kopii zapasowych przed przywróceniem:
 
 - Sprawdza, czy format ZIP jest prawidłowy
 - Weryfikuje, czy schemat bazy danych jest kompatybilny z bieżącą wersją

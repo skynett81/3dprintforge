@@ -95,7 +95,7 @@ Use «Salvar como novo» para manter um perfil funcional enquanto experimenta al
 
 ### Importação
 1. Clique em **Importar perfis**
-2. Selecione um arquivo `.json` exportado de outro Bambu Dashboard
+2. Selecione um arquivo `.json` exportado de outro 3DPrintForge
 3. Perfis existentes com o mesmo nome podem ser sobrescritos ou ambos mantidos
 
 ## Compartilhar perfis

@@ -38,7 +38,7 @@ Z-offset je výška mezi tryskou a podložkou při první vrstvě. Příliš vys
 Upravte Z-offset přes **Ovládání → Živá úprava Z** během tisku.
 
 :::tip Živá úprava během tisku
-Bambu Dashboard zobrazuje tlačítka pro úpravu Z-offsetu během aktivního tisku. Upravujte v krocích ±0,02 mm při sledování první vrstvy.
+3DPrintForge zobrazuje tlačítka pro úpravu Z-offsetu během aktivního tisku. Upravujte v krocích ±0,02 mm při sledování první vrstvy.
 :::
 
 ### 3. Zkontrolujte teplotu podložky

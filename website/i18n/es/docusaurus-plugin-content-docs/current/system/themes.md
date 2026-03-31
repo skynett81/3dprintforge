@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Tema
-description: Personaliza la apariencia de Bambu Dashboard con modo claro/oscuro/automático, 6 paletas de colores y color de acento personalizado
+description: Personaliza la apariencia de 3DPrintForge con modo claro/oscuro/automático, 6 paletas de colores y color de acento personalizado
 ---
 
 # Tema
 
-Bambu Dashboard tiene un sistema de temas flexible que te permite personalizar la apariencia a tu gusto y situación de uso.
+3DPrintForge tiene un sistema de temas flexible que te permite personalizar la apariencia a tu gusto y situación de uso.
 
 Ir a: **https://localhost:3443/#settings** → **Tema**
 
@@ -102,5 +102,5 @@ Para la vista de quiosco, activa **Compacto** + **Oscuro** + **Animaciones reduc
 Comparte tu tema con otros:
 
 1. Haz clic en **Exportar tema** — descarga un archivo `.json`
-2. Comparte el archivo con otros usuarios de Bambu Dashboard
+2. Comparte el archivo con otros usuarios de 3DPrintForge
 3. Ellos importan mediante **Importar tema** → selecciona el archivo

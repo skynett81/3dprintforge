@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: PWA
-description: Installez Bambu Dashboard comme Progressive Web App pour une expérience similaire à une application, le mode hors ligne et les notifications en arrière-plan
+description: Installez 3DPrintForge comme Progressive Web App pour une expérience similaire à une application, le mode hors ligne et les notifications en arrière-plan
 ---
 
 # PWA (Progressive Web App)
 
-Bambu Dashboard peut être installé comme une Progressive Web App (PWA) — une expérience similaire à une application directement depuis le navigateur, sans boutique d'applications. Vous bénéficiez d'un accès plus rapide, de notifications push en arrière-plan et de fonctionnalités hors ligne limitées.
+3DPrintForge peut être installé comme une Progressive Web App (PWA) — une expérience similaire à une application directement depuis le navigateur, sans boutique d'applications. Vous bénéficiez d'un accès plus rapide, de notifications push en arrière-plan et de fonctionnalités hors ligne limitées.
 
 ## Installer comme application
 
@@ -16,9 +16,9 @@ Bambu Dashboard peut être installé comme une Progressive Web App (PWA) — une
 2. Cherchez l'icône **Installer** dans la barre d'adresse (flèche vers le bas avec icône d'écran)
 3. Cliquez dessus
 4. Cliquez sur **Installer** dans la boîte de dialogue
-5. Bambu Dashboard s'ouvre comme une fenêtre séparée sans interface navigateur
+5. 3DPrintForge s'ouvre comme une fenêtre séparée sans interface navigateur
 
-Alternativement : cliquez sur les trois points (⋮) → **Installer Bambu Dashboard...**
+Alternativement : cliquez sur les trois points (⋮) → **Installer 3DPrintForge...**
 
 ### Bureau (Firefox)
 
@@ -75,7 +75,7 @@ Les notifications push nécessitent que le navigateur s'exécute en arrière-pla
 
 ## Icône et apparence de l'application
 
-La PWA utilise automatiquement l'icône Bambu Dashboard. Pour personnaliser :
+La PWA utilise automatiquement l'icône 3DPrintForge. Pour personnaliser :
 
 1. Accédez à **Paramètres → Système → PWA**
 2. Téléchargez une icône personnalisée (minimum 512×512 px PNG)

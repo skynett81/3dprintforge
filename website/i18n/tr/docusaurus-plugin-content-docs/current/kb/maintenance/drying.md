@@ -148,6 +148,6 @@ Ucuz bir dijital higrometre kutudaki gerçek nem oranını gösterir:
 - Kurutulmuş makaraları **kurutma tarihi** ile işaretleyin
 - Kurutucu ile yazıcı arasında **özel PTFE boru**, baskı sırasında maruziyeti en aza indirir
 
-## Bambu Dashboard ve kurutma durumu
+## 3DPrintForge ve kurutma durumu
 
-Bambu Dashboard, filament profillerinde son kurutma tarihi dahil filament bilgilerini kaydetmenize olanak tanır. Hangi makaraların taze kurutulmuş, hangilerinin yeni bir tura ihtiyaç duyduğunu takip etmek için bunu kullanın.
+3DPrintForge, filament profillerinde son kurutma tarihi dahil filament bilgilerini kaydetmenize olanak tanır. Hangi makaraların taze kurutulmuş, hangilerinin yeni bir tura ihtiyaç duyduğunu takip etmek için bunu kullanın.

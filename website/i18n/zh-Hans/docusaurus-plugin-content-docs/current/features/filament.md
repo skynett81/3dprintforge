@@ -64,7 +64,7 @@ description: 管理耗材卷、AMS 同步、干燥记录等
 
 ## NFC 标签
 
-Bambu Dashboard 支持 NFC 标签，实现耗材卷的快速识别：
+3DPrintForge 支持 NFC 标签，实现耗材卷的快速识别：
 
 1. 在库存中为耗材卷写入 NFC 标签 ID
 2. 用手机扫描标签

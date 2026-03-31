@@ -60,7 +60,7 @@ Dra och släpp jobb i kön för att ändra ordningen manuellt inom samma priorit
 
 ## Automatisk dispatch
 
-När **Automatisk dispatch** är aktiverat övervakar Bambu Dashboard alla skrivare och skickar nästa jobb automatiskt:
+När **Automatisk dispatch** är aktiverat övervakar 3DPrintForge alla skrivare och skickar nästa jobb automatiskt:
 
 1. Gå till **Inställningar → Kö**
 2. Aktivera **Automatisk dispatch**

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Settings
-description: Complete overview of all settings in Bambu Dashboard — printer, notifications, theme, OBS, energy, webhooks, and more
+description: Complete overview of all settings in 3DPrintForge — printer, notifications, theme, OBS, energy, webhooks, and more
 ---
 
 # Settings
 
-All settings in Bambu Dashboard are gathered on one page with clear categories. Here is an overview of what is available in each category.
+All settings in 3DPrintForge are gathered on one page with clear categories. Here is an overview of what is available in each category.
 
 Go to: **https://localhost:3443/#settings**
 

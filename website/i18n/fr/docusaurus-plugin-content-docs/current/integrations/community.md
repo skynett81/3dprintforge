@@ -6,7 +6,7 @@ description: Parcourez les profils de filaments partagés par la communauté, co
 
 # Filaments communautaires
 
-Les filaments communautaires constituent une base de données partagée de profils de filaments contribués par les utilisateurs de Bambu Dashboard du monde entier. Trouvez les meilleurs réglages pour votre filament et partagez vos propres expériences.
+Les filaments communautaires constituent une base de données partagée de profils de filaments contribués par les utilisateurs de 3DPrintForge du monde entier. Trouvez les meilleurs réglages pour votre filament et partagez vos propres expériences.
 
 Accédez à : **https://localhost:3443/#community**
 

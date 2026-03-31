@@ -12,7 +12,7 @@ Navigieren Sie zu: **https://localhost:3443/#bedmesh**
 
 ## Was ist Bed Mesh?
 
-Bambu Lab-Drucker scannen die Druckbettoberfläche mit einem Sensor und erstellen eine Karte (Mesh) der Höhenabweichungen. Die Drucker-Firmware kompensiert Abweichungen während des Drucks automatisch. Das Bambu Dashboard visualisiert diese Karte für Sie.
+Bambu Lab-Drucker scannen die Druckbettoberfläche mit einem Sensor und erstellen eine Karte (Mesh) der Höhenabweichungen. Die Drucker-Firmware kompensiert Abweichungen während des Drucks automatisch. Das 3DPrintForge visualisiert diese Karte für Sie.
 
 ## Visualisierung
 

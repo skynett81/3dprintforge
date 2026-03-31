@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: 设置
-description: Bambu Dashboard 所有设置的完整概览——打印机、通知、主题、OBS、电价、Webhook 等
+description: 3DPrintForge 所有设置的完整概览——打印机、通知、主题、OBS、电价、Webhook 等
 ---
 
 # 设置
 
-Bambu Dashboard 的所有设置集中在一个页面，按清晰的类别组织。以下是各类别的内容概览。
+3DPrintForge 的所有设置集中在一个页面，按清晰的类别组织。以下是各类别的内容概览。
 
 访问地址：**https://localhost:3443/#settings**
 

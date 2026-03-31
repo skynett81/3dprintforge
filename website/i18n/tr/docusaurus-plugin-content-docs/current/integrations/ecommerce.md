@@ -19,7 +19,7 @@ E-ticaret modülü geçerli bir lisans gerektirir. Lisanslar **yalnızca [geekte
 ### Lisans Satın Alma
 
 1. **[geektech.no](https://geektech.no)** adresine gidin ve bir hesap oluşturun
-2. **Bambu Dashboard — E-Ticaret Lisansı**'nı seçin
+2. **3DPrintForge — E-Ticaret Lisansı**'nı seçin
 3. Lisans türünü seçin:
 
 | Lisans Türü | Açıklama | Yazıcılar |
@@ -70,7 +70,7 @@ Birden fazla IP adresi ve MAC adresine izin verilebilir (geektech.no admin'de sa
    - **Örnek Kimliği** (kurulumunuza özgü)
 
 :::warning Lisans Anahtarı Alan Adınıza ve Kurulumunuza Bağlıdır
-Anahtar, belirli bir Bambu Dashboard kurulumu ve alan adı için etkinleştirilir. Aşağıdaki durumlarda [geektech.no](https://geektech.no) desteğiyle iletişime geçin:
+Anahtar, belirli bir 3DPrintForge kurulumu ve alan adı için etkinleştirilir. Aşağıdaki durumlarda [geektech.no](https://geektech.no) desteğiyle iletişime geçin:
 - Lisansı yeni bir sunucuya taşımak
 - Alan adını değiştirmek
 - Yazıcı sayısını artırmak
@@ -223,6 +223,6 @@ Muhasebe sistemine aktarmak için CSV'ye dışa aktarın.
 
 :::info Yardıma mı İhtiyacınız Var?
 - **Lisans soruları**: [geektech.no](https://geektech.no) desteğiyle iletişime geçin
-- **Teknik sorunlar**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Özellik istekleri**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Teknik sorunlar**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Özellik istekleri**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

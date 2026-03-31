@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Értesítések beállítása
-description: Telegram, Discord, e-mail és push értesítések konfigurálása a Bambu Dashboardban
+description: Telegram, Discord, e-mail és push értesítések konfigurálása a 3DPrintForgeban
 ---
 
 # Értesítések beállítása
 
-A Bambu Dashboard értesíthet a befejezett nyomtatásoktól a kritikus hibákig — Telegram, Discord, e-mail vagy böngésző push-értesítéseken keresztül.
+A 3DPrintForge értesíthet a befejezett nyomtatásoktól a kritikus hibákig — Telegram, Discord, e-mail vagy böngésző push-értesítéseken keresztül.
 
 ## Értesítési csatornák áttekintése
 
@@ -59,7 +59,7 @@ Szeretne értesíteni egy egész csoportot? Adja hozzá a botot egy Telegram-cso
 2. Kattintson jobb gombbal a csatornára, amelyre értesítéseket szeretne kapni → **Csatorna szerkesztése**
 3. Lépjen az **Integrációk → Webhooks** menübe
 4. Kattintson az **Új Webhook** gombra
-5. Adjon nevet a webhook-nak (pl. "Bambu Dashboard")
+5. Adjon nevet a webhook-nak (pl. "3DPrintForge")
 6. Válasszon egy avatárt (opcionális)
 7. Kattintson a **Webhook URL másolása** gombra
 

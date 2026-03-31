@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Mode kiosque
-description: Configurez Bambu Dashboard comme un écran mural ou une vue hub avec le mode kiosque et la rotation automatique
+description: Configurez 3DPrintForge comme un écran mural ou une vue hub avec le mode kiosque et la rotation automatique
 ---
 
 # Mode kiosque
@@ -96,7 +96,7 @@ Ajoutez la commande dans le démarrage automatique (`~/.config/autostart/bambu-k
    ```
 
 :::tip Compte utilisateur dédié
-Créez un compte Bambu Dashboard dédié avec le rôle **Invité** pour l'appareil kiosque. L'appareil n'aura ainsi qu'un accès en lecture et ne pourra pas modifier les paramètres même si quelqu'un accède à l'écran.
+Créez un compte 3DPrintForge dédié avec le rôle **Invité** pour l'appareil kiosque. L'appareil n'aura ainsi qu'un accès en lecture et ne pourra pas modifier les paramètres même si quelqu'un accède à l'écran.
 :::
 
 ## Paramètres Hub

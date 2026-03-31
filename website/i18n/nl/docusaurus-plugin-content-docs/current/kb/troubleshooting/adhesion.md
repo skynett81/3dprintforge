@@ -38,7 +38,7 @@ De Z-offset is de hoogte tussen de spuit en het bed bij de eerste laag. Te hoog 
 Pas de Z-offset aan via **Besturing → Live Z aanpassen** tijdens het printen.
 
 :::tip Live aanpassen tijdens het printen
-Bambu Dashboard toont Z-offset aanpassingsknoppen bij een actieve print. Pas aan in stappen van ±0.02 mm terwijl u de eerste laag bekijkt.
+3DPrintForge toont Z-offset aanpassingsknoppen bij een actieve print. Pas aan in stappen van ±0.02 mm terwijl u de eerste laag bekijkt.
 :::
 
 ### 3. Controleer de bedtemperatuur

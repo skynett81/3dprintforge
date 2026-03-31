@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Az első nyomtatás
-description: Lépésről lépésre útmutató az első 3D nyomtatás elindításához és figyeléséhez a Bambu Dashboardban
+description: Lépésről lépésre útmutató az első 3D nyomtatás elindításához és figyeléséhez a 3DPrintForgeban
 ---
 
 # Az első nyomtatás
 
-Ez az útmutató végigvezet a teljes folyamaton — a csatlakoztatott nyomtatótól a kész nyomatig — a Bambu Dashboard vezérlőközpontként való használatával.
+Ez az útmutató végigvezet a teljes folyamaton — a csatlakoztatott nyomtatótól a kész nyomatig — a 3DPrintForge vezérlőközpontként való használatával.
 
 ## 1. lépés — Ellenőrizd, hogy a nyomtató csatlakoztatva van-e
 
@@ -32,7 +32,7 @@ A LAN mód kisebb késleltetést biztosít, mint a felhő mód. Engedélyezd a n
 
 ## 2. lépés — Töltsd fel a modelledet
 
-A Bambu Dashboard nem indít el nyomtatásokat közvetlenül — ez a Bambu Studio vagy a MakerWorld feladata. A dashboard akkor veszi át az irányítást, amint a nyomtatás megkezdődik.
+A 3DPrintForge nem indít el nyomtatásokat közvetlenül — ez a Bambu Studio vagy a MakerWorld feladata. A dashboard akkor veszi át az irányítást, amint a nyomtatás megkezdődik.
 
 **A Bambu Studio segítségével:**
 1. Nyisd meg a Bambu Studiót a számítógépeden
@@ -83,7 +83,7 @@ Az első 3–5 réteg kritikus. A rossz tapadás most sikertelen nyomtatást jel
 :::
 
 ### Print Guard
-A Bambu Dashboard rendelkezik egy MI-vezérelt **Print Guard** funkcióval, amely automatikusan észleli a spagetti hibákat, és szüneteltetheti a nyomtatást. Engedélyezd a **Megfigyelés → Print Guard** menüpontban.
+A 3DPrintForge rendelkezik egy MI-vezérelt **Print Guard** funkcióval, amely automatikusan észleli a spagetti hibákat, és szüneteltetheti a nyomtatást. Engedélyezd a **Megfigyelés → Print Guard** menüpontban.
 
 ## 5. lépés — A nyomtatás befejezése után
 

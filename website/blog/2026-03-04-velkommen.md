@@ -1,11 +1,11 @@
 ---
 slug: welcome
-title: "Welcome to Bambu Dashboard"
+title: "Welcome to 3DPrintForge"
 authors: [skynett81]
 tags: [guide]
 ---
 
-Bambu Dashboard is a self-hosted dashboard for Bambu Lab 3D printers. It connects directly to your printer via MQTT and gives you full control and overview.
+3DPrintForge is a self-hosted dashboard for Bambu Lab 3D printers. It connects directly to your printer via MQTT and gives you full control and overview.
 
 <!-- truncate -->
 

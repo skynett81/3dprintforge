@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Uzak Sunucu
-description: Tüm yazıcıları tek bir merkezi panodan görüntülemek için birden fazla Bambu Dashboard örneğini birbirine bağlayın
+description: Tüm yazıcıları tek bir merkezi panodan görüntülemek için birden fazla 3DPrintForge örneğini birbirine bağlayın
 ---
 
 # Uzak Sunucu (Remote Nodes)
 
-Uzak sunucu özelliği, birden fazla Bambu Dashboard örneğini birbirine bağlamanıza olanak tanır; böylece tüm yazıcıları tek bir merkezi arayüzden görüntüleyebilir ve kontrol edebilirsiniz — aynı ağda veya farklı konumlarda olsun.
+Uzak sunucu özelliği, birden fazla 3DPrintForge örneğini birbirine bağlamanıza olanak tanır; böylece tüm yazıcıları tek bir merkezi arayüzden görüntüleyebilir ve kontrol edebilirsiniz — aynı ağda veya farklı konumlarda olsun.
 
 Gidin: **https://localhost:3443/#settings** → **Entegrasyonlar → Uzak Sunucular**
 

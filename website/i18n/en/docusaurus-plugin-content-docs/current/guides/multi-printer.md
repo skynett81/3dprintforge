@@ -1,12 +1,12 @@
 ---
 sidebar_position: 6
 title: Multiple printers
-description: Set up and manage multiple Bambu printers in Bambu Dashboard — fleet overview, queue, and staggered start
+description: Set up and manage multiple Bambu printers in 3DPrintForge — fleet overview, queue, and staggered start
 ---
 
 # Multiple printers
 
-Have more than one printer? Bambu Dashboard is built for fleet management — you can monitor, control, and coordinate all your printers from one place.
+Have more than one printer? 3DPrintForge is built for fleet management — you can monitor, control, and coordinate all your printers from one place.
 
 ## Adding a new printer
 

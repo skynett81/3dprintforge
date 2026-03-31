@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Sikkerhetskopi
-description: Opprett, gjenopprett og planlegg automatiske sikkerhetskopier av Bambu Dashboard-data
+description: Opprett, gjenopprett og planlegg automatiske sikkerhetskopier av 3DPrintForge-data
 ---
 
 # Sikkerhetskopi
 
-Bambu Dashboard kan ta sikkerhetskopi av all konfigurasjon, historikk og data slik at du enkelt kan gjenopprette ved systemfeil, serverflytt eller oppdateringsproblemer.
+3DPrintForge kan ta sikkerhetskopi av all konfigurasjon, historikk og data slik at du enkelt kan gjenopprette ved systemfeil, serverflytt eller oppdateringsproblemer.
 
 Gå til: **https://localhost:3443/#settings** → **System → Sikkerhetskopi**
 
@@ -36,7 +36,7 @@ Gå til: **https://localhost:3443/#settings** → **System → Sikkerhetskopi**
 
 Backup lagres som en `.zip`-fil med tidsstempel i filnavnet:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Laste ned backup
@@ -89,7 +89,7 @@ Gjenoppretting erstatter all eksisterende data med innholdet fra backup-filen. S
 
 ## Backup-validering
 
-Bambu Dashboard validerer alle backup-filer før gjenoppretting:
+3DPrintForge validerer alle backup-filer før gjenoppretting:
 
 - Sjekker at ZIP-formatet er gyldig
 - Verifiserer at databaseskjemaet er kompatibelt med gjeldende versjon

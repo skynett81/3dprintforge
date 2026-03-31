@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Tema
-description: Tilpass utseendet til Bambu Dashboard med lys/mørk/auto-modus, 6 fargepaletter og egendefinert aksentfarge
+description: Tilpass utseendet til 3DPrintForge med lys/mørk/auto-modus, 6 fargepaletter og egendefinert aksentfarge
 ---
 
 # Tema
 
-Bambu Dashboard har et fleksibelt temasystem som lar deg tilpasse utseendet til din smak og brukssituasjon.
+3DPrintForge har et fleksibelt temasystem som lar deg tilpasse utseendet til din smak og brukssituasjon.
 
 Gå til: **https://localhost:3443/#settings** → **Tema**
 
@@ -102,5 +102,5 @@ For kiosk-visning, aktiver **Kompakt** + **Mørk** + **Reduserte animasjoner** f
 Del temaet ditt med andre:
 
 1. Klikk **Eksporter tema** — laster ned en `.json`-fil
-2. Del filen med andre Bambu Dashboard-brukere
+2. Del filen med andre 3DPrintForge-brukere
 3. De importerer via **Importer tema** → velg filen

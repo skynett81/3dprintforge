@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Problemen oplossen bij mislukte prints
-description: Diagnosticeer en los veelvoorkomende printfouten op met behulp van de foutlogboeken en hulpmiddelen van Bambu Dashboard
+description: Diagnosticeer en los veelvoorkomende printfouten op met behulp van de foutlogboeken en hulpmiddelen van 3DPrintForge
 ---
 
 # Problemen oplossen bij mislukte prints
 
-Iets ging fout? Geen paniek — de meeste printfouten hebben eenvoudige oplossingen. Bambu Dashboard helpt je snel de oorzaak te vinden.
+Iets ging fout? Geen paniek — de meeste printfouten hebben eenvoudige oplossingen. 3DPrintForge helpt je snel de oorzaak te vinden.
 
 ## Stap 1 — Controleer de HMS-foutcodes
 

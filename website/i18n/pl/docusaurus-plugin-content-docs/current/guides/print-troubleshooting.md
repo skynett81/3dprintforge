@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Rozwiązywanie problemów z nieudanymi wydrukami
-description: Diagnozuj i rozwiązuj typowe błędy druku za pomocą dzienników błędów i narzędzi Bambu Dashboard
+description: Diagnozuj i rozwiązuj typowe błędy druku za pomocą dzienników błędów i narzędzi 3DPrintForge
 ---
 
 # Rozwiązywanie problemów z nieudanymi wydrukami
 
-Coś poszło nie tak? Nie panikuj — większość błędów druku ma proste rozwiązania. Bambu Dashboard pomoże Ci szybko znaleźć przyczynę.
+Coś poszło nie tak? Nie panikuj — większość błędów druku ma proste rozwiązania. 3DPrintForge pomoże Ci szybko znaleźć przyczynę.
 
 ## Krok 1 — Sprawdź kody błędów HMS
 

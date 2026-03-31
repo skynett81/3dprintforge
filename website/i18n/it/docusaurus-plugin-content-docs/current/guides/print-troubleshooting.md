@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Risoluzione dei problemi di stampa
-description: Diagnostica e risolvi i problemi di stampa più comuni usando i log degli errori e gli strumenti di Bambu Dashboard
+description: Diagnostica e risolvi i problemi di stampa più comuni usando i log degli errori e gli strumenti di 3DPrintForge
 ---
 
 # Risoluzione dei problemi di stampa
 
-Qualcosa è andato storto? Non preoccuparti — la maggior parte dei problemi di stampa ha soluzioni semplici. Bambu Dashboard ti aiuta a trovare rapidamente la causa.
+Qualcosa è andato storto? Non preoccuparti — la maggior parte dei problemi di stampa ha soluzioni semplici. 3DPrintForge ti aiuta a trovare rapidamente la causa.
 
 ## Passo 1 — Controlla i codici di errore HMS
 

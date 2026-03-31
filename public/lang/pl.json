@@ -1889,7 +1889,7 @@
     "ha_mqtt_broker_required": "URL brokera jest wymagany",
     "settings_sub_nodes": "Węzły",
     "nodes_title": "Zewnętrzne węzły",
-    "nodes_desc": "Połącz się z innymi instancjami Bambu Dashboard, aby widzieć ich drukarki obok lokalnych. Zewnętrzne drukarki pojawiają się w selektorze z aktualnym statusem.",
+    "nodes_desc": "Połącz się z innymi instancjami 3DPrintForge, aby widzieć ich drukarki obok lokalnych. Zewnętrzne drukarki pojawiają się w selektorze z aktualnym statusem.",
     "nodes_add": "Dodaj zewnętrzny węzeł",
     "nodes_none": "Brak skonfigurowanych zewnętrznych węzłów",
     "nodes_printers": "drukarki",

@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#maintenance**
 
 ## Onderhoudsplan
 
-Bambu Dashboard wordt geleverd met vooraf geconfigureerde onderhoudsintervallen voor alle Bambu Lab-printermodellen:
+3DPrintForge wordt geleverd met vooraf geconfigureerde onderhoudsintervallen voor alle Bambu Lab-printermodellen:
 
 | Taak | Interval (standaard) | Model |
 |---|---|---|

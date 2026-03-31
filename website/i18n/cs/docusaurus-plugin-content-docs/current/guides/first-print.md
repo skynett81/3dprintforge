@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Váš první tisk
-description: Průvodce krok za krokem pro zahájení prvního 3D tisku a jeho sledování v Bambu Dashboard
+description: Průvodce krok za krokem pro zahájení prvního 3D tisku a jeho sledování v 3DPrintForge
 ---
 
 # Váš první tisk
 
-Tento průvodce vás provede celým procesem — od připojené tiskárny k hotovému výtisku — s Bambu Dashboard jako řídicím centrem.
+Tento průvodce vás provede celým procesem — od připojené tiskárny k hotovému výtisku — s 3DPrintForge jako řídicím centrem.
 
 ## Krok 1 — Ověřte připojení tiskárny
 
@@ -32,7 +32,7 @@ LAN režim poskytuje nižší latenci než cloudový režim. Aktivujte jej v nas
 
 ## Krok 2 — Nahrajte svůj model
 
-Bambu Dashboard nespouští tisky přímo — to je práce Bambu Studia nebo MakerWorld. Panel převezme kontrolu, jakmile tisk začne.
+3DPrintForge nespouští tisky přímo — to je práce Bambu Studia nebo MakerWorld. Panel převezme kontrolu, jakmile tisk začne.
 
 **Přes Bambu Studio:**
 1. Otevřete Bambu Studio na svém počítači
@@ -83,7 +83,7 @@ Prvních 3–5 vrstev je kritických. Špatná přilnavost nyní znamená neúsp
 :::
 
 ### Print Guard
-Bambu Dashboard má **Print Guard** poháněný umělou inteligencí, který automaticky detekuje chyby "spaghetti" a může tisk pozastavit. Aktivujte jej v **Monitorování → Print Guard**.
+3DPrintForge má **Print Guard** poháněný umělou inteligencí, který automaticky detekuje chyby "spaghetti" a může tisk pozastavit. Aktivujte jej v **Monitorování → Print Guard**.
 
 ## Krok 5 — Po dokončení tisku
 

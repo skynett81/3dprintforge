@@ -6,7 +6,7 @@ description: Topluluktan paylaşılan filament profillerine göz atın, kendi pr
 
 # Topluluk Filamentleri
 
-Topluluk filamentleri, dünyanın dört bir yanındaki Bambu Dashboard kullanıcıları tarafından katkıda bulunulan filament profillerinin paylaşılan bir veritabanıdır. Filamentiniz için en iyi ayarları bulun ve kendi deneyimlerinizi paylaşın.
+Topluluk filamentleri, dünyanın dört bir yanındaki 3DPrintForge kullanıcıları tarafından katkıda bulunulan filament profillerinin paylaşılan bir veritabanıdır. Filamentiniz için en iyi ayarları bulun ve kendi deneyimlerinizi paylaşın.
 
 Gidin: **https://localhost:3443/#community**
 

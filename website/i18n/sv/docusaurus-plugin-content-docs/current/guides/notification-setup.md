@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: Ställa in aviseringar
-description: Konfigurera Telegram-, Discord-, e-post- och push-aviseringar i Bambu Dashboard
+description: Konfigurera Telegram-, Discord-, e-post- och push-aviseringar i 3DPrintForge
 ---
 
 # Ställa in aviseringar
 
-Bambu Dashboard kan avisera dig om allt från slutförda utskrifter till kritiska fel — via Telegram, Discord, e-post eller webbläsar-push-aviseringar.
+3DPrintForge kan avisera dig om allt från slutförda utskrifter till kritiska fel — via Telegram, Discord, e-post eller webbläsar-push-aviseringar.
 
 ## Översikt över aviseringskanaler
 
@@ -59,7 +59,7 @@ Vill du avisera en hel grupp? Lägg till boten i en Telegram-grupp, hitta grupp-
 2. Högerklicka på kanalen du vill ha aviseringar i → **Redigera kanal**
 3. Gå till **Integrationer → Webhooks**
 4. Klicka på **Ny Webhook**
-5. Ge den ett namn (t.ex. "Bambu Dashboard")
+5. Ge den ett namn (t.ex. "3DPrintForge")
 6. Välj en avatar (valfritt)
 7. Klicka på **Kopiera Webhook URL**
 

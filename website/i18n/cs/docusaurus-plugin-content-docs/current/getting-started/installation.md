@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Instalace
-description: Nainstalujte Bambu Dashboard na váš server nebo lokální počítač
+description: Nainstalujte 3DPrintForge na váš server nebo lokální počítač
 ---
 
 # Instalace
@@ -16,7 +16,7 @@ description: Nainstalujte Bambu Dashboard na váš server nebo lokální počít
 | OS | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 je povinný
-Bambu Dashboard používá `--experimental-sqlite`, které je zabudováno v Node.js 22. Starší verze nejsou podporovány.
+3DPrintForge používá `--experimental-sqlite`, které je zabudováno v Node.js 22. Starší verze nejsou podporovány.
 :::
 
 ## Instalace pomocí install.sh (doporučeno)
@@ -24,8 +24,8 @@ Bambu Dashboard používá `--experimental-sqlite`, které je zabudováno v Node
 Nejjednodušší způsob je použití interaktivního instalačního skriptu:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Skript vás provede nastavením v prohlížeči. Pro instalaci přes terminál s
 
 ```bash
 # 1. Klonujte repozitář
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Nainstalujte závislosti
 npm install
@@ -75,13 +75,13 @@ Pro spuštění dashboardu jako služby na pozadí:
 Nebo ručně:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Aktualizace
 
-Bambu Dashboard má vestavěnou automatickou aktualizaci přes GitHub Releases. Lze aktualizovat z dashboardu v části **Nastavení → Aktualizace**, nebo ručně:
+3DPrintForge má vestavěnou automatickou aktualizaci přes GitHub Releases. Lze aktualizovat z dashboardu v části **Nastavení → Aktualizace**, nebo ručně:
 
 ```bash
 git pull

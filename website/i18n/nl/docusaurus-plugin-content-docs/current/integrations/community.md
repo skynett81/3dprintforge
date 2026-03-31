@@ -6,7 +6,7 @@ description: Blader door gedeelde filamentprofielen van de community, draag uw e
 
 # Community-filamenten
 
-Community-filamenten is een gedeelde database met filamentprofielen die zijn bijgedragen door Bambu Dashboard-gebruikers over de hele wereld. Vind de beste instellingen voor uw filament en deel uw eigen ervaringen.
+Community-filamenten is een gedeelde database met filamentprofielen die zijn bijgedragen door 3DPrintForge-gebruikers over de hele wereld. Vind de beste instellingen voor uw filament en deel uw eigen ervaringen.
 
 Ga naar: **https://localhost:3443/#community**
 

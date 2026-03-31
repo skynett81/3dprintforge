@@ -6,7 +6,7 @@ description: Połącz dashboard z Bambu Lab Cloud, aby synchronizować modele i 
 
 # Integracja z Bambu Cloud
 
-Bambu Dashboard może łączyć się z **Bambu Lab Cloud** w celu pobierania zdjęć modeli, historii wydruków i danych o filamentach. Dashboard działa doskonale bez połączenia z chmurą, ale integracja z nią oferuje dodatkowe korzyści.
+3DPrintForge może łączyć się z **Bambu Lab Cloud** w celu pobierania zdjęć modeli, historii wydruków i danych o filamentach. Dashboard działa doskonale bez połączenia z chmurą, ale integracja z nią oferuje dodatkowe korzyści.
 
 ## Zalety integracji z chmurą
 

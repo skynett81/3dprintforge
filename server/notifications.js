@@ -79,7 +79,7 @@ async function sendDiscord(conf, title, message, eventType) {
       title, description: message,
       color: colors[eventType] || 0x95a5a6,
       timestamp: new Date().toISOString(),
-      footer: { text: 'Bambu Dashboard by SkyNett81' }
+      footer: { text: '3DPrintForge by SkyNett81' }
     }]
   });
   return _httpPost(conf.webhookUrl, {}, body);
@@ -121,7 +121,7 @@ async function sendEmail(conf, title, message) {
 
         switch (step) {
           case 0: // greeting
-            if (code === 220) { send('EHLO bambu-dashboard'); step = 1; }
+            if (code === 220) { send('EHLO 3dprintforge'); step = 1; }
             else done(new Error(`SMTP greeting: ${line}`));
             break;
           case 1: // EHLO
@@ -145,7 +145,7 @@ async function sendEmail(conf, title, message) {
                   }
                 });
                 socket.on('error', done);
-                send('EHLO bambu-dashboard');
+                send('EHLO 3dprintforge');
                 step = 3;
               });
             }
@@ -166,7 +166,7 @@ async function sendEmail(conf, title, message) {
           case 9:
             if (code === 354) {
               send([
-                `From: Bambu Dashboard <${conf.from}>`,
+                `From: 3DPrintForge <${conf.from}>`,
                 `To: ${conf.to}`,
                 `Subject: ${title}`,
                 'MIME-Version: 1.0',
@@ -426,7 +426,7 @@ export class NotificationManager {
   }
 
   async testChannel(channelName, channelConf) {
-    const title = 'Bambu Dashboard — Test';
+    const title = '3DPrintForge — Test';
     const message = `This is a test notification.\nChannel: ${channelName}\nTime: ${new Date().toLocaleString()}`;
     return this._sendToChannel(channelName, channelConf, title, message, 'test', {});
   }
@@ -504,7 +504,7 @@ export class NotificationManager {
     const queued = getNotificationQueue();
     if (queued.length === 0) return;
 
-    const title = `Bambu Dashboard — Digest (${queued.length} events)`;
+    const title = `3DPrintForge — Digest (${queued.length} events)`;
     let message = `Summary of ${queued.length} events during quiet hours:\n\n`;
     for (const q of queued) {
       message += `[${q.queued_at}] ${q.title}\n`;
@@ -676,7 +676,7 @@ export class NotificationManager {
 
       case 'update_available':
         return {
-          title: 'Update Available — Bambu Dashboard',
+          title: 'Update Available — 3DPrintForge',
           message: `New version: ${data.latest}\nCurrent: ${data.current}${data.changelog ? '\n\n' + data.changelog.substring(0, 300) : ''}`
         };
 
@@ -723,7 +723,7 @@ export class NotificationManager {
         };
 
       default:
-        return { title: `Bambu Dashboard: ${eventType}`, message: JSON.stringify(data) };
+        return { title: `3DPrintForge: ${eventType}`, message: JSON.stringify(data) };
     }
   }
 

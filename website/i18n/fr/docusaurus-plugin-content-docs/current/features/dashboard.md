@@ -6,7 +6,7 @@ description: Vue en temps réel de l'imprimante active avec visualisation 3D, st
 
 # Tableau de bord principal
 
-Le tableau de bord principal est le centre de contrôle central de Bambu Dashboard. Il affiche le statut en temps réel de l'imprimante sélectionnée et vous permet de surveiller, contrôler et personnaliser l'affichage selon vos besoins.
+Le tableau de bord principal est le centre de contrôle central de 3DPrintForge. Il affiche le statut en temps réel de l'imprimante sélectionnée et vous permet de surveiller, contrôler et personnaliser l'affichage selon vos besoins.
 
 Accédez à : **https://localhost:3443/**
 

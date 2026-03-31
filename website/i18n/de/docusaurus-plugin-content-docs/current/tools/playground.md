@@ -6,7 +6,7 @@ description: Testen Sie alle 177 API-Endpunkte direkt im Browser mit integrierte
 
 # API-Spielwiese
 
-Die API-Spielwiese ermöglicht es Ihnen, alle 177 API-Endpunkte im Bambu Dashboard direkt im Browser zu erkunden und zu testen — ohne Code zu schreiben.
+Die API-Spielwiese ermöglicht es Ihnen, alle 177 API-Endpunkte im 3DPrintForge direkt im Browser zu erkunden und zu testen — ohne Code zu schreiben.
 
 Navigieren Sie zu: **https://localhost:3443/api/docs**
 

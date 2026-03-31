@@ -64,7 +64,7 @@ Renk kartı görünümü, makaraları renge göre görsel olarak düzenler. Doğ
 
 ## NFC Etiketleri
 
-Bambu Dashboard, makaraların hızlı tanımlanması için NFC etiketlerini destekler:
+3DPrintForge, makaraların hızlı tanımlanması için NFC etiketlerini destekler:
 
 1. Depodaki makaraya NFC etiket ID'sini yazın
 2. Etiketi telefonunuzla taratın

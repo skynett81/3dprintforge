@@ -6,7 +6,7 @@ description: 내장된 OpenAPI 문서 및 인증으로 브라우저에서 직접
 
 # API 플레이그라운드
 
-API 플레이그라운드를 사용하면 코드를 작성하지 않고도 브라우저에서 직접 Bambu Dashboard의 177개 모든 API 엔드포인트를 탐색하고 테스트할 수 있습니다.
+API 플레이그라운드를 사용하면 코드를 작성하지 않고도 브라우저에서 직접 3DPrintForge의 177개 모든 API 엔드포인트를 탐색하고 테스트할 수 있습니다.
 
 이동: **https://localhost:3443/api/docs**
 

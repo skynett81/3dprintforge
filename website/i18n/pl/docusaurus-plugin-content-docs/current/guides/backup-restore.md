@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Kopia zapasowa i przywracanie
-description: Automatyczna i ręczna kopia zapasowa Bambu Dashboard, przywracanie i przeniesienie na nowy serwer
+description: Automatyczna i ręczna kopia zapasowa 3DPrintForge, przywracanie i przeniesienie na nowy serwer
 ---
 
 # Kopia zapasowa i przywracanie
 
-Bambu Dashboard przechowuje wszystkie dane lokalnie — historię wydruków, magazyn filamentów, ustawienia, użytkowników i więcej. Regularne tworzenie kopii zapasowych zapewnia, że nie stracisz niczego przy awarii serwera lub przy przenoszeniu.
+3DPrintForge przechowuje wszystkie dane lokalnie — historię wydruków, magazyn filamentów, ustawienia, użytkowników i więcej. Regularne tworzenie kopii zapasowych zapewnia, że nie stracisz niczego przy awarii serwera lub przy przenoszeniu.
 
 ## Co jest zawarte w kopii zapasowej?
 
@@ -40,7 +40,7 @@ Domyślnie automatyczna kopia zapasowa jest wykonywana każdej nocy o 03:00.
 
 :::info Pliki kopii zapasowych są domyślnie przechowywane tutaj
 ```
-/ścieżka/do/bambu-dashboard/data/backups/
+/ścieżka/do/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ Utwórz kopię zapasową w dowolnym momencie:
 
 **Alternatywnie przez terminal:**
 ```bash
-cd /ścieżka/do/bambu-dashboard
+cd /ścieżka/do/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ Wszystkie istniejące dane są zastępowane zawartością pliku kopii zapasowej.
 ### Przez terminal
 
 ```bash
-cd /ścieżka/do/bambu-dashboard
+cd /ścieżka/do/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Po przywróceniu uruchom panel ponownie:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # lub
 npm start
 ```
@@ -117,7 +117,7 @@ Wyeksportowane ustawienia są praktyczne do zabrania na nowy serwer. Zaimportuj 
 
 ## Przenoszenie na nowy serwer
 
-Jak przenieść Bambu Dashboard ze wszystkimi danymi na nową maszynę:
+Jak przenieść 3DPrintForge ze wszystkimi danymi na nową maszynę:
 
 ### Krok 1 — Utwórz kopię zapasową na starym serwerze
 
@@ -128,8 +128,8 @@ Jak przenieść Bambu Dashboard ze wszystkimi danymi na nową maszynę:
 ### Krok 2 — Zainstaluj na nowym serwerze
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

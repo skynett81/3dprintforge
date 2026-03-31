@@ -181,7 +181,7 @@ Bambu Studio 内置了整个 Bambu Lab 产品系列的配置文件：
 :::info 在哪里找到配置文件？
 - **Bambu Studio：** Bambu Lab 材料和许多第三方的内置配置文件
 - **供应商网站：** 在下载区搜索"Bambu Studio profile"或"JSON profile"
-- **Bambu Dashboard：** 工具部分的打印配置文件面板
+- **3DPrintForge：** 工具部分的打印配置文件面板
 - **MakerWorld：** 配置文件经常与其他用户的模型一起共享
 :::
 

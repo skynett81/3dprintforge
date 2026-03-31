@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kiosk režim
-description: Nastavte Bambu Dashboard jako nástěnný displej nebo hub zobrazení s kiosk režimem a automatickou rotací
+description: Nastavte 3DPrintForge jako nástěnný displej nebo hub zobrazení s kiosk režimem a automatickou rotací
 ---
 
 # Kiosk režim
@@ -96,7 +96,7 @@ Vložte příkaz do autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Dedikovaný uživatelský účet
-Vytvořte dedikovaný uživatelský účet Bambu Dashboard s rolí **Host** pro kiosk zařízení. Zařízení pak má pouze přístup ke čtení a nemůže měnit nastavení, i když někdo získá přístup k obrazovce.
+Vytvořte dedikovaný uživatelský účet 3DPrintForge s rolí **Host** pro kiosk zařízení. Zařízení pak má pouze přístup ke čtení a nemůže měnit nastavení, i když někdo získá přístup k obrazovce.
 :::
 
 ## Nastavení Hubu

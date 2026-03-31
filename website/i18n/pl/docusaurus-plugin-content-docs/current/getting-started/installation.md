@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Instalacja
-description: Zainstaluj Bambu Dashboard na swoim serwerze lub lokalnym komputerze
+description: Zainstaluj 3DPrintForge na swoim serwerze lub lokalnym komputerze
 ---
 
 # Instalacja
@@ -16,7 +16,7 @@ description: Zainstaluj Bambu Dashboard na swoim serwerze lub lokalnym komputerz
 | System | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 jest wymagany
-Bambu Dashboard używa `--experimental-sqlite`, które jest wbudowane w Node.js 22. Starsze wersje nie są obsługiwane.
+3DPrintForge używa `--experimental-sqlite`, które jest wbudowane w Node.js 22. Starsze wersje nie są obsługiwane.
 :::
 
 ## Instalacja za pomocą install.sh (zalecana)
@@ -24,8 +24,8 @@ Bambu Dashboard używa `--experimental-sqlite`, które jest wbudowane w Node.js 
 Najprostszym sposobem jest użycie interaktywnego skryptu instalacyjnego:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Skrypt przeprowadzi Cię przez konfigurację w przeglądarce. W przypadku instal
 
 ```bash
 # 1. Sklonuj repozytorium
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Zainstaluj zależności
 npm install
@@ -75,13 +75,13 @@ Aby uruchomić dashboard jako usługę działającą w tle:
 Lub ręcznie:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Aktualizacja
 
-Bambu Dashboard ma wbudowaną funkcję automatycznej aktualizacji przez GitHub Releases. Możesz aktualizować z dashboardu w **Ustawienia → Aktualizacja**, lub ręcznie:
+3DPrintForge ma wbudowaną funkcję automatycznej aktualizacji przez GitHub Releases. Możesz aktualizować z dashboardu w **Ustawienia → Aktualizacja**, lub ręcznie:
 
 ```bash
 git pull

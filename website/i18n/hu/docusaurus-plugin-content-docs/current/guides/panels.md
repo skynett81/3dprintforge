@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Navigálás a dashboardban
-description: Ismerd meg a Bambu Dashboard navigációját — oldalsáv, panelek, billentyűparancsok és testreszabás
+description: Ismerd meg a 3DPrintForge navigációját — oldalsáv, panelek, billentyűparancsok és testreszabás
 ---
 
 # Navigálás a dashboardban
@@ -148,7 +148,7 @@ A hatékony navigációhoz egér nélkül:
 
 ## PWA — telepítés alkalmazásként
 
-A Bambu Dashboard progresszív web-alkalmazásként (PWA) telepíthető, és böngésző menü nélkül önálló alkalmazásként futtatható:
+A 3DPrintForge progresszív web-alkalmazásként (PWA) telepíthető, és böngésző menü nélkül önálló alkalmazásként futtatható:
 
 1. Lépjen az irányítópultra a Chrome, Edge vagy Safari böngészőben
 2. Kattintson az **App telepítése** ikonra a címsávban

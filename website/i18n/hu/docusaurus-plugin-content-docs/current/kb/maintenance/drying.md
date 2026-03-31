@@ -148,6 +148,6 @@ Egy olcsó digitális higromérő mutatja a dobozban lévő aktuális páratarta
 - **Jelölje meg a megszárított tekercseket** a szárítás dátumával
 - **Dedikált PTFE cső** a szárítótól a nyomtatóig minimalizálja az expozíciót nyomtatás közben
 
-## Bambu Dashboard és szárítási állapot
+## 3DPrintForge és szárítási állapot
 
-A Bambu Dashboard lehetővé teszi a filament-információk naplózását, beleértve az utolsó szárítás dátumát a filamentprofilokban. Használja ezt annak nyomon követéséhez, hogy mely tekercsek frissen szárítottak és melyeknek van szükségük egy új körre.
+A 3DPrintForge lehetővé teszi a filament-információk naplózását, beleértve az utolsó szárítás dátumát a filamentprofilokban. Használja ezt annak nyomon követéséhez, hogy mely tekercsek frissen szárítottak és melyeknek van szükségük egy új körre.

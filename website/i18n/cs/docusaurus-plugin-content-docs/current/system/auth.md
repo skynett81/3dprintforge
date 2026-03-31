@@ -6,7 +6,7 @@ description: Spravujte uživatele, role, oprávnění, API klíče a dvoufaktoro
 
 # Autentizace
 
-Bambu Dashboard podporuje více uživatelů s řízením přístupu na základě rolí, API klíče a volitelnou dvoufaktorovou autentizaci (2FA) přes TOTP.
+3DPrintForge podporuje více uživatelů s řízením přístupu na základě rolí, API klíče a volitelnou dvoufaktorovou autentizaci (2FA) přes TOTP.
 
 Přejděte na: **https://localhost:3443/#settings** → **Uživatelé a přístup**
 

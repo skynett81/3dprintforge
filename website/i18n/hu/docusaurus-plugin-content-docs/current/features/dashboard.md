@@ -6,7 +6,7 @@ description: Valós idejű áttekintés az aktív nyomtatóról 3D-modellnézett
 
 # Főpanel
 
-A főpanel a Bambu Dashboard központi vezérlőközpontja. Valós idejű állapotot jelenít meg a kiválasztott nyomtatóról, és lehetővé teszi a figyelést, vezérlést, valamint a nézet testreszabását.
+A főpanel a 3DPrintForge központi vezérlőközpontja. Valós idejű állapotot jelenít meg a kiválasztott nyomtatóról, és lehetővé teszi a figyelést, vezérlést, valamint a nézet testreszabását.
 
 Navigálj ide: **https://localhost:3443/**
 

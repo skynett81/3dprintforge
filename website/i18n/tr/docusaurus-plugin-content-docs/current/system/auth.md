@@ -6,7 +6,7 @@ description: TOTP ile kullanıcılar, roller, izinler, API anahtarları ve iki f
 
 # Kimlik Doğrulama
 
-Bambu Dashboard, rol tabanlı erişim kontrolü, API anahtarları ve TOTP aracılığıyla isteğe bağlı iki faktörlü kimlik doğrulama (2FA) ile çok kullanıcılı yapıyı destekler.
+3DPrintForge, rol tabanlı erişim kontrolü, API anahtarları ve TOTP aracılığıyla isteğe bağlı iki faktörlü kimlik doğrulama (2FA) ile çok kullanıcılı yapıyı destekler.
 
 Gidin: **https://localhost:3443/#settings** → **Kullanıcılar ve Erişim**
 

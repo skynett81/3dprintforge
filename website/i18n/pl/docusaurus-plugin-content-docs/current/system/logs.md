@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Dziennik serwera
-description: Przeglądaj dziennik serwera w czasie rzeczywistym, filtruj według poziomu i modułu oraz diagnozuj problemy z Bambu Dashboard
+description: Przeglądaj dziennik serwera w czasie rzeczywistym, filtruj według poziomu i modułu oraz diagnozuj problemy z 3DPrintForge
 ---
 
 # Dziennik serwera
 
-Dziennik serwera daje wgląd w to, co dzieje się wewnątrz Bambu Dashboard — przydatny do diagnozowania, monitorowania i diagnostyki.
+Dziennik serwera daje wgląd w to, co dzieje się wewnątrz 3DPrintForge — przydatny do diagnozowania, monitorowania i diagnostyki.
 
 Przejdź do: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Pliki dziennika są przechowywane na serwerze:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (aktywny dziennik)
-├── bambu-dashboard.log.1.gz     (rotowany)
-├── bambu-dashboard.log.2.gz     (rotowany)
+├── 3dprintforge.log          (aktywny dziennik)
+├── 3dprintforge.log.1.gz     (rotowany)
+├── 3dprintforge.log.2.gz     (rotowany)
 └── ...
 ```
 
 :::tip Dostęp SSH
 Aby czytać dzienniki bezpośrednio na serwerze przez SSH:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

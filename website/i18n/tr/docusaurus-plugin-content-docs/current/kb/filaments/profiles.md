@@ -181,7 +181,7 @@ Birçok önde gelen tedarikçi, tam olarak kendi filamentleri için optimize edi
 :::info Profiller nerede bulunur?
 - **Bambu Studio:** Bambu Lab malzemeleri ve birçok üçüncü taraf için yerleşik profiller
 - **Tedarikçinin web sitesi:** İndirmeler bölümünde "Bambu Studio profile" veya "JSON profile" arayın
-- **Bambu Dashboard:** Araçlar bölümündeki Baskı Profilleri panelinde
+- **3DPrintForge:** Araçlar bölümündeki Baskı Profilleri panelinde
 - **MakerWorld:** Profiller genellikle diğer kullanıcılar tarafından modellerle birlikte paylaşılır
 :::
 

@@ -181,7 +181,7 @@ Veel toonaangevende leveranciers bieden kant-en-klare Bambu Studio-profielen aan
 :::info Waar profielen te vinden?
 - **Bambu Studio:** Ingebouwde profielen voor Bambu Lab-materialen en veel derde partijen
 - **Website van de leverancier:** Zoek naar "Bambu Studio profile" of "JSON profile" onder downloads
-- **Bambu Dashboard:** Onder het Printprofielen-paneel in de Hulpmiddelen-sectie
+- **3DPrintForge:** Onder het Printprofielen-paneel in de Hulpmiddelen-sectie
 - **MakerWorld:** Profielen worden vaak samen met modellen gedeeld door andere gebruikers
 :::
 

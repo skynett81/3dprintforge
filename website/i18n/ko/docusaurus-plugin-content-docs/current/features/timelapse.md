@@ -6,7 +6,7 @@ description: 3D 프린트의 타임랩스 녹화를 자동으로 활성화하고
 
 # 타임랩스
 
-Bambu Dashboard는 프린팅 중 자동으로 사진을 촬영하여 타임랩스 영상으로 합성합니다. 영상은 로컬에 저장되며 대시보드에서 직접 재생할 수 있습니다.
+3DPrintForge는 프린팅 중 자동으로 사진을 촬영하여 타임랩스 영상으로 합성합니다. 영상은 로컬에 저장되며 대시보드에서 직접 재생할 수 있습니다.
 
 이동: **https://localhost:3443/#timelapse**
 
@@ -73,7 +73,7 @@ ln -s /mnt/storage/timelapse data/timelapse
 
 프린트가 완료되면 이미지가 자동으로 ffmpeg를 통해 영상으로 합성됩니다:
 
-1. Bambu Dashboard가 MQTT에서 「print complete」 이벤트를 수신
+1. 3DPrintForge가 MQTT에서 「print complete」 이벤트를 수신
 2. 수집된 이미지로 ffmpeg 실행
 3. 영상이 저장 폴더에 저장
 4. 타임랩스 페이지에 새 영상 표시

@@ -12,7 +12,7 @@ Gå till: **https://localhost:3443/#maintenance**
 
 ## Underhållsplan
 
-Bambu Dashboard levereras med förkonfigurerade underhållsintervall för alla Bambu Lab-skrivarmodeller:
+3DPrintForge levereras med förkonfigurerade underhållsintervall för alla Bambu Lab-skrivarmodeller:
 
 | Uppgift | Intervall (standard) | Modell |
 |---|---|---|

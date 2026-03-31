@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Ställa in filamentlager
-description: Hur du skapar, konfigurerar och håller koll på dina filamentspolar i Bambu Dashboard
+description: Hur du skapar, konfigurerar och håller koll på dina filamentspolar i 3DPrintForge
 ---
 
 # Ställa in filamentlager
 
-Filamentlagret i Bambu Dashboard ger dig full överblick över alla dina spoler — vad som är kvar, vad du har använt och vilka spoler som sitter i AMS just nu.
+Filamentlagret i 3DPrintForge ger dig full överblick över alla dina spoler — vad som är kvar, vad du har använt och vilka spoler som sitter i AMS just nu.
 
 ## Automatisk skapning från AMS
 

@@ -1,6 +1,6 @@
 // health.test.js — Tester for API helse- og status-endepunkter
 // Bruker en minimal HTTP-testserver som kun eksponerer health-endepunktet,
-// uten å starte full Bambu Dashboard server (MQTT, HTTPS, etc.)
+// uten å starte full 3DPrintForge server (MQTT, HTTPS, etc.)
 
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';

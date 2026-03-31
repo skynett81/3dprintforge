@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Műszaki architektúra
-description: A Bambu Dashboard architektúrájának áttekintése — stack, modulok, adatbázis és WebSocket
+description: A 3DPrintForge architektúrájának áttekintése — stack, modulok, adatbázis és WebSocket
 ---
 
 # Műszaki architektúra

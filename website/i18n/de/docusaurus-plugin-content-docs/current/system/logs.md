@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Serverprotokoll
-description: Das Serverprotokoll in Echtzeit anzeigen, nach Stufe und Modul filtern und Probleme mit Bambu Dashboard beheben
+description: Das Serverprotokoll in Echtzeit anzeigen, nach Stufe und Modul filtern und Probleme mit 3DPrintForge beheben
 ---
 
 # Serverprotokoll
 
-Das Serverprotokoll gibt Ihnen Einblick in das, was im Bambu Dashboard passiert — nützlich für die Fehlerbehebung, Überwachung und Diagnose.
+Das Serverprotokoll gibt Ihnen Einblick in das, was im 3DPrintForge passiert — nützlich für die Fehlerbehebung, Überwachung und Diagnose.
 
 Navigieren Sie zu: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Protokolldateien werden auf dem Server gespeichert:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (aktives Protokoll)
-├── bambu-dashboard.log.1.gz     (rotiert)
-├── bambu-dashboard.log.2.gz     (rotiert)
+├── 3dprintforge.log          (aktives Protokoll)
+├── 3dprintforge.log.1.gz     (rotiert)
+├── 3dprintforge.log.2.gz     (rotiert)
 └── ...
 ```
 
 :::tip SSH-Zugriff
 Zum direkten Lesen von Protokollen auf dem Server über SSH:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

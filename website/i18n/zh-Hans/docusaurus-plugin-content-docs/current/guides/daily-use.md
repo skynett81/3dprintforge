@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: 日常使用
-description: Bambu Dashboard日常使用实用指南 — 早晨例行检查、监控、打印后处理和维护
+description: 3DPrintForge日常使用实用指南 — 早晨例行检查、监控、打印后处理和维护
 ---
 
 # 日常使用
 
-本指南介绍如何在日常生活中高效使用Bambu Dashboard — 从开始一天到关灯为止。
+本指南介绍如何在日常生活中高效使用3DPrintForge — 从开始一天到关灯为止。
 
 ## 早晨例行检查
 

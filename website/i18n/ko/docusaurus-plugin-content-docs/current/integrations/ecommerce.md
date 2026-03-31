@@ -19,7 +19,7 @@ description: 3D 프린트 판매를 위한 주문, 고객 및 청구 관리 — 
 ### 라이선스 구매
 
 1. **[geektech.no](https://geektech.no)**에 접속하여 계정 생성
-2. **Bambu Dashboard — 전자상거래 라이선스** 선택
+2. **3DPrintForge — 전자상거래 라이선스** 선택
 3. 라이선스 유형 선택:
 
 | 라이선스 유형 | 설명 | 프린터 수 |
@@ -70,7 +70,7 @@ geektech.no는 라이선스를 하나 이상의 식별자에 바인딩합니다:
    - **인스턴스 ID** (설치에 고유)
 
 :::warning 라이선스 키는 도메인과 설치에 연결됩니다
-키는 특정 Bambu Dashboard 설치와 도메인에 활성화됩니다. 다음이 필요한 경우 [geektech.no](https://geektech.no) 지원팀에 문의하십시오:
+키는 특정 3DPrintForge 설치와 도메인에 활성화됩니다. 다음이 필요한 경우 [geektech.no](https://geektech.no) 지원팀에 문의하십시오:
 - 새 서버로 라이선스 이전
 - 도메인 변경
 - 프린터 수 증가
@@ -223,6 +223,6 @@ curl -sk https://localhost:3443/api/ecommerce/license
 
 :::info 도움이 필요하신가요?
 - **라이선스 문의**: [geektech.no](https://geektech.no) 지원팀 문의
-- **기술적 문제**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **기능 요청**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **기술적 문제**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **기능 요청**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

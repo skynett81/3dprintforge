@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Im Dashboard navigieren
-description: Lernen Sie, im Bambu Dashboard zu navigieren — Seitenleiste, Panels, Tastaturkürzel und Anpassung
+description: Lernen Sie, im 3DPrintForge zu navigieren — Seitenleiste, Panels, Tastaturkürzel und Anpassung
 ---
 
 # Im Dashboard navigieren
@@ -148,7 +148,7 @@ Für effiziente Navigation ohne Maus:
 
 ## PWA — als App installieren
 
-Bambu Dashboard kann als Progressive Web App (PWA) installiert werden und als eigenständige App ohne Browser-Menüs laufen:
+3DPrintForge kann als Progressive Web App (PWA) installiert werden und als eigenständige App ohne Browser-Menüs laufen:
 
 1. Das Dashboard in Chrome, Edge oder Safari öffnen
 2. Auf das Symbol **App installieren** in der Adressleiste klicken

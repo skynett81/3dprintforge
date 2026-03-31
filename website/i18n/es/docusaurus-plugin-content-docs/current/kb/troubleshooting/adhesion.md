@@ -38,7 +38,7 @@ El desplazamiento Z es la altura entre la boquilla y la placa en la primera capa
 Ajusta el desplazamiento Z en **Control → Ajustar Z en vivo** durante la impresión.
 
 :::tip Ajusta en vivo mientras imprimes
-Bambu Dashboard muestra botones de ajuste de desplazamiento Z durante la impresión activa. Ajusta en pasos de ±0.02 mm mientras observas la primera capa.
+3DPrintForge muestra botones de ajuste de desplazamiento Z durante la impresión activa. Ajusta en pasos de ±0.02 mm mientras observas la primera capa.
 :::
 
 ### 3. Verifica la temperatura de la cama

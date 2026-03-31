@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Streaming z OBS
-description: Skonfiguruj Bambu Dashboard jako nakładkę w OBS Studio dla profesjonalnego streamingu druku 3D
+description: Skonfiguruj 3DPrintForge jako nakładkę w OBS Studio dla profesjonalnego streamingu druku 3D
 ---
 
 # Streaming druku 3D do OBS
 
-Bambu Dashboard ma wbudowaną nakładkę OBS, która wyświetla status drukarki, postęp, temperatury i podgląd kamery bezpośrednio w Twoim streamie.
+3DPrintForge ma wbudowaną nakładkę OBS, która wyświetla status drukarki, postęp, temperatury i podgląd kamery bezpośrednio w Twoim streamie.
 
 ## Wymagania wstępne
 
 - Zainstalowane OBS Studio ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard uruchomiony i połączony z drukarką
+- 3DPrintForge uruchomiony i połączony z drukarką
 - (Opcjonalne) Kamera Bambu włączona dla podglądu na żywo
 
 ## Krok 1 — OBS Browser Source
@@ -63,7 +63,7 @@ Nakładka teraz wyświetla tylko sam widget — bez białego ani czarnego tła.
 
 ## Krok 3 — Dostosowanie nakładki
 
-W Bambu Dashboard możesz skonfigurować, co wyświetla nakładka:
+W 3DPrintForge możesz skonfigurować, co wyświetla nakładka:
 
 1. Przejdź do **Funkcje → Nakładka OBS**
 2. Skonfiguruj:
@@ -171,5 +171,5 @@ Drukarki 3D wydają dźwięk — szczególnie AMS i chłodzenie. Rozważ:
 - Lub użyj muzyki w tle / dźwięku czatu zamiast tego
 
 :::tip Automatyczne przełączanie scen
-OBS ma wbudowaną obsługę przełączania scen na podstawie tytułów. Połącz z wtyczką (np. obs-websocket) i API Bambu Dashboard, aby automatycznie przełączać sceny, gdy wydruk się rozpoczyna i kończy.
+OBS ma wbudowaną obsługę przełączania scen na podstawie tytułów. Połącz z wtyczką (np. obs-websocket) i API 3DPrintForge, aby automatycznie przełączać sceny, gdy wydruk się rozpoczyna i kończy.
 :::

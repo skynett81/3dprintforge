@@ -3555,7 +3555,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'bambu-dashboard-settings.json';
+      a.download = '3dprintforge-settings.json';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -3577,7 +3577,7 @@
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data._meta || data._meta.type !== 'bambu-dashboard-settings') {
+        if (!data._meta || (data._meta.type !== '3dprintforge-settings' && data._meta.type !== '3dprintforge-settings')) {
           throw new Error('Ugyldig innstillingsfil');
         }
         const res = await fetch('/api/settings/import', {

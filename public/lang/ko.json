@@ -1744,7 +1744,7 @@
     "ha_mqtt_broker_required": "브로커 URL이 필요합니다",
     "settings_sub_nodes": "노드",
     "nodes_title": "원격 노드",
-    "nodes_desc": "다른 Bambu Dashboard 인스턴스를 연결하여 로컬 프린터와 함께 원격 프린터를 확인합니다. 원격 프린터는 실시간 상태 업데이트와 함께 프린터 선택기에 표시됩니다.",
+    "nodes_desc": "다른 3DPrintForge 인스턴스를 연결하여 로컬 프린터와 함께 원격 프린터를 확인합니다. 원격 프린터는 실시간 상태 업데이트와 함께 프린터 선택기에 표시됩니다.",
     "nodes_add": "원격 노드 추가",
     "nodes_none": "원격 노드가 설정되지 않았습니다",
     "nodes_printers": "프린터",

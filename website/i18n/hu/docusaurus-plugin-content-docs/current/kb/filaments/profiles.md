@@ -181,7 +181,7 @@ Sok vezető szállító kínál kész Bambu Studio profilokat, amelyek pontosan 
 :::info Hol találhat profilokat?
 - **Bambu Studio:** Beépített profilok Bambu Lab anyagokhoz és sok harmadik félhez
 - **Szállító weboldala:** Keressen „Bambu Studio profile" vagy „JSON profile" a letöltések között
-- **Bambu Dashboard:** A Nyomtatási Profilok panelen az Eszközök szekcióban
+- **3DPrintForge:** A Nyomtatási Profilok panelen az Eszközök szekcióban
 - **MakerWorld:** A profilokat gyakran megosztják a modellekkel együtt más felhasználók
 :::
 

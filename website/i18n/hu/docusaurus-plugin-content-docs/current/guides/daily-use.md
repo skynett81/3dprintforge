@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: Napi használat
-description: Gyakorlati útmutató a Bambu Dashboard napi használatához — reggeli rutin, figyelés, nyomtatás után és karbantartás
+description: Gyakorlati útmutató a 3DPrintForge napi használatához — reggeli rutin, figyelés, nyomtatás után és karbantartás
 ---
 
 # Napi használat
 
-Ez az útmutató bemutatja, hogyan használd hatékonyan a Bambu Dashboardot a mindennapokban — a nap kezdetétől a lefekvésig.
+Ez az útmutató bemutatja, hogyan használd hatékonyan a 3DPrintForgeot a mindennapokban — a nap kezdetétől a lefekvésig.
 
 ## Reggeli rutin
 

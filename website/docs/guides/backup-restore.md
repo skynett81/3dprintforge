@@ -1,12 +1,12 @@
 ---
 sidebar_position: 9
 title: Sikkerhetskopi
-description: Automatisk og manuell backup av Bambu Dashboard, gjenoppretting og flytting til ny server
+description: Automatisk og manuell backup av 3DPrintForge, gjenoppretting og flytting til ny server
 ---
 
 # Sikkerhetskopi og gjenoppretting
 
-Bambu Dashboard lagrer all data lokalt — printhistorikk, filamentlager, innstillinger, brukere og mer. Regelmessig sikkerhetskopi sikrer at du ikke mister noe ved serverfeil eller ved flytting.
+3DPrintForge lagrer all data lokalt — printhistorikk, filamentlager, innstillinger, brukere og mer. Regelmessig sikkerhetskopi sikrer at du ikke mister noe ved serverfeil eller ved flytting.
 
 ## Hva inkluderes i en backup?
 
@@ -40,7 +40,7 @@ Som standard kjøres en automatisk backup hver natt kl. 03:00.
 
 :::info Backup-filer lagres som standard her
 ```
-/path/til/bambu-dashboard/data/backups/
+/path/til/3dprintforge/data/backups/
 backup-2025-03-22-030000.tar.gz
 backup-2025-03-21-030000.tar.gz
 ...
@@ -58,7 +58,7 @@ Ta en backup når som helst:
 
 **Alternativt via terminal:**
 ```bash
-cd /sti/til/bambu-dashboard
+cd /sti/til/3dprintforge
 node scripts/backup.js
 ```
 
@@ -81,13 +81,13 @@ All eksisterende data erstattes av innholdet i backup-filen. Sørg for at du gje
 ### Via terminal
 
 ```bash
-cd /sti/til/bambu-dashboard
+cd /sti/til/3dprintforge
 node scripts/restore.js data/backups/backup-2025-03-22-030000.tar.gz
 ```
 
 Etter gjenoppretting, start dashboardet på nytt:
 ```bash
-sudo systemctl restart bambu-dashboard
+sudo systemctl restart 3dprintforge
 # eller
 npm start
 ```
@@ -117,7 +117,7 @@ Eksporterte innstillinger er praktisk å ha med seg til ny server. Importer dem 
 
 ## Flytte til ny server
 
-Slik flytter du Bambu Dashboard med all data til en ny maskin:
+Slik flytter du 3DPrintForge med all data til en ny maskin:
 
 ### Steg 1 — Ta backup på gammel server
 
@@ -128,8 +128,8 @@ Slik flytter du Bambu Dashboard med all data til en ny maskin:
 ### Steg 2 — Installer på ny server
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 

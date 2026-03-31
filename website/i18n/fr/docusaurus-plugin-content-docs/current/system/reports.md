@@ -6,7 +6,7 @@ description: Rapports e-mail automatiques hebdomadaires et mensuels avec statist
 
 # Rapports
 
-Bambu Dashboard peut envoyer des rapports e-mail automatiques avec statistiques et résumé d'activité — hebdomadairement, mensuellement ou les deux.
+3DPrintForge peut envoyer des rapports e-mail automatiques avec statistiques et résumé d'activité — hebdomadairement, mensuellement ou les deux.
 
 Accédez à : **https://localhost:3443/#settings** → **Système → Rapports**
 
@@ -83,7 +83,7 @@ Le rapport mensuel couvre les 30 derniers jours et contient tout ce du rapport h
 1. Accédez à **Paramètres → Rapports → Personnalisation**
 2. Cochez/décochez les sections à inclure
 3. Choisissez le **Filtre d'imprimante** : toutes les imprimantes ou une sélection
-4. Choisissez l'**Affichage du logo** : afficher le logo Bambu Dashboard dans l'en-tête ou désactiver
+4. Choisissez l'**Affichage du logo** : afficher le logo 3DPrintForge dans l'en-tête ou désactiver
 5. Cliquez sur **Enregistrer**
 
 ## Archive des rapports

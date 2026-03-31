@@ -18,7 +18,7 @@ Tibber est un fournisseur d'électricité disposant d'une API ouverte pour les p
 
 1. Connectez-vous à [developer.tibber.com](https://developer.tibber.com)
 2. Générez un **Personal Access Token**
-3. Dans Bambu Dashboard : collez le token sous **Token API Tibber**
+3. Dans 3DPrintForge : collez le token sous **Token API Tibber**
 4. Sélectionnez le **Domicile** (depuis lequel les prix seront récupérés, si vous en avez plusieurs)
 5. Cliquez sur **Tester la connexion**
 6. Cliquez sur **Enregistrer**

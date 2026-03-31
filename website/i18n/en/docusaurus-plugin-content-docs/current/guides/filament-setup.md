@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Setting up filament inventory
-description: How to create, configure and keep track of your filament spools in Bambu Dashboard
+description: How to create, configure and keep track of your filament spools in 3DPrintForge
 ---
 
 # Setting up filament inventory
 
-The filament inventory in Bambu Dashboard gives you a complete overview of all your spools — what is left, what you have used, and which spools are currently loaded in the AMS.
+The filament inventory in 3DPrintForge gives you a complete overview of all your spools — what is left, what you have used, and which spools are currently loaded in the AMS.
 
 ## Automatic creation from AMS
 

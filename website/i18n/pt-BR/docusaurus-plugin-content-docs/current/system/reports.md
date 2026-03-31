@@ -6,7 +6,7 @@ description: Relatórios automáticos semanais e mensais por e-mail com estatís
 
 # Relatórios
 
-O Bambu Dashboard pode enviar relatórios automáticos por e-mail com estatísticas e resumo de atividades — semanal, mensal ou ambos.
+O 3DPrintForge pode enviar relatórios automáticos por e-mail com estatísticas e resumo de atividades — semanal, mensal ou ambos.
 
 Acesse em: **https://localhost:3443/#settings** → **Sistema → Relatórios**
 
@@ -83,7 +83,7 @@ O relatório mensal cobre os últimos 30 dias e contém tudo do relatório seman
 1. Vá em **Configurações → Relatórios → Personalização**
 2. Marque/desmarque as seções que deseja incluir
 3. Selecione o **Filtro de impressora**: todas as impressoras ou uma seleção
-4. Selecione **Exibição de logotipo**: mostrar o logotipo do Bambu Dashboard no cabeçalho ou desativar
+4. Selecione **Exibição de logotipo**: mostrar o logotipo do 3DPrintForge no cabeçalho ou desativar
 5. Clique em **Salvar**
 
 ## Arquivo de relatórios

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: Ihr erster Druck
-description: Schritt-für-Schritt-Anleitung zum Starten Ihres ersten 3D-Drucks und zur Überwachung im Bambu Dashboard
+description: Schritt-für-Schritt-Anleitung zum Starten Ihres ersten 3D-Drucks und zur Überwachung im 3DPrintForge
 ---
 
 # Ihr erster Druck
 
-Diese Anleitung führt Sie durch den gesamten Prozess — vom verbundenen Drucker bis zum fertigen Druck — mit dem Bambu Dashboard als Steuerzentrale.
+Diese Anleitung führt Sie durch den gesamten Prozess — vom verbundenen Drucker bis zum fertigen Druck — mit dem 3DPrintForge als Steuerzentrale.
 
 ## Schritt 1 — Verbindung des Druckers prüfen
 
@@ -32,7 +32,7 @@ Der LAN-Modus bietet geringere Latenz als der Cloud-Modus. Aktivieren Sie ihn in
 
 ## Schritt 2 — Ihr Modell hochladen
 
-Bambu Dashboard startet Drucke nicht direkt — das ist Aufgabe von Bambu Studio oder MakerWorld. Das Dashboard übernimmt, sobald der Druck beginnt.
+3DPrintForge startet Drucke nicht direkt — das ist Aufgabe von Bambu Studio oder MakerWorld. Das Dashboard übernimmt, sobald der Druck beginnt.
 
 **Über Bambu Studio:**
 1. Öffnen Sie Bambu Studio auf Ihrem PC
@@ -83,7 +83,7 @@ Die ersten 3–5 Schichten sind entscheidend. Schlechte Haftung jetzt bedeutet e
 :::
 
 ### Print Guard
-Bambu Dashboard verfügt über einen KI-gesteuerten **Print Guard**, der Spaghetti-Fehler automatisch erkennt und den Druck pausieren kann. Aktivieren Sie dies unter **Überwachung → Print Guard**.
+3DPrintForge verfügt über einen KI-gesteuerten **Print Guard**, der Spaghetti-Fehler automatisch erkennt und den Druck pausieren kann. Aktivieren Sie dies unter **Überwachung → Print Guard**.
 
 ## Schritt 5 — Nach dem Druck
 

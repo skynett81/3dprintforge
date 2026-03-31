@@ -12,7 +12,7 @@ Ga naar: **https://localhost:3443/#waste**
 
 ## Verspillingscategorieën
 
-Bambu Dashboard onderscheidt drie soorten verspilling:
+3DPrintForge onderscheidt drie soorten verspilling:
 
 | Categorie | Bron | Typisch aandeel |
 |---|---|---|

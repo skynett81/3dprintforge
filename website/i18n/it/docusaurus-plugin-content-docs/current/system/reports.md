@@ -6,7 +6,7 @@ description: Report email automatici settimanali e mensili con statistiche, riep
 
 # Report
 
-Bambu Dashboard può inviare report email automatici con statistiche e riepiloghi attività — settimanali, mensili o entrambi.
+3DPrintForge può inviare report email automatici con statistiche e riepiloghi attività — settimanali, mensili o entrambi.
 
 Vai a: **https://localhost:3443/#settings** → **Sistema → Report**
 
@@ -83,7 +83,7 @@ Il report mensile copre gli ultimi 30 giorni e contiene tutto quello del report 
 1. Vai a **Impostazioni → Report → Personalizzazione**
 2. Spunta / deseleziona le sezioni da includere
 3. Seleziona il **Filtro stampanti**: tutte le stampanti o una selezione
-4. Seleziona la **Visualizzazione logo**: mostra il logo Bambu Dashboard nell'intestazione o disabilitalo
+4. Seleziona la **Visualizzazione logo**: mostra il logo 3DPrintForge nell'intestazione o disabilitalo
 5. Clicca **Salva**
 
 ## Archivio report

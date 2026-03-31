@@ -287,4 +287,4 @@ avant le début de l'impression — ne pas ouvrir la porte pendant l'impression
 2. **Sécher le filament en premier** — de nombreux défauts de surface sont en réalité des symptômes d'humidité
 3. **Nettoyer la buse** — un bouchage partiel produit des défauts de surface incohérents difficiles à diagnostiquer
 4. **Effectuer une calibration complète** depuis le menu de maintenance de Bambu Studio après des ajustements importants
-5. **Utiliser Bambu Dashboard** pour suivre quels paramètres ont donné les meilleurs résultats dans le temps
+5. **Utiliser 3DPrintForge** pour suivre quels paramètres ont donné les meilleurs résultats dans le temps

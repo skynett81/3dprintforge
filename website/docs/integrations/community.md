@@ -6,7 +6,7 @@ description: Bla i delte filamentprofiler fra fellesskapet, bidra med egne og im
 
 # Fellesskaps-filamenter
 
-Fellesskaps-filamenter er en delt database med filamentprofiler bidratt av Bambu Dashboard-brukere fra hele verden. Finn de beste innstillingene for ditt filament, og del dine egne erfaringer.
+Fellesskaps-filamenter er en delt database med filamentprofiler bidratt av 3DPrintForge-brukere fra hele verden. Finn de beste innstillingene for ditt filament, og del dine egne erfaringer.
 
 Gå til: **https://localhost:3443/#community**
 

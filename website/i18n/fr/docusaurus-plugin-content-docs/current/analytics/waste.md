@@ -12,7 +12,7 @@ Accédez à : **https://localhost:3443/#waste**
 
 ## Catégories de déchets
 
-Bambu Dashboard distingue trois types de déchets :
+3DPrintForge distingue trois types de déchets :
 
 | Catégorie | Source | Part typique |
 |-----------|--------|-------------|

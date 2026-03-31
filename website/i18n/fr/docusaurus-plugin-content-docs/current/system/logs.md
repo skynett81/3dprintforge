@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Journal serveur
-description: Consultez le journal serveur en temps réel, filtrez par niveau et module, et diagnostiquez les problèmes avec Bambu Dashboard
+description: Consultez le journal serveur en temps réel, filtrez par niveau et module, et diagnostiquez les problèmes avec 3DPrintForge
 ---
 
 # Journal serveur
 
-Le journal serveur vous offre un aperçu de ce qui se passe à l'intérieur de Bambu Dashboard — utile pour le diagnostic, la surveillance et les investigations.
+Le journal serveur vous offre un aperçu de ce qui se passe à l'intérieur de 3DPrintForge — utile pour le diagnostic, la surveillance et les investigations.
 
 Accédez à : **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Les fichiers journaux sont stockés sur le serveur :
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (journal actif)
-├── bambu-dashboard.log.1.gz     (tourné)
-├── bambu-dashboard.log.2.gz     (tourné)
+├── 3dprintforge.log          (journal actif)
+├── 3dprintforge.log.1.gz     (tourné)
+├── 3dprintforge.log.2.gz     (tourné)
 └── ...
 ```
 
 :::tip Accès SSH
 Pour lire les journaux directement sur le serveur via SSH :
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

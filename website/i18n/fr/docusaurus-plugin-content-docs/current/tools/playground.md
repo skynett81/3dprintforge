@@ -6,7 +6,7 @@ description: Testez tous les 177 endpoints API directement dans le navigateur av
 
 # Terrain de jeu API
 
-Le terrain de jeu API vous permet d'explorer et de tester tous les 177 endpoints API de Bambu Dashboard directement dans le navigateur — sans écrire de code.
+Le terrain de jeu API vous permet d'explorer et de tester tous les 177 endpoints API de 3DPrintForge directement dans le navigateur — sans écrire de code.
 
 Accédez à : **https://localhost:3443/api/docs**
 

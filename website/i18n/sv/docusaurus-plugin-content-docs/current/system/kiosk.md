@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Kioskläge
-description: Ställ in Bambu Dashboard som en väggmonterad skärm eller hubbvy med kioskläge och automatisk rotation
+description: Ställ in 3DPrintForge som en väggmonterad skärm eller hubbvy med kioskläge och automatisk rotation
 ---
 
 # Kioskläge
@@ -96,7 +96,7 @@ Lägg in kommandot i autostart (`~/.config/autostart/bambu-kiosk.desktop`).
    ```
 
 :::tip Dedikerat användarkonto
-Skapa ett dedikerat Bambu Dashboard-användarkonto med **Gäst**-roll för kioskenhetens. Då har enheten enbart läsbehörighet och kan inte ändra inställningar även om någon får tillgång till skärmen.
+Skapa ett dedikerat 3DPrintForge-användarkonto med **Gäst**-roll för kioskenhetens. Då har enheten enbart läsbehörighet och kan inte ändra inställningar även om någon får tillgång till skärmen.
 :::
 
 ## Hubb-inställningar

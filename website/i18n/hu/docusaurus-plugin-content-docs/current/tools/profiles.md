@@ -95,7 +95,7 @@ Használd a „Mentés újként" lehetőséget, hogy megőrizz egy működő pro
 
 ### Importálás
 1. Kattints a **Profilok importálása** gombra
-2. Válassz ki egy másik Bambu Dashboardból exportált `.json`-fájlt
+2. Válassz ki egy másik 3DPrintForgeból exportált `.json`-fájlt
 3. Az azonos nevű meglévő profilok felülírhatók, vagy mindkettő megtartható
 
 ## Profilok megosztása

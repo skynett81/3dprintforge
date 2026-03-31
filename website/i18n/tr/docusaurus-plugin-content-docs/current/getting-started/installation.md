@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Kurulum
-description: Bambu Dashboard'u sunucunuza veya yerel makinenize kurun
+description: 3DPrintForge'u sunucunuza veya yerel makinenize kurun
 ---
 
 # Kurulum
@@ -16,7 +16,7 @@ description: Bambu Dashboard'u sunucunuza veya yerel makinenize kurun
 | İşletim Sistemi | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 zorunludur
-Bambu Dashboard, Node.js 22'ye yerleşik `--experimental-sqlite` kullanır. Eski sürümler desteklenmez.
+3DPrintForge, Node.js 22'ye yerleşik `--experimental-sqlite` kullanır. Eski sürümler desteklenmez.
 :::
 
 ## install.sh ile kurulum (önerilen)
@@ -24,8 +24,8 @@ Bambu Dashboard, Node.js 22'ye yerleşik `--experimental-sqlite` kullanır. Eski
 En kolay yöntem, etkileşimli kurulum betiğini kullanmaktır:
 
 ```bash
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 ./install.sh
 ```
 
@@ -39,8 +39,8 @@ Betik, tarayıcıda kurulumu adım adım yönlendirir. Systemd desteği ile term
 
 ```bash
 # 1. Depoyu klonlayın
-git clone https://github.com/skynett81/bambu-dashboard.git
-cd bambu-dashboard
+git clone https://github.com/skynett81/3dprintforge.git
+cd 3dprintforge
 
 # 2. Bağımlılıkları yükleyin
 npm install
@@ -75,13 +75,13 @@ Dashboard'u arka plan hizmeti olarak çalıştırmak için:
 Ya da manuel olarak:
 
 ```bash
-sudo systemctl enable --now bambu-dashboard
-sudo systemctl status bambu-dashboard
+sudo systemctl enable --now 3dprintforge
+sudo systemctl status 3dprintforge
 ```
 
 ## Güncelleme
 
-Bambu Dashboard, GitHub Releases üzerinden yerleşik otomatik güncelleme özelliğine sahiptir. Dashboard'da **Ayarlar → Güncelleme** bölümünden güncelleyebilir ya da manuel olarak yapabilirsiniz:
+3DPrintForge, GitHub Releases üzerinden yerleşik otomatik güncelleme özelliğine sahiptir. Dashboard'da **Ayarlar → Güncelleme** bölümünden güncelleyebilir ya da manuel olarak yapabilirsiniz:
 
 ```bash
 git pull

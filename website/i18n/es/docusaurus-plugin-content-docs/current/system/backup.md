@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Copia de seguridad
-description: Crea, restaura y programa copias de seguridad automáticas de los datos de Bambu Dashboard
+description: Crea, restaura y programa copias de seguridad automáticas de los datos de 3DPrintForge
 ---
 
 # Copia de seguridad
 
-Bambu Dashboard puede hacer copias de seguridad de toda la configuración, historial y datos para que puedas restaurar fácilmente en caso de fallo del sistema, migración de servidor o problemas de actualización.
+3DPrintForge puede hacer copias de seguridad de toda la configuración, historial y datos para que puedas restaurar fácilmente en caso de fallo del sistema, migración de servidor o problemas de actualización.
 
 Ir a: **https://localhost:3443/#settings** → **Sistema → Copia de seguridad**
 
@@ -36,7 +36,7 @@ Ir a: **https://localhost:3443/#settings** → **Sistema → Copia de seguridad*
 
 La copia de seguridad se guarda como un archivo `.zip` con marca de tiempo en el nombre:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Descargar la copia de seguridad
@@ -89,7 +89,7 @@ La restauración reemplaza todos los datos existentes con el contenido del archi
 
 ## Validación de la copia de seguridad
 
-Bambu Dashboard valida todos los archivos de copia de seguridad antes de restaurar:
+3DPrintForge valida todos los archivos de copia de seguridad antes de restaurar:
 
 - Verifica que el formato ZIP sea válido
 - Verifica que el esquema de la base de datos sea compatible con la versión actual

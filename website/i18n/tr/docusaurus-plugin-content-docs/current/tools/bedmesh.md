@@ -12,7 +12,7 @@ Gidin: **https://localhost:3443/#bedmesh**
 
 ## Bed Mesh Nedir?
 
-Bambu Lab yazıcılar, bir sensörle yapı tablasının yüzeyini tarar ve yükseklik sapmalarının bir haritasını (mesh) oluşturur. Yazıcının ürün yazılımı yazdırma sırasında sapmaları otomatik olarak telafi eder. Bambu Dashboard bu haritayı sizin için görselleştirir.
+Bambu Lab yazıcılar, bir sensörle yapı tablasının yüzeyini tarar ve yükseklik sapmalarının bir haritasını (mesh) oluşturur. Yazıcının ürün yazılımı yazdırma sırasında sapmaları otomatik olarak telafi eder. 3DPrintForge bu haritayı sizin için görselleştirir.
 
 ## Görselleştirme
 

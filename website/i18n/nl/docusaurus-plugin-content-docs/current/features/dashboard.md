@@ -6,7 +6,7 @@ description: Realtime overzicht van de actieve printer met 3D-modelweergave, AMS
 
 # Hoofdpaneel
 
-Het hoofdpaneel is het centrale bedieningscentrum van Bambu Dashboard. Het toont de realtime status van de geselecteerde printer en laat u de weergave monitoren, besturen en aanpassen naar wens.
+Het hoofdpaneel is het centrale bedieningscentrum van 3DPrintForge. Het toont de realtime status van de geselecteerde printer en laat u de weergave monitoren, besturen en aanpassen naar wens.
 
 Ga naar: **https://localhost:3443/**
 

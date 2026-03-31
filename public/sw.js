@@ -22,7 +22,7 @@ const PRECACHE = [
 // Offline fallback page
 const OFFLINE_HTML = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bambu Dashboard — Offline</title>
+<title>3DPrintForge — Offline</title>
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0e27;color:#c8d6e5;font-family:system-ui,sans-serif}
   .offline{text-align:center;padding:2rem}
@@ -31,7 +31,7 @@ const OFFLINE_HTML = `<!DOCTYPE html>
   .offline button{background:#00d4ff;color:#0a0e27;border:none;padding:0.6rem 1.5rem;border-radius:6px;cursor:pointer;font-weight:600}
 </style></head><body>
 <div class="offline">
-  <h1>Bambu Dashboard</h1>
+  <h1>3DPrintForge</h1>
   <p>You are currently offline. Some features may be unavailable.</p>
   <button onclick="location.reload()">Retry</button>
 </div>

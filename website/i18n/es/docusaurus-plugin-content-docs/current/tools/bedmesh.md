@@ -12,7 +12,7 @@ Ir a: **https://localhost:3443/#bedmesh**
 
 ## ¿Qué es el bed mesh?
 
-Las impresoras Bambu Lab escanean la superficie de la placa de construcción con una sonda y crean un mapa (mesh) de las desviaciones de altura. El firmware de la impresora compensa automáticamente las desviaciones durante la impresión. Bambu Dashboard visualiza este mapa para ti.
+Las impresoras Bambu Lab escanean la superficie de la placa de construcción con una sonda y crean un mapa (mesh) de las desviaciones de altura. El firmware de la impresora compensa automáticamente las desviaciones durante la impresión. 3DPrintForge visualiza este mapa para ti.
 
 ## Visualización
 

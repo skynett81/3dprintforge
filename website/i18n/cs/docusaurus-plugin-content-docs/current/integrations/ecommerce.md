@@ -19,7 +19,7 @@ Modul e-commerce vyžaduje platnou licenci. Licence lze **zakoupit pouze na [gee
 ### Zakoupení licence
 
 1. Přejděte na **[geektech.no](https://geektech.no)** a vytvořte účet
-2. Vyberte **Bambu Dashboard — Licence e-commerce**
+2. Vyberte **3DPrintForge — Licence e-commerce**
 3. Vyberte typ licence:
 
 | Typ licence | Popis | Tiskárny |
@@ -70,7 +70,7 @@ Lze povolit více IP adres a MAC adres (jeden na řádek v administraci geektech
    - **ID instance** (jedinečné pro vaši instalaci)
 
 :::warning Licenční klíč je vázán na vaši doménu a instalaci
-Klíč se aktivuje pro konkrétní instalaci Bambu Dashboard a doménu. Kontaktujte podporu [geektech.no](https://geektech.no), pokud potřebujete:
+Klíč se aktivuje pro konkrétní instalaci 3DPrintForge a doménu. Kontaktujte podporu [geektech.no](https://geektech.no), pokud potřebujete:
 - Přesunout licenci na nový server
 - Změnit doménu
 - Zvýšit počet tiskáren
@@ -223,6 +223,6 @@ Exportujte do CSV pro účetní systém.
 
 :::info Potřebujete pomoc?
 - **Otázky k licencím**: kontaktujte podporu [geektech.no](https://geektech.no)
-- **Technické problémy**: [GitHub Issues](https://github.com/skynett81/bambu-dashboard/issues)
-- **Požadavky na funkce**: [GitHub Discussions](https://github.com/skynett81/bambu-dashboard/discussions)
+- **Technické problémy**: [GitHub Issues](https://github.com/skynett81/3dprintforge/issues)
+- **Požadavky na funkce**: [GitHub Discussions](https://github.com/skynett81/3dprintforge/discussions)
 :::

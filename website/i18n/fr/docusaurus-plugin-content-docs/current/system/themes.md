@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Thème
-description: Personnalisez l'apparence de Bambu Dashboard avec les modes clair/sombre/automatique, 6 palettes de couleurs et une couleur d'accentuation personnalisée
+description: Personnalisez l'apparence de 3DPrintForge avec les modes clair/sombre/automatique, 6 palettes de couleurs et une couleur d'accentuation personnalisée
 ---
 
 # Thème
 
-Bambu Dashboard dispose d'un système de thèmes flexible qui vous permet de personnaliser l'apparence selon vos goûts et votre contexte d'utilisation.
+3DPrintForge dispose d'un système de thèmes flexible qui vous permet de personnaliser l'apparence selon vos goûts et votre contexte d'utilisation.
 
 Accédez à : **https://localhost:3443/#settings** → **Thème**
 
@@ -102,5 +102,5 @@ Pour l'affichage kiosque, activez **Compact** + **Sombre** + **Animations rédui
 Partagez votre thème avec d'autres :
 
 1. Cliquez sur **Exporter le thème** — télécharge un fichier `.json`
-2. Partagez le fichier avec d'autres utilisateurs de Bambu Dashboard
+2. Partagez le fichier avec d'autres utilisateurs de 3DPrintForge
 3. Ils importent via **Importer le thème** → sélectionnez le fichier

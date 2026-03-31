@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Architektura techniczna
-description: Przegląd architektury Bambu Dashboard — stos technologiczny, moduły, baza danych i WebSocket
+description: Przegląd architektury 3DPrintForge — stos technologiczny, moduły, baza danych i WebSocket
 ---
 
 # Architektura techniczna

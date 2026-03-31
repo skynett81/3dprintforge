@@ -64,7 +64,7 @@ Die Farbkartenansicht organisiert Spulen visuell nach Farbe. Nützlich, um schne
 
 ## NFC-Tags
 
-Bambu Dashboard unterstützt NFC-Tags zur schnellen Identifikation von Spulen:
+3DPrintForge unterstützt NFC-Tags zur schnellen Identifikation von Spulen:
 
 1. Schreiben Sie die NFC-Tag-ID für die Spule im Lager
 2. Scannen Sie den Tag mit dem Mobilgerät

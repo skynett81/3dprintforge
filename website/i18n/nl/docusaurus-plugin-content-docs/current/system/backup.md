@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Back-up
-description: Back-ups van Bambu Dashboard-data aanmaken, terugzetten en automatisch plannen
+description: Back-ups van 3DPrintForge-data aanmaken, terugzetten en automatisch plannen
 ---
 
 # Back-up
 
-Bambu Dashboard kan een back-up maken van alle configuraties, geschiedenis en data, zodat u eenvoudig kunt herstellen bij een systeemfout, servermigratie of updateproblemen.
+3DPrintForge kan een back-up maken van alle configuraties, geschiedenis en data, zodat u eenvoudig kunt herstellen bij een systeemfout, servermigratie of updateproblemen.
 
 Ga naar: **https://localhost:3443/#settings** → **Systeem → Back-up**
 
@@ -36,7 +36,7 @@ Ga naar: **https://localhost:3443/#settings** → **Systeem → Back-up**
 
 De back-up wordt opgeslagen als een `.zip`-bestand met een tijdstempel in de bestandsnaam:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Back-up downloaden
@@ -89,7 +89,7 @@ Herstellen vervangt alle bestaande data met de inhoud van het back-upbestand. Zo
 
 ## Back-upvalidatie
 
-Bambu Dashboard valideert alle back-upbestanden vóór herstel:
+3DPrintForge valideert alle back-upbestanden vóór herstel:
 
 - Controleert of het ZIP-formaat geldig is
 - Verifieert dat het databaseschema compatibel is met de huidige versie

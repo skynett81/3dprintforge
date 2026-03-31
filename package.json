@@ -1,5 +1,5 @@
 {
-  "name": "bambu-dashboard",
+  "name": "3dprintforge",
   "version": "1.1.14",
   "type": "module",
   "description": "Self-hosted dashboard for Bambu Lab 3D printers",
@@ -7,11 +7,11 @@
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skynett81/bambu-dashboard.git"
+    "url": "https://github.com/skynett81/3dprintforge.git"
   },
-  "homepage": "https://github.com/skynett81/bambu-dashboard",
+  "homepage": "https://github.com/skynett81/3dprintforge",
   "bugs": {
-    "url": "https://github.com/skynett81/bambu-dashboard/issues"
+    "url": "https://github.com/skynett81/3dprintforge/issues"
   },
   "keywords": [
     "bambu-lab",

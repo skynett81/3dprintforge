@@ -6,7 +6,7 @@ description: Procházejte sdílené profily filamentů od komunity, přispívejt
 
 # Komunitní filamenty
 
-Komunitní filamenty jsou sdílená databáze profilů filamentů, přispěná uživateli Bambu Dashboard z celého světa. Najděte nejlepší nastavení pro váš filament a sdílejte vlastní zkušenosti.
+Komunitní filamenty jsou sdílená databáze profilů filamentů, přispěná uživateli 3DPrintForge z celého světa. Najděte nejlepší nastavení pro váš filament a sdílejte vlastní zkušenosti.
 
 Přejděte na: **https://localhost:3443/#community**
 

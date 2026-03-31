@@ -6,7 +6,7 @@ description: Böngéssz a közösség által megosztott filamentprofilok közöt
 
 # Közösségi filamentek
 
-A közösségi filamentek egy megosztott adatbázis, amelyet a világ minden tájáról érkező Bambu Dashboard felhasználók töltöttek fel filamentprofilokkal. Keresd meg a filamentedhez legjobb beállításokat, és oszd meg saját tapasztalataidat.
+A közösségi filamentek egy megosztott adatbázis, amelyet a világ minden tájáról érkező 3DPrintForge felhasználók töltöttek fel filamentprofilokkal. Keresd meg a filamentedhez legjobb beállításokat, és oszd meg saját tapasztalataidat.
 
 Navigálj ide: **https://localhost:3443/#community**
 

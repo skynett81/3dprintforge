@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Serverlogboek
-description: Het serverlogboek in realtime bekijken, filteren op niveau en module, en problemen met Bambu Dashboard oplossen
+description: Het serverlogboek in realtime bekijken, filteren op niveau en module, en problemen met 3DPrintForge oplossen
 ---
 
 # Serverlogboek
 
-Het serverlogboek geeft inzicht in wat er in Bambu Dashboard gebeurt — nuttig voor probleemoplossing, bewaking en diagnostiek.
+Het serverlogboek geeft inzicht in wat er in 3DPrintForge gebeurt — nuttig voor probleemoplossing, bewaking en diagnostiek.
 
 Ga naar: **https://localhost:3443/#logs**
 
@@ -109,15 +109,15 @@ Logbestanden worden op de server opgeslagen:
 
 ```
 ./data/logs/
-├── bambu-dashboard.log          (actief logboek)
-├── bambu-dashboard.log.1.gz     (geroteerd)
-├── bambu-dashboard.log.2.gz     (geroteerd)
+├── 3dprintforge.log          (actief logboek)
+├── 3dprintforge.log.1.gz     (geroteerd)
+├── 3dprintforge.log.2.gz     (geroteerd)
 └── ...
 ```
 
 :::tip SSH-toegang
 Om logboeken rechtstreeks op de server via SSH te lezen:
 ```bash
-tail -f ./data/logs/bambu-dashboard.log
+tail -f ./data/logs/3dprintforge.log
 ```
 :::

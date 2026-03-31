@@ -38,7 +38,7 @@ Z-offset er høyden mellom dysen og platen ved første lag. For høy = tråden h
 Juster Z-offset via **Kontroll → Live Juster Z** under printing.
 
 :::tip Live-justér mens du printer
-Bambu Dashboard viser Z-offset justeringsknapper under aktiv print. Juster i steg på ±0.02 mm mens du ser på første lag.
+3DPrintForge viser Z-offset justeringsknapper under aktiv print. Juster i steg på ±0.02 mm mens du ser på første lag.
 :::
 
 ### 3. Sjekk sengtemperatur

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Feilsøking av mislykket print
-description: Diagnostiser og løs vanlige printfeil ved hjelp av Bambu Dashboard sine feillogger og verktøy
+description: Diagnostiser og løs vanlige printfeil ved hjelp av 3DPrintForge sine feillogger og verktøy
 ---
 
 # Feilsøking av mislykket print
 
-Noe gikk galt? Ikke fortvil — de fleste printfeil har enkle løsninger. Bambu Dashboard hjelper deg å finne årsaken raskt.
+Noe gikk galt? Ikke fortvil — de fleste printfeil har enkle løsninger. 3DPrintForge hjelper deg å finne årsaken raskt.
 
 ## Steg 1 — Sjekk HMS-feilkodene
 

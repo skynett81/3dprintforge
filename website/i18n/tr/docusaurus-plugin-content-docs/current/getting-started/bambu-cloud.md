@@ -6,7 +6,7 @@ description: Model görselleri ve baskı geçmişini senkronize etmek için dash
 
 # Bambu Cloud Entegrasyonu
 
-Bambu Dashboard, model görselleri, baskı geçmişi ve filament verilerini almak için **Bambu Lab Cloud**'a bağlanabilir. Dashboard bulut bağlantısı olmadan da çalışır, ancak bulut entegrasyonu ek avantajlar sunar.
+3DPrintForge, model görselleri, baskı geçmişi ve filament verilerini almak için **Bambu Lab Cloud**'a bağlanabilir. Dashboard bulut bağlantısı olmadan da çalışır, ancak bulut entegrasyonu ek avantajlar sunar.
 
 ## Bulut Entegrasyonunun Faydaları
 

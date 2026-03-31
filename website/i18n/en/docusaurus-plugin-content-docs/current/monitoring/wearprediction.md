@@ -12,7 +12,7 @@ Go to: **https://localhost:3443/#wear**
 
 ## Monitored components
 
-Bambu Dashboard tracks wear on 8 components per printer:
+3DPrintForge tracks wear on 8 components per printer:
 
 | Component | Primary wear factor | Typical lifetime |
 |---|---|---|

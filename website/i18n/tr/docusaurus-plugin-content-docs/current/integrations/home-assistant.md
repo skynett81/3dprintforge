@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Home Assistant
-description: MQTT keşfi, otomatik varlıklar ve otomasyon örnekleriyle Bambu Dashboard'u Home Assistant ile entegre edin
+description: MQTT keşfi, otomatik varlıklar ve otomasyon örnekleriyle 3DPrintForge'u Home Assistant ile entegre edin
 ---
 
 # Home Assistant
@@ -14,7 +14,7 @@ Gidin: **https://localhost:3443/#settings** → **Entegrasyonlar → Home Assist
 
 - Ağda çalışan Home Assistant
 - Home Assistant'ta kurulu ve yapılandırılmış MQTT aracısı (Mosquitto)
-- Bambu Dashboard ve Home Assistant aynı MQTT aracısını kullanıyor
+- 3DPrintForge ve Home Assistant aynı MQTT aracısını kullanıyor
 
 ## MQTT Discovery'yi Etkinleştirme
 
@@ -27,7 +27,7 @@ Gidin: **https://localhost:3443/#settings** → **Entegrasyonlar → Home Assist
 4. **Discovery ön ekini** ayarlayın: varsayılan `homeassistant`'tır
 5. **Kaydet ve Etkinleştir**'e tıklayın
 
-Bambu Dashboard artık tüm kayıtlı yazıcılar için discovery mesajları yayınlar.
+3DPrintForge artık tüm kayıtlı yazıcılar için discovery mesajları yayınlar.
 
 ## Home Assistant'taki Varlıklar
 
@@ -63,7 +63,7 @@ Varlık kimlikleri `sensor.{printer_name_slug}_{sensor_id}` desenini izler; bura
 | `{slug}_online` | `on` / `off` |
 
 :::info Not
-Düğmeler (duraklat/devam et/durdur) MQTT Discovery aracılığıyla yayınlanmaz. Otomasyonlardan komut göndermek için Bambu Dashboard API'sini kullanın.
+Düğmeler (duraklat/devam et/durdur) MQTT Discovery aracılığıyla yayınlanmaz. Otomasyonlardan komut göndermek için 3DPrintForge API'sini kullanın.
 :::
 
 ## Otomasyon Örnekleri

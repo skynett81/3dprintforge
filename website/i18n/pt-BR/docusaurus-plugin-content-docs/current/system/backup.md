@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: Backup
-description: Crie, restaure e agende backups automáticos dos dados do Bambu Dashboard
+description: Crie, restaure e agende backups automáticos dos dados do 3DPrintForge
 ---
 
 # Backup
 
-O Bambu Dashboard pode fazer backup de toda a configuração, histórico e dados para que você possa restaurar facilmente em caso de falha do sistema, migração do servidor ou problemas de atualização.
+O 3DPrintForge pode fazer backup de toda a configuração, histórico e dados para que você possa restaurar facilmente em caso de falha do sistema, migração do servidor ou problemas de atualização.
 
 Acesse em: **https://localhost:3443/#settings** → **Sistema → Backup**
 
@@ -36,7 +36,7 @@ Acesse em: **https://localhost:3443/#settings** → **Sistema → Backup**
 
 O backup é salvo como um arquivo `.zip` com timestamp no nome do arquivo:
 ```
-bambu-dashboard-backup-2026-03-22T14-30-00.zip
+3dprintforge-backup-2026-03-22T14-30-00.zip
 ```
 
 ## Baixar backup
@@ -89,7 +89,7 @@ A restauração substitui todos os dados existentes pelo conteúdo do arquivo de
 
 ## Validação de backup
 
-O Bambu Dashboard valida todos os arquivos de backup antes da restauração:
+O 3DPrintForge valida todos os arquivos de backup antes da restauração:
 
 - Verifica que o formato ZIP é válido
 - Verifica que o esquema do banco de dados é compatível com a versão atual

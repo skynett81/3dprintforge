@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: Motyw
-description: Dostosuj wygląd Bambu Dashboard z trybem jasnym/ciemnym/auto, 6 paletami kolorów i niestandardowym kolorem akcentu
+description: Dostosuj wygląd 3DPrintForge z trybem jasnym/ciemnym/auto, 6 paletami kolorów i niestandardowym kolorem akcentu
 ---
 
 # Motyw
 
-Bambu Dashboard ma elastyczny system motywów, który pozwala dostosować wygląd do swoich upodobań i przypadku użycia.
+3DPrintForge ma elastyczny system motywów, który pozwala dostosować wygląd do swoich upodobań i przypadku użycia.
 
 Przejdź do: **https://localhost:3443/#settings** → **Motyw**
 
@@ -102,5 +102,5 @@ Dla widoku kiosku aktywuj **Kompaktowy** + **Ciemny** + **Zredukowane animacje**
 Podziel się swoim motywem z innymi:
 
 1. Kliknij **Eksportuj motyw** — pobiera plik `.json`
-2. Podziel się plikiem z innymi użytkownikami Bambu Dashboard
+2. Podziel się plikiem z innymi użytkownikami 3DPrintForge
 3. Importują przez **Importuj motyw** → wybierz plik

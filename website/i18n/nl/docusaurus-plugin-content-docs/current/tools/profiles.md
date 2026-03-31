@@ -95,7 +95,7 @@ Gebruik «Opslaan als nieuw» om een werkend profiel te bewaren terwijl u experi
 
 ### Importeren
 1. Klik **Profielen importeren**
-2. Kies een `.json`-bestand geëxporteerd vanuit een ander Bambu Dashboard
+2. Kies een `.json`-bestand geëxporteerd vanuit een ander 3DPrintForge
 3. Bestaande profielen met dezelfde naam kunnen worden overschreven of beide worden bewaard
 
 ## Profielen delen

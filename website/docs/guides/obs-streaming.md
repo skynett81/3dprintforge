@@ -1,17 +1,17 @@
 ---
 sidebar_position: 10
 title: Strømme med OBS
-description: Sett opp Bambu Dashboard som overlay i OBS Studio for profesjonell 3D-print-streaming
+description: Sett opp 3DPrintForge som overlay i OBS Studio for profesjonell 3D-print-streaming
 ---
 
 # Strømme 3D-printing til OBS
 
-Bambu Dashboard har et innebygd OBS-overlay som viser printer-status, fremdrift, temperaturer og kamerafeed direkte i strømmen din.
+3DPrintForge har et innebygd OBS-overlay som viser printer-status, fremdrift, temperaturer og kamerafeed direkte i strømmen din.
 
 ## Forutsetninger
 
 - OBS Studio installert ([obsproject.com](https://obsproject.com))
-- Bambu Dashboard kjørende og tilkoblet printer
+- 3DPrintForge kjørende og tilkoblet printer
 - (Valgfritt) Bambu-kameraet aktivert for live-feed
 
 ## Steg 1 — OBS Browser Source
@@ -63,7 +63,7 @@ Overlayet viser nå kun selve widgeten — uten hvit eller svart bakgrunn.
 
 ## Steg 3 — Tilpasse overlayet
 
-I Bambu Dashboard kan du konfigurere hva overlayet viser:
+I 3DPrintForge kan du konfigurere hva overlayet viser:
 
 1. Gå til **Funksjoner → OBS-overlay**
 2. Konfigurer:
@@ -171,5 +171,5 @@ Bambu-kameraet kan noen ganger fryse. I dashboardet under **System → Kamera**:
 - Eller bruk bakgrunnsmusikk / chat-lyd i stedet
 
 :::tip Automatisk scenebytte
-OBS har innebygd støtte for scenebytte basert på titler. Kombiner med en Plugin (f.eks. obs-websocket) og Bambu Dashboard API for å bytte scene automatisk når print starter og stopper.
+OBS har innebygd støtte for scenebytte basert på titler. Kombiner med en Plugin (f.eks. obs-websocket) og 3DPrintForge API for å bytte scene automatisk når print starter og stopper.
 :::
