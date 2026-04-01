@@ -49,8 +49,10 @@ export async function syncMoonrakerHistory(printerId, printerIp, apiKey, port = 
     const jobs = data.result?.jobs || [];
     if (jobs.length === 0) return { imported: 0, skipped: 0, error: null };
 
-    // Get existing history to avoid duplicates (check by started_at + filename)
+    // Get existing history to avoid duplicates
+    // Match by started_at timestamp (within 5 min window) to handle filename variations
     const existing = getHistory(200, 0, printerId);
+    const existingTimes = existing.map(h => h.started_at ? new Date(h.started_at).getTime() : 0).filter(t => t > 0);
     const existingKeys = new Set(existing.map(h => `${h.started_at}_${h.filename}`));
 
     let imported = 0;
@@ -67,9 +69,11 @@ export async function syncMoonrakerHistory(printerId, printerIp, apiKey, port = 
       const filename = job.filename || 'Unknown';
       const modelName = filename.replace(/\.(gcode|3mf|g)$/i, '').replace(/_/g, ' ');
 
-      // Dedup check
+      // Dedup check — match by key OR by start time within 5 min window
       const dedupKey = `${startTime}_${modelName}`;
-      if (existingKeys.has(dedupKey)) {
+      const startMs = startTime ? new Date(startTime).getTime() : 0;
+      const timeMatch = startMs > 0 && existingTimes.some(t => Math.abs(t - startMs) < 300000);
+      if (existingKeys.has(dedupKey) || timeMatch) {
         skipped++;
         continue;
       }
