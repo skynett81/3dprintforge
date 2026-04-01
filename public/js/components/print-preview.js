@@ -329,6 +329,16 @@
     if (mwContainer) mwContainer.style.display = 'none';
     _usingMwImage = false;
 
+    // Moonraker printers never have /api/model — skip fetch entirely
+    const _meta = window.printerState?.getActivePrinterMeta?.();
+    if (_meta?.type === 'moonraker') {
+      _cachedModel = _MODEL_NOT_FOUND;
+      _showThumbnailFallback(canvas, data);
+      _fetching = false;
+      updateModelLoadingState(false);
+      return;
+    }
+
     const now = Date.now();
 
     // Use cached result — "not found" is permanent until subtask changes
