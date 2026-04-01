@@ -746,17 +746,34 @@
     const speed = speedLabel(row.speed_level);
     const filWeight = row.filament_used_g ? fmtW(row.filament_used_g) : '--';
     const filBrand = row.filament_brand || '--';
-    const filType = row.filament_type || '--';
-    const filColorHex = row.filament_color && row.filament_color.length >= 6 ? '#' + row.filament_color.substring(0, 6) : null;
+    const filTypes = (row.filament_type || '').split(';').filter(Boolean);
+    const filColors = (row.filament_color || '').split(';').filter(Boolean);
+    const filType = filTypes.length > 1 ? filTypes.join(' + ') : (filTypes[0] || '--');
+    const filColorHex = filColors[0] ? '#' + filColors[0] : null;
     const traySlot = row.tray_id != null && row.tray_id !== '255' ? `A${parseInt(row.tray_id) + 1}` : row.tray_id === '255' ? 'Ext' : '--';
     const amsUsed = row.ams_units_used ? `${row.ams_units_used} enhet${row.ams_units_used > 1 ? 'er' : ''}` : '--';
     const thumbUrl = `/api/history/${row.id}/thumbnail`;
-    const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
+    const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(filColors[0] || row.filament_color));
     const nozzleText = [row.nozzle_type, row.nozzle_diameter ? row.nozzle_diameter + 'mm' : ''].filter(Boolean).join(' ') || '--';
     const plateLabel = cloud?.plateName || (cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '');
 
     let filChip = '';
-    if (row.filament_type) {
+    if (filColors.length > 1) {
+      // Multi-color print — show all color swatches
+      filChip = '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      for (let ci = 0; ci < filColors.length; ci++) {
+        const hex = '#' + filColors[ci];
+        const type = filTypes[ci] || 'PLA';
+        filChip += `<div class="ph-detail-filament-chip" style="flex:1;min-width:100px">
+          <div class="ph-fil-swatch" style="background:${hex}"></div>
+          <div class="ph-fil-chip-info">
+            <span class="ph-fil-chip-brand">T${ci}</span>
+            <span class="ph-fil-chip-type">${esc(type)} · #${filColors[ci]}</span>
+          </div>
+        </div>`;
+      }
+      filChip += '</div>';
+    } else if (filTypes[0]) {
       const fColor = filColorHex || '#888';
       filChip = `<div class="ph-detail-filament-chip">
         <div class="ph-fil-swatch" style="background:${fColor}"></div>
