@@ -31,15 +31,34 @@
 
   // ── Klipper/Moonraker extruder display — pixel-identical to Bambu AMS ──
   function _renderKlipperExtruders(container, data) {
-    // Build extruder list (T0-T3)
+    const slicer = _parseSlicerData(data);
+
+    // Determine total slot count: max of slicer colors, slicer types, or reported extruders
+    const extraCount = data._extra_extruders ? data._extra_extruders.length : 0;
+    const reportedCount = (data.nozzle_temper !== undefined ? 1 : 0) + extraCount;
+    const slicerCount = Math.max(slicer.colors.filter(function(c) { return c.length > 0; }).length, slicer.types.filter(function(t) { return t.length > 0; }).length);
+    const totalSlots = Math.max(slicerCount, reportedCount, 1);
+
+    // Build extruder list for ALL slots (T0..Tn) — always show every slot
     const extruders = [];
-    if (data.nozzle_temper !== undefined) {
-      extruders.push({ index: 0, temp: Math.round(data.nozzle_temper), target: Math.round(data.nozzle_target_temper || 0), active: data._active_extruder === 'extruder' || data._active_extruder === undefined });
-    }
-    if (data._extra_extruders) {
-      for (let i = 0; i < data._extra_extruders.length; i++) {
-        const ex = data._extra_extruders[i];
-        extruders.push({ index: i + 1, temp: ex.temperature, target: ex.target, active: data._active_extruder === `extruder${i + 1}` });
+    for (let idx = 0; idx < totalSlots; idx++) {
+      if (idx === 0) {
+        extruders.push({
+          index: 0,
+          temp: data.nozzle_temper !== undefined ? Math.round(data.nozzle_temper) : 0,
+          target: Math.round(data.nozzle_target_temper || 0),
+          active: data._active_extruder === 'extruder' || data._active_extruder === undefined,
+          hasData: data.nozzle_temper !== undefined
+        });
+      } else {
+        const ex = data._extra_extruders && data._extra_extruders[idx - 1];
+        extruders.push({
+          index: idx,
+          temp: ex ? ex.temperature : 0,
+          target: ex ? ex.target : 0,
+          active: data._active_extruder === `extruder${idx}`,
+          hasData: !!ex
+        });
       }
     }
     if (extruders.length === 0) {
@@ -47,7 +66,6 @@
       return;
     }
 
-    const slicer = _parseSlicerData(data);
     const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
     const fallbackColors = ['#4a9eff', '#ff6b6b', '#ffd93d', '#6bcb77', '#c084fc', '#f97316', '#38bdf8', '#fb923c'];
     const activeExtIdx = extruders.findIndex(e => e.active);

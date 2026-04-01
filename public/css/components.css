@@ -12638,7 +12638,7 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 /* Spool grid — matches AMS panel visual style */
 .fr-spools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 130px));
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 10px;
   justify-items: center;
   justify-content: center;
