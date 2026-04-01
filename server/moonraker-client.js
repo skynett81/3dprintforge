@@ -325,22 +325,22 @@ export class MoonrakerClient {
     if (ext.target !== undefined) this.state.nozzle_target_temper = Math.round(ext.target);
 
     // Multi-extruder support (Snapmaker U1 has up to 4)
-    // Build full extruder array including primary (T0)
-    const allExtruders = [ext, ext1, ext2, ext3].filter(Boolean);
-    const extraExtruders = [];
-    for (let i = 1; i < allExtruders.length; i++) {
-      const ex = allExtruders[i];
+    // Merge into existing _extra_extruders (WS only sends changed fields)
+    if (!this.state._extra_extruders) this.state._extra_extruders = [];
+    const extras = [ext1, ext2, ext3];
+    for (let i = 0; i < extras.length; i++) {
+      const ex = extras[i];
       if (ex?.temperature !== undefined) {
-        extraExtruders.push({
+        this.state._extra_extruders[i] = {
+          ...(this.state._extra_extruders[i] || {}),
           temperature: Math.round(ex.temperature),
           target: Math.round(ex.target || 0),
-          state: ex.state || null,
-          switch_count: ex.switch_count || 0,
-          pressure_advance: ex.pressure_advance || null,
-        });
+          state: ex.state || this.state._extra_extruders[i]?.state || null,
+          switch_count: ex.switch_count ?? this.state._extra_extruders[i]?.switch_count ?? 0,
+          pressure_advance: ex.pressure_advance ?? this.state._extra_extruders[i]?.pressure_advance ?? null,
+        };
       }
     }
-    if (extraExtruders.length > 0) this.state._extra_extruders = extraExtruders;
 
     // Primary extruder state
     if (ext.state) this.state._extruder_state = ext.state;
