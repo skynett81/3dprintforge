@@ -328,52 +328,48 @@
     if (!thumbEl) {
       thumbEl = document.createElement('div');
       thumbEl.className = 'moonraker-thumb-fallback';
-      thumbEl.style.cssText = 'width:100%;height:100%;display:flex;background:var(--bg-tertiary);border-radius:var(--radius);overflow:hidden';
+      thumbEl.style.cssText = 'width:100%;height:100%;display:flex;background:var(--bg-primary);border-radius:var(--radius);overflow:hidden';
       container.appendChild(thumbEl);
     }
 
-    // Build rich print info — updates live
+    // Build rich print info — updates live, fills entire space
     let html = '';
-    // Left: thumbnail
-    html += `<div style="flex:0 0 45%;display:flex;align-items:center;justify-content:center;padding:8px;background:rgba(0,0,0,0.15)">
-      <img src="${thumbUrl}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px" onerror="this.src='/api/printers/${encodeURIComponent(pid)}/frame.jpeg'">
+    // Left: large thumbnail
+    html += `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,0.2);min-height:0">
+      <img src="${thumbUrl}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px" onerror="this.src='/api/printers/${encodeURIComponent(pid)}/frame.jpeg'">
     </div>`;
 
-    // Right: print details
-    html += `<div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:0.72rem;overflow:hidden">`;
+    // Right: print details — larger text, fills height
+    html += `<div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:6px;font-size:0.82rem;overflow:hidden;justify-content:center">`;
 
     if (isPrinting) {
-      // Progress bar
-      html += `<div style="font-weight:700;font-size:0.85rem;color:var(--text-primary)">${pct}%</div>`;
-      html += `<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent-green);border-radius:2px;transition:width 1s"></div></div>`;
+      // Progress
+      html += `<div style="font-weight:700;font-size:1.4rem;color:var(--text-primary);line-height:1">${pct}%</div>`;
+      html += `<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin:2px 0"><div style="height:100%;width:${pct}%;background:var(--accent-green);border-radius:3px;transition:width 1s"></div></div>`;
 
-      // Layer info
+      // Layer
       if (totalLayers > 0) {
-        html += `<div style="color:var(--text-muted)">Layer ${layer} / ${totalLayers}</div>`;
+        html += `<div style="color:var(--text-secondary)">Layer <b>${layer}</b> / ${totalLayers}</div>`;
       }
 
       // Time
       const fmtT = (s) => { if (!s || s <= 0) return '--'; const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); return h > 0 ? h+'h '+m+'m' : m+'m'; };
-      html += `<div style="color:var(--text-muted)">⏱ ${fmtT(elapsed)} elapsed${estTime ? ' / ' + fmtT(estTime) + ' est' : ''}</div>`;
-      if (remaining > 0) html += `<div style="color:var(--text-muted)">⏳ ${fmtT(remaining * 60)} remaining</div>`;
+      html += `<div style="color:var(--text-secondary)">⏱ ${fmtT(elapsed)}${estTime ? ' / ' + fmtT(estTime) : ''}</div>`;
+      if (remaining > 0) html += `<div style="color:var(--accent-green);font-weight:600">⏳ ${fmtT(remaining * 60)} remaining</div>`;
 
-      // Filament
-      html += `<div style="color:var(--text-muted)">📏 ${filUsed}m used${filTotal ? ' / ' + filTotal + 'g total' : ''}</div>`;
+      // Filament + extruder
+      html += `<div style="color:var(--text-secondary)">📏 ${filUsed}m${filTotal ? ' / ' + filTotal + 'g' : ''}${activeExt ? ' · ' + activeExt : ''}</div>`;
 
-      // Active extruder
-      if (activeExt) html += `<div style="color:var(--text-muted)">🔧 ${activeExt} active</div>`;
-
-      // Position
-      if (pos) html += `<div style="color:var(--text-muted);font-size:0.65rem">X:${pos.x} Y:${pos.y} Z:${pos.z}</div>`;
-
-      // Object info
-      if (data._object_height) html += `<div style="color:var(--text-muted);font-size:0.65rem">▲ ${data._object_height}mm${data._layer_height ? ' · layer ' + data._layer_height + 'mm' : ''}</div>`;
+      // Position + object
+      const posStr = pos ? `X:${pos.x} Y:${pos.y} Z:${pos.z}` : '';
+      const objStr = data._object_height ? `▲ ${data._object_height}mm` : '';
+      if (posStr || objStr) html += `<div style="color:var(--text-muted);font-size:0.72rem">${[posStr, objStr].filter(Boolean).join(' · ')}</div>`;
     } else {
-      html += `<div style="color:var(--text-muted)">Idle</div>`;
+      html += `<div style="color:var(--text-muted);font-size:1rem">Idle</div>`;
     }
 
-    // Slicer
-    if (data._slicer) html += `<div style="color:var(--text-muted);font-size:0.6rem;margin-top:auto">${data._slicer} ${data._slicer_version || ''}</div>`;
+    // Slicer at bottom
+    if (data._slicer) html += `<div style="color:var(--text-muted);font-size:0.68rem;margin-top:auto;opacity:0.7">${data._slicer} ${data._slicer_version || ''}</div>`;
 
     html += `</div>`;
     thumbEl.innerHTML = html;
