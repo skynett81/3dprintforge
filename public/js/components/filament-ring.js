@@ -104,33 +104,45 @@
     }
 
     // ═══ ALL extruders as spool grid — same classes as P2S ═══
+    const printerId = window.printerState?.getActivePrinterId?.();
     html += '<div class="fr-spools-grid">';
     for (const ext of extruders) {
       const slicerColor = slicer.colors[ext.index] || '';
       const c = slicerColor.startsWith('#') ? slicerColor : fallbackColors[ext.index % fallbackColors.length];
       const isAct = ext.active;
-      const brand = slicer.names[ext.index] || '';
-      const tType = slicer.types[ext.index] || '';
-      const colorName = getColorName(c);
-      const slotLabel = 'T' + ext.index;
-      const filWeight = (slicer.weights[ext.index] > 0) ? slicer.weights[ext.index] : 0;
-      const weightG = filWeight > 0 ? Math.round(filWeight) + 'g' : '';
       const isHeating = ext.target > 0;
+      const slotLabel = 'T' + ext.index;
+
+      // Use linked spool from inventory (same as P2S uses getLinkedSpool)
+      const linkedSpool = window.getLinkedSpool?.(printerId, 0, ext.index);
+      const brand = linkedSpool?.profile_name || linkedSpool?.bambu_color_name || slicer.names[ext.index] || '';
+      const tType = linkedSpool?.material || slicer.types[ext.index] || '';
+      const colorName = linkedSpool?.bambu_color_name || linkedSpool?.color_name || getColorName(c);
       const nozzleRange = isHeating ? ext.temp + '–' + ext.target + '°C' : '';
 
-      // Use 80% fill for active/heating, 60% for loaded, 25% for empty
-      const filPct = isHeating ? 80 : (filWeight > 0 ? 60 : 25);
+      // Remaining % and weight from inventory spool
+      let remainPct, weightG, totalG;
+      if (linkedSpool && linkedSpool.initial_weight_g > 0) {
+        remainPct = Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100));
+        weightG = Math.round(linkedSpool.remaining_weight_g) + 'g';
+        totalG = Math.round(linkedSpool.initial_weight_g) + 'g';
+      } else {
+        const slicerW = (slicer.weights[ext.index] > 0) ? slicer.weights[ext.index] : 0;
+        remainPct = slicerW > 0 ? 70 : 25;
+        weightG = slicerW > 0 ? Math.round(slicerW) + 'g' : '';
+        totalG = '';
+      }
 
       // Spool data for popup on click — same structure as P2S
-      const spoolData = JSON.stringify({ unitIdx: 0, trayIdx: ext.index, isExt: false, type: tType, brand: brand || tType, color: c.replace('#',''), remain: filPct, weightG: weightG ? Math.round(filWeight) : null, totalG: null, nozzle: nozzleRange, rfid: false, idName: '', colorName, slot: slotLabel }).replace(/'/g, '&#39;');
+      const spoolData = JSON.stringify({ unitIdx: 0, trayIdx: ext.index, isExt: false, type: tType, brand: brand || tType, color: c.replace('#',''), remain: remainPct, weightG: linkedSpool ? Math.round(linkedSpool.remaining_weight_g) : null, totalG: linkedSpool ? String(linkedSpool.initial_weight_g) : null, nozzle: nozzleRange, rfid: false, idName: '', colorName, slot: slotLabel }).replace(/'/g, '&#39;');
 
       html += `<div class="fr-spool-item${isAct ? ' fr-spool-active' : ''}" style="cursor:pointer" onclick='showSpoolDetail(${spoolData})'>`;
-      // Spool ring — SAME _spoolVisual as P2S with overlay
-      html += `<div class="fr-spool-ring">${_spoolVisual(c, filPct, 'kl-' + ext.index)}<div class="fr-spool-overlay"><span class="fr-spool-pct">${isHeating ? ext.temp + '°' : (filWeight > 0 ? Math.round(filWeight) + 'g' : '--')}</span></div></div>`;
+      // Spool ring — SAME _spoolVisual as P2S with remaining % from inventory
+      html += `<div class="fr-spool-ring">${_spoolVisual(c, remainPct, 'kl-' + ext.index)}<div class="fr-spool-overlay"><span class="fr-spool-pct">${remainPct}%</span></div></div>`;
       // Meta — SAME layout as P2S
       html += `<div class="fr-spool-meta">`;
       html += `<span class="fr-spool-brand">${brand || tType || slotLabel}${colorName ? ' — ' + colorName : ''}</span>`;
-      html += `<span class="fr-spool-weight-row">${weightG}${isHeating ? (weightG ? ' · ' : '') + ext.temp + '°/' + ext.target + '°C' : ''}</span>`;
+      html += `<span class="fr-spool-weight-row">${weightG}${totalG ? ' / ' + totalG : ''}${isHeating ? ' · ' + ext.temp + '°C' : ''}</span>`;
       html += `<span class="fr-spool-slot">${slotLabel}${nozzleRange ? ' · 🔥' + nozzleRange : ''}</span>`;
       if (tType) html += `<span class="fr-spool-temp">${tType}</span>`;
       html += `</div>`;
