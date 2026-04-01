@@ -33,11 +33,9 @@
   function _renderKlipperExtruders(container, data) {
     const slicer = _parseSlicerData(data);
 
-    // Determine total slot count: max of slicer colors, slicer types, or reported extruders
+    // Total slots = number of physical extruders (NOT slicer slot count which can be higher)
     const extraCount = data._extra_extruders ? data._extra_extruders.length : 0;
-    const reportedCount = (data.nozzle_temper !== undefined ? 1 : 0) + extraCount;
-    const slicerCount = Math.max(slicer.colors.filter(function(c) { return c.length > 0; }).length, slicer.types.filter(function(t) { return t.length > 0; }).length);
-    const totalSlots = Math.max(slicerCount, reportedCount, 1);
+    const totalSlots = (data.nozzle_temper !== undefined ? 1 : 0) + extraCount || 1;
 
     // Build extruder list for ALL slots (T0..Tn) — always show every slot
     const extruders = [];
