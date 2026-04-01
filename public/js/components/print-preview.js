@@ -336,56 +336,27 @@
     if (!thumbEl) {
       thumbEl = document.createElement('div');
       thumbEl.className = 'moonraker-thumb-fallback';
-      thumbEl.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-primary);border-radius:var(--radius);overflow:hidden';
+      thumbEl.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-primary);border-radius:var(--radius);overflow:hidden;position:relative';
       container.appendChild(thumbEl);
     }
 
-    // Build rich print info — thumbnail dominant, info compact below
+    // Thumbnail fills entire card — no separate info panel (info is in top bar already)
     let html = '';
-    // Top: large thumbnail (takes most space)
-    html += `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;background:rgba(0,0,0,0.15);min-height:0">
-      <img src="${thumbUrl}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px" onerror="this.src='/api/printers/${encodeURIComponent(pid)}/frame.jpeg'">
-    </div>`;
+    html += `<img src="${thumbUrl}" alt="" style="width:100%;height:100%;object-fit:contain;padding:4px" onerror="this.src='/api/printers/${encodeURIComponent(pid)}/frame.jpeg'">`;
 
-    // Bottom: compact print info bar
-    html += `<div style="flex:0 0 auto;padding:6px 10px;display:flex;flex-direction:column;gap:3px;font-size:0.75rem;border-top:1px solid var(--border-color)">`;
-
-    if (isPrinting) {
-      const fmtT = (s) => { if (!s || s <= 0) return '--'; const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); return h > 0 ? h+'h '+m+'m' : m+'m'; };
-      // Progress bar + percentage inline
-      html += `<div style="display:flex;align-items:center;gap:8px">`;
-      html += `<span style="font-weight:700;font-size:0.9rem;color:var(--text-primary);min-width:36px">${pct}%</span>`;
-      html += `<div style="flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent-green);border-radius:3px;transition:width 1s"></div></div>`;
-      if (totalLayers > 0) html += `<span style="color:var(--text-muted);font-size:0.7rem">L${layer}/${totalLayers}</span>`;
-      html += `</div>`;
-      // Compact info row
-      const infoParts = [];
-      infoParts.push(`⏱ ${fmtT(elapsed)}${estTime ? '/' + fmtT(estTime) : ''}`);
-      if (remaining > 0) infoParts.push(`⏳ ${fmtT(remaining * 60)}`);
-      infoParts.push(`📏 ${filUsed}m`);
-      if (activeExt) infoParts.push(`🔧 ${activeExt}`);
-      html += `<div style="color:var(--text-muted);display:flex;flex-wrap:wrap;gap:6px">${infoParts.join(' · ')}</div>`;
-    } else {
-      html += `<div style="color:var(--text-muted)">Idle</div>`;
-    }
-
-    // Layer color bar — shows filament color per layer (like P2S)
+    // Layer color bar overlay at bottom
     if (_layerColors.length > 1 && totalLayers > 0) {
-      html += `<div style="margin-top:auto;padding-top:4px">`;
-      html += `<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:0">`;
-      const step = Math.max(1, Math.floor(totalLayers / 100));
+      html += `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;height:6px;gap:0">`;
+      const step = Math.max(1, Math.floor(totalLayers / 80));
       for (let i = 0; i < totalLayers; i += step) {
         const c = _layerColors[i];
         const bg = c ? `rgb(${Math.round(c[0]*255)},${Math.round(c[1]*255)},${Math.round(c[2]*255)})` : 'var(--border-color)';
         const w = (step / totalLayers * 100).toFixed(2);
         const done = i <= layer;
-        html += `<div style="flex:${w};background:${bg};opacity:${done ? 1 : 0.2}"></div>`;
+        html += `<div style="flex:${w};background:${bg};opacity:${done ? 1 : 0.25}"></div>`;
       }
-      html += `</div></div>`;
+      html += `</div>`;
     }
-
-    // Slicer at bottom
-    if (data._slicer) html += `<div style="color:var(--text-muted);font-size:0.68rem;margin-top:${_layerColors.length > 1 ? '4px' : 'auto'};opacity:0.7">${data._slicer} ${data._slicer_version || ''}</div>`;
 
     html += `</div>`;
     thumbEl.innerHTML = html;
