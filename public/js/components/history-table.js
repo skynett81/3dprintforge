@@ -791,7 +791,10 @@
 
     const tempInfo = [];
     if (row.max_nozzle_temp > 0) tempInfo.push(`Dyse: ${row.max_nozzle_temp}°C`);
+    else if (row.nozzle_target > 0) tempInfo.push(`Dyse: ${row.nozzle_target}°C`);
     if (row.max_bed_temp > 0) tempInfo.push(`Bed: ${row.max_bed_temp}°C`);
+    else if (row.bed_target > 0) tempInfo.push(`Bed: ${row.bed_target}°C`);
+    if (row.max_chamber_temp > 0) tempInfo.push(`Kammer: ${row.max_chamber_temp}°C`);
     const tempText = tempInfo.length ? tempInfo.join(' · ') : '--';
 
     // Build model source link from DB or cloud task data
@@ -839,23 +842,26 @@
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">Filamentmerke</span>
-              <span class="ph-detail-value">${esc(filBrand)}</span>
+              <span class="ph-detail-value">${esc(filBrand !== '--' ? filBrand : (row.notes?.match(/Slicer: (\S+)/)?.[1] || '--'))}</span>
             </div>
-            <div class="ph-detail-field">
-              <span class="ph-detail-label">Filamenttype</span>
-              <span class="ph-detail-value">${filColorHex ? (typeof miniSpool === 'function' ? miniSpool(filColorHex, 14) + ' ' : `<span class="color-dot" style="background:${filColorHex}"></span> `) : ''}${esc(filType)}</span>
+            <div class="ph-detail-field ph-detail-field-wide">
+              <span class="ph-detail-label">Filament</span>
+              <span class="ph-detail-value">${filColors.length > 1
+                ? filColors.map((c, i) => `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px"><span class="color-dot" style="background:#${c};width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,0.2)"></span><span style="font-size:0.75rem">T${i} ${filTypes[i] || 'PLA'} #${c}</span></span>`).join('')
+                : (filColorHex ? `<span class="color-dot" style="background:${filColorHex}"></span> ` : '') + esc(filType)
+              }</span>
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">Vekt brukt</span>
-              <span class="ph-detail-value">${filWeight}</span>
+              <span class="ph-detail-value">${filWeight}${row.color_changes > 0 ? ` (${row.color_changes + 1} farger)` : ''}</span>
             </div>
             <div class="ph-detail-field">
               <span class="ph-detail-label">${t('history.layers')}</span>
               <span class="ph-detail-value">${row.layer_count || '--'}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">AMS-spor</span>
-              <span class="ph-detail-value">${traySlot}</span>
+              <span class="ph-detail-label">${filColors.length > 1 ? 'Toolheads' : 'AMS-spor'}</span>
+              <span class="ph-detail-value">${filColors.length > 1 ? `T0–T${filColors.length - 1} (${filColors.length} dyser)` : traySlot}</span>
             </div>
             ${speed ? `<div class="ph-detail-field">
               <span class="ph-detail-label">${t('speed.label').replace(':','')}</span>
