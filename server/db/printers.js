@@ -182,3 +182,15 @@ export function getMaintenanceModePrinters() {
   const db = getDb();
   return db.prepare('SELECT id, name, model, maintenance_note, maintenance_since FROM printers WHERE maintenance_mode = 1').all();
 }
+
+// ---- Extruder Slot Colors (physical filaments loaded) ----
+
+export function getExtruderSlots(printerId) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM extruder_slots WHERE printer_id = ? ORDER BY slot_index').all(printerId);
+}
+
+export function upsertExtruderSlot(printerId, slotIndex, colorHex, filamentType, filamentName) {
+  const db = getDb();
+  return db.prepare('INSERT OR REPLACE INTO extruder_slots (printer_id, slot_index, color_hex, filament_type, filament_name, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'))').run(printerId, slotIndex, colorHex, filamentType, filamentName);
+}

@@ -10,6 +10,7 @@
 
 import { createLogger } from './logger.js';
 import { WebSocket } from 'ws';
+import { getExtruderSlots } from './db/printers.js';
 
 const log = createLogger('moonraker');
 
@@ -31,6 +32,7 @@ export class MoonrakerClient {
   constructor(config, hub) {
     this.ip = config.printer.ip;
     this.port = config.printer.port || 80;
+    this._printerId = config.printer.id || '';
     this.apiKey = config.printer.accessCode || '';
     this.hub = hub;
     this.ws = null;
@@ -237,14 +239,41 @@ export class MoonrakerClient {
       if (meta.layer_height) this.state._layer_height = meta.layer_height;
       if (meta.first_layer_height) this.state._first_layer_height = meta.first_layer_height;
       if (meta.filament_type) this.state._slicer_filament_type = meta.filament_type;
-      if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
-      if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
       if (meta.filament_weight) this.state._slicer_filament_weights = meta.filament_weight;
       if (meta.filament_weight_total) this.state._slicer_filament_total_g = meta.filament_weight_total;
       if (meta.slicer) this.state._slicer = meta.slicer;
       if (meta.slicer_version) this.state._slicer_version = meta.slicer_version;
       const thumb = meta.thumbnails?.find(t => t.width >= 200)?.relative_path;
       if (thumb) this.state._thumbnail_path = thumb;
+
+      // Physical slot colors override slicer colors
+      // Slicer colors reflect what the gcode was sliced for, which may differ
+      // from what's physically loaded. extruder_slots table has the truth.
+      try {
+        const slots = getExtruderSlots(this._printerId || '');
+        if (slots.length > 0) {
+          const slicerColors = (meta.filament_colour || '').split(';');
+          const slicerNames = (meta.filament_name || '').split(';');
+          const physColors = [...slicerColors];
+          const physNames = [...slicerNames];
+          for (const slot of slots) {
+            if (slot.color_hex) physColors[slot.slot_index] = '#' + slot.color_hex;
+            if (slot.filament_name) physNames[slot.slot_index] = slot.filament_name;
+          }
+          this.state._slicer_filament_colours = physColors.join(';');
+          this.state._slicer_filament_names = physNames.join(';');
+          log.info(`Physical slot colors applied (${slots.length} slots)`);
+        } else {
+          // No physical slots — use slicer colors as-is
+          if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
+          if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
+        }
+      } catch {
+        // Fallback to slicer colors
+        if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
+        if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
+      }
+
       log.info(`Slicer metadata hentet for ${filename}`);
     } catch { /* not critical */ }
   }

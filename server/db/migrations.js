@@ -127,6 +127,7 @@ export function runMigrations() {
     { version: 107, up: _mig107_ecom_license_identifiers },
     { version: 108, up: _mig108_crm_system },
     { version: 109, up: _mig109_printer_type_column },
+    { version: 110, up: _mig110_extruder_slots },
   ];
 
   for (const m of migrations) {
@@ -4473,4 +4474,18 @@ function _mig103_printer_maintenance_mode(db) {
 // v109: Add printer type column for multi-protocol support (bambu/moonraker)
 function _mig109_printer_type_column(db) {
   try { db.exec("ALTER TABLE printers ADD COLUMN type TEXT DEFAULT NULL"); } catch {}
+}
+
+// v110: Extruder slot colors — physical filaments loaded per printer slot
+function _mig110_extruder_slots(db) {
+  db.exec(`CREATE TABLE IF NOT EXISTS extruder_slots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    printer_id TEXT NOT NULL,
+    slot_index INTEGER NOT NULL,
+    color_hex TEXT,
+    filament_type TEXT,
+    filament_name TEXT,
+    updated_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(printer_id, slot_index)
+  )`);
 }
