@@ -170,16 +170,45 @@
       </button>
     </div>`;
 
+    // Detect printer type for appropriate status items
+    const _meta = window.printerState?.getActivePrinterMeta?.() || {};
+    const isMoonraker = _meta.type === 'moonraker';
+
     const isFirstRender = !container._lastHtml;
-    container.innerHTML = `<div class="qs-grid${isFirstRender ? ' stagger-in' : ''}">
-      ${item('wifi', t('quick_status.wifi'), wifiSig, wifiCol)}
-      ${item('nozzle', t('quick_status.nozzle'), nozzleStr, '')}
-      ${storageItem}
-      ${item('light', t('quick_status.light'), lightStr, lightColor)}
-      ${item('speed', t('quick_status.speed'), speedStr, '')}
-      ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}
-      ${item('guard', t('protection.title'), guardStr, guardColor, 'qs-guard-value')}
-    </div>`;
+
+    if (isMoonraker) {
+      // Moonraker/Klipper status — different info than Bambu
+      const bedTemp = data.bed_temper ? `${data.bed_temper}°C` : '--';
+      const bedTarget = data.bed_target_temper ? ` → ${data.bed_target_temper}°C` : '';
+      const bedColor = data.bed_temper > 50 ? 'var(--accent-orange)' : 'var(--text-muted)';
+      const activeExt = data._active_extruder ? data._active_extruder.replace('extruder', 'T') : '--';
+      const extTemp = data.nozzle_temper ? `${data.nozzle_temper}°C` : '--';
+      const extColor = data.nozzle_temper > 180 ? 'var(--accent-red)' : data.nozzle_temper > 50 ? 'var(--accent-orange)' : 'var(--text-muted)';
+      const speedPct = data.spd_mag ? `${data.spd_mag}%` : '100%';
+      const fanPct = data.cooling_fan_speed != null ? `${data.cooling_fan_speed}%` : '--';
+      const fanColor = data.cooling_fan_speed > 0 ? 'var(--accent-blue)' : 'var(--text-muted)';
+      const posStr = data._position ? `X:${data._position.x} Y:${data._position.y} Z:${data._position.z}` : '--';
+
+      container.innerHTML = `<div class="qs-grid${isFirstRender ? ' stagger-in' : ''}">
+        ${item('nozzle', activeExt + ' Extruder', extTemp, extColor)}
+        ${item('nozzle', 'Bed', bedTemp + bedTarget, bedColor)}
+        ${item('speed', t('quick_status.speed'), speedPct, '')}
+        ${item('light', 'Fan', fanPct, fanColor)}
+        ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}
+        ${item('guard', t('protection.title'), guardStr, guardColor, 'qs-guard-value')}
+      </div>`;
+    } else {
+      // Bambu Lab status
+      container.innerHTML = `<div class="qs-grid${isFirstRender ? ' stagger-in' : ''}">
+        ${item('wifi', t('quick_status.wifi'), wifiSig, wifiCol)}
+        ${item('nozzle', t('quick_status.nozzle'), nozzleStr, '')}
+        ${storageItem}
+        ${item('light', t('quick_status.light'), lightStr, lightColor)}
+        ${item('speed', t('quick_status.speed'), speedStr, '')}
+        ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}
+        ${item('guard', t('protection.title'), guardStr, guardColor, 'qs-guard-value')}
+      </div>`;
+    }
     // Apply stagger delay indices for entrance animation
     if (isFirstRender) {
       const items = container.querySelectorAll('.qs-item');
