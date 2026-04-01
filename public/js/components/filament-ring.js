@@ -31,16 +31,7 @@
 
   // ── Klipper/Moonraker extruder display — pixel-identical to Bambu AMS ──
   function _renderKlipperExtruders(container, data) {
-    const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
-    // When printing: use slicer colors. When idle: use physical slot colors.
-    let colorSource = data._slicer_filament_colours || '';
-    let nameSource = data._slicer_filament_names || '';
-    if (!isPrinting && data._physical_slot_colours) {
-      colorSource = data._physical_slot_colours;
-      nameSource = data._physical_slot_names || nameSource;
-    }
-    const slicerInput = { ...data, _slicer_filament_colours: colorSource, _slicer_filament_names: nameSource };
-    const slicer = _parseSlicerData(slicerInput);
+    const slicer = _parseSlicerData(data);
 
     // Total slots = number of physical extruders (NOT slicer slot count which can be higher)
     const extraCount = data._extra_extruders ? data._extra_extruders.length : 0;
@@ -407,19 +398,17 @@
     }
 
     const ams = data.ams;
-    const hasAms = ams && ams.ams && ams.ams.length > 0;
 
-    // Moonraker/Klipper printers: detect by meta type OR by having extra extruders
-    const meta = window.printerState?.getActivePrinterMeta?.();
-    if (!hasAms && meta?.type === 'moonraker') {
-      try { _renderKlipperExtruders(container, data); } catch(e) { console.error('[filament-ring] Klipper render error:', e); }
+    // Moonraker/Klipper printers: show extruder temps instead of AMS trays
+    if ((!ams || !ams.ams || !ams.ams.length) && data._extra_extruders) {
+      _renderKlipperExtruders(container, data);
       return;
     }
-    if (!hasAms && (data._extra_extruders || data.nozzle_temper !== undefined) && !hasAms) {
-      try { _renderKlipperExtruders(container, data); } catch(e) { console.error('[filament-ring] Klipper render error:', e); }
+    if ((!ams || !ams.ams || !ams.ams.length) && data.nozzle_temper !== undefined && !data.ams) {
+      _renderKlipperExtruders(container, data);
       return;
     }
-    if (!hasAms) {
+    if (!ams || !ams.ams || !ams.ams.length) {
       container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">Ingen AMS-data</div>';
       return;
     }
