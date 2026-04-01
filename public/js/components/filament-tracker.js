@@ -1765,7 +1765,8 @@
     const container = document.getElementById('usage-history-container');
     if (!container) return;
     try {
-      const res = await fetch('/api/inventory/usage?limit=50');
+      const _uPid = window.printerState?.getActivePrinterId?.() || '';
+      const res = await fetch(`/api/inventory/usage?limit=50${_uPid ? '&printer_id=' + encodeURIComponent(_uPid) : ''}`);
       const log = await res.json();
       if (!log || log.length === 0) {
         container.innerHTML = `<p class="text-muted text-sm">${t('filament.no_data')}</p>`;
@@ -4674,7 +4675,8 @@
     const el = document.getElementById('checked-out-container');
     if (!el) return;
     try {
-      const res = await fetch('/api/inventory/checked-out');
+      const _coPid = window.printerState?.getActivePrinterId?.() || '';
+      const res = await fetch(`/api/inventory/checked-out${_coPid ? '?printer_id=' + encodeURIComponent(_coPid) : ''}`);
       const spools = await res.json();
       if (!spools.length) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.no_checked_out')}</p>`; return; }
       let h = '<div class="fil-checkout-list">';
@@ -5350,7 +5352,8 @@
     const el = document.getElementById('timeline-container');
     if (!el) return;
     try {
-      const res = await fetch('/api/inventory/events?limit=50');
+      const _tlPid = window.printerState?.getActivePrinterId?.() || '';
+      const res = await fetch(`/api/inventory/events?limit=50${_tlPid ? '&printer_id=' + encodeURIComponent(_tlPid) : ''}`);
       const events = await res.json();
       if (!events.length) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.timeline_empty')}</p>`; return; }
       const eventIcons = {
