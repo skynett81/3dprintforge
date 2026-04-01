@@ -81,13 +81,35 @@ export async function syncMoonrakerHistory(printerId, printerIp, apiKey, port = 
       const totalWeightG = meta.filament_weight_total || (filamentWeights.length > 0 ? filamentWeights.reduce((a, b) => a + b, 0) : null);
       const filamentUsedMm = job.filament_used || meta.filament_total || 0;
 
-      // Get thumbnail URL if available
-      const thumbnail = meta.thumbnails?.find(t => t.width >= 200)?.relative_path
+      // Download thumbnail if available
+      const thumbPath = meta.thumbnails?.find(t => t.width >= 200)?.relative_path
         || meta.thumbnails?.[0]?.relative_path || null;
-      const thumbnailUrl = thumbnail ? `${baseUrl}/server/files/gcodes/${thumbnail}` : null;
+      let thumbnailData = null;
+      if (thumbPath) {
+        try {
+          const thumbRes = await fetch(`${baseUrl}/server/files/gcodes/${encodeURIComponent(thumbPath)}`, {
+            headers, signal: AbortSignal.timeout(5000)
+          });
+          if (thumbRes.ok) {
+            thumbnailData = Buffer.from(await thumbRes.arrayBuffer());
+          }
+        } catch { /* skip thumbnail */ }
+      }
+
+      // All filament colors as semicolon-separated hex (for multi-color display)
+      const allColors = filamentColors.map(c => c.replace('#', '')).join(';');
+      const allTypes = filamentTypes.join(';');
+
+      // Build descriptive notes
+      const colorNames = filamentColors.map((c, i) => {
+        const w = filamentWeights[i] ? `${filamentWeights[i].toFixed(1)}g` : '';
+        return `${filamentTypes[i] || 'PLA'} #${c.replace('#','')} ${w}`.trim();
+      });
+      const slicerInfo = meta.slicer ? `Slicer: ${meta.slicer} ${meta.slicer_version || ''}` : '';
+      const colorInfo = filamentTypes.length > 1 ? `Colors: ${colorNames.join(' | ')}` : '';
 
       try {
-        addHistory({
+        const histId = addHistory({
           printer_id: printerId,
           filename: modelName,
           model_name: modelName,
@@ -95,16 +117,32 @@ export async function syncMoonrakerHistory(printerId, printerIp, apiKey, port = 
           started_at: startTime,
           finished_at: endTime,
           duration_seconds: durationSeconds,
-          filament_type: filamentTypes[0] || null,
-          filament_color: filamentColors[0]?.replace('#', '') || null,
+          filament_type: allTypes || null,
+          filament_color: allColors || null,
           filament_used_g: totalWeightG,
+          color_changes: filamentTypes.length > 1 ? filamentTypes.length - 1 : 0,
           layer_count: meta.layer_count || null,
           nozzle_diameter: meta.nozzle_diameter || null,
           bed_target: meta.first_layer_bed_temp || null,
           nozzle_target: meta.first_layer_extr_temp || null,
           gcode_file: job.filename || null,
-          notes: `Imported from Moonraker | Slicer: ${meta.slicer || '?'} ${meta.slicer_version || ''} | ${filamentTypes.length} extruder(s)`.trim(),
+          notes: [slicerInfo, colorInfo].filter(Boolean).join(' | '),
         });
+
+        // Save thumbnail to screenshots if available
+        if (thumbnailData && histId) {
+          try {
+            const { addScreenshot } = await import('./database.js');
+            addScreenshot({
+              print_id: histId,
+              printer_id: printerId,
+              type: 'thumbnail',
+              data: thumbnailData,
+              mime_type: 'image/png',
+              filename: `${modelName.replace(/[^a-zA-Z0-9]/g, '_')}_thumb.png`,
+            });
+          } catch { /* screenshot table may not support this format */ }
+        }
         imported++;
       } catch (e) {
         // Duplicate or schema mismatch — skip

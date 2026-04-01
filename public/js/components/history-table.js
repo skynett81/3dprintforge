@@ -998,7 +998,9 @@
     }
 
     try {
-      const [histRes] = await Promise.all([fetch('/api/history?limit=100'), _loadCloudTasks()]);
+      const activePid = window.printerState?.getActivePrinterId?.();
+      const histQuery = activePid ? `/api/history?limit=100&printer_id=${encodeURIComponent(activePid)}` : '/api/history?limit=100';
+      const [histRes] = await Promise.all([fetch(histQuery), _loadCloudTasks()]);
       _data = await histRes.json();
 
       if (!_data.length) {
