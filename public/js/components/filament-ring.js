@@ -95,42 +95,34 @@
       html += `</div></div>`;
     }
     html += '</div>';
-    container.innerHTML = html;
 
-    // ── AMS CARD (bottom) — show extruder details + stats like P2S's AMS panel ──
-    const amsCard = document.getElementById('ams-card');
-    if (amsCard) {
-      amsCard.style.display = '';
-      let amsHtml = '';
+    // Stats + position bar inside filament-ring card (below spool grid)
+    if (isPrinting) {
+      const estTime = data._slicer_estimated_time || 0;
+      const actualTime = data.print_duration_seconds || 0;
+      const usedM = data.filament_used_mm ? (data.filament_used_mm / 1000).toFixed(1) : '0';
+      const heightStr = data._object_height ? data._object_height + 'mm' : '';
+      const layerStr = data._layer_height ? ' (layer ' + data._layer_height + 'mm)' : '';
 
-      // Stats bar (like AMS humidity bar)
-      if (isPrinting) {
-        const estTime = data._slicer_estimated_time || 0;
-        const actualTime = data.print_duration_seconds || 0;
-        const usedM = data.filament_used_mm ? (data.filament_used_mm / 1000).toFixed(1) : '0';
-        const heightStr = data._object_height ? data._object_height + 'mm' : '';
-        const layerStr = data._layer_height ? ' (layer ' + data._layer_height + 'mm)' : '';
-
-        amsHtml += `<div style="display:flex;gap:12px;padding:8px 12px;font-size:0.75rem;color:var(--text-muted);flex-wrap:wrap;border-bottom:1px solid var(--border-color)">`;
-        if (estTime > 0) amsHtml += `<span>⏱ ${_fmtTime(actualTime)} / ${_fmtTime(estTime)}</span>`;
-        amsHtml += `<span>📏 ${usedM}m used</span>`;
-        if (heightStr) amsHtml += `<span>▲ ${heightStr}${layerStr}</span>`;
-        if (data._slicer) amsHtml += `<span>🔧 ${data._slicer} ${data._slicer_version || ''}</span>`;
-        amsHtml += `</div>`;
-      }
-
-      // Position + speed (like AMS controls bar)
-      const infoItems = [];
-      if (data._position) infoItems.push(`X:${data._position.x} Y:${data._position.y} Z:${data._position.z}`);
-      if (data.spd_mag) infoItems.push(`Speed: ${data.spd_mag}%`);
-      if (data.cooling_fan_speed) infoItems.push(`Fan: ${data.cooling_fan_speed}%`);
-      if (data.bed_temper) infoItems.push(`Bed: ${data.bed_temper}°C`);
-      if (infoItems.length > 0) {
-        amsHtml += `<div style="display:flex;gap:10px;padding:6px 12px;font-size:0.72rem;color:var(--text-muted);flex-wrap:wrap">${infoItems.map(s => `<span class="fleet-temp-item">${s}</span>`).join('')}</div>`;
-      }
-
-      amsCard.innerHTML = amsHtml;
+      html += `<div style="display:flex;gap:10px;padding:6px 0;font-size:0.72rem;color:var(--text-muted);flex-wrap:wrap;border-top:1px solid var(--border-color);margin-top:4px">`;
+      if (estTime > 0) html += `<span>⏱ ${_fmtTime(actualTime)} / ${_fmtTime(estTime)}</span>`;
+      html += `<span>📏 ${usedM}m</span>`;
+      if (heightStr) html += `<span>▲ ${heightStr}${layerStr}</span>`;
+      if (data._slicer) html += `<span>🔧 ${data._slicer}</span>`;
+      html += `</div>`;
     }
+
+    // Position bar
+    const infoItems = [];
+    if (data._position) infoItems.push(`X:${data._position.x} Y:${data._position.y} Z:${data._position.z}`);
+    if (data.spd_mag) infoItems.push(`Speed: ${data.spd_mag}%`);
+    if (data.cooling_fan_speed) infoItems.push(`Fan: ${data.cooling_fan_speed}%`);
+    if (data.bed_temper) infoItems.push(`Bed: ${data.bed_temper}°C`);
+    if (infoItems.length > 0) {
+      html += `<div style="display:flex;gap:8px;font-size:0.68rem;color:var(--text-muted);flex-wrap:wrap">${infoItems.join(' · ')}</div>`;
+    }
+
+    container.innerHTML = html;
   }
 
   function _esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
