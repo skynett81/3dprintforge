@@ -4403,11 +4403,10 @@
   box-shadow: var(--shadow-sm);
 }
 
-.printer-tab:hover {
-  border-color: rgba(0, 0, 0, 0.06);
+.printer-tab:hover:not(.active) {
+  border-color: var(--border-color);
   color: var(--text-primary);
   background: var(--bg-tertiary);
-  transform: translateY(-1px);
 }
 
 .printer-tab.active {
@@ -12652,8 +12651,7 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
   transition: transform 0.2s ease;
 }
 .fr-spool-item:hover {
-  transform: scale(1.05);
-  filter: drop-shadow(0 0 6px rgba(16, 179, 164, 0.15));
+  filter: brightness(1.05);
 }
 .fr-spool-active {
   filter: brightness(1.1);
@@ -12917,7 +12915,7 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
   transition: filter 0.3s ease;
 }
 .filament-ring-card:hover .filament-ring-main .spool-svg {
-  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35));
 }
 .filament-ring-overlay {
   position: absolute;
