@@ -529,10 +529,12 @@
   // ═══ Data loading ═══
   async function loadData() {
     try {
+      const _pid = window.printerState?.getActivePrinterId?.() || '';
+      const pidQ = _pid ? `?printer_id=${_pid}` : '';
       const [printersRes, statusRes, logRes] = await Promise.all([
         fetch('/api/printers'),
-        fetch('/api/protection/status'),
-        fetch('/api/protection/log?limit=100')
+        fetch(`/api/protection/status${pidQ}`),
+        fetch(`/api/protection/log?limit=100${_pid ? '&printer_id=' + _pid : ''}`)
       ]);
       _printers = await printersRes.json();
       const statusData = await statusRes.json();

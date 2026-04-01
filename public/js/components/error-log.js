@@ -384,7 +384,7 @@
 
   // ═══ Activity data loader ═══
   async function loadActivityData() {
-    const printerId = _selectedErrorPrinter;
+    const printerId = _selectedErrorPrinter || window.printerState?.getActivePrinterId?.() || '';
     const params = printerId ? `?limit=200&printer_id=${printerId}` : '?limit=200';
     try {
       const res = await fetch(`/api/activity-log${params}`);
@@ -416,7 +416,7 @@
       }
     }
 
-    const printerId = _selectedErrorPrinter;
+    const printerId = _selectedErrorPrinter || window.printerState?.getActivePrinterId?.() || '';
     const params = printerId ? `?limit=100&printer_id=${printerId}` : '?limit=100';
 
     try {

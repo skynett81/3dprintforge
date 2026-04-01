@@ -126,7 +126,7 @@
     if (!container) return;
     if (_activityData !== null && !forceRefresh) { _renderActivity(); return; }
     container.innerHTML = '<div class="text-muted" style="padding:1rem">' + (t('common.loading') || 'Loading...') + '</div>';
-    fetch('/api/activity-log?limit=200')
+    fetch(`/api/activity-log?limit=200&printer_id=${window.printerState?.getActivePrinterId?.() || ''}`)
       .then(function(res) { return res.json(); })
       .then(function(data) {
         _activityData = Array.isArray(data) ? data : [];

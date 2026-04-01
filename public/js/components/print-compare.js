@@ -72,7 +72,7 @@
     const overlay = _createOverlay();
     let prints = [];
     try {
-      const res = await fetch('/api/history?limit=50');
+      const res = await fetch(`/api/history?limit=50&printer_id=${window.printerState?.getActivePrinterId?.() || ''}`);
       const data = await res.json();
       prints = data.prints || data || [];
     } catch (e) {

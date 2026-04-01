@@ -825,7 +825,7 @@
         fetch(`/api/xcam/stats${params}`).catch(() => null),
         fetch(`/api/statistics/costs${params}`).catch(() => null),
         fetch(`/api/statistics/hardware${_printer ? '?printer_id=' + _printer : ''}`).catch(() => null),
-        fetch('/api/history?limit=100').catch(() => null)
+        fetch(`/api/history?limit=100&printer_id=${window.printerState?.getActivePrinterId?.() || ''}`).catch(() => null)
       ]);
       _data = await statsRes.json();
       try { _xcam = xcamRes ? await xcamRes.json() : null; } catch (_) { _xcam = null; }
