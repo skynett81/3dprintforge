@@ -329,14 +329,15 @@
 
     const now = Date.now();
 
-    // Use cached result if fetched recently (including "not found")
-    if (_lastModelFetch && (now - _lastModelFetch) < MODEL_FETCH_INTERVAL) {
-      if (_cachedModel && _cachedModel !== _MODEL_NOT_FOUND) {
-        _applyModel(_cachedModel, canvas, data);
-      } else {
-        // Cached "not found" — show thumbnail fallback without re-fetching
-        _showThumbnailFallback(canvas, data);
-      }
+    // Use cached result — "not found" is permanent until subtask changes
+    if (_cachedModel === _MODEL_NOT_FOUND) {
+      _showThumbnailFallback(canvas, data);
+      _fetching = false;
+      updateModelLoadingState(false);
+      return;
+    }
+    if (_cachedModel && _lastModelFetch && (now - _lastModelFetch) < MODEL_FETCH_INTERVAL) {
+      _applyModel(_cachedModel, canvas, data);
       _fetching = false;
       updateModelLoadingState(false);
       return;
