@@ -141,9 +141,9 @@
     const extSection = document.getElementById('ams-ext-section');
     const amsCard = document.getElementById('ams-card');
 
-    // Hide AMS card entirely for non-AMS printers (Moonraker/Klipper)
+    // For Moonraker/Klipper printers: ams-card is populated by _renderKlipperExtruders
+    // Don't hide it — just skip AMS-specific rendering
     if (!data.ams || !data.ams.ams || data.ams.ams.length === 0) {
-      if (amsCard) amsCard.style.display = 'none';
       return;
     }
     if (amsCard) amsCard.style.display = '';

@@ -29,155 +29,108 @@
     return m + 'm';
   }
 
-  // ── Klipper/Moonraker extruder display (Snapmaker U1 etc.) ──
+  // ── Klipper/Moonraker extruder display — matches Bambu AMS layout ──
   function _renderKlipperExtruders(container, data) {
     const extruders = [];
-    // Primary extruder
     if (data.nozzle_temper !== undefined) {
-      extruders.push({
-        index: 0,
-        temp: Math.round(data.nozzle_temper),
-        target: Math.round(data.nozzle_target_temper || 0),
-        active: data._active_extruder === 'extruder' || data._active_extruder === undefined,
-      });
+      extruders.push({ index: 0, temp: Math.round(data.nozzle_temper), target: Math.round(data.nozzle_target_temper || 0), active: data._active_extruder === 'extruder' || data._active_extruder === undefined });
     }
-    // Additional extruders (Snapmaker U1 has up to 4)
     if (data._extra_extruders) {
       for (let i = 0; i < data._extra_extruders.length; i++) {
         const ex = data._extra_extruders[i];
-        extruders.push({
-          index: i + 1,
-          temp: ex.temperature,
-          target: ex.target,
-          active: data._active_extruder === `extruder${i + 1}`,
-        });
+        extruders.push({ index: i + 1, temp: ex.temperature, target: ex.target, active: data._active_extruder === `extruder${i + 1}` });
       }
     }
-
     if (extruders.length === 0) {
       container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">Ingen data</div>';
       return;
     }
 
-    // Parse slicer metadata for filament info
     const slicer = _parseSlicerData(data);
     const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
-
-    // Filter: show used extruders (weight > 0) + always include active extruder
-    const hasSlicerWeights = slicer.weights.length > 0;
-    const visibleExtruders = (isPrinting && hasSlicerWeights)
-      ? extruders.filter(function(ext) {
-        if (ext.active) return true; // Always show active extruder
-        var w = slicer.weights[ext.index];
-        return w !== undefined && w > 0;
-      })
-      : extruders;
-
-    // Fall back to all extruders if filter resulted in empty set
-    const displayExtruders = visibleExtruders.length > 0 ? visibleExtruders : extruders;
-
-    // Assign fallback colors per slot
     const fallbackColors = ['#4a9eff', '#ff6b6b', '#ffd93d', '#6bcb77', '#c084fc', '#f97316', '#38bdf8', '#fb923c'];
+    const activeIdx = extruders.findIndex(e => e.active);
 
-    let html = '<div class="card-title">Extruders <span class="ams-live-badge" title="Live data via Moonraker">LIVE</span></div>';
+    // ── FILAMENT RING CARD (top) — matches P2S's spool rings ──
+    let html = '<div class="card-title">Filament <span class="ams-live-badge" title="Live via Moonraker">LIVE</span></div>';
 
-    // State bar with filename and progress
-    const state = data.gcode_state || 'IDLE';
-    const progress = data.mc_percent || 0;
-    const filename = data.subtask_name || '';
-
-    if (isPrinting) {
+    // Active spool info bar (like P2S)
+    if (isPrinting && activeIdx >= 0) {
+      const ae = extruders[activeIdx];
+      const aColor = slicer.colors[ae.index]?.startsWith('#') ? slicer.colors[ae.index] : fallbackColors[ae.index];
+      const aName = slicer.names[ae.index] || slicer.types[ae.index] || 'T' + ae.index;
+      const aType = slicer.types[ae.index] || '';
       html += `<div class="fr-active-bar">
-        <span class="fr-active-name">${_esc(filename)}</span>
-        <span class="fr-active-slot">${progress}%</span>
+        <div class="fr-active-dot" style="background:${aColor}"></div>
+        <span class="fr-active-name">${_esc(aName)}</span>
+        ${aType ? `<span class="filament-ring-type-badge">${aType}</span>` : ''}
+        <span class="fr-active-slot">T${ae.index}</span>
+        <span class="fr-active-weight">${ae.temp}°C</span>
       </div>`;
     }
 
-    // Time + filament usage stats bar (only during print)
-    if (isPrinting) {
-      html += '<div class="fr-klipper-stats">';
-
-      // Estimated vs actual time
-      var estTime = data._slicer_estimated_time || 0;
-      var actualTime = data.print_duration_seconds || 0;
-      if (estTime > 0) {
-        html += `<div class="fr-klipper-stat">
-          <span class="fr-klipper-stat-icon">&#9201;</span>
-          <span class="fr-klipper-stat-label">Elapsed</span>
-          <span class="fr-klipper-stat-val">${_fmtTime(actualTime)} / ${_fmtTime(estTime)}</span>
-        </div>`;
-      }
-
-      // Live filament used
-      if (data.filament_used_mm && data.filament_used_mm > 0) {
-        var usedM = (data.filament_used_mm / 1000).toFixed(2);
-        html += `<div class="fr-klipper-stat">
-          <span class="fr-klipper-stat-icon">&#128207;</span>
-          <span class="fr-klipper-stat-label">Filament</span>
-          <span class="fr-klipper-stat-val">${usedM}m</span>
-        </div>`;
-      }
-
-      // Object height / layer info
-      if (data._object_height) {
-        var layerInfo = data._object_height + 'mm';
-        if (data._layer_height) layerInfo += ' (layer ' + data._layer_height + 'mm)';
-        html += `<div class="fr-klipper-stat">
-          <span class="fr-klipper-stat-icon">&#9650;</span>
-          <span class="fr-klipper-stat-label">Height</span>
-          <span class="fr-klipper-stat-val">${layerInfo}</span>
-        </div>`;
-      }
-
-      html += '</div>';
-    }
-
-    // Extruder grid — uses same spool SVG visual as Bambu AMS for consistent look
+    // Spool grid — ALL 4 extruders always shown (like P2S shows all AMS slots)
     html += '<div class="fr-spools-grid">';
-    for (const ext of displayExtruders) {
-      var slicerColor = slicer.colors[ext.index] || '';
-      var filColor = (slicerColor && slicerColor.startsWith('#'))
-        ? slicerColor : fallbackColors[ext.index % fallbackColors.length];
-      var filName = slicer.names[ext.index] || '';
-      var filType = slicer.types[ext.index] || '';
-      var filWeight = (slicer.weights[ext.index] > 0) ? slicer.weights[ext.index] : 0;
-
+    for (const ext of extruders) {
+      const slicerColor = slicer.colors[ext.index] || '';
+      const filColor = slicerColor.startsWith('#') ? slicerColor : fallbackColors[ext.index % fallbackColors.length];
+      const filName = slicer.names[ext.index] || '';
+      const filType = slicer.types[ext.index] || '';
+      const filWeight = (slicer.weights[ext.index] > 0) ? slicer.weights[ext.index] : 0;
       const isActive = ext.active;
       const isHeating = ext.target > 0;
-      const activeCls = isActive ? ' fr-spool-active' : '';
-      const warnCls = ext.temp > 200 ? '' : '';
-
-      // Use filament color for spool visual — percentage based on weight used if available
-      const filPct = filWeight > 0 ? Math.max(10, 80) : (isHeating ? 60 : 30);
-      const tempLabel = ext.temp > 0 ? ext.temp + '°C' : '';
+      const filPct = isHeating ? Math.max(20, 80) : (filWeight > 0 ? 70 : 30);
       const slotLabel = 'T' + ext.index;
+      const colorName = getColorName(filColor);
+      const weightStr = filWeight > 0 ? filWeight.toFixed(0) + 'g' : '';
+      const nozzleRange = isHeating ? ext.target + '°C' : '';
 
-      html += `<div class="fr-spool-item${activeCls}${warnCls}" style="cursor:default">`;
-      // Reuse the same spool SVG as Bambu — with filament color and percentage
-      html += `<div class="fr-spool-ring">${_spoolVisual(filColor, filPct, 'kl-' + ext.index)}<div class="fr-spool-overlay"><span class="fr-spool-pct">${tempLabel}</span></div></div>`;
-
-      // Meta: same layout as Bambu AMS spools
+      html += `<div class="fr-spool-item${isActive ? ' fr-spool-active' : ''}">`;
+      html += `<div class="fr-spool-ring">${_spoolVisual(filColor, filPct, 'kl-' + ext.index)}<div class="fr-spool-overlay"><span class="fr-spool-pct">${isHeating ? ext.temp + '°' : (filWeight > 0 ? filWeight.toFixed(0) + 'g' : 'OFF')}</span></div></div>`;
       html += `<div class="fr-spool-meta">`;
-      html += `<span class="fr-spool-brand">${filName ? _esc(filName) : filType || slotLabel}</span>`;
-      if (filWeight > 0) {
-        html += `<span class="fr-spool-weight-row">${filWeight.toFixed(0)}g</span>`;
-      }
-      html += `<span class="fr-spool-slot">${slotLabel}${isActive ? ' · Active' : ' · Parked'}${isHeating ? ' · 🔥' + ext.target + '°C' : ''}</span>`;
+      html += `<span class="fr-spool-brand">${filName || filType || slotLabel}${colorName ? ' — ' + colorName : ''}</span>`;
+      html += `<span class="fr-spool-weight-row">${weightStr}${isHeating ? (weightStr ? ' · ' : '') + ext.temp + '°/' + ext.target + '°C' : ''}</span>`;
+      html += `<span class="fr-spool-slot">${slotLabel}${nozzleRange ? ' · 🔥' + nozzleRange : ''}${isActive ? ' · ● Active' : ''}</span>`;
       if (filType) html += `<span class="fr-spool-temp">${filType}</span>`;
       html += `</div></div>`;
     }
     html += '</div>';
-
-    // Position + speed bar (compact, like Bambu's AMS info)
-    const infoItems = [];
-    if (data._position) infoItems.push(`X:${data._position.x} Y:${data._position.y} Z:${data._position.z}`);
-    if (data.spd_mag) infoItems.push(`Speed: ${data.spd_mag}%`);
-    if (data.cooling_fan_speed) infoItems.push(`Fan: ${data.cooling_fan_speed}%`);
-    if (infoItems.length > 0) {
-      html += `<div class="fr-klipper-position">${infoItems.join(' · ')}</div>`;
-    }
-
     container.innerHTML = html;
+
+    // ── AMS CARD (bottom) — show extruder details + stats like P2S's AMS panel ──
+    const amsCard = document.getElementById('ams-card');
+    if (amsCard) {
+      amsCard.style.display = '';
+      let amsHtml = '';
+
+      // Stats bar (like AMS humidity bar)
+      if (isPrinting) {
+        const estTime = data._slicer_estimated_time || 0;
+        const actualTime = data.print_duration_seconds || 0;
+        const usedM = data.filament_used_mm ? (data.filament_used_mm / 1000).toFixed(1) : '0';
+        const heightStr = data._object_height ? data._object_height + 'mm' : '';
+        const layerStr = data._layer_height ? ' (layer ' + data._layer_height + 'mm)' : '';
+
+        amsHtml += `<div style="display:flex;gap:12px;padding:8px 12px;font-size:0.75rem;color:var(--text-muted);flex-wrap:wrap;border-bottom:1px solid var(--border-color)">`;
+        if (estTime > 0) amsHtml += `<span>⏱ ${_fmtTime(actualTime)} / ${_fmtTime(estTime)}</span>`;
+        amsHtml += `<span>📏 ${usedM}m used</span>`;
+        if (heightStr) amsHtml += `<span>▲ ${heightStr}${layerStr}</span>`;
+        if (data._slicer) amsHtml += `<span>🔧 ${data._slicer} ${data._slicer_version || ''}</span>`;
+        amsHtml += `</div>`;
+      }
+
+      // Position + speed (like AMS controls bar)
+      const infoItems = [];
+      if (data._position) infoItems.push(`X:${data._position.x} Y:${data._position.y} Z:${data._position.z}`);
+      if (data.spd_mag) infoItems.push(`Speed: ${data.spd_mag}%`);
+      if (data.cooling_fan_speed) infoItems.push(`Fan: ${data.cooling_fan_speed}%`);
+      if (data.bed_temper) infoItems.push(`Bed: ${data.bed_temper}°C`);
+      if (infoItems.length > 0) {
+        amsHtml += `<div style="display:flex;gap:10px;padding:6px 12px;font-size:0.72rem;color:var(--text-muted);flex-wrap:wrap">${infoItems.map(s => `<span class="fleet-temp-item">${s}</span>`).join('')}</div>`;
+      }
+
+      amsCard.innerHTML = amsHtml;
+    }
   }
 
   function _esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
