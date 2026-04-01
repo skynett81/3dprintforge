@@ -22,6 +22,7 @@
   const _maxReconnectAttempt = 15;
   let _staleTimer = null;
   let _lastFrameTs = 0;
+  let _snapshotInterval = null; // For Moonraker SSH snapshot polling
 
   function _clearReconnect() {
     if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
@@ -74,11 +75,18 @@
       return;
     }
 
-    if (port === currentPort && (player || _jpegWs)) return;
+    if (port === currentPort && (player || _jpegWs || _snapshotInterval)) return;
     _cleanup();
     currentPort = port;
     _streamMode = null;
     streamActive = false;
+
+    // Moonraker printers: use SSH snapshot image instead of WebSocket camera
+    const meta = window.printerState?.getActivePrinterMeta?.();
+    if (meta?.type === 'moonraker') {
+      _startSnapshotPlayer(container, meta.id || window.printerState?.getActivePrinterId());
+      return;
+    }
 
     const wsUrl = `ws://${location.hostname}:${port}`;
 
@@ -91,10 +99,47 @@
     _clearStaleTimer();
     if (player) { try { player.destroy(); } catch(e) {} player = null; }
     if (_jpegWs) { try { _jpegWs.close(); } catch(e) {} _jpegWs = null; }
+    if (_snapshotInterval) { clearInterval(_snapshotInterval); _snapshotInterval = null; }
   }
 
-  let _streamMode = null; // 'jpeg' or 'mpeg'
+  let _streamMode = null; // 'jpeg', 'mpeg', or 'snapshot'
   let _jpegWs = null;
+
+  function _startSnapshotPlayer(container, printerId) {
+    _streamMode = 'snapshot';
+    container.innerHTML = '';
+
+    const img = document.createElement('img');
+    img.className = 'camera-canvas';
+    img.style.objectFit = 'contain';
+    if (_isMobile()) {
+      img.style.maxHeight = '240px';
+    }
+    container.appendChild(img);
+
+    const overlay = _buildOverlay(container);
+    container.appendChild(overlay);
+
+    container.style.cursor = 'pointer';
+    container.onclick = () => { if (streamActive) openFullscreen(); };
+
+    const frameUrl = `/api/printers/${printerId}/frame.jpeg`;
+
+    function refreshFrame() {
+      // Cache-bust with timestamp
+      img.src = frameUrl + '?t=' + Date.now();
+    }
+
+    img.onload = () => { streamActive = true; };
+    img.onerror = () => {
+      // Keep trying — printer may not be sending frames yet
+      streamActive = false;
+    };
+
+    // Initial load + refresh every 3 seconds
+    refreshFrame();
+    _snapshotInterval = setInterval(refreshFrame, 3000);
+  }
 
   function _buildOverlay(container) {
     const overlay = document.createElement('div');
@@ -425,7 +470,21 @@
     const wsUrl = `ws://${location.hostname}:${currentPort}`;
 
     try {
-      if (_streamMode === 'jpeg') {
+      if (_streamMode === 'snapshot') {
+        // Snapshot fullscreen — refreshing <img> element
+        fsContainer.innerHTML = '';
+        const fsImg = document.createElement('img');
+        fsImg.className = 'camera-canvas-fullscreen';
+        fsImg.style.objectFit = 'contain';
+        fsContainer.appendChild(fsImg);
+
+        const printerId = window.printerState?.getActivePrinterId();
+        const frameUrl = `/api/printers/${printerId}/frame.jpeg`;
+        function refreshFs() { fsImg.src = frameUrl + '?t=' + Date.now(); }
+        refreshFs();
+        const fsInterval = setInterval(refreshFs, 3000);
+        fullscreenPlayer = { destroy: () => { clearInterval(fsInterval); } };
+      } else if (_streamMode === 'jpeg') {
         // JPEG fullscreen — use <img> element
         fsContainer.innerHTML = '';
         const fsImg = document.createElement('img');

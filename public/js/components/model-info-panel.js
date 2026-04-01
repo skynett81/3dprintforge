@@ -141,7 +141,14 @@
     }
   };
 
+  let _lastModelLinkCheck = 0;
+  let _lastModelLinkFile = '';
   function checkLinkedModel(strip, printerId, filename) {
+    // Throttle: only check once per 30s per filename
+    const now = Date.now();
+    if (filename === _lastModelLinkFile && now - _lastModelLinkCheck < 30000) return;
+    _lastModelLinkCheck = now;
+    _lastModelLinkFile = filename;
     fetch(`/api/model-link/${encodeURIComponent(printerId)}?filename=${encodeURIComponent(filename)}`)
       .then(r => r.ok ? r.json() : null)
       .then(link => {

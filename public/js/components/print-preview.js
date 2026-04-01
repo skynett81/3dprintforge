@@ -13,6 +13,17 @@
   // MakerWorld tracking
   let _usingMwImage = false;
 
+  // Throttle/cache for API calls to prevent 429 floods
+  let _lastModelFetch = 0;
+  let _cachedModel = null;
+  let _lastTasksFetch = 0;
+  let _cachedTasks = null;
+  let _lastModelLinkFetch = 0;
+  let _cachedModelLink = null;
+  const MODEL_FETCH_INTERVAL = 30000;    // 30s
+  const TASKS_FETCH_INTERVAL = 60000;    // 60s
+  const MODEL_LINK_FETCH_INTERVAL = 30000; // 30s
+
   const STATE_TEXT = {
     IDLE: 'idle', RUNNING: 'running', PAUSE: 'pause',
     FINISH: 'finish', FAILED: 'failed', PREPARE: 'prepare', HEATING: 'heating'
@@ -88,6 +99,10 @@
       _lastColor = null;
       // Clear print estimates
       window._printEstimates = null;
+      // Clear fetch caches on idle
+      _cachedModel = null; _lastModelFetch = 0;
+      _cachedTasks = null; _lastTasksFetch = 0;
+      _cachedModelLink = null; _lastModelLinkFetch = 0;
       // Hide model metadata
       renderModelMeta(null, null);
       return;
@@ -141,6 +156,10 @@
       _lastColor = null;
       _usingMwImage = false;
       if (mwContainer) mwContainer.style.display = 'none';
+      // Clear fetch caches for new job
+      _cachedModel = null; _lastModelFetch = 0;
+      _cachedTasks = null; _lastTasksFetch = 0;
+      _cachedModelLink = null; _lastModelLinkFetch = 0;
     }
 
     if (_fetching) return;
@@ -187,9 +206,14 @@
                 estimated_time_s: info.estimated_time_s || null
               });
             } else {
-              fetch(`/api/model/${printerId}`).then(r => r.ok ? r.json() : null)
-                .then(m => { if (m) renderModelMeta(m.meta, m.sliceInfo); })
-                .catch(() => {});
+              const _now = Date.now();
+              if (_cachedModelLink && (_now - _lastModelLinkFetch) < MODEL_LINK_FETCH_INTERVAL) {
+                if (_cachedModelLink) renderModelMeta(_cachedModelLink.meta, _cachedModelLink.sliceInfo);
+              } else {
+                fetch(`/api/model/${printerId}`).then(r => r.ok ? r.json() : null)
+                  .then(m => { _lastModelLinkFetch = Date.now(); _cachedModelLink = m; if (m) renderModelMeta(m.meta, m.sliceInfo); })
+                  .catch(() => {});
+              }
             }
             // Handle image load failure
             if (bgImg) bgImg.onerror = () => {
@@ -214,34 +238,57 @@
 
     // Fallback: if no MakerWorld data, try cloud task history for print estimates
     if (!window._printEstimates && subtask) {
-      fetch('/api/bambu-cloud/tasks').then(r => r.ok ? r.json() : null).then(tasks => {
-        if (!tasks || window._printEstimates) return;
-        const list = Array.isArray(tasks) ? tasks : (tasks.tasks || []);
-        // Match by filename
-        const match = list.find(t => (t.title || t.name || '') === subtask);
-        if (match && (match.weight || match.costTime)) {
-          window._printEstimates = {
-            weight_g: match.weight || 0,
-            time_s: match.costTime || 0,
-            filament_type: match.filament_type || null,
-            title: match.title || match.name || subtask
-          };
-          // Trigger re-render of filament displays with new estimates
-          const _state = window.printerState?.getActivePrinterState?.();
-          if (_state) {
-            const _pd = _state.print || _state;
-            if (typeof updateFilamentRing === 'function') updateFilamentRing(_pd);
-            if (typeof updateActiveFilament === 'function') updateActiveFilament(_pd);
-          }
-        }
-      }).catch(() => {});
+      const now = Date.now();
+
+      // Use cached tasks if fetched recently
+      if (_cachedTasks && (now - _lastTasksFetch) < TASKS_FETCH_INTERVAL) {
+        _applyTaskEstimates(_cachedTasks, subtask);
+      } else {
+        fetch('/api/bambu-cloud/tasks').then(r => r.ok ? r.json() : null).then(tasks => {
+          _lastTasksFetch = Date.now();
+          _cachedTasks = tasks;
+          _applyTaskEstimates(tasks, subtask);
+        }).catch(() => {});
+      }
     }
   };
+
+  function _applyTaskEstimates(tasks, subtask) {
+    if (!tasks || window._printEstimates) return;
+    const list = Array.isArray(tasks) ? tasks : (tasks.tasks || []);
+    // Match by filename
+    const match = list.find(t => (t.title || t.name || '') === subtask);
+    if (match && (match.weight || match.costTime)) {
+      window._printEstimates = {
+        weight_g: match.weight || 0,
+        time_s: match.costTime || 0,
+        filament_type: match.filament_type || null,
+        title: match.title || match.name || subtask
+      };
+      // Trigger re-render of filament displays with new estimates
+      const _state = window.printerState?.getActivePrinterState?.();
+      if (_state) {
+        const _pd = _state.print || _state;
+        if (typeof updateFilamentRing === 'function') updateFilamentRing(_pd);
+        if (typeof updateActiveFilament === 'function') updateActiveFilament(_pd);
+      }
+    }
+  }
 
   function _loadModel(printerId, canvas, data) {
     const mwContainer = document.getElementById('print-mw-container');
     if (mwContainer) mwContainer.style.display = 'none';
     _usingMwImage = false;
+
+    const now = Date.now();
+
+    // Use cached model if fetched recently
+    if (_cachedModel && (now - _lastModelFetch) < MODEL_FETCH_INTERVAL) {
+      _applyModel(_cachedModel, canvas, data);
+      _fetching = false;
+      updateModelLoadingState(false);
+      return;
+    }
 
     fetch(`/api/model/${printerId}`)
       .then(res => {
@@ -249,22 +296,9 @@
         return res.json();
       })
       .then(model => {
-        canvas.style.display = '';
-        if (!_viewer) {
-          _viewer = new window.ModelViewer(canvas);
-        }
-        // Apply active filament color as the model's base color
-        const rgb = getActiveFilamentColor(data);
-        if (rgb) model.color = rgb;
-        _viewer.loadModel(model);
-        const initPct = data.mc_percent || 0;
-        if (initPct > 0) {
-          _viewer.setProgress(initPct / 100);
-        } else {
-          _viewer.setProgress(0);
-        }
-        // Show model metadata bar
-        renderModelMeta(model.meta, model.sliceInfo);
+        _lastModelFetch = Date.now();
+        _cachedModel = model;
+        _applyModel(model, canvas, data);
       })
       .catch(() => {
         canvas.style.display = 'none';
@@ -274,6 +308,25 @@
         _fetching = false;
         updateModelLoadingState(false);
       });
+  }
+
+  function _applyModel(model, canvas, data) {
+    canvas.style.display = '';
+    if (!_viewer) {
+      _viewer = new window.ModelViewer(canvas);
+    }
+    // Apply active filament color as the model's base color
+    const rgb = getActiveFilamentColor(data);
+    if (rgb) model.color = rgb;
+    _viewer.loadModel(model);
+    const initPct = data.mc_percent || 0;
+    if (initPct > 0) {
+      _viewer.setProgress(initPct / 100);
+    } else {
+      _viewer.setProgress(0);
+    }
+    // Show model metadata bar
+    renderModelMeta(model.meta, model.sliceInfo);
   }
 
   function updatePrepareOverlay(data, state) {
