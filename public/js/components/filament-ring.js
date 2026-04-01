@@ -31,7 +31,13 @@
 
   // ── Klipper/Moonraker extruder display — pixel-identical to Bambu AMS ──
   function _renderKlipperExtruders(container, data) {
-    const slicer = _parseSlicerData(data);
+    const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
+    // When printing: use slicer colors (match gcode). When idle: use physical slot colors.
+    const slicer = _parseSlicerData(isPrinting ? data : {
+      ...data,
+      _slicer_filament_colours: data._physical_slot_colours || data._slicer_filament_colours,
+      _slicer_filament_names: data._physical_slot_names || data._slicer_filament_names,
+    });
 
     // Total slots = number of physical extruders (NOT slicer slot count which can be higher)
     const extraCount = data._extra_extruders ? data._extra_extruders.length : 0;

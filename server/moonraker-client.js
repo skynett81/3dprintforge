@@ -227,33 +227,19 @@ export class MoonrakerClient {
       const thumb = meta.thumbnails?.find(t => t.width >= 200)?.relative_path;
       if (thumb) this.state._thumbnail_path = thumb;
 
-      // Physical slot colors override slicer colors
-      // Slicer colors reflect what the gcode was sliced for, which may differ
-      // from what's physically loaded. extruder_slots table has the truth.
+      // During printing: use slicer colors (they match what the gcode expects)
+      // When idle: use physical slot colors from extruder_slots table
+      if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
+      if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
+
+      // Also store physical slot colors separately for idle display
       try {
         const slots = getExtruderSlots(this._printerId || '');
         if (slots.length > 0) {
-          const slicerColors = (meta.filament_colour || '').split(';');
-          const slicerNames = (meta.filament_name || '').split(';');
-          const physColors = [...slicerColors];
-          const physNames = [...slicerNames];
-          for (const slot of slots) {
-            if (slot.color_hex) physColors[slot.slot_index] = '#' + slot.color_hex;
-            if (slot.filament_name) physNames[slot.slot_index] = slot.filament_name;
-          }
-          this.state._slicer_filament_colours = physColors.join(';');
-          this.state._slicer_filament_names = physNames.join(';');
-          log.info(`Physical slot colors applied (${slots.length} slots)`);
-        } else {
-          // No physical slots — use slicer colors as-is
-          if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
-          if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
+          this.state._physical_slot_colours = slots.map(s => '#' + s.color_hex).join(';');
+          this.state._physical_slot_names = slots.map(s => s.filament_name).join(';');
         }
-      } catch {
-        // Fallback to slicer colors
-        if (meta.filament_colour) this.state._slicer_filament_colours = meta.filament_colour;
-        if (meta.filament_name) this.state._slicer_filament_names = meta.filament_name;
-      }
+      } catch { /* not critical */ }
 
       log.info(`Slicer metadata hentet for ${filename}`);
     } catch { /* not critical */ }
