@@ -1,6 +1,6 @@
 # 3DPrintForge
 
-> Self-hosted web dashboard for monitoring and controlling Bambu Lab 3D printers over your local network.
+> Self-hosted web dashboard for monitoring and controlling your 3D printers over your local network.
 
 Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
@@ -37,13 +37,18 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 ## Supported Printers
 
-All Bambu Lab printers with LAN mode enabled:
+### Bambu Lab (MQTT over LAN)
 
 - **P1 Series** — P1S, P1S Combo, P1P
 - **P2 Series** — P2S, P2S Combo
 - **X1 Series** — X1 Carbon, X1 Carbon Combo, X1E
 - **A1 Series** — A1, A1 Combo, A1 Mini
 - **H2 Series** — H2S, H2D, H2C (toolchanger)
+
+### Moonraker / Klipper (WebSocket API)
+
+- **Snapmaker** — U1 and other models with Moonraker firmware
+- Any printer running **Klipper + Moonraker** (Voron, Ender, Prusa, etc.)
 
 ## Supported Platforms
 
@@ -133,12 +138,20 @@ Edit `config.json` (created from `config.example.json`):
 {
   "printers": [
     {
-      "id": "my-printer",
+      "id": "my-bambu",
       "name": "My P1S",
       "ip": "192.168.1.100",
       "serial": "01S00A000000000",
       "accessCode": "12345678",
-      "model": "P1S"
+      "model": "P1S",
+      "type": "bambu"
+    },
+    {
+      "id": "my-klipper",
+      "name": "My Voron",
+      "ip": "192.168.1.200",
+      "type": "moonraker",
+      "port": 80
     }
   ],
   "server": {
@@ -152,18 +165,45 @@ Edit `config.json` (created from `config.example.json`):
 
 ### Finding Your Printer Details
 
+**Bambu Lab:**
+
 | Field | Where to Find |
 |-------|--------------|
 | `ip` | Printer screen: Settings > WiFi/Network > IP Address |
 | `serial` | Printer screen: Settings > Device > Serial Number |
 | `accessCode` | Printer screen: Settings > WiFi/Network > LAN Access Code |
+
+**Moonraker / Klipper:**
+
+| Field | Where to Find |
+|-------|--------------|
+| `ip` | Your printer's network IP address |
+| `port` | Moonraker port (default 80) |
 | `model` | Your printer model (e.g., `P1S`, `P2S Combo`, `X1 Carbon`, `A1 Mini`, `H2D`) |
 
 > **Tip:** Printers can also be added, edited, and deleted from the Settings tab in the dashboard — no restart required.
 
+### Moonraker / Klipper Printers
+
+```json
+{
+  "printers": [
+    {
+      "id": "my-klipper",
+      "name": "Snapmaker U1",
+      "ip": "192.168.1.200",
+      "type": "moonraker",
+      "port": 80
+    }
+  ]
+}
+```
+
+Set `"type": "moonraker"` for any Klipper/Moonraker-based printer. The dashboard connects via Moonraker's WebSocket API.
+
 ### Multiple Printers
 
-Add more entries to the `printers` array. Each printer gets its own MQTT connection and camera stream (on consecutive ports starting from `cameraWsPortStart`).
+Mix Bambu Lab and Moonraker printers in the same `printers` array. Each printer gets its own connection and camera stream (on consecutive ports starting from `cameraWsPortStart`).
 
 ---
 
@@ -240,7 +280,8 @@ docker compose pull && docker compose up -d
 
 | Problem | Solution |
 |---------|----------|
-| Printer not connecting | Verify IP (`ping`), access code, port 8883 open, same LAN |
+| Bambu printer not connecting | Verify IP (`ping`), access code, port 8883 open, same LAN |
+| Moonraker printer not connecting | Verify IP (`ping`), Moonraker running, port open (default 80) |
 | Camera not working | Install `ffmpeg`, verify camera enabled on printer |
 | "experimental-sqlite" error | Update to Node.js 22+: `node -v` |
 | Docker: printer not found | Ensure `network_mode: host` in docker-compose.yml |
