@@ -291,9 +291,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             while True:
                 with frame_lock:
                     data = current_frame
-                    ft = frame_time
-                if data and ft != last_time:
-                    last_time = ft
+                if data:
                     self.wfile.write(b"--frame\\r\\n")
                     self.wfile.write(b"Content-Type: image/jpeg\\r\\n")
                     self.wfile.write(f"Content-Length: {len(data)}\\r\\n\\r\\n".encode())
