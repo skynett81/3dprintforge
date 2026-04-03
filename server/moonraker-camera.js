@@ -1,171 +1,230 @@
 /**
  * MoonrakerCamera — Camera proxy for Klipper/Moonraker printers.
  *
- * For Snapmaker U1: captures via SSH + /tmp/printer_detection.jpg
- * (unisrv writes detection frames here continuously).
+ * Tries multiple snapshot sources automatically:
+ * 1. Moonraker webcam API (queries /server/webcams/list for URLs)
+ * 2. Common snapshot paths (/webcam/?action=snapshot, :8080, :8081)
+ * 3. Crowsnest/camera-streamer default paths
  *
- * For standard Moonraker: proxies /webcam/?action=snapshot endpoint.
- *
- * Serves JPEG snapshots via HTTP endpoint on the dashboard.
+ * Periodically retries if no source is found (webcam may start later).
+ * No external dependencies required (no sshpass, no ffmpeg).
  */
 
-import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { createLogger } from './logger.js';
 
 const log = createLogger('moon-cam');
 
+const SNAPSHOT_CANDIDATES = [
+  { path: '/webcam/?action=snapshot', port: null },
+  { path: '/?action=snapshot', port: 8080 },
+  { path: '/?action=snapshot', port: 8081 },
+  { path: '/webcam/?action=snapshot', port: 4408 },
+  { path: '/webcam/snapshot', port: null },
+  { path: '/snapshot', port: null },
+];
+
 export class MoonrakerCamera {
   constructor(config) {
     this.ip = config.printer.ip;
+    this.port = config.printer.port || 80;
     this.apiKey = config.printer.accessCode || '';
     this.enabled = config.camera?.enabled !== false;
     this._lastFrame = null;
     this._lastFrameTime = 0;
     this._pollTimer = null;
-    this._sshPass = null;
-    this._snapshotPath = '/tmp/printer_detection.jpg'; // Snapmaker unisrv writes here
-    this._pollInterval = 3000; // 3s between snapshots
+    this._retryTimer = null;
+    this._activeUrl = null;
+    this._pollInterval = 3000;
+    this._retryInterval = 30000; // Retry finding camera every 30s
   }
 
-  /**
-   * Try to detect the best camera source for this printer.
-   */
   async start() {
     if (!this.enabled) return;
-
-    // Try MJPEG snapshot first (standard Moonraker webcam)
-    const mjpegUrl = `http://${this.ip}/webcam/?action=snapshot`;
-    try {
-      const res = await fetch(mjpegUrl, {
-        headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
-        signal: AbortSignal.timeout(3000)
-      });
-      if (res.ok) {
-        const ct = res.headers.get('content-type') || '';
-        if (ct.includes('image')) {
-          log.info(`MJPEG snapshot tilgjengelig: ${mjpegUrl}`);
-          this._startMjpegPoll(mjpegUrl);
-          return;
-        }
-      }
-    } catch { /* not available */ }
-
-    // Try SSH snapshot (Snapmaker U1 — /tmp/printer_detection.jpg)
-    try {
-      log.info(`Prøver SSH kamera: ${this.ip}:${this._snapshotPath}...`);
-      const frame = await this._sshSnapshot();
-      if (frame && frame.length > 1000) {
-        log.info(`SSH kamera OK: ${this.ip} — ${frame.length} bytes, starter polling`);
-        this._lastFrame = frame;
-        this._lastFrameTime = Date.now();
-        this._startSshPoll();
-        return;
-      }
-      log.info(`SSH kamera feilet: ${this.ip} — ${frame ? frame.length + ' bytes' : 'null'}`);
-    } catch (e) {
-      log.info(`SSH kamera unntak: ${e.message}`);
-    }
-
-    log.info(`Ingen kamerakilde funnet for ${this.ip}`);
+    await this._findAndStart();
   }
 
   stop() {
-    if (this._pollTimer) {
-      clearInterval(this._pollTimer);
-      this._pollTimer = null;
-    }
+    if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+    if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null; }
+    this._activeUrl = null;
+  }
+
+  /** Update IP when printer changes network. */
+  updateIp(newIp) {
+    if (this.ip === newIp) return;
+    const wasPolling = !!this._pollTimer;
+    this.stop();
+    this.ip = newIp;
+    if (wasPolling || this.enabled) this.start();
   }
 
   /** Get latest JPEG frame (or null). */
-  getSnapshot() {
-    return this._lastFrame;
-  }
+  getSnapshot() { return this._lastFrame; }
 
   /** Get last frame timestamp. */
-  getSnapshotTime() {
-    return this._lastFrameTime;
+  getSnapshotTime() { return this._lastFrameTime; }
+
+  // ---- Discovery ----
+
+  async _findAndStart() {
+    // 1. Try Moonraker webcam API first (most reliable)
+    const apiUrl = await this._findFromMoonrakerApi();
+    if (apiUrl) {
+      this._startPolling(apiUrl);
+      return;
+    }
+
+    // 2. Probe common snapshot paths
+    const probeUrl = await this._probeSnapshotUrls();
+    if (probeUrl) {
+      this._startPolling(probeUrl);
+      return;
+    }
+
+    // 3. No camera found — schedule periodic retry
+    log.info(`Ingen kamerakilde funnet for ${this.ip} — prøver igjen hvert ${this._retryInterval / 1000}s`);
+    if (!this._retryTimer) {
+      this._retryTimer = setInterval(() => this._retryFind(), this._retryInterval);
+    }
   }
 
-  // ---- MJPEG polling ----
-  _startMjpegPoll(url) {
-    this._pollTimer = setInterval(async () => {
-      try {
-        const res = await fetch(url, {
-          headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
-          signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-          const buf = Buffer.from(await res.arrayBuffer());
-          if (buf.length > 500) {
-            this._lastFrame = buf;
-            this._lastFrameTime = Date.now();
-          }
-        }
-      } catch { /* skip */ }
-    }, this._pollInterval);
+  async _retryFind() {
+    // Try Moonraker API
+    const apiUrl = await this._findFromMoonrakerApi();
+    if (apiUrl) {
+      if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null; }
+      log.info(`Kamera funnet etter retry: ${apiUrl}`);
+      this._startPolling(apiUrl);
+      return;
+    }
+
+    // Try probing
+    const probeUrl = await this._probeSnapshotUrls();
+    if (probeUrl) {
+      if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null; }
+      log.info(`Kamera funnet etter retry: ${probeUrl}`);
+      this._startPolling(probeUrl);
+    }
   }
 
-  // ---- SSH snapshot polling (Snapmaker U1) ----
-  _startSshPoll() {
-    this._pollTimer = setInterval(async () => {
-      try {
-        // Trigger a fresh camera capture before fetching
-        await this._triggerMqttCapture();
-        // Small delay for unisrv to write the file
-        await new Promise(r => setTimeout(r, 500));
-        const frame = await this._sshSnapshot();
-        if (frame && frame.length > 500) {
-          this._lastFrame = frame;
-          this._lastFrameTime = Date.now();
-        }
-      } catch { /* skip */ }
-    }, this._pollInterval);
-  }
-
-  // Trigger camera capture via local MQTT on printer
-  async _triggerMqttCapture() {
+  async _findFromMoonrakerApi() {
     try {
-      const args = [
-        '-p', this._sshPass || 'snapmaker',
-        'ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=2',
-        `lava@${this.ip}`,
-        "python3 -c \"import paho.mqtt.client as m;c=m.Client();c.connect('127.0.0.1',1883);c.publish('camera/request','{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"method\\\":\\\"camera.detect_capture\\\",\\\"id\\\":1}');c.disconnect()\""
-      ];
-      await new Promise((resolve) => {
-        execFile('sshpass', args, { timeout: 4000 }, () => resolve());
+      const res = await fetch(`http://${this.ip}:${this.port}/server/webcams/list`, {
+        headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
+        signal: AbortSignal.timeout(3000)
       });
-    } catch { /* not critical */ }
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      const webcams = data.result?.webcams || [];
+      if (webcams.length === 0) return null;
+
+      // Use first enabled webcam
+      const cam = webcams.find(w => w.enabled) || webcams[0];
+      const snapshotUrl = cam.snapshot_url || cam.stream_url;
+      if (!snapshotUrl) return null;
+
+      // Build full URL — snapshot_url may be relative or absolute
+      const fullUrl = snapshotUrl.startsWith('http')
+        ? snapshotUrl
+        : `http://${this.ip}:${this.port}${snapshotUrl.startsWith('/') ? '' : '/'}${snapshotUrl}`;
+
+      // Verify it actually returns an image
+      const ok = await this._testSnapshot(fullUrl);
+      if (ok) return fullUrl;
+
+      // Try on common alternative ports
+      for (const altPort of [8080, 8081, 4408]) {
+        const altUrl = `http://${this.ip}:${altPort}${snapshotUrl.startsWith('/') ? '' : '/'}${snapshotUrl}`;
+        const altOk = await this._testSnapshot(altUrl);
+        if (altOk) return altUrl;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
   }
 
-  _sshSnapshot() {
-    return new Promise((resolve) => {
-      const tmpFile = `/tmp/.moonraker-snap-${this.ip.replace(/\./g, '-')}.jpg`;
-      const args = [
-        '-p', this._sshPass || 'snapmaker',
-        'scp', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=3',
-        `lava@${this.ip}:${this._snapshotPath}`,
-        tmpFile
-      ];
-      execFile('sshpass', args, { timeout: 8000 }, (err) => {
-        if (err) return resolve(null);
-        try {
-          const buf = readFileSync(tmpFile);
-          resolve(buf.length > 500 ? buf : null);
-        } catch {
-          resolve(null);
+  async _probeSnapshotUrls() {
+    for (const candidate of SNAPSHOT_CANDIDATES) {
+      const port = candidate.port || this.port;
+      const url = `http://${this.ip}:${port}${candidate.path}`;
+      const ok = await this._testSnapshot(url);
+      if (ok) return url;
+    }
+    return null;
+  }
+
+  async _testSnapshot(url) {
+    try {
+      const res = await fetch(url, {
+        headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
+        signal: AbortSignal.timeout(3000)
+      });
+      if (!res.ok) return false;
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('image')) return false;
+      // Read a bit to make sure it's a real image
+      const buf = Buffer.from(await res.arrayBuffer());
+      return buf.length > 500;
+    } catch {
+      return false;
+    }
+  }
+
+  // ---- Polling ----
+
+  _startPolling(url) {
+    this._activeUrl = url;
+    log.info(`Kamera aktivt: ${url}`);
+
+    // Fetch first frame immediately
+    this._fetchFrame(url);
+
+    this._pollTimer = setInterval(() => this._fetchFrame(url), this._pollInterval);
+  }
+
+  async _fetchFrame(url) {
+    try {
+      const res = await fetch(url, {
+        headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
+        signal: AbortSignal.timeout(5000)
+      });
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > 500) {
+          this._lastFrame = buf;
+          this._lastFrameTime = Date.now();
+          return;
         }
-      });
-    });
+      }
+      // Camera returned error — might have gone offline
+      this._handleCameraLost();
+    } catch {
+      this._handleCameraLost();
+    }
   }
 
-  /**
-   * Also try triggering a fresh capture via MQTT.
-   * unisrv listens on camera/request topic.
-   */
+  _handleCameraLost() {
+    // If we get 5 consecutive failures, restart discovery
+    this._failCount = (this._failCount || 0) + 1;
+    if (this._failCount >= 5) {
+      log.info(`Kamera mistet kontakt: ${this._activeUrl} — starter ny søk`);
+      this._failCount = 0;
+      if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+      this._activeUrl = null;
+      // Start retry timer
+      if (!this._retryTimer) {
+        this._retryTimer = setInterval(() => this._retryFind(), this._retryInterval);
+      }
+    }
+  }
+
+  /** Trigger a camera capture via Moonraker gcode (for printers that support it). */
   async triggerCapture() {
     try {
-      const res = await fetch(`http://${this.ip}/printer/gcode/script`, {
+      const res = await fetch(`http://${this.ip}:${this.port}/printer/gcode/script`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
