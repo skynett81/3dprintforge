@@ -528,7 +528,7 @@ setApiBroadcast((type, data) => {
 // Printer Manager
 const manager = new PrinterManager(config, broadcastAll, setMetaAll);
 await manager.init();
-manager.startAutoRediscovery(60000); // Check every 60s for disconnected printers
+manager.startAutoRediscovery();
 
 // Wire printer manager ref to PrintTracker for Moonraker thumbnail fetching
 import('./print-tracker.js').then(({ PrintTracker }) => {

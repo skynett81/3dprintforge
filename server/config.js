@@ -62,6 +62,11 @@ const DEFAULTS = {
     refreshToken: '',
     accountEmail: '',
     tokenExpiresAt: 0
+  },
+  network: {
+    extraSubnets: [],
+    rediscoveryIntervalSeconds: 60,
+    scanTimeoutMs: 5000
   }
 };
 

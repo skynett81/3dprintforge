@@ -275,10 +275,16 @@ export class PrinterManager {
 
   // ---- Auto-rediscovery: find printers that changed IP ----
 
-  startAutoRediscovery(intervalMs = 60000) {
+  startAutoRediscovery() {
+    const intervalMs = (this.config.network?.rediscoveryIntervalSeconds || 60) * 1000;
+    this._scanTimeout = this.config.network?.scanTimeoutMs || 5000;
     this._rediscoveryInterval = setInterval(() => this._checkDisconnected(), intervalMs);
     // Run first check after 30s to give printers time to connect initially
     this._rediscoveryInitial = setTimeout(() => this._checkDisconnected(), 30000);
+    const extras = this.config.network?.extraSubnets || [];
+    if (extras.length > 0) {
+      log.info(`[rediscovery] Ekstra subnett: ${extras.join(', ')}`);
+    }
     log.info(`[rediscovery] Aktiv — sjekker frakoblede printere hvert ${Math.round(intervalMs / 1000)}s`);
   }
 
@@ -322,7 +328,7 @@ export class PrinterManager {
     try {
       const { PrinterDiscovery } = await import('./printer-discovery.js');
       const scanner = new PrinterDiscovery();
-      const found = await scanner.scan(5000);
+      const found = await scanner.scan(this._scanTimeout || 5000);
       scanner.shutdown();
       const match = found.find(p => p.serial === printerConf.serial);
       return match?.ip || null;
@@ -343,31 +349,61 @@ export class PrinterManager {
 
   _getLocalSubnets() {
     const ifaces = networkInterfaces();
-    const subnets = [];
+    const subnets = new Set();
+
+    // Auto-detect from network interfaces
     for (const entries of Object.values(ifaces)) {
       for (const entry of entries) {
         if (entry.family === 'IPv4' && !entry.internal) {
-          // Extract /24 subnet base from IP
           const parts = entry.address.split('.');
           parts[3] = '0';
-          subnets.push(parts.join('.'));
+          subnets.add(parts.join('.'));
         }
       }
     }
-    return subnets;
+
+    // Add manually configured extra subnets
+    const extras = this.config.network?.extraSubnets || [];
+    for (const subnet of extras) {
+      // Normalize: accept "10.30.30.0", "10.30.30.0/24", or "10.30.30"
+      const clean = subnet.replace(/\/\d+$/, '').trim();
+      const parts = clean.split('.');
+      if (parts.length >= 3) {
+        if (parts.length === 3) parts.push('0');
+        parts[3] = '0';
+        subnets.add(parts.join('.'));
+      }
+    }
+
+    return [...subnets];
   }
 
-  _scanSubnetForMoonraker(subnetBase, printerConf) {
+  /**
+   * Scan a /24 subnet for Moonraker printers.
+   * @param {string} subnetBase - e.g. "192.168.10.0"
+   * @param {object} printerConf - needs .port (default 80)
+   * @param {boolean} findAll - if true, return array of all found; if false, return first match IP string
+   * @returns {Promise<string|null|Array>}
+   */
+  _scanSubnetForMoonraker(subnetBase, printerConf, findAll = false) {
     const port = printerConf.port || 80;
     const parts = subnetBase.split('.');
     const base = parts.slice(0, 3).join('.');
+    const timeout = this._scanTimeout || 5000;
 
     return new Promise((resolve) => {
-      let found = null;
+      const results = [];
       let pending = 254;
+      let resolved = false;
+
+      const finish = () => {
+        if (resolved) return;
+        resolved = true;
+        resolve(findAll ? results : (results[0]?.ip || null));
+      };
 
       const done = () => {
-        if (--pending <= 0 || found) resolve(found);
+        if (--pending <= 0) finish();
       };
 
       for (let i = 1; i <= 254; i++) {
@@ -379,7 +415,13 @@ export class PrinterManager {
             try {
               const info = JSON.parse(data);
               if (info.result?.hostname || info.result?.state) {
-                if (!found) { found = ip; resolve(ip); }
+                results.push({
+                  ip,
+                  hostname: info.result.hostname || '',
+                  state: info.result.state || '',
+                  software: info.result.software_version || ''
+                });
+                if (!findAll && !resolved) { resolved = true; resolve(ip); }
               }
             } catch { /* not moonraker */ }
             done();
@@ -389,8 +431,7 @@ export class PrinterManager {
         req.on('timeout', () => { req.destroy(); done(); });
       }
 
-      // Safety timeout for entire scan
-      setTimeout(() => { if (!found) resolve(null); }, 10000);
+      setTimeout(finish, timeout + 5000);
     });
   }
 

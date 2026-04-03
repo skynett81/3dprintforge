@@ -192,6 +192,7 @@ function getRoutePermission(method, path) {
 
   // Control routes (printer management, maintenance, protection)
   if (path.startsWith('/api/discovery')) return 'admin';
+  if (path.startsWith('/api/network')) return 'admin';
   if (path.startsWith('/api/bambu-cloud')) return 'admin';
   if (path === '/api/printers' && method === 'POST') return 'admin';
   if (path.match(/^\/api\/printers\/[^/]+$/) && (method === 'PUT' || method === 'DELETE')) return 'controls';
@@ -541,6 +542,70 @@ export async function handleApiRequest(req, res) {
           sendJson(res, { ok: false, error: e.message });
         }
       });
+    }
+
+    // ---- Network Settings ----
+
+    if (method === 'GET' && path === '/api/network/settings') {
+      const net = config.network || {};
+      const subnets = _printerManager?._getLocalSubnets() || [];
+      return sendJson(res, {
+        extraSubnets: net.extraSubnets || [],
+        rediscoveryIntervalSeconds: net.rediscoveryIntervalSeconds || 60,
+        scanTimeoutMs: net.scanTimeoutMs || 5000,
+        detectedSubnets: subnets.filter(s => !(net.extraSubnets || []).some(e => e.replace(/\/\d+$/, '').startsWith(s.replace(/\.0$/, ''))))
+      });
+    }
+
+    if (method === 'PUT' && path === '/api/network/settings') {
+      return readBody(req, res, (body) => {
+        const updates = {};
+        if (Array.isArray(body.extraSubnets)) {
+          updates.extraSubnets = body.extraSubnets.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim());
+        }
+        if (typeof body.rediscoveryIntervalSeconds === 'number' && body.rediscoveryIntervalSeconds >= 10) {
+          updates.rediscoveryIntervalSeconds = body.rediscoveryIntervalSeconds;
+        }
+        if (typeof body.scanTimeoutMs === 'number' && body.scanTimeoutMs >= 1000) {
+          updates.scanTimeoutMs = body.scanTimeoutMs;
+        }
+        config.network = { ...(config.network || {}), ...updates };
+        saveConfig({ network: config.network });
+        sendJson(res, { ok: true, network: config.network });
+      });
+    }
+
+    if (method === 'POST' && path === '/api/network/scan') {
+      // Full network scan: SSDP for Bambu + Moonraker scan on all subnets
+      try {
+        const results = { bambu: [], moonraker: [] };
+
+        // SSDP scan for Bambu printers
+        if (_discovery) {
+          const found = await _discovery.scan(config.network?.scanTimeoutMs || 5000);
+          const existing = getPrinters().map(p => p.serial);
+          results.bambu = found.map(p => ({ ...p, alreadyAdded: existing.includes(p.serial) }));
+        }
+
+        // Moonraker scan on all known subnets
+        if (_printerManager) {
+          const subnets = _printerManager._getLocalSubnets();
+          const existingIps = getPrinters().map(p => p.ip);
+          for (const subnet of subnets) {
+            const found = await _printerManager._scanSubnetForMoonraker(subnet, { port: 80 }, true);
+            for (const printer of found) {
+              results.moonraker.push({
+                ...printer,
+                alreadyAdded: existingIps.includes(printer.ip)
+              });
+            }
+          }
+        }
+
+        return sendJson(res, results);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
     }
 
     // ---- Bambu Lab Cloud ----
