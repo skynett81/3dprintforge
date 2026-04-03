@@ -80,6 +80,7 @@
       case 'FAILED': color = 'var(--accent-red)'; dotClass = 'dot-error status-dot-error'; break;
       case 'PREPARE': case 'HEATING': color = 'var(--accent-blue)'; dotClass = 'dot-running status-dot-running'; break;
       case 'FINISH': color = 'var(--accent-green)'; dotClass = 'dot-idle status-dot-finished'; break;
+      case 'IDLE': color = 'var(--accent-green)'; dotClass = 'dot-idle status-dot-idle'; break;
       default: color = 'var(--text-muted)'; dotClass = 'status-dot-idle';
     }
     return `<span class="printer-status-dot status-dot ${dotClass}" style="background:${color}"></span>`;
