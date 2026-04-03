@@ -12933,6 +12933,57 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 .ph-card-notes:hover .ph-notes-edit-icon, .ph-list-notes:hover .ph-notes-edit-icon { opacity: 1; }
 .ph-notes-textarea { width: 100%; font-size: 0.7rem; padding: 4px 6px; border: 1px solid var(--accent-cyan); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); resize: vertical; font-family: inherit; outline: none; }
 
+/* ═══ Print Review Badges & Dialog ═══ */
+.ph-review-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; white-space: nowrap; }
+.ph-review-approved { background: rgba(0, 230, 118, 0.12); color: var(--accent-green); }
+.ph-review-rejected { background: rgba(248, 81, 73, 0.12); color: var(--accent-red); }
+.ph-review-partial { background: rgba(249, 115, 22, 0.12); color: var(--accent-orange); }
+.ph-review-none { background: rgba(139, 148, 158, 0.1); color: var(--text-muted); font-weight: 400; }
+
+.ph-review-dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 0.65rem; font-weight: 700; }
+.ph-review-dot.ph-review-approved { background: rgba(0, 230, 118, 0.15); color: var(--accent-green); }
+.ph-review-dot.ph-review-rejected { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+.ph-review-dot.ph-review-partial { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); }
+
+.ph-card-review-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 2px 0 0; }
+.ph-list-review { display: flex; align-items: center; gap: 4px; min-width: 50px; }
+
+.ph-review-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(139, 148, 158, 0.1); color: var(--text-muted); cursor: pointer; padding: 0; transition: background 0.15s, color 0.15s; flex-shrink: 0; }
+.ph-review-btn:hover { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+
+/* Review filter bar */
+.history-review-filters { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 4px 0 0; }
+.history-review-filters-label { font-size: 0.68rem; color: var(--text-muted); margin-right: 2px; }
+.history-review-filter-btn { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 12px; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.history-review-filter-btn:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+.history-review-filter-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+
+.ph-review-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent-red); color: #fff; font-size: 0.6rem; font-weight: 700; line-height: 1; }
+
+/* Review dialog */
+.ph-review-overlay { z-index: 10002; }
+.ph-review-dialog { background: var(--bg-card, #1e1e1e); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; max-width: 420px; width: 90%; margin: auto; position: relative; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
+.ph-review-title { margin: 0 0 12px; font-size: 1rem; color: var(--text-primary); }
+.ph-review-info { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; padding: 8px 10px; background: var(--bg-secondary, #252525); border-radius: 8px; }
+.ph-review-info-row { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+.ph-review-info-label { color: var(--text-muted); min-width: 60px; flex-shrink: 0; }
+.ph-review-info-value { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ph-review-actions { display: flex; gap: 6px; margin-bottom: 12px; }
+.ph-review-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 10px; border: 1.5px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.ph-review-action-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+.ph-review-action-approve.active { border-color: var(--accent-green); background: rgba(0, 230, 118, 0.1); color: var(--accent-green); }
+.ph-review-action-reject.active { border-color: var(--accent-red); background: rgba(248, 81, 73, 0.1); color: var(--accent-red); }
+.ph-review-action-partial.active { border-color: var(--accent-orange); background: rgba(249, 115, 22, 0.1); color: var(--accent-orange); }
+
+.ph-review-waste-section, .ph-review-notes-section { margin-bottom: 10px; }
+.ph-review-field-label { display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
+.ph-review-waste-input, .ph-review-notes-input { width: 100%; font-size: 0.8rem; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; }
+.ph-review-waste-input:focus, .ph-review-notes-input:focus { outline: none; border-color: var(--accent-blue); }
+
+.ph-review-submit-row { display: flex; justify-content: flex-end; padding-top: 4px; }
+.ph-review-save-btn { font-size: 0.82rem; padding: 7px 18px; }
+
 /* ═══ Filament Low-Stock Alerts ═══ */
 /* ═══ Global Alert Bar ═══ */
 /* Global alert bar — below navbar, doesn't block content */

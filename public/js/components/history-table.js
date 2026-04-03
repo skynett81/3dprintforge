@@ -52,6 +52,19 @@
     const costNOK = (filamentUsedG / 1000) * pricePerKg;
     return Math.round(costNOK);
   }
+  function reviewBadge(status) {
+    if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Godkjent">&#10003; Godkjent</span>';
+    if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Avvist">&#10007; Avvist</span>';
+    if (status === 'partial') return '<span class="ph-review-badge ph-review-partial" title="Delvis godkjent">&#9680; Delvis</span>';
+    return '<span class="ph-review-badge ph-review-none" title="Ikke vurdert">Ikke vurdert</span>';
+  }
+  function reviewBadgeCompact(status) {
+    if (status === 'approved') return '<span class="ph-review-dot ph-review-approved" title="Godkjent">&#10003;</span>';
+    if (status === 'rejected') return '<span class="ph-review-dot ph-review-rejected" title="Avvist">&#10007;</span>';
+    if (status === 'partial') return '<span class="ph-review-dot ph-review-partial" title="Delvis godkjent">&#9680;</span>';
+    return '';
+  }
+
   function barRow(lbl, pct, clr, val) { return `<div class="chart-bar-row"><span class="chart-bar-label">${lbl}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="chart-bar-value">${val}</span></div>`; }
   function sRow(lbl, val, clr) { return `<div class="stats-detail-item"><span class="stats-detail-item-label">${lbl}</span><span class="stats-detail-item-value"${clr?` style="color:${clr}"`:''}>${val}</span></div>`; }
 
@@ -115,9 +128,11 @@
   let _data = [];
   let _cloudTasks = null;
   let _activeFilter = 'all';
+  let _activeReviewFilter = 'all';
   let _activeTab = 'history';
   let _activePrinter = 'all';
   const _locked = true;
+  let _unreviewedCount = 0;
   let _viewMode = localStorage.getItem('history-view-mode') || 'grid';
   let _sortField = localStorage.getItem('history-sort-field') || 'date';
   let _sortDir = localStorage.getItem('history-sort-dir') || 'desc';
@@ -212,6 +227,16 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           ${t('history.cancelled')} <span class="history-filter-count">${s.cancelled}</span>
         </button>
+      </div>
+      <div class="history-review-filters">
+        <span class="history-review-filters-label">Vurdering:</span>
+        <button class="history-review-filter-btn ${_activeReviewFilter === 'all' ? 'active' : ''}" onclick="filterHistoryReview('all', this)">Alle</button>
+        <button class="history-review-filter-btn ${_activeReviewFilter === 'unreviewed' ? 'active' : ''}" onclick="filterHistoryReview('unreviewed', this)">
+          Ikke vurdert${_unreviewedCount > 0 ? ` <span class="ph-review-count-badge">${_unreviewedCount}</span>` : ''}
+        </button>
+        <button class="history-review-filter-btn ${_activeReviewFilter === 'approved' ? 'active' : ''}" onclick="filterHistoryReview('approved', this)">Godkjent</button>
+        <button class="history-review-filter-btn ${_activeReviewFilter === 'rejected' ? 'active' : ''}" onclick="filterHistoryReview('rejected', this)">Avvist</button>
+        <button class="history-review-filter-btn ${_activeReviewFilter === 'partial' ? 'active' : ''}" onclick="filterHistoryReview('partial', this)">Delvis</button>
       </div>`;
     },
 
@@ -276,7 +301,11 @@
           const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
           const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
 
-          h += `<div class="ph-card" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+          const reviewDisplay = (_activeReviewFilter === 'all' ||
+            (_activeReviewFilter === 'unreviewed' && !row.review_status) ||
+            (_activeReviewFilter === row.review_status)) ? '' : 'display:none;';
+          const combinedDisplay = display || reviewDisplay;
+          h += `<div class="ph-card" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" style="${combinedDisplay}" onclick="showHistoryDetail(${row.id})">
             <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
             <button class="ph-crm-order-btn" onclick="event.stopPropagation();window.createOrderFromHistory(${row.id})" title="${t('crm.create_from_history')}" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -295,6 +324,12 @@
                 <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
                 ${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : ''}
                 <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
+              </div>
+              <div class="ph-card-review-row">
+                ${reviewBadge(row.review_status)}
+                <button class="ph-review-btn" onclick="event.stopPropagation();window.openReviewDialog(${row.id})" title="Vurder print">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                </button>
               </div>
               <div class="ph-card-notes" data-id="${row.id}">
                 <span class="ph-notes-text" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this)">${row.notes ? esc(row.notes) : ''}</span>
@@ -321,7 +356,11 @@
           const thumbUrl = `/api/history/${row.id}/thumbnail`;
           const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
 
-          h += `<div class="ph-list-row" data-status="${row.status}" data-id="${row.id}" style="${display}" onclick="showHistoryDetail(${row.id})">
+          const listReviewDisplay = (_activeReviewFilter === 'all' ||
+            (_activeReviewFilter === 'unreviewed' && !row.review_status) ||
+            (_activeReviewFilter === row.review_status)) ? '' : 'display:none;';
+          const listCombinedDisplay = display || listReviewDisplay;
+          h += `<div class="ph-list-row" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" style="${listCombinedDisplay}" onclick="showHistoryDetail(${row.id})">
             <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
             <button class="ph-crm-order-btn ph-crm-order-btn-list" onclick="event.stopPropagation();window.createOrderFromHistory(${row.id})" title="${t('crm.create_from_history')}" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -342,6 +381,12 @@
               </span>
             </div>
             <div class="ph-list-status" data-label="Status" style="color:${statusColor(row.status)}">${statusIcon(row.status)}</div>
+            <div class="ph-list-review" data-label="Vurdering">
+              ${reviewBadgeCompact(row.review_status)}
+              <button class="ph-review-btn" onclick="event.stopPropagation();window.openReviewDialog(${row.id})" title="Vurder print">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+              </button>
+            </div>
           </div>`;
         }
         h += '</div>';
@@ -910,6 +955,19 @@
               <span class="ph-detail-value">${esc(row.notes)}</span>
             </div>` : ''}
           </div>
+          <div class="ph-detail-divider"></div>
+          <div class="ph-detail-review-section">
+            <span class="ph-detail-label">Vurdering</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              ${reviewBadge(row.review_status)}
+              <button class="form-btn form-btn-sm form-btn-secondary" onclick="this.closest('.ph-detail-overlay').remove();window.openReviewDialog(${row.id})">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                ${row.review_status ? 'Endre' : 'Vurder'}
+              </button>
+            </div>
+            ${row.review_notes ? `<div style="margin-top:4px;font-size:0.72rem;color:var(--text-muted)">${esc(row.review_notes)}</div>` : ''}
+            ${row.review_waste_g ? `<div style="margin-top:2px;font-size:0.72rem;color:var(--accent-orange)">Svinn: ${fmtW(row.review_waste_g)}</div>` : ''}
+          </div>
           <div class="ph-detail-actions" id="ph-detail-actions-${row.id}" style="display:none">
             <div class="ph-detail-divider"></div>
             <button class="form-btn form-btn-sm form-btn-secondary" onclick="event.stopPropagation();window.createOrderFromHistory(${row.id})" title="${t('crm.create_from_history')}">
@@ -1024,8 +1082,13 @@
     try {
       const activePid = window.printerState?.getActivePrinterId?.();
       const histQuery = activePid ? `/api/history?limit=100&printer_id=${encodeURIComponent(activePid)}` : '/api/history?limit=100';
-      const [histRes] = await Promise.all([fetch(histQuery), _loadCloudTasks()]);
+      const unreviewedQuery = activePid ? `/api/history/unreviewed?printer_id=${encodeURIComponent(activePid)}` : '/api/history/unreviewed';
+      const [histRes, unreviewedRes] = await Promise.all([fetch(histQuery), fetch(unreviewedQuery), _loadCloudTasks()]);
       _data = await histRes.json();
+      try {
+        const unreviewedData = await unreviewedRes.json();
+        _unreviewedCount = Array.isArray(unreviewedData) ? unreviewedData.length : 0;
+      } catch { _unreviewedCount = 0; }
 
       if (!_data.length) {
         panel.innerHTML = emptyState({
@@ -1139,9 +1202,172 @@
         if (match && match[1] === status) b.classList.add('active');
       });
     }
+    _applyVisibilityFilters();
+  };
+
+  window.filterHistoryReview = function(reviewStatus, btn) {
+    _activeReviewFilter = reviewStatus;
+    document.querySelectorAll('.history-review-filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    _applyVisibilityFilters();
+  };
+
+  function _applyVisibilityFilters() {
     document.querySelectorAll('.ph-card, .ph-list-row').forEach(card => {
-      card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+      const statusMatch = _activeFilter === 'all' || card.dataset.status === _activeFilter;
+      const reviewVal = card.dataset.review || '';
+      const reviewMatch = _activeReviewFilter === 'all' ||
+        (_activeReviewFilter === 'unreviewed' && !reviewVal) ||
+        (_activeReviewFilter === reviewVal);
+      card.style.display = (statusMatch && reviewMatch) ? '' : 'none';
     });
+  }
+
+  // ═══ Review dialog ═══
+  window.openReviewDialog = function(id) {
+    const row = _data.find(r => r.id === id);
+    if (!row) return;
+
+    const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
+    const displayName = row.model_name || fname;
+    const pName = printerName(row.printer_id);
+    const duration = formatDuration(row.duration_seconds);
+    const filWeight = row.filament_used_g ? fmtW(row.filament_used_g) : '--';
+    const currentStatus = row.review_status || null;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ph-detail-overlay ph-review-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    overlay.innerHTML = `<div class="ph-review-dialog">
+      <button class="ph-detail-close" onclick="this.closest('.ph-detail-overlay').remove()">&times;</button>
+      <h3 class="ph-review-title">Vurder print</h3>
+      <div class="ph-review-info">
+        <div class="ph-review-info-row"><span class="ph-review-info-label">Fil:</span><span class="ph-review-info-value">${esc(displayName)}</span></div>
+        <div class="ph-review-info-row"><span class="ph-review-info-label">Printer:</span><span class="ph-review-info-value">${esc(pName)}</span></div>
+        <div class="ph-review-info-row"><span class="ph-review-info-label">Status:</span><span class="ph-review-info-value" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span></div>
+        <div class="ph-review-info-row"><span class="ph-review-info-label">Filament:</span><span class="ph-review-info-value">${filWeight}</span></div>
+        <div class="ph-review-info-row"><span class="ph-review-info-label">Varighet:</span><span class="ph-review-info-value">${duration}</span></div>
+        ${currentStatus ? `<div class="ph-review-info-row"><span class="ph-review-info-label">Gjeldende:</span><span class="ph-review-info-value">${reviewBadge(currentStatus)}</span></div>` : ''}
+      </div>
+      <div class="ph-review-actions">
+        <button class="ph-review-action-btn ph-review-action-approve${currentStatus === 'approved' ? ' active' : ''}" data-status="approved" onclick="window._selectReviewStatus(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Godkjenn
+        </button>
+        <button class="ph-review-action-btn ph-review-action-reject${currentStatus === 'rejected' ? ' active' : ''}" data-status="rejected" onclick="window._selectReviewStatus(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Avvis
+        </button>
+        <button class="ph-review-action-btn ph-review-action-partial${currentStatus === 'partial' ? ' active' : ''}" data-status="partial" onclick="window._selectReviewStatus(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
+          Delvis
+        </button>
+      </div>
+      <div class="ph-review-waste-section" id="ph-review-waste-section" style="display:${currentStatus === 'rejected' || currentStatus === 'partial' ? '' : 'none'}">
+        <label class="ph-review-field-label">Svinn (gram)</label>
+        <input type="number" class="form-control ph-review-waste-input" id="ph-review-waste" min="0" step="0.1"
+          value="${row.review_waste_g ?? (currentStatus === 'rejected' ? (row.filament_used_g || 0) : '')}"
+          placeholder="${row.filament_used_g ? 'Maks: ' + Math.round(row.filament_used_g) + 'g' : '0'}">
+      </div>
+      <div class="ph-review-notes-section">
+        <label class="ph-review-field-label">Notater</label>
+        <textarea class="form-control ph-review-notes-input" id="ph-review-notes" rows="2" placeholder="Valgfritt...">${row.review_notes || ''}</textarea>
+      </div>
+      <div class="ph-review-submit-row">
+        <button class="form-btn form-btn-primary ph-review-save-btn" id="ph-review-save-btn" onclick="window._submitReview(${row.id})">Lagre vurdering</button>
+      </div>
+    </div>`;
+
+    document.body.appendChild(overlay);
+
+    // Pre-select status if already reviewed
+    if (currentStatus) {
+      overlay._selectedStatus = currentStatus;
+    }
+  };
+
+  window._selectReviewStatus = function(btn) {
+    const dialog = btn.closest('.ph-review-dialog');
+    dialog.querySelectorAll('.ph-review-action-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const status = btn.dataset.status;
+    dialog.closest('.ph-review-overlay')._selectedStatus = status;
+
+    const wasteSection = dialog.querySelector('#ph-review-waste-section');
+    const wasteInput = dialog.querySelector('#ph-review-waste');
+    if (status === 'rejected' || status === 'partial') {
+      wasteSection.style.display = '';
+      if (status === 'rejected' && !wasteInput.value) {
+        const row = _data.find(r => r.id === parseInt(dialog.querySelector('.ph-review-save-btn').getAttribute('onclick').match(/\d+/)[0]));
+        if (row) wasteInput.value = Math.round(row.filament_used_g || 0);
+      }
+    } else {
+      wasteSection.style.display = 'none';
+    }
+  };
+
+  window._submitReview = async function(id) {
+    const overlay = document.querySelector('.ph-review-overlay');
+    if (!overlay) return;
+    const status = overlay._selectedStatus;
+    if (!status) {
+      if (typeof showToast === 'function') showToast('Velg en vurdering (Godkjenn/Avvis/Delvis)', 'warning', 3000);
+      return;
+    }
+
+    const wasteG = parseFloat(overlay.querySelector('#ph-review-waste')?.value) || null;
+    const notes = overlay.querySelector('#ph-review-notes')?.value?.trim() || null;
+
+    const saveBtn = overlay.querySelector('#ph-review-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Lagrer...'; }
+
+    try {
+      const resp = await fetch(`/api/history/${id}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, waste_g: wasteG, notes })
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Feil ved lagring');
+      }
+      const updated = await resp.json();
+
+      // Update local cache
+      const cached = _data.find(r => r.id === id);
+      if (cached) {
+        cached.review_status = updated.review_status;
+        cached.review_waste_g = updated.review_waste_g;
+        cached.review_notes = updated.review_notes;
+        cached.reviewed_at = updated.reviewed_at;
+      }
+
+      // Update DOM without full reload
+      document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+        el.dataset.review = updated.review_status || '';
+        const badge = el.querySelector('.ph-review-badge');
+        if (badge) badge.outerHTML = reviewBadge(updated.review_status);
+        const dot = el.querySelector('.ph-review-dot');
+        if (dot) dot.outerHTML = reviewBadgeCompact(updated.review_status);
+      });
+
+      // Update unreviewed count
+      if (!cached?.review_status || cached.review_status !== status) {
+        _unreviewedCount = Math.max(0, _unreviewedCount - 1);
+        const countBadge = document.querySelector('.ph-review-count-badge');
+        if (countBadge) {
+          countBadge.textContent = _unreviewedCount;
+          if (_unreviewedCount === 0) countBadge.style.display = 'none';
+        }
+      }
+
+      overlay.remove();
+      if (typeof showToast === 'function') showToast('Vurdering lagret', 'success', 2000);
+    } catch (e) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Lagre vurdering'; }
+      if (typeof showToast === 'function') showToast(e.message || 'Feil ved lagring', 'error', 3000);
+    }
   };
 
   // ═══ Compare helpers ═══
