@@ -165,6 +165,10 @@
         layer_count: h.layer_count,
         notes: h.notes,
         printer_id: h.printer_id,
+        review_status: h.review_status,
+        review_notes: h.review_notes,
+        review_waste_g: h.review_waste_g,
+        waste_g: h.waste_g,
         _fromHistory: true
       };});
 
@@ -428,6 +432,7 @@
             ${ev.duration_seconds ? '<span>' + _fmtDuration(ev.duration_seconds) + '</span>' : ''}
             ${colorSwatch}
             ${filamentInfo}
+            ${ev.review_status === 'approved' ? '<span style="color:var(--accent-green)" title="Godkjent">&#10003;</span>' : ev.review_status === 'rejected' ? '<span style="color:var(--accent-red)" title="Avvist">&#10007;</span>' : ev.review_status === 'partial' ? '<span style="color:var(--accent-orange)" title="Delvis">&#9680;</span>' : (ev._fromHistory && !ev._fromLive ? '<span style="color:var(--text-muted);opacity:0.5" title="Ikke vurdert">?</span>' : '')}
           </div>
         </div>
       </div>`;
@@ -524,11 +529,48 @@
       modelHtml = `<div class="sched-field"><label>Modellkilde</label><div><a href="https://makerworld.com/en/models/${ev._cloud.designId}" target="_blank" rel="noopener" class="ph-model-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Åpne på MakerWorld</a></div></div>`;
     }
 
+    // Review section for history events
+    let reviewHtml = '';
+    if (ev._fromHistory && ev._historyId) {
+      const rs = ev.review_status;
+      const reviewBadge = rs === 'approved' ? '<span style="color:var(--accent-green);font-weight:600">&#10003; Godkjent</span>'
+        : rs === 'rejected' ? '<span style="color:var(--accent-red);font-weight:600">&#10007; Avvist</span>'
+        : rs === 'partial' ? '<span style="color:var(--accent-orange);font-weight:600">&#9680; Delvis</span>'
+        : '<span style="color:var(--text-muted)">Ikke vurdert</span>';
+
+      if (rs) {
+        // Already reviewed — show status
+        reviewHtml = `<div class="sched-field" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
+          <label>Kvalitetsvurdering</label>
+          <div>${reviewBadge}</div>
+          ${ev.review_notes ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">${_esc(ev.review_notes)}</div>` : ''}
+          ${ev.review_waste_g ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">Waste: ${ev.review_waste_g}g</div>` : ''}
+          <button class="form-btn form-btn-sm" style="margin-top:8px" onclick="_schedReview(${ev._historyId}, this)">Endre vurdering</button>
+        </div>`;
+      } else {
+        // Not reviewed — show review form
+        reviewHtml = `<div class="sched-field" id="sched-review-${ev._historyId}" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
+          <label>Kvalitetsvurdering</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button class="form-btn form-btn-sm" style="background:var(--accent-green);color:#fff" onclick="_schedSubmitReview(${ev._historyId},'approved',this)">&#10003; Godkjenn</button>
+            <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${ev._historyId},${ev.filament_used_g || 0})">&#10007; Avvis</button>
+            <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${ev._historyId},0)">&#9680; Delvis</button>
+          </div>
+          <div id="sched-reject-form-${ev._historyId}" style="display:none">
+            <div class="sched-field"><label>Waste (gram)</label><input type="number" id="sched-waste-${ev._historyId}" min="0" step="0.1" placeholder="0"></div>
+            <div class="sched-field"><label>Notater</label><textarea id="sched-notes-${ev._historyId}" rows="2" placeholder="Valgfritt..."></textarea></div>
+            <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${ev._historyId},'rejected',this)">Lagre avvisning</button>
+          </div>
+        </div>`;
+      }
+    }
+
     overlay.innerHTML = `<div class="sched-dialog">
       ${thumbHtml}
       <h3 style="margin-top:0">${_esc(ev.title)}</h3>
       ${modelHtml}
       ${fields}
+      ${reviewHtml}
       <div class="sched-dialog-actions">
         ${ev._fromHistory ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#history'">${t('history.view') || 'Vis historikk'}</button>` : ''}
         ${ev._fromQueue ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#queue'">${t('queue.title') || 'Vis ko'}</button>` : ''}
@@ -668,6 +710,57 @@
       _loadEvents();
       if (typeof showToast === 'function') showToast(t('scheduler.deleted'), 'success');
     } catch {}
+  };
+
+  // ═══ Review functions for scheduler ═══
+
+  window._schedShowRejectForm = function(historyId, prefillWaste) {
+    const form = document.getElementById(`sched-reject-form-${historyId}`);
+    if (form) {
+      form.style.display = '';
+      const wasteInput = document.getElementById(`sched-waste-${historyId}`);
+      if (wasteInput && prefillWaste) wasteInput.value = prefillWaste;
+    }
+  };
+
+  window._schedSubmitReview = async function(historyId, status, btn) {
+    const waste = parseFloat(document.getElementById(`sched-waste-${historyId}`)?.value) || null;
+    const notes = document.getElementById(`sched-notes-${historyId}`)?.value?.trim() || null;
+
+    try {
+      const res = await fetch(`/api/history/${historyId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, waste_g: waste, notes })
+      });
+      if (!res.ok) throw new Error('Review failed');
+
+      // Close dialog and reload
+      document.querySelector('.sched-dialog-overlay')?.remove();
+      _loadEvents();
+      const labels = { approved: 'Godkjent', rejected: 'Avvist', partial: 'Delvis godkjent' };
+      if (typeof showToast === 'function') showToast(labels[status] || status, 'success');
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Feil ved lagring', 'error');
+    }
+  };
+
+  window._schedReview = function(historyId, btn) {
+    // Replace "Endre vurdering" button with the review form
+    const container = btn.closest('.sched-field');
+    if (!container) return;
+    container.innerHTML = `
+      <label>Kvalitetsvurdering</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="form-btn form-btn-sm" style="background:var(--accent-green);color:#fff" onclick="_schedSubmitReview(${historyId},'approved',this)">&#10003; Godkjenn</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#10007; Avvis</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#9680; Delvis</button>
+      </div>
+      <div id="sched-reject-form-${historyId}" style="display:none">
+        <div class="sched-field"><label>Waste (gram)</label><input type="number" id="sched-waste-${historyId}" min="0" step="0.1" placeholder="0"></div>
+        <div class="sched-field"><label>Notater</label><textarea id="sched-notes-${historyId}" rows="2" placeholder="Valgfritt..."></textarea></div>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${historyId},'rejected',this)">Lagre</button>
+      </div>`;
   };
 
   function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
