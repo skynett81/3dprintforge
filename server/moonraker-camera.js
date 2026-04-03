@@ -53,7 +53,9 @@ export class MoonrakerCamera {
     this._activeUrl = null;
     this._sshCreds = null;        // { username, password }
     this._sshPath = null;         // remote file path
-    this._pollInterval = 3000;
+    this._sshConn = null;         // persistent SSH connection
+    this._sshSftp = null;         // persistent SFTP session
+    this._pollInterval = 1000;    // 1 fps default
     this._retryInterval = 30000;
     this._failCount = 0;
   }
@@ -66,9 +68,15 @@ export class MoonrakerCamera {
   stop() {
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
     if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null; }
+    this._closeSsh();
     this._activeSource = null;
     this._activeUrl = null;
     this._failCount = 0;
+  }
+
+  _closeSsh() {
+    if (this._sshSftp) { this._sshSftp = null; }
+    if (this._sshConn) { try { this._sshConn.end(); } catch {} this._sshConn = null; }
   }
 
   updateIp(newIp) {
@@ -260,22 +268,72 @@ export class MoonrakerCamera {
     } catch { this._handleFailure(); }
   }
 
-  // ---- SSH polling ----
+  // ---- SSH polling with persistent connection ----
 
   _startSshPolling() {
     this._activeSource = 'ssh';
     this._failCount = 0;
-    log.info(`Kamera aktivt (SSH): ${this._sshCreds.username}@${this.ip}:${this._sshPath}`);
+    log.info(`Kamera aktivt (SSH): ${this._sshCreds.username}@${this.ip}:${this._sshPath} @ ${Math.round(1000 / this._pollInterval)} fps`);
+    this._ensureSshConnection();
     this._pollTimer = setInterval(() => this._fetchSshFrame(), this._pollInterval);
   }
 
+  _ensureSshConnection() {
+    if (this._sshConn && this._sshSftp) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      this._closeSsh();
+      const conn = new SSHClient();
+      const timer = setTimeout(() => { conn.end(); resolve(); }, 8000);
+
+      conn.on('ready', () => {
+        conn.sftp((err, sftp) => {
+          clearTimeout(timer);
+          if (err) { conn.end(); resolve(); return; }
+          this._sshConn = conn;
+          this._sshSftp = sftp;
+          resolve();
+        });
+      });
+
+      conn.on('error', () => { clearTimeout(timer); this._sshConn = null; this._sshSftp = null; resolve(); });
+      conn.on('close', () => { this._sshConn = null; this._sshSftp = null; });
+
+      conn.connect({
+        host: this.ip,
+        port: 22,
+        username: this._sshCreds.username,
+        password: this._sshCreds.password,
+        readyTimeout: 5000,
+        keepaliveInterval: 10000,
+        algorithms: { kex: ['diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'ecdh-sha2-nistp256', 'ecdh-sha2-nistp384', 'ecdh-sha2-nistp521'] }
+      });
+    });
+  }
+
   async _fetchSshFrame() {
-    const frame = await this._sshFetchFile(this._sshCreds, this._sshPath);
-    if (frame && frame.length > 500) {
-      this._lastFrame = frame;
-      this._lastFrameTime = Date.now();
-      this._failCount = 0;
-    } else {
+    // Reconnect if needed
+    if (!this._sshSftp) {
+      await this._ensureSshConnection();
+      if (!this._sshSftp) { this._handleFailure(); return; }
+    }
+
+    try {
+      const buf = await new Promise((resolve) => {
+        this._sshSftp.readFile(this._sshPath, (err, data) => {
+          if (err) return resolve(null);
+          resolve(data);
+        });
+      });
+      if (buf && buf.length > 500) {
+        this._lastFrame = buf;
+        this._lastFrameTime = Date.now();
+        this._failCount = 0;
+      } else {
+        this._handleFailure();
+      }
+    } catch {
+      this._sshSftp = null;
       this._handleFailure();
     }
   }

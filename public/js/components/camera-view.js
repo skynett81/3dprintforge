@@ -132,15 +132,18 @@
       img.src = frameUrl + '?t=' + Date.now();
     }
 
-    img.onload = () => { streamActive = true; };
+    let _loading = false;
+    img.onload = () => { streamActive = true; _loading = false; };
     img.onerror = () => {
-      // Keep trying — printer may not be sending frames yet
       streamActive = false;
+      _loading = false;
     };
 
-    // Initial load + refresh every 3 seconds
+    // Initial load + refresh every second (skip if previous still loading)
     refreshFrame();
-    _snapshotInterval = setInterval(refreshFrame, 3000);
+    _snapshotInterval = setInterval(() => {
+      if (!_loading) { _loading = true; refreshFrame(); }
+    }, 1000);
   }
 
   function _buildOverlay(container) {
