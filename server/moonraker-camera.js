@@ -56,7 +56,7 @@ export class MoonrakerCamera {
     this._sshPath = null;         // remote file path
     this._sshConn = null;         // persistent SSH connection
     this._sshSftp = null;         // persistent SFTP session
-    this._pollInterval = 1000;    // 1 fps default
+    this._pollInterval = config.camera?.framerate ? Math.round(1000 / config.camera.framerate) : 200;  // Match configured FPS
     this._retryInterval = 30000;
     this._failCount = 0;
   }

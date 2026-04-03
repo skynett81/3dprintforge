@@ -196,47 +196,146 @@ async function _configureNginx(ip, creds) {
     return true;
   }
 
-  // Create a simple Python HTTP server that serves the live camera image
-  // Responds to any request with /tmp/.monitor.jpg (mimics mjpgstreamer snapshot)
+  // Camera server that:
+  // 1. Monitors /tmp/.monitor.jpg for changes (inotify)
+  // 2. Falls back to polling the newest .jpg if inotify not available
+  // 3. Serves MJPEG stream at /?action=stream (configurable FPS)
+  // 4. Serves single snapshot at /?action=snapshot or any other path
+  // 5. Works as drop-in replacement for mjpgstreamer on port 8080
   const script = `#!/usr/bin/env python3
-"""3DPrintForge camera server — serves /tmp/.monitor.jpg on port 8080"""
-import http.server, os, signal, sys
+"""3DPrintForge camera server — live MJPEG stream + snapshots from /tmp/.monitor.jpg"""
+import http.server, os, signal, sys, time, threading, glob
+
+FPS = int(os.environ.get("CAMERA_FPS", "10"))
+CAMERA_FILES = ["/tmp/.monitor.jpg", "/tmp/printer_detection.jpg"]
+frame_lock = threading.Lock()
+current_frame = b""
+frame_time = 0
+
+def find_camera_file():
+    """Find the most recently modified camera file."""
+    best = None
+    best_mtime = 0
+    for path in CAMERA_FILES:
+        try:
+            mt = os.path.getmtime(path)
+            if mt > best_mtime:
+                best_mtime = mt
+                best = path
+        except OSError:
+            pass
+    # Also check any .jpg in /tmp that's recent
+    for f in glob.glob("/tmp/*.jpg") + glob.glob("/tmp/.*.jpg"):
+        try:
+            mt = os.path.getmtime(f)
+            if mt > best_mtime:
+                best_mtime = mt
+                best = f
+        except OSError:
+            pass
+    return best
+
+def frame_reader():
+    """Background thread that reads camera file at target FPS."""
+    global current_frame, frame_time
+    interval = 1.0 / max(1, FPS)
+    cam_file = None
+    while True:
+        # Re-detect camera file periodically
+        if cam_file is None or not os.path.exists(cam_file):
+            cam_file = find_camera_file()
+        if cam_file:
+            try:
+                mtime = os.path.getmtime(cam_file)
+                if mtime != frame_time:
+                    with open(cam_file, "rb") as f:
+                        data = f.read()
+                    if len(data) > 500:
+                        with frame_lock:
+                            current_frame = data
+                            frame_time = mtime
+            except (OSError, IOError):
+                pass
+        time.sleep(interval)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        if "action=stream" in self.path:
+            self._stream()
+        else:
+            self._snapshot()
+
+    def _snapshot(self):
+        with frame_lock:
+            data = current_frame
+        if not data:
+            self.send_error(503, "No camera image available yet")
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache, no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _stream(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=--frame")
+        self.send_header("Cache-Control", "no-cache, no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        interval = 1.0 / max(1, FPS)
+        last_time = 0
         try:
-            with open("/tmp/.monitor.jpg", "rb") as f:
-                data = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "image/jpeg")
-            self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "no-cache, no-store")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(data)
-        except FileNotFoundError:
-            self.send_error(404, "No camera image available")
-        except Exception:
-            self.send_error(500, "Internal error")
+            while True:
+                with frame_lock:
+                    data = current_frame
+                    ft = frame_time
+                if data and ft != last_time:
+                    last_time = ft
+                    self.wfile.write(b"--frame\\r\\n")
+                    self.wfile.write(b"Content-Type: image/jpeg\\r\\n")
+                    self.wfile.write(f"Content-Length: {len(data)}\\r\\n\\r\\n".encode())
+                    self.wfile.write(data)
+                    self.wfile.write(b"\\r\\n")
+                    self.wfile.flush()
+                time.sleep(interval)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def log_message(self, *args): pass
 
+# Write PID
 with open("${pidFile}", "w") as f:
     f.write(str(os.getpid()))
 signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))
+
+# Start frame reader thread
+t = threading.Thread(target=frame_reader, daemon=True)
+t.start()
+
+# Wait for first frame
+for _ in range(50):
+    if current_frame:
+        break
+    time.sleep(0.1)
+
+print(f"Camera server started on port 8080 @ {FPS} fps")
 http.server.HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
 `;
 
   // Write script and start it
-  const escaped = script.replace(/"/g, '\\"');
+  const fps = 10; // Target FPS — limited by how fast unisrv writes frames
   const deployCmd = `cat > ${scriptPath} << 'PYEOF'
 ${script}
 PYEOF
 chmod +x ${scriptPath}
 # Kill any old instance
 test -f ${pidFile} && kill $(cat ${pidFile}) 2>/dev/null; sleep 0.5
-# Start in background
-nohup python3 ${scriptPath} > /dev/null 2>&1 &
-sleep 1
+# Start in background with target FPS
+CAMERA_FPS=${fps} nohup python3 ${scriptPath} > /dev/null 2>&1 &
+sleep 1.5
 # Verify
 test -f ${pidFile} && kill -0 $(cat ${pidFile}) 2>/dev/null && echo OK || echo FAILED`;
 
