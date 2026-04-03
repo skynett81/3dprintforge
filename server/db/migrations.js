@@ -128,6 +128,7 @@ export function runMigrations() {
     { version: 108, up: _mig108_crm_system },
     { version: 109, up: _mig109_printer_type_column },
     { version: 110, up: _mig110_extruder_slots },
+    { version: 111, up: _mig111_print_review },
   ];
 
   for (const m of migrations) {
@@ -4488,4 +4489,25 @@ function _mig110_extruder_slots(db) {
     updated_at TEXT DEFAULT (datetime('now')),
     UNIQUE(printer_id, slot_index)
   )`);
+}
+
+// v111: Print review — quality control after print completion
+function _mig111_print_review(db) {
+  // review_status: null (not reviewed), 'approved', 'rejected', 'partial'
+  // review_waste_g: manually entered waste amount (overrides auto-calculated waste_g)
+  // review_notes: reason for rejection or quality notes
+  // reviewed_at: timestamp of review
+  const cols = db.prepare("PRAGMA table_info(print_history)").all().map(c => c.name);
+  if (!cols.includes('review_status')) {
+    db.exec(`ALTER TABLE print_history ADD COLUMN review_status TEXT`);
+  }
+  if (!cols.includes('review_waste_g')) {
+    db.exec(`ALTER TABLE print_history ADD COLUMN review_waste_g REAL`);
+  }
+  if (!cols.includes('review_notes')) {
+    db.exec(`ALTER TABLE print_history ADD COLUMN review_notes TEXT`);
+  }
+  if (!cols.includes('reviewed_at')) {
+    db.exec(`ALTER TABLE print_history ADD COLUMN reviewed_at TEXT`);
+  }
 }

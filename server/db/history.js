@@ -27,6 +27,55 @@ export function updateHistoryNotes(id, notes) {
   return db.prepare('SELECT * FROM print_history WHERE id = ?').get(id) || null;
 }
 
+export function reviewPrint(id, review) {
+  const db = getDb();
+  const existing = db.prepare('SELECT * FROM print_history WHERE id = ?').get(id);
+  if (!existing) return null;
+
+  const status = review.status; // 'approved', 'rejected', 'partial'
+  const wasteG = review.waste_g ?? null;
+  const notes = review.notes ?? null;
+
+  db.prepare(`UPDATE print_history SET
+    review_status = ?,
+    review_waste_g = ?,
+    review_notes = ?,
+    reviewed_at = datetime('now')
+    WHERE id = ?`).run(status, wasteG, notes, id);
+
+  // If rejected or partial, add waste to filament_waste table
+  if ((status === 'rejected' || status === 'partial') && (wasteG || existing.filament_used_g)) {
+    const actualWaste = wasteG ?? existing.filament_used_g ?? 0;
+    if (actualWaste > 0) {
+      db.prepare(`INSERT INTO filament_waste (printer_id, waste_g, reason, notes)
+        VALUES (?, ?, ?, ?)`).run(
+        existing.printer_id,
+        actualWaste,
+        status === 'rejected' ? 'rejected_print' : 'partial_waste',
+        `Print #${id}: ${existing.filename || 'unknown'} — ${notes || status}`
+      );
+    }
+  }
+
+  // If approved, update waste_g to 0 (no waste)
+  if (status === 'approved') {
+    db.prepare('UPDATE print_history SET waste_g = 0 WHERE id = ?').run(id);
+  }
+
+  return db.prepare('SELECT * FROM print_history WHERE id = ?').get(id);
+}
+
+export function getUnreviewedPrints(printerId = null) {
+  const db = getDb();
+  let sql = 'SELECT * FROM print_history WHERE review_status IS NULL AND status IN (\'completed\', \'cancelled\', \'failed\') ORDER BY finished_at DESC';
+  const params = [];
+  if (printerId) {
+    sql = 'SELECT * FROM print_history WHERE review_status IS NULL AND status IN (\'completed\', \'cancelled\', \'failed\') AND printer_id = ? ORDER BY finished_at DESC';
+    params.push(printerId);
+  }
+  return db.prepare(sql).all(...params);
+}
+
 export function addHistory(record) {
   const db = getDb();
   const result = db.prepare(`
