@@ -3,9 +3,11 @@ import { TelemetrySampler } from './telemetry-sampler.js';
 import { CameraStream } from './camera-stream.js';
 import { MoonrakerCamera } from './moonraker-camera.js';
 import { startHistorySync } from './moonraker-history-sync.js';
-import { getPrinters, addFirmwareEntry, addXcamEvent } from './database.js';
+import { getPrinters, addFirmwareEntry, addXcamEvent, updatePrinterIp } from './database.js';
 import { PrintGuardService } from './print-guard.js';
 import { createLogger } from './logger.js';
+import http from 'node:http';
+import { networkInterfaces } from 'node:os';
 
 const log = createLogger('printer');
 
@@ -271,7 +273,130 @@ export class PrinterManager {
     return [...this.printers.keys()];
   }
 
+  // ---- Auto-rediscovery: find printers that changed IP ----
+
+  startAutoRediscovery(intervalMs = 60000) {
+    this._rediscoveryInterval = setInterval(() => this._checkDisconnected(), intervalMs);
+    // Run first check after 30s to give printers time to connect initially
+    this._rediscoveryInitial = setTimeout(() => this._checkDisconnected(), 30000);
+    log.info(`[rediscovery] Aktiv — sjekker frakoblede printere hvert ${Math.round(intervalMs / 1000)}s`);
+  }
+
+  async _checkDisconnected() {
+    const disconnected = [];
+    for (const [id, entry] of this.printers) {
+      if (!entry.live) { disconnected.push(entry.config); continue; }
+      // Check if client is actually connected
+      const client = entry.client;
+      if (!client) { disconnected.push(entry.config); continue; }
+      if (client.connected === false) disconnected.push(entry.config);
+    }
+
+    if (disconnected.length === 0) return;
+
+    log.info(`[rediscovery] ${disconnected.length} printer(e) frakoblet — søker...`);
+
+    for (const printerConf of disconnected) {
+      const newIp = await this._rediscover(printerConf);
+      if (newIp && newIp !== printerConf.ip) {
+        log.info(`[rediscovery] ${printerConf.name}: ny IP funnet ${printerConf.ip} → ${newIp}`);
+        printerConf.ip = newIp;
+        updatePrinterIp(printerConf.id, newIp);
+        this.broadcast('printer_ip_changed', { printer_id: printerConf.id, name: printerConf.name, old_ip: printerConf.ip, new_ip: newIp });
+        await this.updatePrinter(printerConf.id, printerConf);
+      }
+    }
+  }
+
+  async _rediscover(printerConf) {
+    const type = this._getConnectorType(printerConf);
+
+    if (type === 'bambu') {
+      return this._rediscoverBambu(printerConf);
+    }
+    return this._rediscoverMoonraker(printerConf);
+  }
+
+  async _rediscoverBambu(printerConf) {
+    // Use SSDP scan to find Bambu printers
+    try {
+      const { PrinterDiscovery } = await import('./printer-discovery.js');
+      const scanner = new PrinterDiscovery();
+      const found = await scanner.scan(5000);
+      scanner.shutdown();
+      const match = found.find(p => p.serial === printerConf.serial);
+      return match?.ip || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async _rediscoverMoonraker(printerConf) {
+    // Scan all local subnets for Moonraker API
+    const subnets = this._getLocalSubnets();
+    for (const subnet of subnets) {
+      const ip = await this._scanSubnetForMoonraker(subnet, printerConf);
+      if (ip) return ip;
+    }
+    return null;
+  }
+
+  _getLocalSubnets() {
+    const ifaces = networkInterfaces();
+    const subnets = [];
+    for (const entries of Object.values(ifaces)) {
+      for (const entry of entries) {
+        if (entry.family === 'IPv4' && !entry.internal) {
+          // Extract /24 subnet base from IP
+          const parts = entry.address.split('.');
+          parts[3] = '0';
+          subnets.push(parts.join('.'));
+        }
+      }
+    }
+    return subnets;
+  }
+
+  _scanSubnetForMoonraker(subnetBase, printerConf) {
+    const port = printerConf.port || 80;
+    const parts = subnetBase.split('.');
+    const base = parts.slice(0, 3).join('.');
+
+    return new Promise((resolve) => {
+      let found = null;
+      let pending = 254;
+
+      const done = () => {
+        if (--pending <= 0 || found) resolve(found);
+      };
+
+      for (let i = 1; i <= 254; i++) {
+        const ip = `${base}.${i}`;
+        const req = http.get(`http://${ip}:${port}/printer/info`, { timeout: 1500 }, (res) => {
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => {
+            try {
+              const info = JSON.parse(data);
+              if (info.result?.hostname || info.result?.state) {
+                if (!found) { found = ip; resolve(ip); }
+              }
+            } catch { /* not moonraker */ }
+            done();
+          });
+        });
+        req.on('error', done);
+        req.on('timeout', () => { req.destroy(); done(); });
+      }
+
+      // Safety timeout for entire scan
+      setTimeout(() => { if (!found) resolve(null); }, 10000);
+    });
+  }
+
   shutdown() {
+    if (this._rediscoveryInterval) clearInterval(this._rediscoveryInterval);
+    if (this._rediscoveryInitial) clearTimeout(this._rediscoveryInitial);
     for (const [id, p] of this.printers) {
       if (p.client?.disconnect) p.client.disconnect();
       if (p.client?.stop) p.client.stop();

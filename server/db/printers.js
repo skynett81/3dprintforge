@@ -40,6 +40,11 @@ export function updatePrinter(id, p) {
   );
 }
 
+export function updatePrinterIp(id, newIp) {
+  const db = getDb();
+  return db.prepare('UPDATE printers SET ip = ? WHERE id = ?').run(newIp, id);
+}
+
 export function deletePrinter(id) {
   const db = getDb();
   return db.prepare('DELETE FROM printers WHERE id=?').run(id);
