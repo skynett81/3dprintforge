@@ -252,7 +252,9 @@ export class MoonrakerCamera {
 
   async _fetchHttpFrame(url) {
     try {
-      const res = await fetch(url, {
+      // Cache-bust to ensure fresh frame
+      const bustUrl = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+      const res = await fetch(bustUrl, {
         headers: this.apiKey ? { 'X-Api-Key': this.apiKey } : {},
         signal: AbortSignal.timeout(5000)
       });

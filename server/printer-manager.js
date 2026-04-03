@@ -5,6 +5,7 @@ import { MoonrakerCamera } from './moonraker-camera.js';
 import { startHistorySync } from './moonraker-history-sync.js';
 import { getPrinters, addFirmwareEntry, addXcamEvent, updatePrinterIp } from './database.js';
 import { PrintGuardService } from './print-guard.js';
+import { provisionCamera } from './printer-provisioner.js';
 import { createLogger } from './logger.js';
 import http from 'node:http';
 import { networkInterfaces } from 'node:os';
@@ -153,6 +154,8 @@ export class PrinterManager {
     let camera = null;
     let moonCamera = null;
     if (connectorType === 'moonraker') {
+      // Auto-provision camera if needed (configures nginx on printer)
+      provisionCamera(printerConf.ip, printerConf.port || 80).catch(() => {});
       moonCamera = new MoonrakerCamera({
         ...this.config,
         printer: printerConf
