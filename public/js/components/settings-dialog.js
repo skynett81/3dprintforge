@@ -580,22 +580,19 @@
       h += `</div>
       </div>`;
 
-      // Live Preview card
+      // Preview button — opens in new tab
       h += `<div class="settings-card">
         <div class="card-title">${t('settings.obs_preview_title')}</div>
-        <div style="position:relative;border-radius:8px;overflow:hidden;background:#000;aspect-ratio:16/9">
-          <iframe id="obs-preview-frame" style="width:100%;height:100%;border:none;pointer-events:none" src=""></iframe>
-        </div>
-        <button class="form-btn form-btn-sm form-btn-secondary mt-sm" data-ripple onclick="window._obsRefreshPreview()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-          ${t('settings.obs_refresh_preview')}
+        <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px">Open the OBS overlay in a new tab to see how it looks at full size.</p>
+        <button class="form-btn form-btn-primary" data-ripple onclick="window._obsOpenPreview()" style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open preview in new tab
         </button>
       </div>`;
 
       h += '</div>';
       el.innerHTML = h;
       window._obsUpdateUrl();
-      window._obsRefreshPreview();
 
       // Show/hide custom color picker
       document.getElementById('obs-cfg-bg')?.addEventListener('change', function() {
@@ -1964,10 +1961,9 @@
     if (input) input.value = url;
   };
 
-  window._obsRefreshPreview = function() {
+  window._obsOpenPreview = function() {
     const input = document.getElementById('obs-url-display');
-    const frame = document.getElementById('obs-preview-frame');
-    if (input && frame) frame.src = input.value;
+    if (input && input.value) window.open(input.value, '_blank');
   };
 
   window.copyObsUrl = function() {
