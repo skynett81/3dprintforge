@@ -328,9 +328,47 @@
       // Load cloud status async
       _loadCloudStatus();
     } else if (_printerSubTab === 'status') {
-      el.innerHTML = `<div class="settings-card"><div class="card-title">${t('printer_info.title')}</div><div id="settings-printer-info"><span class="text-muted" style="font-size:0.8rem">${t('printer_info.waiting')}</span></div></div>`;
-      const printerInfoEl = document.getElementById('settings-printer-info');
-      if (printerInfoEl && typeof renderPrinterInfoSection === 'function') renderPrinterInfoSection(printerInfoEl);
+      const printers = _cachedPrinters || [];
+      if (printers.length === 0) {
+        el.innerHTML = `<div class="settings-card"><div class="text-muted">${t('printer_info.waiting')}</div></div>`;
+      } else {
+        let h = '<div style="display:flex;flex-direction:column;gap:14px">';
+        for (const pr of printers) {
+          h += `<div class="settings-card">
+            <div class="card-title" style="display:flex;align-items:center;gap:8px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${pr.online !== false ? 'var(--accent-green)' : 'var(--text-muted)'};flex-shrink:0"></span>
+              ${_esc(pr.name || pr.id)}
+              <span style="font-size:0.72rem;color:var(--text-muted);font-weight:400">${_esc(pr.model || pr.type || '')}</span>
+            </div>
+            <div id="settings-printer-info-${pr.id}"><span class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</span></div>
+          </div>`;
+        }
+        h += '</div>';
+        el.innerHTML = h;
+        // Load live status for each printer from WebSocket state
+        for (const pr of printers) {
+          const infoEl = document.getElementById('settings-printer-info-' + pr.id);
+          if (!infoEl) continue;
+          const state = window.printerState?._printerStates?.[pr.id];
+          const meta = window.printerState?._printerMeta?.[pr.id];
+          const data = state?.print || state || {};
+          let info = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;font-size:0.8rem">';
+          info += `<div><span class="text-muted">IP:</span> <strong>${_esc(pr.ip || '-')}</strong></div>`;
+          info += `<div><span class="text-muted">Type:</span> ${_esc(meta?.type || pr.type || 'bambu')}</div>`;
+          info += `<div><span class="text-muted">Model:</span> ${_esc(pr.model || '-')}</div>`;
+          if (data.gcode_state) info += `<div><span class="text-muted">State:</span> <strong style="color:${data.gcode_state === 'RUNNING' ? 'var(--accent-green)' : data.gcode_state === 'FAILED' ? 'var(--accent-red)' : 'var(--text-primary)'}">${_esc(data.gcode_state)}</strong></div>`;
+          else info += `<div><span class="text-muted">State:</span> ${state ? 'Idle' : 'Offline'}</div>`;
+          if (data.nozzle_temper != null) info += `<div><span class="text-muted">Nozzle:</span> ${Math.round(data.nozzle_temper)}°C${data.nozzle_target_temper ? ' / ' + data.nozzle_target_temper + '°C' : ''}</div>`;
+          if (data.bed_temper != null) info += `<div><span class="text-muted">Bed:</span> ${Math.round(data.bed_temper)}°C${data.bed_target_temper ? ' / ' + data.bed_target_temper + '°C' : ''}</div>`;
+          if (data.wifi_signal != null) info += `<div><span class="text-muted">WiFi:</span> ${data.wifi_signal}dBm</div>`;
+          if (data.chamber_temper != null) info += `<div><span class="text-muted">Chamber:</span> ${Math.round(data.chamber_temper)}°C</div>`;
+          if (data.subtask_name) info += `<div style="grid-column:1/-1"><span class="text-muted">Print:</span> ${_esc(data.subtask_name)} ${data.mc_percent != null ? '<strong>(' + data.mc_percent + '%)</strong>' : ''}</div>`;
+          if (data.total_layer_num) info += `<div><span class="text-muted">Layer:</span> ${data.layer_num || 0} / ${data.total_layer_num}</div>`;
+          if (pr.serial) info += `<div><span class="text-muted">Serial:</span> <span style="font-family:monospace;font-size:0.72rem">${_esc(pr.serial)}</span></div>`;
+          info += '</div>';
+          infoEl.innerHTML = info;
+        }
+      }
     }
   }
 
