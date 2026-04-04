@@ -2745,15 +2745,16 @@
               ${lic.license_type && lic.license_type !== 'none' ? '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;font-size:0.7rem">' + _esc(lic.license_type.toUpperCase()) + '</span>' : ''}
               <button class="form-btn form-btn-sm form-btn-danger" data-ripple onclick="deactivateEcomLicense()" style="margin-left:auto">${t('settings.ecom_deactivate')}</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px">
-              <span><strong>Key:</strong> ${_esc(lic.license_key || '')}</span>
+            ${lic.features && lic.features.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + lic.features.map(f => '<span style="font-size:0.68rem;padding:2px 8px;border-radius:10px;background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600">' + _esc(f) + '</span>').join('') + '</div>' : ''}
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px;font-size:0.82rem">
+              <span><strong>Key:</strong> <code style="font-size:0.75rem;background:var(--bg-tertiary);padding:1px 5px;border-radius:3px">${_esc(lic.license_key || '')}</code></span>
               <span><strong>Domain:</strong> ${_esc(lic.domain || '-')}</span>
               <span><strong>Email:</strong> ${_esc(lic.email || '-')}</span>
-              <span><strong>Holder:</strong> ${_esc(lic.holder || '-')}</span>
-              <span><strong>Max printers:</strong> ${lic.max_printers || 1}</span>
+              <span><strong>Printers:</strong> ${lic.max_printers != null ? lic.max_printers : 'Unlimited'}</span>
               <span><strong>Expires:</strong> ${lic.expires_at ? new Date(lic.expires_at).toLocaleDateString() : 'Perpetual'}</span>
-              <span><strong>Verifications:</strong> ${lic.verify_count || 0}</span>
-              <span><strong>Last validated:</strong> ${lic.last_validated ? new Date(lic.last_validated).toLocaleString() : '-'}</span>
+              <span><strong>Fee:</strong> ${lic.fee_pct != null ? lic.fee_pct + '%' : '-'}</span>
+              <span><strong>Verified:</strong> ${lic.verify_count || 0}× — ${lic.last_validated ? new Date(lic.last_validated).toLocaleString() : 'never'}</span>
+              <span><strong>Check-in:</strong> ${lic.days_since_checkin != null ? lic.days_since_checkin + ' days ago' : '-'}${lic.days_until_deactivation != null ? ' (' + lic.days_until_deactivation + 'd left)' : ''}</span>
             </div>
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);display:flex;gap:16px;font-size:0.8rem;color:var(--text-muted)">
               <span>Fees this month: <strong>${feeStr}</strong> (${lic.orders_this_month || 0} orders)</span>
