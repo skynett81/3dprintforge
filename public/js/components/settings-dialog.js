@@ -713,8 +713,8 @@
         <div id="update-section"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div>
       </div>`;
 
-      // System info + Scheduled tasks side by side
-      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+      // System info + Scheduled tasks side by side (stacks on narrow screens)
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">';
       h += `<div class="settings-card">
         <div class="card-title" style="display:flex;align-items:center;gap:6px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -1641,7 +1641,7 @@
       const tip = (text) => `<span class="stip" onclick="this.classList.toggle('stip-open')" tabindex="0"><span class="stip-icon">?</span><span class="stip-bubble">${_esc(text)}</span></span>`;
       let html = `
         <div class="settings-card">
-          <div class="card-title">${t('settings.auth_title')} ${tip('Protect your dashboard with username/password login. Supports multiple users with different permission levels')}</div>`;
+          <div class="card-title" style="display:flex;align-items:center;gap:4px">${t('settings.auth_title')} ${tip('Protect your dashboard with username/password login. Supports multiple users with different permission levels')}</div>`;
 
       if (envManaged) {
         html += `<p class="text-muted" style="font-size:0.8rem">${t('settings.auth_env_notice')}</p>`;
