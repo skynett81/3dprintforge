@@ -136,24 +136,27 @@ export async function generateSign3MF(opts = {}) {
 
     // ── Create base material colours ──
     const matGroup = model.AddBaseMaterialGroup();
-    const whiteColor = new lib.sColor();
-    whiteColor.set_Red(240); whiteColor.set_Green(240); whiteColor.set_Blue(240); whiteColor.set_Alpha(255);
-    matGroup.AddMaterial('Plate', whiteColor);
-    whiteColor.delete();
-    const blackColor = new lib.sColor();
-    blackColor.set_Red(30); blackColor.set_Green(30); blackColor.set_Blue(30); blackColor.set_Alpha(255);
-    matGroup.AddMaterial('Text', blackColor);
-    blackColor.delete();
+    const mgId = matGroup.GetResourceID();
+    const addColor = (name, r, g, b) => {
+      const c = new lib.sColor(); c.set_Red(r); c.set_Green(g); c.set_Blue(b); c.set_Alpha(255);
+      const idx = matGroup.AddMaterial(name, c); c.delete(); return idx;
+    };
+    const colWhite = addColor('White', 240, 240, 240);
+    const colBlack = addColor('Black', 30, 30, 30);
+    const colGrey = addColor('Grey', 90, 90, 95);
+    const colDarkGrey = addColor('DarkGrey', 50, 50, 55);
 
     // ── Sign plate (white) ──
     const plateMesh = model.AddMeshObject();
     plateMesh.SetName('Plate');
+    plateMesh.SetObjectLevelProperty(mgId, colWhite);
     const plate = new MeshBuilder(lib, plateMesh);
     plate.addBox(0, 0, 0, pw, ph, pd);
 
     // ── Raised elements (black — QR, text, dividers) ──
     const textMesh = model.AddMeshObject();
     textMesh.SetName(opts.title || 'Text');
+    textMesh.SetObjectLevelProperty(mgId, colBlack);
     const sign = new MeshBuilder(lib, textMesh);
 
     // ── QR code blocks ──
@@ -236,6 +239,7 @@ export async function generateSign3MF(opts = {}) {
     if (opts.includeBorder) {
       const frameMesh = model.AddMeshObject();
       frameMesh.SetName('Frame');
+      frameMesh.SetObjectLevelProperty(mgId, colGrey);
       const frame = new MeshBuilder(lib, frameMesh);
       const fw = opts.frameWidth || 5;
       const lip = opts.lipWidth || 2;
@@ -269,6 +273,7 @@ export async function generateSign3MF(opts = {}) {
     if (opts.includeStand) {
       const standMesh = model.AddMeshObject();
       standMesh.SetName('Stand');
+      standMesh.SetObjectLevelProperty(mgId, colDarkGrey);
       const stand = new MeshBuilder(lib, standMesh);
       const slotD = opts.standSlotDepth || 15;
       const slotTol = opts.standSlotTolerance || 0.3;
