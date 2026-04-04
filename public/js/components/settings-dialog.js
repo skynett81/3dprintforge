@@ -580,14 +580,17 @@
       h += `</div>
       </div>`;
 
-      // Preview button — opens in new tab
+      // Preview — opens selected printer overlay in new tab
       h += `<div class="settings-card">
         <div class="card-title">${t('settings.obs_preview_title')}</div>
-        <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px">Open the OBS overlay in a new tab to see how it looks at full size.</p>
-        <button class="form-btn form-btn-primary" data-ripple onclick="window._obsOpenPreview()" style="display:inline-flex;align-items:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Open preview in new tab
-        </button>
+        <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px">Preview the OBS overlay at full size with the selected printer and settings.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="form-btn form-btn-primary" data-ripple onclick="window._obsOpenPreview()" style="display:inline-flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open preview in new tab
+          </button>
+          ${(p || []).map(pr => `<button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="document.getElementById('obs-cfg-printer').value='${pr.id}';window._obsUpdateUrl();window._obsOpenPreview()" style="font-size:0.75rem">${pr.name || pr.id}</button>`).join('')}
+        </div>
       </div>`;
 
       h += '</div>';
