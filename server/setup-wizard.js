@@ -219,7 +219,7 @@ After=network.target
 Type=simple
 User=${user}
 WorkingDirectory=${ROOT}
-ExecStart=${nodePath} --experimental-sqlite server/index.js
+ExecStart=${nodePath} server/index.js
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production
@@ -244,7 +244,7 @@ function spawnDashboard() {
   const out = openSync(logFile, 'a');
   const err = openSync(logFile, 'a');
 
-  const child = spawn(process.execPath, ['--experimental-sqlite', 'server/index.js'], {
+  const child = spawn(process.execPath, ['server/index.js'], {
     cwd: ROOT,
     detached: true,
     stdio: ['ignore', out, err],

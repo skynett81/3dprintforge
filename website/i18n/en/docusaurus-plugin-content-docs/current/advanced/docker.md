@@ -63,7 +63,7 @@ COPY . .
 
 EXPOSE 3000 3443
 
-CMD ["node", "--experimental-sqlite", "server/index.js"]
+CMD ["node", "", "server/index.js"]
 ```
 
 ## Volumes

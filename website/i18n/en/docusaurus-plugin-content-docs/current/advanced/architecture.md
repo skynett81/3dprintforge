@@ -21,7 +21,7 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 |-----|-----------|
 | Frontend | Vanilla HTML/CSS/JS — 76 component modules, no build step, no framework |
 | Backend | Node.js 22 with 3 npm packages: `mqtt`, `ws`, `basic-ftp` |
-| Database | SQLite (built into Node.js 22 via `--experimental-sqlite`) |
+| Database | SQLite (built into Node.js 22 via SQLite (innebygd)) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in the browser |
 | Real-time | WebSocket hub broadcasts printer state to all connected clients |
 | Protocol | MQTT over TLS (port 8883) with the printer's LAN Access Code |

@@ -8,7 +8,7 @@ Step-by-step guide for installing 3DPrintForge on your system.
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| **Node.js** | 22.0+ | Required — uses built-in SQLite (`--experimental-sqlite`) |
+| **Node.js** | 22.0+ | Required — uses built-in SQLite (SQLite (innebygd)) |
 | **npm** | Included with Node.js | Package manager |
 | **ffmpeg** | Any recent version | Optional — only needed for camera livestream |
 | **git** | Any recent version | For cloning and auto-updates |
@@ -282,7 +282,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$(pwd)
-ExecStart=$(which node) --experimental-sqlite server/index.js
+ExecStart=$(which node) server/index.js
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production
@@ -385,7 +385,7 @@ This will:
 |---------|----------|
 | Printer not connecting | Verify IP is reachable (`ping`), access code matches, port 8883 is open |
 | Camera not working | Install `ffmpeg`, verify camera streaming is enabled on the printer |
-| "experimental-sqlite" error | Update to Node.js 22+: `node -v` |
+| SQLite error | Update to Node.js 22+: `node -v` |
 | Docker: printer not found | Ensure `network_mode: host` in docker-compose.yml |
 | Port already in use | Change `server.port` in config.json or set `SERVER_PORT` env var |
 | Dashboard blank after update | Clear browser cache (Ctrl+Shift+R) |

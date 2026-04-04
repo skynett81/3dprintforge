@@ -5,7 +5,7 @@
  * Fetches @base profiles from OrcaSlicer GitHub repo and inserts them
  * as filament_profiles + vendors into the dashboard database.
  *
- * Usage: node --experimental-sqlite scripts/import-orcaslicer.js [--dry-run]
+ * Usage: node scripts/import-orcaslicer.js [--dry-run]
  *
  * Data source: https://github.com/OrcaSlicer/OrcaSlicer
  * License: AGPL-3.0 (data used as reference material)

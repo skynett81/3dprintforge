@@ -133,7 +133,7 @@ Komplett vedlikeholdssystem med:
 
 - **Backend**: Node.js 22 med kun 3 npm-pakker (mqtt, ws, basic-ftp)
 - **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS, ingen build-steg
-- **Database**: SQLite via Node.js 22 built-in `--experimental-sqlite`
+- **Database**: SQLite via Node.js 22 built-in SQLite (innebygd)
 - **Dokumentasjon**: Docusaurus med 2 språk, automatisk bygget ved installasjon
 - **API**: 177+ endepunkter, OpenAPI-dokumentasjon på `/api/docs`
 

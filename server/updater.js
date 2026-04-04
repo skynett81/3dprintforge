@@ -377,7 +377,7 @@ export class Updater {
       log.info('Restarting via systemd...');
       process.exit(0);
     } else {
-      const cmd = `sleep 2 && cd "${ROOT_DIR}" && exec node --experimental-sqlite server/index.js`;
+      const cmd = `sleep 2 && cd "${ROOT_DIR}" && exec node server/index.js`;
       const child = spawn('bash', ['-c', cmd], {
         detached: true,
         stdio: 'ignore',

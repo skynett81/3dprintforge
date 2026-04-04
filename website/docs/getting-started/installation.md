@@ -16,7 +16,7 @@ description: Installer 3DPrintForge på din server eller lokale maskin
 | OS | Linux, macOS, Windows | Linux (Ubuntu/Debian) |
 
 :::warning Node.js 22 er påkrevd
-3DPrintForge bruker `--experimental-sqlite` som er innebygd i Node.js 22. Eldre versjoner støttes ikke.
+3DPrintForge bruker SQLite (innebygd) som er innebygd i Node.js 22. Eldre versjoner støttes ikke.
 :::
 
 ## Installasjon med install.sh (anbefalt)

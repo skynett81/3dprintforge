@@ -13,7 +13,7 @@
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
   },
   "file_denylist": [],
-  "startup": "NODE_ENV=production node --experimental-sqlite server/index.js",
+  "startup": "NODE_ENV=production node server/index.js",
   "config": {
     "files": "{}",
     "startup": "{\"done\": [\"3DPrintForge v\"]}",

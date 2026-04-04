@@ -17,7 +17,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 |-------|-----------|
 | Frontend | Vanilla HTML/CSS/JS — 31 component modules, no build step, no frameworks |
 | Backend | Node.js 22 with 3 npm packages: `mqtt`, `ws`, `basic-ftp` |
-| Database | SQLite (built into Node.js 22 via `--experimental-sqlite`) |
+| Database | SQLite (built into Node.js 22 via SQLite (innebygd)) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in browser |
 | Real-time | WebSocket hub broadcasts printer state to all connected clients |
 | Protocol | MQTT over TLS (port 8883) using the printer's LAN access code |
@@ -216,7 +216,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$(pwd)
-ExecStart=$(which node) --experimental-sqlite server/index.js
+ExecStart=$(which node) server/index.js
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production

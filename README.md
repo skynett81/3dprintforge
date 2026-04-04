@@ -21,7 +21,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
 - **2 languages** — Norwegian, English
 - **Docusaurus documentation** — 82 pages in 2 languages, available at `/docs/` and on GitHub Pages
-- **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 4 npm packages
+- **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 6 npm packages
 
 ---
 
@@ -263,7 +263,7 @@ docker compose pull && docker compose up -d
 | Bambu printer not connecting | Verify IP (`ping`), access code, port 8883 open, same LAN |
 | Moonraker printer not connecting | Verify IP (`ping`), Moonraker running, port open (default 80) |
 | Camera not working | Install `ffmpeg`, verify camera enabled on printer |
-| "experimental-sqlite" error | Update to Node.js 22+: `node -v` |
+| SQLite error | Update to Node.js 22+: `node -v` |
 | Docker: printer not found | Ensure `network_mode: host` in docker-compose.yml |
 | Port already in use | Change `server.port` in config.json or set `SERVER_PORT` env var |
 | Dashboard blank after update | Clear browser cache (Ctrl+Shift+R) |

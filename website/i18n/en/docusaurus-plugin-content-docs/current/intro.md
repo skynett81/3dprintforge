@@ -129,7 +129,7 @@ Complete maintenance system with:
 
 - **Backend**: Node.js 22 with only 3 npm packages (mqtt, ws, basic-ftp)
 - **Frontend**: Vanilla HTML/CSS/JS, no build step
-- **Database**: SQLite via Node.js 22 built-in `--experimental-sqlite`
+- **Database**: SQLite via Node.js 22 built-in SQLite (innebygd)
 - **Documentation**: Docusaurus with 2 languages, automatically built at installation
 - **API**: 177+ endpoints, OpenAPI documentation at `/api/docs`
 
