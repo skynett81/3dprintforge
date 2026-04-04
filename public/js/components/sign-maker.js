@@ -123,61 +123,123 @@
       h += _field('Location', 'sm-inv-loc', 'text', '');
     }
 
-    // 3D Print Options — always visible in the form
+    // 3D Print Options — collapsible sections matching parametric generator style
     h += `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)">
-      <h5 style="margin:0 0 10px;font-size:0.85rem;color:var(--text-secondary)">🧊 3D Print Options</h5>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">
+      <h5 style="margin:0 0 12px;font-size:0.9rem;color:var(--text-primary)">🧊 3D Model Settings</h5>`;
+
+    // Sign Plate
+    h += _section('Sign Plate', `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('Width (mm)', 'sm-3d-w', 40, 150, 80, 5)}
+        ${_rangeField('Height (mm)', 'sm-3d-h', 30, 120, 55, 5)}
+        ${_rangeField('Thickness (mm)', 'sm-3d-depth', 1, 5, 2, 0.5)}
+        ${_rangeField('Corner radius (mm)', 'sm-3d-radius', 0, 15, 3, 1)}
+      </div>`, true);
+
+    // QR Code
+    h += _section('QR Code', `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('QR size (mm)', 'sm-3d-qrsize', 15, 80, 35, 1)}
+        ${_rangeField('Dot size (mm)', 'sm-3d-pixel', 0.6, 2.0, 1.2, 0.2)}
+        ${_rangeField('Height (mm)', 'sm-3d-qrh', 0.2, 2.0, 0.8, 0.2)}
+      </div>
+      <div style="margin-top:6px">
+        <label class="form-label" style="font-size:0.75rem">Error correction</label>
+        <select class="form-input" id="sm-3d-ecc" style="font-size:0.8rem">
+          <option value="L">Low (7%)</option>
+          <option value="M" selected>Medium (15%)</option>
+          <option value="Q">Quartile (25%)</option>
+          <option value="H">High (30%)</option>
+        </select>
+      </div>`, true);
+
+    // Text
+    h += _section('Text', `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('Text height (mm)', 'sm-3d-texth', 0.2, 2.0, 0.8, 0.2)}
+        ${_rangeField('Text size (mm)', 'sm-3d-textsize', 4, 20, 8, 1)}
+      </div>`, true);
+
+    // Frame
+    h += _section('Frame', `
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" id="sm-3d-border"> Enable frame
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('Frame width (mm)', 'sm-3d-framew', 2, 12, 5, 1)}
+        ${_rangeField('Lip width (mm)', 'sm-3d-lip', 0, 5, 2, 0.5)}
+        ${_rangeField('Lip depth (mm)', 'sm-3d-lipd', 0.5, 3, 1.5, 0.5)}
+        ${_rangeField('Chamfer (mm)', 'sm-3d-chamfer', 0, 4, 1.5, 0.5)}
+        ${_rangeField('Tolerance (mm)', 'sm-3d-frametol', 0.1, 0.5, 0.3, 0.05)}
+      </div>`);
+
+    // Stand
+    h += _section('Stand', `
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" id="sm-3d-stand" checked> Enable desk stand
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('Slot depth (mm)', 'sm-3d-slotd', 5, 25, 15, 1)}
+        ${_rangeField('Slot tolerance (mm)', 'sm-3d-slottol', 0.1, 0.5, 0.3, 0.05)}
+        ${_rangeField('Base height (mm)', 'sm-3d-baseh', 3, 15, 8, 1)}
+        ${_rangeField('Base depth (mm)', 'sm-3d-based', 20, 60, 40, 5)}
+      </div>`);
+
+    // Magnets
+    h += _section('Magnets', `
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" id="sm-3d-magnets"> Enable magnet holes
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
-          <label class="form-label" style="font-size:0.75rem">Size</label>
-          <select class="form-input" id="sm-3d-size" style="font-size:0.8rem">
-            <option value="small">Small (60×40)</option>
-            <option value="medium" selected>Medium (80×50)</option>
-            <option value="large">Large (100×70)</option>
-            <option value="xl">XL (120×80)</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" style="font-size:0.75rem">Orientation</label>
-          <select class="form-input" id="sm-3d-orient" style="font-size:0.8rem">
-            <option value="landscape" selected>Landscape</option>
-            <option value="portrait">Portrait</option>
+          <label class="form-label" style="font-size:0.75rem">Diameter</label>
+          <select class="form-input" id="sm-3d-magdia" style="font-size:0.8rem">
+            <option value="4">4mm</option>
+            <option value="6" selected>6mm</option>
+            <option value="8">8mm</option>
+            <option value="10">10mm</option>
           </select>
         </div>
         <div>
           <label class="form-label" style="font-size:0.75rem">Thickness</label>
-          <select class="form-input" id="sm-3d-depth" style="font-size:0.8rem">
-            <option value="1.5">1.5mm thin</option>
-            <option value="2" selected>2mm standard</option>
-            <option value="3">3mm thick</option>
+          <select class="form-input" id="sm-3d-magth" style="font-size:0.8rem">
+            <option value="1">1mm</option>
+            <option value="2" selected>2mm</option>
+            <option value="3">3mm</option>
           </select>
         </div>
+        ${_rangeField('Tolerance (mm)', 'sm-3d-magtol', 0.1, 0.4, 0.2, 0.05)}
+      </div>`);
+
+    // NFC Tag
+    h += _section('NFC Tag', `
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" id="sm-3d-nfc"> Enable NFC tag slot
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
-          <label class="form-label" style="font-size:0.75rem">Text height</label>
-          <select class="form-input" id="sm-3d-texth" style="font-size:0.8rem">
-            <option value="0.4">0.4mm subtle</option>
-            <option value="0.8" selected>0.8mm standard</option>
-            <option value="1.2">1.2mm bold</option>
-            <option value="1.6">1.6mm extra</option>
+          <label class="form-label" style="font-size:0.75rem">Shape</label>
+          <select class="form-input" id="sm-3d-nfcshape" style="font-size:0.8rem">
+            <option value="circle" selected>Circle</option>
+            <option value="square">Square</option>
           </select>
         </div>
-        <div>
-          <label class="form-label" style="font-size:0.75rem">QR detail</label>
-          <select class="form-input" id="sm-3d-pixel" style="font-size:0.8rem">
-            <option value="0.8">Fine (0.8mm)</option>
-            <option value="1.2" selected>Standard (1.2mm)</option>
-            <option value="1.6">Large (1.6mm)</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" style="font-size:0.75rem">Extras</label>
-          <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-stand" checked> Desk stand</label>
-            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-holes"> Wall holes</label>
-            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-border"> Border</label>
-          </div>
-        </div>
-      </div>
-    </div>`;
+        ${_rangeField('Diameter (mm)', 'sm-3d-nfcdia', 15, 40, 25, 1)}
+        ${_rangeField('Thickness (mm)', 'sm-3d-nfcth', 0.5, 2, 0.85, 0.05)}
+        ${_rangeField('Tolerance (mm)', 'sm-3d-nfctol', 0.1, 0.5, 0.3, 0.05)}
+      </div>`);
+
+    // Wall Mount
+    h += _section('Wall Mount', `
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" id="sm-3d-holes"> Enable mount holes
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_rangeField('Hole diameter (mm)', 'sm-3d-holedia', 2, 6, 4, 0.5)}
+        ${_rangeField('Margin (mm)', 'sm-3d-holemarg', 3, 10, 5, 1)}
+      </div>`);
+
+    h += '</div>';
 
     h += `<div class="sm-actions" style="margin-top:14px">
       <button class="form-btn form-btn-primary" data-ripple onclick="window._smGenerate('${id}')">Preview Sign</button>
@@ -471,5 +533,23 @@
   }
   function _checkbox(label, id) {
     return `<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="${id}"> ${label}</label>`;
+  }
+  function _section(title, content, open) {
+    const id = 'sm-sec-' + title.replace(/\s/g, '').toLowerCase();
+    return `<div style="margin-bottom:8px;border:1px solid var(--border-color);border-radius:8px;overflow:hidden">
+      <div onclick="const c=this.nextElementSibling;c.style.display=c.style.display==='none'?'':'none';this.querySelector('.sm-arrow').textContent=c.style.display==='none'?'▸':'▾'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-tertiary);cursor:pointer;font-size:0.85rem;font-weight:600">
+        <span>${title}</span><span class="sm-arrow">${open ? '▾' : '▸'}</span>
+      </div>
+      <div style="padding:10px 12px;${open ? '' : 'display:none'}">${content}</div>
+    </div>`;
+  }
+  function _rangeField(label, id, min, max, val, step) {
+    return `<div style="margin-bottom:6px">
+      <label class="form-label" style="font-size:0.72rem;margin-bottom:2px">${label}</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" class="form-input" id="${id}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:55px;font-size:0.8rem;padding:3px 6px" oninput="const s=this.nextElementSibling;if(s)s.value=this.value">
+        <input type="range" min="${min}" max="${max}" value="${val}" step="${step}" style="flex:1;accent-color:var(--accent-blue)" oninput="const n=this.previousElementSibling;if(n)n.value=this.value">
+      </div>
+    </div>`;
   }
 })();
