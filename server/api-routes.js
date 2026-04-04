@@ -9,7 +9,7 @@ import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { inflateRawSync } from 'node:zlib';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
-import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission } from './auth.js';
@@ -2151,12 +2151,12 @@ export async function handleApiRequest(req, res) {
     // ---- Cost Estimator ----
     if (method === 'POST' && path === '/api/cost-estimator/upload') {
       const filename = url.searchParams.get('filename') || 'unknown';
-      return readBinaryBody(req, (buffer) => {
+      return readBinaryBody(req, async (buffer) => {
         try {
           const ext = filename.toLowerCase().split('.').pop();
           let parsed;
           if (ext === '3mf') {
-            parsed = parse3mf(buffer);
+            parsed = await parse3mf(buffer);
           } else if (ext === 'gcode' || ext === 'gco' || ext === 'g') {
             parsed = parseGcode(buffer);
           } else {
@@ -4384,9 +4384,9 @@ export async function handleApiRequest(req, res) {
       const quality = url.searchParams.get('quality') || null;
       const profile = url.searchParams.get('profile') || null;
       if (!filename) return sendJson(res, { error: 'filename query param required' }, 400);
-      return readBinaryBody(req, (buffer) => {
+      return readBinaryBody(req, async (buffer) => {
         try {
-          const result = saveUploadedFile(filename, buffer, printerId, autoQueue);
+          const result = await saveUploadedFile(filename, buffer, printerId, autoQueue);
           sendJson(res, result, 201);
           // Auto-slice if needed
           if (result.needsSlicing) {
@@ -4717,7 +4717,7 @@ export async function handleApiRequest(req, res) {
       const ext = origName.split('.').pop().toLowerCase();
       const allowed = ['stl', '3mf', 'obj', 'step', 'gcode'];
       if (!allowed.includes(ext)) return sendJson(res, { error: 'Unsupported file type' }, 400);
-      return readBinaryBody(req, (buffer) => {
+      return readBinaryBody(req, async (buffer) => {
         const ts = Date.now();
         const safeName = origName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const storedName = `lib_${ts}_${safeName}`;
@@ -4725,15 +4725,15 @@ export async function handleApiRequest(req, res) {
         try { mkdirSync(libDir, { recursive: true }); } catch {}
         const filePath = join(libDir, storedName);
         writeFileSync(filePath, buffer);
-        // Try thumbnail extraction for 3mf
+        // Try thumbnail extraction for 3mf using lib3mf
         let thumbPath = null;
         if (ext === '3mf') {
           try {
-            const thumbNames = ['Metadata/plate_1.png', 'Metadata/top_1.png', 'Metadata/plate_2.png', 'Metadata/thumbnail.png'];
-            const thumbBuf = _extractZipFile(buffer, thumbNames);
-            if (thumbBuf) {
+            const { extractThumbnails } = await import('./lib3mf-parser.js');
+            const thumbs = await extractThumbnails(buffer);
+            if (thumbs.length > 0) {
               const thumbName = `thumb_${ts}.png`;
-              writeFileSync(join(libDir, thumbName), thumbBuf);
+              writeFileSync(join(libDir, thumbName), thumbs[0].data);
               thumbPath = thumbName;
             }
           } catch {}
@@ -4741,7 +4741,7 @@ export async function handleApiRequest(req, res) {
         // Parse estimates
         let est = {};
         try {
-          if (ext === '3mf') est = parse3mf(buffer) || {};
+          if (ext === '3mf') est = await parse3mf(buffer) || {};
           else if (ext === 'gcode') est = parseGcode(buffer.toString('utf-8', 0, Math.min(buffer.length, 200000))) || {};
         } catch {}
         const id = addFileLibraryItem({
@@ -4790,6 +4790,395 @@ export async function handleApiRequest(req, res) {
       createReadStream(thumbFile).pipe(res);
       return;
     }
+    // Library 3D model preview — extract mesh data from 3MF for enhanced viewer
+    if (method === 'GET' && path.match(/^\/api\/library\/(\d+)\/model$/)) {
+      const id = parseInt(path.match(/^\/api\/library\/(\d+)\/model$/)[1]);
+      const item = getFileLibraryItem(id);
+      if (!item) return sendJson(res, { error: 'Not found' }, 404);
+      if (!item.filename.endsWith('.3mf')) return sendJson(res, { error: 'Only 3MF files have 3D preview' }, 400);
+      const filePath = join(DATA_DIR, 'library', item.filename);
+      if (!existsSync(filePath)) return sendJson(res, { error: 'File not found' }, 404);
+      try {
+        const { extractMeshData } = await import('./lib3mf-parser.js');
+        const buffer = readFileSync(filePath);
+        const data = await extractMeshData(buffer);
+        // Convert typed arrays to regular arrays for JSON serialization
+        const meshes = data.meshes.map(m => ({
+          name: m.name,
+          vertices: Array.from(m.vertices),
+          triangles: Array.from(m.triangles),
+          vertexCount: m.vertexCount,
+          triangleCount: m.triangleCount,
+          materialColor: null,
+        }));
+        // Assign material colors if available
+        if (data.materials.length > 0) {
+          for (let i = 0; i < meshes.length; i++) {
+            if (data.materials[i]) {
+              meshes[i].materialColor = data.materials[i].color;
+            }
+          }
+        }
+        return sendJson(res, {
+          meshes,
+          buildItems: data.buildItems,
+          materials: data.materials,
+          colorGroups: data.colorGroups,
+          metadata: data.metadata,
+          unit: data.unit,
+        });
+      } catch (e) {
+        return sendJson(res, { error: 'Failed to parse 3MF: ' + e.message }, 500);
+      }
+    }
+
+    // Library 3MF validation
+    if (method === 'POST' && path === '/api/library/validate') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const { validate3mf } = await import('./lib3mf-parser.js');
+          const result = await validate3mf(buffer);
+          return sendJson(res, result);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
+    // Upload 3MF linked to a history entry
+    const histModelMatch = path.match(/^\/api\/history\/(\d+)\/model-3mf$/);
+    if (histModelMatch && method === 'POST') {
+      const histId = parseInt(histModelMatch[1]);
+      const hist = getHistoryById(histId);
+      if (!hist) return sendJson(res, { error: 'History not found' }, 404);
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const dir = join(DATA_DIR, 'history-models');
+          mkdirSync(dir, { recursive: true });
+          const fname = `hist_${histId}.3mf`;
+          writeFileSync(join(dir, fname), buffer);
+          // Update DB
+          const db = (await import('./db/connection.js')).getDb();
+          db.prepare('UPDATE print_history SET linked_3mf = ? WHERE id = ?').run(fname, histId);
+          // Also extract model_name if missing
+          if (!hist.model_name) {
+            try {
+              const { parse3mfBuffer } = await import('./lib3mf-parser.js');
+              const parsed = await parse3mfBuffer(buffer);
+              if (parsed.metadata?.Title) {
+                db.prepare('UPDATE print_history SET model_name = ? WHERE id = ?').run(parsed.metadata.Title.trim(), histId);
+              }
+            } catch {}
+          }
+          return sendJson(res, { ok: true, filename: fname });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+    if (histModelMatch && method === 'GET') {
+      const histId = parseInt(histModelMatch[1]);
+      const hist = getHistoryById(histId);
+      if (!hist?.linked_3mf) return sendJson(res, { error: 'No linked 3MF' }, 404);
+      const fp = join(DATA_DIR, 'history-models', hist.linked_3mf);
+      if (!existsSync(fp)) return sendJson(res, { error: 'File missing' }, 404);
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+      createReadStream(fp).pipe(res);
+      return;
+    }
+    if (histModelMatch && method === 'DELETE') {
+      const histId = parseInt(histModelMatch[1]);
+      const hist = getHistoryById(histId);
+      if (hist?.linked_3mf) {
+        try { unlinkSync(join(DATA_DIR, 'history-models', hist.linked_3mf)); } catch {}
+        const db = (await import('./db/connection.js')).getDb();
+        db.prepare('UPDATE print_history SET linked_3mf = NULL WHERE id = ?').run(histId);
+      }
+      return sendJson(res, { ok: true });
+    }
+
+    // Serve library files directly by filename (for 3mfViewer embed)
+    const libFileMatch = path.match(/^\/api\/library-file\/(.+)$/);
+    if (method === 'GET' && libFileMatch) {
+      const fname = decodeURIComponent(libFileMatch[1]);
+      const fp = join(DATA_DIR, 'library', fname);
+      if (!fp.startsWith(join(DATA_DIR, 'library')) || !existsSync(fp)) return sendJson(res, { error: 'Not found' }, 404);
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${fname}"` });
+      createReadStream(fp).pipe(res);
+      return;
+    }
+
+    // Universal 3D preview: resolve 3MF from various sources
+    // ?source=library&id=1  |  ?source=slicer&filename=xxx.3mf  |  ?source=history&id=744
+    if (method === 'GET' && path === '/api/preview-3d') {
+      const source = url.searchParams.get('source');
+      const id = url.searchParams.get('id');
+      const filename = url.searchParams.get('filename');
+      let buffer = null;
+
+      let downloadUrl = null; // URL to download original 3MF for 3mfViewer
+
+      try {
+        const { extractMeshData } = await import('./lib3mf-parser.js');
+
+        if (source === 'library' && id) {
+          const item = getFileLibraryItem(parseInt(id));
+          if (item && item.filename.endsWith('.3mf')) {
+            const fp = join(DATA_DIR, 'library', item.filename);
+            if (existsSync(fp)) { buffer = readFileSync(fp); downloadUrl = `/api/library/${id}/download`; }
+          }
+        } else if (source === 'slicer' && filename) {
+          // Try uploads dir, then library dir
+          for (const dir of ['uploads', 'library']) {
+            const fp = join(DATA_DIR, dir, filename);
+            if (existsSync(fp)) { buffer = readFileSync(fp); break; }
+          }
+          // Also try with .3mf extension if gcode was given
+          if (!buffer && !filename.endsWith('.3mf')) {
+            const mfName = filename.replace(/\.gcode$/i, '.3mf');
+            for (const dir of ['uploads', 'library']) {
+              const fp = join(DATA_DIR, dir, mfName);
+              if (existsSync(fp)) { buffer = readFileSync(fp); break; }
+            }
+          }
+        } else if (source === 'history' && id) {
+          // For history: check linked 3MF first, then try other strategies
+          const histRow = getHistoryById(parseInt(id));
+          if (histRow?.linked_3mf) {
+            const linkedPath = join(DATA_DIR, 'history-models', histRow.linked_3mf);
+            if (existsSync(linkedPath)) {
+              buffer = readFileSync(linkedPath);
+              downloadUrl = `/api/history/${id}/model-3mf`;
+            }
+          }
+          if (histRow) {
+            const gcodeFile = histRow.gcode_file || histRow.filename || '';
+            const baseName = (gcodeFile.split('/').pop() || '').replace(/\.gcode$/i, '');
+
+            // Strategy 1: Direct match in uploads/library dirs
+            for (const ext of ['.3mf', '.gcode']) {
+              if (buffer) break;
+              const name = baseName + ext;
+              for (const dir of ['uploads', 'library']) {
+                const fp = join(DATA_DIR, dir, name);
+                if (existsSync(fp) && ext === '.3mf') { buffer = readFileSync(fp); break; }
+              }
+            }
+
+            // Strategy 2: Check model-cache (auto-saved during live print)
+            if (!buffer) {
+              const cacheDir = join(DATA_DIR, 'model-cache');
+              if (existsSync(cacheDir)) {
+                const safeName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const cachePath = join(cacheDir, `${safeName}.3mf`);
+                if (existsSync(cachePath)) buffer = readFileSync(cachePath);
+              }
+            }
+
+            // Strategy 3: Fuzzy match in library — find 3MF whose name is contained in gcode name
+            if (!buffer) {
+              for (const dir of ['library', 'model-cache']) {
+                if (buffer) break;
+                const searchDir = join(DATA_DIR, dir);
+                if (!existsSync(searchDir)) continue;
+                const files = readdirSync(searchDir).filter(f => f.endsWith('.3mf'));
+                for (const lf of files) {
+                  const clean = lf.replace(/^lib_\d+_/, '').replace(/\.3mf$/i, '').toLowerCase();
+                  if (clean && baseName.toLowerCase().includes(clean)) {
+                    buffer = readFileSync(join(searchDir, lf));
+                    // Set downloadUrl so client can use 3mfViewer
+                    if (dir === 'library') {
+                      downloadUrl = `/api/library-file/${encodeURIComponent(lf)}`;
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+
+            // Strategy 3: Fetch from printer via FTP (Bambu printers)
+            if (!buffer && histRow.printer_id) {
+              const printer = getPrinters().find(p => p.id === histRow.printer_id);
+              if (printer?.ip) {
+                const accessCode = printer.access_code || printer.accessCode;
+                if (accessCode) {
+                  try {
+                    const { download3mf } = await import('./thumbnail-service.js');
+                    buffer = await download3mf(printer.ip, accessCode, gcodeFile);
+                  } catch { /* FTP/network not available */ }
+                }
+              }
+            }
+          }
+        }
+
+        // No buffer found — try gcode toolpath as fallback
+        if (!buffer) {
+          try {
+            const toolpathData = await _getGcodeToolpath(source, id, filename);
+            if (toolpathData) return sendJson(res, toolpathData);
+          } catch { /* fallthrough */ }
+          return sendJson(res, { error: 'Ingen 3D-modell tilgjengelig for denne printen' }, 404);
+        }
+
+        const data = await extractMeshData(buffer);
+
+        // If 3MF has no meshes (Bambu gcode.3mf), extract gcode toolpath from ZIP instead
+        if (data.meshes.length === 0) {
+          try {
+            const { inflateRawSync } = await import('node:zlib');
+            const { parseAndCache } = await import('./gcode-toolpath.js');
+            for (let i = buffer.length - 22; i >= 0; i--) {
+              if (buffer.readUInt32LE(i) === 0x06054b50) {
+                let pos = buffer.readUInt32LE(i + 16);
+                const cdEnd = pos + buffer.readUInt32LE(i + 12);
+                while (pos < cdEnd && buffer.readUInt32LE(pos) === 0x02014b50) {
+                  const method = buffer.readUInt16LE(pos + 10);
+                  const cSize = buffer.readUInt32LE(pos + 20);
+                  const uSize = buffer.readUInt32LE(pos + 24);
+                  const nLen = buffer.readUInt16LE(pos + 28);
+                  const eLen = buffer.readUInt16LE(pos + 30);
+                  const cLen = buffer.readUInt16LE(pos + 32);
+                  const lOff = buffer.readUInt32LE(pos + 42);
+                  const name = buffer.toString('utf8', pos + 46, pos + 46 + nLen);
+                  if (/\.gcode$/i.test(name)) {
+                    const lnLen = buffer.readUInt16LE(lOff + 26);
+                    const leLen = buffer.readUInt16LE(lOff + 28);
+                    const dStart = lOff + 30 + lnLen + leLen;
+                    let gcData;
+                    if (method === 0) gcData = buffer.subarray(dStart, dStart + uSize);
+                    else if (method === 8) { try { gcData = inflateRawSync(buffer.subarray(dStart, dStart + cSize)); } catch { gcData = null; } }
+                    if (gcData) return sendJson(res, parseAndCache(gcData.toString('utf8'), name));
+                  }
+                  pos += 46 + nLen + eLen + cLen;
+                }
+                break;
+              }
+            }
+          } catch { /* fallthrough */ }
+          // Still try gcode toolpath helper
+          try {
+            const toolpathData = await _getGcodeToolpath(source, id, filename);
+            if (toolpathData) return sendJson(res, toolpathData);
+          } catch { /* fallthrough */ }
+          return sendJson(res, { error: 'Ingen 3D-modell eller gcode funnet i filen' }, 404);
+        }
+        const meshes = data.meshes.map(m => ({
+          name: m.name,
+          vertices: Array.from(m.vertices),
+          triangles: Array.from(m.triangles),
+          vertexCount: m.vertexCount,
+          triangleCount: m.triangleCount,
+          materialColor: null,
+        }));
+        if (data.materials.length > 0) {
+          for (let i = 0; i < meshes.length; i++) {
+            if (data.materials[i]) meshes[i].materialColor = data.materials[i].color;
+          }
+        }
+        return sendJson(res, {
+          type: 'mesh',
+          meshes,
+          buildItems: data.buildItems,
+          materials: data.materials,
+          metadata: data.metadata,
+          unit: data.unit,
+          downloadUrl: downloadUrl || null,
+        });
+      } catch (e) {
+        return sendJson(res, { error: 'Kunne ikke laste 3D-modell: ' + e.message }, 500);
+      }
+    }
+
+    // Helper: get 3D model or toolpath for any printer type
+    // Uses printer-capabilities to determine the correct strategy
+    async function _getGcodeToolpath(source, id, filename) {
+      const { parseAndCache, downloadGcodeFromMoonraker } = await import('./gcode-toolpath.js');
+      const { getModelStrategy } = await import('./printer-capabilities.js');
+
+      if (source === 'history' && id) {
+        const histRow = getHistoryById(parseInt(id));
+        if (!histRow) return null;
+        const printer = getPrinters().find(p => p.id === histRow.printer_id);
+        if (!printer) return null;
+
+        const strategy = getModelStrategy(printer, histRow);
+        const baseName = (histRow.filename || '').replace(/^.*\//, '');
+
+        // 1. Try local gcode files (uploads/library)
+        for (const dir of ['uploads', 'library']) {
+          const searchDir = join(DATA_DIR, dir);
+          if (!existsSync(searchDir)) continue;
+          const fp = join(searchDir, baseName);
+          if (existsSync(fp)) return parseAndCache(readFileSync(fp, 'utf8'), baseName);
+        }
+
+        // 2. Printer-specific strategy
+        if (strategy.strategy === 'moonraker-gcode') {
+          // Moonraker: download gcode directly via HTTP API
+          const text = await downloadGcodeFromMoonraker(printer.ip, printer.port || 80, baseName);
+          if (text) return parseAndCache(text, baseName);
+
+        } else if (strategy.strategy === 'bambu-ftps') {
+          // Bambu: download .gcode.3mf via FTPS, extract embedded gcode
+          const accessCode = printer.access_code || printer.accessCode;
+          if (!accessCode) return null;
+
+          const { download3mf, downloadAny3mf } = await import('./thumbnail-service.js');
+          let zipBuf = null;
+
+          // Try each search name (model_name → filename → gcode_file)
+          for (const name of strategy.searchNames) {
+            zipBuf = await download3mf(printer.ip, accessCode, name);
+            if (zipBuf) break;
+          }
+
+          if (!zipBuf) return null;
+
+          // Bambu gcode.3mf has no mesh — extract gcode from ZIP
+          return _extractGcodeFromZip(zipBuf, baseName);
+        }
+      } else if (source === 'gcode' && filename) {
+        for (const dir of ['uploads', 'library']) {
+          const fp = join(DATA_DIR, dir, filename);
+          if (existsSync(fp)) return parseAndCache(readFileSync(fp, 'utf8'), filename);
+        }
+      }
+
+      return null;
+    }
+
+    // Extract gcode from a ZIP (3MF) file and parse as toolpath
+    async function _extractGcodeFromZip(zipBuf, filename) {
+      const { parseAndCache } = await import('./gcode-toolpath.js');
+      const { inflateRawSync } = await import('node:zlib');
+      for (let i = zipBuf.length - 22; i >= 0; i--) {
+        if (zipBuf.readUInt32LE(i) !== 0x06054b50) continue;
+        let pos = zipBuf.readUInt32LE(i + 16);
+        const cdEnd = pos + zipBuf.readUInt32LE(i + 12);
+        while (pos < cdEnd && zipBuf.readUInt32LE(pos) === 0x02014b50) {
+          const method = zipBuf.readUInt16LE(pos + 10);
+          const cSize = zipBuf.readUInt32LE(pos + 20);
+          const uSize = zipBuf.readUInt32LE(pos + 24);
+          const nLen = zipBuf.readUInt16LE(pos + 28);
+          const eLen = zipBuf.readUInt16LE(pos + 30);
+          const cLen = zipBuf.readUInt16LE(pos + 32);
+          const lOff = zipBuf.readUInt32LE(pos + 42);
+          const name = zipBuf.toString('utf8', pos + 46, pos + 46 + nLen);
+          if (/\.gcode$/i.test(name)) {
+            const lnLen = zipBuf.readUInt16LE(lOff + 26);
+            const leLen = zipBuf.readUInt16LE(lOff + 28);
+            const dStart = lOff + 30 + lnLen + leLen;
+            let gcData;
+            if (method === 0) gcData = zipBuf.subarray(dStart, dStart + uSize);
+            else if (method === 8) { try { gcData = inflateRawSync(zipBuf.subarray(dStart, dStart + cSize)); } catch { gcData = null; } }
+            if (gcData) return parseAndCache(gcData.toString('utf8'), filename || name);
+          }
+          pos += 46 + nLen + eLen + cLen;
+        }
+        break;
+      }
+      return null;
+    }
+
     if (method === 'GET' && path.match(/^\/api\/library\/(\d+)\/download$/)) {
       const id = parseInt(path.match(/^\/api\/library\/(\d+)\/download$/)[1]);
       const item = getFileLibraryItem(id);
@@ -6461,13 +6850,13 @@ export async function handleApiRequest(req, res) {
 
     // ---- 3MF / Gcode file analysis ----
     if (method === 'POST' && path === '/api/inventory/analyze-file') {
-      return readBinaryBody(req, (buffer) => {
+      return readBinaryBody(req, async (buffer) => {
         try {
           const contentType = req.headers['content-type'] || '';
           const filename = url.searchParams.get('filename') || '';
           let result;
           if (filename.endsWith('.3mf') || contentType.includes('3mf')) {
-            result = parse3mf(buffer);
+            result = await parse3mf(buffer);
           } else if (filename.endsWith('.gcode') || filename.endsWith('.g') || contentType.includes('gcode')) {
             result = parseGcode(buffer);
           } else {
@@ -8481,7 +8870,9 @@ function readBinaryBody(req, callback) {
   });
   req.on('end', () => {
     if (size > MAX_UPLOAD_SIZE) return;
-    callback(Buffer.concat(chunks));
+    Promise.resolve(callback(Buffer.concat(chunks))).catch(e => {
+      console.error('[server] readBinaryBody callback error:', e.message);
+    });
   });
 }
 

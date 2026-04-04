@@ -864,6 +864,11 @@
             <img src="${thumbUrl}" alt="" onerror="this.src='${fallbackThumb}'">
             <span class="ph-badge">Gcode</span>
           </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px" id="ph-3d-actions-${row.id}">
+            <button class="lib-3d-btn" style="flex:1;justify-content:center" onclick="event.stopPropagation();_historyOpen3D(${row.id},this)">&#x25B6; 3D</button>
+            <button class="lib-3d-btn" style="padding:3px 7px" onclick="event.stopPropagation();_historyUpload3mf(${row.id})" title="${t('library.upload') || 'Last opp'} / ${t('common.replace') || 'Erstatt'} 3MF">&#x21E7;</button>
+            <button class="lib-3d-btn" style="padding:3px 7px;color:var(--accent-red);display:${row.linked_3mf ? '' : 'none'}" id="ph-del3mf-${row.id}" onclick="event.stopPropagation();_historyDelete3mf(${row.id})" title="Slett lagret 3MF">&#x2715;</button>
+          </div>
           <div class="ph-detail-status-banner" style="background:${statusColor(row.status)}">
             ${statusIcon(row.status)}
             <span>${statusLabel(row.status)}</span>
@@ -1548,6 +1553,65 @@
         if (typeof showToast === 'function') showToast('Failed to create order', 'error');
       }
     });
+  };
+
+  // Upload 3MF to history entry (opens file picker)
+  window._historyUpload3mf = function(historyId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.3mf';
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      try {
+        const buf = await file.arrayBuffer();
+        const r = await fetch(`/api/history/${historyId}/model-3mf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: buf
+        });
+        if (r.ok) {
+          if (typeof showToast === 'function') showToast('3MF lagret til print #' + historyId, 'success');
+          // Show delete button
+          const delBtn = document.getElementById('ph-del3mf-' + historyId);
+          if (delBtn) delBtn.style.display = '';
+          // Update local data
+          const row = _data.find(r => r.id === historyId);
+          if (row) row.linked_3mf = 'hist_' + historyId + '.3mf';
+        } else {
+          const err = await r.json().catch(() => ({}));
+          if (typeof showToast === 'function') showToast(err.error || 'Feil ved opplasting', 'error');
+        }
+      } catch (e) {
+        if (typeof showToast === 'function') showToast(e.message, 'error');
+      }
+    };
+    input.click();
+  };
+
+  // Delete linked 3MF from history entry
+  window._historyDelete3mf = async function(historyId) {
+    if (!confirm('Slett lagret 3MF-fil?')) return;
+    try {
+      await fetch(`/api/history/${historyId}/model-3mf`, { method: 'DELETE' });
+      if (typeof showToast === 'function') showToast('3MF slettet', 'success');
+      // Hide delete button
+      const delBtn = document.getElementById('ph-del3mf-' + historyId);
+      if (delBtn) delBtn.style.display = 'none';
+      // Update local data
+      const row = _data.find(r => r.id === historyId);
+      if (row) row.linked_3mf = null;
+    } catch {}
+  };
+
+  // 3D preview for history items — uses history ID to find the 3MF
+  window._historyOpen3D = function(historyId, btn) {
+    const row = _data.find(r => r.id === historyId);
+    if (!row) return;
+    const name = row.model_name || (row.filename || '').replace(/\.(3mf|gcode)$/i, '') || 'Model';
+    if (typeof open3DPreview === 'function') {
+      open3DPreview(`/api/preview-3d?source=history&id=${historyId}`, name);
+    }
   };
 
 })();

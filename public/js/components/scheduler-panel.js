@@ -492,10 +492,11 @@
     const endTime = ev.finished_at ? new Date(ev.finished_at).toLocaleString(locale) : null;
     const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : null;
 
-    // Thumbnail for history events
+    // Thumbnail for history events + 3D preview button
     let thumbHtml = '';
     if (ev._historyId) {
-      thumbHtml = `<div style="float:right;margin:0 0 12px 12px"><img src="/api/history/${ev._historyId}/thumbnail" alt="" style="width:100px;height:100px;object-fit:contain;border-radius:var(--radius-sm);background:var(--bg-tertiary)" onerror="this.style.display='none'"></div>`;
+      const safeTitle = _esc(ev.title || ev.filename || '').replace(/'/g, "\\'");
+      thumbHtml = `<div style="float:right;margin:0 0 12px 12px;text-align:center"><img src="/api/history/${ev._historyId}/thumbnail" alt="" style="width:100px;height:100px;object-fit:contain;border-radius:var(--radius-sm);background:var(--bg-tertiary)" onerror="this.style.display='none'">${typeof open3DPreview === 'function' ? `<br><button class="lib-3d-btn" style="margin-top:4px;font-size:0.65rem" onclick="event.stopPropagation();open3DPreview('/api/preview-3d?source=history&id=${ev._historyId}','${safeTitle}')">&#x25B6; 3D</button>` : ''}</div>`;
     }
 
     let fields = '';

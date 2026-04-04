@@ -166,6 +166,7 @@
               ${item.required_material ? `<span class="q-item-material">${item.required_material}</span>` : ''}
             </div>
           </div>
+          ${item.filename?.endsWith('.3mf') && typeof open3DPreview === 'function' ? `<button class="lib-3d-btn" style="padding:3px 7px;font-size:0.65rem" onclick="event.stopPropagation();open3DPreview('/api/preview-3d?source=slicer&filename='+encodeURIComponent(this.dataset.fn),this.dataset.fn)" data-fn="${(item.filename||'').replace(/"/g,'&quot;')}">3D</button>` : ''}
           ${statusBadge(item.status)}
           ${item.status === 'pending' ? `<button class="q-action-btn q-action-danger" data-ripple onclick="window._queueSkipItem(${item.id})" title="${t('queue.skip')}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

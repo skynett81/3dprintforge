@@ -91,7 +91,7 @@ export function getSlicerStatus() {
 }
 
 // Save uploaded file to disk and create a slicer job record
-export function saveUploadedFile(filename, buffer, printerId, autoQueue) {
+export async function saveUploadedFile(filename, buffer, printerId, autoQueue) {
   const ext = extname(filename).toLowerCase();
   const ts = Date.now();
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -106,7 +106,7 @@ export function saveUploadedFile(filename, buffer, printerId, autoQueue) {
   let parsed = null;
   if (!needsSlicing) {
     try {
-      if (ext === '.3mf') parsed = parse3mf(buffer);
+      if (ext === '.3mf') parsed = await parse3mf(buffer);
       else if (ext === '.gcode' || ext === '.g') parsed = parseGcode(buffer);
     } catch (e) { log.warn('Auto-parse failed for ' + filename + ': ' + e.message); }
   }

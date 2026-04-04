@@ -376,6 +376,11 @@ export class PrintTracker {
     const _isExt = _isExtFromMapping || (data.ams?.tray_now != null && parseInt(data.ams.tray_now) >= 254);
     const _effectiveTrayId = _isExt ? '254' : (data.ams?.tray_now != null ? String(data.ams.tray_now) : null);
 
+    // Cache 3MF metadata for Bambu (skip on resume/retroactive — don't delay startup)
+    if (!isResume && !(data.mc_percent > 5)) {
+      setTimeout(() => this._cache3mfMetadata(data).catch(() => {}), 5000);
+    }
+
     this.currentPrint = {
       started_at: startedAt,
       filename: data.subtask_name || data.gcode_file || 'Ukjent',
@@ -525,11 +530,11 @@ export class PrintTracker {
       tray_id: this.currentPrint.tray_id,
       gcode_file: this.currentPrint.gcode_file,
       completion_pct: status === 'completed' ? 100 : completionPct,
-      model_name: null,
-      model_url: null
+      model_name: this.currentPrint?._model_name_from_3mf || null,
+      model_url: this.currentPrint?._design_id ? 'https://makerworld.com/en/models/' + this.currentPrint._design_id : null
     };
 
-    // Enrich with cloud model info
+    // Enrich with cloud model info (overrides 3MF-extracted data if available)
     if (this.currentPrint.cloud_design_id) {
       if (this.cloudTaskProvider) {
         try {
@@ -950,6 +955,63 @@ export class PrintTracker {
     }
 
     return result;
+  }
+
+  async _cache3mfMetadata(data) {
+    // Background task: download 3MF from Bambu printer and cache for later 3D preview
+    // Non-blocking — never delays server startup or print tracking
+    if (!this.printerId || !data.gcode_file) return;
+    try {
+      const { getPrinters } = await import('./db/printers.js');
+      const printer = getPrinters().find(p => p.id === this.printerId);
+      if (!printer?.ip || printer.type === 'moonraker') return;
+      const accessCode = printer.access_code || printer.accessCode;
+      if (!accessCode) return;
+
+      // Race against 10s timeout — if printer is slow/offline, just give up
+      const { download3mf } = await import('./thumbnail-service.js');
+      const subtask = data.subtask_name || '';
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+      const zipBuf = await Promise.race([
+        download3mf(printer.ip, accessCode, data.gcode_file),
+        timeoutPromise
+      ]);
+      if (!zipBuf) return;
+
+      const { mkdirSync, writeFileSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const DATA_DIR = process.env.DATA_DIR || join(import.meta.dirname, '..', 'data');
+      const cacheDir = join(DATA_DIR, 'model-cache');
+      mkdirSync(cacheDir, { recursive: true });
+
+      const { parse3mfBuffer } = await import('./lib3mf-parser.js');
+      const parsed = await parse3mfBuffer(zipBuf);
+      const title = (parsed.metadata?.Title || '').trim();
+
+      // Save with model title as filename (not slicer settings) for better matching
+      const safeName = (title || subtask || 'model').replace(/[^a-zA-Z0-9._-]/g, '_');
+      writeFileSync(join(cacheDir, `${safeName}.3mf`), zipBuf);
+
+      // Also save with subtask name so both match paths work
+      if (title && subtask && title !== subtask) {
+        const safeSubtask = subtask.replace(/[^a-zA-Z0-9._-]/g, '_');
+        writeFileSync(join(cacheDir, `${safeSubtask}.3mf`), zipBuf);
+      }
+
+      if (title && this.currentPrint) {
+        this.currentPrint._model_name_from_3mf = title;
+        log.info(`[3mf-cache] ${safeName}: ${title}`);
+
+        // Extract MakerWorld designId from Copyright metadata for future lookups
+        try {
+          const copyright = parsed.metadata?.CopyRight || parsed.metadata?.Copyright || '';
+          const designMatch = copyright.match(/"designId"\s*:\s*(\d+)/);
+          if (designMatch) {
+            this.currentPrint._design_id = designMatch[1];
+          }
+        } catch {}
+      }
+    } catch { /* non-critical background task */ }
   }
 
   _getAmsRemaining(data) {

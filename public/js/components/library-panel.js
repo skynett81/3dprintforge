@@ -48,6 +48,20 @@
       .lib-detail-value { color:var(--text-primary); font-weight:600; }
       .lib-drop-zone { border:2px dashed var(--border-color); border-radius:var(--radius); padding:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; transition:border-color 0.2s; cursor:pointer; }
       .lib-drop-zone.dragover { border-color:var(--accent-blue); background:rgba(18,121,255,0.05); }
+      .lib-3d-btn { background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:var(--radius); padding:5px 10px; cursor:pointer; color:var(--text-secondary); font-size:0.72rem; font-weight:600; transition:all 0.15s; display:inline-flex; align-items:center; gap:4px; }
+      .lib-3d-btn:hover { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
+      .lib-3d-viewer-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; }
+      .lib-3d-viewer-wrap { background:var(--bg-primary); border-radius:var(--radius-lg, 12px); width:min(1100px, 95vw); height:min(700px, 85vh); display:flex; flex-direction:column; overflow:hidden; box-shadow:var(--shadow-lg); }
+      .lib-3d-toolbar { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--bg-secondary); border-bottom:1px solid var(--border-color); }
+      .lib-3d-toolbar h4 { margin:0; font-size:0.9rem; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .lib-3d-content { flex:1; display:flex; min-height:0; }
+      .lib-3d-canvas-wrap { flex:1; min-width:0; }
+      .lib-3d-info { width:240px; padding:14px; overflow-y:auto; border-left:1px solid var(--border-color); font-size:0.78rem; }
+      .lib-3d-info h5 { margin:0 0 8px; font-size:0.82rem; color:var(--text-muted); }
+      .lib-3d-info-row { display:flex; justify-content:space-between; margin-bottom:5px; }
+      .lib-3d-info-label { color:var(--text-muted); }
+      .lib-3d-info-value { color:var(--text-primary); font-weight:600; }
+      @media (max-width:768px) { .lib-3d-info { display:none; } }
       .lib-progress { height:4px; background:var(--bg-tertiary); border-radius:2px; margin-top:8px; overflow:hidden; }
       .lib-progress-bar { height:100%; background:var(--accent-blue); transition:width 0.3s; }
       .lib-cat-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
@@ -152,6 +166,7 @@
           </div>
           ${f.category !== 'uncategorized' ? `<span class="lib-card-badge">${_esc(f.category)}</span>` : ''}
           ${tags ? `<div class="lib-card-tags">${tags}</div>` : ''}
+          ${f.file_type === '3mf' ? `<button class="lib-3d-btn" style="margin-top:6px" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">&#x25B6; 3D ${t('library.preview') || 'Forhåndsvisning'}</button>` : ''}
         </div>
       </div>`;
     }
@@ -296,6 +311,7 @@
       <div class="lib-dialog-actions">
         <button class="lib-btn-delete" onclick="_libDelete(${f.id})">${t('library.delete')}</button>
         <a href="/api/library/${f.id}/download" class="lib-btn-cancel" style="text-decoration:none;text-align:center">${t('library.download')}</a>
+        ${f.file_type === '3mf' ? `<button class="lib-3d-btn" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">&#x25B6; 3D</button>` : ''}
         <div style="flex:1"></div>
         <button class="lib-btn-cancel" onclick="this.closest('.lib-dialog-overlay').remove()">${t('library.close')}</button>
         <button class="lib-btn-save" onclick="_libSave(${f.id})">${t('library.save')}</button>
@@ -420,6 +436,134 @@
         _loadCategories();
       }, { danger: true });
     }
+  };
+
+  // ── 3D Preview ──
+
+  let _activeViewer = null;
+
+  window._lib3DPreview = async function(id, name) {
+    // Close any existing detail dialog
+    document.querySelector('.lib-dialog-overlay')?.remove();
+
+    // Use 3MFConsortium viewer for library 3MF files (full-featured)
+    if (typeof open3mfViewer === 'function') {
+      open3mfViewer(`/api/library/${id}/download`, name);
+      return;
+    }
+
+    // Fallback to EnhancedViewer
+    if (typeof close3DPreview === 'function') close3DPreview();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lib-3d-viewer-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) _close3DPreview(overlay); };
+
+    overlay.innerHTML = `<div class="lib-3d-viewer-wrap">
+      <div class="lib-3d-toolbar">
+        <h4>${_esc(name)}</h4>
+        <button class="lib-3d-btn" id="lib-3d-wireframe" onclick="_toggle3DWireframe()">Wireframe</button>
+        <button class="lib-3d-btn" id="lib-3d-shading" onclick="_toggle3DShading()">Flat</button>
+        <button class="lib-3d-btn" onclick="_reset3DView()">Reset</button>
+        <button class="lib-3d-btn" onclick="_close3DPreview(this.closest('.lib-3d-viewer-overlay'))" style="font-size:1.1rem;padding:4px 10px">&times;</button>
+      </div>
+      <div class="lib-3d-content">
+        <div class="lib-3d-canvas-wrap" id="lib-3d-canvas-wrap">
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem" id="lib-3d-loading">
+            ${t('library.loading_model') || 'Laster 3D-modell...'}
+          </div>
+        </div>
+        <div class="lib-3d-info" id="lib-3d-info">
+          <h5>${t('library.model_info') || 'Modellinformasjon'}</h5>
+          <div id="lib-3d-info-body"></div>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    // Keyboard close
+    const onKey = (e) => { if (e.key === 'Escape') _close3DPreview(overlay); };
+    document.addEventListener('keydown', onKey);
+    overlay._keyHandler = onKey;
+
+    try {
+      const r = await fetch(`/api/library/${id}/model`);
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed');
+      const data = await r.json();
+
+      const canvasWrap = document.getElementById('lib-3d-canvas-wrap');
+      const loading = document.getElementById('lib-3d-loading');
+      if (loading) loading.remove();
+
+      if (!window.EnhancedViewer) {
+        canvasWrap.innerHTML = '<div style="padding:20px;color:var(--accent-red)">EnhancedViewer not loaded</div>';
+        return;
+      }
+
+      const viewer = new window.EnhancedViewer(canvasWrap);
+      await viewer.init();
+      viewer.loadModel(data);
+      _activeViewer = viewer;
+
+      // Show model info
+      const info = viewer.getModelInfo();
+      const infoBody = document.getElementById('lib-3d-info-body');
+      if (info && infoBody) {
+        let html = '';
+        html += `<div class="lib-3d-info-row"><span class="lib-3d-info-label">${t('library.dimensions') || 'Dimensjoner'}</span><span class="lib-3d-info-value">${info.dimensions.x} × ${info.dimensions.y} × ${info.dimensions.z} mm</span></div>`;
+        html += `<div class="lib-3d-info-row"><span class="lib-3d-info-label">${t('library.triangles') || 'Trekanter'}</span><span class="lib-3d-info-value">${info.triangleCount.toLocaleString()}</span></div>`;
+        html += `<div class="lib-3d-info-row"><span class="lib-3d-info-label">${t('library.vertices') || 'Vertekser'}</span><span class="lib-3d-info-value">${info.vertexCount.toLocaleString()}</span></div>`;
+        html += `<div class="lib-3d-info-row"><span class="lib-3d-info-label">${t('library.mesh_count') || 'Mesh-deler'}</span><span class="lib-3d-info-value">${info.meshCount}</span></div>`;
+        if (info.meshNames.length > 1) {
+          html += `<h5 style="margin-top:12px">${t('library.mesh_list') || 'Mesh-liste'}</h5>`;
+          for (const name of info.meshNames) {
+            html += `<div style="color:var(--text-secondary);margin-bottom:3px;font-size:0.72rem">${_esc(name)}</div>`;
+          }
+        }
+        // Show 3MF metadata
+        if (data.metadata && Object.keys(data.metadata).length) {
+          html += `<h5 style="margin-top:12px">Metadata</h5>`;
+          for (const [k, v] of Object.entries(data.metadata)) {
+            if (v && v.length < 60) {
+              html += `<div class="lib-3d-info-row"><span class="lib-3d-info-label">${_esc(k)}</span><span class="lib-3d-info-value">${_esc(v)}</span></div>`;
+            }
+          }
+        }
+        infoBody.innerHTML = html;
+      }
+    } catch (e) {
+      const loading = document.getElementById('lib-3d-loading');
+      if (loading) {
+        loading.style.color = 'var(--accent-red)';
+        loading.textContent = e.message || 'Failed to load model';
+      }
+    }
+  };
+
+  window._close3DPreview = function(overlay) {
+    if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
+    if (overlay?._keyHandler) document.removeEventListener('keydown', overlay._keyHandler);
+    overlay?.remove();
+  };
+
+  window._toggle3DWireframe = function() {
+    if (!_activeViewer) return;
+    const btn = document.getElementById('lib-3d-wireframe');
+    const on = btn?.dataset.active === '1';
+    _activeViewer.setWireframe(!on);
+    if (btn) { btn.dataset.active = on ? '0' : '1'; btn.style.background = on ? '' : 'var(--accent-blue)'; btn.style.color = on ? '' : '#fff'; }
+  };
+
+  window._toggle3DShading = function() {
+    if (!_activeViewer) return;
+    const btn = document.getElementById('lib-3d-shading');
+    const on = btn?.dataset.active === '1';
+    _activeViewer.setFlatShading(!on);
+    if (btn) { btn.dataset.active = on ? '0' : '1'; btn.textContent = on ? 'Flat' : 'Smooth'; }
+  };
+
+  window._reset3DView = function() {
+    if (_activeViewer) _activeViewer.resetView();
   };
 
   window._batchAddToQueue = function() {

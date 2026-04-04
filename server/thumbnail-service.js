@@ -721,7 +721,7 @@ export async function getModel(printerId, hub) {
     return model;
   }
 
-  // Real printer: fetch 3MF via FTPS and parse model XML
+  // Real printer: fetch 3MF via FTPS and parse with lib3mf
   const printers = getPrinters();
   const printer = printers.find(p => p.id === printerId);
   if (!printer || !printer.ip) return null;
@@ -730,11 +730,67 @@ export async function getModel(printerId, hub) {
   const zipBuf = await download3mf(printer.ip, accessCode, gcodeFile);
   if (!zipBuf) return null;
 
-  const modelXml = extractFromZip(zipBuf, MODEL_PATHS);
-  if (!modelXml) return null;
+  // Cache 3MF to disk for later history 3D preview
+  try {
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const cacheDir = join(DATA_DIR, 'model-cache');
+    mkdirSync(cacheDir, { recursive: true });
+    const safeName = (subtask || 'model').replace(/[^a-zA-Z0-9._-]/g, '_');
+    writeFileSync(join(cacheDir, `${safeName}.3mf`), zipBuf);
+  } catch { /* cache write failed, non-critical */ }
 
-  const model = parse3mfModel(modelXml);
-  if (!model) return null;
+  let model;
+  try {
+    const { extractMeshData } = await import('./lib3mf-parser.js');
+    const meshData = await extractMeshData(zipBuf);
+    if (!meshData.meshes.length) throw new Error('no meshes');
+    const totalTris = meshData.triangles.length / 3;
+    if (totalTris > MAX_TRIANGLES) throw new Error('too many triangles');
+
+    // Compute bounding box and volume from combined arrays
+    const v = meshData.vertices;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let i = 0; i < v.length; i += 3) {
+      if (v[i] < minX) minX = v[i]; if (v[i] > maxX) maxX = v[i];
+      if (v[i+1] < minY) minY = v[i+1]; if (v[i+1] > maxY) maxY = v[i+1];
+      if (v[i+2] < minZ) minZ = v[i+2]; if (v[i+2] > maxZ) maxZ = v[i+2];
+    }
+    let volume = 0;
+    const t = meshData.triangles;
+    for (let i = 0; i < t.length; i += 3) {
+      const a = t[i]*3, b = t[i+1]*3, c = t[i+2]*3;
+      volume += (v[a]*(v[b+1]*v[c+2]-v[b+2]*v[c+1]) + v[b]*(v[c+1]*v[a+2]-v[c+2]*v[a+1]) + v[c]*(v[a+1]*v[b+2]-v[a+2]*v[b+1])) / 6;
+    }
+
+    model = {
+      vertices: Array.from(meshData.vertices),
+      triangles: Array.from(meshData.triangles),
+      meta: {
+        dimensions: {
+          x: +(maxX - minX).toFixed(1),
+          y: +(maxY - minY).toFixed(1),
+          z: +(maxZ - minZ).toFixed(1),
+        },
+        triangleCount: totalTris,
+        vertexCount: v.length / 3,
+        volume: +Math.abs(volume).toFixed(1),
+      },
+      meshes: meshData.meshes.map(m => ({
+        name: m.name,
+        vertexCount: m.vertexCount,
+        triangleCount: m.triangleCount,
+      })),
+      materials: meshData.materials,
+    };
+  } catch {
+    // Fallback to old regex-based XML parsing
+    const modelXml = extractFromZip(zipBuf, MODEL_PATHS);
+    if (!modelXml) return null;
+    model = parse3mfModel(modelXml);
+    if (!model) return null;
+  }
 
   // Try to extract slice info from the 3MF
   const sliceInfo = parseSliceInfo(zipBuf);
@@ -745,7 +801,7 @@ export async function getModel(printerId, hub) {
 }
 
 // Download full 3MF ZIP (shared between thumbnail and model)
-async function download3mf(ip, accessCode, gcodeFile) {
+export async function download3mf(ip, accessCode, gcodeFile) {
   const ftp = await getFtpModule();
   if (!ftp) return null;
   if (!gcodeFile) return null;
@@ -785,24 +841,80 @@ async function download3mf(ip, accessCode, gcodeFile) {
       }
     }
 
-    // Try listing directories to find the 3MF
-    try {
-      const cacheList = await client.list('/cache/');
-      const match = cacheList.find(f => f.name.endsWith('.3mf'));
-      if (match) {
-        log.info(`download3mf: found in /cache/: ${match.name}`);
-        const chunks = [];
-        const { Writable } = await import('node:stream');
-        const writable = new Writable({ write(chunk, _enc, cb) { chunks.push(chunk); cb(); } });
-        await client.downloadTo(writable, `/cache/${match.name}`);
-        return Buffer.concat(chunks);
-      }
-    } catch { /* ignore listing errors */ }
+    // Try listing all directories to find ANY 3MF file (root '/' is where P2S stores them)
+    const { Writable } = await import('node:stream');
+    for (const dir of ['/', '/cache/', '/sdcard/', '/data/']) {
+      try {
+        const fileList = await client.list(dir);
+        const matches = fileList.filter(f => f.name.endsWith('.3mf')).sort((a, b) => (b.rawModifiedAt || 0) - (a.rawModifiedAt || 0));
+        if (matches.length > 0) {
+          // Normalize names for comparison: strip extensions, underscores, special chars
+          const normalize = s => s.replace(/\.(gcode|3mf)/gi, '').replace(/[_\s,!.&%+()-]+/g, '').toLowerCase();
+          const targetNorm = normalize(basename);
+          const nameMatch = matches.find(f => {
+            const fNorm = normalize(f.name);
+            return fNorm.includes(targetNorm) || targetNorm.includes(fNorm) || fNorm === targetNorm;
+          });
+          if (!nameMatch) continue; // Skip dir if no name match — don't guess
+          const pick = nameMatch;
+          log.info(`download3mf: found in ${dir}: ${pick.name}`);
+          const chunks = [];
+          const writable = new Writable({ write(chunk, _enc, cb) { chunks.push(chunk); cb(); } });
+          await client.downloadTo(writable, `${dir}${pick.name}`);
+          const buf = Buffer.concat(chunks);
+          if (buf.length > 0) return buf;
+        }
+      } catch { /* ignore listing errors for this dir */ }
+    }
 
     log.info(`download3mf: no 3MF found for ${gcodeFile}`);
     return null;
   } catch (err) {
     log.info(`download3mf: FTPS connection failed: ${err.message}`);
+    return null;
+  } finally {
+    client.close();
+  }
+}
+
+/**
+ * Download the most recent 3MF from a Bambu printer (no name matching)
+ * Used as last resort when history filename can't be matched
+ */
+export async function downloadAny3mf(ip, accessCode) {
+  const ftp = await getFtpModule();
+  if (!ftp) return null;
+
+  const client = new ftp.Client();
+  client.ftp.verbose = false;
+
+  try {
+    await client.access({
+      host: ip, port: 990, user: 'bblp', password: accessCode,
+      secure: 'implicit', secureOptions: { rejectUnauthorized: false }
+    });
+
+    // List root directory and find most recent 3MF
+    const { Writable } = await import('node:stream');
+    const files = await client.list('/');
+    const threemfs = files.filter(f => f.name.endsWith('.3mf')).sort((a, b) => {
+      // Sort by modification date descending (most recent first)
+      const da = a.modifiedAt ? new Date(a.modifiedAt).getTime() : 0;
+      const db = b.modifiedAt ? new Date(b.modifiedAt).getTime() : 0;
+      return db - da;
+    });
+
+    if (threemfs.length === 0) return null;
+
+    // Download the most recent one
+    const pick = threemfs[0];
+    log.info(`downloadAny3mf: using most recent: ${pick.name}`);
+    const chunks = [];
+    const writable = new Writable({ write(chunk, _enc, cb) { chunks.push(chunk); cb(); } });
+    await client.downloadTo(writable, `/${pick.name}`);
+    return Buffer.concat(chunks);
+  } catch (err) {
+    log.info(`downloadAny3mf: FTPS failed: ${err.message}`);
     return null;
   } finally {
     client.close();

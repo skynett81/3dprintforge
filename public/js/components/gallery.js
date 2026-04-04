@@ -215,6 +215,7 @@
     overlay.innerHTML = `<div class="gallery-detail">
       <div class="gallery-detail-header">
         <img class="gallery-detail-img" src="/api/history/${p.id}/thumbnail" onerror="this.style.display='none'">
+        ${typeof open3DPreview === 'function' ? `<button class="lib-3d-btn" style="position:absolute;bottom:12px;right:12px" onclick="event.stopPropagation();open3DPreview('/api/preview-3d?source=history&id=${p.id}','${_esc(displayName).replace(/'/g,"\\\\'")}')">&#x25B6; 3D</button>` : ''}
         <button class="gallery-detail-close" onclick="this.closest('.gallery-detail-overlay').remove()">&times;</button>
       </div>
       <div class="gallery-detail-body">

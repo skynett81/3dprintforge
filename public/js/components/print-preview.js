@@ -104,6 +104,9 @@
       _currentSubtask = '';
       _usingMwImage = false;
       if (_viewer) { _viewer.destroy(); _viewer = null; }
+      // Hide enhanced viewer wrapper
+      const ewrap = canvas.parentElement?.querySelector('#_enhanced-print-wrap');
+      if (ewrap) ewrap.style.display = 'none';
       // Reset layer tracking
       _layerColors = [];
       _lastTrackedLayer = -1;
@@ -305,6 +308,8 @@
     if (_viewer) { _viewer.destroy(); _viewer = null; }
     const canvas = document.getElementById('print-model-canvas');
     if (canvas) canvas.style.display = 'none';
+    const ewrap = canvas?.parentElement?.querySelector('#_enhanced-print-wrap');
+    if (ewrap) ewrap.style.display = 'none';
     const thumb = canvas?.parentElement?.querySelector('.moonraker-thumb-fallback');
     if (thumb) thumb.remove();
     const mw = document.getElementById('print-mw-container');
@@ -387,7 +392,7 @@
       return;
     }
     if (_cachedModel && _lastModelFetch && (now - _lastModelFetch) < MODEL_FETCH_INTERVAL) {
-      _applyModel(_cachedModel, canvas, data);
+      _applyModel(_cachedModel, canvas, data).catch(() => {});
       _fetching = false;
       updateModelLoadingState(false);
       return;
@@ -401,7 +406,7 @@
       .then(model => {
         _lastModelFetch = Date.now();
         _cachedModel = model;
-        _applyModel(model, canvas, data);
+        _applyModel(model, canvas, data).catch(() => {});
       })
       .catch(() => {
         // Cache "not found" to prevent re-fetching every second
@@ -416,21 +421,48 @@
       });
   }
 
-  function _applyModel(model, canvas, data) {
-    canvas.style.display = '';
+  async function _applyModel(model, canvas, data) {
+    // Use EnhancedViewer (Three.js) if available, fall back to ModelViewer (raw WebGL)
     if (!_viewer) {
-      _viewer = new window.ModelViewer(canvas);
+      if (window.EnhancedViewer) {
+        canvas.style.display = 'none';
+        // Create a dedicated wrapper for Three.js inside the viewport
+        let wrap = canvas.parentElement.querySelector('#_enhanced-print-wrap');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.id = '_enhanced-print-wrap';
+          wrap.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:auto;';
+          canvas.parentElement.insertBefore(wrap, canvas.parentElement.firstChild);
+        }
+        wrap.style.display = '';
+        _viewer = new window.EnhancedViewer(wrap, { transparent: true, autoRotate: true, printMode: true });
+        await _viewer.init();
+      } else {
+        canvas.style.display = '';
+        _viewer = new window.ModelViewer(canvas);
+      }
+    } else {
+      // Show the right element
+      if (_viewer.loadCombinedModel) {
+        canvas.style.display = 'none';
+        const wrap = canvas.parentElement.querySelector('#_enhanced-print-wrap');
+        if (wrap) wrap.style.display = '';
+      } else {
+        canvas.style.display = '';
+      }
     }
     // Apply active filament color as the model's base color
     const rgb = getActiveFilamentColor(data);
     if (rgb) model.color = rgb;
-    _viewer.loadModel(model);
-    const initPct = data.mc_percent || 0;
-    if (initPct > 0) {
-      _viewer.setProgress(initPct / 100);
+    // EnhancedViewer uses loadCombinedModel for flat vertex/triangle arrays
+    if (_viewer.loadCombinedModel) {
+      _viewer.loadCombinedModel(model);
     } else {
-      _viewer.setProgress(0);
+      _viewer.loadModel(model);
     }
+    if (rgb) _viewer.setColor(rgb);
+    const initPct = data.mc_percent || 0;
+    _viewer.setProgress(initPct > 0 ? initPct / 100 : 0);
     // Show model metadata bar
     renderModelMeta(model.meta, model.sliceInfo);
   }

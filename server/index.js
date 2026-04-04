@@ -182,7 +182,13 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2'
+  '.woff2': 'font/woff2',
+  '.wasm': 'application/wasm',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.map': 'application/json'
 };
 
 const SECURITY_HEADERS = {
@@ -193,14 +199,16 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
     "img-src 'self' data: blob: https:",
     "connect-src 'self' ws: wss: https://open.er-api.com",
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self'",
+    "frame-src 'self'",
+    "worker-src 'self' blob:"
   ].join('; ')
 };
 
@@ -424,6 +432,15 @@ function handleRequest(req, res) {
     res.end('Ikke funnet');
     return;
   }
+
+  // Directory → index.html (for 3mf-viewer etc.)
+  try {
+    if (statSync(filePath).isDirectory()) {
+      const indexPath = join(filePath, 'index.html');
+      if (existsSync(indexPath)) filePath = indexPath;
+      else { res.writeHead(404); res.end('Ikke funnet'); return; }
+    }
+  } catch {}
 
   const ext = extname(filePath);
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';

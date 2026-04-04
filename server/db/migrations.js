@@ -129,6 +129,9 @@ export function runMigrations() {
     { version: 109, up: _mig109_printer_type_column },
     { version: 110, up: _mig110_extruder_slots },
     { version: 111, up: _mig111_print_review },
+    { version: 112, up: (db) => {
+      try { db.exec("ALTER TABLE print_history ADD COLUMN linked_3mf TEXT DEFAULT NULL"); } catch {}
+    }},
   ];
 
   for (const m of migrations) {
