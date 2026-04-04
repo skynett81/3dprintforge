@@ -425,8 +425,6 @@
       h += '<div class="settings-card">';
       h += '<div class="card-title">' + (t('settings.general') || 'General') + '</div>';
       h += '<div class="prefs-compact-grid">';
-      // Language
-      h += '<div class="prefs-row"><span class="prefs-label">' + t('settings.language') + '</span><select class="form-input prefs-input" id="lang-select" onchange="changeLanguage(this.value)">' + opts + '</select></div>';
       // Browser notifications
       h += '<div class="prefs-row"><span class="prefs-label">' + t('settings.notifications_title') + '</span><label class="settings-checkbox"><input type="checkbox" id="notify-toggle" ' + (_notifGranted ? 'checked' : '') + ' onchange="toggleNotificationsPerm(this.checked)"><span>' + t('settings.notifications_browser') + '</span></label></div>';
       // Auto-refresh

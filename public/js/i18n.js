@@ -11,7 +11,7 @@
   const LOCALE_TAG = { en: 'en-US' };
   const FALLBACK_RATES = {};
 
-  let _locale = localStorage.getItem('bambu-lang') || DEFAULT_LOCALE;
+  let _locale = 'en'; // English only — ignore stored preference
   let _translations = {};
   let _fallback = {};
   let _ready = false;
