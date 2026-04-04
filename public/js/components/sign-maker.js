@@ -255,8 +255,9 @@
     result.innerHTML = `
       <div class="sm-preview" id="sm-sign">${signHtml}</div>
       <div class="sm-actions" style="justify-content:center;margin-top:16px">
-        <button class="form-btn form-btn-primary" data-ripple onclick="window._smPrint()">🖨️ Print</button>
+        <button class="form-btn form-btn-primary" data-ripple onclick="window._smPrint()">🖨️ Print on paper</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smDownload()">📥 Download PNG</button>
+        <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">🧊 Download 3MF for 3D printing</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smGenerate('${id}')">🔄 Regenerate</button>
       </div>`;
   };
@@ -295,6 +296,80 @@
       a.click();
     };
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  // ── Download as 3MF (3D printable model) ──
+
+  window._smDownload3MF = async function(templateId) {
+    // Gather sign data based on template type
+    const body = { plate_width: 80, plate_height: 50, plate_depth: 2, text_height: 0.8, pixel_size: 1.2 };
+
+    if (templateId === 'wifi') {
+      body.title = _val('sm-ssid') || 'WiFi';
+      body.subtitle = _val('sm-pass') ? 'Pass: ' + _val('sm-pass') : '';
+      const enc = _val('sm-enc');
+      const hidden = document.getElementById('sm-hidden')?.checked;
+      const esc = (s) => s.replace(/[\\;,:""]/g, c => '\\' + c);
+      body.qr_data = `WIFI:T:${enc};S:${esc(body.title)};P:${esc(_val('sm-pass'))};H:${hidden?'true':'false'};;`;
+    } else if (templateId === 'url') {
+      body.title = _val('sm-title') || 'Scan Me';
+      body.qr_data = _val('sm-url') || location.origin;
+    } else if (templateId === 'dashboard') {
+      body.title = '3DPrintForge';
+      body.qr_data = location.origin;
+    } else if (templateId === 'printer') {
+      const pid = _val('sm-printer');
+      const meta = window.printerState?._printerMeta?.[pid] || {};
+      body.title = meta.name || pid;
+      body.subtitle = meta.model || '';
+      body.qr_data = location.origin;
+    } else if (templateId === 'filament') {
+      body.title = _val('sm-material') || 'PLA';
+      body.subtitle = [_val('sm-brand'), _val('sm-colour'), _val('sm-temp') ? _val('sm-temp') + 'C' : ''].filter(Boolean).join(' - ');
+    } else if (templateId === 'warning') {
+      const type = _val('sm-warn-type');
+      const msgs = { hot: 'HOT SURFACE', moving: 'MOVING PARTS', fumes: 'VENTILATION', electric: 'HIGH VOLTAGE', custom: _val('sm-warn-msg') || 'WARNING' };
+      body.title = msgs[type] || 'WARNING';
+      body.subtitle = 'DANGER';
+      body.plate_width = 100; body.plate_height = 60;
+    } else if (templateId === 'custom') {
+      body.title = _val('sm-c-title') || 'Sign';
+      body.subtitle = _val('sm-c-msg') || '';
+      body.qr_data = _val('sm-c-qr') || '';
+    } else if (templateId === 'contact') {
+      body.title = _val('sm-v-name') || 'Contact';
+      body.subtitle = _val('sm-v-company') || '';
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${_val('sm-v-name')}\n${_val('sm-v-phone') ? 'TEL:'+_val('sm-v-phone')+'\n' : ''}${_val('sm-v-email') ? 'EMAIL:'+_val('sm-v-email')+'\n' : ''}END:VCARD`;
+      body.qr_data = vcard;
+    } else if (templateId === 'inventory') {
+      body.title = _val('sm-inv-id') || 'ASSET';
+      body.subtitle = _val('sm-inv-desc') || '';
+      body.qr_data = `ASSET:${_val('sm-inv-id')}|${_val('sm-inv-desc')}|${_val('sm-inv-loc')}`;
+    }
+
+    if (!body.title && !body.qr_data) {
+      if (typeof showToast === 'function') showToast('Fill in the form first', 'error');
+      return;
+    }
+
+    try {
+      if (typeof showToast === 'function') showToast('Generating 3MF...', 'info');
+      const res = await fetch('/api/sign-maker/generate-3mf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Generation failed');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (body.title || 'sign').replace(/[^a-zA-Z0-9_-]/g, '_') + '.3mf';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (typeof showToast === 'function') showToast('3MF downloaded — open in your slicer!', 'success');
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(e.message, 'error');
+    }
   };
 
   // Helpers

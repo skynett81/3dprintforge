@@ -4845,6 +4845,34 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // Generate 3MF sign model
+    if (method === 'POST' && path === '/api/sign-maker/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateSign3MF } = await import('./sign-3mf-generator.js');
+          const buf = await generateSign3MF({
+            title: body.title || '',
+            subtitle: body.subtitle || '',
+            qrData: body.qr_data || '',
+            plateWidth: body.plate_width || 80,
+            plateHeight: body.plate_height || 50,
+            plateDepth: body.plate_depth || 2,
+            textHeight: body.text_height || 0.8,
+            pixelSize: body.pixel_size || 1.2,
+          });
+          const filename = (body.title || 'sign').replace(/[^a-zA-Z0-9_-]/g, '_') + '.3mf';
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Length': buf.length
+          });
+          res.end(buf);
+        } catch (e) {
+          sendJson(res, { error: 'Failed to generate 3MF: ' + e.message }, 500);
+        }
+      });
+    }
+
     // Upload 3MF linked to a history entry
     const histModelMatch = path.match(/^\/api\/history\/(\d+)\/model-3mf$/);
     if (histModelMatch && method === 'POST') {
