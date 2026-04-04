@@ -7,4 +7,4 @@ if [ "$1" = "--demo" ]; then
   shift
   export BAMBU_DEMO=true
 fi
-exec node --experimental-sqlite server/index.js "$@"
+exec node server/index.js "$@"

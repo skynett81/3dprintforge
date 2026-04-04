@@ -77,9 +77,16 @@ if [ -d "$APP_DIR/node_modules" ]; then
   fi
 fi
 
-# 5. Remove data
+# 5. Remove data (database, uploads, 3D model cache, history models, toolpath cache)
 if [ -d "$APP_DIR/data" ]; then
-  read -p "Remove database, data, and uploads? [y/N] " -n 1 -r
+  echo -e "  Data directory contains:"
+  [ -f "$APP_DIR/data/dashboard.db" ] && echo -e "    - Database (dashboard.db)"
+  [ -d "$APP_DIR/data/uploads" ] && echo -e "    - Slicer uploads ($(ls "$APP_DIR/data/uploads" 2>/dev/null | wc -l) files)"
+  [ -d "$APP_DIR/data/library" ] && echo -e "    - File library ($(ls "$APP_DIR/data/library" 2>/dev/null | wc -l) files)"
+  [ -d "$APP_DIR/data/model-cache" ] && echo -e "    - 3MF model cache ($(ls "$APP_DIR/data/model-cache" 2>/dev/null | wc -l) files)"
+  [ -d "$APP_DIR/data/history-models" ] && echo -e "    - History 3MF models ($(ls "$APP_DIR/data/history-models" 2>/dev/null | wc -l) files)"
+  [ -d "$APP_DIR/data/toolpath-cache" ] && echo -e "    - Gcode toolpath cache ($(ls "$APP_DIR/data/toolpath-cache" 2>/dev/null | wc -l) files)"
+  read -p "Remove ALL data? [y/N] " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     rm -rf "$APP_DIR/data"

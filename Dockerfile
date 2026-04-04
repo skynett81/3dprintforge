@@ -11,7 +11,7 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-RUN mkdir -p data certs
+RUN mkdir -p data data/uploads data/library data/model-cache data/history-models data/toolpath-cache certs
 
 EXPOSE 3000 3443 9001-9010
 

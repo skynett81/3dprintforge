@@ -58,7 +58,7 @@ ensure_node() {
 # Shared: Ensure npm dependencies
 # ────────────────────────────────────────
 ensure_deps() {
-  if [ ! -d "$APP_DIR/node_modules/mqtt" ]; then
+  if [ ! -d "$APP_DIR/node_modules/mqtt" ] || [ ! -d "$APP_DIR/node_modules/@3mfconsortium" ]; then
     echo -e "${BOLD}Installing dependencies...${NC}"
     cd "$APP_DIR"
     npm install --omit=dev
@@ -72,6 +72,10 @@ ensure_deps() {
 ensure_dirs() {
   mkdir -p "$APP_DIR/data"
   mkdir -p "$APP_DIR/data/uploads"
+  mkdir -p "$APP_DIR/data/library"
+  mkdir -p "$APP_DIR/data/model-cache"
+  mkdir -p "$APP_DIR/data/history-models"
+  mkdir -p "$APP_DIR/data/toolpath-cache"
   mkdir -p "$APP_DIR/certs"
   [ -f "$APP_DIR/start.sh" ] && chmod +x "$APP_DIR/start.sh"
 }
@@ -98,7 +102,7 @@ run_web_wizard() {
   # Run the setup wizard server (blocks until wizard finishes or user cancels)
   # --lan allows access from any IP (needed when installing on a remote/headless server)
   cd "$APP_DIR"
-  node --experimental-sqlite server/setup-wizard.js --lan
+  node server/setup-wizard.js --lan
   WIZARD_EXIT=$?
 
   if [ $WIZARD_EXIT -eq 0 ]; then
@@ -180,7 +184,7 @@ After=network.target
 Type=simple
 User=$CURRENT_USER
 WorkingDirectory=$APP_DIR
-ExecStart=$NODE_PATH --experimental-sqlite server/index.js
+ExecStart=$NODE_PATH server/index.js
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production
