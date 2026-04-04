@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: API-referanse
-description: REST API med 284+ endepunkter, autentisering og rate limiting
+description: REST API med 590+ endepunkter, autentisering og rate limiting
 ---
 
 # API-referanse
 
-3DPrintForge eksponerer et fullverdig REST API med 284+ endepunkter. API-dokumentasjonen er tilgjengelig direkte i dashboardet.
+3DPrintForge eksponerer et fullverdig REST API med 590+ endepunkter. API-dokumentasjonen er tilgjengelig direkte i dashboardet.
 
 ## Interaktiv dokumentasjon
 

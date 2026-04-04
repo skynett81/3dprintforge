@@ -20,7 +20,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
 - **2 languages** — Norwegian, English
-- **Docusaurus documentation** — 82 pages in 2 languages, available at `/docs/` and on GitHub Pages
+- **Docusaurus documentation** — 96 pages in 2 languages, available at `/docs/` and on GitHub Pages
 - **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 6 npm packages
 
 ---

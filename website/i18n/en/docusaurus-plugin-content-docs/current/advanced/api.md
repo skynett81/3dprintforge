@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: API Reference
-description: REST API with 284+ endpoints, authentication, and rate limiting
+description: REST API with 590+ endpoints, authentication, and rate limiting
 ---
 
 # API Reference
 
-3DPrintForge exposes a full REST API with 284+ endpoints. The API documentation is available directly in the dashboard.
+3DPrintForge exposes a full REST API with 590+ endpoints. The API documentation is available directly in the dashboard.
 
 ## Interactive documentation
 

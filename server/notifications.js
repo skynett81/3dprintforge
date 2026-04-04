@@ -1,4 +1,4 @@
-// Notification Manager — 6 channels, quiet hours, bed cooling, maintenance alerts
+// Notification Manager — 7 channels, quiet hours, bed cooling, maintenance alerts
 import { request as httpsRequest } from 'node:https';
 import { request as httpRequest } from 'node:http';
 import { connect as tlsConnect } from 'node:tls';

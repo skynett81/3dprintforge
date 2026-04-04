@@ -19,8 +19,8 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 
 | Lag | Teknologi |
 |-----|-----------|
-| Frontend | Vanilla HTML/CSS/JS — 76 komponentmoduler, ingen build-steg, ingen rammeverk |
-| Backend | Node.js 22 med 3 npm-pakker: `mqtt`, `ws`, `basic-ftp` |
+| Frontend | Vanilla HTML/CSS/JS — 84 komponentmoduler, ingen build-steg, ingen rammeverk |
+| Backend | Node.js 22 med 6 npm-pakker: `mqtt`, `ws`, `basic-ftp`, `admin-lte`, `ssh2`, `@3mfconsortium/lib3mf` |
 | Database | SQLite (innebygd i Node.js 22 via SQLite (innebygd)) |
 | Kamera | ffmpeg transkoder RTSPS til MPEG1, jsmpeg rendrer i nettleseren |
 | Sanntid | WebSocket-hub sender printer-tilstand til alle tilkoblede klienter |
@@ -36,14 +36,14 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 | 8883 | MQTTS | Ut | Tilkobling til printer |
 | 322 | RTSPS | Ut | Kamera fra printer |
 
-## Servermoduler (44)
+## Servermoduler (74)
 
 | Modul | Formål |
 |-------|--------|
 | `index.js` | HTTP/HTTPS-servere, auto-SSL, CSP/HSTS-headere, statiske filer, demo-modus |
 | `config.js` | Konfigurasjonslasting, standardverdier, env-overstyringer og migrasjoner |
-| `database.js` | SQLite-skjema, 105 migrasjoner, CRUD-operasjoner |
-| `api-routes.js` | REST API (284+ endepunkter) |
+| `database.js` | SQLite-skjema, 112 migrasjoner, CRUD-operasjoner |
+| `api-routes.js` | REST API (590+ endepunkter) |
 | `auth.js` | Autentisering og sesjonsadministrasjon |
 | `backup.js` | Backup og gjenoppretting |
 | `printer-manager.js` | Printer-livssyklus, MQTT-tilkoblingsadministrasjon |
@@ -84,7 +84,7 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 | `validate.js` | Inndata-validering |
 | `wear-prediction.js` | Slitasjepredikering for komponenter |
 
-## Frontend-komponenter (76)
+## Frontend-komponenter (84)
 
 Alle komponenter er vanilla JavaScript-moduler uten build-steg. De lastes direkte i nettleseren via `<script type="module">`.
 
@@ -104,7 +104,7 @@ Alle komponenter er vanilla JavaScript-moduler uten build-steg. De lastes direkt
 
 ## Database
 
-SQLite-databasen er innebygd i Node.js 22 og krever ingen ekstern instalasjon. Skjemaet håndteres av 105 migrasjoner i `db/migrations.js`.
+SQLite-databasen er innebygd i Node.js 22 og krever ingen ekstern instalasjon. Skjemaet håndteres av 112 migrasjoner i `db/migrations.js`.
 
 Hoveddatabeller:
 

@@ -19,8 +19,8 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 
 | Layer | Technology |
 |-----|-----------|
-| Frontend | Vanilla HTML/CSS/JS — 76 component modules, no build step, no framework |
-| Backend | Node.js 22 with 3 npm packages: `mqtt`, `ws`, `basic-ftp` |
+| Frontend | Vanilla HTML/CSS/JS — 84 component modules, no build step, no framework |
+| Backend | Node.js 22 with 6 npm packages: `mqtt`, `ws`, `basic-ftp`, `admin-lte`, `ssh2`, `@3mfconsortium/lib3mf` |
 | Database | SQLite (built into Node.js 22 via SQLite (innebygd)) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in the browser |
 | Real-time | WebSocket hub broadcasts printer state to all connected clients |
@@ -36,14 +36,14 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 | 8883 | MQTTS | Out | Connection to printer |
 | 322 | RTSPS | Out | Camera from printer |
 
-## Server modules (44)
+## Server modules (74)
 
 | Module | Purpose |
 |-------|--------|
 | `index.js` | HTTP/HTTPS servers, auto-SSL, CSP/HSTS headers, static files, demo mode |
 | `config.js` | Configuration loading, defaults, env overrides and migrations |
-| `database.js` | SQLite schema, 105 migrations, CRUD operations |
-| `api-routes.js` | REST API (284+ endpoints) |
+| `database.js` | SQLite schema, 112 migrations, CRUD operations |
+| `api-routes.js` | REST API (590+ endpoints) |
 | `auth.js` | Authentication and session management |
 | `backup.js` | Backup and restoration |
 | `printer-manager.js` | Printer lifecycle, MQTT connection management |
@@ -84,7 +84,7 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 | `validate.js` | Input validation |
 | `wear-prediction.js` | Component wear prediction |
 
-## Frontend components (76)
+## Frontend components (84)
 
 All components are vanilla JavaScript modules with no build step. They are loaded directly in the browser via `<script type="module">`.
 
@@ -104,7 +104,7 @@ All components are vanilla JavaScript modules with no build step. They are loade
 
 ## Database
 
-The SQLite database is built into Node.js 22 and requires no external installation. The schema is managed by 105 migrations in `db/migrations.js`.
+The SQLite database is built into Node.js 22 and requires no external installation. The schema is managed by 112 migrations in `db/migrations.js`.
 
 Main tables:
 
