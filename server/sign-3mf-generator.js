@@ -203,6 +203,50 @@ export async function generateSign3MF(opts = {}) {
       }
     }
 
+    // Border frame
+    if (opts.includeBorder) {
+      const bw = 2; // border width mm
+      const bh = th + 0.4; // slightly taller than text
+      // Top
+      vOff = addBox(lib, mesh, 0, ph - bw, pd, pw, bw, bh, vOff);
+      // Bottom
+      vOff = addBox(lib, mesh, 0, 0, pd, pw, bw, bh, vOff);
+      // Left
+      vOff = addBox(lib, mesh, 0, bw, pd, bw, ph - bw * 2, bh, vOff);
+      // Right
+      vOff = addBox(lib, mesh, pw - bw, bw, pd, bw, ph - bw * 2, bh, vOff);
+    }
+
+    // Wall mount holes (subtract by adding thin cylinders as visual markers)
+    if (opts.includeHoles) {
+      const holeR = 2;
+      const holePad = 6;
+      // Left hole marker (hexagonal approximation)
+      for (const [hx, hy] of [[holePad, ph / 2], [pw - holePad, ph / 2]]) {
+        const segs = 8;
+        const baseVert = vOff;
+        for (let i = 0; i < segs; i++) {
+          const a = (i / segs) * Math.PI * 2;
+          const px2 = hx + Math.cos(a) * holeR;
+          const py2 = hy + Math.sin(a) * holeR;
+          const p = new lib.sPosition();
+          p.set_Coordinates0(px2); p.set_Coordinates1(py2); p.set_Coordinates2(pd + th);
+          mesh.AddVertex(p); p.delete();
+        }
+        // Center top
+        const pc = new lib.sPosition();
+        pc.set_Coordinates0(hx); pc.set_Coordinates1(hy); pc.set_Coordinates2(pd + th);
+        mesh.AddVertex(pc); pc.delete();
+        vOff += segs + 1;
+        // Fan triangles
+        for (let i = 0; i < segs; i++) {
+          const t = new lib.sTriangle();
+          t.set_Indices0(baseVert + segs); t.set_Indices1(baseVert + i); t.set_Indices2(baseVert + (i + 1) % segs);
+          mesh.AddTriangle(t); t.delete();
+        }
+      }
+    }
+
     // Set metadata
     const mdg = model.GetMetaDataGroup();
     if (opts.title) {
@@ -213,6 +257,37 @@ export async function generateSign3MF(opts = {}) {
     appMd.delete();
 
     model.AddBuildItem(mesh, wrapper.GetIdentityTransform());
+
+    // Desk stand (separate object — can be printed in different colour)
+    if (opts.includeStand) {
+      const standMesh = model.AddMeshObject();
+      standMesh.SetName('Stand');
+      let sv = 0;
+      const sw2 = pw * 0.8;   // stand width (80% of sign)
+      const sd = 25;           // stand depth
+      const sh2 = pd + 4;     // stand height (holds sign)
+      const slotW = pd + 0.4; // slot width (slightly wider than plate)
+      const slotD = sd * 0.6; // slot depth
+      const baseH = 4;        // base thickness
+
+      // Base plate
+      sv = addBox(lib, standMesh, -sw2 / 2, 0, 0, sw2, sd, baseH, sv);
+      // Back wall
+      sv = addBox(lib, standMesh, -sw2 / 2, sd - 3, 0, sw2, 3, sh2, sv);
+      // Slot (gap for sign to slide into)
+      // Left wall of slot
+      sv = addBox(lib, standMesh, -sw2 / 2, sd - 3 - slotW - 2, 0, sw2, 2, sh2 * 0.6, sv);
+
+      // Position stand next to sign
+      const standTransform = wrapper.GetIdentityTransform();
+      // Offset: place stand to the right of the sign
+      const st = new lib.sTransform();
+      st.set_Fields_0_0(1); st.set_Fields_1_1(1); st.set_Fields_2_2(1);
+      st.set_Fields_3_0(pw + 10); // X offset
+      st.set_Fields_3_1(0);
+      st.set_Fields_3_2(0);
+      model.AddBuildItem(standMesh, st);
+    }
 
     // Write to buffer
     const vfsPath = `/sign_${Date.now()}.3mf`;

@@ -4859,6 +4859,9 @@ export async function handleApiRequest(req, res) {
             plateDepth: body.plate_depth || 2,
             textHeight: body.text_height || 0.8,
             pixelSize: body.pixel_size || 1.2,
+            includeStand: body.include_stand || false,
+            includeHoles: body.include_holes || false,
+            includeBorder: body.include_border || false,
           });
           const filename = (body.title || 'sign').replace(/[^a-zA-Z0-9_-]/g, '_') + '.3mf';
           res.writeHead(200, {

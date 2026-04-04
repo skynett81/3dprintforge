@@ -257,8 +257,64 @@
       <div class="sm-actions" style="justify-content:center;margin-top:16px">
         <button class="form-btn form-btn-primary" data-ripple onclick="window._smPrint()">🖨️ Print on paper</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smDownload()">📥 Download PNG</button>
-        <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">🧊 Download 3MF for 3D printing</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smGenerate('${id}')">🔄 Regenerate</button>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px">
+        <h4 style="margin:0 0 12px;font-size:0.95rem">🧊 3D Print Options</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px">
+          <div>
+            <label class="form-label">Size</label>
+            <select class="form-input" id="sm-3d-size">
+              <option value="small">Small (60×40mm)</option>
+              <option value="medium" selected>Medium (80×50mm)</option>
+              <option value="large">Large (100×70mm)</option>
+              <option value="xl">XL (120×80mm)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Orientation</label>
+            <select class="form-input" id="sm-3d-orient">
+              <option value="landscape" selected>Landscape</option>
+              <option value="portrait">Portrait</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Plate thickness</label>
+            <select class="form-input" id="sm-3d-depth">
+              <option value="1.5">1.5mm (thin)</option>
+              <option value="2" selected>2mm (standard)</option>
+              <option value="3">3mm (thick)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Text height</label>
+            <select class="form-input" id="sm-3d-texth">
+              <option value="0.4">0.4mm (subtle)</option>
+              <option value="0.8" selected>0.8mm (standard)</option>
+              <option value="1.2">1.2mm (bold)</option>
+              <option value="1.6">1.6mm (extra bold)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">QR pixel size</label>
+            <select class="form-input" id="sm-3d-pixel">
+              <option value="0.8">0.8mm (fine)</option>
+              <option value="1.2" selected>1.2mm (standard)</option>
+              <option value="1.6">1.6mm (large)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Extras</label>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-stand" checked> Desk stand</label>
+              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-holes"> Wall mount holes</label>
+              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-border"> Border frame</label>
+            </div>
+          </div>
+        </div>
+        <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">🧊 Download 3MF for 3D Printing</button>
+        <span class="text-muted" style="font-size:0.72rem;margin-left:8px">Opens in OrcaSlicer / BambuStudio / PrusaSlicer</span>
       </div>`;
   };
 
@@ -301,8 +357,24 @@
   // ── Download as 3MF (3D printable model) ──
 
   window._smDownload3MF = async function(templateId) {
-    // Gather sign data based on template type
-    const body = { plate_width: 80, plate_height: 50, plate_depth: 2, text_height: 0.8, pixel_size: 1.2 };
+    // Read 3D print options
+    const sizes = { small: [60,40], medium: [80,50], large: [100,70], xl: [120,80] };
+    const sizeKey = _val('sm-3d-size') || 'medium';
+    const [sw, sh] = sizes[sizeKey] || sizes.medium;
+    const orient = _val('sm-3d-orient') || 'landscape';
+    const pw = orient === 'portrait' ? sh : sw;
+    const ph = orient === 'portrait' ? sw : sh;
+
+    const body = {
+      plate_width: pw,
+      plate_height: ph,
+      plate_depth: parseFloat(_val('sm-3d-depth')) || 2,
+      text_height: parseFloat(_val('sm-3d-texth')) || 0.8,
+      pixel_size: parseFloat(_val('sm-3d-pixel')) || 1.2,
+      include_stand: document.getElementById('sm-3d-stand')?.checked || false,
+      include_holes: document.getElementById('sm-3d-holes')?.checked || false,
+      include_border: document.getElementById('sm-3d-border')?.checked || false,
+    };
 
     if (templateId === 'wifi') {
       body.title = _val('sm-ssid') || 'WiFi';
