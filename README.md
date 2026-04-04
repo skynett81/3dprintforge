@@ -274,7 +274,7 @@ docker compose pull && docker compose up -d
 
 - **[Features](docs/features.md)** — complete feature list
 - **[Architecture](docs/architecture.md)** — stack, modules, components, project structure, systemd, Pterodactyl
-- **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.14
+- **[Changelog](docs/changelog.md)** — version history from v1.0.0 to v1.1.15
 - **[Installation Guide](INSTALL.md)** — detailed step-by-step install instructions
 - **[Docusaurus Docs](website/)** — full documentation site in 2 languages, served at `/docs/` from the dashboard and deployed to [GitHub Pages](https://skynett81.github.io/3dprintforge/)
 

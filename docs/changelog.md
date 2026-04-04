@@ -4,6 +4,34 @@ All notable changes to 3DPrintForge.
 
 ---
 
+## v1.1.15 — 3MF Consortium Integration, Gcode Toolpath & Universal 3D Preview (2026-04-04)
+
+### 3MF Consortium Integration
+- lib3mf WASM (v2.5.0) for spec-compliant 3MF parsing
+- 3mfViewer embedded viewer with scene tree, materials, wireframe
+- 3MF validation endpoint
+
+### Gcode Toolpath Viewer
+- Server-side gcode parser with per-layer colour visualisation
+- Automatic download from Moonraker HTTP API or Bambu FTPS
+- Gzipped caching for instant repeat views
+
+### Universal 3D Preview
+- Works for all printer types (Bambu, Snapmaker, Voron, Creality)
+- Automatic strategy selection via printer-capabilities.js
+- 3D buttons in history, library, queue, scheduler, gallery
+- History 3MF linking — upload/replace/delete 3MF per print
+- Drag-and-drop upload when no model available
+
+### Infrastructure
+- Removed deprecated --experimental-sqlite flag
+- Updated install.sh, uninstall.sh, Dockerfile, start.sh
+- New data directories: library, model-cache, history-models, toolpath-cache
+- CSP updates for WASM and iframe support
+- DB migration v112: linked_3mf column
+
+---
+
 ## v1.1.14 — AdminLTE 4, CRM System & Achievement Landmarks (2026-03-30)
 
 ### AdminLTE 4 Integration
