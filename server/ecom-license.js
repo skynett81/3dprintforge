@@ -15,7 +15,7 @@ const log = createLogger('ecom');
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;      // 7 days grace period for offline use
 const DEACTIVATE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — auto-deactivate if no check-in
 const REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;  // check in daily
-const FEE_PCT = 5.0;
+let FEE_PCT = 5.0; // default, overridden by geektech.no response (fee_pct field)
 const GEEKTECH_API = 'https://geektech.no/api';
 
 // ── HTTP helpers ──
@@ -174,6 +174,8 @@ export class EcomLicenseManager {
       days_since_checkin: elapsed != null ? Math.round(elapsed / 86400000) : null,
       days_until_deactivation: elapsed != null ? Math.max(0, Math.round((DEACTIVATE_TTL_MS - elapsed) / 86400000)) : null,
       instance_id: this._license?.instance_id || null,
+      features: (() => { try { return JSON.parse(this._license?.features || '[]'); } catch { return []; } })(),
+      fee_pct: FEE_PCT,
       provider: 'geektech.no',
       fees_pending: fees?.pending_count || 0,
       fees_pending_total: fees?.pending_total || 0,
@@ -216,16 +218,20 @@ export class EcomLicenseManager {
       });
 
       if (status >= 200 && status < 300 && data.valid) {
-        // Success — update local state
+        // Success — update local state from geektech.no response
         const lic = data.license || {};
         const count = (this._license.verify_count || 0) + 1;
+
+        // Update fee percentage from server (geektech.no controls this)
+        if (data.fee_pct != null) FEE_PCT = data.fee_pct;
+
         setEcomLicense({
           status: 'active',
           holder_name: data.holder || data.customer_name || lic.customer_name || null,
           plan: data.plan || lic.plan || null,
           features: JSON.stringify(data.features || lic.features || []),
-          max_printers: data.max_printers || lic.max_printers || lic.units || 1,
-          license_type: lic.lock_type || data.license_type || this._license.license_type || 'none',
+          max_printers: data.max_printers || data.max_units || lic.max_printers || null,
+          license_type: data.license_type || lic.lock_type || this._license.license_type || 'none',
           allowed_ips: lic.allowed_ips || data.allowed_ips || null,
           allowed_macs: lic.allowed_macs || data.allowed_macs || null,
           domain: lic.domain || this._license.domain || null,
@@ -235,6 +241,7 @@ export class EcomLicenseManager {
           cached_response: JSON.stringify(data)
         });
         this._license = getEcomLicense();
+        log.info('License verified: plan=' + (data.plan || 'unknown') + ' features=' + (data.features || []).join(',') + ' fee=' + FEE_PCT + '%');
         return data;
       } else {
         // Server returned invalid/inactive/expired
