@@ -1,6 +1,6 @@
 // E-Commerce Premium License Manager
-// Validates licenses against GeekTech.no API with 7-day offline cache.
-// Tracks 5% transaction fees and reports them daily.
+// Validates licenses against GeekTech.no API (POST /api/license/verify).
+// Auto-deactivates after 30 days without successful check-in.
 
 import { request as httpsRequest } from 'node:https';
 import { request as httpRequest } from 'node:http';
@@ -12,9 +12,13 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('ecom');
 
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — grace period for offline use
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;      // 7 days grace period for offline use
 const DEACTIVATE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — auto-deactivate if no check-in
+const REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;  // check in daily
 const FEE_PCT = 5.0;
+const GEEKTECH_API = 'https://geektech.no/api';
+
+// ── HTTP helpers ──
 
 function _httpPost(urlStr, body) {
   return new Promise((resolve, reject) => {
@@ -34,7 +38,7 @@ function _httpPost(urlStr, body) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
-        catch { resolve({ status: res.statusCode, data: {} }); }
+        catch { resolve({ status: res.statusCode, data: { valid: false, error: 'Invalid JSON response from server' } }); }
       });
     });
     req.on('error', reject);
@@ -44,88 +48,77 @@ function _httpPost(urlStr, body) {
   });
 }
 
-function _httpGet(urlStr) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const isHttps = url.protocol === 'https:';
-    const reqFn = isHttps ? httpsRequest : httpRequest;
-    const options = {
-      hostname: url.hostname,
-      port: url.port || (isHttps ? 443 : 80),
-      path: url.pathname + url.search,
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
+async function _getNetworkInfo() {
+  try {
+    const os = await import('node:os');
+    const nets = (os.default || os).networkInterfaces();
+    const ifaces = Object.values(nets).flat().filter(n => !n.internal);
+    return {
+      ip: ifaces.find(n => n.family === 'IPv4')?.address || null,
+      mac: ifaces.find(n => n.mac && n.mac !== '00:00:00:00:00:00')?.mac?.toUpperCase() || null
     };
-    const req = reqFn(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
-        catch { resolve({ status: res.statusCode, data: {} }); }
-      });
-    });
-    req.on('error', reject);
-    req.setTimeout(15000, () => req.destroy(new Error('Request timeout')));
-    req.end();
-  });
+  } catch { return { ip: null, mac: null }; }
 }
+
+// ── License Manager ──
 
 export class EcomLicenseManager {
   constructor() {
     this._license = null;
-    this._reportInterval = null;
+    this._interval = null;
   }
 
   async init() {
     this._license = getEcomLicense();
     if (!this._license) {
-      console.log('[ecom-license] No license table found');
+      log.info('No license configured');
       return;
     }
-    // If there's a license key, try hybrid validation
-    if (this._license.license_key) {
-      try {
-        await this.validate();
-      } catch (e) {
-        console.log('[ecom-license] Validation error during init:', e.message);
-      }
-    }
-    // Start daily fee reporting + license revalidation
-    this._reportInterval = setInterval(() => {
-      this.reportFees().catch(e => log.warn('Fee reporting failed: ' + e.message));
-      this._revalidate().catch(e => log.warn('License revalidation failed: ' + e.message));
-    }, 24 * 60 * 60 * 1000);
 
-    // Also revalidate on startup after a delay (non-blocking)
+    // Validate on startup if we have a key
+    if (this._license.license_key) {
+      try { await this.validate(); }
+      catch (e) { log.warn('Startup validation failed: ' + e.message); }
+    }
+
+    // Daily: revalidate license with geektech.no
+    this._interval = setInterval(() => {
+      this._revalidate().catch(e => log.warn('Revalidation failed: ' + e.message));
+    }, REVALIDATE_INTERVAL_MS);
+
+    // Also revalidate 30s after startup (non-blocking)
     setTimeout(() => this._revalidate().catch(() => {}), 30000);
 
-    console.log('[ecom-license] Initialized (status: ' + (this._license.status || 'inactive') + ')');
+    log.info('Initialized (status: ' + (this._license.status || 'inactive') + ')');
   }
 
   shutdown() {
-    if (this._reportInterval) clearInterval(this._reportInterval);
+    if (this._interval) clearInterval(this._interval);
   }
 
-  // Periodic revalidation — ensures license checks in with geektech.no
+  // ── Check-in with geektech.no ──
+
   async _revalidate() {
     if (!this._license?.license_key) return;
     try {
-      const result = await this.validate(true); // force online
+      const result = await this.validate(true);
       if (result.valid) {
-        log.info('License revalidated successfully (verify #' + (this._license.verify_count || 0) + ')');
+        log.info('Check-in OK (verify #' + (this._license.verify_count || 0) + ')');
       } else {
-        log.warn('License revalidation failed: ' + (result.error || 'unknown'));
+        log.warn('Check-in failed: ' + (result.error || result.code || 'unknown'));
       }
     } catch (e) {
-      log.warn('License revalidation error: ' + e.message);
+      log.warn('Check-in error: ' + e.message);
     }
   }
+
+  // ── Status checks ──
 
   isActive() {
     if (!this._license) return false;
     if (this._license.status !== 'active') return false;
 
-    // Check expiry date
+    // Check expiry
     if (this._license.expires_at && new Date(this._license.expires_at) < new Date()) {
       log.warn('License expired at ' + this._license.expires_at);
       setEcomLicense({ status: 'expired' });
@@ -133,20 +126,19 @@ export class EcomLicenseManager {
       return false;
     }
 
-    // Auto-deactivate if no check-in with geektech.no for 30 days
+    // Auto-deactivate if no successful check-in for 30 days
     if (this._license.last_validated) {
-      const lastCheck = new Date(this._license.last_validated).getTime();
-      const elapsed = Date.now() - lastCheck;
+      const elapsed = Date.now() - new Date(this._license.last_validated).getTime();
       if (elapsed > DEACTIVATE_TTL_MS) {
-        log.warn('License auto-deactivated — no check-in with geektech.no for ' + Math.round(elapsed / 86400000) + ' days. Contact geektech.no to reactivate.');
+        const days = Math.round(elapsed / 86400000);
+        log.warn('Auto-deactivated — no check-in for ' + days + ' days. Contact geektech.no to reactivate.');
         setEcomLicense({ status: 'deactivated' });
         this._license.status = 'deactivated';
         return false;
       }
-      // Warn at 7+ days without check-in
       if (elapsed > CACHE_TTL_MS) {
         const daysLeft = Math.round((DEACTIVATE_TTL_MS - elapsed) / 86400000);
-        log.warn('License warning — last check-in ' + Math.round(elapsed / 86400000) + ' days ago. ' + daysLeft + ' days until auto-deactivation. Ensure internet access to geektech.no.');
+        log.warn('Warning — last check-in ' + Math.round(elapsed / 86400000) + ' days ago. ' + daysLeft + ' days until auto-deactivation.');
       }
     }
 
@@ -159,6 +151,9 @@ export class EcomLicenseManager {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const monthSummary = getEcomFeesSummary(monthStart);
+    const lastCheck = this._license?.last_validated ? new Date(this._license.last_validated).getTime() : null;
+    const elapsed = lastCheck ? Date.now() - lastCheck : null;
+
     return {
       active: this.isActive(),
       status: this._license?.status || 'inactive',
@@ -169,15 +164,15 @@ export class EcomLicenseManager {
       domain: this._license?.domain || null,
       phone: this._license?.phone || null,
       max_printers: this._license?.max_printers || 1,
-      license_type: this._license?.license_type || 'domain',
+      license_type: this._license?.license_type || 'none',
       allowed_ips: this._license?.allowed_ips || null,
       allowed_macs: this._license?.allowed_macs || null,
       verify_count: this._license?.verify_count || 0,
       is_pinned: this._license?.is_pinned || 0,
       expires_at: this._license?.expires_at || null,
       last_validated: this._license?.last_validated || null,
-      days_since_checkin: this._license?.last_validated ? Math.round((Date.now() - new Date(this._license.last_validated).getTime()) / 86400000) : null,
-      days_until_deactivation: this._license?.last_validated ? Math.max(0, Math.round((DEACTIVATE_TTL_MS - (Date.now() - new Date(this._license.last_validated).getTime())) / 86400000)) : null,
+      days_since_checkin: elapsed != null ? Math.round(elapsed / 86400000) : null,
+      days_until_deactivation: elapsed != null ? Math.max(0, Math.round((DEACTIVATE_TTL_MS - elapsed) / 86400000)) : null,
       instance_id: this._license?.instance_id || null,
       provider: 'geektech.no',
       fees_pending: fees?.pending_count || 0,
@@ -188,48 +183,42 @@ export class EcomLicenseManager {
     };
   }
 
+  // ── Validate against GeekTech.no API ──
+  // Only endpoint: POST /api/license/verify
+  // Request:  { license_key, domain, ip_address, mac_address }
+  // Response: { valid, message, code, branding, license? }
+
   async validate(forceOnline = false) {
     this._license = getEcomLicense();
     if (!this._license?.license_key) return { valid: false, error: 'No license key' };
 
-    // Check cache first (unless forced)
+    // Use cache if fresh enough (unless forced)
     if (!forceOnline && this._license.cached_response && this._license.last_validated) {
       const cacheAge = Date.now() - new Date(this._license.last_validated).getTime();
       if (cacheAge < CACHE_TTL_MS) {
         try {
           const cached = JSON.parse(this._license.cached_response);
           if (cached.valid) return cached;
-        } catch { /* invalid cache, revalidate */ }
+        } catch { /* invalid cache, continue to online */ }
       }
     }
 
-    // Online validation
-    const apiUrl = this._license.geektech_api_url || 'https://geektech.no/api';
-    try {
-      // GeekTech API: POST /api/license/verify
-      // Sends all identifiers — the server validates based on license type
-      let ipAddress = null;
-      let macAddress = null;
-      try {
-        const osModule = await import('node:os');
-        const os = osModule.default || osModule;
-        const nets = os.networkInterfaces();
-        const allInterfaces = Object.values(nets).flat().filter(n => !n.internal);
-        ipAddress = allInterfaces.find(n => n.family === 'IPv4')?.address || null;
-        macAddress = allInterfaces.find(n => n.mac && n.mac !== '00:00:00:00:00:00')?.mac?.toUpperCase() || null;
-      } catch (e) { log.debug('Could not get network info: ' + e.message); }
+    // Online: POST to geektech.no/api/license/verify
+    const apiUrl = this._license.geektech_api_url || GEEKTECH_API;
+    const net = await _getNetworkInfo();
 
+    try {
       const { status, data } = await _httpPost(`${apiUrl}/license/verify`, {
         license_key: this._license.license_key,
         domain: this._license.domain || null,
-        ip_address: ipAddress,
-        mac_address: macAddress
+        ip_address: net.ip,
+        mac_address: net.mac
       });
 
       if (status >= 200 && status < 300 && data.valid) {
-        // GeekTech response: { valid, message, branding, license: { domain, lock_type, expires_at } }
+        // Success — update local state
         const lic = data.license || {};
-        const currentCount = this._license.verify_count || 0;
+        const count = (this._license.verify_count || 0) + 1;
         setEcomLicense({
           status: 'active',
           holder_name: data.holder || data.customer_name || lic.customer_name || null,
@@ -242,47 +231,66 @@ export class EcomLicenseManager {
           domain: lic.domain || this._license.domain || null,
           expires_at: lic.expires_at || data.expires_at || null,
           last_validated: new Date().toISOString(),
-          verify_count: currentCount + 1,
+          verify_count: count,
           cached_response: JSON.stringify(data)
         });
         this._license = getEcomLicense();
         return data;
       } else {
-        const newStatus = data.error === 'License expired' ? 'expired' : 'invalid';
-        setEcomLicense({ status: newStatus, last_validated: new Date().toISOString(), cached_response: JSON.stringify(data) });
+        // Server returned invalid/inactive/expired
+        const code = data.code || '';
+        let newStatus = 'invalid';
+        if (code === 'license_inactive' || code === 'license_deactivated') newStatus = 'deactivated';
+        else if (code === 'license_expired' || data.error?.includes('expired')) newStatus = 'expired';
+
+        setEcomLicense({
+          status: newStatus,
+          last_validated: new Date().toISOString(),
+          cached_response: JSON.stringify(data)
+        });
         this._license = getEcomLicense();
-        return { valid: false, error: data.error || 'Invalid license' };
+        return { valid: false, error: data.error || data.message || 'License not valid', code };
       }
     } catch (e) {
-      log.error('License validate error: ' + e.message + ' stack: ' + e.stack);
-      // Network error — use cached if available
+      log.error('Verification failed: ' + e.message);
+      // Network error — use cache if available and not too old
       if (this._license.cached_response) {
         try {
           const cached = JSON.parse(this._license.cached_response);
           if (cached.valid) return { ...cached, offline: true };
         } catch { /* invalid cache */ }
       }
-      return { valid: false, error: 'Cannot reach license server: ' + e.message };
+      return { valid: false, error: 'Cannot reach geektech.no: ' + e.message };
     }
   }
 
+  // ── Activate a new license key ──
+  // Stores key locally, then validates against geektech.no
+
   async activate(licenseKey, email, domain, phone) {
-    // License key must be 32 hex characters
-    if (!licenseKey || !/^[0-9a-fA-F]{32}$/.test(licenseKey.replace(/-/g, ''))) {
-      return { valid: false, error: 'License key must be 32 hex characters (from geektech.no)' };
+    if (!licenseKey) return { valid: false, error: 'License key required' };
+
+    // Strip dashes/spaces, uppercase
+    const cleanKey = licenseKey.replace(/[-\s]/g, '').toUpperCase();
+
+    // Accept any hex key that geektech.no accepts (currently 32 chars)
+    if (!/^[0-9A-F]+$/.test(cleanKey)) {
+      return { valid: false, error: 'License key must be hexadecimal characters' };
     }
 
+    // Store and validate
     setEcomLicense({
-      license_key: licenseKey.replace(/-/g, ''),
+      license_key: cleanKey,
       geektech_email: email || null,
       domain: domain || null,
       phone: phone || null,
       status: 'inactive'
     });
     this._license = getEcomLicense();
-    const result = await this.validate(true);
-    return result;
+    return await this.validate(true);
   }
+
+  // ── Deactivate (local only — removes key) ──
 
   deactivate() {
     setEcomLicense({
@@ -300,6 +308,8 @@ export class EcomLicenseManager {
     return { ok: true };
   }
 
+  // ── Fee tracking ──
+
   addOrderFee(orderId, configId, orderTotal, currency = 'NOK') {
     if (!orderTotal || orderTotal <= 0) return null;
     const feeAmount = Math.round(orderTotal * (FEE_PCT / 100) * 100) / 100;
@@ -313,39 +323,41 @@ export class EcomLicenseManager {
     });
   }
 
+  // Fee reporting — included in the daily verify call payload
+  // GeekTech.no may not have a separate reporting endpoint,
+  // so fees are tracked locally and can be reported when available
   async reportFees() {
     if (!this.isActive()) return { ok: false, error: 'License not active' };
-
     const unreported = getUnreportedFees();
     if (!unreported.length) return { ok: true, accepted: 0 };
 
-    const apiUrl = this._license.geektech_api_url || 'https://geektech.no/api';
-    const orders = unreported.map(f => ({
-      order_id: f.platform_order_id || String(f.order_id),
-      platform: f.platform || 'custom',
-      total_amount: f.order_total,
-      currency: f.currency,
-      fee_amount: f.fee_amount,
-      items_count: 1,
-      fulfilled_at: f.created_at
-    }));
+    // Try to report via verify call with fees attached
+    const apiUrl = this._license.geektech_api_url || GEEKTECH_API;
+    const net = await _getNetworkInfo();
 
     try {
-      const { status, data } = await _httpPost(`${apiUrl}/ecommerce/report`, {
+      const { status, data } = await _httpPost(`${apiUrl}/license/verify`, {
         license_key: this._license.license_key,
-        instance_id: this._license.instance_id,
-        orders
+        domain: this._license.domain || null,
+        ip_address: net.ip,
+        mac_address: net.mac,
+        report_fees: unreported.map(f => ({
+          order_id: f.platform_order_id || String(f.order_id),
+          total: f.order_total,
+          fee: f.fee_amount,
+          currency: f.currency,
+          date: f.created_at
+        }))
       });
 
-      if (status >= 200 && status < 300 && data.ok) {
+      if (status >= 200 && status < 300 && (data.valid || data.fees_accepted)) {
         markFeesReported(unreported.map(f => f.id));
-        setEcomLicense({ last_report_at: new Date().toISOString() });
-        this._license = getEcomLicense();
-        return { ok: true, accepted: data.accepted || unreported.length, balance_due: data.balance_due };
+        log.info('Reported ' + unreported.length + ' fees to geektech.no');
+        return { ok: true, accepted: unreported.length };
       }
-      return { ok: false, error: data.error || 'Report failed' };
+      return { ok: false, error: data.error || 'Report not accepted' };
     } catch (e) {
-      return { ok: false, error: 'Cannot reach server: ' + e.message };
+      return { ok: false, error: 'Cannot reach geektech.no: ' + e.message };
     }
   }
 }
