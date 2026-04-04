@@ -28,7 +28,7 @@
   function _renderNetworkPanel(el) {
     const s = _networkSettings;
     if (!s) return;
-    const tip = (text) => `<span class="settings-tooltip" title="${_esc(text)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:0.65rem;cursor:help;margin-left:6px;vertical-align:middle;border:1px solid var(--border-color)">?</span>`;
+    const tip = (text) => `<span class="stip" onclick="this.classList.toggle('stip-open')" tabindex="0"><span class="stip-icon">?</span><span class="stip-bubble">${_esc(text)}</span></span>`;
 
     let h = '';
 

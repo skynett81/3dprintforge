@@ -407,7 +407,7 @@
     const p = _cachedPrinters;
     const el = document.getElementById('general-sub-content');
     if (!el) return;
-    const tip = (text) => `<span class="settings-tooltip" title="${_esc(text)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:0.65rem;cursor:help;margin-left:6px;vertical-align:middle;border:1px solid var(--border-color)">?</span>`;
+    const tip = (text) => `<span class="stip" onclick="this.classList.toggle('stip-open')" tabindex="0"><span class="stip-icon">?</span><span class="stip-bubble">${_esc(text)}</span></span>`;
 
     if (_generalSubTab === 'preferences') {
       const locales = window.i18n.getSupportedLocales();
@@ -646,7 +646,7 @@
   function _renderSystemSubContent() {
     const el = document.getElementById('system-sub-content');
     if (!el) return;
-    const tip = (text) => `<span class="settings-tooltip" title="${_esc(text)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:0.65rem;cursor:help;margin-left:6px;vertical-align:middle;border:1px solid var(--border-color)">?</span>`;
+    const tip = (text) => `<span class="stip" onclick="this.classList.toggle('stip-open')" tabindex="0"><span class="stip-icon">?</span><span class="stip-bubble">${_esc(text)}</span></span>`;
 
     if (_systemSubTab === 'updates') {
       let h = '<div style="display:flex;flex-direction:column;gap:14px">';
@@ -1582,7 +1582,7 @@
       const envManaged = ac.envManaged;
       _authUsers = (ac.users || []).map(u => ({ ...u }));
 
-      const tip = (text) => `<span class="settings-tooltip" title="${_esc(text)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:0.65rem;cursor:help;margin-left:6px;vertical-align:middle;border:1px solid var(--border-color)">?</span>`;
+      const tip = (text) => `<span class="stip" onclick="this.classList.toggle('stip-open')" tabindex="0"><span class="stip-icon">?</span><span class="stip-bubble">${_esc(text)}</span></span>`;
       let html = `
         <div class="settings-card">
           <div class="card-title">${t('settings.auth_title')} ${tip('Protect your dashboard with username/password login. Supports multiple users with different permission levels')}</div>`;
