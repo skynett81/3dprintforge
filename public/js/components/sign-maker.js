@@ -35,8 +35,8 @@
       .sm-tmpl-btn { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:6px 12px; cursor:pointer; transition:all 0.15s; font-size:0.78rem; font-weight:600; display:flex; align-items:center; gap:5px; }
       .sm-tmpl-btn:hover { border-color:var(--accent-blue); }
       .sm-tmpl-btn.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); color:var(--accent-green); }
-      .sm-layout { display:grid; grid-template-columns:340px 1fr; gap:16px; min-height:400px; }
-      .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 200px); }
+      .sm-layout { display:grid; grid-template-columns:420px 1fr; gap:16px; min-height:400px; }
+      .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 200px); padding-right:4px; }
       .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:14px; }
       .sm-preview-area { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; padding:10px; }
       .sm-preview { background:#fff; color:#000; border-radius:12px; padding:24px; text-align:center; display:inline-block; box-shadow:0 4px 24px rgba(0,0,0,0.3); max-width:100%; }
@@ -130,7 +130,7 @@
 
     // Sign Plate
     h += _section('Sign Plate', `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Width (mm)', 'sm-3d-w', 40, 150, 80, 5)}
         ${_rangeField('Height (mm)', 'sm-3d-h', 30, 120, 55, 5)}
         ${_rangeField('Thickness (mm)', 'sm-3d-depth', 1, 5, 2, 0.5)}
@@ -139,7 +139,7 @@
 
     // QR Code
     h += _section('QR Code', `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('QR size (mm)', 'sm-3d-qrsize', 15, 80, 35, 1)}
         ${_rangeField('Dot size (mm)', 'sm-3d-pixel', 0.6, 2.0, 1.2, 0.2)}
         ${_rangeField('Height (mm)', 'sm-3d-qrh', 0.2, 2.0, 0.8, 0.2)}
@@ -156,7 +156,7 @@
 
     // Text
     h += _section('Text', `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Text height (mm)', 'sm-3d-texth', 0.2, 2.0, 0.8, 0.2)}
         ${_rangeField('Text size (mm)', 'sm-3d-textsize', 4, 20, 8, 1)}
       </div>`, true);
@@ -166,7 +166,7 @@
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-border"> Enable frame
       </label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Frame width (mm)', 'sm-3d-framew', 2, 12, 5, 1)}
         ${_rangeField('Lip width (mm)', 'sm-3d-lip', 0, 5, 2, 0.5)}
         ${_rangeField('Lip depth (mm)', 'sm-3d-lipd', 0.5, 3, 1.5, 0.5)}
@@ -179,7 +179,7 @@
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-stand" checked> Enable desk stand
       </label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Slot depth (mm)', 'sm-3d-slotd', 5, 25, 15, 1)}
         ${_rangeField('Slot tolerance (mm)', 'sm-3d-slottol', 0.1, 0.5, 0.3, 0.05)}
         ${_rangeField('Base height (mm)', 'sm-3d-baseh', 3, 15, 8, 1)}
@@ -191,7 +191,7 @@
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-magnets"> Enable magnet holes
       </label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         <div>
           <label class="form-label" style="font-size:0.75rem">Diameter</label>
           <select class="form-input" id="sm-3d-magdia" style="font-size:0.8rem">
@@ -217,7 +217,7 @@
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-nfc"> Enable NFC tag slot
       </label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         <div>
           <label class="form-label" style="font-size:0.75rem">Shape</label>
           <select class="form-input" id="sm-3d-nfcshape" style="font-size:0.8rem">
@@ -235,7 +235,7 @@
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-holes"> Enable mount holes
       </label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Hole diameter (mm)', 'sm-3d-holedia', 2, 6, 4, 0.5)}
         ${_rangeField('Margin (mm)', 'sm-3d-holemarg', 3, 10, 5, 1)}
       </div>`);
@@ -602,12 +602,12 @@
     </div>`;
   }
   function _rangeField(label, id, min, max, val, step) {
-    return `<div style="margin-bottom:6px">
-      <label class="form-label" style="font-size:0.72rem;margin-bottom:2px">${label}</label>
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="number" class="form-input" id="${id}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:55px;font-size:0.8rem;padding:3px 6px" oninput="const s=this.nextElementSibling;if(s)s.value=this.value">
-        <input type="range" min="${min}" max="${max}" value="${val}" step="${step}" style="flex:1;accent-color:var(--accent-blue)" oninput="const n=this.previousElementSibling;if(n)n.value=this.value">
+    return `<div style="margin-bottom:5px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <label style="font-size:0.7rem;color:var(--text-muted)">${label}</label>
+        <input type="number" class="form-input" id="${id}" value="${val}" min="${min}" max="${max}" step="${step}" style="width:50px;font-size:0.75rem;padding:2px 4px;text-align:center;border-radius:4px" oninput="const s=this.parentElement.nextElementSibling;if(s)s.value=this.value">
       </div>
+      <input type="range" min="${min}" max="${max}" value="${val}" step="${step}" style="width:100%;accent-color:var(--accent-blue);margin-top:2px" oninput="const n=this.previousElementSibling.querySelector('input[type=number]');if(n)n.value=this.value">
     </div>`;
   }
 })();
