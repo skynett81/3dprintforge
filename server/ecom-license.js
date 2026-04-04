@@ -250,7 +250,7 @@ export class EcomLicenseManager {
       email: this._license?.geektech_email || null,
       domain: this._license?.domain || null,
       phone: this._license?.phone || null,
-      max_printers: this._license?.max_printers || 1,
+      max_printers: this._license?.max_printers ?? null,
       license_type: this._license?.license_type || 'none',
       allowed_ips: this._license?.allowed_ips || null,
       allowed_macs: this._license?.allowed_macs || null,
