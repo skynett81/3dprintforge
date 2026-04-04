@@ -16,7 +16,7 @@ export function restoreBackup(filename) {
   // Create a safety backup before restoring
   createBackup('pre-restore');
   copyFileSync(srcPath, DB_PATH);
-  log.info('Database gjenopprettet fra: ' + filename);
+  log.info('Database restored from: ' + filename);
   return { restored: filename };
 }
 
@@ -27,7 +27,7 @@ export function uploadBackup(buffer, originalName) {
   const destPath = join(BACKUP_DIR, filename);
   writeFileSync(destPath, buffer);
   const stat = statSync(destPath);
-  log.info('Backup lastet opp: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
+  log.info('Backup uploaded: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
   return { filename, size: stat.size, created_at: stat.mtime.toISOString() };
 }
 
@@ -39,7 +39,7 @@ export function createBackup(label = 'manual') {
   copyFileSync(DB_PATH, destPath);
   pruneOldBackups();
   const stat = statSync(destPath);
-  log.info('Backup opprettet: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
+  log.info('Backup created: ' + filename + ' (' + Math.round(stat.size / 1024) + 'KB)');
   return { filename, size: stat.size, created_at: stat.mtime.toISOString() };
 }
 
@@ -58,7 +58,7 @@ function pruneOldBackups() {
   const backups = listBackups();
   if (backups.length > MAX_BACKUPS) {
     for (const old of backups.slice(MAX_BACKUPS)) {
-      try { unlinkSync(join(BACKUP_DIR, old.filename)); } catch (e) { log.debug('Kunne ikke slette gammel backup ' + old.filename + ': ' + e.message); }
+      try { unlinkSync(join(BACKUP_DIR, old.filename)); } catch (e) { log.debug('Could not delete old backup ' + old.filename + ': ' + e.message); }
     }
   }
 }

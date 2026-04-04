@@ -20,7 +20,7 @@
     if (remainingSec <= 0) return '';
     const finish = new Date(Date.now() + remainingSec * 1000);
     const timeStr = String(finish.getHours()).padStart(2, '0') + ':' + String(finish.getMinutes()).padStart(2, '0');
-    return (typeof t === 'function' ? t('countdown.finish_at', { time: timeStr }) : null) || ('Ferdig kl. ' + timeStr);
+    return (typeof t === 'function' ? t('countdown.finish_at', { time: timeStr }) : null) || ('Done at ' + timeStr);
   }
 
   function _truncateFilename(name, maxLen) {
@@ -64,7 +64,7 @@
 
   function _showIdle(container) {
     if (!container.querySelector('.countdown-idle')) {
-      container.innerHTML = '<div class="countdown-idle">' + (typeof t === 'function' ? t('countdown.no_active_print') : 'Ingen aktiv utskrift') + '</div>';
+      container.innerHTML = '<div class="countdown-idle">' + (typeof t === 'function' ? t('countdown.no_active_print') : 'No active print') + '</div>';
       _built = false;
     }
   }
@@ -91,7 +91,7 @@
     const layerCurrent = data.layer_num || 0;
     const layerTotal = data.total_layer_num || 0;
     const finishText = _estimateFinishTime(_remainingSec);
-    const pauseLabel = data.gcode_state === 'PAUSE' ? ' (Pauset)' : '';
+    const pauseLabel = data.gcode_state === 'PAUSE' ? ' (Paused)' : '';
 
     // Update only the values
     const progressEl = document.getElementById('ct-progress');
@@ -103,7 +103,7 @@
     const infoEl = document.getElementById('ct-info');
     if (infoEl) {
       const infoText = percent + '% ' +
-        (layerTotal > 0 ? '\u00B7 Lag ' + layerCurrent + ' / ' + layerTotal : '') +
+        (layerTotal > 0 ? '\u00B7 Layer ' + layerCurrent + ' / ' + layerTotal : '') +
         pauseLabel;
       infoEl.textContent = infoText;
     }

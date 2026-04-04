@@ -69,7 +69,7 @@
     const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, isExternal ? 0 : amsTrayIdx);
 
     // Bruk den laveste av AMS-sensor og spoldatabasen
-    // AMS-sensor kan vise for høyt etter feilede prints der filament ble kastet
+    // AMS sensor may show too high after failed prints where filament was wasted
     const amsRemain = (tray.remain >= 0 && tray.remain <= 100) ? Math.round(tray.remain) : null;
     const spoolRemain = (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0)
       ? Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100)) : null;

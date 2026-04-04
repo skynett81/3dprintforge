@@ -67,7 +67,7 @@ export class FailureDetectionService {
 
       const frame = readFileSync(framePath);
       const stats = this._getFrameStats(frame);
-      try { unlinkSync(framePath); } catch (e) { log.debug('Kunne ikke slette frame-fil ' + framePath + ': ' + e.message); }
+      try { unlinkSync(framePath); } catch (e) { log.debug('Could not delete frame file ' + framePath + ': ' + e.message); }
 
       // Load baseline stats
       const baselineJson = getInventorySetting(`bed_check_baseline_${printerId}`);
@@ -87,7 +87,7 @@ export class FailureDetectionService {
 
       return { clear: isClear, confidence: Math.min(Math.max(similarity, 0.1), 0.95), reason: isClear ? 'matches_baseline' : 'differs_from_baseline', stats: { entropy: +stats.entropy.toFixed(2), variance: +stats.variance.toFixed(0), similarity: +similarity.toFixed(3) } };
     } catch (e) {
-      try { unlinkSync(framePath); } catch (e2) { log.debug('Kunne ikke slette frame-fil ' + framePath + ': ' + e2.message); }
+      try { unlinkSync(framePath); } catch (e2) { log.debug('Could not delete frame file ' + framePath + ': ' + e2.message); }
       return { clear: false, reason: 'error', error: e.message };
     }
   }
@@ -105,10 +105,10 @@ export class FailureDetectionService {
         entropy: stats.entropy, variance: stats.variance, highRatio: stats.highRatio,
         lowRatio: stats.lowRatio, mean: stats.mean, captured_at: new Date().toISOString()
       }));
-      try { unlinkSync(framePath); } catch (e) { log.debug('Kunne ikke slette baseline-frame ' + framePath + ': ' + e.message); }
+      try { unlinkSync(framePath); } catch (e) { log.debug('Could not delete baseline frame ' + framePath + ': ' + e.message); }
       return { ok: true, stats: { entropy: +stats.entropy.toFixed(2), variance: +stats.variance.toFixed(0) } };
     } catch (e) {
-      try { unlinkSync(framePath); } catch (e2) { log.debug('Kunne ikke slette baseline-frame ' + framePath + ': ' + e2.message); }
+      try { unlinkSync(framePath); } catch (e2) { log.debug('Could not delete baseline frame ' + framePath + ': ' + e2.message); }
       return { ok: false, error: e.message };
     }
   }
@@ -161,10 +161,10 @@ export class FailureDetectionService {
       }
 
       // Clean up frame if no detection
-      try { unlinkSync(framePath); } catch (e) { log.debug('Kunne ikke slette analyse-frame ' + framePath + ': ' + e.message); }
+      try { unlinkSync(framePath); } catch (e) { log.debug('Could not delete analysis frame ' + framePath + ': ' + e.message); }
     } catch (e) {
       log.warn('Analysis error for ' + printerId + ': ' + e.message);
-      try { unlinkSync(framePath); } catch (e2) { log.debug('Kunne ikke slette analyse-frame ' + framePath + ': ' + e2.message); }
+      try { unlinkSync(framePath); } catch (e2) { log.debug('Could not delete analysis frame ' + framePath + ': ' + e2.message); }
     }
   }
 
@@ -179,7 +179,7 @@ export class FailureDetectionService {
       const proc = spawn('ffmpeg', args, { stdio: 'pipe', timeout: 15000 });
       proc.on('close', code => code === 0 ? resolve() : reject(new Error(`FFmpeg exit ${code}`)));
       proc.on('error', reject);
-      setTimeout(() => { try { proc.kill('SIGKILL'); } catch (e) { log.debug('Kunne ikke drepe ffmpeg-prosess: ' + e.message); } }, 15000);
+      setTimeout(() => { try { proc.kill('SIGKILL'); } catch (e) { log.debug('Could not kill ffmpeg process: ' + e.message); } }, 15000);
     });
   }
 
@@ -288,7 +288,7 @@ export class FailureDetectionService {
         monitor.frameCount++;
       }
     } catch (e) {
-      log.warn('Feil ved bildeanalyse for ' + printerId + ': ' + e.message);
+      log.warn('Error during image analysis for ' + printerId + ': ' + e.message);
     }
 
     return { detected: false };

@@ -29,13 +29,13 @@ export function initConnection() {
  * Must be called after initConnection().
  */
 export function getDb() {
-  if (!db) throw new Error('Database ikke initialisert — kall initConnection() først');
+  if (!db) throw new Error('Database not initialized — call initConnection() first');
   return db;
 }
 
 /**
- * Inject en database-instans direkte (brukes kun i tester).
- * Gjør det mulig å bruke en in-memory-database uten å kalle initConnection().
+ * Inject a database instance directly (used only in tests).
+ * Allows using an in-memory database without calling initConnection().
  */
 export function setDb(instance) {
   db = instance;

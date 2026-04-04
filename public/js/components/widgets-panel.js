@@ -41,7 +41,7 @@
         body: JSON.stringify({ name: 'default', layout: _widgets, active: true })
       });
       if (res.ok && typeof window.showToast === 'function') {
-        window.showToast(_tl('widgets.saved', 'Layout lagret'), 'success');
+        window.showToast(_tl('widgets.saved', 'Layout saved'), 'success');
       }
     } catch {}
   }
@@ -60,16 +60,16 @@
     el.innerHTML = `<div class="wp-panel">
       <!-- Enabled section -->
       <div class="card wp-section">
-        <div class="card-title">${_tl('widgets.enabled', 'Aktive widgets')}</div>
+        <div class="card-title">${_tl('widgets.enabled', 'Active widgets')}</div>
         <div class="wp-enabled-list" id="wp-enabled-list">
           ${enabledWidgets.length === 0
-            ? `<div class="wp-empty-slot">${_tl('widgets.no_widgets', 'Ingen widgets aktivert')}</div>`
+            ? `<div class="wp-empty-slot">${_tl('widgets.no_widgets', 'No widgets enabled')}</div>`
             : enabledWidgets.map(w => {
               const meta = getMeta(w.id);
               return `<div class="wp-enabled-item" data-widget-id="${w.id}">
                 <span class="wp-item-icon">${meta.icon}</span>
                 <span class="wp-item-name">${_tl('widgets.' + w.id, w.id)}</span>
-                <button class="wp-remove-btn" data-remove="${w.id}" title="${_tl('widgets.remove', 'Fjern')}">
+                <button class="wp-remove-btn" data-remove="${w.id}" title="${_tl('widgets.remove', 'Remove')}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>`;
@@ -79,7 +79,7 @@
 
       <!-- Available widgets -->
       <div class="card wp-section">
-        <div class="card-title">${_tl('widgets.available', 'Tilgjengelige widgets')}</div>
+        <div class="card-title">${_tl('widgets.available', 'Available widgets')}</div>
         <div class="wp-available-grid">
           ${WIDGET_TYPES.map(wt => {
             const entry = _widgets.find(w => w.id === wt.id);
@@ -100,7 +100,7 @@
       <!-- Preview -->
       ${enabledWidgets.length > 0 ? `
       <div class="card wp-section">
-        <div class="card-title">${_tl('widgets.preview', 'Forhåndsvisning')}</div>
+        <div class="card-title">${_tl('widgets.preview', 'Preview')}</div>
         <div class="wp-preview-grid">
           ${enabledWidgets.map(w => {
             const meta = getMeta(w.id);
@@ -116,7 +116,7 @@
       <div class="wp-actions">
         <button class="matrec-recalc-btn" id="wp-save-btn" style="margin-left:0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          ${_tl('widgets.save', 'Lagre layout')}
+          ${_tl('widgets.save', 'Save layout')}
         </button>
         <button class="ce-secondary-btn" id="wp-reset-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>

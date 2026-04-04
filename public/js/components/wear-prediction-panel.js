@@ -37,24 +37,24 @@
   function getStatusInfo(hoursRemaining, component) {
     const lifetime = DEFAULT_LIFETIMES[component] || 1000;
     const pctUsed = lifetime > 0 ? Math.min(100, ((lifetime - hoursRemaining) / lifetime) * 100) : 0;
-    if (pctUsed >= 95) return { cls: 'bad', color: 'var(--accent-red)', label: _tl('wear.status_critical', 'Kritisk'), pctUsed };
-    if (pctUsed >= 90) return { cls: 'warn', color: 'var(--accent-orange)', label: _tl('wear.status_warning', 'Advarsel'), pctUsed };
-    if (pctUsed >= 70) return { cls: 'fair', color: 'var(--accent-yellow, #e6a817)', label: _tl('wear.status_fair', 'Brukbar'), pctUsed };
-    return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'God'), pctUsed };
+    if (pctUsed >= 95) return { cls: 'bad', color: 'var(--accent-red)', label: _tl('wear.status_critical', 'Critical'), pctUsed };
+    if (pctUsed >= 90) return { cls: 'warn', color: 'var(--accent-orange)', label: _tl('wear.status_warning', 'Warning'), pctUsed };
+    if (pctUsed >= 70) return { cls: 'fair', color: 'var(--accent-yellow, #e6a817)', label: _tl('wear.status_fair', 'Fair'), pctUsed };
+    return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'Good'), pctUsed };
   }
 
   function getPrinterHealth(predictions) {
-    if (!predictions || !predictions.length) return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'God') };
+    if (!predictions || !predictions.length) return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'Good') };
     let worst = 'good';
     for (const p of predictions) {
       const info = getStatusInfo(p.hours_remaining, p.component);
-      if (info.cls === 'bad') return { cls: 'bad', color: 'var(--accent-red)', label: _tl('wear.status_critical', 'Kritisk') };
+      if (info.cls === 'bad') return { cls: 'bad', color: 'var(--accent-red)', label: _tl('wear.status_critical', 'Critical') };
       if (info.cls === 'warn') worst = 'warn';
       else if (info.cls === 'fair' && worst === 'good') worst = 'fair';
     }
-    if (worst === 'warn') return { cls: 'warn', color: 'var(--accent-orange)', label: _tl('wear.status_warning', 'Advarsel') };
-    if (worst === 'fair') return { cls: 'fair', color: 'var(--accent-yellow, #e6a817)', label: _tl('wear.status_fair', 'Brukbar') };
-    return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'God') };
+    if (worst === 'warn') return { cls: 'warn', color: 'var(--accent-orange)', label: _tl('wear.status_warning', 'Warning') };
+    if (worst === 'fair') return { cls: 'fair', color: 'var(--accent-yellow, #e6a817)', label: _tl('wear.status_fair', 'Fair') };
+    return { cls: 'good', color: 'var(--accent-green)', label: _tl('wear.status_good', 'Good') };
   }
 
   // API
@@ -87,10 +87,10 @@
 
     // Toolbar
     html += `<div class="matrec-toolbar" style="margin-bottom:16px">
-      <div style="font-size:0.8rem;color:var(--text-muted)">${predictions.length} ${_tl('wear.components', 'komponenter')} / ${Object.keys(printerMap).length} ${_tl('wear.printers', 'printere')}</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">${predictions.length} ${_tl('wear.components', 'components')} / ${Object.keys(printerMap).length} ${_tl('wear.printers', 'printers')}</div>
       <button class="matrec-recalc-btn" id="wear-recalc-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-        ${_tl('wear.recalculate', 'Beregn på nytt')}
+        ${_tl('wear.recalculate', 'Recalculate')}
       </button>
     </div>`;
 
@@ -99,7 +99,7 @@
       html += `<div class="card wp-section" style="margin-bottom:16px;padding:0;overflow:hidden">
         <div class="wear-alert-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          ${_tl('wear.active_alerts', 'Aktive varsler')}
+          ${_tl('wear.active_alerts', 'Active alerts')}
           <span class="wear-alert-count">${alerts.length}</span>
         </div>`;
       for (const alert of alerts) {
@@ -107,7 +107,7 @@
         html += `<div class="wear-alert-row${isCritical ? ' wear-alert--critical' : ''}">
           <span class="hs-badge hs-badge-${isCritical ? 'bad' : 'warn'}">${_esc(alert.alert_type)}</span>
           <span class="wear-alert-msg">${_esc(printerNames[alert.printer_id] || alert.printer_id)} — ${_esc(alert.message)}</span>
-          <button class="ce-secondary-btn wear-ack-btn" data-alert-id="${alert.id}" style="padding:4px 10px;font-size:0.72rem">${_tl('wear.acknowledge', 'Bekreft')}</button>
+          <button class="ce-secondary-btn wear-ack-btn" data-alert-id="${alert.id}" style="padding:4px 10px;font-size:0.72rem">${_tl('wear.acknowledge', 'Acknowledge')}</button>
         </div>`;
       }
       html += `</div>`;
@@ -139,13 +139,13 @@
           html += `<div class="wear-comp">
             <div class="wear-comp-header">
               <span class="wear-comp-name">${_esc(compLabel)}</span>
-              <span class="wear-comp-remaining">${formatHours(pred.hours_remaining)} ${_tl('wear.remaining', 'igjen')}</span>
+              <span class="wear-comp-remaining">${formatHours(pred.hours_remaining)} ${_tl('wear.remaining', 'remaining')}</span>
             </div>
             <div class="matrec-bar-track" style="height:6px">
               <div class="matrec-bar-fill" style="width:${pctUsed}%;background:${info.color}"></div>
             </div>
             <div class="wear-comp-footer">
-              <span>${Math.round(pctUsed)}% ${_tl('wear.used', 'brukt')}</span>
+              <span>${Math.round(pctUsed)}% ${_tl('wear.used', 'used')}</span>
               <span>${pred.predicted_failure_at ? formatDate(pred.predicted_failure_at) : '--'}</span>
             </div>
           </div>`;
@@ -154,7 +154,7 @@
         html += `</div>`;
         if (costInfo && costInfo.total > 0) {
           html += `<div class="wear-printer-cost">
-            <span>${_tl('wear.total_cost', 'Total kostnad')}</span>
+            <span>${_tl('wear.total_cost', 'Total cost')}</span>
             <span>${costInfo.total.toFixed(0)} ${costInfo.currency || 'NOK'}</span>
           </div>`;
         }
@@ -164,7 +164,7 @@
     } else {
       html += `<div class="matrec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-        <p>${_tl('wear.no_data', 'Ingen slitasjedata ennå.')}</p>
+        <p>${_tl('wear.no_data', 'No wear data yet.')}</p>
       </div>`;
     }
 
@@ -172,12 +172,12 @@
     const costsWithData = costs.filter(c => c.total > 0);
     if (costsWithData.length > 0) {
       html += `<div class="card" style="margin-top:16px;padding:0;overflow:hidden">
-        <div style="padding:16px 20px 0"><div class="card-title">${_tl('wear.cost_summary', 'Kostnadssammendrag')}</div></div>
+        <div style="padding:16px 20px 0"><div class="card-title">${_tl('wear.cost_summary', 'Cost summary')}</div></div>
         <table class="matrec-table">
           <thead><tr>
             <th style="text-align:left">${_tl('wear.printer', 'Printer')}</th>
             <th>${_tl('wear.total_cost', 'Total')}</th>
-            <th>${_tl('wear.items', 'Deler')}</th>
+            <th>${_tl('wear.items', 'Parts')}</th>
           </tr></thead>
           <tbody>`;
       for (const c of costsWithData) {

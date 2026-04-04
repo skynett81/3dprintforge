@@ -214,7 +214,7 @@
       const segments = [
         { value: bd.purge_g || 0, color: 'var(--accent-blue)', label: t('waste.startup_purge') },
         { value: bd.color_change_g || 0, color: 'var(--accent-orange)', label: t('waste.color_changes') },
-        { value: bd.failed_g || 0, color: 'var(--accent-red)', label: 'Feilet' },
+        { value: bd.failed_g || 0, color: 'var(--accent-red)', label: 'Failed' },
         { value: bd.manual_g || 0, color: 'var(--accent-purple)', label: t('waste.manual') }
       ].filter(seg => seg.value > 0);
       const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
@@ -341,7 +341,7 @@
       h += `<button class="form-btn" data-ripple onclick="recalcWaste()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
         ${ICONS.refresh} ${typeof t === 'function' ? t('waste.recalculate_waste') : 'Rekalkuler waste'}
       </button>
-      <p class="text-muted" style="font-size:0.6rem;text-align:center;margin:0">${typeof t === 'function' ? t('waste.recalculate_hint') : 'Oppdaterer all historikk med nåværende innstillinger'}</p>`;
+      <p class="text-muted" style="font-size:0.6rem;text-align:center;margin:0">${typeof t === 'function' ? t('waste.recalculate_hint') : 'Updates all history with current settings'}</p>`;
 
       h += `</div>`;
       return h;
@@ -358,7 +358,7 @@
         const name = (p.filename || '?').replace(/\.3mf$|\.gcode\.3mf$/i, '');
         const rankClass = i < 3 ? ` waste-top-rank--${i + 1}` : '';
         const statusIcon = (p.status === 'failed' || p.status === 'cancelled')
-          ? `<span class="pill pill-failed" style="font-size:0.55rem;padding:1px 4px">${p.status === 'failed' ? 'Feilet' : 'Avbrutt'}</span>` : '';
+          ? `<span class="pill pill-failed" style="font-size:0.55rem;padding:1px 4px">${p.status === 'failed' ? 'Failed' : 'Cancelled'}</span>` : '';
         h += `<div class="waste-top-item">
           <div class="waste-top-rank${rankClass}">${i + 1}</div>
           ${colorSwatch(p.filament_color, 12)}
@@ -376,7 +376,7 @@
         if (purgePct > 40) {
           h += `<div style="margin-top:10px;padding:8px 12px;background:rgba(59,130,246,0.08);border-radius:8px;font-size:0.72rem;display:flex;align-items:flex-start;gap:8px;color:var(--accent-blue)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <span>${t('waste.savings_tip')}: ${purgePct}% av waste er oppstartspurge. Batch flere prints for å redusere antall oppstarter.</span>
+            <span>${t('waste.savings_tip')}: ${purgePct}% of waste is startup purge. Batch multiple prints to reduce the number of startups.</span>
           </div>`;
         }
       }
@@ -516,7 +516,7 @@
         const isFailed = r.status === 'failed' || r.status === 'cancelled';
         const borderColor = isFailed ? 'var(--accent-red)' : r.color_changes > 0 ? 'var(--accent-purple)' : 'var(--accent-orange)';
         const pillClass = isFailed ? 'pill pill-failed' : isAuto ? 'pill pill-completed' : 'pill pill-cancelled';
-        const label = isFailed ? (r.status === 'failed' ? 'Feilet' : 'Avbrutt') : isAuto ? t('waste.auto') : t('waste.manual');
+        const label = isFailed ? (r.status === 'failed' ? 'Failed' : 'Cancelled') : isAuto ? t('waste.auto') : t('waste.manual');
         const deleteBtn = !isAuto && r.id ? ` <button class="filament-delete-btn" onclick="deleteWasteEntry(${r.id})" title="${t('settings.delete')}" aria-label="${t('settings.delete')}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '';
 
         // Waste efficiency for this print

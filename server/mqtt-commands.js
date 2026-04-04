@@ -147,7 +147,7 @@ export function buildBuzzerCommands(melody, customTones) {
     .map(t => buildGcodeCommand(`M300 S${Math.round(t.freq)} P${Math.round(t.duration)}`));
 }
 
-/** Start AMS tørking — sender tørkeparametre via MQTT. */
+/** Start AMS drying — sends drying parameters via MQTT. */
 export function buildAmsDryCommand(amsId, tempC, durationMin) {
   return {
     print: {
@@ -161,7 +161,7 @@ export function buildAmsDryCommand(amsId, tempC, durationMin) {
   };
 }
 
-/** Stopp AMS tørking. */
+/** Stop AMS drying. */
 export function buildAmsStopDryCommand(amsId) {
   return {
     print: {
@@ -173,7 +173,7 @@ export function buildAmsStopDryCommand(amsId) {
   };
 }
 
-/** Hent MQTT debug-melding (pushall for full state dump). */
+/** Get MQTT debug message (pushall for full state dump). */
 export function buildPushAllCommand() {
   return { pushing: { sequence_id: nextSeq(), command: 'pushall' } };
 }

@@ -56,7 +56,7 @@
   }
 
   function stateLabel(state) {
-    const map = { RUNNING: t('state.running') || 'Skriver ut', IDLE: t('state.idle') || 'Inaktiv', PAUSE: t('state.pause') || 'Pauset', FINISH: t('state.finish') || 'Fullført', FAILED: t('state.failed') || 'Feilet', PREPARE: t('state.prepare') || 'Forbereder' };
+    const map = { RUNNING: t('state.running') || 'Printing', IDLE: t('state.idle') || 'Idle', PAUSE: t('state.pause') || 'Paused', FINISH: t('state.finish') || 'Completed', FAILED: t('state.failed') || 'Failed', PREPARE: t('state.prepare') || 'Preparing' };
     return map[state] || state || '--';
   }
 

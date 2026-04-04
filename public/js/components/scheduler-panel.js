@@ -28,8 +28,8 @@
 
   function _panelSwitcher() {
     return '<div class="tabs" style="margin-bottom:12px">' +
-      '<button class="tab-btn" onclick="openPanel(\'queue\')">' + (t('queue.title') || 'Utskriftskø') + '</button>' +
-      '<button class="tab-btn active" onclick="openPanel(\'scheduler\')">' + (t('tabs.scheduler') || 'Planlegger') + '</button>' +
+      '<button class="tab-btn" onclick="openPanel(\'queue\')">' + (t('queue.title') || 'Print Queue') + '</button>' +
+      '<button class="tab-btn active" onclick="openPanel(\'scheduler\')">' + (t('tabs.scheduler') || 'Scheduler') + '</button>' +
       '</div>';
   }
 
@@ -404,9 +404,9 @@
     const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const statusLabels = {
       completed: t('scheduler.completed') || 'Fullfort',
-      failed: t('scheduler.failed') || 'Feilet',
+      failed: t('scheduler.failed') || 'Failed',
       running: t('scheduler.in_progress') || 'Pagar',
-      paused: t('scheduler.paused') || 'Pauset',
+      paused: t('scheduler.paused') || 'Paused',
       pending: t('scheduler.pending') || 'Ventende'
     };
 
@@ -480,9 +480,9 @@
 
     const statusMap = {
       completed: { label: t('scheduler.completed') || 'Fullfort', color: '#00ae42' },
-      failed: { label: t('scheduler.failed') || 'Feilet', color: '#e53935' },
+      failed: { label: t('scheduler.failed') || 'Failed', color: '#e53935' },
       running: { label: t('scheduler.in_progress') || 'Pagar', color: '#f59e0b' },
-      paused: { label: t('scheduler.paused') || 'Pauset', color: '#f59e0b' },
+      paused: { label: t('scheduler.paused') || 'Paused', color: '#f59e0b' },
       pending: { label: t('scheduler.pending') || 'Ventende', color: '#1279ff' }
     };
     const st = statusMap[ev.status] || { label: ev.status, color: 'var(--text-muted)' };
@@ -527,7 +527,7 @@
     // MakerWorld model link
     let modelHtml = '';
     if (ev._cloud?.designId) {
-      modelHtml = `<div class="sched-field"><label>Modellkilde</label><div><a href="https://makerworld.com/en/models/${ev._cloud.designId}" target="_blank" rel="noopener" class="ph-model-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Åpne på MakerWorld</a></div></div>`;
+      modelHtml = `<div class="sched-field"><label>Model source</label><div><a href="https://makerworld.com/en/models/${ev._cloud.designId}" target="_blank" rel="noopener" class="ph-model-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open on MakerWorld</a></div></div>`;
     }
 
     // Review section for history events
@@ -560,7 +560,7 @@
           <div id="sched-reject-form-${ev._historyId}" style="display:none">
             <div class="sched-field"><label>Waste (gram)</label><input type="number" id="sched-waste-${ev._historyId}" min="0" step="0.1" placeholder="0"></div>
             <div class="sched-field"><label>Notater</label><textarea id="sched-notes-${ev._historyId}" rows="2" placeholder="Valgfritt..."></textarea></div>
-            <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${ev._historyId},'rejected',this)">Lagre avvisning</button>
+            <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${ev._historyId},'rejected',this)">Save rejection</button>
           </div>
         </div>`;
       }
@@ -742,7 +742,7 @@
       const labels = { approved: 'Godkjent', rejected: 'Avvist', partial: 'Delvis godkjent' };
       if (typeof showToast === 'function') showToast(labels[status] || status, 'success');
     } catch (e) {
-      if (typeof showToast === 'function') showToast('Feil ved lagring', 'error');
+      if (typeof showToast === 'function') showToast('Error saving', 'error');
     }
   };
 
@@ -760,7 +760,7 @@
       <div id="sched-reject-form-${historyId}" style="display:none">
         <div class="sched-field"><label>Waste (gram)</label><input type="number" id="sched-waste-${historyId}" min="0" step="0.1" placeholder="0"></div>
         <div class="sched-field"><label>Notater</label><textarea id="sched-notes-${historyId}" rows="2" placeholder="Valgfritt..."></textarea></div>
-        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${historyId},'rejected',this)">Lagre</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${historyId},'rejected',this)">Save</button>
       </div>`;
   };
 

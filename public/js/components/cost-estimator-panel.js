@@ -33,8 +33,8 @@
   // ═══ Tab bar ═══
 
   const TABS = [
-    { id: 'estimate', labelKey: 'cost_estimator.estimate_tab', fallback: 'Estimat' },
-    { id: 'saved', labelKey: 'cost_estimator.saved_tab', fallback: 'Lagrede' }
+    { id: 'estimate', labelKey: 'cost_estimator.estimate_tab', fallback: 'Estimate' },
+    { id: 'saved', labelKey: 'cost_estimator.saved_tab', fallback: 'Saved' }
   ];
 
   function _tabBarHtml() {
@@ -132,7 +132,7 @@
 
   async function processFile(file) {
     const statusEl = document.getElementById('ce-upload-status');
-    if (statusEl) { statusEl.textContent = _tl('cost_estimator.parsing', 'Analyserer fil...'); statusEl.style.display = 'flex'; statusEl.className = 'ce-status ce-status--info'; }
+    if (statusEl) { statusEl.textContent = _tl('cost_estimator.parsing', 'Analyzing file...'); statusEl.style.display = 'flex'; statusEl.className = 'ce-status ce-status--info'; }
 
     try {
       _fileData = await uploadFile(file);
@@ -158,7 +158,7 @@
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
       <div class="ce-drop-text">
-        <div class="ce-drop-title">${_tl('cost_estimator.drop_title', 'Slipp fil her')}</div>
+        <div class="ce-drop-title">${_tl('cost_estimator.drop_title', 'Drop file here')}</div>
         <div class="ce-drop-subtitle">${_tl('cost_estimator.drop_subtitle', '3MF, GCode')}</div>
       </div>
       <input type="file" id="ce-file-input" accept=".3mf,.gcode,.gco,.g" style="display:none">
@@ -178,19 +178,19 @@
         </div>
         <div class="stats-strip ce-file-stats">
           <div class="spark-panel">
-            <span class="spark-label">${_tl('cost_estimator.print_time', 'Tid')}</span>
+            <span class="spark-label">${_tl('cost_estimator.print_time', 'Time')}</span>
             <span class="spark-value">${formatTime(_fileData.estimated_time_min)}</span>
           </div>
           <div class="spark-panel">
-            <span class="spark-label">${_tl('cost_estimator.total_weight', 'Vekt')}</span>
+            <span class="spark-label">${_tl('cost_estimator.total_weight', 'Weight')}</span>
             <span class="spark-value">${_fileData.total_weight_g ? _fileData.total_weight_g.toFixed(1) + ' g' : '--'}</span>
           </div>
           <div class="spark-panel">
-            <span class="spark-label">${_tl('cost_estimator.colors', 'Farger')}</span>
+            <span class="spark-label">${_tl('cost_estimator.colors', 'Colors')}</span>
             <span class="spark-value">${filaments.length}</span>
           </div>
           <div class="spark-panel" style="border-right:none">
-            <span class="spark-label">${_tl('cost_estimator.color_changes', 'Filamentbytter')}</span>
+            <span class="spark-label">${_tl('cost_estimator.color_changes', 'Filament changes')}</span>
             <span class="spark-value">${filaments.length > 1 ? '~' + _fileData._estimated_changes + 'x' : '0'}</span>
           </div>
         </div>`;
@@ -204,12 +204,12 @@
             <div class="ce-filament-info">
               ${colorSwatch}
               <div>
-                <div class="ce-filament-name">${_esc(f.material || _tl('cost_estimator.unknown', 'Ukjent'))}</div>
+                <div class="ce-filament-name">${_esc(f.material || _tl('cost_estimator.unknown', 'Unknown'))}</div>
                 <div class="ce-filament-weight">${f.weight_g ? f.weight_g.toFixed(1) + ' g' : '--'}</div>
               </div>
             </div>
             <select class="ce-spool-select matrec-select" data-filament-idx="${i}">
-              <option value="">${_tl('cost_estimator.manual_price', 'Manuell pris')}</option>
+              <option value="">${_tl('cost_estimator.manual_price', 'Manual price')}</option>
               ${_spools.map(s => `<option value="${s.id}">${_esc((s.filament_name || s.material || '') + ' - ' + (s.color_name || ''))}</option>`).join('')}
             </select>
           </div>`;
@@ -220,17 +220,17 @@
 
       // Calculator settings
       html += `<div class="card ce-section">
-        <div class="card-title">${_tl('cost_estimator.settings', 'Innstillinger')}</div>
+        <div class="card-title">${_tl('cost_estimator.settings', 'Settings')}</div>
         <div class="auto-grid auto-grid--md" style="margin-bottom:16px">
           <label class="ce-field">
-            <span class="ce-field-label">${_tl('cost_estimator.manual_price_kg', 'Pris per kg')}</span>
+            <span class="ce-field-label">${_tl('cost_estimator.manual_price_kg', 'Price per kg')}</span>
             <div class="ce-input-wrap">
               <input type="number" id="ce-manual-price" class="ce-input" value="250" step="1" min="0">
               <span class="ce-input-suffix">NOK</span>
             </div>
           </label>
           <label class="ce-field">
-            <span class="ce-field-label">${_tl('cost_estimator.wattage', 'Effekt')}</span>
+            <span class="ce-field-label">${_tl('cost_estimator.wattage', 'Wattage')}</span>
             <div class="ce-input-wrap">
               <input type="number" id="ce-wattage" class="ce-input" value="150" step="10" min="0">
               <span class="ce-input-suffix">W</span>
@@ -239,13 +239,13 @@
           <label class="ce-field">
             <span class="ce-field-label">${_tl('cost_estimator.printer', 'Printer')}</span>
             <select id="ce-printer" class="matrec-select" style="width:100%">
-              <option value="">${_tl('cost_estimator.default_settings', 'Standard')}</option>
+              <option value="">${_tl('cost_estimator.default_settings', 'Default')}</option>
             </select>
           </label>
         </div>
         <button class="matrec-recalc-btn" id="ce-calc-btn" style="margin-left:0;width:100%;justify-content:center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
-          ${_tl('cost_estimator.calculate', 'Beregn kostnad')}
+          ${_tl('cost_estimator.calculate', 'Calculate cost')}
         </button>
       </div>`;
 
@@ -272,7 +272,7 @@
 
     // Cost breakdown cards
     let html = `<div class="card ce-section">
-      <div class="card-title">${_tl('cost_estimator.cost_breakdown', 'Kostnadsfordeling')}</div>
+      <div class="card-title">${_tl('cost_estimator.cost_breakdown', 'Cost breakdown')}</div>
       <div class="ce-cost-grid">
         <div class="ce-cost-item">
           <div class="ce-cost-icon" style="background:rgba(0,174,66,0.08);color:var(--accent-green)">
@@ -289,7 +289,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           </div>
           <div class="ce-cost-detail">
-            <span class="ce-cost-label">${_tl('cost_estimator.electricity_cost', 'Strøm')}</span>
+            <span class="ce-cost-label">${_tl('cost_estimator.electricity_cost', 'Electricity')}</span>
             <span class="ce-cost-value">${formatCurrency(c.electricity_cost, cur)}</span>
           </div>
           <div class="ce-cost-bar"><div class="ce-cost-bar-fill" style="width:${_costPct(c.electricity_cost, c.total_cost)}%;background:var(--accent-orange)"></div></div>
@@ -299,7 +299,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           </div>
           <div class="ce-cost-detail">
-            <span class="ce-cost-label">${_tl('cost_estimator.wear_cost', 'Slitasje')}</span>
+            <span class="ce-cost-label">${_tl('cost_estimator.wear_cost', 'Wear')}</span>
             <span class="ce-cost-value">${formatCurrency(c.wear_cost, cur)}</span>
           </div>
           <div class="ce-cost-bar"><div class="ce-cost-bar-fill" style="width:${_costPct(c.wear_cost, c.total_cost)}%;background:var(--accent-purple, #7b2ff2)"></div></div>
@@ -309,7 +309,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div class="ce-cost-detail">
-            <span class="ce-cost-label">${_tl('cost_estimator.labor_cost', 'Arbeid')}</span>
+            <span class="ce-cost-label">${_tl('cost_estimator.labor_cost', 'Labor')}</span>
             <span class="ce-cost-value">${formatCurrency(c.labor_cost, cur)}</span>
           </div>
           <div class="ce-cost-bar"><div class="ce-cost-bar-fill" style="width:${_costPct(c.labor_cost, c.total_cost)}%;background:var(--accent-blue)"></div></div>
@@ -319,26 +319,26 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </div>
           <div class="ce-cost-detail">
-            <span class="ce-cost-label">${_tl('cost_estimator.waste_cost', 'Avfall/svinn')}</span>
+            <span class="ce-cost-label">${_tl('cost_estimator.waste_cost', 'Waste')}</span>
             <span class="ce-cost-value">${formatCurrency(c.waste_material_cost, cur)}</span>
           </div>
           <div class="ce-cost-bar"><div class="ce-cost-bar-fill" style="width:${_costPct(c.waste_material_cost, c.total_cost)}%;background:var(--accent-red)"></div></div>
         </div>` : ''}
       </div>
       <div class="ce-total-row" style="border-top:1px solid var(--border-color);padding-top:8px">
-        <span class="ce-total-label">${_tl('cost_estimator.subtotal', 'Produksjonskostnad')}</span>
+        <span class="ce-total-label">${_tl('cost_estimator.subtotal', 'Production cost')}</span>
         <span class="ce-total-value">${formatCurrency(c.subtotal || c.total_cost, cur)}</span>
       </div>
       ${c.markup_amount > 0 ? `<div class="ce-total-row" style="color:var(--accent-green)">
-        <span class="ce-total-label">${_tl('cost_estimator.markup', 'Påslag')} (${c.markup_pct || 0}%)</span>
+        <span class="ce-total-label">${_tl('cost_estimator.markup', 'Markup')} (${c.markup_pct || 0}%)</span>
         <span class="ce-total-value">+ ${formatCurrency(c.markup_amount, cur)}</span>
       </div>` : ''}
       <div class="ce-total-row ce-grand-total">
-        <span class="ce-total-label">${_tl('cost_estimator.total_cost', 'Totalkostnad')}</span>
+        <span class="ce-total-label">${_tl('cost_estimator.total_cost', 'Total cost')}</span>
         <span class="ce-total-value">${formatCurrency(c.total_cost, cur)}</span>
       </div>
       ${c.suggested_prices ? `<div class="ce-pricing-section" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color)">
-        <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">${_tl('cost_estimator.suggested_prices', 'Foreslåtte salgspriser')}</div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">${_tl('cost_estimator.suggested_prices', 'Suggested sale prices')}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div class="ce-price-card" style="text-align:center;padding:10px;border-radius:var(--radius);background:var(--bg-tertiary)">
             <div style="font-size:0.7rem;color:var(--text-muted)">2× margin</div>
@@ -359,7 +359,7 @@
     // Filament detail breakdown
     if (c.filament_breakdown && c.filament_breakdown.length > 0) {
       html += `<div class="card ce-section">
-        <div class="card-title">${_tl('cost_estimator.filament_details', 'Filamentdetaljer')}</div>`;
+        <div class="card-title">${_tl('cost_estimator.filament_details', 'Filament details')}</div>`;
       c.filament_breakdown.forEach((fb, i) => {
         const label = fb.spool ? _esc(fb.spool.name || fb.material || '') : _esc(fb.material || _tl('cost_estimator.filament', 'Filament') + ' ' + (i + 1));
         const color = fb.spool?.color || fb.color || 'var(--border-color)';
@@ -379,11 +379,11 @@
     html += `<div class="ce-actions">
       <button class="matrec-recalc-btn" id="ce-save-btn" style="margin-left:0">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        ${_tl('cost_estimator.save_estimate', 'Lagre estimat')}
+        ${_tl('cost_estimator.save_estimate', 'Save estimate')}
       </button>
       <button class="ce-secondary-btn" id="ce-compare-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        ${_tl('cost_estimator.compare_materials', 'Sammenlign materialer')}
+        ${_tl('cost_estimator.compare_materials', 'Compare materials')}
       </button>
     </div>`;
 
@@ -391,7 +391,7 @@
     if (c.electricity_rate) {
       html += `<div class="ce-info-line">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        ${_tl('cost_estimator.rate_info', `Strømpris: ${c.electricity_rate.toFixed(3)} NOK/kWh, ${c.wattage || 150}W`)}
+        ${_tl('cost_estimator.rate_info', `Electricity rate: ${c.electricity_rate.toFixed(3)} NOK/kWh, ${c.wattage || 150}W`)}
       </div>`;
     }
 
@@ -520,8 +520,8 @@
       });
       _estimates = await fetchEstimates();
       const btn = document.getElementById('ce-save-btn');
-      if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ' + _tl('cost_estimator.saved', 'Lagret'); btn.disabled = true; }
-      if (typeof showToast === 'function') showToast(_tl('cost_estimator.saved', 'Estimat lagret'), 'success');
+      if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ' + _tl('cost_estimator.saved', 'Saved'); btn.disabled = true; }
+      if (typeof showToast === 'function') showToast(_tl('cost_estimator.saved', 'Estimate saved'), 'success');
     } catch (e) {
       if (typeof showToast === 'function') showToast(e.message, 'error');
     }
@@ -535,13 +535,13 @@
     let selectors = '';
     for (let set = 0; set < 2; set++) {
       selectors += `<div class="ce-compare-option">
-        <div class="ce-compare-option-header">${_tl('cost_estimator.option', 'Alternativ')} ${set + 1}</div>`;
+        <div class="ce-compare-option-header">${_tl('cost_estimator.option', 'Option')} ${set + 1}</div>`;
       filaments.forEach((f, i) => {
         const colorSwatch = f.color ? `<span class="ce-swatch ce-swatch--sm" style="background:${_esc(f.color)}"></span>` : '';
         selectors += `<div class="ce-compare-spool-row">
           ${colorSwatch}
           <select class="matrec-select ce-compare-spool" data-set="${set}" data-idx="${i}" style="flex:1">
-            <option value="">${_tl('cost_estimator.select_spool', 'Velg spole...')}</option>
+            <option value="">${_tl('cost_estimator.select_spool', 'Select spool...')}</option>
             ${_spools.map(s => `<option value="${s.id}">${_esc((s.filament_name || s.material || '') + ' - ' + (s.color_name || ''))}</option>`).join('')}
           </select>
         </div>`;
@@ -550,11 +550,11 @@
     }
 
     el.innerHTML = `<div class="card ce-section">
-      <div class="card-title">${_tl('cost_estimator.compare_materials', 'Sammenlign materialer')}</div>
+      <div class="card-title">${_tl('cost_estimator.compare_materials', 'Compare materials')}</div>
       <div class="ce-compare-grid">${selectors}</div>
       <button class="matrec-recalc-btn" id="ce-run-compare" style="margin-left:0;margin-top:16px;width:100%;justify-content:center">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        ${_tl('cost_estimator.compare', 'Sammenlign')}
+        ${_tl('cost_estimator.compare', 'Compare')}
       </button>
       <div id="ce-compare-output"></div>
     </div>`;
@@ -587,8 +587,8 @@
         const isWinner = result.comparisons.length === 2 &&
           comp.total_cost === Math.min(...result.comparisons.map(c => c.total_cost));
         html += `<div class="ce-compare-result-card${isWinner ? ' ce-compare-winner' : ''}">
-          ${isWinner ? '<div class="ce-winner-badge">' + _tl('cost_estimator.cheapest', 'Billigst') + '</div>' : ''}
-          <div class="ce-compare-result-title">${_tl('cost_estimator.option', 'Alternativ')} ${idx + 1}</div>
+          ${isWinner ? '<div class="ce-winner-badge">' + _tl('cost_estimator.cheapest', 'Cheapest') + '</div>' : ''}
+          <div class="ce-compare-result-title">${_tl('cost_estimator.option', 'Option')} ${idx + 1}</div>
           <div class="ce-compare-result-total">${formatCurrency(comp.total_cost, cur)}</div>
           <div class="ce-compare-result-detail">
             <span>${_tl('cost_estimator.filament_cost', 'Filament')}</span>
@@ -602,7 +602,7 @@
         const diff = Math.abs(result.comparisons[0].total_cost - result.comparisons[1].total_cost);
         html += `<div class="ce-compare-diff">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-          ${_tl('cost_estimator.difference', 'Forskjell')}: <strong>${formatCurrency(diff, cur)}</strong>
+          ${_tl('cost_estimator.difference', 'Difference')}: <strong>${formatCurrency(diff, cur)}</strong>
         </div>`;
       }
       out.innerHTML = html;
@@ -621,7 +621,7 @@
     if (!_estimates.length) {
       container.innerHTML = `<div class="matrec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        <p>${_tl('cost_estimator.no_estimates', 'Ingen lagrede estimater ennå.')}</p>
+        <p>${_tl('cost_estimator.no_estimates', 'No saved estimates yet.')}</p>
       </div>`;
       return;
     }
@@ -635,7 +635,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>${_esc(est.filename || '--')}</span>
           </div>
-          <button class="ce-delete-btn ce-delete-est" data-id="${est.id}" title="${_tl('cost_estimator.delete', 'Slett')}">
+          <button class="ce-delete-btn ce-delete-est" data-id="${est.id}" title="${_tl('cost_estimator.delete', 'Delete')}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
         </div>
@@ -645,7 +645,7 @@
             <span>${formatCurrency(est.filament_cost, cur)}</span>
           </div>
           <div class="ce-estimate-cost-item">
-            <span class="ce-estimate-cost-label">${_tl('cost_estimator.electricity_cost', 'Strøm')}</span>
+            <span class="ce-estimate-cost-label">${_tl('cost_estimator.electricity_cost', 'Electricity')}</span>
             <span>${formatCurrency(est.electricity_cost, cur)}</span>
           </div>
           <div class="ce-estimate-cost-item ce-estimate-total">
@@ -714,7 +714,7 @@
     if (!body) return;
 
     if (_spools.length === 0) {
-      body.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div><p>' + _tl('common.loading', 'Laster...') + '</p></div>';
+      body.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div><p>' + _tl('common.loading', 'Loading...') + '</p></div>';
       _spools = await fetchSpools();
       _estimates = await fetchEstimates();
     }

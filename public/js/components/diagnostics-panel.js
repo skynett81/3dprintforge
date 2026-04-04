@@ -7,9 +7,9 @@
   function _esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   const TABS = [
-    { id: 'diagnostics', labelKey: 'tabs.diagnostics_overview', fallback: 'Oversikt' },
-    { id: 'health', labelKey: 'tabs.health', fallback: 'Helsescore' },
-    { id: 'telemetry', labelKey: 'tabs.telemetry', fallback: 'Telemetri' },
+    { id: 'diagnostics', labelKey: 'tabs.diagnostics_overview', fallback: 'Overview' },
+    { id: 'health', labelKey: 'tabs.health', fallback: 'Health Score' },
+    { id: 'telemetry', labelKey: 'tabs.telemetry', fallback: 'Telemetry' },
     { id: 'bedmesh', labelKey: 'tabs.bedmesh', fallback: 'Bed Mesh' }
   ];
 
@@ -99,7 +99,7 @@
   }
 
   function _buildHealthCard(data, pid) {
-    let score = '--', color = 'var(--text-muted)', subtitle = _t('diagnostics.no_data', 'Ingen data');
+    let score = '--', color = 'var(--text-muted)', subtitle = _t('diagnostics.no_data', 'No data');
     let stats = '';
 
     if (data && pid) {
@@ -122,13 +122,13 @@
 
       score = healthScore;
       color = healthScore >= 80 ? 'var(--accent-green)' : healthScore >= 60 ? '#f59e0b' : 'var(--accent-red)';
-      subtitle = healthScore >= 80 ? _t('health.grade_good', 'Bra') : healthScore >= 60 ? _t('health.grade_fair', 'Ok') : _t('health.grade_poor', 'Dårlig');
+      subtitle = healthScore >= 80 ? _t('health.grade_good', 'Good') : healthScore >= 60 ? _t('health.grade_fair', 'OK') : _t('health.grade_poor', 'Poor');
 
       stats = `<div class="diag-card-stats">
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-green)">${successRate}%</div><div class="diag-card-stat-label">${_t('health.success_rate', 'Suksessrate')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-primary)'}">${overdueCount}</div><div class="diag-card-stat-label">${_t('health.overdue', 'Forfalt')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value">${totalPrints}</div><div class="diag-card-stat-label">${_t('health.total_prints', 'Utskrifter')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${recentErrors > 0 ? '#f59e0b' : 'var(--text-primary)'}">${recentErrors}</div><div class="diag-card-stat-label">${_t('health.errors_7d', 'Feil 7d')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-green)">${successRate}%</div><div class="diag-card-stat-label">${_t('health.success_rate', 'Success rate')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-primary)'}">${overdueCount}</div><div class="diag-card-stat-label">${_t('health.overdue', 'Overdue')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value">${totalPrints}</div><div class="diag-card-stat-label">${_t('health.total_prints', 'Prints')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${recentErrors > 0 ? '#f59e0b' : 'var(--text-primary)'}">${recentErrors}</div><div class="diag-card-stat-label">${_t('health.errors_7d', 'Errors 7d')}</div></div>
       </div>`;
     }
 
@@ -138,7 +138,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
         <div>
-          <div class="diag-card-title">${_t('tabs.health', 'Helsescore')}</div>
+          <div class="diag-card-title">${_t('tabs.health', 'Health Score')}</div>
           <div class="diag-card-subtitle">${subtitle}</div>
         </div>
         <div style="margin-left:auto;font-size:1.8rem;font-weight:900;color:${color}">${score}</div>
@@ -146,28 +146,28 @@
       ${stats}
       <div class="diag-card-footer">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        ${_t('diagnostics.view_details', 'Se detaljer')}
+        ${_t('diagnostics.view_details', 'View details')}
       </div>
     </div>`;
   }
 
   function _buildTelemetryCard(live, pid) {
     let stats = '';
-    let subtitle = _t('diagnostics.no_data', 'Ingen data');
+    let subtitle = _t('diagnostics.no_data', 'No data');
 
     if (live && pid) {
       const nozzle = Math.round(live.nozzle_temper || 0);
       const bed = Math.round(live.bed_temper || 0);
       const state = live.gcode_state || 'IDLE';
       const progress = live.mc_percent || 0;
-      const stateLabels = { RUNNING: _t('status.printing', 'Skriver ut'), PAUSE: _t('status.paused', 'Pauset'), FINISH: _t('status.finished', 'Ferdig'), FAILED: _t('status.failed', 'Feilet') };
-      subtitle = stateLabels[state] || _t('status.idle', 'Inaktiv');
+      const stateLabels = { RUNNING: _t('status.printing', 'Printing'), PAUSE: _t('status.paused', 'Paused'), FINISH: _t('status.finished', 'Done'), FAILED: _t('status.failed', 'Failed') };
+      subtitle = stateLabels[state] || _t('status.idle', 'Idle');
 
       stats = `<div class="diag-card-stats">
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#ff5252">${nozzle}°C</div><div class="diag-card-stat-label">${_t('temperature.nozzle', 'Dyse')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#1279ff">${bed}°C</div><div class="diag-card-stat-label">${_t('temperature.bed', 'Seng')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#00e676">${progress}%</div><div class="diag-card-stat-label">${_t('telemetry.print_progress', 'Fremdrift')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value">${live.spd_mag || 100}%</div><div class="diag-card-stat-label">${_t('speed.label', 'Hastighet')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#ff5252">${nozzle}°C</div><div class="diag-card-stat-label">${_t('temperature.nozzle', 'Nozzle')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#1279ff">${bed}°C</div><div class="diag-card-stat-label">${_t('temperature.bed', 'Bed')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#00e676">${progress}%</div><div class="diag-card-stat-label">${_t('telemetry.print_progress', 'Progress')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value">${live.spd_mag || 100}%</div><div class="diag-card-stat-label">${_t('speed.label', 'Speed')}</div></div>
       </div>`;
     }
 
@@ -177,35 +177,35 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
         <div>
-          <div class="diag-card-title">${_t('tabs.telemetry', 'Telemetri')}</div>
+          <div class="diag-card-title">${_t('tabs.telemetry', 'Telemetry')}</div>
           <div class="diag-card-subtitle">${subtitle}</div>
         </div>
       </div>
       ${stats}
       <div class="diag-card-footer">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        ${_t('diagnostics.view_details', 'Se detaljer')}
+        ${_t('diagnostics.view_details', 'View details')}
       </div>
     </div>`;
   }
 
   function _buildMeshCard(data, pid) {
     let stats = '';
-    let subtitle = _t('diagnostics.no_data', 'Ingen data');
+    let subtitle = _t('diagnostics.no_data', 'No data');
 
     if (data?.latest && pid) {
       const mesh = data.latest;
       const range = ((mesh.z_max || 0) - (mesh.z_min || 0)).toFixed(3);
       const rangeNum = parseFloat(range);
-      const quality = rangeNum < 0.1 ? _t('bedmesh.excellent', 'Utmerket') : rangeNum < 0.2 ? _t('bedmesh.good', 'Bra') : rangeNum < 0.3 ? _t('bedmesh.fair', 'Ok') : _t('bedmesh.poor', 'Dårlig');
+      const quality = rangeNum < 0.1 ? _t('bedmesh.excellent', 'Excellent') : rangeNum < 0.2 ? _t('bedmesh.good', 'Good') : rangeNum < 0.3 ? _t('bedmesh.fair', 'OK') : _t('bedmesh.poor', 'Poor');
       const qualColor = rangeNum < 0.1 ? 'var(--accent-green)' : rangeNum < 0.3 ? '#f59e0b' : 'var(--accent-red)';
       subtitle = quality;
 
       stats = `<div class="diag-card-stats">
         <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${qualColor}">${range}</div><div class="diag-card-stat-label">${_t('bedmesh.z_range', 'Z range')} (mm)</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value">${mesh.mesh_rows || '?'}x${mesh.mesh_cols || '?'}</div><div class="diag-card-stat-label">${_t('bedmesh.grid', 'Rutenett')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value">${(mesh.z_mean || 0).toFixed(3)}</div><div class="diag-card-stat-label">${_t('bedmesh.z_mean', 'Z snitt')} (mm)</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value">${(data.history || []).length}</div><div class="diag-card-stat-label">${_t('bedmesh.history', 'Historikk')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value">${mesh.mesh_rows || '?'}x${mesh.mesh_cols || '?'}</div><div class="diag-card-stat-label">${_t('bedmesh.grid', 'Grid')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value">${(mesh.z_mean || 0).toFixed(3)}</div><div class="diag-card-stat-label">${_t('bedmesh.z_mean', 'Z mean')} (mm)</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value">${(data.history || []).length}</div><div class="diag-card-stat-label">${_t('bedmesh.history', 'History')}</div></div>
       </div>`;
     }
 
@@ -222,7 +222,7 @@
       ${stats}
       <div class="diag-card-footer">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        ${_t('diagnostics.view_details', 'Se detaljer')}
+        ${_t('diagnostics.view_details', 'View details')}
       </div>
     </div>`;
   }

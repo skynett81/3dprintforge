@@ -4,11 +4,11 @@
 
   function _t(key, fb) { return (typeof t === 'function' ? t(key) : '') || fb; }
 
-  const MONTHS_FB = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Des'];
-  const DAYS_FB = ['Man','','Ons','','Fre','','Søn'];
+  const MONTHS_FB = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAYS_FB = ['Mon','','Wed','','Fri','','Sun'];
 
   function _monthLabel(i) { return _t('calendar.' + ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][i], MONTHS_FB[i]); }
-  function _dayName(d) { return ['Søn','Man','Tir','Ons','Tor','Fre','Lør'][d.getDay()]; }
+  function _dayName(d) { return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
   function _fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   function _dateLabel(iso) {
     const d = new Date(iso + 'T00:00:00');
@@ -46,7 +46,7 @@
       const res = await fetch('/api/stats/calendar?year=' + year);
       result = await res.json();
     } catch (e) {
-      _container.innerHTML = `<p class="text-muted">${_t('calendar.load_failed', 'Kunne ikke laste kalenderdata')}</p>`;
+      _container.innerHTML = `<p class="text-muted">${_t('calendar.load_failed', 'Could not load calendar data')}</p>`;
       return;
     }
 
@@ -54,7 +54,7 @@
     const years = result.years || [year];
 
     if (!data || !data.length) {
-      _container.innerHTML = _renderYearSelector(year, years) + `<p class="text-muted">${_t('calendar.no_data', 'Ingen printdata for dette året')}</p>`;
+      _container.innerHTML = _renderYearSelector(year, years) + `<p class="text-muted">${_t('calendar.no_data', 'No print data for this year')}</p>`;
       return;
     }
 
@@ -102,36 +102,36 @@
 
     // ── Stats strip ──
     h += `<div class="stats-strip act-stats">
-      <div class="spark-panel"><span class="spark-label">${_t('stats.total_prints', 'Totalt')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
-      <div class="spark-panel"><span class="spark-label">${_t('calendar.active_days', 'Aktive dager')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
+      <div class="spark-panel"><span class="spark-label">${_t('stats.total_prints', 'Total')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
+      <div class="spark-panel"><span class="spark-label">${_t('calendar.active_days', 'Active days')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
       <div class="spark-panel"><span class="spark-label">${_t('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
-      <div class="spark-panel"><span class="spark-label">${_t('activity.longest_streak', 'Lengste')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
-      <div class="spark-panel" style="border-right:none"><span class="spark-label">${_t('stats.success_rate', 'Suksessrate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
+      <div class="spark-panel"><span class="spark-label">${_t('activity.longest_streak', 'Longest')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
+      <div class="spark-panel" style="border-right:none"><span class="spark-label">${_t('stats.success_rate', 'Success rate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
     </div>`;
 
     // ── Secondary stat cards ──
     h += '<div class="auto-grid auto-grid--md act-cards">';
-    h += _statCard(_t('stats.total_time', 'Utskriftstimer'), Math.round(totalHours) + _t('time.h', 't'), 'var(--accent-blue)');
-    h += _statCard(_t('stats.completed', 'Fullført'), totalCompleted, 'var(--accent-green)');
-    h += _statCard(_t('stats.failed', 'Feilet'), totalFailed, 'var(--accent-red)');
-    h += _statCard(_t('activity.avg_per_day', 'Snitt per dag'), avgPerDay, 'var(--accent-purple)');
+    h += _statCard(_t('stats.total_time', 'Print hours'), Math.round(totalHours) + _t('time.h', 't'), 'var(--accent-blue)');
+    h += _statCard(_t('stats.completed', 'Completed'), totalCompleted, 'var(--accent-green)');
+    h += _statCard(_t('stats.failed', 'Failed'), totalFailed, 'var(--accent-red)');
+    h += _statCard(_t('activity.avg_per_day', 'Avg per day'), avgPerDay, 'var(--accent-purple)');
     h += '</div>';
 
     // ── SVG Heatmap ──
     h += `<div class="card act-heatmap-card">
-      <div class="card-title">${_t('activity.year_heatmap', 'Utskriftsaktivitet')} — ${year}</div>
+      <div class="card-title">${_t('activity.year_heatmap', 'Print activity')} — ${year}</div>
       ${_renderHeatmap(dayMap, maxPrints, data)}
     </div>`;
 
     // ── Monthly breakdown ──
     h += `<div class="card act-monthly-card">
-      <div class="card-title">${_t('activity.monthly_breakdown', 'Månedlig oversikt')}</div>
+      <div class="card-title">${_t('activity.monthly_breakdown', 'Monthly overview')}</div>
       ${_renderMonthlyBars(data)}
     </div>`;
 
     // ── Busiest days ──
     h += `<div class="card act-busiest-card">
-      <div class="card-title">${_t('activity.busiest_days', 'Travleste dager')}</div>
+      <div class="card-title">${_t('activity.busiest_days', 'Busiest days')}</div>
       ${_renderBusiestDays(data)}
     </div>`;
 
@@ -214,7 +214,7 @@
         const dateLabel = dayStr.substring(8) + '.' + dayStr.substring(5, 7);
         const tooltip = count > 0
           ? `${dateLabel}: ${count} prints (${(entry.hours || 0).toFixed(1)}${_t('time.h', 't')})`
-          : `${dateLabel}: ${_t('calendar.no_prints', 'ingen prints')}`;
+          : `${dateLabel}: ${_t('calendar.no_prints', 'no prints')}`;
 
         svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-subtle)" stroke-width="0.5"><title>${tooltip}</title></rect>`;
       });
@@ -223,13 +223,13 @@
     svg += '</svg></div>';
 
     svg += `<div class="act-heatmap-legend">
-      <span>${_t('calendar.less', 'Mindre')}</span>
+      <span>${_t('calendar.less', 'Less')}</span>
       <div class="act-legend-cell" style="background:var(--bg-tertiary);border:1px solid var(--border-color)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.3)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.5)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.7)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.95)"></div>
-      <span>${_t('calendar.more', 'Mer')}</span>
+      <span>${_t('calendar.more', 'More')}</span>
     </div>`;
 
     return svg;
@@ -246,7 +246,7 @@
 
     const keys = Object.keys(months).sort();
     const activeKeys = keys.filter(k => months[k].prints > 0);
-    if (!activeKeys.length) return `<div class="matrec-empty"><p>${_t('calendar.no_data', 'Ingen data')}</p></div>`;
+    if (!activeKeys.length) return `<div class="matrec-empty"><p>${_t('calendar.no_data', 'No data')}</p></div>`;
 
     const maxPrints = Math.max(...activeKeys.map(k => months[k].prints), 1);
 
@@ -268,7 +268,7 @@
 
   function _renderBusiestDays(data) {
     const sorted = [...data].filter(d => d.prints > 0).sort((a, b) => b.prints - a.prints).slice(0, 10);
-    if (!sorted.length) return `<div class="matrec-empty"><p>${_t('calendar.no_data', 'Ingen data')}</p></div>`;
+    if (!sorted.length) return `<div class="matrec-empty"><p>${_t('calendar.no_data', 'No data')}</p></div>`;
 
     let h = '<div class="auto-grid auto-grid--md">';
     for (let i = 0; i < sorted.length; i++) {
@@ -281,7 +281,7 @@
           <span class="act-busiest-rank">#${i + 1}</span>
           <div>
             <div class="act-busiest-date">${dateStr}</div>
-            <div class="act-busiest-meta">${(d.hours || 0).toFixed(1)}${_t('time.h', 't')} · ${d.completed || 0} ${_t('calendar.ok', 'ok')}, ${d.failed || 0} ${_t('calendar.failed', 'feilet')}</div>
+            <div class="act-busiest-meta">${(d.hours || 0).toFixed(1)}${_t('time.h', 't')} · ${d.completed || 0} ${_t('calendar.ok', 'ok')}, ${d.failed || 0} ${_t('calendar.failed', 'failed')}</div>
           </div>
         </div>
         <span class="act-busiest-count">${d.prints}</span>

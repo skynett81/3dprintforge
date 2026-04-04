@@ -1,4 +1,4 @@
-// Demo-printere
+// Demo printers
 export const MOCK_PRINTERS = [
   { id: 'demo-p2s', name: 'P2S Combo (Demo)', model: 'P2S Combo' },
   { id: 'demo-x1c', name: 'X1 Carbon (Demo)', model: 'X1 Carbon' },
@@ -253,7 +253,7 @@ export const MOCK_AMS_H2D = {
 // Legacy export for compatibility
 export const MOCK_AMS = MOCK_AMS_P2S;
 
-// Demo print-jobber for historikk
+// Demo print jobs for history
 export const MOCK_HISTORY = [
   { filename: 'benchy_v2.3mf', status: 'completed', duration_seconds: 3420, filament_used_g: 14.2, filament_type: 'PLA', filament_brand: 'Bambu Lab', filament_color: 'FFFFFFFF', layer_count: 150, days_ago: 1, speed_level: 2, nozzle_target: 220, bed_target: 60, max_nozzle_temp: 221, max_bed_temp: 61, nozzle_type: 'stainless_steel', nozzle_diameter: 0.4 },
   { filename: 'cable_clip_x4.3mf', status: 'completed', duration_seconds: 1860, filament_used_g: 8.5, filament_type: 'PLA', filament_brand: 'Bambu Lab', filament_color: '000000FF', layer_count: 80, days_ago: 2, speed_level: 3, nozzle_target: 220, bed_target: 60, max_nozzle_temp: 222, max_bed_temp: 60, nozzle_type: 'stainless_steel', nozzle_diameter: 0.4 },
@@ -272,22 +272,22 @@ export const MOCK_HISTORY = [
   { filename: 'spool_holder.3mf', status: 'completed', duration_seconds: 6300, filament_used_g: 55.0, filament_type: 'PETG', filament_brand: 'Bambu Lab', filament_color: 'FF6600FF', layer_count: 280, days_ago: 28, speed_level: 2, nozzle_target: 250, bed_target: 80, max_nozzle_temp: 251, max_bed_temp: 81, color_changes: 3, waste_g: 2.4 }
 ];
 
-// Demo filament-lager
+// Demo filament inventory
 export const MOCK_FILAMENT = [
-  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PLA', color_name: 'Hvit', color_hex: 'FFFFFF', weight_total_g: 1000, weight_used_g: 220, cost_nok: 219 },
-  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PLA', color_name: 'Svart', color_hex: '000000', weight_total_g: 1000, weight_used_g: 350, cost_nok: 219 },
-  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PETG', color_name: 'Oransje', color_hex: 'FF6600', weight_total_g: 1000, weight_used_g: 80, cost_nok: 249 },
-  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'TPU', color_name: 'Klar', color_hex: 'CCDDFF', weight_total_g: 500, weight_used_g: 28, cost_nok: 299 },
-  { printer_id: 'demo-x1c', brand: 'eSUN', type: 'PLA+', color_name: 'Rød', color_hex: 'CC0000', weight_total_g: 1000, weight_used_g: 0, cost_nok: 179 },
-  { printer_id: 'demo-x1c', brand: 'Polymaker', type: 'ASA', color_name: 'Grå', color_hex: '888888', weight_total_g: 1000, weight_used_g: 0, cost_nok: 329 },
-  { printer_id: 'demo-h2d', brand: 'Bambu Lab', type: 'PLA', color_name: 'Blå', color_hex: '0066FF', weight_total_g: 1000, weight_used_g: 150, cost_nok: 219 }
+  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PLA', color_name: 'White', color_hex: 'FFFFFF', weight_total_g: 1000, weight_used_g: 220, cost_nok: 219 },
+  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PLA', color_name: 'Black', color_hex: '000000', weight_total_g: 1000, weight_used_g: 350, cost_nok: 219 },
+  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'PETG', color_name: 'Orange', color_hex: 'FF6600', weight_total_g: 1000, weight_used_g: 80, cost_nok: 249 },
+  { printer_id: 'demo-p2s', brand: 'Bambu Lab', type: 'TPU', color_name: 'Clear', color_hex: 'CCDDFF', weight_total_g: 500, weight_used_g: 28, cost_nok: 299 },
+  { printer_id: 'demo-x1c', brand: 'eSUN', type: 'PLA+', color_name: 'Red', color_hex: 'CC0000', weight_total_g: 1000, weight_used_g: 0, cost_nok: 179 },
+  { printer_id: 'demo-x1c', brand: 'Polymaker', type: 'ASA', color_name: 'Gray', color_hex: '888888', weight_total_g: 1000, weight_used_g: 0, cost_nok: 329 },
+  { printer_id: 'demo-h2d', brand: 'Bambu Lab', type: 'PLA', color_name: 'Blue', color_hex: '0066FF', weight_total_g: 1000, weight_used_g: 150, cost_nok: 219 }
 ];
 
-// Demo feillogg
+// Demo error log
 export const MOCK_ERRORS = [
-  { code: '0300_0100', message: 'Filament brutt i AMS spor 1', severity: 'warning', days_ago: 4 },
-  { code: '0700_0001', message: 'Første lag inspeksjon: avvik detektert', severity: 'warning', days_ago: 4 },
-  { code: '0500_0200', message: 'Dysetemperatur ustabil', severity: 'error', days_ago: 20 },
-  { code: '0300_0300', message: 'AMS spor 3 kunne ikke leses', severity: 'info', days_ago: 22 },
-  { code: '0C00_0001', message: 'Nettverkstilkobling midlertidig tapt', severity: 'warning', days_ago: 25 }
+  { code: '0300_0100', message: 'Filament broken in AMS slot 1', severity: 'warning', days_ago: 4 },
+  { code: '0700_0001', message: 'First layer inspection: deviation detected', severity: 'warning', days_ago: 4 },
+  { code: '0500_0200', message: 'Nozzle temperature unstable', severity: 'error', days_ago: 20 },
+  { code: '0300_0300', message: 'AMS slot 3 could not be read', severity: 'info', days_ago: 22 },
+  { code: '0C00_0001', message: 'Network connection temporarily lost', severity: 'warning', days_ago: 25 }
 ];

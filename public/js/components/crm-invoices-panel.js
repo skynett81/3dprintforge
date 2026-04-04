@@ -48,18 +48,18 @@
 
     if (_invoices.length === 0) {
       html += `<div class="card"><div class="card-body" style="text-align:center;padding:2rem;opacity:0.6">
-        ${_esc(_tl('crm.no_invoices', 'Ingen fakturaer'))}
+        ${_esc(_tl('crm.no_invoices', 'No invoices'))}
       </div></div>`;
     } else {
       html += `<div class="card"><div class="card-body" style="padding:0">
         <table class="table table-hover table-sm" style="margin:0">
           <thead><tr>
-            <th>${_esc(_tl('crm.invoice_number', 'Faktura #'))}</th>
-            <th>${_esc(_tl('crm.order_number', 'Ordre #'))}</th>
-            <th>${_esc(_tl('crm.customer_name', 'Kunde'))}</th>
+            <th>${_esc(_tl('crm.invoice_number', 'Invoice #'))}</th>
+            <th>${_esc(_tl('crm.order_number', 'Order #'))}</th>
+            <th>${_esc(_tl('crm.customer_name', 'Customer'))}</th>
             <th>${_esc(_tl('crm.status', 'Status'))}</th>
             <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
-            <th>${_esc(_tl('crm.due_date', 'Forfallsdato'))}</th>
+            <th>${_esc(_tl('crm.due_date', 'Due date'))}</th>
           </tr></thead>
           <tbody>${_invoices.map(inv => {
             const sc = STATUS_COLORS[inv.status] || '#94a3b8';
@@ -96,9 +96,9 @@
     if (items.length > 0) {
       itemsHtml = `<table class="table table-sm" style="margin:0">
         <thead><tr>
-          <th>${_esc(_tl('crm.description', 'Beskrivelse'))}</th>
-          <th>${_esc(_tl('crm.quantity', 'Antall'))}</th>
-          <th style="text-align:right">${_esc(_tl('crm.total', 'Pris'))}</th>
+          <th>${_esc(_tl('crm.description', 'Description'))}</th>
+          <th>${_esc(_tl('crm.quantity', 'Quantity'))}</th>
+          <th style="text-align:right">${_esc(_tl('crm.total', 'Price'))}</th>
         </tr></thead>
         <tbody>${items.map(it => `<tr>
           <td>${_esc(it.description || '--')}</td>
@@ -107,27 +107,27 @@
         </tr>`).join('')}</tbody>
         <tfoot>
           <tr><td colspan="2" style="text-align:right"><strong>${_esc(_tl('crm.subtotal', 'Subtotal'))}</strong></td><td style="text-align:right"><strong>${formatCurrency(inv.subtotal)}</strong></td></tr>
-          ${inv.tax_amount ? `<tr><td colspan="2" style="text-align:right">${_esc(_tl('crm.tax', 'MVA'))} (${inv.tax_pct || 25}%)</td><td style="text-align:right">${formatCurrency(inv.tax_amount)}</td></tr>` : ''}
+          ${inv.tax_amount ? `<tr><td colspan="2" style="text-align:right">${_esc(_tl('crm.tax', 'VAT'))} (${inv.tax_pct || 25}%)</td><td style="text-align:right">${formatCurrency(inv.tax_amount)}</td></tr>` : ''}
           <tr><td colspan="2" style="text-align:right"><strong>${_esc(_tl('crm.total', 'Total'))}</strong></td><td style="text-align:right"><strong>${formatCurrency(inv.total)}</strong></td></tr>
         </tfoot>
       </table>`;
     } else {
-      itemsHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'Ingen artikler'))}</div>`;
+      itemsHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'No items'))}</div>`;
     }
 
     // Action buttons based on status
     let actionBtns = '';
     if (inv.status === 'draft') {
-      actionBtns = `<button class="btn btn-sm btn-primary" onclick="window._crmInvMarkSent(${inv.id})"><i class="bi bi-send"></i> ${_esc(_tl('crm.mark_sent', 'Marker sendt'))}</button>`;
+      actionBtns = `<button class="btn btn-sm btn-primary" onclick="window._crmInvMarkSent(${inv.id})"><i class="bi bi-send"></i> ${_esc(_tl('crm.mark_sent', 'Mark sent'))}</button>`;
     } else if (inv.status === 'sent') {
-      actionBtns = `<button class="btn btn-sm btn-success" onclick="window._crmInvMarkPaid(${inv.id})"><i class="bi bi-check-circle"></i> ${_esc(_tl('crm.mark_paid', 'Marker betalt'))}</button>`;
+      actionBtns = `<button class="btn btn-sm btn-success" onclick="window._crmInvMarkPaid(${inv.id})"><i class="bi bi-check-circle"></i> ${_esc(_tl('crm.mark_paid', 'Mark paid'))}</button>`;
     }
     // Always show print/open invoice button
-    actionBtns += ` <button class="btn btn-sm btn-outline-info" onclick="window.open('/api/crm/invoices/${inv.id}/html', '_blank')"><i class="bi bi-printer"></i> ${_esc(_tl('crm.print_invoice', 'Skriv ut faktura'))}</button>`;
+    actionBtns += ` <button class="btn btn-sm btn-outline-info" onclick="window.open('/api/crm/invoices/${inv.id}/html', '_blank')"><i class="bi bi-printer"></i> ${_esc(_tl('crm.print_invoice', 'Print invoice'))}</button>`;
 
     body.innerHTML = `
       <div style="margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmInvBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Tilbake'))}</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmInvBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Back'))}</button>
         ${actionBtns}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem">
@@ -135,17 +135,17 @@
           <div class="card-header"><h3 class="card-title">${_esc(inv.invoice_number)}</h3></div>
           <div class="card-body">
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge" style="background:${sc};color:#fff;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.inv_status_' + inv.status, inv.status))}</span></span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.order_number', 'Ordre'))}</span><span class="stats-detail-item-value">${_esc(inv.order_number || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Kunde'))}</span><span class="stats-detail-item-value">${_esc(inv.customer_name || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Forfallsdato'))}</span><span class="stats-detail-item-value">${formatDate(inv.due_date)}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.created', 'Opprettet'))}</span><span class="stats-detail-item-value">${formatDate(inv.created_at)}</span></div>
-            ${inv.sent_at ? `<div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.sent_at', 'Sendt'))}</span><span class="stats-detail-item-value">${formatDate(inv.sent_at)}</span></div>` : ''}
-            ${inv.paid_at ? `<div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.paid_at', 'Betalt'))}</span><span class="stats-detail-item-value">${formatDate(inv.paid_at)}</span></div>` : ''}
-            ${inv.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notater'))}</strong><p style="white-space:pre-wrap;margin:0.25rem 0">${_esc(inv.notes)}</p></div>` : ''}
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.order_number', 'Order'))}</span><span class="stats-detail-item-value">${_esc(inv.order_number || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Customer'))}</span><span class="stats-detail-item-value">${_esc(inv.customer_name || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Due date'))}</span><span class="stats-detail-item-value">${formatDate(inv.due_date)}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.created', 'Created'))}</span><span class="stats-detail-item-value">${formatDate(inv.created_at)}</span></div>
+            ${inv.sent_at ? `<div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.sent_at', 'Sent'))}</span><span class="stats-detail-item-value">${formatDate(inv.sent_at)}</span></div>` : ''}
+            ${inv.paid_at ? `<div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.paid_at', 'Paid'))}</span><span class="stats-detail-item-value">${formatDate(inv.paid_at)}</span></div>` : ''}
+            ${inv.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notes'))}</strong><p style="white-space:pre-wrap;margin:0.25rem 0">${_esc(inv.notes)}</p></div>` : ''}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.items', 'Linjer'))}</h3></div>
+          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.items', 'Items'))}</h3></div>
           <div class="card-body" style="padding:0">${itemsHtml}</div>
         </div>
       </div>`;
@@ -164,7 +164,7 @@
   window._crmInvMarkSent = async function(id) {
     try {
       await apiUpdateStatus(id, 'sent');
-      if (typeof showToast === 'function') showToast(_tl('crm.marked_sent', 'Markert som sendt'), 'success');
+      if (typeof showToast === 'function') showToast(_tl('crm.marked_sent', 'Marked as sent'), 'success');
       _selectedInvoice = await fetchInvoiceDetail(id);
       const body = document.getElementById('overlay-panel-body');
       if (body) renderDetail(body);
@@ -176,7 +176,7 @@
   window._crmInvMarkPaid = async function(id) {
     try {
       await apiUpdateStatus(id, 'paid');
-      if (typeof showToast === 'function') showToast(_tl('crm.marked_paid', 'Markert som betalt'), 'success');
+      if (typeof showToast === 'function') showToast(_tl('crm.marked_paid', 'Marked as paid'), 'success');
       _selectedInvoice = await fetchInvoiceDetail(id);
       const body = document.getElementById('overlay-panel-body');
       if (body) renderDetail(body);

@@ -42,33 +42,33 @@ if (!IS_DEMO && config.printers.length === 0 && process.stdin.isTTY) {
 
   console.log('');
   console.log('  ┌──────────────────────────────────────────┐');
-  console.log('  │  Velkommen til 3DPrintForge!             │');
-  console.log('  │  Ingen printere er konfigurert ennå.     │');
+  console.log('  │  Welcome to 3DPrintForge!                │');
+  console.log('  │  No printers configured yet.             │');
   console.log('  └──────────────────────────────────────────┘');
   console.log('');
-  console.log('  1) Søk etter printere på nettverket');
-  console.log('  2) Legg til printer manuelt');
-  console.log('  3) Start uten printere (konfigurer via web-UI)');
+  console.log('  1) Search for printers on the network');
+  console.log('  2) Add printer manually');
+  console.log('  3) Start without printers (configure via web UI)');
   console.log('');
-  console.log('  Tips: Bruk "npm run demo" for å teste med simulerte printere.');
+  console.log('  Tip: Use "npm run demo" to test with simulated printers.');
   console.log('');
 
-  const choice = (await ask('  Velg (1-3): ')).trim();
+  const choice = (await ask('  Choose (1-3): ')).trim();
 
   if (choice === '1') {
     // Network scan for Bambu printers via SSDP
     console.log('');
-    console.log('  Søker etter Bambu Lab-printere på nettverket...');
+    console.log('  Searching for Bambu Lab printers on the network...');
     const { PrinterDiscovery } = await import('./printer-discovery.js');
     const scanner = new PrinterDiscovery();
     const found = await scanner.scan(6000);
     scanner.shutdown();
 
     if (found.length === 0) {
-      console.log('  Fant ingen printere. Sørg for at printeren er på og koblet til samme nettverk.');
-      console.log('  Du kan legge til printere manuelt via web-UI etter oppstart.');
+      console.log('  No printers found. Make sure the printer is on and connected to the same network.');
+      console.log('  You can add printers manually via the web UI after startup.');
     } else {
-      console.log(`  Fant ${found.length} printer${found.length > 1 ? 'e' : ''}:`);
+      console.log(`  Found ${found.length} printer${found.length > 1 ? 's' : ''}:`);
       console.log('');
       for (let i = 0; i < found.length; i++) {
         const p = found[i];
@@ -76,8 +76,8 @@ if (!IS_DEMO && config.printers.length === 0 && process.stdin.isTTY) {
       }
       console.log('');
 
-      const sel = (await ask(`  Legg til alle? (j/n): `)).trim().toLowerCase();
-      if (sel === 'j' || sel === 'y') {
+      const sel = (await ask(`  Add all? (y/n): `)).trim().toLowerCase();
+      if (sel === 'y' || sel === 'j') {
         const { saveConfig } = await import('./config.js');
         const printers = found.map(p => ({
           id: p.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || p.serial,
@@ -98,32 +98,32 @@ if (!IS_DEMO && config.printers.length === 0 && process.stdin.isTTY) {
         saveConfig({ printers });
         // Reload config with new printers
         config.printers = printers;
-        console.log(`  ${printers.length} printer${printers.length > 1 ? 'e' : ''} lagt til i config.json`);
+        console.log(`  ${printers.length} printer${printers.length > 1 ? 's' : ''} added to config.json`);
       }
     }
   } else if (choice === '2') {
     // Manual printer setup
     const { saveConfig } = await import('./config.js');
     console.log('');
-    console.log('  Støttede typer: bambu, moonraker');
+    console.log('  Supported types: bambu, moonraker');
     const type = (await ask('  Type (bambu/moonraker): ')).trim().toLowerCase() || 'bambu';
-    const name = (await ask('  Navn: ')).trim();
-    const ip = (await ask('  IP-adresse: ')).trim();
+    const name = (await ask('  Name: ')).trim();
+    const ip = (await ask('  IP address: ')).trim();
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'printer-1';
 
     const printer = { id, name, ip, type };
 
     if (type === 'bambu') {
-      printer.serial = (await ask('  Serienummer: ')).trim();
+      printer.serial = (await ask('  Serial number: ')).trim();
       printer.accessCode = (await ask('  Access code: ')).trim();
-      printer.model = (await ask('  Modell (f.eks. P2S, X1C, A1): ')).trim();
+      printer.model = (await ask('  Model (e.g. P2S, X1C, A1): ')).trim();
     } else {
-      printer.port = parseInt((await ask('  Port (standard 80): ')).trim()) || 80;
+      printer.port = parseInt((await ask('  Port (default 80): ')).trim()) || 80;
     }
 
     saveConfig({ printers: [printer] });
     config.printers = [printer];
-    console.log(`  ${name} lagt til i config.json`);
+    console.log(`  ${name} added to config.json`);
   }
   // choice === '3' or anything else: start normally without printers
 
@@ -1123,10 +1123,10 @@ httpServer.listen(PORT, () => {
     if (hasSSL) {
       console.log(`  ║   HTTPS: https://localhost:${HTTPS_PORT}                ║`);
     } else {
-      console.log('  ║   ⚠ Ingen SSL-sertifikater funnet            ║');
+      console.log('  ║   ⚠ No SSL certificates found                ║');
     }
   }
-  console.log(`  ║   Printere: ${printerCount}                              ║`);
+  console.log(`  ║   Printers: ${printerCount}                              ║`);
   console.log('  ╚══════════════════════════════════════════════╝');
   console.log('');
 

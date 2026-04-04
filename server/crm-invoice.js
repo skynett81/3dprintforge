@@ -20,7 +20,7 @@ function esc(str) {
  */
 function formatCurrency(val, currency = 'NOK') {
   if (val === null || val === undefined) return '0.00 ' + currency;
-  return Number(val).toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+  return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
 }
 
 /**
@@ -29,7 +29,7 @@ function formatCurrency(val, currency = 'NOK') {
 function formatDate(iso) {
   if (!iso) return '--';
   const d = new Date(iso);
-  return d.toLocaleDateString('nb-NO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 /**
@@ -107,11 +107,11 @@ export function generateInvoiceHtml(order, customer, items, invoice, companySett
   }).join('');
 
   return `<!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${esc(invoice.invoice_number || 'Faktura')}</title>
+  <title>${esc(invoice.invoice_number || 'Invoice')}</title>
   <style>
     @media print {
       body { margin: 0; padding: 0; }
@@ -284,52 +284,52 @@ export function generateInvoiceHtml(order, customer, items, invoice, companySett
 <body>
   <div class="invoice-container">
     <div class="no-print" style="text-align:center;margin-bottom:20px">
-      <button class="print-btn" onclick="window.print()">&#128424; Skriv ut / Print</button>
+      <button class="print-btn" onclick="window.print()">&#128424; Print</button>
     </div>
 
     <div class="header">
       <div class="company-info">
         ${logoHtml ? `<div style="margin-bottom:8px">${logoHtml}</div>` : ''}
-        <h1>${esc(companyName) || 'Ditt Firma'}</h1>
+        <h1>${esc(companyName) || 'Your Company'}</h1>
         ${companyAddressLine ? `<p>${esc(companyAddressLine)}</p>` : ''}
-        ${orgNumber ? `<p>Org.nr: ${esc(orgNumber)}</p>` : ''}
+        ${orgNumber ? `<p>Org. no: ${esc(orgNumber)}</p>` : ''}
         ${companyEmail ? `<p>${esc(companyEmail)}</p>` : ''}
-        ${companyPhone ? `<p>Tlf: ${esc(companyPhone)}</p>` : ''}
+        ${companyPhone ? `<p>Phone: ${esc(companyPhone)}</p>` : ''}
       </div>
       <div class="invoice-title">
-        <h2>Faktura</h2>
+        <h2>Invoice</h2>
         <div class="invoice-number">${esc(invoice.invoice_number)}</div>
       </div>
     </div>
 
     <div class="meta-section">
       <div class="meta-block">
-        <h3>Fakturert til</h3>
+        <h3>Billed to</h3>
         <p class="name">${esc(customerName)}</p>
         ${customerCompany ? `<p>${esc(customerCompany)}</p>` : ''}
         ${customerAddressLine ? `<p>${esc(customerAddressLine)}</p>` : ''}
         ${customerEmail ? `<p>${esc(customerEmail)}</p>` : ''}
       </div>
       <div class="meta-block">
-        <h3>Fakturadetaljer</h3>
-        <p><strong>Fakturadato:</strong> ${invoiceDate}</p>
-        <p><strong>Forfallsdato:</strong> ${dueDate}</p>
-        ${order?.order_number ? `<p><strong>Ordrenr:</strong> ${esc(order.order_number)}</p>` : ''}
-        <p><strong>Betalingsfrist:</strong> ${esc(paymentTermsDays)} dager</p>
+        <h3>Invoice details</h3>
+        <p><strong>Invoice date:</strong> ${invoiceDate}</p>
+        <p><strong>Due date:</strong> ${dueDate}</p>
+        ${order?.order_number ? `<p><strong>Order no:</strong> ${esc(order.order_number)}</p>` : ''}
+        <p><strong>Payment terms:</strong> ${esc(paymentTermsDays)} days</p>
       </div>
     </div>
 
     <table class="items-table">
       <thead>
         <tr>
-          <th>Beskrivelse</th>
-          <th>Antall</th>
-          <th>Enhetspris</th>
-          <th>Sum</th>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit price</th>
+          <th>Total</th>
         </tr>
       </thead>
       <tbody>
-        ${itemRows || '<tr><td colspan="4" style="padding:12px;text-align:center;color:#94a3b8">Ingen artikler</td></tr>'}
+        ${itemRows || '<tr><td colspan="4" style="padding:12px;text-align:center;color:#94a3b8">No items</td></tr>'}
       </tbody>
     </table>
 
@@ -340,30 +340,30 @@ export function generateInvoiceHtml(order, customer, items, invoice, companySett
           <td>${formatCurrency(subtotal, currency)}</td>
         </tr>
         ${discountPct > 0 ? `<tr>
-          <td>Rabatt (${discountPct}%)</td>
+          <td>Discount (${discountPct}%)</td>
           <td>-${formatCurrency(discountAmount, currency)}</td>
         </tr>` : ''}
         ${taxPct > 0 ? `<tr>
-          <td>MVA (${taxPct}%)</td>
+          <td>Tax (${taxPct}%)</td>
           <td>${formatCurrency(taxAmount, currency)}</td>
         </tr>` : ''}
         <tr class="total-row">
-          <td>Totalt</td>
+          <td>Total</td>
           <td>${formatCurrency(total, currency)}</td>
         </tr>
       </table>
     </div>
 
     ${bankAccount ? `<div class="payment-section">
-      <h3>Betalingsinformasjon</h3>
-      <p><strong>Kontonummer:</strong> <span class="highlight">${esc(bankAccount)}</span></p>
-      ${invoice.payment_reference ? `<p><strong>Referanse/KID:</strong> <span class="highlight">${esc(invoice.payment_reference)}</span></p>` : ''}
-      <p><strong>Forfallsdato:</strong> <span class="highlight">${dueDate}</span></p>
-      <p><strong>Valuta:</strong> ${esc(currency)}</p>
+      <h3>Payment information</h3>
+      <p><strong>Account number:</strong> <span class="highlight">${esc(bankAccount)}</span></p>
+      ${invoice.payment_reference ? `<p><strong>Reference/KID:</strong> <span class="highlight">${esc(invoice.payment_reference)}</span></p>` : ''}
+      <p><strong>Due date:</strong> <span class="highlight">${dueDate}</span></p>
+      <p><strong>Currency:</strong> ${esc(currency)}</p>
     </div>` : ''}
 
     ${invoiceFooter ? `<div class="footer">${esc(invoiceFooter)}</div>` : ''}
-    ${!invoiceFooter && companyName ? `<div class="footer">${esc(companyName)}${orgNumber ? ' | Org.nr: ' + esc(orgNumber) : ''}${companyEmail ? ' | ' + esc(companyEmail) : ''}</div>` : ''}
+    ${!invoiceFooter && companyName ? `<div class="footer">${esc(companyName)}${orgNumber ? ' | Org. no: ' + esc(orgNumber) : ''}${companyEmail ? ' | ' + esc(companyEmail) : ''}</div>` : ''}
   </div>
 </body>
 </html>`;

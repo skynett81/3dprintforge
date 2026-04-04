@@ -101,10 +101,10 @@
     h += '<button class="form-btn form-btn-sm form-btn-accent" id="net-scan-btn" data-ripple onclick="window._runNetworkScan()" ' + (_scanning ? 'disabled' : '') + '>';
     h += _scanning
       ? '<span class="spinner-sm"></span> ' + (typeof t === 'function' ? t('network.scanning') : 'Skanner...')
-      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg> ' + (typeof t === 'function' ? t('network.scan_for_printers') : 'Søk etter printere');
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg> ' + (typeof t === 'function' ? t('network.scan_for_printers') : 'Scan for printers');
     h += '</button>';
     h += '</div>';
-    h += '<div class="text-muted" style="font-size:0.8rem;margin-bottom:8px">' + (typeof t === 'function' ? t('network.scan_hint') : 'Utfør en full nettverksskanning (Bambu SSDP + Moonraker) for å finne printere.') + '</div>';
+    h += '<div class="text-muted" style="font-size:0.8rem;margin-bottom:8px">' + (typeof t === 'function' ? t('network.scan_hint') : 'Perform a full network scan (Bambu SSDP + Moonraker) to find printers.') + '</div>';
     h += '<div id="net-scan-results">';
     if (_scanResults) {
       h += _renderScanResults(_scanResults);

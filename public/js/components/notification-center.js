@@ -26,13 +26,13 @@
     var diff = Date.now() - new Date(isoStr).getTime();
     if (diff < 0) diff = 0;
     var sec = Math.floor(diff / 1000);
-    if (sec < 60) return 'Nå';
+    if (sec < 60) return 'Now';
     var min = Math.floor(sec / 60);
-    if (min < 60) return min + ' min siden';
+    if (min < 60) return min + ' min ago';
     var hr = Math.floor(min / 60);
-    if (hr < 24) return hr + 't siden';
+    if (hr < 24) return hr + 'h ago';
     var d = Math.floor(hr / 24);
-    return d + 'd siden';
+    return d + 'd ago';
   }
 
   function _escHtml(s) {
@@ -66,14 +66,14 @@
   function _renderPanel() {
     if (!_panelEl) return;
 
-    var html = '<div class="notif-header"><h3>' + (typeof t === 'function' ? t('notification.title') : 'Varsler') + '</h3><div class="notif-header-actions">';
-    html += '<button class="notif-action-btn" onclick="markAllNotificationsRead()" data-tooltip="' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Merk alle lest') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Merk alle lest') + '</button>';
-    html += '<button class="notif-action-btn notif-action-clear" onclick="clearAllNotifications()" data-tooltip="' + (typeof t === 'function' ? t('notification.clear_all_tooltip') : 'Fjern alle varsler') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.clear_all') : 'Tøm') + '</button>';
+    var html = '<div class="notif-header"><h3>' + (typeof t === 'function' ? t('notification.title') : 'Notifications') + '</h3><div class="notif-header-actions">';
+    html += '<button class="notif-action-btn" onclick="markAllNotificationsRead()" data-tooltip="' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '</button>';
+    html += '<button class="notif-action-btn notif-action-clear" onclick="clearAllNotifications()" data-tooltip="' + (typeof t === 'function' ? t('notification.clear_all_tooltip') : 'Clear all notifications') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.clear_all') : 'Clear') + '</button>';
     html += '</div></div>';
 
     html += '<div class="notif-list">';
     if (_notifications.length === 0) {
-      html += '<div class="notif-empty">' + (typeof t === 'function' ? t('notification.no_notifications') : 'Ingen varsler ennå') + '</div>';
+      html += '<div class="notif-empty">' + (typeof t === 'function' ? t('notification.no_notifications') : 'No notifications yet') + '</div>';
     } else {
       for (var i = 0; i < _notifications.length; i++) {
         var n = _notifications[i];
@@ -118,7 +118,7 @@
     _notifications.unshift({
       id: Date.now() + Math.random(),
       ts: new Date().toISOString(),
-      title: title || 'Varsel',
+      title: title || 'Notification',
       message: message || '',
       type: type || 'info',
       read: false
@@ -188,11 +188,11 @@
       var data = e.detail;
       if (!data || !data.type) return;
       if (data.type === 'print_finished') {
-        window.addNotification('Utskrift ferdig', data.filename || 'Utskrift fullført', 'success');
+        window.addNotification('Print finished', data.filename || 'Print completed', 'success');
       } else if (data.type === 'print_failed') {
-        window.addNotification('Utskrift feilet', data.message || data.filename || 'En utskrift har feilet', 'error');
+        window.addNotification('Print failed', data.message || data.filename || 'A print has failed', 'error');
       } else if (data.type === 'error') {
-        window.addNotification('Feil', data.message || 'En feil oppstod', 'error');
+        window.addNotification('Error', data.message || 'An error occurred', 'error');
       }
     });
   }

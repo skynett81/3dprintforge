@@ -294,22 +294,22 @@ export class BambuCloud {
 
   // ---- Cloud File Upload & Print ----
 
-  /** Hent pre-signed S3 upload-URL for filopplasting til cloud. */
+  /** Get pre-signed S3 upload URL for file upload to cloud. */
   async getUploadUrl(filename) {
     this._requireAuth();
     return this._authedGet(`/v1/iot-service/api/user/upload?filename=${encodeURIComponent(filename)}`);
   }
 
   /**
-   * Last opp fil til Bambu Lab cloud via pre-signed S3 URL.
-   * Returnerer { ok, key } ved suksess.
+   * Upload file to Bambu Lab cloud via pre-signed S3 URL.
+   * Returns { ok, key } on success.
    */
   async uploadFileToCloud(filename, fileBuffer) {
     this._requireAuth();
     const uploadInfo = await this.getUploadUrl(filename);
-    if (!uploadInfo?.url) throw new Error('Ingen upload-URL mottatt');
+    if (!uploadInfo?.url) throw new Error('No upload URL received');
 
-    // PUT til S3 pre-signed URL
+    // PUT to S3 pre-signed URL
     return new Promise((resolve, reject) => {
       const url = new URL(uploadInfo.url);
       const req = https.request({
@@ -328,7 +328,7 @@ export class BambuCloud {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve({ ok: true, key: uploadInfo.key || filename, ossPath: uploadInfo.ossPath || null });
           } else {
-            reject(new Error(`S3 upload feilet: HTTP ${res.statusCode}`));
+            reject(new Error(`S3 upload failed: HTTP ${res.statusCode}`));
           }
         });
       });
@@ -339,7 +339,7 @@ export class BambuCloud {
     });
   }
 
-  /** Start cloud-print paa en printer. */
+  /** Start cloud print on a printer. */
   async startCloudPrint(deviceId, filename, fileUrl, settings = {}) {
     this._requireAuth();
     return this._request('POST', '/v1/iot-service/api/user/print', {
@@ -350,7 +350,7 @@ export class BambuCloud {
     }, this._token);
   }
 
-  /** Opprett en ny printjobb i cloud. */
+  /** Create a new print job in cloud. */
   async createTask(task) {
     this._requireAuth();
     return this._request('POST', '/v1/user-service/my/task', task, this._token);
@@ -358,7 +358,7 @@ export class BambuCloud {
 
   // ---- Device Binding ----
 
-  /** Bind en ny printer til kontoen. */
+  /** Bind a new printer to the account. */
   async bindDevice(deviceId, accessCode) {
     this._requireAuth();
     return this._request('POST', '/v1/iot-service/api/user/bind', {
@@ -367,7 +367,7 @@ export class BambuCloud {
     }, this._token);
   }
 
-  /** Fjern en printer fra kontoen. */
+  /** Remove a printer from the account. */
   async unbindDevice(deviceId) {
     this._requireAuth();
     return this._request('DELETE', `/v1/iot-service/api/user/bind?dev_id=${encodeURIComponent(deviceId)}`, null, this._token);
@@ -375,7 +375,7 @@ export class BambuCloud {
 
   // ---- Cloud Video ----
 
-  /** Hent cloud video streaming URL for en enhet. */
+  /** Get cloud video streaming URL for a device. */
   async getCloudVideoUrl(deviceId) {
     this._requireAuth();
     return this._authedGet(`/v1/iot-service/api/user/device/video?dev_id=${encodeURIComponent(deviceId)}`);
@@ -383,19 +383,19 @@ export class BambuCloud {
 
   // ---- User Profile ----
 
-  /** Hent brukerprofil. */
+  /** Get user profile. */
   async getUserProfile() {
     this._requireAuth();
     return this._authedGet('/v1/user-service/my/profile');
   }
 
-  /** Oppdater brukerprofil. */
+  /** Update user profile. */
   async updateUserProfile(updates) {
     this._requireAuth();
     return this._request('PUT', '/v1/user-service/my/profile', updates, this._token);
   }
 
-  /** Hent brukerpreferanser. */
+  /** Get user preferences. */
   async getUserPreferences() {
     this._requireAuth();
     return this._authedGet('/v1/design-user-service/my/preference');
@@ -403,7 +403,7 @@ export class BambuCloud {
 
   // ---- 2FA Email Code ----
 
-  /** Send 2FA-verifiseringskode til e-post (separat fra login-flyten). */
+  /** Send 2FA verification code to email (separate from login flow). */
   async sendVerificationEmail(email) {
     return this._request('POST', '/v1/user-service/user/sendemail/code', {
       account: email,
@@ -413,12 +413,12 @@ export class BambuCloud {
 
   // ---- Cloud Files ----
 
-  /** List cloud-filer (prosjekter, opplastinger). */
+  /** List cloud files (projects, uploads). */
   async getCloudFiles(limit = 50, offset = 0) {
     this._requireAuth();
-    // Prosjekter via IoT-service
+    // Projects via IoT service
     const projects = await this._authedGet('/v1/iot-service/api/user/project').catch(() => ({}));
-    // Oppgaver via user-service
+    // Tasks via user service
     const tasks = await this._authedGet(`/v1/user-service/my/tasks?limit=${limit}&offset=${offset}`).catch(() => ({}));
     return {
       projects: projects.projects || projects.list || [],

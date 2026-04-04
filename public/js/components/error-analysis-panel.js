@@ -16,10 +16,10 @@
     if (!el) return;
 
     el.innerHTML = `<div class="tabs _wrapper-tabs">
-      <button class="tab-btn active" data-tab="overview" onclick="window._switchEpaTab('overview')">${_t('error_analysis.tab_overview', 'Oversikt')}</button>
-      <button class="tab-btn" data-tab="health" onclick="window._switchEpaTab('health')">${_t('error_analysis.tab_health', 'Printerhelse')}</button>
-      <button class="tab-btn" data-tab="patterns" onclick="window._switchEpaTab('patterns')">${_t('error_analysis.tab_patterns', 'Feilmønstre')}</button>
-      <button class="tab-btn" data-tab="correlations" onclick="window._switchEpaTab('correlations')">${_t('error_analysis.tab_correlations', 'Korrelasjoner')}</button>
+      <button class="tab-btn active" data-tab="overview" onclick="window._switchEpaTab('overview')">${_t('error_analysis.tab_overview', 'Overview')}</button>
+      <button class="tab-btn" data-tab="health" onclick="window._switchEpaTab('health')">${_t('error_analysis.tab_health', 'Printer health')}</button>
+      <button class="tab-btn" data-tab="patterns" onclick="window._switchEpaTab('patterns')">${_t('error_analysis.tab_patterns', 'Error patterns')}</button>
+      <button class="tab-btn" data-tab="correlations" onclick="window._switchEpaTab('correlations')">${_t('error_analysis.tab_correlations', 'Correlations')}</button>
     </div>
     <div id="epa-content"></div>`;
 
@@ -59,8 +59,8 @@
       if (!hasData) {
         el.innerHTML = _emptyState(
           '🔍',
-          _t('error_analysis.no_data_title', 'Ingen analysedata ennå'),
-          _t('error_analysis.no_data_desc', 'Kjør en analyse for å oppdage feilmønstre, korrelasjoner og printerhelse basert på historikken din.'),
+          _t('error_analysis.no_data_title', 'No analysis data yet'),
+          _t('error_analysis.no_data_desc', 'Run an analysis to discover error patterns, correlations and printer health based on your history.'),
           true
         );
         return;
@@ -75,28 +75,28 @@
       let h = '<div class="epa-layout"><div class="epa-col-left">';
 
       // Summary cards
-      h += '<div class="card" style="padding:16px"><div class="card-title">' + _t('error_analysis.summary', 'Sammendrag') + '</div>';
+      h += '<div class="card" style="padding:16px"><div class="card-title">' + _t('error_analysis.summary', 'Summary') + '</div>';
       h += '<div class="epa-summary-grid">';
-      h += _summaryCard(scores.length, _t('error_analysis.printers', 'Printere'), 'var(--accent-blue)');
-      h += _summaryCard(avgHealth !== null ? avgHealth + '%' : 'N/A', _t('error_analysis.avg_health', 'Snitt helse'), avgHealth >= 80 ? 'var(--accent-green)' : avgHealth >= 50 ? '#f59e0b' : 'var(--accent-red)');
-      h += _summaryCard(patterns.length, _t('error_analysis.patterns_found', 'Mønstre'), 'var(--accent-orange)');
-      h += _summaryCard(criticalPatterns, _t('error_analysis.critical', 'Kritiske'), criticalPatterns > 0 ? 'var(--accent-red)' : 'var(--accent-green)');
-      h += _summaryCard(strongCorrs, _t('error_analysis.strong_corr', 'Sterke korr.'), 'var(--accent-purple)');
-      h += _summaryCard(suggestions.length, _t('error_analysis.suggestions', 'Forslag'), 'var(--accent-cyan)');
+      h += _summaryCard(scores.length, _t('error_analysis.printers', 'Printers'), 'var(--accent-blue)');
+      h += _summaryCard(avgHealth !== null ? avgHealth + '%' : 'N/A', _t('error_analysis.avg_health', 'Avg health'), avgHealth >= 80 ? 'var(--accent-green)' : avgHealth >= 50 ? '#f59e0b' : 'var(--accent-red)');
+      h += _summaryCard(patterns.length, _t('error_analysis.patterns_found', 'Patterns'), 'var(--accent-orange)');
+      h += _summaryCard(criticalPatterns, _t('error_analysis.critical', 'Critical'), criticalPatterns > 0 ? 'var(--accent-red)' : 'var(--accent-green)');
+      h += _summaryCard(strongCorrs, _t('error_analysis.strong_corr', 'Strong corr.'), 'var(--accent-purple)');
+      h += _summaryCard(suggestions.length, _t('error_analysis.suggestions', 'Suggestions'), 'var(--accent-cyan)');
       h += '</div>';
-      h += `<button class="form-btn form-btn-sm" style="margin-top:8px" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Kjør analyse')}</button>`;
+      h += `<button class="form-btn form-btn-sm" style="margin-top:8px" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Run analysis')}</button>`;
       h += '</div>';
 
       // Worst printer highlight
       if (worstPrinter && worstPrinter.health_score < 80) {
         const color = worstPrinter.health_score >= 50 ? '#f59e0b' : 'var(--accent-red)';
         h += `<div class="card" style="padding:16px;border-left:3px solid ${color}">
-          <div class="card-title">${_t('error_analysis.needs_attention', 'Trenger oppmerksomhet')}</div>
+          <div class="card-title">${_t('error_analysis.needs_attention', 'Needs attention')}</div>
           <div style="display:flex;align-items:center;gap:12px">
             ${_miniRing(worstPrinter.health_score, color, 56)}
             <div>
               <div style="font-weight:700;font-size:0.85rem">${_esc(worstPrinter.printer_id)}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted)">${_t('error_analysis.error_freq', 'Feilfrekvens')}: ${worstPrinter.error_frequency ?? 0}/t · MTBF: ${worstPrinter.mtbf_hours != null ? worstPrinter.mtbf_hours + 't' : 'N/A'}</div>
+              <div style="font-size:0.72rem;color:var(--text-muted)">${_t('error_analysis.error_freq', 'Error frequency')}: ${worstPrinter.error_frequency ?? 0}/t · MTBF: ${worstPrinter.mtbf_hours != null ? worstPrinter.mtbf_hours + 't' : 'N/A'}</div>
             </div>
           </div>
         </div>`;
@@ -105,7 +105,7 @@
       h += '</div><div class="epa-col-right">';
 
       // Suggestions
-      h += '<div class="card" style="padding:16px"><div class="card-title">' + _t('error_analysis.suggestions', 'Forslag') + '</div>';
+      h += '<div class="card" style="padding:16px"><div class="card-title">' + _t('error_analysis.suggestions', 'Suggestions') + '</div>';
       if (suggestions.length) {
         h += '<div class="epa-sugg-list">';
         for (const s of suggestions.slice(0, 8)) {
@@ -131,14 +131,14 @@
         }
         h += '</div>';
       } else {
-        h += `<div class="epa-empty"><div class="epa-empty-desc">${_t('error_analysis.no_suggestions', 'Ingen forslag akkurat nå — alt ser bra ut!')}</div></div>`;
+        h += `<div class="epa-empty"><div class="epa-empty-desc">${_t('error_analysis.no_suggestions', 'No suggestions right now — everything looks good!')}</div></div>`;
       }
       h += '</div>';
 
       h += '</div></div>';
       el.innerHTML = h;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Kunne ikke laste data'), e.message, true);
+      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, true);
     }
   }
 
@@ -147,11 +147,11 @@
     try {
       const scores = await fetch('/api/printer-health').then(r => r.ok ? r.json() : []);
       if (!scores.length) {
-        el.innerHTML = _emptyState('💚', _t('error_analysis.no_health_title', 'Ingen helsedata'), _t('error_analysis.no_health_desc', 'Kjør en analyse for å beregne helsescore for printerne dine.'), true);
+        el.innerHTML = _emptyState('💚', _t('error_analysis.no_health_title', 'No health data'), _t('error_analysis.no_health_desc', 'Run an analysis to calculate health scores for your printers.'), true);
         return;
       }
 
-      let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Kjør analyse')}</button></div>`;
+      let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Run analysis')}</button></div>`;
       html += '<div class="epa-health-grid">';
 
       for (const s of scores) {
@@ -165,7 +165,7 @@
 
         const trendClass = s.trend === 'improving' ? 'epa-trend-improving' : s.trend === 'worsening' ? 'epa-trend-worsening' : 'epa-trend-stable';
         const trendArrow = s.trend === 'improving' ? '↑' : s.trend === 'worsening' ? '↓' : '→';
-        const trendLabel = _t('error_analysis.trend_' + (s.trend || 'stable'), s.trend || 'stabil');
+        const trendLabel = _t('error_analysis.trend_' + (s.trend || 'stable'), s.trend || 'stable');
 
         html += `<div class="epa-health-card">
           <div class="epa-ring-wrap">
@@ -175,17 +175,17 @@
             </svg>
             <div class="epa-score-text">
               <div class="epa-score-num" style="color:${color}">${Math.round(score)}</div>
-              <div class="epa-score-label">${_t('error_analysis.health_score', 'Helse')}</div>
+              <div class="epa-score-label">${_t('error_analysis.health_score', 'Health')}</div>
             </div>
           </div>
           <div class="epa-health-info">
             <div class="epa-health-name">${_esc(s.printer_id)}</div>
             <div class="epa-health-stats">
               <span class="epa-stat">MTBF: <span class="epa-stat-val">${s.mtbf_hours != null ? s.mtbf_hours + 't' : 'N/A'}</span></span>
-              <span class="epa-stat">${_t('error_analysis.error_freq', 'Feilfrekvens')}: <span class="epa-stat-val">${s.error_frequency ?? 0}/t</span></span>
+              <span class="epa-stat">${_t('error_analysis.error_freq', 'Error frequency')}: <span class="epa-stat-val">${s.error_frequency ?? 0}/t</span></span>
             </div>
             <span class="epa-trend ${trendClass}">${trendArrow} ${trendLabel}</span>
-            ${riskFactors.length ? `<div class="epa-risk">${_t('error_analysis.risk_factors', 'Risikofaktorer')}: ${riskFactors.map(r => `<span class="epa-risk-code">${_esc(r.code)} (${r.count})</span>`).join('')}</div>` : ''}
+            ${riskFactors.length ? `<div class="epa-risk">${_t('error_analysis.risk_factors', 'Risk factors')}: ${riskFactors.map(r => `<span class="epa-risk-code">${_esc(r.code)} (${r.count})</span>`).join('')}</div>` : ''}
           </div>
         </div>`;
       }
@@ -193,7 +193,7 @@
       html += '</div>';
       el.innerHTML = html;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Kunne ikke laste data'), e.message, false);
+      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
@@ -202,11 +202,11 @@
     try {
       const patterns = await fetch('/api/error-patterns').then(r => r.ok ? r.json() : []);
       if (!patterns.length) {
-        el.innerHTML = _emptyState('🧩', _t('error_analysis.no_patterns_title', 'Ingen feilmønstre oppdaget'), _t('error_analysis.no_patterns_desc', 'Feilmønstre oppdages automatisk når det finnes gjentakende feil i loggen. Kjør en analyse for å starte.'), true);
+        el.innerHTML = _emptyState('🧩', _t('error_analysis.no_patterns_title', 'No error patterns detected'), _t('error_analysis.no_patterns_desc', 'Error patterns are detected automatically when there are recurring errors in the log. Run an analysis to start.'), true);
         return;
       }
 
-      let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Kjør analyse')}</button></div>`;
+      let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Run analysis')}</button></div>`;
       html += '<div class="epa-pattern-grid">';
 
       for (const p of patterns) {
@@ -216,21 +216,21 @@
 
         html += `<div class="epa-pattern-card">
           <div class="epa-pattern-header">
-            <span class="epa-pattern-name">${_esc(p.pattern_name || 'Ukjent')}</span>
+            <span class="epa-pattern-name">${_esc(p.pattern_name || 'Unknown')}</span>
             <span class="epa-severity ${sevClass}">${_esc(p.severity || 'info')}</span>
           </div>
           <div class="epa-pattern-desc">${_esc(p.description || '')}</div>
           <div class="epa-pattern-meta">
-            <span>${_t('error_analysis.frequency', 'Frekvens')}: <b>${p.frequency || 0}</b></span>
-            <span>${_t('error_analysis.confidence', 'Sikkerhet')}: <b>${Math.round((p.confidence || 0) * 100)}%</b></span>
-            ${p.first_seen ? `<span>${_t('error_analysis.first_seen', 'Først sett')}: <b>${_fmtDate(p.first_seen)}</b></span>` : ''}
-            ${p.last_seen ? `<span>${_t('error_analysis.last_seen', 'Sist sett')}: <b>${_fmtDate(p.last_seen)}</b></span>` : ''}
+            <span>${_t('error_analysis.frequency', 'Frequency')}: <b>${p.frequency || 0}</b></span>
+            <span>${_t('error_analysis.confidence', 'Confidence')}: <b>${Math.round((p.confidence || 0) * 100)}%</b></span>
+            ${p.first_seen ? `<span>${_t('error_analysis.first_seen', 'First seen')}: <b>${_fmtDate(p.first_seen)}</b></span>` : ''}
+            ${p.last_seen ? `<span>${_t('error_analysis.last_seen', 'Last seen')}: <b>${_fmtDate(p.last_seen)}</b></span>` : ''}
           </div>
           <div class="epa-pattern-conditions">
-            ${conditions.materials?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.materials', 'Materialer')}:</span> ${conditions.materials.join(', ')}</div>` : ''}
-            ${conditions.temp_range ? `<div><span class="epa-cond-label">${_t('error_analysis.temp_range', 'Temperatur')}:</span> ${conditions.temp_range.min}–${conditions.temp_range.max}°C (snitt ${conditions.temp_range.avg}°C)</div>` : ''}
-            ${conditions.speed_levels?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.speed_levels', 'Hastighet')}:</span> ${conditions.speed_levels.join(', ')}</div>` : ''}
-            ${conditions.printers?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.printers', 'Printere')}:</span> ${conditions.printers.join(', ')}</div>` : ''}
+            ${conditions.materials?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.materials', 'Materials')}:</span> ${conditions.materials.join(', ')}</div>` : ''}
+            ${conditions.temp_range ? `<div><span class="epa-cond-label">${_t('error_analysis.temp_range', 'Temperature')}:</span> ${conditions.temp_range.min}–${conditions.temp_range.max}°C (snitt ${conditions.temp_range.avg}°C)</div>` : ''}
+            ${conditions.speed_levels?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.speed_levels', 'Speed')}:</span> ${conditions.speed_levels.join(', ')}</div>` : ''}
+            ${conditions.printers?.length ? `<div><span class="epa-cond-label">${_t('error_analysis.printers', 'Printers')}:</span> ${conditions.printers.join(', ')}</div>` : ''}
           </div>
           ${p.suggestion ? `<div class="epa-pattern-suggestion">${_esc(p.suggestion)}</div>` : ''}
         </div>`;
@@ -239,7 +239,7 @@
       html += '</div>';
       el.innerHTML = html;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Kunne ikke laste data'), e.message, false);
+      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
@@ -248,7 +248,7 @@
     try {
       const corrs = await fetch('/api/error-correlations').then(r => r.ok ? r.json() : []);
       if (!corrs.length) {
-        el.innerHTML = _emptyState('📊', _t('error_analysis.no_corr_title', 'Ingen korrelasjoner funnet'), _t('error_analysis.no_corr_desc', 'Korrelasjoner viser sammenhenger mellom feil og faktorer som materiale, hastighet og temperatur.'), true);
+        el.innerHTML = _emptyState('📊', _t('error_analysis.no_corr_title', 'No correlations found'), _t('error_analysis.no_corr_desc', 'Correlations show relationships between errors and factors such as material, speed and temperature.'), true);
         return;
       }
 
@@ -256,16 +256,16 @@
       let activeFactor = factors[0] || 'material';
 
       const factorLabels = {
-        material: _t('error_analysis.factor_material', 'Materiale'),
-        speed: _t('error_analysis.factor_speed', 'Hastighet'),
+        material: _t('error_analysis.factor_material', 'Material'),
+        speed: _t('error_analysis.factor_speed', 'Speed'),
         printer: _t('error_analysis.factor_printer', 'Printer'),
-        temperature: _t('error_analysis.factor_temperature', 'Temperatur')
+        temperature: _t('error_analysis.factor_temperature', 'Temperature')
       };
 
       const render = (factor) => {
         const filtered = corrs.filter(c => c.factor === factor);
 
-        let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Kjør analyse')}</button></div>`;
+        let html = `<div style="margin-bottom:14px"><button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Run analysis')}</button></div>`;
         html += '<div class="epa-corr-filter">';
         for (const f of factors) {
           html += `<button class="epa-corr-filter-btn ${f === factor ? 'active' : ''}" onclick="window._epaFilterCorr('${f}')">${factorLabels[f] || f}</button>`;
@@ -273,7 +273,7 @@
         html += '</div>';
 
         if (!filtered.length) {
-          html += `<div class="epa-empty"><div class="epa-empty-desc">${_t('error_analysis.no_correlations', 'Ingen korrelasjoner for denne faktoren')}</div></div>`;
+          html += `<div class="epa-empty"><div class="epa-empty-desc">${_t('error_analysis.no_correlations', 'No correlations for this factor')}</div></div>`;
           el.innerHTML = html;
           return;
         }
@@ -281,10 +281,10 @@
         const sorted = [...filtered].sort((a, b) => b.correlation_strength - a.correlation_strength);
 
         html += '<div style="overflow-x:auto"><table class="epa-corr-table"><thead><tr>';
-        html += `<th>${_t('error_analysis.error_code', 'Feilkode')}</th>`;
+        html += `<th>${_t('error_analysis.error_code', 'Error code')}</th>`;
         html += `<th>${factorLabels[factor] || factor}</th>`;
-        html += `<th>${_t('error_analysis.strength', 'Styrke')}</th>`;
-        html += `<th>${_t('error_analysis.sample_size', 'Utvalg')}</th>`;
+        html += `<th>${_t('error_analysis.strength', 'Strength')}</th>`;
+        html += `<th>${_t('error_analysis.sample_size', 'Sample size')}</th>`;
         html += '</tr></thead><tbody>';
 
         for (const c of sorted) {
@@ -305,19 +305,19 @@
       window._epaFilterCorr = (factor) => { activeFactor = factor; render(factor); };
       render(activeFactor);
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Kunne ikke laste data'), e.message, false);
+      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
   // ── Run analysis ──
   window._epaRunAnalysis = async function() {
     try {
-      if (typeof showToast === 'function') showToast(_t('error_analysis.analyzing', 'Analyserer...'), 'info', 2000);
+      if (typeof showToast === 'function') showToast(_t('error_analysis.analyzing', 'Analyzing...'), 'info', 2000);
       await fetch('/api/error-patterns/analyze', { method: 'POST' });
-      if (typeof showToast === 'function') showToast(_t('error_analysis.analysis_complete', 'Analyse fullført'), 'success', 3000);
+      if (typeof showToast === 'function') showToast(_t('error_analysis.analysis_complete', 'Analysis complete'), 'success', 3000);
       _switchContent(_tab);
     } catch (e) {
-      if (typeof showToast === 'function') showToast(_t('error_analysis.analysis_failed', 'Analyse feilet'), 'error', 3000);
+      if (typeof showToast === 'function') showToast(_t('error_analysis.analysis_failed', 'Analysis failed'), 'error', 3000);
     }
   };
 
@@ -348,7 +348,7 @@
       <div class="epa-empty-icon">${icon}</div>
       <div class="epa-empty-title">${title}</div>
       <div class="epa-empty-desc">${desc}</div>
-      ${showAnalyzeBtn ? `<button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Kjør analyse')}</button>` : ''}
+      ${showAnalyzeBtn ? `<button class="form-btn form-btn-sm" onclick="window._epaRunAnalysis()">${_t('error_analysis.run_analysis', 'Run analysis')}</button>` : ''}
     </div>`;
   }
 })();

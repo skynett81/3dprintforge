@@ -2,15 +2,15 @@
 (function() {
   'use strict';
 
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
-  const DAYS = ['Man', '', 'Ons', '', 'Fre', '', 'Søn'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DAYS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
 
   function _tl(key, fb) { return (typeof t === 'function' ? t(key) : '') || fb; }
   function _fmtDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
   function _dayName(d) {
-    return ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'][d.getDay()];
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
   }
 
   function _colorForCount(count, max) {
@@ -88,11 +88,11 @@
       // ── Stats strip (full width) ──
       h += `<div class="act-full">
         <div class="stats-strip act-stats">
-          <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Totalt')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
-          <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Aktive dager')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Total')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Active days')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
           <div class="spark-panel"><span class="spark-label">${_tl('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
-          <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Lengste')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
-          <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Suksessrate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Longest')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
+          <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Success rate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>
         </div>
       </div>`;
 
@@ -100,14 +100,14 @@
       // Left: stat cards + busiest days
       h += `<div class="act-col-left">
         <div class="act-cards-grid">
-          ${_statCard(_tl('activity.print_hours', 'Utskriftstimer'), Math.round(totalHours) + 'h', 'var(--accent-blue)')}
-          ${_statCard(_tl('activity.filament_used', 'Filament brukt'), totalFilament >= 1000 ? (totalFilament / 1000).toFixed(1) + 'kg' : Math.round(totalFilament) + 'g', 'var(--accent-orange)')}
-          ${_statCard(_tl('activity.completed', 'Fullført'), totalCompleted, 'var(--accent-green)')}
-          ${_statCard(_tl('activity.failed', 'Feilet'), totalFailed, 'var(--accent-red)')}
-          ${_statCard(_tl('activity.avg_per_day', 'Snitt per dag'), avgPerDay, 'var(--accent-purple)')}
+          ${_statCard(_tl('activity.print_hours', 'Print hours'), Math.round(totalHours) + 'h', 'var(--accent-blue)')}
+          ${_statCard(_tl('activity.filament_used', 'Filament used'), totalFilament >= 1000 ? (totalFilament / 1000).toFixed(1) + 'kg' : Math.round(totalFilament) + 'g', 'var(--accent-orange)')}
+          ${_statCard(_tl('activity.completed', 'Completed'), totalCompleted, 'var(--accent-green)')}
+          ${_statCard(_tl('activity.failed', 'Failed'), totalFailed, 'var(--accent-red)')}
+          ${_statCard(_tl('activity.avg_per_day', 'Avg per day'), avgPerDay, 'var(--accent-purple)')}
         </div>
         <div class="card act-busiest-card">
-          <div class="card-title">${_tl('activity.busiest_days', 'Travleste dager')}</div>
+          <div class="card-title">${_tl('activity.busiest_days', 'Busiest days')}</div>
           ${_renderBusiestDays(daily)}
         </div>
       </div>`;
@@ -115,11 +115,11 @@
       // Right: heatmap + monthly
       h += `<div class="act-col-right">
         <div class="card act-heatmap-card">
-          <div class="card-title">${_tl('activity.year_heatmap', 'Utskriftsaktivitet — siste 12 måneder')}</div>
+          <div class="card-title">${_tl('activity.year_heatmap', 'Print activity — last 12 months')}</div>
           ${_renderHeatmap(dayMap, maxPrints)}
         </div>
         <div class="card act-monthly-card">
-          <div class="card-title">${_tl('activity.monthly_breakdown', 'Månedlig oversikt')}</div>
+          <div class="card-title">${_tl('activity.monthly_breakdown', 'Monthly overview')}</div>
           ${_renderMonthlyBars(daily)}
         </div>
       </div>`;
@@ -204,7 +204,7 @@
 
         const tooltip = count > 0
           ? `${dayStr}: ${count} ${count === 1 ? 'print' : 'prints'} (${entry.hours || 0}h)`
-          : `${dayStr}: ${_tl('activity.no_prints', 'ingen utskrifter')}`;
+          : `${dayStr}: ${_tl('activity.no_prints', 'no prints')}`;
 
         svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-subtle)" stroke-width="0.5"><title>${tooltip}</title></rect>`;
       });
@@ -214,13 +214,13 @@
 
     // Legend
     svg += `<div class="act-heatmap-legend">
-      <span>${_tl('activity.less', 'Mindre')}</span>
+      <span>${_tl('activity.less', 'Less')}</span>
       <div class="act-legend-cell" style="background:var(--bg-tertiary);border:1px solid var(--border-color)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.3)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.5)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.7)"></div>
       <div class="act-legend-cell" style="background:rgba(0,230,118,0.95)"></div>
-      <span>${_tl('activity.more', 'Mer')}</span>
+      <span>${_tl('activity.more', 'More')}</span>
     </div>`;
 
     return svg;
@@ -237,7 +237,7 @@
     }
 
     const keys = Object.keys(months).sort();
-    if (!keys.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'Ingen data')}</p></div>`;
+    if (!keys.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'No data')}</p></div>`;
 
     const maxPrints = Math.max(...Object.values(months).map(m => m.prints), 1);
 
@@ -260,7 +260,7 @@
 
   function _renderBusiestDays(daily) {
     const sorted = [...daily].sort((a, b) => b.prints - a.prints).slice(0, 10);
-    if (!sorted.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'Ingen data')}</p></div>`;
+    if (!sorted.length) return `<div class="matrec-empty"><p>${_tl('activity.no_data', 'No data')}</p></div>`;
 
     let h = '<div class="auto-grid auto-grid--md">';
     for (let i = 0; i < sorted.length; i++) {

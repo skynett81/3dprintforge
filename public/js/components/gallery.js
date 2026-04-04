@@ -152,7 +152,7 @@
       const name = (p.filename || '').replace(/\.3mf$|\.gcode\.3mf$/i, '');
       const cloud = _getCloudMatch(p.filename);
       const displayName = cloud?.designTitle || name;
-      const linkIcon = cloud?.designId ? `<a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Åpne på MakerWorld"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : '';
+      const linkIcon = cloud?.designId ? `<a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Open on MakerWorld"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : '';
 
       card.innerHTML = `
         <img class="gallery-thumb" src="/api/history/${p.id}/thumbnail" loading="lazy" onerror="this.outerHTML='<div class=\\'gallery-thumb-placeholder\\'><svg width=\\'48\\' height=\\'48\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><path d=\\'M21 15l-5-5L5 21\\'/></svg></div>'">
@@ -222,7 +222,7 @@
         <div class="gallery-detail-title">${_esc(displayName)}</div>
         ${cloud?.designId ? `<div style="margin-bottom:12px">
           <a href="https://makerworld.com/en/models/${cloud.designId}" target="_blank" rel="noopener" class="ph-model-link" style="font-size:0.85rem">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Åpne på MakerWorld
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open on MakerWorld
           </a>
           <span class="gallery-designer" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px"></span>
         </div>` : ''}

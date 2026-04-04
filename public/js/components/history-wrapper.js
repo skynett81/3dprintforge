@@ -3,9 +3,9 @@
   let _activeTab = 'history';
   const _origLoad = window.loadHistoryPanel;
   const TABS = [
-    { id: 'history', labelKey: 'tabs.history', fallback: 'Historikk' },
-    { id: 'gallery', labelKey: 'tabs.gallery', fallback: 'Galleri' },
-    { id: 'activity', labelKey: 'tabs.activity', fallback: 'Aktivitet' }
+    { id: 'history', labelKey: 'tabs.history', fallback: 'History' },
+    { id: 'gallery', labelKey: 'tabs.gallery', fallback: 'Gallery' },
+    { id: 'activity', labelKey: 'tabs.activity', fallback: 'Activity' }
   ];
   function _tabBarHtml() {
     return '<div class="tabs _wrapper-tabs">' + TABS.map(tab => {

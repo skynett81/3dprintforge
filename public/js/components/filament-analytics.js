@@ -35,8 +35,8 @@
 
   function fmtDays(d) {
     if (d == null || isNaN(d)) return '–';
-    if (d > 365) return Math.round(d / 30) + ' mnd';
-    return Math.round(d) + ' dager';
+    if (d > 365) return Math.round(d / 30) + ' mo';
+    return Math.round(d) + ' days';
   }
 
   function fmtDate(dateStr) {
@@ -189,15 +189,15 @@
     html += hero('amber', 'Fargebytter', fmtNum(items.reduce((a, r) => a + (r.total_color_changes || 0), 0)), 'totalt');
     html += '</div>';
 
-    html += '<div class="fa-section"><div class="fa-section-title">Svinnanalyse per materiale <span class="fa-section-badge">Siste 30 dager</span></div>';
+    html += '<div class="fa-section"><div class="fa-section-title">Svinnanalyse per materiale <span class="fa-section-badge">Siste 30 days</span></div>';
     html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr>';
-    html += '<th>Materiale</th><th>Merke</th><th>Status</th><th class="num">Prints</th><th class="num">Svinn</th><th class="num">Forbrukt</th><th class="num">Svinn-andel</th><th class="num">Fargebytter</th><th class="num">Snitt svinn/print</th>';
+    html += '<th>Material</th><th>Merke</th><th>Status</th><th class="num">Prints</th><th class="num">Svinn</th><th class="num">Forbrukt</th><th class="num">Svinn-andel</th><th class="num">Fargebytter</th><th class="num">Snitt svinn/print</th>';
     html += '</tr></thead><tbody>';
     for (const r of items) {
       html += `<tr>
         <td><strong>${r.material || '–'}</strong></td>
         <td>${r.brand || '–'}</td>
-        <td><span class="fc-mat-badge ${r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'critical' : 'low'}">${r.status === 'completed' ? 'Fullført' : r.status === 'failed' ? 'Feilet' : r.status}</span></td>
+        <td><span class="fc-mat-badge ${r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'critical' : 'low'}">${r.status === 'completed' ? "Completed" : r.status === 'failed' ? "Failed" : r.status}</span></td>
         <td class="num">${fmtNum(r.print_count)}</td>
         <td class="num">${fmtW(r.total_waste_g)}</td>
         <td class="num">${fmtW(r.total_used_g)}</td>
@@ -302,10 +302,10 @@
         <div class="fa-rows">
           <div class="fa-row"><span>Per dag</span><span>${fmtW(r.avg_daily_g)}</span></div>
           <div class="fa-row"><span>Per uke</span><span>${fmtW(r.avg_weekly_g)}</span></div>
-          <div class="fa-row"><span>Per måned</span><span>${fmtW(r.avg_monthly_g)}</span></div>
+          <div class="fa-row"><span>Per month</span><span>${fmtW(r.avg_monthly_g)}</span></div>
           <div class="fa-row"><span>Svinn-andel</span><span>${fmtPct((r.waste_ratio || 0) * 100)}</span></div>
           <div class="fa-row"><span>Kostnad per gram</span><span>${fmtKrG(r.avg_cost_per_g)}</span></div>
-          <div class="fa-row"><span>Datapunkter</span><span>${fmtNum(r.sample_days)} dager</span></div>
+          <div class="fa-row"><span>Datapunkter</span><span>${fmtNum(r.sample_days)} days</span></div>
         </div>
       </div>`;
     }
@@ -374,7 +374,7 @@
       html += '<div class="fa-cards">';
       for (const a of alerts) {
         const icon = a.type.includes('humidity') ? '💧' : '🌡️';
-        const dir = a.type.includes('high') ? 'for høy' : 'for lav';
+        const dir = a.type.includes('high') ? 'too high' : 'too low';
         html += `<div class="fa-card" style="border-left:3px solid var(--accent-red)">
           <div class="fa-card-header"><div class="fa-card-name">${icon} ${a.location}</div></div>
           <div class="fa-rows">
@@ -389,8 +389,8 @@
     }
 
     if (expired.length > 0) {
-      html += '<div class="fa-section"><div class="fa-section-title">Utløpte spoler <span class="fa-section-badge critical" style="background:rgba(239,68,68,0.1);color:#ef4444">' + expired.length + '</span></div>';
-      html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr><th>Spool</th><th>Materiale</th><th>Leverandør</th><th>Utløpsdato</th></tr></thead><tbody>';
+      html += '<div class="fa-section"><div class="fa-section-title">Expired spools <span class="fa-section-badge critical" style="background:rgba(239,68,68,0.1);color:#ef4444">' + expired.length + '</span></div>';
+      html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr><th>Spool</th><th>Material</th><th>Supplier</th><th>Expiry date</th></tr></thead><tbody>';
       for (const s of expired) {
         html += `<tr><td><strong>${s.profile_name || '–'}</strong></td><td>${s.material || '–'}</td><td>${s.vendor_name || '–'}</td><td style="color:var(--accent-red)">${fmtDate(s.expiry_date)}</td></tr>`;
       }
@@ -398,10 +398,10 @@
     }
 
     if (expiring.length > 0) {
-      html += '<div class="fa-section"><div class="fa-section-title">Utløper snart</div>';
-      html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr><th>Spool</th><th>Materiale</th><th>Utløpsdato</th><th class="num">Dager igjen</th></tr></thead><tbody>';
+      html += '<div class="fa-section"><div class="fa-section-title">Expiring soon</div>';
+      html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr><th>Spool</th><th>Material</th><th>Expiry date</th><th class="num">Days remaining</th></tr></thead><tbody>';
       for (const s of expiring) {
-        html += `<tr><td><strong>${s.profile_name || '–'}</strong></td><td>${s.material || '–'}</td><td>${fmtDate(s.expiry_date)}</td><td class="num">${fmtNum(s.days_until_expiry)} dager</td></tr>`;
+        html += `<tr><td><strong>${s.profile_name || '–'}</strong></td><td>${s.material || '–'}</td><td>${fmtDate(s.expiry_date)}</td><td class="num">${fmtNum(s.days_until_expiry)} days</td></tr>`;
       }
       html += '</tbody></table></div></div>';
     }

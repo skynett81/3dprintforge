@@ -85,12 +85,12 @@ export function purgeDemoData() {
     const demoSpoolIds = db.prepare(`SELECT id FROM spools WHERE printer_id IN (${placeholders})`).all(...ids).map(r => r.id);
     if (demoSpoolIds.length > 0) {
       const sp = demoSpoolIds.map(() => '?').join(',');
-      try { db.prepare(`DELETE FROM spool_usage_log WHERE spool_id IN (${sp})`).run(...demoSpoolIds); } catch (e) { log.debug('Kunne ikke slette spool_usage_log-rader: ' + e.message); }
-      try { db.prepare(`DELETE FROM drying_sessions WHERE spool_id IN (${sp})`).run(...demoSpoolIds); } catch (e) { log.debug('Kunne ikke slette drying_sessions-rader: ' + e.message); }
+      try { db.prepare(`DELETE FROM spool_usage_log WHERE spool_id IN (${sp})`).run(...demoSpoolIds); } catch (e) { log.debug('Could not delete spool_usage_log rows: ' + e.message); }
+      try { db.prepare(`DELETE FROM drying_sessions WHERE spool_id IN (${sp})`).run(...demoSpoolIds); } catch (e) { log.debug('Could not delete drying_sessions rows: ' + e.message); }
       const r = db.prepare(`DELETE FROM spools WHERE id IN (${sp})`).run(...demoSpoolIds);
       deleted += r.changes;
     }
-  } catch (e) { log.warn('Feil ved sletting av spoledata for skrivere: ' + e.message); }
+  } catch (e) { log.warn('Error deleting spool data for printers: ' + e.message); }
 
   // Delete the printers themselves
   for (const id of ids) {

@@ -90,12 +90,12 @@
     return '<div style="display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:1rem">' +
       STATUSES.map(s => {
         const active = _statusFilter === s ? ' btn-primary' : ' btn-outline-secondary';
-        const label = s === 'all' ? _tl('crm.all', 'Alle') : _tl('crm.status_' + s, s);
+        const label = s === 'all' ? _tl('crm.all', 'All') : _tl('crm.status_' + s, s);
         return `<button class="btn btn-sm${active}" onclick="window._crmOrdFilter('${s}')">${_esc(label)}</button>`;
       }).join('') +
       `<div style="flex:1"></div>
       <button class="btn btn-primary btn-sm" onclick="window._crmOrdNewForm()">
-        <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.new_order', 'Ny ordre'))}
+        <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.new_order', 'New order'))}
       </button></div>`;
   }
 
@@ -105,18 +105,18 @@
 
     if (_orders.length === 0) {
       html += `<div class="card"><div class="card-body" style="text-align:center;padding:2rem;opacity:0.6">
-        ${_esc(_tl('crm.no_orders', 'Ingen ordrer'))}
+        ${_esc(_tl('crm.no_orders', 'No orders'))}
       </div></div>`;
     } else {
       html += `<div class="card"><div class="card-body" style="padding:0">
         <table class="table table-hover table-sm" style="margin:0">
           <thead><tr>
             <th>#</th>
-            <th>${_esc(_tl('crm.customer_name', 'Kunde'))}</th>
+            <th>${_esc(_tl('crm.customer_name', 'Customer'))}</th>
             <th>${_esc(_tl('crm.status', 'Status'))}</th>
-            <th style="text-align:right">${_esc(_tl('crm.items', 'Artikler'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.items', 'Items'))}</th>
             <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
-            <th>${_esc(_tl('crm.created', 'Opprettet'))}</th>
+            <th>${_esc(_tl('crm.created', 'Created'))}</th>
           </tr></thead>
           <tbody>${_orders.map(o => {
             const sc = STATUS_COLORS[o.status] || '#94a3b8';
@@ -147,8 +147,8 @@
     if (_orderItems.length > 0) {
       itemsHtml = `<table class="table table-sm" style="margin:0">
         <thead><tr>
-          <th>${_esc(_tl('crm.description', 'Beskrivelse'))}</th>
-          <th>${_esc(_tl('crm.quantity', 'Antall'))}</th>
+          <th>${_esc(_tl('crm.description', 'Description'))}</th>
+          <th>${_esc(_tl('crm.quantity', 'Quantity'))}</th>
           <th>${_esc(_tl('crm.filament', 'Filament'))}</th>
           <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
         </tr></thead>
@@ -162,12 +162,12 @@
           <td colspan="3" style="text-align:right"><strong>${_esc(_tl('crm.subtotal', 'Subtotal'))}</strong></td>
           <td style="text-align:right"><strong>${formatCurrency(o.subtotal)}</strong></td>
         </tr>
-        ${o.tax_amount ? `<tr><td colspan="3" style="text-align:right">${_esc(_tl('crm.tax', 'MVA'))} (${o.tax_pct || 25}%)</td><td style="text-align:right">${formatCurrency(o.tax_amount)}</td></tr>` : ''}
+        ${o.tax_amount ? `<tr><td colspan="3" style="text-align:right">${_esc(_tl('crm.tax', 'VAT'))} (${o.tax_pct || 25}%)</td><td style="text-align:right">${formatCurrency(o.tax_amount)}</td></tr>` : ''}
         <tr><td colspan="3" style="text-align:right"><strong>${_esc(_tl('crm.total', 'Total'))}</strong></td><td style="text-align:right"><strong>${formatCurrency(o.total)}</strong></td></tr>
         </tfoot>
       </table>`;
     } else {
-      itemsHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'Ingen artikler'))}</div>`;
+      itemsHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'No items'))}</div>`;
     }
 
     // Status change buttons
@@ -179,23 +179,23 @@
 
     body.innerHTML = `
       <div style="margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmOrdBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Tilbake'))}</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmOrdBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Back'))}</button>
         ${statusBtns}
-        <button class="btn btn-sm btn-outline-primary" onclick="window._crmOrdGenerateInvoice(${o.id})"><i class="bi bi-file-earmark-text"></i> ${_esc(_tl('crm.generate_invoice', 'Generer faktura'))}</button>
+        <button class="btn btn-sm btn-outline-primary" onclick="window._crmOrdGenerateInvoice(${o.id})"><i class="bi bi-file-earmark-text"></i> ${_esc(_tl('crm.generate_invoice', 'Generate invoice'))}</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem">
         <div class="card">
           <div class="card-header"><h3 class="card-title">${_esc(o.order_number)}</h3></div>
           <div class="card-body">
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge" style="background:${sc};color:#fff;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.status_' + o.status, o.status))}</span></span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Kunde'))}</span><span class="stats-detail-item-value">${_esc(o.customer_name || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Frist'))}</span><span class="stats-detail-item-value">${formatDate(o.due_date)}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.created', 'Opprettet'))}</span><span class="stats-detail-item-value">${formatDate(o.created_at)}</span></div>
-            ${o.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notater'))}</strong><p style="white-space:pre-wrap;margin:0.25rem 0">${_esc(o.notes)}</p></div>` : ''}
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Customer'))}</span><span class="stats-detail-item-value">${_esc(o.customer_name || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Due date'))}</span><span class="stats-detail-item-value">${formatDate(o.due_date)}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.created', 'Created'))}</span><span class="stats-detail-item-value">${formatDate(o.created_at)}</span></div>
+            ${o.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notes'))}</strong><p style="white-space:pre-wrap;margin:0.25rem 0">${_esc(o.notes)}</p></div>` : ''}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.items', 'Artikler'))}</h3></div>
+          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.items', 'Items'))}</h3></div>
           <div class="card-body" style="padding:0">${itemsHtml}</div>
         </div>
       </div>`;
@@ -214,12 +214,12 @@
     ).join('');
 
     function renderItemRows() {
-      if (_formItems.length === 0) return `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'Ingen artikler lagt til'))}</div>`;
+      if (_formItems.length === 0) return `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'No items added'))}</div>`;
       return _formItems.map((it, i) => `<div class="card" style="margin-bottom:0.5rem;padding:0.75rem" data-item-idx="${i}">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.5rem;align-items:end">
-          <div><label class="form-label">${_esc(_tl('crm.description', 'Beskrivelse'))} *</label><input class="form-control form-control-sm crm-item-field" data-field="description" value="${_esc(it.description || '')}"></div>
+          <div><label class="form-label">${_esc(_tl('crm.description', 'Description'))} *</label><input class="form-control form-control-sm crm-item-field" data-field="description" value="${_esc(it.description || '')}"></div>
           <div><label class="form-label">${_esc(_tl('crm.filename', 'Fil'))}</label><input class="form-control form-control-sm crm-item-field" data-field="filename" value="${_esc(it.filename || '')}"></div>
-          <div><label class="form-label">${_esc(_tl('crm.quantity', 'Antall'))}</label><input class="form-control form-control-sm crm-item-field" data-field="quantity" type="number" min="1" value="${it.quantity || 1}"></div>
+          <div><label class="form-label">${_esc(_tl('crm.quantity', 'Quantity'))}</label><input class="form-control form-control-sm crm-item-field" data-field="quantity" type="number" min="1" value="${it.quantity || 1}"></div>
           <div><label class="form-label">Filament</label><input class="form-control form-control-sm crm-item-field" data-field="filament_type" value="${_esc(it.filament_type || '')}"></div>
           <div><label class="form-label">${_esc(_tl('crm.filament_color', 'Farge'))}</label><input class="form-control form-control-sm crm-item-field" data-field="filament_color" value="${_esc(it.filament_color || '')}"></div>
           <div><label class="form-label">${_esc(_tl('crm.filament_weight_g', 'Vekt (g)'))}</label><input class="form-control form-control-sm crm-item-field" data-field="filament_weight_g" type="number" step="0.1" value="${it.filament_weight_g || ''}"></div>
@@ -235,24 +235,24 @@
 
     body.innerHTML = `
       <div style="margin-bottom:1rem">
-        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmOrdBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.cancel', 'Avbryt'))}</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmOrdBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.cancel', 'Cancel'))}</button>
       </div>
       <div class="card">
-        <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.new_order', 'Ny ordre'))}</h3></div>
+        <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.new_order', 'New order'))}</h3></div>
         <div class="card-body">
           <form id="crm-ord-form">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.75rem;margin-bottom:1rem">
-              <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Kunde'))} *</label><select class="form-select" name="customer_id" required><option value="">-- ${_esc(_tl('crm.select_customer', 'Velg kunde'))} --</option>${custOptions}</select></div>
-              <div><label class="form-label">${_esc(_tl('crm.due_date', 'Frist'))}</label><input class="form-control" name="due_date" type="date"></div>
-              <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.notes', 'Notater'))}</label><textarea class="form-control" name="notes" rows="2"></textarea></div>
+              <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Customer'))} *</label><select class="form-select" name="customer_id" required><option value="">-- ${_esc(_tl('crm.select_customer', 'Velg kunde'))} --</option>${custOptions}</select></div>
+              <div><label class="form-label">${_esc(_tl('crm.due_date', 'Due date'))}</label><input class="form-control" name="due_date" type="date"></div>
+              <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.notes', 'Notes'))}</label><textarea class="form-control" name="notes" rows="2"></textarea></div>
             </div>
-            <h5 style="margin-bottom:0.5rem">${_esc(_tl('crm.items', 'Artikler'))}</h5>
+            <h5 style="margin-bottom:0.5rem">${_esc(_tl('crm.items', 'Items'))}</h5>
             <div id="crm-ord-items">${renderItemRows()}</div>
             <button type="button" class="btn btn-sm btn-outline-primary" style="margin-top:0.5rem" onclick="window._crmOrdAddItem()">
               <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.add_item', 'Legg til artikkel'))}
             </button>
             <hr style="margin:1rem 0">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> ${_esc(_tl('crm.save', 'Lagre'))}</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> ${_esc(_tl('crm.save', 'Save'))}</button>
           </form>
         </div>
       </div>`;
@@ -271,7 +271,7 @@
         };
         try {
           await apiSaveOrder(data);
-          if (typeof showToast === 'function') showToast(_tl('crm.saved', 'Lagret!'), 'success');
+          if (typeof showToast === 'function') showToast(_tl('crm.saved', 'Saved!'), 'success');
           _activeView = 'list';
           await _reload();
         } catch (err) {

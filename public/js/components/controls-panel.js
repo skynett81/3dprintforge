@@ -348,9 +348,9 @@
       { label: t('controls.qc_fan_50') || 'Vifte 50%', gcode: 'M106 S127', group: 'cooling' },
       { label: t('controls.qc_fan_off') || 'Vifte av', gcode: 'M107', group: 'cooling' },
       { label: t('controls.qc_pla_preheat') || 'PLA forvarming', gcode: 'M104 S200\\nM140 S60', group: 'temp' },
-      { label: t('controls.qc_petg_preheat') || 'PETG forvarming', gcode: 'M104 S240\\nM140 S80', group: 'temp' },
-      { label: t('controls.qc_abs_preheat') || 'ABS forvarming', gcode: 'M104 S250\\nM140 S100', group: 'temp' },
-      { label: t('controls.cooldown') || 'Avkjøling', gcode: 'M104 S0\\nM140 S0', group: 'temp' },
+      { label: t('controls.qc_petg_preheat') || 'PETG preheat', gcode: 'M104 S240\\nM140 S80', group: 'temp' },
+      { label: t('controls.qc_abs_preheat') || 'ABS preheat', gcode: 'M104 S250\\nM140 S100', group: 'temp' },
+      { label: t('controls.cooldown') || 'Cooldown', gcode: 'M104 S0\\nM140 S0', group: 'temp' },
       { label: t('controls.extrude') + ' 10mm', gcode: 'G91\\nG1 E10 F300\\nG90', group: 'filament' },
       { label: t('controls.retract') + ' 10mm', gcode: 'G91\\nG1 E-10 F300\\nG90', group: 'filament' },
       { label: t('controls.qc_report_temps') || 'Rapporter temp.', gcode: 'M105', group: 'info' },
@@ -888,7 +888,7 @@
     const isUsb = ['P2S', 'P2S Combo', 'H2D'].includes(meta.model);
     const label = isUsb ? 'USB' : t('controls.sd_card_short', 'SD-kort');
     return confirmAction(
-      t('controls.format_confirm', { storage: label }) || `Er du sikker på at du vil formatere ${label}? Alle filer vil bli slettet permanent.`,
+      t('controls.format_confirm', { storage: label }) || `Are you sure you want to format ${label}? All files will be permanently deleted.`,
       async () => {
         try {
           const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/storage/format`, { method: 'POST' });

@@ -64,26 +64,26 @@
     const filtered = _customers;
 
     let html = `<div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
-      <input class="form-control" id="crm-cust-search" type="text" placeholder="${_esc(_tl('crm.search', 'Søk...'))}"
+      <input class="form-control" id="crm-cust-search" type="text" placeholder="${_esc(_tl('crm.search', 'Search...'))}"
         value="${_esc(_searchQuery)}" style="flex:1;min-width:200px">
       <button class="btn btn-primary btn-sm" onclick="window._crmCustNewForm()">
-        <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.new_customer', 'Ny kunde'))}
+        <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.new_customer', 'New customer'))}
       </button>
     </div>`;
 
     if (filtered.length === 0) {
       html += `<div class="card"><div class="card-body" style="text-align:center;padding:2rem;opacity:0.6">
-        ${_esc(_tl('crm.no_customers', 'Ingen kunder funnet'))}
+        ${_esc(_tl('crm.no_customers', 'No customers found'))}
       </div></div>`;
     } else {
       html += `<div class="card"><div class="card-body" style="padding:0">
         <table class="table table-hover table-sm" style="margin:0">
           <thead><tr>
-            <th>${_esc(_tl('crm.customer_name', 'Navn'))}</th>
-            <th>${_esc(_tl('crm.email', 'E-post'))}</th>
-            <th>${_esc(_tl('crm.company', 'Firma'))}</th>
-            <th style="text-align:right">${_esc(_tl('crm.total_orders', 'Ordrer'))}</th>
-            <th style="text-align:right">${_esc(_tl('crm.total_revenue', 'Inntekt'))}</th>
+            <th>${_esc(_tl('crm.customer_name', 'Name'))}</th>
+            <th>${_esc(_tl('crm.email', 'Email'))}</th>
+            <th>${_esc(_tl('crm.company', 'Company'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.total_orders', 'Orders'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.total_revenue', 'Revenue'))}</th>
           </tr></thead>
           <tbody>${filtered.map(c => `<tr style="cursor:pointer" onclick="window._crmCustDetail(${c.id})">
             <td><strong>${_esc(c.name)}</strong></td>
@@ -123,7 +123,7 @@
     let ordersHtml = '';
     if (_customerOrders.length > 0) {
       ordersHtml = `<table class="table table-hover table-sm" style="margin:0">
-        <thead><tr><th>#</th><th>${_esc(_tl('crm.status', 'Status'))}</th><th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th><th>${_esc(_tl('crm.created', 'Opprettet'))}</th></tr></thead>
+        <thead><tr><th>#</th><th>${_esc(_tl('crm.status', 'Status'))}</th><th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th><th>${_esc(_tl('crm.created', 'Created'))}</th></tr></thead>
         <tbody>${_customerOrders.map(o => {
           const sc = STATUS_COLORS[o.status] || '#94a3b8';
           return `<tr><td>${_esc(o.order_number)}</td>
@@ -133,28 +133,28 @@
         }).join('')}</tbody>
       </table>`;
     } else {
-      ordersHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_orders', 'Ingen ordrer'))}</div>`;
+      ordersHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_orders', 'No orders'))}</div>`;
     }
 
     body.innerHTML = `
       <div style="margin-bottom:1rem">
-        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmCustBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Tilbake'))}</button>
-        <button class="btn btn-sm btn-primary" style="margin-left:0.5rem" onclick="window._crmCustEditForm(${c.id})"><i class="bi bi-pencil"></i> ${_esc(_tl('crm.edit', 'Rediger'))}</button>
-        <button class="btn btn-sm btn-outline-danger" style="margin-left:0.5rem" onclick="window._crmCustDelete(${c.id})"><i class="bi bi-trash"></i> ${_esc(_tl('crm.delete', 'Slett'))}</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmCustBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.back', 'Back'))}</button>
+        <button class="btn btn-sm btn-primary" style="margin-left:0.5rem" onclick="window._crmCustEditForm(${c.id})"><i class="bi bi-pencil"></i> ${_esc(_tl('crm.edit', 'Edit'))}</button>
+        <button class="btn btn-sm btn-outline-danger" style="margin-left:0.5rem" onclick="window._crmCustDelete(${c.id})"><i class="bi bi-trash"></i> ${_esc(_tl('crm.delete', 'Delete'))}</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem">
         <div class="card">
           <div class="card-header"><h3 class="card-title">${_esc(c.name)}</h3></div>
           <div class="card-body">
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.email', 'E-post'))}</span><span class="stats-detail-item-value">${_esc(c.email || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.phone', 'Telefon'))}</span><span class="stats-detail-item-value">${_esc(c.phone || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.company', 'Firma'))}</span><span class="stats-detail-item-value">${_esc(c.company || '--')}</span></div>
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.address', 'Adresse'))}</span><span class="stats-detail-item-value">${_esc(c.address || '--')}</span></div>
-            ${c.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notater'))}</strong><p style="margin:0.25rem 0;white-space:pre-wrap">${_esc(c.notes)}</p></div>` : ''}
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.email', 'Email'))}</span><span class="stats-detail-item-value">${_esc(c.email || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.phone', 'Phone'))}</span><span class="stats-detail-item-value">${_esc(c.phone || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.company', 'Company'))}</span><span class="stats-detail-item-value">${_esc(c.company || '--')}</span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.address', 'Address'))}</span><span class="stats-detail-item-value">${_esc(c.address || '--')}</span></div>
+            ${c.notes ? `<div style="margin-top:0.5rem"><strong>${_esc(_tl('crm.notes', 'Notes'))}</strong><p style="margin:0.25rem 0;white-space:pre-wrap">${_esc(c.notes)}</p></div>` : ''}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.orders', 'Ordrer'))}</h3></div>
+          <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.orders', 'Orders'))}</h3></div>
           <div class="card-body" style="padding:0">${ordersHtml}</div>
         </div>
       </div>`;
@@ -163,25 +163,25 @@
   // Render form (create/edit)
   function renderForm(body, existing) {
     const c = existing || {};
-    const title = c.id ? _tl('crm.edit', 'Rediger kunde') : _tl('crm.new_customer', 'Ny kunde');
+    const title = c.id ? _tl('crm.edit', 'Edit customer') : _tl('crm.new_customer', 'New customer');
 
     body.innerHTML = `
       <div style="margin-bottom:1rem">
-        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmCustBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.cancel', 'Avbryt'))}</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window._crmCustBack()"><i class="bi bi-arrow-left"></i> ${_esc(_tl('crm.cancel', 'Cancel'))}</button>
       </div>
       <div class="card">
         <div class="card-header"><h3 class="card-title">${_esc(title)}</h3></div>
         <div class="card-body">
           <form id="crm-cust-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.75rem">
             ${c.id ? `<input type="hidden" name="id" value="${c.id}">` : ''}
-            <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Navn'))} *</label><input class="form-control" name="name" required value="${_esc(c.name || '')}"></div>
-            <div><label class="form-label">${_esc(_tl('crm.email', 'E-post'))}</label><input class="form-control" name="email" type="email" value="${_esc(c.email || '')}"></div>
-            <div><label class="form-label">${_esc(_tl('crm.phone', 'Telefon'))}</label><input class="form-control" name="phone" value="${_esc(c.phone || '')}"></div>
-            <div><label class="form-label">${_esc(_tl('crm.company', 'Firma'))}</label><input class="form-control" name="company" value="${_esc(c.company || '')}"></div>
-            <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.address', 'Adresse'))}</label><input class="form-control" name="address" value="${_esc(c.address || '')}"></div>
-            <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.notes', 'Notater'))}</label><textarea class="form-control" name="notes" rows="3">${_esc(c.notes || '')}</textarea></div>
+            <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Name'))} *</label><input class="form-control" name="name" required value="${_esc(c.name || '')}"></div>
+            <div><label class="form-label">${_esc(_tl('crm.email', 'Email'))}</label><input class="form-control" name="email" type="email" value="${_esc(c.email || '')}"></div>
+            <div><label class="form-label">${_esc(_tl('crm.phone', 'Phone'))}</label><input class="form-control" name="phone" value="${_esc(c.phone || '')}"></div>
+            <div><label class="form-label">${_esc(_tl('crm.company', 'Company'))}</label><input class="form-control" name="company" value="${_esc(c.company || '')}"></div>
+            <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.address', 'Address'))}</label><input class="form-control" name="address" value="${_esc(c.address || '')}"></div>
+            <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.notes', 'Notes'))}</label><textarea class="form-control" name="notes" rows="3">${_esc(c.notes || '')}</textarea></div>
             <div style="grid-column:1/-1">
-              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> ${_esc(_tl('crm.save', 'Lagre'))}</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> ${_esc(_tl('crm.save', 'Save'))}</button>
             </div>
           </form>
         </div>
@@ -196,7 +196,7 @@
         if (data.id) data.id = Number(data.id);
         try {
           await apiSaveCustomer(data);
-          if (typeof showToast === 'function') showToast(_tl('crm.saved', 'Lagret!'), 'success');
+          if (typeof showToast === 'function') showToast(_tl('crm.saved', 'Saved!'), 'success');
           _activeView = 'list';
           await _reload();
         } catch (err) {

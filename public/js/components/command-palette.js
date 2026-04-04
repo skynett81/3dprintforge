@@ -8,48 +8,48 @@
 
   const PANEL_LABELS = {
     dashboard: 'Dashboard',
-    controls: 'Kontroller',
-    queue: 'Utskriftskø',
-    history: 'Historikk',
-    stats: 'Statistikk',
+    controls: 'Controls',
+    queue: 'Print Queue',
+    history: 'History',
+    stats: 'Statistics',
     filament: 'Filament',
-    errors: 'Feillogg',
-    maintenance: 'Vedlikehold',
-    fleet: 'Flåte',
-    library: 'Filbibliotek',
-    diagnostics: 'Diagnostikk',
-    settings: 'Innstillinger',
+    errors: 'Error Log',
+    maintenance: 'Maintenance',
+    fleet: 'Fleet',
+    library: 'File Library',
+    diagnostics: 'Diagnostics',
+    settings: 'Settings',
     achievements: 'Achievements',
     profiles: 'Print Profiles',
     calendar: 'Print Calendar',
-    screenshots: 'Skjermbilder',
+    screenshots: 'Screenshots',
     widgets: 'Widgets',
     plugins: 'Plugins',
-    backup: 'Sikkerhetskopi',
-    costestimator: 'Kostnadskalkulator',
-    labels: 'Etiketter',
-    scheduler: 'Planlegger',
-    telemetry: 'Telemetri',
+    backup: 'Backup',
+    costestimator: 'Cost Estimator',
+    labels: 'Labels',
+    scheduler: 'Scheduler',
+    telemetry: 'Telemetry',
     bedmesh: 'Bed Mesh',
-    health: 'Helsestatus',
+    health: 'Health',
     gcode: 'G-code',
-    comparison: 'Sammenlign',
-    forecast: 'Prognose',
-    waste: 'Avfall',
-    playground: 'API Lekeplass',
-    learning: 'Læringsressurser',
-    knowledge: 'Kunnskapsbase',
-    modelinfo: 'Modellinformasjon',
-    materialrec: 'Anbefalinger',
-    wearprediction: 'Slitasjepredikasjon',
-    erroranalysis: 'Feilmønster AI',
+    comparison: 'Compare',
+    forecast: 'Forecast',
+    waste: 'Waste',
+    playground: 'API Playground',
+    learning: 'Learning Resources',
+    knowledge: 'Knowledge Base',
+    modelinfo: 'Model Info',
+    materialrec: 'Recommendations',
+    wearprediction: 'Wear Prediction',
+    erroranalysis: 'Error Pattern AI',
     multicolor: 'Multicolor',
     protection: 'Print Guard',
-    orders: 'Ordrer',
-    printermatrix: 'Printermatrise',
-    timetracker: 'Tidsanalyse',
-    activity: t('tabs.activity') || 'Aktivitet',
-    gallery: 'Galleri'
+    orders: 'Orders',
+    printermatrix: 'Printer Matrix',
+    timetracker: 'Time Analysis',
+    activity: t('tabs.activity') || 'Activity',
+    gallery: 'Gallery'
   };
 
   /* ---- SVG Icons (16x16) ---- */
@@ -120,7 +120,7 @@
     items.push({
       id: 'nav-dashboard',
       label: 'Dashboard',
-      category: 'Navigasjon',
+      category: 'Navigation',
       icon: ICONS.dashboard,
       action: function() {
         if (typeof showDashboard === 'function') showDashboard();
@@ -132,7 +132,7 @@
       items.push({
         id: 'nav-' + key,
         label: PANEL_LABELS[key],
-        category: 'Navigasjon',
+        category: 'Navigation',
         icon: _getIconForPanel(key),
         action: (function(k) {
           return function() {
@@ -145,8 +145,8 @@
     // Action items
     items.push({
       id: 'act-theme',
-      label: 'Bytt tema',
-      category: 'Handlinger',
+      label: 'Toggle theme',
+      category: 'Actions',
       icon: ICONS.theme,
       action: function() {
         if (typeof toggleTheme === 'function') toggleTheme();
@@ -155,8 +155,8 @@
 
     items.push({
       id: 'act-fullscreen',
-      label: 'Fullskjerm',
-      category: 'Handlinger',
+      label: 'Fullscreen',
+      category: 'Actions',
       icon: ICONS.fullscreen,
       action: function() {
         if (!document.fullscreenElement) {
@@ -169,8 +169,8 @@
 
     items.push({
       id: 'act-pause',
-      label: 'Pause / Fortsett utskrift',
-      category: 'Handlinger',
+      label: 'Pause / Resume print',
+      category: 'Actions',
       icon: ICONS.pause,
       action: function() {
         if (typeof sendCommand === 'function') {
@@ -184,8 +184,8 @@
 
     items.push({
       id: 'act-shortcuts',
-      label: t('command_palette.show_shortcuts') || 'Vis hurtigtaster',
-      category: t('command_palette.actions') || 'Handlinger',
+      label: t('command_palette.show_shortcuts') || 'Show shortcuts',
+      category: t('command_palette.actions') || 'Actions',
       icon: ICONS.shortcuts,
       action: function() {
         if (typeof showShortcutsHelp === 'function') showShortcutsHelp();
@@ -261,7 +261,7 @@
     if (!list) return;
 
     if (_filteredItems.length === 0) {
-      list.innerHTML = '<div class="cmd-palette-empty">' + (t('command_palette.no_results') || 'Ingen resultater') + '</div>';
+      list.innerHTML = '<div class="cmd-palette-empty">' + (t('command_palette.no_results') || 'No results') + '</div>';
       return;
     }
 
@@ -306,7 +306,7 @@
       '<div class="cmd-palette">' +
         '<div class="cmd-palette-header">' +
           '<span class="cmd-palette-search-icon">' + ICONS.search + '</span>' +
-          '<input class="cmd-palette-input" type="text" placeholder="' + (t('command_palette.search_placeholder') || 'Søk paneler, handlinger, skrivere...') + '" autocomplete="off" spellcheck="false">' +
+          '<input class="cmd-palette-input" type="text" placeholder="' + (t('command_palette.search_placeholder') || 'Search panels, actions, printers...') + '" autocomplete="off" spellcheck="false">' +
           '<kbd class="cmd-palette-esc">Esc</kbd>' +
         '</div>' +
         '<div class="cmd-palette-results"></div>' +

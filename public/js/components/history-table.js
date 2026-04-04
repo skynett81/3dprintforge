@@ -53,14 +53,14 @@
     return Math.round(costNOK);
   }
   function reviewBadge(status) {
-    if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Godkjent">&#10003; Godkjent</span>';
-    if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Avvist">&#10007; Avvist</span>';
-    if (status === 'partial') return '<span class="ph-review-badge ph-review-partial" title="Delvis godkjent">&#9680; Delvis</span>';
-    return '<span class="ph-review-badge ph-review-none" title="Ikke vurdert">Ikke vurdert</span>';
+    if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Approved">title="Approved">title="Godkjent">&#10003;#10003; Godkjent#10003; Approved</span>';
+    if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Rejected">title="Rejected">title="Avvist">&#10007;#10007; Avvist#10007; Rejected</span>';
+    if (status === 'partial') return '<span class="ph-review-badge ph-review-partial" title="Partially approved">title="Delvis godkjent">&#9680; Delvis#9680; Partial</span>';
+    return '<span class="ph-review-badge ph-review-none" title="Not reviewed">Not reviewed</span>';
   }
   function reviewBadgeCompact(status) {
-    if (status === 'approved') return '<span class="ph-review-dot ph-review-approved" title="Godkjent">&#10003;</span>';
-    if (status === 'rejected') return '<span class="ph-review-dot ph-review-rejected" title="Avvist">&#10007;</span>';
+    if (status === 'approved') return '<span class="ph-review-dot ph-review-approved" title="Approved">title="Godkjent">&#10003;#10003;</span>';
+    if (status === 'rejected') return '<span class="ph-review-dot ph-review-rejected" title="Rejected">title="Avvist">&#10007;#10007;</span>';
     if (status === 'partial') return '<span class="ph-review-dot ph-review-partial" title="Delvis godkjent">&#9680;</span>';
     return '';
   }
@@ -315,7 +315,7 @@
               <span class="ph-badge">Gcode</span>
             </div>
             <div class="ph-card-info">
-              <div class="ph-card-name" title="${esc(displayName)}">${(row.model_url || cloud?.designId) ? `<a href="${row.model_url || 'https://makerworld.com/en/models/' + cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Åpne modell"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${esc(displayName)}</div>
+              <div class="ph-card-name" title="${esc(displayName)}">${(row.model_url || cloud?.designId) ? `<a href="${row.model_url || 'https://makerworld.com/en/models/' + cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Open model"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${esc(displayName)}</div>
               <div class="ph-card-meta">
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
@@ -604,7 +604,7 @@
           const speedNames = { 1: 'Stille', 2: 'Standard', 3: 'Sport', 4: 'Ludicrous' };
           const bySp = {};
           for (const r of speedLevels) {
-            const name = speedNames[r.speed_level] || `Nivå ${r.speed_level}`;
+            const name = speedNames[r.speed_level] || `Level ${r.speed_level}`;
             bySp[name] = (bySp[name] || 0) + 1;
           }
           const topSpeed = Object.entries(bySp).sort((a, b) => b[1] - a[1]);
@@ -691,7 +691,7 @@
       // Top models
       const byModel = {};
       for (const r of data) {
-        const name = (r.filename || 'Ukjent').replace(/\.(3mf|gcode)$/i, '');
+        const name = (r.filename || 'Unknown').replace(/\.(3mf|gcode)$/i, '');
         if (!byModel[name]) byModel[name] = { count: 0, time: 0, success: 0, fail: 0 };
         byModel[name].count++;
         byModel[name].time += r.duration_seconds || 0;
@@ -851,7 +851,7 @@
       const mwTitle = displayName;
       modelLinkHtml = `<div class="ph-detail-field ph-detail-field-wide">
         <span class="ph-detail-label">Modellkilde</span>
-        <span class="ph-detail-value"><a href="${mwUrl}" target="_blank" rel="noopener" class="ph-model-link" title="Åpne på MakerWorld">
+        <span class="ph-detail-value"><a href="${mwUrl}" target="_blank" rel="noopener" class="ph-model-link" title="Open on MakerWorld">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${esc(mwTitle)}</a></span>
       </div>`;
     }
@@ -1283,7 +1283,7 @@
         <textarea class="form-control ph-review-notes-input" id="ph-review-notes" rows="2" placeholder="Valgfritt...">${row.review_notes || ''}</textarea>
       </div>
       <div class="ph-review-submit-row">
-        <button class="form-btn form-btn-primary ph-review-save-btn" id="ph-review-save-btn" onclick="window._submitReview(${row.id})">Lagre vurdering</button>
+        <button class="form-btn form-btn-primary ph-review-save-btn" id="ph-review-save-btn" onclick="window._submitReview(${row.id})">Save review</button>
       </div>
     </div>`;
 
@@ -1320,7 +1320,7 @@
     if (!overlay) return;
     const status = overlay._selectedStatus;
     if (!status) {
-      if (typeof showToast === 'function') showToast('Velg en vurdering (Godkjenn/Avvis/Delvis)', 'warning', 3000);
+      if (typeof showToast === 'function') showToast('Select a review (Approve/Reject/Partial)', 'warning', 3000);
       return;
     }
 
@@ -1328,7 +1328,7 @@
     const notes = overlay.querySelector('#ph-review-notes')?.value?.trim() || null;
 
     const saveBtn = overlay.querySelector('#ph-review-save-btn');
-    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Lagrer...'; }
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
     try {
       const resp = await fetch(`/api/history/${id}/review`, {

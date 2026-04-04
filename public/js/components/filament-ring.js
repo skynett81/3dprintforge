@@ -60,7 +60,7 @@
       }
     }
     if (extruders.length === 0) {
-      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_data') : 'Ingen data') + '</div>';
+      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_data') : 'No data') + '</div>';
       return;
     }
 
@@ -187,16 +187,16 @@
     const b = parseInt(hex.substring(5, 7), 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
-    if (brightness < 30) return 'Svart';
-    if (brightness > 225 && Math.abs(r - g) < 20 && Math.abs(g - b) < 20) return 'Hvit';
-    if (r > 180 && g < 80 && b < 80) return 'Rød';
-    if (r < 80 && g > 150 && b < 80) return 'Grønn';
-    if (r < 80 && g < 80 && b > 150) return 'Blå';
-    if (r > 200 && g > 200 && b < 80) return 'Gul';
-    if (r > 200 && g > 100 && g < 180 && b < 80) return 'Oransje';
-    if (r > 150 && g < 80 && b > 150) return 'Lilla';
-    if (r > 100 && g < 100 && b > 100) return 'Rosa';
-    if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30) return 'Grå';
+    if (brightness < 30) return 'Black';
+    if (brightness > 225 && Math.abs(r - g) < 20 && Math.abs(g - b) < 20) return 'White';
+    if (r > 180 && g < 80 && b < 80) return 'Red';
+    if (r < 80 && g > 150 && b < 80) return 'Green';
+    if (r < 80 && g < 80 && b > 150) return 'Blue';
+    if (r > 200 && g > 200 && b < 80) return 'Yellow';
+    if (r > 200 && g > 100 && g < 180 && b < 80) return 'Orange';
+    if (r > 150 && g < 80 && b > 150) return 'Purple';
+    if (r > 100 && g < 100 && b > 100) return 'Pink';
+    if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30) return 'Gray';
     return '';
   }
 
@@ -233,7 +233,7 @@
     const printerId = window.printerState?.getActivePrinterId?.() || null;
     const linkedSpool = window.getLinkedSpool?.(printerId, amsUnitIdx, amsTrayIdx);
     // Bruk den laveste av AMS-sensor og spoldatabasen
-    // AMS-sensor kan vise for høyt etter feilede prints der filament ble kastet
+    // AMS sensor may show too high after failed prints where filament was discarded
     const amsRemain = (tray.remain >= 0 && tray.remain <= 100) ? Math.round(tray.remain) : null;
     const spoolRemain = (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0)
       ? Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100)) : null;
@@ -414,7 +414,7 @@
       return;
     }
     if (!ams || !ams.ams || !ams.ams.length) {
-      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_ams_data') : 'Ingen AMS-data') + '</div>';
+      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_ams_data') : 'No AMS data') + '</div>';
       return;
     }
 
@@ -451,7 +451,7 @@
     }
 
     if (!trays.length) {
-      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_filament_loaded') : 'Ingen filament lastet') + '</div>';
+      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_filament_loaded') : 'No filament loaded') + '</div>';
       return;
     }
 

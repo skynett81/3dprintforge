@@ -185,7 +185,7 @@
           { id: 'preferences', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', label: t('settings.settings_sub_preferences') },
           { id: 'auth', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', label: t('settings.settings_sub_auth') },
           { id: 'obs', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', label: t('settings.settings_sub_obs') },
-          { id: 'network', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', label: t('settings.settings_sub_network') || 'Nettverk' }
+          { id: 'network', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', label: t('settings.settings_sub_network') || 'Network' }
         ];
         html += '<div class="drying-sub-tabs">';
         for (const tab of gtabs) html += `<button class="drying-sub-tab${_generalSubTab === tab.id ? ' active' : ''}" data-general-tab="${tab.id}" onclick="window._switchGeneralSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
@@ -606,7 +606,7 @@
       });
 
     } else if (_generalSubTab === 'network') {
-      el.innerHTML = '<div id="network-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">' + (t('common.loading') || 'Laster') + '...</div></div></div>';
+      el.innerHTML = '<div id="network-settings-section"><div class="settings-card"><div class="text-muted" style="font-size:0.8rem">' + (t('common.loading') || 'Loading') + '...</div></div></div>';
       loadNetworkSettings();
     }
   }
@@ -757,17 +757,17 @@
         <div id="energy-nordpool-config" style="display:none;margin-top:8px">
           <label class="form-label">${t('settings.energy_zone')}</label>
           <select id="energy-nordpool-zone" class="form-input">
-            <option value="NO1">NO1 — Øst-Norge (Oslo)</option>
-            <option value="NO2">NO2 — Sør-Norge (Kristiansand)</option>
-            <option value="NO3">NO3 — Midt-Norge (Trondheim)</option>
-            <option value="NO4">NO4 — Nord-Norge (Tromsø)</option>
-            <option value="NO5">NO5 — Vest-Norge (Bergen)</option>
-            <option value="SE1">SE1 — Nord-Sverige</option>
-            <option value="SE2">SE2 — Midt-Sverige</option>
-            <option value="SE3">SE3 — Sør-Sverige (Stockholm)</option>
+            <option value="NO1">NO1 — Eastern Norway (Oslo)</option>
+            <option value="NO2">NO2 — Southern Norway (Kristiansand)</option>
+            <option value="NO3">NO3 — Central Norway (Trondheim)</option>
+            <option value="NO4">NO4 — Northern Norway (Tromso)</option>
+            <option value="NO5">NO5 — Western Norway (Bergen)</option>
+            <option value="SE1">SE1 — Northern Sweden</option>
+            <option value="SE2">SE2 — Central Sweden</option>
+            <option value="SE3">SE3 — Southern Sweden (Stockholm)</option>
             <option value="SE4">SE4 — Malmö</option>
-            <option value="DK1">DK1 — Vest-Danmark</option>
-            <option value="DK2">DK2 — Øst-Danmark</option>
+            <option value="DK1">DK1 — Western Denmark</option>
+            <option value="DK2">DK2 — Eastern Denmark</option>
             <option value="FI">FI — Finland</option>
           </select>
         </div>
@@ -2463,7 +2463,7 @@
         if (openBtn) openBtn.style.display = '';
       } else {
         if (badge) { badge.classList.remove('active'); }
-        licArea.innerHTML = `<div style="font-size:0.85rem;color:var(--text-muted)">${t('settings.orders_license_required') || 'Krever aktiv e-handelslisens. Aktiver ovenfor for å bruke ordrebehandling.'}</div>`;
+        licArea.innerHTML = `<div style="font-size:0.85rem;color:var(--text-muted)">${t('settings.orders_license_required') || 'Requires an active e-commerce license. Activate above to use order management.'}</div>`;
         if (openBtn) openBtn.style.display = 'none';
       }
     } catch {
@@ -2489,24 +2489,24 @@
         licArea.innerHTML = `
           <div class="ecom-license-info" style="font-size:0.85rem;margin-bottom:0.5rem;padding:0.8rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid rgba(0,174,66,0.3)">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="color:var(--accent-green);font-weight:700;font-size:0.9rem">✓ Lisens aktiv</span>
+              <span style="color:var(--accent-green);font-weight:700;font-size:0.9rem">✓ License active</span>
               <span style="background:var(--accent-green);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600">${_esc(lic.plan || 'Standard')}</span>
               ${lic.license_type && lic.license_type !== 'none' ? '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;font-size:0.7rem">' + _esc(lic.license_type.toUpperCase()) + '</span>' : ''}
               <button class="form-btn form-btn-sm form-btn-danger" data-ripple onclick="deactivateEcomLicense()" style="margin-left:auto">${t('settings.ecom_deactivate')}</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px">
-              <span><strong>Nøkkel:</strong> ${_esc(lic.license_key || '')}</span>
-              <span><strong>Domene:</strong> ${_esc(lic.domain || '-')}</span>
-              <span><strong>E-post:</strong> ${_esc(lic.email || '-')}</span>
-              <span><strong>Innehaver:</strong> ${_esc(lic.holder || '-')}</span>
-              <span><strong>Maks printere:</strong> ${lic.max_printers || 1}</span>
-              <span><strong>Utløper:</strong> ${lic.expires_at ? new Date(lic.expires_at).toLocaleDateString() : 'Evigvarende'}</span>
-              <span><strong>Verifiseringer:</strong> ${lic.verify_count || 0}</span>
-              <span><strong>Sist validert:</strong> ${lic.last_validated ? new Date(lic.last_validated).toLocaleString() : '-'}</span>
+              <span><strong>Key:</strong> ${_esc(lic.license_key || '')}</span>
+              <span><strong>Domain:</strong> ${_esc(lic.domain || '-')}</span>
+              <span><strong>Email:</strong> ${_esc(lic.email || '-')}</span>
+              <span><strong>Holder:</strong> ${_esc(lic.holder || '-')}</span>
+              <span><strong>Max printers:</strong> ${lic.max_printers || 1}</span>
+              <span><strong>Expires:</strong> ${lic.expires_at ? new Date(lic.expires_at).toLocaleDateString() : 'Perpetual'}</span>
+              <span><strong>Verifications:</strong> ${lic.verify_count || 0}</span>
+              <span><strong>Last validated:</strong> ${lic.last_validated ? new Date(lic.last_validated).toLocaleString() : '-'}</span>
             </div>
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);display:flex;gap:16px;font-size:0.8rem;color:var(--text-muted)">
-              <span>Gebyrer denne mnd: <strong>${feeStr}</strong> (${lic.orders_this_month || 0} ordrer)</span>
-              <span>Tilbyder: <a href="https://geektech.no" target="_blank" rel="noopener" style="color:var(--accent-green)">geektech.no</a></span>
+              <span>Fees this month: <strong>${feeStr}</strong> (${lic.orders_this_month || 0} orders)</span>
+              <span>Provider: <a href="https://geektech.no" target="_blank" rel="noopener" style="color:var(--accent-green)">geektech.no</a></span>
             </div>
           </div>`;
         if (ecomSection) ecomSection.style.display = '';
@@ -2524,24 +2524,24 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div class="form-group" style="margin-bottom:0.4rem">
                 <label class="form-label">${t('settings.ecom_license_key')} *</label>
-                <input class="form-input" id="ecom-license-key" placeholder="32-tegn hex nøkkel" style="font-family:monospace">
+                <input class="form-input" id="ecom-license-key" placeholder="32-char hex key" style="font-family:monospace">
               </div>
               <div class="form-group" style="margin-bottom:0.4rem">
-                <label class="form-label">${t('settings.ecom_license_email') || 'E-post'} *</label>
-                <input class="form-input" id="ecom-license-email" type="email" placeholder="din@epost.no">
+                <label class="form-label">${t('settings.ecom_license_email') || 'Email'} *</label>
+                <input class="form-input" id="ecom-license-email" type="email" placeholder="you@email.com">
               </div>
               <div class="form-group" style="margin-bottom:0.4rem">
-                <label class="form-label">Domene</label>
-                <input class="form-input" id="ecom-license-domain" placeholder="dashboard.dittdomene.no">
+                <label class="form-label">Domain</label>
+                <input class="form-input" id="ecom-license-domain" placeholder="dashboard.yourdomain.com">
               </div>
               <div class="form-group" style="margin-bottom:0.4rem">
-                <label class="form-label">Telefon</label>
+                <label class="form-label">Phone</label>
                 <input class="form-input" id="ecom-license-phone" placeholder="+47 XXX XX XXX">
               </div>
             </div>
             <div style="display:flex;gap:0.5rem;align-items:center;margin-top:8px">
               <button class="form-btn form-btn-primary" data-ripple onclick="activateEcomLicense()">${t('settings.ecom_activate')}</button>
-              <a href="https://geektech.no" target="_blank" rel="noopener" style="font-size:0.85rem">Kjøp lisens på geektech.no →</a>
+              <a href="https://geektech.no" target="_blank" rel="noopener" style="font-size:0.85rem">Buy license at geektech.no →</a>
             </div>
           </div>`;
         if (ecomSection) ecomSection.style.display = 'none';
@@ -3582,9 +3582,9 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      if (typeof showToast === 'function') showToast('Innstillinger eksportert', 'success', 3000);
+      if (typeof showToast === 'function') showToast('Settings exported', 'success', 3000);
     } catch (e) {
-      if (typeof showToast === 'function') showToast('Eksport feilet: ' + e.message, 'error', 4000);
+      if (typeof showToast === 'function') showToast('Export failed: ' + e.message, 'error', 4000);
     }
   };
 
@@ -3600,7 +3600,7 @@
         const text = await file.text();
         const data = JSON.parse(text);
         if (!data._meta || (data._meta.type !== '3dprintforge-settings' && data._meta.type !== '3dprintforge-settings')) {
-          throw new Error('Ugyldig innstillingsfil');
+          throw new Error('Invalid settings file');
         }
         const res = await fetch('/api/settings/import', {
           method: 'POST',
@@ -3608,12 +3608,12 @@
           body: text
         });
         const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Import feilet');
-        if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-green);font-size:0.8rem">${result.applied} innstillinger importert</span>`;
-        if (typeof showToast === 'function') showToast(`${result.applied} innstillinger importert`, 'success', 3000);
+        if (!res.ok) throw new Error(result.error || 'Import failed');
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-green);font-size:0.8rem">${result.applied} settings imported</span>`;
+        if (typeof showToast === 'function') showToast(`${result.applied} settings imported`, 'success', 3000);
       } catch (err) {
         if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-red);font-size:0.8rem">${err.message}</span>`;
-        if (typeof showToast === 'function') showToast('Import feilet: ' + err.message, 'error', 4000);
+        if (typeof showToast === 'function') showToast('Import failed: ' + err.message, 'error', 4000);
       }
     };
     input.click();

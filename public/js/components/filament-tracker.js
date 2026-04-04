@@ -814,7 +814,7 @@
         ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>', _dbStats.with_td.toLocaleString(), t('filament.db_with_td'), '#e3b341')}
         ${_dbStats.translucent ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10"/></svg>', _dbStats.translucent.toLocaleString(), t('filament.translucent') || 'Transparent', '#67e8f9') : ''}
         ${_dbStats.glow_in_dark ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 009 9 9 9 0 11-9-9z"/></svg>', _dbStats.glow_in_dark.toLocaleString(), t('filament.glow') || 'Glow', '#bef264') : ''}
-        ${_dbStats.multi_color ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><circle cx="15" cy="15" r="6"/></svg>', _dbStats.multi_color.toLocaleString(), t('filament.multi_color') || 'Flerfarge', '#f9a8d4') : ''}
+        ${_dbStats.multi_color ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><circle cx="15" cy="15" r="6"/></svg>', _dbStats.multi_color.toLocaleString(), t('filament.multi_color') || 'Multi-color', '#f9a8d4') : ''}
       </div>`;
       return h;
     },
@@ -1087,7 +1087,7 @@
     const isLow = (pct > 0 && pct < _lowStockPct);
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
-    const statusText = isEmpty ? t('filament.status_empty', 'Tom') : isLow ? t('filament.status_low', 'Lav') : `${pct}%`;
+    const statusText = isEmpty ? t('filament.status_empty', 'Empty') : isLow ? t('filament.status_low', 'Low') : `${pct}%`;
     const tempInfo = (s.nozzle_temp_min && s.nozzle_temp_max) ? `🔥${s.nozzle_temp_min}–${s.nozzle_temp_max}°C` : '';
 
     return `<div class="spool-vcard" onclick="window._showSpoolDetail(${s.id})">
@@ -1120,11 +1120,11 @@
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const isLow = (pct > 0 && pct < _lowStockPct);
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
-    const statusText = isEmpty ? t('filament.status_empty', 'Tom') : isLow ? t('filament.status_low_stock', 'Lav beholdning') : t('filament.status_in_stock', 'På lager');
+    const statusText = isEmpty ? t('filament.status_empty', 'Empty') : isLow ? t('filament.status_low_stock', 'Low stock') : t('filament.status_in_stock', 'In stock');
 
     const daysAgo = s.last_used_at ? Math.floor((Date.now() - new Date(s.last_used_at).getTime()) / 86400000) : null;
-    const lastUsedText = daysAgo !== null ? (daysAgo < 1 ? t('filament.today', 'I dag') : daysAgo + ' ' + t('filament.days_ago', 'dager siden')) : '--';
-    const amsText = s.ams_unit != null ? `AMS${s.ams_unit+1} ${t('filament.slot', 'spor')} ${(s.ams_tray||0)+1}` : '--';
+    const lastUsedText = daysAgo !== null ? (daysAgo < 1 ? t('filament.today', 'Today') : daysAgo + ' ' + t('filament.days_ago', 'days ago')) : '--';
+    const amsText = s.ams_unit != null ? `AMS${s.ams_unit+1} ${t('filament.slot', 'slot')} ${(s.ams_tray||0)+1}` : '--';
     const printerText = s.printer_id ? printerName(s.printer_id) : '--';
 
     // Fetch print stats
@@ -1188,11 +1188,11 @@
               <span class="ph-detail-value">${s.diameter || 1.75}mm</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.used_weight', 'Brukt')}</span>
+              <span class="ph-detail-label">${t('filament.used_weight', 'Used')}</span>
               <span class="ph-detail-value">${Math.round(s.used_weight_g || 0)}g</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.remaining', 'Gjenstående')}</span>
+              <span class="ph-detail-label">${t('filament.remaining', 'Remaining')}</span>
               <span class="ph-detail-value">${spoolRemainG(s)}g (${pct}%)</span>
             </div>
             <div class="ph-detail-field">
@@ -1200,7 +1200,7 @@
               <span class="ph-detail-value">${esc(printerText)}</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.ams_slot', 'AMS-plassering')}</span>
+              <span class="ph-detail-label">${t('filament.ams_slot', 'AMS slot')}</span>
               <span class="ph-detail-value">${amsText}</span>
             </div>
             ${s.cost ? `<div class="ph-detail-field">
@@ -1227,15 +1227,15 @@
           ${ps && ps.total_prints > 0 ? `
           <div class="ph-detail-divider"></div>
           <div class="ph-detail-field ph-detail-field-wide">
-            <span class="ph-detail-label">${t('filament.usage_stats', 'Bruksstatistikk')}</span>
+            <span class="ph-detail-label">${t('filament.usage_stats', 'Usage statistics')}</span>
           </div>
           <div class="ph-detail-grid">
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.total_prints', 'Antall prints')}</span>
-              <span class="ph-detail-value">${ps.total_prints} (${ps.completed_prints} ${t('filament.detail_completed', 'fullført')}${ps.failed_prints > 0 ? ', ' + ps.failed_prints + ' ' + t('filament.detail_failed', 'feilet') : ''})</span>
+              <span class="ph-detail-label">${t('filament.total_prints', 'Total prints')}</span>
+              <span class="ph-detail-value">${ps.total_prints} (${ps.completed_prints} ${t('filament.detail_completed', 'completed')}${ps.failed_prints > 0 ? ', ' + ps.failed_prints + ' ' + t('filament.detail_failed', 'failed') : ''})</span>
             </div>
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.total_print_time', 'Total printtid')}</span>
+              <span class="ph-detail-label">${t('filament.total_print_time', 'Total print time')}</span>
               <span class="ph-detail-value">${fmtTime(ps.total_print_time_s)}</span>
             </div>
             <div class="ph-detail-field">
@@ -1243,15 +1243,15 @@
               <span class="ph-detail-value">${Math.round(ps.avg_per_print_g)}g</span>
             </div>
             ${ps.total_cost_used > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.cost_used', 'Filamentkostnad brukt')}</span>
+              <span class="ph-detail-label">${t('filament.cost_used', 'Filament cost used')}</span>
               <span class="ph-detail-value">${formatCurrency(ps.total_cost_used)}</span>
             </div>` : ''}
             ${ps.remaining_value > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.remaining_value', 'Gjenværende verdi')}</span>
+              <span class="ph-detail-label">${t('filament.remaining_value', 'Remaining value')}</span>
               <span class="ph-detail-value">${formatCurrency(ps.remaining_value)}</span>
             </div>` : ''}
             ${ps.waste_from_failed_g > 0 ? `<div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.waste_failed', 'Svinn (feilede)')}</span>
+              <span class="ph-detail-label">${t('filament.waste_failed', 'Waste (failed)')}</span>
               <span class="ph-detail-value">${Math.round(ps.waste_from_failed_g)}g (${formatCurrency(ps.waste_from_failed_g * costPerG)})</span>
             </div>` : ''}
           </div>
@@ -1268,27 +1268,27 @@
           </div>` : `
           <div class="ph-detail-divider"></div>
           <div class="ph-detail-field ph-detail-field-wide">
-            <span class="ph-detail-label">${t('filament.usage_stats', 'Bruksstatistikk')}</span>
-            <span class="ph-detail-value spool-detail-muted">${t('filament.no_prints_recorded', 'Ingen prints registrert for denne spolen')}</span>
+            <span class="ph-detail-label">${t('filament.usage_stats', 'Usage statistics')}</span>
+            <span class="ph-detail-value spool-detail-muted">${t('filament.no_prints_recorded', 'No prints recorded for this spool')}</span>
           </div>`}
-          ${s.comment ? `<div class="ph-detail-divider"></div><div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">${t('filament.comment', 'Kommentar')}</span><span class="ph-detail-value">${esc(s.comment)}</span></div>` : ''}
+          ${s.comment ? `<div class="ph-detail-divider"></div><div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">${t('filament.comment', 'Comment')}</span><span class="ph-detail-value">${esc(s.comment)}</span></div>` : ''}
           <div class="ph-detail-divider"></div>
           <div class="spool-detail-actions">
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showEditSpoolForm(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              ${t('settings.edit', 'Rediger')}
+              ${t('settings.edit', 'Edit')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showMeasureDialog(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
-              ${t('filament.weigh', 'Vei')}
+              ${t('filament.weigh', 'Weigh')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showStartDryingDialog(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
-              ${t('filament.dry', 'Tørk')}
+              ${t('filament.dry', 'Dry')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolTimeline(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${t('filament.history', 'Historikk')}
+              ${t('filament.history', 'History')}
             </button>
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showSpoolLabel(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1325,11 +1325,11 @@
               const plates = typeof kbFil.plate_compatibility === 'string' ? JSON.parse(kbFil.plate_compatibility) : kbFil.plate_compatibility;
               const plateNames = { cool_plate: 'Cool Plate', engineering_plate: 'Engineering Plate', high_temp_plate: 'High Temp Plate', textured_pei: 'Textured PEI' };
               const ratingColors = { excellent: '#00c864', good: '#4aa3df', fair: '#f0883e', poor: '#e53935', not_recommended: '#888' };
-              const ratingLabels = { excellent: 'Utmerket', good: 'Bra', fair: 'Greit', poor: 'Dårlig', not_recommended: 'Ikke anbefalt' };
+              const ratingLabels = { excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor', not_recommended: 'Not recommended' };
               const ratingIcons = { excellent: '★★★', good: '★★', fair: '★', poor: '✗', not_recommended: '⊘' };
 
               plateHtml += '<div class="ph-detail-divider"></div>';
-              plateHtml += '<div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">Plate-kompatibilitet for ' + esc(s.material) + '</span></div>';
+              plateHtml += '<div class="ph-detail-field ph-detail-field-wide"><span class="ph-detail-label">Plate compatibility for ' + esc(s.material) + '</span></div>';
               plateHtml += '<div class="kb-plate-grid" style="margin-bottom:8px">';
               for (const [key, rating] of Object.entries(plates)) {
                 const name = plateNames[key] || key;
@@ -1340,7 +1340,7 @@
                 plateHtml += '<div class="kb-plate-card' + (best ? ' kb-plate-best' : '') + '" style="border-color:' + color + '">';
                 plateHtml += '<div class="kb-plate-name">' + name + '</div>';
                 plateHtml += '<div class="kb-plate-rating" style="color:' + color + '">' + icon + ' ' + label + '</div>';
-                if (best) plateHtml += '<div class="kb-plate-rec">Anbefalt</div>';
+                if (best) plateHtml += '<div class="kb-plate-rec">Recommended</div>';
                 plateHtml += '</div>';
               }
               plateHtml += '</div>';
@@ -1349,13 +1349,13 @@
 
           // Glue stick info
           if (kbFil.glue_stick) {
-            const glueLabels = { required: 'Påkrevd', recommended: 'Anbefalt', optional: 'Valgfritt', not_needed: 'Ikke nødvendig' };
+            const glueLabels = { required: 'Required', recommended: 'Recommended', optional: 'Optional', not_needed: 'Not required' };
             const glueColors = { required: '#e53935', recommended: '#f0883e', optional: '#4aa3df', not_needed: '#00c864' };
             const glueIcons = { required: '⚠️', recommended: '📌', optional: 'ℹ️', not_needed: '✅' };
             plateHtml += '<div class="kb-glue-card" style="border-left:3px solid ' + (glueColors[kbFil.glue_stick] || '#888') + ';margin-bottom:8px">';
             plateHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
             plateHtml += '<span style="font-size:1rem">' + (glueIcons[kbFil.glue_stick] || '') + '</span>';
-            plateHtml += '<span style="font-weight:700;font-size:0.85rem">Limstift: <span style="color:' + (glueColors[kbFil.glue_stick] || '#888') + '">' + (glueLabels[kbFil.glue_stick] || '') + '</span></span>';
+            plateHtml += '<span style="font-weight:700;font-size:0.85rem">Glue stick: <span style="color:' + (glueColors[kbFil.glue_stick] || '#888') + '">' + (glueLabels[kbFil.glue_stick] || '') + '</span></span>';
             plateHtml += '</div>';
             if (kbFil.plate_notes) plateHtml += '<div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4">' + esc(kbFil.plate_notes) + '</div>';
             plateHtml += '</div>';
@@ -2090,11 +2090,11 @@
       storage_method: document.getElementById(`sp-storage-${id}`).value || null,
       extra_fields: _collectExtraFields(`sp-${id}`)
     };
-    // Manuelt remaining har prioritet, ellers beregn fra initial - used
+    // Manual remaining takes priority, otherwise calculate from initial - used
     const manualRemaining = document.getElementById(`sp-remaining-${id}`)?.value;
     if (manualRemaining !== '' && manualRemaining !== undefined) {
       data.remaining_weight_g = Math.max(0, parseFloat(manualRemaining));
-      // Oppdater used_weight_g til å matche
+      // Update used_weight_g to match
       data.used_weight_g = Math.max(0, data.initial_weight_g - data.remaining_weight_g);
     } else {
       data.remaining_weight_g = Math.max(0, data.initial_weight_g - data.used_weight_g);
@@ -2250,11 +2250,11 @@
             </button>
             <button class="fil-profile-action" onclick="editProfile(${p.id})" data-tooltip="${t('settings.edit')}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              ${t('settings.edit', 'Rediger')}
+              ${t('settings.edit', 'Edit')}
             </button>
             <button class="fil-profile-action fil-profile-action-danger" onclick="deleteProfileItem(${p.id})" data-tooltip="${t('settings.delete')}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              ${t('settings.delete', 'Slett')}
+              ${t('settings.delete', 'Delete')}
             </button>
           </div>
         </div>`;
@@ -3825,15 +3825,15 @@
             <input class="form-input" id="set-labor-rate" type="number" step="0.01" value="${settings.labor_rate_hourly || ''}" placeholder="0.00">
           </div>
           <div class="form-group">
-            <label class="form-label">${t('filament.setup_time') || 'Oppsett-tid per print (min)'}</label>
+            <label class="form-label">${t('filament.setup_time') || 'Setup time per print (min)'}</label>
             <input class="form-input" id="set-setup-minutes" type="number" step="1" value="${settings.labor_setup_minutes || ''}" placeholder="5">
           </div>
           <div class="form-group">
-            <label class="form-label">${t('filament.markup_pct') || 'Påslag / profittmargin (%)'}</label>
+            <label class="form-label">${t('filament.markup_pct') || 'Markup / profit margin (%)'}</label>
             <input class="form-input" id="set-markup-pct" type="number" step="0.1" value="${settings.markup_pct || ''}" placeholder="0">
           </div>
           <div class="form-group">
-            <label class="form-label">${t('filament.nozzle_cost_hour') || 'Dysekostnad per time (kr)'}</label>
+            <label class="form-label">${t('filament.nozzle_cost_hour') || 'Nozzle cost per hour'}</label>
             <input class="form-input" id="set-nozzle-cost" type="number" step="0.01" value="${settings.nozzle_cost_per_hour || ''}" placeholder="0.05">
           </div>
           <div class="form-group">
@@ -4796,11 +4796,11 @@
           <option value="">${t('filament.filter_all')} kategorier</option>
           <option value="standard">${t('filament.cat_standard') || 'Standard'}</option>
           <option value="engineering">${t('filament.cat_engineering') || 'Engineering'}</option>
-          <option value="composite">${t('filament.cat_composite') || 'Kompositt'}</option>
-          <option value="flexible">${t('filament.cat_flexible') || 'Fleksibel'}</option>
-          <option value="specialty">${t('filament.cat_specialty') || 'Spesial'}</option>
-          <option value="support">${t('filament.cat_support') || 'Støttemateriale'}</option>
-          <option value="high-performance">${t('filament.cat_high_perf') || 'Høyytelses'}</option>
+          <option value="composite">${t('filament.cat_composite') || 'Composite'}</option>
+          <option value="flexible">${t('filament.cat_flexible') || 'Flexible'}</option>
+          <option value="specialty">${t('filament.cat_specialty') || 'Specialty'}</option>
+          <option value="support">${t('filament.cat_support') || 'Support material'}</option>
+          <option value="high-performance">${t('filament.cat_high_perf') || 'High performance'}</option>
         </select>
       </div>
       <div id="matref-container"><span class="text-muted text-sm">${t('common.loading')}...</span></div>`;
@@ -4880,7 +4880,7 @@
       const plateNames = { cool_plate: 'Cool Plate', engineering_plate: 'Engineering Plate', high_temp_plate: 'High Temp Plate', textured_pei: 'Textured PEI' };
       const ratingIcons = { excellent: '★★★', good: '★★', fair: '★', poor: '✗', not_recommended: '⊘' };
       const ratingColors = { excellent: '#00c864', good: '#4aa3df', fair: '#f0883e', poor: '#e53935', not_recommended: '#666' };
-      const ratingLabels = { excellent: 'Utmerket', good: 'Bra', fair: 'Greit', poor: 'Dårlig', not_recommended: 'Nei' };
+      const ratingLabels = { excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor', not_recommended: 'No' };
       const glueIcons = { required: '⚠️', recommended: '📌', optional: 'ℹ️', not_needed: '✅' };
       const glueLabels = { required: t('filament.plate_glue_required'), recommended: t('filament.plate_glue_recommended'), optional: t('filament.plate_glue_optional'), not_needed: t('filament.plate_glue_not_needed') };
       const glueColors = { required: '#e53935', recommended: '#f0883e', optional: '#4aa3df', not_needed: '#00c864' };
@@ -6399,13 +6399,13 @@
       ['Diameter', f.diameter ? f.diameter + ' mm' : '1.75 mm'],
       [t('filament.db_finish') || 'Finish', f.finish || '--'],
       [t('filament.db_spool_type') || 'Spooltype', f.spool_type || '--'],
-      [t('filament.db_spool_weight') || 'Spoolvekt', f.spool_weight ? f.spool_weight + 'g' : '--'],
+      [t('filament.db_spool_weight') || 'Spool weight', f.spool_weight ? f.spool_weight + 'g' : '--'],
     ];
     // Only show visual properties if they have values
-    if (f.translucent) fields.push([t('filament.translucent') || 'Transparent', 'Ja']);
-    if (f.glow) fields.push([t('filament.glow') || 'Glow-in-dark', 'Ja']);
-    if (f.pattern) fields.push([t('filament.db_pattern') || 'Mønster', f.pattern]);
-    if (f.multi_color_direction) fields.push([t('filament.multi_color') || 'Flerfarge', f.multi_color_direction]);
+    if (f.translucent) fields.push([t('filament.translucent') || 'Translucent', 'Yes']);
+    if (f.glow) fields.push([t('filament.glow') || 'Glow-in-dark', 'Yes']);
+    if (f.pattern) fields.push([t('filament.db_pattern') || 'Pattern', f.pattern]);
+    if (f.multi_color_direction) fields.push([t('filament.multi_color') || 'Multi-color', f.multi_color_direction]);
     fields.push(
       [t('filament.db_price'), f.price ? '$' + f.price + (f.price_currency && f.price_currency !== 'USD' ? ' ' + f.price_currency : '') : '--'],
       [t('filament.db_source'), f.source || '--']

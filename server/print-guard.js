@@ -144,7 +144,7 @@ export class PrintGuardService {
         const approaching = prevTemp != null && Math.abs(nozzleTemp - nozzleTarget) < Math.abs(prevTemp - nozzleTarget);
         if (!approaching) {
           this._processEvent(printerId, 'temp_deviation', printId,
-            `Nozzle: ${nozzleTemp}°C (mål ${nozzleTarget}°C, avvik ${diff.toFixed(1)}°C)`);
+            `Nozzle: ${nozzleTemp}°C (target ${nozzleTarget}°C, deviation ${diff.toFixed(1)}°C)`);
         }
       }
     }
@@ -157,7 +157,7 @@ export class PrintGuardService {
         const approaching = prevBed != null && Math.abs(bedTemp - bedTarget) < Math.abs(prevBed - bedTarget);
         if (!approaching) {
           this._processEvent(printerId, 'temp_deviation', printId,
-            `Bed: ${bedTemp}°C (mål ${bedTarget}°C, avvik ${diff.toFixed(1)}°C)`);
+            `Bed: ${bedTemp}°C (target ${bedTarget}°C, deviation ${diff.toFixed(1)}°C)`);
         }
       }
     }

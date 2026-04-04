@@ -161,7 +161,7 @@ export class EcomLicenseManager {
     const apiUrl = this._license.geektech_api_url || 'https://geektech.no/api';
     try {
       // GeekTech API: POST /api/license/verify
-      // Sender alle identifikatorer — serveren validerer basert på lisenstype
+      // Sends all identifiers — the server validates based on license type
       let ipAddress = null;
       let macAddress = null;
       try {
@@ -171,7 +171,7 @@ export class EcomLicenseManager {
         const allInterfaces = Object.values(nets).flat().filter(n => !n.internal);
         ipAddress = allInterfaces.find(n => n.family === 'IPv4')?.address || null;
         macAddress = allInterfaces.find(n => n.mac && n.mac !== '00:00:00:00:00:00')?.mac?.toUpperCase() || null;
-      } catch (e) { log.debug('Kunne ikke hente nettverksinfo: ' + e.message); }
+      } catch (e) { log.debug('Could not get network info: ' + e.message); }
 
       const { status, data } = await _httpPost(`${apiUrl}/license/verify`, {
         license_key: this._license.license_key,
@@ -181,7 +181,7 @@ export class EcomLicenseManager {
       });
 
       if (status >= 200 && status < 300 && data.valid) {
-        // GeekTech respons: { valid, message, branding, license: { domain, lock_type, expires_at } }
+        // GeekTech response: { valid, message, branding, license: { domain, lock_type, expires_at } }
         const lic = data.license || {};
         const currentCount = this._license.verify_count || 0;
         setEcomLicense({
@@ -221,9 +221,9 @@ export class EcomLicenseManager {
   }
 
   async activate(licenseKey, email, domain, phone) {
-    // Lisensnøkkel må være 32 tegn hex
+    // License key must be 32 hex characters
     if (!licenseKey || !/^[0-9a-fA-F]{32}$/.test(licenseKey.replace(/-/g, ''))) {
-      return { valid: false, error: 'Lisensnøkkel må være 32 tegn hex (fra geektech.no)' };
+      return { valid: false, error: 'License key must be 32 hex characters (from geektech.no)' };
     }
 
     setEcomLicense({

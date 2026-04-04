@@ -37,7 +37,7 @@
     if (_reconnectAttempt >= _maxReconnectAttempt) return;
     _reconnectAttempt++;
     const delay = Math.min(2000 * _reconnectAttempt, 30000);
-    console.log('[kamera] Reconnect om ' + (delay / 1000) + 's (forsøk ' + _reconnectAttempt + '/' + _maxReconnectAttempt + ')');
+    console.log('[camera] Reconnecting in ' + (delay / 1000) + 's (attempt ' + _reconnectAttempt + '/' + _maxReconnectAttempt + ')');
     _reconnectTimer = setTimeout(() => {
       initCamera(currentPort);
     }, delay);

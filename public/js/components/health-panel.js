@@ -31,7 +31,7 @@
     }
 
     if (!printers.length) {
-      _replaceContent(el, `<div class="epa-empty"><div class="epa-empty-icon">🖨</div><div class="epa-empty-title">${_t('health.no_printer', 'Ingen printere tilkoblet')}</div></div>`);
+      _replaceContent(el, `<div class="epa-empty"><div class="epa-empty-icon">🖨</div><div class="epa-empty-title">${_t('health.no_printer', 'No printers connected')}</div></div>`);
       return;
     }
 
@@ -49,7 +49,7 @@
       _data = _computeHealth(maint, stats, errors);
       _render(el, printers);
     } catch (e) {
-      _replaceContent(el, `<div class="epa-empty"><div class="epa-empty-icon">❌</div><div class="epa-empty-title">${_t('health.load_error', 'Kunne ikke laste helsedata')}</div><div class="epa-empty-desc">${e.message}</div></div>`);
+      _replaceContent(el, `<div class="epa-empty"><div class="epa-empty-icon">❌</div><div class="epa-empty-title">${_t('health.load_error', 'Could not load health data')}</div><div class="epa-empty-desc">${e.message}</div></div>`);
     }
   }
 
@@ -143,10 +143,10 @@
 
     // Hero
     let badges = '';
-    if (details.maintenance.overdue > 0) badges += `<span class="hs-badge hs-badge-bad">${details.maintenance.overdue} ${_t('health.overdue', 'forfalt')}</span>`;
-    if (details.errors.recent7d > 0) badges += `<span class="hs-badge hs-badge-warn">${details.errors.recent7d} ${_t('health.recent_errors', 'feil siste 7d')}</span>`;
-    if (details.reliability.streak > 5) badges += `<span class="hs-badge hs-badge-good">${details.reliability.streak} ${_t('health.streak', 'på rad')}</span>`;
-    if (details.maintenance.nozzleWear > 80) badges += `<span class="hs-badge hs-badge-bad">${_t('health.nozzle_worn', 'Dyse slitt')}</span>`;
+    if (details.maintenance.overdue > 0) badges += `<span class="hs-badge hs-badge-bad">${details.maintenance.overdue} ${_t('health.overdue', 'overdue')}</span>`;
+    if (details.errors.recent7d > 0) badges += `<span class="hs-badge hs-badge-warn">${details.errors.recent7d} ${_t('health.recent_errors', 'errors last 7d')}</span>`;
+    if (details.reliability.streak > 5) badges += `<span class="hs-badge hs-badge-good">${details.reliability.streak} ${_t('health.streak', 'in a row')}</span>`;
+    if (details.maintenance.nozzleWear > 80) badges += `<span class="hs-badge hs-badge-bad">${_t('health.nozzle_worn', 'Nozzle worn')}</span>`;
 
     h += `<div class="hs-score-hero">
       <div class="hs-ring-wrap">
@@ -156,54 +156,54 @@
         </svg>
         <div class="hs-score-text">
           <div class="hs-score-num" style="color:${color}">${overall}</div>
-          <div class="hs-score-label">${_t('health.score', 'Helsescore')}</div>
+          <div class="hs-score-label">${_t('health.score', 'Health Score')}</div>
         </div>
       </div>
       <div class="hs-hero-info">
         <div class="hs-hero-title">${grade}</div>
-        <div class="hs-hero-subtitle">${_t('health.based_on', 'Basert på')} ${details.upkeep.totalHours}t, ${details.reliability.totalPrints} ${_t('health.prints', 'utskrifter')}</div>
-        <div class="hs-hero-badges">${badges || `<span class="hs-badge hs-badge-good">${_t('health.all_good', 'Alt ser bra ut')}</span>`}</div>
+        <div class="hs-hero-subtitle">${_t('health.based_on', 'Based on')} ${details.upkeep.totalHours}t, ${details.reliability.totalPrints} ${_t('health.prints', 'prints')}</div>
+        <div class="hs-hero-badges">${badges || `<span class="hs-badge hs-badge-good">${_t('health.all_good', 'All looks good')}</span>`}</div>
       </div>
     </div>`;
 
     // Quick stats strip
     h += `<div class="epa-summary-grid">
-      ${_summaryCard(scores.reliability, _t('health.cat_reliability', 'Pålitelighet'), _scoreColor(scores.reliability))}
-      ${_summaryCard(scores.maintenance, _t('health.cat_maintenance', 'Vedlikehold'), _scoreColor(scores.maintenance))}
-      ${_summaryCard(scores.errors, _t('health.cat_errors', 'Feil'), _scoreColor(scores.errors))}
-      ${_summaryCard(scores.upkeep, _t('health.cat_upkeep', 'Tilstand'), _scoreColor(scores.upkeep))}
+      ${_summaryCard(scores.reliability, _t('health.cat_reliability', 'Reliability'), _scoreColor(scores.reliability))}
+      ${_summaryCard(scores.maintenance, _t('health.cat_maintenance', 'Maintenance'), _scoreColor(scores.maintenance))}
+      ${_summaryCard(scores.errors, _t('health.cat_errors', 'Errors'), _scoreColor(scores.errors))}
+      ${_summaryCard(scores.upkeep, _t('health.cat_upkeep', 'Condition'), _scoreColor(scores.upkeep))}
     </div>`;
 
     h += '</div><div class="hs-col-right">';
 
     // Category detail cards
     h += '<div class="hs-categories">';
-    h += _catCard(_t('health.cat_reliability', 'Pålitelighet'), scores.reliability, [
-      [_t('health.success_rate', 'Suksessrate'), details.reliability.successRate + '%'],
-      [_t('health.completed', 'Fullført'), details.reliability.completed],
-      [_t('health.failed', 'Feilet'), details.reliability.failed],
-      [_t('health.cancelled', 'Avbrutt'), details.reliability.cancelled],
+    h += _catCard(_t('health.cat_reliability', 'Reliability'), scores.reliability, [
+      [_t('health.success_rate', 'Success rate'), details.reliability.successRate + '%'],
+      [_t('health.completed', 'Completed'), details.reliability.completed],
+      [_t('health.failed', 'Failed'), details.reliability.failed],
+      [_t('health.cancelled', 'Cancelled'), details.reliability.cancelled],
       [_t('health.current_streak', 'Streak'), details.reliability.streak]
-    ], scores.reliability < 80 ? _t('health.tip_reliability', 'Suksessraten er under 80%. Sjekk filament, sengadhesjon og sliceinnstillinger.') : null);
+    ], scores.reliability < 80 ? _t('health.tip_reliability', 'Success rate is below 80%. Check filament, bed adhesion and slicer settings.') : null);
 
-    h += _catCard(_t('health.cat_maintenance', 'Vedlikehold'), scores.maintenance, [
-      [_t('health.overdue_items', 'Forfalt'), details.maintenance.overdue],
-      [_t('health.near_due', 'Nær frist'), details.maintenance.nearDue],
-      [_t('health.nozzle_wear', 'Dyseslitasje'), details.maintenance.nozzleWear + '%'],
-      [_t('health.nozzle_condition', 'Dysetilstand'), details.maintenance.nozzleCondition],
-      [_t('health.total_hours', 'Totalt timer'), details.maintenance.totalHours.toFixed(0) + 't']
-    ], details.maintenance.overdue > 0 ? _t('health.tip_maintenance', 'Du har forfalt vedlikehold. Gå til Vedlikehold for å oppdatere.') : null);
+    h += _catCard(_t('health.cat_maintenance', 'Maintenance'), scores.maintenance, [
+      [_t('health.overdue_items', 'Overdue'), details.maintenance.overdue],
+      [_t('health.near_due', 'Near deadline'), details.maintenance.nearDue],
+      [_t('health.nozzle_wear', 'Nozzle wear'), details.maintenance.nozzleWear + '%'],
+      [_t('health.nozzle_condition', 'Nozzle condition'), details.maintenance.nozzleCondition],
+      [_t('health.total_hours', 'Total hours'), details.maintenance.totalHours.toFixed(0) + 't']
+    ], details.maintenance.overdue > 0 ? _t('health.tip_maintenance', 'You have overdue maintenance. Go to Maintenance to update.') : null);
 
-    h += _catCard(_t('health.cat_errors', 'Feil'), scores.errors, [
-      [_t('health.total_errors', 'Totalt feil'), details.errors.total],
-      [_t('health.errors_7d', 'Feil siste 7d'), details.errors.recent7d],
-      [_t('health.unacknowledged', 'Ubehandlet'), details.errors.unacknowledged]
-    ], details.errors.unacknowledged > 0 ? _t('health.tip_errors', 'Du har ubehandlede feil. Gå til Feillogg for å kvittere dem.') : null);
+    h += _catCard(_t('health.cat_errors', 'Errors'), scores.errors, [
+      [_t('health.total_errors', 'Total errors'), details.errors.total],
+      [_t('health.errors_7d', 'Errors last 7d'), details.errors.recent7d],
+      [_t('health.unacknowledged', 'Unacknowledged'), details.errors.unacknowledged]
+    ], details.errors.unacknowledged > 0 ? _t('health.tip_errors', 'You have unacknowledged errors. Go to Error Log to acknowledge them.') : null);
 
-    h += _catCard(_t('health.cat_upkeep', 'Tilstand'), scores.upkeep, [
-      [_t('health.total_hours', 'Totalt timer'), details.upkeep.totalHours + 't'],
-      [_t('health.total_filament', 'Totalt filament'), details.upkeep.totalFilamentKg + ' kg'],
-      [_t('health.total_prints', 'Totalt utskrifter'), details.upkeep.totalPrints]
+    h += _catCard(_t('health.cat_upkeep', 'Condition'), scores.upkeep, [
+      [_t('health.total_hours', 'Total hours'), details.upkeep.totalHours + 't'],
+      [_t('health.total_filament', 'Total filament'), details.upkeep.totalFilamentKg + ' kg'],
+      [_t('health.total_prints', 'Total prints'), details.upkeep.totalPrints]
     ], null);
 
     h += '</div></div></div>';
@@ -241,11 +241,11 @@
   }
 
   function _scoreGrade(score) {
-    if (score >= 90) return _t('health.grade_excellent', 'Utmerket');
-    if (score >= 80) return _t('health.grade_good', 'Bra');
-    if (score >= 60) return _t('health.grade_fair', 'Ok');
-    if (score >= 40) return _t('health.grade_poor', 'Dårlig');
-    return _t('health.grade_critical', 'Kritisk');
+    if (score >= 90) return _t('health.grade_excellent', 'Excellent');
+    if (score >= 80) return _t('health.grade_good', 'Good');
+    if (score >= 60) return _t('health.grade_fair', 'OK');
+    if (score >= 40) return _t('health.grade_poor', 'Poor');
+    return _t('health.grade_critical', 'Critical');
   }
 
   function _esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }

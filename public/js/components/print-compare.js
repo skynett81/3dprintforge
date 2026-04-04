@@ -64,7 +64,7 @@
       ]);
       _showCompareModal(r1, r2);
     } catch (err) {
-      if (typeof showToast === 'function') showToast((typeof t === 'function' ? t('history.compare_load_failed') : '') || 'Kunne ikke laste utskriftsdata', 'error', 3000);
+      if (typeof showToast === 'function') showToast((typeof t === 'function' ? t('history.compare_load_failed') : '') || 'Could not load print data', 'error', 3000);
     }
   };
 
@@ -81,11 +81,11 @@
 
     let html = `<div class="modal-content" style="max-width:550px">
       <div class="modal-header">
-        <h3>${(typeof t === 'function' ? t('history.compare_prints') : '') || 'Sammenlign utskrifter'}</h3>
+        <h3>${(typeof t === 'function' ? t('history.compare_prints') : '') || 'Compare prints'}</h3>
         <button class="modal-close" onclick="document.getElementById('print-compare-modal')?.remove()">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="text-muted" style="font-size:0.8rem;margin-bottom:10px">${(typeof t === 'function' ? t('history.compare_select_hint') : '') || 'Velg nøyaktig to utskrifter, klikk deretter Sammenlign.'}</p>
+        <p class="text-muted" style="font-size:0.8rem;margin-bottom:10px">${(typeof t === 'function' ? t('history.compare_select_hint') : '') || 'Select exactly two prints, then click Compare.'}</p>
         <div class="compare-select-list">`;
 
     for (const p of prints) {
@@ -102,8 +102,8 @@
 
     html += `</div></div>
       <div class="modal-footer">
-        <button class="form-btn form-btn-secondary" onclick="document.getElementById('print-compare-modal')?.remove()">${(typeof t === 'function' ? t('common.cancel') : '') || 'Avbryt'}</button>
-        <button class="form-btn form-btn-primary" id="compare-go-btn" disabled onclick="window._compareSelected()">${(typeof t === 'function' ? t('history.compare_btn') : '') || 'Sammenlign'}</button>
+        <button class="form-btn form-btn-secondary" onclick="document.getElementById('print-compare-modal')?.remove()">${(typeof t === 'function' ? t('common.cancel') : '') || 'Cancel'}</button>
+        <button class="form-btn form-btn-primary" id="compare-go-btn" disabled onclick="window._compareSelected()">${(typeof t === 'function' ? t('history.compare_btn') : '') || 'Compare'}</button>
       </div>
     </div>`;
 
@@ -166,7 +166,7 @@
 
     let html = `<div class="modal-content" style="max-width:700px">
       <div class="modal-header">
-        <h3>${_tl('history.compare_title', 'Sammenlign utskrifter')}</h3>
+        <h3>${_tl('history.compare_title', 'Compare prints')}</h3>
         <button class="modal-close" onclick="document.getElementById('print-compare-modal')?.remove()">&times;</button>
       </div>
       <div class="modal-body" style="padding:0">

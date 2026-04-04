@@ -154,7 +154,7 @@
 
     <!-- Camera -->
     <div class="obs-card obs-cam-card" id="obs-cam-card">
-      <div id="obs-cam-container"><div class="obs-cam-off" id="obs-cam-ph">Kamera ikke tilgjengelig</div></div>
+      <div id="obs-cam-container"><div class="obs-cam-off" id="obs-cam-ph">Camera not available</div></div>
     </div>
 
     <!-- Model thumbnail -->
@@ -167,19 +167,19 @@
       <div class="obs-temps" id="obs-temps">
         <div class="obs-temp-item">
           <svg class="obs-temp-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
-          <div class="obs-temp-info"><span class="obs-temp-label">Dyse</span><span class="obs-temp-val" id="obs-nozzle">--</span></div>
+          <div class="obs-temp-info"><span class="obs-temp-label">Nozzle</span><span class="obs-temp-val" id="obs-nozzle">--</span></div>
         </div>
         <div class="obs-temp-item">
           <svg class="obs-temp-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="14" width="20" height="6" rx="1"/></svg>
-          <div class="obs-temp-info"><span class="obs-temp-label">Seng</span><span class="obs-temp-val" id="obs-bed">--</span></div>
+          <div class="obs-temp-info"><span class="obs-temp-label">Bed</span><span class="obs-temp-val" id="obs-bed">--</span></div>
         </div>
         <div class="obs-temp-item">
           <svg class="obs-temp-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-          <div class="obs-temp-info"><span class="obs-temp-label">Kammer</span><span class="obs-temp-val" id="obs-chamber">--</span></div>
+          <div class="obs-temp-info"><span class="obs-temp-label">Chamber</span><span class="obs-temp-val" id="obs-chamber">--</span></div>
         </div>
         <div class="obs-temp-item">
           <svg class="obs-temp-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <div class="obs-temp-info"><span class="obs-temp-label">Fart</span><span class="obs-temp-val" id="obs-speed">--</span></div>
+          <div class="obs-temp-info"><span class="obs-temp-label">Speed</span><span class="obs-temp-val" id="obs-speed">--</span></div>
         </div>
       </div>
     </div>
@@ -216,19 +216,19 @@
     const SPEED = { 1: 'Silent', 2: 'Standard', 3: 'Sport', 4: 'Ludicrous' };
     const SCLS = { RUNNING: 'obs-state-running', PAUSE: 'obs-state-pause', IDLE: 'obs-state-idle', FINISH: 'obs-state-finish', FAILED: 'obs-state-failed' };
     const STG = [
-      'Printer','Auto bed-nivelering','Forvarmer varmeplate','Sveiper XY','Bytter filament',
-      'M400 pause','Filament tom','Varmer dyse','Kalibrerer ekstrudering','Skanner seng',
-      'Inspiserer første lag','Identifiserer plate','Kalibrerer Lidar','Homing','Renser dyse',
-      'Sjekker temp','Pauset','Frontdeksel','Kalibrerer Lidar','Kalibrerer flyt',
-      'Dysetemp-feil','Sengtemp-feil','Laster ut filament','Hoppet steg','Laster filament',
-      'Motorkalibrering','AMS mistet','Vifte lav','Kammertemp-feil','Kjøler kammer',
-      'G-kode pause','Motor-demo','Dyse dekket','Kutterfeil','Førstelagsfeil','Dyse tettet'
+      'Printing','Auto bed leveling','Preheating bed','Sweeping XY','Changing filament',
+      'M400 pause','Filament runout','Heating nozzle','Calibrating extrusion','Scanning bed',
+      'Inspecting first layer','Identifying plate','Calibrating Lidar','Homing','Cleaning nozzle',
+      'Checking temp','Paused','Front cover','Calibrating Lidar','Calibrating flow',
+      'Nozzle temp error','Bed temp error','Unloading filament','Skipped step','Loading filament',
+      'Motor calibration','AMS lost','Fan low','Chamber temp error','Cooling chamber',
+      'G-code pause','Motor demo','Nozzle capped','Cutter error','First layer error','Nozzle clogged'
     ];
     const STG_ERR=[17,20,21,26,27,28,32,33,34,35], STG_P=[5,6,16,17,20,21,23,26,27,28,30,32,33,34,35], STG_C=[1,8,9,10,11,12,13,14,15,18,19,25];
 
     let cameraPlayer=null, cameraPort=null, printerMeta={}, activePrinterId=null, lastThumbnailUrl=null;
 
-    function fmtT(m) { if(!m||m<=0) return '--'; const h=Math.floor(m/60),mn=m%60; return h>0?`${h}t ${mn}m`:`${mn}m`; }
+    function fmtT(m) { if(!m||m<=0) return '--'; const h=Math.floor(m/60),mn=m%60; return h>0?`${h}h ${mn}m`:`${mn}m`; }
     function tc(r) { return r>50?'var(--accent-green)':r>20?'var(--accent-orange)':'var(--accent-red)'; }
 
     // SVG spool matching dashboard spool-utils.js style
@@ -279,9 +279,9 @@
       document.getElementById('obs-pct').textContent = pct+'%';
       document.getElementById('obs-ring').setAttribute('stroke-dashoffset', CIRC-(pct/100)*CIRC);
       document.getElementById('obs-bar').style.width = pct+'%';
-      document.getElementById('obs-eta').textContent = isPrinting ? 'ETA: '+fmtT(pd.mc_remaining_time) : (state==='FINISH'?'Ferdig':'--');
+      document.getElementById('obs-eta').textContent = isPrinting ? 'ETA: '+fmtT(pd.mc_remaining_time) : (state==='FINISH'?'Finished':'--');
       const ln=pd.layer_num||0, tl=pd.total_layer_num||0;
-      document.getElementById('obs-layers').textContent = tl>0?`Lag ${ln} / ${tl}`:'--';
+      document.getElementById('obs-layers').textContent = tl>0?`Layer ${ln} / ${tl}`:'--';
 
       // Stage
       const sw = document.getElementById('obs-stage-wrap');
@@ -361,14 +361,14 @@
         container.innerHTML=''; container.appendChild(canvas);
         cameraPlayer=new JSMpeg.Player(wsUrl,{
           canvas, autoplay:true, audio:false, loop:false,
-          onSourceCompleted:()=>{ container.innerHTML='<div class="obs-cam-off">Stream avsluttet</div>'; }
+          onSourceCompleted:()=>{ container.innerHTML='<div class="obs-cam-off">Stream ended</div>'; }
         });
         // Verify frames after 3s
         setTimeout(()=>{
           try {
             const ctx=canvas.getContext('2d');
             const px=ctx.getImageData(0,0,1,1).data;
-            if(px[3]===0) container.innerHTML='<div class="obs-cam-off">Kamera ikke tilgjengelig</div>';
+            if(px[3]===0) container.innerHTML='<div class="obs-cam-off">Camera not available</div>';
           } catch(_){}
         },3000);
       };

@@ -313,7 +313,7 @@
 
         let remain;
         // Bruk den laveste av AMS-sensor og spoldatabasen
-        // AMS-sensor kan vise for høyt etter feilede prints der filament ble kastet
+        // AMS sensor may show too high after failed prints where filament was discarded
         const amsRemain = (tray.remain >= 0 && tray.remain <= 100) ? Math.round(tray.remain) : null;
         const spoolRemain = (linkedSpool && linkedSpool.initial_weight_g > 0 && linkedSpool.remaining_weight_g >= 0)
           ? Math.max(0, Math.round((linkedSpool.remaining_weight_g / linkedSpool.initial_weight_g) * 100)) : null;
@@ -405,9 +405,9 @@
           </div>
           <div class="ams-spool-label">A${i + 1}</div>`;
 
-        // Klikk på spool for å kalibrere
+        // Click spool to calibrate
         card.style.cursor = 'pointer';
-        card.title = t('ams.click_to_calibrate') || 'Klikk for å kalibrere';
+        card.title = t('ams.click_to_calibrate') || 'Click to calibrate';
         const trayIdx = i;
         const unitIdx = _selectedUnit;
         card.addEventListener('click', () => _showCalibrationDialog(printerId, unitIdx, trayIdx, tray, linkedSpool, remain, displayGrams));
@@ -513,7 +513,7 @@
     requestAnimationFrame(() => drawTubes(container, activeTray, amsUnits, _selectedUnit));
   };
 
-  // Kalibreringsdialo for AMS-spole
+  // Calibration dialog for AMS spool
   function _showCalibrationDialog(printerId, amsUnit, amsTray, tray, linkedSpool, currentPct, currentGrams) {
     // Fjern eksisterende dialog
     document.querySelectorAll('.ams-calibrate-overlay').forEach(el => el.remove());
@@ -529,10 +529,10 @@
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
     overlay.innerHTML = `
       <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:24px;width:340px;max-width:90vw">
-        <h3 style="margin:0 0 16px;color:${rgb}">Kalibrer ${slotName} — ${tray.tray_type || 'Filament'}</h3>
+        <h3 style="margin:0 0 16px;color:${rgb}">Calibrate ${slotName} — ${tray.tray_type || 'Filament'}</h3>
         <div style="display:flex;gap:12px;margin-bottom:16px">
           <div style="flex:1">
-            <label style="font-size:0.8rem;color:var(--text-muted)">Spool størrelse (g)</label>
+            <label style="font-size:0.8rem;color:var(--text-muted)">Spool size (g)</label>
             <input type="number" id="cal-initial" value="${initG}" style="width:100%;padding:8px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary)">
           </div>
           <div style="flex:1">
@@ -548,11 +548,11 @@
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button onclick="this.closest('.ams-calibrate-overlay').remove()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);cursor:pointer">Avbryt</button>
-          <button onclick="window._saveCalibration('${printerId}',${amsUnit},${amsTray})" style="padding:8px 16px;border-radius:6px;border:none;background:${rgb};color:${isLightColor(color)?'#333':'#fff'};cursor:pointer;font-weight:bold">Lagre</button>
+          <button onclick="window._saveCalibration('${printerId}',${amsUnit},${amsTray})" style="padding:8px 16px;border-radius:6px;border:none;background:${rgb};color:${isLightColor(color)?'#333':'#fff'};cursor:pointer;font-weight:bold">Save</button>
         </div>
       </div>`;
 
-    // Oppdater slider når gram endres
+    // Update slider when grams change
     const remInput = overlay.querySelector('#cal-remaining');
     const initInput = overlay.querySelector('#cal-initial');
     const slider = overlay.querySelector('#cal-slider');
@@ -583,7 +583,7 @@
       });
       if (typeof showToast === 'function') showToast(`A${amsTray+1} kalibrert: ${Math.round(remG)}g igjen (${Math.round(remG/initG*100)}%)`, 'success');
     } else {
-      if (typeof showToast === 'function') showToast('Ingen spoole koblet til denne AMS-plassen', 'warning');
+      if (typeof showToast === 'function') showToast('No spools linked to this AMS slot', 'warning');
     }
 
     document.querySelectorAll('.ams-calibrate-overlay').forEach(el => el.remove());

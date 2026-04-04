@@ -42,7 +42,7 @@ export function generateReport(period = 'week') {
   try { waste = getWasteStats(); } catch (e) { log.warn('Could not fetch waste statistics: ' + e.message); }
 
   const periodLabel = period === 'month' ? 'Monthly' : 'Weekly';
-  const periodLabelNb = period === 'month' ? 'Månedlig' : 'Ukentlig';
+  const periodLabelNb = period === 'month' ? 'Monthly' : 'Weekly';
 
   const summary = {
     period: periodLabel,
@@ -268,7 +268,7 @@ async function _sendHtmlEmail(conf) {
     let socket;
 
     const done = (err) => {
-      if (socket) try { socket.destroy(); } catch (e) { log.debug('Feil ved lukking av e-post-socket: ' + e.message); }
+      if (socket) try { socket.destroy(); } catch (e) { log.debug('Error closing email socket: ' + e.message); }
       if (err) reject(err); else resolve();
     };
 

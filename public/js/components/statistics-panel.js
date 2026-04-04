@@ -650,7 +650,7 @@
         const speedLevels = hist.filter(r => r.speed_level != null);
         if (speedLevels.length > 0) {
           const bySp = {};
-          for (const r of speedLevels) { const name = (SPEED_MAP[r.speed_level] ? t(SPEED_MAP[r.speed_level]) : `${t('stats.level') || 'Nivå'} ${r.speed_level}`); bySp[name] = (bySp[name] || 0) + 1; }
+          for (const r of speedLevels) { const name = (SPEED_MAP[r.speed_level] ? t(SPEED_MAP[r.speed_level]) : `${t('stats.level') || 'Level'} ${r.speed_level}`); bySp[name] = (bySp[name] || 0) + 1; }
           const topSpeed = Object.entries(bySp).sort((a, b) => b[1] - a[1]);
           h += sRow(t('stats.most_used') || 'Mest brukte', topSpeed[0] ? `${topSpeed[0][0]} (${topSpeed[0][1]}\u00D7)` : '--');
         }

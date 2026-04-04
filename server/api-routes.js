@@ -939,10 +939,10 @@ export async function handleApiRequest(req, res) {
     // ---- Cloud File Upload & Print ----
 
     if (method === 'POST' && path === '/api/bambu-cloud/upload') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       const params = new URL(req.url, 'http://localhost').searchParams;
       const filename = params.get('filename');
-      if (!filename) return sendJson(res, { error: 'Filnavn påkrevd (?filename=)' }, 400);
+      if (!filename) return sendJson(res, { error: 'Filename required (?filename=)' }, 400);
       // Collect raw body
       const chunks = [];
       req.on('data', c => chunks.push(c));
@@ -960,10 +960,10 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/bambu-cloud/upload-url') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       const params = new URL(req.url, 'http://localhost').searchParams;
       const filename = params.get('filename');
-      if (!filename) return sendJson(res, { error: 'Filnavn påkrevd' }, 400);
+      if (!filename) return sendJson(res, { error: 'Filename required' }, 400);
       try {
         const data = await _bambuCloud.getUploadUrl(filename);
         return sendJson(res, data);
@@ -973,10 +973,10 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/bambu-cloud/cloud-print') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       return readBody(req, res, async (body) => {
         const { device_id, filename, url, settings } = body;
-        if (!device_id || !filename) return sendJson(res, { error: 'device_id og filename påkrevd' }, 400);
+        if (!device_id || !filename) return sendJson(res, { error: 'device_id and filename required' }, 400);
         try {
           const data = await _bambuCloud.startCloudPrint(device_id, filename, url, settings || {});
           sendJson(res, data);
@@ -987,7 +987,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/bambu-cloud/create-task') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.createTask(body);
@@ -1001,10 +1001,10 @@ export async function handleApiRequest(req, res) {
     // ---- Device Binding ----
 
     if (method === 'POST' && path === '/api/bambu-cloud/bind') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       return readBody(req, res, async (body) => {
         const { device_id, access_code } = body;
-        if (!device_id || !access_code) return sendJson(res, { error: 'device_id og access_code påkrevd' }, 400);
+        if (!device_id || !access_code) return sendJson(res, { error: 'device_id and access_code required' }, 400);
         try {
           const data = await _bambuCloud.bindDevice(device_id, access_code);
           sendJson(res, data);
@@ -1015,10 +1015,10 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'DELETE' && path === '/api/bambu-cloud/bind') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       const params = new URL(req.url, 'http://localhost').searchParams;
       const deviceId = params.get('device_id');
-      if (!deviceId) return sendJson(res, { error: 'device_id påkrevd' }, 400);
+      if (!deviceId) return sendJson(res, { error: 'device_id required' }, 400);
       try {
         const data = await _bambuCloud.unbindDevice(deviceId);
         return sendJson(res, data);
@@ -1030,10 +1030,10 @@ export async function handleApiRequest(req, res) {
     // ---- Cloud Video & Profile ----
 
     if (method === 'GET' && path === '/api/bambu-cloud/video-url') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       const params = new URL(req.url, 'http://localhost').searchParams;
       const deviceId = params.get('device_id');
-      if (!deviceId) return sendJson(res, { error: 'device_id påkrevd' }, 400);
+      if (!deviceId) return sendJson(res, { error: 'device_id required' }, 400);
       try {
         const data = await _bambuCloud.getCloudVideoUrl(deviceId);
         return sendJson(res, data);
@@ -1043,7 +1043,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/bambu-cloud/profile') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       try {
         const data = await _bambuCloud.getUserProfile();
         return sendJson(res, data);
@@ -1053,7 +1053,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'PUT' && path === '/api/bambu-cloud/profile') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       return readBody(req, res, async (body) => {
         try {
           const data = await _bambuCloud.updateUserProfile(body);
@@ -1065,7 +1065,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/bambu-cloud/preferences') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       try {
         const data = await _bambuCloud.getUserPreferences();
         return sendJson(res, data);
@@ -1075,7 +1075,7 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/bambu-cloud/files') {
-      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Ikke autentisert' }, 401);
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
       const params = new URL(req.url, 'http://localhost').searchParams;
       try {
         const data = await _bambuCloud.getCloudFiles(
@@ -1089,10 +1089,10 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'POST' && path === '/api/bambu-cloud/send-code') {
-      if (!_bambuCloud) return sendJson(res, { error: 'Cloud ikke tilgjengelig' }, 503);
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
       return readBody(req, res, async (body) => {
         const { email } = body;
-        if (!email) return sendJson(res, { error: 'E-post påkrevd' }, 400);
+        if (!email) return sendJson(res, { error: 'Email required' }, 400);
         try {
           const data = await _bambuCloud.sendVerificationEmail(email);
           sendJson(res, data);
@@ -1425,21 +1425,21 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path.startsWith('/api/bambu/variant/')) {
       const variantId = decodeURIComponent(path.split('/api/bambu/variant/')[1]);
       const result = lookupBambuVariant(variantId);
-      return sendJson(res, result || { error: 'Variant ikke funnet' }, result ? 200 : 404);
+      return sendJson(res, result || { error: 'Variant not found' }, result ? 200 : 404);
     }
 
     if (method === 'GET' && path.startsWith('/api/bambu/product/')) {
       const code = path.split('/api/bambu/product/')[1];
       const result = lookupBambuByProductCode(code);
-      return sendJson(res, result || { error: 'Produktkode ikke funnet' }, result ? 200 : 404);
+      return sendJson(res, result || { error: 'Product code not found' }, result ? 200 : 404);
     }
 
     if (method === 'GET' && path === '/api/bambu/enrich-tray') {
       const params = new URL(req.url, 'http://localhost').searchParams;
       const trayIdName = params.get('tray_id_name');
-      if (!trayIdName) return sendJson(res, { error: 'tray_id_name påkrevd' }, 400);
+      if (!trayIdName) return sendJson(res, { error: 'tray_id_name required' }, 400);
       const result = enrichTrayWithVariant(trayIdName);
-      return sendJson(res, result || { error: 'Ingen match' }, result ? 200 : 404);
+      return sendJson(res, result || { error: 'No match' }, result ? 200 : 404);
     }
 
     if (method === 'GET' && path === '/api/bambu/materials') {
@@ -1449,26 +1449,26 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/bambu/colors') {
       const params = new URL(req.url, 'http://localhost').searchParams;
       const materialName = params.get('material_name');
-      if (!materialName) return sendJson(res, { error: 'material_name påkrevd' }, 400);
+      if (!materialName) return sendJson(res, { error: 'material_name required' }, 400);
       return sendJson(res, getBambuColorsByMaterial(materialName));
     }
 
     // ---- Print Stage Codes ----
     if (method === 'GET' && path === '/api/bambu/print-stages') {
-      // Returns all 36 stage codes with Norwegian and English labels
+      // Returns all 36 stage codes with English labels
       // This is served from the frontend's print-stages.js, but also available via API
       const stages = {};
       for (let i = 0; i <= 35; i++) {
         stages[i] = {
-          nb: ['Printer','Auto bed-nivelering','Forvarmer varmeplate','Sveiper XY-mekanikk','Bytter filament',
-               'M400 pause','Pause — filament tom','Varmer opp dyse','Kalibrerer ekstrudering','Skanner sengoverflate',
-               'Inspiserer første lag','Identifiserer byggplate','Kalibrerer Micro Lidar','Homing av verktøyhode',
-               'Renser dysespiss','Sjekker ekstrudertemp','Pauset av bruker','Pause — frontdeksel falt',
-               'Kalibrerer Micro Lidar','Kalibrerer ekstruderingsflyt','Pause — dysetemp-feil','Pause — sengtemp-feil',
-               'Laster ut filament','Pause — hoppet over steg','Laster filament','Motorkalibrering (støy)',
-               'Pause — AMS mistet','Pause — heatbreak vifte lav','Pause — kammertemp-feil','Kjøler ned kammer',
-               'Pause fra G-kode','Motorstøy-demo','Pause — dyse dekket','Pause — kutterfeil',
-               'Pause — førstelagsfeil','Pause — dyse tettet'][i],
+          nb: ['Printing','Auto bed leveling','Heatbed preheating','Sweeping XY mech mode','Changing filament',
+               'M400 pause','Paused: filament runout','Heating hotend','Calibrating extrusion','Scanning bed surface',
+               'Inspecting first layer','Identifying build plate','Calibrating Micro Lidar','Homing toolhead',
+               'Cleaning nozzle tip','Checking extruder temp','Paused by user','Paused: front cover falling',
+               'Calibrating Micro Lidar','Calibrating extrusion flow','Paused: nozzle temp malfunction',
+               'Paused: bed temp malfunction','Filament unloading','Skip step pause','Filament loading',
+               'Motor noise calibration','Paused: AMS lost','Paused: heatbreak fan low','Paused: chamber temp error',
+               'Cooling chamber','Paused by G-code','Motor noise showoff','Paused: nozzle filament covered',
+               'Paused: cutter error','Paused: first layer error','Paused: nozzle clog'][i],
           en: ['Printing','Auto bed leveling','Heatbed preheating','Sweeping XY mech mode','Changing filament',
                'M400 pause','Paused: filament runout','Heating hotend','Calibrating extrusion','Scanning bed surface',
                'Inspecting first layer','Identifying build plate','Calibrating Micro Lidar','Homing toolhead',
@@ -1489,7 +1489,7 @@ export async function handleApiRequest(req, res) {
     if (method === 'POST' && path.match(/^\/api\/screenshots\/\d+\/link$/)) {
       const screenshotId = parseInt(path.split('/')[3]);
       return readBody(req, res, (body) => {
-        if (!body.print_history_id) return sendJson(res, { error: 'print_history_id påkrevd' }, 400);
+        if (!body.print_history_id) return sendJson(res, { error: 'print_history_id required' }, 400);
         linkScreenshotToPrint(screenshotId, body.print_history_id);
         sendJson(res, { ok: true });
       });
@@ -1541,7 +1541,7 @@ export async function handleApiRequest(req, res) {
     if (mjpegMatch && method === 'GET') {
       const pid = decodeURIComponent(mjpegMatch[1]);
       const entry = _printerManager?.printers?.get(pid);
-      if (!entry?.camera) return sendJson(res, { error: 'Kamera ikke tilgjengelig' }, 404);
+      if (!entry?.camera) return sendJson(res, { error: 'Camera not available' }, 404);
       entry.camera.addMjpegClient(res);
       return;
     }
@@ -1552,7 +1552,7 @@ export async function handleApiRequest(req, res) {
       const entry = _printerManager?.printers?.get(pid);
       // Support both Bambu camera and Moonraker camera
       const frame = entry?.camera?.getLastFrame() || entry?.moonCamera?.getSnapshot();
-      if (!frame) return sendJson(res, { error: 'Ingen frame tilgjengelig ennå' }, 503);
+      if (!frame) return sendJson(res, { error: 'No frame available yet' }, 503);
       res.writeHead(200, {
         'Content-Type': 'image/jpeg',
         'Content-Length': frame.length,
@@ -5016,7 +5016,7 @@ export async function handleApiRequest(req, res) {
             const toolpathData = await _getGcodeToolpath(source, id, filename);
             if (toolpathData) return sendJson(res, toolpathData);
           } catch { /* fallthrough */ }
-          return sendJson(res, { error: 'Ingen 3D-modell tilgjengelig for denne printen' }, 404);
+          return sendJson(res, { error: 'No 3D model available for this print' }, 404);
         }
 
         const data = await extractMeshData(buffer);
@@ -5059,7 +5059,7 @@ export async function handleApiRequest(req, res) {
             const toolpathData = await _getGcodeToolpath(source, id, filename);
             if (toolpathData) return sendJson(res, toolpathData);
           } catch { /* fallthrough */ }
-          return sendJson(res, { error: 'Ingen 3D-modell eller gcode funnet i filen' }, 404);
+          return sendJson(res, { error: 'No 3D model or gcode found in file' }, 404);
         }
         const meshes = data.meshes.map(m => ({
           name: m.name,
@@ -5084,7 +5084,7 @@ export async function handleApiRequest(req, res) {
           downloadUrl: downloadUrl || null,
         });
       } catch (e) {
-        return sendJson(res, { error: 'Kunne ikke laste 3D-modell: ' + e.message }, 500);
+        return sendJson(res, { error: 'Could not load 3D model:' + e.message }, 500);
       }
     }
 
@@ -5996,7 +5996,7 @@ export async function handleApiRequest(req, res) {
       const id = parseInt(timelapseEditMatch[1]);
       return readBody(req, res, async (body) => {
         const rec = getTimelapseRecording(id);
-        if (!rec || !rec.file_path || !existsSync(rec.file_path)) return sendJson(res, { error: 'Video ikke funnet' }, 404);
+        if (!rec || !rec.file_path || !existsSync(rec.file_path)) return sendJson(res, { error: 'Video not found' }, 404);
         const { speed, quality, trim_start, trim_end } = body;
         try {
           const { execSync } = await import('node:child_process');
@@ -6345,7 +6345,7 @@ export async function handleApiRequest(req, res) {
           body.invoice_number = 'INV-' + Date.now();
         }
         const id = createInvoice(body);
-        addTimelineEvent(body.project_id, 'invoice_created', 'Faktura ' + body.invoice_number + ' opprettet');
+        addTimelineEvent(body.project_id, 'invoice_created', 'Invoice ' + body.invoice_number + ' created');
         sendJson(res, { ok: true, id }, 201);
       });
     }
@@ -6378,7 +6378,7 @@ export async function handleApiRequest(req, res) {
         const projectId = parseInt(projLinkQueueMatch[1]);
         if (!body.queue_item_id) return sendJson(res, { error: 'queue_item_id required' }, 400);
         const id = addProjectPrint({ project_id: projectId, queue_item_id: body.queue_item_id, filename: body.filename || null, status: 'pending' });
-        addTimelineEvent(projectId, 'queue_linked', 'Køelement #' + body.queue_item_id + ' koblet');
+        addTimelineEvent(projectId, 'queue_linked', 'Queue item #' + body.queue_item_id + ' linked');
         sendJson(res, { ok: true, id }, 201);
       });
     }
@@ -6394,7 +6394,7 @@ export async function handleApiRequest(req, res) {
       return readBody(req, res, (body) => {
         if (!body.name) return sendJson(res, { error: 'name required' }, 400);
         const id = addProject(body);
-        addTimelineEvent(id, 'project_created', 'Bestilling "' + body.name + '" opprettet');
+        addTimelineEvent(id, 'project_created', 'Order "' + body.name + '" created');
         sendJson(res, { ok: true, id }, 201);
       });
     }
@@ -7842,11 +7842,11 @@ export async function handleApiRequest(req, res) {
     }
 
     // 404
-    sendJson(res, { error: 'Ikke funnet' }, 404);
+    sendJson(res, { error: 'Not found' }, 404);
 
   } catch (e) {
-    log.error('Feil: ' + e.message);
-    sendJson(res, { error: 'Serverfeil' }, 500);
+    log.error('Error: ' + e.message);
+    sendJson(res, { error: 'Server error' }, 500);
   }
 }
 
@@ -8133,15 +8133,15 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/bambu-cloud/design/:id', tag: 'Bambu Cloud', summary: 'Get design details', permission: 'admin' },
       { method: 'GET', path: '/api/bambu-cloud/design/:id/3mf', tag: 'Bambu Cloud', summary: 'Get 3MF download URL for design', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/upload', tag: 'Bambu Cloud', summary: 'Last opp fil til Bambu Lab cloud (binary body + ?filename=)', permission: 'admin' },
-      { method: 'GET', path: '/api/bambu-cloud/upload-url', tag: 'Bambu Cloud', summary: 'Hent pre-signed S3 upload-URL', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/upload-url', tag: 'Bambu Cloud', summary: 'Get pre-signed S3 upload URL', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/cloud-print', tag: 'Bambu Cloud', summary: 'Start cloud-print paa en printer', permission: 'admin' },
-      { method: 'POST', path: '/api/bambu-cloud/create-task', tag: 'Bambu Cloud', summary: 'Opprett printjobb i cloud', permission: 'admin' },
+      { method: 'POST', path: '/api/bambu-cloud/create-task', tag: 'Bambu Cloud', summary: 'Create print job in cloud', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/bind', tag: 'Bambu Cloud', summary: 'Bind ny printer til kontoen', permission: 'admin' },
-      { method: 'DELETE', path: '/api/bambu-cloud/bind', tag: 'Bambu Cloud', summary: 'Fjern printer fra kontoen', permission: 'admin' },
-      { method: 'GET', path: '/api/bambu-cloud/video-url', tag: 'Bambu Cloud', summary: 'Hent cloud video streaming URL', permission: 'admin' },
-      { method: 'GET', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Hent brukerprofil', permission: 'admin' },
-      { method: 'PUT', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Oppdater brukerprofil', permission: 'admin' },
-      { method: 'GET', path: '/api/bambu-cloud/preferences', tag: 'Bambu Cloud', summary: 'Hent brukerpreferanser', permission: 'admin' },
+      { method: 'DELETE', path: '/api/bambu-cloud/bind', tag: 'Bambu Cloud', summary: 'Remove printer from account', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/video-url', tag: 'Bambu Cloud', summary: 'Get cloud video streaming URL', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Get user profile', permission: 'admin' },
+      { method: 'PUT', path: '/api/bambu-cloud/profile', tag: 'Bambu Cloud', summary: 'Update user profile', permission: 'admin' },
+      { method: 'GET', path: '/api/bambu-cloud/preferences', tag: 'Bambu Cloud', summary: 'Get user preferences', permission: 'admin' },
       { method: 'GET', path: '/api/bambu-cloud/files', tag: 'Bambu Cloud', summary: 'List cloud-filer (prosjekter, opplastinger)', permission: 'admin' },
       { method: 'POST', path: '/api/bambu-cloud/send-code', tag: 'Bambu Cloud', summary: 'Send 2FA-verifiseringskode til e-post', permission: 'admin' },
       // Filament Tracker
@@ -8188,20 +8188,20 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/filament-analytics/accuracy', tag: 'Filament Analytics', summary: 'Filament estimation vs actual accuracy stats', permission: 'view' },
       // Bambu Lab RFID Variant Database
       { method: 'GET', path: '/api/bambu/variants', tag: 'Bambu Lab', summary: 'Komplett Bambu Lab variant-database (228+ varianter)', permission: 'view' },
-      { method: 'GET', path: '/api/bambu/variant/:id', tag: 'Bambu Lab', summary: 'Slå opp variant etter ID (f.eks. A00-K0)', permission: 'view' },
-      { method: 'GET', path: '/api/bambu/product/:code', tag: 'Bambu Lab', summary: 'Slå opp variant etter produktkode', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/variant/:id', tag: 'Bambu Lab', summary: 'Look up variant by ID (e.g. A00-K0)', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/product/:code', tag: 'Bambu Lab', summary: 'Look up variant by product code', permission: 'view' },
       { method: 'GET', path: '/api/bambu/enrich-tray', tag: 'Bambu Lab', summary: 'Berik AMS-tray med fargenavn og hex fra variant-database', permission: 'view' },
       { method: 'GET', path: '/api/bambu/materials', tag: 'Bambu Lab', summary: 'Liste over alle Bambu Lab materialtyper', permission: 'view' },
-      { method: 'GET', path: '/api/bambu/colors', tag: 'Bambu Lab', summary: 'Farger tilgjengelig for et materiale', permission: 'view' },
+      { method: 'GET', path: '/api/bambu/colors', tag: 'Bambu Lab', summary: 'Colors available for a material', permission: 'view' },
       { method: 'GET', path: '/api/bambu/print-stages', tag: 'Bambu Lab', summary: '36 print-stage koder med norske/engelske beskrivelser', permission: 'view' },
       // BamBuddy features
       { method: 'POST', path: '/api/screenshots/:id/link', tag: 'Screenshots', summary: 'Koble screenshot til printhistorikk', permission: 'controls' },
-      { method: 'GET', path: '/api/history/:id/photos', tag: 'History', summary: 'Hent bilder for en print', permission: 'view' },
-      { method: 'GET', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Hent MQTT debug-logg', permission: 'admin' },
-      { method: 'DELETE', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Slett MQTT debug-logg', permission: 'admin' },
+      { method: 'GET', path: '/api/history/:id/photos', tag: 'History', summary: 'Get photos for a print', permission: 'view' },
+      { method: 'GET', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Get MQTT debug log', permission: 'admin' },
+      { method: 'DELETE', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Delete MQTT debug log', permission: 'admin' },
       { method: 'GET', path: '/api/firmware/check/:printerId', tag: 'Firmware', summary: 'Sjekk firmware-status per modul', permission: 'view' },
       { method: 'POST', path: '/api/printers/:id/maintenance', tag: 'Printers', summary: 'Sett vedlikeholdsmodus paa/av', permission: 'controls' },
-      { method: 'GET', path: '/api/printers/maintenance', tag: 'Printers', summary: 'Hent printere i vedlikeholdsmodus', permission: 'view' },
+      { method: 'GET', path: '/api/printers/maintenance', tag: 'Printers', summary: 'Get printers in maintenance mode', permission: 'view' },
       // Printers
       { method: 'GET', path: '/api/printers', tag: 'Printers', summary: 'List all printers', permission: 'view' },
       { method: 'POST', path: '/api/printers', tag: 'Printers', summary: 'Add a printer', permission: 'admin' },
@@ -8851,7 +8851,7 @@ function readBody(req, res, callback) {
     try {
       parsed = JSON.parse(body);
     } catch (e) {
-      sendJson(res, { error: 'Ugyldig JSON i forespørsel' }, 400);
+      sendJson(res, { error: 'Invalid JSON in request' }, 400);
       return;
     }
     callback(parsed);

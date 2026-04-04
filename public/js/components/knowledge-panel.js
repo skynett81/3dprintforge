@@ -495,10 +495,10 @@
           not_recommended: '#888'
         };
         const ratingLabels = {
-          excellent: 'Utmerket',
+          excellent: 'Excellent',
           good: 'Bra',
           fair: 'Greit',
-          poor: 'Dårlig',
+          poor: 'Poor',
           not_recommended: 'Ikke anbefalt'
         };
         const ratingIcons = {
@@ -529,7 +529,7 @@
 
     // Glue stick recommendation
     if (f.glue_stick) {
-      const glueLabels = { required: 'Påkrevd', recommended: 'Anbefalt', optional: 'Valgfritt', not_needed: 'Ikke nødvendig' };
+      const glueLabels = { required: 'Required', recommended: 'Recommended', optional: 'Optional', not_needed: 'Not needed' };
       const glueColors = { required: '#e53935', recommended: '#f0883e', optional: '#4aa3df', not_needed: 'var(--accent-green)' };
       const glueIcons = { required: '⚠️', recommended: '📌', optional: 'ℹ️', not_needed: '✅' };
       const glueLabel = glueLabels[f.glue_stick] || f.glue_stick;

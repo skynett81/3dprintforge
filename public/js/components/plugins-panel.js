@@ -30,16 +30,16 @@
   };
 
   const HOOK_DESCS = {
-    onPrintStart: 'Utløses når en utskrift starter',
-    onPrintEnd: 'Utløses når en utskrift fullføres, feiler eller kanselleres',
-    onPrintProgress: 'Utløses periodisk under utskrift',
-    onError: 'Utløses ved printerfeil',
-    onPrinterConnected: 'Utløses når en printer kobles til via MQTT',
-    onPrinterDisconnected: 'Utløses når en printer kobles fra',
-    onQueueItemCompleted: 'Utløses når et køelement er ferdig',
-    onMaintenanceAlert: 'Utløses når et vedlikeholdsvarsel opprettes',
-    onServerStart: 'Utløses etter at serveren er startet',
-    onBackupCreated: 'Utløses etter at en backup er opprettet'
+    onPrintStart: 'Triggered when a print starts',
+    onPrintEnd: 'Triggered when a print completes, fails or is cancelled',
+    onPrintProgress: 'Triggered periodically during printing',
+    onError: 'Triggered on printer error',
+    onPrinterConnected: 'Triggered when a printer connects via MQTT',
+    onPrinterDisconnected: 'Triggered when a printer disconnects',
+    onQueueItemCompleted: 'Triggered when a queue item is completed',
+    onMaintenanceAlert: 'Triggered when a maintenance alert is created',
+    onServerStart: 'Triggered after the server has started',
+    onBackupCreated: 'Triggered after a backup is created'
   };
 
   function _hookBadge(hookName) {
@@ -74,24 +74,24 @@
               <div class="plg-card-title">
                 <span class="plg-name">${_esc(plugin.name)}</span>
                 <span class="plg-version">v${_esc(plugin.version || '0.0.1')}</span>
-                ${isLoaded ? '<span class="hs-badge hs-badge-good">' + _tl('plugins.loaded', 'Lastet') + '</span>' : ''}
+                ${isLoaded ? '<span class="hs-badge hs-badge-good">' + _tl('plugins.loaded', 'Loaded') + '</span>' : ''}
               </div>
-              ${plugin.author ? '<div class="plg-author">' + _tl('plugins.by', 'av') + ' ' + _esc(plugin.author) + '</div>' : ''}
+              ${plugin.author ? '<div class="plg-author">' + _tl('plugins.by', 'by') + ' ' + _esc(plugin.author) + '</div>' : ''}
               ${plugin.description ? '<div class="plg-desc">' + _esc(plugin.description) + '</div>' : ''}
             </div>
-            <label class="wp-toggle" title="${isEnabled ? _tl('plugins.disable', 'Deaktiver') : _tl('plugins.enable', 'Aktiver')}">
+            <label class="wp-toggle" title="${isEnabled ? _tl('plugins.disable', 'Disable') : _tl('plugins.enable', 'Enable')}">
               <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="window._pluginToggle('${_esc(plugin.name)}', this.checked)">
               <span class="wp-toggle-track"></span>
               <span class="wp-toggle-knob"></span>
             </label>
           </div>
           ${hooks.length > 0 ? '<div class="plg-hooks"><span class="plg-hooks-label">' + _tl('plugins.hooks', 'Hooks') + ':</span> ' + hooks.map(h => _hookBadge(h)).join(' ') + '</div>' : ''}
-          ${panels.length > 0 ? '<div class="plg-hooks"><span class="plg-hooks-label">' + _tl('plugins.panels_label', 'Paneler') + ':</span> ' + panels.map(p => '<span class="plg-hook-badge" style="--hook-color:var(--accent-blue)">' + _esc(p.name || p) + '</span>').join(' ') + '</div>' : ''}
+          ${panels.length > 0 ? '<div class="plg-hooks"><span class="plg-hooks-label">' + _tl('plugins.panels_label', 'Panels') + ':</span> ' + panels.map(p => '<span class="plg-hook-badge" style="--hook-color:var(--accent-blue)">' + _esc(p.name || p) + '</span>').join(' ') + '</div>' : ''}
           <div class="plg-card-footer">
-            ${hasSettings ? '<button class="ce-secondary-btn" onclick="window._pluginSettings(\'' + _esc(plugin.name) + '\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> ' + _tl('plugins.settings_btn', 'Innstillinger') + '</button>' : ''}
+            ${hasSettings ? '<button class="ce-secondary-btn" onclick="window._pluginSettings(\'' + _esc(plugin.name) + '\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> ' + _tl('plugins.settings_btn', 'Settings') + '</button>' : ''}
             <button class="plg-uninstall-btn" onclick="window._pluginUninstall('${_esc(plugin.name)}')">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              ${_tl('plugins.uninstall', 'Avinstaller')}
+              ${_tl('plugins.uninstall', 'Uninstall')}
             </button>
           </div>
         </div>`;
@@ -100,7 +100,7 @@
     } else {
       html += `<div class="matrec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-        <p>${_tl('plugins.no_plugins', 'Ingen plugins installert. Legg plugin-mapper i data/plugins/')}</p>
+        <p>${_tl('plugins.no_plugins', 'No plugins installed. Place plugin folders in data/plugins/')}</p>
       </div>`;
     }
 
@@ -109,7 +109,7 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          ${_tl('plugins.available_hooks', 'Tilgjengelige hooks')}
+          ${_tl('plugins.available_hooks', 'Available hooks')}
         </summary>
         <div class="plg-hooks-list">
           ${_hooks.map(h => `<div class="plg-hook-item">
@@ -125,10 +125,10 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          ${_tl('plugins.how_to_create', 'Slik lager du en plugin')}
+          ${_tl('plugins.how_to_create', 'How to create a plugin')}
         </summary>
         <div class="plg-guide">
-          <p>${_tl('plugins.guide_intro', 'Opprett en mappe i')} <code>data/plugins/din-plugin/</code> ${_tl('plugins.guide_with', 'med disse filene:')}</p>
+          <p>${_tl('plugins.guide_intro', 'Create a folder in')} <code>data/plugins/your-plugin/</code> ${_tl('plugins.guide_with', 'with these files:')}</p>
           <div class="plg-guide-file">manifest.json</div>
           <pre class="plg-code"><code>{
   "name": "my-plugin",
@@ -154,7 +154,7 @@ export function onPrintStart(data) {
 export function destroy() {
   // Cleanup when disabled
 }</code></pre>
-          <p class="plg-guide-note">${_tl('plugins.guide_restart', 'Start serveren på nytt for å laste endringer.')}</p>
+          <p class="plg-guide-note">${_tl('plugins.guide_restart', 'Restart the server to load changes.')}</p>
         </div>
       </details>
     </div>`;
@@ -174,7 +174,7 @@ export function destroy() {
   };
 
   window._pluginUninstall = async function(name) {
-    if (!confirm(_tl('plugins.confirm_uninstall', 'Fjerne denne pluginen fra databasen?'))) return;
+    if (!confirm(_tl('plugins.confirm_uninstall', 'Remove this plugin from the database?'))) return;
     try {
       await fetch(`/api/plugins/${encodeURIComponent(name)}`, { method: 'DELETE' });
     } catch {}
@@ -209,13 +209,13 @@ export function destroy() {
     }
 
     overlay.innerHTML = `<div class="plg-settings-modal card">
-      <div class="plg-settings-header">${_esc(name)} — ${_tl('plugins.settings_btn', 'Innstillinger')}</div>
+      <div class="plg-settings-header">${_esc(name)} — ${_tl('plugins.settings_btn', 'Settings')}</div>
       <div class="plg-settings-fields">${fieldsHtml}</div>
       <div class="plg-settings-actions">
-        <button class="ce-secondary-btn" onclick="this.closest('.plg-settings-overlay').remove()">${_tl('plugins.cancel', 'Avbryt')}</button>
+        <button class="ce-secondary-btn" onclick="this.closest('.plg-settings-overlay').remove()">${_tl('plugins.cancel', 'Cancel')}</button>
         <button class="matrec-recalc-btn" style="margin-left:0" id="plg-settings-save">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          ${_tl('plugins.save', 'Lagre')}
+          ${_tl('plugins.save', 'Save')}
         </button>
       </div>
     </div>`;

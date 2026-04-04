@@ -89,7 +89,7 @@ function _connect() {
 function _disconnect() {
   if (_publishTimer) { clearInterval(_publishTimer); _publishTimer = null; }
   if (_client) {
-    try { _client.end(true); } catch (e) { log.debug('Feil ved lukking av MQTT-klient: ' + e.message); }
+    try { _client.end(true); } catch (e) { log.debug('Error closing MQTT client: ' + e.message); }
     _client = null;
   }
   _connected = false;

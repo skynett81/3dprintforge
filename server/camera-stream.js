@@ -118,7 +118,7 @@ export class CameraStream {
     let probeTimedOut = false;
     const probeTimeout = setTimeout(() => {
       probeTimedOut = true;
-      if (probeSock) { try { probeSock.destroy(); } catch (e) { log.debug('Feil ved lukking av probe-socket: ' + e.message); } }
+      if (probeSock) { try { probeSock.destroy(); } catch (e) { log.debug('Error closing probe socket: ' + e.message); } }
       log.info('TLS probe timeout — trying RTSP (port 322)');
       this.mode = 'rtsp';
       this._startFfmpeg();
@@ -255,7 +255,7 @@ export class CameraStream {
           this._broadcastError('auth_denied');
           this._cleanupJpeg();
 
-          // Auto-reset auth denied etter 60s — tillater ny tilkobling
+          // Auto-reset auth denied after 60s — allows new connection
           if (this._authDeniedTimer) clearTimeout(this._authDeniedTimer);
           this._authDeniedTimer = setTimeout(() => {
             log.info('Resetting auth-denied — retrying');
@@ -380,7 +380,7 @@ export class CameraStream {
 
   _cleanupJpeg() {
     if (this.tlsSocket) {
-      try { this.tlsSocket.destroy(); } catch (e) { log.debug('Feil ved lukking av TLS-socket: ' + e.message); }
+      try { this.tlsSocket.destroy(); } catch (e) { log.debug('Error closing TLS socket: ' + e.message); }
       this.tlsSocket = null;
     }
     this._headerBuf = Buffer.alloc(0);
@@ -520,7 +520,7 @@ export class CameraStream {
     }
     this._stopWatchdog();
     if (this.ffmpeg) {
-      log.info('Stopper ffmpeg');
+      log.info('Stopping ffmpeg');
       this.ffmpeg.kill('SIGTERM');
       this.ffmpeg = null;
     }

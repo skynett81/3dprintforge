@@ -57,7 +57,7 @@ export async function captureMilestone(printerId, printerIp, accessCode, milesto
       }
     }
 
-    // Strategy 2: TLS JPEG capture via port 6000 (direkte, uten ffmpeg)
+    // Strategy 2: TLS JPEG capture via port 6000 (direct, without ffmpeg)
     const tlsFrame = await _captureTlsJpeg(printerIp, accessCode).catch(() => null);
     if (tlsFrame && tlsFrame.length > 100) {
       writeFileSync(filepath, tlsFrame);
@@ -101,7 +101,7 @@ function _buildResult(printerId, milestone, filename, filepath, meta) {
 function _captureTlsJpeg(printerIp, accessCode) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      try { sock.destroy(); } catch (e) { log.debug('Feil ved lukking av TLS-socket ved timeout: ' + e.message); }
+      try { sock.destroy(); } catch (e) { log.debug('Error closing TLS socket on timeout: ' + e.message); }
       reject(new Error('TLS capture timeout'));
     }, 8000);
 
@@ -159,7 +159,7 @@ function _captureTlsJpeg(printerIp, accessCode) {
           if (pSize >= 4 && payload.readUInt32LE(0) === 0xFFFFFFFF) {
             clearTimeout(timeout);
             sock.destroy();
-            reject(new Error('Auth denied — LAN Live View deaktivert'));
+            reject(new Error('Auth denied — LAN Live View disabled'));
             return;
           }
           readState = 'header';
@@ -173,7 +173,7 @@ function _captureTlsJpeg(printerIp, accessCode) {
           if (payloadSize <= 0 || payloadSize > 10 * 1024 * 1024) {
             clearTimeout(timeout);
             sock.destroy();
-            reject(new Error('Ugyldig payload-størrelse: ' + payloadSize));
+            reject(new Error('Invalid payload size: ' + payloadSize));
             return;
           }
           readState = 'payload';
@@ -206,7 +206,7 @@ function _captureTlsJpeg(printerIp, accessCode) {
 
     sock.on('close', () => {
       clearTimeout(timeout);
-      if (!gotFrame) reject(new Error('TLS tilkobling lukket uten frame'));
+      if (!gotFrame) reject(new Error('TLS connection closed without frame'));
     });
   });
 }
@@ -237,7 +237,7 @@ function _captureRtsp(printerIp, accessCode, filepath) {
       ff.kill('SIGTERM');
       // Give ffmpeg 2s to clean up gracefully before SIGKILL
       setTimeout(() => {
-        try { ff.kill('SIGKILL'); } catch (e) { log.debug('Kunne ikke drepe ffmpeg-prosess: ' + e.message); }
+        try { ff.kill('SIGKILL'); } catch (e) { log.debug('Could not kill ffmpeg process: ' + e.message); }
       }, 2000);
     }, 10000);
 
@@ -246,9 +246,9 @@ function _captureRtsp(printerIp, accessCode, filepath) {
       if (code === 0 && existsSync(filepath)) {
         resolve();
       } else {
-        const reason = stderrData.includes('401') ? 'Autentisering avvist'
-          : stderrData.includes('Connection refused') ? 'Tilkobling nektet'
-          : `ffmpeg avsluttet med kode ${code}`;
+        const reason = stderrData.includes('401') ? 'Authentication rejected'
+          : stderrData.includes('Connection refused') ? 'Connection refused'
+          : `ffmpeg exited with code ${code}`;
         reject(new Error(reason));
       }
     });
@@ -309,7 +309,7 @@ export function archivePrintMilestones(printerId, printHistoryId) {
         unlinkSync(join(printerDir, f));
       }
     }
-    log.info('Arkivert ' + files.length + ' screenshots for print #' + printHistoryId);
+    log.info('Archived ' + files.length + ' screenshots for print #' + printHistoryId);
     return files.length;
   } catch (e) {
     log.error('Archiving failed: ' + e.message);

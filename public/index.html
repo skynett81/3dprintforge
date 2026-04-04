@@ -57,7 +57,7 @@
         <ul class="navbar-nav ms-auto">
           <!-- Notification bell -->
           <li class="nav-item">
-            <a class="nav-link" href="#" role="button" id="notif-bell-btn" onclick="toggleNotificationCenter(); return false;" data-tooltip="Varsler" data-tooltip-pos="bottom">
+            <a class="nav-link" href="#" role="button" id="notif-bell-btn" onclick="toggleNotificationCenter(); return false;" data-tooltip="Notifications" data-tooltip-pos="bottom">
               <i class="bi bi-bell"></i>
               <span class="notif-badge" id="notif-badge" style="display:none">0</span>
             </a>
@@ -76,7 +76,7 @@
         </ul>
 
         <!-- Connection & system info badges -->
-        <span id="connection-badge" class="badge badge-disconnected" data-i18n-key="header.connecting">Kobler til...</span>
+        <span id="connection-badge" class="badge badge-disconnected" data-i18n-key="header.connecting">Connecting...</span>
         <span id="system-info-badge" class="system-info-badge" style="cursor:pointer;font-size:0.7rem;color:var(--text-muted);margin-left:8px" title="System info"></span>
       </div>
     </nav>
@@ -107,12 +107,12 @@
             </a>
           </li>
 
-          <!-- Utskrift (Printing) -->
+          <!-- Printing -->
           <li class="nav-item sidebar-section" data-section="printing" style="--section-color: var(--accent-blue)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-printer"></i>
               <p>
-                <span data-i18n-key="sidebar.section_printing">Utskrift</span>
+                <span data-i18n-key="sidebar.section_printing">Printing</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">4</span>
               </p>
@@ -121,36 +121,36 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="controls" onclick="openPanel('controls'); return false;" data-ripple>
                   <i class="nav-icon bi bi-sliders"></i>
-                  <p data-i18n-key="tabs.controls">Kontroller</p>
+                  <p data-i18n-key="tabs.controls">Controls</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="queue" onclick="openPanel('queue'); return false;" data-ripple>
                   <i class="nav-icon bi bi-list-check"></i>
-                  <p data-i18n-key="queue.title">Utskriftskø</p>
+                  <p data-i18n-key="queue.title">Print Queue</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="scheduler" onclick="openPanel('scheduler'); return false;" data-ripple>
                   <i class="nav-icon bi bi-calendar3"></i>
-                  <p data-i18n-key="tabs.scheduler">Planlegger</p>
+                  <p data-i18n-key="tabs.scheduler">Scheduler</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="fleet" onclick="openPanel('fleet'); return false;" data-ripple>
                   <i class="nav-icon bi bi-display"></i>
-                  <p data-i18n-key="tabs.fleet">Flåte</p>
+                  <p data-i18n-key="tabs.fleet">Fleet</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Historikk (History) -->
+          <!-- History -->
           <li class="nav-item sidebar-section" data-section="history" style="--section-color: var(--accent-blue, #06b6d4)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-clock-history"></i>
               <p>
-                <span data-i18n-key="sidebar.section_history">Historikk</span>
+                <span data-i18n-key="sidebar.section_history">History</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">1</span>
               </p>
@@ -159,18 +159,18 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="history" onclick="openPanel('history'); return false;" data-ripple>
                   <i class="nav-icon bi bi-clock-history"></i>
-                  <p data-i18n-key="tabs.history">Historikk</p>
+                  <p data-i18n-key="tabs.history">History</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Analyse (Analysis) -->
+          <!-- Analysis -->
           <li class="nav-item sidebar-section" data-section="analysis" style="--section-color: var(--accent-purple, #8b5cf6)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-bar-chart-line"></i>
               <p>
-                <span data-i18n-key="tabs.analysis">Analyse</span>
+                <span data-i18n-key="tabs.analysis">Analysis</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">3</span>
               </p>
@@ -179,30 +179,30 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="analysis" onclick="openPanel('analysis'); return false;" data-ripple>
                   <i class="nav-icon bi bi-bar-chart-line"></i>
-                  <p data-i18n-key="tabs.statistics">Statistikk</p>
+                  <p data-i18n-key="tabs.statistics">Statistics</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="calendar" onclick="openPanel('calendar'); return false;" data-ripple>
                   <i class="nav-icon bi bi-calendar-event"></i>
-                  <p data-i18n-key="nav.calendar">Printkalender</p>
+                  <p data-i18n-key="nav.calendar">Print Calendar</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="erroranalysis" onclick="openPanel('erroranalysis'); return false;" data-ripple>
                   <i class="nav-icon bi bi-cpu"></i>
-                  <p data-i18n-key="error_analysis.title">Feilmønster AI</p>
+                  <p data-i18n-key="error_analysis.title">Error Pattern AI</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Overvåking (Monitoring) -->
+          <!-- Monitoring -->
           <li class="nav-item sidebar-section" data-section="monitoring" style="--section-color: var(--accent-orange)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-activity"></i>
               <p>
-                <span data-i18n-key="sidebar.section_monitoring">Overvåking</span>
+                <span data-i18n-key="sidebar.section_monitoring">Monitoring</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">4</span>
               </p>
@@ -211,7 +211,7 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="diagnostics" onclick="openPanel('diagnostics'); return false;" data-ripple>
                   <i class="nav-icon bi bi-activity"></i>
-                  <p data-i18n-key="tabs.diagnostics">Diagnostikk</p>
+                  <p data-i18n-key="tabs.diagnostics">Diagnostics</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -224,24 +224,24 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="errors" onclick="openPanel('errors'); return false;" data-ripple>
                   <i class="nav-icon bi bi-exclamation-triangle"></i>
-                  <p data-i18n-key="tabs.errors">Feillogg</p>
+                  <p data-i18n-key="tabs.errors">Error Log</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="maintenance" onclick="openPanel('maintenance'); return false;" data-ripple>
                   <i class="nav-icon bi bi-wrench"></i>
-                  <p data-i18n-key="tabs.maintenance">Vedlikehold</p>
+                  <p data-i18n-key="tabs.maintenance">Maintenance</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Materialer (Materials) -->
+          <!-- Materials -->
           <li class="nav-item sidebar-section" data-section="materials" style="--section-color: var(--accent-green)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-circle"></i>
               <p>
-                <span data-i18n-key="sidebar.section_materials">Materialer</span>
+                <span data-i18n-key="sidebar.section_materials">Materials</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">3</span>
               </p>
@@ -256,24 +256,24 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="materialrec" onclick="openPanel('materialrec'); return false;" data-ripple>
                   <i class="nav-icon bi bi-lightbulb"></i>
-                  <p data-i18n-key="material_rec.title">Anbefalinger</p>
+                  <p data-i18n-key="material_rec.title">Recommendations</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="filamentanalytics" onclick="openPanel('filamentanalytics'); return false;" data-ripple>
                   <i class="nav-icon bi bi-graph-up"></i>
-                  <p data-i18n-key="tabs.filament_analytics">Filament Analyse</p>
+                  <p data-i18n-key="tabs.filament_analytics">Filament Analytics</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Bibliotek (Library) -->
+          <!-- Library -->
           <li class="nav-item sidebar-section" data-section="library" style="--section-color: var(--accent-purple)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-archive"></i>
               <p>
-                <span data-i18n-key="sidebar.section_library">Bibliotek</span>
+                <span data-i18n-key="sidebar.section_library">Library</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">4</span>
               </p>
@@ -282,36 +282,36 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="library" onclick="openPanel('library'); return false;" data-ripple>
                   <i class="nav-icon bi bi-folder"></i>
-                  <p data-i18n-key="tabs.library">Filbibliotek</p>
+                  <p data-i18n-key="tabs.library">File Library</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="knowledge" onclick="openPanel('knowledge'); return false;" data-ripple>
                   <i class="nav-icon bi bi-book"></i>
-                  <p data-i18n-key="nav.knowledge">Kunnskapsbase</p>
+                  <p data-i18n-key="nav.knowledge">Knowledge Base</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="screenshots" onclick="openPanel('screenshots'); return false;" data-ripple>
                   <i class="nav-icon bi bi-camera"></i>
-                  <p data-i18n-key="screenshots.title">Skjermbilder</p>
+                  <p data-i18n-key="screenshots.title">Screenshots</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="profiles" onclick="openPanel('profiles'); return false;" data-ripple>
                   <i class="nav-icon bi bi-file-text"></i>
-                  <p data-i18n-key="nav.profiles">Utskriftsprofiler</p>
+                  <p data-i18n-key="nav.profiles">Print Profiles</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Verktøy (Tools) -->
+          <!-- Tools -->
           <li class="nav-item sidebar-section" data-section="tools" style="--section-color: var(--accent-red)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-tools"></i>
               <p>
-                <span data-i18n-key="sidebar.section_tools">Verktøy</span>
+                <span data-i18n-key="sidebar.section_tools">Tools</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">5</span>
               </p>
@@ -320,13 +320,13 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="costestimator" onclick="openPanel('costestimator'); return false;" data-ripple>
                   <i class="nav-icon bi bi-calculator"></i>
-                  <p data-i18n-key="tabs.costestimator">Kostnadskalkulator</p>
+                  <p data-i18n-key="tabs.costestimator">Cost Estimator</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="labels" onclick="openPanel('labels'); return false;" data-ripple>
                   <i class="nav-icon bi bi-tag"></i>
-                  <p data-i18n-key="tabs.labels">Etiketter</p>
+                  <p data-i18n-key="tabs.labels">Labels</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -338,24 +338,24 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="playground" onclick="openPanel('playground'); return false;" data-ripple>
                   <i class="nav-icon bi bi-code-slash"></i>
-                  <p data-i18n-key="tabs.playground">API Lekeplass</p>
+                  <p data-i18n-key="tabs.playground">API Playground</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="achievements" onclick="openPanel('achievements'); return false;" data-ripple>
                   <i class="nav-icon bi bi-trophy"></i>
-                  <p data-i18n-key="achievements.title">Prestasjoner</p>
+                  <p data-i18n-key="achievements.title">Achievements</p>
                 </a>
               </li>
             </ul>
           </li>
 
-          <!-- Bedrift (Business) — only visible with active ecom license -->
+          <!-- Business — only visible with active ecom license -->
           <li class="nav-item sidebar-section" data-section="business" id="sidebar-business" style="display:none;--section-color: var(--accent-green, #22c55e)">
             <a href="#" class="nav-link">
               <i class="nav-icon bi bi-briefcase"></i>
               <p>
-                <span data-i18n-key="sidebar.section_business">Bedrift</span>
+                <span data-i18n-key="sidebar.section_business">Business</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
                 <span class="badge text-bg-secondary sidebar-section-count">5</span>
               </p>
@@ -364,31 +364,31 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="crm-dashboard" onclick="openPanel('crm-dashboard'); return false;" data-ripple>
                   <i class="nav-icon bi bi-graph-up"></i>
-                  <p data-i18n-key="crm.dashboard">CRM Oversikt</p>
+                  <p data-i18n-key="crm.dashboard">CRM Overview</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="crm-customers" onclick="openPanel('crm-customers'); return false;" data-ripple>
                   <i class="nav-icon bi bi-people"></i>
-                  <p data-i18n-key="crm.customers">Kunder</p>
+                  <p data-i18n-key="crm.customers">Customers</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="crm-orders" onclick="openPanel('crm-orders'); return false;" data-ripple>
                   <i class="nav-icon bi bi-receipt"></i>
-                  <p data-i18n-key="crm.orders">Ordrer</p>
+                  <p data-i18n-key="crm.orders">Orders</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="crm-invoices" onclick="openPanel('crm-invoices'); return false;" data-ripple>
                   <i class="nav-icon bi bi-file-earmark-text"></i>
-                  <p data-i18n-key="crm.invoices">Fakturaer</p>
+                  <p data-i18n-key="crm.invoices">Invoices</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="crm-settings" onclick="openPanel('crm-settings'); return false;" data-ripple>
                   <i class="nav-icon bi bi-gear"></i>
-                  <p data-i18n-key="crm.company_settings">Firmainst.</p>
+                  <p data-i18n-key="crm.company_settings">Company Settings</p>
                 </a>
               </li>
             </ul>
@@ -414,25 +414,25 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="backup" onclick="openPanel('backup'); return false;" data-ripple>
                   <i class="nav-icon bi bi-cloud-upload"></i>
-                  <p data-i18n-key="tabs.backup">Sikkerhetskopi</p>
+                  <p data-i18n-key="tabs.backup">Backup</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="logs" onclick="openPanel('logs'); return false;" data-ripple>
                   <i class="nav-icon bi bi-terminal"></i>
-                  <p data-i18n-key="logs.title">Serverlogg</p>
+                  <p data-i18n-key="logs.title">Server Log</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="/docs/" target="_blank" class="nav-link" style="text-decoration:none" data-ripple>
                   <i class="nav-icon bi bi-file-text"></i>
-                  <p>Dokumentasjon</p>
+                  <p>Documentation</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="settings" onclick="openPanel('settings'); return false;" data-ripple>
                   <i class="nav-icon bi bi-gear"></i>
-                  <p data-i18n-key="tabs.settings">Innstillinger</p>
+                  <p data-i18n-key="tabs.settings">Settings</p>
                 </a>
               </li>
             </ul>
@@ -455,7 +455,7 @@
         </button>
         <div class="sidebar-version" id="sidebar-version">v...</div>
         <div class="sidebar-credits">
-          <span data-i18n-key="sidebar.made_by">Laget av</span>
+          <span data-i18n-key="sidebar.made_by">Made by</span>
           <a href="https://geektech.no" target="_blank" rel="noopener">SkyNett81</a>
         </div>
         <a href="https://ko-fi.com/V7V21NRKM7" target="_blank" rel="noopener" class="sidebar-kofi" title="Support on Ko-fi">
@@ -484,42 +484,42 @@
         <div class="strip-speed" id="strip-speed"></div>
         <div class="spark-panel" id="spark-nozzle">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="temperature.nozzle">Dyse</span>
+            <span class="spark-label" data-i18n-key="temperature.nozzle">Nozzle</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
         </div>
         <div class="spark-panel" id="spark-bed">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="temperature.bed">Seng</span>
+            <span class="spark-label" data-i18n-key="temperature.bed">Bed</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
         </div>
         <div class="spark-panel" id="spark-chamber">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="temperature.chamber">Kammer</span>
+            <span class="spark-label" data-i18n-key="temperature.chamber">Chamber</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
         </div>
         <div class="spark-panel" id="spark-fan">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="controls.fan_part">Delvifte</span>
+            <span class="spark-label" data-i18n-key="controls.fan_part">Part Fan</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
         </div>
         <div class="spark-panel" id="spark-speed">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="telemetry.speed_mag">Hastighet</span>
+            <span class="spark-label" data-i18n-key="telemetry.speed_mag">Speed</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
         </div>
         <div class="spark-panel" id="spark-layer">
           <div class="spark-header">
-            <span class="spark-label" data-i18n-key="history.layers">Lag</span>
+            <span class="spark-label" data-i18n-key="history.layers">Layer</span>
             <span class="spark-value">--</span>
           </div>
           <div class="spark-chart"></div>
@@ -606,7 +606,7 @@
               </div>
               <div style="display:none"><span id="progress-eta"></span></div>
               <div class="hud-center-bottom" id="active-filament">
-                <span class="text-muted" data-i18n-key="progress.waiting">Venter...</span>
+                <span class="text-muted" data-i18n-key="progress.waiting">Waiting...</span>
               </div>
             </div>
             <div class="hud-timer" id="countdown-embed"></div>
@@ -618,7 +618,7 @@
 
         <div class="card" id="camera-card">
           <div class="card-header">
-            <h3 class="card-title" data-i18n-key="camera.title">Kamera</h3>
+            <h3 class="card-title" data-i18n-key="camera.title">Camera</h3>
           </div>
           <div class="card-body">
             <div id="camera-container" class="camera-container">
@@ -627,7 +627,7 @@
                   <rect x="2" y="6" width="15" height="12" rx="2"/>
                   <path d="M17 10l4-2v8l-4-2z"/>
                 </svg>
-                <span data-i18n-key="camera.not_available">Kamera ikke tilgjengelig</span>
+                <span data-i18n-key="camera.not_available">Camera not available</span>
               </div>
             </div>
           </div>
@@ -667,21 +667,21 @@
 
         <div class="card" id="temp-card">
           <div class="card-header">
-            <h3 class="card-title" data-i18n-key="temperature.title">Temperaturer</h3>
+            <h3 class="card-title" data-i18n-key="temperature.title">Temperatures</h3>
           </div>
           <div class="card-body">
             <div class="temp-gauges">
               <div class="gauge-wrapper">
                 <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-nozzle"></svg>
-                <div class="gauge-label" data-i18n-key="temperature.nozzle">Dyse</div>
+                <div class="gauge-label" data-i18n-key="temperature.nozzle">Nozzle</div>
               </div>
               <div class="gauge-wrapper">
                 <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-bed"></svg>
-                <div class="gauge-label" data-i18n-key="temperature.bed">Seng</div>
+                <div class="gauge-label" data-i18n-key="temperature.bed">Bed</div>
               </div>
               <div class="gauge-wrapper">
                 <svg class="gauge-svg" viewBox="0 0 120 120" id="gauge-chamber"></svg>
-                <div class="gauge-label" data-i18n-key="temperature.chamber">Kammer</div>
+                <div class="gauge-label" data-i18n-key="temperature.chamber">Chamber</div>
               </div>
             </div>
           </div>
@@ -689,7 +689,7 @@
 
         <div class="card" id="fans-card">
           <div class="card-header">
-            <h3 class="card-title" data-i18n-key="quick_status.fans">Vifter</h3>
+            <h3 class="card-title" data-i18n-key="quick_status.fans">Fans</h3>
           </div>
           <div class="card-body" id="fans-card-content"></div>
         </div>
@@ -713,7 +713,7 @@
   <div class="camera-modal" id="camera-modal">
     <div class="camera-modal-content">
       <div class="camera-modal-header">
-        <span class="camera-modal-title" data-i18n-key="camera.title">Kamera</span>
+        <span class="camera-modal-title" data-i18n-key="camera.title">Camera</span>
         <button class="camera-modal-close" onclick="closeCameraModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -725,7 +725,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         <span class="camera-stream-label" data-i18n-key="camera.stream_url">Stream URL:</span>
         <code class="camera-stream-url"></code>
-        <button class="camera-copy-btn" data-i18n-key="camera.copy">Kopier</button>
+        <button class="camera-copy-btn" data-i18n-key="camera.copy">Copy</button>
       </div>
     </div>
   </div>
@@ -734,7 +734,7 @@
   <div class="camera-modal" id="model-modal">
     <div class="camera-modal-content model-modal-content">
       <div class="camera-modal-header">
-        <span class="camera-modal-title" data-i18n-key="model.preview">3D-visning</span>
+        <span class="camera-modal-title" data-i18n-key="model.preview">3D Preview</span>
         <button class="camera-modal-close" onclick="close3dFullscreen()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

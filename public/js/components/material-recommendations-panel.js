@@ -8,9 +8,9 @@
   let _compareData = [];
 
   const TABS = [
-    { id: 'recommendations', labelKey: 'material_rec.tab_recommendations', fallback: 'Anbefalinger' },
-    { id: 'compare', labelKey: 'material_rec.tab_compare', fallback: 'Sammenlign' },
-    { id: 'success', labelKey: 'material_rec.tab_success_rates', fallback: 'Suksessrate' }
+    { id: 'recommendations', labelKey: 'material_rec.tab_recommendations', fallback: 'Recommendations' },
+    { id: 'compare', labelKey: 'material_rec.tab_compare', fallback: 'Compare' },
+    { id: 'success', labelKey: 'material_rec.tab_success_rates', fallback: 'Success rate' }
   ];
 
   function _tabBarHtml() {
@@ -86,13 +86,13 @@
       const resp = await fetch('/api/materials/recommendations/recalculate', { method: 'POST' });
       const data = await resp.json();
       if (data.ok) {
-        if (typeof showToast === 'function') showToast(_tl('material_rec.recalculated', 'Anbefalinger oppdatert') + ` (${data.count})`, 'success');
+        if (typeof showToast === 'function') showToast(_tl('material_rec.recalculated', 'Recommendations updated') + ` (${data.count})`, 'success');
         await _fetchRecommendations();
         await _fetchSuccessRates();
         _render();
       }
     } catch (e) {
-      if (typeof showToast === 'function') showToast('Feil: ' + e.message, 'error');
+      if (typeof showToast === 'function') showToast('Error: ' + e.message, 'error');
     }
   }
 
@@ -108,19 +108,19 @@
 
     let html = `<div class="stats-strip" style="border-radius:var(--radius-sm);border:1px solid var(--border-color);margin-bottom:18px;overflow:hidden">
       <div class="spark-panel">
-        <span class="spark-label">${_tl('material_rec.total_materials', 'Materialer')}</span>
+        <span class="spark-label">${_tl('material_rec.total_materials', 'Materials')}</span>
         <span class="spark-value">${totalMaterials}</span>
       </div>
       <div class="spark-panel">
-        <span class="spark-label">${_tl('material_rec.avg_success', 'Snitt suksess')}</span>
+        <span class="spark-label">${_tl('material_rec.avg_success', 'Avg success')}</span>
         <span class="spark-value" style="color:${_rateColor(avgRate)}">${avgRate}%</span>
       </div>
       <div class="spark-panel">
-        <span class="spark-label">${_tl('material_rec.total_prints', 'Totalt utskrifter')}</span>
+        <span class="spark-label">${_tl('material_rec.total_prints', 'Total prints')}</span>
         <span class="spark-value">${totalPrints}</span>
       </div>
       <div class="spark-panel" style="border-right:none">
-        <span class="spark-label">${_tl('material_rec.best_material', 'Beste materiale')}</span>
+        <span class="spark-label">${_tl('material_rec.best_material', 'Best material')}</span>
         <span class="spark-value" style="font-size:0.85rem">${topMaterial ? topMaterial.filament_type : '--'}</span>
       </div>
     </div>`;
@@ -128,19 +128,19 @@
     // Toolbar
     html += `<div class="matrec-toolbar">
       <select id="matrec-filter" onchange="_matRecFilterType(this.value)" class="matrec-select">
-        <option value="">${_tl('material_rec.all_types', 'Alle typer')}</option>
+        <option value="">${_tl('material_rec.all_types', 'All types')}</option>
         ${types.map(tp => `<option value="${tp}" ${tp === _filterType ? 'selected' : ''}>${tp}</option>`).join('')}
       </select>
       <button onclick="_matRecRecalculate()" class="matrec-recalc-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-        ${_tl('material_rec.recalculate', 'Beregn på nytt')}
+        ${_tl('material_rec.recalculate', 'Recalculate')}
       </button>
     </div>`;
 
     if (filtered.length === 0) {
       return html + `<div class="matrec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-        <p>${_tl('material_rec.no_data', 'Ingen anbefalinger ennå. Trenger minst 3 utskrifter per materiale.')}</p>
+        <p>${_tl('material_rec.no_data', 'No recommendations yet. Needs at least 3 prints per material.')}</p>
       </div>`;
     }
 
@@ -148,7 +148,7 @@
     for (const r of filtered) {
       const rate = r.success_rate || 0;
       const cls = _rateClass(rate);
-      const brandLabel = r.filament_brand || _tl('material_rec.unknown_brand', 'Ukjent');
+      const brandLabel = r.filament_brand || _tl('material_rec.unknown_brand', 'Unknown');
       html += `
         <div class="card matrec-card">
           <div class="matrec-card-header matrec-card-header--${cls}">
@@ -157,19 +157,19 @@
           </div>
           <div class="matrec-card-stats">
             <div class="matrec-stat">
-              <span class="matrec-stat-label">${_tl('material_rec.nozzle_temp', 'Dyse')}</span>
+              <span class="matrec-stat-label">${_tl('material_rec.nozzle_temp', 'Nozzle')}</span>
               <span class="matrec-stat-value">${r.recommended_nozzle_temp != null ? r.recommended_nozzle_temp + '°C' : '--'}</span>
             </div>
             <div class="matrec-stat">
-              <span class="matrec-stat-label">${_tl('material_rec.bed_temp', 'Seng')}</span>
+              <span class="matrec-stat-label">${_tl('material_rec.bed_temp', 'Bed')}</span>
               <span class="matrec-stat-value">${r.recommended_bed_temp != null ? r.recommended_bed_temp + '°C' : '--'}</span>
             </div>
             <div class="matrec-stat">
-              <span class="matrec-stat-label">${_tl('material_rec.speed', 'Hastighet')}</span>
+              <span class="matrec-stat-label">${_tl('material_rec.speed', 'Speed')}</span>
               <span class="matrec-stat-value">${_speedLabel(r.recommended_speed_level)}</span>
             </div>
             <div class="matrec-stat">
-              <span class="matrec-stat-label">${_tl('material_rec.avg_time', 'Snitt-tid')}</span>
+              <span class="matrec-stat-label">${_tl('material_rec.avg_time', 'Avg time')}</span>
               <span class="matrec-stat-value">${r.avg_print_time_min != null ? r.avg_print_time_min + ' min' : '--'}</span>
             </div>
           </div>
@@ -177,7 +177,7 @@
             <div class="matrec-rate">
               <span class="hs-badge hs-badge-${cls}">${rate}%</span>
             </div>
-            <span class="matrec-samples">${r.sample_size || 0} ${_tl('material_rec.prints', 'utskrifter')}</span>
+            <span class="matrec-samples">${r.sample_size || 0} ${_tl('material_rec.prints', 'prints')}</span>
           </div>
         </div>`;
     }
@@ -191,7 +191,7 @@
 
     let html = `<div class="matrec-toolbar" style="margin-bottom:18px">
       <select id="matrec-compare-type" onchange="_matRecCompareType(this.value)" class="matrec-select">
-        <option value="">${_tl('material_rec.select_type', 'Velg materialtype...')}</option>
+        <option value="">${_tl('material_rec.select_type', 'Select material type...')}</option>
         ${types.map(tp => `<option value="${tp}" ${tp === _compareType ? 'selected' : ''}>${tp}</option>`).join('')}
       </select>
     </div>`;
@@ -200,12 +200,12 @@
       if (_compareType) {
         html += `<div class="matrec-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          <p>${_tl('material_rec.no_compare_data', 'Ingen merker å sammenligne for denne typen.')}</p>
+          <p>${_tl('material_rec.no_compare_data', 'No brands to compare for this type.')}</p>
         </div>`;
       } else {
         html += `<div class="matrec-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          <p>${_tl('material_rec.select_to_compare', 'Velg en materialtype for å sammenligne merker.')}</p>
+          <p>${_tl('material_rec.select_to_compare', 'Select a material type to compare brands.')}</p>
         </div>`;
       }
       return html;
@@ -236,9 +236,9 @@
             <th>#</th>
             <th style="text-align:left">${_tl('material_rec.brand', 'Merke')}</th>
             <th>${_tl('material_rec.success_rate', 'Suksess')}</th>
-            <th>${_tl('material_rec.nozzle_temp', 'Dyse')}</th>
-            <th>${_tl('material_rec.bed_temp', 'Seng')}</th>
-            <th>${_tl('material_rec.speed', 'Hastighet')}</th>
+            <th>${_tl('material_rec.nozzle_temp', 'Nozzle')}</th>
+            <th>${_tl('material_rec.bed_temp', 'Bed')}</th>
+            <th>${_tl('material_rec.speed', 'Speed')}</th>
             <th>${_tl('material_rec.samples', 'Antall')}</th>
           </tr>
         </thead>
@@ -264,7 +264,7 @@
     if (_successRates.length === 0) {
       return `<div class="matrec-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        <p>${_tl('material_rec.no_data', 'Ingen data ennå. Trenger minst 3 utskrifter per materiale.')}</p>
+        <p>${_tl('material_rec.no_data', 'No data yet. Needs at least 3 prints per material.')}</p>
       </div>`;
     }
 

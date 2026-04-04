@@ -105,7 +105,7 @@ function loadConfig() {
       // Secure config file permissions (owner-only read/write)
       try { chmodSync(CONFIG_PATH, 0o600); } catch { /* Windows etc. */ }
     } catch (e) {
-      console.warn('[config] Kunne ikke lese config.json:', e.message);
+      console.warn('[config] Could not read config.json:', e.message);
     }
   }
 
