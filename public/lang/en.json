@@ -1213,7 +1213,15 @@
     "open_queue": "Open queue",
     "ready_to_queue": "ready for queue — select a queue in the Queue panel",
     "select": "Select",
-    "selected": "selected"
+    "selected": "selected",
+    "preview": "Preview",
+    "loading_model": "Loading 3D model...",
+    "model_info": "Model information",
+    "dimensions": "Dimensions",
+    "triangles": "Triangles",
+    "vertices": "Vertices",
+    "mesh_count": "Mesh parts",
+    "mesh_list": "Mesh list"
   },
   "bedmesh": {
     "heatmap": "Heatmap",
@@ -2444,7 +2452,8 @@
     "download": "Download",
     "error": "Error",
     "refresh": "Refresh",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "replace": "Replace"
   },
   "update": {
     "title": "Updates",

@@ -1213,7 +1213,15 @@
     "open_queue": "Åpne kø",
     "ready_to_queue": "klar for kø — velg en kø i Kø-panelet",
     "select": "Velg",
-    "selected": "valgt"
+    "selected": "valgt",
+    "preview": "Forhåndsvisning",
+    "loading_model": "Laster 3D-modell...",
+    "model_info": "Modellinformasjon",
+    "dimensions": "Dimensjoner",
+    "triangles": "Trekanter",
+    "vertices": "Vertekser",
+    "mesh_count": "Mesh-deler",
+    "mesh_list": "Mesh-liste"
   },
   "bedmesh": {
     "heatmap": "Varmekart",
@@ -2444,7 +2452,8 @@
     "download": "Last ned",
     "error": "Feil",
     "refresh": "Oppdater",
-    "unknown": "Ukjent"
+    "unknown": "Ukjent",
+    "replace": "Erstatt"
   },
   "update": {
     "title": "Oppdateringer",
