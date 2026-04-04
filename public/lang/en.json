@@ -2293,7 +2293,8 @@
     "obs_copied": "Copied!",
     "obs_preview_title": "Preview",
     "obs_refresh_preview": "Refresh preview",
-    "moonraker_sync_hint": "Klipper/Moonraker printers (Snapmaker, Voron, Creality K1, etc.) sync print history automatically directly from the printer every 5 minutes. No cloud account needed."
+    "moonraker_sync_hint": "Klipper/Moonraker printers (Snapmaker, Voron, Creality K1, etc.) sync print history automatically directly from the printer every 5 minutes. No cloud account needed.",
+    "settings_sub_network": "Network"
   },
   "notify": {
     "print": "Print",
