@@ -429,7 +429,7 @@ function handleRequest(req, res) {
 
   if (!existsSync(filePath)) {
     res.writeHead(404);
-    res.end('Ikke funnet');
+    res.end('Not found');
     return;
   }
 
@@ -438,7 +438,7 @@ function handleRequest(req, res) {
     if (statSync(filePath).isDirectory()) {
       const indexPath = join(filePath, 'index.html');
       if (existsSync(indexPath)) filePath = indexPath;
-      else { res.writeHead(404); res.end('Ikke funnet'); return; }
+      else { res.writeHead(404); res.end('Not found'); return; }
     }
   } catch {}
 
