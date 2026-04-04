@@ -134,13 +134,27 @@ export async function generateSign3MF(opts = {}) {
     const qrH = opts.qrHeight || th;
     const qrSize = opts.qrSize || 35;
 
-    // ── Sign plate ──
-    const signMesh = model.AddMeshObject();
-    signMesh.SetName(opts.title || 'Sign');
-    const sign = new MeshBuilder(lib, signMesh);
+    // ── Create base material colours ──
+    const matGroup = model.AddBaseMaterialGroup();
+    const whiteColor = new lib.sColor();
+    whiteColor.set_Red(240); whiteColor.set_Green(240); whiteColor.set_Blue(240); whiteColor.set_Alpha(255);
+    matGroup.AddMaterial('Plate', whiteColor);
+    whiteColor.delete();
+    const blackColor = new lib.sColor();
+    blackColor.set_Red(30); blackColor.set_Green(30); blackColor.set_Blue(30); blackColor.set_Alpha(255);
+    matGroup.AddMaterial('Text', blackColor);
+    blackColor.delete();
 
-    // Base plate
-    sign.addBox(0, 0, 0, pw, ph, pd);
+    // ── Sign plate (white) ──
+    const plateMesh = model.AddMeshObject();
+    plateMesh.SetName('Plate');
+    const plate = new MeshBuilder(lib, plateMesh);
+    plate.addBox(0, 0, 0, pw, ph, pd);
+
+    // ── Raised elements (black — QR, text, dividers) ──
+    const textMesh = model.AddMeshObject();
+    textMesh.SetName(opts.title || 'Text');
+    const sign = new MeshBuilder(lib, textMesh);
 
     // ── QR code blocks ──
     if (opts.qrData) {
@@ -189,32 +203,33 @@ export async function generateSign3MF(opts = {}) {
       sign.addBox(3, 1 + 7 * ((opts.textSize || 8) * 0.6 / 7) + 1, pd, pw - 6, 0.6, th * 0.5); // line above subtitle
     }
 
-    // ── Wall mount holes (cutouts marked as raised rings) ──
+    // ── Wall mount holes ──
     if (opts.includeHoles) {
       const hr = (opts.holeDiameter || 4) / 2;
       const hm = opts.holeMargin || 5;
-      sign.addCylinder(hm + hr, ph / 2, pd, hr + 1, th, 16);
-      sign.addCylinder(pw - hm - hr, ph / 2, pd, hr + 1, th, 16);
+      plate.addCylinder(hm + hr, ph / 2, pd, hr + 1, th, 16);
+      plate.addCylinder(pw - hm - hr, ph / 2, pd, hr + 1, th, 16);
     }
 
-    // ── Magnet holes (recesses in the back) ──
+    // ── Magnet holes ──
     if (opts.includeMagnets) {
       const mr = (opts.magnetDiameter || 6) / 2 + (opts.magnetTolerance || 0.2);
       const pad = mr + 3;
-      // Mark magnet positions as raised dots on the surface
-      sign.addCylinder(pad, pad, pd, mr, th, 16);
-      sign.addCylinder(pw - pad, pad, pd, mr, th, 16);
-      sign.addCylinder(pad, ph - pad, pd, mr, th, 16);
-      sign.addCylinder(pw - pad, ph - pad, pd, mr, th, 16);
+      plate.addCylinder(pad, pad, pd, mr, th, 16);
+      plate.addCylinder(pw - pad, pad, pd, mr, th, 16);
+      plate.addCylinder(pad, ph - pad, pd, mr, th, 16);
+      plate.addCylinder(pw - pad, ph - pad, pd, mr, th, 16);
     }
 
-    // ── NFC tag slot (recess on back, marked on front) ──
+    // ── NFC tag slot ──
     if (opts.includeNfc) {
       const nr = (opts.nfcDiameter || 25) / 2;
-      sign.addCylinder(pw / 2, ph / 2, pd, nr, th * 0.3, 24);
+      plate.addCylinder(pw / 2, ph / 2, pd, nr, th * 0.3, 24);
     }
 
-    model.AddBuildItem(signMesh, wrapper.GetIdentityTransform());
+    // Add both sign objects as build items
+    model.AddBuildItem(plateMesh, wrapper.GetIdentityTransform());
+    model.AddBuildItem(textMesh, wrapper.GetIdentityTransform());
 
     // ── Frame (separate object) ──
     if (opts.includeBorder) {
