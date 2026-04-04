@@ -668,10 +668,36 @@
       _loadBackupList();
 
     } else if (_systemSubTab === 'security') {
+      const tip = (text) => `<span class="settings-tooltip" title="${_esc(text)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:0.65rem;cursor:help;margin-left:6px;vertical-align:middle;border:1px solid var(--border-color)">?</span>`;
+
       let h = '<div class="settings-grid">';
-      h += `<div class="settings-card"><div class="card-title">${t('settings.users_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.users_desc')}</p><div id="users-section"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showUserEditor()">${t('settings.user_add')}</button></div>`;
-      h += `<div class="settings-card"><div class="card-title">${t('settings.api_keys_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.api_keys_desc')}</p><div id="api-keys-section"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div><button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showApiKeyEditor()">${t('settings.api_key_add')}</button></div>`;
-      h += `<div class="settings-card"><div class="card-title">${t('settings.push_title')}</div><p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.push_desc')}</p><div style="display:flex;gap:0.5rem;flex-wrap:wrap"><button class="form-btn form-btn-primary" data-ripple onclick="subscribePush()">${t('settings.push_enable')}</button><button class="form-btn" data-ripple onclick="unsubscribePush()">${t('settings.push_disable')}</button></div></div>`;
+
+      // Users
+      h += `<div class="settings-card">
+        <div class="card-title">${t('settings.users_title')} ${tip('Create user accounts with role-based permissions. Roles: admin (full access), controls (printer control), print (start prints), queue (manage queue), view (read-only).')}</div>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.users_desc')}</p>
+        <div id="users-section"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div>
+        <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showUserEditor()">${t('settings.user_add')}</button>
+      </div>`;
+
+      // API Keys
+      h += `<div class="settings-card">
+        <div class="card-title">${t('settings.api_keys_title')} ${tip('API keys allow external tools (Home Assistant, scripts, mobile apps) to access the API without a username/password. Use the Bearer token or X-API-Key header.')}</div>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.api_keys_desc')}</p>
+        <div id="api-keys-section"><div class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</div></div>
+        <button class="form-btn form-btn-primary mt-sm" data-ripple onclick="showApiKeyEditor()">${t('settings.api_key_add')}</button>
+      </div>`;
+
+      // Push Notifications
+      h += `<div class="settings-card">
+        <div class="card-title">${t('settings.push_title')} ${tip('Browser push notifications let you receive alerts even when the dashboard tab is closed. Requires HTTPS and a modern browser. Each device must be subscribed individually.')}</div>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem">${t('settings.push_desc')}</p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="form-btn form-btn-primary" data-ripple onclick="subscribePush()">${t('settings.push_enable')}</button>
+          <button class="form-btn" data-ripple onclick="unsubscribePush()">${t('settings.push_disable')}</button>
+        </div>
+      </div>`;
+
       h += '</div>';
       el.innerHTML = h;
       if (window._can && window._can('admin')) { loadUsers(); loadApiKeys(); }
