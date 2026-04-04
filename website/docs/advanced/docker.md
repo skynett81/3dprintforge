@@ -21,25 +21,18 @@ docker-compose up -d
 ## docker-compose.yml
 
 ```yaml
-version: '3.8'
-
 services:
   3dprintforge:
     build: .
     container_name: 3dprintforge
+    network_mode: host
     restart: unless-stopped
-    ports:
-      - "3000:3000"
-      - "3443:3443"
-      - "9001-9010:9001-9010"   # Kamerastrømmer
     volumes:
-      - ./data:/app/data         # Database og konfigurasjon
-      - ./certs:/app/certs       # SSL-sertifikater (valgfritt)
+      - ./config.json:/app/config.json
+      - ./data:/app/data
+      - ./certs:/app/certs
     environment:
       - NODE_ENV=production
-      - PORT=3000
-      - HTTPS_PORT=3443
-    network_mode: host           # Anbefalt for MQTT-tilkobling
 ```
 
 :::warning network_mode: host
@@ -51,20 +44,23 @@ services:
 ```dockerfile
 FROM node:22-slim
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg openssl && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Installer ffmpeg og openssl for kamerastrømming og SSL
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg openssl && rm -rf /var/lib/apt/lists/*
-
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY . .
 
-EXPOSE 3000 3443
+RUN mkdir -p data data/uploads data/library data/model-cache data/history-models data/toolpath-cache certs
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+EXPOSE 3000 3443 9001-9010
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok&&r.status!==301)throw new Error();process.exit(0)}).catch(()=>process.exit(1))"
 
 CMD ["node", "server/index.js"]
 ```

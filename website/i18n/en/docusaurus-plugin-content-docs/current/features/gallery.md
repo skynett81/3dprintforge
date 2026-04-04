@@ -94,3 +94,7 @@ Share a gallery image via a time-limited link:
 1. Open the image in preview
 2. Click **Share**
 3. Choose expiration time and copy the link
+
+## 3D Preview
+
+The gallery detail view has a **▶ 3D** button that opens a 3D preview of the model — either as a 3MF view from 3mfViewer or as a gcode toolpath.

@@ -100,3 +100,12 @@ Fra filbiblioteket kan du sende direkte til printer:
 :::warning Direktesending
 Direktesending starter printen umiddelbart uten bekreftelse i Bambu Studio. Pass på at printeren er klar.
 :::
+
+## 3D-forhåndsvisning
+
+Alle 3MF-filer i biblioteket har en **▶ 3D Forhåndsvisning**-knapp som åpner [3MFConsortium sin 3mfViewer](https://github.com/3MFConsortium/3mfViewer):
+
+- **Full 3D-visning** — scene tree, materialer, farger, wireframe og beam lattice
+- **lib3mf WASM** — spec-kompatibel parsing av metadata, thumbnails og mesh-data
+- **Interaktiv** — roter, zoom og panorer modellen med musekontroller
+- Drevet av den offisielle [3MF Consortium](https://github.com/3mfconsortium) standarden

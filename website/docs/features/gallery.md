@@ -94,3 +94,7 @@ Del et galleri-bilde via tidsbegrenset lenke:
 1. Åpne bildet i forhåndsvisning
 2. Klikk **Del**
 3. Velg utløpstid og kopier lenken
+
+## 3D-forhåndsvisning
+
+Galleriets detaljvisning har en **▶ 3D**-knapp som åpner en 3D-forhåndsvisning av modellen — enten som 3MF-visning fra 3mfViewer eller som gcode toolpath.

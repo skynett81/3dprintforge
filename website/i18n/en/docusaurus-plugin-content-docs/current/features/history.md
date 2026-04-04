@@ -84,3 +84,21 @@ You can edit print log entries after the fact:
 - Delete incorrectly recorded prints
 
 Right-click a row and select **Edit** or click the pencil icon.
+
+## 3D Preview
+
+Each print history entry has a **▶ 3D** button that opens a 3D preview:
+
+- **3MF files from library** — displayed in the official 3MFConsortium 3mfViewer with full scene tree, materials and wireframe
+- **Gcode toolpath** — for Moonraker/Klipper printers, gcode is downloaded and displayed as per-layer coloured toolpath
+- **Bambu Lab** — gcode is extracted from gcode.3mf via FTPS and displayed as toolpath
+
+### Upload 3MF
+
+If no 3D model is available you can upload a .3mf file directly:
+
+- The **⇧** button next to the 3D button opens the file picker
+- The file is permanently saved to the print history entry
+- Next time you click ▶ 3D it opens in 3mfViewer automatically
+- The **✕** button deletes the saved file
+- You can also drag and drop a .3mf file directly into the viewer

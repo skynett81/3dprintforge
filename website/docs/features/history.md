@@ -84,3 +84,21 @@ Du kan redigere printlogg-oppføringer i ettertid:
 - Slette feilregistrerte prints
 
 Høyreklikk en rad og velg **Rediger** eller klikk blyant-ikonet.
+
+## 3D-forhåndsvisning
+
+Hver printhistorikk-post har en **▶ 3D**-knapp som åpner en 3D-forhåndsvisning:
+
+- **3MF-filer fra library** — vises i 3MFConsortium sin offisielle 3mfViewer med full scene tree, materialer og wireframe
+- **Gcode toolpath** — for Moonraker/Klipper-printere lastes gcode ned og vises som per-lag farget toolpath
+- **Bambu Lab** — gcode ekstraheres fra gcode.3mf via FTPS og vises som toolpath
+
+### Last opp 3MF
+
+Hvis ingen 3D-modell er tilgjengelig kan du laste opp en .3mf-fil direkte:
+
+- **⇧**-knappen ved siden av 3D-knappen åpner filvelgeren
+- Filen lagres permanent til printhistorikk-posten
+- Neste gang du klikker ▶ 3D åpnes den i 3mfViewer automatisk
+- **✕**-knappen sletter den lagrede filen
+- Du kan også dra og slippe en .3mf-fil direkte inn i vieweren

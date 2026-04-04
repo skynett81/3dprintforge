@@ -40,6 +40,7 @@ Se [Historikk](./history) for full dokumentasjon.
 - Filament-sporing per print
 - Lenker til MakerWorld-modeller
 - Statistikk og eksport til CSV
+- 3D-forhåndsvisning med 3mfViewer (3MF) eller gcode toolpath, med mulighet for å laste opp 3MF-filer
 
 ## Planlegger
 

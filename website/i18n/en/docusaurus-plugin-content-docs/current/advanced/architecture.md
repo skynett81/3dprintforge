@@ -42,7 +42,7 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 |-------|--------|
 | `index.js` | HTTP/HTTPS servers, auto-SSL, CSP/HSTS headers, static files, demo mode |
 | `config.js` | Configuration loading, defaults, env overrides and migrations |
-| `database.js` | SQLite schema, 112 migrations, CRUD operations |
+| `database.js` | Re-export wrapper — actual logic lives in `server/db/` modules |
 | `api-routes.js` | REST API (590+ endpoints) |
 | `auth.js` | Authentication and session management |
 | `backup.js` | Backup and restoration |
@@ -82,6 +82,12 @@ The dashboard communicates with the printer via MQTT over TLS (port 8883) and th
 | `seed-filament-db.js` | Filament database seeding |
 | `spoolease-data.js` | SpoolEase integration |
 | `validate.js` | Input validation |
+| `gcode-toolpath.js` | Gcode toolpath parser for 3D preview |
+| `lib3mf-parser.js` | lib3mf WASM wrapper for 3MF parsing |
+| `printer-capabilities.js` | Per-brand/model printer configuration |
+| `moonraker-client.js` | Moonraker/Klipper WebSocket client |
+| `moonraker-camera.js` | Moonraker camera integration |
+| `moonraker-history-sync.js` | Moonraker print history sync |
 | `wear-prediction.js` | Component wear prediction |
 
 ## Frontend components (84)

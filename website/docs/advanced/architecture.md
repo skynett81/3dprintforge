@@ -42,7 +42,7 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 |-------|--------|
 | `index.js` | HTTP/HTTPS-servere, auto-SSL, CSP/HSTS-headere, statiske filer, demo-modus |
 | `config.js` | Konfigurasjonslasting, standardverdier, env-overstyringer og migrasjoner |
-| `database.js` | SQLite-skjema, 112 migrasjoner, CRUD-operasjoner |
+| `database.js` | Re-eksport-wrapper — faktisk logikk ligger i `server/db/`-modulene |
 | `api-routes.js` | REST API (590+ endepunkter) |
 | `auth.js` | Autentisering og sesjonsadministrasjon |
 | `backup.js` | Backup og gjenoppretting |
@@ -82,6 +82,12 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 | `seed-filament-db.js` | Seeding av filamentdatabase |
 | `spoolease-data.js` | SpoolEase-integrasjon |
 | `validate.js` | Inndata-validering |
+| `gcode-toolpath.js` | Gcode toolpath-parser for 3D-forhåndsvisning |
+| `lib3mf-parser.js` | lib3mf WASM-wrapper for 3MF-parsing |
+| `printer-capabilities.js` | Per-merke/modell printerkonfigurasjon |
+| `moonraker-client.js` | Moonraker/Klipper WebSocket-klient |
+| `moonraker-camera.js` | Moonraker kameraintegrasjon |
+| `moonraker-history-sync.js` | Moonraker printhistorikk-synkronisering |
 | `wear-prediction.js` | Slitasjepredikering for komponenter |
 
 ## Frontend-komponenter (84)

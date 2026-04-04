@@ -100,3 +100,12 @@ From the file library you can send directly to a printer:
 :::warning Direct send
 Direct send starts the print immediately without confirmation in Bambu Studio. Make sure the printer is ready.
 :::
+
+## 3D Preview
+
+All 3MF files in the library have a **▶ 3D Preview** button that opens the [3MFConsortium 3mfViewer](https://github.com/3MFConsortium/3mfViewer):
+
+- **Full 3D viewing** — scene tree, materials, colours, wireframe and beam lattice
+- **lib3mf WASM** — spec-compliant parsing of metadata, thumbnails and mesh data
+- **Interactive** — rotate, zoom and pan the model with mouse controls
+- Powered by the official [3MF Consortium](https://github.com/3mfconsortium) standard

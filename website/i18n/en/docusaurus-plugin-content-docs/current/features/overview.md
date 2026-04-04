@@ -40,6 +40,7 @@ See [History](./history) for full documentation.
 - Filament tracking per print
 - Links to MakerWorld models
 - Statistics and export to CSV
+- 3D preview with 3mfViewer (3MF) or gcode toolpath, with option to upload 3MF files
 
 ## Scheduler
 
