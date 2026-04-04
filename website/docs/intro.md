@@ -17,12 +17,13 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 ### Viktigste funksjoner
 
 - **Live dashboard** — sanntids temperatur, fremgang, kamera, AMS-status med LIVE-indikator
+- **3D modellvisning** — 3MFConsortium 3mfViewer for 3MF-filer, gcode toolpath-visning med per-lag farger, Three.js-basert rendering
 - **AdminLTE 4** — moderne dashboard-rammeverk med treeview-sidebar og responsivt design
 - **CRM-system** — kunder, ordrer, fakturaer, bedriftsinnstillinger og printhistorikk-kobling
 - **Filamentlager** — spor alle spoler med AMS-synk, EXT-spool støtte, materialinfo, plate-kompatibilitet og tørkeguide
 - **Filament-tracking** — live sporing under printing med 4-nivå fallback (AMS-sensor → EXT-estimat → cloud → varighet)
 - **Materialguide** — 15 materialer med temperaturer, plate-kompatibilitet, tørking, egenskaper og tips
-- **Printhistorikk** — komplett logg med modellnavn, MakerWorld-lenker, filamentforbruk og kostnader
+- **Printhistorikk** — komplett logg med modellnavn, MakerWorld-lenker, filamentforbruk, kostnader og 3D-forhåndsvisning
 - **Planlegger** — kalendervisning, print-kø med lastbalansering og filamentsjekk
 - **Printerkontroll** — temperatur, hastighet, vifter, G-code konsoll
 - **Print Guard** — automatisk beskyttelse med xcam + 5 sensormonitorer
@@ -34,8 +35,21 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Achievements** — 18 verdens landemerker som milepæler for filamentforbruk med XP-progresjon
 - **Varsler** — 7 kanaler (Telegram, Discord, e-post, ntfy, Pushover, SMS, webhook)
 - **Multi-printer, multi-brand** — Bambu Lab (MQTT) + Snapmaker, Voron, Creality og alle Klipper/Moonraker-printere
+- **Printer-capabilities** — per-merke konfigurasjon for filtilgang, kamera og funksjoner
+- **Filbibliotek** — 3MF/STL/gcode-bibliotek med thumbnails, kategorier, tags og 3D-forhåndsvisning
 - **2 språk** — norsk og engelsk
 - **Selvdriftet** — ingen sky-avhengighet, dine data på din maskin
+
+### Nytt i v1.1.15
+
+- **3MF Consortium-integrasjon** — lib3mf WASM for spec-kompatibel 3MF-parsing, 3mfViewer embed for full 3D-visning
+- **Gcode toolpath-viewer** — per-lag fargevisualisering for alle Moonraker/Klipper-printere
+- **Three.js EnhancedViewer** — smooth shading, orbit controls, clipping planes for print-progress
+- **Universell 3D-forhåndsvisning** — fungerer for alle printertyper (Bambu FTPS, Moonraker HTTP, lokale filer)
+- **Printer-capabilities** — per-merke/modell konfigurasjon (Bambu Lab, Snapmaker, Voron, Creality etc.)
+- **History 3MF-linking** — last opp, erstatt og slett 3MF-filer koblet til printhistorikk
+- **Auto 3MF-caching** — lagrer modellnavn og metadata fra Bambu-printer ved print-start
+- **3D-knapper overalt** — history, library, kø, planlegger og galleri
 
 ### Nytt i v1.1.14
 
@@ -45,13 +59,6 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Achievements: 18 landemerker** — vikingskip, Frihetsgudinnen, Eiffeltårnet, Big Ben, Brandenburger Tor, Sagrada Família, Colosseum, Tokyo Tower, Gyeongbokgung, nederlandsk vindmølle, Wawel-dragen, Cristo Redentor, Turning Torso, Hagia Sophia, Moderlandet, Den kinesiske mur, Praha orloj, Budapest parlament — med detalj-popup, XP og rarity
 - **AMS fuktighet/temperatur** — 5-nivå vurdering med anbefalinger for oppbevaring og tørking
 - **Live filament-tracking** — sanntids oppdatering under printing via cloud estimate fallback
-- **Filament-seksjon redesign** — store spoler med full info (brand, vekt, temp, RFID, farge), horisontal layout og klikk-for-detaljer
-- **EXT spool inline** — ekstern spool vist sammen med AMS-spoler med bedre plassbruk
-- **Dashboard-layout optimalisert** — 2-kolonne standard for 24–27" skjermer, stor 3D/kamera, kompakt filament/AMS
-- **Filamentbytte-tid** i kostnadsestimator med synlig bytte-teller
-- **Global varselsystem** — alert bar med toast-varsler i bottom-right, blokkerer ikke navbar
-- **Guided tour i18n** — alle 14 tour-nøkler oversatt til 2 språk
-- **5 nye KB-sider** — kompatibilitetsmatrise og nye filamentguider oversatt til 2 språk
 - **Komplett i18n** — alle 3252 nøkler oversatt til 2 språk inkludert CRM og landemerke-achievements
 
 ## Hurtigstart
@@ -88,53 +95,36 @@ Du kan prøve dashboardet uten en fysisk printer ved å kjøre `npm run demo`. D
 - **Ratrig**: V-Core, V-Minion
 - **Alle andre** Klipper + Moonraker-baserte printere
 
-## Funksjoner i detalj
+## 3D-modellvisning
 
-### Filament-tracking
+3DPrintForge integrerer 3MF Consortium sine offisielle verktøy for 3D-modellvisning:
 
-Dashboard tracker filamentforbruk automatisk med 4-nivå fallback:
+### 3MF-filer (Library og History)
+- **3mfViewer** fra [3MFConsortium](https://github.com/3MFConsortium/3mfViewer) — full 3D-viewer med scene tree, materialer, wireframe og farger
+- **lib3mf WASM** for spec-kompatibel parsing av metadata, thumbnails og mesh-data
+- Last opp 3MF-filer direkte til printhistorikk for 3D-visning
 
-1. **AMS-sensor diff** — mest nøyaktig, sammenligner start/slutt remain%
-2. **EXT direkte** — for P2S/A1 uten vt_tray, bruker cloud-estimat
-3. **Cloud estimat** — fra Bambu Cloud printjobb-data
-4. **Varighet-estimat** — ~30g/time som siste fallback
+### Gcode toolpath (Moonraker og Bambu)
+- Per-lag fargevisualisering (blå bunn → rød topp)
+- Automatisk nedlasting fra Moonraker HTTP API eller Bambu FTPS
+- Downsampling for store filer (maks 100k segmenter)
 
-Alle verdier vises som minimum av AMS-sensor og spoldatabase for å unngå feil etter mislykkede prints.
-
-### Materialguide
-
-Innebygd database med 15 materialer inkludert:
-- Temperaturer (dyse, seng, kammer)
-- Plate-kompatibilitet (Cool, Engineering, High Temp, Textured PEI)
-- Tørkeinformasjon (temperatur, tid, hygroskopisitet)
-- 8 egenskaper (styrke, fleksibilitet, varmeresistens, UV, overflate, brukervennlighet)
-- Vanskelighetsgrad og spesielle krav (herdet dyse, enclosure)
-
-### Lydvarsler
-
-9 konfigurerbare events med støtte for:
-- **Custom lydklipp** — last opp MP3/OGG/WAV (maks 10 sekunder, 500 KB)
-- **Innebygde toner** — metallic/synth-lyder generert med Web Audio API
-- **Printerhøyttaler** — M300 G-code melodier direkte på printerens buzzer
-- **Countdown** — lydalarm når det er 1 minutt igjen av printen
-
-### Vedlikehold
-
-Komplett vedlikeholdssystem med:
-- Komponentsporing (dyse, PTFE-rør, stenger, leiere, AMS, plate, tørking)
-- KB-baserte intervaller fra dokumentasjonen
-- Dyselevetid per type (messing, herdet stål, HS01)
-- Platelevetid per type (Cool, Engineering, High Temp, Textured PEI)
-- Guide-fane med tips og lenker til full dokumentasjon
+### Printer-spesifikk tilgang
+| Printertype | 3MF-tilgang | Gcode-tilgang |
+|-------------|-------------|---------------|
+| Bambu Lab | FTPS (port 990) | Innebygd i gcode.3mf |
+| Moonraker/Klipper | Ikke på printer | HTTP API `/server/files/gcodes/` |
+| Library-filer | Lokal disk | N/A |
 
 ## Teknisk oversikt
 
 3DPrintForge er bygget med Node.js 22 og vanilla HTML/CSS/JS — ingen tunge rammeverk, ingen build-steg. Databasen er SQLite, innebygd i Node.js 22.
 
-- **Backend**: Node.js 22 med kun 3 npm-pakker (mqtt, ws, basic-ftp)
-- **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS, ingen build-steg
-- **Database**: SQLite via Node.js 22 built-in SQLite (innebygd)
+- **Backend**: Node.js 22 med 6 npm-pakker (mqtt, ws, basic-ftp, admin-lte, ssh2, @3mfconsortium/lib3mf)
+- **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS + Three.js (vendored) + 3mfViewer (embedded), ingen build-steg
+- **Database**: SQLite (innebygd i Node.js 22)
+- **3D-visning**: Three.js r183 + 3MFConsortium 3mfViewer + lib3mf WASM
 - **Dokumentasjon**: Docusaurus med 2 språk, automatisk bygget ved installasjon
-- **API**: 177+ endepunkter, OpenAPI-dokumentasjon på `/api/docs`
+- **API**: 180+ endepunkter, OpenAPI-dokumentasjon på `/api/docs`
 
 Se [Arkitektur](./advanced/architecture) for detaljer.
