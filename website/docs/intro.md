@@ -37,7 +37,7 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Multi-printer, multi-brand** — Bambu Lab (MQTT) + Snapmaker, Voron, Creality og alle Klipper/Moonraker-printere
 - **Printer-capabilities** — per-merke konfigurasjon for filtilgang, kamera og funksjoner
 - **Filbibliotek** — 3MF/STL/gcode-bibliotek med thumbnails, kategorier, tags og 3D-forhåndsvisning
-- **2 språk** — norsk og engelsk
+- **Engelsk UI** — hele applikasjonen på engelsk, dokumentasjon tilgjengelig på norsk og engelsk
 - **Selvdriftet** — ingen sky-avhengighet, dine data på din maskin
 
 ### Nytt i v1.1.15
@@ -59,7 +59,7 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Achievements: 18 landemerker** — vikingskip, Frihetsgudinnen, Eiffeltårnet, Big Ben, Brandenburger Tor, Sagrada Família, Colosseum, Tokyo Tower, Gyeongbokgung, nederlandsk vindmølle, Wawel-dragen, Cristo Redentor, Turning Torso, Hagia Sophia, Moderlandet, Den kinesiske mur, Praha orloj, Budapest parlament — med detalj-popup, XP og rarity
 - **AMS fuktighet/temperatur** — 5-nivå vurdering med anbefalinger for oppbevaring og tørking
 - **Live filament-tracking** — sanntids oppdatering under printing via cloud estimate fallback
-- **Komplett i18n** — alle 3252 nøkler oversatt til 2 språk inkludert CRM og landemerke-achievements
+- **Komplett i18n** — alle nøkler oversatt, nå English-only UI med norsk dokumentasjon
 
 ## Hurtigstart
 
@@ -124,7 +124,7 @@ Du kan prøve dashboardet uten en fysisk printer ved å kjøre `npm run demo`. D
 - **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS + Three.js (vendored) + 3mfViewer (embedded), ingen build-steg
 - **Database**: SQLite (innebygd i Node.js 22)
 - **3D-visning**: Three.js r183 + 3MFConsortium 3mfViewer + lib3mf WASM
-- **Dokumentasjon**: Docusaurus med 2 språk, automatisk bygget ved installasjon
+- **Dokumentasjon**: Docusaurus med engelsk og norsk, automatisk bygget ved installasjon
 - **API**: 180+ endepunkter, OpenAPI-dokumentasjon på `/api/docs`
 
 Se [Arkitektur](./advanced/architecture) for detaljer.

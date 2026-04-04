@@ -37,7 +37,7 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **Multi-printer, multi-brand** — Bambu Lab (MQTT) + Snapmaker, Voron, Creality and all Klipper/Moonraker printers
 - **Printer capabilities** — per-brand configuration for file access, camera, and features
 - **File library** — 3MF/STL/gcode library with thumbnails, categories, tags, and 3D preview
-- **2 languages** — Norwegian and English
+- **English UI** — entire application in English, documentation available in English and Norwegian
 - **Self-hosted** — no cloud dependency, your data on your machine
 
 ### New in v1.1.15
@@ -59,7 +59,7 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **Achievements: 18 landmarks** — Viking ship, Statue of Liberty, Eiffel Tower, Big Ben, Brandenburg Gate, Sagrada Familia, Colosseum, Tokyo Tower, Gyeongbokgung, Dutch windmill, Wawel Dragon, Cristo Redentor, Turning Torso, Hagia Sophia, The Motherland, Great Wall of China, Prague Astronomical Clock, Budapest Parliament — with detail popup, XP and rarity
 - **AMS humidity/temperature** — 5-level rating with recommendations for storage and drying
 - **Live filament tracking** — real-time updates during printing via cloud estimate fallback
-- **Complete i18n** — all 3252 keys translated into 2 languages including CRM and landmark achievements
+- **Complete i18n** — all keys translated, now English-only UI with Norwegian documentation
 
 ## Quick start
 
@@ -124,7 +124,7 @@ You can try the dashboard without a physical printer by running `npm run demo`. 
 - **Frontend**: AdminLTE 4 + vanilla HTML/CSS/JS + Three.js (vendored) + 3mfViewer (embedded), no build step
 - **Database**: SQLite (built into Node.js 22)
 - **3D viewing**: Three.js r183 + 3MFConsortium 3mfViewer + lib3mf WASM
-- **Documentation**: Docusaurus with 2 languages, automatically built at installation
+- **Documentation**: Docusaurus with English and Norwegian, automatically built at installation
 - **API**: 180+ endpoints, OpenAPI documentation at `/api/docs`
 
 See [Architecture](./advanced/architecture) for details.

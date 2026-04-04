@@ -23,6 +23,11 @@ All notable changes to 3DPrintForge.
 - History 3MF linking — upload/replace/delete 3MF per print
 - Drag-and-drop upload when no model available
 
+### English Only
+- Entire application converted to English (800+ strings across 70 files)
+- Removed Norwegian from i18n system, setup wizard, print stages
+- Documentation site keeps English + Norwegian translations
+
 ### Infrastructure
 - Removed deprecated --experimental-sqlite flag
 - Updated install.sh, uninstall.sh, Dockerfile, start.sh
