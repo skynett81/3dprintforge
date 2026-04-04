@@ -31,30 +31,31 @@
     if (!el) return;
 
     let h = `<style>
-      .sm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:20px; }
-      .sm-card { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s; }
-      .sm-card:hover { border-color:var(--accent-blue); box-shadow:0 4px 12px rgba(0,0,0,0.2); transform:translateY(-1px); }
-      .sm-card.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 5%, var(--bg-secondary)); }
-      .sm-card-icon { font-size:1.8rem; margin-bottom:6px; }
-      .sm-card-name { font-size:0.9rem; font-weight:700; margin-bottom:2px; }
-      .sm-card-desc { font-size:0.72rem; color:var(--text-muted); }
-      .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:20px; margin-bottom:16px; }
-      .sm-preview { background:#fff; color:#000; border-radius:12px; padding:28px; text-align:center; display:inline-block; box-shadow:0 4px 24px rgba(0,0,0,0.3); min-width:280px; }
-      .sm-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+      .sm-templates { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+      .sm-tmpl-btn { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:6px 12px; cursor:pointer; transition:all 0.15s; font-size:0.78rem; font-weight:600; display:flex; align-items:center; gap:5px; }
+      .sm-tmpl-btn:hover { border-color:var(--accent-blue); }
+      .sm-tmpl-btn.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); color:var(--accent-green); }
+      .sm-layout { display:grid; grid-template-columns:340px 1fr; gap:16px; min-height:400px; }
+      .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 200px); }
+      .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:14px; }
+      .sm-preview-area { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; padding:10px; }
+      .sm-preview { background:#fff; color:#000; border-radius:12px; padding:24px; text-align:center; display:inline-block; box-shadow:0 4px 24px rgba(0,0,0,0.3); max-width:100%; }
+      .sm-actions { display:flex; gap:6px; flex-wrap:wrap; }
+      @media (max-width:900px) { .sm-layout { grid-template-columns:1fr; } .sm-sidebar { max-height:none; } }
     </style>`;
 
-    h += '<div class="sm-grid" id="sm-templates">';
+    // Template selector (compact horizontal pills)
+    h += '<div class="sm-templates" id="sm-templates">';
     for (const t of TEMPLATES) {
-      h += `<div class="sm-card" data-template="${t.id}" onclick="window._smSelectTemplate('${t.id}')">
-        <div class="sm-card-icon">${t.icon}</div>
-        <div class="sm-card-name">${t.name}</div>
-        <div class="sm-card-desc">${t.desc}</div>
-      </div>`;
+      h += `<div class="sm-tmpl-btn" data-template="${t.id}" onclick="window._smSelectTemplate('${t.id}')">${t.icon} ${t.name}</div>`;
     }
     h += '</div>';
 
-    h += '<div id="sm-editor" style="display:none"></div>';
-    h += '<div id="sm-result" style="display:none;text-align:center"></div>';
+    // Side-by-side layout: settings left, preview right
+    h += '<div class="sm-layout">';
+    h += '<div class="sm-sidebar" id="sm-editor" style="display:none"></div>';
+    h += '<div class="sm-preview-area" id="sm-result" style="display:none"></div>';
+    h += '</div>';
 
     el.innerHTML = h;
   };
@@ -241,11 +242,7 @@
 
     h += '</div>';
 
-    h += `<div class="sm-actions" style="margin-top:14px">
-      <button class="form-btn form-btn-primary" data-ripple onclick="window._smGenerate('${id}')">Preview Sign</button>
-      <button class="form-btn form-btn-primary" data-ripple onclick="window._smPreview3D('${id}')" style="background:var(--accent-cyan)">🧊 3D Preview</button>
-      <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">📥 Download 3MF</button>
-    </div></div>`;
+    h += '</div>';
 
     editor.innerHTML = h;
 
@@ -400,12 +397,13 @@
     }
 
     result.innerHTML = `
-      <div class="sm-preview" id="sm-sign">${signHtml}</div>
-      <div class="sm-actions" style="justify-content:center;margin-top:16px">
-        <button class="form-btn form-btn-primary" data-ripple onclick="window._smPrint()">🖨️ Print on paper</button>
-        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smDownload()">📥 Download PNG</button>
-        <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smGenerate('${id}')">🔄 Regenerate</button>
-      </div>`;
+      <div class="sm-actions" style="justify-content:center">
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smPrint()">🖨️ Print</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload()">📥 PNG</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}')" style="background:var(--accent-cyan);color:#fff">🧊 3D</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green);color:#fff">📥 3MF</button>
+      </div>
+      <div class="sm-preview" id="sm-sign">${signHtml}</div>`;
   };
 
   window._smPrint = function() {
