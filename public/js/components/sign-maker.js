@@ -120,8 +120,65 @@
       h += _field('Location', 'sm-inv-loc', 'text', '');
     }
 
-    h += `<div class="sm-actions">
-      <button class="form-btn form-btn-primary" data-ripple onclick="window._smGenerate('${id}')">Generate Sign</button>
+    // 3D Print Options — always visible in the form
+    h += `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)">
+      <h5 style="margin:0 0 10px;font-size:0.85rem;color:var(--text-secondary)">🧊 3D Print Options</h5>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">
+        <div>
+          <label class="form-label" style="font-size:0.75rem">Size</label>
+          <select class="form-input" id="sm-3d-size" style="font-size:0.8rem">
+            <option value="small">Small (60×40)</option>
+            <option value="medium" selected>Medium (80×50)</option>
+            <option value="large">Large (100×70)</option>
+            <option value="xl">XL (120×80)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.75rem">Orientation</label>
+          <select class="form-input" id="sm-3d-orient" style="font-size:0.8rem">
+            <option value="landscape" selected>Landscape</option>
+            <option value="portrait">Portrait</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.75rem">Thickness</label>
+          <select class="form-input" id="sm-3d-depth" style="font-size:0.8rem">
+            <option value="1.5">1.5mm thin</option>
+            <option value="2" selected>2mm standard</option>
+            <option value="3">3mm thick</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.75rem">Text height</label>
+          <select class="form-input" id="sm-3d-texth" style="font-size:0.8rem">
+            <option value="0.4">0.4mm subtle</option>
+            <option value="0.8" selected>0.8mm standard</option>
+            <option value="1.2">1.2mm bold</option>
+            <option value="1.6">1.6mm extra</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.75rem">QR detail</label>
+          <select class="form-input" id="sm-3d-pixel" style="font-size:0.8rem">
+            <option value="0.8">Fine (0.8mm)</option>
+            <option value="1.2" selected>Standard (1.2mm)</option>
+            <option value="1.6">Large (1.6mm)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.75rem">Extras</label>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-stand" checked> Desk stand</label>
+            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-holes"> Wall holes</label>
+            <label style="font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-border"> Border</label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    h += `<div class="sm-actions" style="margin-top:14px">
+      <button class="form-btn form-btn-primary" data-ripple onclick="window._smGenerate('${id}')">Preview Sign</button>
+      <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">🧊 Download 3MF</button>
     </div></div>`;
 
     editor.innerHTML = h;
@@ -258,63 +315,6 @@
         <button class="form-btn form-btn-primary" data-ripple onclick="window._smPrint()">🖨️ Print on paper</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smDownload()">📥 Download PNG</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="window._smGenerate('${id}')">🔄 Regenerate</button>
-      </div>
-
-      <div style="margin-top:20px;padding:16px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px">
-        <h4 style="margin:0 0 12px;font-size:0.95rem">🧊 3D Print Options</h4>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px">
-          <div>
-            <label class="form-label">Size</label>
-            <select class="form-input" id="sm-3d-size">
-              <option value="small">Small (60×40mm)</option>
-              <option value="medium" selected>Medium (80×50mm)</option>
-              <option value="large">Large (100×70mm)</option>
-              <option value="xl">XL (120×80mm)</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Orientation</label>
-            <select class="form-input" id="sm-3d-orient">
-              <option value="landscape" selected>Landscape</option>
-              <option value="portrait">Portrait</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Plate thickness</label>
-            <select class="form-input" id="sm-3d-depth">
-              <option value="1.5">1.5mm (thin)</option>
-              <option value="2" selected>2mm (standard)</option>
-              <option value="3">3mm (thick)</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Text height</label>
-            <select class="form-input" id="sm-3d-texth">
-              <option value="0.4">0.4mm (subtle)</option>
-              <option value="0.8" selected>0.8mm (standard)</option>
-              <option value="1.2">1.2mm (bold)</option>
-              <option value="1.6">1.6mm (extra bold)</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">QR pixel size</label>
-            <select class="form-input" id="sm-3d-pixel">
-              <option value="0.8">0.8mm (fine)</option>
-              <option value="1.2" selected>1.2mm (standard)</option>
-              <option value="1.6">1.6mm (large)</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Extras</label>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
-              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-stand" checked> Desk stand</label>
-              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-holes"> Wall mount holes</label>
-              <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="sm-3d-border"> Border frame</label>
-            </div>
-          </div>
-        </div>
-        <button class="form-btn form-btn-primary" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green)">🧊 Download 3MF for 3D Printing</button>
-        <span class="text-muted" style="font-size:0.72rem;margin-left:8px">Opens in OrcaSlicer / BambuStudio / PrusaSlicer</span>
       </div>`;
   };
 
