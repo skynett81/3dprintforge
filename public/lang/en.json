@@ -836,7 +836,11 @@
     "plate_rating_not_recommended": "Not recommended",
     "plate_glue_required_legend": "Glue stick required",
     "plate_glue_recommended_legend": "Recommended",
-    "plate_glue_not_needed_legend": "Not needed"
+    "plate_glue_not_needed_legend": "Not needed",
+    "export_short": "Export",
+    "history": "History",
+    "share_short": "Share",
+    "total_prints": "Total prints"
   },
   "controls": {
     "title": "Controls",
@@ -1556,7 +1560,10 @@
     "upload_error": "Upload error",
     "confirm_delete_3mf": "Delete saved 3MF file?",
     "3mf_deleted": "3MF deleted",
-    "waste_label": "Waste"
+    "waste_label": "Waste",
+    "compare_title": "Compare Prints",
+    "filament_type": "Filament type",
+    "notes": "Notes"
   },
   "stats": {
     "total_prints": "Total prints",
@@ -3718,5 +3725,91 @@
     "state_loading": "Loading Filament",
     "state_unloading": "Unloading Filament",
     "state_error": "Error"
+  },
+  "calendar": {
+    "no_prints": "No prints in this period",
+    "active_days": "Active days",
+    "failed": "Failed",
+    "less": "Less",
+    "load_failed": "Failed to load calendar data",
+    "more": "More",
+    "no_data": "No data available",
+    "ok": "OK"
+  },
+  "cost_estimator": {
+    "cheapest": "Cheapest",
+    "difference": "Difference",
+    "labor_cost": "Labor cost",
+    "markup": "Markup",
+    "subtotal": "Subtotal",
+    "suggested_prices": "Suggested prices",
+    "waste_cost": "Waste cost"
+  },
+  "cost": {
+    "energy_info": "Energy cost based on spot prices"
+  },
+  "labels": {
+    "no_profiles": "No profiles found",
+    "type_profile": "Profiles"
+  },
+  "material_rec": {
+    "avg_success": "Average success rate",
+    "best_material": "Best material",
+    "brand_comparison": "Brand comparison",
+    "leaderboard": "Leaderboard",
+    "select_to_compare": "Select materials to compare",
+    "total_materials": "Total materials",
+    "total_prints": "Total prints"
+  },
+  "orders": {
+    "title": "Orders",
+    "confirm_delete": "Delete this order?",
+    "create": "Create order",
+    "delete": "Delete",
+    "deleted": "Order deleted",
+    "description": "Description",
+    "duplicate": "Duplicate",
+    "duplicated": "Order duplicated",
+    "go_to_settings": "Go to settings",
+    "license_required": "License required",
+    "license_required_desc": "A commercial license is required for order management",
+    "name_required": "Order name is required",
+    "order_name": "Order name"
+  },
+  "protection": {
+    "title": "Print Guard",
+    "no_printer": "No printer selected",
+    "active_alerts": "Active alerts",
+    "active_label": "Active",
+    "auto_resume": "Auto resume",
+    "clear_all": "Clear all",
+    "clear_resolved": "Clear resolved",
+    "confirm_clear_all": "Clear all alerts?",
+    "confirm_clear_resolved": "Clear resolved alerts?",
+    "cooldown": "Cooldown",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "filament_threshold": "Filament threshold",
+    "filter_active": "Active",
+    "filter_all": "All",
+    "filter_resolved": "Resolved",
+    "guard_overview": "Guard overview",
+    "log_cleared": "Log cleared",
+    "log_empty": "No log entries",
+    "no_alerts": "No alerts",
+    "resolve": "Resolve",
+    "resolved_label": "Resolved",
+    "section_camera": "Camera monitoring",
+    "section_sensors": "Sensor monitoring",
+    "sensor_dashboard": "Sensor dashboard",
+    "stall_threshold": "Stall threshold",
+    "tab_log": "Log",
+    "tab_settings": "Settings",
+    "temp_threshold": "Temperature threshold",
+    "thresholds": "Thresholds"
+  },
+  "wear": {
+    "components": "Components",
+    "printers": "Printers"
   }
 }
