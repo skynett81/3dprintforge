@@ -8,9 +8,9 @@
     { id: 'storage-box', name: 'Storage Box', icon: '📦', desc: 'Parametric boxes with dividers (Gridfinity)', loader: 'loadForgeStorageBox' },
     { id: 'text-plate', name: 'Text Plate', icon: '🔤', desc: 'Custom 3D text on a plate with multi-line support', loader: 'loadForgeTextPlate' },
     { id: 'keychain', name: 'Keychain', icon: '🔑', desc: 'Custom keychains with text and shapes', loader: 'loadForgeKeychain' },
-    { id: 'cable-label', name: 'Cable Label', icon: '🏷️', desc: 'Wrap-around labels for cables and wires', loader: null, soon: true },
-    { id: 'relief', name: 'Image Relief', icon: '🗿', desc: 'Convert images to raised 3D surfaces or stamps', loader: null, soon: true },
-    { id: 'stencil', name: 'Stencil', icon: '✂️', desc: 'Create cut-out stencils from images', loader: null, soon: true },
+    { id: 'cable-label', name: 'Cable Label', icon: '🏷️', desc: 'Wrap-around labels for cables and wires', loader: 'loadForgeCableLabel' },
+    { id: 'relief', name: 'Image Relief', icon: '🗿', desc: 'Convert images to raised 3D surfaces or stamps', loader: 'loadForgeRelief' },
+    { id: 'stencil', name: 'Stencil', icon: '✂️', desc: 'Create cut-out stencils from images', loader: 'loadForgeStencil' },
   ];
 
   window.loadModelForgePanel = function(subTool) {

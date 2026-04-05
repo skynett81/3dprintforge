@@ -4935,6 +4935,63 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Model Forge: Cable Label Generator ──
+    if (method === 'POST' && path === '/api/model-forge/cable-label/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateCableLabel3MF } = await import('./generators/cable-label-generator.js');
+          const buf = await generateCableLabel3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="cable_label.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Cable label generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Image Relief Generator ──
+    if (method === 'POST' && path === '/api/model-forge/relief/generate-3mf') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const url = new URL(req.url, `http://${req.headers.host}`);
+          const opts = {
+            width: parseFloat(url.searchParams.get('width')) || 80,
+            maxRelief: parseFloat(url.searchParams.get('maxRelief')) || 3,
+            baseThickness: parseFloat(url.searchParams.get('baseThickness')) || 2,
+            resolution: parseInt(url.searchParams.get('resolution')) || 150,
+            invert: url.searchParams.get('invert') === 'true',
+            mirror: url.searchParams.get('mirror') === 'true',
+            gamma: parseFloat(url.searchParams.get('gamma')) || 1.0,
+            border: url.searchParams.get('border') === 'true',
+          };
+          const { generateRelief3MF } = await import('./generators/relief-generator.js');
+          const buf = await generateRelief3MF(buffer, opts);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="relief.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Relief generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Stencil Generator ──
+    if (method === 'POST' && path === '/api/model-forge/stencil/generate-3mf') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const url = new URL(req.url, `http://${req.headers.host}`);
+          const opts = {
+            width: parseFloat(url.searchParams.get('width')) || 100,
+            thickness: parseFloat(url.searchParams.get('thickness')) || 1.5,
+            resolution: parseInt(url.searchParams.get('resolution')) || 100,
+            threshold: parseFloat(url.searchParams.get('threshold')) || 0.5,
+            invert: url.searchParams.get('invert') === 'true',
+            border: url.searchParams.get('border') !== 'false',
+            borderWidth: parseFloat(url.searchParams.get('borderWidth')) || 3,
+          };
+          const { generateStencil3MF } = await import('./generators/stencil-generator.js');
+          const buf = await generateStencil3MF(buffer, opts);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="stencil.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Stencil generation failed: ' + e.message }, 500); }
+      });
+    }
+
     // ── Model Forge: Lithophane Generator ──
     if (method === 'POST' && path === '/api/model-forge/lithophane/generate-3mf') {
       return readBinaryBody(req, async (buffer) => {
