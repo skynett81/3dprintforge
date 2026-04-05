@@ -90,7 +90,7 @@
     _streamMode = null;
     streamActive = false;
 
-    const wsUrl = `ws://${location.hostname}:${port}`;
+    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${port}`;
 
     // Single connection — detect mode from first message and keep playing
     startPlayer(container, wsUrl);
@@ -436,7 +436,7 @@
 
   function getStreamUrl() {
     if (!currentPort) return null;
-    return `ws://${location.hostname}:${currentPort}`;
+    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${currentPort}`;
   }
 
   function openFullscreen() {
@@ -472,7 +472,7 @@
       }
     }
 
-    const wsUrl = `ws://${location.hostname}:${currentPort}`;
+    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${currentPort}`;
 
     try {
       if (_streamMode === 'snapshot') {

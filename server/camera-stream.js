@@ -1,6 +1,9 @@
 import { spawn } from 'node:child_process';
 import { connect as tlsConnect } from 'node:tls';
 import net from 'node:net';
+import { createServer as createHttpsServer } from 'node:https';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { createLogger } from './logger.js';
 
@@ -48,14 +51,34 @@ export class CameraStream {
       return;
     }
 
-    this.wss = new WebSocketServer({ port: this.port });
+    // Use WSS (secure WebSocket) if SSL certs exist
+    const certsDir = join(import.meta.dirname, '..', 'certs');
+    const certPath = join(certsDir, 'cert.pem');
+    const keyPath = join(certsDir, 'key.pem');
+
+    if (existsSync(certPath) && existsSync(keyPath)) {
+      try {
+        const httpsServer = createHttpsServer({
+          cert: readFileSync(certPath),
+          key: readFileSync(keyPath),
+        });
+        this.wss = new WebSocketServer({ server: httpsServer });
+        httpsServer.listen(this.port);
+        this._httpsServer = httpsServer;
+      } catch (e) {
+        log.warn('WSS failed, falling back to WS: ' + e.message);
+        this.wss = new WebSocketServer({ port: this.port });
+      }
+    } else {
+      this.wss = new WebSocketServer({ port: this.port });
+    }
 
     this.wss.on('error', (err) => {
       log.warn('WebSocket error on port ' + this.port + ': ' + err.message);
       this.wss = null;
     });
 
-    log.info('WebSocket server on port ' + this.port);
+    log.info('WebSocket server on port ' + this.port + (this._httpsServer ? ' (WSS)' : ' (WS)'));
 
     this.wss.on('connection', (ws) => {
       this.clients.add(ws);
@@ -100,6 +123,10 @@ export class CameraStream {
     if (this.wss) {
       this.wss.close();
       this.wss = null;
+    }
+    if (this._httpsServer) {
+      this._httpsServer.close();
+      this._httpsServer = null;
     }
   }
 
