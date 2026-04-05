@@ -35,11 +35,11 @@
       .sm-tmpl-btn { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:6px 12px; cursor:pointer; transition:all 0.15s; font-size:0.78rem; font-weight:600; display:flex; align-items:center; gap:5px; }
       .sm-tmpl-btn:hover { border-color:var(--accent-blue); }
       .sm-tmpl-btn.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); color:var(--accent-green); }
-      .sm-layout { display:grid; grid-template-columns:420px 1fr; gap:16px; min-height:400px; }
-      .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 200px); padding-right:4px; }
-      .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:14px; }
-      .sm-preview-area { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; padding:10px; }
-      .sm-preview { background:#fff; color:#000; border-radius:12px; padding:24px; text-align:center; display:inline-block; box-shadow:0 4px 24px rgba(0,0,0,0.3); max-width:100%; }
+      .sm-layout { display:grid; grid-template-columns:360px 1fr; gap:12px; min-height:500px; }
+      .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 180px); padding-right:4px; }
+      .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:12px; }
+      .sm-preview-area { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:16px; min-height:400px; }
+      .sm-preview { background:#fff; color:#000; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(0,0,0,0.3); }
       .sm-actions { display:flex; gap:6px; flex-wrap:wrap; }
       @media (max-width:900px) { .sm-layout { grid-template-columns:1fr; } .sm-sidebar { max-height:none; } }
     </style>`;
@@ -270,8 +270,8 @@
     const hasStand = !!document.getElementById('sm-3d-stand')?.checked;
     const frameW = parseFloat(_val('sm-3d-framew')) || 5;
     const qrSizeMm = parseFloat(_val('sm-3d-qrsize')) || 35;
-    // Scale: 1mm = ~3px for preview
-    const scale = Math.min(3.5, 350 / Math.max(plateW, plateH));
+    // Scale to fit preview area (larger = better visibility)
+    const scale = Math.min(5, 450 / Math.max(plateW, plateH));
     const previewW = Math.round(plateW * scale);
     const previewH = Math.round(plateH * scale);
     const qrPx = Math.round(qrSizeMm * scale / 5); // QR cell size in preview
