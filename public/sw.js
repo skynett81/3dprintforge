@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bambu-dash-v166';
+const CACHE_NAME = 'bambu-dash-v167';
 const PRECACHE = [
   '/',
   '/css/main.css',
@@ -56,8 +56,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Skip non-GET, API, WebSocket, and docs requests
-  if (e.request.method !== 'GET' || url.pathname.startsWith('/api/') || url.pathname.startsWith('/docs/') || url.protocol === 'ws:' || url.protocol === 'wss:') {
+  // Skip non-GET, API, WebSocket, docs, and lang files (always fresh)
+  if (e.request.method !== 'GET' || url.pathname.startsWith('/api/') || url.pathname.startsWith('/docs/') || url.pathname.startsWith('/lang/') || url.protocol === 'ws:' || url.protocol === 'wss:') {
     return;
   }
 
