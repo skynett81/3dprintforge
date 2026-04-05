@@ -1,0 +1,14 @@
+{
+  "machines": {
+    "AnkerMake M5": { "build_volume": [235, 235, 250], "max_speed": 500, "max_nozzle_temp": 260, "max_bed_temp": 100, "ai_camera": true, "direct_drive": true },
+    "AnkerMake M5C": { "build_volume": [220, 220, 250], "max_speed": 500, "max_nozzle_temp": 260, "max_bed_temp": 100, "direct_drive": true },
+    "RatRig V-Core 3.1": { "build_volume": [300, 300, 300], "max_speed": 600, "max_nozzle_temp": 300, "max_bed_temp": 120, "enclosure": false, "corexy": true, "triple_z": true },
+    "RatRig V-Minion": { "build_volume": [180, 180, 180], "max_speed": 400, "max_nozzle_temp": 300, "max_bed_temp": 120, "corexy": true }
+  },
+  "filaments": [
+    { "name": "AnkerMake PLA+", "type": "PLA+", "nozzle": 210, "bed": 60, "speed": 250, "density": 1.24 },
+    { "name": "AnkerMake PETG", "type": "PETG", "nozzle": 240, "bed": 80, "speed": 150, "density": 1.27 },
+    { "name": "Generic PLA (RatRig)", "type": "PLA", "nozzle": 210, "bed": 60, "speed": 300, "density": 1.24 },
+    { "name": "Generic ABS (RatRig)", "type": "ABS", "nozzle": 250, "bed": 110, "speed": 200, "density": 1.04 }
+  ]
+}

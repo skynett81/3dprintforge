@@ -545,6 +545,60 @@
       </div>`;
     }
 
+    // Elegoo: Neptune-specific controls
+    if (caps.elegooFeatures) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/></svg>
+          Elegoo Neptune
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">PID Nozzle</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=heater_bed TARGET=60')">PID Bed</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LOAD_FILAMENT')">Load Filament</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('UNLOAD_FILAMENT')">Unload Filament</button>
+        </div>
+      </div>`;
+    }
+
+    // QIDI: Chamber control + calibration
+    if (caps.qidiFeatures) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="9" y1="2" x2="9" y2="22"/></svg>
+          QIDI Controls
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">Z-Tilt Align</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=50')">Chamber 50°C</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=0')">Chamber Off</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=250')">PID Nozzle</button>
+        </div>
+      </div>`;
+    }
+
+    // AnkerMake controls
+    if (caps.ankerFeatures) {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+          AnkerMake Controls
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">PID Nozzle</button>
+        </div>
+      </div>`;
+    }
+
     // ===== CARD: Klipper Macros (Moonraker printers) =====
     if (meta?.type === 'moonraker' || meta?.type === 'klipper' || meta?.type === 'creality' || meta?.type === 'elegoo' || meta?.type === 'voron') {
       html += `<div class="ctrl-card">

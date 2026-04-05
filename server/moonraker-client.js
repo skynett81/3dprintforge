@@ -95,6 +95,8 @@ export class MoonrakerClient {
       this.hub.broadcast('connection', { status: 'connected' });
       this._subscribe();
       this._requestFullState();
+      this._autoDetectModel();
+      this._autoDetectWebcam();
       this._detectLightObjects();
     });
 
@@ -623,6 +625,90 @@ export class MoonrakerClient {
         if (this.onSmDetected) this.onSmDetected();
       }
     } catch { /* ignore */ }
+  }
+
+  // ---- Auto-detect printer model ----
+
+  async _autoDetectModel() {
+    try {
+      const info = await this._apiGet('/printer/info');
+      if (!info?.result) return;
+      const hostname = info.result.hostname || '';
+      const swVersion = info.result.software_version || '';
+
+      // Try to detect model from hostname or config
+      const configRes = await this._apiGet('/printer/objects/query?configfile');
+      const config = configRes?.result?.status?.configfile?.config || {};
+      const printerCfg = config.printer || {};
+
+      // Extract kinematics and max values for model detection
+      const kinematics = printerCfg.kinematics || '';
+      const maxVel = parseInt(printerCfg.max_velocity) || 0;
+      const maxAccel = parseInt(printerCfg.max_accel) || 0;
+
+      this.state._klipper_version = swVersion;
+      this.state._hostname = hostname;
+      this.state._kinematics = kinematics;
+      this.state._max_velocity = maxVel;
+      this.state._max_accel = maxAccel;
+
+      // Auto-detect specific brands from hostname/config
+      if (hostname.includes('creality') || hostname.includes('CR-') || hostname.includes('K1')) {
+        this.state._detected_brand = 'Creality';
+      } else if (hostname.includes('neptune') || hostname.includes('elegoo')) {
+        this.state._detected_brand = 'Elegoo';
+      } else if (hostname.includes('qidi') || hostname.includes('QIDI')) {
+        this.state._detected_brand = 'QIDI';
+      } else if (hostname.includes('voron') || hostname.includes('Voron')) {
+        this.state._detected_brand = 'Voron';
+      } else if (hostname.includes('ratrig') || hostname.includes('RatRig')) {
+        this.state._detected_brand = 'RatRig';
+      }
+
+      if (this.state._detected_brand) {
+        log.info(`Auto-detected brand: ${this.state._detected_brand} (hostname: ${hostname})`);
+      }
+    } catch { /* not critical */ }
+  }
+
+  // ---- Webcam auto-discovery ----
+
+  async _autoDetectWebcam() {
+    // Try Moonraker's webcam API first
+    try {
+      const data = await this._apiGet('/server/webcams/list');
+      const cams = data?.result?.webcams || [];
+      if (cams.length > 0) {
+        const cam = cams.find(c => c.enabled) || cams[0];
+        this.state._webcam = {
+          name: cam.name,
+          streamUrl: cam.stream_url?.startsWith('/') ? `http://${this.ip}:${this.port}${cam.stream_url}` : cam.stream_url,
+          snapshotUrl: cam.snapshot_url?.startsWith('/') ? `http://${this.ip}:${this.port}${cam.snapshot_url}` : cam.snapshot_url,
+          flipH: cam.flip_horizontal,
+          flipV: cam.flip_vertical,
+          rotation: cam.rotation,
+        };
+        log.info(`Webcam detected: ${cam.name} (${cam.service})`);
+        return;
+      }
+    } catch { /* no webcam API */ }
+
+    // Probe common webcam ports
+    const ports = [8080, 8081, 4408];
+    for (const port of ports) {
+      try {
+        const res = await fetch(`http://${this.ip}:${port}/?action=snapshot`, { signal: AbortSignal.timeout(2000) });
+        if (res.ok && (res.headers.get('content-type') || '').includes('image')) {
+          this.state._webcam = {
+            name: 'camera',
+            snapshotUrl: `http://${this.ip}:${port}/?action=snapshot`,
+            streamUrl: `http://${this.ip}:${port}/?action=stream`,
+          };
+          log.info(`Webcam found on port ${port}`);
+          return;
+        }
+      } catch { /* next */ }
+    }
   }
 
   // ---- Extended firmware detection (paxx12) ----

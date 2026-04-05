@@ -40,6 +40,20 @@
     'Prusa MK4': { ...PRUSALINK_CAPS, buildVolume: [250,210,220] },
     'Prusa Mini': { ...PRUSALINK_CAPS, maxNozzleTemp: 280, maxBedTemp: 100, buildVolume: [180,180,180] },
     'Prusa XL': { ...PRUSALINK_CAPS, toolchanger: true, buildVolume: [360,360,360] },
+    // Elegoo
+    'Elegoo Neptune 4': { ...MOONRAKER_CAPS, maxSpeed: 500, buildVolume: [225,225,265], elegooFeatures: true },
+    'Elegoo Neptune 4 Plus': { ...MOONRAKER_CAPS, maxSpeed: 500, buildVolume: [320,320,385], elegooFeatures: true },
+    // QIDI
+    'QIDI X-Max 3': { ...MOONRAKER_CAPS, enclosure: true, chamberHeat: true, maxSpeed: 600, buildVolume: [325,325,315], qidiFeatures: true },
+    'QIDI X-Smart 3': { ...MOONRAKER_CAPS, enclosure: true, maxSpeed: 500, buildVolume: [175,175,170], qidiFeatures: true },
+    // AnkerMake
+    'AnkerMake M5': { ...MOONRAKER_CAPS, maxSpeed: 500, maxNozzleTemp: 260, buildVolume: [235,235,250], ankerFeatures: true },
+    'AnkerMake M5C': { ...MOONRAKER_CAPS, maxSpeed: 500, maxNozzleTemp: 260, buildVolume: [220,220,250], ankerFeatures: true },
+    // RatRig
+    'RatRig V-Core 3.1': { ...MOONRAKER_CAPS, maxSpeed: 600, buildVolume: [300,300,300], voronFeatures: true },
+    'RatRig V-Minion': { ...MOONRAKER_CAPS, maxSpeed: 400, buildVolume: [180,180,180], voronFeatures: true },
+    // Voron additional
+    'Voron Switchwire': { ...MOONRAKER_CAPS, maxSpeed: 300, buildVolume: [250,210,210], voronFeatures: true },
   };
 
   window.getCapabilities = function(model, meta) {

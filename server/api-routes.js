@@ -4940,10 +4940,53 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Spoolman Sync ──
+    if (method === 'POST' && path === '/api/spoolman/sync') {
+      return readBody(req, res, async (body) => {
+        const spoolmanUrl = body.url || config.spoolman?.url;
+        if (!spoolmanUrl) return sendJson(res, { error: 'Spoolman URL required (body.url or config.spoolman.url)' }, 400);
+        try {
+          // Fetch all spools from Spoolman
+          const spoolRes = await fetch(`${spoolmanUrl}/api/v1/spool`, { signal: AbortSignal.timeout(10000) });
+          if (!spoolRes.ok) throw new Error(`Spoolman HTTP ${spoolRes.status}`);
+          const spools = await spoolRes.json();
+
+          // Import into our inventory
+          const { getInventorySpools, addSpool } = await import('./database.js');
+          const existing = getInventorySpools();
+          const existingNames = new Set(existing.map(s => s.name));
+          let imported = 0;
+
+          for (const spool of spools) {
+            const filament = spool.filament || {};
+            const name = `${filament.vendor?.name || 'Unknown'} ${filament.name || filament.material || 'Spool'}`;
+            if (existingNames.has(name)) continue;
+
+            addSpool({
+              name,
+              material: filament.material || 'PLA',
+              color_hex: (filament.color_hex || '808080').replace('#', ''),
+              brand: filament.vendor?.name || 'Unknown',
+              weight_total: spool.initial_weight || 1000,
+              weight_used: (spool.initial_weight || 1000) - (spool.remaining_weight || 0),
+              price: filament.price || 0,
+              diameter: filament.diameter || 1.75,
+              temp_nozzle: filament.settings_extruder_temp || 210,
+              temp_bed: filament.settings_bed_temp || 60,
+              source: 'spoolman',
+            });
+            imported++;
+          }
+
+          return sendJson(res, { ok: true, imported, total: spools.length, skipped: spools.length - imported });
+        } catch (e) { return sendJson(res, { error: 'Spoolman sync failed: ' + e.message }, 500); }
+      });
+    }
+
     // ── Brand Profiles (Prusa, Creality, Voron) ──
     if (method === 'GET' && path.startsWith('/api/profiles/')) {
       const brand = decodeURIComponent(path.split('/').pop());
-      const brandMap = { prusa: 'prusa-profiles.json', creality: 'creality-profiles.json', voron: 'voron-profiles.json' };
+      const brandMap = { prusa: 'prusa-profiles.json', creality: 'creality-profiles.json', voron: 'voron-profiles.json', elegoo: 'elegoo-profiles.json', qidi: 'qidi-profiles.json', anker: 'anker-ratrig-profiles.json', ratrig: 'anker-ratrig-profiles.json', ankermake: 'anker-ratrig-profiles.json' };
       const file = brandMap[brand.toLowerCase()];
       if (file) {
         try {

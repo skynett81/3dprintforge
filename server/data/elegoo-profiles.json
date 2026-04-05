@@ -1,0 +1,16 @@
+{
+  "machines": {
+    "Elegoo Neptune 4": { "build_volume": [225, 225, 265], "max_speed": 500, "max_nozzle_temp": 300, "max_bed_temp": 110, "input_shaper": true, "direct_drive": true, "auto_level": true },
+    "Elegoo Neptune 4 Pro": { "build_volume": [225, 225, 265], "max_speed": 500, "max_nozzle_temp": 300, "max_bed_temp": 110, "input_shaper": true, "direct_drive": true, "auto_level": true, "linear_rail": true },
+    "Elegoo Neptune 4 Plus": { "build_volume": [320, 320, 385], "max_speed": 500, "max_nozzle_temp": 300, "max_bed_temp": 110, "input_shaper": true },
+    "Elegoo Neptune 4 Max": { "build_volume": [420, 420, 480], "max_speed": 500, "max_nozzle_temp": 300, "max_bed_temp": 110, "input_shaper": true }
+  },
+  "klipper_macros": ["PRINT_START", "PRINT_END", "CANCEL_PRINT", "PAUSE", "RESUME", "G28", "G29", "BED_MESH_CALIBRATE", "SHAPER_CALIBRATE", "PID_CALIBRATE", "M600", "LOAD_FILAMENT", "UNLOAD_FILAMENT"],
+  "filaments": [
+    { "name": "Elegoo PLA", "type": "PLA", "nozzle": 210, "bed": 60, "speed": 250, "density": 1.24 },
+    { "name": "Elegoo PLA+", "type": "PLA+", "nozzle": 215, "bed": 60, "speed": 250, "density": 1.24 },
+    { "name": "Elegoo PETG", "type": "PETG", "nozzle": 240, "bed": 80, "speed": 150, "density": 1.27 },
+    { "name": "Elegoo ABS", "type": "ABS", "nozzle": 250, "bed": 100, "speed": 150, "density": 1.04 },
+    { "name": "Elegoo TPU", "type": "TPU", "nozzle": 225, "bed": 50, "speed": 40, "density": 1.21 }
+  ]
+}

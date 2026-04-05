@@ -1,0 +1,16 @@
+{
+  "machines": {
+    "QIDI X-Plus 3": { "build_volume": [280, 280, 270], "max_speed": 600, "max_nozzle_temp": 350, "max_bed_temp": 120, "enclosure": true, "chamber_heat": true, "input_shaper": true, "dual_z": true },
+    "QIDI X-Max 3": { "build_volume": [325, 325, 315], "max_speed": 600, "max_nozzle_temp": 350, "max_bed_temp": 120, "enclosure": true, "chamber_heat": true, "input_shaper": true, "dual_z": true },
+    "QIDI Q1 Pro": { "build_volume": [245, 245, 245], "max_speed": 600, "max_nozzle_temp": 350, "max_bed_temp": 120, "enclosure": true, "chamber_heat": true },
+    "QIDI X-Smart 3": { "build_volume": [175, 175, 170], "max_speed": 500, "max_nozzle_temp": 300, "max_bed_temp": 100, "enclosure": true }
+  },
+  "klipper_macros": ["PRINT_START", "PRINT_END", "CANCEL_PRINT", "PAUSE", "RESUME", "G28", "BED_MESH_CALIBRATE", "Z_TILT_ADJUST", "SHAPER_CALIBRATE", "PID_CALIBRATE", "SET_HEATER_TEMPERATURE", "CHAMBER_FAN"],
+  "filaments": [
+    { "name": "QIDI PLA", "type": "PLA", "nozzle": 215, "bed": 60, "speed": 300, "density": 1.24 },
+    { "name": "QIDI ABS", "type": "ABS", "nozzle": 260, "bed": 100, "speed": 200, "chamber": 60, "density": 1.04 },
+    { "name": "QIDI PA-CF", "type": "PA-CF", "nozzle": 290, "bed": 90, "speed": 100, "chamber": 60, "density": 1.15 },
+    { "name": "QIDI PETG", "type": "PETG", "nozzle": 245, "bed": 80, "speed": 200, "density": 1.27 },
+    { "name": "QIDI ASA", "type": "ASA", "nozzle": 260, "bed": 100, "speed": 200, "chamber": 55, "density": 1.07 }
+  ]
+}
