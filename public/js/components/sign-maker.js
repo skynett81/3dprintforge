@@ -262,6 +262,20 @@
     if (!result) return;
     result.style.display = '';
 
+    // Read plate dimensions for visual scaling
+    const plateW = parseFloat(_val('sm-3d-w')) || 80;
+    const plateH = parseFloat(_val('sm-3d-h')) || 55;
+    const cornerR = parseFloat(_val('sm-3d-radius')) || 3;
+    const hasBorder = !!document.getElementById('sm-3d-border')?.checked;
+    const hasStand = !!document.getElementById('sm-3d-stand')?.checked;
+    const frameW = parseFloat(_val('sm-3d-framew')) || 5;
+    const qrSizeMm = parseFloat(_val('sm-3d-qrsize')) || 35;
+    // Scale: 1mm = ~3px for preview
+    const scale = Math.min(3.5, 350 / Math.max(plateW, plateH));
+    const previewW = Math.round(plateW * scale);
+    const previewH = Math.round(plateH * scale);
+    const qrPx = Math.round(qrSizeMm * scale / 5); // QR cell size in preview
+
     let signHtml = '';
     let qrData = '';
 
@@ -277,19 +291,20 @@
       try { localStorage.setItem('wifi-qr-ssid', ssid); localStorage.setItem('wifi-qr-pass', pass); } catch {}
       const esc = (s) => s.replace(/[\\;,:""]/g, c => '\\' + c);
       qrData = `WIFI:T:${enc};S:${esc(ssid)};P:${esc(pass)};H:${hidden ? 'true' : 'false'};;`;
+      const titleScale = Math.max(0.8, Math.min(2, previewW / 150));
       signHtml = `
-        <div style="padding:8px 20px;font-family:'Georgia',serif">
-          <div style="font-size:2rem;font-weight:700;font-style:italic;margin-bottom:6px">${_esc(welcome)}</div>
-          <hr style="border:none;border-top:2px solid #000;margin:0 0 14px">
+        <div style="padding:0;font-family:'Georgia',serif;width:100%">
+          <div style="font-size:${1.4*titleScale}rem;font-weight:700;font-style:italic;margin-bottom:4px">${_esc(welcome)}</div>
+          <hr style="border:none;border-top:2px solid #000;margin:0 0 8px">
           <div style="position:relative;display:inline-block;margin:0 auto">
-            ${_makeQR(qrData, 5)}
+            ${_makeQR(qrData, Math.max(2, qrPx))}
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="#000"/></svg>
             </div>
           </div>
-          <hr style="border:none;border-top:2px solid #000;margin:14px 0 8px">
-          <div style="font-size:1.5rem;font-weight:700;font-style:italic;margin-bottom:10px">${_esc(bottom)}</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 12px;text-align:left;font-size:0.9rem">
+          <hr style="border:none;border-top:2px solid #000;margin:8px 0 4px">
+          <div style="font-size:${1.1*titleScale}rem;font-weight:700;font-style:italic;margin-bottom:6px">${_esc(bottom)}</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;text-align:left;font-size:${0.65*titleScale}rem">
             <strong>Name</strong><span>${_esc(ssid)}</span>
             ${pass && enc !== 'nopass' ? '<strong>Password</strong><span>' + (showPass ? _esc(pass) : '••••••••') + '</span>' : ''}
           </div>
@@ -396,6 +411,9 @@
         ${loc ? '<div style="font-size:0.78rem;color:#666">📍 ' + _esc(loc) + '</div>' : ''}`;
     }
 
+    // Size info
+    const sizeInfo = `${plateW}×${plateH}mm`;
+
     result.innerHTML = `
       <div class="sm-actions" style="justify-content:center">
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smPrint()">🖨️ Print</button>
@@ -403,7 +421,11 @@
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}')" style="background:var(--accent-cyan);color:#fff">🧊 3D</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green);color:#fff">📥 3MF</button>
       </div>
-      <div class="sm-preview" id="sm-sign">${signHtml}</div>`;
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${sizeInfo}${hasBorder ? ' + frame' : ''}${hasStand ? ' + stand' : ''}</div>
+      ${hasBorder ? '<div style="background:var(--bg-tertiary);padding:' + Math.round(frameW * scale) + 'px;border-radius:' + Math.round((cornerR + 2) * scale) + 'px;display:inline-block">' : ''}
+      <div class="sm-preview" id="sm-sign" style="width:${previewW}px;min-width:${previewW}px;height:${previewH}px;padding:${Math.round(4*scale)}px;border-radius:${Math.round(cornerR*scale)}px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden">${signHtml}</div>
+      ${hasBorder ? '</div>' : ''}
+      ${hasStand ? '<div style="width:' + Math.round(plateW * 0.7 * scale) + 'px;height:' + Math.round(10 * scale) + 'px;background:var(--bg-tertiary);border-radius:0 0 ' + Math.round(3*scale) + 'px ' + Math.round(3*scale) + 'px;margin:-2px auto 0"></div>' : ''}`;
   };
 
   window._smPrint = function() {
