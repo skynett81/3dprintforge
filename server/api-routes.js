@@ -4909,6 +4909,27 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── EULA ──
+    if (method === 'GET' && path === '/api/eula') {
+      try {
+        const { readFileSync } = await import('node:fs');
+        const { join, dirname } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const eulaPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'EULA.md');
+        const text = readFileSync(eulaPath, 'utf8');
+        const accepted = getInventorySetting('eula_accepted') === '1';
+        const acceptedAt = getInventorySetting('eula_accepted_at') || null;
+        return sendJson(res, { text, accepted, acceptedAt, version: '1.0' });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    if (method === 'POST' && path === '/api/eula/accept') {
+      setInventorySetting('eula_accepted', '1');
+      setInventorySetting('eula_accepted_at', new Date().toISOString());
+      setInventorySetting('eula_version', '1.0');
+      return sendJson(res, { ok: true, acceptedAt: new Date().toISOString() });
+    }
+
     // ── Bambu Printer Database ──
     if (method === 'GET' && path === '/api/bambu/printer-db') {
       try {

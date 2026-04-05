@@ -241,6 +241,28 @@ function updateStatusBar(data) {
 }
 
 // Reload active tab data when switching printers
+function _showEulaModal(text) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:var(--bg-secondary,#1e1e2e);border:1px solid var(--border-color,#333);border-radius:12px;max-width:700px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border-color,#333);display:flex;align-items:center;gap:10px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <h3 style="margin:0;font-size:1.1rem">3DPrintForge — End User License Agreement</h3>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px;font-size:0.82rem;line-height:1.7;color:var(--text-muted,#aaa);white-space:pre-wrap;font-family:inherit">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^#{1,3}\s+(.+)/gm,'<strong style="color:var(--text-primary,#eee);font-size:0.95rem">$1</strong>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" style="color:var(--accent-blue,#448aff)">$1</a>')}</div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border-color,#333);display:flex;align-items:center;gap:10px;justify-content:space-between">
+      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="eula-agree-check"> I have read and agree to the EULA
+      </label>
+      <button id="eula-accept-btn" disabled style="padding:8px 24px;border-radius:8px;border:none;background:var(--accent-green,#00e676);color:#000;font-weight:700;cursor:pointer;opacity:0.4;font-size:0.85rem" onclick="fetch('/api/eula/accept',{method:'POST'}).then(()=>this.closest('div').parentElement.parentElement.remove())">Accept & Continue</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const check = overlay.querySelector('#eula-agree-check');
+  const btn = overlay.querySelector('#eula-accept-btn');
+  check.addEventListener('change', () => { btn.disabled = !check.checked; btn.style.opacity = check.checked ? '1' : '0.4'; });
+}
+
 window.reloadActiveTab = function() {
   if (window._activePanel) {
     openPanel(window._activePanel);
@@ -667,6 +689,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     section.addEventListener('expanded.lte.treeview', () => _saveSidebarSections());
     section.addEventListener('collapsed.lte.treeview', () => _saveSidebarSections());
   });
+
+  // Check EULA acceptance
+  fetch('/api/eula').then(r => r.json()).then(d => {
+    if (!d.accepted) _showEulaModal(d.text);
+  }).catch(() => {});
 
   // Fetch version for sidebar
   fetch('/api/update/status').then(r => r.json()).then(d => {

@@ -1111,10 +1111,23 @@
         </div>
         <div id="settings-import-status" style="margin-top:8px"></div>
       </div>`;
+      // EULA card
+      h += `<div class="settings-card">
+        <div class="card-title">End User License Agreement</div>
+        <div id="eula-status"><span class="text-muted" style="font-size:0.8rem">Loading...</span></div>
+        <button class="form-btn form-btn-sm mt-sm" data-ripple onclick="fetch('/api/eula').then(r=>r.json()).then(d=>{if(typeof _showEulaModal==='function')_showEulaModal(d.text)})">View EULA</button>
+      </div>`;
       h += '</div>';
       el.innerHTML = h;
       loadCustomFieldsSettings();
       loadBrandDefaultsSettings();
+      // Load EULA status
+      fetch('/api/eula').then(r => r.json()).then(d => {
+        const el2 = document.getElementById('eula-status');
+        if (el2) el2.innerHTML = d.accepted
+          ? `<span style="color:var(--accent-green);font-size:0.82rem">✓ Accepted on ${new Date(d.acceptedAt).toLocaleDateString()}</span>`
+          : `<span style="color:var(--accent-red);font-size:0.82rem">⚠ Not yet accepted</span>`;
+      }).catch(() => {});
     } else if (_systemSubTab === 'tunnel') {
       el.innerHTML = `<div class="settings-card">
         <div class="card-title" style="display:flex;align-items:center;gap:6px">
