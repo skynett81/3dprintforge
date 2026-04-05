@@ -68,10 +68,23 @@
       return `<span class="printer-tab-status">${percent}%${timeStr}</span>`;
     }
 
+    // Snapmaker: show granular state label instead of generic state
+    if (ps._sm_state_label && ps._sm_state_category !== 'idle') {
+      return `<span class="printer-tab-status">${ps._sm_state_label}</span>`;
+    }
+
     return `<span class="printer-tab-status">${stateShort(gcodeState)}</span>`;
   }
 
   function getStatusDot(printerState) {
+    // Snapmaker U1: use granular state category for dot color
+    if (printerState._sm_state_category) {
+      const SM_COLORS = { idle: 'var(--accent-green)', printing: 'var(--accent-blue)', calibrating: 'var(--accent-orange)', loading: 'var(--accent-cyan)', unloading: 'var(--accent-cyan)', error: 'var(--accent-red)', maintenance: 'var(--accent-orange)' };
+      const color = SM_COLORS[printerState._sm_state_category] || 'var(--text-muted)';
+      const dotClass = printerState._sm_state_category === 'printing' ? 'dot-running status-dot-running' : printerState._sm_state_category === 'error' ? 'dot-error status-dot-error' : 'dot-idle status-dot-idle';
+      return `<span class="printer-status-dot status-dot ${dotClass}" style="background:${color}" title="${printerState._sm_state_label || ''}"></span>`;
+    }
+
     const gcodeState = printerState.gcode_state || 'IDLE';
     let color, dotClass = '';
     switch(gcodeState) {

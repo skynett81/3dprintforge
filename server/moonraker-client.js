@@ -449,25 +449,34 @@ export class MoonrakerClient {
     // NFC filament detection (per-channel spool info)
     const fd = status.filament_detect;
     if (fd?.info) {
-      this.state._sm_filament = fd.info.map(ch => ({
-        vendor: ch.VENDOR || '',
-        manufacturer: ch.MANUFACTURER || '',
-        type: ch.MAIN_TYPE || '',
-        subType: ch.SUB_TYPE || '',
-        color: argbToHex(ch.ARGB_COLOR),
-        colorArgb: ch.ARGB_COLOR,
-        weight: ch.WEIGHT || 0,
-        diameter: (ch.DIAMETER || 175) / 100,
-        sku: ch.SKU || 0,
-        official: ch.OFFICIAL || false,
-        nozzleTempMin: ch.HOTEND_MIN_TEMP || 0,
-        nozzleTempMax: ch.HOTEND_MAX_TEMP || 0,
-        bedTemp: ch.BED_TEMP || 0,
-        firstLayerTemp: ch.FIRST_LAYER_TEMP || 0,
-        otherLayerTemp: ch.OTHER_LAYER_TEMP || 0,
-        dryingTemp: ch.DRYING_TEMP || 0,
-        dryingTime: ch.DRYING_TIME || 0,
-      }));
+      this.state._sm_filament = fd.info.map((ch, idx) => {
+        const data = {
+          vendor: ch.VENDOR || '',
+          manufacturer: ch.MANUFACTURER || '',
+          type: ch.MAIN_TYPE || '',
+          subType: ch.SUB_TYPE || '',
+          color: argbToHex(ch.ARGB_COLOR),
+          colorArgb: ch.ARGB_COLOR,
+          weight: ch.WEIGHT || 0,
+          diameter: (ch.DIAMETER || 175) / 100,
+          sku: ch.SKU || 0,
+          official: ch.OFFICIAL || false,
+          nozzleTempMin: ch.HOTEND_MIN_TEMP || 0,
+          nozzleTempMax: ch.HOTEND_MAX_TEMP || 0,
+          bedTemp: ch.BED_TEMP || 0,
+          firstLayerTemp: ch.FIRST_LAYER_TEMP || 0,
+          otherLayerTemp: ch.OTHER_LAYER_TEMP || 0,
+          dryingTemp: ch.DRYING_TEMP || 0,
+          dryingTime: ch.DRYING_TIME || 0,
+        };
+        // Persist to DB cache (fire-and-forget)
+        try {
+          import('./db/snapmaker.js').then(({ upsertNfcFilament }) => {
+            upsertNfcFilament(this._printerId, idx, data);
+          }).catch(() => {});
+        } catch { /* ignore */ }
+        return data;
+      });
     }
 
     // Filament feed state (left: extruder0+1, right: extruder2+3)

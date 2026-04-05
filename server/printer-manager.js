@@ -104,14 +104,23 @@ export class PrinterManager {
           if (this._notifier) this._notifier.updateBedMonitor(id, printerConf.name, printData);
           if (this.guard) this.guard.processSensorData(id, printData);
 
-          // Snapmaker defect detection — notify on critical defects
+          // Snapmaker defect detection — notify + optional auto-pause
           if (printData._sm_defect && printData.gcode_state === 'RUNNING') {
             const dd = printData._sm_defect;
-            if (dd.noodle?.probability > 0.8 && this._notifier) {
+            const threshold = printerConf.defectPauseThreshold ?? 0.9;
+            const autoPause = printerConf.defectAutoPause !== false;
+            // Check noodle (spaghetti) detection
+            if (dd.noodle?.probability > 0.7 && this._notifier) {
               this._notifier.notify('defect_detected', {
                 printerId: id, printerName: printerConf.name,
                 type: 'spaghetti', probability: dd.noodle.probability,
               });
+              // Auto-pause if above threshold and enabled
+              if (autoPause && dd.noodle.probability > threshold && entry.client) {
+                const cmd = entry.client._buildCommand?.({ action: 'pause' });
+                if (cmd) entry.client.sendCommand(cmd);
+                log.warn(`[defect] Auto-paused ${printerConf.name}: spaghetti probability ${dd.noodle.probability}`);
+              }
             }
           }
         }

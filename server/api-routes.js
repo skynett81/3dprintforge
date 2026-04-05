@@ -4953,12 +4953,15 @@ export async function handleApiRequest(req, res) {
 
       if (method === 'POST' && smPath === 'feed') {
         return readBody(req, res, (body) => {
-          const action = body.action || 'auto';
-          const channel = parseInt(body.channel) || 0;
+          const action = body.action;
+          if (!action || !['auto', 'unload', 'manual'].includes(action)) return sendJson(res, { error: 'action required: auto, unload, or manual' }, 400);
+          const channel = parseInt(body.channel);
+          if (isNaN(channel) || channel < 0 || channel > 3) return sendJson(res, { error: 'channel required: 0-3' }, 400);
+          if (!entry.live) return sendJson(res, { error: 'Printer is offline' }, 503);
           if (action === 'auto') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_auto', channel });
           else if (action === 'unload') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_unload', channel });
           else if (action === 'manual') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_manual', channel });
-          return sendJson(res, { ok: true });
+          return sendJson(res, { ok: true, action, channel });
         });
       }
 
@@ -4972,9 +4975,16 @@ export async function handleApiRequest(req, res) {
       }
 
       if (method === 'PUT' && smPath === 'print-config') {
+        if (!entry.live) return sendJson(res, { error: 'Printer is offline' }, 503);
         return readBody(req, res, (body) => {
-          _printerManager.handleCommand({ printer_id: pid, action: 'sm_set_print_config', ...body });
-          return sendJson(res, { ok: true });
+          const allowed = ['autoBedLeveling', 'flowCalibrate', 'shaperCalibrate', 'timelapse'];
+          const filtered = {};
+          for (const key of allowed) {
+            if (body[key] !== undefined) filtered[key] = !!body[key];
+          }
+          if (Object.keys(filtered).length === 0) return sendJson(res, { error: 'No valid config keys provided. Allowed: ' + allowed.join(', ') }, 400);
+          _printerManager.handleCommand({ printer_id: pid, action: 'sm_set_print_config', ...filtered });
+          return sendJson(res, { ok: true, updated: filtered });
         });
       }
 
