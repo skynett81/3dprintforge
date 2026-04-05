@@ -298,6 +298,169 @@ export function runMigrations() {
         calibrated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
     }},
+
+    // Additional Learning Center courses: multi-brand setup, Model Forge, advanced calibration, remote access, print farm
+    { version: 119, up: (db) => {
+      const ins = db.prepare('INSERT INTO courses (title, description, category, difficulty, content, steps, estimated_minutes) VALUES (?,?,?,?,?,?,?)');
+      const courses = [
+        // ── getting_started ──
+        {
+          title: 'Setting Up a Snapmaker U1',
+          description: 'Connect your Snapmaker U1 toolchanger to 3DPrintForge via Moonraker and explore NFC filament, defect detection, timelapse, and multi-head calibration.',
+          category: 'getting_started', difficulty: 2, estimated_minutes: 20,
+          steps: [
+            { title: 'Connect via Moonraker', description: 'Add the Snapmaker U1 in Settings > Printers. Select type Snapmaker / Moonraker, enter the printer IP (e.g. 192.168.10.193), and leave the default port 7125. The dashboard discovers all four extruders and the heated bed automatically.', action: '#settings/printers' },
+            { title: 'Verify NFC filament detection', description: 'Load a Snapmaker NFC spool into any extruder channel. The NFC chip is read automatically and the detected material, color, and temperature range appear in the Filament panel within seconds. Third-party spools without NFC require manual profile assignment.', action: '#filament' },
+            { title: 'Enable AI defect detection', description: 'Open the printer detail view and toggle Defect Detection on. The built-in camera runs spaghetti and bed-cleanliness checks between layers. Detected events are logged in the Defect Events panel with severity and a snapshot thumbnail.', action: null },
+            { title: 'Set up timelapse recording', description: 'In the printer Camera settings enable Timelapse mode. Choose layer-sync (one frame per layer change) or interval (every N seconds). Completed timelapses are saved alongside the print history entry and can be downloaded as MP4.', action: '#settings/printers' },
+            { title: 'Run multi-head offset calibration', description: 'Navigate to Controls > Calibration and start the Extruder Offset routine. The printer prints a calibration pattern for each toolhead pair. Enter the measured X/Y offsets when prompted. This ensures multi-color prints align perfectly across all four nozzles.', action: 'openPanel("controls")' },
+            { title: 'Configure the air purifier', description: 'The U1 has an integrated HEPA + activated-carbon purifier. Open Controls > Environment to view filter life percentage. Set the auto-run threshold so the purifier activates whenever ABS, ASA, or PA materials are detected via NFC.', action: 'openPanel("controls")' }
+          ]
+        },
+        {
+          title: 'Setting Up a Prusa Printer',
+          description: 'Connect a Prusa MK4, Mini+, or XL to 3DPrintForge through PrusaLink for remote monitoring, camera feeds, and firmware management.',
+          category: 'getting_started', difficulty: 2, estimated_minutes: 15,
+          steps: [
+            { title: 'Enable PrusaLink on the printer', description: 'On the printer touchscreen go to Settings > Network > PrusaLink and enable it. Note the displayed IP address and the one-time setup password. PrusaLink exposes a local HTTP API on port 80 that the dashboard uses for communication.', action: null },
+            { title: 'Add the printer in 3DPrintForge', description: 'In Settings > Printers click Add Printer. Select type Prusa / PrusaLink, enter the printer IP, and paste the API key shown on the printer screen (Settings > Network > API Key). The dashboard polls PrusaLink every 2 seconds for live status.', action: '#settings/printers' },
+            { title: 'Set up the camera feed', description: 'If your Prusa has a built-in camera (MK4S, XL) or a Raspberry Pi camera module, the MJPEG stream URL is typically http://<printer-ip>:8080/?action=stream. Enter this in the Camera URL field on the printer settings page to enable live view.', action: '#settings/printers' },
+            { title: 'Check firmware version', description: 'The dashboard displays the current firmware version on the printer detail card. Compare it with the latest release on help.prusa3d.com. Firmware updates must be applied via Bambu Studio or USB drive — the dashboard monitors but does not flash firmware.', action: null },
+            { title: 'Upload and print a file', description: 'Drag a .gcode or .bgcode file onto the Queue panel or use the Upload button on the printer card. PrusaLink transfers the file over the network and starts the print. Monitor progress, temperatures, and the camera feed from the dashboard in real time.', action: '#queue' }
+          ]
+        },
+        {
+          title: 'Setting Up Klipper Printers (Creality, Elegoo, Voron)',
+          description: 'Connect any Klipper-based printer running Moonraker to 3DPrintForge for full remote control, webcam streaming, and macro support.',
+          category: 'getting_started', difficulty: 2, estimated_minutes: 15,
+          steps: [
+            { title: 'Find your Moonraker URL', description: 'Moonraker runs alongside Klipper and exposes an HTTP/WebSocket API, usually on port 7125. SSH into your printer host (Raspberry Pi, BTT CB1, etc.) and run "systemctl status moonraker" to confirm it is running. The URL is http://<host-ip>:7125.', action: null },
+            { title: 'Add the printer in 3DPrintForge', description: 'In Settings > Printers click Add Printer. Select the brand (Creality, Elegoo, Voron, or Generic Klipper) and enter the Moonraker URL. The dashboard auto-detects the printer name, kinematics, extruder count, and heated-bed capability from the Klipper config.', action: '#settings/printers' },
+            { title: 'Configure the webcam', description: 'Moonraker serves webcam streams via crowsnect or ustreamer. The default MJPEG URL is http://<host-ip>/webcam/?action=stream. Enter this in the Camera URL field. For multiple cameras, add a second URL for the bed-level cam if available.', action: '#settings/printers' },
+            { title: 'Verify input shaper data', description: 'If your printer has an ADXL345 accelerometer (built-in on many Creality K1 and Elegoo Neptune boards), navigate to the printer detail page and check the Input Shaper section. The recommended shaper type (MZV or EI) and frequency are displayed from the last calibration run.', action: null },
+            { title: 'Test remote control', description: 'Open the Controls panel and test Home All, Bed Mesh Calibrate, and Extrude/Retract commands. These call Klipper G-code macros through Moonraker. Verify that emergency stop (M112) works reliably — it is the most critical safety control.', action: 'openPanel("controls")' }
+          ]
+        },
+
+        // ── printing ──
+        {
+          title: 'Model Forge: Creating Lithophanes',
+          description: 'Turn any photo into a stunning lithophane using Model Forge. Learn image preparation, shape selection, thickness tuning, and backlight display tips.',
+          category: 'printing', difficulty: 2, estimated_minutes: 20,
+          steps: [
+            { title: 'Upload your image', description: 'Open Model Forge > Lithophane and upload a JPG or PNG image. High-contrast photos with clear subjects work best. The tool converts the image to grayscale and maps brightness to wall thickness — bright areas become thin (translucent) and dark areas become thick (opaque).', action: null },
+            { title: 'Choose a shape', description: 'Select from Flat Panel, Curved (cylinder section), Sphere Cap, or Heart. Flat panels are easiest to print and frame. Curved lithophanes wrap around a tea-light holder for 360-degree viewing. Set the outer dimensions (width and height) in millimeters.', action: null },
+            { title: 'Adjust thickness settings', description: 'Set the minimum thickness to 0.8mm (translucent highlights) and maximum thickness to 3.0mm (opaque shadows). A wider range gives more contrast but takes longer to print. Enable the border frame (2-3mm) for structural rigidity. Preview updates in real time.', action: null },
+            { title: 'Slice and print correctly', description: 'Export the STL and slice it standing upright (not flat on the bed) at 0.12mm layer height for fine detail. Use 100% infill, 1 wall, and 0 top/bottom layers. Print in white or natural PLA at slow speed (40-60mm/s). Orientation matters — the light must pass through the thickness axis.', action: null },
+            { title: 'Backlight your lithophane', description: 'Place the finished lithophane in front of a white LED panel or inside a lightbox. Warm-white LEDs (3000K) give a classic photo look. Cool-white (5000K) gives a crisper image. Avoid colored LEDs as they tint the entire image. A simple USB LED strip behind the panel works perfectly.', action: null },
+            { title: 'Advanced: curved lamp shade', description: 'For a cylindrical lithophane lamp, select the Curved shape and set the arc to 360 degrees. Print in two halves if the circumference exceeds your build volume. Glue the halves together and place over an LED candle or smart bulb. The image wraps around the entire lamp.', action: null }
+          ]
+        },
+        {
+          title: 'Model Forge: Storage Boxes & Gridfinity',
+          description: 'Design custom storage boxes and Gridfinity-compatible bins using Model Forge parametric tools.',
+          category: 'printing', difficulty: 2, estimated_minutes: 15,
+          steps: [
+            { title: 'Set box dimensions', description: 'Open Model Forge > Storage Box and enter the inner width, depth, and height in millimeters. Wall thickness defaults to 2mm (strong for PLA/PETG). Enable a lid slot if you want a snap-fit or sliding lid. The preview updates as you adjust parameters.', action: null },
+            { title: 'Add dividers', description: 'Toggle Dividers and specify the number of columns and rows. Divider thickness is set independently (1.2mm default). You can make dividers removable by enabling the slot-fit option, which adds grooves on the inner walls for sliding dividers in and out.', action: null },
+            { title: 'Enable Gridfinity compatibility', description: 'Toggle Gridfinity Mode to generate a bin that fits the standard 42mm Gridfinity grid. Choose the grid units (1x1, 2x1, 3x2, etc.) and the bin height in 7mm increments. The base automatically includes the Gridfinity stacking profile and magnet holes (6mm x 2mm) for secure placement.', action: null },
+            { title: 'Generate a Gridfinity baseplate', description: 'Switch to Baseplate mode to create the matching grid. Set the number of units in X and Y. Enable screw holes if you want to mount the baseplate to a surface (M3 countersunk). Export and print in PETG or ABS for durability — baseplates take repeated insertion loads.', action: null },
+            { title: 'Print settings for boxes', description: 'Export the STL and slice with 3 walls, 15-20% Gyroid infill, and 0.2mm layer height. For bins that hold heavy items increase to 4 walls. PETG is the best material for storage bins — tougher than PLA, no warping over time. Print the baseplate separately with 4 walls for maximum rigidity.', action: null }
+          ]
+        },
+        {
+          title: 'Multi-Material Printing on Snapmaker U1',
+          description: 'Leverage the Snapmaker U1 four-extruder toolchanger for multi-color and multi-material prints with NFC auto-detection.',
+          category: 'printing', difficulty: 3, estimated_minutes: 20,
+          steps: [
+            { title: 'Assign tools to materials', description: 'In the slicer, assign each extruder (T0-T3) to a filament profile. On the U1, each toolhead can hold a different material or color. The dashboard Filament panel shows which material is loaded in each slot. NFC spools are detected automatically; non-NFC spools need manual assignment.', action: '#filament' },
+            { title: 'Configure the purge tower', description: 'Multi-material prints require a purge tower (prime tower) to clean the nozzle after each tool change. Set the purge volume per material transition — PLA-to-PLA needs less purge (50mm3) than PLA-to-PETG (120mm3). Place the tower near the model to minimize travel time.', action: null },
+            { title: 'Set up color swap points', description: 'For artistic multi-color prints, use the slicer color painting tool to assign regions to different extruders. At each layer where a color change occurs, the printer parks the current tool, picks up the next, and purges before resuming. Each swap adds 8-15 seconds.', action: null },
+            { title: 'NFC auto-detect workflow', description: 'Load NFC-tagged spools and the U1 reads material type, color hex, and temperature range from each spool automatically. The dashboard maps these to filament profiles so you skip manual temp entry. If a spool is swapped mid-print, the printer pauses and prompts for confirmation.', action: '#filament' },
+            { title: 'Optimize multi-material prints', description: 'Minimize tool changes by grouping colors per layer where possible. Use "Flush into infill" to reduce purge tower waste. For soluble supports, assign PVA to one extruder and set it as the support material in the slicer — the U1 switches to PVA only for support layers.', action: null }
+          ]
+        },
+        {
+          title: 'Pressure Advance & Flow Calibration',
+          description: 'Dial in perfect extrusion with pressure advance tuning and flow rate calibration for sharp corners and consistent walls.',
+          category: 'printing', difficulty: 3, estimated_minutes: 20,
+          steps: [
+            { title: 'Understand pressure advance', description: 'Pressure advance (PA) compensates for the delay between extruder motor movement and filament exiting the nozzle. Without PA, corners bulge (too much pressure) and starts of lines are thin (too little pressure). A well-tuned PA value gives crisp corners and uniform line width.', action: null },
+            { title: 'Run the auto-calibration pattern', description: 'Navigate to Controls > Calibration and start the Pressure Advance test. The printer prints a series of lines at different PA values (typically 0.0 to 0.1 in 0.005 increments). Examine the printed pattern and identify the line with the sharpest corners and most uniform width.', action: 'openPanel("controls")' },
+            { title: 'Manual tuning with a test print', description: 'For finer tuning, print a cube at 60mm/s with the PA value from the auto-test. Inspect corners for bulging (PA too low) or gaps (PA too high). Adjust in 0.002 increments. Typical values: direct drive 0.02-0.06, Bowden 0.4-0.8. Each filament brand may need a slightly different value.', action: null },
+            { title: 'Calibrate flow rate', description: 'Print a single-wall cube (vase mode, 20mm x 20mm x 20mm) and measure the wall thickness with calipers. If the wall measures 0.44mm with a 0.4mm nozzle, your flow rate is 0.4/0.44 = 0.909 (90.9%). Set this as the flow ratio in your filament profile for dimensionally accurate parts.', action: null },
+            { title: 'Save per-filament profiles', description: 'PA and flow values differ between filament brands and types. After calibrating, save the values in the filament profile on the dashboard. The Snapmaker U1 stores PA per extruder in Klipper config. For Bambu printers, set flow ratio per filament in Bambu Studio.', action: '#filament' }
+          ]
+        },
+
+        // ── maintenance ──
+        {
+          title: 'Klipper Input Shaper Calibration',
+          description: 'Eliminate ringing and ghosting artifacts on Klipper printers by running input shaper calibration with an accelerometer.',
+          category: 'maintenance', difficulty: 3, estimated_minutes: 20,
+          steps: [
+            { title: 'Install the accelerometer', description: 'Mount an ADXL345 accelerometer on the toolhead using the printed mount for your printer model. Connect it to the MCU via SPI (Creality K1 and Elegoo Neptune 4 Pro have it built-in). Add the [adxl345] and [resonance_tester] sections to your printer.cfg if not already present.', action: null },
+            { title: 'Run the resonance test', description: 'In the dashboard Controls panel or via Klipper console, run SHAPER_CALIBRATE. The printer vibrates the toolhead at frequencies from 5Hz to 133Hz on both X and Y axes. This takes about 2 minutes. The accelerometer records the resonance response curve for each axis.', action: 'openPanel("controls")' },
+            { title: 'Understand shaper types', description: 'Klipper recommends a shaper type per axis: MZV is the most common (good vibration reduction, minimal smoothing). EI handles higher resonance but smooths more. 2HUMP_EI is for printers with two resonance peaks. ZV is the lightest but only works if your resonance is very clean.', action: null },
+            { title: 'Apply the recommended values', description: 'Klipper outputs recommended shaper type and frequency for each axis (e.g., shaper_type_x = mzv, shaper_freq_x = 54.2). Apply these to the [input_shaper] section of printer.cfg and restart Klipper. The dashboard displays the active shaper values on the printer detail page.', action: null },
+            { title: 'Verify with a test print', description: 'Print a ringing test model (a cube with sharp corners at 100mm/s+). Compare before and after: ghosting ripples next to corners should be eliminated or greatly reduced. If artifacts remain on one axis, re-run calibration for that axis only. Re-calibrate after any mechanical change (new belt, toolhead mod).', action: null }
+          ]
+        },
+        {
+          title: 'Snapmaker U1 Maintenance',
+          description: 'Keep your Snapmaker U1 toolchanger running reliably with regular nozzle cleaning, offset calibration, purifier care, and bed mesh tuning.',
+          category: 'maintenance', difficulty: 2, estimated_minutes: 15,
+          steps: [
+            { title: 'Clean the nozzles', description: 'Heat each toolhead to 250C and perform a cold pull with cleaning filament. Repeat until the pulled filament comes out clean. With four extruders, do this every 200-300 print hours or whenever you notice under-extrusion on any head. A brass wire brush on the hot nozzle exterior removes stuck filament blobs.', action: null },
+            { title: 'Re-calibrate extruder offsets', description: 'Over time, thermal cycling can shift toolhead alignment. Navigate to Controls > Calibration and run the Extruder Offset test. The printer prints alignment marks for each head pair. Measure the offset with a loupe or the built-in camera and enter the corrections. This keeps multi-color registration tight.', action: 'openPanel("controls")' },
+            { title: 'Replace the purifier filter', description: 'The HEPA and activated-carbon filters have a limited lifespan shown in Controls > Environment. Replace the HEPA filter every 500 hours of ABS/ASA printing or when airflow drops noticeably. The carbon filter absorbs VOCs and should be replaced every 300 hours of enclosed high-temp printing.', action: 'openPanel("controls")' },
+            { title: 'Run a fresh bed mesh', description: 'A bed mesh calibration compensates for slight warps in the build plate. Run it from Controls > Calibration after any plate change, after moving the printer, or every 50-100 prints. The U1 probes a 7x7 grid (49 points) for high-resolution compensation across the 271x335mm bed.', action: 'openPanel("controls")' },
+            { title: 'Lubricate linear rails', description: 'The U1 uses linear rails on all axes. Apply a thin film of PTFE-based grease (Mobilux EP2 or Super Lube) every 500 print hours. Move each axis through its full range after lubricating to distribute evenly. Wipe excess from the rail surfaces with a lint-free cloth to avoid dust accumulation.', action: null }
+          ]
+        },
+
+        // ── automation ──
+        {
+          title: 'Remote Access with Cloudflare Tunnel',
+          description: 'Securely access your 3DPrintForge dashboard from anywhere using a Cloudflare Tunnel — no port forwarding or VPN required.',
+          category: 'automation', difficulty: 3, estimated_minutes: 15,
+          steps: [
+            { title: 'Install cloudflared', description: 'Download and install cloudflared on the machine running 3DPrintForge. On Debian/Ubuntu: "curl -L https://pkg.cloudflare.com/cloudflared-linux-amd64.deb -o cloudflared.deb && sudo dpkg -i cloudflared.deb". On Arch: "yay -S cloudflared". Verify with "cloudflared --version".', action: null },
+            { title: 'Create a quick tunnel', description: 'For testing, run "cloudflared tunnel --url https://localhost:3443". Cloudflare assigns a random *.trycloudflare.com subdomain. Open that URL on your phone to verify remote access works. This tunnel is temporary and disappears when you stop the command.', action: null },
+            { title: 'Set up a permanent tunnel', description: 'Run "cloudflared tunnel login" to authenticate with your Cloudflare account. Then "cloudflared tunnel create 3dprintforge" to create a named tunnel. Configure the tunnel to route your custom domain (e.g. forge.yourdomain.com) to https://localhost:3443. Install as a system service with "cloudflared service install" so it starts on boot.', action: null },
+            { title: 'Secure the tunnel', description: 'Enable Cloudflare Access to add authentication in front of the tunnel. Create an Access Application in the Cloudflare Zero Trust dashboard and require email OTP or SSO login. This adds a second layer of security on top of 3DPrintForge built-in authentication. Enable the dashboard auth system as well for defense in depth.', action: '#settings/system' }
+          ]
+        },
+        {
+          title: 'Print Farm Management',
+          description: 'Scale from a single printer to a multi-printer farm with queue distribution, material matching, load balancing, and batch operations.',
+          category: 'automation', difficulty: 3, estimated_minutes: 20,
+          steps: [
+            { title: 'Set up the queue system', description: 'Create named queues for different job types (e.g. Production, Prototypes, Customer Orders). Each queue can be assigned to specific printers or left unassigned for automatic routing. Priority levels (1-5) determine which jobs print first when multiple are waiting.', action: '#queue' },
+            { title: 'Configure material matching', description: 'Enable Material Matching in Settings > Queue so jobs are only sent to printers that have the correct filament loaded. The system checks the loaded spool profile against the job requirements. For Bambu printers with AMS, it checks all four AMS slots. For Snapmaker U1, it reads NFC tags on all extruders.', action: '#settings/general' },
+            { title: 'Enable load balancing', description: 'With multiple printers of the same type, enable Load Balancing to automatically distribute jobs. The system considers: current print time remaining, queued job count, and printer availability. Idle printers pick up the next matching job automatically, minimizing total farm downtime.', action: '#settings/general' },
+            { title: 'Batch printing workflow', description: 'For orders requiring multiple copies, set the quantity on the queue item. The system schedules the total quantity across available printers. As each printer finishes, it picks up the next copy. Track batch progress in the Queue panel where completed/total counts are shown per batch.', action: '#queue' },
+            { title: 'Monitor the farm', description: 'The dashboard grid shows all printers at a glance with live status, progress bars, and camera feeds. Enable webhook notifications for print-complete and print-error events to get instant alerts. The Statistics panel aggregates farm-wide metrics: utilization rate, prints per day, failure rate, and material consumption.', action: null }
+          ]
+        },
+
+        // ── filament ──
+        {
+          title: 'NFC Filament on Snapmaker U1',
+          description: 'Understand how the Snapmaker U1 uses NFC chips on filament spools for automatic material detection, temperature setting, and spool tracking.',
+          category: 'filament', difficulty: 2, estimated_minutes: 12,
+          steps: [
+            { title: 'How NFC detection works', description: 'Each extruder channel on the U1 has an NFC reader. When a Snapmaker-compatible spool is loaded, the reader scans the NFC chip and retrieves the material type (PLA, PETG, ABS, etc.), color hex code, recommended temperatures, and remaining weight. This data appears in the dashboard Filament panel within seconds.', action: '#filament' },
+            { title: 'Automatic temperature setting', description: 'When an NFC spool is detected, the printer automatically sets the nozzle and bed temperatures to the values stored on the chip. This eliminates manual temp entry and prevents mistakes like printing PETG at PLA temperatures. The auto-set values can be overridden in the slicer if needed.', action: null },
+            { title: 'Spool tracking and inventory', description: 'The dashboard syncs NFC spool data with your filament inventory. As you print, the estimated remaining weight updates based on actual extrusion. When a spool runs low (below a configurable threshold, default 50g), the dashboard shows a warning. Swap alerts notify you before a print fails due to empty spool.', action: '#filament' },
+            { title: 'Using third-party spools', description: 'Non-NFC spools work fine on the U1 but require manual profile selection. In the Filament panel, assign a filament profile to the extruder channel. The dashboard caches your assignment so it persists across reboots. For frequent use of the same third-party spool, consider programming rewritable NFC tags with Snapmaker spool format data.', action: '#filament' }
+          ]
+        }
+      ];
+      for (const c of courses) {
+        ins.run(c.title, c.description, c.category, c.difficulty, null, JSON.stringify(c.steps), c.estimated_minutes);
+      }
+    }},
   ];
 
   for (const m of migrations) {
