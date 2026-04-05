@@ -1,0 +1,58 @@
+{
+  "machine": {
+    "name": "Snapmaker U1",
+    "model_id": "797581801",
+    "family": "Snapmaker",
+    "gcode_flavor": "klipper",
+    "build_volume": { "x": 271, "y": 335, "z": 275 },
+    "nozzle_count": 4,
+    "nozzle_diameter": 0.4,
+    "max_layer_height": 0.32,
+    "min_layer_height": 0.08,
+    "max_speed": { "x": 500, "y": 500, "z": 20, "e": 30 },
+    "max_acceleration": { "x": 5000, "y": 5000, "z": 500, "e": 5000 },
+    "retraction_length": 0.8,
+    "retraction_speed": 30,
+    "features": {
+      "toolchanger": true,
+      "nfc_filament": true,
+      "defect_detection": true,
+      "auto_bed_leveling": true,
+      "flow_calibration": true,
+      "input_shaper": true,
+      "enclosure": true,
+      "purifier": true,
+      "timelapse": true,
+      "power_loss_recovery": true
+    }
+  },
+  "filaments": [
+    { "name": "Snapmaker PLA", "type": "PLA", "subType": "Standard", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 230, "other_layer": 220, "density": 1.24, "max_volumetric_speed": 12 },
+    { "name": "Snapmaker PLA Basic", "type": "PLA", "subType": "Basic", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PLA SnapSpeed", "type": "PLA", "subType": "SnapSpeed", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 230, "other_layer": 220, "density": 1.24, "max_volumetric_speed": 15 },
+    { "name": "Snapmaker PLA Matte", "type": "PLA", "subType": "Matte", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PLA Silk", "type": "PLA", "subType": "Silk", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PLA Metal", "type": "PLA", "subType": "Metal", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PLA Eco", "type": "PLA", "subType": "Eco", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PLA-CF", "type": "PLA-CF", "subType": "Carbon Fiber", "nozzle_min": 200, "nozzle_max": 240, "bed": 60, "first_layer": 230, "other_layer": 220, "density": 1.28, "max_volumetric_speed": 8 },
+    { "name": "Snapmaker PETG", "type": "PETG", "subType": "Standard", "nozzle_min": 220, "nozzle_max": 260, "bed": 80, "first_layer": 250, "other_layer": 245, "density": 1.25, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker PETG-CF", "type": "PETG-CF", "subType": "Carbon Fiber", "nozzle_min": 230, "nozzle_max": 270, "bed": 80, "first_layer": 260, "other_layer": 255, "density": 1.30, "max_volumetric_speed": 8 },
+    { "name": "Snapmaker PET", "type": "PET", "subType": "Standard", "nozzle_min": 220, "nozzle_max": 260, "bed": 70, "first_layer": 245, "other_layer": 240, "density": 1.38, "max_volumetric_speed": 10 },
+    { "name": "Snapmaker ABS", "type": "ABS", "subType": "Standard", "nozzle_min": 230, "nozzle_max": 270, "bed": 100, "first_layer": 260, "other_layer": 255, "density": 1.04, "max_volumetric_speed": 8 },
+    { "name": "Snapmaker ASA", "type": "ASA", "subType": "Standard", "nozzle_min": 230, "nozzle_max": 270, "bed": 100, "first_layer": 260, "other_layer": 255, "density": 1.07, "max_volumetric_speed": 8 },
+    { "name": "Snapmaker PA-CF", "type": "PA-CF", "subType": "Nylon Carbon Fiber", "nozzle_min": 260, "nozzle_max": 290, "bed": 90, "first_layer": 280, "other_layer": 275, "density": 1.15, "max_volumetric_speed": 6 },
+    { "name": "Snapmaker TPU 95A", "type": "TPU", "subType": "95A", "nozzle_min": 220, "nozzle_max": 250, "bed": 50, "first_layer": 240, "other_layer": 240, "density": 1.24, "max_volumetric_speed": 5 },
+    { "name": "Snapmaker TPU High-Flow", "type": "TPU", "subType": "High-Flow", "nozzle_min": 200, "nozzle_max": 240, "bed": 50, "first_layer": 230, "other_layer": 225, "density": 1.24, "max_volumetric_speed": 8 },
+    { "name": "Snapmaker PVA", "type": "PVA", "subType": "Support", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 210, "other_layer": 200, "density": 1.23, "max_volumetric_speed": 6 },
+    { "name": "Snapmaker Breakaway Support", "type": "PLA", "subType": "Breakaway Support", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 8 },
+    { "name": "PolyLite PLA", "type": "PLA", "subType": "PolyLite", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 },
+    { "name": "PolyTerra PLA", "type": "PLA", "subType": "PolyTerra", "nozzle_min": 190, "nozzle_max": 230, "bed": 60, "first_layer": 220, "other_layer": 210, "density": 1.24, "max_volumetric_speed": 10 }
+  ],
+  "process_presets": [
+    { "name": "0.08mm Ultra Fine", "layer_height": 0.08, "speed": 80, "infill": 15 },
+    { "name": "0.12mm Fine", "layer_height": 0.12, "speed": 120, "infill": 15 },
+    { "name": "0.16mm Standard", "layer_height": 0.16, "speed": 200, "infill": 15 },
+    { "name": "0.20mm Draft", "layer_height": 0.20, "speed": 300, "infill": 10 },
+    { "name": "0.28mm Fast", "layer_height": 0.28, "speed": 400, "infill": 10 }
+  ]
+}

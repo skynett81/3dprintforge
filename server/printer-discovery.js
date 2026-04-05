@@ -115,6 +115,81 @@ export class PrinterDiscovery {
     });
   }
 
+  /**
+   * Scan for Moonraker/Klipper printers on the local network.
+   * Probes common IPs via HTTP for Moonraker's /printer/info endpoint.
+   * @param {string[]} [extraIps] - Additional IPs to probe
+   * @param {number} [timeoutMs=3000] - Per-probe timeout
+   */
+  async scanMoonraker(extraIps = [], timeoutMs = 3000) {
+    const ipsToProbe = new Set(extraIps);
+
+    // Get local subnet from network interfaces
+    const { networkInterfaces } = await import('node:os');
+    const ifaces = networkInterfaces();
+    for (const list of Object.values(ifaces)) {
+      for (const iface of list) {
+        if (iface.internal || iface.family !== 'IPv4') continue;
+        const parts = iface.address.split('.');
+        // Probe common printer IPs in the same subnet (limited range)
+        for (let i = 1; i <= 254; i++) {
+          ipsToProbe.add(`${parts[0]}.${parts[1]}.${parts[2]}.${i}`);
+        }
+      }
+    }
+
+    // Remove our own IPs
+    for (const list of Object.values(ifaces)) {
+      for (const iface of list) ipsToProbe.delete(iface.address);
+    }
+
+    const results = [];
+    const batchSize = 30;
+    const ips = [...ipsToProbe];
+
+    for (let i = 0; i < ips.length; i += batchSize) {
+      const batch = ips.slice(i, i + batchSize);
+      const probes = batch.map(async (ip) => {
+        try {
+          const res = await fetch(`http://${ip}:80/printer/info`, { signal: AbortSignal.timeout(timeoutMs) });
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (!data?.result?.hostname) return null;
+          return {
+            ip,
+            serial: data.result.hostname || ip,
+            model: 'Moonraker/Klipper',
+            modelCode: '',
+            name: data.result.hostname || ip,
+            signal: null,
+            type: 'moonraker',
+            software_version: data.result.software_version || '',
+            state: data.result.state || '',
+          };
+        } catch { return null; }
+      });
+      const batchResults = await Promise.all(probes);
+      for (const r of batchResults) {
+        if (r) results.push(r);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Combined scan — Bambu SSDP + Moonraker HTTP probing
+   */
+  async scanAll(timeoutMs = 5000, extraIps = []) {
+    const [bambu, moonraker] = await Promise.all([
+      this.scan(timeoutMs),
+      this.scanMoonraker(extraIps, 3000),
+    ]);
+    const combined = [...bambu, ...moonraker];
+    this._cache = combined;
+    return combined;
+  }
+
   getCached() { return this._cache; }
   isScanning() { return this._scanning; }
   shutdown() { this._cache = []; }

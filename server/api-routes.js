@@ -513,11 +513,14 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/discovery/scan') {
       if (!_discovery) return sendJson(res, { error: 'Discovery not available' }, 503);
       try {
-        const found = await _discovery.scan();
-        const existing = getPrinters().map(p => p.serial);
+        // Combined scan: Bambu SSDP + Moonraker HTTP probing
+        const found = await _discovery.scanAll();
+        const existing = getPrinters();
+        const existingSerials = existing.map(p => p.serial);
+        const existingIps = existing.map(p => p.ip);
         const printers = found.map(p => ({
           ...p,
-          alreadyAdded: existing.includes(p.serial)
+          alreadyAdded: existingSerials.includes(p.serial) || existingIps.includes(p.ip)
         }));
         return sendJson(res, { printers, total: found.length });
       } catch (e) {
@@ -4973,6 +4976,19 @@ export async function handleApiRequest(req, res) {
           _printerManager.handleCommand({ printer_id: pid, action: 'sm_set_print_config', ...body });
           return sendJson(res, { ok: true });
         });
+      }
+
+      if (method === 'GET' && smPath === 'profiles') {
+        try {
+          const { readFileSync } = await import('node:fs');
+          const { join, dirname } = await import('node:path');
+          const { fileURLToPath } = await import('node:url');
+          const profilePath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-u1-profiles.json');
+          const profiles = JSON.parse(readFileSync(profilePath, 'utf8'));
+          return sendJson(res, profiles);
+        } catch (e) {
+          return sendJson(res, { error: 'Profiles not available: ' + e.message }, 500);
+        }
       }
 
       return sendJson(res, { error: 'Unknown Snapmaker endpoint' }, 404);
