@@ -28,20 +28,39 @@ export class FailureDetectionService {
     if (!this._enabled) return;
     if (this._monitors.has(printerId)) return;
 
-    const interval = parseInt(getInventorySetting('ai_detection_interval') || '60') * 1000;
+    const normalInterval = parseInt(getInventorySetting('ai_detection_interval') || '60') * 1000;
+    const firstLayerInterval = Math.round(normalInterval / 3); // 3x faster during first layers
     const monitor = {
-      timer: setInterval(() => this._captureAndAnalyze(printerId, printerIp, accessCode), interval),
+      timer: setInterval(() => this._captureAndAnalyze(printerId, printerIp, accessCode), normalInterval),
       lastFrame: null,
-      frameCount: 0
+      frameCount: 0,
+      firstLayerMode: true,
+      normalInterval,
+      firstLayerInterval,
+      lastEntropy: null,
     };
     this._monitors.set(printerId, monitor);
-    log.info('Monitoring started for ' + printerId + ' (interval: ' + (interval / 1000) + 's)');
+    // Start in first-layer mode (faster capture rate for first 5 minutes)
+    if (firstLayerInterval < normalInterval) {
+      clearInterval(monitor.timer);
+      monitor.timer = setInterval(() => this._captureAndAnalyze(printerId, printerIp, accessCode), firstLayerInterval);
+      // Switch to normal rate after 5 minutes
+      monitor.firstLayerTimeout = setTimeout(() => {
+        if (!this._monitors.has(printerId)) return;
+        clearInterval(monitor.timer);
+        monitor.timer = setInterval(() => this._captureAndAnalyze(printerId, printerIp, accessCode), normalInterval);
+        monitor.firstLayerMode = false;
+        log.info(`First-layer monitoring ended for ${printerId}, switching to normal interval`);
+      }, 5 * 60 * 1000);
+    }
+    log.info('Monitoring started for ' + printerId + ' (first-layer: ' + (firstLayerInterval/1000) + 's, normal: ' + (normalInterval / 1000) + 's)');
   }
 
   stopMonitoring(printerId) {
     const monitor = this._monitors.get(printerId);
     if (monitor) {
       clearInterval(monitor.timer);
+      if (monitor.firstLayerTimeout) clearTimeout(monitor.firstLayerTimeout);
       this._monitors.delete(printerId);
       log.info('Monitoring stopped for ' + printerId);
     }
@@ -62,7 +81,7 @@ export class FailureDetectionService {
   async checkBedClear(printerId, printerIp, accessCode) {
     const framePath = join(FRAMES_DIR, `${printerId}_bedcheck_${Date.now()}.jpg`);
     try {
-      await this._captureFrame(printerIp, accessCode, framePath);
+      await this._captureFrame(printerIp, accessCode, framePath, printerId);
       if (!existsSync(framePath)) return { clear: false, reason: 'frame_capture_failed' };
 
       const frame = readFileSync(framePath);
@@ -95,7 +114,7 @@ export class FailureDetectionService {
   async captureBaseline(printerId, printerIp, accessCode) {
     const framePath = join(FRAMES_DIR, `${printerId}_baseline_${Date.now()}.jpg`);
     try {
-      await this._captureFrame(printerIp, accessCode, framePath);
+      await this._captureFrame(printerIp, accessCode, framePath, printerId);
       if (!existsSync(framePath)) return { ok: false, error: 'capture_failed' };
 
       const frame = readFileSync(framePath);
@@ -117,8 +136,8 @@ export class FailureDetectionService {
     const framePath = join(FRAMES_DIR, `${printerId}_${Date.now()}.jpg`);
 
     try {
-      // Capture a single frame via RTSP
-      await this._captureFrame(printerIp, accessCode, framePath);
+      // Capture frame via RTSP (Bambu), HTTP snapshot (Moonraker/PrusaLink), or ffmpeg
+      await this._captureFrame(printerIp, accessCode, framePath, printerId);
 
       if (!existsSync(framePath)) return;
 
@@ -168,7 +187,40 @@ export class FailureDetectionService {
     }
   }
 
-  _captureFrame(ip, accessCode, outputPath) {
+  async _captureFrame(ip, accessCode, outputPath, printerId) {
+    // Try to determine frame source from printer manager
+    const entry = this._printerManager?.printers?.get(printerId);
+    const connType = entry?.config?.type;
+
+    // Moonraker/Klipper printers: HTTP snapshot
+    if (connType === 'moonraker' || connType === 'klipper' || connType === 'creality' || connType === 'elegoo' || connType === 'voron' || connType === 'anker' || connType === 'ratrig' || connType === 'qidi') {
+      try {
+        const port = entry?.config?.port || 80;
+        const snapUrl = `http://${ip}:${port}/webcam/?action=snapshot`;
+        const res = await fetch(snapUrl, { signal: AbortSignal.timeout(10000) });
+        if (res.ok) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(outputPath, Buffer.from(await res.arrayBuffer()));
+          return;
+        }
+      } catch { /* fall through to ffmpeg */ }
+    }
+
+    // PrusaLink: camera snap endpoint
+    if (connType === 'prusalink') {
+      try {
+        const snapUrl = `http://${ip}:${entry?.config?.port || 80}/api/v1/cameras/snap`;
+        const headers = accessCode ? { 'X-Api-Key': accessCode } : {};
+        const res = await fetch(snapUrl, { headers, signal: AbortSignal.timeout(10000) });
+        if (res.ok) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(outputPath, Buffer.from(await res.arrayBuffer()));
+          return;
+        }
+      } catch { /* fall through to ffmpeg */ }
+    }
+
+    // Bambu Lab: RTSPS via ffmpeg (default)
     return new Promise((resolve, reject) => {
       const args = [
         '-y', '-rtsp_transport', 'tcp',

@@ -1,0 +1,230 @@
+/**
+ * PrusaLink REST API Client
+ * Supports: Prusa MK4/MK3.9/Mini+/XL with PrusaLink firmware
+ * Protocol: HTTP REST with Digest Auth, poll-based state updates
+ */
+
+import { createHash, randomBytes } from 'node:crypto';
+
+const log = { info: (...a) => console.log('[prusalink]', ...a), warn: (...a) => console.warn('[prusalink]', ...a), error: (...a) => console.error('[prusalink]', ...a) };
+
+const STATE_MAP = {
+  IDLE: 'IDLE', BUSY: 'RUNNING', PRINTING: 'RUNNING', PAUSED: 'PAUSE',
+  FINISHED: 'FINISH', STOPPED: 'IDLE', ERROR: 'FAILED', ATTENTION: 'PAUSE',
+};
+
+export class PrusaLinkClient {
+  constructor(config, hub) {
+    this.ip = config.printer.ip;
+    this.port = config.printer.port || 80;
+    this._printerId = config.printer.id || '';
+    this.apiKey = config.printer.accessCode || '';
+    this.username = config.printer.username || 'maker';
+    this.password = config.printer.password || config.printer.accessCode || '';
+    this.hub = hub;
+    this.state = {};
+    this.connected = false;
+    this._pollTimer = null;
+    this._pollInterval = 3000;
+    this._digestAuth = null;
+    this.onFirmwareInfo = null;
+    this.onXcamEvent = null;
+  }
+
+  get _baseUrl() {
+    return `http://${this.ip}:${this.port}`;
+  }
+
+  connect() {
+    log.info(`Connecting to PrusaLink at ${this._baseUrl}`);
+    this._poll();
+  }
+
+  disconnect() {
+    this.connected = false;
+    if (this._pollTimer) { clearTimeout(this._pollTimer); this._pollTimer = null; }
+  }
+
+  async _poll() {
+    try {
+      const [status, job] = await Promise.all([
+        this._apiGet('/api/v1/status'),
+        this._apiGet('/api/v1/job'),
+      ]);
+
+      if (!this.connected) {
+        this.connected = true;
+        this.hub.broadcast('connection', { status: 'connected' });
+        log.info(`Connected to PrusaLink: ${this.ip}`);
+
+        // Get printer info on first connect
+        const info = await this._apiGet('/api/v1/info');
+        if (info && this.onFirmwareInfo) {
+          this.onFirmwareInfo({ name: 'prusalink', sw_ver: info.firmware || '', hw_ver: info.serial || '', sn: info.serial || '' });
+        }
+      }
+
+      this._mergeState(status, job);
+      this.hub.broadcast('status', { print: this.state });
+    } catch (e) {
+      if (this.connected) {
+        this.connected = false;
+        this.hub.broadcast('connection', { status: 'disconnected' });
+        log.warn(`PrusaLink disconnected: ${e.message}`);
+      }
+    }
+
+    this._pollTimer = setTimeout(() => this._poll(), this._pollInterval);
+  }
+
+  _mergeState(status, job) {
+    if (!status) return;
+
+    // Printer state
+    const pState = status.printer?.state || 'IDLE';
+    this.state.gcode_state = STATE_MAP[pState] || 'IDLE';
+
+    // Temperatures
+    if (status.printer?.temp_nozzle !== undefined) this.state.nozzle_temper = Math.round(status.printer.temp_nozzle);
+    if (status.printer?.target_nozzle !== undefined) this.state.nozzle_target_temper = Math.round(status.printer.target_nozzle);
+    if (status.printer?.temp_bed !== undefined) this.state.bed_temper = Math.round(status.printer.temp_bed);
+    if (status.printer?.target_bed !== undefined) this.state.bed_target_temper = Math.round(status.printer.target_bed);
+
+    // Fan
+    if (status.printer?.fan_printing !== undefined) this.state.cooling_fan_speed = status.printer.fan_printing;
+
+    // Speed
+    if (status.printer?.speed !== undefined) this.state.spd_mag = status.printer.speed;
+
+    // Flow
+    if (status.printer?.flow !== undefined) this.state._flow_rate = status.printer.flow;
+
+    // Z height
+    if (status.printer?.axis_z !== undefined) {
+      this.state._position = { x: status.printer.axis_x || 0, y: status.printer.axis_y || 0, z: status.printer.axis_z || 0 };
+    }
+
+    // Job info
+    if (job) {
+      if (job.progress !== undefined) this.state.mc_percent = Math.round(job.progress);
+      if (job.time_remaining !== undefined) this.state.mc_remaining_time = Math.round(job.time_remaining / 60);
+      if (job.time_printing !== undefined) this.state.print_duration_seconds = Math.round(job.time_printing);
+      if (job.file?.display_name) this.state.subtask_name = job.file.display_name;
+      if (job.file?.m_timestamp) this.state._file_timestamp = job.file.m_timestamp;
+    }
+  }
+
+  // ── Commands ──
+
+  sendCommand(commandObj) {
+    if (!this.connected) return;
+    const action = commandObj._prusalink_action || commandObj.action;
+
+    switch (action) {
+      case 'pause':
+        this._apiPut('/api/v1/job', { command: 'PAUSE' });
+        break;
+      case 'resume':
+        this._apiPut('/api/v1/job', { command: 'RESUME' });
+        break;
+      case 'stop':
+        this._apiDelete('/api/v1/job');
+        break;
+      case 'print_file':
+        this._apiPost('/api/v1/job', { command: 'START', path: commandObj.filename });
+        break;
+      default:
+        log.warn(`Unknown PrusaLink command: ${action}`);
+    }
+  }
+
+  // ── Camera ──
+
+  getSnapshotUrl() {
+    return `${this._baseUrl}/api/v1/cameras/snap`;
+  }
+
+  // ── HTTP with Digest Auth ──
+
+  async _apiGet(path) {
+    try {
+      const res = await this._fetchWithAuth('GET', path);
+      if (!res.ok) return null;
+      return res.json();
+    } catch (e) {
+      log.error(`GET ${path}: ${e.message}`);
+      return null;
+    }
+  }
+
+  async _apiPut(path, body) {
+    try {
+      await this._fetchWithAuth('PUT', path, body);
+    } catch (e) { log.error(`PUT ${path}: ${e.message}`); }
+  }
+
+  async _apiPost(path, body) {
+    try {
+      await this._fetchWithAuth('POST', path, body);
+    } catch (e) { log.error(`POST ${path}: ${e.message}`); }
+  }
+
+  async _apiDelete(path) {
+    try {
+      await this._fetchWithAuth('DELETE', path);
+    } catch (e) { log.error(`DELETE ${path}: ${e.message}`); }
+  }
+
+  async _fetchWithAuth(method, path, body) {
+    const url = `${this._baseUrl}${path}`;
+    const headers = {};
+
+    // Try API key first (simpler)
+    if (this.apiKey) {
+      headers['X-Api-Key'] = this.apiKey;
+    }
+
+    if (body) headers['Content-Type'] = 'application/json';
+
+    let res = await fetch(url, {
+      method, headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(5000),
+    });
+
+    // If 401, try digest auth
+    if (res.status === 401 && this.password) {
+      const wwwAuth = res.headers.get('www-authenticate') || '';
+      const digestHeader = this._buildDigestAuth(method, path, wwwAuth);
+      if (digestHeader) {
+        headers['Authorization'] = digestHeader;
+        res = await fetch(url, {
+          method, headers,
+          body: body ? JSON.stringify(body) : undefined,
+          signal: AbortSignal.timeout(5000),
+        });
+      }
+    }
+
+    return res;
+  }
+
+  _buildDigestAuth(method, path, wwwAuth) {
+    const realm = wwwAuth.match(/realm="([^"]+)"/)?.[1];
+    const nonce = wwwAuth.match(/nonce="([^"]+)"/)?.[1];
+    const qop = wwwAuth.match(/qop="([^"]+)"/)?.[1] || 'auth';
+    if (!realm || !nonce) return null;
+
+    const nc = '00000001';
+    const cnonce = randomBytes(8).toString('hex');
+    const ha1 = createHash('md5').update(`${this.username}:${realm}:${this.password}`).digest('hex');
+    const ha2 = createHash('md5').update(`${method}:${path}`).digest('hex');
+    const response = createHash('md5').update(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`).digest('hex');
+
+    return `Digest username="${this.username}", realm="${realm}", nonce="${nonce}", uri="${path}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
+  }
+}
+
+export function buildPrusaLinkCommand(msg) {
+  return { _prusalink_action: msg.action, ...msg };
+}

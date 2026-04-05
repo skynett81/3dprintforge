@@ -199,6 +199,81 @@ export function toolpathCacheKey(filename, fileSize) {
 /**
  * Parse and cache a gcode file with downsampling
  */
+/**
+ * Analyze gcode for statistics, errors, and material estimation
+ * @param {string} text - Raw gcode content
+ * @returns {object} Analysis results
+ */
+export function analyzeGcode(text) {
+  const lines = text.split('\n');
+  let totalExtrusion = 0, totalTravel = 0, retractions = 0;
+  let maxTemp = 0, maxBedTemp = 0, layerCount = 0;
+  let x = 0, y = 0, z = 0, e = 0, lastZ = 0;
+  let estimatedTime = 0; // seconds
+  const warnings = [];
+  const layerHeights = new Set();
+
+  for (const raw of lines) {
+    const line = raw.split(';')[0].trim();
+    if (!line) continue;
+
+    // Temperature commands
+    const m104 = line.match(/^M10[49]\s+S(\d+)/);
+    if (m104) maxTemp = Math.max(maxTemp, parseInt(m104[1]));
+    const m140 = line.match(/^M14[09]\s+S(\d+)/);
+    if (m140) maxBedTemp = Math.max(maxBedTemp, parseInt(m140[1]));
+
+    // Time estimate from slicer comments
+    const timeMatch = raw.match(/;.*estimated.*time.*?(\d+)/i) || raw.match(/;TIME:(\d+)/);
+    if (timeMatch) estimatedTime = Math.max(estimatedTime, parseInt(timeMatch[1]));
+
+    // Movement commands
+    if (line.startsWith('G0') || line.startsWith('G1')) {
+      const xm = line.match(/X([-\d.]+)/), ym = line.match(/Y([-\d.]+)/), zm = line.match(/Z([-\d.]+)/), em = line.match(/E([-\d.]+)/), fm = line.match(/F([\d.]+)/);
+      const nx = xm ? parseFloat(xm[1]) : x;
+      const ny = ym ? parseFloat(ym[1]) : y;
+      const nz = zm ? parseFloat(zm[1]) : z;
+      const ne = em ? parseFloat(em[1]) : e;
+      const dist = Math.sqrt((nx-x)**2 + (ny-y)**2 + (nz-z)**2);
+
+      if (ne > e) totalExtrusion += ne - e;
+      else if (ne < e) retractions++;
+      if (ne === e && dist > 0) totalTravel += dist;
+
+      if (nz !== lastZ) { layerCount++; layerHeights.add(+(nz - lastZ).toFixed(3)); lastZ = nz; }
+
+      x = nx; y = ny; z = nz; e = ne;
+    }
+  }
+
+  // Filament weight estimation (PLA density ~1.24 g/cm³, 1.75mm diameter)
+  const filamentLengthMm = totalExtrusion;
+  const filamentVolumeCm3 = Math.PI * (0.0875 ** 2) * (filamentLengthMm / 10);
+  const filamentWeightG = filamentVolumeCm3 * 1.24;
+
+  // Warnings
+  if (maxTemp > 300) warnings.push({ type: 'high_temp', message: `Nozzle temp ${maxTemp}°C exceeds 300°C`, severity: 'warning' });
+  if (maxBedTemp > 120) warnings.push({ type: 'high_bed', message: `Bed temp ${maxBedTemp}°C exceeds 120°C`, severity: 'warning' });
+  if (retractions > 10000) warnings.push({ type: 'excessive_retractions', message: `${retractions} retractions detected`, severity: 'info' });
+  if (layerCount === 0) warnings.push({ type: 'no_layers', message: 'No Z changes detected', severity: 'error' });
+
+  return {
+    layerCount,
+    layerHeights: [...layerHeights].sort((a,b) => a-b),
+    totalExtrusionMm: Math.round(totalExtrusion),
+    totalTravelMm: Math.round(totalTravel),
+    retractionCount: retractions,
+    filamentLengthM: +(filamentLengthMm / 1000).toFixed(2),
+    filamentWeightG: +filamentWeightG.toFixed(1),
+    maxNozzleTemp: maxTemp,
+    maxBedTemp,
+    estimatedTimeSeconds: estimatedTime,
+    estimatedTimeMinutes: Math.round(estimatedTime / 60),
+    objectHeight: +z.toFixed(2),
+    warnings,
+  };
+}
+
 export function parseAndCache(gcodeText, filename) {
   const cacheKey = toolpathCacheKey(filename, gcodeText.length);
   const cached = getCachedToolpath(cacheKey);

@@ -64,6 +64,22 @@ const CAPABILITIES = {
     },
     auth: { required: ['ip'] },
   },
+
+  prusalink: {
+    label: 'PrusaLink',
+    connection: 'http-poll',
+    fileAccess: 'http-api',
+    httpApi: { filesEndpoint: '/api/v1/files/local', metadataEndpoint: '/api/v1/files' },
+    camera: { modes: ['http-snapshot'], snapshotEndpoint: '/api/v1/cameras/snap' },
+    modelAccess: { method: 'prusalink-gcode', hasMeshIn3MF: false },
+    gcodeAccess: { method: 'http-download', endpoint: '/api/v1/files/local/' },
+    features: {
+      ams: false, xcam: false, firmwareDetection: true,
+      ssdpDiscovery: false, cloudTasks: false, historySync: false,
+      multiExtruder: false,
+    },
+    auth: { required: ['ip', 'accessCode'], methods: ['api-key', 'digest'] },
+  },
 };
 
 /**
@@ -82,11 +98,29 @@ const MODEL_OVERRIDES = {
 
   // Snapmaker models
   'Snapmaker U1': {
-    camera: {
-      modes: ['http-snapshot', 'ssh-sftp'],
-      sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'],
-    },
+    camera: { modes: ['http-snapshot', 'ssh-sftp'], sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'] },
   },
+
+  // Prusa models (PrusaLink)
+  'Prusa MK4': { camera: { modes: ['http-snapshot'] }, buildVolume: [250, 210, 220] },
+  'Prusa MK3.9': { camera: { modes: ['http-snapshot'] }, buildVolume: [250, 210, 210] },
+  'Prusa Mini': { camera: { modes: ['http-snapshot'] }, buildVolume: [180, 180, 180] },
+  'Prusa XL': { camera: { modes: ['http-snapshot'] }, buildVolume: [360, 360, 360] },
+
+  // Creality models (Klipper/Moonraker)
+  'Creality K1': { camera: { modes: ['http-snapshot'] }, buildVolume: [220, 220, 250] },
+  'Creality K1 Max': { camera: { modes: ['http-snapshot'] }, buildVolume: [300, 300, 300] },
+  'Creality Ender-3 V3': { camera: { modes: ['http-snapshot'] }, buildVolume: [220, 220, 250] },
+
+  // Elegoo models (Klipper/Moonraker)
+  'Elegoo Neptune 4': { camera: { modes: ['http-snapshot'] }, buildVolume: [225, 225, 265] },
+  'Elegoo Neptune 4 Pro': { camera: { modes: ['http-snapshot'] }, buildVolume: [225, 225, 265] },
+  'Elegoo Neptune 4 Max': { camera: { modes: ['http-snapshot'] }, buildVolume: [420, 420, 480] },
+
+  // Voron (Klipper/Moonraker)
+  'Voron 0.2': { camera: { modes: ['http-snapshot'] }, buildVolume: [120, 120, 120] },
+  'Voron 2.4': { camera: { modes: ['http-snapshot'] }, buildVolume: [350, 350, 350] },
+  'Voron Trident': { camera: { modes: ['http-snapshot'] }, buildVolume: [350, 350, 250] },
 };
 
 /**
@@ -96,7 +130,9 @@ const MODEL_OVERRIDES = {
  */
 export function getCapabilities(printer) {
   const baseType = (printer.type || 'bambu').toLowerCase();
-  const typeKey = baseType === 'klipper' ? 'moonraker' : (baseType === 'mqtt' ? 'bambu' : baseType);
+  // Map brand aliases to connector types
+  const TYPE_MAP = { klipper: 'moonraker', mqtt: 'bambu', creality: 'moonraker', elegoo: 'moonraker', anker: 'moonraker', voron: 'moonraker', ratrig: 'moonraker', qidi: 'moonraker' };
+  const typeKey = TYPE_MAP[baseType] || baseType;
   const base = CAPABILITIES[typeKey] || CAPABILITIES.bambu;
 
   // Apply model-specific overrides

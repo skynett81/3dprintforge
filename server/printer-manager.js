@@ -80,6 +80,9 @@ export class PrinterManager {
     // Explicit type in config takes priority
     if (printerConf.type === 'moonraker' || printerConf.type === 'klipper') return 'moonraker';
     if (printerConf.type === 'bambu' || printerConf.type === 'mqtt') return 'bambu';
+    if (printerConf.type === 'prusalink') return 'prusalink';
+    // Klipper-based brands → Moonraker connector
+    if (['creality', 'elegoo', 'anker', 'voron', 'ratrig', 'qidi'].includes(printerConf.type)) return 'moonraker';
     // Auto-detect: Bambu printers use serial + accessCode, Moonraker printers don't need serial
     if (printerConf.serial && printerConf.accessCode) return 'bambu';
     if (printerConf.ip && !printerConf.serial) return 'moonraker';
@@ -129,7 +132,12 @@ export class PrinterManager {
     };
 
     let client;
-    if (connectorType === 'moonraker') {
+    if (connectorType === 'prusalink') {
+      const { PrusaLinkClient, buildPrusaLinkCommand } = await import('./prusalink-client.js');
+      client = new PrusaLinkClient({ printer: printerConf }, connectorHub);
+      client._buildCommand = buildPrusaLinkCommand;
+      log.info(`Using PrusaLink connector for ${printerConf.name}`);
+    } else if (connectorType === 'moonraker') {
       const { MoonrakerClient, buildMoonrakerCommand } = await import('./moonraker-client.js');
       client = new MoonrakerClient({ printer: printerConf }, connectorHub);
       client._buildCommand = buildMoonrakerCommand;

@@ -32,7 +32,7 @@ const log = createLogger('api');
 
 // ---- Validation schemas ----
 // model is now free-text (maxLength 100) — no enum restriction for multi-brand support
-const PRINTER_TYPES = ['bambu', 'moonraker', 'klipper'];
+const PRINTER_TYPES = ['bambu', 'moonraker', 'klipper', 'prusalink', 'creality', 'elegoo', 'anker', 'voron', 'ratrig', 'qidi'];
 
 const PRINTER_SCHEMA = {
   name: { type: 'string', required: true, minLength: 1, maxLength: 100 },
@@ -4898,6 +4898,62 @@ export async function handleApiRequest(req, res) {
         } catch (e) {
           sendJson(res, { error: 'Failed to generate 3MF: ' + e.message }, 500);
         }
+      });
+    }
+
+    // ── Cloudflare Tunnel ──
+    if (path.startsWith('/api/tunnel')) {
+      if (method === 'GET' && path === '/api/tunnel/status') {
+        try {
+          const { CloudflareTunnel } = await import('./cloudflare-tunnel.js');
+          if (!globalThis._cfTunnel) globalThis._cfTunnel = new CloudflareTunnel();
+          return sendJson(res, globalThis._cfTunnel.getStatus());
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+      if (method === 'POST' && path === '/api/tunnel/start') {
+        try {
+          const { CloudflareTunnel } = await import('./cloudflare-tunnel.js');
+          if (!globalThis._cfTunnel) globalThis._cfTunnel = new CloudflareTunnel();
+          const port = config.server?.httpsPort || 3443;
+          return sendJson(res, globalThis._cfTunnel.startQuickTunnel(port));
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+      if (method === 'POST' && path === '/api/tunnel/stop') {
+        try {
+          if (globalThis._cfTunnel) return sendJson(res, globalThis._cfTunnel.stop());
+          return sendJson(res, { ok: false, error: 'No tunnel instance' });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+    }
+
+    // ── Plugin Routes ──
+    if (path.startsWith('/api/plugins/')) {
+      const pluginRouteKey = `${method}:${path}`;
+      const handler = _pluginManager?._pluginRoutes?.get(pluginRouteKey);
+      if (handler) {
+        try {
+          if (method === 'POST' || method === 'PUT') {
+            return readBody(req, res, async (body) => {
+              const result = await handler(body, req, res);
+              if (result !== undefined && !res.writableEnded) sendJson(res, result);
+            });
+          }
+          const result = await handler(null, req, res);
+          if (result !== undefined && !res.writableEnded) sendJson(res, result);
+        } catch (e) { sendJson(res, { error: 'Plugin error: ' + e.message }, 500); }
+        return;
+      }
+    }
+
+    // ── G-code Analysis ──
+    if (method === 'POST' && path === '/api/gcode/analyze') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const text = buffer.toString('utf8');
+          const { analyzeGcode } = await import('./gcode-toolpath.js');
+          const analysis = analyzeGcode(text);
+          return sendJson(res, analysis);
+        } catch (e) { sendJson(res, { error: e.message }, 500); }
       });
     }
 

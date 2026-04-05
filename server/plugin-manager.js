@@ -1,4 +1,5 @@
 import { getPlugins, getPlugin, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginById } from './database.js';
+import { getDb } from './db/connection.js';
 import { readFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createLogger } from './logger.js';
@@ -137,6 +138,35 @@ export class PluginManager {
       http: {
         get: async (url, opts) => { const r = await fetch(url, opts); return r.json(); },
         post: async (url, body, opts) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...opts?.headers }, body: JSON.stringify(body) }); return r.json(); }
+      },
+
+      // Register a custom API route under /api/plugins/{name}/
+      registerRoute: (method, path, handler) => {
+        const safeName = dbPlugin.name.replace(/[^a-z0-9-]/g, '');
+        const fullPath = `/api/plugins/${safeName}/${path.replace(/^\//, '')}`;
+        if (!self._pluginRoutes) self._pluginRoutes = new Map();
+        self._pluginRoutes.set(`${method.toUpperCase()}:${fullPath}`, handler);
+        self.log?.info(`Plugin ${dbPlugin.name} registered route: ${method.toUpperCase()} ${fullPath}`);
+      },
+
+      // Register a UI panel
+      registerPanel: (panelId, title, loaderFn) => {
+        if (!self._pluginPanels) self._pluginPanels = [];
+        self._pluginPanels.push({ plugin: dbPlugin.name, id: panelId, title, loader: loaderFn });
+      },
+
+      // Timer for background tasks
+      setInterval: (fn, ms) => {
+        const timer = setInterval(() => { try { fn(); } catch (e) { self.log?.error(`Plugin ${dbPlugin.name} timer error: ${e.message}`); } }, Math.max(ms, 5000));
+        if (!self._pluginTimers) self._pluginTimers = [];
+        self._pluginTimers.push(timer);
+        return timer;
+      },
+
+      // Read-only database access
+      db: {
+        getPrinters: () => { try { return getDb().prepare('SELECT id, name, model, ip FROM printers').all(); } catch { return []; } },
+        getHistory: (limit) => { try { return getDb().prepare('SELECT * FROM print_history ORDER BY id DESC LIMIT ?').all(limit || 20); } catch { return []; } },
       }
     };
   }

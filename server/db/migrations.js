@@ -163,6 +163,30 @@ export function runMigrations() {
       )`);
     }},
 
+    // Community filament reviews + per-printer settings
+    { version: 116, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS community_filament_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filament_id INTEGER NOT NULL,
+        user_name TEXT DEFAULT 'Anonymous',
+        rating INTEGER CHECK(rating BETWEEN 1 AND 5),
+        review_text TEXT,
+        printer_model TEXT,
+        print_quality TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE TABLE IF NOT EXISTS community_filament_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filament_id INTEGER NOT NULL,
+        printer_model TEXT NOT NULL,
+        nozzle_temp INTEGER, bed_temp INTEGER,
+        print_speed INTEGER, retraction_length REAL, retraction_speed INTEGER,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(filament_id, printer_model)
+      )`);
+    }},
+
     // Snapmaker calibration results
     { version: 115, up: (db) => {
       db.exec(`CREATE TABLE IF NOT EXISTS sm_calibration_results (

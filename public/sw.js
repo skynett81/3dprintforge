@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bambu-dash-v135';
+const CACHE_NAME = 'bambu-dash-v136';
 const PRECACHE = [
   '/',
   '/css/main.css',
@@ -81,4 +81,26 @@ self.addEventListener('fetch', (e) => {
       });
     })
   );
+});
+
+// ── Push Notifications ──
+self.addEventListener('push', (e) => {
+  const data = e.data?.json?.() || { title: '3DPrintForge', body: 'Notification' };
+  e.waitUntil(self.registration.showNotification(data.title || '3DPrintForge', {
+    body: data.body || '',
+    icon: '/assets/icon-192.png',
+    badge: '/assets/favicon.svg',
+    tag: data.tag || 'default',
+    data: { url: data.url || '/' },
+    actions: data.actions || [],
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(clients.matchAll({ type: 'window' }).then(list => {
+    for (const c of list) { if (c.url.includes(url) && 'focus' in c) return c.focus(); }
+    return clients.openWindow(url);
+  }));
 });
