@@ -24,7 +24,11 @@
     'ams':  'AMS',
     'n1f':  'AMS Lite',
     'rv1126': 'Camera Module',
-    'esp32':  'WiFi Module'
+    'esp32':  'WiFi Module',
+    // Klipper/Moonraker modules
+    'klipper': 'Klipper Firmware',
+    'prusalink': 'PrusaLink Firmware',
+    'moonraker': 'Moonraker API',
   };
 
   // Module code → detail suffix (shown after dash)
@@ -295,6 +299,89 @@
       html += `</div></div>`;
     }
     html += `</div>`;
+
+    // ---- Multi-brand: Printer capabilities & connection info ----
+    html += `<div class="di-usage-header" style="margin-top:14px">Printer Details</div>`;
+    html += `<div class="di-stats-row">`;
+    html += `<div class="di-stat-card"><div class="di-stat-value">${esc(meta.model || 'Unknown')}</div><div class="di-stat-label">Model</div></div>`;
+    html += `<div class="di-stat-card"><div class="di-stat-value">${esc(meta.type || 'bambu')}</div><div class="di-stat-label">Connection</div></div>`;
+    if (meta.ip) html += `<div class="di-stat-card"><div class="di-stat-value">${esc(meta.ip || '--')}</div><div class="di-stat-label">IP Address</div></div>`;
+    if (meta.cameraPort) html += `<div class="di-stat-card"><div class="di-stat-value">${meta.cameraPort}</div><div class="di-stat-label">Camera Port</div></div>`;
+    html += `</div>`;
+
+    // Snapmaker U1 specific info
+    if (printData._sm_state_label) {
+      html += `<div class="di-usage-header" style="margin-top:14px">Snapmaker U1 Status</div>`;
+      html += `<div class="di-stats-row">`;
+      html += `<div class="di-stat-card"><div class="di-stat-value">${esc(printData._sm_state_label)}</div><div class="di-stat-label">Machine State</div></div>`;
+      if (printData._sm_filament) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${printData._sm_filament.length}</div><div class="di-stat-label">NFC Spools</div></div>`;
+      }
+      if (printData._sm_defect) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${printData._sm_defect.enabled ? 'Active' : 'Off'}</div><div class="di-stat-label">Defect Detection</div></div>`;
+      }
+      if (printData._sm_power) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${printData._sm_power.powerLoss ? '⚠ Loss' : '✓ OK'}</div><div class="di-stat-label">Power</div></div>`;
+      }
+      html += `</div>`;
+
+      // NFC Filament cards
+      if (printData._sm_filament?.length) {
+        html += `<div class="di-usage-header" style="margin-top:10px">Loaded Filament (NFC)</div>`;
+        html += `<div class="di-modules-grid">`;
+        for (let i = 0; i < printData._sm_filament.length; i++) {
+          const f = printData._sm_filament[i];
+          html += `<div class="di-module-card">
+            <div class="di-module-card-icon"><div style="width:30px;height:30px;border-radius:50%;background:${f.color};border:2px solid rgba(255,255,255,0.2)"></div></div>
+            <div class="di-module-card-info">
+              <div class="di-module-name">T${i}: ${esc(f.type)} ${esc(f.subType)}</div>
+              <div class="di-module-detail"><span class="di-detail-label">Vendor:</span> ${esc(f.vendor)}</div>
+              <div class="di-module-detail"><span class="di-detail-label">Temps:</span> ${f.nozzleTempMin}-${f.nozzleTempMax}°C / Bed ${f.bedTemp}°C</div>
+              <div class="di-module-detail"><span class="di-detail-label">Weight:</span> ${f.weight}g</div>
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+    }
+
+    // Moonraker/Klipper specific info
+    if ((meta.type === 'moonraker' || meta.type === 'klipper' || meta.type === 'prusalink') && !printData._sm_state_label) {
+      html += `<div class="di-usage-header" style="margin-top:14px">Klipper Info</div>`;
+      html += `<div class="di-stats-row">`;
+      if (printData._position) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${printData._position.x}/${printData._position.y}/${printData._position.z}</div><div class="di-stat-label">Position (X/Y/Z)</div></div>`;
+      }
+      if (printData._active_extruder) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${esc(printData._active_extruder)}</div><div class="di-stat-label">Active Extruder</div></div>`;
+      }
+      if (printData.chamber_temper) {
+        html += `<div class="di-stat-card"><div class="di-stat-value">${printData.chamber_temper}°C</div><div class="di-stat-label">Chamber Temp</div></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Bambu specific: show printer capabilities from database
+    if (meta.type !== 'moonraker' && meta.type !== 'klipper' && meta.type !== 'prusalink') {
+      const caps = typeof getCapabilities === 'function' ? getCapabilities(meta.model, meta) : {};
+      html += `<div class="di-usage-header" style="margin-top:14px">Capabilities</div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+      const capItems = [
+        ['AMS', caps.amsType],
+        ['Chamber', caps.chamberHeat || caps.enclosure],
+        ['AI Detection', caps.ai],
+        ['Chamber Fan', caps.chamberFan],
+        ['Aux Fan', caps.auxFan],
+        ['Light', caps.light],
+        ['Dual Nozzle', caps.dualNozzle],
+        ['Toolchanger', caps.toolchanger],
+      ];
+      for (const [name, val] of capItems) {
+        const on = !!val;
+        html += `<span style="font-size:0.72rem;padding:2px 8px;border-radius:10px;background:${on ? 'rgba(0,230,118,0.15)' : 'rgba(255,82,82,0.08)'};color:${on ? 'var(--accent-green)' : 'var(--text-muted)'};border:1px solid ${on ? 'rgba(0,230,118,0.3)' : 'transparent'}">${on ? '✓' : '✗'} ${name}</span>`;
+      }
+      html += `</div>`;
+    }
 
     html += `</div>`;
     container.innerHTML = html;
