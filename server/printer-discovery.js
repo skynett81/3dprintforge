@@ -178,14 +178,20 @@ export class PrinterDiscovery {
   }
 
   /**
-   * Combined scan — Bambu SSDP + Moonraker HTTP probing
+   * Combined scan — Bambu SSDP + Moonraker HTTP + Snapmaker SACP broadcast
    */
   async scanAll(timeoutMs = 5000, extraIps = []) {
+    let sacpResults = [];
+    try {
+      const { discoverSacpPrinters } = await import('./sacp-client.js');
+      sacpResults = await discoverSacpPrinters(3000);
+    } catch { /* SACP discovery optional */ }
+
     const [bambu, moonraker] = await Promise.all([
       this.scan(timeoutMs),
       this.scanMoonraker(extraIps, 3000),
     ]);
-    const combined = [...bambu, ...moonraker];
+    const combined = [...bambu, ...moonraker, ...sacpResults];
     this._cache = combined;
     return combined;
   }

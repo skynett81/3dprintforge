@@ -736,6 +736,76 @@ export class MoonrakerClient {
     }
   }
 
+  // ---- Moonraker File Manager ----
+
+  async listFiles(root = 'gcodes') {
+    const data = await this._apiGet(`/server/files/list?root=${root}`);
+    return data?.result || [];
+  }
+
+  async getFileMetadata(filename) {
+    const data = await this._apiGet(`/server/files/metadata?filename=${encodeURIComponent(filename)}`);
+    return data?.result || null;
+  }
+
+  async deleteFile(filename, root = 'gcodes') {
+    return this._apiDelete(`/server/files/${root}/${encodeURIComponent(filename)}`);
+  }
+
+  getThumbnailUrl(relativePath) {
+    return `${this._baseUrl}/server/files/gcodes/${encodeURIComponent(relativePath)}`;
+  }
+
+  getFileDownloadUrl(filename) {
+    return `${this._baseUrl}/server/files/gcodes/${encodeURIComponent(filename)}`;
+  }
+
+  // ---- Moonraker Job Queue ----
+
+  async getJobQueue() {
+    const data = await this._apiGet('/server/job_queue/status');
+    return data?.result || { queued_jobs: [], queue_state: 'paused' };
+  }
+
+  async enqueueJob(filenames) {
+    const files = Array.isArray(filenames) ? filenames : [filenames];
+    return this._apiPost('/server/job_queue/job', { filenames: files });
+  }
+
+  async removeQueueJob(jobIds) {
+    const ids = Array.isArray(jobIds) ? jobIds : [jobIds];
+    return this._apiDelete(`/server/job_queue/job?job_ids=${ids.join(',')}`);
+  }
+
+  async pauseQueue() { return this._apiPost('/server/job_queue/pause'); }
+  async startQueue() { return this._apiPost('/server/job_queue/start'); }
+
+  // ---- Moonraker Webcam ----
+
+  async getWebcams() {
+    const data = await this._apiGet('/server/webcams/list');
+    return data?.result?.webcams || [];
+  }
+
+  getSnapshotUrl() {
+    return `${this._baseUrl}/webcam/?action=snapshot`;
+  }
+
+  getStreamUrl() {
+    return `${this._baseUrl}/webcam/?action=stream`;
+  }
+
+  // ---- Moonraker Update Manager ----
+
+  async getUpdateStatus() {
+    const data = await this._apiGet('/machine/update/status');
+    return data?.result || null;
+  }
+
+  async triggerUpdate(name) {
+    return this._apiPost(`/machine/update/${name}`);
+  }
+
   // ---- HTTP helpers ----
 
   async _apiGet(path) {
@@ -764,6 +834,19 @@ export class MoonrakerClient {
       if (!res.ok) log.warn(`POST ${path}: HTTP ${res.status}`);
     } catch (e) {
       log.error(`POST ${path}: ${e.message}`);
+    }
+  }
+
+  async _apiDelete(path) {
+    const headers = {};
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+    try {
+      const res = await fetch(`${this._baseUrl}${path}`, { method: 'DELETE', headers, signal: AbortSignal.timeout(5000) });
+      if (!res.ok) log.warn(`DELETE ${path}: HTTP ${res.status}`);
+      return res.ok;
+    } catch (e) {
+      log.error(`DELETE ${path}: ${e.message}`);
+      return false;
     }
   }
 

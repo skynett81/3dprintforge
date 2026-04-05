@@ -1,0 +1,54 @@
+{
+  "Snapmaker 2.0 A150": {
+    "build_volume": [160, 160, 145],
+    "heated_bed": true, "max_bed_temp": 80, "max_nozzle_temp": 275,
+    "enclosure": false, "dual_extruder": false,
+    "capabilities": ["3dp", "laser", "cnc"],
+    "connection": "sacp", "port": 8888
+  },
+  "Snapmaker 2.0 A250": {
+    "build_volume": [230, 250, 235],
+    "heated_bed": true, "max_bed_temp": 80, "max_nozzle_temp": 275,
+    "enclosure": true, "dual_extruder": false,
+    "capabilities": ["3dp", "laser", "cnc"],
+    "connection": "sacp", "port": 8888
+  },
+  "Snapmaker 2.0 A350": {
+    "build_volume": [320, 350, 330],
+    "heated_bed": true, "max_bed_temp": 80, "max_nozzle_temp": 275,
+    "enclosure": true, "dual_extruder": false,
+    "capabilities": ["3dp", "laser", "cnc"],
+    "connection": "sacp", "port": 8888
+  },
+  "Snapmaker J1": {
+    "build_volume": [324, 200, 200],
+    "heated_bed": true, "max_bed_temp": 100, "max_nozzle_temp": 300,
+    "enclosure": true, "dual_extruder": true,
+    "capabilities": ["3dp"],
+    "connection": "sacp", "port": 8888
+  },
+  "Snapmaker Artisan": {
+    "build_volume": [400, 400, 400],
+    "heated_bed": true, "max_bed_temp": 110, "max_nozzle_temp": 300,
+    "enclosure": true, "dual_extruder": true,
+    "capabilities": ["3dp", "laser", "cnc"],
+    "connection": "sacp", "port": 8888
+  },
+  "Snapmaker Ray": {
+    "build_volume": [600, 400, 0],
+    "heated_bed": false, "max_bed_temp": 0, "max_nozzle_temp": 0,
+    "enclosure": false, "dual_extruder": false,
+    "capabilities": ["laser"],
+    "connection": "sacp", "port": 8889,
+    "transport": "udp"
+  },
+  "Snapmaker U1": {
+    "build_volume": [271, 335, 275],
+    "heated_bed": true, "max_bed_temp": 110, "max_nozzle_temp": 300,
+    "enclosure": true, "dual_extruder": false, "toolchanger": true,
+    "nozzle_count": 4,
+    "capabilities": ["3dp"],
+    "connection": "moonraker", "port": 80,
+    "features": ["nfc_filament", "defect_detection", "timelapse", "purifier", "flow_calibration"]
+  }
+}

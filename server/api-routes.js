@@ -4901,6 +4901,140 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Moonraker File Manager / Job Queue / Webcam / Updates ──
+    const moonMatch = path.match(/^\/api\/printers\/([^/]+)\/moonraker\/(.+)$/);
+    if (moonMatch) {
+      const pid = decodeURIComponent(moonMatch[1]);
+      const moonPath = moonMatch[2];
+      const entry = _printerManager?.printers?.get(pid);
+      if (!entry) return sendJson(res, { error: 'Printer not found' }, 404);
+      if (!entry.live || !entry.client) return sendJson(res, { error: 'Printer offline' }, 503);
+      const client = entry.client;
+
+      // ── File Manager ──
+      if (method === 'GET' && moonPath === 'files') {
+        try {
+          const files = await client.listFiles();
+          return sendJson(res, { files });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      const fileMetaMatch = moonPath.match(/^files\/metadata\/(.+)$/);
+      if (method === 'GET' && fileMetaMatch) {
+        try {
+          const meta = await client.getFileMetadata(decodeURIComponent(fileMetaMatch[1]));
+          if (!meta) return sendJson(res, { error: 'File not found' }, 404);
+          // Add full thumbnail URLs
+          if (meta.thumbnails) {
+            meta.thumbnails = meta.thumbnails.map(t => ({
+              ...t,
+              url: client.getThumbnailUrl(t.relative_path),
+            }));
+          }
+          return sendJson(res, meta);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      const fileDeleteMatch = moonPath.match(/^files\/delete\/(.+)$/);
+      if (method === 'DELETE' && fileDeleteMatch) {
+        const ok = await client.deleteFile(decodeURIComponent(fileDeleteMatch[1]));
+        return sendJson(res, { ok });
+      }
+
+      if (method === 'GET' && moonPath === 'files/download-url') {
+        const filename = new URL(req.url, `http://${req.headers.host}`).searchParams.get('filename');
+        if (!filename) return sendJson(res, { error: 'filename required' }, 400);
+        return sendJson(res, { url: client.getFileDownloadUrl(filename) });
+      }
+
+      // ── Job Queue ──
+      if (method === 'GET' && moonPath === 'queue') {
+        try {
+          const queue = await client.getJobQueue();
+          return sendJson(res, queue);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      if (method === 'POST' && moonPath === 'queue/enqueue') {
+        return readBody(req, res, async (body) => {
+          if (!body.filenames && !body.filename) return sendJson(res, { error: 'filename(s) required' }, 400);
+          const files = body.filenames || [body.filename];
+          await client.enqueueJob(files);
+          return sendJson(res, { ok: true, queued: files });
+        });
+      }
+
+      if (method === 'POST' && moonPath === 'queue/start') {
+        await client.startQueue();
+        return sendJson(res, { ok: true });
+      }
+
+      if (method === 'POST' && moonPath === 'queue/pause') {
+        await client.pauseQueue();
+        return sendJson(res, { ok: true });
+      }
+
+      const queueRemoveMatch = moonPath.match(/^queue\/remove\/(.+)$/);
+      if (method === 'DELETE' && queueRemoveMatch) {
+        await client.removeQueueJob(decodeURIComponent(queueRemoveMatch[1]));
+        return sendJson(res, { ok: true });
+      }
+
+      // ── Webcam ──
+      if (method === 'GET' && moonPath === 'webcams') {
+        try {
+          const webcams = await client.getWebcams();
+          return sendJson(res, { webcams });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      if (method === 'GET' && moonPath === 'snapshot') {
+        try {
+          const snapRes = await fetch(client.getSnapshotUrl(), { signal: AbortSignal.timeout(5000) });
+          if (!snapRes.ok) return sendJson(res, { error: 'Snapshot failed' }, 502);
+          const buf = Buffer.from(await snapRes.arrayBuffer());
+          res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': buf.length, 'Cache-Control': 'no-cache' });
+          res.end(buf);
+        } catch (e) { return sendJson(res, { error: e.message }, 502); }
+        return;
+      }
+
+      if (method === 'GET' && moonPath === 'stream-url') {
+        return sendJson(res, { stream: client.getStreamUrl(), snapshot: client.getSnapshotUrl() });
+      }
+
+      // ── Update Manager ──
+      if (method === 'GET' && moonPath === 'updates') {
+        try {
+          const status = await client.getUpdateStatus();
+          return sendJson(res, status || { error: 'Update manager not available' });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      if (method === 'POST' && moonPath.startsWith('updates/')) {
+        const pkg = moonPath.replace('updates/', '');
+        await client.triggerUpdate(pkg);
+        return sendJson(res, { ok: true, updating: pkg });
+      }
+
+      // ── Spoolman (if configured in Moonraker) ──
+      if (method === 'GET' && moonPath === 'spoolman/spools') {
+        try {
+          const data = await client._apiGet('/server/spoolman/proxy/v1/spool');
+          return sendJson(res, data?.result || []);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      if (method === 'GET' && moonPath === 'spoolman/status') {
+        try {
+          const data = await client._apiGet('/server/spoolman/status');
+          return sendJson(res, data?.result || {});
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      return sendJson(res, { error: 'Unknown Moonraker endpoint' }, 404);
+    }
+
     // ── Snapmaker U1 API ──
     const smMatch = path.match(/^\/api\/printers\/([^/]+)\/snapmaker\/(.+)$/);
     if (smMatch) {
@@ -4986,6 +5120,88 @@ export async function handleApiRequest(req, res) {
           _printerManager.handleCommand({ printer_id: pid, action: 'sm_set_print_config', ...filtered });
           return sendJson(res, { ok: true, updated: filtered });
         });
+      }
+
+      // Filament parameters database (load/unload/clean temps per material)
+      if (method === 'GET' && smPath === 'filament-params') {
+        try {
+          const { readFileSync } = await import('node:fs');
+          const { join, dirname } = await import('node:path');
+          const { fileURLToPath } = await import('node:url');
+          const paramsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-filament-params.json');
+          const params = JSON.parse(readFileSync(paramsPath, 'utf8'));
+          return sendJson(res, params);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Auto-suggest temperatures for a filament type+subtype
+      if (method === 'GET' && smPath === 'filament-params/suggest') {
+        try {
+          const url = new URL(req.url, `http://${req.headers.host}`);
+          const type = url.searchParams.get('type') || 'PLA';
+          const subType = url.searchParams.get('subType') || 'Standard';
+          const { readFileSync } = await import('node:fs');
+          const { join, dirname } = await import('node:path');
+          const { fileURLToPath } = await import('node:url');
+          const paramsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-filament-params.json');
+          const params = JSON.parse(readFileSync(paramsPath, 'utf8'));
+          const typeParams = params[type];
+          const suggestion = typeParams?.[subType] || typeParams?.Standard || typeParams?.default || null;
+          return sendJson(res, suggestion || { error: `No params for ${type}/${subType}` });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Camera snapshot from defect detection (via Moonraker webcam)
+      if (method === 'GET' && smPath === 'camera/snapshot') {
+        try {
+          const snapUrl = entry.client?.getSnapshotUrl();
+          if (!snapUrl) return sendJson(res, { error: 'Webcam not available' }, 503);
+          const snapRes = await fetch(snapUrl, { signal: AbortSignal.timeout(5000) });
+          if (!snapRes.ok) return sendJson(res, { error: 'Snapshot failed' }, 502);
+          const buf = Buffer.from(await snapRes.arrayBuffer());
+          res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': buf.length, 'Cache-Control': 'no-cache' });
+          res.end(buf);
+        } catch (e) { return sendJson(res, { error: e.message }, 502); }
+        return;
+      }
+
+      // Purifier maintenance info
+      if (method === 'GET' && smPath === 'purifier') {
+        return sendJson(res, {
+          ...(smState._purifier || {}),
+          workTimeHours: smState._purifier?.work_time ? Math.round(smState._purifier.work_time / 3600 * 10) / 10 : 0,
+          filterReplacementHours: 500,
+          needsReplacement: (smState._purifier?.work_time || 0) > 500 * 3600,
+        });
+      }
+
+      // Power loss recovery
+      if (method === 'POST' && smPath === 'power-recovery') {
+        if (!entry.live) return sendJson(res, { error: 'Printer offline' }, 503);
+        _printerManager.handleCommand({ printer_id: pid, action: 'gcode', gcode: 'RESUME' });
+        return sendJson(res, { ok: true, action: 'resume_after_power_loss' });
+      }
+
+      // Extruder offset calibration
+      if (method === 'POST' && smPath === 'calibrate/extruder-offset') {
+        if (!entry.live) return sendJson(res, { error: 'Printer offline' }, 503);
+        return readBody(req, res, (body) => {
+          const mode = body.mode || 'all';
+          const gcode = mode === 'all' ? 'EXTRUDER_OFFSET_ACTION_PROBE_CALIBRATE_ALL' : `XYZ_OFFSET_CALIBRATE`;
+          _printerManager.handleCommand({ printer_id: pid, action: 'gcode', gcode });
+          return sendJson(res, { ok: true, mode });
+        });
+      }
+
+      // All Snapmaker machine definitions
+      if (method === 'GET' && smPath === 'machines') {
+        try {
+          const { readFileSync } = await import('node:fs');
+          const { join, dirname } = await import('node:path');
+          const { fileURLToPath } = await import('node:url');
+          const defsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-machine-defs.json');
+          return sendJson(res, JSON.parse(readFileSync(defsPath, 'utf8')));
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
       }
 
       if (method === 'GET' && smPath === 'profiles') {
