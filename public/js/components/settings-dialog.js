@@ -2896,7 +2896,7 @@
         if (openBtn) openBtn.style.display = 'none';
       }
     } catch {
-      licArea.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('settings.orders_license_error') || 'Kunne ikke sjekke lisens.'}</span>`;
+      licArea.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('settings.orders_license_error') || 'Could not verify license.'}</span>`;
     }
   }
 

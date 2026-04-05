@@ -450,7 +450,7 @@
       <div class="sched-dialog-actions" style="margin-top:12px">
         <button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();_schedShowAdd('${dateStr}')">+ ${t('scheduler.add_event') || 'Ny hendelse'}</button>
         <div style="flex:1"></div>
-        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Lukk'}</button>
+        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Close'}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);
@@ -506,7 +506,7 @@
     }
     if (printerLabel) fields += `<div class="sched-field"><label>${t('scheduler.printer') || 'Printer'}</label><div>${_esc(printerLabel)}</div></div>`;
     fields += `<div class="sched-field"><label>${t('scheduler.started') || 'Startet'}</label><div>${startTime}</div></div>`;
-    if (endTime) fields += `<div class="sched-field"><label>${t('scheduler.finished') || 'Ferdig'}</label><div>${endTime}</div></div>`;
+    if (endTime) fields += `<div class="sched-field"><label>${t('scheduler.finished') || 'Done'}</label><div>${endTime}</div></div>`;
     if (dur) fields += `<div class="sched-field"><label>${t('scheduler.duration') || 'Varighet'}</label><div>${dur}</div></div>`;
 
     // Filament info with color swatch
@@ -546,7 +546,7 @@
           <div>${reviewBadge}</div>
           ${ev.review_notes ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">${_esc(ev.review_notes)}</div>` : ''}
           ${ev.review_waste_g ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">Waste: ${ev.review_waste_g}g</div>` : ''}
-          <button class="form-btn form-btn-sm" style="margin-top:8px" onclick="_schedReview(${ev._historyId}, this)">${typeof t === 'function' ? t('scheduler.change_review') : 'Endre vurdering'}</button>
+          <button class="form-btn form-btn-sm" style="margin-top:8px" onclick="_schedReview(${ev._historyId}, this)">${typeof t === 'function' ? t('scheduler.change_review') : 'Edit assessment'}</button>
         </div>`;
       } else {
         // Not reviewed — show review form
@@ -576,7 +576,7 @@
         ${ev._fromHistory ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#history'">${t('history.view') || 'Vis historikk'}</button>` : ''}
         ${ev._fromQueue ? `<button class="form-btn form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove();location.hash='#queue'">${t('queue.title') || 'Vis ko'}</button>` : ''}
         <div style="flex:1"></div>
-        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Lukk'}</button>
+        <button class="form-btn form-btn-secondary form-btn-sm" onclick="this.closest('.sched-dialog-overlay').remove()">${t('scheduler.close') || 'Close'}</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);

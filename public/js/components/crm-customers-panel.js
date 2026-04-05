@@ -239,7 +239,7 @@
     if (!confirm(_tl('crm.confirm_delete', 'Er du sikker?'))) return;
     try {
       await apiDeleteCustomer(id);
-      if (typeof showToast === 'function') showToast(_tl('crm.deleted', 'Slettet'), 'success');
+      if (typeof showToast === 'function') showToast(_tl('crm.deleted', 'Deleted'), 'success');
       _activeView = 'list';
       await _reload();
     } catch (err) {

@@ -299,8 +299,8 @@
       // Stats section
       h += `<div class="stats-detail-list" style="margin-bottom:12px">`;
       h += sRow(t('waste.color_changes'), `${s.total_color_changes} (${s.prints_with_changes} prints)`);
-      h += sRow('Kostnad per print', `${formatCurrency(parseFloat(costPerPrint), 0)}`);
-      h += sRow('Nyttig filament', formatWeight(usefulG), 'var(--accent-green)');
+      h += sRow('Cost per print', `${formatCurrency(parseFloat(costPerPrint), 0)}`);
+      h += sRow('Useful filament', formatWeight(usefulG), 'var(--accent-green)');
       h += sRow(t('waste.waste_ratio'), `${wasteRatio}%`, parseFloat(wasteRatio) > 5 ? 'var(--accent-red)' : 'var(--accent-green)');
       h += `</div>`;
 

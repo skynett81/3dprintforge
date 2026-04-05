@@ -565,12 +565,12 @@
         if (nozzleTemps.length) {
           const avg = Math.round(nozzleTemps.reduce((a, b) => a + b, 0) / nozzleTemps.length);
           const max = Math.max(...nozzleTemps);
-          h += sRow('Dyse snitt / maks', `${avg}°C / ${max}°C`);
+          h += sRow('Nozzle avg / max', `${avg}°C / ${max}°C`);
         }
         if (bedTemps.length) {
           const avg = Math.round(bedTemps.reduce((a, b) => a + b, 0) / bedTemps.length);
           const max = Math.max(...bedTemps);
-          h += sRow('Bed snitt / maks', `${avg}°C / ${max}°C`);
+          h += sRow('Bed avg / max', `${avg}°C / ${max}°C`);
         }
         h += `</div></div>`;
       }
@@ -592,7 +592,7 @@
       const sortedNozzles = Object.entries(byNozzle).sort((a, b) => b[1].count - a[1].count);
       if (sortedNozzles.length) {
         h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)">`;
-        h += `<div class="waste-compact-heading">Dyse & hastighet</div>`;
+        h += `<div class="waste-compact-heading">Nozzle & speed</div>`;
         const mxN = sortedNozzles[0][1].count;
         for (const [nz, d] of sortedNozzles) {
           h += barRow(esc(nz), (d.count / mxN) * 100, 'var(--accent-orange)', `${d.count}× · ${formatDuration(d.time)}`);

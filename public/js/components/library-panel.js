@@ -497,7 +497,7 @@
   window._batchDeleteFiles = function() {
     if (_selectedFiles.size === 0) return;
     if (typeof confirmAction === 'function') {
-      confirmAction(`${t('library.delete_confirm_prefix') || 'Slette'} ${_selectedFiles.size} ${_selectedFiles.size > 1 ? (t('library.files') || 'files') : (t('library.file') || 'file')}?`, async () => {
+      confirmAction(`${t('library.delete_confirm_prefix') || 'Delete'} ${_selectedFiles.size} ${_selectedFiles.size > 1 ? (t('library.files') || 'files') : (t('library.file') || 'file')}?`, async () => {
         let deleted = 0;
         for (const fileId of _selectedFiles) {
           try {
@@ -548,7 +548,7 @@
       <div class="lib-3d-content">
         <div class="lib-3d-canvas-wrap" id="lib-3d-canvas-wrap">
           <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem" id="lib-3d-loading">
-            ${t('library.loading_model') || 'Laster 3D-modell...'}
+            ${t('library.loading_model') || 'Loading 3D model...'}
           </div>
         </div>
         <div class="lib-3d-info" id="lib-3d-info">

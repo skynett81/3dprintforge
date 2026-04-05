@@ -300,12 +300,12 @@
           <span class="fc-mat-badge ${(r.success_rate || 0) > 0.9 ? 'ok' : (r.success_rate || 0) > 0.7 ? 'low' : 'critical'}">${fmtPct((r.success_rate || 0) * 100)}</span>
         </div>
         <div class="fa-rows">
-          <div class="fa-row"><span>Per dag</span><span>${fmtW(r.avg_daily_g)}</span></div>
-          <div class="fa-row"><span>Per uke</span><span>${fmtW(r.avg_weekly_g)}</span></div>
+          <div class="fa-row"><span>Per day</span><span>${fmtW(r.avg_daily_g)}</span></div>
+          <div class="fa-row"><span>Per week</span><span>${fmtW(r.avg_weekly_g)}</span></div>
           <div class="fa-row"><span>Per month</span><span>${fmtW(r.avg_monthly_g)}</span></div>
           <div class="fa-row"><span>Waste Ratio</span><span>${fmtPct((r.waste_ratio || 0) * 100)}</span></div>
-          <div class="fa-row"><span>Kostnad per gram</span><span>${fmtKrG(r.avg_cost_per_g)}</span></div>
-          <div class="fa-row"><span>Datapunkter</span><span>${fmtNum(r.sample_days)} days</span></div>
+          <div class="fa-row"><span>Cost per gram</span><span>${fmtKrG(r.avg_cost_per_g)}</span></div>
+          <div class="fa-row"><span>Data points</span><span>${fmtNum(r.sample_days)} days</span></div>
         </div>
       </div>`;
     }
@@ -493,7 +493,7 @@
       panel.innerHTML = renderPanel();
       renderTabContent();
     } catch (e) {
-      panel.innerHTML = emptyState('⚠️', 'Kunne ikke laste data', e.message);
+      panel.innerHTML = emptyState('⚠️', 'Failed to load data', e.message);
     }
   }
 

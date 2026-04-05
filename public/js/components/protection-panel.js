@@ -302,7 +302,7 @@
 
       // Filter buttons
       h += `<button class="form-btn form-btn-sm ${_logFilter === 'all' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('all')">${t('protection.filter_all') || 'Alle'} (${total})</button>`;
-      h += `<button class="form-btn form-btn-sm ${_logFilter === 'active' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('active')"${unresolved ? ' style="color:var(--accent-red)"' : ''}>${t('protection.filter_active') || 'Aktive'} (${unresolved})</button>`;
+      h += `<button class="form-btn form-btn-sm ${_logFilter === 'active' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('active')"${unresolved ? ' style="color:var(--accent-red)"' : ''}>${t('protection.filter_active') || 'Active'} (${unresolved})</button>`;
       h += `<button class="form-btn form-btn-sm ${_logFilter === 'resolved' ? '' : 'form-btn-secondary'}" data-ripple onclick="_setLogFilter('resolved')">${t('protection.filter_resolved') || 'Resolved'} (${resolved})</button>`;
 
       // Clear buttons
@@ -367,7 +367,7 @@
               <span class="pill ${actionPill}">${actLabel}</span>
               ${entry.resolved
                 ? `<span class="pill pill-completed pp-resolved-pill">${t('protection.resolved_label') || 'Resolved'}</span>`
-                : `<span class="pill pill-failed pp-active-pill">${t('protection.active_label') || 'Aktiv'}</span>`}
+                : `<span class="pill pill-failed pp-active-pill">${t('protection.active_label') || 'Active'}</span>`}
             </div>
             <div class="protection-log-card-meta">
               <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(printerName(entry.printer_id))}</span>

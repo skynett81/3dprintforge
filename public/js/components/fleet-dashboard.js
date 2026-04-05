@@ -168,7 +168,7 @@
     <div class="fleet-summary" id="fleet-summary"></div>
     <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap">
       <span style="font-size:0.75rem;color:var(--text-muted)">${t('fleet.sort_by') || 'Sorter:'}</span>
-      <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('name')">${t('fleet.sort_name') || 'Navn'}</button>
+      <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('name')">${t('fleet.sort_name') || 'Name'}</button>
       <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('status')">${t('fleet.sort_status') || 'Status'}</button>
       <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('progress')">${t('fleet.sort_progress') || 'Fremdrift'}</button>
       <div class="fleet-layout-group">${_layoutButtons()}</div>
@@ -273,7 +273,7 @@
     const isMaintenance = meta.maintenance_mode === 1 || meta.maintenance_mode === true;
     const isPrinting = !isMaintenance && ['RUNNING', 'PREPARE', 'PAUSE'].includes(gcodeState);
     const badgeCls = isMaintenance ? 'fleet-badge-maintenance' : `fleet-badge-${gcodeState.toLowerCase()}`;
-    const badgeLabel = isMaintenance ? (t('fleet.maintenance') || 'Vedlikehold') : _stateLabel(gcodeState);
+    const badgeLabel = isMaintenance ? (t('fleet.maintenance') || 'Maintenance') : _stateLabel(gcodeState);
     const pct = isPrinting ? (parseInt(printState.mc_percent || ps.mc_percent) || 0) : 0;
     const remaining = isPrinting ? (parseInt(printState.mc_remaining_time || ps.mc_remaining_time) || 0) : 0;
     const file = isPrinting ? (printState.subtask_name || ps.subtask_name || '') : '';

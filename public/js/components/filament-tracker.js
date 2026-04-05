@@ -1172,7 +1172,7 @@
           </div>
           <div class="ph-detail-grid">
             <div class="ph-detail-field">
-              <span class="ph-detail-label">${t('filament.brand', 'Merke')}</span>
+              <span class="ph-detail-label">${t('filament.brand', 'Brand')}</span>
               <span class="ph-detail-value">${esc(s.vendor_name || '--')}</span>
             </div>
             <div class="ph-detail-field">
@@ -4373,7 +4373,7 @@
       h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', closestEmpty < 999 ? closestEmpty + 'd' : '--', t('filament.next_empty') || 'Tidligst tom', closestEmpty <= 7 ? '#f85149' : closestEmpty <= 14 ? '#f0883e' : '#00e676');
       h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>', Math.round(totalRemaining) + 'g', t('filament.total_remaining') || 'Totalt igjen', '#00e676');
       h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', needsReorder, t('filament.needs_reorder_count') || 'Trenger bestilling', needsReorder > 0 ? '#f0883e' : '#8b949e');
-      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>', active.length, t('filament.active_spools') || 'Aktive spoler', '#a371f7');
+      h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>', active.length, t('filament.active_spools') || 'Active spools', '#a371f7');
       h += '</div>';
 
       // Material usage summary cards
@@ -4384,7 +4384,7 @@
           h += `<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
             <div>
               <div style="font-weight:700;font-size:0.9rem;color:${matColor}">${esc(m.material)}</div>
-              <div class="text-muted" style="font-size:0.7rem">${m.active_days} ${t('filament.active_days') || 'aktive dager'}</div>
+              <div class="text-muted" style="font-size:0.7rem">${m.active_days} ${t('filament.active_days') || 'active days'}</div>
             </div>
             <div style="text-align:right">
               <div style="font-weight:700;font-size:0.9rem">${m.avg_daily_g}g/d</div>
@@ -4429,7 +4429,7 @@
 
       // Forecast chart
       h += '<div class="card" style="margin-top:12px">';
-      h += `<div class="card-title">${t('forecast.chart_title') || '30-dagers prognose'}</div>`;
+      h += `<div class="card-title">${t('forecast.chart_title') || '30-day forecast'}</div>`;
       h += '<div id="forecast-chart-container"></div>';
       h += '</div>';
 

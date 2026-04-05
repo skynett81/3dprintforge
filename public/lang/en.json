@@ -1103,7 +1103,14 @@
     "unknown": "Unknown",
     "settings": "Calculation settings",
     "rate_info": "Electricity rate: {{rate}} /kWh, Printer power: {{wattage}}W",
-    "color_changes": "Color changes"
+    "color_changes": "Color changes",
+    "cheapest": "Cheapest",
+    "difference": "Difference",
+    "labor_cost": "Labor cost",
+    "markup": "Markup",
+    "subtotal": "Subtotal",
+    "suggested_prices": "Suggested prices",
+    "waste_cost": "Waste cost"
   },
   "fleet": {
     "printing": "Printing",
@@ -1453,7 +1460,9 @@
     "location": "Location",
     "printer_id": "Printer ID",
     "no_spools": "No spools in inventory to create labels for.",
-    "no_printers": "No printers connected."
+    "no_printers": "No printers connected.",
+    "no_profiles": "No profiles found",
+    "type_profile": "Profiles"
   },
   "gallery": {
     "title": "Print Gallery",
@@ -2674,13 +2683,13 @@
     "action_pause": "Pause print",
     "action_stop": "Stop print",
     "action_ignore": "Ignore",
-    "cooldown": "Cooldown (seconds)",
-    "auto_resume": "Auto-resume after pause",
+    "cooldown": "Cooldown",
+    "auto_resume": "Auto resume",
     "active_alerts": "Active alerts",
     "resolve": "Resolve",
     "resolved_label": "Resolved",
-    "no_alerts": "No active alerts",
-    "guard_overview": "Guard status",
+    "no_alerts": "No alerts",
+    "guard_overview": "Guard overview",
     "sensor_dashboard": "Sensor dashboard",
     "last_event": "Last event",
     "events_24h": "Events (24h)",
@@ -2689,22 +2698,23 @@
     "print_error": "Printer error",
     "fan_failure": "Fan failure",
     "print_stall": "Print stalled",
-    "section_camera": "Camera AI",
-    "section_sensors": "Sensors",
+    "section_camera": "Camera monitoring",
+    "section_sensors": "Sensor monitoring",
     "thresholds": "Thresholds",
-    "temp_threshold": "Temp deviation",
-    "filament_threshold": "Filament low",
-    "stall_threshold": "Stall time",
+    "temp_threshold": "Temperature threshold",
+    "filament_threshold": "Filament threshold",
+    "stall_threshold": "Stall threshold",
     "filter_all": "All",
     "filter_active": "Active",
     "filter_resolved": "Resolved",
     "clear_resolved": "Clear resolved",
     "clear_all": "Clear all",
-    "confirm_clear_resolved": "Clear all resolved events?",
-    "confirm_clear_all": "Clear the ENTIRE log? This cannot be undone.",
+    "confirm_clear_resolved": "Clear resolved alerts?",
+    "confirm_clear_all": "Clear all alerts?",
     "log_cleared": "Log cleared",
-    "log_empty": "No events",
-    "active_label": "Active"
+    "log_empty": "No log entries",
+    "active_label": "Active",
+    "no_printer": "No printer selected"
   },
   "queue": {
     "title": "Print Queue",
@@ -3076,7 +3086,14 @@
     "success_rate": "Success rate",
     "samples": "Count",
     "leaderboard_desc": "Materials ranked by success rate (min. 3 prints)",
-    "recalculated": "Recommendations updated"
+    "recalculated": "Recommendations updated",
+    "avg_success": "Average success rate",
+    "best_material": "Best material",
+    "brand_comparison": "Brand comparison",
+    "leaderboard": "Leaderboard",
+    "select_to_compare": "Select materials to compare",
+    "total_materials": "Total materials",
+    "total_prints": "Total prints"
   },
   "wear": {
     "title": "Wear prediction",
@@ -3095,7 +3112,9 @@
     "cost_summary": "Maintenance costs",
     "printer": "Printer",
     "items": "Items",
-    "predicted_replacement": "Predicted replacement"
+    "predicted_replacement": "Predicted replacement",
+    "components": "Components",
+    "printers": "Printers"
   },
   "error_analysis": {
     "title": "Error pattern AI",
@@ -3219,7 +3238,19 @@
     "view": "View",
     "mark_sent": "Mark as sent",
     "mark_paid": "Mark as paid",
-    "status_updated": "Status updated"
+    "status_updated": "Status updated",
+    "confirm_delete": "Delete this order?",
+    "create": "Create order",
+    "delete": "Delete",
+    "deleted": "Order deleted",
+    "description": "Description",
+    "duplicate": "Duplicate",
+    "duplicated": "Order duplicated",
+    "go_to_settings": "Go to settings",
+    "license_required": "License required",
+    "license_required_desc": "A commercial license is required for order management",
+    "name_required": "Order name is required",
+    "order_name": "Order name"
   },
   "plugins": {
     "title": "Plugins",
@@ -3285,10 +3316,10 @@
   "calendar": {
     "title": "Print Calendar",
     "active_days": "Active days",
-    "load_failed": "Could not load calendar data",
-    "no_data": "No print data available",
-    "ok": "ok",
-    "failed": "failed",
+    "load_failed": "Failed to load calendar data",
+    "no_data": "No data available",
+    "ok": "OK",
+    "failed": "Failed",
     "less": "Less",
     "more": "More",
     "jan": "Jan",
@@ -3309,7 +3340,8 @@
     "wed": "Wed",
     "thu": "Thu",
     "fri": "Fri",
-    "sat": "Sat"
+    "sat": "Sat",
+    "no_prints": "No prints in this period"
   },
   "achievements": {
     "title": "Achievements",
@@ -3726,90 +3758,7 @@
     "state_unloading": "Unloading Filament",
     "state_error": "Error"
   },
-  "calendar": {
-    "no_prints": "No prints in this period",
-    "active_days": "Active days",
-    "failed": "Failed",
-    "less": "Less",
-    "load_failed": "Failed to load calendar data",
-    "more": "More",
-    "no_data": "No data available",
-    "ok": "OK"
-  },
-  "cost_estimator": {
-    "cheapest": "Cheapest",
-    "difference": "Difference",
-    "labor_cost": "Labor cost",
-    "markup": "Markup",
-    "subtotal": "Subtotal",
-    "suggested_prices": "Suggested prices",
-    "waste_cost": "Waste cost"
-  },
   "cost": {
     "energy_info": "Energy cost based on spot prices"
-  },
-  "labels": {
-    "no_profiles": "No profiles found",
-    "type_profile": "Profiles"
-  },
-  "material_rec": {
-    "avg_success": "Average success rate",
-    "best_material": "Best material",
-    "brand_comparison": "Brand comparison",
-    "leaderboard": "Leaderboard",
-    "select_to_compare": "Select materials to compare",
-    "total_materials": "Total materials",
-    "total_prints": "Total prints"
-  },
-  "orders": {
-    "title": "Orders",
-    "confirm_delete": "Delete this order?",
-    "create": "Create order",
-    "delete": "Delete",
-    "deleted": "Order deleted",
-    "description": "Description",
-    "duplicate": "Duplicate",
-    "duplicated": "Order duplicated",
-    "go_to_settings": "Go to settings",
-    "license_required": "License required",
-    "license_required_desc": "A commercial license is required for order management",
-    "name_required": "Order name is required",
-    "order_name": "Order name"
-  },
-  "protection": {
-    "title": "Print Guard",
-    "no_printer": "No printer selected",
-    "active_alerts": "Active alerts",
-    "active_label": "Active",
-    "auto_resume": "Auto resume",
-    "clear_all": "Clear all",
-    "clear_resolved": "Clear resolved",
-    "confirm_clear_all": "Clear all alerts?",
-    "confirm_clear_resolved": "Clear resolved alerts?",
-    "cooldown": "Cooldown",
-    "disabled": "Disabled",
-    "enabled": "Enabled",
-    "filament_threshold": "Filament threshold",
-    "filter_active": "Active",
-    "filter_all": "All",
-    "filter_resolved": "Resolved",
-    "guard_overview": "Guard overview",
-    "log_cleared": "Log cleared",
-    "log_empty": "No log entries",
-    "no_alerts": "No alerts",
-    "resolve": "Resolve",
-    "resolved_label": "Resolved",
-    "section_camera": "Camera monitoring",
-    "section_sensors": "Sensor monitoring",
-    "sensor_dashboard": "Sensor dashboard",
-    "stall_threshold": "Stall threshold",
-    "tab_log": "Log",
-    "tab_settings": "Settings",
-    "temp_threshold": "Temperature threshold",
-    "thresholds": "Thresholds"
-  },
-  "wear": {
-    "components": "Components",
-    "printers": "Printers"
   }
 }

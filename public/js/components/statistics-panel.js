@@ -630,8 +630,8 @@
       const bedTemps = hist.filter(r => r.max_bed_temp > 0).map(r => r.max_bed_temp);
       if (nozzleTemps.length || bedTemps.length) {
         h += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-color)"><div class="waste-compact-heading">${t('stats.temperatures') || 'Temperaturer'}</div><div class="stats-detail-list">`;
-        if (nozzleTemps.length) { const avg = Math.round(nozzleTemps.reduce((a, b) => a + b, 0) / nozzleTemps.length); h += sRow(t('stats.nozzle_avg_max') || 'Dyse snitt / maks', `${avg}\u00B0C / ${Math.max(...nozzleTemps)}\u00B0C`); }
-        if (bedTemps.length) { const avg = Math.round(bedTemps.reduce((a, b) => a + b, 0) / bedTemps.length); h += sRow(t('stats.bed_avg_max') || 'Bed snitt / maks', `${avg}\u00B0C / ${Math.max(...bedTemps)}\u00B0C`); }
+        if (nozzleTemps.length) { const avg = Math.round(nozzleTemps.reduce((a, b) => a + b, 0) / nozzleTemps.length); h += sRow(t('stats.nozzle_avg_max') || 'Nozzle avg / max', `${avg}\u00B0C / ${Math.max(...nozzleTemps)}\u00B0C`); }
+        if (bedTemps.length) { const avg = Math.round(bedTemps.reduce((a, b) => a + b, 0) / bedTemps.length); h += sRow(t('stats.bed_avg_max') || 'Bed avg / max', `${avg}\u00B0C / ${Math.max(...bedTemps)}\u00B0C`); }
         h += `</div></div>`;
       }
       const byNozzle = {}; let totalLayers = 0;
@@ -642,7 +642,7 @@
       }
       const sortedNozzles = Object.entries(byNozzle).sort((a, b) => b[1].count - a[1].count);
       if (sortedNozzles.length) {
-        h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)"><div class="waste-compact-heading">${t('stats.nozzle_speed') || 'Dyse & hastighet'}</div>`;
+        h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)"><div class="waste-compact-heading">${t('stats.nozzle_speed') || 'Nozzle & speed'}</div>`;
         const mxN = sortedNozzles[0][1].count;
         for (const [nz, d] of sortedNozzles) h += barRow(esc(nz), (d.count / mxN) * 100, 'var(--accent-orange)', `${d.count}\u00D7 \u00B7 ${_fmtDurLong(d.time)}`);
         h += `<div class="stats-detail-list" style="margin-top:6px">`;
@@ -763,11 +763,11 @@
       const maxHour = Math.max(...byHour, 1);
       h += `<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">`;
       h += `<div style="flex:1;min-width:180px"><div class="stats-detail-list">`;
-      h += sRow(t('stats.active_days') || 'Aktive printdager', `${totalDays} ${t('stats.of') || 'av'} ${span} ${t('stats.days') || 'dager'} (${activePct}%)`);
+      h += sRow(t('stats.active_days') || 'Active print days', `${totalDays} ${t('stats.of') || 'of'} ${span} ${t('stats.days') || 'days'} (${activePct}%)`);
       h += sRow(t('stats.prints_per_day') || 'Prints per dag (snitt)', (hist.length / totalDays).toFixed(1));
       h += sRow(t('stats.peak_hour') || 'Mest aktive time', `${String(peakHour).padStart(2,'0')}:00 – ${String(peakHour+1).padStart(2,'0')}:00 (${byHour[peakHour]} prints)`);
       h += `</div></div>`;
-      h += `<div style="flex:1;min-width:200px"><div class="waste-compact-heading">${t('stats.hourly_activity') || 'Aktivitet per time'}</div>`;
+      h += `<div style="flex:1;min-width:200px"><div class="waste-compact-heading">${t('stats.hourly_activity') || 'Hourly activity'}</div>`;
       h += `<div style="display:flex;gap:2px;align-items:flex-end;height:36px">`;
       for (let i = 0; i < 24; i++) {
         const v = byHour[i], ht = maxHour > 0 ? Math.max((v / maxHour) * 100, v > 0 ? 8 : 2) : 2;

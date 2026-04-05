@@ -337,7 +337,7 @@
         }
       }, 8000);
     } catch (e) {
-      console.warn('[kamera] Kunne ikke starte:', e.message);
+      console.warn('[camera] Failed to start:', e.message);
       showPlaceholder(container);
       _scheduleReconnect();
     }

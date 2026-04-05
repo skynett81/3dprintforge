@@ -201,7 +201,7 @@
       items.push({
         id: 'printer-' + pid,
         label: name,
-        category: t('command_palette.printers') || 'Skrivere',
+        category: t('command_palette.printers') || 'Printers',
         icon: ICONS.printer,
         action: (function(id) {
           return function() {
@@ -311,7 +311,7 @@
         '</div>' +
         '<div class="cmd-palette-results"></div>' +
         '<div class="cmd-palette-footer">' +
-          '<span><kbd>&uarr;</kbd><kbd>&darr;</kbd> ' + (t('command_palette.navigate') || 'naviger') + '</span>' +
+          '<span><kbd>&uarr;</kbd><kbd>&darr;</kbd> ' + (t('command_palette.navigate') || 'navigate') + '</span>' +
           '<span><kbd>Enter</kbd> ' + (t('command_palette.select') || 'velg') + '</span>' +
           '<span><kbd>Esc</kbd> ' + (t('command_palette.close') || 'lukk') + '</span>' +
         '</div>' +

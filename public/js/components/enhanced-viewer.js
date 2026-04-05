@@ -717,7 +717,7 @@
       <div class="lib-3d-content">
         <div class="lib-3d-canvas-wrap" id="_g3d-canvas">
           <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem" id="_g3d-loading">
-            ${typeof t === 'function' ? t('library.loading_model') || 'Laster 3D-modell...' : 'Loading 3D model...'}
+            ${typeof t === 'function' ? t('library.loading_model') || 'Loading 3D model...' : 'Loading 3D model...'}
           </div>
         </div>
         <div class="lib-3d-info" id="_g3d-info">

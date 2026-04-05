@@ -138,8 +138,8 @@
       { label: _tl('history.duration', 'Varighet'), key: 'duration_seconds', fmt: v => _formatDuration(v), compare: 'lower' },
       { label: _tl('history.started', 'Startet'), key: 'started_at', fmt: v => _formatDate(v) },
       { label: _tl('history.ended', 'Avsluttet'), key: 'ended_at', fmt: v => _formatDate(v) },
-      { label: _tl('history.filament', 'Filament brukt'), key: 'filament_used_g', fmt: v => v ? v.toFixed(1) + 'g' : '--', compare: 'lower' },
-      { label: _tl('history.filament_type', 'Filamenttype'), key: 'filament_type', fmt: v => _esc(v || '--') },
+      { label: _tl('history.filament', 'Filament used'), key: 'filament_used_g', fmt: v => v ? v.toFixed(1) + 'g' : '--', compare: 'lower' },
+      { label: _tl('history.filament_type', 'Filament type'), key: 'filament_type', fmt: v => _esc(v || '--') },
       { label: _tl('history.layers', 'Lag'), key: 'layer_count', fmt: v => v ? String(v) : '--' },
       { label: _tl('history.notes', 'Notater'), key: 'notes', fmt: v => _esc(v || '--') }
     ];
@@ -199,7 +199,7 @@
 
     html += `</div>
       <div class="modal-footer">
-        <button class="form-btn form-btn-secondary" onclick="document.getElementById('print-compare-modal')?.remove()">${_tl('common.close', 'Lukk')}</button>
+        <button class="form-btn form-btn-secondary" onclick="document.getElementById('print-compare-modal')?.remove()">${_tl('common.close', 'Close')}</button>
       </div>
     </div>`;
 

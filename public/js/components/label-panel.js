@@ -75,11 +75,11 @@
         <div class="lbl-actions">
           <button class="lbl-select-btn" onclick="_lblToggleAll()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-            ${_tl('labels.select_all', 'Velg alle')}
+            ${_tl('labels.select_all', 'Select all')}
           </button>
           <button class="lbl-print-btn" onclick="window.print()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            ${_tl('labels.print', 'Skriv ut')}
+            ${_tl('labels.print', 'Print')}
           </button>
         </div>
       </div>

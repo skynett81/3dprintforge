@@ -423,7 +423,7 @@
       if (typeof showToast === 'function') showToast(t('common.saved') || 'Saved', 'success');
       _reload();
     } catch (e) {
-      if (typeof showToast === 'function') showToast(t('common.save_error') || 'Feil ved lagring', 'error');
+      if (typeof showToast === 'function') showToast(t('common.save_error') || 'Error saving', 'error');
     }
   };
 
@@ -431,7 +431,7 @@
     if (typeof confirmAction === 'function') {
       confirmAction(t('queue.delete_confirm') || 'Delete this queue?', async () => {
         await fetch(`/api/queue/${id}`, { method: 'DELETE' });
-        if (typeof showToast === 'function') showToast(t('common.deleted') || 'Slettet', 'success');
+        if (typeof showToast === 'function') showToast(t('common.deleted') || 'Deleted', 'success');
         _reload();
       }, { danger: true });
     }

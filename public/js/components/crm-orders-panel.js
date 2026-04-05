@@ -227,7 +227,7 @@
           <div><label class="form-label">${_esc(_tl('crm.unit_price', 'Pris'))}</label><input class="form-control form-control-sm crm-item-field" data-field="unit_price" type="number" step="0.01" value="${it.unit_price || ''}"></div>
           <div style="display:flex;gap:0.25rem;align-items:end;padding-bottom:2px">
             <button type="button" class="btn btn-sm btn-outline-info" onclick="window._crmOrdCalcItem(${i})" title="${_esc(_tl('crm.calculate', 'Kalkuler'))}"><i class="bi bi-calculator"></i></button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="window._crmOrdRemoveItem(${i})" title="${_esc(_tl('crm.remove_item', 'Fjern'))}"><i class="bi bi-trash"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="window._crmOrdRemoveItem(${i})" title="${_esc(_tl('crm.remove_item', 'Remove'))}"><i class="bi bi-trash"></i></button>
           </div>
         </div>
       </div>`).join('');
@@ -242,14 +242,14 @@
         <div class="card-body">
           <form id="crm-ord-form">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.75rem;margin-bottom:1rem">
-              <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Customer'))} *</label><select class="form-select" name="customer_id" required><option value="">-- ${_esc(_tl('crm.select_customer', 'Velg kunde'))} --</option>${custOptions}</select></div>
+              <div><label class="form-label">${_esc(_tl('crm.customer_name', 'Customer'))} *</label><select class="form-select" name="customer_id" required><option value="">-- ${_esc(_tl('crm.select_customer', 'Select customer'))} --</option>${custOptions}</select></div>
               <div><label class="form-label">${_esc(_tl('crm.due_date', 'Due date'))}</label><input class="form-control" name="due_date" type="date"></div>
               <div style="grid-column:1/-1"><label class="form-label">${_esc(_tl('crm.notes', 'Notes'))}</label><textarea class="form-control" name="notes" rows="2"></textarea></div>
             </div>
             <h5 style="margin-bottom:0.5rem">${_esc(_tl('crm.items', 'Items'))}</h5>
             <div id="crm-ord-items">${renderItemRows()}</div>
             <button type="button" class="btn btn-sm btn-outline-primary" style="margin-top:0.5rem" onclick="window._crmOrdAddItem()">
-              <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.add_item', 'Legg til artikkel'))}
+              <i class="bi bi-plus-lg"></i> ${_esc(_tl('crm.add_item', 'Add item'))}
             </button>
             <hr style="margin:1rem 0">
             <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> ${_esc(_tl('crm.save', 'Save'))}</button>
@@ -318,9 +318,9 @@
       _formItems = _formItems.map((it, i) => i === idx ? Object.assign({}, it, { unit_price: result.total }) : it);
       const body = document.getElementById('overlay-panel-body');
       if (body && _activeView === 'form') renderForm(body);
-      if (typeof showToast === 'function') showToast(_tl('crm.cost_calculated', 'Kostnad beregnet'), 'success');
+      if (typeof showToast === 'function') showToast(_tl('crm.cost_calculated', 'Cost calculated'), 'success');
     } else {
-      if (typeof showToast === 'function') showToast(_tl('crm.calc_failed', 'Kunne ikke beregne'), 'warning');
+      if (typeof showToast === 'function') showToast(_tl('crm.calc_failed', 'Could not calculate'), 'warning');
     }
   };
 

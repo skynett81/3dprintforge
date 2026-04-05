@@ -213,7 +213,7 @@
 
     // Bar chart
     html += '<div class="card" style="padding:20px;margin-bottom:18px">';
-    html += `<div class="card-title">${_compareType} — ${_tl('material_rec.brand_comparison', 'Merkesammenligning')}</div>`;
+    html += `<div class="card-title">${_compareType} — ${_tl('material_rec.brand_comparison', 'Brand comparison')}</div>`;
     for (const d of _compareData) {
       const pct = d.success_rate || 0;
       const color = _rateColor(pct);
@@ -234,12 +234,12 @@
         <thead>
           <tr>
             <th>#</th>
-            <th style="text-align:left">${_tl('material_rec.brand', 'Merke')}</th>
-            <th>${_tl('material_rec.success_rate', 'Suksess')}</th>
+            <th style="text-align:left">${_tl('material_rec.brand', 'Brand')}</th>
+            <th>${_tl('material_rec.success_rate', 'Success rate')}</th>
             <th>${_tl('material_rec.nozzle_temp', 'Nozzle')}</th>
             <th>${_tl('material_rec.bed_temp', 'Bed')}</th>
             <th>${_tl('material_rec.speed', 'Speed')}</th>
-            <th>${_tl('material_rec.samples', 'Antall')}</th>
+            <th>${_tl('material_rec.samples', 'Count')}</th>
           </tr>
         </thead>
         <tbody>`;
@@ -269,8 +269,8 @@
     }
 
     let html = `<div class="card" style="padding:20px">
-      <div class="card-title">${_tl('material_rec.leaderboard', 'Rangliste')}</div>
-      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px">${_tl('material_rec.leaderboard_desc', 'Materialer rangert etter suksessrate (min. 3 utskrifter)')}</p>`;
+      <div class="card-title">${_tl('material_rec.leaderboard', 'Leaderboard')}</div>
+      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px">${_tl('material_rec.leaderboard_desc', 'Materials ranked by success rate (min. 3 prints)')}</p>`;
 
     for (let i = 0; i < _successRates.length; i++) {
       const r = _successRates[i];
@@ -303,7 +303,7 @@
 
     // Show loading on first load
     if (_recommendations.length === 0 && _successRates.length === 0) {
-      body.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div><p>' + _tl('common.loading', 'Laster...') + '</p></div>';
+      body.innerHTML = '<div class="matrec-empty"><div class="matrec-spinner"></div><p>' + _tl('common.loading', 'Loading...') + '</p></div>';
       await Promise.all([_fetchRecommendations(), _fetchSuccessRates()]);
     }
 
