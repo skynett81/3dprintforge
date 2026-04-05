@@ -3,6 +3,7 @@
   let lightState = 'on';
   let _lastData = null;
   let _rendered = false;
+  let _renderedForPrinter = null; // Track which printer the panel was rendered for
 
   function fanPercent(raw) {
     const val = parseInt(raw) || 0;
@@ -532,7 +533,7 @@
     // ===== CARD: Storage Files (SD/USB depending on model) =====
     if (meta?.id) {
       const _isUsbModel = ['P2S', 'P2S Combo', 'H2D'].includes(meta.model);
-      const _storageLabel = _isUsbModel ? t('controls.usb_files', 'USB-filer') : t('controls.sd_files');
+      const _storageLabel = _isUsbModel ? t('controls.usb_files', 'USB Files') : t('controls.sd_files');
       html += `<div class="ctrl-card ctrl-area-files">
         <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px">
@@ -542,7 +543,7 @@
           <div style="display:flex;gap:4px">
             <button class="form-btn form-btn-sm" data-ripple onclick="showFileUpload('${esc(meta.id)}')">${t('controls.upload_file')}</button>
             <button class="form-btn form-btn-sm" data-ripple onclick="loadPrinterFiles('${esc(meta.id)}')">${t('controls.refresh')}</button>
-            <button class="form-btn form-btn-sm" style="color:var(--accent-red)" data-ripple onclick="formatStorage('${esc(meta.id)}')" title="${_isUsbModel ? t('controls.format_usb', 'Formater USB') : t('controls.format_sd', 'Formater SD-kort')}">
+            <button class="form-btn form-btn-sm" style="color:var(--accent-red)" data-ripple onclick="formatStorage('${esc(meta.id)}')" title="${_isUsbModel ? t('controls.format_usb', 'Format USB') : t('controls.format_sd', 'Format SD')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
             </button>
           </div>
@@ -555,6 +556,7 @@
     html += '</div>'; // close .ctrl-layout
     container.innerHTML = html;
     _rendered = true;
+    _renderedForPrinter = window.printerState?.getActivePrinterId() || null;
     // Load macros now that DOM is ready
     loadMacros();
   }
@@ -641,11 +643,15 @@
 
   window.updateControls = function(data) {
     _lastData = data;
+    const activePrinter = window.printerState?.getActivePrinterId();
+    const printerChanged = _renderedForPrinter !== null && _renderedForPrinter !== activePrinter;
+
     const miniContainer = document.getElementById('controls-content');
     if (miniContainer) renderControls(miniContainer, data);
     const panelContainer = document.getElementById('controls-panel-content');
     if (panelContainer) {
-      if (!_rendered || !panelContainer.hasChildNodes()) {
+      if (!_rendered || !panelContainer.hasChildNodes() || printerChanged) {
+        _rendered = false; // Force full re-render
         renderControls(panelContainer, data);
       } else {
         updateControlsInPlace(panelContainer, data);

@@ -47,6 +47,7 @@ export function updatePrinterIp(id, newIp) {
 
 export function deletePrinter(id) {
   const db = getDb();
+  delete _capCache[id];
   return db.prepare('DELETE FROM printers WHERE id=?').run(id);
 }
 

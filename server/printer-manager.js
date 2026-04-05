@@ -250,13 +250,13 @@ export class PrinterManager {
   handleCommand(msg) {
     const id = msg.printer_id;
     if (!id) {
-      const firstId = this.printers.keys().next().value;
-      if (firstId) msg.printer_id = firstId;
-      else return;
+      log.warn('Command received without printer_id — ignoring (action: ' + msg.action + ')');
+      return;
     }
 
-    const printer = this.printers.get(msg.printer_id);
-    if (!printer || !printer.live || !printer.client) return;
+    const printer = this.printers.get(id);
+    if (!printer) { log.warn(`Command for unknown printer: ${id}`); return; }
+    if (!printer.live || !printer.client) { log.warn(`Command for offline printer: ${id}`); return; }
 
     const cmd = printer.client._buildCommand?.(msg);
     if (cmd) printer.client.sendCommand(cmd);
