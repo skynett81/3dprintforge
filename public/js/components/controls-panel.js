@@ -985,8 +985,17 @@
     if (!el) return;
     el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('common.loading')}...</span>`;
     try {
-      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/files`);
-      const files = await res.json();
+      // Try Moonraker API first, fall back to Bambu FTP API
+      const meta = window.printerState?.getActivePrinterMeta();
+      let files;
+      if (meta?.type === 'moonraker' || meta?.type === 'klipper' || meta?.type === 'prusalink' || meta?.type === 'creality' || meta?.type === 'elegoo' || meta?.type === 'voron') {
+        const moonRes = await fetch(`/api/printers/${encodeURIComponent(printerId)}/moonraker/files`);
+        const moonData = await moonRes.json();
+        files = (moonData.files || []).map(f => ({ name: f.path, path: f.path, size: f.size }));
+      } else {
+        const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/files`);
+        files = await res.json();
+      }
       if (files.error) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${esc(files.error)}</span>`; return; }
       if (!files.length) { el.innerHTML = `<span class="text-muted" style="font-size:0.8rem">${t('controls.sd_no_files')}</span>`; return; }
       let h = '<div class="ctrl-files-grid">';

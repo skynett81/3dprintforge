@@ -235,7 +235,8 @@
           { id: 'energy', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', label: t('settings.settings_sub_energy') },
           { id: 'integrations', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>', label: t('settings.settings_sub_integrations') },
           { id: 'nodes', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>', label: t('settings.settings_sub_nodes') },
-          { id: 'data', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', label: t('settings.settings_sub_data') }
+          { id: 'data', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', label: t('settings.settings_sub_data') },
+          { id: 'tunnel', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', label: 'Remote Access' }
         ];
         html += '<div class="drying-sub-tabs">';
         for (const tab of stabs) {
@@ -1025,11 +1026,15 @@
         </div>
         <p class="text-muted" style="font-size:0.8rem;margin-bottom:8px">Supported printer protocols and brands</p>
         ${brand('Bambu Lab', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8v8H8z"/></svg>', iCheck, 'MQTT over TLS (port 8883) — X1C, P1S, P2S, A1, H2 series')}
-        ${brand('Moonraker / Klipper', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', iCheck, 'WebSocket + REST API — Snapmaker, Voron, Creality, Sovol, QIDI, Ratrig')}
-        ${brand('OctoPrint', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-9-9h4m14 0h4"/></svg>', iSoon, 'REST API — Prusa, Ender, any OctoPrint-compatible printer')}
-        ${brand('Prusa Connect', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', iSoon, 'Prusa Connect API — MK4, MK3.9, Mini, XL')}
-        ${brand('Creality Cloud', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>', iSoon, 'Cloud API — K1, K1 Max, Ender-3 V3, CR-10 SE')}
-        <div style="padding:10px 0 0;font-size:0.72rem;color:var(--text-muted)">More printer brands can be added via the plugin system or by request.</div>
+        ${brand('Moonraker / Klipper', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', iCheck, 'WebSocket + REST API — Snapmaker U1, Voron, Sovol, RatRig')}
+        ${brand('PrusaLink', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', iCheck, 'PrusaLink REST API with Digest Auth — MK4, MK3.9, Mini+, XL')}
+        ${brand('Creality (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>', iCheck, 'Via Moonraker — K1, K1 Max, Ender-3 V3, CR-10 SE')}
+        ${brand('Elegoo (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/></svg>', iCheck, 'Via Moonraker — Neptune 4, Neptune 4 Pro/Max')}
+        ${brand('AnkerMake (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>', iCheck, 'Via Moonraker — AnkerMake M5 series')}
+        ${brand('QIDI (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>', iCheck, 'Via Moonraker — QIDI X-Plus 3, X-Max 3, Q1 Pro')}
+        ${brand('Snapmaker SACP', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 7h10v10H7z"/></svg>', iCheck, 'Binary protocol — A150, A250, A350, J1, Artisan')}
+        ${brand('OctoPrint', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-9-9h4m14 0h4"/></svg>', iSoon, 'REST API — any OctoPrint-compatible printer')}
+        <div style="padding:10px 0 0;font-size:0.72rem;color:var(--text-muted)">8 brands supported. More can be added via the plugin system.</div>
       </div>`;
 
       // 3D Model Integrations
@@ -1110,8 +1115,70 @@
       el.innerHTML = h;
       loadCustomFieldsSettings();
       loadBrandDefaultsSettings();
+    } else if (_systemSubTab === 'tunnel') {
+      el.innerHTML = `<div class="settings-card">
+        <div class="card-title" style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10"/></svg>
+          Cloudflare Tunnel — Remote Access
+        </div>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:12px">Access 3DPrintForge from anywhere via a secure Cloudflare tunnel. No VPN, no port forwarding needed.</p>
+        <div id="tunnel-status"><div class="text-muted" style="font-size:0.8rem">Loading...</div></div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button class="form-btn form-btn-primary" data-ripple onclick="window._startTunnel()">Start Tunnel</button>
+          <button class="form-btn form-btn-sm" data-ripple style="color:var(--accent-red)" onclick="window._stopTunnel()">Stop</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._loadTunnelStatus()">Refresh</button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="card-title">How it works</div>
+        <ol style="font-size:0.82rem;color:var(--text-muted);padding-left:20px;margin:0;line-height:1.8">
+          <li>Install <code>cloudflared</code> on this server (<a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/" target="_blank" style="color:var(--accent-blue)">download</a>)</li>
+          <li>Click "Start Tunnel" — a temporary public URL is created</li>
+          <li>Share the URL to access your dashboard from any device</li>
+          <li>The tunnel auto-closes when you click "Stop"</li>
+        </ol>
+      </div>`;
+      window._loadTunnelStatus();
     }
   }
+
+  window._loadTunnelStatus = async function() {
+    const el = document.getElementById('tunnel-status');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/tunnel/status');
+      const d = await res.json();
+      let h = '<div class="stats-detail-list">';
+      h += `<div class="stats-detail-row"><span class="stats-detail-label">cloudflared</span><span class="stats-detail-value">${d.available ? '✅ Installed' : '❌ Not found'}</span></div>`;
+      if (d.version) h += `<div class="stats-detail-row"><span class="stats-detail-label">Version</span><span class="stats-detail-value">${d.version}</span></div>`;
+      h += `<div class="stats-detail-row"><span class="stats-detail-label">Status</span><span class="stats-detail-value" style="color:${d.status === 'running' ? 'var(--accent-green)' : d.status === 'starting' ? 'var(--accent-orange)' : 'var(--text-muted)'};font-weight:600">${d.status.toUpperCase()}</span></div>`;
+      if (d.url) h += `<div class="stats-detail-row"><span class="stats-detail-label">Public URL</span><span class="stats-detail-value"><a href="${d.url}" target="_blank" style="color:var(--accent-blue);word-break:break-all">${d.url}</a></span></div>`;
+      h += '</div>';
+      if (d.logs?.length) {
+        h += '<div style="margin-top:8px;max-height:120px;overflow-y:auto;background:var(--bg-tertiary);border-radius:6px;padding:6px 8px;font-size:0.65rem;font-family:monospace;color:var(--text-muted)">';
+        for (const log of d.logs.slice(-10)) h += `<div>${log.replace(/</g, '&lt;')}</div>`;
+        h += '</div>';
+      }
+      el.innerHTML = h;
+    } catch { el.innerHTML = '<span class="text-muted">Failed to load tunnel status</span>'; }
+  };
+
+  window._startTunnel = async function() {
+    try {
+      const res = await fetch('/api/tunnel/start', { method: 'POST' });
+      const d = await res.json();
+      if (d.ok) { if (typeof showToast === 'function') showToast('Tunnel starting...', 'info'); setTimeout(window._loadTunnelStatus, 3000); }
+      else if (typeof showToast === 'function') showToast(d.error || 'Failed', 'error');
+    } catch (e) { if (typeof showToast === 'function') showToast(e.message, 'error'); }
+  };
+
+  window._stopTunnel = async function() {
+    try {
+      await fetch('/api/tunnel/stop', { method: 'POST' });
+      if (typeof showToast === 'function') showToast('Tunnel stopped', 'info');
+      setTimeout(window._loadTunnelStatus, 500);
+    } catch {}
+  };
 
   // ═══ System Info, Backups, Scheduled Tasks ═══
 

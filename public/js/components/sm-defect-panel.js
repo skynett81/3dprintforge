@@ -66,6 +66,35 @@
       </div>`;
     }
 
+    // ── Purifier Maintenance ──
+    if (data._purifier) {
+      const pur = data._purifier;
+      const workHours = pur.work_time ? Math.round(pur.work_time / 3600 * 10) / 10 : 0;
+      const filterLife = 500; // hours until replacement
+      const pct = Math.min(100, Math.round((workHours / filterLife) * 100));
+      const needsReplace = workHours > filterLife;
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+          Air Purifier
+          <span style="font-size:0.65rem;padding:1px 6px;border-radius:8px;background:${pur.fan_speed > 0 ? 'var(--accent-green)' : 'var(--bg-tertiary)'};color:${pur.fan_speed > 0 ? '#fff' : 'var(--text-muted)'};margin-left:auto">${pur.fan_speed > 0 ? pur.fan_speed + '%' : 'OFF'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.78rem">
+          <div><span class="text-muted">Work time:</span> ${workHours}h</div>
+          <div><span class="text-muted">Filter:</span> <span style="color:${needsReplace ? 'var(--accent-red)' : 'var(--accent-green)'}">${100 - pct}% remaining</span></div>
+        </div>
+        <div style="height:4px;background:var(--bg-tertiary);border-radius:2px;margin-top:6px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${needsReplace ? 'var(--accent-red)' : pct > 70 ? 'var(--accent-orange)' : 'var(--accent-green)'};border-radius:2px"></div>
+        </div>
+        ${needsReplace ? '<div style="font-size:0.7rem;color:var(--accent-red);margin-top:4px;font-weight:600">⚠ Filter replacement recommended</div>' : ''}
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=1.0'})">Full Speed</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0.5'})">50%</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0'})">Off</button>
+        </div>
+      </div>`;
+    }
+
     // ── Power Status ──
     if (data._sm_power) {
       const p = data._sm_power;
@@ -80,6 +109,7 @@
           ${p.powerLoss ? '⚠ Power loss detected!' : 'Power stable'}
           ${p.dutyPercent !== undefined ? ' — Duty: ' + Math.round(p.dutyPercent * 100) + '%' : ''}
         </div>
+        ${p.powerLoss ? '<button class="form-btn form-btn-sm" style="font-size:0.7rem;margin-top:6px;background:var(--accent-orange);color:#fff" data-ripple onclick="fetch(\'/api/printers/\'+encodeURIComponent(window.printerState?.getActivePrinterId())+\'/snapmaker/power-recovery\',{method:\'POST\'})">Resume Print (Power Recovery)</button>' : ''}
       </div>`;
     }
 
