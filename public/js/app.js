@@ -241,7 +241,8 @@ function updateStatusBar(data) {
 }
 
 // Reload active tab data when switching printers
-function _showEulaModal(text) {
+window._showEulaModal = function(text) {
+  if (!text) { if (typeof showToast === 'function') showToast('EULA text not available', 'error'); return; }
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML = `<div style="background:var(--bg-secondary,#1e1e2e);border:1px solid var(--border-color,#333);border-radius:12px;max-width:700px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
