@@ -75,8 +75,17 @@
       return;
     }
 
-    // No camera port configured — show placeholder
+    // No camera port — try snapshot polling for Moonraker/PrusaLink printers
     if (!port) {
+      const printerId = window.printerState?.getActivePrinterId();
+      const printerMeta = window.printerState?.getActivePrinterMeta?.() || {};
+      const isMoonraker = ['moonraker', 'klipper', 'prusalink', 'creality', 'elegoo', 'voron', 'anker', 'ratrig', 'qidi'].includes(printerMeta.type);
+      if (printerId && isMoonraker) {
+        _cleanup();
+        currentPort = null;
+        _startSnapshotPolling(container, printerId);
+        return;
+      }
       _cleanup();
       currentPort = null;
       streamActive = false;
