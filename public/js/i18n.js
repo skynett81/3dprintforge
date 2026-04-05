@@ -147,7 +147,7 @@
       localStorage.setItem('bambu-lang', locale);
 
       try {
-        const res = await fetch(`/lang/${locale}.json`);
+        const res = await fetch(`/lang/${locale}.json?v=${Date.now()}`);
         _translations = await res.json();
       } catch (e) {
         console.warn(`[i18n] Could not load ${locale}, using ${DEFAULT_LOCALE}`);
@@ -164,9 +164,9 @@
     },
 
     async init() {
-      // Load fallback (nb) first
+      // Load fallback first (cache-bust to avoid stale translations)
       try {
-        const res = await fetch(`/lang/${DEFAULT_LOCALE}.json`);
+        const res = await fetch(`/lang/${DEFAULT_LOCALE}.json?v=${Date.now()}`);
         _fallback = await res.json();
       } catch (e) {
         console.error('[i18n] Could not load fallback translations');
@@ -175,7 +175,7 @@
       // Load selected locale
       if (_locale !== DEFAULT_LOCALE) {
         try {
-          const res = await fetch(`/lang/${_locale}.json`);
+          const res = await fetch(`/lang/${_locale}.json?v=${Date.now()}`);
           _translations = await res.json();
         } catch (e) {
           _translations = _fallback;
