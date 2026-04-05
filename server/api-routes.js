@@ -1554,7 +1554,15 @@ export async function handleApiRequest(req, res) {
       const pid = decodeURIComponent(frameMatch[1]);
       const entry = _printerManager?.printers?.get(pid);
       // Support both Bambu camera and Moonraker camera
-      const frame = entry?.camera?.getLastFrame() || entry?.moonCamera?.getSnapshot();
+      let frame = entry?.camera?.getLastFrame() || entry?.moonCamera?.getSnapshot();
+      // Fallback: try live fetch from Moonraker webcam endpoint
+      if (!frame && entry?.client?.getSnapshotUrl) {
+        try {
+          const snapUrl = entry.client.getSnapshotUrl();
+          const snapRes = await fetch(snapUrl, { signal: AbortSignal.timeout(3000) });
+          if (snapRes.ok) frame = Buffer.from(await snapRes.arrayBuffer());
+        } catch { /* ignore */ }
+      }
       if (!frame) return sendJson(res, { error: 'No frame available yet' }, 503);
       res.writeHead(200, {
         'Content-Type': 'image/jpeg',
