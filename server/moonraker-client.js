@@ -760,6 +760,51 @@ export class MoonrakerClient {
     return `${this._baseUrl}/server/files/gcodes/${encodeURIComponent(filename)}`;
   }
 
+  /** Upload a gcode file to the printer */
+  async uploadFile(filename, buffer) {
+    const boundary = '----3DPrintForge' + Date.now();
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(footer)]);
+
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}`, 'Content-Length': body.length };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+
+    try {
+      const res = await fetch(`${this._baseUrl}/server/files/upload`, {
+        method: 'POST', headers, body, signal: AbortSignal.timeout(60000),
+      });
+      if (!res.ok) throw new Error(`Upload failed: HTTP ${res.status}`);
+      return res.json();
+    } catch (e) {
+      log.error(`Upload failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  /** Upload and start printing immediately */
+  async uploadAndPrint(filename, buffer) {
+    const boundary = '----3DPrintForge' + Date.now();
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+    const printField = `\r\n--${boundary}\r\nContent-Disposition: form-data; name="print"\r\n\r\ntrue`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(printField), Buffer.from(footer)]);
+
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}`, 'Content-Length': body.length };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+
+    try {
+      const res = await fetch(`${this._baseUrl}/server/files/upload`, {
+        method: 'POST', headers, body, signal: AbortSignal.timeout(60000),
+      });
+      if (!res.ok) throw new Error(`Upload failed: HTTP ${res.status}`);
+      return res.json();
+    } catch (e) {
+      log.error(`Upload+print failed: ${e.message}`);
+      throw e;
+    }
+  }
+
   // ---- Moonraker Job Queue ----
 
   async getJobQueue() {

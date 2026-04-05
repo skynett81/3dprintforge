@@ -4967,6 +4967,24 @@ export async function handleApiRequest(req, res) {
       if (!entry.live || !entry.client) return sendJson(res, { error: 'Printer offline' }, 503);
       const client = entry.client;
 
+      // ── File Upload (send gcode/3mf to printer) ──
+      if (method === 'POST' && moonPath === 'upload') {
+        return readBinaryBody(req, async (buffer) => {
+          try {
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const filename = url.searchParams.get('filename') || 'print.gcode';
+            const print = url.searchParams.get('print') === 'true';
+            if (print) {
+              const result = await client.uploadAndPrint(filename, buffer);
+              return sendJson(res, { ok: true, uploaded: filename, printing: true, result });
+            } else {
+              const result = await client.uploadFile(filename, buffer);
+              return sendJson(res, { ok: true, uploaded: filename, result });
+            }
+          } catch (e) { return sendJson(res, { error: 'Upload failed: ' + e.message }, 500); }
+        });
+      }
+
       // ── File Manager ──
       if (method === 'GET' && moonPath === 'files') {
         try {

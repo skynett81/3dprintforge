@@ -138,6 +138,30 @@ export class PrusaLinkClient {
     }
   }
 
+  // ── File Upload ──
+
+  async uploadFile(filename, buffer) {
+    const boundary = '----3DPrintForge' + Date.now();
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(footer)]);
+
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+
+    const res = await fetch(`${this._baseUrl}/api/v1/files/local`, {
+      method: 'POST', headers, body, signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) throw new Error(`PrusaLink upload failed: HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async uploadAndPrint(filename, buffer) {
+    const result = await this.uploadFile(filename, buffer);
+    await this._apiPost('/api/v1/job', { command: 'START', path: filename });
+    return result;
+  }
+
   // ── Camera ──
 
   getSnapshotUrl() {

@@ -167,6 +167,10 @@
           ${f.category !== 'uncategorized' ? `<span class="lib-card-badge">${_esc(f.category)}</span>` : ''}
           ${tags ? `<div class="lib-card-tags">${tags}</div>` : ''}
           ${f.file_type === '3mf' ? `<button class="lib-3d-btn" style="margin-top:6px" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">&#x25B6; 3D ${t('library.preview') || 'Preview'}</button>` : ''}
+          <div style="display:flex;gap:3px;margin-top:4px">
+            <button class="lib-3d-btn" style="background:var(--accent-cyan);font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🖨️ Print</button>
+            <button class="lib-3d-btn" style="font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">📋 Queue</button>
+          </div>
         </div>
       </div>`;
     }
@@ -312,6 +316,8 @@
         <button class="lib-btn-delete" onclick="_libDelete(${f.id})">${t('library.delete')}</button>
         <a href="/api/library/${f.id}/download" class="lib-btn-cancel" style="text-decoration:none;text-align:center">${t('library.download')}</a>
         ${f.file_type === '3mf' ? `<button class="lib-3d-btn" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">&#x25B6; 3D</button>` : ''}
+        <button class="lib-btn-save" style="background:var(--accent-cyan)" onclick="_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🖨️ Send to Printer</button>
+        <button class="lib-btn-save" style="background:var(--accent-blue)" onclick="_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">📋 Add to Queue</button>
         <div style="flex:1"></div>
         <button class="lib-btn-cancel" onclick="this.closest('.lib-dialog-overlay').remove()">${t('library.close')}</button>
         <button class="lib-btn-save" onclick="_libSave(${f.id})">${t('library.save')}</button>
@@ -336,6 +342,76 @@
       if (typeof showToast === 'function') showToast(t('library.saved'), 'success');
     } catch {
       if (typeof showToast === 'function') showToast(t('library.save_error'), 'error');
+    }
+  };
+
+  window._libSendToPrinter = async function(id, filename) {
+    const state = window.printerState;
+    const printerIds = state ? state.getPrinterIds() : [];
+    if (printerIds.length === 0) { if (typeof showToast === 'function') showToast('No printers connected', 'error'); return; }
+
+    // Build printer selector
+    let printerOpts = printerIds.map(pid => {
+      const meta = state._printerMeta?.[pid] || {};
+      return `<option value="${pid}">${meta.name || pid}</option>`;
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lib-dialog-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="lib-dialog" style="max-width:350px;padding:16px">
+      <h4 style="margin:0 0 12px">Send to Printer</h4>
+      <div style="margin-bottom:10px"><label style="font-size:0.8rem">File: <strong>${filename}</strong></label></div>
+      <div style="margin-bottom:10px"><label style="font-size:0.8rem">Printer</label><select class="form-input" id="lib-send-printer">${printerOpts}</select></div>
+      <label style="font-size:0.8rem;display:flex;align-items:center;gap:6px;margin-bottom:12px"><input type="checkbox" id="lib-send-start"> Start printing immediately</label>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="form-btn form-btn-sm" onclick="this.closest('.lib-dialog-overlay').remove()">Cancel</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-cyan);color:#fff" onclick="window._libDoSend(${id},'${filename.replace(/'/g,"\\'")}')">Send</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window._libDoSend = async function(id, filename) {
+    const printerId = document.getElementById('lib-send-printer')?.value;
+    const startPrint = document.getElementById('lib-send-start')?.checked;
+    if (!printerId) return;
+    document.querySelector('.lib-dialog-overlay')?.remove();
+
+    try {
+      if (typeof showToast === 'function') showToast('Uploading to printer...', 'info');
+      // Download file from library
+      const fileRes = await fetch(`/api/library/${id}/download`);
+      if (!fileRes.ok) throw new Error('Failed to download from library');
+      const buffer = await fileRes.arrayBuffer();
+
+      // Upload to printer via Moonraker API
+      const uploadRes = await fetch(`/api/printers/${encodeURIComponent(printerId)}/moonraker/upload?filename=${encodeURIComponent(filename)}&print=${startPrint}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buffer,
+      });
+      const result = await uploadRes.json();
+      if (result.ok) {
+        if (typeof showToast === 'function') showToast(startPrint ? 'Sent and printing!' : 'Uploaded to printer!', 'success');
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(e.message, 'error');
+    }
+  };
+
+  window._libAddToQueue = async function(id, filename) {
+    try {
+      const qRes = await fetch('/api/queue');
+      const queues = await qRes.json();
+      if (!queues.length) { if (typeof showToast === 'function') showToast('No queues available — create one first', 'warning'); return; }
+      await fetch(`/api/queue/${queues[0].id}/items`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, library_id: id })
+      });
+      if (typeof showToast === 'function') showToast(`Added "${filename}" to queue`, 'success');
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(e.message, 'error');
     }
   };
 

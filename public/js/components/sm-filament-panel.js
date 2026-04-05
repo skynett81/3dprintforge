@@ -34,9 +34,10 @@
             <span style="font-size:0.82rem;font-weight:600">T${i}</span>
             ${f.official ? '<span style="font-size:0.55rem;padding:0 4px;border-radius:6px;background:var(--accent-green);color:#fff">NFC</span>' : ''}
           </div>
-          <div style="font-size:0.72rem;color:var(--text-muted)">${f.vendor ? f.vendor + ' ' : ''}${f.type}${f.subType ? ' ' + f.subType : ''}</div>
-          <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">${f.nozzleTempMin}-${f.nozzleTempMax}°C / Bed ${f.bedTemp}°C</div>
-          ${f.weight ? '<div style="font-size:0.65rem;color:var(--text-muted)">' + f.weight + 'g / ⌀' + f.diameter + 'mm</div>' : ''}
+          <div style="font-size:0.72rem;color:var(--text-muted)">${f.vendor ? f.vendor + ' ' : ''}${f.type}${f.subType ? ' ' + f.subType : ''}${f.manufacturer && f.manufacturer !== f.vendor ? ' (' + f.manufacturer + ')' : ''}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">🔥 ${f.firstLayerTemp || f.nozzleTempMax}°C / 🛏️ ${f.bedTemp}°C</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">${f.weight ? f.weight + 'g' : ''} ${f.diameter ? '⌀' + f.diameter + 'mm' : ''} ${f.sku ? '#' + f.sku : ''}</div>
+          ${f.dryingTemp ? '<div style="font-size:0.6rem;color:var(--text-muted)">Dry: ' + f.dryingTemp + '°C / ' + f.dryingTime + 'h</div>' : ''}
           ${feedLabel ? '<div style="font-size:0.65rem;margin-top:3px;color:' + (feedCat === 'error' ? 'var(--accent-red)' : 'var(--accent-cyan)') + '">' + feedLabel + '</div>' : ''}
           ${isLoading ? '<div style="height:2px;background:var(--bg-secondary);border-radius:1px;margin-top:3px"><div style="height:2px;background:var(--accent-cyan);border-radius:1px;width:50%;animation:sm-pulse 1s infinite alternate"></div></div>' : ''}
           <div style="display:flex;gap:3px;margin-top:5px">
