@@ -530,6 +530,23 @@
       </div>`;
     }
 
+    // ===== Snapmaker U1: Filament + Defect + Config panels =====
+    if (data._sm_filament || data._sm_feed_channels) {
+      html += typeof renderSmFilamentPanel === 'function' ? renderSmFilamentPanel(data, meta?.id) : '';
+    }
+    if (data._sm_defect || data._sm_timelapse !== undefined || data._sm_print_config || data._sm_power) {
+      html += typeof renderSmAdvancedPanel === 'function' ? renderSmAdvancedPanel(data) : '';
+    }
+
+    // ===== Snapmaker U1: Status badge override =====
+    if (data._sm_state_label && typeof renderSmStatusBadge === 'function') {
+      // Will be applied after DOM render via setTimeout
+      setTimeout(() => {
+        const badge = document.getElementById('ctrl-stage-badge');
+        if (badge) badge.innerHTML = renderSmStatusBadge(data);
+      }, 10);
+    }
+
     // ===== CARD: Storage Files (SD/USB depending on model) =====
     if (meta?.id) {
       const _isUsbModel = ['P2S', 'P2S Combo', 'H2D'].includes(meta.model);

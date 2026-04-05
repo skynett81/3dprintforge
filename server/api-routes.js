@@ -4898,6 +4898,86 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Snapmaker U1 API ──
+    const smMatch = path.match(/^\/api\/printers\/([^/]+)\/snapmaker\/(.+)$/);
+    if (smMatch) {
+      const pid = decodeURIComponent(smMatch[1]);
+      const smPath = smMatch[2];
+      const entry = _printerManager?.printers?.get(pid);
+      if (!entry) return sendJson(res, { error: 'Printer not found' }, 404);
+      const smState = entry.client?.state || {};
+
+      if (method === 'GET' && smPath === 'state') {
+        return sendJson(res, {
+          machine_state: smState._sm_machine_state,
+          state_name: smState._sm_state_name,
+          state_category: smState._sm_state_category,
+          state_label: smState._sm_state_label,
+          action_code: smState._sm_action_code,
+        });
+      }
+
+      if (method === 'GET' && smPath === 'filament') {
+        return sendJson(res, {
+          channels: smState._sm_filament || [],
+          feed: smState._sm_feed_channels || [],
+        });
+      }
+
+      if (method === 'GET' && smPath === 'defects') {
+        const { getDefectEvents } = await import('./db/snapmaker.js');
+        return sendJson(res, {
+          current: smState._sm_defect || null,
+          events: getDefectEvents(pid, 50),
+        });
+      }
+
+      if (method === 'GET' && smPath === 'print-config') {
+        return sendJson(res, smState._sm_print_config || {});
+      }
+
+      if (method === 'GET' && smPath === 'calibration') {
+        const { getCalibrationResults } = await import('./db/snapmaker.js');
+        return sendJson(res, {
+          flow_cal: smState._sm_flow_cal || {},
+          history: getCalibrationResults(pid),
+        });
+      }
+
+      if (method === 'GET' && smPath === 'power') {
+        return sendJson(res, smState._sm_power || {});
+      }
+
+      if (method === 'POST' && smPath === 'feed') {
+        return readBody(req, res, (body) => {
+          const action = body.action || 'auto';
+          const channel = parseInt(body.channel) || 0;
+          if (action === 'auto') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_auto', channel });
+          else if (action === 'unload') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_unload', channel });
+          else if (action === 'manual') _printerManager.handleCommand({ printer_id: pid, action: 'sm_feed_manual', channel });
+          return sendJson(res, { ok: true });
+        });
+      }
+
+      if (method === 'POST' && smPath === 'defects/enable') {
+        _printerManager.handleCommand({ printer_id: pid, action: 'sm_defect_config', enable: true });
+        return sendJson(res, { ok: true });
+      }
+      if (method === 'POST' && smPath === 'defects/disable') {
+        _printerManager.handleCommand({ printer_id: pid, action: 'sm_defect_config', enable: false });
+        return sendJson(res, { ok: true });
+      }
+
+      if (method === 'PUT' && smPath === 'print-config') {
+        return readBody(req, res, (body) => {
+          _printerManager.handleCommand({ printer_id: pid, action: 'sm_set_print_config', ...body });
+          return sendJson(res, { ok: true });
+        });
+      }
+
+      return sendJson(res, { error: 'Unknown Snapmaker endpoint' }, 404);
+    }
+
     // ── Model Forge: Storage Box Generator ──
     if (method === 'POST' && path === '/api/model-forge/storage-box/generate-3mf') {
       return readBody(req, res, async (body) => {

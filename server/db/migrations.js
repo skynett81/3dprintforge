@@ -132,6 +132,49 @@ export function runMigrations() {
     { version: 112, up: (db) => {
       try { db.exec("ALTER TABLE print_history ADD COLUMN linked_3mf TEXT DEFAULT NULL"); } catch {}
     }},
+
+    // Snapmaker U1 NFC filament cache
+    { version: 113, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS sm_nfc_filament (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        printer_id TEXT NOT NULL,
+        channel INTEGER NOT NULL,
+        vendor TEXT, manufacturer TEXT, filament_type TEXT, sub_type TEXT,
+        color_hex TEXT, weight_g REAL, sku TEXT, official INTEGER DEFAULT 0,
+        nozzle_temp_min INTEGER, nozzle_temp_max INTEGER, bed_temp INTEGER,
+        first_layer_temp INTEGER, other_layer_temp INTEGER,
+        drying_temp INTEGER, drying_time INTEGER,
+        detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(printer_id, channel)
+      )`);
+    }},
+
+    // Snapmaker defect detection event history
+    { version: 114, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS sm_defect_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        printer_id TEXT NOT NULL,
+        print_history_id INTEGER,
+        event_type TEXT NOT NULL,
+        severity TEXT DEFAULT 'warning',
+        details TEXT,
+        detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+        acknowledged INTEGER DEFAULT 0
+      )`);
+    }},
+
+    // Snapmaker calibration results
+    { version: 115, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS sm_calibration_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        printer_id TEXT NOT NULL,
+        cal_type TEXT NOT NULL,
+        extruder INTEGER DEFAULT 0,
+        k_value REAL,
+        result_data TEXT,
+        calibrated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+    }},
   ];
 
   for (const m of migrations) {

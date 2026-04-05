@@ -44,6 +44,12 @@
       @media (max-width:900px) { .sm-layout { grid-template-columns:1fr; } .sm-sidebar { max-height:none; } }
     </style>`;
 
+    // Back button to Model Forge hub
+    h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button class="form-btn form-btn-sm" onclick="window.loadModelForgePanel()" style="padding:4px 10px">← Back</button>
+      <h4 style="margin:0;font-size:1rem">📶 Sign Maker</h4>
+    </div>`;
+
     // Template selector (compact horizontal pills)
     h += '<div class="sm-templates" id="sm-templates">';
     for (const t of TEMPLATES) {

@@ -11,6 +11,7 @@
 import { createLogger } from './logger.js';
 import { WebSocket } from 'ws';
 import { getExtruderSlots } from './db/printers.js';
+import { mapSmState, mapFeedState, argbToHex } from './snapmaker-state-map.js';
 
 const log = createLogger('moonraker');
 
@@ -46,6 +47,7 @@ export class MoonrakerClient {
     this._subscriptionId = 0;
     this._ledName = null;       // Detected Klipper LED object name
     this._lightPin = null;      // Detected output_pin for light
+    this._isSnapmakerU1 = false; // Auto-detected Snapmaker U1
   }
 
   get _baseUrl() {
@@ -150,6 +152,20 @@ export class MoonrakerClient {
       'temperature_sensor cavity': null,
       'purifier': null,
       'exclude_object': null,
+      // Snapmaker U1 specific (silently ignored on non-SM printers)
+      'machine_state_manager': null,
+      'filament_detect': null,
+      'filament_feed left': null,
+      'filament_feed right': null,
+      'filament_entangle_detect e0_filament': null,
+      'filament_entangle_detect e1_filament': null,
+      'filament_entangle_detect e2_filament': null,
+      'filament_entangle_detect e3_filament': null,
+      'defect_detection': null,
+      'timelapse': null,
+      'print_task_config': null,
+      'power_loss_check': null,
+      'flow_calibrator': null,
     };
 
     this._wsSend({
@@ -166,7 +182,7 @@ export class MoonrakerClient {
     try {
       const [info, status, history] = await Promise.all([
         this._apiGet('/printer/info'),
-        this._apiGet('/printer/objects/query?print_stats&display_status&heater_bed&extruder&extruder1&extruder2&extruder3&fan&toolhead&gcode_move&virtual_sdcard&idle_timeout&system_stats&fan_generic%20cavity_fan&temperature_sensor%20cavity&purifier&exclude_object'),
+        this._apiGet('/printer/objects/query?print_stats&display_status&heater_bed&extruder&extruder1&extruder2&extruder3&fan&toolhead&gcode_move&virtual_sdcard&idle_timeout&system_stats&fan_generic%20cavity_fan&temperature_sensor%20cavity&purifier&exclude_object&machine_state_manager&filament_detect&filament_feed%20left&filament_feed%20right&defect_detection&timelapse&print_task_config&power_loss_check&flow_calibrator'),
         this._apiGet('/server/history/list?limit=1&order=desc'),
       ]);
 
@@ -416,6 +432,121 @@ export class MoonrakerClient {
         skipped: excl.excluded_objects?.includes(o.name) || false,
       }));
     }
+
+    // ── Snapmaker U1 specific state ──
+
+    // Machine state manager (70+ granular states)
+    const msm = status.machine_state_manager;
+    if (msm && msm.main_state !== undefined) {
+      const mapped = mapSmState(msm.main_state);
+      this.state._sm_machine_state = msm.main_state;
+      this.state._sm_action_code = msm.action_code;
+      this.state._sm_state_name = mapped.name;
+      this.state._sm_state_category = mapped.category;
+      this.state._sm_state_label = mapped.label;
+    }
+
+    // NFC filament detection (per-channel spool info)
+    const fd = status.filament_detect;
+    if (fd?.info) {
+      this.state._sm_filament = fd.info.map(ch => ({
+        vendor: ch.VENDOR || '',
+        manufacturer: ch.MANUFACTURER || '',
+        type: ch.MAIN_TYPE || '',
+        subType: ch.SUB_TYPE || '',
+        color: argbToHex(ch.ARGB_COLOR),
+        colorArgb: ch.ARGB_COLOR,
+        weight: ch.WEIGHT || 0,
+        diameter: (ch.DIAMETER || 175) / 100,
+        sku: ch.SKU || 0,
+        official: ch.OFFICIAL || false,
+        nozzleTempMin: ch.HOTEND_MIN_TEMP || 0,
+        nozzleTempMax: ch.HOTEND_MAX_TEMP || 0,
+        bedTemp: ch.BED_TEMP || 0,
+        firstLayerTemp: ch.FIRST_LAYER_TEMP || 0,
+        otherLayerTemp: ch.OTHER_LAYER_TEMP || 0,
+        dryingTemp: ch.DRYING_TEMP || 0,
+        dryingTime: ch.DRYING_TIME || 0,
+      }));
+    }
+
+    // Filament feed state (left: extruder0+1, right: extruder2+3)
+    const feedL = status['filament_feed left'];
+    const feedR = status['filament_feed right'];
+    if (feedL || feedR) {
+      const channels = [];
+      for (const [key, data] of Object.entries(feedL || {})) {
+        const mapped = mapFeedState(data.channel_state);
+        channels.push({ extruder: key, side: 'left', ...data, stateLabel: mapped.label, stateCategory: mapped.category });
+      }
+      for (const [key, data] of Object.entries(feedR || {})) {
+        const mapped = mapFeedState(data.channel_state);
+        channels.push({ extruder: key, side: 'right', ...data, stateLabel: mapped.label, stateCategory: mapped.category });
+      }
+      this.state._sm_feed_channels = channels;
+    }
+
+    // Filament entangle detection
+    for (let i = 0; i < 4; i++) {
+      const fed = status[`filament_entangle_detect e${i}_filament`];
+      if (fed) {
+        if (!this.state._sm_entangle) this.state._sm_entangle = {};
+        this.state._sm_entangle[`e${i}`] = { detectFactor: fed.detect_factor };
+      }
+    }
+
+    // Defect detection (AI camera)
+    const dd = status.defect_detection;
+    if (dd) {
+      this.state._sm_defect = {
+        enabled: dd.main_enable,
+        cleanBed: dd.clean_bed,
+        noodle: dd.noodle,
+        residue: dd.residue,
+        nozzle: dd.nozzle,
+      };
+    }
+
+    // Timelapse
+    const tl = status.timelapse;
+    if (tl) {
+      this.state._sm_timelapse = { active: tl.is_active };
+    }
+
+    // Print task config
+    const ptc = status.print_task_config;
+    if (ptc) {
+      this.state._sm_print_config = {
+        timelapse: ptc.time_lapse_camera,
+        autoBedLeveling: ptc.auto_bed_leveling,
+        flowCalibrate: ptc.flow_calibrate,
+        shaperCalibrate: ptc.shaper_calibrate,
+        autoReplenish: ptc.auto_replenish_filament,
+        entangleDetect: ptc.filament_entangle_detect,
+        entangleSensitivity: ptc.filament_entangle_sen,
+        extruderMap: ptc.extruder_map_table,
+        extrudersUsed: ptc.extruders_used,
+        flowCalibExtruders: ptc.flow_calib_extruders,
+        filamentConfig: ptc.filament_config,
+      };
+    }
+
+    // Power loss check
+    const plc = status.power_loss_check;
+    if (plc) {
+      this.state._sm_power = {
+        initialized: !!plc.initialized,
+        powerLoss: !!plc.power_loss_flag,
+        dutyPercent: plc.duty_percent,
+        voltageType: plc.voltage_type,
+      };
+    }
+
+    // Flow calibrator
+    const fc = status.flow_calibrator;
+    if (fc && Object.keys(fc).length > 0) {
+      this.state._sm_flow_cal = fc;
+    }
   }
 
   // ---- WebSocket message handler ----
@@ -470,6 +601,11 @@ export class MoonrakerClient {
       if (lightPin) {
         this._lightPin = lightPin.replace('output_pin ', '');
         log.info(`Detected light pin: ${this._lightPin}`);
+      }
+      // Detect Snapmaker U1 by presence of machine_state_manager
+      if (objects.includes('machine_state_manager')) {
+        this._isSnapmakerU1 = true;
+        log.info('Detected Snapmaker U1 printer');
       }
     } catch { /* ignore */ }
   }
@@ -549,6 +685,40 @@ export class MoonrakerClient {
         // Moonraker equivalent: fetch full state
         this._requestFullState();
         break;
+      // ── Snapmaker U1 commands ──
+      case 'sm_feed_auto':
+        this._apiPost('/printer/gcode/script', { script: `AUTO_FEEDING CHANNEL=${commandObj.channel || 0}` });
+        break;
+      case 'sm_feed_manual':
+        this._apiPost('/printer/gcode/script', { script: `MANUAL_FEEDING CHANNEL=${commandObj.channel || 0}` });
+        break;
+      case 'sm_feed_unload':
+        this._apiPost('/printer/gcode/script', { script: `INNER_FILAMENT_UNLOAD CHANNEL=${commandObj.channel || 0}` });
+        break;
+      case 'sm_defect_config':
+        this._apiPost('/printer/gcode/script', { script: `DEFECT_DETECTION_CONFIG MAIN_ENABLE=${commandObj.enable ? 1 : 0}` });
+        break;
+      case 'sm_timelapse_start':
+        this._apiPost('/printer/gcode/script', { script: 'TIMELAPSE_START TYPE=new' });
+        break;
+      case 'sm_timelapse_stop':
+        this._apiPost('/printer/gcode/script', { script: 'TIMELAPSE_STOP' });
+        break;
+      case 'sm_timelapse_frame':
+        this._apiPost('/printer/gcode/script', { script: 'TIMELAPSE_TAKE_FRAME' });
+        break;
+      case 'sm_flow_calibrate':
+        this._apiPost('/printer/gcode/script', { script: `SET_PRINT_FLOW_CALIBRATION ENABLE=1` });
+        break;
+      case 'sm_set_print_config': {
+        const cmds = [];
+        if (commandObj.autoBedLeveling !== undefined) cmds.push(`SET_PRINT_AUTO_BED_LEVELING ENABLE=${commandObj.autoBedLeveling ? 1 : 0}`);
+        if (commandObj.timelapse !== undefined) cmds.push(`SET_TIME_LAPSE_CAMERA ENABLE=${commandObj.timelapse ? 1 : 0}`);
+        if (commandObj.flowCalibrate !== undefined) cmds.push(`SET_PRINT_FLOW_CALIBRATION ENABLE=${commandObj.flowCalibrate ? 1 : 0}`);
+        if (commandObj.shaperCalibrate !== undefined) cmds.push(`SET_PRINT_SHAPER_CALIBRATION ENABLE=${commandObj.shaperCalibrate ? 1 : 0}`);
+        for (const cmd of cmds) this._apiPost('/printer/gcode/script', { script: cmd });
+        break;
+      }
       default:
         log.warn(`Unknown command: ${action}`);
     }
@@ -608,6 +778,15 @@ export function buildMoonrakerCommand(msg) {
     case 'home': return { _moonraker_action: 'home' };
     case 'emergency_stop': return { _moonraker_action: 'emergency_stop' };
     case 'light': return { _moonraker_action: 'light', mode: msg.mode };
+    case 'sm_feed_auto': return { _moonraker_action: 'sm_feed_auto', channel: msg.channel };
+    case 'sm_feed_manual': return { _moonraker_action: 'sm_feed_manual', channel: msg.channel };
+    case 'sm_feed_unload': return { _moonraker_action: 'sm_feed_unload', channel: msg.channel };
+    case 'sm_defect_config': return { _moonraker_action: 'sm_defect_config', enable: msg.enable };
+    case 'sm_timelapse_start': return { _moonraker_action: 'sm_timelapse_start' };
+    case 'sm_timelapse_stop': return { _moonraker_action: 'sm_timelapse_stop' };
+    case 'sm_timelapse_frame': return { _moonraker_action: 'sm_timelapse_frame' };
+    case 'sm_flow_calibrate': return { _moonraker_action: 'sm_flow_calibrate' };
+    case 'sm_set_print_config': return { _moonraker_action: 'sm_set_print_config', ...msg };
     default: return { _moonraker_action: action, ...msg };
   }
 }
