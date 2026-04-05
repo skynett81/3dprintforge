@@ -124,11 +124,17 @@
       h += _field('Location', 'sm-inv-loc', 'text', '');
     }
 
-    // 3D Print Options — collapsible sections matching parametric generator style
-    h += `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)">
-      <h5 style="margin:0 0 12px;font-size:0.9rem;color:var(--text-primary)">🧊 3D Model Settings</h5>`;
+    // Step tabs: Content | Plate | Frame | Stand
+    h += `<div style="margin-top:14px;border-top:1px solid var(--border-color);padding-top:10px">
+      <div style="display:flex;gap:0;margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid var(--border-color)">
+        <button class="sm-step-tab active" data-step="plate" onclick="window._smSwitchStep('plate')" style="flex:1;padding:7px 4px;font-size:0.78rem;font-weight:600;border:none;cursor:pointer;background:var(--accent-blue);color:#fff;transition:all 0.15s">🧊 Plate</button>
+        <button class="sm-step-tab" data-step="frame" onclick="window._smSwitchStep('frame')" style="flex:1;padding:7px 4px;font-size:0.78rem;font-weight:600;border:none;border-left:1px solid var(--border-color);cursor:pointer;background:var(--bg-tertiary);color:var(--text-primary);transition:all 0.15s">🖼️ Frame</button>
+        <button class="sm-step-tab" data-step="stand" onclick="window._smSwitchStep('stand')" style="flex:1;padding:7px 4px;font-size:0.78rem;font-weight:600;border:none;border-left:1px solid var(--border-color);cursor:pointer;background:var(--bg-tertiary);color:var(--text-primary);transition:all 0.15s">🦶 Stand</button>
+        <button class="sm-step-tab" data-step="extras" onclick="window._smSwitchStep('extras')" style="flex:1;padding:7px 4px;font-size:0.78rem;font-weight:600;border:none;border-left:1px solid var(--border-color);cursor:pointer;background:var(--bg-tertiary);color:var(--text-primary);transition:all 0.15s">⚙️ Extras</button>
+      </div>`;
 
-    // Sign Plate
+    // ── Step: Plate ──
+    h += `<div class="sm-step-panel" data-step="plate">`;
     h += _section('Sign Plate', `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Width (mm)', 'sm-3d-w', 40, 150, 80, 5)}
@@ -137,7 +143,6 @@
         ${_rangeField('Corner radius (mm)', 'sm-3d-radius', 0, 15, 3, 1)}
       </div>`, true);
 
-    // QR Code
     h += _section('QR Code', `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('QR size (mm)', 'sm-3d-qrsize', 15, 80, 35, 1)}
@@ -154,17 +159,17 @@
         </select>
       </div>`, true);
 
-    // Text
     h += _section('Text', `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Text height (mm)', 'sm-3d-texth', 0.2, 2.0, 0.8, 0.2)}
         ${_rangeField('Text size (mm)', 'sm-3d-textsize', 4, 20, 8, 1)}
       </div>`, true);
+    h += `</div>`;
 
-    // Frame
-    h += _section('Frame', `
-      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <input type="checkbox" id="sm-3d-border"> Enable frame
+    // ── Step: Frame ──
+    h += `<div class="sm-step-panel" data-step="frame" style="display:none">`;
+    h += `<label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--bg-tertiary);border-radius:8px">
+        <input type="checkbox" id="sm-3d-border"> <strong>Enable frame</strong>
       </label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Frame width (mm)', 'sm-3d-framew', 2, 12, 5, 1)}
@@ -172,21 +177,26 @@
         ${_rangeField('Lip depth (mm)', 'sm-3d-lipd', 0.5, 3, 1.5, 0.5)}
         ${_rangeField('Chamfer (mm)', 'sm-3d-chamfer', 0, 4, 1.5, 0.5)}
         ${_rangeField('Tolerance (mm)', 'sm-3d-frametol', 0.1, 0.5, 0.3, 0.05)}
-      </div>`);
+      </div>
+      <p style="font-size:0.72rem;color:var(--text-muted);margin:10px 0 0">The frame is a separate piece that snaps around the plate. Print it in a contrasting colour for best effect.</p>`;
+    h += `</div>`;
 
-    // Stand
-    h += _section('Stand', `
-      <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <input type="checkbox" id="sm-3d-stand" checked> Enable desk stand
+    // ── Step: Stand ──
+    h += `<div class="sm-step-panel" data-step="stand" style="display:none">`;
+    h += `<label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--bg-tertiary);border-radius:8px">
+        <input type="checkbox" id="sm-3d-stand" checked> <strong>Enable desk stand</strong>
       </label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         ${_rangeField('Slot depth (mm)', 'sm-3d-slotd', 5, 25, 15, 1)}
         ${_rangeField('Slot tolerance (mm)', 'sm-3d-slottol', 0.1, 0.5, 0.3, 0.05)}
         ${_rangeField('Base height (mm)', 'sm-3d-baseh', 3, 15, 8, 1)}
         ${_rangeField('Base depth (mm)', 'sm-3d-based', 20, 60, 40, 5)}
-      </div>`);
+      </div>
+      <p style="font-size:0.72rem;color:var(--text-muted);margin:10px 0 0">The stand holds the sign upright on a desk. The plate slides into the slot. Print with the open side up.</p>`;
+    h += `</div>`;
 
-    // Magnets
+    // ── Step: Extras ──
+    h += `<div class="sm-step-panel" data-step="extras" style="display:none">`;
     h += _section('Magnets', `
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-magnets"> Enable magnet holes
@@ -212,7 +222,6 @@
         ${_rangeField('Tolerance (mm)', 'sm-3d-magtol', 0.1, 0.4, 0.2, 0.05)}
       </div>`);
 
-    // NFC Tag
     h += _section('NFC Tag', `
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-nfc"> Enable NFC tag slot
@@ -230,7 +239,6 @@
         ${_rangeField('Tolerance (mm)', 'sm-3d-nfctol', 0.1, 0.5, 0.3, 0.05)}
       </div>`);
 
-    // Wall Mount
     h += _section('Wall Mount', `
       <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input type="checkbox" id="sm-3d-holes"> Enable mount holes
@@ -239,6 +247,7 @@
         ${_rangeField('Hole diameter (mm)', 'sm-3d-holedia', 2, 6, 4, 0.5)}
         ${_rangeField('Margin (mm)', 'sm-3d-holemarg', 3, 10, 5, 1)}
       </div>`);
+    h += `</div>`;
 
     h += '</div>';
 
@@ -435,12 +444,75 @@
     // Size info
     const sizeInfo = `${plateW}×${plateH}mm`;
 
+    // Determine which step is active
+    const activeStep = document.querySelector('.sm-step-tab.active')?.dataset?.step || 'plate';
+
+    if (activeStep === 'frame') {
+      // Frame preview
+      const frameTotalW = Math.round((plateW + (frameW * 2) + 2) * scale);
+      const frameTotalH = Math.round((plateH + (frameW * 2) + 2) * scale);
+      const fwPx = Math.round(frameW * scale);
+      result.innerHTML = `
+        <div class="sm-actions" style="justify-content:center">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}','frame')" style="background:var(--accent-cyan);color:#fff">🧊 3D Frame</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','frame')" style="background:var(--accent-green);color:#fff">📥 Frame 3MF</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Frame: ${Math.round(plateW + frameW*2+2)}×${Math.round(plateH + frameW*2+2)}mm</div>
+        ${hasBorder ? `
+        <div style="background:#5a5a5f;width:${frameTotalW}px;height:${frameTotalH}px;border-radius:${Math.round((cornerR+2)*scale)}px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(0,0,0,0.3)">
+          <div style="background:#333;width:${previewW + Math.round(2*scale)}px;height:${previewH + Math.round(2*scale)}px;border-radius:${Math.round(cornerR*scale)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(previewW*0.04)}px;color:#666">plate slot</div>
+        </div>` : '<div style="padding:20px;color:var(--text-muted)">Enable frame to see preview</div>'}`;
+      return;
+    }
+
+    if (activeStep === 'stand') {
+      // Stand preview
+      const standW = Math.round(plateW * 0.85 * scale);
+      const baseD = parseFloat(_val('sm-3d-based')) || 40;
+      const baseH = parseFloat(_val('sm-3d-baseh')) || 8;
+      const slotD = parseFloat(_val('sm-3d-slotd')) || 15;
+      result.innerHTML = `
+        <div class="sm-actions" style="justify-content:center">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}','stand')" style="background:var(--accent-cyan);color:#fff">🧊 3D Stand</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','stand')" style="background:var(--accent-green);color:#fff">📥 Stand 3MF</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Stand: ${Math.round(plateW*0.85)}×${baseD}×${baseH+slotD}mm</div>
+        ${hasStand ? `
+        <div style="display:flex;flex-direction:column;align-items:center;box-shadow:0 4px 24px rgba(0,0,0,0.3)">
+          <div style="background:#323237;width:${standW}px;height:${Math.round(slotD*scale)}px;border-radius:${Math.round(2*scale)}px ${Math.round(2*scale)}px 0 0;display:flex;align-items:flex-end;justify-content:center">
+            <div style="width:${Math.round(2*scale)}px;height:${Math.round(slotD*0.8*scale)}px;background:#444;margin-bottom:${Math.round(1*scale)}px"></div>
+          </div>
+          <div style="background:#323237;width:${standW}px;height:${Math.round(baseH*scale)}px;border-radius:0 0 ${Math.round(2*scale)}px ${Math.round(2*scale)}px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 ${Math.round(2*scale)}px">
+            <div style="width:${Math.round(4*scale)}px;height:${Math.round(0.6*scale+1)}px;background:#555;border-radius:1px"></div>
+            <div style="width:${Math.round(4*scale)}px;height:${Math.round(0.6*scale+1)}px;background:#555;border-radius:1px"></div>
+          </div>
+        </div>` : '<div style="padding:20px;color:var(--text-muted)">Enable stand to see preview</div>'}`;
+      return;
+    }
+
+    if (activeStep === 'extras') {
+      // Extras — no visual preview, just action buttons
+      result.innerHTML = `
+        <div class="sm-actions" style="justify-content:center">
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}')" style="background:var(--accent-cyan);color:#fff">🧊 3D All Parts</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-green);color:#fff">📥 All Parts 3MF</button>
+        </div>
+        <div style="padding:20px;color:var(--text-muted);font-size:0.85rem;text-align:center">
+          Configure magnets, NFC tag, and wall mount holes.<br>These features modify the plate — preview via 3D button above.
+        </div>`;
+      return;
+    }
+
+    // Default: Plate preview
     result.innerHTML = `
       <div class="sm-actions" style="justify-content:center">
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smPrint()">🖨️ Print</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload()">📥 PNG</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}')" style="background:var(--accent-cyan);color:#fff">🧊 3D</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}')" style="background:var(--accent-green);color:#fff">📥 3MF</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smPreview3D('${id}','plate')" style="background:var(--accent-cyan);color:#fff">🧊 3D Plate</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','plate')" style="background:var(--accent-green);color:#fff">📥 Plate 3MF</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${sizeInfo}${hasBorder ? ' + frame' : ''}${hasStand ? ' + stand' : ''}</div>
       ${hasBorder ? '<div style="background:var(--bg-tertiary);padding:' + Math.round(frameW * scale) + 'px;border-radius:' + Math.round((cornerR + 2) * scale) + 'px;display:inline-block">' : ''}
@@ -487,9 +559,14 @@
 
   // ── 3D Preview — generate 3MF and show in 3mfViewer ──
 
-  window._smPreview3D = async function(templateId) {
+  window._smPreview3D = async function(templateId, part) {
     const body = _buildBody(templateId);
     if (!body) return;
+    if (part) {
+      body.part = part;
+      if (part === 'frame') body.include_border = true;
+      if (part === 'stand') body.include_stand = true;
+    }
 
     const result = document.getElementById('sm-result');
     if (result) {
@@ -616,15 +693,21 @@
 
   // ── Download as 3MF ──
 
-  window._smDownload3MF = async function(templateId) {
+  window._smDownload3MF = async function(templateId, part) {
     const body = _buildBody(templateId);
     if (!body) {
       if (typeof showToast === 'function') showToast('Fill in the form first', 'error');
       return;
     }
+    if (part) body.part = part;
 
+    // For frame/stand-only, force the relevant flag on
+    if (part === 'frame') body.include_border = true;
+    if (part === 'stand') body.include_stand = true;
+
+    const partLabel = part && part !== 'all' ? ` (${part})` : '';
     try {
-      if (typeof showToast === 'function') showToast('Generating 3MF...', 'info');
+      if (typeof showToast === 'function') showToast(`Generating ${part || 'all'} 3MF...`, 'info');
       const res = await fetch('/api/sign-maker/generate-3mf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -634,10 +717,11 @@
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = (body.title || 'sign').replace(/[^a-zA-Z0-9_-]/g, '_') + '.3mf';
+      const suffix = part && part !== 'all' ? '_' + part : '';
+      a.download = (body.title || 'sign').replace(/[^a-zA-Z0-9_-]/g, '_') + suffix + '.3mf';
       a.click();
       URL.revokeObjectURL(a.href);
-      if (typeof showToast === 'function') showToast('3MF downloaded — open in your slicer!', 'success');
+      if (typeof showToast === 'function') showToast(`3MF${partLabel} downloaded — open in your slicer!`, 'success');
     } catch (e) {
       if (typeof showToast === 'function') showToast(e.message, 'error');
     }
@@ -654,6 +738,20 @@
   function _checkbox(label, id) {
     return `<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="${id}"> ${label}</label>`;
   }
+  window._smSwitchStep = function(step) {
+    document.querySelectorAll('.sm-step-panel').forEach(p => p.style.display = p.dataset.step === step ? '' : 'none');
+    document.querySelectorAll('.sm-step-tab').forEach(t => {
+      const active = t.dataset.step === step;
+      t.classList.toggle('active', active);
+      t.style.background = active ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+      t.style.color = active ? '#fff' : 'var(--text-primary)';
+    });
+    // Re-generate preview for the new step
+    const tmplBtn = document.querySelector('.sm-tmpl-btn.active') || document.querySelector('.sm-tmpl-btn');
+    const tmplId = tmplBtn?.dataset?.template;
+    if (tmplId) window._smGenerate(tmplId);
+  };
+
   function _section(title, content, open) {
     const id = 'sm-sec-' + title.replace(/\s/g, '').toLowerCase();
     return `<div style="margin-bottom:8px;border:1px solid var(--border-color);border-radius:8px;overflow:hidden">

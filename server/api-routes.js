@@ -4869,6 +4869,7 @@ export async function handleApiRequest(req, res) {
         try {
           const { generateSign3MF } = await import('./sign-3mf-generator.js');
           const buf = await generateSign3MF({
+            part: body.part || 'all',
             title: body.title || '', subtitle: body.subtitle || '', qrData: body.qr_data || '',
             plateWidth: body.plate_width, plateHeight: body.plate_height, plateDepth: body.plate_depth,
             cornerRadius: body.corner_radius, qrSize: body.qr_size, pixelSize: body.pixel_size,
@@ -4893,6 +4894,77 @@ export async function handleApiRequest(req, res) {
           res.end(buf);
         } catch (e) {
           sendJson(res, { error: 'Failed to generate 3MF: ' + e.message }, 500);
+        }
+      });
+    }
+
+    // ── Model Forge: Storage Box Generator ──
+    if (method === 'POST' && path === '/api/model-forge/storage-box/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateStorageBox3MF } = await import('./generators/storage-box-generator.js');
+          const buf = await generateStorageBox3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="storage_box.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Storage box generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Keychain Generator ──
+    if (method === 'POST' && path === '/api/model-forge/keychain/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateKeychain3MF } = await import('./generators/keychain-generator.js');
+          const buf = await generateKeychain3MF(body);
+          const name = (body.text || 'keychain').replace(/[^a-zA-Z0-9_-]/g, '_');
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${name}.3mf"`, 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Keychain generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Text Plate Generator ──
+    if (method === 'POST' && path === '/api/model-forge/text-plate/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateTextPlate3MF } = await import('./generators/text-plate-generator.js');
+          const buf = await generateTextPlate3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="text_plate.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Text plate generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Lithophane Generator ──
+    if (method === 'POST' && path === '/api/model-forge/lithophane/generate-3mf') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          // Parse multipart — image is the binary body, params in query string
+          const url = new URL(req.url, `http://${req.headers.host}`);
+          const opts = {
+            shape: url.searchParams.get('shape') || 'flat',
+            width: parseFloat(url.searchParams.get('width')) || 100,
+            maxThickness: parseFloat(url.searchParams.get('maxThickness')) || 3,
+            minThickness: parseFloat(url.searchParams.get('minThickness')) || 0.4,
+            resolution: parseInt(url.searchParams.get('resolution')) || 150,
+            invert: url.searchParams.get('invert') === 'true',
+            gamma: parseFloat(url.searchParams.get('gamma')) || 1.0,
+            curveRadius: parseFloat(url.searchParams.get('curveRadius')) || 60,
+            frame: url.searchParams.get('frame') === 'true',
+            frameWidth: parseFloat(url.searchParams.get('frameWidth')) || 3,
+            base: url.searchParams.get('base') === 'true',
+            baseHeight: parseFloat(url.searchParams.get('baseHeight')) || 8,
+          };
+          const { generateLithophane3MF } = await import('./generators/lithophane-generator.js');
+          const buf = await generateLithophane3MF(buffer, opts);
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="lithophane.3mf"',
+            'Content-Length': buf.length
+          });
+          res.end(buf);
+        } catch (e) {
+          sendJson(res, { error: 'Lithophane generation failed: ' + e.message }, 500);
         }
       });
     }

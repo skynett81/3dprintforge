@@ -3,13 +3,7 @@
  * Creates printable 3D signs with QR codes, text, frames, stands, magnets, NFC slots
  */
 
-let _lib = null;
-async function getLib() {
-  if (_lib) return _lib;
-  const init = (await import('@3mfconsortium/lib3mf')).default;
-  _lib = await init();
-  return _lib;
-}
+import { MeshBuilder, getLib } from './mesh-builder.js';
 
 // ── Pixel font (5x7, uppercase + digits + symbols) ──
 const FONT={A:[0x7C,0x12,0x11,0x12,0x7C],B:[0x7F,0x49,0x49,0x49,0x36],C:[0x3E,0x41,0x41,0x41,0x22],D:[0x7F,0x41,0x41,0x22,0x1C],E:[0x7F,0x49,0x49,0x49,0x41],F:[0x7F,0x09,0x09,0x09,0x01],G:[0x3E,0x41,0x49,0x49,0x7A],H:[0x7F,0x08,0x08,0x08,0x7F],I:[0x00,0x41,0x7F,0x41,0x00],J:[0x20,0x40,0x41,0x3F,0x01],K:[0x7F,0x08,0x14,0x22,0x41],L:[0x7F,0x40,0x40,0x40,0x40],M:[0x7F,0x02,0x0C,0x02,0x7F],N:[0x7F,0x04,0x08,0x10,0x7F],O:[0x3E,0x41,0x41,0x41,0x3E],P:[0x7F,0x09,0x09,0x09,0x06],Q:[0x3E,0x41,0x51,0x21,0x5E],R:[0x7F,0x09,0x19,0x29,0x46],S:[0x46,0x49,0x49,0x49,0x31],T:[0x01,0x01,0x7F,0x01,0x01],U:[0x3F,0x40,0x40,0x40,0x3F],V:[0x1F,0x20,0x40,0x20,0x1F],W:[0x3F,0x40,0x30,0x40,0x3F],X:[0x63,0x14,0x08,0x14,0x63],Y:[0x07,0x08,0x70,0x08,0x07],Z:[0x61,0x51,0x49,0x45,0x43],'0':[0x3E,0x51,0x49,0x45,0x3E],'1':[0x00,0x42,0x7F,0x40,0x00],'2':[0x42,0x61,0x51,0x49,0x46],'3':[0x21,0x41,0x45,0x4B,0x31],'4':[0x18,0x14,0x12,0x7F,0x10],'5':[0x27,0x45,0x45,0x45,0x39],'6':[0x3C,0x4A,0x49,0x49,0x30],'7':[0x01,0x71,0x09,0x05,0x03],'8':[0x36,0x49,0x49,0x49,0x36],'9':[0x06,0x49,0x49,0x29,0x1E],' ':[0,0,0,0,0],'.':[0,0x60,0x60,0,0],':':[0,0x36,0x36,0,0],'-':[8,8,8,8,8],'/':[0x20,0x10,0x08,0x04,0x02],'_':[0x40,0x40,0x40,0x40,0x40],'!':[0,0,0x5F,0,0],'?':[0x02,0x01,0x51,0x09,0x06]};
@@ -51,70 +45,6 @@ function generateQRGrid(text) {
     grid.push(row);
   }
   return grid;
-}
-
-// ── Mesh builder helpers ──
-
-class MeshBuilder {
-  constructor(lib, mesh) {
-    this.lib = lib;
-    this.mesh = mesh;
-    this.vOff = 0;
-  }
-
-  addBox(x, y, z, w, h, d) {
-    const { lib, mesh } = this;
-    const corners = [[x,y,z],[x+w,y,z],[x+w,y+h,z],[x,y+h,z],[x,y,z+d],[x+w,y,z+d],[x+w,y+h,z+d],[x,y+h,z+d]];
-    for (const [cx,cy,cz] of corners) {
-      const p = new lib.sPosition();
-      p.set_Coordinates0(cx); p.set_Coordinates1(cy); p.set_Coordinates2(cz);
-      mesh.AddVertex(p); p.delete();
-    }
-    const faces = [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[2,3,7],[2,7,6],[1,2,6],[1,6,5],[0,4,7],[0,7,3]];
-    for (const [a,b,c] of faces) {
-      const t = new lib.sTriangle();
-      t.set_Indices0(this.vOff+a); t.set_Indices1(this.vOff+b); t.set_Indices2(this.vOff+c);
-      mesh.AddTriangle(t); t.delete();
-    }
-    this.vOff += 8;
-  }
-
-  addCylinder(cx, cy, z, r, depth, segments) {
-    const { lib, mesh } = this;
-    const segs = segments || 16;
-    const base = this.vOff;
-    // Bottom center
-    const pb = new lib.sPosition(); pb.set_Coordinates0(cx); pb.set_Coordinates1(cy); pb.set_Coordinates2(z); mesh.AddVertex(pb); pb.delete();
-    // Top center
-    const pt = new lib.sPosition(); pt.set_Coordinates0(cx); pt.set_Coordinates1(cy); pt.set_Coordinates2(z+depth); mesh.AddVertex(pt); pt.delete();
-    // Ring vertices (bottom + top)
-    for (let i = 0; i < segs; i++) {
-      const a = (i / segs) * Math.PI * 2;
-      const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
-      const p1 = new lib.sPosition(); p1.set_Coordinates0(px); p1.set_Coordinates1(py); p1.set_Coordinates2(z); mesh.AddVertex(p1); p1.delete();
-      const p2 = new lib.sPosition(); p2.set_Coordinates0(px); p2.set_Coordinates1(py); p2.set_Coordinates2(z+depth); mesh.AddVertex(p2); p2.delete();
-    }
-    this.vOff += 2 + segs * 2;
-    // Bottom fan
-    for (let i = 0; i < segs; i++) {
-      const t = new lib.sTriangle();
-      t.set_Indices0(base); t.set_Indices1(base+2+((i+1)%segs)*2); t.set_Indices2(base+2+i*2);
-      mesh.AddTriangle(t); t.delete();
-    }
-    // Top fan
-    for (let i = 0; i < segs; i++) {
-      const t = new lib.sTriangle();
-      t.set_Indices0(base+1); t.set_Indices1(base+3+i*2); t.set_Indices2(base+3+((i+1)%segs)*2);
-      mesh.AddTriangle(t); t.delete();
-    }
-    // Side quads
-    for (let i = 0; i < segs; i++) {
-      const bl = base+2+i*2, br = base+2+((i+1)%segs)*2;
-      const tl = bl+1, tr = br+1;
-      const t1 = new lib.sTriangle(); t1.set_Indices0(bl); t1.set_Indices1(br); t1.set_Indices2(tr); mesh.AddTriangle(t1); t1.delete();
-      const t2 = new lib.sTriangle(); t2.set_Indices0(bl); t2.set_Indices1(tr); t2.set_Indices2(tl); mesh.AddTriangle(t2); t2.delete();
-    }
-  }
 }
 
 // ── Main generator ──
@@ -230,13 +160,20 @@ export async function generateSign3MF(opts = {}) {
       plate.addCylinder(pw / 2, ph / 2, pd, nr, th * 0.3, 24);
     }
 
+    // ── Determine which parts to include ──
+    const partFilter = opts.part || 'all'; // 'all', 'plate', 'frame', 'stand'
+    const wantPlate = partFilter === 'all' || partFilter === 'plate';
+    const wantFrame = (partFilter === 'all' || partFilter === 'frame') && opts.includeBorder;
+    const wantStand = (partFilter === 'all' || partFilter === 'stand') && opts.includeStand;
+
     // ── PLATE 1: Sign (plate + text on same position) ──
-    // Plate centered at origin
-    model.AddBuildItem(plateMesh, wrapper.GetIdentityTransform());
-    model.AddBuildItem(textMesh, wrapper.GetIdentityTransform());
+    if (wantPlate) {
+      model.AddBuildItem(plateMesh, wrapper.GetIdentityTransform());
+      model.AddBuildItem(textMesh, wrapper.GetIdentityTransform());
+    }
 
     // ── PLATE 2: Frame (offset to the right, own print area) ──
-    if (opts.includeBorder) {
+    if (wantFrame) {
       const frameMesh = model.AddMeshObject();
       frameMesh.SetName('Frame');
       frameMesh.SetObjectLevelProperty(mgId, colGrey);
@@ -262,15 +199,19 @@ export async function generateSign3MF(opts = {}) {
       frame.addBox(fw - lip, fw, 0, lip, totalH - fw * 2, lipD * 0.5);
       frame.addBox(totalW - fw, fw, 0, lip, totalH - fw * 2, lipD * 0.5);
 
-      // Position frame on plate 2 (offset right)
-      const frameSt = new lib.sTransform();
-      frameSt.set_Fields_0_0(1); frameSt.set_Fields_1_1(1); frameSt.set_Fields_2_2(1);
-      frameSt.set_Fields_3_0(pw + 20); // X offset for plate 2
-      model.AddBuildItem(frameMesh, frameSt);
+      // Position frame — at origin if standalone, offset if combined
+      if (partFilter === 'frame') {
+        model.AddBuildItem(frameMesh, wrapper.GetIdentityTransform());
+      } else {
+        const frameSt = new lib.sTransform();
+        frameSt.set_Fields_0_0(1); frameSt.set_Fields_1_1(1); frameSt.set_Fields_2_2(1);
+        frameSt.set_Fields_3_0(pw + 20);
+        model.AddBuildItem(frameMesh, frameSt);
+      }
     }
 
     // ── PLATE 3: Stand (offset further right, own print area) ──
-    if (opts.includeStand) {
+    if (wantStand) {
       const standMesh = model.AddMeshObject();
       standMesh.SetName('Stand');
       standMesh.SetObjectLevelProperty(mgId, colDarkGrey);
@@ -297,11 +238,15 @@ export async function generateSign3MF(opts = {}) {
       stand.addBox(3, baseD - 8, 0, 6, 6, 0.6);
       stand.addBox(standW - 9, baseD - 8, 0, 6, 6, 0.6);
 
-      // Position stand on plate 3 (offset further right)
-      const standSt = new lib.sTransform();
-      standSt.set_Fields_0_0(1); standSt.set_Fields_1_1(1); standSt.set_Fields_2_2(1);
-      standSt.set_Fields_3_0((opts.includeBorder ? pw * 2 + 50 : pw + 20)); // X offset for plate 3
-      model.AddBuildItem(standMesh, standSt);
+      // Position stand — at origin if standalone, offset if combined
+      if (partFilter === 'stand') {
+        model.AddBuildItem(standMesh, wrapper.GetIdentityTransform());
+      } else {
+        const standSt = new lib.sTransform();
+        standSt.set_Fields_0_0(1); standSt.set_Fields_1_1(1); standSt.set_Fields_2_2(1);
+        standSt.set_Fields_3_0((opts.includeBorder ? pw * 2 + 50 : pw + 20));
+        model.AddBuildItem(standMesh, standSt);
+      }
     }
 
     // ── Metadata ──

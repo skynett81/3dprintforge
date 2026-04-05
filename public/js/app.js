@@ -301,6 +301,7 @@ const PANEL_TITLES = {
   diagnostics: 'tabs.diagnostics',
   labels: 'tabs.labels',
   signmaker: 'Sign Maker',
+  modelforge: 'Model Forge',
   widgets: 'tabs.widgets',
   timetracker: 'tabs.timetracker',
   printermatrix: 'tabs.printermatrix',
@@ -341,6 +342,12 @@ const PANEL_LOADERS = {
   diagnostics: () => { if (typeof loadDiagnosticsPanel === 'function') loadDiagnosticsPanel(); },
   labels: () => { if (typeof loadLabelPanel === 'function') loadLabelPanel(); },
   signmaker: () => { if (typeof loadSignMakerPanel === 'function') loadSignMakerPanel(); },
+  modelforge: () => {
+    // Support deep-linking: #modelforge/lithophane
+    const hash = location.hash.replace('#', '');
+    const sub = hash.startsWith('modelforge/') ? hash.split('/')[1] : null;
+    if (typeof loadModelForgePanel === 'function') loadModelForgePanel(sub);
+  },
   widgets: () => { if (typeof loadWidgetsPanel === 'function') loadWidgetsPanel(); },
   plugins: () => { if (typeof loadPluginsPanel === 'function') loadPluginsPanel(); },
   backup: () => { if (typeof loadBackupPanel === 'function') loadBackupPanel(); },
