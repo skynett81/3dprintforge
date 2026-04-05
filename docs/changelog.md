@@ -4,6 +4,87 @@ All notable changes to 3DPrintForge.
 
 ---
 
+## v1.1.16 — Model Forge, Snapmaker Deep Integration, Multi-Brand Support (2026-04-05)
+
+### Model Forge — 3D Model Generation Suite
+- 8 parametric generators: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil
+- Shared MeshBuilder with heightmap surface, tube, rounded box primitives
+- Pure JS PNG decoder for image-to-3D conversion (no npm deps)
+- All models exported as 3MF via lib3mf WASM
+
+### Snapmaker U1 Deep Integration
+- 13 custom Klipper modules: machine state, NFC filament, feed system, defect detection, timelapse, print config, flow calibration, power loss, purifier
+- NFC filament spool cards with vendor, type, color, weight, temp profiles
+- Auto-load/unload with live progress, entangle detection
+- AI defect detection (spaghetti, residue, bed, nozzle) with configurable auto-pause
+- Print task config toggles, calibration wizard
+- 20 filament profiles + 5 process presets from OrcaSlicer
+- U1 bed STL model + texture for 3D visualization
+- SACP binary protocol client for older Snapmaker machines (A150/A250/A350/J1/Artisan)
+- 7 Snapmaker machine definitions
+
+### Bambu Lab Deep Integration
+- 12 printer capability configs from BambuStudio (exact feature flags per model)
+- 40+ new MQTT commands: calibration, camera, AMS advanced, multi-nozzle, fan v3, HMS
+- 12 job states with transition tracking (Pausing/Resuming/Finishing/Stopping)
+- HMS error system: 4 severity levels, 16 module IDs
+- 7 fan types with air duct modes (cooling/heating/exhaust)
+- Filament blacklist (TPU/CF restrictions per AMS)
+- Camera resolution switching (720p/1080p)
+- Calibration + Camera + System cards in controls panel
+
+### Multi-Brand Printer Support
+- PrusaLink REST client with digest auth (Prusa MK4/MK3.9/Mini+/XL)
+- Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
+- 15+ model overrides with build volumes and camera modes
+- Combined discovery: Bambu SSDP + Moonraker HTTP + SACP broadcast
+
+### Moonraker API Integrations
+- File Manager: list, metadata with thumbnails, delete, download
+- Job Queue: enqueue, start, pause, remove
+- Webcam: snapshot proxy, stream URL (no mixed content on HTTPS)
+- Update Manager: status + trigger
+- Spoolman: proxy integration
+- File upload to all Moonraker/PrusaLink printers
+
+### Network & Remote Access
+- SSL certs auto-include all local IPs and hostname
+- Server accessible via IP, hostname, and localhost
+- System info shows network interfaces and ports
+- Cloudflare Tunnel integration (quick tunnel, no account needed)
+- Camera snapshot polling on HTTPS (no separate cert for camera port)
+
+### Library Improvements
+- "Send to Printer" button on every library file
+- Printer selector dialog with instant print option
+- "Add to Queue" from library cards
+- Reorganized dialog layout
+
+### Other Features
+- G-code analyzer: layers, extrusion, temps, warnings, filament weight
+- G-code 3D toolpath viewer with layer scrubber
+- Pre-print confirmation dialog with settings overview
+- PWA push notifications via service worker
+- Print farm load balancing (material/capability/enclosure scoring)
+- Plugin system: route registration, UI panels, timers, DB access
+- Community filament reviews + per-printer settings tables
+- AMS drying card with material presets (PLA/PETG/ABS/TPU)
+
+### Bug Fixes
+- Camera WSS for HTTPS access (mixed content fix)
+- Printer isolation: full re-render on switch, reject orphan commands
+- Sign Maker: mirrored text in 3MF fixed, proportional preview sizing
+- Norwegian fallback strings translated to English
+- Capability cache cleared on printer deletion
+
+### Tests
+- 99 tests total (all passing)
+- MeshBuilder, image-to-heightmap, all 8 Model Forge generators
+- Snapmaker state map, DB operations, API endpoints
+- E2E tests for SM filament, defect, calibration APIs
+
+---
+
 ## v1.1.15 — 3MF Consortium Integration, Gcode Toolpath & Universal 3D Preview (2026-04-04)
 
 ### 3MF Consortium Integration

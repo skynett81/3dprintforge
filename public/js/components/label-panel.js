@@ -60,7 +60,7 @@
           </button>
           <button class="lbl-type-btn" data-type="profile" onclick="_lblSetType('profile')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            ${_tl('labels.type_profile', 'Profiler')}
+            ${_tl('labels.type_profile', 'Profiles')}
           </button>
           <button class="lbl-type-btn" data-type="printer" onclick="_lblSetType('printer')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -182,7 +182,7 @@
   function _renderProfileLabels() {
     const grid = document.getElementById('lbl-grid');
     if (!grid) return;
-    if (!_profiles.length) { grid.innerHTML = _emptyState('layers', _tl('labels.no_profiles', 'Ingen profiler funnet')); return; }
+    if (!_profiles.length) { grid.innerHTML = _emptyState('layers', _tl('labels.no_profiles', 'No profiles found')); return; }
 
     let html = '';
     for (const p of _profiles) {

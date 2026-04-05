@@ -158,7 +158,7 @@
     // Storage row with format button
     const storageIcon = useUsb ? 'usb' : 'sd';
     const storageLabel = useUsb ? t('quick_status.usb_storage', 'USB') : t('quick_status.sd_card');
-    const formatTitle = useUsb ? t('controls.format_usb', 'Formater USB') : t('controls.format_sd', 'Formater SD-kort');
+    const formatTitle = useUsb ? t('controls.format_usb', 'Format USB') : t('controls.format_sd', 'Format SD');
     const storageItem = `<div class="qs-item">
       <div class="qs-icon">${ICONS[storageIcon]}</div>
       <div class="qs-text">
