@@ -103,6 +103,17 @@ export class PrinterManager {
           sampler.update(printData);
           if (this._notifier) this._notifier.updateBedMonitor(id, printerConf.name, printData);
           if (this.guard) this.guard.processSensorData(id, printData);
+
+          // Snapmaker defect detection — notify on critical defects
+          if (printData._sm_defect && printData.gcode_state === 'RUNNING') {
+            const dd = printData._sm_defect;
+            if (dd.noodle?.probability > 0.8 && this._notifier) {
+              this._notifier.notify('defect_detected', {
+                printerId: id, printerName: printerConf.name,
+                type: 'spaghetti', probability: dd.noodle.probability,
+              });
+            }
+          }
         }
       },
       printerState: {}
@@ -127,6 +138,11 @@ export class PrinterManager {
       try {
         addFirmwareEntry({ printer_id: id, module: mod.name, sw_ver: mod.sw_ver, hw_ver: mod.hw_ver, sn: mod.sn });
       } catch (e) { /* duplicate or error */ }
+    };
+
+    // Snapmaker U1 detection — update meta with SM flag
+    client.onSmDetected = () => {
+      this.setMeta(id, { name: printerConf.name, model: printerConf.model || '', cameraPort, type: connectorType, _isSnapmakerU1: true });
     };
 
     // XCam event detection

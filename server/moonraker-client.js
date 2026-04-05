@@ -605,7 +605,10 @@ export class MoonrakerClient {
       // Detect Snapmaker U1 by presence of machine_state_manager
       if (objects.includes('machine_state_manager')) {
         this._isSnapmakerU1 = true;
+        this.state._isSnapmakerU1 = true;
         log.info('Detected Snapmaker U1 printer');
+        // Notify hub so frontend gets the SM flag in meta
+        if (this.onSmDetected) this.onSmDetected();
       }
     } catch { /* ignore */ }
   }

@@ -17,15 +17,22 @@
   const DEFAULT_CAPS = { auxFan: true, chamberFan: true, chamberHeat: true, light: true, ai: true, enclosure: true, dualNozzle: false, toolchanger: false, amsType: 'full', maxAmsUnits: 4, maxNozzleTemp: 300, maxBedTemp: 120, maxChamberTemp: 60, buildVolume: [256,256,256], maxSpeed: 500 };
 
   // Moonraker/Klipper printers — no Bambu-specific fans (uses cavity_fan via gcode), no AI
-  const MOONRAKER_CAPS = { auxFan: false, chamberFan: false, chamberHeat: false, light: true, ai: false, enclosure: true, dualNozzle: false, toolchanger: false, amsType: null, maxAmsUnits: 0, maxNozzleTemp: 300, maxBedTemp: 120, maxChamberTemp: null, buildVolume: [300,300,300], maxSpeed: 500 };
+  const MOONRAKER_CAPS = { auxFan: false, chamberFan: false, chamberHeat: false, light: true, ai: false, enclosure: true, dualNozzle: false, toolchanger: false, amsType: null, maxAmsUnits: 0, maxNozzleTemp: 300, maxBedTemp: 120, maxChamberTemp: null, buildVolume: [300,300,300], maxSpeed: 500, smFeatures: false };
+
+  // Snapmaker U1 — 4-extruder toolchanger with NFC, defect detection, purifier
+  const SM_U1_CAPS = { auxFan: false, chamberFan: false, chamberHeat: false, light: true, ai: false, enclosure: true, dualNozzle: false, toolchanger: true, amsType: null, maxAmsUnits: 0, maxNozzleTemp: 300, maxBedTemp: 110, maxChamberTemp: null, buildVolume: [271,335,275], maxSpeed: 500, smFeatures: true, nozzleCount: 4 };
 
   window.getCapabilities = function(model, meta) {
-    // If meta has connector type info, use it
+    if (model === 'Snapmaker U1') return SM_U1_CAPS;
     if (meta?.type === 'moonraker' || meta?.type === 'klipper') {
-      return MOONRAKER_CAPS;
+      return meta?._isSnapmakerU1 ? SM_U1_CAPS : MOONRAKER_CAPS;
     }
     if (!model) return DEFAULT_CAPS;
     return MODELS[model] || DEFAULT_CAPS;
+  };
+
+  window.isSnapmakerU1 = function(model, meta) {
+    return model === 'Snapmaker U1' || !!meta?._isSnapmakerU1;
   };
 
   window.getKnownModels = function() {

@@ -537,6 +537,9 @@
     if (data._sm_defect || data._sm_timelapse !== undefined || data._sm_print_config || data._sm_power) {
       html += typeof renderSmAdvancedPanel === 'function' ? renderSmAdvancedPanel(data) : '';
     }
+    if (data._sm_print_config || data._sm_flow_cal) {
+      html += typeof renderSmCalibrationPanel === 'function' ? renderSmCalibrationPanel(data) : '';
+    }
 
     // ===== Snapmaker U1: Status badge override =====
     if (data._sm_state_label && typeof renderSmStatusBadge === 'function') {
