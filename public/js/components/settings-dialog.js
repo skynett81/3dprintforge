@@ -731,6 +731,26 @@
       </div>`;
       h += '</div>';
 
+      // Server Management card
+      h += `<div class="settings-card">
+        <div class="card-title" style="display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          Server Management
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-orange);color:#fff" onclick="window._serverRestart()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>Restart Server
+          </button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._serverClearCache()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Clear Browser Cache
+          </button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="if(navigator.serviceWorker)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(w=>w.unregister())).then(()=>showToast('Service worker unregistered. Reload page.','success'))">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Unregister Service Worker
+          </button>
+        </div>
+        <p class="text-muted" style="font-size:0.72rem;margin:0"><strong>Restart:</strong> Stops the server process. Requires a process manager (systemd/pm2/Docker) to auto-restart.<br><strong>Clear Cache:</strong> Forces fresh translations and assets on next reload.<br><strong>Unregister SW:</strong> Removes the service worker — fixes stale cache issues.</p>
+      </div>`;
+
       // Backups card (full width)
       h += `<div class="settings-card">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -1377,6 +1397,40 @@
       _loadBackupList();
     } catch (e) { showToast(e.message, 'error'); }
     finally { input.value = ''; }
+  };
+
+  window._serverRestart = async function() {
+    if (!confirm('Restart the server? The page will reload automatically when the server is back.')) return;
+    try {
+      await fetch('/api/server/restart', { method: 'POST' });
+      showToast('Server is restarting...', 'info');
+      // Poll until server comes back
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch('/api/health', { signal: AbortSignal.timeout(2000) });
+          if (r.ok) { clearInterval(poll); location.reload(); }
+        } catch { /* still restarting */ }
+      }, 3000);
+    } catch (e) { showToast('Restart failed: ' + e.message, 'error'); }
+  };
+
+  window._serverClearCache = async function() {
+    try {
+      // Unregister service worker
+      if (navigator.serviceWorker) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) await r.unregister();
+      }
+      // Clear all caches
+      if (window.caches) {
+        const keys = await caches.keys();
+        for (const k of keys) await caches.delete(k);
+      }
+      // Clear server-side cache
+      await fetch('/api/server/clear-cache', { method: 'POST' });
+      showToast('All caches cleared. Reloading...', 'success');
+      setTimeout(() => location.reload(true), 1000);
+    } catch (e) { showToast('Clear cache failed: ' + e.message, 'error'); }
   };
 
   function renderPrinterForm(target, printer = null) {
