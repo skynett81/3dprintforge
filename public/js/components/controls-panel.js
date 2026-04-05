@@ -541,6 +541,54 @@
       html += typeof renderSmCalibrationPanel === 'function' ? renderSmCalibrationPanel(data) : '';
     }
 
+    // ===== CARD: Bambu Calibration (Bambu only) =====
+    if (meta?.type !== 'moonraker' && meta?.type !== 'prusalink') {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+          Calibration
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{bedLeveling:true})">Bed Leveling</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{vibration:true})">Vibration</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{motorNoise:true})">Motor Noise</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('pa_calibration',{mode:0})">PA Auto</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('flow_calibration',{tray_index:0,nozzle_temp:220,bed_temp:60})">Flow Cal</button>
+        </div>
+      </div>`;
+
+      // Camera controls
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Camera
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:true})">Start Recording</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:false})">Stop Recording</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:true})">Timelapse On</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:false})">Timelapse Off</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_resolution',{resolution:'1080p'})">1080p</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_resolution',{resolution:'720p'})">720p</button>
+        </div>
+      </div>`;
+
+      // System controls
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06"/></svg>
+          System
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('stop_buzzer')">Stop Buzzer</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:true})">Auto Recovery On</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:false})">Auto Recovery Off</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:true})">Door Check On</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:false})">Door Check Off</button>
+        </div>
+      </div>`;
+    }
+
     // ===== Snapmaker U1: Status badge override =====
     if (data._sm_state_label && typeof renderSmStatusBadge === 'function') {
       // Will be applied after DOM render via setTimeout

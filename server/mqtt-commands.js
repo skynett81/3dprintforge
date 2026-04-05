@@ -178,6 +178,139 @@ export function buildPushAllCommand() {
   return { pushing: { sequence_id: nextSeq(), command: 'pushall' } };
 }
 
+// ── Calibration commands ──
+
+/** Start calibration with selectable modes */
+export function buildCalibrationCommand(opts = {}) {
+  return { print: { sequence_id: nextSeq(), command: 'calibration',
+    vibration: opts.vibration ? 1 : 0,
+    bed_leveling: opts.bedLeveling ? 1 : 0,
+    xcam_cali: opts.xcamCali ? 1 : 0,
+    motor_noise: opts.motorNoise ? 1 : 0,
+    nozzle_cali: opts.nozzleCali ? 1 : 0,
+  }};
+}
+
+/** Pressure advance (PA) calibration */
+export function buildPACalibrationCommand(mode = 0) {
+  return { print: { sequence_id: nextSeq(), command: 'extrusion_cali', mode } };
+}
+
+/** Flow ratio calibration */
+export function buildFlowCalibrationCommand(trayIndex, nozzleTemp, bedTemp, maxVolumetricSpeed) {
+  return { print: { sequence_id: nextSeq(), command: 'flowrate_cali',
+    tray_index: trayIndex || 0, nozzle_temp: nozzleTemp || 220,
+    bed_temp: bedTemp || 60, max_volumetric_speed: maxVolumetricSpeed || 12,
+  }};
+}
+
+// ── Camera commands ──
+
+export function buildCameraRecordCommand(onOff) {
+  return { system: { sequence_id: nextSeq(), command: 'ipcam_record_set', control: onOff ? 'enable' : 'disable' } };
+}
+
+export function buildCameraTimelapseCommand(onOff) {
+  return { system: { sequence_id: nextSeq(), command: 'ipcam_timelapse', control: onOff ? 'enable' : 'disable' } };
+}
+
+export function buildCameraResolutionCommand(resolution) {
+  return { system: { sequence_id: nextSeq(), command: 'ipcam_resolution_set', resolution: resolution || '1080p' } };
+}
+
+// ── AMS advanced commands ──
+
+export function buildAmsChangeTrayCommand(amsId, slotId, oldTemp, newTemp) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_change_filament',
+    target: amsId * 4 + slotId, old_temp: oldTemp || 220, new_temp: newTemp || 220,
+  }};
+}
+
+export function buildAmsSettingsCommand(startReadOpt, trayReadOpt, remainFlag) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_user_setting',
+    ams_user_setting: { startup_read_option: startReadOpt ? 1 : 0, tray_read_option: trayReadOpt ? 1 : 0, calibrate_remain_flag: remainFlag ? 1 : 0 }
+  }};
+}
+
+export function buildAmsFilamentSettingCommand(amsId, slotId, trayColor, trayType, nozzleTempMin, nozzleTempMax) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_filament_setting',
+    ams_id: amsId, tray_id: slotId, tray_color: trayColor || 'FFFFFFFF',
+    tray_type: trayType || 'PLA', nozzle_temp_min: nozzleTempMin || 190, nozzle_temp_max: nozzleTempMax || 230,
+  }};
+}
+
+export function buildAmsRefreshRfidCommand(trayId) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_control', param: 'resume', tray_id: trayId } };
+}
+
+export function buildAmsSelectTrayCommand(trayId) {
+  return { print: { sequence_id: nextSeq(), command: 'ams_change_filament', target: trayId } };
+}
+
+// ── Nozzle/Extruder commands ──
+
+export function buildSetNozzleCommand(nozzleType, diameter) {
+  return { print: { sequence_id: nextSeq(), command: 'set_nozzle', nozzle_type: nozzleType || 'stainless_steel', nozzle_diameter: diameter || '0.4' } };
+}
+
+/** For multi-nozzle printers (H2D) */
+export function buildSetNozzle2Command(nozzleId, nozzleType, diameter) {
+  return { print: { sequence_id: nextSeq(), command: 'set_nozzle', nozzle_id: nozzleId, nozzle_type: nozzleType || 'stainless_steel', nozzle_diameter: diameter || '0.4' } };
+}
+
+export function buildSelectExtruderCommand(extruderId) {
+  return { print: { sequence_id: nextSeq(), command: 'select_extruder', extruder_id: extruderId || 0 } };
+}
+
+export function buildSetBedTempCommand(temp) {
+  return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: `M140 S${temp || 0}` } };
+}
+
+export function buildSetNozzleTempCommand(temp) {
+  return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: `M104 S${temp || 0}` } };
+}
+
+// ── System commands ──
+
+export function buildStopBuzzerCommand() {
+  return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: 'M20' } };
+}
+
+export function buildSetDoorCheckCommand(enabled) {
+  return { print: { sequence_id: nextSeq(), command: 'set_door_open_check', state: enabled ? 1 : 0 } };
+}
+
+export function buildCleanPrintErrorCommand(taskId, printError) {
+  return { print: { sequence_id: nextSeq(), command: 'clean_print_error', task_id: taskId || '', print_error: printError || 0 } };
+}
+
+export function buildSetAutoRecoveryCommand(enabled) {
+  return { print: { sequence_id: nextSeq(), command: 'print_option', option: 'auto_recovery', value: enabled ? 1 : 0 } };
+}
+
+// ── Fan commands (v3 with air duct modes) ──
+
+/** Fan IDs: 0=heat_break_0, 1=cooling_0, 2=remote_cooling_0, 3=chamber_0, 4=heat_break_1, 5=mc_board_0, 6=inner_loop_0 */
+export function buildFanCommand(fanId, speed) {
+  return { print: { sequence_id: nextSeq(), command: 'gcode_line', param: `M106 P${fanId} S${Math.round((speed / 100) * 255)}` } };
+}
+
+/** Air duct mode: 'cooling', 'heating', 'exhaust', 'full_cooling' */
+export function buildAirDuctModeCommand(mode) {
+  const modes = { cooling: 0, heating: 1, exhaust: 2, full_cooling: 3 };
+  return { system: { sequence_id: nextSeq(), command: 'set_air_duct_mode', mode: modes[mode] ?? 0 } };
+}
+
+// ── HMS commands ──
+
+export function buildHmsIgnoreCommand(hmsCode) {
+  return { print: { sequence_id: nextSeq(), command: 'hms_idle_ignore', hms_code: hmsCode } };
+}
+
+export function buildHmsResumeCommand(hmsCode) {
+  return { print: { sequence_id: nextSeq(), command: 'hms_idle_resume', hms_code: hmsCode } };
+}
+
 export function buildCommandFromClientMessage(msg) {
   switch (msg.action) {
     case 'pause': return buildPauseCommand();
@@ -192,6 +325,31 @@ export function buildCommandFromClientMessage(msg) {
     case 'ams_dry': return buildAmsDryCommand(msg.ams_id, msg.temp, msg.duration);
     case 'ams_stop_dry': return buildAmsStopDryCommand(msg.ams_id);
     case 'pushall': return buildPushAllCommand();
+    // New commands
+    case 'calibration': return buildCalibrationCommand(msg);
+    case 'pa_calibration': return buildPACalibrationCommand(msg.mode);
+    case 'flow_calibration': return buildFlowCalibrationCommand(msg.tray_index, msg.nozzle_temp, msg.bed_temp, msg.max_volumetric_speed);
+    case 'camera_record': return buildCameraRecordCommand(msg.enable);
+    case 'camera_timelapse': return buildCameraTimelapseCommand(msg.enable);
+    case 'camera_resolution': return buildCameraResolutionCommand(msg.resolution);
+    case 'ams_change_tray': return buildAmsChangeTrayCommand(msg.ams_id, msg.slot_id, msg.old_temp, msg.new_temp);
+    case 'ams_settings': return buildAmsSettingsCommand(msg.startup_read, msg.tray_read, msg.remain_flag);
+    case 'ams_filament_setting': return buildAmsFilamentSettingCommand(msg.ams_id, msg.slot_id, msg.tray_color, msg.tray_type, msg.nozzle_temp_min, msg.nozzle_temp_max);
+    case 'ams_refresh_rfid': return buildAmsRefreshRfidCommand(msg.tray_id);
+    case 'ams_select_tray': return buildAmsSelectTrayCommand(msg.tray_id);
+    case 'set_nozzle': return buildSetNozzleCommand(msg.nozzle_type, msg.diameter);
+    case 'set_nozzle2': return buildSetNozzle2Command(msg.nozzle_id, msg.nozzle_type, msg.diameter);
+    case 'select_extruder': return buildSelectExtruderCommand(msg.extruder_id);
+    case 'set_bed_temp': return buildSetBedTempCommand(msg.temp);
+    case 'set_nozzle_temp': return buildSetNozzleTempCommand(msg.temp);
+    case 'stop_buzzer': return buildStopBuzzerCommand();
+    case 'set_door_check': return buildSetDoorCheckCommand(msg.enable);
+    case 'clean_print_error': return buildCleanPrintErrorCommand(msg.task_id, msg.print_error);
+    case 'set_auto_recovery': return buildSetAutoRecoveryCommand(msg.enable);
+    case 'set_fan': return buildFanCommand(msg.fan_id, msg.speed);
+    case 'set_air_duct_mode': return buildAirDuctModeCommand(msg.mode);
+    case 'hms_ignore': return buildHmsIgnoreCommand(msg.hms_code);
+    case 'hms_resume': return buildHmsResumeCommand(msg.hms_code);
     default: return null;
   }
 }

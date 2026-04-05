@@ -4901,6 +4901,42 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Bambu Printer Database ──
+    if (method === 'GET' && path === '/api/bambu/printer-db') {
+      try {
+        const { readFileSync } = await import('node:fs');
+        const { join, dirname } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
+        return sendJson(res, JSON.parse(readFileSync(dbPath, 'utf8')));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    if (method === 'GET' && path.startsWith('/api/bambu/printer-db/')) {
+      try {
+        const modelId = decodeURIComponent(path.split('/').pop());
+        const { readFileSync } = await import('node:fs');
+        const { join, dirname } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
+        const db = JSON.parse(readFileSync(dbPath, 'utf8'));
+        const printer = db.printers[modelId];
+        if (!printer) return sendJson(res, { error: 'Model not found' }, 404);
+        return sendJson(res, printer);
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    if (method === 'GET' && path === '/api/bambu/filament-blacklist') {
+      try {
+        const { readFileSync } = await import('node:fs');
+        const { join, dirname } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
+        const db = JSON.parse(readFileSync(dbPath, 'utf8'));
+        return sendJson(res, db.filament_blacklist || {});
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
     // ── Cloudflare Tunnel ──
     if (path.startsWith('/api/tunnel')) {
       if (method === 'GET' && path === '/api/tunnel/status') {
