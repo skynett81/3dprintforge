@@ -4909,6 +4909,34 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Klipper Macros ──
+    const klipMacroMatch = path.match(/^\/api\/printers\/([^/]+)\/macros$/);
+    if (klipMacroMatch && method === 'GET') {
+      const pid = decodeURIComponent(klipMacroMatch[1]);
+      const entry = _printerManager?.printers?.get(pid);
+      if (!entry?.client?.state) return sendJson(res, { error: 'Printer not found' }, 404);
+      try {
+        const objects = await entry.client._apiGet('/printer/objects/list');
+        const macros = (objects?.result?.objects || [])
+          .filter(o => o.startsWith('gcode_macro '))
+          .map(o => o.replace('gcode_macro ', ''))
+          .filter(m => !m.startsWith('_')) // skip internal macros
+          .sort();
+        return sendJson(res, { macros, total: macros.length });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    const klipMacroRunMatch = path.match(/^\/api\/printers\/([^/]+)\/macros\/run$/);
+    if (klipMacroRunMatch && method === 'POST') {
+      const pid = decodeURIComponent(klipMacroRunMatch[1]);
+      return readBody(req, res, (body) => {
+        if (!body.macro) return sendJson(res, { error: 'macro required' }, 400);
+        const safe = body.macro.replace(/[^A-Z0-9_]/gi, '');
+        _printerManager.handleCommand({ printer_id: pid, action: 'gcode', gcode: safe });
+        return sendJson(res, { ok: true, ran: safe });
+      });
+    }
+
     // ── EULA ──
     if (method === 'GET' && path === '/api/eula') {
       try {

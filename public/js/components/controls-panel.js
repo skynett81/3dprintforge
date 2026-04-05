@@ -488,6 +488,22 @@
       </div>`;
     }
 
+    // ===== CARD: Klipper Macros (Moonraker printers) =====
+    if (meta?.type === 'moonraker' || meta?.type === 'klipper' || meta?.type === 'creality' || meta?.type === 'elegoo' || meta?.type === 'voron') {
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            Klipper Macros
+          </span>
+          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:2px 6px" data-ripple onclick="window._loadKlipperMacros('${esc(meta?.id || '')}')">Load</button>
+        </div>
+        <div id="ctrl-klipper-macros" style="max-height:200px;overflow-y:auto">
+          <span class="text-muted" style="font-size:0.75rem">Click Load to fetch available macros</span>
+        </div>
+      </div>`;
+    }
+
     // ===== CARD: AMS Drying (Bambu only) =====
     if (caps.amsType && meta?.type !== 'moonraker') {
       const amsData = data.ams;
@@ -845,6 +861,35 @@
     return confirmAction(t('controls.confirm_stop'), () => {
       sendCommand('stop');
     }, { danger: true });
+  };
+
+  window._loadKlipperMacros = async function(printerId) {
+    const el = document.getElementById('ctrl-klipper-macros');
+    if (!el) return;
+    el.innerHTML = '<span class="text-muted" style="font-size:0.75rem">Loading macros...</span>';
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/macros`);
+      const data = await res.json();
+      if (!data.macros?.length) { el.innerHTML = '<span class="text-muted" style="font-size:0.75rem">No macros found</span>'; return; }
+      let h = `<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">${data.total} macros available</div>`;
+      h += '<div style="display:flex;flex-wrap:wrap;gap:3px">';
+      for (const m of data.macros) {
+        const isCommon = /^(PRINT_START|PRINT_END|CANCEL_PRINT|PAUSE|RESUME|G28|G29|BED_MESH|SHAPER|CLEAN|HOME)/.test(m);
+        h += `<button class="form-btn form-btn-sm" style="font-size:0.62rem;padding:1px 5px;${isCommon ? 'background:var(--accent-blue);color:#fff' : ''}" data-ripple onclick="window._runKlipperMacro('${printerId}','${m}')" title="${m}">${m.length > 20 ? m.slice(0, 18) + '..' : m}</button>`;
+      }
+      h += '</div>';
+      el.innerHTML = h;
+    } catch (e) { el.innerHTML = `<span style="color:var(--accent-red);font-size:0.75rem">${e.message}</span>`; }
+  };
+
+  window._runKlipperMacro = async function(printerId, macro) {
+    try {
+      await fetch(`/api/printers/${encodeURIComponent(printerId)}/macros/run`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ macro })
+      });
+      if (typeof showToast === 'function') showToast(`Running: ${macro}`, 'info');
+    } catch (e) { if (typeof showToast === 'function') showToast(e.message, 'error'); }
   };
 
   window._startAmsDry = function() {
