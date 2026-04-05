@@ -127,7 +127,7 @@
     }
     streamActive = true;
     _streamMode = 'snapshot';
-    log.info('Snapshot polling via HTTPS proxy');
+    console.log('[camera] Snapshot polling via HTTPS proxy');
 
     const refresh = () => {
       if (!streamActive) return;
