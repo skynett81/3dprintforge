@@ -1,4 +1,5 @@
 import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, enrichTrayWithVariant } from './database.js';
+import { getDb } from './db/connection.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -441,16 +442,41 @@ export class PrintTracker {
     const completionPct = parseInt(data.mc_percent) || 0;
 
     let filamentUsedG = 0;
+
+    // Moonraker/Klipper: convert filament_used_mm to grams
+    // Formula: volume = π × (d/2)² × length; weight = volume × density
+    // PLA ~1.24 g/cm³, 1.75mm diameter → ~1g per 340mm
+    if (data.filament_used_mm && data.filament_used_mm > 0) {
+      const diamMm = data._filament_diameter || 1.75;
+      const density = data._filament_density || 1.24; // g/cm³ (PLA default)
+      const radiusCm = (diamMm / 2) / 10;
+      const lengthCm = data.filament_used_mm / 10;
+      filamentUsedG = Math.PI * radiusCm * radiusCm * lengthCm * density;
+    }
+
+    // Moonraker: use slicer total weight if available and more reliable
+    if (filamentUsedG < 1 && data._slicer_filament_total_g && data._slicer_filament_total_g > 0) {
+      const pctDone = completionPct || (status === 'completed' ? 100 : 0);
+      if (pctDone > 0) {
+        filamentUsedG = data._slicer_filament_total_g * (pctDone / 100);
+        log.info('Using slicer weight estimate: ' + filamentUsedG.toFixed(1) + 'g at ' + pctDone + '%');
+      }
+    }
+
+    // Bambu: AMS snapshot diff (most accurate for Bambu printers)
     if (this.amsSnapshot) {
       const currentAms = this._getAmsRemaining(data);
+      let amsDiffG = 0;
       for (const [trayId, startRemain] of Object.entries(this.amsSnapshot)) {
         const endRemain = currentAms[trayId] ?? startRemain;
         const diff = startRemain - endRemain;
         if (diff > 0) {
           const trayWeight = this.amsTrayWeights[trayId] || 1000;
-          filamentUsedG += (diff / 100) * trayWeight;
+          amsDiffG += (diff / 100) * trayWeight;
         }
       }
+      // Prefer AMS diff if it gives a meaningful result
+      if (amsDiffG > 0) filamentUsedG = amsDiffG;
     }
 
     // Fallback: use cloud estimate if AMS diff is too low
@@ -549,7 +575,7 @@ export class PrintTracker {
 
     try {
       const printHistoryId = addHistory(record);
-      log.info('Print ' + status + ': ' + record.filename + ' (' + Math.round(duration / 60) + 'm, ' + filamentUsedG.toFixed(1) + 'g, ' + this.colorChanges + ' fargebytter, ' + wasteG + 'g waste)');
+      log.info('Print ' + status + ': ' + record.filename + ' (' + Math.round(duration / 60) + 'm, ' + filamentUsedG.toFixed(1) + 'g, ' + this.colorChanges + ' color changes, ' + wasteG + 'g waste)');
 
       // Save thumbnail from cache if available
       this._saveHistoryThumbnail(printHistoryId);
@@ -1263,7 +1289,6 @@ export class PrintTracker {
         const activeTray = parseInt(data.ams.tray_now);
         let spool = null;
         if (activeTray >= 254) {
-          // External spool (EXT) — mapped as unit 255, tray 0
           spool = getSpoolBySlot(this.printerId, 255, 0);
         } else if (activeTray >= 0) {
           const unitId = Math.floor(activeTray / 4);
@@ -1274,9 +1299,38 @@ export class PrintTracker {
           useSpoolWeight(spool.id, filamentUsedG, 'estimate', printHistoryId, this.printerId);
           trackConsumedSinceWeight(spool.id, filamentUsedG);
           log.info('Spool #' + spool.id + ' usage (cloud estimate): ' + filamentUsedG.toFixed(1) + 'g (active tray ' + activeTray + (activeTray >= 254 ? ' EXT' : '') + ')');
+          spoolUpdated = true;
         }
       } catch (e) {
         log.error('Spool fallback usage update failed: ' + e.message);
+      }
+    }
+
+    // Method 3: Moonraker/Klipper — deduct from spool linked to extruder slot 0
+    // Moonraker printers don't have AMS, so we use the active extruder slot
+    if (!spoolUpdated && filamentUsedG > 0) {
+      try {
+        // Try extruder slot 0 (primary extruder for most Klipper printers)
+        let spool = getSpoolBySlot(this.printerId, 0, 0);
+        // Fallback: try slot (254, 0) used by some NFC-equipped printers
+        if (!spool) spool = getSpoolBySlot(this.printerId, 254, 0);
+        // Fallback: try any spool linked to this printer
+        if (!spool) {
+          try {
+            const row = getDb().prepare('SELECT id FROM spools WHERE printer_id = ? AND remaining_pct > 0 ORDER BY id LIMIT 1').get(this.printerId);
+            if (row) spool = { id: row.id };
+          } catch {}
+        }
+        if (spool) {
+          useSpoolWeight(spool.id, filamentUsedG, 'moonraker-estimate', printHistoryId, this.printerId);
+          trackConsumedSinceWeight(spool.id, filamentUsedG);
+          log.info('Spool #' + spool.id + ' usage (Moonraker): ' + filamentUsedG.toFixed(1) + 'g');
+          spoolUpdated = true;
+        } else {
+          log.debug('Moonraker print finished but no spool linked to printer ' + this.printerId);
+        }
+      } catch (e) {
+        log.error('Moonraker spool usage update failed: ' + e.message);
       }
     }
   }
