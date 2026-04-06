@@ -858,7 +858,7 @@
   window._g3dDelete3mf = async function(historyId) {
     if (!confirm(typeof t === 'function' ? t('viewer.confirm_delete_3mf') : 'Delete saved 3MF?')) return;
     await fetch(`/api/history/${historyId}/model-3mf`, { method: 'DELETE' });
-    if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('viewer.3mf_deleted') : '3MF slettet', 'success');
+    if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('viewer.3mf_deleted') : '3MF deleted', 'success');
     const delBtn = document.getElementById('_g3d-del-btn');
     if (delBtn) delBtn.style.display = 'none';
     close3DPreview();

@@ -264,7 +264,7 @@
       let firstMessage = true;
 
       ws.onopen = () => {
-        console.log('[kamera] WebSocket tilkoblet');
+        console.log('[camera] WebSocket connected');
         _reconnectAttempt = 0; // Reset on successful connect
       };
 
@@ -274,7 +274,7 @@
           try {
             const msg = JSON.parse(e.data);
             if (msg.error === 'auth_denied') {
-              console.log('[kamera] Auth avvist — LAN Live View deaktivert');
+              console.log('[camera] Auth denied — LAN Live View disabled');
               _streamMode = 'error';
               ws.close();
               showPlaceholder(container, 'auth_denied');
@@ -298,12 +298,12 @@
           const data = new Uint8Array(e.data);
 
           if (data.length > 2 && data[0] === 0xFF && data[1] === 0xD8) {
-            console.log('[kamera] JPEG-modus detektert');
+            console.log('[camera] JPEG mode detected');
             _streamMode = 'jpeg';
             // Reuse this WS for JPEG playback — don't open a new one
             _startJpegPlayerDirect(container, ws, overlay, e.data);
           } else {
-            console.log('[kamera] MPEG-modus detektert');
+            console.log('[camera] MPEG mode detected');
             _streamMode = 'mpeg';
             // MPEG needs JSMpeg which manages its own WS — close this one
             ws.close();
@@ -366,7 +366,7 @@
     _jpegWs.binaryType = 'arraybuffer';
 
     _jpegWs.onopen = () => {
-      console.log('[kamera] JPEG stream tilkoblet');
+      console.log('[camera] JPEG stream connected');
       streamActive = true;
     };
 
@@ -382,7 +382,7 @@
     };
 
     _jpegWs.onclose = () => {
-      console.log('[kamera] JPEG stream avsluttet');
+      console.log('[camera] JPEG stream closed');
       streamActive = false;
       _jpegWs = null;
     };
@@ -411,11 +411,11 @@
       audio: false,
       loop: false,
       onSourceEstablished: () => {
-        console.log('[kamera] MPEG stream tilkoblet');
+        console.log('[camera] MPEG stream connected');
         streamActive = true;
       },
       onSourceCompleted: () => {
-        console.log('[kamera] MPEG stream avsluttet');
+        console.log('[camera] MPEG stream closed');
         streamActive = false;
         showPlaceholder(container);
       }

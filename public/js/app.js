@@ -9,7 +9,7 @@ function connect() {
   ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
   ws.onopen = () => {
-    console.log('[ws] Tilkoblet');
+    console.log('[ws] Connected');
     if (_wasConnected) {
       // Reconnected after a disconnect
       if (typeof showToast === 'function') showToast(t('connection.reconnected'), 'success', 3000);
@@ -138,12 +138,12 @@ function connect() {
         }
       }
     } catch (e) {
-      console.warn('[ws] Parse-feil:', e);
+      console.warn('[ws] Parse error:', e);
     }
   };
 
   ws.onclose = () => {
-    console.log('[ws] Frakoblet - gjenkobler...');
+    console.log('[ws] Disconnected - reconnecting...');
     updateConnectionBadge('disconnected');
     if (_wasConnected && typeof showToast === 'function') {
       showToast(t('connection.lost'), 'warning', 4000);
@@ -152,7 +152,7 @@ function connect() {
   };
 
   ws.onerror = () => {
-    console.warn('[ws] Feil');
+    console.warn('[ws] Error');
     ws.close();
   };
 }

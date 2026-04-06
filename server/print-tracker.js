@@ -354,7 +354,7 @@ export class PrintTracker {
             if (spool) {
               const lastKnownPct = Math.round(spool.remaining_weight_g / spoolWeight * 100);
               currentAms[key] = Math.min(100, lastKnownPct + Math.round((100 - lastKnownPct) * pct / 100));
-              log.info('AMS snapshot rekonstruert for tray ' + key + ': ' + currentAms[key] + '% (spool #' + spool.id + ' hadde ' + lastKnownPct + '%)');
+              log.info('AMS snapshot reconstructed for tray ' + key + ': ' + currentAms[key] + '% (spool #' + spool.id + ' had ' + lastKnownPct + '%)');
             }
           }
         }
@@ -415,9 +415,9 @@ export class PrintTracker {
           this.currentPrint.cloud_weight_g = cloud.weight || null;
           this.currentPrint.cloud_time_s = cloud.costTime || null;
           this.currentPrint.cloud_design_id = cloud.designId || null;
-          if (cloud.weight) log.info('Cloud-estimat: ' + cloud.weight.toFixed(1) + 'g, ' + Math.round((cloud.costTime || 0) / 60) + ' min');
+          if (cloud.weight) log.info('Cloud estimate:' + cloud.weight.toFixed(1) + 'g, ' + Math.round((cloud.costTime || 0) / 60) + ' min');
         }
-      } catch (e) { log.debug('Cloud-estimat feilet: ' + e.message); }
+      } catch (e) { log.debug('Cloud estimate failed: ' + e.message); }
     }
 
     // Check for nozzle change
@@ -466,7 +466,7 @@ export class PrintTracker {
         if (cloud?.weight) {
           cloudWeight = cloud.weight;
           this.currentPrint.cloud_weight_g = cloudWeight;
-          log.info('Cloud-estimat hentet ved print-slutt: ' + cloudWeight.toFixed(1) + 'g');
+          log.info('Cloud estimate fetched at print end: ' + cloudWeight.toFixed(1) + 'g');
         }
       } catch {}
     }
@@ -656,7 +656,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      log.error('Nozzle check feil: ' + e.message);
+      log.error('Nozzle check error: ' + e.message);
     }
   }
 
@@ -668,7 +668,7 @@ export class PrintTracker {
       const abrasiveG = isAbrasiveFilament(filamentType) ? (filamentG || 0) : 0;
       updateNozzleSessionCounters(session.id, hours, filamentG || 0, abrasiveG);
     } catch (e) {
-      log.error('Nozzle update feil: ' + e.message);
+      log.error('Nozzle update error: ' + e.message);
     }
   }
 
@@ -738,7 +738,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      log.error('AMS snapshot feil: ' + e.message);
+      log.error('AMS snapshot error: ' + e.message);
     }
 
     // Auto-detect NFC tags from AMS trays
@@ -816,7 +816,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      log.error('NFC auto-detect feil: ' + e.message);
+      log.error('NFC auto-detect error: ' + e.message);
     }
 
     // Auto-match AMS trays to spools by color+material (fallback when no NFC tag)
@@ -881,7 +881,7 @@ export class PrintTracker {
         }
       }
     } catch (e) {
-      log.error('AMS auto-match feil: ' + e.message);
+      log.error('AMS auto-match error: ' + e.message);
     }
   }
 

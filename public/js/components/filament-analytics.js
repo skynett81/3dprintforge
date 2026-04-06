@@ -466,7 +466,7 @@
       if (typeof showToast === 'function') showToast(`Recalculated: ${data.daily_rows} daily rows, ${data.rate_rows} material rates`, 'success');
       window.loadFilamentAnalyticsPanel(_activeTab);
     } catch (e) {
-      if (typeof showToast === 'function') showToast('Rekalkulering feilet: ' + e.message, 'error');
+      if (typeof showToast === 'function') showToast('Recalculation failed: ' + e.message, 'error');
     }
   };
 

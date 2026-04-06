@@ -115,7 +115,7 @@
 
   window._deleteScreenshot = async function(id) {
     await fetch(`/api/screenshots/${id}`, { method: 'DELETE' });
-    showToast(t('gallery.deleted') || 'Skjermbilde slettet', 'success');
+    showToast(t('gallery.deleted') || 'Screenshot deleted', 'success');
     if (window._activePanel === 'screenshots') loadScreenshotGallery();
   };
 })();

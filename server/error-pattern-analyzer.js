@@ -12,7 +12,7 @@ export class ErrorPatternAnalyzer {
       this.calculateHealthScores();
       this._broadcast('error_analysis_updated', { timestamp: new Date().toISOString() });
     } catch (e) {
-      console.error('[error-analysis] Analysefeil:', e.message);
+      console.error('[error-analysis] Analysis error:', e.message);
     }
   }
 

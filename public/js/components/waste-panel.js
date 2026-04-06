@@ -720,7 +720,7 @@
       loadWaste();
     } catch (e) {
       console.error('[waste] Recalc failed:', e);
-      if (window.showToast) window.showToast(typeof t === 'function' ? t('waste.recalculate_failed') : 'Rekalkulering feilet', 'error');
+      if (window.showToast) window.showToast(typeof t === 'function' ? t('waste.recalculate_failed') : 'Recalculation failed', 'error');
     }
   };
 

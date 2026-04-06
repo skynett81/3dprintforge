@@ -56,7 +56,7 @@ export class TelemetrySampler {
       insertTelemetryBatch(this.buffer);
       this.buffer = [];
     } catch (e) {
-      console.error(`[telemetry:${this.printerId}] Flush feilet:`, e.message);
+      console.error(`[telemetry:${this.printerId}] Flush failed:`, e.message);
     }
   }
 
@@ -65,7 +65,7 @@ export class TelemetrySampler {
       try {
         purgeTelemetry(this.retentionDays);
       } catch (e) {
-        console.error('[telemetry] Purge feilet:', e.message);
+        console.error('[telemetry] Purge failed:', e.message);
       }
     }, 6 * 60 * 60 * 1000);
   }
