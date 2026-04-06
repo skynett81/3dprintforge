@@ -14,6 +14,12 @@
     { id: 'nfc-tag', name: 'NFC Filament Tag', icon: '🏷️', desc: 'Write filament info to NFC tags (OpenSpool format)', loader: 'loadForgeNfcTag' },
     { id: '3mf-converter', name: '3MF Converter', icon: '🔄', desc: 'Convert Bambu Lab .3mf to Snapmaker U1 format', loader: 'loadForge3mfConverter' },
     { id: 'calibration', name: 'Calibration Tools', icon: '🔧', desc: '8 tools: tolerance test, bed level, temp tower, retraction, vase, QR, shapes, threads', loader: 'loadForgeCalibration' },
+    { id: 'lattice', name: 'Lattice Structure', icon: '🔩', desc: 'Lightweight lattice structures: BCC, FCC, octet, diamond, cubic cells', loader: 'loadForgeLattice' },
+    { id: 'multi-color', name: 'Multi-Color', icon: '🎨', desc: 'Multi-material colored parts for AMS/MMU color assignment', loader: 'loadForgeMultiColor' },
+    { id: 'vase', name: 'Advanced Vase', icon: '🏺', desc: 'Spiral vases with sine, bulge, flare, twist and tulip profiles', loader: 'loadForgeVase' },
+    { id: 'thread', name: 'Threads & Joints', icon: '🔩', desc: 'Metric bolts, nuts, standoffs and snap-fit joints (M3–M20)', loader: 'loadForgeThread' },
+    { id: 'texture', name: 'Texture Surface', icon: '🧱', desc: 'Procedural textures: diamond plate, knurl, honeycomb, waves, brick', loader: 'loadForgeTexture' },
+    { id: 'validator', name: '3MF Validator', icon: '✅', desc: 'Validate 3MF files, check mesh integrity, detect extensions, match colors', loader: 'loadForgeValidator' },
   ];
 
   window.loadModelForgePanel = function(subTool) {

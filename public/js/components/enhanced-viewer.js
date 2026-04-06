@@ -710,6 +710,7 @@
         <h4>${_escText(title || '3D Preview')}</h4>
         <button class="lib-3d-btn" id="_g3d-wireframe" onclick="_g3dToggleWireframe()">Wireframe</button>
         <button class="lib-3d-btn" id="_g3d-shading" onclick="_g3dToggleShading()">Flat</button>
+        <button class="lib-3d-btn" id="_g3d-parts-btn" onclick="_g3dToggleParts()" style="display:none">Parts</button>
         <button class="lib-3d-btn" onclick="_g3dResetView()">Reset</button>
         ${_histId ? `<div style="flex:1"></div><button class="lib-3d-btn" onclick="_g3dUpload3mf(${_histId})" title="${typeof t === 'function' ? t('viewer.upload_replace_3mf') : 'Upload / replace 3MF'}">&#x21E7; 3MF</button><button class="lib-3d-btn" id="_g3d-del-btn" style="color:var(--accent-red);display:${_hasLinked ? '' : 'none'}" onclick="_g3dDelete3mf(${_histId})" title="${typeof t === 'function' ? t('viewer.delete_saved_3mf') : 'Delete saved 3MF'}">&#x2715;</button>` : ''}
         <button class="lib-3d-btn" onclick="close3DPreview()" style="font-size:1.1rem;padding:4px 10px">&times;</button>
@@ -719,10 +720,25 @@
           <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem" id="_g3d-loading">
             ${typeof t === 'function' ? t('library.loading_model') || 'Loading 3D model...' : 'Loading 3D model...'}
           </div>
+          <div id="_g3d-layer-scrubber" style="display:none;padding:4px 12px;background:var(--bg-tertiary,#1a1f3c);border-top:1px solid var(--border-color)">
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.7rem;color:var(--text-muted)">
+              <span>Layer</span>
+              <input type="range" id="_g3d-layer-slider" min="0" max="100" value="100" style="flex:1;accent-color:var(--accent-cyan)" oninput="window._g3dLayerSlide(this.value)">
+              <span id="_g3d-layer-val" style="min-width:40px;text-align:right">100%</span>
+            </div>
+          </div>
         </div>
         <div class="lib-3d-info" id="_g3d-info">
           <h5>${typeof t === 'function' ? t('library.model_info') || 'Model information' : 'Model Info'}</h5>
           <div id="_g3d-info-body"></div>
+          <div id="_g3d-parts-panel" style="display:none;margin-top:12px">
+            <h5 style="margin:0 0 6px;font-size:0.8rem">Parts</h5>
+            <div id="_g3d-parts-list"></div>
+          </div>
+          <div id="_g3d-materials-panel" style="display:none;margin-top:12px">
+            <h5 style="margin:0 0 6px;font-size:0.8rem">Materials</h5>
+            <div id="_g3d-materials-list"></div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -751,6 +767,7 @@
         viewer.loadModel(data);
       }
       _globalViewer = viewer;
+      setTimeout(_buildViewerPanels, 100);
 
       // Metadata
       const infoBody = document.getElementById('_g3d-info-body');
@@ -823,6 +840,112 @@
     if (btn) { btn.dataset.active = on ? '0' : '1'; btn.textContent = on ? 'Flat' : 'Smooth'; }
   };
   window._g3dResetView = function() { if (_globalViewer) _globalViewer.resetView(); };
+
+  // Layer scrubber — clip model at a given height percentage
+  window._g3dLayerSlide = function(val) {
+    if (!_globalViewer) return;
+    const pct = parseInt(val);
+    const label = document.getElementById('_g3d-layer-val');
+    if (label) label.textContent = pct + '%';
+    if (_globalViewer._clipPlane && _globalViewer._meshGroup) {
+      const box = new THREE.Box3().setFromObject(_globalViewer._meshGroup);
+      const minY = box.min.y, maxY = box.max.y;
+      _globalViewer._clipPlane.constant = minY + (maxY - minY) * (pct / 100);
+      _globalViewer._cutY = _globalViewer._clipPlane.constant;
+    }
+  };
+
+  // Parts panel — list mesh objects with visibility toggle
+  window._g3dToggleParts = function() {
+    const panel = document.getElementById('_g3d-parts-panel');
+    if (!panel) return;
+    const visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : '';
+    const btn = document.getElementById('_g3d-parts-btn');
+    if (btn) { btn.style.background = visible ? '' : 'var(--accent-blue)'; btn.style.color = visible ? '' : '#fff'; }
+  };
+
+  window._g3dTogglePart = function(idx) {
+    if (!_globalViewer?._meshGroup) return;
+    const child = _globalViewer._meshGroup.children[idx];
+    if (!child) return;
+    child.visible = !child.visible;
+    const el = document.getElementById('_g3d-part-eye-' + idx);
+    if (el) el.style.opacity = child.visible ? '1' : '0.3';
+  };
+
+  window._g3dIsolatePart = function(idx) {
+    if (!_globalViewer?._meshGroup) return;
+    const children = _globalViewer._meshGroup.children;
+    const allVisible = children.every((c, i) => i === idx ? c.visible : !c.visible);
+    // If already isolated, show all
+    for (let i = 0; i < children.length; i++) {
+      children[i].visible = allVisible ? true : (i === idx);
+      const el = document.getElementById('_g3d-part-eye-' + i);
+      if (el) el.style.opacity = children[i].visible ? '1' : '0.3';
+    }
+  };
+
+  // Build parts and materials panels after model loads
+  function _buildViewerPanels() {
+    if (!_globalViewer?._meshGroup) return;
+    const children = _globalViewer._meshGroup.children;
+    if (children.length < 2) return;
+
+    // Show parts button and panel
+    const btn = document.getElementById('_g3d-parts-btn');
+    if (btn) btn.style.display = '';
+    const panel = document.getElementById('_g3d-parts-panel');
+    const list = document.getElementById('_g3d-parts-list');
+    if (panel && list) {
+      panel.style.display = '';
+      let h = '';
+      for (let i = 0; i < children.length; i++) {
+        const c = children[i];
+        const name = c.name || `Part ${i + 1}`;
+        const color = c.material?.color;
+        const hex = color ? '#' + color.getHexString() : '#888';
+        h += `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:0.75rem;cursor:pointer" ondblclick="_g3dIsolatePart(${i})">
+          <span id="_g3d-part-eye-${i}" onclick="_g3dTogglePart(${i})" style="cursor:pointer;font-size:0.9rem" title="Toggle visibility">👁</span>
+          <span style="width:12px;height:12px;border-radius:2px;background:${hex};flex-shrink:0"></span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+        </div>`;
+      }
+      list.innerHTML = h;
+    }
+
+    // Show layer scrubber
+    const scrubber = document.getElementById('_g3d-layer-scrubber');
+    if (scrubber) scrubber.style.display = '';
+
+    // Materials panel
+    const matPanel = document.getElementById('_g3d-materials-panel');
+    const matList = document.getElementById('_g3d-materials-list');
+    if (matPanel && matList) {
+      const colors = new Map();
+      for (const c of children) {
+        const color = c.material?.color;
+        if (color) {
+          const hex = '#' + color.getHexString();
+          const name = c.name || 'Unknown';
+          if (!colors.has(hex)) colors.set(hex, []);
+          colors.get(hex).push(name);
+        }
+      }
+      if (colors.size > 1) {
+        matPanel.style.display = '';
+        let h = '';
+        for (const [hex, names] of colors) {
+          h += `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.72rem">
+            <span style="width:14px;height:14px;border-radius:3px;background:${hex};border:1px solid rgba(255,255,255,0.15)"></span>
+            <span>${hex.toUpperCase()}</span>
+            <span style="color:var(--text-muted)">(${names.length} part${names.length > 1 ? 's' : ''})</span>
+          </div>`;
+        }
+        matList.innerHTML = h;
+      }
+    }
+  }
 
   // Upload 3MF from inside the viewer modal
   window._g3dUpload3mf = function(historyId) {

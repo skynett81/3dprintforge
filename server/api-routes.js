@@ -5570,6 +5570,92 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ── Model Forge: Lattice Generator ──
+    if (method === 'POST' && path === '/api/model-forge/lattice/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateLattice3MF } = await import('./generators/lattice-generator.js');
+          const buf = await generateLattice3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="lattice.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Lattice generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Multi-Color Generator ──
+    if (method === 'POST' && path === '/api/model-forge/multi-color/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateMultiColor3MF } = await import('./generators/multi-color-generator.js');
+          const buf = await generateMultiColor3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="multi_color.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Multi-color generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Advanced Vase Generator ──
+    if (method === 'POST' && path === '/api/model-forge/vase/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateVase3MF } = await import('./generators/vase-generator.js');
+          const buf = await generateVase3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="vase.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Vase generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Thread & Joint Generator ──
+    if (method === 'POST' && path === '/api/model-forge/thread/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateThread3MF } = await import('./generators/thread-generator.js');
+          const buf = await generateThread3MF(body);
+          const name = (body.type || 'bolt') + '_' + (body.standard || 'M6');
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${name}.3mf"`, 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Thread generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Texture Generator ──
+    if (method === 'POST' && path === '/api/model-forge/texture/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateTexture3MF } = await import('./generators/texture-generator.js');
+          const buf = await generateTexture3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="texture.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Texture generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: 3MF Validator ──
+    if (method === 'POST' && path === '/api/model-forge/validator/validate') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const { validate3MF } = await import('./generators/threemf-validator.js');
+          const result = await validate3MF(buffer);
+          return sendJson(res, result);
+        } catch (e) { sendJson(res, { error: 'Validation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Color Matcher ──
+    if (method === 'POST' && path === '/api/model-forge/color-match') {
+      return readBinaryBody(req, async (buffer) => {
+        try {
+          const { extractColors, matchColors } = await import('./generators/color-matcher.js');
+          const { listSpools } = await import('./db/spools.js');
+          const fileColors = await extractColors(buffer);
+          const spools = listSpools();
+          const matches = matchColors(fileColors, spools);
+          return sendJson(res, { colors: fileColors, matches });
+        } catch (e) { sendJson(res, { error: 'Color matching failed: ' + e.message }, 500); }
+      });
+    }
+
     // ── Model Forge: 3MF Converter (Bambu → Snapmaker U1) ──
     if (method === 'POST' && path === '/api/model-forge/3mf-converter/analyze') {
       return readBinaryBody(req, async (buffer) => {

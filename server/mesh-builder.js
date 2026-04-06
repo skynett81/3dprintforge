@@ -213,4 +213,207 @@ export class MeshBuilder {
       this._addTri(bt, tt, tn); this._addTri(bt, tn, bn);
     }
   }
+
+  /**
+   * Revolution surface — watertight solid of revolution around Z axis.
+   * @param {number} cx - center X
+   * @param {number} cy - center Y
+   * @param {number} zStart - base Z
+   * @param {Function} profileFn - (z) => radius at that height
+   * @param {number} layers - number of vertical slices
+   * @param {number} height - total height
+   * @param {number} segments - radial segments
+   * @param {number} wallThickness - wall thickness (0 = solid)
+   */
+  addRevolutionSurface(cx, cy, zStart, profileFn, layers, height, segments, wallThickness) {
+    const segs = segments || 24;
+    const wall = wallThickness || 0;
+    const base = this.vOff;
+    const layerH = height / layers;
+
+    // Generate outer ring vertices per layer
+    for (let l = 0; l <= layers; l++) {
+      const z = zStart + l * layerH;
+      const r = profileFn(l * layerH);
+      for (let s = 0; s < segs; s++) {
+        const a = (s / segs) * Math.PI * 2;
+        this._addVertex(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z);
+      }
+    }
+
+    if (wall > 0) {
+      // Generate inner ring vertices per layer
+      for (let l = 0; l <= layers; l++) {
+        const z = zStart + l * layerH;
+        const r = Math.max(0.1, profileFn(l * layerH) - wall);
+        for (let s = 0; s < segs; s++) {
+          const a = (s / segs) * Math.PI * 2;
+          this._addVertex(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z);
+        }
+      }
+    }
+
+    const outerIdx = (l, s) => base + l * segs + (s % segs);
+    const innerBase = base + (layers + 1) * segs;
+    const innerIdx = (l, s) => innerBase + l * segs + (s % segs);
+
+    // Outer wall quads
+    for (let l = 0; l < layers; l++) {
+      for (let s = 0; s < segs; s++) {
+        const a = outerIdx(l, s), b = outerIdx(l, s + 1);
+        const c = outerIdx(l + 1, s + 1), d = outerIdx(l + 1, s);
+        this._addTri(a, b, c); this._addTri(a, c, d);
+      }
+    }
+
+    if (wall > 0) {
+      // Inner wall quads (reversed winding)
+      for (let l = 0; l < layers; l++) {
+        for (let s = 0; s < segs; s++) {
+          const a = innerIdx(l, s), b = innerIdx(l, s + 1);
+          const c = innerIdx(l + 1, s + 1), d = innerIdx(l + 1, s);
+          this._addTri(a, c, b); this._addTri(a, d, c);
+        }
+      }
+      // Bottom ring
+      for (let s = 0; s < segs; s++) {
+        this._addTri(outerIdx(0, s), innerIdx(0, s + 1), outerIdx(0, s + 1));
+        this._addTri(outerIdx(0, s), innerIdx(0, s), innerIdx(0, s + 1));
+      }
+      // Top ring
+      for (let s = 0; s < segs; s++) {
+        this._addTri(outerIdx(layers, s), outerIdx(layers, s + 1), innerIdx(layers, s + 1));
+        this._addTri(outerIdx(layers, s), innerIdx(layers, s + 1), innerIdx(layers, s));
+      }
+    } else {
+      // Solid: bottom cap (fan from center)
+      const botCenter = this._addVertex(cx, cy, zStart);
+      for (let s = 0; s < segs; s++) {
+        this._addTri(botCenter, outerIdx(0, s + 1), outerIdx(0, s));
+      }
+      // Top cap
+      const topCenter = this._addVertex(cx, cy, zStart + height);
+      for (let s = 0; s < segs; s++) {
+        this._addTri(topCenter, outerIdx(layers, s), outerIdx(layers, s + 1));
+      }
+    }
+  }
+
+  /**
+   * Helical strip — generates a helix thread profile for screws/bolts.
+   * @param {number} cx - center X
+   * @param {number} cy - center Y
+   * @param {number} zStart - start Z
+   * @param {number} radius - outer thread radius
+   * @param {number} pitch - distance between thread peaks (mm)
+   * @param {number} length - total thread length (mm)
+   * @param {number} profileW - thread profile width (radial depth)
+   * @param {number} profileH - thread profile height (along Z)
+   * @param {number} segments - segments per revolution
+   */
+  addHelicalStrip(cx, cy, zStart, radius, pitch, length, profileW, profileH, segments) {
+    const segs = segments || 32;
+    const turns = length / pitch;
+    const totalSteps = Math.ceil(turns * segs);
+    const base = this.vOff;
+
+    // Generate two rings of vertices per step: outer peak and inner root
+    for (let i = 0; i <= totalSteps; i++) {
+      const frac = i / totalSteps;
+      const angle = frac * turns * Math.PI * 2;
+      const z = zStart + frac * length;
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+
+      // Outer peak
+      this._addVertex(cx + cos * radius, cy + sin * radius, z + profileH / 2);
+      // Inner root
+      this._addVertex(cx + cos * (radius - profileW), cy + sin * (radius - profileW), z - profileH / 2);
+    }
+
+    // Connect strips
+    for (let i = 0; i < totalSteps; i++) {
+      const a = base + i * 2, b = a + 1;       // current outer, inner
+      const c = base + (i + 1) * 2, d = c + 1; // next outer, inner
+      // Outer face
+      this._addTri(a, c, d); this._addTri(a, d, b);
+    }
+  }
+
+  /**
+   * Cylindrical heightmap — wraps a 2D grid around a cylinder surface.
+   * @param {number} cx - center X
+   * @param {number} cy - center Y
+   * @param {number} zStart - base Z
+   * @param {number} radius - cylinder radius
+   * @param {number} height - cylinder height
+   * @param {number[][]} grid - 2D array [row][col] of displacement values (0..1)
+   * @param {number} maxDisplacement - max outward displacement in mm
+   * @param {number} wallThickness - wall thickness in mm
+   */
+  addCylindricalHeightmap(cx, cy, zStart, radius, height, grid, maxDisplacement, wallThickness) {
+    const rows = grid.length;
+    if (rows === 0) return;
+    const cols = grid[0].length;
+    if (cols === 0) return;
+    const wall = wallThickness || 2;
+    const base = this.vOff;
+
+    // Outer surface: displaced
+    for (let r = 0; r <= rows; r++) {
+      const z = zStart + (r / rows) * height;
+      for (let c = 0; c <= cols; c++) {
+        const angle = (c / cols) * Math.PI * 2;
+        // Sample height
+        const gr = Math.min(r, rows - 1), gc = c % cols;
+        const h = grid[gr][gc] || 0;
+        const outerR = radius + h * maxDisplacement;
+        this._addVertex(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR, z);
+      }
+    }
+
+    // Inner surface: smooth cylinder
+    const innerR = radius - wall;
+    for (let r = 0; r <= rows; r++) {
+      const z = zStart + (r / rows) * height;
+      for (let c = 0; c <= cols; c++) {
+        const angle = (c / cols) * Math.PI * 2;
+        this._addVertex(cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR, z);
+      }
+    }
+
+    const stride = cols + 1;
+    const outerBase = base;
+    const innerBase = base + stride * (rows + 1);
+
+    // Outer surface triangles
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const tl = outerBase + r * stride + c, tr = tl + 1;
+        const bl = tl + stride, br = bl + 1;
+        this._addTri(tl, bl, tr); this._addTri(tr, bl, br);
+      }
+    }
+
+    // Inner surface triangles (reversed)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const tl = innerBase + r * stride + c, tr = tl + 1;
+        const bl = tl + stride, br = bl + 1;
+        this._addTri(tl, tr, bl); this._addTri(tr, br, bl);
+      }
+    }
+
+    // Bottom ring cap
+    for (let c = 0; c < cols; c++) {
+      const oo = outerBase + c, on = oo + 1;
+      const io = innerBase + c, in_ = io + 1;
+      this._addTri(oo, on, in_); this._addTri(oo, in_, io);
+    }
+    // Top ring cap
+    for (let c = 0; c < cols; c++) {
+      const oo = outerBase + rows * stride + c, on = oo + 1;
+      const io = innerBase + rows * stride + c, in_ = io + 1;
+      this._addTri(oo, in_, on); this._addTri(oo, io, in_);
+    }
+  }
 }
