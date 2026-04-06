@@ -4,7 +4,7 @@ All notable changes to 3DPrintForge.
 
 ---
 
-## v1.1.17 — Security Hardening, Model Forge Expansion, 3D Viewer Enhancements (TBD)
+## v1.1.17 — Security Hardening, Model Forge Expansion, 3D Viewer Enhancements (2026-04-06)
 
 ### Knowledge Base Expansion
 - 32 printers across 8 brands (Bambu Lab, Snapmaker, Prusa, Creality, Elegoo, Voron, AnkerMake, QIDI)
