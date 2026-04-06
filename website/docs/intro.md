@@ -17,7 +17,7 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 ### Viktigste funksjoner
 
 - **Live dashboard** — sanntids temperatur, fremgang, kamera, AMS-status med LIVE-indikator
-- **Model Forge** — 8 innebygde 3D-verktoy: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief og Stencil
+- **Model Forge** — 17 innebygde 3D-verktoy: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface og 3MF Validator
 - **3D modellvisning** — 3MFConsortium 3mfViewer for 3MF-filer, gcode toolpath-visning med per-lag farger, Three.js-basert rendering
 - **G-code Analyzer** — fullstendig G-code-analyse med 3D toolpath-visning for alle printertyper
 - **AdminLTE 4** — moderne dashboard-rammeverk med treeview-sidebar og responsivt design
@@ -47,7 +47,14 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 
 ### Nytt i v1.1.16
 
-- **Model Forge** — erstatter frittstående Sign Maker med 8 verktøy: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief og Stencil
+- **Model Forge** — 17 verktoy (erstatter frittstående Sign Maker): Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface og 3MF Validator
+- **6 nye Model Forge-verktoy** — Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface og 3MF Validator
+- **Forbedret 3D-viewer** — layer scrubber, parts panel og materials panel
+- **Server management** — restart og clear cache fra dashboardet
+- **16 sikkerhetsforbedringer** — CIS/NIS2-kompatibel hardening
+- **Color matcher API** — fargematching mot filamentlager
+- **TOFU cert pinning** — Trust-on-first-use sertifikatpinning for MQTT
+- **First-message WebSocket-autentisering** — sikker WS-tilkobling fra forste melding
 - **Multi-brand utvidelse** — PrusaLink (Prusa MK4/Mini/XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
 - **Snapmaker U1 dyp integrasjon** — NFC-filament, defektdeteksjon AI, timelapse, printkonfigurasjon, kalibrering, luftrenser og strømmåler. SACP-protokoll for eldre modeller
 - **Bambu Lab forbedringer** — 40+ MQTT-kommandoer, kalibrerings-UI, kamerastyring, AMS-tørking og HMS-feilsystem

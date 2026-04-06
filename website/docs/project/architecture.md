@@ -16,7 +16,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla HTML/CSS/JS — 31 component modules, no build step, no frameworks |
-| Backend | Node.js 22 with 3 npm packages: `mqtt`, `ws`, `basic-ftp` |
+| Backend | Node.js 22 with 6 npm packages: `mqtt`, `ws`, `basic-ftp`, `admin-lte`, `ssh2`, `@3mfconsortium/lib3mf` |
 | Database | SQLite (built into Node.js 22 via SQLite (innebygd)) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in browser |
 | Real-time | WebSocket hub broadcasts printer state to all connected clients |
@@ -41,7 +41,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 | `index.js` | HTTP/HTTPS servers, auto-SSL, CSP/HSTS headers, static files, demo mode |
 | `config.js` | Configuration loading, defaults, env overrides, and migrations |
 | `database.js` | SQLite schema, 60 migrations, CRUD operations |
-| `api-routes.js` | REST API (~130 endpoints) |
+| `api-routes.js` | REST API (590+ endpoints) |
 | `auth.js` | Authentication and session management |
 | `backup.js` | Backup and restore functionality |
 | `printer-manager.js` | Printer lifecycle, MQTT connection management |
@@ -62,6 +62,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 | `setup-wizard.js` | Web-based first-time setup |
 | `ecom-license.js` | License management |
 | `failure-detection.js` | Failure detection and analysis |
+| `mesh-builder.js` | Parametric 3D mesh generation (createBox, createCylinder, createText) |
 
 ### Demo Modules
 
@@ -131,7 +132,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 │   ├── index.js               # Entry point (auto-SSL, CSP, HSTS)
 │   ├── config.js              # Configuration
 │   ├── database.js            # SQLite database (60 migrations)
-│   ├── api-routes.js          # REST API (~130 endpoints)
+│   ├── api-routes.js          # REST API (590+ endpoints)
 │   ├── auth.js                # Authentication
 │   ├── backup.js              # Backup and restore
 │   ├── printer-manager.js     # Printer management
@@ -152,6 +153,25 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 │   ├── setup-wizard.js        # Setup wizard
 │   ├── ecom-license.js        # License management
 │   ├── failure-detection.js   # Failure detection
+│   ├── mesh-builder.js        # Parametric 3D mesh generation
+│   ├── generators/            # Model Forge generators (17 tools)
+│   │   ├── sign-maker.js      # Sign Maker
+│   │   ├── lithophane.js      # Lithophane
+│   │   ├── storage-box.js     # Storage Box
+│   │   ├── text-plate.js      # Text Plate
+│   │   ├── keychain.js        # Keychain
+│   │   ├── cable-label.js     # Cable Label
+│   │   ├── image-relief.js    # Image Relief
+│   │   ├── stencil.js         # Stencil
+│   │   ├── nfc-tag.js         # NFC Filament Tag
+│   │   ├── converter-3mf.js   # 3MF Converter
+│   │   ├── calibration.js     # Calibration Tools
+│   │   ├── lattice.js         # Lattice Structure
+│   │   ├── multi-color.js     # Multi-Color
+│   │   ├── vase.js            # Advanced Vase
+│   │   ├── threads-joints.js  # Threads & Joints
+│   │   ├── texture.js         # Texture Surface
+│   │   └── validator-3mf.js   # 3MF Validator
 │   └── demo/                  # Demo mode
 │       ├── mock-printer.js    # Simulated printers
 │       └── mock-data.js       # Seed data

@@ -12,13 +12,13 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 
 ## What is 3DPrintForge?
 
-3DPrintForge connects to your printers via MQTT (Bambu Lab), PrusaLink (Prusa), or Moonraker WebSocket (Snapmaker, Voron, Creality, Elegoo, AnkerMake, QIDI, RatRig and other Klipper printers) over LAN. Sync models and print history via Bambu Cloud, Snapmaker Cloud, or fetch data directly from your printer. The built-in **Model Forge** provides 8 parametric design tools so you can create custom models without leaving the dashboard. **Snapmaker U1** is supported with deep integration including NFC filament, AI defect detection, timelapse, calibration, purifier, and power monitoring via SACP.
+3DPrintForge connects to your printers via MQTT (Bambu Lab), PrusaLink (Prusa), or Moonraker WebSocket (Snapmaker, Voron, Creality, Elegoo, AnkerMake, QIDI, RatRig and other Klipper printers) over LAN. Sync models and print history via Bambu Cloud, Snapmaker Cloud, or fetch data directly from your printer. The built-in **Model Forge** provides 17 parametric design tools so you can create custom models without leaving the dashboard. **Snapmaker U1** is supported with deep integration including NFC filament, AI defect detection, timelapse, calibration, purifier, and power monitoring via SACP.
 
 ### Key features
 
 - **Live dashboard** — real-time temperature, progress, camera, AMS status with LIVE indicator
 - **3D model viewing** — 3MFConsortium 3mfViewer for 3MF files, gcode toolpath viewer with per-layer colours, Three.js-based rendering
-- **Model Forge** — 8 parametric design tools: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, and Stencil
+- **Model Forge** — 17 parametric design tools: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, and 3MF Validator
 - **G-code Analyzer** — full G-code analysis with estimated print time, filament usage, layer stats, and 3D toolpath viewer
 - **AdminLTE 4** — modern dashboard framework with treeview sidebar and responsive design
 - **CRM system** — customers, orders, invoices, company settings with history integration
@@ -46,7 +46,14 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 
 ### New in v1.1.16
 
-- **Model Forge** — 8 parametric design tools replacing standalone Sign Maker: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, and Stencil
+- **Model Forge** — 17 parametric design tools (replacing standalone Sign Maker): Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, and 3MF Validator
+- **6 new Model Forge tools** — Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, and 3MF Validator
+- **Enhanced 3D viewer** — layer scrubber, parts panel, and materials panel
+- **Server management** — restart and clear cache from the dashboard
+- **16 security hardening improvements** — CIS/NIS2 compliant
+- **Color matcher API** — colour matching against filament inventory
+- **TOFU cert pinning** — Trust-on-first-use certificate pinning for MQTT
+- **First-message WebSocket authentication** — secure WS connection from first message
 - **Multi-brand expansion** — PrusaLink (Prusa MK4, Mini, XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
 - **Snapmaker U1 deep integration** — NFC filament recognition, AI defect detection, timelapse recording, print config, calibration, purifier control, power monitor, SACP for older models
 - **Bambu Lab enhancements** — 40+ MQTT commands, calibration UI, camera controls, AMS drying, HMS error system

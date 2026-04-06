@@ -1,6 +1,6 @@
 # Features
 
-Complete feature list for 3DPrintForge v1.1.12.
+Complete feature list for 3DPrintForge v1.1.16.
 
 ---
 
@@ -138,3 +138,58 @@ Quiet hours support — no notifications during specified time window.
 - **Demo mode** — 3 mock printers for testing without hardware
 - **Pterodactyl / wisp.gg** — ready-made egg file for game panel hosting
 - **HMS error database** — 268 error codes with descriptions and wiki links
+
+## Model Forge (17 tools)
+
+Parametric 3D generators built into the dashboard — create custom models without leaving the browser:
+
+| Tool | Description |
+|------|-------------|
+| **Sign Maker** | Custom 3D-printable signs with text and icons |
+| **Lithophane** | Convert images to lithophane 3D models |
+| **Storage Box** | Parametric storage boxes with dividers |
+| **Text Plate** | Text plates and labels |
+| **Keychain** | Custom keychains with text and shapes |
+| **Cable Label** | Cable management labels |
+| **Image Relief** | Convert images to 3D relief models |
+| **Stencil** | Stencil generator from images |
+| **NFC Filament Tag** | NFC tags for filament spool identification |
+| **3MF Converter** | Convert between 3D file formats to 3MF |
+| **Calibration Tools** | Temperature towers, retraction tests, flow calibration |
+| **Lattice Structure** | Lattice and infill structure generator |
+| **Multi-Color** | Multi-color model preparation and splitting |
+| **Advanced Vase** | Vase mode models with advanced shapes |
+| **Threads & Joints** | Threaded fasteners and snap-fit joints |
+| **Texture Surface** | Apply textures and patterns to surfaces |
+| **3MF Validator** | Validate and repair 3MF files |
+
+## 3D Viewer Enhancements
+
+- **Layer scrubber** — slider to navigate through print layers
+- **Parts panel** — tree view of model parts and components
+- **Materials panel** — material properties and colour display
+- **3MFConsortium 3mfViewer** — full 3D viewer with scene tree, wireframe, colours
+- **Gcode toolpath** — per-layer colour visualisation (blue bottom to red top)
+- **Three.js EnhancedViewer** — smooth shading, orbit controls, clipping planes
+
+## Security
+
+16 hardening improvements (CIS/NIS2 compliant):
+
+- **TOFU cert pinning** — Trust-on-first-use certificate pinning for MQTT connections
+- **First-message WebSocket authentication** — secure WS connection from first message
+- **Color matcher API** — colour matching against filament inventory
+- **CSP headers** — Content Security Policy to prevent XSS and code injection
+- **HTTPS by default** — auto-generated self-signed SSL certificates, forced HTTPS redirect, HSTS headers
+- **CSRF protection** — validation on state-changing requests
+- **Rate limiting** — 200 req/min per IP (API), 5 login attempts per 15 min
+- **Session management** — role-based permissions (admin, controls, print, queue, view)
+- **API key support** — Bearer token or X-API-Key header authentication
+- **Server management** — restart and clear cache from the dashboard
+
+## API
+
+- **590+ REST endpoints** with OpenAPI documentation at `/api/docs`
+- Rate limiting with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
+- RESTful pattern: `GET/POST/PUT/DELETE /api/{resource}[/:id]`
+- Error responses: `{ error: "message" }` with appropriate HTTP status codes
