@@ -532,6 +532,10 @@ const hasSSL = existsSync(certPath) && existsSync(keyPath);
 const forceHttps = hasSSL && config.server.forceHttps !== false;
 
 const httpServer = createHttpServer((req, res) => {
+  // Log all HTTP requests (useful for debugging phone access)
+  const clientIp = req.socket.remoteAddress || '?';
+  log.info(`[http] ${req.method} ${(req.url||'').split('?')[0]} from ${clientIp}`);
+
   if (forceHttps) {
     const reqPath = (req.url || '').split('?')[0];
     // Allow /app and /api/qr over HTTP — phones with self-signed cert issues need this

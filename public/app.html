@@ -194,9 +194,25 @@
 
 <script>
 // Server injects {{BASE_URL}} at render time — no JS fetch needed
-var baseUrl = '{{BASE_URL}}' || window.location.origin;
-// Fallback if not injected (direct file access)
-if (baseUrl.includes('{{')) baseUrl = window.location.origin;
+var baseUrl = '{{BASE_URL}}';
+// Fallback if not injected (direct file access without server route)
+if (!baseUrl || baseUrl.includes('{{')) {
+  baseUrl = window.location.origin;
+  // If on localhost, resolve to LAN IP via API
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/api/info', false); // synchronous
+      xhr.send();
+      if (xhr.status === 200) {
+        var info = JSON.parse(xhr.responseText);
+        if (info.ip && info.ip !== 'localhost') {
+          baseUrl = 'http://' + info.ip + ':' + (info.port || 3000);
+        }
+      }
+    } catch(e) {}
+  }
+}
 
 // QR codes
 // Use absolute URL for QR endpoint so it works from any origin
