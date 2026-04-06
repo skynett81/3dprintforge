@@ -307,7 +307,7 @@ function encodePNG(grayscale, width, height) {
     b = (b + a) % 65521;
   }
   const adler = Buffer.alloc(4);
-  adler.writeUInt32BE((b << 16) | a, 0);
+  adler.writeUInt32BE(((b << 16) | a) >>> 0, 0);
 
   const idat = Buffer.concat([deflated, adler]);
 
@@ -323,11 +323,11 @@ function encodePNG(grayscale, width, height) {
 }
 
 // CRC32 lookup
-const CRC_TABLE = new Int32Array(256);
+const CRC_TABLE = new Uint32Array(256);
 {
   for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    let c = n >>> 0;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? ((0xEDB88320 ^ (c >>> 1)) >>> 0) : (c >>> 1);
     CRC_TABLE[n] = c;
   }
 }
