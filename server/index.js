@@ -376,10 +376,29 @@ function handleRequest(req, res) {
     return handleApiRequest(req, res);
   }
 
-  // /app → app download page
-  if (pathname === '/app') {
-    res.writeHead(302, { Location: '/app.html' });
-    res.end();
+  // /app → app download page with injected server URL
+  if (pathname === '/app' || pathname === '/app.html') {
+    try {
+      const appHtmlPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app.html');
+      let html = readFileSync(appHtmlPath, 'utf-8');
+      // Inject the LAN-accessible base URL so no JS fetch is needed
+      let lanIp = 'localhost';
+      const nets = networkInterfaces();
+      for (const ifaces of Object.values(nets)) {
+        for (const iface of ifaces) {
+          if (iface.family === 'IPv4' && !iface.internal) { lanIp = iface.address; break; }
+        }
+        if (lanIp !== 'localhost') break;
+      }
+      const httpBase = `http://${lanIp}:${PORT}`;
+      html = html.replace('{{BASE_URL}}', httpBase);
+      html = html.replace('{{VERSION}}', config.version || '1.1.17');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } catch {
+      res.writeHead(302, { Location: '/app.html' });
+      res.end();
+    }
     return;
   }
 

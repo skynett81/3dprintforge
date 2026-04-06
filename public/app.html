@@ -193,37 +193,27 @@
 </div>
 
 <script>
-// Use LAN IP for QR codes so phones can reach the server
-// If accessing via localhost, try to get the real IP from the server
-let baseUrl = window.location.origin;
+// Server injects {{BASE_URL}} at render time — no JS fetch needed
+var baseUrl = '{{BASE_URL}}' || window.location.origin;
+// Fallback if not injected (direct file access)
+if (baseUrl.includes('{{')) baseUrl = window.location.origin;
 
-async function init() {
-  // Always resolve to LAN IP + HTTP port for QR codes
-  // iPhones reject self-signed HTTPS certs silently — use HTTP for phone access
-  try {
-    const r = await fetch('/api/info');
-    const info = await r.json();
-    if (info.ip && info.ip !== 'localhost') {
-      baseUrl = 'http://' + info.ip + ':' + (info.port || 3000);
-    }
-  } catch {}
+// QR codes
+// Use absolute URL for QR endpoint so it works from any origin
+var qrBase = baseUrl.includes('{{') ? '' : baseUrl;
+document.getElementById('qr-android').src = (qrBase || '') + '/api/qr?data=' + encodeURIComponent(baseUrl + '/app') + '&size=300';
+document.getElementById('qr-ios').src = (qrBase || '') + '/api/qr?data=' + encodeURIComponent(baseUrl) + '&size=300';
 
-  // QR codes — use 200px for better scanability, short URL for less dense QR
-  document.getElementById('qr-android').src = '/api/qr?data=' + encodeURIComponent(baseUrl + '/app') + '&size=300';
-  document.getElementById('qr-ios').src = '/api/qr?data=' + encodeURIComponent(baseUrl) + '&size=300';
+// Fill URL placeholders
+document.getElementById('server-url').textContent = baseUrl;
+document.getElementById('ios-url').textContent = baseUrl;
+var pwaEl = document.getElementById('pwa-url');
+if (pwaEl) pwaEl.textContent = baseUrl;
+var urlInfo = document.getElementById('url-info');
+if (urlInfo) urlInfo.textContent = baseUrl;
 
-  // Fill URL placeholders
-  document.getElementById('server-url').textContent = baseUrl;
-  document.getElementById('ios-url').textContent = baseUrl;
-  const pwaEl = document.getElementById('pwa-url');
-  if (pwaEl) pwaEl.textContent = baseUrl;
-
-  // Show the actual URLs users need
-  const urlInfo = document.getElementById('url-info');
-  if (urlInfo) urlInfo.textContent = baseUrl;
-}
-
-init();
+// Version
+document.getElementById('app-version').textContent = '{{VERSION}}';
 
 // Fetch version
 fetch('/api/health').then(r => r.json()).then(d => {
