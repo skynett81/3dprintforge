@@ -1657,6 +1657,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           <span>${t('filament.tab_database')}</span>
         </button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._recalcSpoolUsage()" style="display:flex;align-items:center;gap:4px" title="Recalculate spool usage from print history">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
+          <span>Recalculate</span>
+        </button>
         <div class="inv-export-dropdown">
           <button class="form-btn form-btn-sm" data-ripple onclick="this.nextElementSibling.classList.toggle('show')" style="display:flex;align-items:center;gap:4px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -3305,6 +3309,28 @@
   };
 
   // ═══ Export ═══
+  window._recalcSpoolUsage = async function() {
+    if (!confirm('Recalculate spool remaining weights from print history?\n\nThis will update all spools based on recorded filament usage.')) return;
+    try {
+      if (typeof showToast === 'function') showToast('Recalculating...', 'info');
+      const activePrinter = window.activePrinterId || '';
+      const res = await fetch('/api/inventory/spools/recalculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: activePrinter || undefined })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (typeof showToast === 'function') showToast(`Recalculated: ${data.updated} of ${data.total} spools updated`, 'success');
+        _loadSpools();
+      } else {
+        if (typeof showToast === 'function') showToast(data.error || 'Recalculation failed', 'error');
+      }
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Error: ' + e.message, 'error');
+    }
+  };
+
   window.importFromAms = async function() {
     try {
       const res = await fetch('/api/inventory/import-ams', { method: 'POST' });

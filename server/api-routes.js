@@ -3378,6 +3378,69 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Inventory: Recalculate Spool Usage from Print History ----
+    if (method === 'POST' && path === '/api/inventory/spools/recalculate') {
+      return readBody(req, res, async (body) => {
+        try {
+          const printerId = body.printer_id || null;
+          const { getDb } = await import('./db/connection.js');
+          const db = getDb();
+
+          // Get spools to recalculate (optionally filtered by printer)
+          const spoolQuery = printerId
+            ? db.prepare('SELECT id, initial_weight_g, printer_id, ams_unit, ams_tray FROM spools WHERE printer_id = ?')
+            : db.prepare('SELECT id, initial_weight_g, printer_id, ams_unit, ams_tray FROM spools');
+          const spools = printerId ? spoolQuery.all(printerId) : spoolQuery.all();
+
+          let updated = 0;
+
+          // Group spools by printer for history-based fallback
+          const spoolsByPrinter = new Map();
+          for (const spool of spools) {
+            // First: check if this spool has individual usage logs
+            const usageRow = db.prepare('SELECT COALESCE(SUM(used_weight_g), 0) as total FROM spool_usage_log WHERE spool_id = ?').get(spool.id);
+            spool._loggedUsage = usageRow.total || 0;
+            if (spool.printer_id) {
+              if (!spoolsByPrinter.has(spool.printer_id)) spoolsByPrinter.set(spool.printer_id, []);
+              spoolsByPrinter.get(spool.printer_id).push(spool);
+            }
+          }
+
+          for (const spool of spools) {
+            let totalUsed = spool._loggedUsage;
+
+            // If no individual logs, distribute printer history evenly across its spools
+            if (totalUsed < 1 && spool.printer_id) {
+              const printerSpools = spoolsByPrinter.get(spool.printer_id) || [];
+              const spoolsWithoutLogs = printerSpools.filter(s => s._loggedUsage < 1);
+              if (spoolsWithoutLogs.length > 0) {
+                const histRow = db.prepare("SELECT COALESCE(SUM(filament_used_g), 0) as total FROM print_history WHERE printer_id = ? AND status = 'completed'").get(spool.printer_id);
+                const historyTotal = histRow.total || 0;
+                // Subtract any already-logged usage from other spools on same printer
+                const loggedOthers = printerSpools.reduce((s, sp) => s + sp._loggedUsage, 0);
+                const unloggedUsage = Math.max(0, historyTotal - loggedOthers);
+                // Distribute evenly, capped by each spool's initial weight
+                totalUsed = Math.min(spool.initial_weight_g, unloggedUsage / spoolsWithoutLogs.length);
+              }
+            }
+
+            if (totalUsed > 0) {
+              const remaining = Math.max(0, Math.round(spool.initial_weight_g - totalUsed));
+              db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = ? WHERE id = ?').run(
+                remaining, Math.round(totalUsed), spool.id
+              );
+              updated++;
+            }
+          }
+
+          _broadcastInventory('recalculated', 'spools', { updated });
+          return sendJson(res, { ok: true, updated, total: spools.length });
+        } catch (e) {
+          return sendJson(res, { error: 'Recalculation failed: ' + e.message }, 500);
+        }
+      });
+    }
+
     // ---- Inventory: Measure Weight ----
     const spoolMeasureMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/measure$/);
     if (spoolMeasureMatch && method === 'POST') {
