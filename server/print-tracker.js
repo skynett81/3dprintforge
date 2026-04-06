@@ -375,7 +375,17 @@ export class PrintTracker {
     // Detect EXT from mapping field (P2S/A1 AMS Lite don't send vt_tray)
     const _isExtFromMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
     const _isExt = _isExtFromMapping || (data.ams?.tray_now != null && parseInt(data.ams.tray_now) >= 254);
-    const _effectiveTrayId = _isExt ? '254' : (data.ams?.tray_now != null ? String(data.ams.tray_now) : null);
+    let _effectiveTrayId = _isExt ? '254' : (data.ams?.tray_now != null ? String(data.ams.tray_now) : null);
+
+    // Moonraker/Klipper: detect active feed channel from Snapmaker filament_feed state
+    if (_effectiveTrayId == null && data._sm_feed_channels) {
+      const active = data._sm_feed_channels.find(ch => ch.stateCategory === 'active' || ch.channel_state === 1);
+      if (active) _effectiveTrayId = String(active.extruder || '0');
+    }
+    // Moonraker fallback: if no feed channel info, default to slot 0
+    if (_effectiveTrayId == null && data.filament_used_mm !== undefined) {
+      _effectiveTrayId = '0';
+    }
 
     // Cache 3MF metadata for Bambu (skip on resume/retroactive — don't delay startup)
     if (!isResume && !(data.mc_percent > 5)) {

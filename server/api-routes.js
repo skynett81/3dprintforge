@@ -3409,18 +3409,52 @@ export async function handleApiRequest(req, res) {
           for (const spool of spools) {
             let totalUsed = spool._loggedUsage;
 
-            // If no individual logs, distribute printer history evenly across its spools
+            // If no individual logs, match prints to spools by filament color
             if (totalUsed < 1 && spool.printer_id) {
               const printerSpools = spoolsByPrinter.get(spool.printer_id) || [];
               const spoolsWithoutLogs = printerSpools.filter(s => s._loggedUsage < 1);
               if (spoolsWithoutLogs.length > 0) {
-                const histRow = db.prepare("SELECT COALESCE(SUM(filament_used_g), 0) as total FROM print_history WHERE printer_id = ? AND status = 'completed'").get(spool.printer_id);
-                const historyTotal = histRow.total || 0;
-                // Subtract any already-logged usage from other spools on same printer
-                const loggedOthers = printerSpools.reduce((s, sp) => s + sp._loggedUsage, 0);
-                const unloggedUsage = Math.max(0, historyTotal - loggedOthers);
-                // Distribute evenly, capped by each spool's initial weight
-                totalUsed = Math.min(spool.initial_weight_g, unloggedUsage / spoolsWithoutLogs.length);
+                // Get spool color for matching
+                const profile = spool.filament_profile_id
+                  ? db.prepare('SELECT color_hex FROM filament_profiles WHERE id = ?').get(spool.filament_profile_id)
+                  : null;
+                const spoolColor = (profile?.color_hex || '').toUpperCase();
+
+                // Get all completed prints for this printer
+                const prints = db.prepare("SELECT filament_used_g, filament_color, tray_id FROM print_history WHERE printer_id = ? AND status = 'completed'").all(spool.printer_id);
+
+                let matched = 0;
+                for (const p of prints) {
+                  const usedG = p.filament_used_g || 0;
+                  if (usedG < 0.1) continue;
+
+                  // If tray_id is known, match directly to spool slot
+                  if (p.tray_id != null) {
+                    if (parseInt(p.tray_id) === spool.ams_tray) matched += usedG;
+                    continue;
+                  }
+
+                  // Match by color: check if spool color appears in print's filament_color list
+                  if (spoolColor && p.filament_color) {
+                    const printColors = p.filament_color.toUpperCase().split(';');
+                    if (printColors.includes(spoolColor)) {
+                      // Distribute among matching spools (how many spools match this print?)
+                      const matchingSpools = spoolsWithoutLogs.filter(s => {
+                        const sp = s.filament_profile_id ? db.prepare('SELECT color_hex FROM filament_profiles WHERE id = ?').get(s.filament_profile_id) : null;
+                        return sp && printColors.includes((sp.color_hex || '').toUpperCase());
+                      });
+                      if (matchingSpools.length > 0) {
+                        matched += usedG / matchingSpools.length;
+                      }
+                    }
+                    continue;
+                  }
+
+                  // No color data — distribute evenly among all unlogged spools
+                  matched += usedG / spoolsWithoutLogs.length;
+                }
+
+                totalUsed = Math.min(spool.initial_weight_g, matched);
               }
             }
 
