@@ -86,6 +86,7 @@ const sidebars: SidebarsConfig = {
       label: 'System',
       items: [
         'system/auth',
+        'system/security',
         'system/backup',
         'system/settings',
         'system/themes',

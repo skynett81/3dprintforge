@@ -4,7 +4,7 @@ All notable changes to 3DPrintForge.
 
 ---
 
-## v1.1.17 — Knowledge Base, EULA, Camera Fixes, Community Integrations (2026-04-05)
+## v1.1.17 — Security Hardening, Model Forge Expansion, 3D Viewer Enhancements (TBD)
 
 ### Knowledge Base Expansion
 - 32 printers across 8 brands (Bambu Lab, Snapmaker, Prusa, Creality, Elegoo, Voron, AnkerMake, QIDI)
@@ -45,19 +45,68 @@ All notable changes to 3DPrintForge.
 - Fixed corrupted HTML in review badges (history-table)
 - Filament analytics: Norwegian → English (waste, brand, color changes)
 
+### Model Forge Expansion (11 → 17 tools)
+- Lattice Structure — BCC/FCC/octet/diamond/cubic cells with configurable strut diameter
+- Multi-Color — Multi-object 3MF for AMS/MMU color assignment (stack/side-by-side/inlay)
+- Advanced Vase — 7 profiles: cylinder, sine, bulge, flare, twist, hourglass, tulip
+- Threads & Joints — M3-M20 bolts, nuts, standoffs, snap-fit clips with helical geometry
+- Texture Surface — 8 patterns: diamond plate, knurl, honeycomb, waves, brick, carbon fiber, dots, crosshatch
+- 3MF Validator — Validate 3MF files, check mesh integrity, detect extensions, match colors against spool inventory
+- 3 new MeshBuilder methods: addRevolutionSurface, addHelicalStrip, addCylindricalHeightmap
+- Color matcher API with CIE76 Delta-E sRGB→Lab color distance
+
+### 3D Viewer Enhancements
+- Layer scrubber slider for height clipping
+- Parts panel with per-object visibility toggle and double-click isolate
+- Materials panel showing unique colors with part counts
+- Parts button in toolbar (auto-shown for multi-object models)
+
+### Security Hardening (16 improvements, CIS/NIS2 compliant)
+- **CRITICAL:** Fixed command injection via ffmpeg — replaced execSync with spawnSync + input validation
+- **HIGH:** SSRF guard on webhook dispatcher — blocks private IPs and link-local addresses
+- **HIGH:** Auth disabled warning on startup + REQUIRE_AUTH env var
+- **HIGH:** Metrics endpoint moved behind authentication
+- **HIGH:** Health endpoint stripped of version/node info (moved to /api/health/detail)
+- **HIGH:** Camera WebSocket now requires session token or API key
+- **MEDIUM:** First-message WebSocket auth (alternative to URL query param token)
+- **MEDIUM:** X-Forwarded-For only trusted from TRUSTED_PROXIES env var
+- **MEDIUM:** TOFU certificate pinning for MQTT TLS connections
+- **MEDIUM:** Plugin integrity verification (SHA-256 manifest hash) + SSRF guard on plugin HTTP
+- **MEDIUM:** SMS gateway headers sanitized (blocks host/cookie/authorization injection)
+- **LOW:** Session invalidation on role/permission/password changes
+- **LOW:** TOTP-specific brute force rate limiting (5 attempts/15min per user+IP)
+- **LOW:** CSP hardened: removed unsafe-eval, added frame-ancestors and upgrade-insecure-requests
+- **LOW:** getSafeConfig() masks all secrets (tokens, passwords, access codes)
+- **LOW:** Backup path traversal guard with startsWith validation
+
+### Server Management
+- Restart Server button in Settings → System → Updates
+- Clear Browser Cache (unregisters SW, clears all caches, server-side clear)
+- Unregister Service Worker button
+
+### i18n & Code Quality
+- Merged 7 duplicate i18n keys in en.json — restored 266 lost translation keys
+- Replaced 47+ Norwegian fallback strings with English across 20 components
+- Fixed filament analytics tabs (lazy i18n loading)
+- Replaced 30 Norwegian log/error messages with English
+- Switched filament-analytics formatters from hardcoded nb-NO to dynamic locale
+- docs/ is now a symlink to website/docs/ for unified documentation
+
 ### Bug Fixes
 - Camera WSS mixed content on HTTPS
 - EULA modal null check and global scope
 - Knowledge Base filter by brand instead of Bambu series
 - Camera-view log is not defined
 - Printer isolation on switch
+- False v4l2-mpp detection (probes /status instead of /snapshot)
+- Service worker skips /lang/ files for fresh translations
 
 ---
 
 ## v1.1.16 — Model Forge, Snapmaker Deep Integration, Multi-Brand Support (2026-04-05)
 
 ### Model Forge — 3D Model Generation Suite
-- 8 parametric generators: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil
+- 11 parametric generators: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools (8 sub-tools)
 - Shared MeshBuilder with heightmap surface, tube, rounded box primitives
 - Pure JS PNG decoder for image-to-3D conversion (no npm deps)
 - All models exported as 3MF via lib3mf WASM

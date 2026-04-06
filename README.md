@@ -6,7 +6,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
-![3DPrintForge](docs/dashboard.png)
+![3DPrintForge](docs/project/dashboard.png)
 
 ---
 
@@ -17,10 +17,14 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **Print Guard** — automatic protection using xcam + 5 sensor monitors (temp, filament, fan, stall, errors)
 - **Print Queue** — multi-printer dispatch with load balancing and pre-print filament checks
 - **Filament Inventory** — favorites, color filters, bulk add, HueForge TD, CSV import, Spoolman sync
+- **Model Forge** — 17 parametric 3D generators: signs, lithophanes, boxes, vases, threads, lattices, textures, and more
 - **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
+- **Multi-brand** — Bambu Lab, Snapmaker, Prusa, Creality, Elegoo, Voron, AnkerMake, QIDI, RatRig
+- **Security hardened** — CIS/NIS2 aligned: scrypt auth, CSRF, CSP, rate limiting, TOFU cert pinning, SSRF guards
+- **590+ API endpoints** — full REST API with OpenAPI docs at `/api/docs`
 - **English UI** — entire application in English, documentation site available in English and Norwegian
-- **Docusaurus documentation** — 96 pages available at `/docs/` and on GitHub Pages
+- **Docusaurus documentation** — available at `/docs/` and on GitHub Pages
 - **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 6 npm packages
 
 ---
