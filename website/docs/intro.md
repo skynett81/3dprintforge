@@ -45,17 +45,19 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Engelsk UI** — hele applikasjonen pa engelsk, dokumentasjon tilgjengelig pa norsk og engelsk
 - **Selvdriftet** — ingen sky-avhengighet, dine data pa din maskin
 
+### Nytt i v1.1.17
+
+- **Model Forge utvidet til 17 verktøy** — 6 nye: Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, 3MF Validator
+- **16 sikkerhetsforbedringer** — CIS/NIS2-kompatibel: command injection fix, SSRF-guard, kamera WS-auth, TOFU cert pinning, plugin-integritet, session-invalidering, TOTP rate limiting, CSP-hardening
+- **Forbedret 3D-viewer** — layer scrubber, parts panel med synlighetstoggle, materials panel
+- **Server management** — restart server, clear cache og unregister service worker fra Settings
+- **Color matcher** — match 3MF-farger mot filamentlager med CIE76 Delta-E
+- **i18n-kvalitet** — 7 duplikatnøkler merget (266 nøkler gjenopprettet), 77+ norske strenger erstattet
+
 ### Nytt i v1.1.16
 
-- **Model Forge** — 17 verktoy (erstatter frittstående Sign Maker): Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface og 3MF Validator
-- **6 nye Model Forge-verktoy** — Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface og 3MF Validator
-- **Forbedret 3D-viewer** — layer scrubber, parts panel og materials panel
-- **Server management** — restart og clear cache fra dashboardet
-- **16 sikkerhetsforbedringer** — CIS/NIS2-kompatibel hardening
-- **Color matcher API** — fargematching mot filamentlager
-- **TOFU cert pinning** — Trust-on-first-use sertifikatpinning for MQTT
-- **First-message WebSocket-autentisering** — sikker WS-tilkobling fra forste melding
-- **Multi-brand utvidelse** — PrusaLink (Prusa MK4/Mini/XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
+- **Model Forge** — 11 verktøy: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools
+- **Multi-brand** — PrusaLink (Prusa MK4/Mini/XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
 - **Snapmaker U1 dyp integrasjon** — NFC-filament, defektdeteksjon AI, timelapse, printkonfigurasjon, kalibrering, luftrenser og strømmåler. SACP-protokoll for eldre modeller
 - **Bambu Lab forbedringer** — 40+ MQTT-kommandoer, kalibrerings-UI, kamerastyring, AMS-tørking og HMS-feilsystem
 - **Moonraker API** — filbehandler, jobbkø, webkamera, oppdateringsbehandler og Spoolman-integrasjon

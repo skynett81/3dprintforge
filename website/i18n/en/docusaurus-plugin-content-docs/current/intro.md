@@ -44,24 +44,26 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **English UI** — entire application in English, documentation available in English and Norwegian
 - **Self-hosted** — no cloud dependency, your data on your machine
 
+### New in v1.1.17
+
+- **Model Forge expanded to 17 tools** — 6 new: Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, 3MF Validator
+- **16 security hardening improvements** — CIS/NIS2 aligned: command injection fix, SSRF guards, camera WS auth, TOFU cert pinning, plugin integrity, session invalidation, TOTP rate limiting, CSP hardening
+- **Enhanced 3D viewer** — layer scrubber, parts panel with visibility toggle, materials panel
+- **Server management** — restart server, clear cache, unregister service worker from Settings
+- **Color matcher** — match 3MF colours against filament inventory with CIE76 Delta-E
+- **i18n quality** — merged 7 duplicate keys (restored 266 translations), replaced 77+ Norwegian strings
+
 ### New in v1.1.16
 
-- **Model Forge** — 17 parametric design tools (replacing standalone Sign Maker): Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools, Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, and 3MF Validator
-- **6 new Model Forge tools** — Lattice Structure, Multi-Color, Advanced Vase, Threads & Joints, Texture Surface, and 3MF Validator
-- **Enhanced 3D viewer** — layer scrubber, parts panel, and materials panel
-- **Server management** — restart and clear cache from the dashboard
-- **16 security hardening improvements** — CIS/NIS2 compliant
-- **Color matcher API** — colour matching against filament inventory
-- **TOFU cert pinning** — Trust-on-first-use certificate pinning for MQTT
-- **First-message WebSocket authentication** — secure WS connection from first message
-- **Multi-brand expansion** — PrusaLink (Prusa MK4, Mini, XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
-- **Snapmaker U1 deep integration** — NFC filament recognition, AI defect detection, timelapse recording, print config, calibration, purifier control, power monitor, SACP for older models
+- **Model Forge** — 11 tools: Sign Maker, Lithophane, Storage Box, Text Plate, Keychain, Cable Label, Image Relief, Stencil, NFC Filament Tag, 3MF Converter, Calibration Tools
+- **Multi-brand** — PrusaLink (Prusa MK4, Mini, XL), Creality, Elegoo, AnkerMake, Voron, RatRig, QIDI via Moonraker
+- **Snapmaker U1 deep integration** — NFC filament, AI defect detection, timelapse, print config, calibration, purifier, power monitor, SACP for older models
 - **Bambu Lab enhancements** — 40+ MQTT commands, calibration UI, camera controls, AMS drying, HMS error system
-- **Moonraker API** — file manager, job queue, webcam integration, update manager, Spoolman support
-- **Remote access** — Cloudflare Tunnel built into Settings > System > Remote Access
+- **Moonraker API** — file manager, job queue, webcam, update manager, Spoolman
+- **Remote access** — Cloudflare Tunnel in Settings > System > Remote Access
 - **Library** — Send to Printer and Add to Queue buttons on file cards
-- **G-code** — Analyzer with detailed stats and 3D toolpath viewer
-- **PWA** — installable Progressive Web App with push notifications
+- **G-code** — Analyzer with 3D toolpath viewer
+- **PWA** — installable webapp with push notifications
 
 ### New in v1.1.15
 
