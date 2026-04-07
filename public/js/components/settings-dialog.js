@@ -1083,8 +1083,8 @@
         ${brand('AnkerMake (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>', iCheck, 'Via Moonraker — AnkerMake M5 series')}
         ${brand('QIDI (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>', iCheck, 'Via Moonraker — QIDI X-Plus 3, X-Max 3, Q1 Pro')}
         ${brand('Snapmaker SACP', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 7h10v10H7z"/></svg>', iCheck, 'Binary protocol — A150, A250, A350, J1, Artisan')}
-        ${brand('OctoPrint', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-9-9h4m14 0h4"/></svg>', iSoon, 'REST API — any OctoPrint-compatible printer')}
-        <div style="padding:10px 0 0;font-size:0.72rem;color:var(--text-muted)">8 brands supported. More can be added via the plugin system.</div>
+        ${brand('OctoPrint', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-9-9h4m14 0h4"/></svg>', iCheck, 'REST API with API key — Ender 3, Prusa MK3, Anycubic, any OctoPrint printer')}
+        <div style="padding:10px 0 0;font-size:0.72rem;color:var(--text-muted)">9 brands supported. More can be added via the plugin system.</div>
       </div>`;
 
       // 3D Model Integrations
@@ -1097,6 +1097,7 @@
         ${brand('3MF Consortium', '<span style="font-size:0.7rem;font-weight:800;color:var(--accent-blue)">3MF</span>', iCheck, 'lib3mf WASM + 3mfViewer — spec-compliant 3MF parsing and 3D viewer')}
         ${brand('Bambu FTPS', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>', iCheck, 'Download gcode.3mf from printer via FTPS (port 990)')}
         ${brand('Moonraker Files', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>', iCheck, 'Download gcode via HTTP API (/server/files/gcodes/)')}
+        ${brand('OctoPrint Files', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>', iCheck, 'Upload, list and print files via OctoPrint REST API (/api/files/)')}
         ${brand('Gcode Toolpath', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', iCheck, 'Server-side G0/G1 parser with per-layer colour visualisation')}
         ${brand('Three.js Viewer', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>', iCheck, 'r183 — smooth shading, orbit controls, clipping planes')}
       </div>`;
