@@ -59,6 +59,120 @@
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* ---- Info Box Strip (AdminLTE small-box widgets) ---- */
+.info-box-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 16px 20px 0;
+}
+
+.info-box-strip .small-box {
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  min-height: 100px;
+}
+
+.info-box-strip .small-box .inner {
+  padding: 12px 16px 8px;
+}
+
+.info-box-strip .small-box .inner h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.info-box-strip .small-box .inner p {
+  font-size: 0.82rem;
+  margin: 2px 0 0;
+  opacity: 0.85;
+}
+
+.info-box-strip .small-box .icon {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 3rem;
+  opacity: 0.15;
+}
+
+.info-box-strip .small-box-footer {
+  display: block;
+  padding: 4px 16px;
+  font-size: 0.78rem;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.1);
+  transition: background 0.15s;
+}
+
+.info-box-strip .small-box-footer:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+/* Hide info-boxes when a panel is open */
+.info-box-strip.hidden {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .info-box-strip { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 576px) {
+  .info-box-strip { grid-template-columns: 1fr; }
+}
+
+/* ---- Table Enhancer (search, sort indicators, pagination) ---- */
+.te-search-wrap {
+  margin-bottom: 10px;
+}
+
+.te-search {
+  max-width: 300px;
+}
+
+.te-sortable {
+  user-select: none;
+  position: relative;
+  padding-right: 20px !important;
+}
+
+.te-sortable::after {
+  content: '⇅';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  font-size: 0.7rem;
+}
+
+.te-sort-asc::after {
+  content: '↑';
+  opacity: 0.8;
+}
+
+.te-sort-desc::after {
+  content: '↓';
+  opacity: 0.8;
+}
+
+.te-pagination-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.te-page-info {
+  font-size: 0.78rem;
+}
+
 /* ---- Main Grid (dashboard layout) ---- */
 .dashboard {
   display: grid;
@@ -332,6 +446,26 @@
   background: var(--bs-body-bg, var(--bg-secondary));
   flex-shrink: 0;
   border-bottom: 1px solid var(--bs-border-color, var(--border-color));
+}
+
+/* Breadcrumb in panel header */
+#panel-breadcrumb .breadcrumb {
+  font-size: 0.82rem;
+  background: transparent;
+  padding: 0;
+}
+
+#panel-breadcrumb .breadcrumb-item a {
+  color: var(--ifm-color-primary, var(--accent-green));
+  text-decoration: none;
+}
+
+#panel-breadcrumb .breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+
+#panel-breadcrumb .breadcrumb-item.active {
+  color: var(--text-secondary);
 }
 
 .panel-back-btn {

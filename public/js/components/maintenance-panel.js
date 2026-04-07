@@ -467,6 +467,13 @@
 
       panel.innerHTML = html;
 
+      // Enhance data tables with search/sort/pagination
+      panel.querySelectorAll('.data-table').forEach(tbl => {
+        if (tbl.querySelector('tbody')?.children.length > 5 && typeof enhanceTable === 'function') {
+          enhanceTable(tbl.parentElement, { pageSize: 15, searchPlaceholder: t('maintenance.search') || 'Search...' });
+        }
+      });
+
       // Load external panels after DOM insert
       _loadExternalTab(_activeTab);
     } catch (e) {

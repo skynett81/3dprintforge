@@ -1559,7 +1559,13 @@
     const ip = document.getElementById('pf-ip')?.value.trim();
     const serial = document.getElementById('pf-serial')?.value.trim();
 
-    if (!name) { showToast(t('settings.name_required'), 'warning'); return; }
+    const nameInput = document.getElementById('pf-name');
+    if (!name) {
+      if (typeof markInvalid === 'function') markInvalid(nameInput, t('settings.name_required'));
+      showToast(t('settings.name_required'), 'warning');
+      return;
+    }
+    if (typeof clearValidation === 'function') clearValidation(nameInput);
 
     const accessCode = document.getElementById('pf-access')?.value.trim();
     const wattage = document.getElementById('pf-wattage')?.value;
@@ -2788,8 +2794,12 @@
     const role_id = parseInt(document.getElementById('user-role').value) || null;
     const password = document.getElementById('user-password').value;
 
-    if (!username) { showToast(t('settings.username_required'), 'warning'); return; }
-    if (!id && !password) { showToast(t('settings.password_required_new'), 'warning'); return; }
+    const usernameInput = document.getElementById('user-username');
+    const passwordInput = document.getElementById('user-password');
+    if (!username) { if (typeof markInvalid === 'function') markInvalid(usernameInput, t('settings.username_required')); showToast(t('settings.username_required'), 'warning'); return; }
+    if (typeof clearValidation === 'function') clearValidation(usernameInput);
+    if (!id && !password) { if (typeof markInvalid === 'function') markInvalid(passwordInput, t('settings.password_required_new')); showToast(t('settings.password_required_new'), 'warning'); return; }
+    if (typeof clearValidation === 'function') clearValidation(passwordInput);
 
     const body = { username, display_name, role_id };
     if (password) body.password = password;

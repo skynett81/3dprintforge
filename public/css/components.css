@@ -9812,14 +9812,21 @@ select:disabled {
 .ix-flash-error   { animation: flashError 0.5s ease; }
 
 /* ---- Enhanced Form Validation ---- */
-.form-input.ix-invalid {
-  border-color: var(--accent-red);
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+/* Bootstrap validation states on .form-input */
+.form-input.is-invalid, .form-input.ix-invalid {
+  border-color: var(--bs-form-invalid-border-color, var(--accent-red));
+  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.15);
 }
 
-.form-input.ix-valid {
-  border-color: var(--accent-green);
+.form-input.is-valid, .form-input.ix-valid {
+  border-color: var(--bs-form-valid-border-color, var(--accent-green));
   box-shadow: 0 0 0 3px rgba(0, 200, 100, 0.1);
+}
+
+.invalid-feedback {
+  font-size: 0.78rem;
+  color: var(--accent-red, #dc3545);
+  margin-top: 4px;
 }
 
 /* ---- Slider Enhancements ---- */

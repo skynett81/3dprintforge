@@ -515,6 +515,54 @@
     });
   }
 
+  // ---- Form Validation Helpers ----
+  // Mark a field as invalid with Bootstrap .is-invalid and optional feedback message
+  window.markInvalid = function(input, message) {
+    if (!input) return;
+    input.classList.remove('is-valid');
+    input.classList.add('is-invalid');
+    // Add or update feedback element
+    let fb = input.nextElementSibling;
+    if (!fb || !fb.classList.contains('invalid-feedback')) {
+      fb = document.createElement('div');
+      fb.className = 'invalid-feedback';
+      input.parentNode.insertBefore(fb, input.nextSibling);
+    }
+    fb.textContent = message || '';
+    fb.style.display = message ? 'block' : 'none';
+  };
+
+  window.markValid = function(input) {
+    if (!input) return;
+    input.classList.remove('is-invalid');
+    input.classList.add('is-valid');
+    const fb = input.nextElementSibling;
+    if (fb?.classList.contains('invalid-feedback')) fb.style.display = 'none';
+  };
+
+  window.clearValidation = function(input) {
+    if (!input) return;
+    input.classList.remove('is-invalid', 'is-valid');
+    const fb = input.nextElementSibling;
+    if (fb?.classList.contains('invalid-feedback')) fb.style.display = 'none';
+  };
+
+  // Validate a form — returns true if all required fields are filled
+  window.validateForm = function(container) {
+    let valid = true;
+    const inputs = container.querySelectorAll('[required], [data-required]');
+    inputs.forEach(input => {
+      const val = input.value?.trim();
+      if (!val) {
+        markInvalid(input, input.dataset.errorMsg || 'Required');
+        valid = false;
+      } else {
+        markValid(input);
+      }
+    });
+    return valid;
+  };
+
   // ---- Gauge Danger Monitor ----
   // Watches temperature gauges and adds danger class when values are high
   window.checkGaugeDanger = function() {

@@ -545,13 +545,51 @@
       <!-- Panel Content (inline, replaces dashboard when active) -->
       <div class="panel-content" id="panel-content">
         <div class="panel-content-header">
-          <button class="panel-back-btn" onclick="showDashboard()" data-ripple>
-            <i class="bi bi-chevron-left"></i>
-            <span data-i18n-key="nav.dashboard">Dashboard</span>
-          </button>
+          <nav aria-label="breadcrumb" id="panel-breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a href="#" onclick="showDashboard(); return false;" data-i18n-key="nav.dashboard">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page" id="breadcrumb-current"></li>
+            </ol>
+          </nav>
           <h2 class="panel-content-title" id="overlay-panel-title"></h2>
         </div>
         <div class="panel-content-body" id="overlay-panel-body"></div>
+      </div>
+
+      <!-- Info Boxes — quick overview stats -->
+      <div class="info-box-strip" id="info-box-strip">
+        <div class="small-box text-bg-success" id="info-printers">
+          <div class="inner">
+            <h3 id="info-printers-count">0</h3>
+            <p data-i18n-key="info.printers_online">Printers Online</p>
+          </div>
+          <div class="icon"><i class="bi bi-printer"></i></div>
+          <a href="#" class="small-box-footer" onclick="openPanel('settings'); return false;" data-i18n-key="info.manage">Manage <i class="bi bi-arrow-right-circle"></i></a>
+        </div>
+        <div class="small-box text-bg-info" id="info-prints">
+          <div class="inner">
+            <h3 id="info-prints-count">0</h3>
+            <p data-i18n-key="info.active_prints">Active Prints</p>
+          </div>
+          <div class="icon"><i class="bi bi-play-circle"></i></div>
+          <a href="#" class="small-box-footer" onclick="return false;" data-i18n-key="info.view_details">View details <i class="bi bi-arrow-right-circle"></i></a>
+        </div>
+        <div class="small-box text-bg-warning" id="info-queue">
+          <div class="inner">
+            <h3 id="info-queue-count">0</h3>
+            <p data-i18n-key="info.queue_items">Queue Items</p>
+          </div>
+          <div class="icon"><i class="bi bi-list-check"></i></div>
+          <a href="#" class="small-box-footer" onclick="openPanel('queue'); return false;" data-i18n-key="info.view_queue">View queue <i class="bi bi-arrow-right-circle"></i></a>
+        </div>
+        <div class="small-box text-bg-danger" id="info-filament">
+          <div class="inner">
+            <h3 id="info-filament-count">0</h3>
+            <p data-i18n-key="info.filament_spools">Filament Spools</p>
+          </div>
+          <div class="icon"><i class="bi bi-circle"></i></div>
+          <a href="#" class="small-box-footer" onclick="openPanel('inventory'); return false;" data-i18n-key="info.view_inventory">View inventory <i class="bi bi-arrow-right-circle"></i></a>
+        </div>
       </div>
 
       <!-- Dashboard Grid -->
@@ -774,6 +812,7 @@
 
   <!-- Scripts -->
   <script src="/js/i18n.js"></script>
+  <script src="/js/utils/table-enhancer.js"></script>
   <script src="/js/utils/formatters.js" type="module"></script>
   <script src="/js/utils/dom-helpers.js" type="module"></script>
   <script src="/js/state.js"></script>

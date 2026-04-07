@@ -136,6 +136,8 @@
   let _viewMode = localStorage.getItem('history-view-mode') || 'grid';
   let _sortField = localStorage.getItem('history-sort-field') || 'date';
   let _sortDir = localStorage.getItem('history-sort-dir') || 'desc';
+  let _historyPage = 1;
+  const _HISTORY_PAGE_SIZE = 30;
 
   // Load cloud tasks for design title enrichment
   async function _loadCloudTasks() {
@@ -287,6 +289,13 @@
       h += '</div>';
       h += '</div>';
 
+      // Pagination
+      const visibleSorted = sorted.filter(r => _activeFilter === 'all' || r.status === _activeFilter);
+      const totalPages = Math.max(1, Math.ceil(visibleSorted.length / _HISTORY_PAGE_SIZE));
+      if (_historyPage > totalPages) _historyPage = totalPages;
+      const pageStart = (_historyPage - 1) * _HISTORY_PAGE_SIZE;
+      const pageItems = visibleSorted.slice(pageStart, pageStart + _HISTORY_PAGE_SIZE);
+
       if (_viewMode === 'grid') {
         h += '<div class="ph-grid" id="history-cards">';
         for (const row of sorted) {
@@ -393,6 +402,21 @@
       }
 
       const exportBase = _activePrinter === 'all' ? '/api/history/export' : `/api/history/export?printer_id=${_activePrinter}`;
+      // Pagination controls
+      if (totalPages > 1) {
+        h += '<nav class="te-pagination-wrap" style="padding:8px 0">';
+        h += `<small class="te-page-info text-muted">${visibleSorted.length} items · Page ${_historyPage}/${totalPages}</small>`;
+        h += '<ul class="pagination pagination-sm mb-0">';
+        h += `<li class="page-item ${_historyPage <= 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); window._histPage(${_historyPage - 1})">‹</a></li>`;
+        const ps = Math.max(1, _historyPage - 2);
+        const pe = Math.min(totalPages, ps + 4);
+        for (let i = ps; i <= pe; i++) {
+          h += `<li class="page-item ${i === _historyPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); window._histPage(${i})">${i}</a></li>`;
+        }
+        h += `<li class="page-item ${_historyPage >= totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); window._histPage(${_historyPage + 1})">›</a></li>`;
+        h += '</ul></nav>';
+      }
+
       const csvUrl = exportBase + (exportBase.includes('?') ? '&' : '?') + 'format=csv';
       const jsonUrl = exportBase + (exportBase.includes('?') ? '&' : '?') + 'format=json';
       const dlIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
@@ -1176,6 +1200,11 @@
     _activePrinter = printerId;
     const slug = printerId === 'all' ? 'history' : `history/printer/${printerId}`;
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
+    loadHistory();
+  };
+
+  window._histPage = function(page) {
+    _historyPage = Math.max(1, page);
     loadHistory();
   };
 

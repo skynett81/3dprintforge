@@ -56,17 +56,29 @@
             <th>${_esc(_tl('crm.status', 'Status'))}</th>
             <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
             <th>${_esc(_tl('crm.due_date', 'Due date'))}</th>
+            <th data-no-sort style="width:40px"></th>
           </tr></thead>
           <tbody>${_invoices.map(inv => {
             const isOverdue = inv.due_date && inv.status === 'sent' && new Date(inv.due_date) < new Date();
             const effectiveStatus = isOverdue ? 'overdue' : inv.status;
-            return `<tr style="cursor:pointer" onclick="window._crmInvDetail(${inv.id})">
-              <td><strong>${_esc(inv.invoice_number)}</strong></td>
+            return `<tr>
+              <td style="cursor:pointer" onclick="window._crmInvDetail(${inv.id})"><strong>${_esc(inv.invoice_number)}</strong></td>
               <td>${_esc(inv.order_number || '--')}</td>
               <td>${_esc(inv.customer_name || '--')}</td>
               <td><span class="badge badge-status badge-status-${effectiveStatus}">${_esc(_tl('crm.inv_status_' + effectiveStatus, effectiveStatus))}</span></td>
               <td style="text-align:right">${formatCurrency(inv.total)}</td>
               <td>${formatDate(inv.due_date)}</td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" onclick="event.stopPropagation()">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); window._crmInvDetail(${inv.id})"><i class="bi bi-eye me-2"></i>${_esc(_tl('crm.view', 'View'))}</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); window.open('/api/crm/invoices/${inv.id}/html', '_blank')"><i class="bi bi-printer me-2"></i>${_esc(_tl('crm.print_invoice', 'Print'))}</a></li>
+                  </ul>
+                </div>
+              </td>
             </tr>`;
           }).join('')}</tbody>
         </table>
@@ -74,6 +86,11 @@
     }
 
     body.innerHTML = html;
+
+    const tableCard = body.querySelector('.card-body');
+    if (tableCard && typeof enhanceTable === 'function') {
+      enhanceTable(tableCard, { pageSize: 20, searchPlaceholder: _tl('crm.search_invoices', 'Search invoices...') });
+    }
   }
 
   // Render detail

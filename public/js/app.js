@@ -197,7 +197,53 @@ function updateConnectionBadge(status) {
   badge.className = `badge badge-${_connectionStatus}`;
 }
 
+// ---- Info Box Stats ----
+async function updateInfoBoxes() {
+  try {
+    const [printers, queue, filament] = await Promise.all([
+      fetch('/api/printers').then(r => r.json()).catch(() => []),
+      fetch('/api/queue').then(r => r.json()).catch(() => []),
+      fetch('/api/filament').then(r => r.json()).catch(() => []),
+    ]);
+
+    // Printers online (count those with active WS data)
+    const totalPrinters = Array.isArray(printers) ? printers.length : 0;
+    const onlinePrinters = Object.keys(window.printerState?.printers || {}).length;
+    const printersEl = document.getElementById('info-printers-count');
+    if (printersEl) printersEl.textContent = `${onlinePrinters}/${totalPrinters}`;
+
+    // Active prints (printers currently printing)
+    let activePrints = 0;
+    const printerStates = window.printerState?.printers || {};
+    for (const id of Object.keys(printerStates)) {
+      const s = printerStates[id];
+      if (s && s.gcode_state === 'RUNNING') activePrints++;
+    }
+    const printsEl = document.getElementById('info-prints-count');
+    if (printsEl) printsEl.textContent = activePrints;
+
+    // Queue items
+    const queueCount = Array.isArray(queue) ? queue.length : 0;
+    const queueEl = document.getElementById('info-queue-count');
+    if (queueEl) queueEl.textContent = queueCount;
+
+    // Filament spools
+    const spoolCount = Array.isArray(filament) ? filament.length : 0;
+    const filamentEl = document.getElementById('info-filament-count');
+    if (filamentEl) filamentEl.textContent = spoolCount;
+  } catch (_) { /* non-critical */ }
+}
+
 function updateDashboard(data) {
+  // Update active prints count in info-box (no API call needed, use live WS data)
+  let activePrints = 0;
+  const printerStates = window.printerState?.printers || {};
+  for (const id of Object.keys(printerStates)) {
+    if (printerStates[id]?.gcode_state === 'RUNNING') activePrints++;
+  }
+  const printsEl = document.getElementById('info-prints-count');
+  if (printsEl) printsEl.textContent = activePrints;
+
   if (typeof updateTemperatureGauges === 'function') updateTemperatureGauges(data);
   if (typeof updatePrintProgress === 'function') updatePrintProgress(data);
   if (typeof updateAmsPanel === 'function') updateAmsPanel(data);
@@ -428,9 +474,14 @@ window.openPanel = function(name, skipHash) {
   // Persist last panel to localStorage
   try { localStorage.setItem('lastPanel', name); } catch (_) {}
 
+  const panelTitle = t(PANEL_TITLES[name] || name);
   if (titleEl) {
-    titleEl.textContent = t(PANEL_TITLES[name] || name);
+    titleEl.textContent = panelTitle;
   }
+
+  // Update breadcrumb
+  const bcCurrent = document.getElementById('breadcrumb-current');
+  if (bcCurrent) bcCurrent.textContent = panelTitle;
 
   // Update URL hash
   if (!skipHash) history.replaceState(null, '', '#' + name);
@@ -451,9 +502,11 @@ window.openPanel = function(name, skipHash) {
   document.querySelector(`.sidebar-btn[data-panel="${sidebarName}"]`)?.classList.add('active');
   _expandSectionForPanel(name);
 
-  // Hide dashboard + stats strip, show panel
+  // Hide dashboard + stats strip + info boxes, show panel
   dashboardGrid.classList.add('view-hidden');
   if (statsStrip) statsStrip.classList.add('view-hidden');
+  const infoStrip = document.getElementById('info-box-strip');
+  if (infoStrip) infoStrip.classList.add('hidden');
   panelContent.classList.add('panel-active');
 
   // Show skeleton while content loads — tailored per panel type
@@ -525,6 +578,8 @@ window.showDashboard = function(skipHash) {
 
   dashboardGrid.classList.remove('view-hidden');
   if (statsStrip) statsStrip.classList.remove('view-hidden');
+  const infoStrip = document.getElementById('info-box-strip');
+  if (infoStrip) infoStrip.classList.remove('hidden');
   panelContent.classList.remove('panel-active');
   window._activePanel = null;
 
@@ -670,6 +725,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   connect();
+
+  // Load info-box stats and refresh every 30s
+  updateInfoBoxes();
+  setInterval(updateInfoBoxes, 30000);
 
   // Show business sidebar section only when ecom license is active
   fetch('/api/ecommerce/license').then(r => r.ok ? r.json() : { active: false }).then(lic => {

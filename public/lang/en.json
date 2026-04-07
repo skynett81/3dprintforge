@@ -3823,5 +3823,15 @@
   },
   "cost": {
     "energy_info": "Energy cost based on spot prices"
+  },
+  "info": {
+    "printers_online": "Printers Online",
+    "active_prints": "Active Prints",
+    "queue_items": "Queue Items",
+    "filament_spools": "Filament Spools",
+    "manage": "Manage",
+    "view_details": "View details",
+    "view_queue": "View queue",
+    "view_inventory": "View inventory"
   }
 }

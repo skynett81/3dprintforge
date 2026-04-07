@@ -112,15 +112,28 @@
             <th style="text-align:right">${_esc(_tl('crm.items', 'Items'))}</th>
             <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
             <th>${_esc(_tl('crm.created', 'Created'))}</th>
+            <th data-no-sort style="width:40px"></th>
           </tr></thead>
           <tbody>${_orders.map(o => {
-            return `<tr style="cursor:pointer" onclick="window._crmOrdDetail(${o.id})">
-              <td><strong>${_esc(o.order_number)}</strong></td>
+            return `<tr>
+              <td style="cursor:pointer" onclick="window._crmOrdDetail(${o.id})"><strong>${_esc(o.order_number)}</strong></td>
               <td>${_esc(o.customer_name || '--')}</td>
               <td><span class="badge badge-status badge-status-${o.status}">${_esc(_tl('crm.status_' + o.status, o.status))}</span></td>
               <td style="text-align:right">${o.item_count || 0}</td>
               <td style="text-align:right">${formatCurrency(o.total)}</td>
               <td>${formatDate(o.created_at)}</td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation()">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); window._crmOrdDetail(${o.id})"><i class="bi bi-eye me-2"></i>${_esc(_tl('crm.view', 'View'))}</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); window._crmOrdEdit(${o.id})"><i class="bi bi-pencil me-2"></i>${_esc(_tl('crm.edit', 'Edit'))}</a></li>
+                    ${o.status === 'draft' ? `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault(); window._crmOrdDelete(${o.id})"><i class="bi bi-trash me-2"></i>${_esc(_tl('crm.delete', 'Delete'))}</a></li>` : ''}
+                  </ul>
+                </div>
+              </td>
             </tr>`;
           }).join('')}</tbody>
         </table>
@@ -128,6 +141,12 @@
     }
 
     body.innerHTML = html;
+
+    // Enhance table with search, sort, pagination
+    const tableCard = body.querySelector('.card-body');
+    if (tableCard && typeof enhanceTable === 'function') {
+      enhanceTable(tableCard, { pageSize: 20, searchPlaceholder: _tl('crm.search_orders', 'Search orders...') });
+    }
   }
 
   // Render detail view
