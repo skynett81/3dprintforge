@@ -322,7 +322,7 @@
         const prType = pr.type || (pr.serial ? 'bambu' : 'moonraker');
         const prTypeBadge = prType === 'moonraker' ? '<span class="pill pill-info" style="font-size:0.6rem;margin-left:4px">Moonraker</span>' : '<span class="pill pill-completed" style="font-size:0.6rem;margin-left:4px">Bambu MQTT</span>';
         const prConnInfo = prType === 'moonraker' ? (pr.ip ? pr.ip + ' | Moonraker' : t('settings.add_details')) : (pr.ip && pr.serial && pr.accessCode ? pr.ip + ' | ' + t('settings.auto_connect') : t('settings.add_details'));
-        h += `<div class="printer-config-card"><div class="printer-config-header"><div><strong>${pr.name}</strong>${prTypeBadge}<div class="text-muted" style="font-size:0.75rem">${pr.model || ''} | ${prConnInfo}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.edit')}" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.delete')}" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
+        h += `<div class="printer-config-card"><div class="printer-config-header"><div><strong>${pr.name}</strong>${prTypeBadge}<div class="text-muted" style="font-size:0.75rem">${pr.model || ''} | ${prConnInfo}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple title="${t('settings.edit')}" data-bs-toggle="tooltip" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.delete')}" data-bs-toggle="tooltip" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
       }
       h += '</div>';
       h += '<div id="printer-form-area"></div>';
@@ -1943,7 +1943,7 @@
             <div class="text-muted" style="font-size:0.8rem; margin-bottom:8px;">
               ${t('settings.demo_description', { count: data.printerIds.length })}
             </div>
-            <button class="form-btn form-btn-danger" data-ripple data-tooltip="${t('settings.demo_delete')}" onclick="deleteDemoData()">${t('settings.demo_delete')}</button>
+            <button class="form-btn form-btn-danger" data-ripple title="${t('settings.demo_delete')}" data-bs-toggle="tooltip" onclick="deleteDemoData()">${t('settings.demo_delete')}</button>
           </div>`;
       }
     } catch { /* no demo data endpoint or error */ }
@@ -2039,7 +2039,7 @@
           <input class="form-input auth-user-input" type="password" value="${u.password || ''}"
                  placeholder="${u.password === '***' ? t('settings.auth_password_unchanged') : t('settings.auth_password_ph')}"
                  data-idx="${i}" data-field="password" onchange="updateAuthUser(this)">
-          <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.delete')}" onclick="removeAuthUser(${i})" title="${t('settings.delete')}">✕</button>
+          <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.delete')}" data-bs-toggle="tooltip" onclick="removeAuthUser(${i})" title="${t('settings.delete')}">✕</button>
         </div>`;
     }
     html += '</div>';
@@ -2577,10 +2577,10 @@
           <div class="text-muted" style="font-size:0.8rem;word-break:break-all">${wh.url}</div>
           <div class="text-muted" style="font-size:0.75rem">${t('settings.webhook_template')}: ${wh.template} | ${t('settings.webhook_events')}: ${events.length === 0 ? t('common.all') : events.join(', ')}</div>
           <div class="wh-item-actions mt-xs">
-            <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.webhook_test')}" onclick="testWebhook(${wh.id})">${t('settings.webhook_test')}</button>
-            <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.webhook_edit')}" onclick="showWebhookEditor(${wh.id})">${t('settings.webhook_edit')}</button>
-            <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.webhook_deliveries')}" onclick="showWebhookDeliveries(${wh.id})">${t('settings.webhook_deliveries')}</button>
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.webhook_delete')}" onclick="deleteWebhookItem(${wh.id})">${t('settings.webhook_delete')}</button>
+            <button class="form-btn form-btn-sm" data-ripple title="${t('settings.webhook_test')}" data-bs-toggle="tooltip" onclick="testWebhook(${wh.id})">${t('settings.webhook_test')}</button>
+            <button class="form-btn form-btn-sm" data-ripple title="${t('settings.webhook_edit')}" data-bs-toggle="tooltip" onclick="showWebhookEditor(${wh.id})">${t('settings.webhook_edit')}</button>
+            <button class="form-btn form-btn-sm" data-ripple title="${t('settings.webhook_deliveries')}" data-bs-toggle="tooltip" onclick="showWebhookDeliveries(${wh.id})">${t('settings.webhook_deliveries')}</button>
+            <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.webhook_delete')}" data-bs-toggle="tooltip" onclick="deleteWebhookItem(${wh.id})">${t('settings.webhook_delete')}</button>
           </div>
         </div>`;
       }
@@ -2734,8 +2734,8 @@
           </div>
           <div class="text-muted" style="font-size:0.75rem">${t('settings.user_last_login')}: ${u.last_login || t('common.never')}</div>
           <div class="wh-item-actions mt-xs">
-            <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.user_edit')}" onclick="showUserEditor(${u.id})">${t('settings.user_edit')}</button>
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.user_delete')}" onclick="deleteUserItem(${u.id})">${t('settings.user_delete')}</button>
+            <button class="form-btn form-btn-sm" data-ripple title="${t('settings.user_edit')}" data-bs-toggle="tooltip" onclick="showUserEditor(${u.id})">${t('settings.user_edit')}</button>
+            <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.user_delete')}" data-bs-toggle="tooltip" onclick="deleteUserItem(${u.id})">${t('settings.user_delete')}</button>
           </div>
         </div>`;
       }
@@ -2840,7 +2840,7 @@
             ${k.expires_at ? ` | ${t('common.expires')}: ${k.expires_at}` : ''}
           </div>
           <div class="wh-item-actions mt-xs">
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.api_key_delete')}" onclick="deleteApiKeyItem(${k.id})">${t('settings.api_key_delete')}</button>
+            <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.api_key_delete')}" data-bs-toggle="tooltip" onclick="deleteApiKeyItem(${k.id})">${t('settings.api_key_delete')}</button>
           </div>
         </div>`;
       }
@@ -3058,8 +3058,8 @@
             ${c.auto_queue ? '<span class="wh-badge" style="background:rgba(0,180,255,0.15);color:#00b4ff">' + t('settings.auto_queue') + '</span>' : ''}
           </div>
           <div style="display:flex;gap:0.3rem">
-            <button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('settings.webhook_edit')}" onclick="showEcomEditor(${c.id})">${t('settings.webhook_edit')}</button>
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('settings.webhook_delete')}" onclick="deleteEcomConfig(${c.id})">${t('settings.webhook_delete')}</button>
+            <button class="form-btn form-btn-sm" data-ripple title="${t('settings.webhook_edit')}" data-bs-toggle="tooltip" onclick="showEcomEditor(${c.id})">${t('settings.webhook_edit')}</button>
+            <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.webhook_delete')}" data-bs-toggle="tooltip" onclick="deleteEcomConfig(${c.id})">${t('settings.webhook_delete')}</button>
           </div>
         </div>`).join('');
     } catch (e) { el.innerHTML = `<span class="text-muted">Error: ${e.message}</span>`; }
@@ -3178,8 +3178,8 @@
             ${r.file_size_bytes ? '<span class="text-muted" style="margin-left:0.3rem">' + (r.file_size_bytes / 1024 / 1024).toFixed(1) + 'MB</span>' : ''}
           </div>
           <div style="display:flex;gap:0.3rem">
-            ${r.status === 'complete' ? `<a class="form-btn form-btn-sm" data-ripple data-tooltip="${t('common.view')}" href="/api/timelapse/${r.id}/video" target="_blank">${t('common.view')}</a>` : ''}
-            <button class="form-btn form-btn-sm form-btn-danger" data-ripple data-tooltip="${t('common.delete')}" onclick="deleteTimelapse(${r.id})">${t('common.delete')}</button>
+            ${r.status === 'complete' ? `<a class="form-btn form-btn-sm" data-ripple title="${t('common.view')}" data-bs-toggle="tooltip" href="/api/timelapse/${r.id}/video" target="_blank">${t('common.view')}</a>` : ''}
+            <button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('common.delete')}" data-bs-toggle="tooltip" onclick="deleteTimelapse(${r.id})">${t('common.delete')}</button>
           </div>
         </div>`).join('');
     } catch {}
@@ -3264,7 +3264,7 @@
         section.innerHTML = '<div class="text-muted" style="font-size:0.8rem">' + t('settings.no_printer_groups') + '</div>';
         return;
       }
-      section.innerHTML = groups.map(g => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(g.name)} ${g.color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + _esc(g.color) + '"></span>' : ''} <span class="text-muted">(${(g.members || []).length} printers, stagger: ${g.stagger_delay_s}s)</span></span><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('common.delete')}" onclick="deletePrinterGroupSetting(${g.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
+      section.innerHTML = groups.map(g => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(g.name)} ${g.color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + _esc(g.color) + '"></span>' : ''} <span class="text-muted">(${(g.members || []).length} printers, stagger: ${g.stagger_delay_s}s)</span></span><button class="form-btn form-btn-sm" data-ripple title="${t('common.delete')}" data-bs-toggle="tooltip" onclick="deletePrinterGroupSetting(${g.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
     } catch {}
   }
 
@@ -3349,7 +3349,7 @@
         section.innerHTML = '<div class="text-muted" style="font-size:0.8rem">' + t('settings.no_custom_fields') + '</div>';
         return;
       }
-      section.innerHTML = fields.map(f => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(f.field_label)} <span class="text-muted">(${_esc(f.entity_type)} / ${_esc(f.field_type)})</span></span><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('common.delete')}" onclick="deleteCustomFieldSetting(${f.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
+      section.innerHTML = fields.map(f => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(f.field_label)} <span class="text-muted">(${_esc(f.entity_type)} / ${_esc(f.field_type)})</span></span><button class="form-btn form-btn-sm" data-ripple title="${t('common.delete')}" data-bs-toggle="tooltip" onclick="deleteCustomFieldSetting(${f.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
     } catch {}
   }
 
@@ -3438,7 +3438,7 @@
         section.innerHTML = '<div class="text-muted" style="font-size:0.8rem">' + t('settings.no_brand_defaults') + '</div>';
         return;
       }
-      section.innerHTML = defaults.map(d => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(d.manufacturer)} ${d.material ? '(' + _esc(d.material) + ')' : ''} <span class="text-muted">${d.default_extruder_temp ? d.default_extruder_temp + '°C' : ''}</span></span><button class="form-btn form-btn-sm" data-ripple data-tooltip="${t('common.delete')}" onclick="deleteBrandDefaultSetting(${d.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
+      section.innerHTML = defaults.map(d => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem">${_esc(d.manufacturer)} ${d.material ? '(' + _esc(d.material) + ')' : ''} <span class="text-muted">${d.default_extruder_temp ? d.default_extruder_temp + '°C' : ''}</span></span><button class="form-btn form-btn-sm" data-ripple title="${t('common.delete')}" data-bs-toggle="tooltip" onclick="deleteBrandDefaultSetting(${d.id})" style="font-size:0.75rem">${t('common.delete')}</button></div>`).join('');
     } catch {}
   }
 

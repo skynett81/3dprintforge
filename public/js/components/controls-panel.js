@@ -278,7 +278,7 @@
       <div class="ctrl-tools-grid">`;
 
     if (caps.light) {
-      html += `<button class="ctrl-tool-btn ${lightState === 'on' ? 'ctrl-tool-active' : ''}" id="ctrl-light-btn" data-ripple data-tooltip="${t('controls.light')}" onclick="toggleLight()">
+      html += `<button class="ctrl-tool-btn ${lightState === 'on' ? 'ctrl-tool-active' : ''}" id="ctrl-light-btn" data-ripple title="${t('controls.light')}" data-bs-toggle="tooltip" onclick="toggleLight()">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 4 12.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3A7 7 0 0 1 12 2z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
         </div>
@@ -286,7 +286,7 @@
       </button>`;
     }
 
-    html += `<button class="ctrl-tool-btn" data-ripple data-tooltip="${t('controls.calibration')}" onclick="sendGcode('G29')">
+    html += `<button class="ctrl-tool-btn" data-ripple title="${t('controls.calibration')}" data-bs-toggle="tooltip" onclick="sendGcode('G29')">
       <div class="ctrl-tool-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><rect x="9" y="12" width="6" height="8"/></svg>
       </div>
@@ -296,13 +296,13 @@
     if (caps.ai) {
       const spaghetti = data.xcam?.spaghetti_detector;
       const firstLayer = data.xcam?.first_layer_inspector;
-      html += `<button class="ctrl-tool-btn ${spaghetti ? 'ctrl-tool-active' : ''}" id="ctrl-ai-spaghetti" disabled data-tooltip="${t('controls.ai_spaghetti')}" title="${t('controls.ai_spaghetti')}">
+      html += `<button class="ctrl-tool-btn ${spaghetti ? 'ctrl-tool-active' : ''}" id="ctrl-ai-spaghetti" disabled title="${t('controls.ai_spaghetti')}" data-bs-toggle="tooltip">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         </div>
         <span class="ctrl-tool-label">${t('controls.ai_spaghetti')}</span>
       </button>`;
-      html += `<button class="ctrl-tool-btn ${firstLayer ? 'ctrl-tool-active' : ''}" id="ctrl-ai-firstlayer" disabled data-tooltip="${t('controls.ai_first_layer')}" title="${t('controls.ai_first_layer')}">
+      html += `<button class="ctrl-tool-btn ${firstLayer ? 'ctrl-tool-active' : ''}" id="ctrl-ai-firstlayer" disabled title="${t('controls.ai_first_layer')}" data-bs-toggle="tooltip">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
         </div>
@@ -438,7 +438,7 @@
         <div class="ctrl-quickcmds-label">${groupLabels[group] || group}</div>
         <div class="ctrl-quickcmds-btns">`;
       for (const cmd of cmds) {
-        html += `<button class="ctrl-quick-btn" onclick="_quickGcode('${cmd.gcode}')" data-ripple data-tooltip="${cmd.gcode.replace(/\\\\n/g, ' → ')}">${cmd.label}</button>`;
+        html += `<button class="ctrl-quick-btn" onclick="_quickGcode('${cmd.gcode}')" data-ripple title="${cmd.gcode.replace(/\\\\n/g, ' → ')}" data-bs-toggle="tooltip">${cmd.label}</button>`;
       }
       html += `</div></div>`;
     }

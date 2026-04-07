@@ -9267,26 +9267,14 @@ html.theme-transitioning *::after {
 }
 
 /* ---- Tooltips ---- */
-.ix-tooltip {
-  position: fixed;
-  z-index: 10000;
-  padding: 6px 12px;
-  background: var(--bg-elevated, #343a40);
-  color: var(--text-primary, #e9ecef);
-  font-size: 0.72rem;
-  font-weight: 500;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(4px);
-  animation: tooltipIn 0.15s ease 0.05s forwards;
-}
-
-@keyframes tooltipIn {
-  to { opacity: 1; transform: translateY(0); }
+/* Using Bootstrap 5 tooltips — customized via CSS variables */
+.tooltip {
+  --bs-tooltip-bg: var(--bg-elevated, #343a40);
+  --bs-tooltip-color: var(--text-primary, #e9ecef);
+  --bs-tooltip-font-size: 0.72rem;
+  --bs-tooltip-border-radius: 4px;
+  --bs-tooltip-padding-y: 6px;
+  --bs-tooltip-padding-x: 12px;
 }
 
 /* ---- Toast Notifications ---- */
@@ -9409,7 +9397,10 @@ html.theme-transitioning *::after {
               transform 0.15s ease;
 }
 
-.app-sidebar.collapsed {
+/* Sidebar collapsed state — triggered by AdminLTE sidebar-mini (body.sidebar-collapse)
+   or legacy .app-sidebar.collapsed class */
+.app-sidebar.collapsed,
+body.sidebar-collapse .app-sidebar {
   width: 70px;
   min-width: 70px;
 }
@@ -9423,7 +9414,20 @@ html.theme-transitioning *::after {
 .app-sidebar.collapsed .sidebar-version,
 .app-sidebar.collapsed .sidebar-links,
 .app-sidebar.collapsed #pwa-install-btn span,
-.app-sidebar.collapsed #sidebar-status-content {
+.app-sidebar.collapsed #sidebar-status-content,
+body.sidebar-collapse .sidebar-title,
+body.sidebar-collapse .sidebar-by,
+body.sidebar-collapse .sidebar-btn span,
+body.sidebar-collapse .sidebar-section-toggle,
+body.sidebar-collapse .sidebar-status-title,
+body.sidebar-collapse .sidebar-credits,
+body.sidebar-collapse .sidebar-version,
+body.sidebar-collapse .sidebar-links,
+body.sidebar-collapse #pwa-install-btn span,
+body.sidebar-collapse #sidebar-status-content,
+body.sidebar-collapse .brand-text,
+body.sidebar-collapse .nav-link > p,
+body.sidebar-collapse .sidebar-section-count {
   opacity: 0;
   width: 0;
   overflow: hidden;
@@ -9431,30 +9435,41 @@ html.theme-transitioning *::after {
   transition: opacity 0.2s, width 0.2s;
 }
 
-.app-sidebar.collapsed .nav-treeview {
+.app-sidebar.collapsed .nav-treeview,
+body.sidebar-collapse .nav-treeview {
   border-left: none;
   margin-left: 0;
   padding-left: 0;
 }
 
-.app-sidebar.collapsed .sidebar-section::before {
+.app-sidebar.collapsed .sidebar-section::before,
+body.sidebar-collapse .sidebar-section::before {
   left: 4px;
   right: 4px;
 }
 
-.app-sidebar.collapsed .sidebar-btn {
+.app-sidebar.collapsed .sidebar-btn,
+body.sidebar-collapse .sidebar-btn {
   justify-content: center;
   padding: 10px;
 }
 
-.app-sidebar.collapsed .sidebar-header {
+.app-sidebar.collapsed .sidebar-header,
+body.sidebar-collapse .sidebar-header {
   justify-content: center;
   padding: 12px 8px;
 }
 
-.app-sidebar.collapsed .sidebar-nav {
+.app-sidebar.collapsed .sidebar-nav,
+body.sidebar-collapse .sidebar-nav {
   padding: 12px 4px;
   align-items: center;
+}
+
+/* Flip collapse button chevron when collapsed */
+body.sidebar-collapse .sidebar-collapse-btn i {
+  transform: rotate(180deg);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-collapse-btn {
@@ -9474,11 +9489,13 @@ html.theme-transitioning *::after {
   background: var(--bg-tertiary);
 }
 
-.app-sidebar.collapsed .sidebar-collapse-btn svg {
+.app-sidebar.collapsed .sidebar-collapse-btn svg,
+body.sidebar-collapse .sidebar-collapse-btn svg {
   transform: rotate(180deg);
 }
 
-.sidebar-collapse-btn svg {
+.sidebar-collapse-btn svg,
+.sidebar-collapse-btn i {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

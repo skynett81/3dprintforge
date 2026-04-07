@@ -34,7 +34,7 @@
       html += `
         <div class="info-item">
           <span class="info-label">IP</span>
-          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${ipAddr}', 'IP')" data-tooltip="Click to copy">${ipAddr}</span></span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${ipAddr}', 'IP')" title="Click to copy" data-bs-toggle="tooltip">${ipAddr}</span></span>
         </div>`;
     }
 
@@ -42,7 +42,7 @@
       html += `
         <div class="info-item">
           <span class="info-label">Serial</span>
-          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${serialNum}', 'Serial')" data-tooltip="Click to copy">${serialNum}</span></span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${serialNum}', 'Serial')" title="Click to copy" data-bs-toggle="tooltip">${serialNum}</span></span>
         </div>`;
     }
 
@@ -50,7 +50,7 @@
       html += `
         <div class="info-item">
           <span class="info-label">${t('printer_info.firmware')}</span>
-          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${firmware}', 'Firmware')" data-tooltip="Click to copy">${firmware}</span></span>
+          <span class="info-value"><span class="copy-value" onclick="copyToClipboard('${firmware}', 'Firmware')" title="Click to copy" data-bs-toggle="tooltip">${firmware}</span></span>
         </div>`;
     }
 

@@ -429,6 +429,28 @@ function handleRequest(req, res) {
     return;
   }
 
+  // Serve Bootstrap JS from node_modules
+  if (pathname.startsWith('/vendor/bootstrap/')) {
+    const BS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', 'bootstrap', 'dist');
+    const relative = pathname.replace(/^\/vendor\/bootstrap\//, '');
+    const filePath = join(BS_DIR, relative);
+    if (!filePath.startsWith(BS_DIR)) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+    if (existsSync(filePath)) {
+      const ext = extname(filePath);
+      const ct = MIME_TYPES[ext] || 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' });
+      createReadStream(filePath).pipe(res);
+      return;
+    }
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+
   // Serve Docusaurus documentation from /docs/
   // Build structure: build/assets/ (static), build/docs/ (pages), build/blog/, build/img/
   // URL /docs/X maps to build/X (assets, img, blog) or build/docs/X (doc pages)

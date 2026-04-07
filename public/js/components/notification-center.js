@@ -67,8 +67,8 @@
     if (!_panelEl) return;
 
     var html = '<div class="notif-header"><h3>' + (typeof t === 'function' ? t('notification.title') : 'Notifications') + '</h3><div class="notif-header-actions">';
-    html += '<button class="notif-action-btn" onclick="markAllNotificationsRead()" data-tooltip="' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '</button>';
-    html += '<button class="notif-action-btn notif-action-clear" onclick="clearAllNotifications()" data-tooltip="' + (typeof t === 'function' ? t('notification.clear_all_tooltip') : 'Clear all notifications') + '" data-tooltip-pos="bottom">' + (typeof t === 'function' ? t('notification.clear_all') : 'Clear') + '</button>';
+    html += '<button class="notif-action-btn" onclick="markAllNotificationsRead()" title="' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '" data-bs-toggle="tooltip" data-bs-placement="bottom">' + (typeof t === 'function' ? t('notification.mark_all_read') : 'Mark all read') + '</button>';
+    html += '<button class="notif-action-btn notif-action-clear" onclick="clearAllNotifications()" title="' + (typeof t === 'function' ? t('notification.clear_all_tooltip') : 'Clear all notifications') + '" data-bs-toggle="tooltip" data-bs-placement="bottom">' + (typeof t === 'function' ? t('notification.clear_all') : 'Clear') + '</button>';
     html += '</div></div>';
 
     html += '<div class="notif-list">';

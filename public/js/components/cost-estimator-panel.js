@@ -489,7 +489,7 @@
     for (const item of items) {
       const pct = (item.value / total * 100).toFixed(1);
       if (item.value > 0) {
-        h += `<div style="width:${pct}%;background:${item.color};transition:width 0.3s" data-tooltip="${item.label}: ${item.value.toFixed(2)} (${pct}%)"></div>`;
+        h += `<div style="width:${pct}%;background:${item.color};transition:width 0.3s" title="${item.label}: ${item.value.toFixed(2)} (${pct}%)" data-bs-toggle="tooltip"></div>`;
       }
     }
     h += '</div>';

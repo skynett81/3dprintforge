@@ -38,6 +38,7 @@
     "@3mfconsortium/lib3mf": "^2.5.0-fix.2",
     "admin-lte": "^4.0.0-rc7",
     "basic-ftp": "^5.2.0",
+    "bootstrap": "^5.3.8",
     "mqtt": "^5.10.0",
     "qrcode": "^1.5.4",
     "ssh2": "^1.17.0",

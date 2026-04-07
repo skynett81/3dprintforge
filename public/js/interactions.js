@@ -2,62 +2,32 @@
 (function() {
   'use strict';
 
-  // ---- Tooltip System ----
-  let _activeTooltip = null;
-  let _tooltipTimeout = null;
-
+  // ---- Bootstrap Tooltip Auto-Initializer ----
+  // Automatically initializes Bootstrap tooltips on [data-bs-toggle="tooltip"] elements,
+  // including dynamically added content via MutationObserver.
   function _initTooltips() {
-    document.addEventListener('mouseover', (e) => {
-      const target = e.target.closest('[data-tooltip]');
-      if (!target || _activeTooltip) return;
-      const text = target.getAttribute('data-tooltip');
-      if (!text) return;
+    function activateTooltips(root) {
+      const els = (root || document).querySelectorAll('[data-bs-toggle="tooltip"]:not([data-bs-tooltip-init])');
+      els.forEach(el => {
+        el.setAttribute('data-bs-tooltip-init', '');
+        new bootstrap.Tooltip(el, { trigger: 'hover focus', delay: { show: 200, hide: 0 } });
+      });
+    }
 
-      _tooltipTimeout = setTimeout(() => {
-        const tip = document.createElement('div');
-        tip.className = 'ix-tooltip';
-        tip.textContent = text;
-        document.body.appendChild(tip);
+    // Init existing tooltips
+    activateTooltips();
 
-        const rect = target.getBoundingClientRect();
-        const pos = target.getAttribute('data-tooltip-pos') || 'top';
-        const tw = tip.offsetWidth;
-        const th = tip.offsetHeight;
-
-        let top, left;
-        if (pos === 'bottom') {
-          top = rect.bottom + 6;
-          left = rect.left + rect.width / 2 - tw / 2;
-        } else if (pos === 'left') {
-          top = rect.top + rect.height / 2 - th / 2;
-          left = rect.left - tw - 6;
-        } else if (pos === 'right') {
-          top = rect.top + rect.height / 2 - th / 2;
-          left = rect.right + 6;
-        } else {
-          top = rect.top - th - 6;
-          left = rect.left + rect.width / 2 - tw / 2;
+    // Watch for dynamically added tooltips (SPA renders components on the fly)
+    const observer = new MutationObserver(mutations => {
+      for (const m of mutations) {
+        if (m.type === 'childList' && m.addedNodes.length) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1) activateTooltips(node.parentElement || document);
+          }
         }
-
-        // Keep within viewport
-        left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
-        top = Math.max(8, top);
-
-        tip.style.top = top + 'px';
-        tip.style.left = left + 'px';
-        _activeTooltip = tip;
-      }, 200);
-    });
-
-    document.addEventListener('mouseout', (e) => {
-      const target = e.target.closest('[data-tooltip]');
-      if (!target) return;
-      clearTimeout(_tooltipTimeout);
-      if (_activeTooltip) {
-        _activeTooltip.remove();
-        _activeTooltip = null;
       }
     });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   // ---- Toast System ----
@@ -522,8 +492,9 @@
   function _initScrollToTop() {
     const btn = document.createElement('button');
     btn.className = 'ix-scroll-top';
-    btn.setAttribute('data-tooltip', 'Scroll to top');
-    btn.setAttribute('data-tooltip-pos', 'left');
+    btn.setAttribute('title', 'Scroll to top');
+    btn.setAttribute('data-bs-toggle', 'tooltip');
+    btn.setAttribute('data-bs-placement', 'left');
     btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>';
     document.body.appendChild(btn);
 

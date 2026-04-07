@@ -173,8 +173,8 @@
       <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_sortFleet('progress')">${t('fleet.sort_progress') || 'Fremdrift'}</button>
       <div class="fleet-layout-group">${_layoutButtons()}</div>
       <div style="display:flex;gap:8px;margin-left:auto">
-        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetPauseAll()" data-tooltip="${t('fleet.pause_all_tip') || 'Pause alle som printer'}">${t('fleet.pause_all') || 'Pause alle'}</button>
-        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetResumeAll()" data-tooltip="${t('fleet.resume_all_tip') || 'Fortsett alle pausede'}">${t('fleet.resume_all') || 'Fortsett alle'}</button>
+        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetPauseAll()" title="${t('fleet.pause_all_tip') || 'Pause alle som printer'}" data-bs-toggle="tooltip">${t('fleet.pause_all') || 'Pause alle'}</button>
+        <button class="form-btn form-btn-secondary" style="padding:3px 8px;font-size:0.7rem" onclick="_fleetResumeAll()" title="${t('fleet.resume_all_tip') || 'Fortsett alle pausede'}" data-bs-toggle="tooltip">${t('fleet.resume_all') || 'Fortsett alle'}</button>
       </div>
     </div>
     <div class="fleet-grid" id="fleet-grid"></div>`;

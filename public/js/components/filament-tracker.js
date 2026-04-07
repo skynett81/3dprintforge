@@ -966,44 +966,44 @@
             <strong>${esc(cleanName)}</strong>
           </div>
           <div class="fil-spool-actions">
-            <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})" title="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}" data-tooltip="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}">
+            <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})" title="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}" title="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="${s.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             </button>
-            ${s.archived ? `<button class="filament-edit-btn" onclick="unarchiveSpoolItem(${s.id})" title="${t('filament.unarchive')}" data-tooltip="${t('filament.unarchive')}">↩</button>` : ''}
-            <button class="filament-edit-btn" onclick="showSwatchLabel(${s.id})" title="${t('filament.swatch_label')}" data-tooltip="${t('filament.swatch_label')}">
+            ${s.archived ? `<button class="filament-edit-btn" onclick="unarchiveSpoolItem(${s.id})" title="${t('filament.unarchive')}" title="${t('filament.unarchive')}" data-bs-toggle="tooltip">↩</button>` : ''}
+            <button class="filament-edit-btn" onclick="showSwatchLabel(${s.id})" title="${t('filament.swatch_label')}" title="${t('filament.swatch_label')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="12" r="4"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showSpoolTimeline(${s.id})" title="${t('filament.spool_timeline')}" data-tooltip="${t('filament.spool_timeline')}">
+            <button class="filament-edit-btn" onclick="showSpoolTimeline(${s.id})" title="${t('filament.spool_timeline')}" title="${t('filament.spool_timeline')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showSpoolLabel(${s.id})" title="${t('filament.qr_label')}" data-tooltip="${t('filament.qr_label')}">
+            <button class="filament-edit-btn" onclick="showSpoolLabel(${s.id})" title="${t('filament.qr_label')}" title="${t('filament.qr_label')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="duplicateSpoolItem(${s.id})" title="${t('filament.duplicate')}" data-tooltip="${t('filament.duplicate')}">
+            <button class="filament-edit-btn" onclick="duplicateSpoolItem(${s.id})" title="${t('filament.duplicate')}" title="${t('filament.duplicate')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showMeasureDialog(${s.id})" title="${t('filament.measure_weight')}" data-tooltip="${t('filament.measure_weight')}">
+            <button class="filament-edit-btn" onclick="showMeasureDialog(${s.id})" title="${t('filament.measure_weight')}" title="${t('filament.measure_weight')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showStartDryingDialog(${s.id})" title="${t('filament.start_drying')}" data-tooltip="${t('filament.start_drying')}">
+            <button class="filament-edit-btn" onclick="showStartDryingDialog(${s.id})" title="${t('filament.start_drying')}" title="${t('filament.start_drying')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="window.open('https://store.bambulab.com/collections/filament?q='+encodeURIComponent('${esc(s.material||'')} ${esc(s.color_name||'')}'),'_blank')" title="${t('filament.buy_reorder')}" data-tooltip="${t('filament.buy_reorder')}">
+            <button class="filament-edit-btn" onclick="window.open('https://store.bambulab.com/collections/filament?q='+encodeURIComponent('${esc(s.material||'')} ${esc(s.color_name||'')}'),'_blank')" title="${t('filament.buy_reorder')}" title="${t('filament.buy_reorder')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showSpoolTagAssign(${s.id})" title="${t('filament.tags_title')}" data-tooltip="${t('filament.tags_title')}">
+            <button class="filament-edit-btn" onclick="showSpoolTagAssign(${s.id})" title="${t('filament.tags_title')}" title="${t('filament.tags_title')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
+            <button class="filament-edit-btn" onclick="showEditSpoolForm(${s.id})" title="${t('settings.edit')}" title="${t('settings.edit')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            <button class="filament-edit-btn" onclick="showRefillDialog(${s.id})" title="${t('filament.refill_spool')}" data-tooltip="${t('filament.refill_spool')}">
+            <button class="filament-edit-btn" onclick="showRefillDialog(${s.id})" title="${t('filament.refill_spool')}" title="${t('filament.refill_spool')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 11-.57-8.38"/></svg>
             </button>
-            ${!s.archived ? `<button class="filament-edit-btn" onclick="archiveSpoolItem(${s.id})" title="${t('filament.archive')}" data-tooltip="${t('filament.archive')}">
+            ${!s.archived ? `<button class="filament-edit-btn" onclick="archiveSpoolItem(${s.id})" title="${t('filament.archive')}" title="${t('filament.archive')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
             </button>` : ''}
-            <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}">
+            <button class="filament-delete-btn" onclick="deleteSpoolItem(${s.id})" title="${t('settings.delete')}" title="${t('settings.delete')}" data-bs-toggle="tooltip">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -2207,8 +2207,8 @@
           <td>${v.website ? `<a href="${esc(v.website)}" target="_blank" class="text-muted">${esc(v.website)}</a>` : '--'}</td>
           <td>${v.empty_spool_weight_g ? v.empty_spool_weight_g + 'g' : '--'}</td>
           <td style="text-align:right">
-            <button class="filament-edit-btn" onclick="editVendor(${v.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="filament-delete-btn" onclick="deleteVendorItem(${v.id})" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="filament-edit-btn" onclick="editVendor(${v.id})" title="${t('settings.edit')}" title="${t('settings.edit')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="filament-delete-btn" onclick="deleteVendorItem(${v.id})" title="${t('settings.delete')}" title="${t('settings.delete')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </td>
         </tr>`;
       }
@@ -2265,19 +2265,19 @@
           ${p.finish || p.translucent || p.glow || p.modifiers ? `<div class="fil-profile-badges">${p.finish ? `<span class="fil-badge">${t('filament.finish_' + p.finish)}</span>` : ''}${p.translucent ? `<span class="fil-badge">${t('filament.translucent')}</span>` : ''}${p.glow ? `<span class="fil-badge fil-badge-glow">${t('filament.glow')}</span>` : ''}${_parseModifiers(p.modifiers).map(m => `<span class="modifier-badge">${m}</span>`).join('')}</div>` : ''}
           ${tuneParts.length ? `<div class="fil-spool-meta text-muted" style="font-size:0.65rem;margin-top:2px">${tuneParts.join(' · ')}</div>` : ''}
           <div class="fil-profile-toolbar">
-            <button class="fil-profile-action" onclick="window._shareProfile(${p.id})" data-tooltip="${t('filament.share_to_community')}">
+            <button class="fil-profile-action" onclick="window._shareProfile(${p.id})" title="${t('filament.share_to_community')}" data-bs-toggle="tooltip">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               ${t('filament.share_short', 'Del')}
             </button>
-            <button class="fil-profile-action" onclick="window._exportSlicerProfile(${p.id})" data-tooltip="${t('filament.export_slicer')}">
+            <button class="fil-profile-action" onclick="window._exportSlicerProfile(${p.id})" title="${t('filament.export_slicer')}" data-bs-toggle="tooltip">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               ${t('filament.export_short', 'Eksporter')}
             </button>
-            <button class="fil-profile-action" onclick="editProfile(${p.id})" data-tooltip="${t('settings.edit')}">
+            <button class="fil-profile-action" onclick="editProfile(${p.id})" title="${t('settings.edit')}" data-bs-toggle="tooltip">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               ${t('settings.edit', 'Edit')}
             </button>
-            <button class="fil-profile-action fil-profile-action-danger" onclick="deleteProfileItem(${p.id})" data-tooltip="${t('settings.delete')}">
+            <button class="fil-profile-action fil-profile-action-danger" onclick="deleteProfileItem(${p.id})" title="${t('settings.delete')}" data-bs-toggle="tooltip">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
               ${t('settings.delete', 'Delete')}
             </button>
@@ -2313,8 +2313,8 @@
           out += `<div class="inv-location-item" style="padding-left:${indent}px">
             <span>${depth > 0 ? '&#x2514; ' : ''}${esc(l.name)}${l.description ? ` <span class="text-muted">(${esc(l.description)})</span>` : ''}${thresholdInfo.length ? ` <span class="text-muted" style="font-size:0.7rem">[${thresholdInfo.join(', ')}]</span>` : ''}</span>
             <div>
-              <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button class="filament-edit-btn" onclick="editLocationItem(${l.id})" title="${t('settings.edit')}" title="${t('settings.edit')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="filament-delete-btn" onclick="deleteLocationItem(${l.id})" title="${t('settings.delete')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>`;
           out += renderLevel(l.id, depth + 1);
@@ -2343,8 +2343,8 @@
           <span style="flex:1"><strong>${esc(tag.name)}</strong> <span class="text-muted" style="font-size:0.75rem">(${esc(tag.category || 'custom')})</span></span>
           <span class="text-muted" style="font-size:0.75rem">${t('filament.tag_usage_count', { count: tag.usage_count || 0 })}</span>
           <div>
-            <button class="filament-edit-btn" onclick="showEditTagForm(${tag.id})" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="filament-delete-btn" onclick="deleteTagItem(${tag.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="filament-edit-btn" onclick="showEditTagForm(${tag.id})" title="${t('settings.edit')}" title="${t('settings.edit')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="filament-delete-btn" onclick="deleteTagItem(${tag.id})" title="${t('settings.delete')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         </div>`;
       }
@@ -4189,7 +4189,7 @@
         <td>${s.duration_minutes} min</td>
         <td>${s.humidity_before != null ? s.humidity_before + '%' : '-'}</td>
         <td>${s.humidity_after != null ? s.humidity_after + '%' : '-'}</td>
-        <td><button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingItem(${s.id})" data-tooltip="${t('settings.delete')}">
+        <td><button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingItem(${s.id})" title="${t('settings.delete')}" data-bs-toggle="tooltip">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button></td>
       </tr>`;
@@ -4222,10 +4222,10 @@
         <td>${p.duration_minutes} min (${(p.duration_minutes / 60).toFixed(1)}h)</td>
         <td>${p.max_days_without_drying} d</td>
         <td style="text-align:right">
-          <button class="filament-edit-btn" style="opacity:1" onclick="editDryingPreset('${esc(p.material)}')" title="${t('settings.edit')}" data-tooltip="${t('settings.edit')}">
+          <button class="filament-edit-btn" style="opacity:1" onclick="editDryingPreset('${esc(p.material)}')" title="${t('settings.edit')}" title="${t('settings.edit')}" data-bs-toggle="tooltip">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingPresetItem('${esc(p.material)}')" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}">
+          <button class="filament-delete-btn" style="opacity:1" onclick="deleteDryingPresetItem('${esc(p.material)}')" title="${t('settings.delete')}" title="${t('settings.delete')}" data-bs-toggle="tooltip">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </td>
@@ -4386,7 +4386,7 @@
             </span>
             ${statusIcon}
             ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" class="filament-edit-btn" title="${t('filament.price_source')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
-            <button class="filament-delete-btn" onclick="window._deletePriceAlert(${a.id})" data-tooltip="${t('settings.delete')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="filament-delete-btn" onclick="window._deletePriceAlert(${a.id})" title="${t('settings.delete')}" data-bs-toggle="tooltip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>`;
         }
         h += '</div>';
@@ -5179,7 +5179,7 @@
             <strong>${esc(m.spool_name || t('filament.nfc_unlinked'))}</strong>
             <span class="text-muted" style="font-size:0.75rem">UID: ${esc(m.tag_uid)} · ${esc(m.standard || 'openspool')}</span>
           </div>
-          <button class="filament-delete-btn" style="opacity:1" onclick="unlinkNfcItem('${esc(m.tag_uid)}')" title="${t('settings.delete')}" data-tooltip="${t('settings.delete')}">
+          <button class="filament-delete-btn" style="opacity:1" onclick="unlinkNfcItem('${esc(m.tag_uid)}')" title="${t('settings.delete')}" title="${t('settings.delete')}" data-bs-toggle="tooltip">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>`;

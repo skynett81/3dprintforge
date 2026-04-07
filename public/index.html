@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="/css/responsive.css">
   <script type="importmap">{"imports":{"three":"/js/lib/three.module.min.js"}}</script>
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary" data-bs-theme="dark">
   <!-- Skip link for keyboard accessibility -->
   <a href="#main-content" class="skip-link">Skip to content</a>
 
@@ -44,7 +44,7 @@
         <!-- Sidebar toggle -->
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" id="hamburger-btn" href="#" role="button" onclick="toggleSidebar(); return false;" aria-label="Menu" data-tooltip="Menu" data-tooltip-pos="bottom">
+            <a class="nav-link" id="hamburger-btn" href="#" role="button" data-lte-toggle="sidebar" aria-label="Menu" title="Menu" data-bs-toggle="tooltip" data-bs-placement="bottom">
               <i class="bi bi-list"></i>
             </a>
           </li>
@@ -57,14 +57,14 @@
         <ul class="navbar-nav ms-auto">
           <!-- Notification bell -->
           <li class="nav-item">
-            <a class="nav-link" href="#" role="button" id="notif-bell-btn" onclick="toggleNotificationCenter(); return false;" data-tooltip="Notifications" data-tooltip-pos="bottom">
+            <a class="nav-link" href="#" role="button" id="notif-bell-btn" onclick="toggleNotificationCenter(); return false;" title="Notifications" data-bs-toggle="tooltip" data-bs-placement="bottom">
               <i class="bi bi-bell"></i>
               <span class="notif-badge" id="notif-badge" style="display:none">0</span>
             </a>
           </li>
           <!-- Theme toggle -->
           <li class="nav-item">
-            <a class="nav-link" href="#" role="button" id="theme-toggle-btn" onclick="theme.toggle(); return false;" data-tooltip="Toggle theme" data-tooltip-pos="bottom">
+            <a class="nav-link" href="#" role="button" id="theme-toggle-btn" onclick="theme.toggle(); return false;" title="Toggle theme" data-bs-toggle="tooltip" data-bs-placement="bottom">
               <i class="bi bi-sun theme-icon theme-icon-light"></i>
               <i class="bi bi-moon theme-icon theme-icon-dark"></i>
             </a>
@@ -89,7 +89,7 @@
           <img src="/assets/favicon.svg" alt="Logo" class="brand-image opacity-75 shadow-sm" style="height:28px">
           <span class="brand-text fw-light">3DPrintForge <small class="sidebar-by">by SkyNett81</small></span>
         </a>
-        <button class="sidebar-collapse-btn btn btn-sm" onclick="toggleSidebarCollapse()" data-tooltip="Collapse" data-tooltip-pos="right">
+        <button class="sidebar-collapse-btn btn btn-sm" data-lte-toggle="sidebar" title="Collapse" data-bs-toggle="tooltip" data-bs-placement="right">
           <i class="bi bi-chevron-double-left"></i>
         </button>
       </div>
@@ -767,6 +767,8 @@
     });
   </script>
 
+  <!-- Bootstrap 5 JS (required for tooltips, dropdowns, etc.) -->
+  <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <!-- AdminLTE JS -->
   <script src="/adminlte/js/adminlte.min.js"></script>
 

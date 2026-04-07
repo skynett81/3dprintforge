@@ -127,7 +127,7 @@
             <div class="pp-alert-title">${esc(printerName(a.printer_id))} — ${evLabel}</div>
             <div class="pp-alert-meta">${actLabel} · ${fmtTime(a.timestamp)}${a.notes ? ` · ${esc(a.notes)}` : ''}</div>
           </div>
-          <button class="form-btn form-btn-sm form-btn-secondary" data-ripple data-tooltip="${t('protection.resolve')}" onclick="resolveProtectionAlert(${a.id})">${t('protection.resolve')}</button>
+          <button class="form-btn form-btn-sm form-btn-secondary" data-ripple title="${t('protection.resolve')}" data-bs-toggle="tooltip" onclick="resolveProtectionAlert(${a.id})">${t('protection.resolve')}</button>
         </div>`;
       }
       h += '</div>';
