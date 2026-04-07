@@ -118,16 +118,13 @@
     const c = _selectedCustomer;
     if (!c) { _activeView = 'list'; renderList(body); return; }
 
-    const STATUS_COLORS = { draft: '#94a3b8', pending: '#f59e0b', printing: '#3b82f6', completed: '#22c55e', shipped: '#8b5cf6', cancelled: '#ef4444' };
-
     let ordersHtml = '';
     if (_customerOrders.length > 0) {
       ordersHtml = `<table class="table table-hover table-sm" style="margin:0">
         <thead><tr><th>#</th><th>${_esc(_tl('crm.status', 'Status'))}</th><th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th><th>${_esc(_tl('crm.created', 'Created'))}</th></tr></thead>
         <tbody>${_customerOrders.map(o => {
-          const sc = STATUS_COLORS[o.status] || '#94a3b8';
           return `<tr><td>${_esc(o.order_number)}</td>
-            <td><span class="badge" style="background:${sc};color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.status_' + o.status, o.status))}</span></td>
+            <td><span class="badge badge-status badge-status-${o.status}">${_esc(_tl('crm.status_' + o.status, o.status))}</span></td>
             <td style="text-align:right">${formatCurrency(o.total)}</td>
             <td>${formatDate(o.created_at)}</td></tr>`;
         }).join('')}</tbody>

@@ -3760,7 +3760,7 @@
 
     h += `<div style="font-size:0.8rem;margin-bottom:4px"><strong>${data.length}</strong> ${t('filament.import_rows')}</div>`;
     if (fields.length && sample.length) {
-      h += '<div style="overflow-x:auto;max-height:200px;border:1px solid var(--border);border-radius:6px"><table style="width:100%;font-size:0.72rem;border-collapse:collapse">';
+      h += '<div style="overflow-x:auto;max-height:200px;border:1px solid var(--border);border-radius:6px"><table class="table table-sm" style="font-size:0.72rem">';
       h += '<thead><tr style="background:var(--bg-secondary);position:sticky;top:0">';
       for (const f of fields.slice(0, 6)) h += `<th style="padding:3px 6px;text-align:left;white-space:nowrap">${esc(f)}</th>`;
       if (fields.length > 6) h += '<th style="padding:3px 6px">...</th>';
@@ -3877,7 +3877,7 @@
       if (data.estimated_time_min) h += `<div><strong>${t('filament.estimated_time')}:</strong> ${Math.floor(data.estimated_time_min / 60)}h ${data.estimated_time_min % 60}m</div>`;
       if (data.filaments.length) {
         h += `<div style="margin-top:6px"><strong>${t('filament.filaments_used')}:</strong></div>`;
-        h += '<table style="width:100%;font-size:0.75rem;border-collapse:collapse;margin-top:4px">';
+        h += '<table class="table table-sm" style="font-size:0.75rem;margin-top:4px">';
         h += '<tr style="background:var(--bg-secondary)"><th style="padding:2px 6px;text-align:left">#</th><th style="padding:2px 6px;text-align:left">${t("filament.material")}</th><th style="padding:2px 6px;text-align:right">${t("filament.weight")}</th></tr>';
         data.filaments.forEach((f, i) => {
           h += `<tr><td style="padding:2px 6px">${i + 1}</td><td style="padding:2px 6px">${esc(f.material || '?')}</td><td style="padding:2px 6px;text-align:right">${Math.round(f.weight_g * 100) / 100}g</td></tr>`;

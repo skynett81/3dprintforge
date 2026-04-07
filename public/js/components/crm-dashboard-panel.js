@@ -21,9 +21,6 @@
     confirmed: '#06b6d4', in_progress: '#f97316'
   };
 
-  const INVOICE_STATUS_COLORS = {
-    draft: '#94a3b8', sent: '#3b82f6', paid: '#22c55e', overdue: '#ef4444', cancelled: '#6b7280'
-  };
 
   async function fetchDashboard() {
     try {
@@ -145,8 +142,6 @@
       const isOrder = a.type === 'order';
       const icon = isOrder ? 'bi-receipt' : 'bi-file-earmark-text';
       const iconColor = isOrder ? 'var(--accent-blue)' : 'var(--accent-green)';
-      const colors = isOrder ? STATUS_COLORS : INVOICE_STATUS_COLORS;
-      const statusColor = colors[a.status] || '#94a3b8';
       const statusKey = isOrder ? 'crm.status_' + a.status : 'crm.inv_status_' + a.status;
       const typeLabel = isOrder ? _tl('crm.orders', 'Ordre') : _tl('crm.invoices', 'Faktura');
 
@@ -156,7 +151,7 @@
           <div style="font-weight:600;font-size:0.85rem">${_esc(a.ref_number)}</div>
           <div style="font-size:0.75rem;opacity:0.6">${_esc(a.customer_name || '--')} &middot; ${_esc(typeLabel)}</div>
         </div>
-        <span class="badge" style="background:${statusColor};color:#fff;font-size:0.7rem;padding:2px 6px;border-radius:4px">${_esc(_tl(statusKey, a.status))}</span>
+        <span class="badge badge-status badge-status-${a.status}" style="font-size:0.7rem">${_esc(_tl(statusKey, a.status))}</span>
         <span style="min-width:80px;text-align:right;font-size:0.85rem;font-weight:500">${formatCurrency(a.amount)}</span>
         <span style="min-width:70px;text-align:right;font-size:0.75rem;opacity:0.6">${formatDate(a.created_at)}</span>
       </div>`;

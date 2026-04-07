@@ -377,7 +377,7 @@
           }
 
           // Info table (compact, clean)
-          info += '<table style="width:100%;max-width:500px;border-collapse:collapse">';
+          info += '<table class="table table-sm" style="max-width:500px">';
           info += row('IP', `<code style="font-size:0.78rem;background:var(--bg-tertiary);padding:1px 6px;border-radius:4px">${_esc(pr.ip || '-')}</code>`);
           if (pr.serial) info += row('Serial', `<code style="font-size:0.72rem;background:var(--bg-tertiary);padding:1px 6px;border-radius:4px">${_esc(pr.serial)}</code>`);
           if (data.nozzle_temper != null) info += row('Nozzle', `${Math.round(data.nozzle_temper)}°C${data.nozzle_target_temper ? ' <span style="color:var(--text-muted)">→</span> ' + data.nozzle_target_temper + '°C' : ''}`);

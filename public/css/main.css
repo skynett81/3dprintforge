@@ -382,6 +382,32 @@
   cursor: pointer;
 }
 
+.badge-muted {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+/* ---- CRM Status Badges ---- */
+/* Shared base: used by orders, invoices, customers */
+.badge-status {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+.badge-status-draft      { background: #94a3b8; }
+.badge-status-pending    { background: #f59e0b; }
+.badge-status-printing   { background: #3b82f6; }
+.badge-status-completed  { background: #22c55e; }
+.badge-status-shipped    { background: #8b5cf6; }
+.badge-status-cancelled  { background: #ef4444; }
+.badge-status-confirmed  { background: #06b6d4; }
+.badge-status-in_progress { background: #f97316; }
+/* Invoice-specific */
+.badge-status-sent       { background: #3b82f6; }
+.badge-status-paid       { background: #22c55e; }
+.badge-status-overdue    { background: #ef4444; }
+
 /* ---- Notification badge (header bell) ---- */
 .notif-badge {
   position: absolute;
@@ -650,12 +676,13 @@
 }
 
 /* ---- Button upgrade ---- */
-.btn-primary, .form-btn {
+/* .form-btn gradient is now defined in components.css via --bs-btn-bg */
+.btn-primary {
   background: linear-gradient(135deg, #10b3a4, #0d9488);
   border: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.btn-primary:hover, .form-btn:hover {
+.btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 179, 164, 0.3);
 }

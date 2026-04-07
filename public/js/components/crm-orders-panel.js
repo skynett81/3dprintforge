@@ -16,11 +16,6 @@
   }
 
   const STATUSES = ['all', 'draft', 'pending', 'printing', 'completed', 'shipped', 'cancelled'];
-  const STATUS_COLORS = {
-    draft: '#94a3b8', pending: '#f59e0b', printing: '#3b82f6',
-    completed: '#22c55e', shipped: '#8b5cf6', cancelled: '#ef4444'
-  };
-
   let _orders = [];
   let _statusFilter = 'all';
   let _activeView = 'list'; // list | detail | form
@@ -119,11 +114,10 @@
             <th>${_esc(_tl('crm.created', 'Created'))}</th>
           </tr></thead>
           <tbody>${_orders.map(o => {
-            const sc = STATUS_COLORS[o.status] || '#94a3b8';
             return `<tr style="cursor:pointer" onclick="window._crmOrdDetail(${o.id})">
               <td><strong>${_esc(o.order_number)}</strong></td>
               <td>${_esc(o.customer_name || '--')}</td>
-              <td><span class="badge" style="background:${sc};color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.status_' + o.status, o.status))}</span></td>
+              <td><span class="badge badge-status badge-status-${o.status}">${_esc(_tl('crm.status_' + o.status, o.status))}</span></td>
               <td style="text-align:right">${o.item_count || 0}</td>
               <td style="text-align:right">${formatCurrency(o.total)}</td>
               <td>${formatDate(o.created_at)}</td>
@@ -140,8 +134,6 @@
   function renderDetail(body) {
     const o = _selectedOrder;
     if (!o) { _activeView = 'list'; renderList(body); return; }
-
-    const sc = STATUS_COLORS[o.status] || '#94a3b8';
 
     let itemsHtml = '';
     if (_orderItems.length > 0) {
@@ -173,8 +165,7 @@
     // Status change buttons
     const nextStatuses = { draft: ['pending'], pending: ['printing', 'cancelled'], printing: ['completed', 'cancelled'], completed: ['shipped'], shipped: [] };
     const statusBtns = (nextStatuses[o.status] || []).map(s => {
-      const c2 = STATUS_COLORS[s] || '#94a3b8';
-      return `<button class="btn btn-sm" style="background:${c2};color:#fff" onclick="window._crmOrdChangeStatus(${o.id},'${s}')">${_esc(_tl('crm.status_' + s, s))}</button>`;
+      return `<button class="btn btn-sm badge-status badge-status-${s}" onclick="window._crmOrdChangeStatus(${o.id},'${s}')">${_esc(_tl('crm.status_' + s, s))}</button>`;
     }).join(' ');
 
     body.innerHTML = `
@@ -187,7 +178,7 @@
         <div class="card">
           <div class="card-header"><h3 class="card-title">${_esc(o.order_number)}</h3></div>
           <div class="card-body">
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge" style="background:${sc};color:#fff;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.status_' + o.status, o.status))}</span></span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge badge-status badge-status-${o.status}">${_esc(_tl('crm.status_' + o.status, o.status))}</span></span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Customer'))}</span><span class="stats-detail-item-value">${_esc(o.customer_name || '--')}</span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Due date'))}</span><span class="stats-detail-item-value">${formatDate(o.due_date)}</span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.created', 'Created'))}</span><span class="stats-detail-item-value">${formatDate(o.created_at)}</span></div>

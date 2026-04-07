@@ -15,10 +15,6 @@
     return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
-  const STATUS_COLORS = {
-    draft: '#94a3b8', sent: '#3b82f6', paid: '#22c55e', overdue: '#ef4444', cancelled: '#6b7280'
-  };
-
   let _invoices = [];
   let _activeView = 'list'; // list | detail
   let _selectedInvoice = null;
@@ -62,15 +58,13 @@
             <th>${_esc(_tl('crm.due_date', 'Due date'))}</th>
           </tr></thead>
           <tbody>${_invoices.map(inv => {
-            const sc = STATUS_COLORS[inv.status] || '#94a3b8';
             const isOverdue = inv.due_date && inv.status === 'sent' && new Date(inv.due_date) < new Date();
             const effectiveStatus = isOverdue ? 'overdue' : inv.status;
-            const effectiveColor = STATUS_COLORS[effectiveStatus] || sc;
             return `<tr style="cursor:pointer" onclick="window._crmInvDetail(${inv.id})">
               <td><strong>${_esc(inv.invoice_number)}</strong></td>
               <td>${_esc(inv.order_number || '--')}</td>
               <td>${_esc(inv.customer_name || '--')}</td>
-              <td><span class="badge" style="background:${effectiveColor};color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.inv_status_' + effectiveStatus, effectiveStatus))}</span></td>
+              <td><span class="badge badge-status badge-status-${effectiveStatus}">${_esc(_tl('crm.inv_status_' + effectiveStatus, effectiveStatus))}</span></td>
               <td style="text-align:right">${formatCurrency(inv.total)}</td>
               <td>${formatDate(inv.due_date)}</td>
             </tr>`;
@@ -86,8 +80,6 @@
   function renderDetail(body) {
     const inv = _selectedInvoice;
     if (!inv) { _activeView = 'list'; renderList(body); return; }
-
-    const sc = STATUS_COLORS[inv.status] || '#94a3b8';
 
     let itemsHtml = '';
     let items = [];
@@ -134,7 +126,7 @@
         <div class="card">
           <div class="card-header"><h3 class="card-title">${_esc(inv.invoice_number)}</h3></div>
           <div class="card-body">
-            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge" style="background:${sc};color:#fff;padding:2px 8px;border-radius:4px">${_esc(_tl('crm.inv_status_' + inv.status, inv.status))}</span></span></div>
+            <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.status', 'Status'))}</span><span class="stats-detail-item-value"><span class="badge badge-status badge-status-${inv.status}">${_esc(_tl('crm.inv_status_' + inv.status, inv.status))}</span></span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.order_number', 'Order'))}</span><span class="stats-detail-item-value">${_esc(inv.order_number || '--')}</span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.customer_name', 'Customer'))}</span><span class="stats-detail-item-value">${_esc(inv.customer_name || '--')}</span></div>
             <div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(_tl('crm.due_date', 'Due date'))}</span><span class="stats-detail-item-value">${formatDate(inv.due_date)}</span></div>

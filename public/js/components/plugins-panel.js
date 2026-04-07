@@ -163,7 +163,7 @@
         </summary>
         <div class="plg-guide">
           <p style="font-size:0.78rem;font-weight:600;margin-bottom:8px">Context object passed to init(api):</p>
-          <table style="width:100%;font-size:0.72rem;border-collapse:collapse">
+          <table class="table table-sm" style="font-size:0.72rem">
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.log(msg)</td><td style="padding:4px 8px">Log an info message</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.warn(msg)</td><td style="padding:4px 8px">Log a warning</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.error(msg)</td><td style="padding:4px 8px">Log an error</td></tr>
