@@ -15,25 +15,134 @@
 
   async function _fetchAndRender(panel) {
     try {
-      const [overview, hourly, topEndpoints, sessions, errors] = await Promise.all([
-        fetch('/api/analytics/overview').then(r => r.json()),
-        fetch('/api/analytics/hourly?days=7').then(r => r.json()),
-        fetch('/api/analytics/top-endpoints').then(r => r.json()),
-        fetch('/api/analytics/sessions').then(r => r.json()),
-        fetch('/api/analytics/errors').then(r => r.json()),
+      // Fetch ALL available data
+      const [overview, hourly, topEndpoints, sessions, errors,
+             history, printers, filament, queue, printErrors, sysInfo
+      ] = await Promise.all([
+        fetch('/api/analytics/overview').then(r => r.json()).catch(() => ({})),
+        fetch('/api/analytics/hourly?days=7').then(r => r.json()).catch(() => []),
+        fetch('/api/analytics/top-endpoints').then(r => r.json()).catch(() => []),
+        fetch('/api/analytics/sessions').then(r => r.json()).catch(() => []),
+        fetch('/api/analytics/errors').then(r => r.json()).catch(() => []),
+        fetch('/api/history?limit=100').then(r => r.json()).catch(() => []),
+        fetch('/api/printers').then(r => r.json()).catch(() => []),
+        fetch('/api/filament').then(r => r.json()).catch(() => []),
+        fetch('/api/queue').then(r => r.json()).catch(() => []),
+        fetch('/api/errors?limit=20').then(r => r.json()).catch(() => []),
+        fetch('/api/system/info').then(r => r.json()).catch(() => ({})),
       ]);
+
+      // Calculate print stats
+      const totalPrints = history.length;
+      const successPrints = history.filter(h => h.status === 'completed').length;
+      const failedPrints = history.filter(h => h.status === 'failed').length;
+      const successRate = totalPrints > 0 ? Math.round((successPrints / totalPrints) * 100) : 0;
+      const totalPrintHours = Math.round(history.reduce((s, h) => s + (h.duration_seconds || 0), 0) / 3600 * 10) / 10;
+      const totalFilamentG = Math.round(history.reduce((s, h) => s + (h.filament_used_g || 0), 0));
+      const totalSpools = filament.length;
+      const activeQueue = Array.isArray(queue) ? queue.length : 0;
+      const onlinePrinters = Object.keys(window.printerState?.printers || {}).length;
+      const totalPrinters = printers.length;
 
       let html = '<div class="analytics-layout" style="display:flex;flex-direction:column;gap:14px">';
 
-      // ── Overview Cards ──
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
-      html += _statCard('Requests Today', overview.today?.requests || 0, '📊');
-      html += _statCard('Errors Today', overview.today?.errors || 0, '⚠️', overview.today?.errors > 0 ? 'var(--accent-red)' : '');
+      // ── Overview Cards — Print Farm Stats ──
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
+      html += _statCard('Total Prints', totalPrints, '🖨️');
+      html += _statCard('Success Rate', successRate + '%', '✅', successRate > 80 ? 'var(--accent-green)' : successRate > 50 ? 'var(--accent-orange)' : 'var(--accent-red)');
+      html += _statCard('Failed', failedPrints, '❌', failedPrints > 0 ? 'var(--accent-red)' : '');
+      html += _statCard('Print Hours', totalPrintHours + 'h', '⏱️');
+      html += _statCard('Filament Used', totalFilamentG + 'g', '🧵');
+      html += _statCard('Spools', totalSpools, '🎨');
+      html += _statCard('Printers', `${onlinePrinters}/${totalPrinters}`, '🖨️', onlinePrinters > 0 ? 'var(--accent-green)' : 'var(--accent-red)');
+      html += _statCard('Queue', activeQueue, '📋');
+      html += _statCard('Errors', printErrors.length, '⚠️', printErrors.length > 0 ? 'var(--accent-red)' : '');
+      html += _statCard('Requests', overview.today?.requests || 0, '📊');
       html += _statCard('Bandwidth', _fmtBytes(overview.today?.bytes || 0), '📡');
-      html += _statCard('Avg Response', (overview.today?.avgResponseMs || 0) + 'ms', '⚡');
-      html += _statCard('Active Sessions', overview.activeSessions || 0, '👥');
-      html += _statCard('WS Connections', overview.websocket?.connections || 0, '🔌');
+      html += _statCard('Sessions', overview.activeSessions || 0, '👥');
       html += '</div>';
+
+      // ── System Info Bar ──
+      if (sysInfo.version || sysInfo.uptime) {
+        const upHours = sysInfo.uptime ? Math.round(sysInfo.uptime / 3600 * 10) / 10 : 0;
+        const memMB = sysInfo.memory ? Math.round(sysInfo.memory.rss / 1048576) : 0;
+        const dbMB = sysInfo.dbSize ? Math.round(sysInfo.dbSize / 1048576 * 10) / 10 : 0;
+        html += `<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.68rem;color:var(--text-muted);padding:6px 10px;background:var(--bg-inset);border-radius:6px">
+          ${sysInfo.version ? `<span>Version: <strong>${sysInfo.version}</strong></span>` : ''}
+          <span>Uptime: <strong>${upHours}h</strong></span>
+          <span>Memory: <strong>${memMB} MB</strong></span>
+          <span>DB: <strong>${dbMB} MB</strong></span>
+          <span>Node: <strong>${sysInfo.nodeVersion || process?.version || '?'}</strong></span>
+        </div>`;
+      }
+
+      // ── Print Success/Failure Chart ──
+      if (history.length > 0) {
+        html += `<div class="settings-card" style="overflow:hidden">
+          <div class="card-title">Print History — Last ${totalPrints} prints</div>
+          <div style="display:flex;gap:2px;height:30px;border-radius:4px;overflow:hidden">
+            ${history.slice(0, 50).map(h => {
+              const color = h.status === 'completed' ? 'var(--accent-green)' : h.status === 'failed' ? 'var(--accent-red)' : h.status === 'cancelled' ? 'var(--accent-orange)' : 'var(--bg-tertiary)';
+              const dur = h.duration_seconds ? Math.round(h.duration_seconds / 60) + 'm' : '';
+              return `<div style="flex:1;background:${color};min-width:4px" title="${h.filename || '?'} — ${h.status} ${dur}"></div>`;
+            }).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.6rem;color:var(--text-muted)">
+            <span>✅ ${successPrints} completed</span>
+            <span>❌ ${failedPrints} failed</span>
+            <span>⏹ ${history.filter(h => h.status === 'cancelled').length} cancelled</span>
+          </div>
+        </div>`;
+      }
+
+      // ── Printer Utilization ──
+      if (printers.length > 0) {
+        html += `<div class="settings-card" style="overflow:hidden">
+          <div class="card-title">Printers (${onlinePrinters}/${totalPrinters} online)</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${printers.map(p => {
+              const state = window.printerState?.printers?.[p.id];
+              const gState = state?.gcode_state || 'OFFLINE';
+              const color = gState === 'RUNNING' ? 'var(--accent-green)' : gState === 'IDLE' ? 'var(--accent-blue)' : gState === 'PAUSE' ? 'var(--accent-orange)' : 'var(--accent-red)';
+              const pct = state?.mc_percent || 0;
+              return `<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:var(--bg-inset);border-radius:4px;font-size:0.72rem">
+                <span style="width:8px;height:8px;border-radius:50%;background:${color}"></span>
+                <span style="flex:1;font-weight:500">${p.name}</span>
+                <span style="color:${color};font-size:0.65rem">${gState}</span>
+                ${gState === 'RUNNING' ? `<span style="font-weight:600">${pct}%</span>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }
+
+      // ── Filament Inventory Summary ──
+      if (filament.length > 0) {
+        const byMaterial = {};
+        for (const f of filament) { const m = f.material || 'Unknown'; byMaterial[m] = (byMaterial[m] || 0) + 1; }
+        html += `<div class="settings-card" style="overflow:hidden">
+          <div class="card-title">Filament Inventory (${filament.length} spools)</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${Object.entries(byMaterial).sort((a, b) => b[1] - a[1]).map(([mat, count]) =>
+              `<span style="padding:2px 8px;border-radius:12px;background:var(--bg-inset);font-size:0.68rem">${mat}: <strong>${count}</strong></span>`
+            ).join('')}
+          </div>
+        </div>`;
+      }
+
+      // ── Recent Errors ──
+      if (printErrors.length > 0) {
+        html += `<div class="settings-card" style="overflow:hidden">
+          <div class="card-title" style="color:var(--accent-red)">Recent Errors (${printErrors.length})</div>
+          <div style="max-height:150px;overflow-y:auto">
+            ${printErrors.slice(0, 10).map(e => `
+              <div style="display:flex;gap:6px;padding:3px 0;font-size:0.68rem;border-bottom:1px solid var(--border-subtle)">
+                <span class="text-muted" style="min-width:65px">${new Date(e.created_at || e.timestamp).toLocaleDateString()}</span>
+                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.message || e.error || e.description || 'Error'}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      }
 
       // ── Requests per Hour Chart ──
       html += `<div class="settings-card" style="overflow:hidden">
