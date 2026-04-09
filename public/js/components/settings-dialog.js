@@ -1,4 +1,34 @@
-// Settings - Tabbed layout with printer management, auth, notifications, system
+/**
+ * Settings — Tabbed layout with printer management, auth, notifications, system
+ *
+ * SECTION INDEX:
+ * ──────────────
+ * Line ~20    State & Search
+ * Line ~120   Tab Rendering & Hash Routing
+ * Line ~286   PRINTERS TAB — Printer list, add/edit form, test connection
+ * Line ~395   APPEARANCE TAB — Theme, accent color, border radius
+ * Line ~454   GENERAL TAB — Language, units, sounds, defaults
+ * Line ~670   NOTIFICATIONS TAB — Channels (Telegram, Discord, email, ntfy, etc.)
+ * Line ~694   SYSTEM TAB — Sub-tabs:
+ *   Line ~707   Updates — Server version, check for updates
+ *   Line ~813   Security — Auth settings, TOTP 2FA, rate limiting
+ *   Line ~846   Printers — Printer groups, brand defaults
+ *   Line ~855   Automation — Macros, scheduled tasks
+ *   Line ~988   Energy — Electricity rates, circuit breakers
+ *   Line ~1064  Integrations — Brand status, 3D model access, e-commerce licenses
+ *   Line ~1135  Nodes — Remote node management
+ *   Line ~1146  Data — Backup, restore, export, import
+ *   Line ~1182  Tunnel — Cloudflare remote access
+ * Line ~1247  System Info, Backups, Scheduled Tasks
+ * Line ~1460  Printer Form Rendering (add/edit printer)
+ * Line ~1570  Save Printer, Edit Printer, Delete Printer
+ * Line ~1650  Discovery (mDNS, SSDP, SACP broadcast)
+ * Line ~2050  Notification Channel Forms
+ * Line ~2550  Webhook Management
+ * Line ~2700  User Management (roles, users, API keys)
+ * Line ~2900  E-commerce License Management
+ * Line ~3100  Printer Add Form Helpers
+ */
 (function() {
   window.loadSettingsPanel = loadSettings;
 

@@ -1,4 +1,34 @@
-// Filament Inventory Tracker — Modular with Tabs, 3-tier model (vendors → profiles → spools)
+/**
+ * Filament Inventory Tracker — Modular with Tabs, 3-tier model (vendors → profiles → spools)
+ *
+ * SECTION INDEX:
+ * ──────────────
+ * Line ~4     Constants & Helpers
+ * Line ~101   Tab Config
+ * Line ~172   Filament Database State
+ * Line ~197   Color Family Classification
+ * Line ~255   Printer Capability Map
+ * Line ~300   Cascade Filter Options
+ * Line ~347   Module Builders (inventory grid, database browser, analytics)
+ * Line ~895   Spool Card Rendering
+ * Line ~1029  Visual Spool Card
+ * Line ~1111  Spool Detail Overlay
+ * Line ~1499  Active Filament Display
+ * Line ~1563  Tab Switching
+ * Line ~1596  Main Render
+ * Line ~1788  Usage History
+ * Line ~1864  Global API (window.loadInventory, window._inv*)
+ * Line ~1910  Add/Edit Spool Form
+ * Line ~2164  Manage Dashboard Sub-tabs
+ * Line ~2390  Vendor CRUD
+ * Line ~2458  Profile CRUD
+ * Line ~2791  Community Sharing
+ * Line ~2859  Location CRUD
+ * Line ~2934  Duplicate & Measure
+ * Line ~3000  Refill, Archive, Bulk Ops
+ * Line ~3600  Import/Export
+ * Line ~4000  Drying Management
+ */
 (function() {
 
   // ═══ Constants & Helpers ═══
