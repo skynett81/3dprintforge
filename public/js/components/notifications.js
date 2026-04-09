@@ -104,9 +104,23 @@
   let _filamentAlertShown = false;
 
   window.checkFilamentAlerts = function(data) {
-    if (!data.ams?.ams || _filamentAlertDismissed) return;
+    if (_filamentAlertDismissed) return;
     const bar = document.getElementById('global-alert-bar');
     if (!bar) return;
+
+    // Non-Bambu: filament sensor runout alert
+    if (!data.ams?.ams) {
+      if (data._filament_sensor && !data._filament_sensor.detected && data.gcode_state === 'RUNNING') {
+        if (!bar.querySelector('#filament-sensor-alert')) {
+          bar.innerHTML = `<div id="filament-sensor-alert" class="global-alert global-alert-error">
+            <span>⚠ Filament not detected! Print may fail.</span>
+            <button class="global-alert-dismiss" onclick="this.parentElement.remove()">✕</button>
+          </div>`;
+          bar.style.display = '';
+        }
+      }
+      return;
+    }
 
     // Only update if not already showing (avoid flicker from re-creating every tick)
     const lowTrays = [];

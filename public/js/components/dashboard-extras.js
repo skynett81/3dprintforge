@@ -86,8 +86,8 @@
     const fansCard = document.getElementById('fans-card-content');
     if (!fansCard) return;
 
-    // Only enhance if Bambu with detailed fan data
-    if (data._fan_part === undefined && data._fan_aux === undefined) return;
+    // Show for all printers that have fan data (Bambu + Klipper)
+    if (data._fan_part === undefined && data._fan_aux === undefined && data.cooling_fan_speed === undefined) return;
 
     let badge = document.getElementById('dashboard-fan-badge');
     if (!badge) {

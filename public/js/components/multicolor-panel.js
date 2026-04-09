@@ -48,7 +48,34 @@
     try {
       const state = window.printerState?.getActivePrinterState?.();
       const amsRoot = state?.ams || state?.print?.ams;
-      if (!amsRoot?.ams) return;
+
+      // Non-Bambu: build slots from extruder data
+      if (!amsRoot?.ams) {
+        const pt = typeof getPrinterType === 'function' ? getPrinterType(null, state) : {};
+        const extCount = state?._extruderCount || 1;
+        if (pt.isMoonraker || pt.isOctoPrint || pt.isPrusaLink) {
+          for (let i = 0; i < extCount; i++) {
+            const color = state?._slicer_filament_colours?.split(';')[i] || '#808080';
+            _amsTrays.push({
+              color, type: 'PLA', brand: '', slotLabel: `T${i}`, remain: null,
+              isActive: i === 0, unitIdx: 0, trayIdx: i, globalIdx: i,
+            });
+          }
+          // ERCF gates as slots
+          if (state?._ercf?.gateColor?.length) {
+            _amsTrays = [];
+            for (let i = 0; i < state._ercf.numGates; i++) {
+              _amsTrays.push({
+                color: state._ercf.gateColor[i] || '#808080',
+                type: 'ERCF', brand: '', slotLabel: `Gate ${i}`,
+                remain: state._ercf.gateStatus[i] === 2 ? 100 : state._ercf.gateStatus[i] === 1 ? 50 : 0,
+                isActive: state._ercf.gate === i, unitIdx: 0, trayIdx: i, globalIdx: i,
+              });
+            }
+          }
+        }
+        return;
+      }
       const units = amsRoot.ams;
       const activeIdx = amsRoot.tray_now != null ? parseInt(amsRoot.tray_now) : -1;
       for (let u = 0; u < units.length; u++) {

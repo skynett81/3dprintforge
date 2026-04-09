@@ -141,9 +141,51 @@
     const extSection = document.getElementById('ams-ext-section');
     const amsCard = document.getElementById('ams-card');
 
-    // Hide AMS card for non-AMS printers — Moonraker uses filament-ring only
+    // Show AMS card for Bambu with AMS, hide for Bambu without, show alternative for others
+    const pt = typeof getPrinterType === 'function' ? getPrinterType() : {};
     if (!data.ams || !data.ams.ams || data.ams.ams.length === 0) {
-      if (amsCard) amsCard.style.display = 'none';
+      if (pt.isBambu) {
+        if (amsCard) amsCard.style.display = 'none';
+        return;
+      }
+      // Non-Bambu: show filament status in AMS card area
+      if (amsCard && container) {
+        amsCard.style.display = '';
+        let altHtml = '';
+        // Moonraker multi-extruder
+        if (data._extruderCount > 1 || data.nozzle_temper !== undefined) {
+          const extCount = data._extruderCount || 1;
+          altHtml += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+          for (let i = 0; i < extCount; i++) {
+            const temp = i === 0 ? data.nozzle_temper : data[`_nozzle${i+1}_temper`];
+            const target = i === 0 ? data.nozzle_target_temper : data[`_nozzle${i+1}_target`];
+            altHtml += `<div style="background:var(--bg-tertiary);padding:6px 10px;border-radius:6px;min-width:70px;text-align:center">
+              <div style="font-size:0.72rem;font-weight:600">T${i}</div>
+              <div style="font-size:0.85rem">${temp ?? '--'}°C</div>
+              ${target ? `<div style="font-size:0.6rem;color:var(--text-muted)">→ ${target}°C</div>` : ''}
+            </div>`;
+          }
+          altHtml += '</div>';
+        }
+        // ERCF/AFC
+        if (data._ercf) {
+          altHtml += `<div style="margin-top:6px;font-size:0.72rem">ERCF: Gate ${data._ercf.gate ?? '?'} · Tool ${data._ercf.tool ?? '?'} · ${data._ercf.numGates} gates</div>`;
+        }
+        if (data._afc) {
+          altHtml += `<div style="margin-top:6px;font-size:0.72rem">AFC: Lane ${data._afc.currentLane ?? '?'} · ${data._afc.lanes?.length || 0} lanes</div>`;
+        }
+        // PrusaLink MMU
+        if (data._mmu_enabled) {
+          altHtml += `<div style="margin-top:6px;font-size:0.72rem">MMU: Slot ${data._active_slot ?? '?'} · ${data._mmu_version || ''}</div>`;
+        }
+        // Filament sensor
+        if (data._filament_sensor) {
+          const fs = data._filament_sensor;
+          altHtml += `<div style="margin-top:6px;font-size:0.72rem">Filament: <span style="color:${fs.detected ? 'var(--accent-green)' : 'var(--accent-red)'}">${fs.detected ? '✓ Detected' : '⚠ Not detected'}</span></div>`;
+        }
+        if (altHtml) container.innerHTML = altHtml;
+        else { amsCard.style.display = 'none'; }
+      }
       return;
     }
     if (amsCard) amsCard.style.display = '';

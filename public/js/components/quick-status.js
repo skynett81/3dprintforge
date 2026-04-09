@@ -172,11 +172,10 @@
 
     // Detect printer type for appropriate status items
     const _meta = window.printerState?.getActivePrinterMeta?.() || {};
-    const isMoonraker = _meta.type === 'moonraker';
-
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(_meta, data) : { isMoonraker: _meta.type === 'moonraker', isBambu: !_meta.type || _meta.type === 'bambu' };
     const isFirstRender = !container._lastHtml;
 
-    if (isMoonraker) {
+    if (pt.isMoonraker || pt.isOctoPrint || pt.isPrusaLink) {
       // Moonraker/Klipper status — different info than Bambu
       const bedTemp = data.bed_temper ? `${data.bed_temper}°C` : '--';
       const bedTarget = data.bed_target_temper ? ` → ${data.bed_target_temper}°C` : '';
