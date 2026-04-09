@@ -214,5 +214,37 @@
           </div>`;
       }
     }
+
+    // ── Type-aware print metadata badges ──
+    let metaContainer = document.getElementById('progress-meta-badges');
+    if (!metaContainer) {
+      const hudCenter = document.querySelector('.hud-center-bottom') || document.getElementById('active-filament');
+      if (hudCenter?.parentElement) {
+        metaContainer = document.createElement('div');
+        metaContainer.id = 'progress-meta-badges';
+        metaContainer.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;font-size:0.6rem;margin-top:4px;justify-content:center';
+        hudCenter.parentElement.appendChild(metaContainer);
+      }
+    }
+    if (metaContainer && (state === 'RUNNING' || state === 'PAUSE')) {
+      let badges = '';
+      // Filament used
+      if (data.filament_used_mm > 0) badges += `<span style="padding:1px 4px;border-radius:4px;background:var(--bg-inset)">📏 ${Math.round(data.filament_used_mm / 10) / 100}m</span>`;
+      // Estimated weight
+      if (data._slicer_filament_weight > 0) badges += `<span style="padding:1px 4px;border-radius:4px;background:var(--bg-inset)">⚖ ${data._slicer_filament_weight}g</span>`;
+      // Speed
+      if (data.spd_mag && data.spd_mag !== 100) badges += `<span style="padding:1px 4px;border-radius:4px;background:var(--bg-inset)">🏎 ${data.spd_mag}%</span>`;
+      // Elapsed
+      if (data.print_duration_seconds > 60) {
+        const h = Math.floor(data.print_duration_seconds / 3600);
+        const m = Math.floor((data.print_duration_seconds % 3600) / 60);
+        badges += `<span style="padding:1px 4px;border-radius:4px;background:var(--bg-inset)">⏱ ${h > 0 ? h + 'h ' : ''}${m}m</span>`;
+      }
+      // Z height
+      if (data._position?.z > 0) badges += `<span style="padding:1px 4px;border-radius:4px;background:var(--bg-inset)">Z:${data._position.z}mm</span>`;
+      metaContainer.innerHTML = badges;
+    } else if (metaContainer) {
+      metaContainer.innerHTML = '';
+    }
   };
 })();

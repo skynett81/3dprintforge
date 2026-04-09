@@ -378,13 +378,29 @@
     _inject('injected-library', `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${html}</div>`);
   }
 
-  // Cost Estimator: power from ADC, nozzle wear
+  // Cost Estimator: real power data, nozzle wear, printer-specific costs
   function _injectCostEstimator(data) {
-    let html = '';
-    if (data._sm_current?.heater_bed) html += _badge('Bed Current', data._sm_current.heater_bed.current + 'A', '');
-    if (data._nozzle_diameter) html += _badge('Nozzle', data._nozzle_diameter + 'mm', '');
-    if (data._nozzle_type) html += _badge('Type', data._nozzle_type, '');
-    if (html) _inject('injected-costestimator', `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${html}</div>`);
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">';
+    // Real power measurement (U1 ADC)
+    if (data._sm_current?.heater_bed) {
+      html += `<div class="settings-card" style="padding:8px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Bed Power</div><div style="font-size:1rem;font-weight:700">${data._sm_current.heater_bed.current}A</div></div>`;
+    }
+    if (data._sm_current?.extruder) {
+      html += `<div class="settings-card" style="padding:8px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Extruder Power</div><div style="font-size:1rem;font-weight:700">${data._sm_current.extruder.current}A</div></div>`;
+    }
+    // Nozzle wear estimate
+    if (data._nozzle_type || data.nozzle_type) {
+      const type = data._nozzle_type || data.nozzle_type || '';
+      const diam = data._nozzle_diameter || data.nozzle_diameter || 0.4;
+      const wearRate = type.includes('hardened') || type.includes('steel') ? 'Low (hardened)' : 'Normal (brass)';
+      html += `<div class="settings-card" style="padding:8px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Nozzle ${diam}mm</div><div style="font-size:0.75rem;font-weight:600">${type || 'Standard'}</div><div style="font-size:0.6rem;color:var(--text-muted)">${wearRate}</div></div>`;
+    }
+    // Voltage for power calc
+    if (data._sm_inputVoltage) {
+      html += `<div class="settings-card" style="padding:8px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Input</div><div style="font-size:1rem;font-weight:700">${data._sm_inputVoltage}</div></div>`;
+    }
+    html += '</div>';
+    _inject('injected-costestimator', html);
   }
 
   // Achievements: printer milestones
@@ -503,17 +519,124 @@
     if (html) _inject('injected-plugins', html);
   }
 
-  // Error Analysis: HMS + TMC + defect trends
+  // Error Analysis: comprehensive for ALL printer types
   function _injectErrorAnalysis(data) {
-    let html = '';
-    if (data.hms?.length) html += _badge('HMS Errors', data.hms.length, 'var(--accent-red)');
-    if (data._active_errors) html += _badge('Active', data._active_errors, 'var(--accent-red)');
-    if (data._tmc) {
-      const issues = Object.entries(data._tmc).filter(([, v]) => v.temperature > 80);
-      if (issues.length) html += _badge('TMC Hot', issues.map(([n]) => n).join(','), 'var(--accent-orange)');
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:10px">';
+    // HMS errors (Bambu)
+    if (data.hms?.length) {
+      html += `<div class="settings-card" style="padding:8px"><div style="font-size:0.65rem;color:var(--text-muted)">HMS Errors</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--accent-red)">${data.hms.length}</div>
+        <div style="font-size:0.6rem">${data.hms.map(h => `Code: 0x${(h.attr || 0).toString(16)}`).slice(0, 3).join(', ')}</div>
+      </div>`;
     }
-    if (data._sm_defect?.noodle?.probability > 0.3) html += _badge('Spaghetti', Math.round(data._sm_defect.noodle.probability * 100) + '%', 'var(--accent-orange)');
-    if (html) _inject('injected-erroranalysis', `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${html}</div>`);
+    // TMC driver issues (Klipper)
+    if (data._tmc) {
+      const drivers = Object.entries(data._tmc);
+      const hot = drivers.filter(([, v]) => v.temperature > 80);
+      html += `<div class="settings-card" style="padding:8px"><div style="font-size:0.65rem;color:var(--text-muted)">TMC Drivers</div>
+        <div style="font-size:0.82rem">${drivers.map(([n, v]) => `${n}: ${v.temperature ? Math.round(v.temperature) + '°C' : '?'}`).join(', ')}</div>
+        ${hot.length > 0 ? `<div style="font-size:0.65rem;color:var(--accent-red)">⚠ ${hot.length} driver(s) overheating</div>` : ''}
+      </div>`;
+    }
+    // Defect detection (Snapmaker U1)
+    if (data._sm_defect) {
+      const d = data._sm_defect;
+      html += `<div class="settings-card" style="padding:8px"><div style="font-size:0.65rem;color:var(--text-muted)">AI Defect Detection</div>
+        <div style="font-size:0.82rem">${d.enabled ? 'Active' : 'Disabled'}</div>
+        ${d.noodle?.probability > 0.3 ? `<div style="font-size:0.65rem;color:var(--accent-orange)">Spaghetti: ${Math.round(d.noodle.probability * 100)}%</div>` : ''}
+      </div>`;
+    }
+    // Active errors
+    if (data._active_errors > 0) {
+      html += `<div class="settings-card" style="padding:8px"><div style="font-size:0.65rem;color:var(--text-muted)">Active Errors</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--accent-red)">${data._active_errors}</div>
+      </div>`;
+    }
+    // Filament sensor (all Klipper)
+    if (data._filament_sensor && !data._filament_sensor.detected) {
+      html += `<div class="settings-card" style="padding:8px;border-left:3px solid var(--accent-red)"><div style="font-size:0.65rem;color:var(--accent-red)">⚠ Filament Not Detected</div></div>`;
+    }
+    // Power loss (Snapmaker)
+    if (data._sm_power?.powerLoss) {
+      html += `<div class="settings-card" style="padding:8px;border-left:3px solid var(--accent-red)"><div style="font-size:0.65rem;color:var(--accent-red)">⚠ Power Loss Detected</div></div>`;
+    }
+    html += '</div>';
+    _inject('injected-erroranalysis', html);
+  }
+
+  // Wear Prediction: TMC hours, purifier, nozzle for ALL types
+  function _injectWearPrediction(data) {
+    let html = '';
+    // Purifier filter
+    if (data._purifier?.work_time || data._sm_purifier) {
+      const hours = Math.round((data._purifier?.work_time || 0) / 3600);
+      const remaining = Math.max(0, 500 - hours);
+      html += `<div class="alert ${remaining < 50 ? 'alert-warning' : 'alert-info'}" style="font-size:0.72rem;margin-bottom:6px">
+        Purifier filter: ${hours}h used, ~${remaining}h remaining ${remaining < 50 ? '— replace soon' : ''}
+      </div>`;
+    }
+    // TMC driver wear
+    if (data._tmc) {
+      const hotDrivers = Object.entries(data._tmc).filter(([, v]) => v.temperature > 60);
+      if (hotDrivers.length) {
+        html += `<div class="alert alert-info" style="font-size:0.72rem;margin-bottom:6px">
+          TMC drivers running warm: ${hotDrivers.map(([n, v]) => `${n} (${Math.round(v.temperature)}°C)`).join(', ')}
+        </div>`;
+      }
+    }
+    // Nozzle wear
+    if (data._nozzle_type) {
+      const type = data._nozzle_type;
+      const lifespan = type.includes('hardened') || type.includes('steel') ? '2000+ hours' : '500-800 hours (brass)';
+      html += `<div class="alert alert-info" style="font-size:0.72rem;margin-bottom:6px">
+        Nozzle ${data._nozzle_diameter || '0.4'}mm ${type}: expected lifespan ${lifespan}
+      </div>`;
+    }
+    if (html) _inject('injected-wearprediction', html);
+  }
+
+  // Onboarding: printer-specific tips
+  function _injectOnboarding(data) {
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(null, data) : {};
+    const tips = [];
+
+    if (pt.isBambu) {
+      tips.push({ icon: '🔗', text: 'Connect Bambu Cloud for print history sync and MakerWorld models', link: '#settings' });
+      if (pt.hasAms) tips.push({ icon: '🎨', text: 'AMS detected — filament colors sync automatically to inventory' });
+      tips.push({ icon: '📷', text: 'Camera streams via RTSP — adjust resolution in Settings → Printers' });
+    }
+    if (pt.isMoonraker) {
+      tips.push({ icon: '📐', text: 'Run BED_MESH_CALIBRATE for bed mesh heatmap visualization' });
+      tips.push({ icon: '📊', text: 'Run SHAPER_CALIBRATE for input shaper frequency tuning' });
+      if (pt.hasFilamentSensor) tips.push({ icon: '🧵', text: 'Filament runout sensor active — alerts will show during print' });
+      if (data._detected_brand === 'Voron') tips.push({ icon: '🌀', text: 'Voron detected — QGL, Nevermore and ERCF status shown in Controls' });
+      if (data._detected_brand === 'Creality') tips.push({ icon: '📸', text: 'Creality K1 camera detected on port 4408' });
+    }
+    if (pt.isOctoPrint) {
+      tips.push({ icon: '🔌', text: 'Install PSU Control plugin for power on/off from dashboard' });
+      tips.push({ icon: '🧵', text: 'Install Filament Manager plugin for spool tracking integration' });
+      tips.push({ icon: '📐', text: 'Install Bed Level Visualizer for mesh heatmap' });
+    }
+    if (pt.isPrusaLink) {
+      if (pt.hasMmu) tips.push({ icon: '🎨', text: 'MMU detected — slot status shown in filament panel' });
+      tips.push({ icon: '☁️', text: 'Enable PrusaConnect in Settings for cloud monitoring' });
+    }
+    if (pt.isSacp) {
+      tips.push({ icon: '🔧', text: 'Installed modules detected automatically — laser/CNC controls appear when relevant module is active' });
+      if (pt.isSnapmaker) tips.push({ icon: '📡', text: 'NFC filament data syncs to inventory automatically' });
+    }
+
+    if (tips.length === 0) return;
+    let html = '<div style="margin-bottom:10px">';
+    html += '<div style="font-size:0.82rem;font-weight:600;margin-bottom:6px">Getting Started with ' + (pt.brand || 'Your Printer') + '</div>';
+    for (const tip of tips) {
+      html += `<div style="display:flex;gap:6px;padding:4px 0;font-size:0.72rem;align-items:flex-start">
+        <span style="flex-shrink:0">${tip.icon}</span>
+        <span>${tip.text}${tip.link ? ` <a href="${tip.link}" style="color:var(--accent-green)">→ Open</a>` : ''}</span>
+      </div>`;
+    }
+    html += '</div>';
+    _inject('injected-onboarding', html);
   }
 
   // Backup: printer config reminder
@@ -557,6 +680,8 @@
       case 'materialrec': _injectMaterialRec(data); break;
       case 'plugins': _injectPlugins(data); break;
       case 'erroranalysis': _injectErrorAnalysis(data); break;
+      case 'wearprediction': _injectWearPrediction(data); break;
+      case 'playground': _injectOnboarding(data); break;
       case 'backup': _injectBackup(data); break;
     }
   };

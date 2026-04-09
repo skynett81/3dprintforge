@@ -55,6 +55,8 @@
 
       ${filColour ? `<div style="display:flex;gap:4px;margin-bottom:12px;align-items:center"><span style="font-size:0.75rem;color:var(--text-muted)">Colours:</span>${filColour.split(';').map(c => `<span style="width:16px;height:16px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.2);display:inline-block"></span>`).join('')}</div>` : ''}
 
+      ${_renderValidation(printerId, m)}
+
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="form-btn form-btn-sm" onclick="this.closest('.lib-dialog-overlay').remove()">Cancel</button>
         <button class="form-btn form-btn-sm" style="background:var(--accent-green);color:#fff;padding:6px 20px" onclick="this.closest('.lib-dialog-overlay').remove();(${_esc(onConfirm.toString())})()">🖨️ Start Print</button>
@@ -74,6 +76,58 @@
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function _renderValidation(printerId, m) {
+    const state = window.printerState;
+    const printerData = state?.printers?.[printerId] || {};
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(state?._printerMeta?.[printerId], printerData) : {};
+    const warnings = [];
+    const checks = [];
+
+    // Build volume check
+    const vol = printerData._buildVolume || printerData._printerProfile?.volume;
+    if (vol && m.dimensions) {
+      const w = vol.width || vol.x || 999, d = vol.depth || vol.y || 999, h = vol.height || vol.z || 999;
+      if (m.dimensions.x > w || m.dimensions.y > d || m.dimensions.z > h) {
+        warnings.push(`⚠ Model (${m.dimensions.x}×${m.dimensions.y}×${m.dimensions.z}mm) exceeds build volume (${w}×${d}×${h}mm)`);
+      } else {
+        checks.push(`✅ Fits within ${w}×${d}×${h}mm build volume`);
+      }
+    }
+
+    // Heated chamber check
+    if (m.filament_type && ['ABS', 'ASA', 'PA', 'PC'].includes(m.filament_type.toUpperCase())) {
+      if (pt.hasChamber) checks.push('✅ Heated chamber available for ' + m.filament_type);
+      else warnings.push(`⚠ ${m.filament_type} recommended with heated chamber — not available`);
+    }
+
+    // Nozzle check
+    if (m.nozzle_diameter && printerData._nozzle_diameter) {
+      if (Math.abs(m.nozzle_diameter - printerData._nozzle_diameter) > 0.01) {
+        warnings.push(`⚠ G-code sliced for ${m.nozzle_diameter}mm nozzle, printer has ${printerData._nozzle_diameter}mm`);
+      } else {
+        checks.push(`✅ Nozzle ${printerData._nozzle_diameter}mm matches`);
+      }
+    }
+
+    // Filament sensor
+    if (pt.hasFilamentSensor && printerData._filament_sensor && !printerData._filament_sensor.detected) {
+      warnings.push('⚠ Filament not detected — insert filament before printing');
+    }
+
+    // Printer state
+    if (printerData.gcode_state === 'RUNNING') {
+      warnings.push('⚠ Printer is currently printing — this will queue the job');
+    }
+
+    if (warnings.length === 0 && checks.length === 0) return '';
+
+    let html = '<div style="margin-bottom:12px">';
+    for (const w of warnings) html += `<div style="font-size:0.72rem;color:var(--accent-orange);margin-bottom:2px">${w}</div>`;
+    for (const c of checks) html += `<div style="font-size:0.72rem;color:var(--accent-green);margin-bottom:2px">${c}</div>`;
+    html += '</div>';
+    return html;
   }
 
   function _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }

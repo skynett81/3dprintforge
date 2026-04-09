@@ -276,10 +276,31 @@
     badge.innerHTML = html;
   }
 
-  // Override updateDashboardExtras to include AI badge
+  // ── Build Volume Validation Badge in model-meta-bar ──
+  function _updateBuildVolumeBadge(data) {
+    const metaBar = document.getElementById('model-meta-bar');
+    if (!metaBar || metaBar.style.display === 'none') return;
+
+    const vol = data._buildVolume || data._printerProfile?.volume;
+    if (!vol) return;
+    const w = vol.width || vol.x || 0, d = vol.depth || vol.y || 0, h = vol.height || vol.z || 0;
+    if (!w) return;
+
+    let badge = document.getElementById('build-vol-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'build-vol-badge';
+      badge.style.cssText = 'font-size:0.6rem;padding:2px 6px;border-radius:4px;background:var(--bg-tertiary);margin-left:6px';
+      metaBar.appendChild(badge);
+    }
+    badge.textContent = `📐 Build: ${w}×${d}×${h}mm`;
+  }
+
+  // Override updateDashboardExtras to include AI badge + build volume
   const _origUpdate = window.updateDashboardExtras;
   window.updateDashboardExtras = function(data) {
     _origUpdate(data);
     _updateAiDetectionBadge(data);
+    _updateBuildVolumeBadge(data);
   };
 })();
