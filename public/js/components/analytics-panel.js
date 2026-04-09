@@ -23,10 +23,10 @@
         fetch('/api/analytics/errors').then(r => r.json()),
       ]);
 
-      let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">';
+      let html = '<div class="analytics-layout" style="display:flex;flex-direction:column;gap:14px">';
 
       // ── Overview Cards ──
-      html += '<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">';
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
       html += _statCard('Requests Today', overview.today?.requests || 0, '📊');
       html += _statCard('Errors Today', overview.today?.errors || 0, '⚠️', overview.today?.errors > 0 ? 'var(--accent-red)' : '');
       html += _statCard('Bandwidth', _fmtBytes(overview.today?.bytes || 0), '📡');
@@ -36,13 +36,16 @@
       html += '</div>';
 
       // ── Requests per Hour Chart ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">Requests per Hour (7 days)</div>
-        <canvas id="analytics-hourly-chart" width="400" height="180" style="width:100%;height:180px"></canvas>
+        <canvas id="analytics-hourly-chart" width="400" height="160" style="width:100%;height:160px;display:block"></canvas>
       </div>`;
 
+      // ── Grid for details ──
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
+
       // ── Top Endpoints ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">Top Endpoints (24h)</div>
         <div style="max-height:250px;overflow-y:auto">
           ${topEndpoints.length ? topEndpoints.map((ep, i) => `
@@ -57,7 +60,7 @@
       </div>`;
 
       // ── Device/Browser Breakdown ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">Devices & Browsers</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
@@ -78,7 +81,7 @@
       </div>`;
 
       // ── Active Sessions ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">Active Sessions (last hour)</div>
         <div style="max-height:200px;overflow-y:auto">
           ${sessions.length ? sessions.map(s => `
@@ -93,7 +96,7 @@
 
       // ── Error Breakdown ──
       if (errors.length > 0) {
-        html += `<div class="settings-card">
+        html += `<div class="settings-card" style="overflow:hidden">
           <div class="card-title" style="color:var(--accent-red)">Error Endpoints (24h)</div>
           ${errors.map(e => `
             <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:0.68rem">
@@ -104,7 +107,7 @@
       }
 
       // ── WebSocket Stats ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">WebSocket & Camera</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.72rem">
           <div style="padding:6px;background:var(--bg-inset);border-radius:4px">WS Connections: <strong>${overview.websocket?.connections || 0}</strong></div>
@@ -122,7 +125,7 @@
       </div>`;
 
       // ── OS Breakdown ──
-      html += `<div class="settings-card">
+      html += `<div class="settings-card" style="overflow:hidden">
         <div class="card-title">Operating Systems</div>
         ${Object.entries(overview.os || {}).filter(([,v]) => v > 0).map(([name, count]) => `
           <div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:2px 0">
@@ -130,7 +133,8 @@
           </div>`).join('') || '<div class="text-muted" style="font-size:0.68rem">No data</div>'}
       </div>`;
 
-      html += '</div>';
+      html += '</div>'; // close detail grid
+      html += '</div>'; // close analytics-layout
       panel.innerHTML = html;
 
       // Draw hourly chart
