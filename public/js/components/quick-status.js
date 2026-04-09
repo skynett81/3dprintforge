@@ -197,14 +197,37 @@
       const fsColor = fsensor ? (fsensor.detected ? 'var(--accent-green)' : 'var(--accent-red)') : 'var(--text-muted)';
       const ercfStr = data._ercf ? `Gate ${data._ercf.gate ?? '?'} / T${data._ercf.tool ?? '?'}` : '';
 
+      // Camera state (all types)
+      const camState = data._camera_state || (data._brand_camera_confirmed ? { resolution: 'Active' } : null);
+      const camStr2 = camState ? (camState.recording ? '● REC' : camState.resolution || 'Active') : '';
+      const camColor2 = camState?.recording ? 'var(--accent-red)' : 'var(--accent-green)';
+      // System temps
+      const mcuTemp = data._system_temps?.mcu_temp?.temp;
+      const mcuStr = mcuTemp ? `${Math.round(mcuTemp)}°C` : '';
+      const mcuColor = mcuTemp > 70 ? 'var(--accent-red)' : mcuTemp > 55 ? 'var(--accent-orange)' : 'var(--accent-green)';
+      // Brand
+      const brand = data._detected_brand || (pt.isOctoPrint ? 'OctoPrint' : pt.isPrusaLink ? 'PrusaLink' : '');
+      // Power device
+      const hasPower = data._powerDevices?.length > 0 || data._pluginData?.psucontrol;
+      // Nozzle info for all
+      const nzType = data.nozzle_type || data._nozzle_type || '';
+      const nzDiam = data.nozzle_diameter || data._nozzle_diameter || '';
+      const nzStr2 = nzType || nzDiam ? `${nzType} ${nzDiam ? nzDiam + 'mm' : ''}`.trim() : '';
+
       container.innerHTML = `<div class="qs-grid${isFirstRender ? ' stagger-in' : ''}">
         ${item('nozzle', activeExt + ' Extruder', extTemp, extColor)}
         ${item('nozzle', 'Bed', bedTemp + bedTarget, bedColor)}
         ${item('speed', t('quick_status.speed'), speedPct, '')}
         ${item('light', 'Fan', fanPct, fanColor)}
+        ${nzStr2 ? item('nozzle', 'Nozzle', nzStr2, '') : ''}
         ${meshVar !== null ? item('guard', 'Bed Mesh', meshStr, meshColor) : ''}
         ${fsensor ? item('error', 'Filament', fsStr, fsColor) : ''}
         ${ercfStr ? item('nozzle', 'ERCF', ercfStr, 'var(--accent-cyan)') : ''}
+        ${data._mmu_enabled ? item('nozzle', 'MMU', `Slot ${data._active_slot ?? '?'}`, 'var(--accent-cyan)') : ''}
+        ${camStr2 ? item('guard', 'Camera', camStr2, camColor2) : ''}
+        ${mcuStr ? item('nozzle', 'MCU', mcuStr, mcuColor) : ''}
+        ${brand ? item('wifi', 'Brand', brand, '') : ''}
+        ${hasPower ? item('light', 'Power', 'Connected', 'var(--accent-green)') : ''}
         ${item('error', t('quick_status.error'), errStr, errColor, 'qs-error-value')}
         ${item('guard', t('protection.title'), guardStr, guardColor, 'qs-guard-value')}
       </div>`;

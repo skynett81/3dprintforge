@@ -11,10 +11,14 @@
   /**
    * Render all Klipper extra panels
    */
+  /**
+   * Render extras for ALL printer types (not just Klipper).
+   * Each section auto-detects from data — shows only if relevant.
+   */
   window.renderKlipperExtrasPanel = function(data) {
     let html = '';
 
-    // ── Power Device Control (smart plugs, GPIO, relays) ──
+    // ── Power Device Control (Klipper smart plugs + OctoPrint PSU) ──
     html += _renderPowerDevices(data);
 
     // ── ERCF / AFC MMU Visualization ──
@@ -139,9 +143,10 @@
     return html;
   }
 
-  // ── System Management ──
+  // ── System Management ── (works for ALL printer types)
   function _renderSystemPanel(data) {
-    if (!data._detected_brand && !data._pluginData) return '';
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(null, data) : {};
+    if (!pt.isMoonraker && !pt.isOctoPrint && !pt.isSacp && !pt.isPrusaLink) return '';
 
     let html = `<div class="ctrl-card">
       <div class="ctrl-card-title">
@@ -158,8 +163,20 @@
       html += `<button class="form-btn form-btn-sm form-btn-danger" style="font-size:0.65rem" data-ripple onclick="if(confirm('Shutdown printer OS?')) sendCommand('system_shutdown')">Shutdown</button>`;
     }
 
+    // SACP system
+    if (pt.isSacp) {
+      html += `<button class="form-btn form-btn-sm" style="font-size:0.65rem" data-ripple onclick="sendCommand('emergency_stop')">E-Stop</button>`;
+      html += `<button class="form-btn form-btn-sm form-btn-secondary" style="font-size:0.65rem" data-ripple onclick="sendCommand('home')">Home All</button>`;
+    }
+
+    // PrusaLink system
+    if (pt.isPrusaLink) {
+      html += `<button class="form-btn form-btn-sm" style="font-size:0.65rem" data-ripple onclick="sendCommand('emergency_stop')">E-Stop</button>`;
+      html += `<button class="form-btn form-btn-sm form-btn-secondary" style="font-size:0.65rem" data-ripple onclick="sendCommand('home')">Home</button>`;
+    }
+
     // OctoPrint system
-    if (data._installedPlugins) {
+    if (pt.isOctoPrint || data._installedPlugins) {
       html += `<button class="form-btn form-btn-sm" style="font-size:0.65rem" data-ripple onclick="sendCommand('system_restart')">Restart OctoPrint</button>`;
       html += `<button class="form-btn form-btn-sm form-btn-secondary" style="font-size:0.65rem" data-ripple onclick="if(confirm('Reboot host?')) sendCommand('system_reboot')">Reboot</button>`;
       html += `<button class="form-btn form-btn-sm form-btn-danger" style="font-size:0.65rem" data-ripple onclick="if(confirm('Shutdown host?')) sendCommand('system_shutdown')">Shutdown</button>`;
@@ -169,9 +186,10 @@
     return html;
   }
 
-  // ── Diagnostics ──
+  // ── Diagnostics ── (for ALL printer types)
   function _renderDiagnostics(data) {
-    if (!data._system_temps && !data._tmc && !data._mcu) return '';
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(null, data) : {};
+    if (!data._system_temps && !data._tmc && !data._mcu && !data._modules && !data._printerProfile && !data._upgrade) return '';
 
     let html = `<div class="ctrl-card">
       <div class="ctrl-card-title">
@@ -218,6 +236,34 @@
     if (data._qgl) {
       html += `<div style="padding:4px 8px;background:var(--bg-inset);border-radius:4px">
         <span class="text-muted">QGL:</span> ${data._qgl.applied ? '✅ Applied' : '⚠ Not applied'}
+      </div>`;
+    }
+
+    // OctoPrint: server info
+    if (data._printerProfile?.name) {
+      html += `<div style="grid-column:span 2;padding:4px 8px;background:var(--bg-inset);border-radius:4px">
+        <span class="text-muted">Profile:</span> ${data._printerProfile.name} ${data._printerProfile.model || ''}
+      </div>`;
+    }
+
+    // SACP: modules
+    if (data._modules?.length) {
+      html += `<div style="grid-column:span 2;padding:4px 8px;background:var(--bg-inset);border-radius:4px">
+        <span class="text-muted">Modules:</span> ${data._modules.map(m => m.name).join(', ')}
+      </div>`;
+    }
+
+    // Bambu: firmware upgrade
+    if (data._upgrade?.newVersion) {
+      html += `<div style="grid-column:span 2;padding:4px 8px;background:var(--bg-inset);border-radius:4px">
+        <span class="text-muted">Firmware:</span> <span style="color:var(--accent-cyan)">Update available: ${data._upgrade.newVersion}</span>
+      </div>`;
+    }
+
+    // Nozzle info (all types)
+    if (data._nozzle_type || data.nozzle_type) {
+      html += `<div style="padding:4px 8px;background:var(--bg-inset);border-radius:4px">
+        <span class="text-muted">Nozzle:</span> ${data._nozzle_type || data.nozzle_type} ${data._nozzle_diameter || data.nozzle_diameter ? (data._nozzle_diameter || data.nozzle_diameter) + 'mm' : ''}
       </div>`;
     }
 

@@ -673,9 +673,10 @@
       html += typeof renderBedMeshPanel === 'function' ? renderBedMeshPanel(data) : '';
     }
 
-    // ===== Klipper Extras (Power, ERCF/AFC, System, Diagnostics) =====
+    // ===== Extras for ALL printer types (Power, ERCF/AFC, System, Diagnostics) =====
     if (data._detected_brand || data._ercf || data._afc || data._system_temps || data._tmc || data._mcu ||
-        data._input_shaper || data._filament_sensor || data._nevermore || data._powerDevices || data._pluginData?.psucontrol) {
+        data._input_shaper || data._filament_sensor || data._nevermore || data._powerDevices || data._pluginData?.psucontrol ||
+        data._modules?.length || data._printerProfile || data._upgrade?.newVersion || data._mmu_enabled) {
       html += typeof renderKlipperExtrasPanel === 'function' ? renderKlipperExtrasPanel(data) : '';
     }
 
