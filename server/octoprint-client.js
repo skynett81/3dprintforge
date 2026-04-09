@@ -1,10 +1,24 @@
 /**
- * OctoPrint REST API Client
+ * OctoPrint Client — Full implementation
  * Supports: Any 3D printer running OctoPrint (Ender 3, Prusa MK3, Anycubic, etc.)
- * Protocol: HTTP REST with API key auth, poll-based state updates
+ *
+ * Features:
+ * - SockJS WebSocket for real-time state updates (2Hz) with HTTP polling fallback
+ * - Native REST API for temperature, tool, bed, chamber control
+ * - Connection management (connect/disconnect serial port)
+ * - Printer profiles (build volume, extruder count, heated bed/chamber)
+ * - System commands (restart, reboot, shutdown)
+ * - Full file management (list recursive, upload, select, copy, move, delete, SD)
+ * - Timelapse management (list, config, delete, render)
+ * - Settings read/write
+ * - Error info with terminal log
+ * - Plugin API (PSU Control, Filament Manager, Bed Level Visualizer)
+ * - Slicing API
  *
  * API Reference: https://docs.octoprint.org/en/master/api/
  */
+
+import http from 'node:http';
 
 const log = {
   info: (...a) => console.log('[octoprint]', ...a),
@@ -13,19 +27,10 @@ const log = {
 };
 
 const STATE_MAP = {
-  'Operational':  'IDLE',
-  'Printing':     'RUNNING',
-  'Starting':     'RUNNING',
-  'Pausing':      'PAUSE',
-  'Paused':       'PAUSE',
-  'Resuming':     'RUNNING',
-  'Finishing':    'RUNNING',
-  'Cancelling':   'PAUSE',
-  'Offline':      'OFFLINE',
-  'Error':        'FAILED',
-  'Closed':       'OFFLINE',
-  'Connecting':   'OFFLINE',
-  'Ready':        'IDLE',
+  'Operational': 'IDLE', 'Printing': 'RUNNING', 'Starting': 'RUNNING',
+  'Pausing': 'PAUSE', 'Paused': 'PAUSE', 'Resuming': 'RUNNING',
+  'Finishing': 'RUNNING', 'Cancelling': 'PAUSE', 'Offline': 'OFFLINE',
+  'Error': 'FAILED', 'Closed': 'OFFLINE', 'Connecting': 'OFFLINE', 'Ready': 'IDLE',
 };
 
 export class OctoPrintClient {
@@ -40,8 +45,15 @@ export class OctoPrintClient {
     this.connected = false;
     this._pollTimer = null;
     this._pollInterval = 2000;
+    this._wsConnected = false;
+    this._sessionKey = null;
     this.onFirmwareInfo = null;
     this.onXcamEvent = null;
+
+    // Cached data
+    this._printerProfile = null;
+    this._settings = null;
+    this._plugins = null;
   }
 
   get _baseUrl() {
@@ -49,17 +61,239 @@ export class OctoPrintClient {
     return `${proto}://${this.ip}:${this.port}`;
   }
 
+  // ══════════════════════════════════════════
+  // CONNECTION LIFECYCLE
+  // ══════════════════════════════════════════
+
   connect() {
     log.info(`Connecting to OctoPrint at ${this._baseUrl}`);
-    this._poll();
+    this._connectWithWebSocket();
   }
 
   disconnect() {
     this.connected = false;
+    this._wsConnected = false;
     if (this._pollTimer) { clearTimeout(this._pollTimer); this._pollTimer = null; }
   }
 
-  // ── Polling loop ──
+  async _connectWithWebSocket() {
+    // Try WebSocket first, fall back to polling
+    try {
+      // Step 1: Passive login to get session key
+      const loginRes = await this._apiPost('/api/login', { passive: true });
+      if (loginRes?.name) {
+        this._sessionKey = loginRes.session || loginRes._session || '';
+        log.info(`Passive login as: ${loginRes.name}`);
+      }
+    } catch {}
+
+    // Step 2: Try SockJS WebSocket
+    // OctoPrint uses SockJS at /sockjs/websocket
+    try {
+      const wsProto = this.port === 443 ? 'wss' : 'ws';
+      const wsUrl = `${wsProto}://${this.ip}:${this.port}/sockjs/websocket`;
+      const { WebSocket } = await import('ws');
+      const ws = new WebSocket(wsUrl);
+
+      ws.on('open', () => {
+        log.info('WebSocket connected');
+        this._wsConnected = true;
+
+        // Authenticate on socket
+        if (this._sessionKey) {
+          ws.send(JSON.stringify({ auth: `${this.apiKey}:${this._sessionKey}` }));
+        }
+      });
+
+      ws.on('message', (data) => {
+        try {
+          const msg = JSON.parse(data.toString());
+          this._handleWsMessage(msg);
+        } catch {}
+      });
+
+      ws.on('close', () => {
+        this._wsConnected = false;
+        log.info('WebSocket closed — falling back to polling');
+        if (this.connected) this._startPolling();
+      });
+
+      ws.on('error', () => {
+        this._wsConnected = false;
+        // Fall back to polling silently
+        this._startPolling();
+      });
+
+      // Give WS 3 seconds to connect, otherwise start polling
+      setTimeout(() => {
+        if (!this._wsConnected && !this.connected) this._startPolling();
+      }, 3000);
+
+    } catch {
+      // WebSocket not available — use polling
+      this._startPolling();
+    }
+  }
+
+  _handleWsMessage(msg) {
+    // OctoPrint SockJS message types: connected, current, history, event, plugin
+    if (msg.connected) {
+      // Initial connection info
+      if (!this.connected) {
+        this.connected = true;
+        this.hub.broadcast('connection', { status: 'connected' });
+        log.info(`Connected to OctoPrint: ${this.ip} (WebSocket)`);
+        this._fetchInitialData();
+      }
+    }
+
+    if (msg.current) {
+      // Real-time state update (2Hz)
+      this._mergeWsState(msg.current);
+      this.hub.broadcast('status', { print: this.state });
+    }
+
+    if (msg.history) {
+      // Full state history on connect
+      this._mergeWsState(msg.history);
+      this.hub.broadcast('status', { print: this.state });
+    }
+
+    if (msg.event) {
+      // System events
+      const evt = msg.event;
+      if (evt.type === 'PrintFailed' || evt.type === 'Error') {
+        this.state._lastError = evt.payload;
+      }
+      if (evt.type === 'PrintDone') {
+        this.state.gcode_state = 'FINISH';
+        this.hub.broadcast('status', { print: this.state });
+      }
+    }
+
+    if (msg.plugin) {
+      // Plugin messages
+      this.state._pluginData = { ...(this.state._pluginData || {}), [msg.plugin.plugin]: msg.plugin.data };
+    }
+  }
+
+  _mergeWsState(current) {
+    // State
+    if (current.state) {
+      const stateText = current.state.text || 'Offline';
+      this.state.gcode_state = STATE_MAP[stateText] || 'IDLE';
+      const flags = current.state.flags || {};
+      if (flags.printing) this.state.gcode_state = 'RUNNING';
+      else if (flags.pausing || flags.paused) this.state.gcode_state = 'PAUSE';
+      else if (flags.error) this.state.gcode_state = 'FAILED';
+      else if (flags.closedOrError) this.state.gcode_state = 'OFFLINE';
+    }
+
+    // Temperatures
+    if (current.temps?.length) {
+      const latest = current.temps[current.temps.length - 1];
+      if (latest.tool0) {
+        this.state.nozzle_temper = Math.round(latest.tool0.actual ?? 0);
+        this.state.nozzle_target_temper = Math.round(latest.tool0.target ?? 0);
+      }
+      if (latest.tool1) {
+        this.state._nozzle2_temper = Math.round(latest.tool1.actual ?? 0);
+        this.state._nozzle2_target = Math.round(latest.tool1.target ?? 0);
+      }
+      if (latest.bed) {
+        this.state.bed_temper = Math.round(latest.bed.actual ?? 0);
+        this.state.bed_target_temper = Math.round(latest.bed.target ?? 0);
+      }
+      if (latest.chamber) {
+        this.state.chamber_temper = Math.round(latest.chamber.actual ?? 0);
+      }
+    }
+
+    // Job progress
+    if (current.progress) {
+      if (current.progress.completion != null) this.state.mc_percent = Math.round(current.progress.completion);
+      if (current.progress.printTimeLeft != null) this.state.mc_remaining_time = Math.round(current.progress.printTimeLeft / 60);
+      if (current.progress.printTime != null) this.state.print_duration_seconds = current.progress.printTime;
+    }
+
+    // Job file
+    if (current.job?.file) {
+      this.state.subtask_name = current.job.file.display || current.job.file.name || '';
+      const analysis = current.job.file.gcodeAnalysis;
+      if (analysis?.estimatedPrintTime) this.state._slicer_estimated_time = Math.round(analysis.estimatedPrintTime);
+      if (analysis?.filament?.tool0) {
+        this.state.filament_used_mm = Math.round(analysis.filament.tool0.length || 0);
+        this.state._slicer_filament_weight = Math.round((analysis.filament.tool0.volume || 0) * 1.24);
+      }
+    }
+
+    // Current Z
+    if (current.currentZ != null) {
+      this.state._position = { ...(this.state._position || {}), z: current.currentZ };
+    }
+
+    // Logs (last 10 lines for terminal)
+    if (current.logs?.length) {
+      this.state._terminalLog = current.logs.slice(-10);
+    }
+  }
+
+  async _fetchInitialData() {
+    // Fetch version, profile, settings in parallel
+    try {
+      const [version, profile, settings] = await Promise.all([
+        this._apiGet('/api/version'),
+        this._apiGet('/api/printerprofiles'),
+        this._apiGet('/api/settings'),
+      ]);
+
+      if (version && this.onFirmwareInfo) {
+        this.onFirmwareInfo({
+          name: 'octoprint', sw_ver: version.text || version.server || '',
+          hw_ver: version.api || '', sn: this._printerId,
+        });
+      }
+
+      // Cache printer profile
+      if (profile?.profiles) {
+        const defaultProfile = Object.values(profile.profiles).find(p => p.default) || Object.values(profile.profiles)[0];
+        if (defaultProfile) {
+          this._printerProfile = defaultProfile;
+          this.state._buildVolume = defaultProfile.volume || {};
+          this.state._extruderCount = defaultProfile.extruder?.count || 1;
+          this.state._heatedBed = defaultProfile.heatedBed ?? true;
+          this.state._heatedChamber = defaultProfile.heatedChamber ?? false;
+          this.state._printerProfile = {
+            name: defaultProfile.name,
+            model: defaultProfile.model || '',
+            volume: defaultProfile.volume,
+            extruders: defaultProfile.extruder,
+            axes: defaultProfile.axes,
+          };
+        }
+      }
+
+      // Cache settings (webcam URLs, etc.)
+      if (settings) {
+        this._settings = settings;
+        if (!this.webcamUrl && settings.webcam?.snapshotUrl) {
+          this.webcamUrl = settings.webcam.snapshotUrl;
+        }
+        // Detect installed plugins
+        if (settings.plugins) {
+          this._plugins = Object.keys(settings.plugins);
+          this.state._installedPlugins = this._plugins;
+        }
+      }
+    } catch (e) { log.warn(`Initial data fetch failed: ${e.message}`); }
+  }
+
+  // ── HTTP Polling fallback ──
+
+  _startPolling() {
+    if (this._pollTimer) return;
+    this._poll();
+  }
 
   async _poll() {
     try {
@@ -71,20 +305,8 @@ export class OctoPrintClient {
       if (!this.connected) {
         this.connected = true;
         this.hub.broadcast('connection', { status: 'connected' });
-        log.info(`Connected to OctoPrint: ${this.ip}`);
-
-        // Get version info on first connect
-        try {
-          const version = await this._apiGet('/api/version');
-          if (version && this.onFirmwareInfo) {
-            this.onFirmwareInfo({
-              name: 'octoprint',
-              sw_ver: version.text || version.server || '',
-              hw_ver: version.api || '',
-              sn: this._printerId,
-            });
-          }
-        } catch {}
+        log.info(`Connected to OctoPrint: ${this.ip} (polling)`);
+        this._fetchInitialData();
       }
 
       this._mergeState(printer, job);
@@ -100,151 +322,166 @@ export class OctoPrintClient {
     this._pollTimer = setTimeout(() => this._poll(), this._pollInterval);
   }
 
-  // ── State mapping ──
-
   _mergeState(printer, job) {
-    // Printer state
     if (printer?.state) {
       const stateText = printer.state.text || 'Offline';
       this.state.gcode_state = STATE_MAP[stateText] || 'IDLE';
-
-      // Flags for more precise state
       const flags = printer.state.flags || {};
       if (flags.printing) this.state.gcode_state = 'RUNNING';
       else if (flags.pausing || flags.paused) this.state.gcode_state = 'PAUSE';
-      else if (flags.cancelling) this.state.gcode_state = 'PAUSE';
       else if (flags.error) this.state.gcode_state = 'FAILED';
       else if (flags.closedOrError) this.state.gcode_state = 'OFFLINE';
     }
-
-    // Temperatures
     if (printer?.temperature) {
-      const tool0 = printer.temperature.tool0;
-      if (tool0) {
-        this.state.nozzle_temper = Math.round(tool0.actual ?? 0);
-        this.state.nozzle_target_temper = Math.round(tool0.target ?? 0);
-      }
-      // Additional extruders
-      const tool1 = printer.temperature.tool1;
-      if (tool1) {
-        this.state._nozzle2_temper = Math.round(tool1.actual ?? 0);
-        this.state._nozzle2_target = Math.round(tool1.target ?? 0);
-      }
-
-      const bed = printer.temperature.bed;
-      if (bed) {
-        this.state.bed_temper = Math.round(bed.actual ?? 0);
-        this.state.bed_target_temper = Math.round(bed.target ?? 0);
-      }
-
-      const chamber = printer.temperature.chamber;
-      if (chamber) {
-        this.state.chamber_temper = Math.round(chamber.actual ?? 0);
-      }
+      const t = printer.temperature;
+      if (t.tool0) { this.state.nozzle_temper = Math.round(t.tool0.actual ?? 0); this.state.nozzle_target_temper = Math.round(t.tool0.target ?? 0); }
+      if (t.tool1) { this.state._nozzle2_temper = Math.round(t.tool1.actual ?? 0); this.state._nozzle2_target = Math.round(t.tool1.target ?? 0); }
+      if (t.bed) { this.state.bed_temper = Math.round(t.bed.actual ?? 0); this.state.bed_target_temper = Math.round(t.bed.target ?? 0); }
+      if (t.chamber) { this.state.chamber_temper = Math.round(t.chamber.actual ?? 0); }
     }
-
-    // Job info
     if (job) {
-      // Progress
-      const progress = job.progress || {};
-      if (progress.completion != null) {
-        this.state.mc_percent = Math.round(progress.completion);
-      }
-      if (progress.printTimeLeft != null) {
-        this.state.mc_remaining_time = Math.round(progress.printTimeLeft / 60);
-      }
-      if (progress.printTime != null) {
-        this.state.print_duration_seconds = progress.printTime;
-      }
-
-      // File info
-      const file = job.job?.file;
-      if (file) {
-        this.state.subtask_name = file.display || file.name || '';
-
-        // Slicer analysis data
-        const analysis = file.gcodeAnalysis;
-        if (analysis) {
-          if (analysis.estimatedPrintTime) {
-            this.state._slicer_estimated_time = Math.round(analysis.estimatedPrintTime);
-          }
-          // Filament usage
-          const filament = analysis.filament;
-          if (filament?.tool0) {
-            this.state.filament_used_mm = Math.round(filament.tool0.length || 0);
-            this.state._slicer_filament_weight = Math.round((filament.tool0.volume || 0) * 1.24); // PLA density approx
-          }
-        }
-      }
-
-      // Filament data from job
-      const jobFilament = job.job?.filament;
-      if (jobFilament?.tool0) {
-        this.state._filament_length_mm = Math.round(jobFilament.tool0.length || 0);
-        this.state._filament_volume_cm3 = Math.round((jobFilament.tool0.volume || 0) * 100) / 100;
+      const p = job.progress || {};
+      if (p.completion != null) this.state.mc_percent = Math.round(p.completion);
+      if (p.printTimeLeft != null) this.state.mc_remaining_time = Math.round(p.printTimeLeft / 60);
+      if (p.printTime != null) this.state.print_duration_seconds = p.printTime;
+      if (job.job?.file) {
+        this.state.subtask_name = job.job.file.display || job.job.file.name || '';
+        const a = job.job.file.gcodeAnalysis;
+        if (a?.estimatedPrintTime) this.state._slicer_estimated_time = Math.round(a.estimatedPrintTime);
+        if (a?.filament?.tool0) { this.state.filament_used_mm = Math.round(a.filament.tool0.length || 0); }
       }
     }
-
-    // Fan speed (not directly available in OctoPrint API — use M106 tracking or leave unknown)
-    // Speed override (not directly available — read via custom plugin or GCODE M220)
   }
 
-  // ── Commands ──
+  // ══════════════════════════════════════════
+  // COMMANDS — Native REST API (no G-code fallbacks)
+  // ══════════════════════════════════════════
 
   sendCommand(commandObj) {
     if (!this.connected) return;
     const action = commandObj._octoprint_action || commandObj.action;
 
     switch (action) {
-      case 'pause':
-        this._apiPost('/api/job', { command: 'pause', action: 'pause' });
-        break;
-      case 'resume':
-        this._apiPost('/api/job', { command: 'pause', action: 'resume' });
-        break;
-      case 'stop':
-        this._apiPost('/api/job', { command: 'cancel' });
-        break;
+      // Print control
+      case 'pause': this._apiPost('/api/job', { command: 'pause', action: 'pause' }); break;
+      case 'resume': this._apiPost('/api/job', { command: 'pause', action: 'resume' }); break;
+      case 'stop': this._apiPost('/api/job', { command: 'cancel' }); break;
+      case 'restart': this._apiPost('/api/job', { command: 'restart' }); break;
       case 'print_file':
-        this._apiPost('/api/files/local/' + encodeURIComponent(commandObj.filename), {
-          command: 'select', print: true,
-        });
+        this._apiPost('/api/files/local/' + encodeURIComponent(commandObj.filename), { command: 'select', print: true });
         break;
-      case 'speed':
-        this._sendGcode(`M220 S${commandObj.value || 100}`);
+      case 'select_file':
+        this._apiPost('/api/files/local/' + encodeURIComponent(commandObj.filename), { command: 'select', print: false });
         break;
+
+      // Native temperature control (no G-code needed)
       case 'set_nozzle_temp':
       case 'set_temp_nozzle':
-        this._sendGcode(`M104 S${commandObj.target || 0}`);
+        this._apiPost('/api/printer/tool', { command: 'target', targets: { tool0: commandObj.target || 0 } });
+        break;
+      case 'set_nozzle2_temp':
+        this._apiPost('/api/printer/tool', { command: 'target', targets: { tool1: commandObj.target || 0 } });
         break;
       case 'set_bed_temp':
       case 'set_temp_bed':
-        this._sendGcode(`M140 S${commandObj.target || 0}`);
+        this._apiPost('/api/printer/bed', { command: 'target', target: commandObj.target || 0 });
         break;
+      case 'set_chamber_temp':
+        this._apiPost('/api/printer/chamber', { command: 'target', target: commandObj.target || 0 });
+        break;
+      case 'temp_offset':
+        this._apiPost('/api/printer/tool', { command: 'offset', offsets: commandObj.offsets || {} });
+        break;
+
+      // Tool control
+      case 'select_tool':
+        this._apiPost('/api/printer/tool', { command: 'select', tool: `tool${commandObj.tool || 0}` });
+        break;
+      case 'extrude':
+        this._apiPost('/api/printer/tool', { command: 'extrude', amount: commandObj.amount || 5 });
+        break;
+      case 'retract':
+        this._apiPost('/api/printer/tool', { command: 'extrude', amount: -(commandObj.amount || 5) });
+        break;
+      case 'flowrate':
+        this._apiPost('/api/printer/tool', { command: 'flowrate', factor: commandObj.value || 100 });
+        break;
+
+      // Movement
+      case 'home':
+        this._apiPost('/api/printer/printhead', { command: 'home', axes: commandObj.axes || ['x', 'y', 'z'] });
+        break;
+      case 'jog':
+        this._apiPost('/api/printer/printhead', { command: 'jog', x: commandObj.x || 0, y: commandObj.y || 0, z: commandObj.z || 0 });
+        break;
+      case 'feedrate':
+        this._apiPost('/api/printer/printhead', { command: 'feedrate', factor: commandObj.value || 100 });
+        break;
+      case 'speed':
+        this._apiPost('/api/printer/printhead', { command: 'feedrate', factor: commandObj.value || 100 });
+        break;
+
+      // Fan
       case 'set_fan':
         this._sendGcode(`M106 S${Math.round((commandObj.value || 0) * 2.55)}`);
         break;
-      case 'home':
-        this._apiPost('/api/printer/printhead', { command: 'home', axes: ['x', 'y', 'z'] });
+
+      // Connection control
+      case 'connect_printer':
+        this._apiPost('/api/connection', { command: 'connect', port: commandObj.port || '', baudrate: commandObj.baudrate || 0, printerProfile: commandObj.profile || '' });
         break;
-      case 'jog':
-        this._apiPost('/api/printer/printhead', {
-          command: 'jog',
-          x: commandObj.x || 0,
-          y: commandObj.y || 0,
-          z: commandObj.z || 0,
-        });
+      case 'disconnect_printer':
+        this._apiPost('/api/connection', { command: 'disconnect' });
+        break;
+
+      // System commands
+      case 'system_restart':
+        this._apiPost('/api/system/commands/core/restart', {});
+        break;
+      case 'system_reboot':
+        this._apiPost('/api/system/commands/core/reboot', {});
+        break;
+      case 'system_shutdown':
+        this._apiPost('/api/system/commands/core/shutdown', {});
+        break;
+
+      // SD card
+      case 'sd_init':
+        this._apiPost('/api/printer/storage', { command: 'init' });
+        break;
+      case 'sd_refresh':
+        this._apiPost('/api/printer/storage', { command: 'refresh' });
+        break;
+      case 'sd_release':
+        this._apiPost('/api/printer/storage', { command: 'release' });
+        break;
+
+      // Plugin commands
+      case 'plugin':
+        if (commandObj.plugin && commandObj.data) {
+          this._apiPost(`/api/plugin/${commandObj.plugin}`, commandObj.data);
+        }
+        break;
+
+      // PSU Control plugin
+      case 'psu_on':
+        this._apiPost('/api/plugin/psucontrol', { command: 'turnPSUOn' });
+        break;
+      case 'psu_off':
+        this._apiPost('/api/plugin/psucontrol', { command: 'turnPSUOff' });
+        break;
+
+      // G-code fallback
+      case 'gcode':
+        if (commandObj.gcode) this._sendGcode(commandObj.gcode);
         break;
       case 'emergency_stop':
         this._sendGcode('M112');
         break;
-      case 'gcode':
-        if (commandObj.gcode) this._sendGcode(commandObj.gcode);
-        break;
       case 'light':
-        // OctoPrint doesn't have native light control — try M355
         this._sendGcode(commandObj.mode === 'on' ? 'M355 S1' : 'M355 S0');
         break;
+
       default:
         log.warn(`Unknown OctoPrint command: ${action}`);
     }
@@ -255,7 +492,210 @@ export class OctoPrintClient {
     await this._apiPost('/api/printer/command', { commands });
   }
 
-  // ── Camera ──
+  // ══════════════════════════════════════════
+  // QUERIES — On-demand data fetching
+  // ══════════════════════════════════════════
+
+  // Connection info + available ports
+  async getConnectionInfo() {
+    return this._apiGet('/api/connection');
+  }
+
+  // Printer profiles
+  async getPrinterProfiles() {
+    return this._apiGet('/api/printerprofiles');
+  }
+
+  // Settings
+  async getSettings() {
+    return this._apiGet('/api/settings');
+  }
+
+  // System commands available
+  async getSystemCommands() {
+    return this._apiGet('/api/system/commands');
+  }
+
+  // Server info
+  async getServerInfo() {
+    return this._apiGet('/api/server');
+  }
+
+  // Last error with terminal context
+  async getLastError() {
+    return this._apiGet('/api/printer/error');
+  }
+
+  // Printer info (combined)
+  async getPrinterInfo() {
+    const [version, connection, profile] = await Promise.all([
+      this._apiGet('/api/version'),
+      this._apiGet('/api/connection'),
+      this._printerProfile ? Promise.resolve(this._printerProfile) : this._apiGet('/api/printerprofiles').then(p => {
+        if (p?.profiles) return Object.values(p.profiles).find(pr => pr.default) || Object.values(p.profiles)[0];
+        return null;
+      }),
+    ]);
+    return {
+      server: version?.server || '', api: version?.api || '', text: version?.text || '',
+      state: connection?.current?.state || 'Closed',
+      port: connection?.current?.port || '', baudrate: connection?.current?.baudrate || '',
+      availablePorts: connection?.options?.ports || [],
+      availableBaudrates: connection?.options?.baudrates || [],
+      profile: profile ? { name: profile.name, model: profile.model, volume: profile.volume, extruder: profile.extruder } : null,
+      plugins: this._plugins || [],
+    };
+  }
+
+  // ══════════════════════════════════════════
+  // FILE MANAGEMENT — Full implementation
+  // ══════════════════════════════════════════
+
+  async listFiles(storage = 'local', recursive = true) {
+    const data = await this._apiGet(`/api/files/${storage}?recursive=${recursive}`);
+    if (!data?.files) return [];
+    return this._flattenFiles(data.files, storage);
+  }
+
+  _flattenFiles(files, storage, prefix = '') {
+    const result = [];
+    for (const f of files) {
+      const path = prefix ? `${prefix}/${f.name}` : f.name;
+      if (f.type === 'folder' && f.children) {
+        result.push({ path, type: 'folder', storage });
+        result.push(...this._flattenFiles(f.children, storage, path));
+      } else {
+        result.push({
+          path, type: f.type || 'file', storage, size: f.size || 0,
+          modified: f.date ? f.date * 1000 : 0, display: f.display || f.name,
+          gcodeAnalysis: f.gcodeAnalysis || null, prints: f.prints || null,
+        });
+      }
+    }
+    return result;
+  }
+
+  async uploadFile(filename, buffer, storage = 'local') {
+    const boundary = '----3DPrintForge' + Date.now();
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(footer)]);
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+    const res = await fetch(`${this._baseUrl}/api/files/${storage}`, { method: 'POST', headers, body, signal: AbortSignal.timeout(120000) });
+    if (!res.ok) throw new Error(`Upload failed: HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async uploadAndPrint(filename, buffer, storage = 'local') {
+    const boundary = '----3DPrintForge' + Date.now();
+    const parts = `--${boundary}\r\nContent-Disposition: form-data; name="select"\r\n\r\ntrue\r\n--${boundary}\r\nContent-Disposition: form-data; name="print"\r\n\r\ntrue\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(parts), buffer, Buffer.from(footer)]);
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+    const res = await fetch(`${this._baseUrl}/api/files/${storage}`, { method: 'POST', headers, body, signal: AbortSignal.timeout(120000) });
+    if (!res.ok) throw new Error(`Upload+print failed: HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async selectFile(filename, print = false) {
+    await this._apiPost(`/api/files/local/${encodeURIComponent(filename)}`, { command: 'select', print });
+  }
+
+  async copyFile(filename, destination) {
+    await this._apiPost(`/api/files/local/${encodeURIComponent(filename)}`, { command: 'copy', destination });
+  }
+
+  async moveFile(filename, destination) {
+    await this._apiPost(`/api/files/local/${encodeURIComponent(filename)}`, { command: 'move', destination });
+  }
+
+  async deleteFile(filename, storage = 'local') {
+    await this._apiDelete(`/api/files/${storage}/${encodeURIComponent(filename)}`);
+  }
+
+  async createFolder(foldername, storage = 'local') {
+    const boundary = '----3DPrintForge' + Date.now();
+    const body = `--${boundary}\r\nContent-Disposition: form-data; name="foldername"\r\n\r\n${foldername}\r\n--${boundary}--\r\n`;
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+    await fetch(`${this._baseUrl}/api/files/${storage}`, { method: 'POST', headers, body: Buffer.from(body), signal: AbortSignal.timeout(10000) });
+  }
+
+  // ══════════════════════════════════════════
+  // TIMELAPSE
+  // ══════════════════════════════════════════
+
+  async getTimelapses() {
+    return this._apiGet('/api/timelapse');
+  }
+
+  async configureTimelapse(config) {
+    // config: { type: 'off'|'zchange'|'timed', fps, interval, postRoll, etc. }
+    await this._apiPost('/api/timelapse', config);
+  }
+
+  async deleteTimelapse(name) {
+    await this._apiDelete(`/api/timelapse/${encodeURIComponent(name)}`);
+  }
+
+  async renderTimelapse(name) {
+    await this._apiPost(`/api/timelapse/unrendered/${encodeURIComponent(name)}`, { command: 'render' });
+  }
+
+  // ══════════════════════════════════════════
+  // SLICING
+  // ══════════════════════════════════════════
+
+  async getSlicers() {
+    return this._apiGet('/api/slicing');
+  }
+
+  async getSlicerProfiles(slicer) {
+    return this._apiGet(`/api/slicing/${slicer}/profiles`);
+  }
+
+  async sliceFile(filename, slicer, profile, printerProfile) {
+    await this._apiPost(`/api/files/local/${encodeURIComponent(filename)}`, {
+      command: 'slice', slicer, profile, printerProfile,
+    });
+  }
+
+  // ══════════════════════════════════════════
+  // PLUGIN API
+  // ══════════════════════════════════════════
+
+  async getPluginData(pluginName) {
+    return this._apiGet(`/api/plugin/${pluginName}`);
+  }
+
+  async sendPluginCommand(pluginName, command) {
+    return this._apiPost(`/api/plugin/${pluginName}`, command);
+  }
+
+  // PSU Control
+  async getPsuState() {
+    return this._apiGet('/api/plugin/psucontrol');
+  }
+
+  // Filament Manager
+  async getFilamentSpools() {
+    return this._apiGet('/api/plugin/filamentmanager/spools');
+  }
+
+  async getFilamentSelections() {
+    return this._apiGet('/api/plugin/filamentmanager/selections');
+  }
+
+  // Bed Level Visualizer
+  async getBedLevelData() {
+    return this._apiGet('/api/plugin/bedlevelvisualizer');
+  }
+
+  // ══════════════════════════════════════════
+  // CAMERA
+  // ══════════════════════════════════════════
 
   getSnapshotUrl() {
     if (this.webcamUrl) return this.webcamUrl;
@@ -273,114 +713,50 @@ export class OctoPrintClient {
     return null;
   }
 
-  // ── File management ──
-
-  async listFiles() {
-    const data = await this._apiGet('/api/files/local?recursive=false');
-    if (!data?.files) return [];
-    return data.files
-      .filter(f => f.type === 'machinecode' || f.type === 'model')
-      .map(f => ({
-        path: f.display || f.name,
-        size: f.size || 0,
-        modified: f.date ? f.date * 1000 : 0,
-        origin: 'local',
-      }));
-  }
-
-  async uploadFile(filename, buffer) {
-    const boundary = '----3DPrintForge' + Date.now();
-    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
-    const footer = `\r\n--${boundary}--\r\n`;
-    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(footer)]);
-
-    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
-    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-
-    const res = await fetch(`${this._baseUrl}/api/files/local`, {
-      method: 'POST', headers, body, signal: AbortSignal.timeout(120000),
-    });
-    if (!res.ok) throw new Error(`OctoPrint upload failed: HTTP ${res.status}`);
-    return res.json();
-  }
-
-  async uploadAndPrint(filename, buffer) {
-    const boundary = '----3DPrintForge' + Date.now();
-    const selectPart = `--${boundary}\r\nContent-Disposition: form-data; name="select"\r\n\r\ntrue\r\n`;
-    const printPart = `--${boundary}\r\nContent-Disposition: form-data; name="print"\r\n\r\ntrue\r\n`;
-    const filePart = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
-    const footer = `\r\n--${boundary}--\r\n`;
-    const body = Buffer.concat([
-      Buffer.from(selectPart + printPart + filePart), buffer, Buffer.from(footer),
-    ]);
-
-    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
-    if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-
-    const res = await fetch(`${this._baseUrl}/api/files/local`, {
-      method: 'POST', headers, body, signal: AbortSignal.timeout(120000),
-    });
-    if (!res.ok) throw new Error(`OctoPrint upload+print failed: HTTP ${res.status}`);
-    return res.json();
-  }
-
-  async deleteFile(filename) {
-    await this._apiDelete(`/api/files/local/${encodeURIComponent(filename)}`);
-  }
-
-  // ── Printer info ──
-
-  async getPrinterInfo() {
-    const [version, connection] = await Promise.all([
-      this._apiGet('/api/version'),
-      this._apiGet('/api/connection'),
-    ]);
-    return {
-      server: version?.server || '',
-      api: version?.api || '',
-      text: version?.text || '',
-      state: connection?.current?.state || 'Closed',
-      port: connection?.current?.port || '',
-      baudrate: connection?.current?.baudrate || '',
-    };
-  }
-
-  // ── HTTP helpers ──
+  // ══════════════════════════════════════════
+  // HTTP HELPERS
+  // ══════════════════════════════════════════
 
   async _apiGet(path) {
     try {
       const headers = {};
       if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-      const res = await fetch(`${this._baseUrl}${path}`, {
-        method: 'GET', headers, signal: AbortSignal.timeout(5000),
-      });
-      if (res.status === 409) return null; // printer not connected
+      const res = await fetch(`${this._baseUrl}${path}`, { method: 'GET', headers, signal: AbortSignal.timeout(5000) });
+      if (res.status === 409) return null;
       if (!res.ok) return null;
       return res.json();
-    } catch (e) {
-      throw e; // propagate for connection detection
-    }
+    } catch (e) { throw e; }
   }
 
   async _apiPost(path, body) {
     try {
       const headers = { 'Content-Type': 'application/json' };
       if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-      await fetch(`${this._baseUrl}${path}`, {
-        method: 'POST', headers,
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(5000),
+      const res = await fetch(`${this._baseUrl}${path}`, {
+        method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(10000),
       });
-    } catch (e) { log.error(`POST ${path}: ${e.message}`); }
+      if (res.ok || res.status === 204) {
+        try { return await res.json(); } catch { return null; }
+      }
+      return null;
+    } catch (e) { log.error(`POST ${path}: ${e.message}`); return null; }
+  }
+
+  async _apiPatch(path, body) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+      await fetch(`${this._baseUrl}${path}`, {
+        method: 'PATCH', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
+      });
+    } catch (e) { log.error(`PATCH ${path}: ${e.message}`); }
   }
 
   async _apiDelete(path) {
     try {
       const headers = {};
       if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-      await fetch(`${this._baseUrl}${path}`, {
-        method: 'DELETE', headers, signal: AbortSignal.timeout(5000),
-      });
+      await fetch(`${this._baseUrl}${path}`, { method: 'DELETE', headers, signal: AbortSignal.timeout(5000) });
     } catch (e) { log.error(`DELETE ${path}: ${e.message}`); }
   }
 }

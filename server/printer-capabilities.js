@@ -115,7 +115,7 @@ const CAPABILITIES = {
 
   octoprint: {
     label: 'OctoPrint',
-    connection: 'http-poll',
+    connection: 'websocket-sockjs',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/api/files/local', metadataEndpoint: '/api/files' },
     camera: { modes: ['http-snapshot'], snapshotEndpoint: '/webcam/?action=snapshot' },
@@ -124,9 +124,17 @@ const CAPABILITIES = {
     features: {
       ams: false, xcam: false, firmwareDetection: false,
       ssdpDiscovery: false, cloudTasks: false, historySync: false,
-      multiExtruder: true,
+      multiExtruder: true, websocket: true, printerProfiles: true,
+      systemCommands: true, timelapse: true, slicing: true,
+      connectionControl: true, sdCard: true, pluginApi: true,
+      nativeTemp: true, toolControl: true, bedControl: true,
     },
     auth: { required: ['ip', 'accessCode'], methods: ['api-key'] },
+    plugins: {
+      psuControl: { endpoint: '/api/plugin/psucontrol' },
+      filamentManager: { endpoint: '/api/plugin/filamentmanager' },
+      bedLevelVisualizer: { endpoint: '/api/plugin/bedlevelvisualizer' },
+    },
   },
 };
 
