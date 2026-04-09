@@ -171,6 +171,8 @@ export class MoonrakerClient {
       'park_detector t1': null,
       'park_detector t2': null,
       'park_detector t3': null,
+      'adc_current_sensor heater_bed': null,
+      'adc_current_sensor extruder': null,
       'flow_calibrator': null,
     };
 
@@ -648,6 +650,26 @@ export class MoonrakerClient {
     }
     if (Object.keys(parkState).length > 0) {
       this.state._sm_park = parkState;
+    }
+
+    // ADC current sensors — motor/heater current monitoring
+    const currentSensors = {};
+    for (const key of ['heater_bed', 'extruder']) {
+      const cs = status[`adc_current_sensor ${key}`];
+      if (cs) {
+        currentSensors[key] = {
+          current: Math.round((cs.current || 0) * 100) / 100,
+          power: Math.round((cs.power || 0) * 10) / 10,
+        };
+      }
+    }
+    if (Object.keys(currentSensors).length > 0) {
+      this.state._sm_current = currentSensors;
+    }
+
+    // Voltage type from power_loss_check (110V vs 220V)
+    if (this.state._sm_power?.voltageType !== undefined) {
+      this.state._sm_inputVoltage = this.state._sm_power.voltageType === 1 ? '220V' : '110V';
     }
   }
 

@@ -5657,6 +5657,84 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, { ok: true, action: 'resume_after_power_loss' });
       }
 
+      // G-code reference for Snapmaker-specific commands
+      if (method === 'GET' && smPath === 'gcode-reference') {
+        try {
+          const ref = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-gcode-reference.json'), 'utf8'));
+          const model = url.searchParams.get('model') || '';
+          if (model) {
+            // Filter commands for this model
+            const filtered = {};
+            for (const [cmd, data] of Object.entries(ref.commands)) {
+              if (data.machines.includes('all') || data.machines.some(m => model.includes(m))) {
+                filtered[cmd] = data;
+              }
+            }
+            return sendJson(res, { commands: filtered, model });
+          }
+          return sendJson(res, ref);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      // Firmware version check from Snapmaker version-center
+      if (method === 'GET' && smPath === 'firmware-check') {
+        const modelMap = {
+          'Snapmaker J1': 'j1', 'Snapmaker J1s': 'j1',
+          'Snapmaker Artisan': 'a400',
+          'Snapmaker 2.0 A150': 'fabscreen', 'Snapmaker 2.0 A250': 'fabscreen', 'Snapmaker 2.0 A350': 'fabscreen',
+        };
+        const model = entry.model || smState._machineModel || '';
+        const fwKey = modelMap[model] || Object.entries(modelMap).find(([k]) => model.includes(k))?.[1];
+        if (!fwKey) return sendJson(res, { error: 'Unknown model for firmware check', model });
+        try {
+          const fwRes = await fetch(`https://raw.githubusercontent.com/Snapmaker/snapmaker-version-center/main/upgrade/firmware/${fwKey}/version.json`, {
+            signal: AbortSignal.timeout(10000),
+          });
+          if (fwRes.ok) {
+            const data = await fwRes.json();
+            const latest = data.data?.new_version;
+            return sendJson(res, {
+              model,
+              currentFirmware: smState._firmware || entry.firmwareVersion || '',
+              latestVersion: latest?.version || '',
+              downloadUrl: latest?.url || '',
+              changeLog: latest?.change_log || {},
+              summary: latest?.summary || [],
+              packageSize: latest?.package_size || 0,
+            });
+          }
+        } catch {}
+        return sendJson(res, { error: 'Firmware check failed' }, 503);
+      }
+
+      // Cloud file sync — pull file from Snapmaker Cloud to printer
+      if (method === 'POST' && smPath === 'cloud/pull') {
+        if (!entry.live) return sendJson(res, { error: 'Printer offline' }, 503);
+        return readBody(req, res, async (body) => {
+          try {
+            const pullRes = await fetch(`http://${entry.ip}:${entry.port || 80}/server/files/pull`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: body.url, filename: body.filename }),
+              signal: AbortSignal.timeout(30000),
+            });
+            if (pullRes.ok) return sendJson(res, await pullRes.json());
+            return sendJson(res, { error: `Pull failed: ${pullRes.status}` }, pullRes.status);
+          } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        });
+      }
+
+      // Cloud file status
+      if (method === 'GET' && smPath === 'cloud/status') {
+        try {
+          const statusRes = await fetch(`http://${entry.ip}:${entry.port || 80}/server/files/get_status`, {
+            method: 'POST', signal: AbortSignal.timeout(5000),
+          });
+          if (statusRes.ok) return sendJson(res, await statusRes.json());
+        } catch {}
+        return sendJson(res, { error: 'Cloud status unavailable' }, 503);
+      }
+
       // Storage space
       if (method === 'GET' && smPath === 'storage') {
         try {

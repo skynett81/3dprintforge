@@ -167,10 +167,16 @@
           <div style="height:100%;width:${pct}%;background:${needsReplace ? 'var(--accent-red)' : pct > 70 ? 'var(--accent-orange)' : 'var(--accent-green)'};border-radius:2px"></div>
         </div>
         ${needsReplace ? '<div style="font-size:0.7rem;color:var(--accent-red);margin-top:4px;font-weight:600">⚠ Filter replacement recommended</div>' : ''}
-        <div style="display:flex;gap:4px;margin-top:6px">
-          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=1.0'})">Full Speed</button>
-          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0.5'})">50%</button>
-          <button class="form-btn form-btn-sm" style="font-size:0.7rem" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0'})">Off</button>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px">
+          <button class="form-btn form-btn-sm ${pur.fan_speed === 0 ? 'form-btn-secondary' : ''}" style="font-size:0.65rem;padding:4px" data-ripple onclick="sendCommand('gcode',{gcode:'SET_PURIFIER OFF'})">Off</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:4px" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0.3'})">Low</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:4px" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=0.6'})">Med</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:4px" data-ripple onclick="sendCommand('gcode',{gcode:'SET_FAN_SPEED FAN=purifier SPEED=1.0'})">Max</button>
+        </div>
+        <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;display:flex;gap:8px">
+          <span>Hours left: ~${Math.max(0, Math.round(filterLife - workHours))}h</span>
+          ${data._sm_inputVoltage ? `<span>Input: ${data._sm_inputVoltage}</span>` : ''}
+          ${data._sm_current?.heater_bed ? `<span>Bed: ${data._sm_current.heater_bed.current}A</span>` : ''}
         </div>
       </div>`;
     }
