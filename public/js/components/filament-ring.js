@@ -409,12 +409,14 @@
       _renderKlipperExtruders(container, data);
       return;
     }
-    if ((!ams || !ams.ams || !ams.ams.length) && data.nozzle_temper !== undefined && !data.ams) {
+    if ((!ams || !ams.ams || !ams.ams.length) && data.nozzle_temper !== undefined) {
+      // Moonraker, OctoPrint, PrusaLink — show extruder info
       _renderKlipperExtruders(container, data);
       return;
     }
     if (!ams || !ams.ams || !ams.ams.length) {
-      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.no_ams_data') : 'No AMS data') + '</div>';
+      // No data at all
+      container.innerHTML = '<div class="card-title">Filament</div><div class="countdown-idle">' + (typeof t === 'function' ? t('filament_ring.waiting') : 'Waiting for printer...') + '</div>';
       return;
     }
 

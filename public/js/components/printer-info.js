@@ -7,12 +7,13 @@
     const state = data;
     const info = state._info || {};
 
-    const timelapse = state.ipcam?.timelapse === 'enable';
+    const pt = typeof getPrinterType === 'function' ? getPrinterType(meta, state) : {};
+    const timelapse = state.ipcam?.timelapse === 'enable' || state._sm_timelapse?.active;
     const firstLayer = state.xcam?.first_layer_inspector;
-    const spaghetti = state.xcam?.spaghetti_detector;
-    const firmware = info.module?.find(m => m.name === 'ota')?.sw_ver || state.upgrade_state?.ota_new_version_number || '';
-    const nozzleType = state.nozzle_type || '';
-    const nozzleDiameter = state.nozzle_diameter ? `${state.nozzle_diameter}mm` : '';
+    const spaghetti = state.xcam?.spaghetti_detector || state._sm_defect?.enabled;
+    const firmware = info.module?.find(m => m.name === 'ota')?.sw_ver || state.upgrade_state?.ota_new_version_number || state._mcu?.mcuVersion || '';
+    const nozzleType = state.nozzle_type || state._nozzle_type || '';
+    const nozzleDiameter = state.nozzle_diameter || state._nozzle_diameter ? `${state.nozzle_diameter || state._nozzle_diameter}mm` : '';
     const hasAms = !!(state.ams?.ams?.length > 0);
 
     let html = '<div class="info-grid">';
@@ -62,10 +63,14 @@
         </div>`;
     }
 
+    // Filament system (type-aware)
+    const filamentLabel = pt.hasAms ? 'AMS' : pt.hasErcf ? 'ERCF' : pt.hasAfc ? 'AFC' : pt.hasMmu ? 'MMU' : pt.hasMultiExtruder ? 'Multi-Extruder' : 'Filament';
+    const filamentConnected = pt.hasAms || pt.hasErcf || pt.hasAfc || pt.hasMmu || pt.hasMultiExtruder;
+
     html += `
       <div class="info-item">
-        <span class="info-label">${t('printer_info.ams_label')}</span>
-        <span class="info-value ${hasAms ? 'text-green' : 'text-muted'}">${hasAms ? t('printer_info.connected') : t('printer_info.not_connected')}</span>
+        <span class="info-label">${filamentLabel}</span>
+        <span class="info-value ${filamentConnected ? 'text-green' : 'text-muted'}">${filamentConnected ? t('printer_info.connected') : t('printer_info.not_connected')}</span>
       </div>
       <div class="info-item">
         ${(() => {
