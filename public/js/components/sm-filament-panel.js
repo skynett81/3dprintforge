@@ -30,7 +30,10 @@
 
         html += `<div style="background:var(--bg-tertiary);border-radius:8px;padding:8px;position:relative;border-left:4px solid ${f.color || '#888'}">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
-            <span style="width:12px;height:12px;border-radius:50%;background:${f.color};border:1px solid rgba(255,255,255,0.2);flex-shrink:0"></span>
+            ${f.colors && f.colors.length > 1
+              ? `<div style="display:flex;gap:1px;flex-shrink:0">${f.colors.map(c => `<span style="width:${Math.max(4, 12/f.colors.length)}px;height:12px;background:${c};border:1px solid rgba(255,255,255,0.2)"></span>`).join('')}</div>`
+              : `<span style="width:12px;height:12px;border-radius:50%;background:${f.color};border:1px solid rgba(255,255,255,0.2);flex-shrink:0"></span>`
+            }
             <span style="font-size:0.82rem;font-weight:600">T${i}</span>
             ${f.official ? '<span style="font-size:0.55rem;padding:0 4px;border-radius:6px;background:var(--accent-green);color:#fff">NFC</span>' : ''}
           </div>

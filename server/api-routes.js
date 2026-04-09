@@ -5657,6 +5657,23 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, { ok: true, action: 'resume_after_power_loss' });
       }
 
+      // Storage space
+      if (method === 'GET' && smPath === 'storage') {
+        try {
+          const storageRes = await fetch(`http://${entry.ip}:${entry.port || 80}/server/files/get_userdata_space`, { method: 'POST', signal: AbortSignal.timeout(5000) });
+          if (storageRes.ok) {
+            const data = await storageRes.json();
+            return sendJson(res, data.result || data);
+          }
+        } catch {}
+        return sendJson(res, { error: 'Storage info unavailable' }, 503);
+      }
+
+      // Park detector
+      if (method === 'GET' && smPath === 'park') {
+        return sendJson(res, smState._sm_park || {});
+      }
+
       // Extruder offset calibration
       if (method === 'POST' && smPath === 'calibrate/extruder-offset') {
         if (!entry.live) return sendJson(res, { error: 'Printer offline' }, 503);

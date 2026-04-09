@@ -73,7 +73,7 @@ describe('Snapmaker API logic', () => {
 
     it('feed state labels are user-friendly', () => {
       assert.equal(mapFeedState('load_finish').label, 'Loaded');
-      assert.equal(mapFeedState('loading').label, 'Loading filament');
+      assert.equal(mapFeedState('loading').label, 'Feeding filament');
       assert.equal(mapFeedState('error').label, 'Feed Error');
     });
   });

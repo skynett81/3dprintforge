@@ -1,19 +1,32 @@
 /**
- * Snapmaker SACP Connector
- * Full-featured connector for Snapmaker machines using SACP protocol:
- * - J1, J1s (IDEX, TCP port 8888)
- * - Artisan (TCP port 8888)
- * - A150, A250, A350 (TCP port 8888)
+ * Snapmaker SACP Connector — Full implementation
+ * Corrected command IDs from Luban SacpClient.ts reference.
  *
- * Uses @snapmaker/snapmaker-sacp-sdk for protocol handling
- * and subscribes to real-time status updates.
+ * Supports: J1, J1s (IDEX), Artisan, A150, A250, A350
+ * Protocol: Binary TCP on port 8888 via @snapmaker/snapmaker-sacp-sdk
  *
- * Protocol reference: https://github.com/Snapmaker/Snapmaker-SACP
- * Luban reference: https://github.com/Snapmaker/Luban
+ * Command ID reference (verified against Luban source):
+ * - Auth:        0x01, 0x05 → PeerId.SCREEN (not CONTROLLER)
+ * - Heartbeat:   0xb0, 0x0b → PeerId.SCREEN
+ * - G-code:      0x01, 0x02 → PeerId.CONTROLLER
+ * - Machine:     0x01, 0x20/0x21/0x22 → PeerId.CONTROLLER
+ * - Nozzle sub:  0x10, 0xa0 (not 0xa0, 0x01)
+ * - Bed sub:     0x14, 0xa0 (not 0xa0, 0x02)
+ * - Coords sub:  0x01, 0xa2
+ * - Status sub:  0x01, 0xa0
+ * - Print ctrl:  0xac, 0x04/0x05/0x06 (not 0x04, 0x02/0x04/0x06)
+ * - Print file:  0xac, 0x1a (get), 0xac, 0x03 (start)
+ * - Speed:       0xac, 0x0e (set), 0xac, 0x0f (get)
+ * - File upload:  0xb0, 0x10/0x11 (compressed)
+ * - Enclosure:   0x15, 0x01-0x04
+ * - Purifier:    0x17, 0x01-0x03
+ * - FDM head:    0x10, 0x01-0x09
+ * - Errors:      0x04, 0x02
  */
 
 import { createConnection } from 'node:net';
 import { Dispatcher, helper } from '@snapmaker/snapmaker-sacp-sdk';
+import { hostname } from 'node:os';
 
 const log = {
   info: (...a) => console.log('[sacp]', ...a),
@@ -21,39 +34,83 @@ const log = {
   error: (...a) => console.error('[sacp]', ...a),
 };
 
-// SACP Command Sets and IDs (from protocol docs + Luban source)
-const CMD = {
-  // System (0x01)
-  SUBSCRIBE:      [0x01, 0x00],
-  EXECUTE_GCODE:  [0x01, 0x02],
-  GET_MODULE_INFO:[0x01, 0x20],
-  GET_MACHINE_INFO:[0x01, 0x21],
-
-  // Print (0x04)
-  START_PRINT:    [0x04, 0x00],
-  PAUSE_PRINT:    [0x04, 0x02],
-  RESUME_PRINT:   [0x04, 0x04],
-  STOP_PRINT:     [0x04, 0x06],
-
-  // File transfer (0xb0)
-  FILE_START:     [0xb0, 0x10],
-  FILE_DATA:      [0xb0, 0x11],
-
-  // Subscriptions (response command sets)
-  NOZZLE_INFO:        [0xa0, 0x01],
-  HOTBED_TEMP:        [0xa0, 0x02],
-  COORDINATE_INFO:    [0xa0, 0x04],
-  PRINT_PROGRESS:     [0xa0, 0x05],
-  PRINT_TIME:         [0xa0, 0x06],
-  PRINT_CURRENT_LINE: [0xa0, 0x07],
-  GCODE_FILE_INFO:    [0xa0, 0x08],
-  MACHINE_STATE:      [0xa0, 0x0a],
-  ENCLOSURE_INFO:     [0xa0, 0x0e],
-  PURIFIER_INFO:      [0xa0, 0x0f],
+// ── Peer IDs (from SACP protocol) ──
+const PEER = {
+  CONTROLLER: 0x01,
+  SCREEN: 0x02,
 };
 
-// Peer IDs
-const PEER_CONTROLLER = 0x01;
+// ── Correct Command IDs (verified from Luban SacpClient.ts) ──
+const CMD = {
+  // System (0x01)
+  EXECUTE_GCODE:      { set: 0x01, id: 0x02 },
+  WIFI_CONNECTION:    { set: 0x01, id: 0x05 },  // Auth → SCREEN
+  WIFI_CLOSE:         { set: 0x01, id: 0x06 },  // Disconnect → SCREEN
+  GET_MODULE_INFO:    { set: 0x01, id: 0x20 },
+  GET_MACHINE_INFO:   { set: 0x01, id: 0x21 },
+  GET_MACHINE_SIZE:   { set: 0x01, id: 0x22 },
+  GET_COORDINATES:    { set: 0x01, id: 0x30 },
+  REQUEST_HOME:       { set: 0x01, id: 0x35 },
+  // System subscriptions
+  SUB_HEARTBEAT:      { set: 0x01, id: 0xa0 },
+  SUB_COORDINATES:    { set: 0x01, id: 0xa2 },
+
+  // Error reports (0x04)
+  GET_ERROR_REPORTS:  { set: 0x04, id: 0x02 },
+
+  // FDM / Extruder (0x10)
+  GET_FDM_INFO:       { set: 0x10, id: 0x01 },
+  SET_NOZZLE_TEMP:    { set: 0x10, id: 0x02 },
+  SET_FILAMENT_STATUS:{ set: 0x10, id: 0x04 },
+  SWITCH_EXTRUDER:    { set: 0x10, id: 0x05 },
+  SET_EXTRUDER_FAN:   { set: 0x10, id: 0x06 },
+  GET_EXTRUDER_OFFSET:{ set: 0x10, id: 0x08 },
+  EXTRUDER_MOVEMENT:  { set: 0x10, id: 0x09 },
+  SUB_NOZZLE_INFO:    { set: 0x10, id: 0xa0 },
+
+  // Heated Bed (0x14)
+  GET_HOT_BED:        { set: 0x14, id: 0x01 },
+  SET_BED_TEMP:       { set: 0x14, id: 0x02 },
+  SUB_BED_TEMP:       { set: 0x14, id: 0xa0 },
+
+  // Enclosure (0x15)
+  GET_ENCLOSURE:      { set: 0x15, id: 0x01 },
+  SET_ENCLOSURE_LIGHT:{ set: 0x15, id: 0x02 },
+  SET_ENCLOSURE_DOOR: { set: 0x15, id: 0x03 },
+  SET_ENCLOSURE_FAN:  { set: 0x15, id: 0x04 },
+  SUB_ENCLOSURE:      { set: 0x15, id: 0xa0 },
+  SUB_ENCLOSURE_LIGHT:{ set: 0x15, id: 0xa1 },
+
+  // Air Purifier (0x17)
+  GET_PURIFIER:       { set: 0x17, id: 0x01 },
+  SET_PURIFIER_SPEED: { set: 0x17, id: 0x02 },
+  SET_PURIFIER_SWITCH:{ set: 0x17, id: 0x03 },
+  SUB_PURIFIER:       { set: 0x17, id: 0xa0 },
+
+  // Print Job Control (0xac) — CORRECT IDs from Luban
+  GET_GCODE_FILE:     { set: 0xac, id: 0x00 },
+  START_PRINT:        { set: 0xac, id: 0x03 },
+  PAUSE_PRINT:        { set: 0xac, id: 0x04 },
+  RESUME_PRINT:       { set: 0xac, id: 0x05 },
+  STOP_PRINT:         { set: 0xac, id: 0x06 },
+  SET_WORK_SPEED:     { set: 0xac, id: 0x0e },
+  GET_WORK_SPEED:     { set: 0xac, id: 0x0f },
+  GET_PRINTING_FILE:  { set: 0xac, id: 0x1a },
+  SUB_PRINT_LINE:     { set: 0xac, id: 0xa0 },
+  SUB_WORK_SPEED:     { set: 0xac, id: 0xa4 },
+  SUB_PRINT_TIME:     { set: 0xac, id: 0xa5 },
+
+  // File Transfer / Screen (0xb0) — to SCREEN peer
+  FILE_UPLOAD_START:  { set: 0xb0, id: 0x00 },
+  FILE_UPLOAD_DATA:   { set: 0xb0, id: 0x01 },
+  FILE_UPLOAD_RESULT: { set: 0xb0, id: 0x02 },
+  SCREEN_PRINT:       { set: 0xb0, id: 0x08 },
+  HEARTBEAT:          { set: 0xb0, id: 0x0b },  // → SCREEN
+  COMPRESSED_START:   { set: 0xb0, id: 0x10 },
+  COMPRESSED_DATA:    { set: 0xb0, id: 0x11 },
+  SUB_PROGRESS:       { set: 0xb0, id: 0xa0 },
+  SUB_ESTIMATED_TIME: { set: 0xb0, id: 0xa1 },
+};
 
 // Machine model mapping
 const MODEL_MAP = {
@@ -61,13 +118,14 @@ const MODEL_MAP = {
   3: 'Snapmaker Artisan', 4: 'Snapmaker J1', 5: 'Snapmaker Ray',
 };
 
-// SACP machine state mapping → internal gcode_state
 const STATE_MAP = {
-  0: 'IDLE',      // Idle
-  1: 'RUNNING',   // Running
-  2: 'PAUSE',     // Paused
-  3: 'PAUSE',     // Stopped (pausing)
-  4: 'FINISH',    // Finished
+  0: 'IDLE', 1: 'RUNNING', 2: 'PAUSE', 3: 'PAUSE', 4: 'FINISH',
+};
+
+const MODULE_NAMES = {
+  0: '3D Print Head', 1: 'CNC Router', 2: '1.6W Laser',
+  7: 'Air Purifier', 13: 'Dual Extruder', 14: '10W Laser',
+  16: 'Enclosure', 19: '20W Laser', 20: '40W Laser',
 };
 
 export class SacpConnector {
@@ -84,16 +142,16 @@ export class SacpConnector {
     this._reconnectTimer = null;
     this._reconnectDelay = 3000;
     this._heartbeatTimer = null;
-    this._subscriptions = [];
     this.onFirmwareInfo = null;
     this.onXcamEvent = null;
-
-    // Machine info (populated on connect)
     this._machineInfo = null;
     this._modules = [];
+    this._machineSize = null;
   }
 
-  // ── Connection lifecycle ──
+  // ══════════════════════════════════════════
+  // CONNECTION LIFECYCLE
+  // ══════════════════════════════════════════
 
   connect() {
     log.info(`Connecting to SACP at ${this.ip}:${this.port}`);
@@ -101,8 +159,12 @@ export class SacpConnector {
   }
 
   disconnect() {
-    this.connected = false;
     this._clearTimers();
+    // Graceful disconnect (Luban: wifiConnectionClose)
+    if (this.connected && this._dispatcher) {
+      try { this._dispatcher.send(CMD.WIFI_CLOSE.set, CMD.WIFI_CLOSE.id, PEER.SCREEN, Buffer.alloc(0)); } catch {}
+    }
+    this.connected = false;
     if (this._dispatcher) { this._dispatcher.dispose(); this._dispatcher = null; }
     if (this._socket) { this._socket.destroy(); this._socket = null; }
   }
@@ -112,7 +174,7 @@ export class SacpConnector {
 
     this._socket = createConnection({ host: this.ip, port: this.port }, () => {
       log.info(`TCP connected to ${this.ip}:${this.port}`);
-      this._initDispatcher();
+      this._dispatcher = new Dispatcher('tcp', this._socket);
       this._authenticate();
     });
 
@@ -135,83 +197,40 @@ export class SacpConnector {
     });
   }
 
-  _initDispatcher() {
-    this._dispatcher = new Dispatcher('tcp', this._socket);
-
-    // Handle incoming subscription data
-    this._dispatcher.setHandler(...CMD.NOZZLE_INFO, (req) => {
-      this._handleNozzleInfo(req.data);
-      this._dispatcher.ack(...CMD.NOZZLE_INFO, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.HOTBED_TEMP, (req) => {
-      this._handleHotbedTemp(req.data);
-      this._dispatcher.ack(...CMD.HOTBED_TEMP, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.COORDINATE_INFO, (req) => {
-      this._handleCoordinateInfo(req.data);
-      this._dispatcher.ack(...CMD.COORDINATE_INFO, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.PRINT_PROGRESS, (req) => {
-      this._handlePrintProgress(req.data);
-      this._dispatcher.ack(...CMD.PRINT_PROGRESS, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.PRINT_TIME, (req) => {
-      this._handlePrintTime(req.data);
-      this._dispatcher.ack(...CMD.PRINT_TIME, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.GCODE_FILE_INFO, (req) => {
-      this._handleGcodeFileInfo(req.data);
-      this._dispatcher.ack(...CMD.GCODE_FILE_INFO, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.MACHINE_STATE, (req) => {
-      this._handleMachineState(req.data);
-      this._dispatcher.ack(...CMD.MACHINE_STATE, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.ENCLOSURE_INFO, (req) => {
-      this._handleEnclosureInfo(req.data);
-      this._dispatcher.ack(...CMD.ENCLOSURE_INFO, req.packet, Buffer.alloc(1));
-    });
-
-    this._dispatcher.setHandler(...CMD.PURIFIER_INFO, (req) => {
-      this._handlePurifierInfo(req.data);
-      this._dispatcher.ack(...CMD.PURIFIER_INFO, req.packet, Buffer.alloc(1));
-    });
-  }
-
   async _authenticate() {
     try {
-      // WiFi connection handshake (from Luban: SacpClient.wifiConnection)
-      const hostname = require('node:os').hostname();
-      const connInfo = Buffer.alloc(200);
-      let off = 0;
-      const hostBuf = helper.stringToBuffer(hostname);
-      hostBuf.copy(connInfo, off); off += hostBuf.length;
-      const appBuf = helper.stringToBuffer('3DPrintForge');
-      appBuf.copy(connInfo, off); off += appBuf.length;
-      const tokenBuf = helper.stringToBuffer('');
-      tokenBuf.copy(connInfo, off); off += tokenBuf.length;
+      // WiFi connection handshake — CORRECT: 0x01, 0x05 to PeerId.SCREEN
+      const host = hostname();
+      const connPayload = Buffer.concat([
+        helper.stringToBuffer(host),
+        helper.stringToBuffer('3DPrintForge'),
+        helper.stringToBuffer(''),
+      ]);
 
-      await this._dispatcher.send(0xa0, 0x00, PEER_CONTROLLER, connInfo.subarray(0, off));
-      log.info('SACP authenticated');
+      const resp = await this._dispatcher.send(
+        CMD.WIFI_CONNECTION.set, CMD.WIFI_CONNECTION.id,
+        PEER.SCREEN, connPayload
+      );
+      log.info('SACP WiFi authenticated');
 
-      // Get machine info
+      // Set disconnect handler
+      this._dispatcher.setHandler(CMD.WIFI_CLOSE.set, CMD.WIFI_CLOSE.id, () => {
+        log.warn('Printer requested disconnect');
+        this.connected = false;
+        this.hub.broadcast('connection', { status: 'disconnected' });
+        this._scheduleReconnect();
+      });
+
+      // Fetch machine info + modules + size
       await this._fetchMachineInfo();
 
-      // Start subscriptions
+      // Start subscriptions with CORRECT command IDs
       await this._startSubscriptions();
 
-      // Mark as connected
       this.connected = true;
       this.hub.broadcast('connection', { status: 'connected' });
 
-      // Start heartbeat
+      // Start heartbeat — CORRECT: 0xb0, 0x0b to PeerId.SCREEN
       this._startHeartbeat();
 
     } catch (err) {
@@ -221,8 +240,9 @@ export class SacpConnector {
   }
 
   async _fetchMachineInfo() {
+    // Machine info
     try {
-      const resp = await this._dispatcher.send(...CMD.GET_MACHINE_INFO, PEER_CONTROLLER, Buffer.alloc(0));
+      const resp = await this._send(CMD.GET_MACHINE_INFO, PEER.CONTROLLER, Buffer.alloc(0));
       if (resp?.data) {
         const buf = resp.data;
         const modelId = buf[0];
@@ -232,64 +252,142 @@ export class SacpConnector {
           serialNumber: buf.subarray(31, 61).toString('utf8').replace(/\0/g, '').trim(),
           firmwareVersion: buf.subarray(61, 91).toString('utf8').replace(/\0/g, '').trim(),
         };
-
         if (this.onFirmwareInfo) {
           this.onFirmwareInfo({
-            name: 'sacp',
-            sw_ver: this._machineInfo.firmwareVersion,
-            hw_ver: this._machineInfo.model,
-            sn: this._machineInfo.serialNumber,
+            name: 'sacp', sw_ver: this._machineInfo.firmwareVersion,
+            hw_ver: this._machineInfo.model, sn: this._machineInfo.serialNumber,
           });
         }
-
         log.info(`Machine: ${this._machineInfo.model}, FW: ${this._machineInfo.firmwareVersion}`);
       }
-    } catch (e) { log.warn(`Failed to get machine info: ${e.message}`); }
+    } catch (e) { log.warn(`Machine info failed: ${e.message}`); }
 
-    // Get module list
+    // Machine size (build volume)
     try {
-      const resp = await this._dispatcher.send(...CMD.GET_MODULE_INFO, PEER_CONTROLLER, Buffer.alloc(0));
+      const resp = await this._send(CMD.GET_MACHINE_SIZE, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data && resp.data.length >= 12) {
+        this._machineSize = {
+          x: resp.data.readFloatLE(0),
+          y: resp.data.readFloatLE(4),
+          z: resp.data.readFloatLE(8),
+        };
+        this.state._buildVolume = this._machineSize;
+        log.info(`Build volume: ${this._machineSize.x}x${this._machineSize.y}x${this._machineSize.z}mm`);
+      }
+    } catch (e) { log.warn(`Machine size failed: ${e.message}`); }
+
+    // Module list
+    try {
+      const resp = await this._send(CMD.GET_MODULE_INFO, PEER.CONTROLLER, Buffer.alloc(0));
       if (resp?.data) {
         this._modules = this._parseModules(resp.data);
+        this.state._modules = this._modules;
         log.info(`Modules: ${this._modules.map(m => m.name).join(', ')}`);
       }
-    } catch (e) { log.warn(`Failed to get modules: ${e.message}`); }
+    } catch (e) { log.warn(`Module info failed: ${e.message}`); }
+
+    // Get error reports
+    try {
+      const resp = await this._send(CMD.GET_ERROR_REPORTS, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data && resp.data.length > 1) {
+        this.state._errors = this._parseErrors(resp.data);
+      }
+    } catch {}
   }
 
-  async _startSubscriptions() {
-    const subs = [
-      CMD.NOZZLE_INFO,
-      CMD.HOTBED_TEMP,
-      CMD.COORDINATE_INFO,
-      CMD.PRINT_PROGRESS,
-      CMD.PRINT_TIME,
-      CMD.GCODE_FILE_INFO,
-      CMD.MACHINE_STATE,
-      CMD.ENCLOSURE_INFO,
-      CMD.PURIFIER_INFO,
-    ];
+  // ══════════════════════════════════════════
+  // SUBSCRIPTIONS — CORRECT COMMAND IDS
+  // ══════════════════════════════════════════
 
-    for (const [cmdSet, cmdId] of subs) {
-      try {
-        const intervalBuf = Buffer.alloc(2);
-        intervalBuf.writeUInt16LE(1000); // 1 second interval
-        await this._dispatcher.send(0x01, 0x00, PEER_CONTROLLER,
-          Buffer.from([cmdSet, cmdId, ...intervalBuf]));
-        this._subscriptions.push([cmdSet, cmdId]);
-      } catch (e) {
-        log.warn(`Subscription ${cmdSet.toString(16)}:${cmdId.toString(16)} failed: ${e.message}`);
-      }
-    }
+  async _startSubscriptions() {
+    const d = this._dispatcher;
+    const interval = 1000;
+
+    // Nozzle temperature — 0x10, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_NOZZLE_INFO.set, CMD.SUB_NOZZLE_INFO.id, interval, (resp) => {
+        this._handleNozzleInfo(resp.data);
+      });
+    } catch (e) { log.warn(`Sub nozzle failed: ${e.message}`); }
+
+    // Bed temperature — 0x14, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_BED_TEMP.set, CMD.SUB_BED_TEMP.id, interval, (resp) => {
+        this._handleHotbedTemp(resp.data);
+      });
+    } catch (e) { log.warn(`Sub bed failed: ${e.message}`); }
+
+    // Coordinates — 0x01, 0xa2
+    try {
+      await d.subscribe(CMD.SUB_COORDINATES.set, CMD.SUB_COORDINATES.id, interval, (resp) => {
+        this._handleCoordinateInfo(resp.data);
+      });
+    } catch (e) { log.warn(`Sub coords failed: ${e.message}`); }
+
+    // Heartbeat/machine state — 0x01, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_HEARTBEAT.set, CMD.SUB_HEARTBEAT.id, interval, (resp) => {
+        this._handleMachineState(resp.data);
+      });
+    } catch (e) { log.warn(`Sub heartbeat failed: ${e.message}`); }
+
+    // Print progress — 0xb0, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_PROGRESS.set, CMD.SUB_PROGRESS.id, interval, (resp) => {
+        this._handlePrintProgress(resp.data);
+      });
+    } catch (e) { log.warn(`Sub progress failed: ${e.message}`); }
+
+    // Print estimated time — 0xb0, 0xa1
+    try {
+      await d.subscribe(CMD.SUB_ESTIMATED_TIME.set, CMD.SUB_ESTIMATED_TIME.id, interval, (resp) => {
+        this._handlePrintTime(resp.data);
+      });
+    } catch (e) { log.warn(`Sub est.time failed: ${e.message}`); }
+
+    // Print line number — 0xac, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_PRINT_LINE.set, CMD.SUB_PRINT_LINE.id, interval, (resp) => {
+        if (resp?.data && resp.data.length >= 4) {
+          this.state._currentLine = resp.data.readUInt32LE(0);
+        }
+      });
+    } catch (e) { log.warn(`Sub print line failed: ${e.message}`); }
+
+    // Work speed — 0xac, 0xa4
+    try {
+      await d.subscribe(CMD.SUB_WORK_SPEED.set, CMD.SUB_WORK_SPEED.id, interval, (resp) => {
+        if (resp?.data && resp.data.length >= 2) {
+          this.state.spd_mag = resp.data.readUInt16LE(0);
+        }
+      });
+    } catch (e) { log.warn(`Sub speed failed: ${e.message}`); }
+
+    // Enclosure — 0x15, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_ENCLOSURE.set, CMD.SUB_ENCLOSURE.id, interval * 2, (resp) => {
+        this._handleEnclosureInfo(resp.data);
+      });
+    } catch (e) { log.warn(`Sub enclosure failed: ${e.message}`); }
+
+    // Purifier — 0x17, 0xa0
+    try {
+      await d.subscribe(CMD.SUB_PURIFIER.set, CMD.SUB_PURIFIER.id, interval * 2, (resp) => {
+        this._handlePurifierInfo(resp.data);
+      });
+    } catch (e) { log.warn(`Sub purifier failed: ${e.message}`); }
   }
 
   _startHeartbeat() {
+    // CORRECT: 0xb0, 0x0b to PeerId.SCREEN
     this._heartbeatTimer = setInterval(async () => {
       if (!this.connected || !this._dispatcher) return;
       try {
-        // WiFi heartbeat (from Luban: SacpClient.wifiConnectionHeartBeat)
-        await this._dispatcher.send(0xa0, 0x01, PEER_CONTROLLER, Buffer.alloc(0));
+        await this._dispatcher.send(
+          CMD.HEARTBEAT.set, CMD.HEARTBEAT.id,
+          PEER.SCREEN, Buffer.alloc(0)
+        );
       } catch {
-        // Heartbeat failed — connection may be dead
         if (this.connected) {
           this.connected = false;
           this.hub.broadcast('connection', { status: 'disconnected' });
@@ -299,11 +397,12 @@ export class SacpConnector {
     }, 5000);
   }
 
-  // ── Subscription data handlers ──
+  // ══════════════════════════════════════════
+  // SUBSCRIPTION DATA HANDLERS
+  // ══════════════════════════════════════════
 
   _handleNozzleInfo(data) {
     if (!data || data.length < 4) return;
-    // ExtruderInfo format: key(1) + count(1) + [actual(2) + target(2)] per nozzle
     const count = data[1] || 1;
     if (data.length >= 6) {
       this.state.nozzle_temper = Math.round(data.readInt16LE(2) / 10);
@@ -318,17 +417,13 @@ export class SacpConnector {
 
   _handleHotbedTemp(data) {
     if (!data || data.length < 6) return;
-    // BedInfo: key(1) + zone_count(1) + [actual(2) + target(2)] per zone
-    if (data.length >= 6) {
-      this.state.bed_temper = Math.round(data.readInt16LE(2) / 10);
-      this.state.bed_target_temper = Math.round(data.readInt16LE(4) / 10);
-    }
+    this.state.bed_temper = Math.round(data.readInt16LE(2) / 10);
+    this.state.bed_target_temper = Math.round(data.readInt16LE(4) / 10);
     this._broadcastState();
   }
 
   _handleCoordinateInfo(data) {
     if (!data || data.length < 5) return;
-    // CoordinateInfo array: count(1) + [key(1) + value(4)] per axis
     const count = data[0];
     const coords = { x: 0, y: 0, z: 0 };
     for (let i = 0; i < count && (1 + i * 5 + 5) <= data.length; i++) {
@@ -348,21 +443,14 @@ export class SacpConnector {
   }
 
   _handlePrintTime(data) {
-    if (!data || data.length < 8) return;
-    // elapsed(4) + remaining(4)
-    const elapsed = data.readUInt32LE(0);
-    const remaining = data.readUInt32LE(4);
-    this.state.print_duration_seconds = elapsed;
-    this.state.mc_remaining_time = Math.round(remaining / 60);
+    if (!data || data.length < 4) return;
+    if (data.length >= 8) {
+      this.state.print_duration_seconds = data.readUInt32LE(0);
+      this.state.mc_remaining_time = Math.round(data.readUInt32LE(4) / 60);
+    } else {
+      this.state.mc_remaining_time = Math.round(data.readUInt32LE(0) / 60);
+    }
     this._broadcastState();
-  }
-
-  _handleGcodeFileInfo(data) {
-    if (!data || data.length < 2) return;
-    try {
-      const { result: name } = helper.readString(data, 0);
-      if (name) this.state.subtask_name = name;
-    } catch {}
   }
 
   _handleMachineState(data) {
@@ -373,8 +461,7 @@ export class SacpConnector {
   }
 
   _handleEnclosureInfo(data) {
-    if (!data || data.length < 4) return;
-    // Enclosure: led_state(1) + fan_state(1) + door_state(1) + temperature(2)
+    if (!data || data.length < 3) return;
     this.state._enclosure = {
       led: data[0] === 1,
       fan: data[1] === 1,
@@ -399,163 +486,320 @@ export class SacpConnector {
     this.hub.broadcast('status', { print: this.state });
   }
 
-  // ── Commands ──
+  // ══════════════════════════════════════════
+  // COMMANDS — Native SACP (no G-code fallback where possible)
+  // ══════════════════════════════════════════
 
   sendCommand(commandObj) {
     if (!this.connected || !this._dispatcher) return;
     const action = commandObj._sacp_action || commandObj.action;
 
     switch (action) {
+      // ── Print control (CORRECT: 0xac command set) ──
       case 'pause':
-        this._dispatcher.send(...CMD.PAUSE_PRINT, PEER_CONTROLLER, Buffer.alloc(0));
+        this._send(CMD.PAUSE_PRINT, PEER.CONTROLLER, Buffer.alloc(0));
         break;
       case 'resume':
-        this._dispatcher.send(...CMD.RESUME_PRINT, PEER_CONTROLLER, Buffer.alloc(0));
+        this._send(CMD.RESUME_PRINT, PEER.CONTROLLER, Buffer.alloc(0));
         break;
       case 'stop':
-        this._dispatcher.send(...CMD.STOP_PRINT, PEER_CONTROLLER, Buffer.alloc(0));
+        this._send(CMD.STOP_PRINT, PEER.CONTROLLER, Buffer.alloc(0));
         break;
+
+      // ── Speed (native SACP: 0xac, 0x0e) ──
+      case 'speed': {
+        const buf = Buffer.alloc(5);
+        buf[0] = 0; // key
+        buf[1] = 0; // extruder index
+        buf.writeUInt16LE(commandObj.value || 100, 2);
+        buf[4] = 0; // reserved
+        this._send(CMD.SET_WORK_SPEED, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── Temperature (native SACP: 0x10, 0x02 / 0x14, 0x02) ──
+      case 'set_nozzle_temp':
+      case 'set_temp_nozzle': {
+        const buf = Buffer.alloc(5);
+        buf[0] = 0; // key
+        buf[1] = commandObj.extruder || 0; // extruder index
+        buf.writeInt16LE((commandObj.target || 0) * 10, 2); // temp * 10
+        this._send(CMD.SET_NOZZLE_TEMP, PEER.CONTROLLER, buf);
+        break;
+      }
+      case 'set_bed_temp':
+      case 'set_temp_bed': {
+        const buf = Buffer.alloc(5);
+        buf[0] = 0; // key
+        buf[1] = 0; // zone 0
+        buf.writeInt16LE((commandObj.target || 0) * 10, 2);
+        this._send(CMD.SET_BED_TEMP, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── Fan (native SACP: 0x10, 0x06) ──
+      case 'set_fan': {
+        const buf = Buffer.alloc(4);
+        buf[0] = 0; // key
+        buf[1] = 0; // fan index (0 = part cooling)
+        buf[2] = Math.round(commandObj.value || 0); // speed level
+        this._send(CMD.SET_EXTRUDER_FAN, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── Extruder switch (native SACP: 0x10, 0x05) ──
+      case 'switch_extruder': {
+        const buf = Buffer.alloc(3);
+        buf[0] = 0; // key
+        buf[1] = commandObj.extruder || 0; // extruder index
+        this._send(CMD.SWITCH_EXTRUDER, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── Home (native SACP: 0x01, 0x35) ──
+      case 'home':
+        this._send(CMD.REQUEST_HOME, PEER.CONTROLLER, Buffer.from([0]));
+        break;
+
+      // ── Enclosure (native SACP: 0x15) ──
+      case 'light': {
+        const brightness = commandObj.mode === 'on' ? (commandObj.brightness || 100) : 0;
+        const buf = Buffer.alloc(3);
+        buf[0] = 0; // key
+        buf[1] = brightness; // 0-100
+        this._send(CMD.SET_ENCLOSURE_LIGHT, PEER.CONTROLLER, buf);
+        break;
+      }
+      case 'set_enclosure_fan': {
+        const buf = Buffer.alloc(3);
+        buf[0] = 0; // key
+        buf[1] = commandObj.value || 0; // 0-100
+        this._send(CMD.SET_ENCLOSURE_FAN, PEER.CONTROLLER, buf);
+        break;
+      }
+      case 'set_enclosure_door': {
+        const buf = Buffer.alloc(4);
+        buf[0] = 0; // key
+        buf[1] = commandObj.headType || 0;
+        buf[2] = commandObj.enabled ? 1 : 0;
+        this._send(CMD.SET_ENCLOSURE_DOOR, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── Purifier (native SACP: 0x17) ──
+      case 'set_purifier_speed': {
+        const buf = Buffer.alloc(3);
+        buf[0] = 0; // key
+        buf[1] = commandObj.speed || 1; // speed level
+        this._send(CMD.SET_PURIFIER_SPEED, PEER.CONTROLLER, buf);
+        break;
+      }
+      case 'set_purifier_switch': {
+        const buf = Buffer.alloc(3);
+        buf[0] = 0; // key
+        buf[1] = commandObj.enabled ? 1 : 0;
+        this._send(CMD.SET_PURIFIER_SWITCH, PEER.CONTROLLER, buf);
+        break;
+      }
+
+      // ── G-code (for anything not natively supported) ──
       case 'gcode':
         if (commandObj.gcode) this._executeGcode(commandObj.gcode);
-        break;
-      case 'speed':
-        this._executeGcode(`M220 S${commandObj.value || 100}`);
-        break;
-      case 'set_nozzle_temp':
-      case 'set_temp_nozzle':
-        this._executeGcode(`M104 S${commandObj.target || 0}`);
-        break;
-      case 'set_bed_temp':
-      case 'set_temp_bed':
-        this._executeGcode(`M140 S${commandObj.target || 0}`);
-        break;
-      case 'set_fan':
-        this._executeGcode(`M106 S${Math.round((commandObj.value || 0) * 2.55)}`);
-        break;
-      case 'home':
-        this._executeGcode('G28');
-        break;
-      case 'light':
-        this._setEnclosureLight(commandObj.mode === 'on');
         break;
       case 'emergency_stop':
         this._executeGcode('M112');
         break;
-      // J1 IDEX modes (M605)
+
+      // ── IDEX modes (J1) ──
       case 'idex_single_left':
-        this._executeGcode('M605 S0\nT0'); // Single mode, left extruder
+        this._executeGcode('M605 S0\nT0');
         break;
       case 'idex_single_right':
-        this._executeGcode('M605 S0\nT1'); // Single mode, right extruder
+        this._executeGcode('M605 S0\nT1');
         break;
       case 'idex_duplicate':
-        this._executeGcode('M605 S2'); // Duplication mode
+        this._executeGcode('M605 S2');
         break;
       case 'idex_mirror':
-        this._executeGcode('M605 S3'); // Mirror mode
+        this._executeGcode('M605 S3');
         break;
-      case 'idex_backup':
-        this._executeGcode('M605 S4'); // Backup mode (J1-specific)
-        break;
+
       default:
         log.warn(`Unknown SACP command: ${action}`);
     }
   }
 
   async _executeGcode(gcode) {
-    const lines = gcode.split('\n').map(l => l.trim()).filter(Boolean);
-    for (const line of lines) {
+    for (const line of gcode.split('\n').map(l => l.trim()).filter(Boolean)) {
       try {
-        const buf = Buffer.from(line + '\n', 'utf8');
-        await this._dispatcher.send(...CMD.EXECUTE_GCODE, PEER_CONTROLLER, buf);
+        await this._send(CMD.EXECUTE_GCODE, PEER.CONTROLLER, Buffer.from(line + '\n', 'utf8'));
       } catch (e) {
         log.error(`G-code failed: ${line}: ${e.message}`);
       }
     }
   }
 
-  async _setEnclosureLight(on) {
-    // Enclosure LED via gcode
-    this._executeGcode(on ? 'M1010 S1' : 'M1010 S0');
+  // ══════════════════════════════════════════
+  // QUERIES — On-demand data fetching
+  // ══════════════════════════════════════════
+
+  async getPrintingFileInfo() {
+    try {
+      const resp = await this._send(CMD.GET_PRINTING_FILE, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data) {
+        const { result: filename, nextOffset } = helper.readString(resp.data, 0);
+        const totalLine = resp.data.length >= nextOffset + 4 ? resp.data.readUInt32LE(nextOffset) : 0;
+        const estimatedTime = resp.data.length >= nextOffset + 8 ? resp.data.readUInt32LE(nextOffset + 4) : 0;
+        return { filename, totalLine, estimatedTime };
+      }
+    } catch {}
+    return null;
   }
 
-  // ── File transfer ──
+  async getWorkSpeed() {
+    try {
+      const resp = await this._send(CMD.GET_WORK_SPEED, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data && resp.data.length >= 2) return resp.data.readUInt16LE(0);
+    } catch {}
+    return 100;
+  }
+
+  async getErrorReports() {
+    try {
+      const resp = await this._send(CMD.GET_ERROR_REPORTS, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data) return this._parseErrors(resp.data);
+    } catch {}
+    return [];
+  }
+
+  async getEnclosureInfo() {
+    try {
+      const resp = await this._send(CMD.GET_ENCLOSURE, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data) { this._handleEnclosureInfo(resp.data); return this.state._enclosure; }
+    } catch {}
+    return null;
+  }
+
+  async getPurifierInfo() {
+    try {
+      const resp = await this._send(CMD.GET_PURIFIER, PEER.CONTROLLER, Buffer.alloc(0));
+      if (resp?.data) { this._handlePurifierInfo(resp.data); return this.state._purifier; }
+    } catch {}
+    return null;
+  }
+
+  async getFdmInfo() {
+    try {
+      const resp = await this._send(CMD.GET_FDM_INFO, PEER.CONTROLLER, Buffer.alloc(1));
+      return resp?.data || null;
+    } catch {}
+    return null;
+  }
+
+  // ══════════════════════════════════════════
+  // FILE TRANSFER (compressed, with correct chunk size)
+  // ══════════════════════════════════════════
 
   async uploadAndPrint(filename, buffer) {
-    // Compressed file transfer (zlib deflate + chunked)
     const zlib = await import('node:zlib');
-    const compressed = zlib.deflateSync(buffer);
-    const md5 = (await import('node:crypto')).createHash('md5').update(buffer).digest('hex');
-    const chunkSize = 512;
+    const crypto = await import('node:crypto');
+    const compressed = zlib.deflateRawSync(buffer);
+    const md5 = crypto.createHash('md5').update(buffer).digest('hex');
+    const chunkSize = 960; // Luban uses 960-byte chunks for compressed
 
-    // Start file transfer
-    const startPayload = Buffer.alloc(200);
-    let off = 0;
+    // Start compressed transfer — 0xb0, 0x10
     const nameBuf = helper.stringToBuffer(filename);
+    const startPayload = Buffer.alloc(nameBuf.length + 4 + 4 + 32 + 1);
+    let off = 0;
     nameBuf.copy(startPayload, off); off += nameBuf.length;
     startPayload.writeUInt32LE(buffer.length, off); off += 4;
     startPayload.writeUInt32LE(compressed.length, off); off += 4;
-    const md5Buf = Buffer.from(md5, 'utf8');
-    md5Buf.copy(startPayload, off); off += md5Buf.length;
+    Buffer.from(md5, 'utf8').copy(startPayload, off); off += 32;
+    startPayload[off] = 0; // head type (3D print = 0)
 
-    await this._dispatcher.send(...CMD.FILE_START, PEER_CONTROLLER, startPayload.subarray(0, off));
+    await this._send(CMD.COMPRESSED_START, PEER.CONTROLLER, startPayload.subarray(0, off + 1));
 
-    // Send chunks
-    for (let i = 0; i < compressed.length; i += chunkSize) {
-      const chunk = compressed.subarray(i, Math.min(i + chunkSize, compressed.length));
+    // Send chunks — 0xb0, 0x11
+    const totalChunks = Math.ceil(compressed.length / chunkSize);
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkSize;
+      const chunk = compressed.subarray(start, Math.min(start + chunkSize, compressed.length));
       const payload = Buffer.alloc(6 + chunk.length);
-      payload.writeUInt16LE(Math.floor(i / chunkSize), 0); // chunk index
+      payload.writeUInt16LE(i, 0);
       payload.writeUInt32LE(chunk.length, 2);
       chunk.copy(payload, 6);
-      await this._dispatcher.send(...CMD.FILE_DATA, PEER_CONTROLLER, payload);
+      await this._send(CMD.COMPRESSED_DATA, PEER.CONTROLLER, payload);
     }
 
-    log.info(`File uploaded: ${filename} (${buffer.length} bytes)`);
-    return { filename };
+    log.info(`File uploaded: ${filename} (${buffer.length} bytes, ${totalChunks} chunks)`);
+
+    // Start print via screen — 0xb0, 0x08
+    const headType = 0; // 3D printing
+    const printPayload = Buffer.alloc(nameBuf.length + 32 + 1);
+    off = 0;
+    printPayload[off] = headType; off += 1;
+    nameBuf.copy(printPayload, off); off += nameBuf.length;
+    Buffer.from(md5, 'utf8').copy(printPayload, off);
+
+    await this._send(CMD.SCREEN_PRINT, PEER.SCREEN, printPayload);
+
+    return { filename, md5 };
   }
 
-  // ── Printer info ──
+  // ══════════════════════════════════════════
+  // PRINTER INFO & CAMERA
+  // ══════════════════════════════════════════
 
   async getPrinterInfo() {
     return {
       ...this._machineInfo,
       modules: this._modules,
+      buildVolume: this._machineSize,
+      errors: this.state._errors || [],
     };
   }
 
-  async getCameraFrame() {
-    // SACP printers don't have camera API — return null
-    return null;
-  }
+  async getCameraFrame() { return null; } // SACP machines don't expose camera via API
+  getSnapshotUrl() { return null; }
 
-  getSnapshotUrl() {
-    return null;
-  }
+  // ══════════════════════════════════════════
+  // INTERNAL HELPERS
+  // ══════════════════════════════════════════
 
-  // ── Module parsing ──
+  async _send(cmd, peer, payload) {
+    return this._dispatcher.send(cmd.set, cmd.id, peer, payload);
+  }
 
   _parseModules(data) {
     const modules = [];
-    const MODULE_NAMES = {
-      0: '3D Print Head', 1: 'CNC Router', 2: '1.6W Laser',
-      7: 'Air Purifier', 13: 'Dual Extruder', 14: '10W Laser',
-      16: 'Enclosure', 19: '20W Laser', 20: '40W Laser',
-    };
-
     try {
       const count = data[0];
       let offset = 1;
-      for (let i = 0; i < count && offset < data.length; i++) {
+      for (let i = 0; i < count && offset + 2 <= data.length; i++) {
         const moduleId = data.readUInt16LE(offset);
         const name = MODULE_NAMES[moduleId] || `Module ${moduleId}`;
         modules.push({ moduleId, name });
-        offset += 30; // approximate module entry size
+        // ModuleInfo has variable byte length — read it from the model
+        offset += 30; // approximate, sufficient for detection
       }
     } catch {}
     return modules;
   }
 
-  // ── Timers ──
+  _parseErrors(data) {
+    const errors = [];
+    try {
+      const count = data[0];
+      let offset = 1;
+      for (let i = 0; i < count && offset + 4 <= data.length; i++) {
+        const code = data.readUInt16LE(offset);
+        const severity = data[offset + 2];
+        errors.push({ code, severity });
+        offset += 4;
+      }
+    } catch {}
+    return errors;
+  }
 
   _scheduleReconnect() {
     this._clearTimers();

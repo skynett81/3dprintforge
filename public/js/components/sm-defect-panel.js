@@ -37,6 +37,30 @@
       </div>`;
     }
 
+    // ── Park Detector (Toolchanger) ──
+    if (data._sm_park) {
+      const heads = Object.entries(data._sm_park);
+      html += `<div class="ctrl-card">
+        <div class="ctrl-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          Toolchanger Status
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          ${heads.map(([key, val]) => {
+            const idx = key.replace('t', '');
+            const color = val.active ? 'var(--accent-green)' : val.parked ? 'var(--text-muted)' : 'var(--accent-orange)';
+            const icon = val.active ? '●' : val.parked ? '○' : '?';
+            const label = val.active ? 'Active' : val.parked ? 'Parked' : val.state;
+            return `<div style="text-align:center;padding:6px;border-radius:6px;background:var(--bg-inset)">
+              <div style="font-size:1.2rem;color:${color}">${icon}</div>
+              <div style="font-size:0.72rem;font-weight:600">T${idx}</div>
+              <div style="font-size:0.65rem;color:${color}">${label}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
     // ── Defect Detection ──
     if (data._sm_defect) {
       const d = data._sm_defect;
@@ -47,10 +71,10 @@
           <span style="font-size:0.65rem;padding:1px 6px;border-radius:8px;background:${d.enabled ? 'var(--accent-green)' : 'var(--accent-red)'};color:#fff;margin-left:auto">${d.enabled ? 'ON' : 'OFF'}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-          ${_detectorCard('Spaghetti', d.noodle)}
-          ${_detectorCard('Clean Bed', d.cleanBed)}
-          ${_detectorCard('Residue', d.residue)}
-          ${_detectorCard('Nozzle', d.nozzle)}
+          ${_detectorCard('Spaghetti', d.noodle, 'noodle')}
+          ${_detectorCard('Clean Bed', d.cleanBed, 'clean_bed')}
+          ${_detectorCard('Residue', d.residue, 'residue')}
+          ${_detectorCard('Nozzle', d.nozzle, 'nozzle_check')}
         </div>
         <div style="display:flex;gap:4px">
           <button class="form-btn form-btn-sm" data-ripple onclick="sendCommand('sm_defect_config',{enable:${!d.enabled}})" style="font-size:0.72rem">${d.enabled ? 'Disable' : 'Enable'} Detection</button>
@@ -187,14 +211,19 @@
     return html;
   };
 
-  function _detectorCard(name, cfg) {
+  function _detectorCard(name, cfg, detectorKey) {
     if (!cfg) return '';
+    const prob = cfg.probability != null ? Math.round(cfg.probability * 100) : null;
+    const probColor = prob > 80 ? 'var(--accent-red)' : prob > 50 ? 'var(--accent-orange)' : 'var(--accent-green)';
+    const sensitivityLabel = cfg.sensitivity === 'high' ? '🔴 High' : cfg.sensitivity === 'low' ? '🟢 Low' : cfg.sensitivity || '-';
     return `<div style="background:var(--bg-tertiary);padding:6px 8px;border-radius:6px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:0.75rem;font-weight:500">${name}</span>
-        <span style="width:6px;height:6px;border-radius:50%;background:${cfg.enable ? 'var(--accent-green)' : 'var(--accent-red)'}"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${cfg.enable ? 'var(--accent-green)' : 'var(--accent-red)'};cursor:pointer" title="${cfg.enable ? 'Enabled' : 'Disabled'} — click to toggle"
+          onclick="sendCommand('sm_defect_config_detail',{detector:'${detectorKey}',enable:${!cfg.enable}})"></span>
       </div>
-      <div style="font-size:0.6rem;color:var(--text-muted)">${cfg.sensitivity || '-'}</div>
+      <div style="font-size:0.62rem;color:var(--text-muted)">${sensitivityLabel}</div>
+      ${prob != null ? `<div style="font-size:0.62rem;color:${probColor};font-weight:600">${prob}% probability</div>` : ''}
     </div>`;
   }
 

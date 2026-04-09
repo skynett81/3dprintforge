@@ -167,6 +167,10 @@ export class MoonrakerClient {
       'timelapse': null,
       'print_task_config': null,
       'power_loss_check': null,
+      'park_detector t0': null,
+      'park_detector t1': null,
+      'park_detector t2': null,
+      'park_detector t3': null,
       'flow_calibrator': null,
     };
 
@@ -452,14 +456,24 @@ export class MoonrakerClient {
     const fd = status.filament_detect;
     if (fd?.info) {
       this.state._sm_filament = fd.info.map((ch, idx) => {
+        // Parse multi-color ARGB (up to 5 colors per NFC tag)
+        const colors = [];
+        if (ch.ARGB_COLOR) colors.push(argbToHex(ch.ARGB_COLOR));
+        for (let ci = 2; ci <= 5; ci++) {
+          const key = `ARGB_COLOR_${ci}`;
+          if (ch[key]) colors.push(argbToHex(ch[key]));
+        }
+
         const data = {
           vendor: ch.VENDOR || '',
           manufacturer: ch.MANUFACTURER || '',
           type: ch.MAIN_TYPE || '',
           subType: ch.SUB_TYPE || '',
-          color: argbToHex(ch.ARGB_COLOR),
+          color: colors[0] || '#000000',
+          colors, // multi-color array (up to 5)
           colorArgb: ch.ARGB_COLOR,
           weight: ch.WEIGHT || 0,
+          length: ch.LENGTH || 0,
           diameter: (ch.DIAMETER || 175) / 100,
           sku: ch.SKU || 0,
           official: ch.OFFICIAL || false,
@@ -470,6 +484,8 @@ export class MoonrakerClient {
           otherLayerTemp: ch.OTHER_LAYER_TEMP || 0,
           dryingTemp: ch.DRYING_TEMP || 0,
           dryingTime: ch.DRYING_TIME || 0,
+          mfDate: ch.MF_DATE || null,
+          cardUid: ch.CARD_UID || null,
         };
         // Persist to DB cache + sync to main filament inventory (fire-and-forget)
         try {
@@ -616,6 +632,22 @@ export class MoonrakerClient {
     const fc = status.flow_calibrator;
     if (fc && Object.keys(fc).length > 0) {
       this.state._sm_flow_cal = fc;
+    }
+
+    // Park detector — which extruder is active vs parked (U1 toolchanger)
+    const parkState = {};
+    for (let i = 0; i < 4; i++) {
+      const pd = status[`park_detector t${i}`];
+      if (pd) {
+        parkState[`t${i}`] = {
+          parked: pd.park_state === 'PARKED',
+          active: pd.park_state === 'ACTIVATE',
+          state: pd.park_state || 'UNKNOWN',
+        };
+      }
+    }
+    if (Object.keys(parkState).length > 0) {
+      this.state._sm_park = parkState;
     }
   }
 
@@ -892,6 +924,16 @@ export class MoonrakerClient {
       case 'sm_defect_config':
         this._apiPost('/printer/gcode/script', { script: `DEFECT_DETECTION_CONFIG MAIN_ENABLE=${commandObj.enable ? 1 : 0}` });
         break;
+      case 'sm_defect_config_detail': {
+        // Per-detector enable/disable with optional sensitivity
+        const det = commandObj.detector; // noodle, clean_bed, residue, nozzle_check
+        const en = commandObj.enable ? 1 : 0;
+        const sens = commandObj.sensitivity || '';
+        let gcode = `DEFECT_DETECTION_CONFIG ${det.toUpperCase()}_ENABLE=${en}`;
+        if (sens) gcode += ` ${det.toUpperCase()}_SENSITIVITY=${sens}`;
+        this._apiPost('/printer/gcode/script', { script: gcode });
+        break;
+      }
       case 'sm_timelapse_start':
         this._apiPost('/printer/gcode/script', { script: 'TIMELAPSE_START TYPE=new' });
         break;
@@ -1132,6 +1174,7 @@ export function buildMoonrakerCommand(msg) {
     case 'sm_feed_manual': return { _moonraker_action: 'sm_feed_manual', channel: msg.channel };
     case 'sm_feed_unload': return { _moonraker_action: 'sm_feed_unload', channel: msg.channel };
     case 'sm_defect_config': return { _moonraker_action: 'sm_defect_config', enable: msg.enable };
+    case 'sm_defect_config_detail': return { _moonraker_action: 'sm_defect_config_detail', detector: msg.detector, enable: msg.enable, sensitivity: msg.sensitivity };
     case 'sm_timelapse_start': return { _moonraker_action: 'sm_timelapse_start' };
     case 'sm_timelapse_stop': return { _moonraker_action: 'sm_timelapse_stop' };
     case 'sm_timelapse_frame': return { _moonraker_action: 'sm_timelapse_frame' };

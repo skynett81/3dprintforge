@@ -41,26 +41,63 @@ export const SM_ACTION_CODES = {
   40: 'power_loss_resume', 41: 'reprint',
 };
 
-// Filament feed channel states (from filament_feed module)
+// Filament feed channel states (from u1-klipper filament_feed.py — all 40+ states)
 export const SM_FEED_STATES = {
+  // Idle states
   idle: { label: 'Idle', category: 'idle' },
-  load_prepare: { label: 'Preparing to load', category: 'loading' },
-  loading: { label: 'Loading filament', category: 'loading' },
-  load_extrude: { label: 'Extruding', category: 'loading' },
-  load_flush: { label: 'Flushing', category: 'loading' },
-  load_finish: { label: 'Loaded', category: 'idle' },
-  unload_prepare: { label: 'Preparing to unload', category: 'unloading' },
-  unloading: { label: 'Unloading filament', category: 'unloading' },
-  unload_retract: { label: 'Retracting', category: 'unloading' },
-  unload_finish: { label: 'Unloaded', category: 'idle' },
+  standby: { label: 'Standby', category: 'idle' },
+
+  // Preload (filament detected at port, not yet in extruder)
+  preload_prepare: { label: 'Preload: preparing', category: 'loading', step: 1 },
+  preload_feeding: { label: 'Preload: feeding to buffer', category: 'loading', step: 2 },
+  preload_finish: { label: 'Preload: done', category: 'idle', step: 3 },
+  preload_error: { label: 'Preload: error', category: 'error' },
+
+  // Auto-load (full load into extruder + nozzle)
+  load_prepare: { label: 'Preparing to load', category: 'loading', step: 1 },
+  load_homing: { label: 'Homing extruder', category: 'loading', step: 2 },
+  load_picking: { label: 'Picking up tool head', category: 'loading', step: 3 },
+  load_heating: { label: 'Heating nozzle', category: 'loading', step: 4 },
+  loading: { label: 'Feeding filament', category: 'loading', step: 5 },
+  load_extrude: { label: 'Extruding into nozzle', category: 'loading', step: 6 },
+  load_flush: { label: 'Flushing old filament', category: 'loading', step: 7 },
+  load_verify: { label: 'Verifying feed', category: 'loading', step: 8 },
+  load_finish: { label: 'Loaded', category: 'idle', step: 9 },
+  load_error: { label: 'Load error', category: 'error' },
+
+  // Auto-unload
+  unload_prepare: { label: 'Preparing to unload', category: 'unloading', step: 1 },
+  unload_heating: { label: 'Heating for unload', category: 'unloading', step: 2 },
+  unloading: { label: 'Retracting filament', category: 'unloading', step: 3 },
+  unload_retract: { label: 'Retracting from nozzle', category: 'unloading', step: 4 },
+  unload_parking: { label: 'Parking tool head', category: 'unloading', step: 5 },
+  unload_finish: { label: 'Unloaded', category: 'idle', step: 6 },
+  unload_error: { label: 'Unload error', category: 'error' },
+
+  // Runout handling (during print)
+  runout_detected: { label: 'Filament runout!', category: 'error' },
+  runout_pause: { label: 'Pausing for runout', category: 'error' },
+  runout_unload: { label: 'Removing empty spool', category: 'unloading' },
+  runout_wait: { label: 'Insert new filament', category: 'loading' },
+  runout_load: { label: 'Loading new spool', category: 'loading' },
+  runout_resume: { label: 'Resuming print', category: 'loading' },
+
+  // Manual feed
+  manual_prepare: { label: 'Manual: ready', category: 'loading', step: 1 },
+  manual_heating: { label: 'Manual: heating', category: 'loading', step: 2 },
+  manual_extrude: { label: 'Manual: extruding', category: 'loading', step: 3 },
+  manual_flush: { label: 'Manual: flushing', category: 'loading', step: 4 },
+  manual_finish: { label: 'Manual: done', category: 'idle', step: 5 },
+  manual_cancel: { label: 'Manual: cancelled', category: 'idle' },
+
+  // Error states
   error: { label: 'Feed Error', category: 'error' },
   heating: { label: 'Heating nozzle', category: 'loading' },
   cooling: { label: 'Cooling down', category: 'unloading' },
-  manual_prepare: { label: 'Manual feed ready', category: 'loading' },
-  manual_extrude: { label: 'Manual extruding', category: 'loading' },
-  manual_flush: { label: 'Manual flushing', category: 'loading' },
-  manual_finish: { label: 'Manual feed done', category: 'idle' },
-  manual_cancel: { label: 'Manual feed cancelled', category: 'idle' },
+  motor_error: { label: 'Motor error', category: 'error' },
+  tachometer_error: { label: 'Tachometer error', category: 'error' },
+  port_not_detected: { label: 'No port detected', category: 'error' },
+  filament_stuck: { label: 'Filament stuck', category: 'error' },
 };
 
 /**
