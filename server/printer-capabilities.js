@@ -81,6 +81,22 @@ const CAPABILITIES = {
     auth: { required: ['ip', 'accessCode'], methods: ['api-key', 'digest'] },
   },
 
+  sacp: {
+    label: 'Snapmaker SACP',
+    connection: 'sacp-tcp',
+    fileAccess: 'sacp-upload',
+    camera: { modes: [] },
+    modelAccess: { method: 'none', hasMeshIn3MF: false },
+    gcodeAccess: { method: 'sacp-upload' },
+    features: {
+      ams: false, xcam: false, firmwareDetection: true,
+      ssdpDiscovery: false, cloudTasks: false, historySync: false,
+      multiExtruder: true, enclosure: true, purifier: true,
+      sacpDiscovery: true,
+    },
+    auth: { required: ['ip'] },
+  },
+
   octoprint: {
     label: 'OctoPrint',
     connection: 'http-poll',
@@ -116,6 +132,12 @@ const MODEL_OVERRIDES = {
   'Snapmaker U1': {
     camera: { modes: ['http-snapshot', 'ssh-sftp'], sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'] },
   },
+  'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true } },
+  'Snapmaker J1s': { features: { multiExtruder: true, idex: true, dualNozzle: true } },
+  'Snapmaker Artisan': { features: { multiExtruder: true, enclosure: true, purifier: true, dualNozzle: true } },
+  'Snapmaker 2.0 A150': { features: { enclosure: true, multiModule: true } },
+  'Snapmaker 2.0 A250': { features: { enclosure: true, multiModule: true } },
+  'Snapmaker 2.0 A350': { features: { enclosure: true, multiModule: true } },
 
   // Prusa models (PrusaLink)
   'Prusa MK4': { camera: { modes: ['http-snapshot'] }, buildVolume: [250, 210, 220] },

@@ -82,6 +82,7 @@ export class PrinterManager {
     if (printerConf.type === 'bambu' || printerConf.type === 'mqtt') return 'bambu';
     if (printerConf.type === 'prusalink') return 'prusalink';
     if (printerConf.type === 'octoprint') return 'octoprint';
+    if (printerConf.type === 'sacp') return 'sacp';
     // Klipper-based brands → Moonraker connector
     if (['creality', 'elegoo', 'anker', 'voron', 'ratrig', 'qidi'].includes(printerConf.type)) return 'moonraker';
     // Auto-detect: Bambu printers use serial + accessCode, Moonraker printers don't need serial
@@ -133,7 +134,12 @@ export class PrinterManager {
     };
 
     let client;
-    if (connectorType === 'octoprint') {
+    if (connectorType === 'sacp') {
+      const { SacpConnector, buildSacpCommand } = await import('./sacp-connector.js');
+      client = new SacpConnector({ printer: printerConf }, connectorHub);
+      client._buildCommand = buildSacpCommand;
+      log.info(`Using SACP connector for ${printerConf.name}`);
+    } else if (connectorType === 'octoprint') {
       const { OctoPrintClient, buildOctoPrintCommand } = await import('./octoprint-client.js');
       client = new OctoPrintClient({ printer: printerConf }, connectorHub);
       client._buildCommand = buildOctoPrintCommand;

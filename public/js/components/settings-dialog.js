@@ -1082,7 +1082,7 @@
         ${brand('Elegoo (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/></svg>', iCheck, 'Via Moonraker — Neptune 4, Neptune 4 Pro/Max')}
         ${brand('AnkerMake (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>', iCheck, 'Via Moonraker — AnkerMake M5 series')}
         ${brand('QIDI (Klipper)', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>', iCheck, 'Via Moonraker — QIDI X-Plus 3, X-Max 3, Q1 Pro')}
-        ${brand('Snapmaker SACP', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 7h10v10H7z"/></svg>', iCheck, 'Binary protocol — A150, A250, A350, J1, Artisan')}
+        ${brand('Snapmaker SACP', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 7h10v10H7z"/></svg>', iCheck, 'Binary protocol (TCP:8888) + SDK — J1, J1s, Artisan, A150, A250, A350. Full control: temps, progress, file transfer, modules')}
         ${brand('OctoPrint', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-9-9h4m14 0h4"/></svg>', iCheck, 'REST API with API key — Ender 3, Prusa MK3, Anycubic, any OctoPrint printer')}
         <div style="padding:10px 0 0;font-size:0.72rem;color:var(--text-muted)">9 brands supported. More can be added via the plugin system.</div>
       </div>`;
@@ -1479,6 +1479,7 @@
             <option value="moonraker" ${curType === 'moonraker' ? 'selected' : ''}>Moonraker / Klipper (Snapmaker, Voron, Creality, etc.)</option>
             <option value="prusalink" ${curType === 'prusalink' ? 'selected' : ''}>PrusaLink (Prusa MK4, Mini+, XL)</option>
             <option value="octoprint" ${curType === 'octoprint' ? 'selected' : ''}>OctoPrint (Ender 3, Prusa MK3, Anycubic, etc.)</option>
+            <option value="sacp" ${curType === 'sacp' ? 'selected' : ''}>Snapmaker SACP (J1, Artisan, A150/A250/A350)</option>
           </select>
         </div>
         <div class="form-group">
