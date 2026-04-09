@@ -185,6 +185,30 @@ export class PrusaLinkClient {
       case 'mmu_unload':
         this._apiPost('/api/v1/job', { command: 'MMU_UNLOAD' });
         break;
+      // LED control
+      case 'light':
+        this._apiPut('/api/v1/status', { led: commandObj.mode === 'on' ? 1 : 0 });
+        break;
+      // Home axes
+      case 'home':
+        this._apiPost('/api/v1/job', { command: 'GCODE', gcode: 'G28' });
+        break;
+      // Jog movement
+      case 'jog':
+        this._apiPost('/api/v1/job', { command: 'GCODE', gcode: `G91\nG1 X${commandObj.x || 0} Y${commandObj.y || 0} Z${commandObj.z || 0} F3000\nG90` });
+        break;
+      // Fan control
+      case 'set_fan':
+        this._apiPost('/api/v1/job', { command: 'GCODE', gcode: `M106 S${Math.round((commandObj.value || 0) * 2.55)}` });
+        break;
+      // Emergency stop
+      case 'emergency_stop':
+        this._apiPost('/api/v1/job', { command: 'GCODE', gcode: 'M112' });
+        break;
+      // Flow rate
+      case 'flowrate':
+        this._apiPost('/api/v1/job', { command: 'GCODE', gcode: `M221 S${commandObj.value || 100}` });
+        break;
       default:
         log.warn(`Unknown PrusaLink command: ${action}`);
     }
@@ -244,7 +268,50 @@ export class PrusaLinkClient {
   // ── Printer info ──
 
   async getPrinterInfo() {
-    return this._apiGet('/api/v1/info');
+    const [info, printer] = await Promise.all([
+      this._apiGet('/api/v1/info'),
+      this._apiGet('/api/v1/printer'),
+    ]);
+    return {
+      ...info,
+      printer: printer || {},
+      buildVolume: printer?.build_plate || null,
+      nozzleDiameter: this.state.nozzle_diameter || null,
+      mmu: this.state._mmu_enabled ? { enabled: true, version: this.state._mmu_version } : null,
+    };
+  }
+
+  // ── System info ──
+
+  async getSystemInfo() {
+    const info = await this._apiGet('/api/v1/info');
+    return {
+      firmware: info?.firmware || '',
+      serial: info?.serial || '',
+      hostname: info?.hostname || '',
+      type: info?.type || '',
+      nozzle_diameter: info?.nozzle_diameter || 0.4,
+    };
+  }
+
+  // ── Job history (PrusaLink v1 API) ──
+
+  async getJobHistory() {
+    return this._apiGet('/api/v1/job/history') || [];
+  }
+
+  // ── Printer profile ──
+
+  async getPrinterProfile() {
+    const printer = await this._apiGet('/api/v1/printer');
+    if (!printer) return null;
+    return {
+      type: printer.type || '',
+      firmware: printer.firmware || '',
+      axes: printer.axes || {},
+      nozzle: printer.nozzle_diameter || 0.4,
+      mmu: printer.mmu_enabled || false,
+    };
   }
 
   // ── HTTP with Digest Auth ──

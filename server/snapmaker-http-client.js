@@ -43,6 +43,7 @@ export class SnapmakerHttpClient {
     this._pollTimer = null;
     this._pollInterval = 2000;
     this._connectionState = 'disconnected'; // disconnected | pending | connected
+    this._tempPollCounter = 0;
     this.onFirmwareInfo = null;
     this.onXcamEvent = null;
   }
@@ -168,6 +169,21 @@ export class SnapmakerHttpClient {
       if (res.ok) {
         const data = await res.json();
         this._mergeState(data);
+
+        // Query temperatures via M105 if not in status (SM 2.0 HTTP limitation)
+        if (this.state.nozzle_temper === undefined || this._tempPollCounter++ % 3 === 0) {
+          try {
+            const tempRes = await this._post('/api/v1/gcode', { token: this._token, code: 'M105' });
+            if (tempRes?.result) {
+              // Parse M105 response: "ok T:200.5 /210.0 B:60.2 /60.0"
+              const m = tempRes.result.match(/T:([\d.]+)\s*\/\s*([\d.]+)/);
+              if (m) { this.state.nozzle_temper = Math.round(parseFloat(m[1])); this.state.nozzle_target_temper = Math.round(parseFloat(m[2])); }
+              const b = tempRes.result.match(/B:([\d.]+)\s*\/\s*([\d.]+)/);
+              if (b) { this.state.bed_temper = Math.round(parseFloat(b[1])); this.state.bed_target_temper = Math.round(parseFloat(b[2])); }
+            }
+          } catch { /* non-critical */ }
+        }
+
         this.hub.broadcast('status', { print: this.state });
       }
     } catch (e) {

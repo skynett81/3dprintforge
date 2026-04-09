@@ -768,20 +768,104 @@ export class MoonrakerClient {
       // Auto-detect specific brands from hostname/config
       if (hostname.includes('creality') || hostname.includes('CR-') || hostname.includes('K1')) {
         this.state._detected_brand = 'Creality';
+        // Creality K1/K1 Max: custom camera on port 4408 with fluidd
+        this.state._brand_camera_port = 4408;
+        this.state._brand_ui = 'fluidd';
       } else if (hostname.includes('neptune') || hostname.includes('elegoo')) {
         this.state._detected_brand = 'Elegoo';
+        // Elegoo Neptune 4: custom firmware with OpenNept4une, camera usually on 8080
+        this.state._brand_camera_port = 8080;
+        this.state._brand_ui = 'fluidd';
       } else if (hostname.includes('qidi') || hostname.includes('QIDI')) {
         this.state._detected_brand = 'QIDI';
+        // QIDI: custom Klipper with extended firmware, camera varies
+        this.state._brand_ui = 'fluidd';
+        // QIDI has custom pressure advance tuning
+        this.state._brand_features = ['input_shaper', 'pressure_advance', 'chamber_heater'];
       } else if (hostname.includes('voron') || hostname.includes('Voron')) {
         this.state._detected_brand = 'Voron';
+        // Voron: advanced features — chamber heater, quad_gantry_level, auto-Z
+        this.state._brand_ui = 'mainsail';
+        this.state._brand_features = ['quad_gantry_level', 'chamber_heater', 'nevermore_filter', 'auto_z_calibrate'];
       } else if (hostname.includes('ratrig') || hostname.includes('RatRig')) {
         this.state._detected_brand = 'RatRig';
+        // RatRig: RatOS with custom macros
+        this.state._brand_ui = 'mainsail';
+        this.state._brand_features = ['ratos_macros', 'beacon_probe', 'auto_z_calibrate'];
+      } else if (hostname.includes('sovol') || hostname.includes('SV')) {
+        this.state._detected_brand = 'Sovol';
+        this.state._brand_ui = 'mainsail';
+        this.state._brand_features = ['auto_z_offset'];
+      } else if (hostname.includes('anker') || hostname.includes('AnkerMake')) {
+        this.state._detected_brand = 'AnkerMake';
+        this.state._brand_camera_port = 8080;
       }
 
       if (this.state._detected_brand) {
         log.info(`Auto-detected brand: ${this.state._detected_brand} (hostname: ${hostname})`);
+        // Fetch brand-specific Klipper objects
+        this._fetchBrandSpecificData();
       }
     } catch { /* not critical */ }
+  }
+
+  // ---- Brand-specific data fetch ----
+
+  async _fetchBrandSpecificData() {
+    const brand = this.state._detected_brand;
+    if (!brand) return;
+
+    try {
+      // Voron: Quad Gantry Level, chamber heater
+      if (brand === 'Voron') {
+        const qgl = await this._apiGet('/printer/objects/query?quad_gantry_level');
+        if (qgl?.result?.status?.quad_gantry_level) {
+          this.state._brand_qgl = qgl.result.status.quad_gantry_level;
+        }
+        // Chamber heater (generic_heater or heater_generic)
+        const chamber = await this._apiGet('/printer/objects/query?heater_generic%20chamber');
+        if (chamber?.result?.status?.['heater_generic chamber']) {
+          const ch = chamber.result.status['heater_generic chamber'];
+          this.state.chamber_temper = Math.round(ch.temperature || 0);
+          this.state._chamber_target = Math.round(ch.target || 0);
+        }
+      }
+
+      // Creality K1: Input shaper results
+      if (brand === 'Creality') {
+        const shaper = await this._apiGet('/printer/objects/query?input_shaper');
+        if (shaper?.result?.status?.input_shaper) {
+          this.state._brand_input_shaper = shaper.result.status.input_shaper;
+        }
+      }
+
+      // QIDI: Chamber heater is common on X-Max/X-Plus
+      if (brand === 'QIDI') {
+        const chamber = await this._apiGet('/printer/objects/query?heater_generic%20chamber_heater');
+        if (chamber?.result?.status?.['heater_generic chamber_heater']) {
+          const ch = chamber.result.status['heater_generic chamber_heater'];
+          this.state.chamber_temper = Math.round(ch.temperature || 0);
+          this.state._chamber_target = Math.round(ch.target || 0);
+        }
+      }
+
+      // RatRig: RatOS macros detection
+      if (brand === 'RatRig') {
+        const macros = await this._apiGet('/printer/objects/list');
+        if (macros?.result?.objects) {
+          const ratosObjects = macros.result.objects.filter(o => o.includes('ratos') || o.includes('beacon'));
+          this.state._brand_ratos_objects = ratosObjects;
+        }
+      }
+
+      // All Klipper: Pressure advance
+      const pa = await this._apiGet('/printer/objects/query?extruder');
+      if (pa?.result?.status?.extruder?.pressure_advance !== undefined) {
+        this.state._pressure_advance = pa.result.status.extruder.pressure_advance;
+        this.state._smooth_time = pa.result.status.extruder.smooth_time;
+      }
+
+    } catch (e) { log.warn(`Brand-specific fetch failed: ${e.message}`); }
   }
 
   // ---- Webcam auto-discovery ----

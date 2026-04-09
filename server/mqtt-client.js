@@ -121,6 +121,21 @@ export class BambuMqttClient {
     }
   }
 
+  // Camera — Bambu uses RTSPS stream handled by camera-stream.js
+  // This provides a snapshot URL for the /frame.jpeg endpoint
+  getSnapshotUrl() {
+    return null; // Camera handled via separate RTSP→MPEG1 pipeline
+  }
+
+  async getCameraFrame() {
+    return null; // Camera frames served via WebSocket, not HTTP
+  }
+
+  // File listing — Bambu uses FTPS, handled by thumbnail-service
+  async listFiles() {
+    return []; // File management via FTPS in file-parser.js
+  }
+
   _requestFullState() {
     this.sendCommand({
       pushing: {
@@ -181,6 +196,29 @@ export class BambuMqttClient {
     }
 
     if (updated) {
+      // Normalize key state fields for dashboard consistency
+      // (MQTT data uses Bambu-specific names, dashboard expects standard names)
+      if (this.state.nozzle_temper !== undefined) this.state._nozzle_actual = this.state.nozzle_temper;
+      if (this.state.nozzle_target_temper !== undefined) this.state._nozzle_target = this.state.nozzle_target_temper;
+      if (this.state.bed_temper !== undefined) this.state._bed_actual = this.state.bed_temper;
+      if (this.state.bed_target_temper !== undefined) this.state._bed_target = this.state.bed_target_temper;
+
+      // AMS summary for quick access
+      if (this.state.ams?.ams) {
+        this.state._ams_count = this.state.ams.ams.length;
+        this.state._ams_humidity = this.state.ams.ams.map(a => ({ id: a.id, humidity: a.humidity, temp: a.temp }));
+      }
+
+      // HMS error code tracking
+      if (this.state.hms?.length > 0) {
+        this.state._active_errors = this.state.hms.filter(h => h.attr > 0).length;
+      }
+
+      // Print statistics summary
+      if (this.state.mc_percent !== undefined) {
+        this.state._print_progress_pct = this.state.mc_percent;
+      }
+
       this.hub.broadcast('status', { print: this.state });
     }
   }
