@@ -3919,6 +3919,39 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Analytics ----
+    if (method === 'GET' && path === '/api/analytics/overview') {
+      try {
+        const { getOverview } = await import('./analytics.js');
+        return sendJson(res, getOverview());
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/hourly') {
+      const days = parseInt(url.searchParams.get('days')) || 7;
+      try {
+        const { getHourlyStats } = await import('./analytics.js');
+        return sendJson(res, getHourlyStats(days));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/top-endpoints') {
+      try {
+        const { getTopEndpoints } = await import('./analytics.js');
+        return sendJson(res, getTopEndpoints(parseInt(url.searchParams.get('limit')) || 20));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/sessions') {
+      try {
+        const { getActiveSessions } = await import('./analytics.js');
+        return sendJson(res, getActiveSessions());
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/errors') {
+      try {
+        const { getErrorBreakdown } = await import('./analytics.js');
+        return sendJson(res, getErrorBreakdown());
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
     // ---- System Info ----
     if (method === 'GET' && path === '/api/system/info') {
       const dbPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'dashboard.db');

@@ -18,6 +18,7 @@ import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth
 import { PrinterManager } from './printer-manager.js';
 import { NotificationManager } from './notifications.js';
 import { Updater } from './updater.js';
+import { recordRequest, startFlushTimer, createAnalyticsTables, recordWsConnect, recordWsDisconnect } from './analytics.js';
 import { sendTelemetryPing } from './telemetry.js';
 import { QueueManager } from './queue-manager.js';
 import { TimelapseService } from './timelapse-service.js';
@@ -197,6 +198,9 @@ initDatabase();
 // Start nightly backup
 startNightlyBackup();
 
+// Initialize analytics
+try { createAnalyticsTables(); startFlushTimer(); } catch (e) { log.warn('Analytics init: ' + e.message); }
+
 // Auto-trash empty spools (run on startup + every 24h)
 try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash startup error: ' + e.message); }
 const _autoTrashInterval = setInterval(() => { try { autoTrashEmptySpools(); } catch (e) { log.error('Auto-trash error: ' + e.message); } }, 24 * 60 * 60 * 1000);
@@ -307,6 +311,16 @@ function handleRequest(req, res) {
     if (pathname.startsWith('/api/') || duration > 500) {
       log.info(`${req.method} ${pathname} ${res.statusCode} ${duration}ms`);
     }
+    // Record analytics
+    try {
+      recordRequest({
+        method: req.method, path: pathname, status: res.statusCode,
+        responseTimeMs: duration, requestSize: parseInt(req.headers['content-length'] || 0),
+        responseSize: parseInt(res.getHeader('content-length') || 0),
+        userAgent: req.headers['user-agent'] || '', ip: req.socket?.remoteAddress || '',
+        user: req._user?.username || '',
+      });
+    } catch {}
     return origEnd(...args);
   };
 
