@@ -307,6 +307,69 @@ export function buildHmsIgnoreCommand(hmsCode) {
   return { print: { sequence_id: nextSeq(), command: 'hms_idle_ignore', hms_code: hmsCode } };
 }
 
+// ── Firmware 01.02.00.00 new commands ──
+
+/** Disable motors (stepper idle) — firmware 01.02.00.00+ */
+export function buildDisableMotorsCommand() {
+  return { print: { sequence_id: nextSeq(), command: 'disable_motors' } };
+}
+
+/** Set heatbed low-power mode — reduces peak power by extending heating time */
+export function buildBedLowPowerModeCommand(enabled) {
+  return { print: { sequence_id: nextSeq(), command: 'set_bed_heating_mode', mode: enabled ? 'low_power' : 'normal' } };
+}
+
+/** Manual filament change for multi-color via external spool — firmware 01.02.00.00+ */
+export function buildManualFilamentChangeCommand(trayColor, trayType) {
+  return {
+    print: {
+      sequence_id: nextSeq(),
+      command: 'ext_manual_change',
+      tray_color: trayColor || '',
+      tray_type: trayType || '',
+    }
+  };
+}
+
+/** Start drying while printing — firmware 01.02.00.00+ */
+export function buildPrintWhileDryingCommand(amsId, tempC, durationMin, enabled) {
+  return {
+    print: {
+      sequence_id: nextSeq(),
+      command: 'ams_control',
+      param: enabled ? 'start' : 'stop',
+      ams_id: parseInt(amsId) || 0,
+      dry_temp: parseInt(tempC) || 55,
+      dry_duration: parseInt(durationMin) || 240,
+      while_printing: enabled ? 1 : 0,
+    }
+  };
+}
+
+/** Save timelapse to internal storage — firmware 01.02.00.00+ (no USB required) */
+export function buildTimelapseStorageCommand(storageType) {
+  // storageType: 'internal' | 'external' (USB)
+  return {
+    system: {
+      sequence_id: nextSeq(),
+      command: 'ipcam_timelapse_storage',
+      storage: storageType === 'internal' ? 'internal' : 'external',
+    }
+  };
+}
+
+/** Delete a timelapse file from printer storage */
+export function buildDeleteTimelapseCommand(filename, storage) {
+  return {
+    system: {
+      sequence_id: nextSeq(),
+      command: 'ipcam_timelapse_delete',
+      filename: filename || '',
+      storage: storage || 'internal',
+    }
+  };
+}
+
 export function buildHmsResumeCommand(hmsCode) {
   return { print: { sequence_id: nextSeq(), command: 'hms_idle_resume', hms_code: hmsCode } };
 }
@@ -350,6 +413,13 @@ export function buildCommandFromClientMessage(msg) {
     case 'set_air_duct_mode': return buildAirDuctModeCommand(msg.mode);
     case 'hms_ignore': return buildHmsIgnoreCommand(msg.hms_code);
     case 'hms_resume': return buildHmsResumeCommand(msg.hms_code);
+    // Firmware 01.02.00.00 new commands
+    case 'disable_motors': return buildDisableMotorsCommand();
+    case 'bed_low_power': return buildBedLowPowerModeCommand(msg.enable);
+    case 'manual_filament_change': return buildManualFilamentChangeCommand(msg.tray_color, msg.tray_type);
+    case 'print_while_drying': return buildPrintWhileDryingCommand(msg.ams_id, msg.temp, msg.duration, msg.enable);
+    case 'timelapse_storage': return buildTimelapseStorageCommand(msg.storage);
+    case 'delete_timelapse': return buildDeleteTimelapseCommand(msg.filename, msg.storage);
     default: return null;
   }
 }

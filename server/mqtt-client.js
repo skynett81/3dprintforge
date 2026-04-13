@@ -410,12 +410,71 @@ export class BambuMqttClient {
         this.state._ams_humidity = this.state.ams.ams.map(a => ({ id: a.id, humidity: a.humidity, temp: a.temp }));
       }
 
-      // HMS error code tracking with full details
+      // HMS error code tracking with full details + firmware 01.02.00.00 detailed causes
       if (this.state.hms?.length > 0) {
         this.state._active_errors = this.state.hms.filter(h => h.attr > 0).length;
         this.state._hms_errors = this.state.hms.filter(h => h.attr > 0).map(h => ({
-          attr: h.attr, code: h.code, msg: h.msg || ''
+          attr: h.attr,
+          code: h.code,
+          msg: h.msg || '',
+          // Firmware 01.02.00.00 adds detailed causes and wiki URLs
+          causes: h.causes || h.detailed_causes || null,
+          wiki_url: h.wiki_url || null,
+          severity: h.severity || (h.attr >> 16) || null,
         }));
+      }
+
+      // Stopping status (firmware 01.02.00.00) — new gcode_state value
+      if (this.state.gcode_state === 'STOPPING' || this.state.gcode_state === 'SLICING') {
+        this.state._stopping = this.state.gcode_state === 'STOPPING';
+      } else {
+        this.state._stopping = false;
+      }
+
+      // Bed low-power mode (firmware 01.02.00.00)
+      if (this.state.bed_heating_mode !== undefined) {
+        this.state._bed_heating_mode = this.state.bed_heating_mode;
+        this.state._bed_low_power = this.state.bed_heating_mode === 'low_power';
+      }
+
+      // Motor enable state (firmware 01.02.00.00)
+      if (this.state.motor_enabled !== undefined) {
+        this.state._motors_enabled = this.state.motor_enabled !== 0;
+      }
+
+      // External spool manual change state (firmware 01.02.00.00)
+      if (this.state.ext_change) {
+        this.state._ext_manual_change = {
+          active: this.state.ext_change.active === 1 || this.state.ext_change.active === true,
+          step: this.state.ext_change.step || '',
+          targetColor: this.state.ext_change.target_color || '',
+          targetType: this.state.ext_change.target_type || '',
+        };
+      }
+
+      // Timelapse storage info (firmware 01.02.00.00 — local storage support)
+      if (this.state.ipcam?.timelapse_storage) {
+        this.state._timelapse_storage = this.state.ipcam.timelapse_storage; // 'internal' | 'external'
+      }
+      if (this.state.ipcam?.timelapse_count !== undefined) {
+        this.state._timelapse_count = this.state.ipcam.timelapse_count;
+      }
+
+      // Print while drying (firmware 01.02.00.00) — concurrent drying during print
+      if (this.state.ams?.ams) {
+        const dryingDuringPrint = this.state.ams.ams.find(a => a.humidity_raw !== undefined && a.drying_while_printing === 1);
+        if (dryingDuringPrint) {
+          this.state._drying_while_printing = true;
+          this.state._drying_ams_id = dryingDuringPrint.id;
+        } else {
+          this.state._drying_while_printing = false;
+        }
+      }
+
+      // XCam AI frame snapshot (firmware 01.02.00.00) — base64 image in popup
+      if (this.state.xcam_status?.frame) {
+        this.state._xcam_frame = this.state.xcam_status.frame;
+        this.state._xcam_frame_at = Date.now();
       }
 
       // Speed magnitude (percentage, more precise than spd_lvl discrete 1-4)
