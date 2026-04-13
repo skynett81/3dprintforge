@@ -818,6 +818,16 @@ export function runMigrations() {
       // Index for fast lookup of available updates
       try { db.exec('CREATE INDEX IF NOT EXISTS idx_fw_update_avail ON firmware_history(update_available, printer_id)'); } catch {}
     }},
+
+    // Firmware dev commits tracking (open-source firmware repos like U1 klipper/moonraker/fluidd)
+    { version: 122, up: (db) => {
+      try { db.exec('ALTER TABLE firmware_history ADD COLUMN dev_commits_ahead INTEGER DEFAULT 0'); } catch {}
+      try { db.exec('ALTER TABLE firmware_history ADD COLUMN dev_commits_json TEXT'); } catch {}
+      // Global setting default: dev notifications enabled
+      try {
+        db.prepare("INSERT OR IGNORE INTO inventory_settings (key, value) VALUES ('firmware_dev_notifications', '1')").run();
+      } catch {}
+    }},
   ];
 
   for (const m of migrations) {

@@ -2209,6 +2209,23 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    if (method === 'GET' && path === '/api/firmware/settings') {
+      const { getInventorySetting } = await import('./database.js');
+      return sendJson(res, {
+        dev_notifications: getInventorySetting('firmware_dev_notifications') !== '0',
+      });
+    }
+
+    if (method === 'PUT' && path === '/api/firmware/settings') {
+      const { setInventorySetting } = await import('./database.js');
+      return readBody(req, res, (body) => {
+        if (typeof body.dev_notifications === 'boolean') {
+          setInventorySetting('firmware_dev_notifications', body.dev_notifications ? '1' : '0');
+        }
+        return sendJson(res, { ok: true });
+      });
+    }
+
     if (method === 'POST' && path.startsWith('/api/firmware/dismiss/')) {
       // Mark a firmware update as dismissed (user updated manually or wants to ignore it)
       const printerId = path.slice('/api/firmware/dismiss/'.length);

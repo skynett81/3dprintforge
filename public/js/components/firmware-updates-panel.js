@@ -230,17 +230,27 @@
     const container = document.getElementById('firmware-updates-panel');
     if (!container) return;
 
-    const updatesCount = _updates.length;
-    const badgeClass = updatesCount > 0 ? 'badge-warning' : 'badge-success';
+    // Separate stable updates from dev-only entries
+    const stableUpdates = _updates.filter(u => u.update_available === 1);
+    const devOnlyUpdates = _updates.filter(u => u.update_available !== 1 && (u.dev_commits_ahead || 0) > 0);
+    const stableCount = stableUpdates.length;
+    const devCount = devOnlyUpdates.length;
+    const totalCount = stableCount + devCount;
+
+    const cardClass = stableCount > 0 ? 'card-warning' : devCount > 0 ? 'card-info' : 'card-success';
+    const badgeClass = stableCount > 0 ? 'bg-warning' : devCount > 0 ? 'bg-info' : 'bg-success';
 
     let html = `
-      <div class="card card-outline ${updatesCount > 0 ? 'card-warning' : 'card-success'}">
+      <div class="card card-outline ${cardClass}">
         <div class="card-header">
           <h3 class="card-title">
             <i class="bi bi-cloud-download"></i> Firmware Updates
-            <span class="badge ${badgeClass}">${updatesCount} available</span>
+            <span class="badge ${badgeClass}">${totalCount} ${totalCount === 1 ? 'update' : 'updates'}</span>
           </h3>
           <div class="card-tools">
+            <button class="btn btn-sm btn-outline-secondary me-1" id="fw-settings-btn" title="Firmware settings">
+              <i class="bi bi-gear"></i>
+            </button>
             <button class="btn btn-sm btn-primary" id="fw-check-now-btn" ${_checking ? 'disabled' : ''}>
               <i class="bi bi-arrow-repeat ${_checking ? 'spin' : ''}"></i>
               ${_checking ? 'Checking...' : 'Check Now'}
@@ -250,51 +260,33 @@
         <div class="card-body">
           <div class="text-muted small mb-2">Last checked: ${_lastCheckAt ? formatDate(_lastCheckAt) : 'Never'}</div>`;
 
-    if (updatesCount === 0) {
+    if (totalCount === 0) {
       html += `<p class="text-success mb-0"><i class="bi bi-check-circle"></i> All printers are up to date</p>`;
-    } else {
-      for (const u of _updates) {
-        const name = _esc(u.printer_name || u.printer_id);
-        const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
-        const changelogId = 'fw-changelog-' + u.printer_id;
-        html += `
-          <div class="card mb-3" style="border-left:4px solid var(--bs-warning)">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-                <div>
-                  <h5 class="mb-1"><i class="bi bi-printer"></i> ${name}${model}</h5>
-                  <div>
-                    <span class="badge text-bg-secondary">Current: ${_esc(u.sw_ver || '?')}</span>
-                    <i class="bi bi-arrow-right mx-1"></i>
-                    <span class="badge text-bg-success">Latest: ${_esc(u.latest_available || '?')}</span>
-                  </div>
-                </div>
-                <div class="btn-group flex-wrap">
-                  <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
-                    <i class="bi bi-arrow-repeat"></i> Recheck
-                  </button>
-                  <button class="btn btn-sm btn-warning" onclick="window._fwTrigger('${_esc(u.printer_id)}')" title="Install update">
-                    <i class="bi bi-download"></i> Install Update
-                  </button>
-                  <button class="btn btn-sm btn-outline-success" onclick="window._fwDismiss('${_esc(u.printer_id)}')" title="Mark as already updated">
-                    <i class="bi bi-check"></i> Mark as Updated
-                  </button>
-                </div>
-              </div>
-              ${u.changelog ? `
-                <details>
-                  <summary style="cursor:pointer;font-weight:600;margin-bottom:8px">
-                    <i class="bi bi-card-text"></i> Release Notes
-                  </summary>
-                  <div id="${changelogId}" class="fw-changelog" style="max-height:400px;overflow-y:auto;padding:12px;background:var(--bs-tertiary-bg);border-radius:6px;font-size:0.88rem;line-height:1.5">
-                    ${renderMarkdown(u.changelog)}
-                  </div>
-                </details>
-              ` : ''}
-              ${u.release_url ? `<div class="mt-2"><a href="${_esc(u.release_url)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open release notes externally</a></div>` : ''}
-              <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
-            </div>
-          </div>`;
+    }
+
+    // ── Stable Updates Section ──
+    if (stableCount > 0) {
+      html += `<h6 class="text-warning mt-3 mb-2"><i class="bi bi-star-fill"></i> Stable Releases (${stableCount})</h6>`;
+      for (const u of stableUpdates) {
+        html += _renderStableCard(u);
+      }
+    }
+
+    // ── Development Commits Section ──
+    if (devCount > 0) {
+      html += `<h6 class="text-info mt-4 mb-2"><i class="bi bi-code-slash"></i> Development Commits (${devCount})</h6>
+        <div class="alert alert-info py-2 small mb-2">
+          <i class="bi bi-info-circle"></i> These are commits pushed to the open-source firmware repos after the latest stable release. They are NOT stable releases — use at your own risk. Snapmaker typically builds a new stable firmware from these commits.
+        </div>`;
+      for (const u of devOnlyUpdates) {
+        html += _renderDevCard(u);
+      }
+    }
+
+    // Also render dev commits for printers that ALSO have a stable update
+    for (const u of stableUpdates) {
+      if ((u.dev_commits_ahead || 0) > 0) {
+        html += _renderDevCard(u, true);
       }
     }
 
@@ -306,6 +298,165 @@
 
     const btn = document.getElementById('fw-check-now-btn');
     if (btn) btn.addEventListener('click', checkNow);
+    const settingsBtn = document.getElementById('fw-settings-btn');
+    if (settingsBtn) settingsBtn.addEventListener('click', showSettingsDialog);
+  }
+
+  async function showSettingsDialog() {
+    const existing = document.getElementById('fw-settings-dialog');
+    if (existing) existing.remove();
+
+    let settings = { dev_notifications: true };
+    try {
+      const res = await fetch('/api/firmware/settings');
+      if (res.ok) settings = await res.json();
+    } catch {}
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'fw-settings-dialog';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+    backdrop.innerHTML = `
+      <div class="card" style="max-width:480px;width:100%">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-gear"></i> Firmware Settings</h5>
+        </div>
+        <div class="card-body">
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="fw-setting-dev" ${settings.dev_notifications ? 'checked' : ''}>
+            <label class="form-check-label" for="fw-setting-dev">
+              <strong>Development commit notifications</strong>
+              <div class="text-muted small">Show commits on open-source firmware repos (e.g. Snapmaker U1) that are ahead of the latest stable release. Useful for power users tracking upcoming features.</div>
+            </label>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <button class="btn btn-secondary" id="fw-settings-cancel">Cancel</button>
+            <button class="btn btn-primary" id="fw-settings-save">Save</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+    document.getElementById('fw-settings-cancel').addEventListener('click', () => backdrop.remove());
+    document.getElementById('fw-settings-save').addEventListener('click', async () => {
+      const devEnabled = document.getElementById('fw-setting-dev').checked;
+      try {
+        await fetch('/api/firmware/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dev_notifications: devEnabled }),
+        });
+        showToast('Firmware settings saved', 'success');
+      } catch {
+        showToast('Could not save settings', 'error');
+      }
+      backdrop.remove();
+      fetchStatus();
+    });
+  }
+
+  function _renderStableCard(u) {
+    const name = _esc(u.printer_name || u.printer_id);
+    const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
+    return `
+      <div class="card mb-3" style="border-left:4px solid var(--bs-warning)">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <h5 class="mb-1"><i class="bi bi-printer"></i> ${name}${model}</h5>
+              <div>
+                <span class="badge text-bg-secondary">Current: ${_esc(u.sw_ver || '?')}</span>
+                <i class="bi bi-arrow-right mx-1"></i>
+                <span class="badge text-bg-success">Latest: ${_esc(u.latest_available || '?')}</span>
+              </div>
+            </div>
+            <div class="btn-group flex-wrap">
+              <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
+                <i class="bi bi-arrow-repeat"></i> Recheck
+              </button>
+              <button class="btn btn-sm btn-warning" onclick="window._fwTrigger('${_esc(u.printer_id)}')" title="Install update">
+                <i class="bi bi-download"></i> Install Update
+              </button>
+              <button class="btn btn-sm btn-outline-success" onclick="window._fwDismiss('${_esc(u.printer_id)}')" title="Mark as already updated">
+                <i class="bi bi-check"></i> Mark as Updated
+              </button>
+            </div>
+          </div>
+          ${u.changelog ? `
+            <details>
+              <summary style="cursor:pointer;font-weight:600;margin-bottom:8px">
+                <i class="bi bi-card-text"></i> Release Notes
+              </summary>
+              <div class="fw-changelog" style="max-height:400px;overflow-y:auto;padding:12px;background:var(--bs-tertiary-bg);border-radius:6px;font-size:0.88rem;line-height:1.5">
+                ${renderMarkdown(u.changelog)}
+              </div>
+            </details>
+          ` : ''}
+          ${u.release_url ? `<div class="mt-2"><a href="${_esc(u.release_url)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open release notes externally</a></div>` : ''}
+          <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
+        </div>
+      </div>`;
+  }
+
+  function _renderDevCard(u, isSecondary) {
+    const name = _esc(u.printer_name || u.printer_id);
+    const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
+    const ahead = u.dev_commits_ahead || 0;
+    let commits = [];
+    try { commits = u.dev_commits_json ? JSON.parse(u.dev_commits_json) : []; } catch {}
+
+    // Group commits by repo
+    const byRepo = {};
+    for (const c of commits) {
+      if (!byRepo[c.repo]) byRepo[c.repo] = [];
+      byRepo[c.repo].push(c);
+    }
+
+    const repoSections = Object.entries(byRepo).map(([repo, list]) => `
+      <div class="mb-3">
+        <h6 class="mb-2"><i class="bi bi-git"></i> Snapmaker/${_esc(repo)} <span class="badge text-bg-info">${list.length}</span></h6>
+        <ul class="list-unstyled mb-0 small" style="border-left:2px solid var(--bs-border-color);padding-left:12px">
+          ${list.map(c => `
+            <li class="mb-2">
+              <code style="font-size:0.8em">${_esc(c.sha)}</code>
+              <span class="text-muted">${_esc(c.date)}</span>
+              <div>${_esc(c.message)}</div>
+              ${c.author ? `<div class="text-muted" style="font-size:0.85em">by ${_esc(c.author)}</div>` : ''}
+              ${c.url ? `<a href="${_esc(c.url)}" target="_blank" rel="noopener" class="small"><i class="bi bi-box-arrow-up-right"></i> View on GitHub</a>` : ''}
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `).join('');
+
+    return `
+      <div class="card mb-3" style="border-left:4px solid var(--bs-info)">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <h5 class="mb-1">
+                <i class="bi bi-code-slash"></i> ${name}${model}
+                ${isSecondary ? '<span class="badge text-bg-secondary ms-2">Also has dev commits</span>' : ''}
+              </h5>
+              <div class="text-muted small">${ahead} commit${ahead === 1 ? '' : 's'} ahead of stable ${_esc(u.latest_available || u.sw_ver || '?')}</div>
+            </div>
+            <div class="btn-group flex-wrap">
+              <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
+                <i class="bi bi-arrow-repeat"></i> Recheck
+              </button>
+            </div>
+          </div>
+          <details ${ahead <= 5 ? 'open' : ''}>
+            <summary style="cursor:pointer;font-weight:600;margin-bottom:8px">
+              <i class="bi bi-list-ul"></i> Recent Commits
+            </summary>
+            <div style="max-height:500px;overflow-y:auto;padding:12px;background:var(--bs-tertiary-bg);border-radius:6px">
+              ${repoSections || '<p class="text-muted mb-0">No commit details available</p>'}
+            </div>
+          </details>
+          <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
+        </div>
+      </div>`;
   }
 
   // Expose action handlers for inline onclick

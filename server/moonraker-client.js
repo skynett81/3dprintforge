@@ -1778,30 +1778,39 @@ export class MoonrakerClient {
         const m = swVer.match(/^(\d+)\.(\d+)\.(\d+)/);
         const current = m ? `${m[1]}.${m[2]}.${m[3]}` : swVer;
 
-        // Fetch latest from Snapmaker wiki
-        const wikiRes = await fetch('https://wiki.snapmaker.com/en/snapmaker_u1/firmware/release_notes', {
-          signal: AbortSignal.timeout(8000),
-          headers: { 'User-Agent': '3dprintforge' },
-        });
-        if (wikiRes.ok) {
-          const html = await wikiRes.text();
-          // Parse "V1.2.0 (2026-03-23)" pattern
-          const versionMatch = html.match(/V(\d+\.\d+\.\d+)\s*\((\d{4}-\d{2}-\d{2})\)/);
-          if (versionMatch) {
-            const latest = versionMatch[1];
-            const releaseDate = versionMatch[2];
-            const updateAvailable = _versionGt(latest, current);
-            return {
-              available: updateAvailable,
-              current,
-              latest,
-              releaseDate,
-              releaseUrl: 'https://wiki.snapmaker.com/en/snapmaker_u1/firmware/release_notes',
-              source: 'snapmaker-wiki',
-            };
+        // 1. Fetch latest STABLE release from Snapmaker wiki
+        let latest = current;
+        let releaseDate = '';
+        let releaseUrl = 'https://wiki.snapmaker.com/en/snapmaker_u1/firmware/release_notes';
+        try {
+          const wikiRes = await fetch(releaseUrl, {
+            signal: AbortSignal.timeout(8000),
+            headers: { 'User-Agent': '3dprintforge' },
+          });
+          if (wikiRes.ok) {
+            const html = await wikiRes.text();
+            const versionMatch = html.match(/V(\d+\.\d+\.\d+)\s*\((\d{4}-\d{2}-\d{2})\)/);
+            if (versionMatch) {
+              latest = versionMatch[1];
+              releaseDate = versionMatch[2];
+            }
           }
-        }
-        return { available: false, current, reason: 'Could not fetch Snapmaker wiki' };
+        } catch {}
+        const stableAvailable = _versionGt(latest, current);
+
+        // 2. Fetch DEV commits from GitHub u1-klipper/u1-moonraker/u1-fluidd
+        const devCommits = await this._fetchU1DevCommits(latest);
+
+        return {
+          available: stableAvailable,
+          current,
+          latest,
+          releaseDate,
+          releaseUrl,
+          source: 'snapmaker-wiki',
+          devCommitsAhead: devCommits.totalAhead,
+          devCommits: devCommits.commits,
+        };
       }
     } catch (e) {
       return { available: false, error: e.message };
@@ -1812,6 +1821,52 @@ export class MoonrakerClient {
 
   async triggerFirmwareUpdate(pkg) {
     return this.triggerUpdate(pkg || 'klipper');
+  }
+
+  // Fetch dev commits from Snapmaker U1 open-source repos since the last release
+  async _fetchU1DevCommits(releaseVersion) {
+    const repos = ['u1-klipper', 'u1-moonraker', 'u1-fluidd'];
+    const result = { totalAhead: 0, commits: [] };
+
+    for (const repo of repos) {
+      try {
+        // Fetch recent commits (first 30 on main)
+        const res = await fetch(`https://api.github.com/repos/Snapmaker/${repo}/commits?per_page=30`, {
+          signal: AbortSignal.timeout(8000),
+          headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': '3dprintforge' },
+        });
+        if (!res.ok) continue;
+        const commits = await res.json();
+        if (!Array.isArray(commits)) continue;
+
+        // Find the release commit (marked with "Release firmware version X.X.X" or containing the version)
+        const releasePattern = new RegExp(`Release firmware version ${releaseVersion.replace(/\./g, '\\.')}`, 'i');
+        const releaseIdx = commits.findIndex(c => releasePattern.test(c.commit?.message || ''));
+
+        // If release not found, check if any commit contains the version string
+        const effectiveIdx = releaseIdx >= 0 ? releaseIdx :
+          commits.findIndex(c => (c.commit?.message || '').includes(releaseVersion));
+
+        const ahead = effectiveIdx >= 0 ? effectiveIdx : 0;
+        result.totalAhead += ahead;
+
+        // Collect commits ahead of release (exclude the release commit itself)
+        const newCommits = commits.slice(0, ahead).map(c => ({
+          repo,
+          sha: c.sha?.slice(0, 8) || '',
+          message: (c.commit?.message || '').split('\n')[0].slice(0, 120),
+          author: c.commit?.author?.name || '',
+          date: c.commit?.author?.date?.slice(0, 10) || '',
+          url: c.html_url || '',
+        }));
+        result.commits.push(...newCommits);
+      } catch { /* skip this repo */ }
+    }
+
+    // Sort newest first, keep max 20
+    result.commits.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    result.commits = result.commits.slice(0, 20);
+    return result;
   }
 
   // ── Moonraker Announcements ──

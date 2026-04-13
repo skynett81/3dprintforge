@@ -15,6 +15,7 @@
  */
 
 import { setFirmwareUpdateStatus, getAvailableFirmwareUpdates, getFirmwareStatus } from './db/telemetry.js';
+import { getInventorySetting } from './database.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('firmware-check');
@@ -110,6 +111,8 @@ export class FirmwareChecker {
     const current = result.current || client.state?._info?.[0]?.sw_ver || 'unknown';
     const latest = result.latest || result.updates?.[0]?.latest || current;
     const changelog = result.releaseNotes || result.updates?.map(u => `${u.module}: ${u.current} → ${u.latest}`).join('\n') || '';
+    const devCommits = result.devCommits || [];
+    const devAhead = result.devCommitsAhead || 0;
 
     setFirmwareUpdateStatus({
       printer_id: printerId,
@@ -119,9 +122,11 @@ export class FirmwareChecker {
       update_available: result.available || false,
       changelog: changelog.slice(0, 2000),
       release_url: result.releaseUrl || '',
+      dev_commits_ahead: devAhead,
+      dev_commits_json: devCommits.length > 0 ? JSON.stringify(devCommits) : null,
     });
 
-    // Trigger notification if this is a new update
+    // Trigger notification if this is a new stable update
     if (result.available && this.notifier) {
       const updateKey = `${printerId}:${latest}`;
       if (!this._notifiedUpdates.has(updateKey)) {
@@ -140,11 +145,32 @@ export class FirmwareChecker {
       }
     }
 
+    // Trigger dev notification if enabled and new dev commits appeared
+    const devNotificationsEnabled = getInventorySetting('firmware_dev_notifications') !== '0';
+    if (devAhead > 0 && devNotificationsEnabled && this.notifier) {
+      const devKey = `${printerId}:dev:${devAhead}:${devCommits[0]?.sha || ''}`;
+      if (!this._notifiedUpdates.has(devKey)) {
+        this._notifiedUpdates.add(devKey);
+        const printerName = printer.name || printer.config?.name || printerId;
+        try {
+          await this.notifier.notify?.('firmware_update_available', {
+            printerName,
+            printer_id: printerId,
+            current_version: current,
+            latest_version: `${latest} + ${devAhead} dev commits`,
+            title: `Dev commits available: ${printerName}`,
+            message: `${printerName} has ${devAhead} development commits ahead of stable release ${latest}. Check Firmware Updates panel for details.`,
+          });
+        } catch (e) { log.warn(`Dev notification send failed: ${e.message}`); }
+      }
+    }
+
     return {
       printerId,
       available: result.available,
       current,
       latest,
+      devCommitsAhead: devAhead,
       error: result.error || null,
     };
   }
