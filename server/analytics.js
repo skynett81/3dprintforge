@@ -299,6 +299,58 @@ export function getActiveSessions() {
   } catch { return []; }
 }
 
+// Daily aggregation — sum hourly data grouped by day
+export function getDailyStats(days = 30) {
+  try {
+    const db = getDb();
+    return db.prepare(`
+      SELECT substr(hour, 1, 10) as date,
+        SUM(requests) as requests,
+        SUM(errors) as errors,
+        SUM(bytes) as bytes,
+        AVG(avg_response_ms) as avg_response_ms,
+        SUM(ws_messages) as ws_messages,
+        SUM(camera_bytes) as camera_bytes
+      FROM analytics_hourly
+      WHERE hour >= datetime('now', ?)
+      GROUP BY substr(hour, 1, 10)
+      ORDER BY date DESC
+    `).all(`-${days} days`);
+  } catch { return []; }
+}
+
+// Weekly aggregation
+export function getWeeklyStats(weeks = 12) {
+  try {
+    const db = getDb();
+    return db.prepare(`
+      SELECT strftime('%Y-W%W', hour) as week,
+        SUM(requests) as requests,
+        SUM(errors) as errors,
+        SUM(bytes) as bytes,
+        AVG(avg_response_ms) as avg_response_ms
+      FROM analytics_hourly
+      WHERE hour >= datetime('now', ?)
+      GROUP BY strftime('%Y-W%W', hour)
+      ORDER BY week DESC
+    `).all(`-${weeks * 7} days`);
+  } catch { return []; }
+}
+
+// Error breakdown by hour for trends
+export function getErrorTrend(hours = 24) {
+  try {
+    const db = getDb();
+    return db.prepare(`
+      SELECT hour, errors, requests,
+        CASE WHEN requests > 0 THEN (errors * 100.0 / requests) ELSE 0 END as error_rate
+      FROM analytics_hourly
+      WHERE hour >= datetime('now', ?)
+      ORDER BY hour
+    `).all(`-${hours} hours`);
+  } catch { return []; }
+}
+
 export function getErrorBreakdown() {
   try {
     const db = getDb();

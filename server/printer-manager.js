@@ -32,23 +32,42 @@ export class PrinterManager {
     }
   }
 
+  setPluginManager(pm) {
+    this._pluginManager = pm;
+    for (const [id, entry] of this.printers) {
+      if (entry.tracker) this._wireTrackerNotifications(id, entry.config.name, entry.tracker);
+    }
+  }
+
+  _dispatchPlugin(hookName, data) {
+    if (this._pluginManager?.dispatch) {
+      this._pluginManager.dispatch(hookName, data).catch(() => {});
+    }
+  }
+
   _wireTrackerNotifications(printerId, printerName, tracker) {
     if (!this._notifier) return;
     tracker.onPrintStart = (data) => {
       this._notifier.notify('print_started', { ...data, printerName });
+      this._dispatchPlugin('onPrintStart', { printerId, printerName, ...data });
     };
     tracker.onPrintEnd = (data) => {
       const eventMap = { completed: 'print_finished', failed: 'print_failed', cancelled: 'print_cancelled' };
       this._notifier.notify(eventMap[data.status] || 'print_finished', { ...data, printerName });
+      this._dispatchPlugin('onPrintEnd', { printerId, printerName, ...data });
     };
     tracker.onError = (data) => {
       this._notifier.notify('printer_error', { ...data, printerName });
+      this._dispatchPlugin('onError', { printerId, printerName, ...data });
     };
     tracker.onNfcAutoLinked = (data) => {
       if (this.broadcast) this.broadcast('nfc_auto_linked', { ...data, printerName });
     };
     tracker.onBroadcast = (type, data) => {
       if (this.broadcast) this.broadcast(type, { ...data, printerId, printerName });
+      if (type === 'progress' || type === 'status') {
+        this._dispatchPlugin('onPrintProgress', { printerId, printerName, type, ...data });
+      }
     };
   }
 
@@ -239,6 +258,7 @@ export class PrinterManager {
     if (moonCamera) moonCamera.start();
     client.connect();
     log.info('Printer connected: ' + printerConf.name + ' (' + printerConf.ip + ')');
+    this._dispatchPlugin('onPrinterConnected', { printerId: id, printerName: printerConf.name, ip: printerConf.ip, type: connectorType });
   }
 
   _addOfflinePrinter(printerConf, reusePort) {
@@ -327,6 +347,7 @@ export class PrinterManager {
     if (printer.camera) printer.camera.stop();
     this.printers.delete(id);
     log.info('Printer removed: ' + id);
+    this._dispatchPlugin('onPrinterDisconnected', { printerId: id, printerName: printer.config?.name });
   }
 
   getPrinterIds() {

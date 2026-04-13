@@ -4006,6 +4006,27 @@ export async function handleApiRequest(req, res) {
         return sendJson(res, getHourlyStats(days));
       } catch (e) { return sendJson(res, { error: e.message }, 500); }
     }
+    if (method === 'GET' && path === '/api/analytics/daily') {
+      const days = parseInt(url.searchParams.get('days')) || 30;
+      try {
+        const { getDailyStats } = await import('./analytics.js');
+        return sendJson(res, getDailyStats(days));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/weekly') {
+      const weeks = parseInt(url.searchParams.get('weeks')) || 12;
+      try {
+        const { getWeeklyStats } = await import('./analytics.js');
+        return sendJson(res, getWeeklyStats(weeks));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+    if (method === 'GET' && path === '/api/analytics/error-trend') {
+      const hours = parseInt(url.searchParams.get('hours')) || 24;
+      try {
+        const { getErrorTrend } = await import('./analytics.js');
+        return sendJson(res, getErrorTrend(hours));
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
     if (method === 'GET' && path === '/api/analytics/top-endpoints') {
       try {
         const { getTopEndpoints } = await import('./analytics.js');
@@ -7163,6 +7184,10 @@ export async function handleApiRequest(req, res) {
           return readBody(req, res, (body) => {
             try {
               const result = createCrmOrder(body);
+              // Track 5% transaction fee if license active
+              if (_ecomLicense && result?.id && (body.total_amount > 0)) {
+                _ecomLicense.addOrderFee(result.id, null, body.total_amount, body.currency || 'NOK');
+              }
               return sendJson(res, { ok: true, ...result }, 201);
             } catch (e) { return sendJson(res, { error: e.message }, 500); }
           });

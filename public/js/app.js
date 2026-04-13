@@ -380,6 +380,7 @@ const PANEL_TITLES = {
   costestimator: 'tabs.costestimator',
   plugins: 'tabs.plugins',
   backup: 'tabs.backup',
+  'firmware-updates': 'Firmware Updates',
   playground: 'tabs.playground',
   settings: 'tabs.settings',
   materialrec: 'material_rec.title',
@@ -424,6 +425,11 @@ const PANEL_LOADERS = {
   plugins: () => { if (typeof loadPluginsPanel === 'function') loadPluginsPanel(); },
   analytics: () => { if (typeof loadAnalyticsPanel === 'function') loadAnalyticsPanel(); },
   backup: () => { if (typeof loadBackupPanel === 'function') loadBackupPanel(); },
+  'firmware-updates': () => {
+    const body = document.getElementById('overlay-panel-body');
+    if (body) body.innerHTML = '<div id="firmware-updates-panel"></div>';
+    if (typeof loadFirmwareUpdatesPanel === 'function') loadFirmwareUpdatesPanel();
+  },
   playground: () => { if (typeof loadPlaygroundPanel === 'function') loadPlaygroundPanel(); },
   costestimator: () => { if (typeof loadCostEstimatorPanel === 'function') loadCostEstimatorPanel(); },
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); },

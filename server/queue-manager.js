@@ -338,7 +338,13 @@ export class QueueManager {
       const printerName = data.printerId ? this._getPrinterName(data.printerId) : null;
       this._notifier.notify(eventType, { ...data, printerName });
     }
+    // Dispatch plugin hooks for queue events
+    if (this._pluginManager && eventType === 'queue_item_completed') {
+      this._pluginManager.dispatch('onQueueItemCompleted', data).catch(() => {});
+    }
   }
+
+  setPluginManager(pm) { this._pluginManager = pm; }
 
   _getPrinterName(printerId) {
     const entry = this._pm.printers.get(printerId);

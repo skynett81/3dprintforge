@@ -157,8 +157,30 @@
     document.addEventListener('ws:firmware_check_complete', () => fetchStatus());
   }
 
+  // Periodic badge update in sidebar (every 5 minutes)
+  async function updateSidebarBadge() {
+    try {
+      const res = await fetch('/api/firmware/updates');
+      if (!res.ok) return;
+      const data = await res.json();
+      const count = Array.isArray(data?.availableUpdates) ? data.availableUpdates.length : 0;
+      const badge = document.getElementById('fw-nav-badge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count;
+          badge.style.display = '';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch {}
+  }
+
   // Auto-load on DOM ready if container exists
   document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('firmware-updates-panel')) fetchStatus();
+    // Start periodic badge update
+    updateSidebarBadge();
+    setInterval(updateSidebarBadge, 5 * 60 * 1000);
   });
 })();

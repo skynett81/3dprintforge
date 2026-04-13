@@ -763,6 +763,8 @@ const _errorPatternInterval = setInterval(() => { try { errorPatternAnalyzer.ana
 const pluginManager = new PluginManager({ broadcast: broadcastAll, dataDir: DATA_DIR, notifier });
 await pluginManager.init();
 setPluginManager(pluginManager);
+manager.setPluginManager(pluginManager);
+queueManager.setPluginManager(pluginManager);
 
 // Generate VAPID keys for Web Push if not yet set
 if (!getInventorySetting('vapid_public_key')) {
