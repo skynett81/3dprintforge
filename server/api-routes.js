@@ -313,6 +313,11 @@ export function setUpdater(updater) {
   _updater = updater;
 }
 
+let _firmwareChecker = null;
+export function setFirmwareChecker(checker) {
+  _firmwareChecker = checker;
+}
+
 export function setHub(hub) {
   _hub = hub;
 }
@@ -2147,6 +2152,59 @@ export async function handleApiRequest(req, res) {
       const printerId = url.searchParams.get('printer_id');
       if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
       return sendJson(res, getFirmwareHistory(printerId));
+    }
+
+    // ---- Firmware Update System (unified) ----
+    if (method === 'GET' && path === '/api/firmware/updates') {
+      // All printers with available updates
+      if (!_firmwareChecker) return sendJson(res, { error: 'Firmware checker not initialized' }, 503);
+      return sendJson(res, _firmwareChecker.getStatus());
+    }
+
+    if (method === 'GET' && path === '/api/firmware/status') {
+      // Per-printer firmware status (current + latest)
+      const printerId = url.searchParams.get('printer_id');
+      if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
+      if (!_firmwareChecker) return sendJson(res, { error: 'Firmware checker not initialized' }, 503);
+      return sendJson(res, _firmwareChecker.getPrinterStatus(printerId));
+    }
+
+    if (method === 'POST' && path === '/api/firmware/check-now') {
+      // Trigger immediate check for all printers
+      if (!_firmwareChecker) return sendJson(res, { error: 'Firmware checker not initialized' }, 503);
+      _firmwareChecker.checkAll().catch(() => {});
+      return sendJson(res, { ok: true, message: 'Firmware check started' });
+    }
+
+    if (method === 'POST' && path.startsWith('/api/firmware/check/')) {
+      // Trigger immediate check for a specific printer
+      const printerId = path.slice('/api/firmware/check/'.length);
+      if (!_firmwareChecker) return sendJson(res, { error: 'Firmware checker not initialized' }, 503);
+      try {
+        const result = await _firmwareChecker.checkPrinter(printerId);
+        return sendJson(res, result);
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    if (method === 'POST' && path.startsWith('/api/firmware/trigger/')) {
+      // Trigger firmware update on a specific printer
+      const printerId = path.slice('/api/firmware/trigger/'.length);
+      const printer = _printerManager?.printers?.get?.(printerId);
+      if (!printer) return sendJson(res, { error: 'Printer not found' }, 404);
+      const client = printer.client || printer;
+      if (typeof client.triggerFirmwareUpdate !== 'function') {
+        return sendJson(res, { error: 'Connector does not support firmware update trigger' }, 400);
+      }
+      return readBody(req, res, async (body) => {
+        try {
+          const result = await client.triggerFirmwareUpdate(body?.module);
+          return sendJson(res, { ok: true, ...result });
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
     }
 
     // ---- XCam Events ----

@@ -162,6 +162,47 @@ export function getLatestFirmware(printerId) {
     FROM firmware_history WHERE printer_id = ? GROUP BY module ORDER BY module`).all(printerId);
 }
 
+// Update the latest entry for a printer+module with available-version info
+export function setFirmwareUpdateStatus({ printer_id, module, sw_ver, latest_available, update_available, changelog, release_url }) {
+  const db = getDb();
+  const checkedAt = new Date().toISOString();
+  // Ensure a row exists for this printer+module+current version
+  const existing = db.prepare('SELECT id FROM firmware_history WHERE printer_id = ? AND module = ? AND sw_ver = ?')
+    .get(printer_id, module, sw_ver);
+  if (existing) {
+    db.prepare(`UPDATE firmware_history SET latest_available = ?, update_available = ?, changelog = ?, release_url = ?, checked_at = ? WHERE id = ?`)
+      .run(latest_available || null, update_available ? 1 : 0, changelog || null, release_url || null, checkedAt, existing.id);
+  } else {
+    db.prepare(`INSERT INTO firmware_history (printer_id, module, sw_ver, latest_available, update_available, changelog, release_url, checked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(printer_id, module, sw_ver, latest_available || null, update_available ? 1 : 0, changelog || null, release_url || null, checkedAt);
+  }
+}
+
+// Get all printers with available updates
+export function getAvailableFirmwareUpdates() {
+  const db = getDb();
+  return db.prepare(`
+    SELECT fh.*, p.name as printer_name, p.model, p.type as printer_type
+    FROM firmware_history fh
+    LEFT JOIN printers p ON fh.printer_id = p.id
+    WHERE fh.update_available = 1
+    AND fh.id IN (SELECT MAX(id) FROM firmware_history WHERE update_available = 1 GROUP BY printer_id, module)
+    ORDER BY fh.checked_at DESC
+  `).all();
+}
+
+// Get firmware status for a specific printer (current + latest)
+export function getFirmwareStatus(printerId) {
+  const db = getDb();
+  return db.prepare(`
+    SELECT module, sw_ver as current, latest_available, update_available, changelog, release_url, checked_at
+    FROM firmware_history
+    WHERE printer_id = ?
+    AND id IN (SELECT MAX(id) FROM firmware_history WHERE printer_id = ? GROUP BY module)
+    ORDER BY module
+  `).all(printerId, printerId);
+}
+
 // ---- XCam Events ----
 
 export function addXcamEvent(event) {

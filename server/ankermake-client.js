@@ -193,6 +193,28 @@ export class AnkerMakeClient {
     return this._apiGet('/api/version');
   }
 
+  async checkFirmwareUpdate() {
+    // AnkerMake doesn't expose a public firmware manifest. Best effort:
+    // 1. Get current firmware from ankerctl status if available
+    // 2. No known public endpoint to compare against — return current only
+    try {
+      const status = await this._apiGet('/api/version').catch(() => null);
+      const current = status?.server || status?.firmware || this.state?._firmware || '';
+      return {
+        available: false,
+        current,
+        latest: current,
+        reason: 'AnkerMake firmware updates must be performed via the official AnkerMake app. No public update manifest available.',
+      };
+    } catch (e) {
+      return { available: false, error: e.message };
+    }
+  }
+
+  async triggerFirmwareUpdate() {
+    throw new Error('AnkerMake firmware updates must be performed via the official AnkerMake mobile app');
+  }
+
   // ── HTTP helpers ──
 
   async _apiGet(path) {

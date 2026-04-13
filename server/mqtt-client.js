@@ -121,6 +121,30 @@ export class BambuMqttClient {
     }
   }
 
+  // Check firmware update status from Bambu upgrade_state (already reported via MQTT)
+  async checkFirmwareUpdate() {
+    const upg = this.state._upgrade;
+    const current = (this.state._info?.find?.(m => m.name === 'ota')?.sw_ver) || this.state.info?.module?.find?.(m => m.name === 'ota')?.sw_ver || '';
+    if (upg && upg.newVersion && upg.newVersion !== current) {
+      return {
+        available: true,
+        current,
+        latest: upg.newVersion,
+        status: upg.status,
+        message: upg.message,
+        forceUpgrade: upg.forceUpgrade,
+      };
+    }
+    return { available: false, current };
+  }
+
+  // Trigger firmware update via MQTT
+  async triggerFirmwareUpdate() {
+    if (!this.connected) throw new Error('Not connected');
+    this.sendCommand({ upgrade: { sequence_id: String(Date.now()), command: 'start' } });
+    return { ok: true, message: 'Upgrade start command sent — printer will begin update process' };
+  }
+
   // Camera — Bambu uses RTSPS stream handled by camera-stream.js
   // This provides a snapshot URL for the /frame.jpeg endpoint
   getSnapshotUrl() {

@@ -1727,11 +1727,38 @@ export class MoonrakerClient {
     return data?.result?.[device] || null;
   }
 
-  // ── Moonraker Update Manager ──
+  // ── Firmware check (wraps update manager) ──
 
-  async getUpdateStatus() {
-    const data = await this._apiGet('/machine/update/status');
-    return data?.result || null;
+  async checkFirmwareUpdate() {
+    try {
+      const status = await this.getUpdateStatus();
+      if (!status?.version_info) return { available: false, reason: 'update_manager not configured' };
+      const updates = [];
+      for (const [pkg, info] of Object.entries(status.version_info)) {
+        const current = info.version || info.installed_hash || '';
+        const latest = info.remote_version || info.remote_hash || '';
+        if (latest && current && latest !== current) {
+          updates.push({
+            module: pkg,
+            current,
+            latest,
+            pendingCommits: info.pending_commits || 0,
+          });
+        }
+      }
+      return {
+        available: updates.length > 0,
+        count: updates.length,
+        updates,
+        busy: status.busy || false,
+      };
+    } catch (e) {
+      return { available: false, error: e.message };
+    }
+  }
+
+  async triggerFirmwareUpdate(pkg) {
+    return this.triggerUpdate(pkg || 'klipper');
   }
 
   // ── Moonraker Announcements ──

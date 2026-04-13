@@ -685,6 +685,46 @@ export class OctoPrintClient {
   }
 
   // ══════════════════════════════════════════
+  // FIRMWARE UPDATE CHECK (Software Update plugin)
+  // ══════════════════════════════════════════
+
+  async checkFirmwareUpdate() {
+    // Uses OctoPrint's bundled Software Update plugin
+    try {
+      const result = await this._apiGet('/api/plugin/softwareupdate/check');
+      if (!result?.information) return { available: false, reason: 'softwareupdate plugin not available' };
+      const updates = [];
+      for (const [key, info] of Object.entries(result.information)) {
+        if (info?.updateAvailable) {
+          updates.push({
+            module: key,
+            displayName: info.displayName || key,
+            current: info.information?.local?.name || info.version || '',
+            latest: info.information?.remote?.name || info.remoteVersion || '',
+            releaseUrl: info.releaseNotes || '',
+            releaseNotes: info.information?.remote?.release_notes || '',
+          });
+        }
+      }
+      return {
+        available: updates.length > 0,
+        count: updates.length,
+        updates,
+        status: result.status || 'checked',
+      };
+    } catch (e) {
+      return { available: false, error: e.message };
+    }
+  }
+
+  async triggerFirmwareUpdate(targets) {
+    // targets: array of module names to update (e.g., ['octoprint'])
+    return this._apiPost('/api/plugin/softwareupdate/update', {
+      targets: Array.isArray(targets) ? targets : [targets],
+    });
+  }
+
+  // ══════════════════════════════════════════
   // TIMELAPSE
   // ══════════════════════════════════════════
 

@@ -9,7 +9,8 @@ import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
 import { startNightlyBackup } from './backup.js';
-import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, setDiscovery, setBambuCloud, setMaterialRecommender, setWearPrediction, setErrorPatternAnalyzer, setPluginManager, dispatchWebhooksForEvent } from './api-routes.js';
+import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setFirmwareChecker, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, setDiscovery, setBambuCloud, setMaterialRecommender, setWearPrediction, setErrorPatternAnalyzer, setPluginManager, dispatchWebhooksForEvent } from './api-routes.js';
+import { FirmwareChecker } from './firmware-checker.js';
 import { PluginManager } from './plugin-manager.js';
 import { PrinterDiscovery, testMqttConnection } from './printer-discovery.js';
 import { BambuCloud } from './bambu-cloud.js';
@@ -680,6 +681,11 @@ const updater = new Updater(config, broadcastAll, notifier, hub);
 setUpdater(updater);
 if (config.update?.autoCheck !== false) updater.start();
 
+// Firmware Checker (across all printers)
+const firmwareChecker = new FirmwareChecker({ printerManager: manager, hub, notifier });
+setFirmwareChecker(firmwareChecker);
+firmwareChecker.start();
+
 // Queue Manager
 const queueManager = new QueueManager(manager, notifier, broadcastAll, null); // failureDetector set below
 queueManager.init();
@@ -1206,6 +1212,7 @@ function shutdown() {
   for (const mock of demoMockPrinters) mock.stop();
   queueManager.shutdown();
   updater.shutdown();
+  firmwareChecker.shutdown();
   notifier.shutdown();
   manager.shutdown();
   discovery.shutdown();

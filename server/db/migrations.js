@@ -802,6 +802,22 @@ export function runMigrations() {
       const v118 = migrations.find(m => m.version === 118);
       if (v118) v118.up(db);
     }},
+
+    // Firmware update tracking — extends firmware_history with available-version columns
+    { version: 121, up: (db) => {
+      const cols = ['latest_available', 'update_available', 'changelog', 'release_url', 'checked_at'];
+      for (const col of cols) {
+        try {
+          if (col === 'update_available') {
+            db.exec(`ALTER TABLE firmware_history ADD COLUMN ${col} INTEGER DEFAULT 0`);
+          } else {
+            db.exec(`ALTER TABLE firmware_history ADD COLUMN ${col} TEXT`);
+          }
+        } catch { /* already exists */ }
+      }
+      // Index for fast lookup of available updates
+      try { db.exec('CREATE INDEX IF NOT EXISTS idx_fw_update_avail ON firmware_history(update_available, printer_id)'); } catch {}
+    }},
   ];
 
   for (const m of migrations) {

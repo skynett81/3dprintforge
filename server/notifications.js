@@ -704,6 +704,12 @@ export class NotificationManager {
           message: `New version: ${data.latest}\nCurrent: ${data.current}${data.changelog ? '\n\n' + data.changelog.substring(0, 300) : ''}`
         };
 
+      case 'firmware_update_available':
+        return {
+          title: data.title || `Firmware Update Available — ${printer}`,
+          message: data.message || `Printer: ${printer}\nCurrent: ${data.current_version || 'unknown'}\nLatest: ${data.latest_version || 'unknown'}`
+        };
+
       case 'protection_alert':
         return {
           title: `Print Guard Alert — ${printer}`,

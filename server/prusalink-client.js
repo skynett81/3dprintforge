@@ -13,6 +13,18 @@ const STATE_MAP = {
   FINISHED: 'FINISH', STOPPED: 'IDLE', ERROR: 'FAILED', ATTENTION: 'PAUSE',
 };
 
+// Semver-ish comparison: returns true if a > b
+function _versionGt(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x > y) return true;
+    if (x < y) return false;
+  }
+  return false;
+}
+
 export class PrusaLinkClient {
   constructor(config, hub) {
     this.ip = config.printer.ip;
@@ -344,7 +356,45 @@ export class PrusaLinkClient {
   // ── Firmware update ──
 
   async checkFirmwareUpdate() {
-    return this._apiGet('/api/v1/update/buddy') || this._apiGet('/api/v1/update/firmware');
+    try {
+      // 1. Get current firmware version from printer
+      const info = await this._apiGet('/api/v1/info');
+      const currentFw = info?.firmware || '';
+      const printerType = (info?.hostname || '').toLowerCase().includes('xl') ? 'mk4-xl' :
+                         (info?.hostname || '').toLowerCase().includes('mini') ? 'mini' : 'mk4';
+
+      // 2. Check Prusa's public firmware manifest on GitHub
+      // Map printer type to GitHub release repo
+      const repoMap = {
+        'mk4': 'prusa3d/Prusa-Firmware-Buddy',
+        'mk4-xl': 'prusa3d/Prusa-Firmware-Buddy',
+        'mini': 'prusa3d/Prusa-Firmware-Buddy',
+      };
+      const repo = repoMap[printerType] || 'prusa3d/Prusa-Firmware-Buddy';
+      const releaseUrl = `https://api.github.com/repos/${repo}/releases/latest`;
+
+      const res = await fetch(releaseUrl, {
+        headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': '3dprintforge' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) return { available: false, current: currentFw, error: `GitHub API HTTP ${res.status}` };
+      const release = await res.json();
+
+      const latestTag = (release.tag_name || '').replace(/^v/, '');
+      const currentClean = currentFw.split('-')[0]; // strip commit suffix
+      const updateAvailable = latestTag && currentClean && latestTag !== currentClean && _versionGt(latestTag, currentClean);
+
+      return {
+        available: updateAvailable,
+        current: currentFw,
+        latest: latestTag,
+        releaseUrl: release.html_url || '',
+        releaseNotes: (release.body || '').slice(0, 2000),
+        publishedAt: release.published_at,
+      };
+    } catch (e) {
+      return { available: false, error: e.message };
+    }
   }
 
   async triggerFirmwareUpdate(env) {
