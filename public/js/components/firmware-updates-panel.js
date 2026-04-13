@@ -8,6 +8,78 @@
 
   function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
+  // Lightweight Markdown → HTML renderer (headings, bold, italic, lists, paragraphs, line breaks)
+  function renderMarkdown(md) {
+    if (!md) return '';
+    // Escape HTML first
+    let html = _esc(md);
+
+    // Process line by line to handle lists and headings
+    const lines = html.split('\n');
+    const out = [];
+    let inList = false;
+
+    for (let raw of lines) {
+      const line = raw.trimEnd();
+
+      // Skip empty lines (they create paragraph breaks)
+      if (!line.trim()) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push('');
+        continue;
+      }
+
+      // Headings: ### / ## / #
+      const h3 = line.match(/^###\s+(.+)$/);
+      const h2 = line.match(/^##\s+(.+)$/);
+      const h1 = line.match(/^#\s+(.+)$/);
+      if (h1 || h2 || h3) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        const level = h1 ? 'h5' : h2 ? 'h6' : 'h6';
+        const text = (h1 || h2 || h3)[1];
+        out.push(`<${level} style="margin:12px 0 6px;font-weight:700;color:var(--bs-body-color)">${text}</${level}>`);
+        continue;
+      }
+
+      // Numbered list: 1. text
+      const num = line.match(/^(\d+)\.\s+(.+)$/);
+      if (num) {
+        if (!inList) { out.push('<ol style="margin:4px 0 8px 20px;padding:0">'); inList = 'ol'; }
+        out.push(`<li style="margin-bottom:4px">${num[2]}</li>`);
+        continue;
+      }
+
+      // Bullet list: - text / * text
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+      if (bullet) {
+        if (!inList) { out.push('<ul style="margin:4px 0 8px 20px;padding:0">'); inList = 'ul'; }
+        out.push(`<li style="margin-bottom:4px">${bullet[1]}</li>`);
+        continue;
+      }
+
+      // Italic note indented: *text
+      const note = line.match(/^\s*\*([^*].+)$/);
+      if (note) {
+        out.push(`<div style="font-style:italic;color:var(--text-muted);margin:2px 0 6px 20px;font-size:0.88em">${note[1]}</div>`);
+        continue;
+      }
+
+      // Close list if we're out of list items
+      if (inList) { out.push(inList === 'ol' ? '</ol>' : '</ul>'); inList = false; }
+
+      // Plain paragraph
+      out.push(`<p style="margin:4px 0">${line}</p>`);
+    }
+    if (inList) out.push(inList === 'ol' ? '</ol>' : '</ul>');
+
+    // Inline formatting: **bold**, *italic*, `code`
+    let result = out.join('\n');
+    result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+    result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+    return result;
+  }
+
   function formatDate(iso) {
     if (!iso) return '--';
     const locale = (window.i18n?.getLocale() || 'en').replace('_', '-');
@@ -109,30 +181,46 @@
     if (updatesCount === 0) {
       html += `<p class="text-success mb-0"><i class="bi bi-check-circle"></i> All printers are up to date</p>`;
     } else {
-      html += `<div class="list-group list-group-flush">`;
       for (const u of _updates) {
         const name = _esc(u.printer_name || u.printer_id);
+        const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
+        const changelogId = 'fw-changelog-' + u.printer_id;
         html += `
-          <div class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <strong>${name}</strong>
-              <div class="text-muted small">
-                ${_esc(u.sw_ver || '?')} → <strong>${_esc(u.latest_available || '?')}</strong>
-                ${u.release_url ? `<a href="${_esc(u.release_url)}" target="_blank" rel="noopener">release notes</a>` : ''}
+          <div class="card mb-3" style="border-left:4px solid var(--bs-warning)">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 class="mb-1"><i class="bi bi-printer"></i> ${name}${model}</h5>
+                  <div>
+                    <span class="badge text-bg-secondary">Current: ${_esc(u.sw_ver || '?')}</span>
+                    <i class="bi bi-arrow-right mx-1"></i>
+                    <span class="badge text-bg-success">Latest: ${_esc(u.latest_available || '?')}</span>
+                  </div>
+                </div>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
+                    <i class="bi bi-arrow-repeat"></i> Recheck
+                  </button>
+                  <button class="btn btn-sm btn-warning" onclick="window._fwTrigger('${_esc(u.printer_id)}')" title="Install update">
+                    <i class="bi bi-download"></i> Install Update
+                  </button>
+                </div>
               </div>
-              ${u.changelog ? `<div class="text-muted small mt-1" style="max-height:60px;overflow-y:auto">${_esc(u.changelog).slice(0, 300)}</div>` : ''}
-            </div>
-            <div>
-              <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
-                <i class="bi bi-arrow-repeat"></i>
-              </button>
-              <button class="btn btn-sm btn-warning" onclick="window._fwTrigger('${_esc(u.printer_id)}')" title="Install update">
-                <i class="bi bi-download"></i> Update
-              </button>
+              ${u.changelog ? `
+                <details>
+                  <summary style="cursor:pointer;font-weight:600;margin-bottom:8px">
+                    <i class="bi bi-card-text"></i> Release Notes
+                  </summary>
+                  <div id="${changelogId}" class="fw-changelog" style="max-height:400px;overflow-y:auto;padding:12px;background:var(--bs-tertiary-bg);border-radius:6px;font-size:0.88rem;line-height:1.5">
+                    ${renderMarkdown(u.changelog)}
+                  </div>
+                </details>
+              ` : ''}
+              ${u.release_url ? `<div class="mt-2"><a href="${_esc(u.release_url)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open release notes externally</a></div>` : ''}
+              <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
             </div>
           </div>`;
       }
-      html += `</div>`;
     }
 
     html += `
