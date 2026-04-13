@@ -150,10 +150,13 @@ export class PrinterManager {
                 type: 'spaghetti', probability: dd.noodle.probability,
               });
               // Auto-pause if above threshold and enabled
-              if (autoPause && dd.noodle.probability > threshold && entry.client) {
-                const cmd = entry.client._buildCommand?.({ action: 'pause' });
-                if (cmd) entry.client.sendCommand(cmd);
-                log.warn(`[defect] Auto-paused ${printerConf.name}: spaghetti probability ${dd.noodle.probability}`);
+              if (autoPause && dd.noodle.probability > threshold) {
+                const printer = this.printers.get(id);
+                if (printer?.client) {
+                  const cmd = printer.client._buildCommand?.({ action: 'pause' });
+                  if (cmd) printer.client.sendCommand(cmd);
+                  log.warn(`[defect] Auto-paused ${printerConf.name}: spaghetti probability ${dd.noodle.probability}`);
+                }
               }
             }
           }
@@ -398,11 +401,12 @@ export class PrinterManager {
     for (const printerConf of disconnected) {
       const newIp = await this._rediscover(printerConf);
       if (newIp && newIp !== printerConf.ip) {
-        log.info(`[rediscovery] ${printerConf.name}: new IP found ${printerConf.ip} → ${newIp}`);
+        const oldIp = printerConf.ip;
+        log.info(`[rediscovery] ${printerConf.name}: new IP found ${oldIp} → ${newIp}`);
         printerConf.ip = newIp;
         updatePrinterIp(printerConf.id, newIp);
-        this.broadcast('printer_ip_changed', { printer_id: printerConf.id, name: printerConf.name, old_ip: printerConf.ip, new_ip: newIp });
         await this.updatePrinter(printerConf.id, printerConf);
+        this.broadcast('printer_ip_changed', { printer_id: printerConf.id, name: printerConf.name, old_ip: oldIp, new_ip: newIp });
       }
     }
   }

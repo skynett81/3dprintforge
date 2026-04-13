@@ -406,8 +406,9 @@
   window._libAddToQueue = async function(id, filename) {
     try {
       const qRes = await fetch('/api/queue');
-      const queues = await qRes.json();
-      if (!queues.length) { if (typeof showToast === 'function') showToast('No queues available — create one first', 'warning'); return; }
+      const raw = await qRes.json();
+      const queues = Array.isArray(raw) ? raw : [];
+      if (queues.length === 0) { if (typeof showToast === 'function') showToast('No queues available — create one first', 'warning'); return; }
       await fetch(`/api/queue/${queues[0].id}/items`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, library_id: id })

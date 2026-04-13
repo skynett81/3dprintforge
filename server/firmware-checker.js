@@ -108,7 +108,9 @@ export class FirmwareChecker {
 
     // Store result in DB (extract module info — default to 'firmware')
     const module = 'firmware';
-    const current = result.current || client.state?._info?.[0]?.sw_ver || 'unknown';
+    // _info may be an object with a module array (Bambu) or an array directly
+    const infoModules = client.state?._info?.module || (Array.isArray(client.state?._info) ? client.state._info : []);
+    const current = result.current || infoModules?.[0]?.sw_ver || 'unknown';
     const latest = result.latest || result.updates?.[0]?.latest || current;
     const changelog = result.releaseNotes || result.updates?.map(u => `${u.module}: ${u.current} → ${u.latest}`).join('\n') || '';
     const devCommits = result.devCommits || [];

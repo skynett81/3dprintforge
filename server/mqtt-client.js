@@ -164,12 +164,12 @@ export class BambuMqttClient {
       try {
         const resp = await this._bambuCloud.getDeviceVersion();
         // Response format: { message: "success", devices: [{ dev_id, firmware: [{ version, name, ... }], ... }] }
-        const devices = resp?.devices || [];
-        const myDevice = devices.find(d => d.dev_id === this.serial || d.dev_id === this.serial?.toUpperCase());
+        const devices = Array.isArray(resp?.devices) ? resp.devices : [];
+        const myDevice = devices.find(d => d?.dev_id === this.serial || d?.dev_id === this.serial?.toUpperCase());
         if (myDevice) {
           // firmware array contains modules — find ota/latest entry
-          const modules = myDevice.firmware || [];
-          const ota = modules.find(m => m.name === 'ota' || m.type === 'firmware') || modules[0];
+          const modules = Array.isArray(myDevice.firmware) ? myDevice.firmware : [];
+          const ota = modules.find(m => m?.name === 'ota' || m?.type === 'firmware') || modules[0];
           const latestVersion = ota?.version || ota?.latest_version || myDevice.latest_version;
           const currentVersion = myDevice.firmware_version || current || '';
           if (latestVersion && currentVersion && latestVersion !== currentVersion) {

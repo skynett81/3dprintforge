@@ -192,16 +192,30 @@
     }
 
     let _loading = false;
-    img.onload = () => { streamActive = true; _loading = false; };
+    let _consecutiveErrors = 0;
+    let _nextRetryAt = 0;
+    img.onload = () => {
+      streamActive = true;
+      _loading = false;
+      _consecutiveErrors = 0;
+      _nextRetryAt = 0;
+    };
     img.onerror = () => {
       streamActive = false;
       _loading = false;
+      _consecutiveErrors++;
+      // Exponential backoff: 1s → 2s → 4s → 8s → max 30s
+      const backoff = Math.min(1000 * Math.pow(2, Math.min(_consecutiveErrors - 1, 5)), 30000);
+      _nextRetryAt = Date.now() + backoff;
     };
 
-    // Initial load + refresh every second (skip if previous still loading)
+    // Initial load + refresh every second (with backoff on errors)
     refreshFrame();
     _snapshotInterval = setInterval(() => {
-      if (!_loading) { _loading = true; refreshFrame(); }
+      if (_loading) return;
+      if (_nextRetryAt && Date.now() < _nextRetryAt) return;
+      _loading = true;
+      refreshFrame();
     }, 1000);
   }
 
