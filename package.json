@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/skynett81/3dprintforge.git"
   },
+  "main": "electron/main.cjs",
   "homepage": "https://github.com/skynett81/3dprintforge",
   "bugs": {
     "url": "https://github.com/skynett81/3dprintforge/issues"
@@ -32,7 +33,12 @@
     "postinstall": "cd website && npm install --silent 2>/dev/null && npm run build 2>/dev/null || true",
     "docs:dev": "cd website && npm start",
     "docs:build": "cd website && npm run build",
-    "docs:serve": "cd website && npm run serve"
+    "docs:serve": "cd website && npm run serve",
+    "electron:dev": "NODE_ENV=development electron electron/main.cjs",
+    "electron:build": "electron-builder",
+    "electron:build:linux": "electron-builder --linux",
+    "electron:build:mac": "electron-builder --mac",
+    "electron:build:win": "electron-builder --win"
   },
   "dependencies": {
     "@3mfconsortium/lib3mf": "^2.5.0-fix.2",
@@ -46,5 +52,121 @@
     "qrcode": "^1.5.4",
     "ssh2": "^1.17.0",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-updater": "^6.8.3"
+  },
+  "build": {
+    "appId": "com.geektech.3dprintforge",
+    "productName": "3DPrintForge",
+    "copyright": "Copyright © 2026 SkyNett81",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "electron/assets"
+    },
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "public/**/*",
+      "package.json",
+      "!**/*.md",
+      "!data/**/*",
+      "!certs/**/*",
+      "!dist-electron/**/*",
+      "!website/**/*",
+      "!tests/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules",
+        "to": "app/node_modules",
+        "filter": [
+          "@3mfconsortium/**/*",
+          "@jscad/**/*",
+          "@snapmaker/**/*",
+          "admin-lte/**/*",
+          "basic-ftp/**/*",
+          "bootstrap/**/*",
+          "mqtt/**/*",
+          "qrcode/**/*",
+          "ssh2/**/*",
+          "ws/**/*"
+        ]
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm",
+        "flatpak",
+        "tar.gz"
+      ],
+      "category": "Graphics",
+      "icon": "electron/assets/icon.png",
+      "maintainer": "SkyNett81 <noreply@geektech.no>",
+      "vendor": "GeekTech",
+      "synopsis": "Self-hosted 3D printer dashboard",
+      "description": "A self-hosted dashboard for managing Bambu Lab, Prusa, Snapmaker, OctoPrint, Moonraker-based, and other 3D printers from one place.",
+      "desktop": {
+        "entry": {
+          "Name": "3DPrintForge",
+          "Comment": "Self-hosted 3D printer dashboard",
+          "Categories": "Graphics;Utility;Development",
+          "Keywords": "3d;printer;printing;bambu;prusa;octoprint;snapmaker;moonraker;klipper",
+          "StartupNotify": "true",
+          "StartupWMClass": "3dprintforge"
+        }
+      }
+    },
+    "flatpak": {
+      "runtime": "org.freedesktop.Platform",
+      "runtimeVersion": "24.08",
+      "sdk": "org.freedesktop.Sdk",
+      "base": "org.electronjs.Electron2.BaseApp",
+      "baseVersion": "24.08",
+      "finishArgs": [
+        "--share=network",
+        "--share=ipc",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio",
+        "--device=all",
+        "--filesystem=home",
+        "--filesystem=xdg-documents",
+        "--filesystem=xdg-download",
+        "--talk-name=org.freedesktop.Notifications",
+        "--talk-name=org.kde.StatusNotifierWatcher",
+        "--own-name=com.geektech.3dprintforge"
+      ]
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "electron/assets/icon.png"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.utilities",
+      "icon": "electron/assets/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "skynett81",
+      "repo": "3dprintforge"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "protocols": [
+      {
+        "name": "3DPrintForge Protocol",
+        "schemes": ["3dprintforge"]
+      }
+    ]
   }
 }

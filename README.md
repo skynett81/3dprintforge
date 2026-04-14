@@ -26,6 +26,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **English UI** — entire application in English, documentation site available in English and Norwegian
 - **Docusaurus documentation** — available at `/docs/` and on GitHub Pages
 - **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 9 npm packages
+- **Desktop app (Electron)** — optional native desktop build for Linux (AppImage, deb, rpm, Flatpak, tar.gz), Windows, macOS with system tray, native notifications, auto-updater, and auto-start at login
 
 ---
 
