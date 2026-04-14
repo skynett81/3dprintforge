@@ -2209,6 +2209,110 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- OctoPrint Deep Integration (system, users, settings, plugins, events) ----
+    // All endpoints require a printer_id query param that resolves to an OctoPrint connector
+    function _getOctoClient() {
+      const printerId = url.searchParams.get('printer_id') || url.searchParams.get('id');
+      if (!printerId) return null;
+      const entry = _printerManager?.printers?.get?.(printerId);
+      const client = entry?.client;
+      if (!client || client.constructor?.name !== 'OctoPrintClient') return null;
+      return client;
+    }
+
+    if (method === 'GET' && path === '/api/octoprint/events') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found or not OctoPrint' }, 404);
+      return sendJson(res, c.state?._events || []);
+    }
+    if (method === 'GET' && path === '/api/octoprint/system-commands') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c.getSystemCommands()); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'POST' && path === '/api/octoprint/system-commands/execute') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      return readBody(req, res, async (body) => {
+        if (!body.source || !body.action) return sendJson(res, { error: 'source and action required' }, 400);
+        try {
+          const result = await c.executeSystemCommand?.(body.source, body.action)
+            || c._apiPost(`/api/system/commands/${body.source}/${body.action}`, {});
+          return sendJson(res, { ok: true, ...result });
+        } catch (e) { return sendJson(res, { error: e.message }, 502); }
+      });
+    }
+    if (method === 'GET' && path === '/api/octoprint/users') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c.getUsers()); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'GET' && path === '/api/octoprint/groups') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c.getGroups()); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'POST' && path === '/api/octoprint/users') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      return readBody(req, res, async (body) => {
+        try { return sendJson(res, await c.addUser(body)); }
+        catch (e) { return sendJson(res, { error: e.message }, 502); }
+      });
+    }
+    if (method === 'GET' && path === '/api/octoprint/settings') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c.getSettings()); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'PUT' && path === '/api/octoprint/settings') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      return readBody(req, res, async (body) => {
+        try { return sendJson(res, await c.updateSettings(body)); }
+        catch (e) { return sendJson(res, { error: e.message }, 502); }
+      });
+    }
+    if (method === 'GET' && path === '/api/octoprint/printer-profiles') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c._apiGet('/api/printerprofiles')); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'GET' && path === '/api/octoprint/connection') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c._apiGet('/api/connection')); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+    if (method === 'POST' && path === '/api/octoprint/connection') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      return readBody(req, res, async (body) => {
+        try { return sendJson(res, await c._apiPost('/api/connection', body)); }
+        catch (e) { return sendJson(res, { error: e.message }, 502); }
+      });
+    }
+    if (method === 'GET' && path === '/api/octoprint/plugins') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      // Return the cached plugin list from settings (detected at connect)
+      return sendJson(res, {
+        installed: c.state?._installedPlugins || [],
+        pluginData: c.state?._pluginData || {},
+      });
+    }
+    if (method === 'GET' && path === '/api/octoprint/slicing') {
+      const c = _getOctoClient();
+      if (!c) return sendJson(res, { error: 'Printer not found' }, 404);
+      try { return sendJson(res, await c._apiGet('/api/slicing')); }
+      catch (e) { return sendJson(res, { error: e.message }, 502); }
+    }
+
     // ---- JSCAD Generator (scripted parametric 3D modeling) ----
     if (method === 'POST' && path === '/api/jscad/render') {
       return readBody(req, res, async (body) => {

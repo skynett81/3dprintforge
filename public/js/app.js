@@ -383,6 +383,7 @@ const PANEL_TITLES = {
   'firmware-updates': 'Firmware Updates',
   'resources': 'Resources',
   'jscad': 'JSCAD Studio',
+  'octoprint': 'OctoPrint',
   playground: 'tabs.playground',
   settings: 'tabs.settings',
   materialrec: 'material_rec.title',
@@ -441,6 +442,11 @@ const PANEL_LOADERS = {
     const body = document.getElementById('overlay-panel-body');
     if (body) body.innerHTML = '<div id="jscad-panel"></div>';
     if (typeof loadJscadPanel === 'function') loadJscadPanel();
+  },
+  'octoprint': () => {
+    const body = document.getElementById('overlay-panel-body');
+    if (body) body.innerHTML = '<div id="octoprint-panel"></div>';
+    if (typeof loadOctoprintPanel === 'function') loadOctoprintPanel();
   },
   playground: () => { if (typeof loadPlaygroundPanel === 'function') loadPlaygroundPanel(); },
   costestimator: () => { if (typeof loadCostEstimatorPanel === 'function') loadCostEstimatorPanel(); },

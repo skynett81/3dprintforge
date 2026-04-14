@@ -160,21 +160,194 @@ export class OctoPrintClient {
     }
 
     if (msg.event) {
-      // System events
-      const evt = msg.event;
-      if (evt.type === 'PrintFailed' || evt.type === 'Error') {
-        this.state._lastError = evt.payload;
-      }
-      if (evt.type === 'PrintDone') {
-        this.state.gcode_state = 'FINISH';
-        this.hub.broadcast('status', { print: this.state });
-      }
+      this._handleOctoPrintEvent(msg.event);
     }
 
     if (msg.plugin) {
       // Plugin messages
       this.state._pluginData = { ...(this.state._pluginData || {}), [msg.plugin.plugin]: msg.plugin.data };
     }
+  }
+
+  // Comprehensive OctoPrint event handler — maps 50+ event types to state + broadcasts
+  // Reference: https://docs.octoprint.org/en/master/events/
+  _handleOctoPrintEvent(evt) {
+    if (!evt?.type) return;
+    const type = evt.type;
+    const payload = evt.payload || {};
+
+    // Maintain list of recent events (last 100)
+    if (!this.state._events) this.state._events = [];
+    this.state._events.unshift({
+      type,
+      ts: Date.now(),
+      payload: typeof payload === 'object' ? { ...payload } : payload,
+    });
+    if (this.state._events.length > 100) this.state._events.length = 100;
+
+    // Broadcast event to WS clients for real-time UI updates
+    try { this.hub.broadcast('octoprint_event', { type, payload, ts: Date.now() }); } catch {}
+
+    // Map events to state updates + notifier calls
+    switch (type) {
+      // ── Print state events ──
+      case 'PrintStarted':
+        this.state.gcode_state = 'RUNNING';
+        this.state.subtask_name = payload.name || payload.path || '';
+        if (this.onPrintStart) this.onPrintStart({ printerId: this._printerId, filename: this.state.subtask_name });
+        break;
+      case 'PrintPaused':
+        this.state.gcode_state = 'PAUSE';
+        break;
+      case 'PrintResumed':
+        this.state.gcode_state = 'RUNNING';
+        break;
+      case 'PrintDone':
+      case 'PrintCompleted':
+        this.state.gcode_state = 'FINISH';
+        if (this.onPrintEnd) this.onPrintEnd({ printerId: this._printerId, filename: this.state.subtask_name, status: 'completed' });
+        break;
+      case 'PrintFailed':
+        this.state.gcode_state = 'FAILED';
+        this.state._lastError = payload.reason || payload.error || 'Print failed';
+        if (this.onPrintEnd) this.onPrintEnd({ printerId: this._printerId, filename: this.state.subtask_name, status: 'failed', reason: this.state._lastError });
+        break;
+      case 'PrintCancelled':
+      case 'PrintCancelling':
+        this.state.gcode_state = 'IDLE';
+        if (this.onPrintEnd) this.onPrintEnd({ printerId: this._printerId, filename: this.state.subtask_name, status: 'cancelled' });
+        break;
+      case 'Error':
+        this.state._lastError = payload.error || 'Unknown error';
+        if (this.onError) this.onError({ printerId: this._printerId, error: this.state._lastError });
+        break;
+
+      // ── Connection events ──
+      case 'Connecting':
+        this.state._connectionState = 'connecting';
+        break;
+      case 'Connected':
+        this.state._connectionState = 'connected';
+        this.state._connection = {
+          ...(this.state._connection || {}),
+          port: payload.port,
+          baudrate: payload.baudrate,
+          printerProfile: payload.printerProfile,
+        };
+        break;
+      case 'Disconnected':
+        this.state._connectionState = 'disconnected';
+        this.state.gcode_state = 'OFFLINE';
+        break;
+      case 'Disconnecting':
+        this.state._connectionState = 'disconnecting';
+        break;
+
+      // ── File events ──
+      case 'FileAdded':
+      case 'FileSelected':
+      case 'FileDeselected':
+      case 'FileRemoved':
+      case 'FileMoved':
+      case 'FolderAdded':
+      case 'FolderRemoved':
+        // Track file system mutations — frontend may want to refresh file list
+        this.state._lastFileEvent = { type, ts: Date.now(), path: payload.path || payload.name };
+        break;
+      case 'Upload':
+        this.state._lastUpload = { path: payload.path, target: payload.target, ts: Date.now() };
+        break;
+
+      // ── Transfer events ──
+      case 'TransferStarted':
+      case 'TransferDone':
+      case 'TransferFailed':
+        this.state._transferState = {
+          type: type.replace('Transfer', '').toLowerCase(),
+          local: payload.local,
+          remote: payload.remote,
+          ts: Date.now(),
+        };
+        break;
+
+      // ── Settings / Configuration ──
+      case 'SettingsUpdated':
+        this.state._settingsUpdatedAt = Date.now();
+        break;
+
+      // ── Printer profiles ──
+      case 'PrinterProfileAdded':
+      case 'PrinterProfileModified':
+      case 'PrinterProfileRemoved':
+      case 'PrinterProfileActivated':
+        this.state._lastProfileEvent = { type, profile: payload.profile, ts: Date.now() };
+        break;
+
+      // ── Slicer events ──
+      case 'SlicingStarted':
+      case 'SlicingDone':
+      case 'SlicingFailed':
+      case 'SlicingCancelled':
+      case 'SlicingProfileAdded':
+      case 'SlicingProfileModified':
+      case 'SlicingProfileDeleted':
+        this.state._slicingState = {
+          type: type.replace('Slicing', '').toLowerCase(),
+          payload,
+          ts: Date.now(),
+        };
+        break;
+
+      // ── Metadata analysis ──
+      case 'MetadataAnalysisStarted':
+      case 'MetadataAnalysisFinished':
+        this.state._analysisState = { type: type.replace('MetadataAnalysis', '').toLowerCase(), ts: Date.now() };
+        break;
+
+      // ── Timelapse events ──
+      case 'CaptureStart':
+      case 'CaptureDone':
+      case 'CaptureFailed':
+      case 'PostRollStart':
+      case 'PostRollEnd':
+      case 'MovieRendering':
+      case 'MovieDone':
+      case 'MovieFailed':
+        this.state._timelapseEvent = { type, payload, ts: Date.now() };
+        break;
+
+      // ── Power events (PSU Control) ──
+      case 'PowerOn':
+      case 'PowerOff':
+        this.state._powerState = type === 'PowerOn' ? 'on' : 'off';
+        break;
+
+      // ── Z-axis change ──
+      case 'ZChange':
+        if (payload.new != null) {
+          this.state._position = { ...(this.state._position || {}), z: payload.new };
+        }
+        break;
+
+      // ── User events ──
+      case 'UserLoggedIn':
+      case 'UserLoggedOut':
+        this.state._lastUser = { type, user: payload.username, ts: Date.now() };
+        break;
+
+      // ── Plugin events (generic passthrough) ──
+      default:
+        // Plugin-specific events arrive with type 'plugin_<name>_<event>'
+        if (type.startsWith('plugin_')) {
+          if (!this.state._pluginEvents) this.state._pluginEvents = [];
+          this.state._pluginEvents.unshift({ type, payload, ts: Date.now() });
+          if (this.state._pluginEvents.length > 50) this.state._pluginEvents.length = 50;
+        }
+        break;
+    }
+
+    // Always broadcast status after event-triggered state changes
+    this.hub.broadcast('status', { print: this.state });
   }
 
   _mergeWsState(current) {
@@ -575,6 +748,11 @@ export class OctoPrintClient {
   // System commands available
   async getSystemCommands() {
     return this._apiGet('/api/system/commands');
+  }
+
+  async executeSystemCommand(source, action) {
+    // source: 'core' | 'custom', action: 'restart' | 'shutdown' | 'reboot' | custom name
+    return this._apiPost(`/api/system/commands/${encodeURIComponent(source)}/${encodeURIComponent(action)}`, {});
   }
 
   // Server info
