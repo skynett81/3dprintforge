@@ -5950,6 +5950,54 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { error: 'Unknown Snapmaker endpoint' }, 404);
     }
 
+    // ── Model Forge: Gridfinity Baseplate Generator ──
+    if (method === 'POST' && path === '/api/model-forge/gridfinity-baseplate/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateGridfinityBaseplate3MF } = await import('./generators/gridfinity-baseplate-generator.js');
+          const buf = await generateGridfinityBaseplate3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="gridfinity_baseplate.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Gridfinity baseplate generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Gridfinity Bin Generator ──
+    if (method === 'POST' && path === '/api/model-forge/gridfinity-bin/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateGridfinityBin3MF } = await import('./generators/gridfinity-bin-generator.js');
+          const buf = await generateGridfinityBin3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="gridfinity_bin.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Gridfinity bin generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Gridfinity Lid Generator ──
+    if (method === 'POST' && path === '/api/model-forge/gridfinity-lid/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateGridfinityLid3MF } = await import('./generators/gridfinity-lid-generator.js');
+          const buf = await generateGridfinityLid3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="gridfinity_lid.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Gridfinity lid generation failed: ' + e.message }, 500); }
+      });
+    }
+
+    // ── Model Forge: Gridfinity Tool Holder Generator ──
+    if (method === 'POST' && path === '/api/model-forge/gridfinity-tool-holder/generate-3mf') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { generateGridfinityToolHolder3MF } = await import('./generators/gridfinity-tool-holder-generator.js');
+          const buf = await generateGridfinityToolHolder3MF(body);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="gridfinity_tool_holder.3mf"', 'Content-Length': buf.length });
+          res.end(buf);
+        } catch (e) { sendJson(res, { error: 'Gridfinity tool holder generation failed: ' + e.message }, 500); }
+      });
+    }
+
     // ── Model Forge: Storage Box Generator ──
     if (method === 'POST' && path === '/api/model-forge/storage-box/generate-3mf') {
       return readBody(req, res, async (body) => {

@@ -75,12 +75,203 @@ export class MeshBuilder {
     this._addTri(base, base+2, base+3);
   }
 
-  /** Box with rounded vertical edges */
+  /** Box with rounded vertical edges — delegates to addExtrudedRoundedRect */
   addRoundedBox(x, y, z, w, h, d, radius, segments) {
     const r = Math.min(radius, w/2, h/2);
     if (r <= 0.1) return this.addBox(x, y, z, w, h, d);
-    // Approximate with a regular box for now — full curved edges in later iteration
-    this.addBox(x, y, z, w, h, d);
+    this.addExtrudedRoundedRect(x, y, z, w, h, r, d, segments || 8);
+  }
+
+  /**
+   * Build the 2D polygon of a rounded rectangle — axis-aligned, in CCW order.
+   * @returns {Array<[number, number]>} points
+   */
+  _roundedRectPoints(x, y, w, h, r, segments) {
+    const segs = Math.max(2, segments || 8);
+    const pts = [];
+    const r_ = Math.min(r, w/2, h/2);
+    // Corners: BL, BR, TR, TL (CCW seen from +Z)
+    // BR corner: center (x+w-r, y+r), sweep from -90° to 0°
+    const centers = [
+      { cx: x + w - r_, cy: y + r_,       a0: -Math.PI/2,       a1: 0          }, // BR
+      { cx: x + w - r_, cy: y + h - r_,   a0: 0,                 a1: Math.PI/2  }, // TR
+      { cx: x + r_,     cy: y + h - r_,   a0: Math.PI/2,         a1: Math.PI    }, // TL
+      { cx: x + r_,     cy: y + r_,       a0: Math.PI,           a1: 3*Math.PI/2}, // BL
+    ];
+    for (const c of centers) {
+      for (let i = 0; i <= segs; i++) {
+        const t = c.a0 + (c.a1 - c.a0) * (i / segs);
+        pts.push([c.cx + Math.cos(t) * r_, c.cy + Math.sin(t) * r_]);
+      }
+    }
+    return pts;
+  }
+
+  /**
+   * Extruded rounded rectangle — watertight prism from z to z+depth.
+   * @param {number} x - origin X (corner)
+   * @param {number} y - origin Y (corner)
+   * @param {number} z - base Z
+   * @param {number} w - width
+   * @param {number} h - height (Y)
+   * @param {number} r - corner radius
+   * @param {number} depth - Z extrusion
+   * @param {number} [segments=8] - segments per corner
+   */
+  addExtrudedRoundedRect(x, y, z, w, h, r, depth, segments) {
+    const segs = Math.max(2, segments || 8);
+    const pts = this._roundedRectPoints(x, y, w, h, r, segs);
+    const n = pts.length;
+    const base = this.vOff;
+    // Bottom ring
+    for (const [px, py] of pts) this._addVertex(px, py, z);
+    // Top ring
+    for (const [px, py] of pts) this._addVertex(px, py, z + depth);
+    // Bottom center + top center for caps
+    // Use average XY as the fan center (rounded rect has center at x+w/2, y+h/2)
+    const bCenter = this._addVertex(x + w/2, y + h/2, z);
+    const tCenter = this._addVertex(x + w/2, y + h/2, z + depth);
+    // Bottom cap (reversed winding so normal faces -Z)
+    for (let i = 0; i < n; i++) {
+      const a = base + i, b = base + ((i + 1) % n);
+      this._addTri(bCenter, b, a);
+    }
+    // Top cap
+    for (let i = 0; i < n; i++) {
+      const a = base + n + i, b = base + n + ((i + 1) % n);
+      this._addTri(tCenter, a, b);
+    }
+    // Side walls
+    for (let i = 0; i < n; i++) {
+      const bl = base + i;
+      const br = base + ((i + 1) % n);
+      const tl = bl + n;
+      const tr = br + n;
+      this._addTri(bl, br, tr);
+      this._addTri(bl, tr, tl);
+    }
+  }
+
+  /**
+   * Frustum between two rounded rectangles at different Z heights — watertight.
+   * Both rectangles must use the same segments count. Used to create chamfered
+   * transitions (e.g. Gridfinity bin feet).
+   * @param {number} x1 - bottom origin X
+   * @param {number} y1 - bottom origin Y
+   * @param {number} w1 - bottom width
+   * @param {number} h1 - bottom height
+   * @param {number} r1 - bottom corner radius
+   * @param {number} x2 - top origin X
+   * @param {number} y2 - top origin Y
+   * @param {number} w2 - top width
+   * @param {number} h2 - top height
+   * @param {number} r2 - top corner radius
+   * @param {number} zBottom - bottom Z
+   * @param {number} zTop - top Z
+   * @param {number} [segments=8] - segments per corner
+   * @param {boolean} [capBottom=false] - close bottom face
+   * @param {boolean} [capTop=false] - close top face
+   */
+  addFrustumRoundedRect(x1, y1, w1, h1, r1, x2, y2, w2, h2, r2, zBottom, zTop, segments, capBottom, capTop) {
+    const segs = Math.max(2, segments || 8);
+    const ptsB = this._roundedRectPoints(x1, y1, w1, h1, r1, segs);
+    const ptsT = this._roundedRectPoints(x2, y2, w2, h2, r2, segs);
+    const n = Math.min(ptsB.length, ptsT.length);
+    const base = this.vOff;
+    for (let i = 0; i < n; i++) this._addVertex(ptsB[i][0], ptsB[i][1], zBottom);
+    for (let i = 0; i < n; i++) this._addVertex(ptsT[i][0], ptsT[i][1], zTop);
+    // Side quads
+    for (let i = 0; i < n; i++) {
+      const bl = base + i;
+      const br = base + ((i + 1) % n);
+      const tl = bl + n;
+      const tr = br + n;
+      this._addTri(bl, br, tr);
+      this._addTri(bl, tr, tl);
+    }
+    if (capBottom) {
+      const bc = this._addVertex(x1 + w1/2, y1 + h1/2, zBottom);
+      for (let i = 0; i < n; i++) {
+        const a = base + i, b = base + ((i + 1) % n);
+        this._addTri(bc, b, a);
+      }
+    }
+    if (capTop) {
+      const tc = this._addVertex(x2 + w2/2, y2 + h2/2, zTop);
+      for (let i = 0; i < n; i++) {
+        const a = base + n + i, b = base + n + ((i + 1) % n);
+        this._addTri(tc, a, b);
+      }
+    }
+  }
+
+  /**
+   * Hex prism — watertight regular hexagonal prism.
+   * @param {number} cx - center X
+   * @param {number} cy - center Y
+   * @param {number} z - base Z
+   * @param {number} r - circumradius (corner distance)
+   * @param {number} depth - Z height
+   * @param {boolean} [pointyTop=true] - true = flat-top hex rotated, false = flat sides on X
+   */
+  addHexPrism(cx, cy, z, r, depth, pointyTop) {
+    const offset = pointyTop === false ? Math.PI / 6 : 0;
+    const base = this.vOff;
+    for (let i = 0; i < 6; i++) {
+      const a = offset + (i / 6) * Math.PI * 2;
+      this._addVertex(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z);
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = offset + (i / 6) * Math.PI * 2;
+      this._addVertex(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z + depth);
+    }
+    const bCenter = this._addVertex(cx, cy, z);
+    const tCenter = this._addVertex(cx, cy, z + depth);
+    for (let i = 0; i < 6; i++) {
+      const a = base + i, b = base + ((i + 1) % 6);
+      this._addTri(bCenter, b, a);
+      const at = a + 6, bt = b + 6;
+      this._addTri(tCenter, at, bt);
+      this._addTri(a, b, bt);
+      this._addTri(a, bt, at);
+    }
+  }
+
+  /**
+   * Torus — watertight torus ring. Used for hinges, springs, o-rings.
+   * @param {number} cx - center X
+   * @param {number} cy - center Y
+   * @param {number} cz - center Z
+   * @param {number} R - major radius (center of tube)
+   * @param {number} r - minor radius (tube thickness)
+   * @param {number} [majorSegs=24] - segments around major ring
+   * @param {number} [minorSegs=12] - segments around tube
+   */
+  addTorus(cx, cy, cz, R, r, majorSegs, minorSegs) {
+    const M = Math.max(3, majorSegs || 24);
+    const m = Math.max(3, minorSegs || 12);
+    const base = this.vOff;
+    for (let i = 0; i < M; i++) {
+      const u = (i / M) * Math.PI * 2;
+      const cu = Math.cos(u), su = Math.sin(u);
+      for (let j = 0; j < m; j++) {
+        const v = (j / m) * Math.PI * 2;
+        const cv = Math.cos(v), sv = Math.sin(v);
+        this._addVertex(cx + (R + r * cv) * cu, cy + (R + r * cv) * su, cz + r * sv);
+      }
+    }
+    for (let i = 0; i < M; i++) {
+      const iN = (i + 1) % M;
+      for (let j = 0; j < m; j++) {
+        const jN = (j + 1) % m;
+        const a = base + i * m + j;
+        const b = base + iN * m + j;
+        const c = base + iN * m + jN;
+        const d = base + i * m + jN;
+        this._addTri(a, b, c);
+        this._addTri(a, c, d);
+      }
+    }
   }
 
   /** Hollow cylinder (tube) */
