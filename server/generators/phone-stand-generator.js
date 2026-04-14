@@ -11,15 +11,13 @@
  */
 
 import { MeshBuilder, getLib } from '../mesh-builder.js';
-import { num, bool } from './_shared/validate.js';
+import { num } from './_shared/validate.js';
 
 /** @typedef {object} PhoneStandOptions
  * @property {number} [deviceWidth=80]
- * @property {number} [deviceThickness=12]
  * @property {number} [backHeight=90]
  * @property {number} [baseDepth=60]
  * @property {number} [wallThickness=3]
- * @property {boolean} [cableSlot=true]
  */
 
 /**
@@ -28,11 +26,9 @@ import { num, bool } from './_shared/validate.js';
  */
 export async function generatePhoneStand3MF(opts = {}) {
   const dw = num(opts.deviceWidth, 50, 250, 80);
-  const dt = num(opts.deviceThickness, 4, 30, 12);
   const bh = num(opts.backHeight, 40, 200, 90);
   const bd = num(opts.baseDepth, 40, 150, 60);
   const wt = num(opts.wallThickness, 2, 6, 3);
-  const cableSlot = bool(opts.cableSlot, true);
 
   const lib = await getLib();
   const wrapper = new lib.CWrapper();
@@ -78,20 +74,6 @@ export async function generatePhoneStand3MF(opts = {}) {
       wt * 1.5            // thickness of the support along Y at each slice
     );
 
-    // Cable slot in the base — leave an opening in the front lip
-    // (implemented as omitting a section above). For simplicity we add
-    // nothing; the user can cut with side cutters after printing if
-    // they opt out of the slot — or we can carve a channel into the
-    // base via a NEGATIVE approach: build the base floor in two halves
-    // leaving a gap. Do that now.
-    if (cableSlot) {
-      // Overwrite approach: we already placed the full front lip.
-      // Build a small bump to fill the center of the base NOT including
-      // the cable slot area. Instead of repairs, we leave the lip as-is
-      // and rely on it being thin enough to bend/break if the user needs
-      // cable access. For v1 we document this.
-    }
-
     model.AddBuildItem(mesh, wrapper.GetIdentityTransform());
 
     const mdg = model.GetMetaDataGroup();
@@ -99,7 +81,6 @@ export async function generatePhoneStand3MF(opts = {}) {
     addMd('Title', `Phone Stand ${dw}mm`);
     addMd('Application', '3DPrintForge Model Forge');
     addMd('CreationDate', new Date().toISOString().split('T')[0]);
-    dt; // consume (reserved for device thickness clearance)
 
     const vfsPath = `/phone_stand_${Date.now()}.3mf`;
     const writer = model.QueryWriter('3mf');

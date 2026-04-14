@@ -30,11 +30,18 @@ import { int, num } from './_shared/validate.js';
 export async function generateSpring3MF(opts = {}) {
   const coils = int(opts.coils, 2, 40, 8);
   const diameter = num(opts.diameter, 4, 100, 20);
-  const wireDiameter = num(opts.wireDiameter, 0.6, 10, 2);
+  // Wire diameter is capped to keep the helix centerline radius strictly
+  // positive AND greater than the wire radius itself. Without this the
+  // helical tube would fold through the origin and produce self-
+  // intersecting geometry even though lib3mf would still write the file.
+  const wireDiameter = num(opts.wireDiameter, 0.6, Math.max(0.6, diameter / 2 - 0.5), 2);
   const pitch = num(opts.pitch, wireDiameter + 0.3, 20, 4);
 
   const majorR = diameter / 2 - wireDiameter / 2;
   const wireR = wireDiameter / 2;
+  if (majorR <= wireR) {
+    throw new Error(`Wire diameter (${wireDiameter}mm) too large for coil diameter (${diameter}mm).`);
+  }
 
   const lib = await getLib();
   const wrapper = new lib.CWrapper();

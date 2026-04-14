@@ -104,7 +104,12 @@ export async function generateGear3MF(opts = {}) {
   const module = num(opts.module, 0.3, 5, 1.5);
   const faceWidth = num(opts.faceWidth, 1, 50, 5);
   const pressureAngle = num(opts.pressureAngle, 14, 30, 20);
-  const bore = num(opts.bore, 0, teeth * module - module * 2, 3);
+  // Bore must stay strictly inside the root (dedendum) circle so the bore
+  // polygon cannot overlap the gear profile in addExtrudedAnnulus.
+  const pitchR = (teeth * module) / 2;
+  const rootR = Math.max(0.2, pitchR - 1.25 * module);
+  const maxBore = Math.max(0, 2 * rootR - 0.5);
+  const bore = num(opts.bore, 0, maxBore, Math.min(3, maxBore));
   const backlash = num(opts.backlash, 0, 0.5, 0.1);
 
   const polygon = buildGearPolygon(teeth, module, (pressureAngle * Math.PI) / 180, backlash);

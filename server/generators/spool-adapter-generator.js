@@ -55,10 +55,12 @@ export async function generateSpoolAdapter3MF(opts = {}) {
     // Main tube
     mb.addTube(0, 0, 0, outerD / 2, innerD / 2, height, 64);
 
-    // Internal grip ribs — small box protrusions facing inward
-    if (ribCount > 0) {
-      const ribW = 1.5;
-      const ribL = Math.min(height - 2, 8);
+    // Internal grip ribs — small box protrusions facing inward.
+    // Skip entirely when the adapter is too short to fit ribs — a zero or
+    // negative rib length would emit degenerate (non-manifold) boxes.
+    const ribW = 1.5;
+    const ribL = Math.min(height - 2, 8);
+    if (ribCount > 0 && ribL > 0.5) {
       for (let i = 0; i < ribCount; i++) {
         const a = (i / ribCount) * Math.PI * 2;
         const cx = Math.cos(a) * (innerD / 2 - ribHeight / 2);
