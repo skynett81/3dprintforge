@@ -41,3 +41,7 @@ packaging/arch/*.tar.gz
 packaging/arch/*.pkg.tar.zst
 packaging/arch/src/
 packaging/arch/pkg/
+packaging/flatpak/repo/
+packaging/flatpak/build-dir/
+packaging/flatpak/.flatpak-builder/
+packaging/flatpak/*.flatpak

@@ -1,6 +1,6 @@
 # Flatpak manifest for 3DPrintForge
-# Build: flatpak-builder build-dir com.geektech.3dprintforge.yml --force-clean --install --user
-app-id: com.geektech.3dprintforge
+# Build: flatpak-builder build-dir com.geektech.PrintForge3D.yml --force-clean --install --user
+app-id: com.geektech.PrintForge3D
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
@@ -21,25 +21,27 @@ finish-args:
   - --filesystem=xdg-download
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
-  - --own-name=com.geektech.3dprintforge
+  - --own-name=com.geektech.PrintForge3D
 
 modules:
-  - name: 3dprintforge
+  - name: printforge3d
     buildsystem: simple
     build-commands:
-      - cp -r linux-unpacked /app/3dprintforge
+      - mkdir -p /app/3dprintforge
+      - cp -r 3dprintforge-1.1.18/* /app/3dprintforge/
       - install -Dm755 launcher.sh /app/bin/3dprintforge
-      - install -Dm644 com.geektech.3dprintforge.desktop /app/share/applications/com.geektech.3dprintforge.desktop
-      - install -Dm644 icon.png /app/share/icons/hicolor/256x256/apps/com.geektech.3dprintforge.png
-      - install -Dm644 com.geektech.3dprintforge.metainfo.xml /app/share/metainfo/com.geektech.3dprintforge.metainfo.xml
+      - install -Dm644 com.geektech.PrintForge3D.desktop /app/share/applications/com.geektech.PrintForge3D.desktop
+      - install -Dm644 icon.png /app/share/icons/hicolor/256x256/apps/com.geektech.PrintForge3D.png
+      - install -Dm644 com.geektech.PrintForge3D.metainfo.xml /app/share/metainfo/com.geektech.PrintForge3D.metainfo.xml
     sources:
       - type: archive
         path: ../../dist-electron/3dprintforge-1.1.18.tar.gz
+        strip-components: 0
       - type: file
         path: launcher.sh
       - type: file
-        path: com.geektech.3dprintforge.desktop
+        path: com.geektech.PrintForge3D.desktop
       - type: file
         path: icon.png
       - type: file
-        path: com.geektech.3dprintforge.metainfo.xml
+        path: com.geektech.PrintForge3D.metainfo.xml
