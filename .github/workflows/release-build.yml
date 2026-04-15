@@ -1,0 +1,139 @@
+name: Build and Sign Release
+
+# Builds all desktop installers when a new version tag is pushed.
+# Windows artifacts are signed by SignPath.io (free for open source).
+#
+# Setup required before first use:
+#   1. Register at https://signpath.io/ with your open-source project
+#   2. Get approved (free for open-source — takes a few days)
+#   3. Add repository secrets:
+#      - SIGNPATH_API_TOKEN
+#      - SIGNPATH_ORG_ID
+#      - SIGNPATH_PROJECT_SLUG
+#      - SIGNPATH_SIGNING_POLICY_SLUG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm flatpak flatpak-builder
+          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y --noninteractive flathub \
+            org.freedesktop.Platform//24.08 \
+            org.freedesktop.Sdk//24.08 \
+            org.electronjs.Electron2.BaseApp//24.08
+      - run: npm ci
+      - name: Build Linux installers
+        run: npx electron-builder --linux AppImage deb rpm tar.gz
+      - name: Build Flatpak
+        run: |
+          cd packaging/flatpak
+          flatpak-builder --repo=repo --force-clean build-dir com.geektech.PrintForge3D.yml
+          flatpak build-bundle repo 3dprintforge-${GITHUB_REF_NAME#v}.flatpak com.geektech.PrintForge3D
+          cp *.flatpak ../../dist-electron/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-installers
+          path: dist-electron/*
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build macOS installers (unsigned)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npx electron-builder --mac dmg zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-installers
+          path: dist-electron/*.{dmg,zip}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build Windows installers (unsigned placeholder)
+        run: npx electron-builder --win nsis portable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers-unsigned
+          path: dist-electron/*.exe
+
+  sign-windows:
+    needs: build-windows
+    runs-on: windows-latest
+    # Only run signing job if SignPath secrets are configured
+    if: ${{ github.repository == 'skynett81/3dprintforge' && vars.SIGNPATH_ENABLED == 'true' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-installers-unsigned
+          path: unsigned
+      - name: Submit to SignPath
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+          project-slug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ github.run_id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers-signed
+          path: signed/*.exe
+
+  publish:
+    needs: [build-linux, build-mac, sign-windows]
+    if: always() && (needs.build-linux.result == 'success' || needs.build-mac.result == 'success' || needs.sign-windows.result == 'success' || needs.build-windows.result == 'success')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Generate SHA256SUMS
+        run: |
+          cd artifacts
+          find . -type f \( -name '*.exe' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.flatpak' -o -name '*.zst' -o -name '*.tar.gz' -o -name '*.dmg' -o -name '*.zip' \) -exec sha256sum {} \; | sed 's|\./||' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Upload to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.rpm
+            artifacts/**/*.flatpak
+            artifacts/**/*.zst
+            artifacts/**/*.tar.gz
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
+            artifacts/SHA256SUMS.txt
