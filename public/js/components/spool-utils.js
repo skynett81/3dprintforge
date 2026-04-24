@@ -155,14 +155,19 @@
       if (isPrinting && est && est.weight_g > 0) {
         const pct = data.mc_percent || 0;
         const consumedG = Math.round(est.weight_g * pct / 100);
-        // For AMS trays: remainG is continuously synced during printing (decreasing),
-        // so we reconstruct start weight: startOfPrintG = remainG + consumedG
-        // For EXT (no AMS sync): remainG is fixed at print-start value,
-        // so we use it directly as start weight
+        // Start-of-print weight calculation depends on whether the platform
+        // syncs remainG live during the job:
+        //   - Bambu AMS: remainG shrinks continuously → reconstruct start
+        //     with remainG + consumedG
+        //   - Bambu EXT: remainG is frozen at print-start → use it directly
+        //   - Moonraker / PrusaLink / OctoPrint: no live sync, spool weight
+        //     updates only when print finishes → same treatment as EXT
         const _isExtMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
-        const startOfPrintG = _isExtMapping
-          ? Math.min(totalG, remainG)  // EXT: remainG IS the start value (not synced during print)
-          : Math.min(totalG, remainG + consumedG);  // AMS: reconstruct start from synced value
+        const _isBambuAms = Array.isArray(data.mapping) && !_isExtMapping && data.ams?.ams?.length;
+        const _useLiveSyncMath = _isBambuAms;
+        const startOfPrintG = _useLiveSyncMath
+          ? Math.min(totalG, remainG + consumedG)  // Bambu AMS: reconstruct start from synced value
+          : Math.min(totalG, remainG);             // EXT / Klipper: remainG IS the start value
         const currentRemainG = Math.max(0, startOfPrintG - consumedG);
         const afterPrintG = Math.max(0, startOfPrintG - est.weight_g);
         return {
