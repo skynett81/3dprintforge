@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3DPrintForge — Debug</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; background: #0b0f17; color: #cbd5e1; font-size: 13px; }
+    header { padding: 10px 14px; background: #111827; border-bottom: 1px solid #1f2937; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    header h1 { font-size: 14px; margin: 0; color: #10b3a4; font-weight: 600; }
+    header .pill { padding: 2px 8px; border-radius: 4px; background: #1f2937; font-size: 11px; }
+    header .pill.ok { background: #065f46; color: #d1fae5; }
+    header .pill.warn { background: #7c2d12; color: #fed7aa; }
+    header .pill.err { background: #7f1d1d; color: #fecaca; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1f2937; height: calc(100vh - 44px); }
+    section { background: #0b0f17; overflow: hidden; display: flex; flex-direction: column; }
+    section > h2 { margin: 0; padding: 8px 12px; background: #111827; border-bottom: 1px solid #1f2937; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
+    section > h2 button { background: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 4px; font-size: 11px; padding: 3px 8px; cursor: pointer; }
+    section > h2 button:hover { background: #374151; }
+    section .body { flex: 1; overflow: auto; padding: 4px 0; }
+    .row { padding: 4px 12px; border-bottom: 1px solid #1f2937; display: grid; grid-template-columns: 70px 60px 1fr; gap: 8px; }
+    .row .t { color: #64748b; font-size: 11px; }
+    .row .tag { font-size: 11px; padding: 0 6px; border-radius: 3px; background: #1f2937; text-align: center; }
+    .row.err .tag { background: #7f1d1d; color: #fecaca; }
+    .row.warn .tag { background: #7c2d12; color: #fed7aa; }
+    .row.ws .tag { background: #134e4a; color: #5eead4; }
+    .row.render .tag { background: #1e3a8a; color: #bfdbfe; }
+    .row .msg { word-break: break-word; white-space: pre-wrap; }
+    .row .msg.dim { color: #64748b; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 4px 12px; text-align: left; border-bottom: 1px solid #1f2937; font-size: 12px; }
+    th { background: #111827; color: #94a3b8; font-weight: 600; position: sticky; top: 0; }
+    td.n { font-variant-numeric: tabular-nums; text-align: right; }
+    td .bar { display: inline-block; height: 10px; background: #10b981; vertical-align: middle; margin-left: 6px; border-radius: 2px; }
+    .legend { padding: 8px 12px; font-size: 11px; color: #64748b; border-top: 1px solid #1f2937; background: #0b0f17; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>3DPrintForge Debug</h1>
+    <span id="ws-status" class="pill">WS: connecting…</span>
+    <span id="dash-status" class="pill">Dashboard: not connected</span>
+    <span class="pill" id="console-count">0 console errors</span>
+    <span class="pill" id="render-count">0 renders/s</span>
+    <span class="pill" id="ws-count">0 WS msgs/s</span>
+    <span class="pill" id="ws-bytes">0 B/s</span>
+    <span class="pill" id="uptime">uptime 0s</span>
+    <span style="flex:1"></span>
+    <button onclick="copyDiagnostics()" id="copy-btn" style="background:#065f46;color:#d1fae5;border-color:#047857">📋 Copy diagnostics</button>
+    <button onclick="location.href='/'">← Back to dashboard</button>
+  </header>
+  <main>
+    <section>
+      <h2>Console errors &amp; warnings <button onclick="clearConsole()">Clear</button></h2>
+      <div class="body" id="console-body"></div>
+      <div class="legend">Captures window.onerror, unhandledrejection, and console.warn/error from this tab.</div>
+    </section>
+    <section>
+      <h2>WebSocket traffic <button onclick="clearWs()">Clear</button></h2>
+      <div class="body" id="ws-body"></div>
+      <div class="legend">Each incoming WS message. Size shown in bytes. Click a row to view payload.</div>
+    </section>
+    <section>
+      <h2>Re-render counters (top 15) <button onclick="_renderTallies = {}; renderTop()">Reset</button></h2>
+      <div class="body" id="render-body"></div>
+      <div class="legend">Counts every `innerHTML = …` assignment. High numbers &rarr; component is rebuilding DOM unnecessarily.</div>
+    </section>
+    <section>
+      <h2>State deltas (active printer) <button onclick="clearState()">Clear</button></h2>
+      <div class="body" id="state-body"></div>
+      <div class="legend">Top-level keys that changed in each `status` message. Helps pinpoint which fields drive repaints.</div>
+    </section>
+  </main>
+
+<script>
+'use strict';
+
+const startTime = Date.now();
+let _renderTallies = {};
+let _renderTicksPerSec = 0;
+let _wsTicksPerSec = 0;
+let _wsBytesPerSec = 0;
+let _consoleErrors = 0;
+
+const consoleBody = document.getElementById('console-body');
+const wsBody = document.getElementById('ws-body');
+const stateBody = document.getElementById('state-body');
+
+function fmtTime(d = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3, '0')}`;
+}
+
+function row(cls, tag, msg, parent) {
+  const r = document.createElement('div');
+  r.className = 'row ' + cls;
+  r.innerHTML = `<span class="t">${fmtTime()}</span><span class="tag">${tag}</span><span class="msg"></span>`;
+  r.querySelector('.msg').textContent = msg;
+  parent.insertBefore(r, parent.firstChild);
+  while (parent.children.length > 500) parent.lastChild.remove();
+  return r;
+}
+
+window.addEventListener('error', (e) => {
+  _consoleErrors++;
+  row('err', 'ERR', `${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`, consoleBody);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  _consoleErrors++;
+  row('err', 'REJ', String(e.reason?.stack || e.reason), consoleBody);
+});
+const origWarn = console.warn;
+const origError = console.error;
+console.warn = (...args) => { row('warn', 'WARN', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '), consoleBody); origWarn.apply(console, args); };
+console.error = (...args) => { _consoleErrors++; row('err', 'ERR', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '), consoleBody); origError.apply(console, args); };
+
+// Listen for render-tally bursts + heartbeat from the dashboard tab.
+// The dashboard broadcasts unconditionally, so all we do here is aggregate.
+let _dashboardConnected = false;
+let _lastHeartbeatAt = 0;
+if (typeof BroadcastChannel !== 'undefined') {
+  const ch = new BroadcastChannel('3dpf-debug');
+  ch.addEventListener('message', (e) => {
+    const msg = e.data;
+    if (msg?.type === 'hb') {
+      _dashboardConnected = true;
+      _lastHeartbeatAt = Date.now();
+    } else if (msg?.type === 'render' && msg.tallies) {
+      _dashboardConnected = true;
+      _lastHeartbeatAt = Date.now();
+      for (const [k, n] of Object.entries(msg.tallies)) {
+        _renderTallies[k] = (_renderTallies[k] || 0) + n;
+        _renderTicksPerSec += n;
+      }
+    }
+  });
+}
+
+// Drop connection indicator if we haven't heard from dashboard in 4s.
+setInterval(() => {
+  if (_lastHeartbeatAt && Date.now() - _lastHeartbeatAt > 4000) _dashboardConnected = false;
+}, 1000);
+
+function renderTop() {
+  const arr = Object.entries(_renderTallies).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  const max = arr[0]?.[1] || 1;
+  document.getElementById('render-body').innerHTML =
+    '<table><tr><th>Target</th><th class="n">Writes</th><th></th></tr>' +
+    arr.map(([k, n]) =>
+      `<tr><td>${k}</td><td class="n">${n}</td><td><span class="bar" style="width:${Math.round(200 * n / max)}px"></span></td></tr>`).join('') +
+    '</table>';
+}
+
+// Connect to the real /ws endpoint on this server and spy on the payload.
+let lastState = null;
+function connect() {
+  const url = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws';
+  const ws = new WebSocket(url);
+  const status = document.getElementById('ws-status');
+  ws.onopen = () => { status.textContent = 'WS: connected'; status.classList.remove('err'); status.classList.add('ok'); };
+  ws.onclose = () => { status.textContent = 'WS: disconnected'; status.classList.remove('ok'); status.classList.add('err'); setTimeout(connect, 1500); };
+  ws.onerror = () => { status.textContent = 'WS: error'; status.classList.add('err'); };
+  ws.onmessage = (e) => {
+    _wsTicksPerSec++;
+    _wsBytesPerSec += e.data.length;
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    const r = row('ws', msg.type || '?', `${msg.data?.printer_id || ''} ${e.data.length} B`, wsBody);
+    r.title = e.data.length > 4000 ? e.data.slice(0, 4000) + '…(truncated)' : e.data;
+    r.onclick = () => alert(JSON.stringify(msg, null, 2).slice(0, 4000));
+
+    if (msg.type === 'status' && msg.data) {
+      const d = msg.data;
+      const changed = lastState
+        ? Object.keys(d).filter(k => JSON.stringify(d[k]) !== JSON.stringify(lastState[k]))
+        : Object.keys(d);
+      lastState = { ...lastState, ...d };
+      row('render', 'DIFF', changed.slice(0, 20).join(', ') + (changed.length > 20 ? ` +${changed.length - 20} more` : ''), stateBody);
+    }
+  };
+}
+connect();
+
+function clearConsole() { consoleBody.innerHTML = ''; }
+function clearWs() { wsBody.innerHTML = ''; }
+function clearState() { stateBody.innerHTML = ''; lastState = null; }
+
+// Copy a full diagnostics snapshot to clipboard as plain text so it can be
+// pasted into chat or an issue. Samples 60 seconds of counter data so bursts
+// average out.
+async function copyDiagnostics() {
+  const btn = document.getElementById('copy-btn');
+  const orig = btn.textContent;
+  btn.textContent = 'Collecting…';
+  btn.disabled = true;
+
+  // Snapshot top render counters
+  const renderRows = Object.entries(_renderTallies)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([k, n]) => `  ${n.toString().padStart(6)}  ${k}`);
+
+  // Snapshot last console errors
+  const consoleRows = Array.from(consoleBody.children).slice(0, 20).map(r => r.textContent.trim());
+
+  // Snapshot recent WS traffic types with counts
+  const wsTypes = {};
+  Array.from(wsBody.children).forEach(r => {
+    const tag = r.querySelector('.tag')?.textContent || '?';
+    wsTypes[tag] = (wsTypes[tag] || 0) + 1;
+  });
+  const wsRows = Object.entries(wsTypes).sort((a, b) => b[1] - a[1]).map(([t, n]) => `  ${n.toString().padStart(6)}  ${t}`);
+
+  // Snapshot state delta keys (top N by occurrence across recent samples)
+  const stateKeys = {};
+  Array.from(stateBody.children).forEach(r => {
+    const msg = r.querySelector('.msg')?.textContent || '';
+    msg.split(/[, ]+/).forEach(k => { k = k.trim(); if (k && !/^\+/.test(k) && !/^more/.test(k)) stateKeys[k] = (stateKeys[k] || 0) + 1; });
+  });
+  const stateRows = Object.entries(stateKeys).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k, n]) => `  ${n.toString().padStart(6)}  ${k}`);
+
+  const uptime = Math.round((Date.now() - startTime) / 1000);
+  const report = [
+    '=== 3DPrintForge Debug Snapshot ===',
+    `Time:     ${new Date().toISOString()}`,
+    `URL:      ${location.href}`,
+    `UA:       ${navigator.userAgent}`,
+    `Uptime:   ${uptime}s on this page`,
+    `Viewport: ${window.innerWidth}×${window.innerHeight}`,
+    '',
+    `Console errors: ${_consoleErrors}`,
+    `Current:  ${document.getElementById('render-count').textContent} · ${document.getElementById('ws-count').textContent} · ${document.getElementById('ws-bytes').textContent}`,
+    '',
+    '── Top 15 innerHTML writers ──',
+    renderRows.join('\n') || '  (none)',
+    '',
+    '── WS message types (recent) ──',
+    wsRows.join('\n') || '  (none)',
+    '',
+    '── State delta keys most frequently changed ──',
+    stateRows.join('\n') || '  (none)',
+    '',
+    '── Last 20 console entries ──',
+    consoleRows.join('\n') || '  (none)',
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(report);
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+  } catch (e) {
+    // Fallback — show in a textarea for manual copy
+    const pre = document.createElement('textarea');
+    pre.value = report;
+    pre.style.cssText = 'position:fixed;top:20px;left:20px;right:20px;bottom:20px;z-index:99999;background:#0b0f17;color:#cbd5e1;border:1px solid #374151;font-family:monospace;padding:12px;font-size:12px';
+    pre.readOnly = true;
+    pre.select();
+    const close = document.createElement('button');
+    close.textContent = 'Close (click outside works too)';
+    close.style.cssText = 'position:fixed;top:24px;right:30px;z-index:100000';
+    close.onclick = () => { pre.remove(); close.remove(); btn.disabled = false; btn.textContent = orig; };
+    document.body.appendChild(pre);
+    document.body.appendChild(close);
+    pre.focus();
+    pre.select();
+  }
+}
+
+setInterval(() => {
+  const dashEl = document.getElementById('dash-status');
+  if (_dashboardConnected) { dashEl.textContent = 'Dashboard: connected'; dashEl.classList.add('ok'); dashEl.classList.remove('warn'); }
+  else { dashEl.textContent = 'Dashboard: not connected (open / in another tab)'; dashEl.classList.add('warn'); }
+  document.getElementById('console-count').textContent = `${_consoleErrors} console errors`;
+  document.getElementById('render-count').textContent = `${_renderTicksPerSec} renders/s`;
+  document.getElementById('ws-count').textContent = `${_wsTicksPerSec} WS msgs/s`;
+  document.getElementById('ws-bytes').textContent = `${(_wsBytesPerSec / 1024).toFixed(1)} KB/s`;
+  const up = Math.round((Date.now() - startTime) / 1000);
+  document.getElementById('uptime').textContent = `uptime ${up}s`;
+  _renderTicksPerSec = 0;
+  _wsTicksPerSec = 0;
+  _wsBytesPerSec = 0;
+  renderTop();
+}, 1000);
+</script>
+</body>
+</html>

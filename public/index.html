@@ -407,7 +407,7 @@
               <p>
                 <span>System</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">4</span>
+                <span class="badge text-bg-secondary sidebar-section-count">7</span>
               </p>
             </a>
             <ul class="nav nav-treeview">
@@ -451,6 +451,24 @@
                 <a href="#" class="nav-link sidebar-btn" data-panel="octoprint" onclick="openPanel('octoprint'); return false;" data-ripple>
                   <i class="nav-icon bi bi-plug"></i>
                   <p>OctoPrint</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="admin-diagnostics" onclick="openPanel('admin-diagnostics'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-wrench-adjustable"></i>
+                  <p>Diagnostics &amp; tuning</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="admin-inventory" onclick="openPanel('admin-inventory'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-boxes"></i>
+                  <p>Inventory admin</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="admin-kb" onclick="openPanel('admin-kb'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-journal-richtext"></i>
+                  <p>Knowledge base</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -771,6 +789,10 @@
         <!-- Model Info strip (MakerWorld / Printables / Thingiverse) -->
         <div class="model-info-strip" id="model-info" style="display:none"></div>
 
+        <!-- Admin-only panels (Diagnostics & tuning, Inventory admin, Knowledge base viewer,
+             Vendor-features-2026) live in the sidebar under "System" — keeping them out of the
+             main dashboard avoids reflow jitter from their per-tick display toggles. -->
+
       </div><!-- /app-content (dashboard-grid) -->
 
     </main><!-- /app-main -->
@@ -1010,6 +1032,11 @@
   <script src="/js/components/filament-ring.js?v=15"></script>
   <script src="/js/components/drag-drop-upload.js"></script>
   <script src="/js/components/notification-center.js"></script>
+  <script src="/js/components/vendor-features-2026.js"></script>
+  <script src="/js/components/vendor-diagnostics-2026.js"></script>
+  <script src="/js/components/inventory-enhancements.js"></script>
+  <script src="/js/components/inventory-admin-2026.js"></script>
+  <script src="/js/components/kb-viewer-2026.js"></script>
   <script src="/js/interactions.js"></script>
   <script src="/js/permissions.js"></script>
   <script src="/js/app.js"></script>

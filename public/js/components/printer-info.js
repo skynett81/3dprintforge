@@ -63,9 +63,12 @@
         </div>`;
     }
 
-    // Filament system (type-aware)
-    const filamentLabel = pt.hasAms ? 'AMS' : pt.hasErcf ? 'ERCF' : pt.hasAfc ? 'AFC' : pt.hasMmu ? 'MMU' : pt.hasMultiExtruder ? 'Multi-Extruder' : 'Filament';
-    const filamentConnected = pt.hasAms || pt.hasErcf || pt.hasAfc || pt.hasMmu || pt.hasMultiExtruder;
+    // Filament system (type-aware) — Snapmaker U1 has a true toolchanger,
+    // so label it accordingly rather than the generic "Multi-Extruder".
+    const modelStr = (meta.model || '').toLowerCase();
+    const isU1 = state._isSnapmakerU1 || /snapmaker.*u1/.test(modelStr);
+    const filamentLabel = pt.hasAms ? 'AMS' : pt.hasErcf ? 'ERCF' : pt.hasAfc ? 'AFC' : pt.hasMmu ? 'MMU' : isU1 ? 'Toolchanger' : pt.hasMultiExtruder ? 'Multi-Extruder' : 'Filament';
+    const filamentConnected = pt.hasAms || pt.hasErcf || pt.hasAfc || pt.hasMmu || isU1 || pt.hasMultiExtruder;
 
     html += `
       <div class="info-item">
