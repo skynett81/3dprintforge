@@ -144,7 +144,14 @@
     if (isActive && data) {
       const gcodeState = data.gcode_state || 'IDLE';
       const isPrinting = gcodeState === 'RUNNING' || gcodeState === 'PAUSE';
-      const est = window._printEstimates;
+      // Prefer MakerWorld/task estimate (Bambu); fall back to the slicer's
+      // embedded filament weight (Moonraker / PrusaLink / OctoPrint ship it
+      // in the gcode metadata under _slicer_filament_total_g). Without this
+      // fallback, non-Bambu printers never get live %-ticking.
+      const est = window._printEstimates
+        || (data._slicer_filament_total_g > 0
+              ? { weight_g: data._slicer_filament_total_g }
+              : null);
       if (isPrinting && est && est.weight_g > 0) {
         const pct = data.mc_percent || 0;
         const consumedG = Math.round(est.weight_g * pct / 100);
