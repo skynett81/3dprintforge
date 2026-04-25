@@ -343,6 +343,8 @@ function getRoutePermission(method, path) {
 
   // Slicer bridge — slicing is a 'print' operation (uses connected printers)
   if (path.startsWith('/api/slicer/bridge/')) return method === 'GET' ? 'view' : 'print';
+  // Native slicer — pure JS, no printer access required, anyone with view perm
+  if (path.startsWith('/api/slicer/native/')) return 'view';
 
   // Default: require view for GET, admin for everything else
   return method === 'GET' ? 'view' : 'admin';
@@ -7009,6 +7011,68 @@ export async function handleApiRequest(req, res) {
           return res.end(result.gcodeBuffer);
         } catch (e) {
           return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice') {
+      // Project's own pure-JS slicer. No external slicer required.
+      // EXPERIMENTAL — single perimeter + linear infill, no supports.
+      const chunks = [];
+      let total = 0;
+      const limit = 50 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'model too large (max 50 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const filename = url.searchParams.get('filename') || 'model.stl';
+          const settings = {
+            layerHeight:    parseFloat(url.searchParams.get('layerHeight'))    || 0.2,
+            lineWidth:      parseFloat(url.searchParams.get('lineWidth'))      || 0.4,
+            perimeters:     parseInt(url.searchParams.get('perimeters'), 10)   || 2,
+            infillDensity:  parseFloat(url.searchParams.get('infillDensity'))  || 0.2,
+            infillAngle:    parseFloat(url.searchParams.get('infillAngle'))    || 45,
+            printSpeed:     parseFloat(url.searchParams.get('printSpeed'))     || 60,
+            firstLayerSpeed:parseFloat(url.searchParams.get('firstLayerSpeed'))|| 20,
+            travelSpeed:    parseFloat(url.searchParams.get('travelSpeed'))    || 120,
+            bedTemp:        parseFloat(url.searchParams.get('bedTemp'))        || 60,
+            nozzleTemp:     parseFloat(url.searchParams.get('nozzleTemp'))     || 215,
+            material:       url.searchParams.get('material') || 'PLA',
+          };
+
+          const start = Date.now();
+          const { bufferToMesh } = await import('./format-converter.js');
+          const { sliceMeshToGcode } = await import('./native-slicer.js');
+          const mesh = await bufferToMesh(buf, filename);
+          const result = await sliceMeshToGcode(mesh, settings);
+          const elapsed = Date.now() - start;
+
+          // Optional time/material estimate via the existing estimator.
+          const { estimate } = await import('./gcode-time-estimator.js');
+          const est = estimate(result.gcode);
+
+          const gcodeBuf = Buffer.from(result.gcode, 'utf-8');
+          const outName = filename.replace(/\.[^.]+$/, '') + '.gcode';
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${outName}"`,
+            'X-Slicer': 'native',
+            'X-Slice-Duration-Ms': String(elapsed),
+            'X-Layer-Count': String(result.layers),
+            'X-Triangles': String(result.triangles),
+            'X-Estimated-Time-Sec': String(est.timeSeconds),
+            'X-Filament-G': String(est.weightG),
+          });
+          return res.end(gcodeBuf);
+        } catch (e) {
+          return sendJson(res, { error: e.message, stack: e.stack?.slice(0, 1000) }, 500);
         }
       });
       return;

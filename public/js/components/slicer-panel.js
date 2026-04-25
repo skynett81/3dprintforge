@@ -27,6 +27,11 @@
     const body = document.getElementById('overlay-panel-body');
     if (!body) return;
     body.innerHTML = `
+      <div class="pf-tabs" style="margin-bottom:8px">
+        <button class="form-btn pf-tab active" data-tab="bridge">🔗 Slicer Bridge (recommended)</button>
+        <button class="form-btn pf-tab" data-tab="native">⚡ Native Slicer (experimental)</button>
+      </div>
+      <div id="slc-tab-bridge">
       <div class="card" id="slc-card">
         <div class="card-body">
           <h5 style="margin:0 0 8px"><i class="bi bi-cpu"></i> Slicer Bridge</h5>
@@ -69,7 +74,64 @@
 
           <div id="slc-status" style="margin-top:12px"></div>
         </div>
-      </div>`;
+      </div>
+      </div><!-- /tab-bridge -->
+
+      <div id="slc-tab-native" style="display:none">
+        <div class="card">
+          <div class="card-body">
+            <h5 style="margin:0 0 8px"><i class="bi bi-lightning-charge"></i> Native Slicer <span class="badge" style="background:#f59e0b;color:#fff;font-size:0.7rem">experimental</span></h5>
+            <p class="text-muted" style="font-size:0.82rem">3DPrintForge's own pure-JS slicer. No external slicer required. <strong>Limitations</strong>: simple geometry only, basic linear infill, no supports/bridges, no advanced features. Use the Bridge tab for production prints.</p>
+
+            <div class="pf-drop" id="slc-n-drop" style="margin-top:8px">
+              <input type="file" id="slc-n-file" accept=".stl,.3mf,.obj" style="display:none">
+              <strong>Drop a model file here</strong>
+              <p class="text-muted" style="font-size:0.78rem">or <a href="#" id="slc-n-pick" style="color:var(--accent-primary)">click to choose</a></p>
+              <p class="text-muted" style="font-size:0.7rem">Up to 50 MB · STL / 3MF / OBJ</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:12px">
+              <label>Material:
+                <select id="slc-n-material" class="form-control">
+                  <option value="PLA">PLA</option>
+                  <option value="PETG">PETG</option>
+                  <option value="ABS">ABS</option>
+                  <option value="ASA">ASA</option>
+                  <option value="TPU">TPU</option>
+                </select>
+              </label>
+              <label>Layer height (mm): <input type="number" id="slc-n-lh" value="0.2" step="0.05" min="0.05" max="0.6" class="form-control"></label>
+              <label>Line width (mm): <input type="number" id="slc-n-lw" value="0.4" step="0.05" min="0.2" max="1.0" class="form-control"></label>
+              <label>Perimeters: <input type="number" id="slc-n-per" value="2" min="1" max="6" class="form-control"></label>
+              <label>Infill %: <input type="number" id="slc-n-inf" value="20" min="0" max="100" class="form-control"></label>
+              <label>Print speed (mm/s): <input type="number" id="slc-n-ps" value="60" min="10" max="300" class="form-control"></label>
+              <label>Nozzle (°C): <input type="number" id="slc-n-nt" value="215" min="150" max="320" class="form-control"></label>
+              <label>Bed (°C): <input type="number" id="slc-n-bt" value="60" min="0" max="120" class="form-control"></label>
+            </div>
+
+            <button id="slc-n-go" class="form-btn primary" style="margin-top:14px" disabled>Slice &amp; Download</button>
+            <div id="slc-n-status" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div><!-- /tab-native -->`;
+
+    // Wire tab switcher.
+    body.querySelectorAll('.pf-tab').forEach(b => {
+      b.onclick = () => {
+        body.querySelectorAll('.pf-tab').forEach(x => x.classList.toggle('active', x === b));
+        document.getElementById('slc-tab-bridge').style.display = (b.dataset.tab === 'bridge') ? '' : 'none';
+        document.getElementById('slc-tab-native').style.display = (b.dataset.tab === 'native') ? '' : 'none';
+      };
+    });
+
+    // Wire native tab.
+    document.getElementById('slc-n-pick').onclick = (e) => { e.preventDefault(); document.getElementById('slc-n-file').click(); };
+    document.getElementById('slc-n-file').onchange = (e) => _selectFileNative(e.target.files[0]);
+    const ndrop = document.getElementById('slc-n-drop');
+    ndrop.ondragover = (e) => { e.preventDefault(); ndrop.classList.add('pf-drop-over'); };
+    ndrop.ondragleave = () => ndrop.classList.remove('pf-drop-over');
+    ndrop.ondrop = (e) => { e.preventDefault(); ndrop.classList.remove('pf-drop-over'); _selectFileNative(e.dataTransfer.files[0]); };
+    document.getElementById('slc-n-go').onclick = _runNativeSlice;
 
     document.getElementById('slc-pick').onclick = (e) => { e.preventDefault(); document.getElementById('slc-file').click(); };
     document.getElementById('slc-file').onchange = (e) => _selectFile(e.target.files[0]);
@@ -215,6 +277,78 @@
     } finally {
       document.getElementById('slc-go').disabled = false;
       document.getElementById('slc-go-send').disabled = false;
+    }
+  }
+
+  // ── Native slicer handlers ──────────────────────────────────────
+
+  function _selectFileNative(file) {
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) { _toast('Model too large (max 50 MB)', 'error'); return; }
+    _state.nativeFile = file;
+    _state.nativeName = file.name;
+    document.getElementById('slc-n-drop').querySelector('strong').textContent = file.name;
+    document.getElementById('slc-n-go').disabled = false;
+  }
+
+  async function _runNativeSlice() {
+    if (!_state.nativeFile) return;
+    const status = document.getElementById('slc-n-status');
+    status.innerHTML = '<em><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Slicing in pure JS…</em>';
+    document.getElementById('slc-n-go').disabled = true;
+
+    const params = new URLSearchParams({
+      filename: _state.nativeName,
+      material:        document.getElementById('slc-n-material').value,
+      layerHeight:     document.getElementById('slc-n-lh').value,
+      lineWidth:       document.getElementById('slc-n-lw').value,
+      perimeters:      document.getElementById('slc-n-per').value,
+      infillDensity:   String(parseFloat(document.getElementById('slc-n-inf').value) / 100),
+      printSpeed:      document.getElementById('slc-n-ps').value,
+      nozzleTemp:      document.getElementById('slc-n-nt').value,
+      bedTemp:         document.getElementById('slc-n-bt').value,
+    });
+
+    try {
+      const buf = await _state.nativeFile.arrayBuffer();
+      const r = await fetch(`/api/slicer/native/slice?${params.toString()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf,
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        status.innerHTML = `<div style="color:#ef4444"><strong>Slice failed:</strong> ${_esc(err.error || r.statusText)}</div>`;
+        return;
+      }
+      const layers = r.headers.get('X-Layer-Count');
+      const tris = r.headers.get('X-Triangles');
+      const dur = r.headers.get('X-Slice-Duration-Ms');
+      const timeSec = parseInt(r.headers.get('X-Estimated-Time-Sec'), 10) || 0;
+      const fil = parseFloat(r.headers.get('X-Filament-G')) || 0;
+      const filename = (_state.nativeName.replace(/\.[^.]+$/, '') || 'model') + '.gcode';
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      const hours = Math.floor(timeSec / 3600), mins = Math.floor((timeSec % 3600) / 60);
+      status.innerHTML = `
+        <div style="color:#22c55e;font-weight:600">✓ Native slice complete</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px;font-size:0.85rem">
+          <div><strong>Layers:</strong> ${layers}</div>
+          <div><strong>Triangles:</strong> ${parseInt(tris).toLocaleString()}</div>
+          <div><strong>Slice time:</strong> ${dur} ms</div>
+          <div><strong>Print time:</strong> ${hours}h ${mins}m</div>
+          <div><strong>Filament:</strong> ${fil.toFixed(1)} g</div>
+          <div><strong>Output:</strong> <code>${_esc(filename)}</code></div>
+        </div>
+        <div style="margin-top:6px;font-size:0.78rem;color:#f59e0b">⚠ Experimental output — verify in your slicer's preview before printing.</div>`;
+    } catch (e) {
+      status.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+    } finally {
+      document.getElementById('slc-n-go').disabled = false;
     }
   }
 
