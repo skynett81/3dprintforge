@@ -341,6 +341,9 @@ function getRoutePermission(method, path) {
   if (method === 'GET' && path.startsWith('/api/printer-image')) return 'view';
   if (path.startsWith('/api/printer-image')) return 'admin';
 
+  // Slicer bridge — slicing is a 'print' operation (uses connected printers)
+  if (path.startsWith('/api/slicer/bridge/')) return method === 'GET' ? 'view' : 'print';
+
   // Default: require view for GET, admin for everything else
   return method === 'GET' ? 'view' : 'admin';
 }
@@ -6922,6 +6925,153 @@ export async function handleApiRequest(req, res) {
         printerId: url.searchParams.get('printer_id') || undefined,
         days: url.searchParams.get('days') ? parseInt(url.searchParams.get('days'), 10) : undefined,
       }));
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // SLICER BRIDGE — headless slicing via OrcaSlicer / BambuStudio / Snapmaker Orca
+    // ──────────────────────────────────────────────────────────────────
+
+    if (method === 'GET' && path === '/api/slicer/bridge/probe') {
+      const { detectSlicers } = await import('./slicer-bridge.js');
+      const slicers = await detectSlicers();
+      return sendJson(res, {
+        slicers: slicers.map(s => ({
+          id: s.id, label: s.label,
+          profileDirExists: s.profileDirExists,
+          kind: s.command.kind,
+        })),
+      });
+    }
+
+    if (method === 'GET' && path === '/api/slicer/bridge/profiles') {
+      try {
+        const { detectSlicers, listProfiles, pickSlicer } = await import('./slicer-bridge.js');
+        const id = url.searchParams.get('slicer');
+        const slicers = await detectSlicers();
+        const slicer = id ? slicers.find(s => s.id === id) : await pickSlicer({});
+        if (!slicer) return sendJson(res, { error: 'no slicer matched' }, 404);
+        return sendJson(res, {
+          slicer: { id: slicer.id, label: slicer.label },
+          profiles: listProfiles(slicer),
+        });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
+    if (method === 'POST' && path === '/api/slicer/bridge/slice') {
+      const chunks = [];
+      let total = 0;
+      const limit = 100 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'model too large (max 100 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const { sliceModel, pickSlicer, detectSlicers } = await import('./slicer-bridge.js');
+          const slicerId = url.searchParams.get('slicer');
+          const printerModel = url.searchParams.get('printerModel') || '';
+          const printerType = url.searchParams.get('printerType') || '';
+          const printerProfile = url.searchParams.get('printerProfile') || null;
+          const filamentProfile = url.searchParams.get('filamentProfile') || null;
+          const processProfile = url.searchParams.get('processProfile') || null;
+          const filename = url.searchParams.get('filename') || 'model.stl';
+
+          let slicer = null;
+          if (slicerId) {
+            const all = await detectSlicers();
+            slicer = all.find(s => s.id === slicerId);
+          } else {
+            slicer = await pickSlicer({ model: printerModel, type: printerType });
+          }
+          if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
+
+          const result = await sliceModel({
+            modelBuffer: buf,
+            modelFilename: filename,
+            slicer,
+            printerInfo: { model: printerModel, type: printerType },
+            printerProfile, filamentProfile, processProfile,
+          });
+          if (!result.ok) return sendJson(res, result, 500);
+
+          // Return G-code as binary with metadata in headers.
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${result.gcodeFilename}"`,
+            'X-Slicer': result.slicer,
+            'X-Slice-Duration-Ms': String(result.durationMs),
+            'X-GCode-Filename': result.gcodeFilename,
+          });
+          return res.end(result.gcodeBuffer);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/bridge/slice-and-send') {
+      // Slice + upload to a connected printer in one call.
+      const chunks = [];
+      let total = 0;
+      const limit = 100 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'model too large (max 100 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const printerId = url.searchParams.get('printerId');
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') {
+            return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          }
+
+          const { sliceModel, pickSlicer } = await import('./slicer-bridge.js');
+          const slicer = await pickSlicer({ model: entry.config?.model, type: entry.config?.type });
+          if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
+
+          const result = await sliceModel({
+            modelBuffer: buf,
+            modelFilename: url.searchParams.get('filename') || 'model.stl',
+            slicer,
+            printerInfo: { model: entry.config?.model, type: entry.config?.type },
+            printerProfile: url.searchParams.get('printerProfile') || null,
+            filamentProfile: url.searchParams.get('filamentProfile') || null,
+            processProfile: url.searchParams.get('processProfile') || null,
+          });
+          if (!result.ok) return sendJson(res, result, 500);
+
+          const startNow = url.searchParams.get('print') === '1' && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow
+            ? await entry.client.uploadAndPrint(result.gcodeFilename, result.gcodeBuffer)
+            : await entry.client.uploadFile(result.gcodeFilename, result.gcodeBuffer);
+
+          return sendJson(res, {
+            ok: true,
+            slicer: result.slicer,
+            gcodeFilename: result.gcodeFilename,
+            sizeBytes: result.gcodeBuffer.length,
+            sliceDurationMs: result.durationMs,
+            uploaded: true,
+            printing: startNow,
+            upload,
+          }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
     }
 
     // ──────────────────────────────────────────────────────────────────

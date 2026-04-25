@@ -370,6 +370,7 @@ const PANEL_TITLES = {
   'mesh-repair': 'Mesh Repair Toolkit',
   'ai-forge': 'AI Model Forge',
   'scene-composer': 'Scene Composer',
+  'slicer': 'Slicer Bridge',
   'admin-diagnostics': 'Diagnostics & Tuning',
   'admin-inventory': 'Inventory Admin',
   'admin-kb': 'Knowledge Base Admin',
@@ -432,6 +433,7 @@ const PANEL_LOADERS = {
   'mesh-repair': () => { if (typeof loadMeshRepairSuite === 'function') loadMeshRepairSuite(); },
   'ai-forge': () => { if (typeof loadAiForge === 'function') loadAiForge(); },
   'scene-composer': () => { if (typeof loadSceneComposer === 'function') loadSceneComposer(); },
+  'slicer': () => { if (typeof loadSlicerPanel === 'function') loadSlicerPanel(); },
   'admin-diagnostics': () => {
     const body = document.getElementById('overlay-panel-body');
     if (body) body.innerHTML = '<div id="vendor-diagnostics-2026"></div>';

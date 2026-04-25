@@ -67,6 +67,7 @@
     'admin-kb':         'Knowledge Base Admin',
     'modelforge':       'Model Forge',
     'signmaker':        'Sign Maker',
+    'slicer':           'Slicer Bridge',
     'jscad':            'JSCAD Studio',
     'octoprint':        'OctoPrint Bridge',
     'resources':        'Vendor Resources',
