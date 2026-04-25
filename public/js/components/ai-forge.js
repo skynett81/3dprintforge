@@ -57,25 +57,54 @@
       <div class="card">
         <div class="card-body">
           <h5>Generate from text prompt</h5>
-          <p class="text-muted" style="font-size:0.85rem">Examples: <code>cube 30mm</code>, <code>sphere 15</code>,
-          <code>cylinder r=10 h=20</code>, <code>three small cubes</code>,
-          <code>keychain with text "Sara"</code>, <code>hex prism 25x25x10</code>.</p>
+          <p class="text-muted" style="font-size:0.85rem">
+            Click an example below to insert it, or type your own. Recognised shape keywords:
+            <code>cube</code>, <code>sphere</code>, <code>cylinder</code>, <code>cone</code>, <code>torus</code>, <code>hex</code>, <code>pyramid</code>,
+            <code>keychain</code>, <code>sign</code>, <code>vase</code>, <code>gear</code>, <code>storage box</code>, <code>plant pot</code>,
+            <code>phone stand</code>, <code>cable label</code>, <code>cable clip</code>, <code>hook</code>, <code>hinge</code>, <code>spring</code>,
+            <code>thread</code>, <code>battery holder</code>, <code>headphone stand</code>, <code>gridfinity bin</code>, <code>gridfinity baseplate</code>.
+          </p>
+          <div id="aif-examples" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px"><em>Loading examples…</em></div>
           <textarea id="aif-text-prompt" class="form-control" rows="3" placeholder="Describe the shape…"></textarea>
           <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
             <label>Format:
               <select id="aif-text-format" class="form-control" style="display:inline-block;width:auto;margin-left:6px">
                 <option value="stl">STL</option>
                 <option value="obj">OBJ</option>
-                <option value="3mf">3MF</option>
+                <option value="3mf" selected>3MF</option>
               </select>
             </label>
-            <label><input type="checkbox" id="aif-text-repair" checked> Auto-repair output</label>
+            <label><input type="checkbox" id="aif-text-repair" checked> Auto-repair (primitives only)</label>
             <button id="aif-text-go" class="form-btn primary" style="margin-left:auto">Generate</button>
           </div>
           <div id="aif-text-status" style="margin-top:10px"></div>
         </div>
       </div>`;
     document.getElementById('aif-text-go').onclick = _runText;
+    _loadExamples();
+  }
+
+  async function _loadExamples() {
+    try {
+      const r = await fetch('/api/ai-forge/generators');
+      const data = await r.json();
+      const wrap = document.getElementById('aif-examples');
+      if (!wrap) return;
+      const items = (data.generators || []).flatMap(g =>
+        g.examples.slice(0, 1).map(ex => ({ ex, key: g.key, desc: g.description }))
+      );
+      wrap.innerHTML = items.map(it =>
+        `<button class="form-btn" style="font-size:0.78rem;padding:4px 8px" data-prompt="${_esc(it.ex)}" title="${_esc(it.desc)}">${_esc(it.ex)}</button>`
+      ).join('');
+      wrap.querySelectorAll('button[data-prompt]').forEach(b => {
+        b.onclick = () => {
+          document.getElementById('aif-text-prompt').value = b.dataset.prompt;
+        };
+      });
+    } catch {
+      const wrap = document.getElementById('aif-examples');
+      if (wrap) wrap.innerHTML = '<em style="opacity:0.6">Examples unavailable</em>';
+    }
   }
 
   async function _runText() {
@@ -364,8 +393,11 @@
     const j = data.job || {};
     const stats = data.stats || {};
     const downloadUrl = j.id ? `/api/ai-forge/jobs/${j.id}/download` : null;
+    const generatorBadge = data.generator
+      ? `<span class="badge" style="background:rgba(34,197,94,0.15);color:#22c55e;margin-left:6px">via ${_esc(data.generator)} generator</span>`
+      : '';
     target.innerHTML = `
-      <div style="color:#22c55e;font-weight:600">✓ Generated ${_esc(j.result_format)} · ${_formatBytes(j.result_size_bytes)} · ${j.duration_ms} ms</div>
+      <div style="color:#22c55e;font-weight:600">✓ Generated ${_esc(j.result_format)} · ${_formatBytes(j.result_size_bytes)} · ${j.duration_ms} ms${generatorBadge}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.5rem;margin-top:8px;font-size:0.85rem">
         <div><strong>Vertices:</strong> ${(stats.vertices || 0).toLocaleString()}</div>
         <div><strong>Faces:</strong> ${(stats.faces || 0).toLocaleString()}</div>

@@ -23,8 +23,9 @@ import {
   extrudePolygon, heightmapToMesh, unionMeshes, offset,
 } from './mesh-primitives.js';
 import { autoRepair, analyzeMesh } from './mesh-repair.js';
-import { meshToBuffer } from './format-converter.js';
+import { meshToBuffer, bufferToMesh } from './format-converter.js';
 import { meshStats } from './mesh-transforms.js';
+import { hasGenerator, runGenerator } from './ai-forge-generators.js';
 
 const DATA_DIR = process.env.DATA_DIR || join(import.meta.dirname, '..', 'data');
 const OUTPUT_DIR = join(DATA_DIR, 'ai-forge-output');
@@ -354,3 +355,68 @@ export async function generateAndSave({
 }
 
 export function outputDir() { return OUTPUT_DIR; }
+
+/**
+ * High-level dispatcher: turn a parsed intent into a saved job.
+ *
+ * 1. If a real parametric generator is registered for `intent.shape`,
+ *    use it (output is a 3MF buffer, conversion handles STL/OBJ).
+ * 2. Otherwise fall back to mesh-primitives via buildMeshFromIntent +
+ *    autoRepair pipeline.
+ *
+ * Returns the same job-row-shape `generateAndSave` produces, so the
+ * API layer can record it directly.
+ */
+export async function generateFromIntent(intent, { format = 'stl', repair = true } = {}) {
+  if (hasGenerator(intent.shape)) {
+    const start = Date.now();
+    const result = await runGenerator(intent);
+    let outBuffer;
+    let mesh;
+    // Convert the native 3MF to the requested format if the user asked
+    // for STL or OBJ. We always parse the 3MF back to an indexed mesh
+    // so we can also report stats / analysis.
+    try {
+      mesh = await bufferToMesh(result.buffer, `model.${result.format}`);
+    } catch {
+      mesh = null;
+    }
+
+    if (format === result.format) {
+      outBuffer = result.buffer;
+    } else if (mesh) {
+      outBuffer = await meshToBuffer(mesh, format);
+    } else {
+      // If parse failed but the user wanted a different format, fall back to native.
+      outBuffer = result.buffer;
+      format = result.format;
+    }
+
+    const filename = `${_timestamp()}_${_safeFilename(intent.raw, intent.shape)}.${format}`;
+    const fullPath = join(OUTPUT_DIR, filename);
+    writeFileSync(fullPath, outBuffer);
+
+    return {
+      job_type: 'text',
+      prompt: intent.raw || null,
+      params_json: JSON.stringify({ intent, generatorOpts: result.opts }),
+      status: 'completed',
+      result_path: filename,
+      result_format: format,
+      result_size_bytes: outBuffer.length,
+      repair_report_json: null, // skipped — generators are already clean
+      duration_ms: Date.now() - start,
+      stats: mesh ? meshStats(mesh) : null,
+      analysis: mesh ? analyzeMesh(mesh) : null,
+      generatorKey: result.generatorKey,
+    };
+  }
+  // Primitive fallback path.
+  const mesh = buildMeshFromIntent(intent);
+  return generateAndSave({
+    jobType: 'text',
+    prompt: intent.raw,
+    params: { intent },
+    mesh, format, repair,
+  });
+}

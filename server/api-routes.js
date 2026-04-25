@@ -6453,22 +6453,27 @@ export async function handleApiRequest(req, res) {
           const format = (body.format || 'stl').toLowerCase();
           const repair = body.repair !== false;
           const { parseIntent } = await import('./text-intent-parser.js');
-          const { buildMeshFromIntent, generateAndSave } = await import('./ai-forge.js');
+          const { generateFromIntent } = await import('./ai-forge.js');
           const { recordAiForgeJob } = await import('./db/ai-forge-jobs.js');
           const intent = parseIntent(body.prompt);
-          const mesh = buildMeshFromIntent(intent);
-          const result = await generateAndSave({
-            jobType: 'text',
-            prompt: body.prompt,
-            params: { intent },
-            mesh, format, repair,
-          });
+          const result = await generateFromIntent(intent, { format, repair });
           const row = recordAiForgeJob(result);
-          return sendJson(res, { job: row, intent, stats: result.stats, analysis: result.analysis }, 201);
+          return sendJson(res, {
+            job: row,
+            intent,
+            stats: result.stats,
+            analysis: result.analysis,
+            generator: result.generatorKey || null,
+          }, 201);
         } catch (e) {
           return sendJson(res, { error: e.message }, 400);
         }
       });
+    }
+
+    if (method === 'GET' && path === '/api/ai-forge/generators') {
+      const { listGenerators } = await import('./ai-forge-generators.js');
+      return sendJson(res, { generators: listGenerators() });
     }
 
     if (method === 'POST' && path === '/api/ai-forge/image') {

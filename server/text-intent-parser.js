@@ -66,6 +66,26 @@ const SHAPE_KEYWORDS = {
   gear:        { type: 'gear',        defaults: { teeth: 20, modulus: 1, h: 8 } },
   plate:       { type: 'plate',       defaults: { w: 50, h: 50, d: 2 } },
   bracket:     { type: 'bracket',     defaults: { w: 30, h: 30, t: 3 } },
+  // Single-word generator-backed shapes
+  hook:        { type: 'hook',        defaults: { w: 40, h: 30, d: 5 } },
+  hinge:       { type: 'hinge',       defaults: { w: 40, h: 20, d: 4 } },
+  spring:      { type: 'spring',      defaults: { r: 10, h: 40 } },
+  thread:      { type: 'thread',      defaults: { r: 5, pitch: 1.5, h: 20 } },
+};
+
+// Multi-word shape keywords ("phone stand" → phone_stand). Resolved by
+// pairing adjacent tokens during parsing.
+const MULTI_WORD_KEYWORDS = {
+  'storage box':        { type: 'storage_box',        defaults: { w: 60, h: 40, d: 30 } },
+  'plant pot':          { type: 'plant_pot',          defaults: { r: 40, h: 60 } },
+  'phone stand':        { type: 'phone_stand',        defaults: { w: 90, h: 60 } },
+  'cable label':        { type: 'cable_label',        defaults: { w: 25, text: 'LABEL' } },
+  'cable clip':         { type: 'cable_clip',         defaults: { d: 10, diameter: 6 } },
+  'battery holder':     { type: 'battery_holder',     defaults: { count: 2, type: 'AA' } },
+  'headphone stand':    { type: 'headphone_stand',    defaults: { h: 200, w: 100 } },
+  'gridfinity bin':     { type: 'gridfinity_bin',     defaults: { unitsX: 1, unitsY: 1, heightUnits: 3 } },
+  'gridfinity baseplate': { type: 'gridfinity_baseplate', defaults: { unitsX: 4, unitsY: 4 } },
+  'gridfinity lid':     { type: 'gridfinity_lid',     defaults: { unitsX: 1, unitsY: 1 } },
 };
 
 /**
@@ -100,6 +120,11 @@ function _extractDimensions(tokens, raw) {
   const tripleRe = /(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i;
   let m = String(raw || '').match(tripleRe);
   if (m) { out.w = parseFloat(m[1]); out.h = parseFloat(m[2]); out.d = parseFloat(m[3]); return out; }
+
+  // Pair dimension (e.g. "30x80" or "2x3" for gridfinity)
+  const pairRe = /(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i;
+  m = String(raw || '').match(pairRe);
+  if (m) { out.w = parseFloat(m[1]); out.h = parseFloat(m[2]); out.unitsX = parseInt(m[1], 10); out.unitsY = parseInt(m[2], 10); }
 
   // Single units
   const numberUnitRe = /(\d+(?:\.\d+)?)\s*(mm|cm|m|in|inch|inches|")/g;
@@ -144,6 +169,15 @@ function _extractCount(tokens) {
  * Resolve the primary shape keyword the user mentioned.
  */
 function _resolveShape(tokens) {
+  // Try multi-word keywords first (most specific wins): scan adjacent
+  // pairs of tokens. "gridfinity bin 2x3" → gridfinity_bin.
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const pair = `${tokens[i]} ${tokens[i + 1]}`;
+    if (MULTI_WORD_KEYWORDS[pair]) {
+      return { keyword: pair, ...MULTI_WORD_KEYWORDS[pair] };
+    }
+  }
+  // Single-word keyword pass.
   for (const t of tokens) {
     if (SHAPE_KEYWORDS[t]) return { keyword: t, ...SHAPE_KEYWORDS[t] };
     // Handle plurals: "cubes" → "cube", "spheres" → "sphere".
@@ -225,6 +259,8 @@ export function parseIntent(rawText) {
   if ('w' in dims) params.w = dims.w;
   if ('h' in dims) params.h = dims.h;
   if ('d' in dims) params.d = dims.d;
+  if ('unitsX' in dims) params.unitsX = dims.unitsX;
+  if ('unitsY' in dims) params.unitsY = dims.unitsY;
   if ('size' in dims && 'size' in params) params.size = dims.size;
   if ('size' in dims && 'r' in params && !('r' in dims)) params.r = dims.size / 2;
   if ('size' in dims && 'h' in params && !('h' in dims)) params.h = dims.size;
