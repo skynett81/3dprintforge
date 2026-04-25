@@ -59,7 +59,7 @@
       </div>
 
       <!-- 2-column auto-grid for the rest -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));grid-auto-flow:dense;gap:10px">
 
         ${card('soundwave', 'Input shaper tuning', `
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">

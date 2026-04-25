@@ -2216,10 +2216,15 @@
 .stats-table th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
 .stats-table td { padding: 5px 10px; border-bottom: 1px solid var(--bg-secondary); white-space: nowrap; }
 
-/* Tab panels as grids */
+/* Tab panels as grids — auto-fit, dense flow lets small modules
+   backfill any cells left next to a `.stats-module-full` spanning row.
+   Used by: stats, maintenance, filament, waste, error, history,
+   telemetry, protection — every panel that adopted the .stats-module
+   layout. */
 .stats-tab-panel {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-auto-flow: dense;
   gap: 14px;
   align-items: start;
 }
@@ -2230,11 +2235,7 @@
 .stats-module:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .stats-module-full { grid-column: 1 / -1; }
 .filament-tab-panel .stats-module, .maint-tab-panel .stats-module, .waste-tab-panel .stats-module, .error-tab-panel .stats-module, .history-tab-panel .stats-module, .tele-tab-panel .stats-module, .protection-tab-panel .stats-module { margin-bottom: 0; }
-@media (max-width: 900px) {
-  .stats-tab-panel { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 600px) {
-  .stats-tab-panel { grid-template-columns: 1fr; }
   .stats-module-full { grid-column: 1; }
 }
 
@@ -4891,6 +4892,7 @@
 .printer-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  grid-auto-flow: dense;
   gap: 8px;
 }
 
@@ -11672,6 +11674,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 .plg-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-auto-flow: dense;
   gap: 12px;
   margin-bottom: 16px;
   align-items: start;

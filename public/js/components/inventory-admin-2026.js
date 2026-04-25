@@ -107,7 +107,7 @@
       </div>
 
       <!-- 2-column grid for everything else (auto-fits to 1 column on narrow viewports) -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));grid-auto-flow:dense;gap:10px">
 
         ${card('currency-dollar', 'Cheapest retailer per filament',
           `<div style="max-height:280px;overflow-y:auto">${renderCheapest()}</div>`,

@@ -87,7 +87,7 @@
       // (was: 4 stacked full-width cards + a separate 280px-min detail grid).
       // Wide cards that need horizontal room (Hourly chart, Print history bar)
       // get grid-column: 1/-1 so they span the entire row regardless of column count.
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:12px">';
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));grid-auto-flow:dense;gap:12px">';
 
       // ── Requests per Hour Chart (full-width) ──
       html += `<div class="settings-card" style="overflow:hidden;grid-column:1/-1">

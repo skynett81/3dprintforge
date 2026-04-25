@@ -107,7 +107,7 @@
     // Wrap all info sections (hooks list, state viewer, logs, API ref,
     // generator, full example, creation guide) in a 2-column auto-fit grid.
     // Wide-content sections (API ref + Full example) span both columns.
-    html += `<div class="plg-info-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:12px;align-items:start">`;
+    html += `<div class="plg-info-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));grid-auto-flow:dense;gap:12px;align-items:start">`;
 
     // Available hooks
     html += `<div class="card plg-info-section">
