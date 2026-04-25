@@ -3966,13 +3966,43 @@
 
   window._testBuzzer = async function() {
     try {
-      const printersRes = await fetch('/api/printers').then(r => r.json());
-      const printers = Array.isArray(printersRes) ? printersRes : (printersRes.printers || []);
-      const online = printers.find(p => p.state && p.state !== 'OFFLINE');
-      if (!online) { window.showToast?.('No online printer found', 'error'); return; }
-      const res = await fetch('/api/printers/' + online.id + '/buzzer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ melody: 'alert' }) });
+      // Pick from the live printerState (populated via WS) — /api/printers
+      // only returns the configured list and has no online/offline flag.
+      // Prefer the currently-active printer; fall back to any printer that
+      // has been seen alive (not in OFFLINE / undefined state).
+      const ps = window.printerState;
+      const activeId = ps?.getActivePrinterId?.();
+      const allStates = ps?._printers || {};
+      const allMeta = ps?._printerMeta || {};
+
+      const isAlive = (st) => {
+        const s = st?.print || st || {};
+        const g = s.gcode_state;
+        return g && g !== 'OFFLINE' && g !== 'UNKNOWN';
+      };
+
+      let chosen = null;
+      if (activeId && isAlive(allStates[activeId])) {
+        chosen = { id: activeId, name: allMeta[activeId]?.name || activeId };
+      } else {
+        for (const [id, st] of Object.entries(allStates)) {
+          if (isAlive(st)) { chosen = { id, name: allMeta[id]?.name || id }; break; }
+        }
+      }
+      if (!chosen) {
+        // Last resort — any configured printer with WS data, even idle.
+        for (const [id, st] of Object.entries(allStates)) {
+          if (st && Object.keys(st).length > 0) { chosen = { id, name: allMeta[id]?.name || id }; break; }
+        }
+      }
+      if (!chosen) { window.showToast?.('No online printer found', 'error'); return; }
+
+      const res = await fetch('/api/printers/' + chosen.id + '/buzzer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ melody: 'alert' }),
+      });
       const data = await res.json();
-      if (data.ok) window.showToast?.('Buzzer test sent to ' + (online.name || online.id), 'success');
+      if (res.ok && data.ok !== false) window.showToast?.('Buzzer test sent to ' + chosen.name, 'success');
       else window.showToast?.(data.error || 'Buzzer test failed', 'error');
     } catch (e) { window.showToast?.('Buzzer test failed: ' + e.message, 'error'); }
   };

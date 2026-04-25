@@ -1704,6 +1704,17 @@ export class MoonrakerClient {
   sendCommand(commandObj) {
     if (!this.connected) return;
 
+    // Bambu-style raw G-code wrapper from buildGcodeCommand:
+    //   { print: { command: 'gcode_line', param: 'M300 S1000 P150' } }
+    // Buzzer melodies, custom macros, and brand-agnostic G-code use this
+    // shape. Translate to Moonraker's /printer/gcode/script before the
+    // action-based switch so the buzzer test (and any other gcode_line
+    // sender) works on Klipper.
+    if (commandObj?.print?.command === 'gcode_line' && typeof commandObj.print.param === 'string') {
+      this._apiPost('/printer/gcode/script', { script: commandObj.print.param });
+      return;
+    }
+
     // Accept both Bambu-style command objects and direct Moonraker actions
     const action = commandObj._moonraker_action || commandObj.action;
 
