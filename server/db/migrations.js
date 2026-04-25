@@ -1429,6 +1429,28 @@ export function runMigrations() {
         for (const row of seed) insert.run(...row);
       }
     }},
+
+    // v133: AI Model Forge job tracking
+    { version: 133, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS ai_forge_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_type TEXT NOT NULL,            -- 'text' | 'image' | 'sketch' | 'compose'
+        prompt TEXT,
+        params_json TEXT,
+        status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'running' | 'completed' | 'failed'
+        result_path TEXT,
+        result_format TEXT,                -- 'stl' | 'obj' | '3mf'
+        result_size_bytes INTEGER,
+        repair_report_json TEXT,
+        error TEXT,
+        duration_ms INTEGER,
+        created_at TEXT DEFAULT (datetime('now')),
+        completed_at TEXT
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_forge_jobs_status ON ai_forge_jobs(status)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_forge_jobs_type ON ai_forge_jobs(job_type)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_forge_jobs_created ON ai_forge_jobs(created_at DESC)`);
+    }},
   ];
 
   for (const m of migrations) {

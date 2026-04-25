@@ -334,6 +334,9 @@ function getRoutePermission(method, path) {
   if (path === '/api/gcode/reference' || path.startsWith('/api/gcode/reference/')) return 'view';
   if (path === '/api/gcode/estimate') return 'view';
 
+  // AI Model Forge — local mesh generation, no printer-state mutation
+  if (path.startsWith('/api/ai-forge/')) return 'view';
+
   // Default: require view for GET, admin for everything else
   return method === 'GET' ? 'view' : 'admin';
 }
@@ -6435,6 +6438,159 @@ export async function handleApiRequest(req, res) {
         }
       });
       return;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // AI MODEL FORGE — text/image/sketch → mesh
+    // ──────────────────────────────────────────────────────────────────
+
+    if (method === 'POST' && path === '/api/ai-forge/text') {
+      return readBody(req, res, async (body) => {
+        try {
+          if (!body.prompt || typeof body.prompt !== 'string') {
+            return sendJson(res, { error: 'prompt required' }, 400);
+          }
+          const format = (body.format || 'stl').toLowerCase();
+          const repair = body.repair !== false;
+          const { parseIntent } = await import('./text-intent-parser.js');
+          const { buildMeshFromIntent, generateAndSave } = await import('./ai-forge.js');
+          const { recordAiForgeJob } = await import('./db/ai-forge-jobs.js');
+          const intent = parseIntent(body.prompt);
+          const mesh = buildMeshFromIntent(intent);
+          const result = await generateAndSave({
+            jobType: 'text',
+            prompt: body.prompt,
+            params: { intent },
+            mesh, format, repair,
+          });
+          const row = recordAiForgeJob(result);
+          return sendJson(res, { job: row, intent, stats: result.stats, analysis: result.analysis }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 400);
+        }
+      });
+    }
+
+    if (method === 'POST' && path === '/api/ai-forge/image') {
+      const chunks = [];
+      let total = 0;
+      const limit = 30 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'image too large (max 30 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const opts = {};
+          for (const k of ['mode', 'widthMm', 'heightMm', 'depthMm', 'baseMm', 'threshold']) {
+            const v = url.searchParams.get(k);
+            if (v !== null) opts[k] = isNaN(parseFloat(v)) ? v : parseFloat(v);
+          }
+          if (url.searchParams.get('invert') === '1') opts.invert = true;
+          const format = (url.searchParams.get('format') || 'stl').toLowerCase();
+          const repair = url.searchParams.get('repair') !== '0';
+
+          const { imageToMesh, generateAndSave } = await import('./ai-forge.js');
+          const { recordAiForgeJob } = await import('./db/ai-forge-jobs.js');
+          const mesh = await imageToMesh(buf, opts);
+          const result = await generateAndSave({
+            jobType: 'image',
+            prompt: `image-${opts.mode || 'heightmap'}`,
+            params: opts,
+            mesh, format, repair,
+          });
+          const row = recordAiForgeJob(result);
+          return sendJson(res, { job: row, stats: result.stats, analysis: result.analysis }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 400);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/ai-forge/sketch') {
+      return readBody(req, res, async (body) => {
+        try {
+          if (!body.svgPath || typeof body.svgPath !== 'string') {
+            return sendJson(res, { error: 'svgPath required (string)' }, 400);
+          }
+          const opts = {
+            depth: Number(body.depth) || 5,
+            scale: Number(body.scale) || 1,
+          };
+          const format = (body.format || 'stl').toLowerCase();
+          const repair = body.repair !== false;
+
+          const { sketchToMesh, generateAndSave } = await import('./ai-forge.js');
+          const { recordAiForgeJob } = await import('./db/ai-forge-jobs.js');
+          const mesh = sketchToMesh(body.svgPath, opts);
+          const result = await generateAndSave({
+            jobType: 'sketch',
+            prompt: body.label || 'sketch',
+            params: opts,
+            mesh, format, repair,
+          });
+          const row = recordAiForgeJob(result);
+          return sendJson(res, { job: row, stats: result.stats, analysis: result.analysis }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 400);
+        }
+      });
+    }
+
+    if (method === 'GET' && path === '/api/ai-forge/jobs') {
+      const { listAiForgeJobs } = await import('./db/ai-forge-jobs.js');
+      const jobs = listAiForgeJobs({
+        limit: parseInt(url.searchParams.get('limit'), 10) || 50,
+        jobType: url.searchParams.get('type') || null,
+      });
+      return sendJson(res, { jobs });
+    }
+
+    const aiJobMatch = path.match(/^\/api\/ai-forge\/jobs\/(\d+)$/);
+    if (aiJobMatch && method === 'GET') {
+      const { getAiForgeJob } = await import('./db/ai-forge-jobs.js');
+      const job = getAiForgeJob(parseInt(aiJobMatch[1], 10));
+      if (!job) return sendJson(res, { error: 'not found' }, 404);
+      return sendJson(res, job);
+    }
+
+    if (aiJobMatch && method === 'DELETE') {
+      const { deleteAiForgeJob, getAiForgeJob } = await import('./db/ai-forge-jobs.js');
+      const id = parseInt(aiJobMatch[1], 10);
+      const job = getAiForgeJob(id);
+      const ok = deleteAiForgeJob(id);
+      if (ok && job?.result_path) {
+        try {
+          const { unlinkSync, existsSync } = await import('node:fs');
+          const { outputDir } = await import('./ai-forge.js');
+          const full = `${outputDir()}/${job.result_path}`;
+          if (existsSync(full)) unlinkSync(full);
+        } catch { /* best-effort cleanup */ }
+      }
+      return sendJson(res, { ok });
+    }
+
+    const aiDownloadMatch = path.match(/^\/api\/ai-forge\/jobs\/(\d+)\/download$/);
+    if (aiDownloadMatch && method === 'GET') {
+      const { getAiForgeJob } = await import('./db/ai-forge-jobs.js');
+      const { outputDir } = await import('./ai-forge.js');
+      const job = getAiForgeJob(parseInt(aiDownloadMatch[1], 10));
+      if (!job || !job.result_path) return sendJson(res, { error: 'not found' }, 404);
+      const { readFileSync, existsSync } = await import('node:fs');
+      const full = `${outputDir()}/${job.result_path}`;
+      if (!existsSync(full)) return sendJson(res, { error: 'output file missing on disk' }, 410);
+      const buf = readFileSync(full);
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${job.result_path}"`,
+        'Content-Length': buf.length,
+      });
+      return res.end(buf);
     }
 
     // ──────────────────────────────────────────────────────────────────
