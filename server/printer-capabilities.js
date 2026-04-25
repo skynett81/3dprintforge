@@ -158,22 +158,27 @@ const CAPABILITIES = {
  */
 const MODEL_OVERRIDES = {
   // Bambu Lab models
-  'P1S': { camera: { modes: ['rtsp'] } },
-  'P1P': { camera: { modes: ['rtsp'] } },
-  'X1C': { camera: { modes: ['rtsp'] } },
-  'X1E': { camera: { modes: ['rtsp'] } },
-  'A1': { camera: { modes: ['jpeg-tls', 'rtsp'] } },
-  'A1 mini': { camera: { modes: ['jpeg-tls'] } },
-  'P2S': { camera: { modes: ['jpeg-tls', 'rtsp'] } },
-  'H2D': { camera: { modes: ['jpeg-tls', 'rtsp'] } },
-
-  // Snapmaker models
+  'P1S': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'P1P': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'P2S': { camera: { modes: ['jpeg-tls', 'rtsp'] }, buildVolume: [256, 256, 256] },
+  'A1': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'A1 mini': { camera: { modes: ['rtsp'] }, buildVolume: [180, 180, 180] },
+  'X1': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'X1C': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'X1E': { camera: { modes: ['rtsp'] }, buildVolume: [256, 256, 256] },
+  'H2D': { camera: { modes: ['rtsp'] }, buildVolume: [325, 320, 325] },
   'Snapmaker U1': {
+    features: { multiExtruder: true, toolheads: 4, purifier: true },
+    buildVolume: [220, 220, 220],
     camera: { modes: ['http-snapshot', 'ssh-sftp'], sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'] },
   },
-  'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true } },
-  'Snapmaker J1s': { features: { multiExtruder: true, idex: true, dualNozzle: true } },
-  'Snapmaker Artisan': { features: { multiExtruder: true, enclosure: true, purifier: true, dualNozzle: true } },
+  'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
+  'Snapmaker J1s': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
+  'Snapmaker Artisan': { features: { multiExtruder: true, enclosure: true, purifier: true, dualNozzle: true }, buildVolume: [400, 400, 400] },
+  'X1C': { camera: { modes: ['rtsp'] } },
+  // (P2S/A1/A1 mini/X1*/H2D and Snapmaker U1/J1/J1s/Artisan are defined
+  //  above in the same MODEL_OVERRIDES map. They include both buildVolume
+  //  and camera-specific config as needed.)
   'Snapmaker 2.0 A150': { features: { enclosure: true, multiModule: true } },
   'Snapmaker 2.0 A250': { features: { enclosure: true, multiModule: true } },
   'Snapmaker 2.0 A350': { features: { enclosure: true, multiModule: true } },

@@ -142,8 +142,25 @@
               </select>
             </label>
             <label style="font-size:0.78rem"><input type="checkbox" id="sc-csg" checked> CSG holes</label>
+            <button class="form-btn" id="sc-group" title="Group selected shapes">Group</button>
+            <button class="form-btn" id="sc-ungroup" title="Ungroup selected">Ungroup</button>
             <button class="form-btn primary" id="sc-render" style="margin-left:auto">Render &amp; Download</button>
+            <button class="form-btn" id="sc-send-printer" title="Send rendered scene directly to a connected printer">→ Printer</button>
             <span style="font-size:0.85rem;opacity:0.7;margin-left:8px" id="sc-saved-status">●</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:0.78rem">
+            <span style="opacity:0.7">View:</span>
+            <button class="form-btn" data-view="iso">Iso</button>
+            <button class="form-btn" data-view="top">Top</button>
+            <button class="form-btn" data-view="front">Front</button>
+            <button class="form-btn" data-view="side">Side</button>
+            <button class="form-btn" data-view="fit">Fit all</button>
+            <span style="border-left:1px solid var(--border-color);height:20px;margin:0 4px"></span>
+            <label>Print bed:
+              <select id="sc-bed-select" class="form-control" style="display:inline-block;width:auto;font-size:0.78rem">
+                <option value="">none</option>
+              </select>
+            </label>
           </div>
           <div style="display:grid;grid-template-columns:160px 1fr 280px;gap:8px;min-height:540px">
             <div id="sc-palette" style="border:1px solid var(--border-color);border-radius:6px;padding:8px;overflow:auto"></div>
@@ -169,8 +186,14 @@
     document.getElementById('sc-import-file').onchange = (e) => _importStl(e.target.files[0]);
     document.getElementById('sc-gallery').onclick = _openGallery;
     document.getElementById('sc-pattern').onclick = _openPatternDialog;
+    document.getElementById('sc-group').onclick = _groupSelected;
+    document.getElementById('sc-ungroup').onclick = _ungroupSelected;
+    document.getElementById('sc-send-printer').onclick = _sendToPrinter;
     document.querySelectorAll('[data-mirror]').forEach(b => b.onclick = () => _mirrorSelected(b.dataset.mirror));
     document.querySelectorAll('[data-align]').forEach(b => b.onclick = () => _alignSelected(b.dataset.align));
+    document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => _setView(b.dataset.view));
+    document.getElementById('sc-bed-select').onchange = (e) => _showBedFor(e.target.value);
+    _loadPrinterBeds();
 
     // Keyboard shortcuts (only while panel is active).
     if (_state.keyHandler) document.removeEventListener('keydown', _state.keyHandler);
@@ -303,6 +326,173 @@
       for (const s of selected) s.transform.pz = min;
     }
     _markDirty(); _renderSidePanel(); _rebuildViewport();
+  }
+
+  // ── View presets ────────────────────────────────────────────────────
+
+  function _setView(name) {
+    if (!_state.camera || !_state.controls) return;
+    const t = _state.controls.target;
+    const tx = t.x, ty = t.y, tz = t.z;
+    const dist = 120;
+    switch (name) {
+      case 'iso':   _state.camera.position.set(tx + dist, ty + dist, tz + dist); break;
+      case 'top':   _state.camera.position.set(tx,        ty,        tz + dist); break;
+      case 'front': _state.camera.position.set(tx,        ty - dist, tz);        break;
+      case 'side':  _state.camera.position.set(tx + dist, ty,        tz);        break;
+      case 'fit':   _fitView();                                                  return;
+      default: return;
+    }
+    _state.camera.lookAt(tx, ty, tz);
+    _state.controls.update();
+  }
+
+  function _fitView() {
+    if (!_state.scene3 || !_state.THREE || _state.meshNodes.size === 0) return;
+    const THREE = _state.THREE;
+    const bb = new THREE.Box3();
+    for (const m of _state.meshNodes.values()) bb.expandByObject(m);
+    const center = bb.getCenter(new THREE.Vector3());
+    const size = bb.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 10);
+    const dist = maxDim * 2.5;
+    _state.camera.position.set(center.x + dist, center.y + dist, center.z + dist);
+    _state.controls.target.copy(center);
+    _state.camera.lookAt(center);
+    _state.controls.update();
+  }
+
+  // ── Print bed overlay ───────────────────────────────────────────────
+
+  async function _loadPrinterBeds() {
+    try {
+      const r = await fetch('/api/ai-forge/scenes/printer-beds');
+      const data = await r.json();
+      const sel = document.getElementById('sc-bed-select');
+      if (!sel) return;
+      // Cache for showBedFor lookup.
+      _state.printerBeds = data.printers || [];
+      sel.innerHTML = '<option value="">none</option>'
+        + _state.printerBeds.map(p =>
+            `<option value="${_esc(p.id)}">${_esc(p.name)} (${p.buildVolume.join('×')} mm)</option>`
+          ).join('');
+    } catch { /* no printers — silently leave dropdown empty */ }
+  }
+
+  function _showBedFor(printerId) {
+    if (!_state.scene3 || !_state.THREE) return;
+    const THREE = _state.THREE;
+    if (_state.bedOverlay) { _state.scene3.remove(_state.bedOverlay); _state.bedOverlay = null; }
+    if (!printerId) return;
+    const printer = (_state.printerBeds || []).find(p => p.id === printerId);
+    if (!printer || !printer.buildVolume) return;
+    const [bx, by, bz] = printer.buildVolume;
+    const group = new THREE.Group();
+    // Translucent box for build volume.
+    const boxGeo = new THREE.BoxGeometry(bx, by, bz);
+    const edges = new THREE.EdgesGeometry(boxGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
+    const lines = new THREE.LineSegments(edges, lineMat);
+    lines.position.set(bx / 2, by / 2, bz / 2); // bed origin at (0,0,0)
+    group.add(lines);
+    // Filled bed plate (translucent).
+    const plateGeo = new THREE.PlaneGeometry(bx, by);
+    const plateMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
+    const plate = new THREE.Mesh(plateGeo, plateMat);
+    plate.position.set(bx / 2, by / 2, 0);
+    group.add(plate);
+    _state.bedOverlay = group;
+    _state.scene3.add(group);
+  }
+
+  // ── Group / ungroup ─────────────────────────────────────────────────
+
+  function _groupSelected() {
+    if (_state.selectedIds.size < 2) { _toast('Select 2+ shapes to group', 'info'); return; }
+    _pushUndo();
+    // Create a new "group" container shape that has no geometry, only
+    // a transform. Tag each selected shape with groupId pointing at it.
+    const groupId = `g${Date.now().toString(36)}`;
+    _state.scene.shapes.push({
+      id: groupId,
+      name: `Group ${_state.scene.shapes.filter(s => s.type === 'group').length + 1}`,
+      type: 'group',
+      params: {},
+      transform: _defaultTransform(),
+      color: '#a78bfa',
+      hole: false,
+    });
+    for (const sid of _state.selectedIds) {
+      const s = _state.scene.shapes.find(sh => sh.id === sid);
+      if (s) s.groupId = groupId;
+    }
+    _state.selectedIds.clear();
+    _state.selectedIds.add(groupId);
+    _markDirty(); _renderSidePanel(); _rebuildViewport();
+    _toast('Group created', 'success');
+  }
+
+  function _ungroupSelected() {
+    if (_state.selectedIds.size === 0) { _toast('Select a group to ungroup', 'info'); return; }
+    _pushUndo();
+    let removedCount = 0;
+    for (const id of Array.from(_state.selectedIds)) {
+      const s = _state.scene.shapes.find(sh => sh.id === id);
+      if (!s) continue;
+      if (s.type === 'group') {
+        // Detach all children, then remove the group container.
+        for (const child of _state.scene.shapes) {
+          if (child.groupId === id) delete child.groupId;
+        }
+        _state.scene.shapes = _state.scene.shapes.filter(sh => sh.id !== id);
+        removedCount++;
+      } else if (s.groupId) {
+        delete s.groupId;
+        removedCount++;
+      }
+    }
+    _markDirty(); _renderSidePanel(); _rebuildViewport();
+    if (removedCount > 0) _toast('Ungrouped', 'success');
+  }
+
+  // ── Send to printer ─────────────────────────────────────────────────
+
+  async function _sendToPrinter() {
+    if (!_state.printerBeds || _state.printerBeds.length === 0) {
+      await _loadPrinterBeds();
+    }
+    const list = (_state.printerBeds || []).map((p, i) => `${i + 1}. ${p.name} (${p.type})`).join('\n');
+    if (!list) { _toast('No connected printers found', 'warning'); return; }
+    const choice = prompt(`Send to which printer?\n\n${list}\n\nEnter number:`);
+    const idx = parseInt(choice, 10);
+    if (!Number.isFinite(idx) || idx < 1 || idx > _state.printerBeds.length) return;
+    const printer = _state.printerBeds[idx - 1];
+    const filename = prompt('Filename to save on printer:', `scene_${Date.now()}.stl`);
+    if (!filename) return;
+    const status = document.getElementById('sc-status');
+    status.innerHTML = '<em>Sending to printer…</em>';
+    try {
+      const useCsg = document.getElementById('sc-csg')?.checked !== false;
+      const r = await fetch('/api/ai-forge/scenes/send-to-printer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scene: _state.scene,
+          printerId: printer.id,
+          format: 'stl',
+          filename,
+          useCsg,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        return;
+      }
+      status.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sent ${_esc(filename)} (${data.sizeBytes} bytes) to ${_esc(printer.name)}</div>`;
+      _toast(`Sent to ${printer.name}`, 'success');
+    } catch (e) {
+      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+    }
   }
 
   // ── Snap-to-grid helper ─────────────────────────────────────────────
@@ -560,15 +750,18 @@
     const tree = `
       <div style="font-size:0.78rem;font-weight:600;margin-bottom:6px;opacity:0.7">Scene Tree (${_state.scene.shapes.length}) <small style="font-weight:normal">— Ctrl+click for multi-select</small></div>
       <div style="margin-bottom:12px">
-        ${_state.scene.shapes.map(s => `
-          <div style="display:flex;align-items:center;gap:4px;padding:3px 4px;border-radius:3px;cursor:pointer;background:${_state.selectedIds.has(s.id) ? 'rgba(59,130,246,0.15)' : 'transparent'}"
+        ${_state.scene.shapes.map(s => {
+          const indent = s.groupId ? 'margin-left:14px;border-left:2px solid var(--border-color);padding-left:6px;' : '';
+          const icon = s.type === 'group' ? '🗂️' : '';
+          return `
+          <div style="${indent}display:flex;align-items:center;gap:4px;padding:3px 4px;border-radius:3px;cursor:pointer;background:${_state.selectedIds.has(s.id) ? 'rgba(59,130,246,0.15)' : 'transparent'}"
                data-shape-id="${_esc(s.id)}">
             <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${_esc(s.color)}"></span>
-            <span style="flex:1;font-size:0.78rem">${_esc(s.name)}</span>
+            <span style="flex:1;font-size:0.78rem">${icon}${_esc(s.name)}</span>
             <small style="opacity:0.6">${_esc(s.type)}${s.hole ? ' (hole)' : ''}</small>
             <button class="form-btn" data-del-shape="${_esc(s.id)}" style="padding:1px 5px;font-size:0.7rem">×</button>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     `;
     let props;
@@ -773,6 +966,17 @@
     document.getElementById('sc-empty').style.display = _state.scene.shapes.length ? 'none' : 'block';
 
     for (const s of _state.scene.shapes) {
+      if (s.type === 'group' || s.type === 'mesh' || s.type === 'generator') {
+        // No live preview here — group has no geometry; mesh/generator
+        // get their geometry loaded asynchronously via _load*Preview.
+        // Skip silently so rebuilding doesn't clobber loaded buffers.
+        if (s.type !== 'group' && _state.meshNodes.has(s.id)) {
+          // Re-apply transform on the existing buffer.
+          const eff = _resolveEffectiveTransform(s);
+          _applyTransform(_state.meshNodes.get(s.id), eff);
+        }
+        continue;
+      }
       const geom = _buildGeometry(THREE, s);
       const mat = new THREE.MeshLambertMaterial({
         color: new THREE.Color(s.color || '#3b82f6'),
@@ -782,11 +986,37 @@
       });
       const mesh = new THREE.Mesh(geom, mat);
       mesh.userData.shapeId = s.id;
-      _applyTransform(mesh, s.transform);
+      const eff = _resolveEffectiveTransform(s);
+      _applyTransform(mesh, eff);
       scene3.add(mesh);
       _state.meshNodes.set(s.id, mesh);
     }
     _highlightSelected();
+  }
+
+  // Resolve a shape's transform combined with any ancestor group transforms
+  // — same logic the backend uses, kept client-side for live viewport.
+  function _resolveEffectiveTransform(shape) {
+    let t = { ...(shape.transform || {}) };
+    let groupId = shape.groupId;
+    for (let i = 0; i < 8 && groupId; i++) {
+      const parent = _state.scene.shapes.find(sh => sh.id === groupId);
+      if (!parent) break;
+      const p = parent.transform || {};
+      t = {
+        sx: (p.sx ?? 1) * (t.sx ?? 1),
+        sy: (p.sy ?? 1) * (t.sy ?? 1),
+        sz: (p.sz ?? 1) * (t.sz ?? 1),
+        rx: (p.rx ?? 0) + (t.rx ?? 0),
+        ry: (p.ry ?? 0) + (t.ry ?? 0),
+        rz: (p.rz ?? 0) + (t.rz ?? 0),
+        px: (p.px ?? 0) + (t.px ?? 0) * (p.sx ?? 1),
+        py: (p.py ?? 0) + (t.py ?? 0) * (p.sy ?? 1),
+        pz: (p.pz ?? 0) + (t.pz ?? 0) * (p.sz ?? 1),
+      };
+      groupId = parent.groupId;
+    }
+    return t;
   }
 
   function _buildGeometry(THREE, s) {

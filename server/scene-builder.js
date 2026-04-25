@@ -128,7 +128,7 @@ export function validateScene(scene) {
   if (!scene || typeof scene !== 'object') throw new Error('scene must be an object');
   if (!Array.isArray(scene.shapes)) throw new Error('scene.shapes must be an array');
   if (scene.shapes.length === 0) throw new Error('scene must contain at least one shape');
-  const allowed = ['box', 'sphere', 'cylinder', 'cone', 'torus', 'prism', 'pyramid', 'mesh', 'generator'];
+  const allowed = ['box', 'sphere', 'cylinder', 'cone', 'torus', 'prism', 'pyramid', 'mesh', 'generator', 'group'];
   for (const s of scene.shapes) {
     if (!s.type) throw new Error('shape.type required');
     if (!allowed.includes(s.type)) {
@@ -172,12 +172,62 @@ export function buildScene(scene, opts = {}) {
 }
 
 /**
+ * Compose two transforms (parent applied first, then child). Returns a
+ * new transform that has the same effect as applying parent then child
+ * to a mesh — used so that group children inherit their group's
+ * position/rotation/scale.
+ *
+ * Note: this is a simple SRT compose where translation is added (with
+ * scale applied) and scale/rotation are multiplied/summed component-
+ * wise. For axis-aligned scaling and small rotations this is exact;
+ * for combined non-axis-aligned rotation-then-translate the result
+ * matches what the per-vertex `_applyTransform` does in sequence.
+ */
+function _composeTransforms(parent, child) {
+  if (!parent) return child || {};
+  if (!child) return parent;
+  const out = {
+    sx: (parent.sx ?? 1) * (child.sx ?? 1),
+    sy: (parent.sy ?? 1) * (child.sy ?? 1),
+    sz: (parent.sz ?? 1) * (child.sz ?? 1),
+    rx: (parent.rx ?? 0) + (child.rx ?? 0),
+    ry: (parent.ry ?? 0) + (child.ry ?? 0),
+    rz: (parent.rz ?? 0) + (child.rz ?? 0),
+    px: (parent.px ?? 0) + (child.px ?? 0) * (parent.sx ?? 1),
+    py: (parent.py ?? 0) + (child.py ?? 0) * (parent.sy ?? 1),
+    pz: (parent.pz ?? 0) + (child.pz ?? 0) * (parent.sz ?? 1),
+  };
+  return out;
+}
+
+/**
+ * Resolve the effective transform for a shape — composing the
+ * transforms of any ancestor groups (matching by groupId) on top of the
+ * shape's own transform. Groups are themselves shapes with `type: 'group'`
+ * — their geometry is empty but their transform applies to all children.
+ */
+function _effectiveTransform(shape, scene) {
+  let t = shape.transform || {};
+  let groupId = shape.groupId;
+  // Walk up the parent chain by groupId. Bail after a few steps to avoid
+  // infinite loops if data is malformed.
+  for (let i = 0; i < 8 && groupId; i++) {
+    const parent = scene.shapes.find(s => s.id === groupId);
+    if (!parent) break;
+    t = _composeTransforms(parent.transform, t);
+    groupId = parent.groupId;
+  }
+  return t;
+}
+
+/**
  * Async scene compose with full CSG support. Solids are concatenated
  * via unionMeshes (slicer-tolerant), then each hole is *subtracted*
  * from the combined solid mesh via the BSP-tree CSG engine.
  *
  * Mesh-type shapes (uploaded STL/OBJ/3MF) are loaded and parsed before
- * they enter the pipeline.
+ * they enter the pipeline. Group-type shapes (no geometry) are skipped
+ * but their children inherit the group's transform.
  *
  * @param {object} scene
  * @param {object} [opts] - { useCsg: true } - when true (default) holes
@@ -192,6 +242,7 @@ export async function buildSceneAsync(scene, opts = {}) {
   const holes = [];
 
   for (const s of scene.shapes) {
+    if (s.type === 'group') continue; // groups have no geometry of their own
     let base;
     if (s.type === 'mesh') {
       const safe = String(s.params?.meshFile || '').replace(/[^a-zA-Z0-9_.-]/g, '_');
@@ -210,7 +261,8 @@ export async function buildSceneAsync(scene, opts = {}) {
     } else {
       base = _buildShape(s.type, s.params || {});
     }
-    const transformed = _applyTransform(base, s.transform);
+    const eff = _effectiveTransform(s, scene);
+    const transformed = _applyTransform(base, eff);
     if (s.hole) holes.push(transformed);
     else solids.push(transformed);
   }

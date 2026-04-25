@@ -6562,6 +6562,66 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // List connected printers with their build volumes (used by Scene
+    // Composer for the print-bed overlay).
+    if (method === 'GET' && path === '/api/ai-forge/scenes/printer-beds') {
+      try {
+        const { getPrinters } = await import('./db/printers.js');
+        const { getCapabilities } = await import('./printer-capabilities.js');
+        const printers = getPrinters().map(p => {
+          const caps = getCapabilities(p);
+          return {
+            id: p.id,
+            name: p.name,
+            type: p.type,
+            buildVolume: caps?.buildVolume || null,
+          };
+        }).filter(p => p.buildVolume);
+        return sendJson(res, { printers });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
+    // Send a rendered scene directly to a connected printer's file storage
+    // (and optionally start the print). Closes the design→print loop.
+    if (method === 'POST' && path === '/api/ai-forge/scenes/send-to-printer') {
+      return readBody(req, res, async (body) => {
+        try {
+          if (!body.scene) return sendJson(res, { error: 'scene required' }, 400);
+          if (!body.printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const format = (body.format || 'stl').toLowerCase();
+
+          const entry = _printerManager?.printers?.get(body.printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found or not connected' }, 404);
+          if (!entry.client || typeof entry.client.uploadFile !== 'function') {
+            return sendJson(res, { error: `printer '${body.printerId}' (${entry.config?.type || 'unknown'}) does not support file upload from this UI` }, 400);
+          }
+
+          const { buildSceneAsync } = await import('./scene-builder.js');
+          const { meshToBuffer } = await import('./format-converter.js');
+          const mesh = await buildSceneAsync(body.scene, { useCsg: body.useCsg !== false });
+          const buf = await meshToBuffer(mesh, format);
+
+          const filename = (body.filename || `scene_${Date.now()}.${format}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+          const startNow = body.print === true && typeof entry.client.uploadAndPrint === 'function';
+          const result = startNow
+            ? await entry.client.uploadAndPrint(filename, buf)
+            : await entry.client.uploadFile(filename, buf);
+          return sendJson(res, {
+            ok: true,
+            printerId: body.printerId,
+            filename,
+            sizeBytes: buf.length,
+            printing: startNow,
+            result,
+          }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+    }
+
     // Preview a single scene shape — returns indexed mesh data
     // (positions + indices arrays as plain JSON) so the Three.js viewport
     // can render the actual generator/mesh-import geometry instead of a
