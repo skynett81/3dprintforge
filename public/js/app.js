@@ -370,6 +370,9 @@ const PANEL_TITLES = {
   'mesh-repair': 'Mesh Repair Toolkit',
   'ai-forge': 'AI Model Forge',
   'scene-composer': 'Scene Composer',
+  'admin-diagnostics': 'Diagnostics & Tuning',
+  'admin-inventory': 'Inventory Admin',
+  'admin-kb': 'Knowledge Base Admin',
   bedmesh: 'tabs.bedmesh',
   gcode: 'tabs.gcode',
   health: 'tabs.health',
@@ -429,6 +432,21 @@ const PANEL_LOADERS = {
   'mesh-repair': () => { if (typeof loadMeshRepairSuite === 'function') loadMeshRepairSuite(); },
   'ai-forge': () => { if (typeof loadAiForge === 'function') loadAiForge(); },
   'scene-composer': () => { if (typeof loadSceneComposer === 'function') loadSceneComposer(); },
+  'admin-diagnostics': () => {
+    const body = document.getElementById('overlay-panel-body');
+    if (body) body.innerHTML = '<div id="vendor-diagnostics-2026"></div>';
+    if (typeof window.renderVendorDiagnostics2026 === 'function') window.renderVendorDiagnostics2026();
+  },
+  'admin-inventory': () => {
+    const body = document.getElementById('overlay-panel-body');
+    if (body) body.innerHTML = '<div id="inventory-admin-2026"></div>';
+    if (typeof window.renderInventoryAdmin2026 === 'function') window.renderInventoryAdmin2026();
+  },
+  'admin-kb': () => {
+    const body = document.getElementById('overlay-panel-body');
+    if (body) body.innerHTML = '<div id="kb-viewer-2026"></div>';
+    if (typeof window.renderKbViewer2026 === 'function') window.renderKbViewer2026();
+  },
   diagnostics: () => { if (typeof loadDiagnosticsPanel === 'function') loadDiagnosticsPanel(); },
   labels: () => { if (typeof loadLabelPanel === 'function') loadLabelPanel(); },
   signmaker: () => { if (typeof loadSignMakerPanel === 'function') loadSignMakerPanel(); },
