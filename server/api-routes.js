@@ -330,6 +330,10 @@ function getRoutePermission(method, path) {
   // Mesh repair toolkit — local utility, no printer-state mutation
   if (path.startsWith('/api/mesh/')) return 'view';
 
+  // G-code reference & estimator — read-only utilities
+  if (path === '/api/gcode/reference' || path.startsWith('/api/gcode/reference/')) return 'view';
+  if (path === '/api/gcode/estimate') return 'view';
+
   // Default: require view for GET, admin for everything else
   return method === 'GET' ? 'view' : 'admin';
 }
@@ -6375,6 +6379,62 @@ export async function handleApiRequest(req, res) {
     if (snippetIdMatch && method === 'DELETE') {
       const ok = deleteGcodeSnippet(parseInt(snippetIdMatch[1], 10));
       return sendJson(res, { ok }, ok ? 200 : 404);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // G-CODE REFERENCE EXPLORER + TIME/COST ESTIMATOR
+    // ──────────────────────────────────────────────────────────────────
+
+    if (method === 'GET' && path === '/api/gcode/reference') {
+      const { searchReference, listCategories, listFirmwares } = await import('./gcode-reference.js');
+      return sendJson(res, {
+        commands: searchReference({
+          q: url.searchParams.get('q') || '',
+          category: url.searchParams.get('category') || '',
+          firmware: url.searchParams.get('firmware') || '',
+        }),
+        categories: listCategories(),
+        firmwares: listFirmwares(),
+      });
+    }
+
+    const refCodeMatch = path.match(/^\/api\/gcode\/reference\/([A-Za-z0-9_]+)$/);
+    if (refCodeMatch && method === 'GET') {
+      const { getReference } = await import('./gcode-reference.js');
+      const entry = getReference(refCodeMatch[1]);
+      if (!entry) return sendJson(res, { error: 'not found' }, 404);
+      return sendJson(res, entry);
+    }
+
+    if (method === 'POST' && path === '/api/gcode/estimate') {
+      // Streaming binary upload (any text encoding works), capped at 50 MB.
+      const chunks = [];
+      let total = 0;
+      const limit = 50 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'gcode too large (max 50 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const opts = {};
+          for (const k of ['filamentDiameterMm', 'filamentDensityGcm3', 'filamentPricePerKg', 'maxAcceleration']) {
+            const v = url.searchParams.get(k);
+            if (v !== null) opts[k] = parseFloat(v);
+          }
+          const cur = url.searchParams.get('filamentCurrency');
+          if (cur) opts.filamentCurrency = cur;
+          const { estimate } = await import('./gcode-time-estimator.js');
+          return sendJson(res, estimate(buf, opts));
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
     }
 
     // ──────────────────────────────────────────────────────────────────
