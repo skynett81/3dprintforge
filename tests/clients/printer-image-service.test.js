@@ -69,9 +69,16 @@ describe('printer-image-service', () => {
     assert.equal(svc._internals._slug(null),            '');
   });
 
-  it('returns null when model is unknown to registry', async () => {
+  it('falls through to SVG renderer when registry has no URL', async () => {
+    // The service used to return null for unknown models. After the
+    // 2026 change it falls back to the server-side SVG renderer so
+    // every printer gets a representative image. Output is image/svg+xml
+    // tagged with source:'generated'.
     const res = await svc.getPrinterImage('Unknown Model 9000');
-    assert.equal(res, null);
+    assert.ok(res, 'should generate an SVG fallback');
+    assert.equal(res.contentType, 'image/svg+xml');
+    assert.equal(res.source, 'generated');
+    assert.ok(res.buffer.length > 200, 'SVG should be non-trivial');
   });
 
   it('uploads custom image and serves it from cache', async () => {
@@ -99,8 +106,12 @@ describe('printer-image-service', () => {
     svc.uploadPrinterImage('Tmp Model', _validPngBuffer(), 'image/png');
     const removed = svc.clearPrinterImage('Tmp Model');
     assert.equal(removed.filesRemoved, 2);
+    // After clear, the next lookup falls through to the SVG renderer.
+    // Confirm it no longer returns the user-uploaded PNG.
     const after = await svc.getPrinterImage('Tmp Model');
-    assert.equal(after, null);
+    assert.ok(after);
+    assert.equal(after.source, 'generated');
+    assert.equal(after.contentType, 'image/svg+xml');
   });
 
   it('getCacheStats reports entry count + total bytes', () => {
@@ -139,20 +150,24 @@ describe('printer-image-service', () => {
     assert.equal(vendorRequests, before2, 'second call should NOT hit upstream');
   });
 
-  it('rejects non-image content-type from vendor URL', async () => {
+  it('falls through to renderer when vendor returns non-image content-type', async () => {
     const reg = svc._internals._loadRegistry();
     reg.bad_ct_model = `http://127.0.0.1:${vendorPort}/printer.png`;
     vendorBody = Buffer.from('<html>error</html>');
     vendorContentType = 'text/html';
     vendorStatus = 200;
     const res = await svc.getPrinterImage('Bad CT Model');
-    assert.equal(res, null);
+    // Vendor fetch fails → service falls back to SVG renderer rather than
+    // null, so users still see a representative image.
+    assert.ok(res);
+    assert.equal(res.source, 'generated');
   });
 
-  it('rejects vendor 404', async () => {
+  it('falls through to renderer when vendor URL returns 404', async () => {
     const reg = svc._internals._loadRegistry();
     reg.notfound_model = `http://127.0.0.1:${vendorPort}/missing.png`;
     const res = await svc.getPrinterImage('NotFound Model');
-    assert.equal(res, null);
+    assert.ok(res);
+    assert.equal(res.source, 'generated');
   });
 });

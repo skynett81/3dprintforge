@@ -6948,7 +6948,19 @@ export async function handleApiRequest(req, res) {
       try {
         const model = decodeURIComponent(printerImgMatch[1]);
         const { getPrinterImage } = await import('./printer-image-service.js');
-        const result = await getPrinterImage(model);
+        // Pass capabilities so the SVG renderer can pick the right
+        // chassis + feature badges. Look up by model name first; fall
+        // back to slug match if the user passed a slug directly.
+        const { getCapabilities } = await import('./printer-capabilities.js');
+        // Best-effort: try the literal model + a "title-cased" version.
+        const candidates = [model, model.replace(/_/g, ' '),
+                            model.split(/[\s_]/).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ')];
+        let caps = null;
+        for (const c of candidates) {
+          const r = getCapabilities({ model: c, type: 'moonraker' });
+          if (r && r.buildVolume) { caps = r; break; }
+        }
+        const result = await getPrinterImage(model, caps || {});
         if (!result) return sendJson(res, { error: 'no image for model' }, 404);
         res.writeHead(200, {
           'Content-Type': result.contentType,

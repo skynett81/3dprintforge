@@ -130,10 +130,24 @@ async function _fetchFromVendor(url) {
 /**
  * Get an image for a printer model.
  *
+ * Resolution order:
+ *   1. Disk cache hit (admin upload OR previous fetch OR previous render)
+ *   2. Registry URL → fetch from vendor → cache
+ *   3. SVG renderer → generate from model + capabilities → cache
+ *
+ * Step 3 means every printer in the project gets a real, distinct image
+ * rendered server-side from its chassis kinematics + feature flags. The
+ * frontend SVG-fallback only fires now if step 3 also fails (e.g. on a
+ * truly unknown model where the renderer can't decide a chassis).
+ *
  * @param {string} model - the model name (case-insensitive)
+ * @param {object} [capabilities] - optional, passed straight to the
+ *        renderer so it can pick chassis + feature badges. The caller
+ *        (api-routes) is expected to inject this from
+ *        printer-capabilities.getCapabilities().
  * @returns {Promise<null | { buffer, contentType, source }>}
  */
-export async function getPrinterImage(model) {
+export async function getPrinterImage(model, capabilities = null) {
   if (!model) return null;
   const slug = _slug(model);
   if (!slug) return null;
@@ -145,13 +159,26 @@ export async function getPrinterImage(model) {
   // 2. Registry lookup
   const reg = _loadRegistry();
   const url = reg[slug];
-  if (!url) return null;
+  if (url) {
+    const fetched = await _fetchFromVendor(url);
+    if (fetched) {
+      _writeCache(slug, fetched.buffer, fetched.contentType, url);
+      return { ...fetched, source: url };
+    }
+    // Fetch failed — fall through to generator instead of returning null,
+    // so the user still gets a recognisable image.
+  }
 
-  // 3. Fetch + cache
-  const fetched = await _fetchFromVendor(url);
-  if (!fetched) return null;
-  _writeCache(slug, fetched.buffer, fetched.contentType, url);
-  return { ...fetched, source: url };
+  // 3. Server-side SVG renderer
+  try {
+    const { renderPrinterSvg } = await import('./printer-image-renderer.js');
+    const svg = renderPrinterSvg(model, capabilities || {});
+    const buf = Buffer.from(svg, 'utf-8');
+    _writeCache(slug, buf, 'image/svg+xml', 'generated');
+    return { buffer: buf, contentType: 'image/svg+xml', source: 'generated' };
+  } catch {
+    return null;
+  }
 }
 
 /**

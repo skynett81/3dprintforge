@@ -1,5 +1,7 @@
 {
-  "_comment": "Model-name → upstream image URL. Keys are slugified (lowercase, non-alphanumeric replaced with '_'). Empty/null URL means no upstream registered — frontend will fall back to the SVG placeholder. Admins can upload their own image via POST /api/printer-image/:model and it overrides whatever is here.",
+  "_comment": "Model→URL registry for vendor product photos. Slugs are lowercased+non-alphanumeric→'_'. Service tries this URL first, falls back to a generated SVG chassis image when the URL fails or is null. The SVG renderer is the primary mechanism — it produces distinct, accurate-to-spec images for every printer (correct chassis type, build volume, feature badges) without depending on unstable vendor CDNs. Admins can populate any URL here OR upload a custom image via POST /api/printer-image/:slug.",
+  "_doc_admin_upload": "Real vendor product photos: use Settings → Printer Images (admin only) to upload PNG/WebP. Each image overrides whatever URL is here.",
+  "_doc_url_format": "URLs must return Content-Type: image/* and at least 200 bytes. The fetcher has an 8s timeout and a sane User-Agent.",
 
   "p1s":              null,
   "p1p":              null,
@@ -89,14 +91,14 @@
   "flashforge_adventurer_5m": null,
   "flashforge_adventurer_5m_pro": null,
   "flashforge_ad5x":  null,
-  "flashforge_creator_4":      null,
-  "flashforge_guider_3_plus":  null,
+  "flashforge_creator_4": null,
+  "flashforge_guider_3_plus": null,
 
   "biqu_hurakan":     null,
   "biqu_b1_se_plus":  null,
   "two_trees_sk_1":   null,
   "two_trees_sk_1_pro":null,
-  "two_trees_sapphire_pro":   null,
+  "two_trees_sapphire_pro": null,
   "tronxy_crux1":     null,
   "tronxy_veho_600":  null,
   "mingda_magician_x2": null,
