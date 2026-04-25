@@ -1353,6 +1353,37 @@ export function runMigrations() {
       )`, 'slug, locale, title, description, symptom, causes, solutions, body_markdown, source_file, updated_at');
     }},
 
+    // v132: Calibration runs + ETA prediction buckets
+    { version: 132, up: (db) => {
+      db.exec(`CREATE TABLE IF NOT EXISTS calibration_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        printer_id TEXT,
+        type TEXT NOT NULL,
+        params_json TEXT,
+        gcode_size_bytes INTEGER,
+        result_notes TEXT,
+        chosen_value REAL,
+        chosen_unit TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_calibration_runs_printer ON calibration_runs(printer_id)`);
+
+      db.exec(`CREATE TABLE IF NOT EXISTS eta_predictions (
+        bucket_key TEXT PRIMARY KEY,
+        printer_id TEXT NOT NULL,
+        material TEXT NOT NULL,
+        nozzle_diameter REAL NOT NULL,
+        multiplier REAL NOT NULL DEFAULT 1.0,
+        samples INTEGER NOT NULL DEFAULT 0,
+        total_slicer_min REAL NOT NULL DEFAULT 0,
+        total_actual_min REAL NOT NULL DEFAULT 0,
+        last_slicer_min REAL,
+        last_actual_min REAL,
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_eta_printer ON eta_predictions(printer_id)`);
+    }},
+
     // v131: G-code Studio snippet library
     { version: 131, up: (db) => {
       db.exec(`CREATE TABLE IF NOT EXISTS gcode_snippets (

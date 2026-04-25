@@ -6374,6 +6374,68 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok }, ok ? 200 : 404);
     }
 
+    // ──────────────────────────────────────────────────────────────────
+    // CALIBRATION & TUNING SUITE
+    // ──────────────────────────────────────────────────────────────────
+
+    if (method === 'GET' && path === '/api/calibration/types') {
+      const { listGenerators } = await import('./calibration-generator.js');
+      return sendJson(res, { types: listGenerators() });
+    }
+
+    if (method === 'POST' && path === '/api/calibration/generate') {
+      return readBody(req, res, async (body) => {
+        if (!body.type) return sendJson(res, { error: 'type required' }, 400);
+        try {
+          const { generate } = await import('./calibration-generator.js');
+          const result = generate(body.type, body.params || {});
+          return sendJson(res, result);
+        } catch (e) { return sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
+    // ETA prediction
+    const etaPrinterMatch = path.match(/^\/api\/eta\/printer\/([^/]+)$/);
+    if (etaPrinterMatch && method === 'GET') {
+      const pid = decodeURIComponent(etaPrinterMatch[1]);
+      const { listEtaStatsForPrinter } = await import('./eta-predictor.js');
+      return sendJson(res, listEtaStatsForPrinter(pid));
+    }
+
+    if (method === 'POST' && path === '/api/eta/predict') {
+      return readBody(req, res, async (body) => {
+        if (!Number.isFinite(body.slicer_minutes)) return sendJson(res, { error: 'slicer_minutes required' }, 400);
+        const { predictEta } = await import('./eta-predictor.js');
+        return sendJson(res, predictEta(body.slicer_minutes, {
+          printerId: body.printer_id,
+          material: body.material,
+          nozzleDiameter: body.nozzle_diameter,
+        }));
+      });
+    }
+
+    if (method === 'DELETE' && path.startsWith('/api/eta/bucket')) {
+      return readBody(req, res, async (body) => {
+        const { resetEtaBucket } = await import('./eta-predictor.js');
+        const ok = resetEtaBucket(body.printer_id, body.material, body.nozzle_diameter);
+        return sendJson(res, { ok });
+      });
+    }
+
+    // Input shaper analysis
+    if (method === 'POST' && path === '/api/input-shaper/analyze') {
+      return readBody(req, res, async (body) => {
+        if (!body.csv) return sendJson(res, { error: 'csv body required' }, 400);
+        try {
+          const { recommendShaper, parseResonanceCsv, downsampleForPlot } = await import('./input-shaper-analyzer.js');
+          const reco = recommendShaper(body.csv, body.axis || 'x', { maxSmoothing: body.max_smoothing });
+          const data = parseResonanceCsv(body.csv, body.axis || 'x');
+          reco.plot = downsampleForPlot(data, 200);
+          return sendJson(res, reco);
+        } catch (e) { return sendJson(res, { error: e.message }, 400); }
+      });
+    }
+
     // ── Spoolman Sync ──
     if (method === 'POST' && path === '/api/spoolman/sync') {
       return readBody(req, res, async (body) => {
