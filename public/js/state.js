@@ -6,6 +6,12 @@ class StateStore {
     this._listeners = new Map();
   }
 
+  // Public getters used by app.js / dashboard widgets to count online
+  // printers, list registered printers, etc. Without these, callers were
+  // hitting `undefined` and seeing "0/N online" even with active streams.
+  get printers() { return this._printers; }
+  get printerMeta() { return this._printerMeta; }
+
   // Multi-printer methods
   setActivePrinter(id) {
     this._activePrinterId = id;
