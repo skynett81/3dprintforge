@@ -384,15 +384,6 @@ body {
   position: absolute; inset: 0;
   background: radial-gradient(ellipse at center, transparent 30%, rgba(4,6,26,0.7) 90%);
 }
-/* Horizontal scan-line that travels top→bottom */
-.bg-hscan {
-  position: absolute; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
-  box-shadow: 0 0 24px var(--color-accent), 0 0 48px rgba(0,212,255,0.3);
-  opacity: 0.5;
-  animation: hscan 9s linear infinite;
-}
-@keyframes hscan { 0% { top: -10%; } 100% { top: 110%; } }
 /* Falling matrix-style particles */
 .bg-particles { position: absolute; inset: 0; overflow: hidden; }
 .particle {
@@ -861,7 +852,6 @@ tr:hover td { background: rgba(18,121,255,0.05); }
   <div class="bg-particles">
     ${Array.from({length: 18}, (_, i) => `<div class="particle" style="left:${(i*5.6+Math.sin(i)*3).toFixed(1)}%;height:${40+i*8}px;animation-duration:${(8+i*0.7).toFixed(1)}s;animation-delay:${(i*0.4).toFixed(1)}s"></div>`).join('')}
   </div>
-  <div class="bg-hscan"></div>
   <div class="bg-scanlines"></div>
   <div class="bg-vignette"></div>
 </div>
