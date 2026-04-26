@@ -4437,6 +4437,12 @@ export async function handleApiRequest(req, res) {
       const httpPort = config.server?.port || parseInt(process.env.SERVER_PORT) || 3000;
       const httpsPort = config.server?.httpsPort || parseInt(process.env.SERVER_HTTPS_PORT) || 3443;
 
+      let dbVersion = 0;
+      try {
+        const { getDb } = await import('./db/connection.js');
+        dbVersion = getDb().prepare('SELECT MAX(version) as v FROM schema_version').get()?.v || 0;
+      } catch { /* ignore */ }
+
       return sendJson(res, {
         uptime: uptime,
         uptime_seconds: Math.floor(uptime),
@@ -4448,7 +4454,7 @@ export async function handleApiRequest(req, res) {
         printer_count: getPrinters().length,
         dbSize: dbSize,
         db_size: dbSize,
-        db_version: 76,
+        db_version: dbVersion,
         startedAt: _serverStartTime,
         pid: process.pid,
         memory_mb: Math.round(mem.rss / 1024 / 1024),

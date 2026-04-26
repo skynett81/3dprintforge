@@ -49,7 +49,22 @@ async function ensureSchema(env) {
     ['installations', 'cloud_printers', 'INTEGER DEFAULT 0'],
     ['installations', 'plugin_count', 'INTEGER DEFAULT 0'],
     ['installations', 'slicer_jobs', 'INTEGER DEFAULT 0'],
-    ['installations', 'schema_version', 'INTEGER DEFAULT 1']
+    ['installations', 'schema_version', 'INTEGER DEFAULT 1'],
+    // Print activity (already in payload from ping; was being dropped)
+    ['installations', 'total_prints', 'INTEGER DEFAULT 0'],
+    ['installations', 'completed_prints', 'INTEGER DEFAULT 0'],
+    ['installations', 'failed_prints', 'INTEGER DEFAULT 0'],
+    ['installations', 'cancelled_prints', 'INTEGER DEFAULT 0'],
+    ['installations', 'success_rate', 'INTEGER DEFAULT 0'],
+    ['installations', 'total_print_hours', 'INTEGER DEFAULT 0'],
+    ['installations', 'total_filament_kg', 'REAL DEFAULT 0'],
+    ['installations', 'queue_items', 'INTEGER DEFAULT 0'],
+    ['installations', 'install_age_days', 'INTEGER DEFAULT 0'],
+    ['installations', 'material_types', 'TEXT'],
+    ['installations', 'ram_gb', 'INTEGER'],
+    ['installations', 'cpu_cores', 'INTEGER'],
+    ['installations', 'cpu_model', 'TEXT'],
+    ['installations', 'ecom_active', 'INTEGER DEFAULT 0']
   ];
   for (const [t, c, type] of cols) {
     try { await env.DB.prepare(`ALTER TABLE ${t} ADD COLUMN ${c} ${type}`).run(); }
@@ -92,6 +107,20 @@ async function handlePing(request, env) {
   const safeFeatures = Array.isArray(body.features) ? body.features.join(',').substring(0, 500) : null;
   const safeDemo = body.demo ? 1 : 0;
   const safeLanguage = body.language ? String(body.language).substring(0, 10) : null;
+  // Print activity + system info that the server already sends
+  const safeTotalPrints = parseInt(body.totalPrints) || 0;
+  const safeCompletedPrints = parseInt(body.completedPrints) || 0;
+  const safeFailedPrints = parseInt(body.failedPrints) || 0;
+  const safeCancelledPrints = parseInt(body.cancelledPrints) || 0;
+  const safeSuccessRate = parseInt(body.successRate) || 0;
+  const safeTotalPrintHours = parseInt(body.totalPrintHours) || 0;
+  const safeTotalFilamentKg = parseFloat(body.totalFilamentKg) || 0;
+  const safeQueueItems = parseInt(body.queueItems) || 0;
+  const safeInstallAgeDays = parseInt(body.installAgeDays) || 0;
+  const safeMaterialTypes = Array.isArray(body.materialTypes) ? body.materialTypes.join(',').substring(0, 500) : null;
+  const safeCpuCores = parseInt(body.cpuCores) || null;
+  const safeCpuModel = body.cpuModel ? String(body.cpuModel).substring(0, 100) : null;
+  const safeEcomActive = body.ecomActive ? 1 : 0;
   const today = new Date().toISOString().split('T')[0];
 
   // Upsert installation
@@ -102,27 +131,45 @@ async function handlePing(request, env) {
   if (existing) {
     await env.DB.prepare(
       `UPDATE installations SET version = ?, platform = ?, node_version = ?, arch = ?, ram_gb = ?,
+       cpu_cores = ?, cpu_model = ?,
        printer_count = ?, printer_models = ?, printer_connectors = ?, cloud_printers = ?,
        plugin_count = ?, slicer_jobs = ?, schema_version = ?,
        total_spools = ?, total_profiles = ?,
+       total_prints = ?, completed_prints = ?, failed_prints = ?, cancelled_prints = ?,
+       success_rate = ?, total_print_hours = ?, total_filament_kg = ?,
+       queue_items = ?, install_age_days = ?, material_types = ?, ecom_active = ?,
        features = ?, demo = ?, language = ?,
        last_seen = datetime('now'), ping_count = ping_count + 1 WHERE id = ?`
     ).bind(safeVersion, safePlatform, safeNode, safeArch, safeRam,
+      safeCpuCores, safeCpuModel,
       safePrinterCount, safePrinterModels, safePrinterConnectors, safeCloudPrinters,
       safePluginCount, safeSlicerJobs, safeSchemaVersion,
       safeTotalSpools, safeTotalProfiles,
+      safeTotalPrints, safeCompletedPrints, safeFailedPrints, safeCancelledPrints,
+      safeSuccessRate, safeTotalPrintHours, safeTotalFilamentKg,
+      safeQueueItems, safeInstallAgeDays, safeMaterialTypes, safeEcomActive,
       safeFeatures, safeDemo, safeLanguage, safeId).run();
   } else {
     await env.DB.prepare(
       `INSERT INTO installations (id, version, platform, node_version, arch, ram_gb,
+       cpu_cores, cpu_model,
        printer_count, printer_models, printer_connectors, cloud_printers,
        plugin_count, slicer_jobs, schema_version,
-       total_spools, total_profiles, features, demo, language)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       total_spools, total_profiles,
+       total_prints, completed_prints, failed_prints, cancelled_prints,
+       success_rate, total_print_hours, total_filament_kg,
+       queue_items, install_age_days, material_types, ecom_active,
+       features, demo, language)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(safeId, safeVersion, safePlatform, safeNode, safeArch, safeRam,
+      safeCpuCores, safeCpuModel,
       safePrinterCount, safePrinterModels, safePrinterConnectors, safeCloudPrinters,
       safePluginCount, safeSlicerJobs, safeSchemaVersion,
-      safeTotalSpools, safeTotalProfiles, safeFeatures, safeDemo, safeLanguage).run();
+      safeTotalSpools, safeTotalProfiles,
+      safeTotalPrints, safeCompletedPrints, safeFailedPrints, safeCancelledPrints,
+      safeSuccessRate, safeTotalPrintHours, safeTotalFilamentKg,
+      safeQueueItems, safeInstallAgeDays, safeMaterialTypes, safeEcomActive,
+      safeFeatures, safeDemo, safeLanguage).run();
 
     // Increment new installs for today
     await env.DB.prepare(
@@ -601,6 +648,22 @@ tr:hover td { background: rgba(18,121,255,0.05); }
         <div class="g-card-value green">${s.total_slicer_jobs}</div>
         <div class="g-card-label">Slicer Jobs</div>
       </div></div>
+      <div class="g-card"><div class="g-card-inner">
+        <div class="g-card-value pink">${s.total_prints.toLocaleString()}</div>
+        <div class="g-card-label">Total Prints</div>
+      </div></div>
+      <div class="g-card"><div class="g-card-inner">
+        <div class="g-card-value green">${s.overall_success_rate}%</div>
+        <div class="g-card-label">Success Rate</div>
+      </div></div>
+      <div class="g-card"><div class="g-card-inner">
+        <div class="g-card-value orange">${s.total_print_hours.toLocaleString()} h</div>
+        <div class="g-card-label">Print Hours</div>
+      </div></div>
+      <div class="g-card"><div class="g-card-inner">
+        <div class="g-card-value purple">${s.total_filament_kg.toLocaleString()} kg</div>
+        <div class="g-card-label">Filament Used</div>
+      </div></div>
     </div>
   </div>
 </section>
@@ -650,14 +713,32 @@ tr:hover td { background: rgba(18,121,255,0.05); }
         }).join('')}</tbody></table>
       </div>` : ''}
     </div>
-    ${s.connectors.length ? `<div class="three-col" style="margin-top:20px">
-      <div class="data-section">
+    ${(s.connectors.length || s.materials.length) ? `<div class="three-col" style="margin-top:20px">
+      ${s.connectors.length ? `<div class="data-section">
         <div class="data-section-title">Printer Connectors</div>
         <table><thead><tr><th>Type</th><th>Count</th><th class="bar-cell"></th></tr></thead><tbody>${s.connectors.map(c => {
           const maxC = s.connectors[0]?.count || 1;
           const label = { bambu: 'Bambu Lab', moonraker: 'Moonraker/Klipper', octoprint: 'OctoPrint', prusalink: 'PrusaLink', 'snapmaker-sacp': 'Snapmaker SACP', 'snapmaker-http': 'Snapmaker HTTP', sacp: 'SACP', ankermake: 'AnkerMake', duet: 'Duet/RRF', flashforge: 'FlashForge', repetier: 'Repetier' }[c.type] || c.type;
           return `<tr><td>${esc(label)}</td><td>${c.count}</td><td class="bar-cell"><div class="bar green-bar" style="width:${Math.max(Math.round(c.count/maxC*100), 5)}%"></div></td></tr>`;
         }).join('')}</tbody></table>
+      </div>` : ''}
+      ${s.materials.length ? `<div class="data-section">
+        <div class="data-section-title">Material Types in Use</div>
+        <table><thead><tr><th>Material</th><th>Installs</th><th class="bar-cell"></th></tr></thead><tbody>${s.materials.slice(0, 12).map(m => {
+          const maxM = s.materials[0]?.count || 1;
+          return `<tr><td>${esc(m.material)}</td><td>${m.count}</td><td class="bar-cell"><div class="bar purple-bar" style="width:${Math.max(Math.round(m.count/maxM*100), 5)}%"></div></td></tr>`;
+        }).join('')}</tbody></table>
+      </div>` : ''}
+      <div class="data-section">
+        <div class="data-section-title">Print Outcomes</div>
+        <table><tbody>
+          <tr><td>Completed</td><td><strong style="color:var(--color-green)">${s.completed_prints.toLocaleString()}</strong></td></tr>
+          <tr><td>Failed</td><td><strong style="color:var(--color-pink)">${s.failed_prints.toLocaleString()}</strong></td></tr>
+          <tr><td>Cancelled</td><td><strong style="color:rgba(255,255,255,0.5)">${s.cancelled_prints.toLocaleString()}</strong></td></tr>
+          <tr><td>Queue (pending)</td><td><strong>${s.queue_items.toLocaleString()}</strong></td></tr>
+          <tr><td>Avg install age</td><td><strong>${s.avg_install_age_days} d</strong></td></tr>
+          <tr><td>Oldest install</td><td><strong>${s.max_install_age_days} d</strong></td></tr>
+        </tbody></table>
       </div>
     </div>` : ''}
     <div class="three-col" style="margin-top:20px">
@@ -739,7 +820,8 @@ async function getStatsData(env) {
   const [total, active24h, active7d, active30d, new7d, totalPings,
     versions, platforms, nodeVersions, archs, languages, daily, recent,
     totalPrinters, totalSpools, totalProfiles, demoCount, featureRows,
-    totalCloudPrinters, totalPluginCount, totalSlicerJobs, connectorRows] = await Promise.all([
+    totalCloudPrinters, totalPluginCount, totalSlicerJobs, connectorRows,
+    printActivity, materialTypeRows, ageStats, ecomActiveCount] = await Promise.all([
     env.DB.prepare('SELECT COUNT(*) as count FROM installations').first(),
     env.DB.prepare(`SELECT COUNT(*) as count FROM installations WHERE last_seen >= datetime('now', '-1 day')`).first(),
     env.DB.prepare(`SELECT COUNT(*) as count FROM installations WHERE last_seen >= datetime('now', '-7 days')`).first(),
@@ -762,6 +844,10 @@ async function getStatsData(env) {
     env.DB.prepare('SELECT SUM(plugin_count) as total FROM installations').first(),
     env.DB.prepare('SELECT SUM(slicer_jobs) as total FROM installations').first(),
     env.DB.prepare('SELECT printer_connectors FROM installations WHERE printer_connectors IS NOT NULL AND printer_connectors != \'\'').all(),
+    env.DB.prepare('SELECT SUM(total_prints) as total, SUM(completed_prints) as completed, SUM(failed_prints) as failed, SUM(cancelled_prints) as cancelled, SUM(total_print_hours) as hours, SUM(total_filament_kg) as kg, SUM(queue_items) as queue FROM installations').first(),
+    env.DB.prepare('SELECT material_types FROM installations WHERE material_types IS NOT NULL AND material_types != \'\'').all(),
+    env.DB.prepare('SELECT AVG(install_age_days) as avg, MAX(install_age_days) as max FROM installations WHERE install_age_days > 0').first(),
+    env.DB.prepare('SELECT COUNT(*) as count FROM installations WHERE ecom_active = 1').first(),
   ]);
 
   // Aggregate printer models across all installations
@@ -810,6 +896,24 @@ async function getStatsData(env) {
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Aggregate material types across installations
+  const materialCounts = {};
+  for (const row of (materialTypeRows?.results || [])) {
+    if (row.material_types) {
+      for (const m of row.material_types.split(',')) {
+        const mt = m.trim();
+        if (mt) materialCounts[mt] = (materialCounts[mt] || 0) + 1;
+      }
+    }
+  }
+  const materials = Object.entries(materialCounts)
+    .map(([material, count]) => ({ material, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const totalAttempted = printActivity?.total || 0;
+  const totalCompleted = printActivity?.completed || 0;
+  const overallSuccessRate = totalAttempted > 0 ? Math.round(totalCompleted / totalAttempted * 100) : 0;
+
   return {
     total: total?.count || 0,
     active_24h: active24h?.count || 0,
@@ -823,6 +927,17 @@ async function getStatsData(env) {
     total_cloud_printers: totalCloudPrinters?.total || 0,
     total_plugins: totalPluginCount?.total || 0,
     total_slicer_jobs: totalSlicerJobs?.total || 0,
+    total_prints: totalAttempted,
+    completed_prints: totalCompleted,
+    failed_prints: printActivity?.failed || 0,
+    cancelled_prints: printActivity?.cancelled || 0,
+    overall_success_rate: overallSuccessRate,
+    total_print_hours: printActivity?.hours || 0,
+    total_filament_kg: Math.round((printActivity?.kg || 0) * 10) / 10,
+    queue_items: printActivity?.queue || 0,
+    avg_install_age_days: Math.round(ageStats?.avg || 0),
+    max_install_age_days: ageStats?.max || 0,
+    ecom_active_count: ecomActiveCount?.count || 0,
     demo_count: demoCount?.count || 0,
     versions: versions?.results || [],
     platforms: platforms?.results || [],
@@ -831,6 +946,7 @@ async function getStatsData(env) {
     languages: languages?.results || [],
     printerModels,
     connectors,
+    materials,
     features,
     daily: daily?.results || [],
     recent: recent?.results || [],
