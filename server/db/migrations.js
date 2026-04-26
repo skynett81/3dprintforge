@@ -195,9 +195,13 @@ export function ensureBaseSchemaColumns(db) {
     ['ams_snapshots', 'bed_temp_recommend', 'INTEGER'],
     ['ams_snapshots', 'k_value', 'REAL'],
     // filament_profiles is migration-created but suffers the same drift —
-    // spoolmandb-modular writes weight_g which was never declared.
+    // spoolmandb-modular writes weight_g / source / external_id which were
+    // never declared in earlier migrations.
     ['filament_profiles', 'weight_g', 'REAL'],
-    ['filament_profiles', 'price', 'REAL']
+    ['filament_profiles', 'price', 'REAL'],
+    ['filament_profiles', 'source', 'TEXT'],
+    ['filament_profiles', 'external_id', 'TEXT'],
+    ['filament_profiles', 'article_number', 'TEXT']
   ];
   for (const [table, col, type] of adds) {
     if (!_tableExists(db, table)) continue;

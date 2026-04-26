@@ -222,8 +222,16 @@ export async function refreshModularSpoolmanDb() {
       log.info(`Upserted ${vendors.length} vendors from SpoolmanDB`);
     }
   } catch (e) {
-    log.warn(`Vendor fetch failed: ${e.message}`);
-    result.errors.push({ source: 'vendors', message: e.message });
+    // Upstream removed the centralized vendors.json — vendor names are now
+    // embedded in each per-filament file under filaments/. A 404 here is
+    // expected on current SpoolmanDB; downgrade the warning to debug so it
+    // doesn't spam the boot log.
+    if (/HTTP 404/.test(e.message)) {
+      log.debug(`SpoolmanDB vendors.json removed upstream (404) — vendor names now come from per-filament files`);
+    } else {
+      log.warn(`Vendor fetch failed: ${e.message}`);
+      result.errors.push({ source: 'vendors', message: e.message });
+    }
   }
 
   try {
