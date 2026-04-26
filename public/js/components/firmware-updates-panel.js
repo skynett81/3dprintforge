@@ -6,6 +6,37 @@
   let _lastCheckAt = null;
   let _checking = false;
 
+  // View mode — persisted across sessions so users get their preferred layout back.
+  // 'active'  → only the currently-selected printer (matches the rest of the dashboard)
+  // 'columns' → responsive grid, all printers at once
+  // 'list'    → single vertical column, all printers (legacy behaviour)
+  const VIEW_MODES = ['active', 'columns', 'list'];
+  let _viewMode = (() => {
+    try {
+      const v = localStorage.getItem('fw_view_mode');
+      return VIEW_MODES.includes(v) ? v : 'active';
+    } catch { return 'active'; }
+  })();
+
+  function _setViewMode(mode) {
+    if (!VIEW_MODES.includes(mode)) return;
+    _viewMode = mode;
+    try { localStorage.setItem('fw_view_mode', mode); } catch {}
+    _render();
+  }
+
+  // Resubscribe once the shared printerState store is available so switching
+  // the active printer live-updates this panel when we're in 'active' mode.
+  function _bindActivePrinter() {
+    if (_bindActivePrinter._done) return;
+    const st = window.printerState;
+    if (!st || typeof st.subscribe !== 'function') return;
+    st.subscribe('*', () => {
+      if (_viewMode === 'active') _render();
+    });
+    _bindActivePrinter._done = true;
+  }
+
   function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
   // Lightweight Markdown → HTML renderer (headings, bold, italic, lists, paragraphs, line breaks)
@@ -229,16 +260,70 @@
   function _render() {
     const container = document.getElementById('firmware-updates-panel');
     if (!container) return;
+    _bindActivePrinter();
 
-    // Separate stable updates from dev-only entries
-    const stableUpdates = _updates.filter(u => u.update_available === 1);
-    const devOnlyUpdates = _updates.filter(u => u.update_available !== 1 && (u.dev_commits_ahead || 0) > 0);
-    const stableCount = stableUpdates.length;
-    const devCount = devOnlyUpdates.length;
+    // Group updates by printer so multi-printer setups don't get a flat mixed list.
+    // Each group holds the printer's stable update (if any) and dev commits (if any).
+    const byPrinter = new Map();
+    for (const u of _updates) {
+      const id = u.printer_id || '(unknown)';
+      if (!byPrinter.has(id)) {
+        byPrinter.set(id, {
+          printer_id: id,
+          printer_name: u.printer_name || id,
+          model: u.model || '',
+          type: u.type || '',
+          stable: null,
+          dev: null,
+        });
+      }
+      const g = byPrinter.get(id);
+      if (u.update_available === 1) g.stable = u;
+      if ((u.dev_commits_ahead || 0) > 0) g.dev = u;
+    }
+
+    const groups = Array.from(byPrinter.values())
+      .sort((a, b) => String(a.printer_name).localeCompare(String(b.printer_name)));
+
+    const stableCount = groups.filter(g => g.stable).length;
+    const devCount = groups.filter(g => g.dev && !g.stable).length;
     const totalCount = stableCount + devCount;
+    const printerCount = groups.length;
+
+    // In 'active' mode, narrow the groups to just the currently-selected printer.
+    const activeId = window.printerState?.getActivePrinterId?.() || null;
+    let visible = groups;
+    if (_viewMode === 'active' && activeId) {
+      visible = groups.filter(g => g.printer_id === activeId);
+      // If the active printer isn't in the updates list, synthesise an "up to date"
+      // placeholder so the user knows the panel did see it.
+      if (visible.length === 0) {
+        const meta = window.printerState?._printerMeta?.[activeId] || {};
+        visible = [{
+          printer_id: activeId,
+          printer_name: meta.name || activeId,
+          model: meta.model || '',
+          stable: null, dev: null,
+        }];
+      }
+    }
 
     const cardClass = stableCount > 0 ? 'card-warning' : devCount > 0 ? 'card-info' : 'card-success';
     const badgeClass = stableCount > 0 ? 'bg-warning' : devCount > 0 ? 'bg-info' : 'bg-success';
+
+    // View-mode toggle: Active / Columns / List.
+    const viewToggle = `
+      <div class="btn-group btn-group-sm me-2" role="group" aria-label="View mode">
+        <button type="button" class="btn ${_viewMode === 'active' ? 'btn-primary' : 'btn-outline-secondary'}" data-view="active" title="Show the currently selected printer only">
+          <i class="bi bi-person-check"></i> Active
+        </button>
+        <button type="button" class="btn ${_viewMode === 'columns' ? 'btn-primary' : 'btn-outline-secondary'}" data-view="columns" title="All printers side-by-side (responsive grid)">
+          <i class="bi bi-grid-3x3-gap"></i> Columns
+        </button>
+        <button type="button" class="btn ${_viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'}" data-view="list" title="All printers in a single vertical list">
+          <i class="bi bi-list-ul"></i> List
+        </button>
+      </div>`;
 
     let html = `
       <div class="card card-outline ${cardClass}">
@@ -246,47 +331,43 @@
           <h3 class="card-title">
             <i class="bi bi-cloud-download"></i> Firmware Updates
             <span class="badge ${badgeClass}">${totalCount} ${totalCount === 1 ? 'update' : 'updates'}</span>
+            ${printerCount > 1 ? `<span class="badge text-bg-secondary ms-1">${printerCount} printers</span>` : ''}
           </h3>
-          <div class="card-tools">
+          <div class="card-tools d-flex align-items-center flex-wrap">
+            ${printerCount > 1 ? viewToggle : ''}
             <button class="btn btn-sm btn-outline-secondary me-1" id="fw-settings-btn" title="Firmware settings">
               <i class="bi bi-gear"></i>
             </button>
             <button class="btn btn-sm btn-primary" id="fw-check-now-btn" ${_checking ? 'disabled' : ''}>
               <i class="bi bi-arrow-repeat ${_checking ? 'spin' : ''}"></i>
-              ${_checking ? 'Checking...' : 'Check Now'}
+              ${_checking ? 'Checking...' : 'Check All'}
             </button>
           </div>
         </div>
         <div class="card-body">
-          <div class="text-muted small mb-2">Last checked: ${_lastCheckAt ? formatDate(_lastCheckAt) : 'Never'}</div>`;
+          <div class="text-muted small mb-2">
+            Last checked: ${_lastCheckAt ? formatDate(_lastCheckAt) : 'Never'}
+            ${_viewMode === 'active' && activeId ? ` &middot; showing active printer only` : ''}
+          </div>`;
 
     if (totalCount === 0) {
       html += `<p class="text-success mb-0"><i class="bi bi-check-circle"></i> All printers are up to date</p>`;
     }
 
-    // ── Stable Updates Section ──
-    if (stableCount > 0) {
-      html += `<h6 class="text-warning mt-3 mb-2"><i class="bi bi-star-fill"></i> Stable Releases (${stableCount})</h6>`;
-      for (const u of stableUpdates) {
-        html += _renderStableCard(u);
+    // Layout container
+    if (_viewMode === 'columns') {
+      // Responsive grid: 1 col < 768px, 2 cols 768–1199px, 3 cols >= 1200px.
+      html += '<div class="row g-3">';
+      for (const g of visible) {
+        if (_viewMode !== 'active' && !g.stable && !g.dev) continue;
+        html += '<div class="col-12 col-md-6 col-xl-4">' + _renderPrinterGroup(g) + '</div>';
       }
-    }
-
-    // ── Development Commits Section ──
-    if (devCount > 0) {
-      html += `<h6 class="text-info mt-4 mb-2"><i class="bi bi-code-slash"></i> Development Commits (${devCount})</h6>
-        <div class="alert alert-info py-2 small mb-2">
-          <i class="bi bi-info-circle"></i> These are commits pushed to the open-source firmware repos after the latest stable release. They are NOT stable releases — use at your own risk. Snapmaker typically builds a new stable firmware from these commits.
-        </div>`;
-      for (const u of devOnlyUpdates) {
-        html += _renderDevCard(u);
-      }
-    }
-
-    // Also render dev commits for printers that ALSO have a stable update
-    for (const u of stableUpdates) {
-      if ((u.dev_commits_ahead || 0) > 0) {
-        html += _renderDevCard(u, true);
+      html += '</div>';
+    } else {
+      // 'active' or 'list' — single column, sections stacked vertically.
+      for (const g of visible) {
+        if (_viewMode === 'list' && !g.stable && !g.dev) continue;
+        html += _renderPrinterGroup(g);
       }
     }
 
@@ -300,6 +381,52 @@
     if (btn) btn.addEventListener('click', checkNow);
     const settingsBtn = document.getElementById('fw-settings-btn');
     if (settingsBtn) settingsBtn.addEventListener('click', showSettingsDialog);
+
+    // Wire view-mode toggle
+    container.querySelectorAll('[data-view]').forEach(b => {
+      b.addEventListener('click', () => _setViewMode(b.getAttribute('data-view')));
+    });
+  }
+
+  function _renderPrinterGroup(g) {
+    const name = _esc(g.printer_name);
+    const model = g.model ? ` <span class="text-muted small">(${_esc(g.model)})</span>` : '';
+    const printerId = _esc(g.printer_id);
+
+    // Status badge summarising what the printer has pending.
+    const statusBadge = g.stable
+      ? `<span class="badge text-bg-warning"><i class="bi bi-star-fill"></i> Stable update available</span>`
+      : g.dev
+        ? `<span class="badge text-bg-info"><i class="bi bi-code-slash"></i> Dev commits ahead</span>`
+        : `<span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Up to date</span>`;
+
+    // Accent stripe colour matches the most important pending item (stable > dev > up-to-date).
+    const borderColor = g.stable ? 'var(--bs-warning)' : g.dev ? 'var(--bs-info)' : 'var(--bs-success)';
+
+    let inner = '';
+    if (g.stable) inner += _renderStableCard(g.stable);
+    if (g.dev) inner += _renderDevCard(g.dev, !!g.stable);
+
+    // In columns mode, row-gap handles spacing so no bottom margin; otherwise mb-4.
+    const gapClass = _viewMode === 'columns' ? 'h-100' : 'mb-4';
+
+    return `
+      <section class="card ${gapClass}" style="border-left:6px solid ${borderColor}" data-printer-id="${printerId}">
+        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h4 class="card-title mb-1"><i class="bi bi-printer-fill"></i> ${name}${model}</h4>
+            <div>${statusBadge}</div>
+          </div>
+          <div class="btn-group flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${printerId}')" title="Check this printer only">
+              <i class="bi bi-arrow-repeat"></i> Check this printer
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          ${inner || '<p class="text-success mb-0"><i class="bi bi-check-circle"></i> This printer is up to date</p>'}
+        </div>
+      </section>`;
   }
 
   async function showSettingsDialog() {
@@ -356,14 +483,11 @@
   }
 
   function _renderStableCard(u) {
-    const name = _esc(u.printer_name || u.printer_id);
-    const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
     return `
-      <div class="card mb-3" style="border-left:4px solid var(--bs-warning)">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
             <div>
-              <h5 class="mb-1"><i class="bi bi-printer"></i> ${name}${model}</h5>
+              <h6 class="mb-1 text-warning"><i class="bi bi-star-fill"></i> Stable release</h6>
               <div>
                 <span class="badge text-bg-secondary">Current: ${_esc(u.sw_ver || '?')}</span>
                 <i class="bi bi-arrow-right mx-1"></i>
@@ -371,9 +495,6 @@
               </div>
             </div>
             <div class="btn-group flex-wrap">
-              <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
-                <i class="bi bi-arrow-repeat"></i> Recheck
-              </button>
               <button class="btn btn-sm btn-warning" onclick="window._fwTrigger('${_esc(u.printer_id)}')" title="Install update">
                 <i class="bi bi-download"></i> Install Update
               </button>
@@ -394,7 +515,6 @@
           ` : ''}
           ${u.release_url ? `<div class="mt-2"><a href="${_esc(u.release_url)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open release notes externally</a></div>` : ''}
           <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
-        </div>
       </div>`;
   }
 
@@ -430,20 +550,14 @@
     `).join('');
 
     return `
-      <div class="card mb-3" style="border-left:4px solid var(--bs-info)">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+      <div class="mt-3 pt-3" style="border-top:1px solid var(--bs-border-color)">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
             <div>
-              <h5 class="mb-1">
-                <i class="bi bi-code-slash"></i> ${name}${model}
-                ${isSecondary ? '<span class="badge text-bg-secondary ms-2">Also has dev commits</span>' : ''}
-              </h5>
+              <h6 class="mb-1 text-info">
+                <i class="bi bi-code-slash"></i> Development commits
+                ${isSecondary ? '<span class="badge text-bg-secondary ms-2">also newer than stable</span>' : ''}
+              </h6>
               <div class="text-muted small">${ahead} commit${ahead === 1 ? '' : 's'} ahead of stable ${_esc(u.latest_available || u.sw_ver || '?')}</div>
-            </div>
-            <div class="btn-group flex-wrap">
-              <button class="btn btn-sm btn-outline-secondary" onclick="window._fwCheck('${_esc(u.printer_id)}')" title="Recheck">
-                <i class="bi bi-arrow-repeat"></i> Recheck
-              </button>
             </div>
           </div>
           <details ${ahead <= 5 ? 'open' : ''}>
@@ -455,7 +569,6 @@
             </div>
           </details>
           <div class="text-muted small mt-2">Checked: ${formatDate(u.checked_at)}</div>
-        </div>
       </div>`;
   }
 

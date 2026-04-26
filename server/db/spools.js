@@ -202,15 +202,130 @@ export function getLocationAlerts() {
     (SELECT COUNT(*) FROM spools s WHERE (s.location_id = l.id OR s.location = l.name) AND s.archived = 0) as spool_count,
     (SELECT COALESCE(SUM(s.remaining_weight_g), 0) / 1000.0 FROM spools s WHERE (s.location_id = l.id OR s.location = l.name) AND s.archived = 0) as total_weight_kg
     FROM locations l
-    WHERE l.min_spools IS NOT NULL OR l.max_spools IS NOT NULL OR l.min_weight_kg IS NOT NULL OR l.max_weight_kg IS NOT NULL`).all();
+    WHERE l.min_spools IS NOT NULL OR l.max_spools IS NOT NULL
+       OR l.min_weight_kg IS NOT NULL OR l.max_weight_kg IS NOT NULL
+       OR l.humidity_min IS NOT NULL OR l.humidity_max IS NOT NULL
+       OR l.temp_min IS NOT NULL OR l.temp_max IS NOT NULL`).all();
   const alerts = [];
   for (const loc of locations) {
     if (loc.min_spools != null && loc.spool_count < loc.min_spools) alerts.push({ location: loc.name, type: 'min_spools', current: loc.spool_count, threshold: loc.min_spools });
     if (loc.max_spools != null && loc.spool_count > loc.max_spools) alerts.push({ location: loc.name, type: 'max_spools', current: loc.spool_count, threshold: loc.max_spools });
     if (loc.min_weight_kg != null && loc.total_weight_kg < loc.min_weight_kg) alerts.push({ location: loc.name, type: 'min_weight', current: loc.total_weight_kg, threshold: loc.min_weight_kg });
     if (loc.max_weight_kg != null && loc.total_weight_kg > loc.max_weight_kg) alerts.push({ location: loc.name, type: 'max_weight', current: loc.total_weight_kg, threshold: loc.max_weight_kg });
+
+    // Climate alerts use the last recorded reading (updated via POST /api/inventory/locations/:id/climate).
+    // Only raises the alarm when we have a reading AND the threshold is set.
+    if (loc.last_temp != null) {
+      if (loc.temp_min != null && loc.last_temp < loc.temp_min) alerts.push({ location: loc.name, type: 'temp_low', current: loc.last_temp, threshold: loc.temp_min, since: loc.climate_alert_since });
+      if (loc.temp_max != null && loc.last_temp > loc.temp_max) alerts.push({ location: loc.name, type: 'temp_high', current: loc.last_temp, threshold: loc.temp_max, since: loc.climate_alert_since });
+    }
+    if (loc.last_humidity != null) {
+      if (loc.humidity_min != null && loc.last_humidity < loc.humidity_min) alerts.push({ location: loc.name, type: 'humidity_low', current: loc.last_humidity, threshold: loc.humidity_min, since: loc.climate_alert_since });
+      if (loc.humidity_max != null && loc.last_humidity > loc.humidity_max) alerts.push({ location: loc.name, type: 'humidity_high', current: loc.last_humidity, threshold: loc.humidity_max, since: loc.climate_alert_since });
+    }
   }
   return alerts;
+}
+
+/** Record a climate reading (temp °C + humidity %) against a location. */
+export function recordLocationClimate(locationId, temp, humidity) {
+  const db = getDb();
+  const loc = db.prepare('SELECT temp_min, temp_max, humidity_min, humidity_max, climate_alert_since FROM locations WHERE id = ?').get(locationId);
+  if (!loc) throw new Error(`Location ${locationId} not found`);
+  const now = new Date().toISOString();
+
+  const outOfRange =
+    (loc.temp_min != null && temp != null && temp < loc.temp_min) ||
+    (loc.temp_max != null && temp != null && temp > loc.temp_max) ||
+    (loc.humidity_min != null && humidity != null && humidity < loc.humidity_min) ||
+    (loc.humidity_max != null && humidity != null && humidity > loc.humidity_max);
+  const alertSince = outOfRange ? (loc.climate_alert_since || now) : null;
+
+  db.prepare(`UPDATE locations
+              SET last_temp = ?, last_humidity = ?, last_climate_at = ?, climate_alert_since = ?
+              WHERE id = ?`).run(temp ?? null, humidity ?? null, now, alertSince, locationId);
+  return { out_of_range: outOfRange, alert_since: alertSince };
+}
+
+/** Mark sync status with Spoolman for a specific spool. */
+export function setSpoolmanSyncStatus(spoolId, error = null) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE spools SET spoolman_synced_at = ?, spoolman_sync_error = ? WHERE id = ?')
+    .run(error ? null : now, error || null, spoolId);
+}
+
+// ─────────────────────────────────────────────────────────────
+// extra_field_schema — user-defined custom fields (Spoolman compat)
+// ─────────────────────────────────────────────────────────────
+export function getExtraFieldSchemas(entity) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM extra_field_schema WHERE entity = ? ORDER BY order_index, id').all(entity);
+}
+
+export function addExtraFieldSchema(entry) {
+  const db = getDb();
+  const r = db.prepare(`INSERT INTO extra_field_schema
+    (entity, key, name, field_type, default_value, choices, unit, order_index)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      entry.entity, entry.key, entry.name,
+      entry.field_type || 'text',
+      entry.default_value || null,
+      entry.choices ? JSON.stringify(entry.choices) : null,
+      entry.unit || null,
+      entry.order_index || 0,
+    );
+  return r.lastInsertRowid;
+}
+
+export function deleteExtraFieldSchema(id) {
+  getDb().prepare('DELETE FROM extra_field_schema WHERE id = ?').run(id);
+}
+
+export function listMaterials() {
+  return getDb().prepare('SELECT * FROM materials_taxonomy ORDER BY parent_material NULLS FIRST, material').all();
+}
+
+export function listPurgeMatrix({ from, to } = {}) {
+  const db = getDb();
+  if (from && to) return db.prepare('SELECT * FROM filament_purge_matrix WHERE from_material = ? AND to_material = ?').all(from, to);
+  if (from) return db.prepare('SELECT * FROM filament_purge_matrix WHERE from_material = ?').all(from);
+  return db.prepare('SELECT * FROM filament_purge_matrix ORDER BY from_material, to_material LIMIT 500').all();
+}
+
+export function listOrcaSlicerFilaments({ vendor, material } = {}) {
+  const db = getDb();
+  if (vendor && material) return db.prepare('SELECT id, vendor, name, material, printer_type, nozzle_temp_min, nozzle_temp_max, bed_temp_min, bed_temp_max, max_volumetric_speed FROM orcaslicer_filaments WHERE vendor = ? AND material = ?').all(vendor, material);
+  if (vendor) return db.prepare('SELECT id, vendor, name, material, printer_type, nozzle_temp_min, nozzle_temp_max, bed_temp_min, bed_temp_max, max_volumetric_speed FROM orcaslicer_filaments WHERE vendor = ?').all(vendor);
+  return db.prepare('SELECT id, vendor, name, material, printer_type FROM orcaslicer_filaments ORDER BY vendor, name LIMIT 1000').all();
+}
+
+export function getOrcaSlicerFilament(id) {
+  return getDb().prepare('SELECT * FROM orcaslicer_filaments WHERE id = ?').get(id);
+}
+
+export function markVendorSpoolmanSynced(vendorId, spoolmanId) {
+  getDb().prepare('UPDATE vendors SET spoolman_id = ?, spoolman_synced_at = datetime(\'now\') WHERE id = ?')
+    .run(spoolmanId, vendorId);
+}
+
+/**
+ * Convert our hierarchical location (parent_id chain) to a Spoolman-style
+ * "/"-joined path for the location string on a spool push. Returns '' if
+ * locationId is null or the location can't be resolved.
+ */
+export function locationIdToSpoolmanPath(locationId) {
+  if (!locationId) return '';
+  const db = getDb();
+  const parts = [];
+  let current = db.prepare('SELECT id, name, parent_id FROM locations WHERE id = ?').get(locationId);
+  const seen = new Set();
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    parts.unshift(current.name);
+    current = current.parent_id ? db.prepare('SELECT id, name, parent_id FROM locations WHERE id = ?').get(current.parent_id) : null;
+  }
+  return parts.join('/');
 }
 
 // ---- Filament Usage History ----

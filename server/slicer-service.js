@@ -11,17 +11,45 @@ const log = createLogger('slicer');
 const UPLOAD_DIR = join(DATA_DIR, 'uploads');
 if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
 
-// Supported slicer CLIs (auto-detected)
+// Supported slicer CLIs (auto-detected). Order matters — first match wins.
+// OrcaSlicer-based forks (Elegoo/QIDI/BambuStudio/SnapmakerOrca) all accept the
+// same --slice / --export-3mf / --load CLI flags, so any of them works as a
+// backend. PrusaSlicer and its fork SuperSlicer share another CLI surface.
 const SLICER_PATHS = [
   // OrcaSlicer
   '/usr/bin/orca-slicer',
   '/usr/local/bin/orca-slicer',
   '/opt/OrcaSlicer/orca-slicer',
+  // BambuStudio (OrcaSlicer fork)
+  '/usr/bin/bambu-studio',
+  '/usr/local/bin/bambu-studio',
+  '/opt/BambuStudio/bambu-studio',
+  // Elegoo Slicer (OrcaSlicer fork, Centauri Carbon)
+  '/usr/bin/elegoo-slicer',
+  '/opt/ElegooSlicer/elegoo-slicer',
+  // QIDI Slicer / QIDIStudio (OrcaSlicer fork, Plus4/Q1 Pro)
+  '/usr/bin/qidi-slicer',
+  '/usr/bin/qidi-studio',
+  '/opt/QIDIStudio/qidi-studio',
+  // Snapmaker Orca (U1, OrcaSlicer fork)
+  '/usr/bin/snapmaker-orca',
+  '/opt/SnapmakerOrca/snapmaker-orca',
+  // Creality Print (standalone)
+  '/usr/bin/creality-print',
+  '/opt/CrealityPrint/creality-print',
   // PrusaSlicer
   '/usr/bin/prusa-slicer',
   '/usr/local/bin/prusa-slicer',
+  // SuperSlicer (PrusaSlicer fork)
+  '/usr/bin/superslicer',
+  '/opt/SuperSlicer/superslicer',
+  // UltiMaker Cura (separate CLI: CuraEngine)
+  '/usr/bin/CuraEngine',
+  '/usr/local/bin/CuraEngine',
   // Flatpak variants
   '/var/lib/flatpak/exports/bin/com.bambulab.OrcaSlicer',
+  '/var/lib/flatpak/exports/bin/com.prusa3d.PrusaSlicer',
+  '/var/lib/flatpak/exports/bin/com.ultimaker.cura',
 ];
 
 let _detectedSlicer = null;
@@ -54,12 +82,24 @@ const QUALITY_PRESETS = {
   fine:     { label: 'Fine (0.08mm)',     layerHeight: 0.08, infill: 25, speed: 'slow' },
 };
 
-// Detect available slicer profiles from standard install locations
+// Detect available slicer profiles from standard install locations.
+// Covers all OrcaSlicer-based forks (they share the same profile layout)
+// plus PrusaSlicer and SuperSlicer.
 const PROFILE_DIRS = [
   '/usr/share/OrcaSlicer/resources/profiles',
   '/opt/OrcaSlicer/resources/profiles',
+  '/usr/share/BambuStudio/resources/profiles',
+  '/opt/BambuStudio/resources/profiles',
+  '/usr/share/ElegooSlicer/resources/profiles',
+  '/usr/share/QIDIStudio/resources/profiles',
+  '/usr/share/SnapmakerOrca/resources/profiles',
   join(process.env.HOME || '', '.config/OrcaSlicer/user'),
+  join(process.env.HOME || '', '.config/BambuStudio/user'),
+  join(process.env.HOME || '', '.config/ElegooSlicer/user'),
+  join(process.env.HOME || '', '.config/QIDIStudio/user'),
+  join(process.env.HOME || '', '.config/SnapmakerOrca/user'),
   join(process.env.HOME || '', '.config/PrusaSlicer/print'),
+  join(process.env.HOME || '', '.config/SuperSlicer/print'),
 ];
 
 export function getSlicerProfiles() {

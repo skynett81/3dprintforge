@@ -574,50 +574,80 @@ export class PrusaLinkClient {
   async _fetchWithAuth(method, path, body) {
     const url = `${this._baseUrl}${path}`;
     const headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
 
-    // Try API key first (simpler)
-    if (this.apiKey) {
+    const preferDigest = !!(this.username && this.password);
+
+    // PrusaLink 1.8+ dropped API-key support — prefer preemptive digest when
+    // username/password is configured. Use cached nonce/realm to avoid 401 roundtrip.
+    if (preferDigest && this._digestAuth) {
+      headers['Authorization'] = this._buildDigestHeader(method, path, this._digestAuth);
+    } else if (!preferDigest && this.apiKey) {
       headers['X-Api-Key'] = this.apiKey;
     }
 
-    if (body) headers['Content-Type'] = 'application/json';
-
-    let res = await fetch(url, {
-      method, headers,
+    const doFetch = (h) => fetch(url, {
+      method, headers: h,
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(5000),
     });
 
-    // If 401, try digest auth
+    let res = await doFetch(headers);
+
+    // On 401, try to (re)challenge: parse WWW-Authenticate and retry with digest
     if (res.status === 401 && this.password) {
       const wwwAuth = res.headers.get('www-authenticate') || '';
-      const digestHeader = this._buildDigestAuth(method, path, wwwAuth);
-      if (digestHeader) {
-        headers['Authorization'] = digestHeader;
-        res = await fetch(url, {
-          method, headers,
-          body: body ? JSON.stringify(body) : undefined,
-          signal: AbortSignal.timeout(5000),
+      const challenge = this._parseDigestChallenge(wwwAuth);
+      if (challenge) {
+        this._digestAuth = challenge;
+        headers['Authorization'] = this._buildDigestHeader(method, path, challenge);
+        res = await doFetch(headers);
+      }
+    }
+
+    // If still 401, broadcast auth_error so the UI can surface it
+    if (res.status === 401) {
+      if (!this._authErrorBroadcast) {
+        this._authErrorBroadcast = true;
+        this.hub?.broadcast?.('connection', {
+          status: 'auth_error',
+          vendor: 'prusalink',
+          message: 'PrusaLink rejected credentials (401)',
+          hint: 'PrusaLink 1.8+ requires username and password — API-key is no longer sufficient. Check printer config.',
         });
       }
+    } else if (res.ok && this._authErrorBroadcast) {
+      this._authErrorBroadcast = false;
     }
 
     return res;
   }
 
-  _buildDigestAuth(method, path, wwwAuth) {
+  _parseDigestChallenge(wwwAuth) {
     const realm = wwwAuth.match(/realm="([^"]+)"/)?.[1];
     const nonce = wwwAuth.match(/nonce="([^"]+)"/)?.[1];
     const qop = wwwAuth.match(/qop="([^"]+)"/)?.[1] || 'auth';
     if (!realm || !nonce) return null;
+    return { realm, nonce, qop, nc: 0 };
+  }
 
-    const nc = '00000001';
+  _buildDigestHeader(method, path, challenge) {
+    challenge.nc = (challenge.nc || 0) + 1;
+    const nc = String(challenge.nc).padStart(8, '0');
     const cnonce = randomBytes(8).toString('hex');
-    const ha1 = createHash('md5').update(`${this.username}:${realm}:${this.password}`).digest('hex');
+    const ha1 = createHash('md5').update(`${this.username}:${challenge.realm}:${this.password}`).digest('hex');
     const ha2 = createHash('md5').update(`${method}:${path}`).digest('hex');
-    const response = createHash('md5').update(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`).digest('hex');
+    const response = createHash('md5')
+      .update(`${ha1}:${challenge.nonce}:${nc}:${cnonce}:${challenge.qop}:${ha2}`)
+      .digest('hex');
+    return `Digest username="${this.username}", realm="${challenge.realm}", nonce="${challenge.nonce}", uri="${path}", qop=${challenge.qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
+  }
 
-    return `Digest username="${this.username}", realm="${realm}", nonce="${nonce}", uri="${path}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
+  // Back-compat wrapper (kept for any external callers)
+  _buildDigestAuth(method, path, wwwAuth) {
+    const challenge = this._parseDigestChallenge(wwwAuth);
+    if (!challenge) return null;
+    return this._buildDigestHeader(method, path, challenge);
   }
 }
 

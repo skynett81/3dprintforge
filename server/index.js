@@ -694,6 +694,16 @@ startPrusaRefresh();
 const { startBrandRefresh, stopBrandRefresh } = await import('./brand-resources-importer.js');
 startBrandRefresh();
 
+// SpoolmanDB + 3DFilamentProfiles weekly refresh
+const { startFilamentDbScheduler } = await import('./filament-db-refresh.js');
+startFilamentDbScheduler();
+
+// Spoolman health monitor — alerts via notifications when Spoolman goes offline/online
+const { startSpoolmanHealthMonitor, setHub: setSpoolmanHub, setNotifier: setSpoolmanNotifier } = await import('./spoolman-health-monitor.js');
+setSpoolmanHub(hub);
+setSpoolmanNotifier(notifier);
+startSpoolmanHealthMonitor();
+
 // Queue Manager
 const queueManager = new QueueManager(manager, notifier, broadcastAll, null); // failureDetector set below
 queueManager.init();

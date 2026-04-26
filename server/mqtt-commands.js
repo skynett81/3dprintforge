@@ -20,6 +20,22 @@ export function buildSpeedCommand(level) {
   return { print: { sequence_id: nextSeq(), command: 'print_speed', param: String(level) } };
 }
 
+/**
+ * Set chamber heater target — X1E, H2D, H2S, H2C (printers with active
+ * chamber heating). Target is clamped to the vendor-safe 0–65°C range.
+ * Verified against ha-bambulab chamber_temperature number entity.
+ */
+export function buildChamberTempCommand(targetC) {
+  const clamped = Math.max(0, Math.min(65, Math.round(Number(targetC) || 0)));
+  return {
+    print: {
+      sequence_id: nextSeq(),
+      command: 'chamber_temp',
+      target: clamped,
+    },
+  };
+}
+
 export function buildLightCommand(node, mode) {
   return {
     system: {
@@ -43,15 +59,21 @@ export function buildSkipObjectsCommand(objList) {
   return { print: { sequence_id: nextSeq(), command: 'skip_objects', obj_list: objList } };
 }
 
+// Match any known URL scheme the printer accepts: ftp/ftps, http/https, file.
+// H2D (2026 firmware) accepts http(s):// URLs so the printer fetches the 3MF
+// directly from our server — no USB stick or cloud upload required.
+const URL_SCHEME_RE = /^(ftp|ftps|http|https|file):\/\//i;
+
 export function buildPrintCommand(filename, plateId = 1) {
   const subtaskName = filename.split('/').pop().replace(/\.[^.]+$/, '');
+  const url = URL_SCHEME_RE.test(filename) ? filename : `ftp://${filename}`;
   return {
     print: {
       sequence_id: nextSeq(),
       command: 'project_file',
       param: `Metadata/plate_${plateId}.gcode`,
       subtask_name: subtaskName,
-      url: `ftp://${filename}`,
+      url,
       bed_type: 'auto',
       timelapse: false,
       bed_leveling: true,
@@ -420,6 +442,25 @@ export function buildCommandFromClientMessage(msg) {
     case 'print_while_drying': return buildPrintWhileDryingCommand(msg.ams_id, msg.temp, msg.duration, msg.enable);
     case 'timelapse_storage': return buildTimelapseStorageCommand(msg.storage);
     case 'delete_timelapse': return buildDeleteTimelapseCommand(msg.filename, msg.storage);
+    // 2025–2026 — chamber heater (X1E/H2D/H2S/H2C) and H2D granular xcam toggles
+    case 'chamber_temp': return buildChamberTempCommand(msg.target);
+    case 'xcam_control': return buildXcamControlCommand(msg.field, msg.enable);
     default: return null;
   }
+}
+
+/**
+ * Toggle an individual xcam AI detector (H2D granular controls).
+ * field values: clump_detector, airprint_detector, pileup_detector,
+ * spaghetti_detector, first_layer_inspector, printing_monitor
+ */
+export function buildXcamControlCommand(field, enable) {
+  return {
+    print: {
+      sequence_id: nextSeq(),
+      command: 'xcam_control_set',
+      module_name: field,
+      enable: !!enable,
+    },
+  };
 }

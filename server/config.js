@@ -45,7 +45,12 @@ const DEFAULTS = {
       queue_completed:     { enabled: true,  channels: ['telegram','discord','email','webhook','ntfy','pushover','sms'] }
     },
     quietHours: { enabled: false, start: '23:00', end: '07:00' },
-    bedCooledThreshold: 30
+    bedCooledThreshold: 30,
+    incoming_webhooks: {
+      octoeverywhere_secret: '',
+      obico_secret: '',
+      simplyprint_secret: ''
+    }
   },
   spoolman: {
     enabled: false,
@@ -155,10 +160,23 @@ export function getSafeConfig() {
   if (safe.auth?.users) {
     safe.auth.users = safe.auth.users.map(u => ({ ...u, password: '***' }));
   }
-  // Mask printer access codes
+  // Mask printer access codes, tokens, and passwords
   if (safe.printers) {
-    safe.printers = safe.printers.map(p => ({ ...p, accessCode: p.accessCode ? '***' : '' }));
+    safe.printers = safe.printers.map(p => ({
+      ...p,
+      accessCode: p.accessCode ? '***' : '',
+      token: p.token ? '***' : '',
+      password: p.password ? '***' : '',
+    }));
   }
+  // Mask incoming-webhook shared secrets (OctoEverywhere / Obico / SimplyPrint)
+  const iw = safe.notifications?.incoming_webhooks;
+  if (iw) {
+    if (iw.octoeverywhere_secret) iw.octoeverywhere_secret = '***';
+    if (iw.obico_secret) iw.obico_secret = '***';
+    if (iw.simplyprint_secret) iw.simplyprint_secret = '***';
+  }
+
   // Mask notification secrets
   const nc = safe.notifications?.channels;
   if (nc) {

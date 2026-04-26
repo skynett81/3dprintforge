@@ -10,15 +10,43 @@ Kunnskapsbasen inneholder praktiske guider for å få best mulig resultat med Ba
 
 ## Hva finner du her?
 
-### Filamenter
+### Filamenter — standard materialer
 Detaljerte guider for hvert materialtype — temperaturinnstillinger, platevalg, tørketider og tips for vellykket printing.
 
 - [PLA](./filaments/pla) — Det enkleste å printe, anbefalt for nybegynnere
 - [PETG](./filaments/petg) — Sterkere enn PLA, god kjemisk motstand
 - [ABS](./filaments/abs) — Termisk stabilt, krever innelukke
+- [PC (Polykarbonat)](./filaments/pc) — Svært slagfast og varmestabilt
 - [TPU](./filaments/tpu) — Fleksibelt materiale, krever lav hastighet
-- [PA/Nylon](./filaments/nylon) — Svært slitesterkt, krevende å printe
-- [Kompositt (CF/GF)](./filaments/composite) — Høy stivhet, sliter dysen
+- [PA / Nylon](./filaments/nylon) — Svært slitesterkt, krevende å printe
+
+### Filamenter — kompositt, spesial og referanser
+
+- [Komposittmaterialer (CF/GF)](./filaments/composite) — PLA-CF, PETG-CF, PA-CF, PA-GF, ABS-CF osv. — krever herdet stål-dyse
+- [Spesialmaterialer](./filaments/special) — ASA (UV-bestandig), PC, PP, PVA, HIPS og andre nisjematerialer
+- [Bambu Lab-serien](./filaments/bambu-series) — PLA Basic/Matte/Silk/Sparkle/Tough/Glow/Aero/Carbon, PETG Basic/HF/CF, ABS, ASA, TPU, PA6-CF/GF, PC, PVA, HIPS — alle med RFID og AMS-kompatibilitet
+- [Master-temperaturguide](./filaments/guide) — Ett oppslag med dyse/seng/kammer for 15+ materialer
+- [Materialsammenligning](./filaments/comparison) — Styrke, varme, fleks, UV, kjemisk motstand + Shore-hardhet + HDT/VST
+- [Kompatibilitetsmatrise](./filaments/compatibility) — Hvilke materialer passer på hvilke byggplater og dyser
+- [Printprofiler og innstillinger](./filaments/profiles) — Retract, hastighet, kjøling og kvalitetsmodus
+
+### Alle filament-varianter vi har data på (109 rader live i dashbordet)
+
+Basert på Bambu Lab, Polymaker, Prusament, Elegoo, Creality, QIDI, Snapmaker og community-databaser (SpoolmanDB, 3DFilamentProfiles, OrcaSlicer):
+
+| Familie | Varianter |
+|---|---|
+| **PLA** | Basic, Matte, Silk, Sparkle, Glow, Aero (LW-PLA), Tough (PLA+), Wood, Metal, Ceramic-fill, Stone-fill, HTPLA, FR-PLA, Conductive, Magnetic, PLA-CF, PLA-GF |
+| **PETG** | PETG, PETG HF (High-Flow), PETG-CF, PET, PET-CF, PCTG |
+| **ABS / ASA** | ABS, ABS+, ABS-CF, ABS-GF, ASA, ASA-CF |
+| **PC (Polykarbonat)** | PC, PC Blend, PC-CF, PC-ABS |
+| **Nylon (PA)** | PA, PA6, PA12, PAHT, PA-CF, PA6-CF, PA12-CF, PA-GF, PA6-GF, PAHT-CF, PPA-CF |
+| **Fleksibelt** | TPU 95A, TPU 85A, TPU 60A, TPU HF, TPE, TPC |
+| **Støttemateriale** | PVA, HIPS, BVOH, PVB, Breakaway |
+| **Polypropylen** | PP, PP-CF, PP-GF |
+| **Høy ytelse** | PEEK, PEKK, PEKK-CF, PEI (ULTEM), PPS, PPS-CF |
+
+Totalt: **28 unike materialer**, **66 Bambu Lab-varianter**, **86 materialer i taksonomi**, **75 rader med byggplate-kompatibilitet**, **109 rader med stjernebasert styrke/fleks/varme/UV-rating**.
 
 ### Byggplater
 Velg riktig plate for hvert materiale og lær å vedlikeholde dem.

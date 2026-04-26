@@ -46,6 +46,12 @@
     "printers": "{{count}} printers",
     "printer": "{{count}} printer"
   },
+  "auth_error": {
+    "generic": "Printer authentication failed",
+    "bambu": "Bambu auth failed — enable LAN Developer Mode",
+    "prusalink": "PrusaLink auth failed — check username/password",
+    "moonraker": "Moonraker auth failed — check API key / token"
+  },
   "state": {
     "idle": "Idle",
     "running": "Printing",

@@ -224,6 +224,43 @@ export async function seedFilamentDatabase(options = {}) {
 
   stats.upserted = count;
   console.log(`[seed] Done. Upserted ${count} filaments.`);
+
+  // Opt-in: warm the image cache + track 3DFP multi-listing prices. These
+  // two run after the seed so they have fresh data to index.
+  if (options.cacheImages !== false) {
+    try {
+      const { getCachedImage } = await import('./filament-image-cache.js');
+      let cached = 0;
+      for (const item of threeDfpItems) {
+        if (item.image_url) {
+          // eslint-disable-next-line no-await-in-loop
+          const local = await getCachedImage(item.image_url);
+          if (local) cached++;
+        }
+      }
+      stats.images_cached = cached;
+      console.log(`[seed] Cached ${cached} filament images locally`);
+    } catch (e) { console.warn(`[seed] Image cache warm failed: ${e.message}`); }
+  }
+
+  if (options.trackPrices !== false) {
+    try {
+      const { trackPricesFromCache } = await import('./threedfp-price-tracker.js');
+      const r = trackPricesFromCache();
+      stats.prices_tracked = r.tracked || 0;
+      console.log(`[seed] Tracked ${stats.prices_tracked} price rows`);
+    } catch (e) { console.warn(`[seed] Price tracking failed: ${e.message}`); }
+  }
+
+  // Finally, scan for cross-source duplicates and link them
+  if (options.detectDuplicates !== false) {
+    try {
+      const { detectAndLinkDuplicates } = await import('./filament-dedupe.js');
+      const r = detectAndLinkDuplicates();
+      stats.duplicates_merged = r.merged || 0;
+    } catch (e) { console.warn(`[seed] Dedupe failed: ${e.message}`); }
+  }
+
   return stats;
 }
 

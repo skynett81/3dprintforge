@@ -1,6 +1,13 @@
 /**
  * AnkerMake Client — via ankerctl proxy
  *
+ * ⚠ LEGACY: Anker exited the FDM market in 2025. The M5, M5C, and M5X are
+ * discontinued, Anker stopped selling parts, and the AnkerMake cloud is
+ * effectively unmaintained. This integration is kept for users running
+ * existing hardware with community tooling (ankerctl), but new deployments
+ * should prefer a different printer. See:
+ *   https://3dprint.com/319651/anker-discontinues-fdm-3d-printers-focuses-on-uv-model-after-record-kickstarter/
+ *
  * AnkerMake printers (M5, M5C) use a proprietary MQTT + PPPP protocol
  * that requires Python's libflagship library. Direct Node.js implementation
  * is not feasible.
@@ -49,6 +56,7 @@ export class AnkerMakeClient {
   }
 
   connect() {
+    log.warn('AnkerMake integration is LEGACY — Anker exited the FDM market in 2025. Existing hardware continues to work via ankerctl, but the vendor no longer ships updates.');
     log.info(`Connecting to ankerctl at ${this._baseUrl}`);
     this._connectWs();
     this._poll();
