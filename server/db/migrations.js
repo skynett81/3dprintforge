@@ -191,7 +191,11 @@ export function ensureBaseSchemaColumns(db) {
     ['ams_snapshots', 'nozzle_temp_min', 'INTEGER'],
     ['ams_snapshots', 'nozzle_temp_max', 'INTEGER'],
     ['ams_snapshots', 'bed_temp_recommend', 'INTEGER'],
-    ['ams_snapshots', 'k_value', 'REAL']
+    ['ams_snapshots', 'k_value', 'REAL'],
+    // filament_profiles is migration-created but suffers the same drift —
+    // spoolmandb-modular writes weight_g which was never declared.
+    ['filament_profiles', 'weight_g', 'REAL'],
+    ['filament_profiles', 'price', 'REAL']
   ];
   for (const [table, col, type] of adds) {
     if (!_tableExists(db, table)) continue;

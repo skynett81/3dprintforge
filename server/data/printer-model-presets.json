@@ -1,0 +1,201 @@
+{
+  "_meta": {
+    "description": "Printer model presets for 2025-2026 hardware. Seeds the dashboard with sensible defaults (build volume, capabilities, expected endpoints) when a user adds a new printer but Klipper/firmware hasn't yet reported its full capability set.",
+    "updated": "2026-04-21",
+    "note": "Use `vendor + model` as the composite key when matching from config.printer.model."
+  },
+  "presets": [
+    {
+      "vendor": "bambu",
+      "model": "H2D",
+      "model_id": "BL-H2D",
+      "build_volume_mm": [350, 320, 325],
+      "nozzle_count": 2,
+      "dual_nozzle": true,
+      "ams_default": "ams_2_pro",
+      "chamber_heated": false,
+      "active_chamber_temp_c": null,
+      "capabilities": ["dual_extruder", "ams_2_pro", "rfid_auto_drying", "lan_start_over_http", "ai_granular_toggles"]
+    },
+    {
+      "vendor": "bambu",
+      "model": "H2D Pro",
+      "model_id": "BL-H2D-PRO",
+      "build_volume_mm": [350, 320, 325],
+      "nozzle_count": 2,
+      "dual_nozzle": true,
+      "ams_default": "ams_2_pro",
+      "chamber_heated": true,
+      "active_chamber_temp_c": 65,
+      "capabilities": ["dual_extruder", "ams_2_pro", "ams_ht", "rfid_auto_drying", "tungsten_carbide_nozzle", "chamber_heating", "lan_start_over_http", "ai_granular_toggles"]
+    },
+    {
+      "vendor": "bambu",
+      "model": "H2S",
+      "model_id": "BL-H2S",
+      "build_volume_mm": [350, 320, 325],
+      "nozzle_count": 1,
+      "dual_nozzle": false,
+      "ams_default": "ams_2_pro",
+      "chamber_heated": false,
+      "capabilities": ["ams_2_pro", "rfid_auto_drying", "lan_start_over_http"]
+    },
+    {
+      "vendor": "bambu",
+      "model": "H2C",
+      "model_id": "BL-H2C",
+      "build_volume_mm": [350, 320, 325],
+      "nozzle_count": 7,
+      "dual_nozzle": false,
+      "ams_default": "vortek",
+      "chamber_heated": false,
+      "capabilities": ["vortek_7_nozzle", "toolchanger", "ams_2_pro", "lan_start_over_http"]
+    },
+    {
+      "vendor": "bambu",
+      "model": "P2S",
+      "model_id": "BL-P2S",
+      "build_volume_mm": [256, 256, 256],
+      "nozzle_count": 1,
+      "dual_nozzle": false,
+      "ams_default": "ams_lite",
+      "chamber_heated": false,
+      "capabilities": ["ams_lite"]
+    },
+    {
+      "vendor": "prusa",
+      "model": "CORE One L",
+      "model_id": "PRUSA-C1L",
+      "build_volume_mm": [300, 300, 300],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "active_chamber_temp_c": 55,
+      "capabilities": ["chamber_heating", "bed_led_progress", "vent_grille_auto", "input_shaper", "mmu3_compatible"]
+    },
+    {
+      "vendor": "prusa",
+      "model": "CORE One+",
+      "model_id": "PRUSA-C1P",
+      "build_volume_mm": [250, 220, 270],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "active_chamber_temp_c": 55,
+      "capabilities": ["chamber_heating", "vent_grille_auto", "input_shaper", "mmu3_compatible"]
+    },
+    {
+      "vendor": "prusa",
+      "model": "CORE One",
+      "model_id": "PRUSA-C1",
+      "build_volume_mm": [250, 220, 270],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "active_chamber_temp_c": 55,
+      "capabilities": ["chamber_heating", "input_shaper"]
+    },
+    {
+      "vendor": "prusa",
+      "model": "MK4S",
+      "model_id": "PRUSA-MK4S",
+      "build_volume_mm": [250, 210, 220],
+      "nozzle_count": 1,
+      "capabilities": ["input_shaper", "mmu3_compatible"]
+    },
+    {
+      "vendor": "creality",
+      "model": "K2 Plus",
+      "model_id": "CR-K2-PLUS",
+      "build_volume_mm": [350, 350, 350],
+      "nozzle_count": 1,
+      "chamber_heated": false,
+      "capabilities": ["input_shaper", "nebula_camera", "cfs_multi_filament"]
+    },
+    {
+      "vendor": "creality",
+      "model": "K2 Pro",
+      "model_id": "CR-K2-PRO",
+      "build_volume_mm": [300, 300, 300],
+      "nozzle_count": 1,
+      "chamber_heated": false,
+      "capabilities": ["input_shaper", "nebula_camera", "cfs_multi_filament"]
+    },
+    {
+      "vendor": "elegoo",
+      "model": "Centauri Carbon 2",
+      "model_id": "EL-CC2",
+      "build_volume_mm": [300, 300, 300],
+      "nozzle_count": 1,
+      "chamber_heated": false,
+      "capabilities": ["canvas_multi_material", "input_shaper", "500mm_s_top_speed"]
+    },
+    {
+      "vendor": "elegoo",
+      "model": "Centauri Carbon",
+      "model_id": "EL-CC",
+      "build_volume_mm": [256, 256, 256],
+      "nozzle_count": 1,
+      "capabilities": ["input_shaper"]
+    },
+    {
+      "vendor": "qidi",
+      "model": "Plus4",
+      "model_id": "QIDI-PLUS4",
+      "build_volume_mm": [305, 305, 305],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "active_chamber_temp_c": 65,
+      "capabilities": ["chamber_heating", "qidi_box_multi_filament", "ax300_wifi", "input_shaper"]
+    },
+    {
+      "vendor": "qidi",
+      "model": "Q1 Pro",
+      "model_id": "QIDI-Q1-PRO",
+      "build_volume_mm": [245, 245, 245],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "active_chamber_temp_c": 60,
+      "capabilities": ["chamber_heating", "qidi_box_multi_filament", "ax600_wifi", "input_shaper"]
+    },
+    {
+      "vendor": "qidi",
+      "model": "Q2",
+      "model_id": "QIDI-Q2",
+      "build_volume_mm": [300, 300, 300],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "capabilities": ["chamber_heating", "qidi_box_multi_filament", "input_shaper"]
+    },
+    {
+      "vendor": "qidi",
+      "model": "Q2C",
+      "model_id": "QIDI-Q2C",
+      "build_volume_mm": [300, 300, 300],
+      "nozzle_count": 1,
+      "chamber_heated": true,
+      "capabilities": ["chamber_heating", "corexy", "qidi_box_multi_filament", "input_shaper"]
+    },
+    {
+      "vendor": "snapmaker",
+      "model": "U1",
+      "model_id": "SM-U1",
+      "build_volume_mm": [250, 250, 250],
+      "nozzle_count": 4,
+      "capabilities": ["toolchanger", "nfc_filament", "ai_defect_detection", "flow_calibration", "timelapse"]
+    }
+  ],
+  "placeholder_models": [
+    {
+      "vendor": "prusa",
+      "model": "INDX",
+      "status": "pre_release",
+      "_note": "Bondtech INDX — 4-head ($499) or 8-head ($699) multi-material kit for Core One. Public state model unavailable until hardware ships (spring 2026).",
+      "capabilities": ["multi_material_indx", "mmu_replacement"]
+    },
+    {
+      "vendor": "elegoo",
+      "model": "CANVAS",
+      "status": "proprietary",
+      "_note": "Elegoo CANVAS multi-material system ships exclusively with Centauri Carbon 2. Proprietary — no public API docs. Capability flag exposed so UI can hint users that CANVAS exists on their printer.",
+      "capabilities": ["canvas_multi_material"]
+    }
+  ]
+}

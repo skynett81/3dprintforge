@@ -1,0 +1,138 @@
+{
+  "_meta": {
+    "description": "New filament types and RFID materials released 2025–2026 by vendors we support.",
+    "updated": "2026-04-21"
+  },
+  "filaments": [
+    {
+      "vendor": "Bambu Lab",
+      "material": "PETG HF",
+      "density": 1.27,
+      "diameter": 1.75,
+      "bed_temp": 70,
+      "nozzle_temp_min": 240,
+      "nozzle_temp_max": 260,
+      "drying_temp": 65,
+      "drying_time_h": 8,
+      "notes": "High-Flow PETG, ~2× speed vs standard PETG. Added 2025."
+    },
+    {
+      "vendor": "Bambu Lab",
+      "material": "TPU HF",
+      "density": 1.20,
+      "diameter": 1.75,
+      "bed_temp": 35,
+      "nozzle_temp_min": 220,
+      "nozzle_temp_max": 240,
+      "drying_temp": 60,
+      "drying_time_h": 10,
+      "notes": "High-Flow TPU for AMS HT and AMS 2 Pro. RFID-tagged with auto-drying metadata."
+    },
+    {
+      "vendor": "Bambu Lab",
+      "material": "PLA Silk+",
+      "density": 1.24,
+      "bed_temp": 55,
+      "nozzle_temp_min": 210,
+      "nozzle_temp_max": 230,
+      "drying_temp": 45,
+      "drying_time_h": 8
+    },
+    {
+      "vendor": "Prusa",
+      "material": "Prusament PC Blend Tungsten",
+      "density": 1.32,
+      "bed_temp": 110,
+      "nozzle_temp_min": 270,
+      "nozzle_temp_max": 290,
+      "notes": "For Tungsten Carbide nozzle (H2D Pro / Core One)."
+    },
+    {
+      "vendor": "Polymaker",
+      "material": "PolyTerra PLA Satin",
+      "density": 1.17,
+      "bed_temp": 60,
+      "nozzle_temp_min": 200,
+      "nozzle_temp_max": 220
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#FFFFFF",
+      "color_name": "Snow White",
+      "rfid_supported": true,
+      "_note": "One of 15 new RFID-tagged colors released March 2026 for U1 NFC detection."
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#1A1A1A",
+      "color_name": "Cosmic Black",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#E74C3C",
+      "color_name": "Lava Red",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#27AE60",
+      "color_name": "Forest Green",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#3498DB",
+      "color_name": "Ocean Blue",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#F39C12",
+      "color_name": "Sunset Orange",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#9B59B6",
+      "color_name": "Amethyst Purple",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PLA",
+      "color": "#F1C40F",
+      "color_name": "Canary Yellow",
+      "rfid_supported": true
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "PETG HF",
+      "rfid_supported": true,
+      "_note": "High-Flow PETG for U1, 2026 release."
+    },
+    {
+      "vendor": "Snapmaker",
+      "material": "TPU 95A HF",
+      "rfid_supported": true,
+      "_note": "High-Flow TPU 95A for U1, 2026 release."
+    }
+  ],
+  "nozzles": [
+    {
+      "vendor": "Bambu Lab",
+      "type": "Tungsten Carbide",
+      "diameter_mm": [0.4, 0.6, 0.8],
+      "use_case": "Abrasive filaments (carbon-fiber, glass-fiber, metal-fill). +50% life vs hardened steel.",
+      "compatible_printers": ["H2D Pro"],
+      "notes": "Introduced with H2D Pro. Not interchangeable with standard hotend assembly."
+    }
+  ]
+}

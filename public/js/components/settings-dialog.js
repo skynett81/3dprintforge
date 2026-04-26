@@ -2177,11 +2177,27 @@
       showToast('Failed to parse printer data: ' + e.message, 'error');
       return;
     }
+    let ip = p.ip || '';
+    // Bambu Cloud doesn't know the printer's LAN IP, and SSDP discovery only
+    // works when the server is on the same subnet. Prompt the user when both
+    // failed to provide one.
+    if (!ip) {
+      ip = prompt('Bambu Cloud could not provide the local IP for "' + (p.name || p.serial) + '".\n\nEnter the printer LAN IP (e.g. 192.168.10.193):', '') || '';
+      ip = ip.trim();
+      if (!ip) {
+        showToast('LAN IP required to connect — printer not added', 'warning');
+        return;
+      }
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+        showToast('Invalid IP address: ' + ip, 'error');
+        return;
+      }
+    }
     const body = {
       id: (p.name || p.serial || 'printer').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
       name: p.name || p.serial,
       model: p.model || '',
-      ip: p.ip || '',
+      ip,
       serial: p.serial,
       accessCode: p.accessCode || ''
     };

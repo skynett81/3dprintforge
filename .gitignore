@@ -4,8 +4,9 @@ node_modules/
 # User configuration (contains printer access codes)
 config.json
 
-# Runtime data
-data/
+# Runtime data — top-level only. server/data/ holds shipped JSON catalogs
+# and must stay tracked, so anchor the rule to the project root.
+/data/
 *.db
 *.log
 
@@ -31,7 +32,7 @@ CLAUDE.md
 *~
 
 # Backups created by updater
-data/backups/
+/data/backups/
 telemetry-worker/
 website/node_modules/
 website/build/
