@@ -139,7 +139,7 @@ function getAggregateStats() {
     }
 
     // Print statistics
-    let printStats = { total: 0, completed: 0, failed: 0, cancelled: 0, totalDurationH: 0, totalFilamentG: 0 };
+    let printStats = { total: 0, completed: 0, failed: 0, cancelled: 0, totalDurationH: 0, totalFilamentG: 0, totalWasteG: 0, multiColorPrints: 0, totalColorChanges: 0 };
     try {
       const row = db.prepare(`
         SELECT
@@ -148,16 +148,30 @@ function getAggregateStats() {
           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
           COALESCE(SUM(duration_seconds), 0) as total_duration_s,
-          COALESCE(SUM(filament_used_g), 0) as total_filament_g
+          COALESCE(SUM(filament_used_g), 0) as total_filament_g,
+          COALESCE(SUM(waste_g), 0) as total_waste_g,
+          COALESCE(SUM(color_changes), 0) as total_color_changes,
+          SUM(CASE WHEN color_changes > 0 THEN 1 ELSE 0 END) as multi_color_prints
         FROM print_history
       `).get();
+      // Prime-tower waste estimate: rows with at least one color change
+      // contribute prime-tower purges. Sum their waste as the estimate.
+      let primeTowerWaste = 0;
+      try {
+        const ptRow = db.prepare("SELECT COALESCE(SUM(waste_g), 0) as g FROM print_history WHERE color_changes > 0").get();
+        primeTowerWaste = ptRow?.g || 0;
+      } catch {}
       printStats = {
         total: row.total || 0,
         completed: row.completed || 0,
         failed: row.failed || 0,
         cancelled: row.cancelled || 0,
         totalDurationH: Math.round((row.total_duration_s || 0) / 3600),
-        totalFilamentKg: Math.round((row.total_filament_g || 0) / 100) / 10
+        totalFilamentKg: Math.round((row.total_filament_g || 0) / 100) / 10,
+        totalWasteG: Math.round(row.total_waste_g || 0),
+        primeTowerWasteG: Math.round(primeTowerWaste),
+        totalColorChanges: row.total_color_changes || 0,
+        multiColorPrints: row.multi_color_prints || 0,
       };
     } catch {}
 
@@ -226,6 +240,10 @@ function getAggregateStats() {
       successRate: printStats.total > 0 ? Math.round(printStats.completed / printStats.total * 100) : 0,
       totalPrintHours: printStats.totalDurationH,
       totalFilamentKg: printStats.totalFilamentKg,
+      totalWasteG: printStats.totalWasteG,
+      primeTowerWasteG: printStats.primeTowerWasteG,
+      totalColorChanges: printStats.totalColorChanges,
+      multiColorPrints: printStats.multiColorPrints,
       materialTypes,
       queueItems,
       slicerJobs,

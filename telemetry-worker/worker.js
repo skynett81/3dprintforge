@@ -65,7 +65,11 @@ async function ensureSchema(env) {
     ['installations', 'ram_gb', 'INTEGER'],
     ['installations', 'cpu_cores', 'INTEGER'],
     ['installations', 'cpu_model', 'TEXT'],
-    ['installations', 'ecom_active', 'INTEGER DEFAULT 0']
+    ['installations', 'ecom_active', 'INTEGER DEFAULT 0'],
+    ['installations', 'total_waste_g', 'INTEGER DEFAULT 0'],
+    ['installations', 'prime_tower_waste_g', 'INTEGER DEFAULT 0'],
+    ['installations', 'total_color_changes', 'INTEGER DEFAULT 0'],
+    ['installations', 'multi_color_prints', 'INTEGER DEFAULT 0']
   ];
   for (const [t, c, type] of cols) {
     try { await env.DB.prepare(`ALTER TABLE ${t} ADD COLUMN ${c} ${type}`).run(); }
@@ -123,6 +127,10 @@ async function handlePing(request, env) {
   const safeCpuCores = parseInt(body.cpuCores) || null;
   const safeCpuModel = body.cpuModel ? String(body.cpuModel).substring(0, 100) : null;
   const safeEcomActive = body.ecomActive ? 1 : 0;
+  const safeTotalWasteG = parseInt(body.totalWasteG) || 0;
+  const safePrimeTowerWasteG = parseInt(body.primeTowerWasteG) || 0;
+  const safeTotalColorChanges = parseInt(body.totalColorChanges) || 0;
+  const safeMultiColorPrints = parseInt(body.multiColorPrints) || 0;
   const today = new Date().toISOString().split('T')[0];
 
   // Upsert installation
@@ -140,6 +148,7 @@ async function handlePing(request, env) {
        total_prints = ?, completed_prints = ?, failed_prints = ?, cancelled_prints = ?,
        success_rate = ?, total_print_hours = ?, total_filament_kg = ?,
        queue_items = ?, install_age_days = ?, material_types = ?, ecom_active = ?,
+       total_waste_g = ?, prime_tower_waste_g = ?, total_color_changes = ?, multi_color_prints = ?,
        features = ?, demo = ?, language = ?,
        last_seen = datetime('now'), ping_count = ping_count + 1 WHERE id = ?`
     ).bind(safeVersion, safePlatform, safeNode, safeArch, safeRam,
@@ -150,6 +159,7 @@ async function handlePing(request, env) {
       safeTotalPrints, safeCompletedPrints, safeFailedPrints, safeCancelledPrints,
       safeSuccessRate, safeTotalPrintHours, safeTotalFilamentKg,
       safeQueueItems, safeInstallAgeDays, safeMaterialTypes, safeEcomActive,
+      safeTotalWasteG, safePrimeTowerWasteG, safeTotalColorChanges, safeMultiColorPrints,
       safeFeatures, safeDemo, safeLanguage, safeId).run();
   } else {
     await env.DB.prepare(
@@ -161,8 +171,9 @@ async function handlePing(request, env) {
        total_prints, completed_prints, failed_prints, cancelled_prints,
        success_rate, total_print_hours, total_filament_kg,
        queue_items, install_age_days, material_types, ecom_active,
+       total_waste_g, prime_tower_waste_g, total_color_changes, multi_color_prints,
        features, demo, language)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(safeId, safeVersion, safePlatform, safeNode, safeArch, safeRam,
       safeCpuCores, safeCpuModel,
       safePrinterCount, safePrinterModels, safePrinterConnectors, safePrinterBrands, safeCloudPrinters,
@@ -171,6 +182,7 @@ async function handlePing(request, env) {
       safeTotalPrints, safeCompletedPrints, safeFailedPrints, safeCancelledPrints,
       safeSuccessRate, safeTotalPrintHours, safeTotalFilamentKg,
       safeQueueItems, safeInstallAgeDays, safeMaterialTypes, safeEcomActive,
+      safeTotalWasteG, safePrimeTowerWasteG, safeTotalColorChanges, safeMultiColorPrints,
       safeFeatures, safeDemo, safeLanguage).run();
 
     // Increment new installs for today
@@ -905,7 +917,7 @@ tr:hover td { background: rgba(18,121,255,0.05); }
         <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
         <div class="hero-stat-label">Filament Burned</div>
         <div class="hero-stat-value">${s.total_filament_kg.toLocaleString()} <span style="font-size:1.6rem;color:rgba(255,255,255,0.5)">kg</span></div>
-        <div class="hero-stat-sub">${s.total_print_hours.toLocaleString()} print hours</div>
+        <div class="hero-stat-sub">${s.total_print_hours.toLocaleString()} print hours${s.waste_pct > 0 ? ' · ' + s.waste_pct + '% waste' : ''}</div>
       </div>
       <div class="hero-stat">
         <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
@@ -1019,6 +1031,16 @@ tr:hover td { background: rgba(18,121,255,0.05); }
           <tr><td>Oldest install</td><td><strong>${s.max_install_age_days} d</strong></td></tr>
         </tbody></table>
       </div>
+      ${(s.total_waste_kg > 0 || s.prime_tower_waste_kg > 0 || s.multi_color_prints > 0) ? `<div class="data-section">
+        <div class="data-section-title">Waste & Multi-Color</div>
+        <table><tbody>
+          <tr><td>Total waste</td><td><strong style="color:var(--color-orange)">${s.total_waste_kg.toLocaleString()} kg</strong></td></tr>
+          <tr><td>Prime-tower waste</td><td><strong style="color:var(--color-pink)">${s.prime_tower_waste_kg.toLocaleString()} kg</strong></td></tr>
+          <tr><td>Waste %</td><td><strong>${s.waste_pct}%</strong></td></tr>
+          <tr><td>Multi-color prints</td><td><strong style="color:var(--color-purple)">${s.multi_color_prints.toLocaleString()}</strong></td></tr>
+          <tr><td>Color changes</td><td><strong>${s.total_color_changes.toLocaleString()}</strong></td></tr>
+        </tbody></table>
+      </div>` : ''}
     </div>` : ''}
     <div class="three-col" style="margin-top:20px">
       ${s.features.length ? `<div class="data-section">
@@ -1124,7 +1146,7 @@ async function getStatsData(env) {
     env.DB.prepare('SELECT SUM(slicer_jobs) as total FROM installations').first(),
     env.DB.prepare('SELECT printer_connectors FROM installations WHERE printer_connectors IS NOT NULL AND printer_connectors != \'\'').all(),
     env.DB.prepare('SELECT printer_brands FROM installations WHERE printer_brands IS NOT NULL AND printer_brands != \'\'').all(),
-    env.DB.prepare('SELECT SUM(total_prints) as total, SUM(completed_prints) as completed, SUM(failed_prints) as failed, SUM(cancelled_prints) as cancelled, SUM(total_print_hours) as hours, SUM(total_filament_kg) as kg, SUM(queue_items) as queue FROM installations').first(),
+    env.DB.prepare('SELECT SUM(total_prints) as total, SUM(completed_prints) as completed, SUM(failed_prints) as failed, SUM(cancelled_prints) as cancelled, SUM(total_print_hours) as hours, SUM(total_filament_kg) as kg, SUM(queue_items) as queue, SUM(total_waste_g) as waste_g, SUM(prime_tower_waste_g) as prime_g, SUM(total_color_changes) as color_changes, SUM(multi_color_prints) as multi_color FROM installations').first(),
     env.DB.prepare('SELECT material_types FROM installations WHERE material_types IS NOT NULL AND material_types != \'\'').all(),
     env.DB.prepare('SELECT AVG(install_age_days) as avg, MAX(install_age_days) as max FROM installations WHERE install_age_days > 0').first(),
     env.DB.prepare('SELECT COUNT(*) as count FROM installations WHERE ecom_active = 1').first(),
@@ -1231,6 +1253,16 @@ async function getStatsData(env) {
     total_print_hours: printActivity?.hours || 0,
     total_filament_kg: Math.round((printActivity?.kg || 0) * 10) / 10,
     queue_items: printActivity?.queue || 0,
+    total_waste_kg: Math.round((printActivity?.waste_g || 0) / 100) / 10,
+    prime_tower_waste_kg: Math.round((printActivity?.prime_g || 0) / 100) / 10,
+    total_color_changes: printActivity?.color_changes || 0,
+    multi_color_prints: printActivity?.multi_color || 0,
+    waste_pct: (() => {
+      const used = (printActivity?.kg || 0);
+      const waste = (printActivity?.waste_g || 0) / 1000;
+      const total = used + waste;
+      return total > 0 ? Math.round(waste / total * 1000) / 10 : 0;
+    })(),
     avg_install_age_days: Math.round(ageStats?.avg || 0),
     max_install_age_days: ageStats?.max || 0,
     ecom_active_count: ecomActiveCount?.count || 0,
