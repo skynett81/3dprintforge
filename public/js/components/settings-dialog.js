@@ -2749,20 +2749,27 @@
       }
 
       const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
+      // SQLite stores timestamps as 'YYYY-MM-DD HH:MM:SS' UTC; append Z so
+      // the browser parses them as UTC instead of local-tz-naive.
+      const parseTs = (t) => t ? new Date(t.replace(' ', 'T') + (t.endsWith('Z') ? '' : 'Z')) : new Date();
       let html = '<div class="notif-log-list">';
       for (const l of logs) {
-        const d = l.timestamp ? new Date(l.timestamp) : new Date();
-        const time = d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const okClass = l.success ? 'notif-log-ok' : 'notif-log-fail';
-        const icon = l.success
+        const d = parseTs(l.timestamp);
+        const time = d.toLocaleString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        // DB schema uses status TEXT ('sent' | 'failed' | etc.), not bool
+        const ok = (l.status || 'sent') === 'sent';
+        const okClass = ok ? 'notif-log-ok' : 'notif-log-fail';
+        const icon = ok
           ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
           : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        const err = l.error_info || '';
         html += `<div class="notif-log-item ${okClass}">
           <span class="notif-log-icon">${icon}</span>
           <span class="notif-log-channel">${l.channel || '--'}</span>
-          <span class="notif-log-event">${l.event || '--'}</span>
+          <span class="notif-log-event">${l.event_type || '--'}</span>
+          <span class="notif-log-title" title="${(l.title || '').replace(/"/g,'&quot;')}">${l.title || ''}</span>
           <span class="notif-log-time">${time}</span>
-          ${l.error ? `<span class="notif-log-error" title="${l.error}">${l.error.substring(0, 40)}</span>` : ''}
+          ${err ? `<span class="notif-log-error" title="${err.replace(/"/g,'&quot;')}">${err.substring(0, 40)}</span>` : ''}
         </div>`;
       }
       html += '</div>';
