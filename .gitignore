@@ -33,7 +33,6 @@ CLAUDE.md
 
 # Backups created by updater
 /data/backups/
-telemetry-worker/
 website/node_modules/
 website/build/
 website/.docusaurus/
