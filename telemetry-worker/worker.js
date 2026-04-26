@@ -1094,7 +1094,12 @@ tr:hover td { background: rgba(18,121,255,0.05); }
 </footer>
 
 </body></html>`;
-  return new Response(html, { headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    }
+  });
 }
 
 function esc(s) {
