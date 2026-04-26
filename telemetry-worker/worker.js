@@ -372,7 +372,57 @@ body {
   position: absolute; inset: 0;
   background: radial-gradient(ellipse at center, transparent 30%, rgba(4,6,26,0.7) 90%);
 }
-header, .hero, .content-section, .content-section-alt, .footer { position: relative; z-index: 1; }
+/* Horizontal scan-line that travels top→bottom */
+.bg-hscan {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+  box-shadow: 0 0 24px var(--color-accent), 0 0 48px rgba(0,212,255,0.3);
+  opacity: 0.5;
+  animation: hscan 9s linear infinite;
+}
+@keyframes hscan { 0% { top: -10%; } 100% { top: 110%; } }
+/* Falling matrix-style particles */
+.bg-particles { position: absolute; inset: 0; overflow: hidden; }
+.particle {
+  position: absolute; top: -20px; width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--color-orange), transparent);
+  opacity: 0;
+  animation: particleFall linear infinite;
+}
+@keyframes particleFall {
+  0%   { opacity: 0; transform: translateY(0); }
+  10%  { opacity: 0.55; }
+  90%  { opacity: 0.35; }
+  100% { opacity: 0; transform: translateY(110vh); }
+}
+header, .hero, .content-section, .content-section-alt, .footer, .top-strip { position: relative; z-index: 1; }
+
+/* Top status strip — live mission-control bar */
+.top-strip {
+  background: linear-gradient(90deg, rgba(249,115,22,0.08), rgba(0,212,255,0.08), rgba(249,115,22,0.08));
+  border-bottom: 1px solid rgba(0,212,255,0.2);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  padding: 6px 1rem;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+}
+.top-strip-inner {
+  max-width: 1600px; margin: 0 auto;
+  display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;
+}
+.top-strip span { display: inline-flex; align-items: center; gap: 6px; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-green);
+  box-shadow: 0 0 8px var(--color-green), 0 0 16px rgba(0,230,118,0.6);
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
 
 /* Header */
 .header {
@@ -384,7 +434,7 @@ header, .hero, .content-section, .content-section-alt, .footer { position: relat
   padding: 0 1rem;
 }
 .header-inner {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -472,7 +522,7 @@ header, .hero, .content-section, .content-section-alt, .footer { position: relat
 /* Content */
 .content-section { background: var(--color-dark); padding: 48px 1rem; }
 .content-section-alt { background: linear-gradient(135deg, rgba(26,31,58,0.3), rgba(10,14,39,0.5)); padding: 48px 1rem; }
-.container { max-width: 1200px; margin: 0 auto; }
+.container { max-width: 1600px; margin: 0 auto; padding: 0 0.5rem; }
 
 /* Section titles */
 .section-title {
@@ -487,12 +537,97 @@ header, .hero, .content-section, .content-section-alt, .footer { position: relat
   text-align: center;
 }
 
-/* Stats grid */
+/* Stats grid — Bento layout: hero stats + secondary tier */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
   margin-bottom: 0;
+}
+/* Mission-control hero strip — 4 oversized stats with hex-ring decorations */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.hero-stat {
+  position: relative;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  background: linear-gradient(135deg, rgba(10,14,39,0.85), rgba(4,6,26,0.95));
+  border: 1px solid rgba(0,212,255,0.3);
+  padding: 28px 24px;
+  text-align: center;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-stat:hover {
+  border-color: rgba(249,115,22,0.6);
+  box-shadow: 0 0 40px rgba(249,115,22,0.3), 0 0 80px rgba(0,212,255,0.2), inset 0 0 30px rgba(0,212,255,0.08);
+  transform: translateY(-4px);
+}
+.hero-stat::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-orange), var(--color-accent), var(--color-orange));
+  background-size: 200% 100%;
+  opacity: 0.7;
+  animation: heroStatLine 3s linear infinite;
+}
+@keyframes heroStatLine { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+.hero-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: rgba(0,212,255,0.7);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.hero-stat-value {
+  font-family: var(--font-heading);
+  font-size: 3.4rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 14px rgba(249,115,22,0.5),
+    0 0 28px rgba(0,212,255,0.4);
+  margin-bottom: 6px;
+}
+.hero-stat-value.green { text-shadow: 0 0 14px rgba(0,230,118,0.5), 0 0 28px rgba(0,230,118,0.3); }
+.hero-stat-sub {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.1em;
+}
+.hero-stat-hex {
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 90px; height: 90px;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: hexSpin 22s linear infinite;
+}
+@keyframes hexSpin { to { transform: rotate(360deg); } }
+
+/* Bento grid for breakdown panels */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+.bento > .data-section { margin-bottom: 0; }
+.bento .span-4 { grid-column: span 4; }
+.bento .span-6 { grid-column: span 6; }
+.bento .span-8 { grid-column: span 8; }
+.bento .span-12 { grid-column: span 12; }
+@media (max-width: 1100px) {
+  .bento .span-4, .bento .span-6, .bento .span-8 { grid-column: span 12; }
 }
 
 /* Gaming card — skjerm1-style with orange/cyan dual glow */
@@ -667,7 +802,7 @@ tr:hover td { background: rgba(18,121,255,0.05); }
   text-align: center;
   margin-top: auto;
 }
-.footer-inner { max-width: 1200px; margin: 0 auto; }
+.footer-inner { max-width: 1600px; margin: 0 auto; }
 .footer-text { color: rgba(255,255,255,0.35); font-size: 0.8rem; }
 .footer-text a { color: var(--color-accent); text-decoration: none; transition: color 0.3s; }
 .footer-text a:hover { color: var(--color-pink); }
@@ -711,8 +846,23 @@ tr:hover td { background: rgba(18,121,255,0.05); }
   <div class="bg-orb bg-orb-1"></div>
   <div class="bg-orb bg-orb-2"></div>
   <div class="bg-orb bg-orb-3"></div>
+  <div class="bg-particles">
+    ${Array.from({length: 18}, (_, i) => `<div class="particle" style="left:${(i*5.6+Math.sin(i)*3).toFixed(1)}%;height:${40+i*8}px;animation-duration:${(8+i*0.7).toFixed(1)}s;animation-delay:${(i*0.4).toFixed(1)}s"></div>`).join('')}
+  </div>
+  <div class="bg-hscan"></div>
   <div class="bg-scanlines"></div>
   <div class="bg-vignette"></div>
+</div>
+
+<!-- Top mission-control strip -->
+<div class="top-strip">
+  <div class="top-strip-inner">
+    <span><span class="live-dot"></span>SYSTEM ONLINE</span>
+    <span>NODE: TELEMETRY-EU</span>
+    <span>D1: ${s.total} INSTALLS</span>
+    <span>PINGS: ${(s.total_pings || 0).toLocaleString()}</span>
+    <span>UPLINK: CLOUDFLARE WORKERS</span>
+  </div>
 </div>
 
 <!-- Header -->
@@ -735,37 +885,44 @@ tr:hover td { background: rgba(18,121,255,0.05); }
   </div>
 </section>
 
-<!-- Stats cards -->
+<!-- Mission-control hero stats — 4 oversized -->
 <section class="content-section">
   <div class="container">
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
+        <div class="hero-stat-label"><span class="live-dot"></span>Active Installs (24h)</div>
+        <div class="hero-stat-value green">${s.active_24h}</div>
+        <div class="hero-stat-sub">${s.active_7d} weekly · ${s.active_30d} monthly</div>
+      </div>
+      <div class="hero-stat">
+        <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
+        <div class="hero-stat-label">Total Prints</div>
+        <div class="hero-stat-value">${s.total_prints.toLocaleString()}</div>
+        <div class="hero-stat-sub">${s.overall_success_rate}% success rate</div>
+      </div>
+      <div class="hero-stat">
+        <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
+        <div class="hero-stat-label">Filament Burned</div>
+        <div class="hero-stat-value">${s.total_filament_kg.toLocaleString()} <span style="font-size:1.6rem;color:rgba(255,255,255,0.5)">kg</span></div>
+        <div class="hero-stat-sub">${s.total_print_hours.toLocaleString()} print hours</div>
+      </div>
+      <div class="hero-stat">
+        <svg class="hero-stat-hex" viewBox="0 0 100 100"><polygon points="50,5 93,28 93,72 50,95 7,72 7,28" fill="none" stroke="#00d4ff" stroke-width="1.5"/><polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#f97316" stroke-width="1"/></svg>
+        <div class="hero-stat-label">Connected Printers</div>
+        <div class="hero-stat-value">${s.total_printers}</div>
+        <div class="hero-stat-sub">${s.total_cloud_printers} via Bambu Cloud</div>
+      </div>
+    </div>
+
     <div class="stats-grid">
       <div class="g-card"><div class="g-card-inner">
         <div class="g-card-value">${s.total}</div>
         <div class="g-card-label">Total Installs</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value green">${s.active_24h}</div>
-        <div class="g-card-label">Active (24h)</div>
-      </div></div>
-      <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value blue">${s.active_7d}</div>
-        <div class="g-card-label">Active (7 days)</div>
-      </div></div>
-      <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value purple">${s.active_30d}</div>
-        <div class="g-card-label">Active (30 days)</div>
-      </div></div>
-      <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value pink">${s.total_printers}</div>
-        <div class="g-card-label">Total Printers</div>
-      </div></div>
-      <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value orange">${s.total_spools}</div>
-        <div class="g-card-label">Total Spools</div>
-      </div></div>
-      <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value blue">${s.total_cloud_printers}</div>
-        <div class="g-card-label">Cloud Printers</div>
+        <div class="g-card-value pink">${s.total_spools}</div>
+        <div class="g-card-label">Filament Spools</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
         <div class="g-card-value purple">${s.total_plugins}</div>
@@ -776,20 +933,20 @@ tr:hover td { background: rgba(18,121,255,0.05); }
         <div class="g-card-label">Slicer Jobs</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value pink">${s.total_prints.toLocaleString()}</div>
-        <div class="g-card-label">Total Prints</div>
+        <div class="g-card-value orange">${s.queue_items}</div>
+        <div class="g-card-label">Pending Queue</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value green">${s.overall_success_rate}%</div>
-        <div class="g-card-label">Success Rate</div>
+        <div class="g-card-value blue">${s.total_profiles}</div>
+        <div class="g-card-label">Filament Profiles</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value orange">${s.total_print_hours.toLocaleString()} h</div>
-        <div class="g-card-label">Print Hours</div>
+        <div class="g-card-value blue">${s.avg_install_age_days}d</div>
+        <div class="g-card-label">Avg Install Age</div>
       </div></div>
       <div class="g-card"><div class="g-card-inner">
-        <div class="g-card-value purple">${s.total_filament_kg.toLocaleString()} kg</div>
-        <div class="g-card-label">Filament Used</div>
+        <div class="g-card-value purple">${s.ecom_active_count}</div>
+        <div class="g-card-label">E-commerce Active</div>
       </div></div>
     </div>
   </div>
