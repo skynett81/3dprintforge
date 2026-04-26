@@ -55,6 +55,16 @@ function getEnabledFeatures() {
   if (config.server?.forceHttps !== false) flags.push('https');
   if (config.energy?.provider) flags.push('energy_' + config.energy.provider);
   if (config.homeAssistant?.enabled) flags.push('homeassistant');
+  if (config.failureDetection?.enabled) flags.push('failure_detection');
+  if (config.printGuard?.enabled) flags.push('print_guard');
+  if (config.timelapse?.enabled) flags.push('timelapse');
+  if (process.env.PUBLIC_HOST) flags.push('public_host');
+  if (process.env.TRUSTED_PROXIES) flags.push('trusted_proxies');
+  if (process.env.THINGIVERSE_API_KEY) flags.push('thingiverse');
+  if (process.env.SLICER_PATH) flags.push('slicer_bridge');
+  if (process.env.BAMBU_REGION && process.env.BAMBU_REGION !== 'eu') {
+    flags.push('region_' + process.env.BAMBU_REGION);
+  }
 
   // Enabled notification channels
   const channels = config.notifications?.channels || {};
@@ -73,11 +83,16 @@ function getAggregateStats() {
     const profiles = getFilamentProfiles({});
     const language = getInventorySetting('language');
 
-    // Printer models
+    // Printer models + brand/connector type breakdown + cloud usage
     const models = {};
+    const connectors = {};
+    let cloudPrinters = 0;
     for (const p of printers) {
       const m = p.model || 'unknown';
       models[m] = (models[m] || 0) + 1;
+      const t = p.type || 'bambu';
+      connectors[t] = (connectors[t] || 0) + 1;
+      if (p.cloudMode) cloudPrinters++;
     }
 
     // Print statistics
@@ -139,9 +154,23 @@ function getAggregateStats() {
       }
     } catch {}
 
+    // Plugin count
+    let pluginCount = 0;
+    try {
+      pluginCount = db.prepare("SELECT COUNT(*) as c FROM plugins WHERE enabled = 1").get()?.c || 0;
+    } catch {}
+
+    // Slicer jobs handled
+    let slicerJobs = 0;
+    try {
+      slicerJobs = db.prepare("SELECT COUNT(*) as c FROM slicer_jobs").get()?.c || 0;
+    } catch {}
+
     return {
       printerCount: printers.length,
       printerModels: models,
+      printerConnectors: connectors,
+      cloudPrinters,
       totalSpools: spools.length || 0,
       totalProfiles: profiles.length || 0,
       totalPrints: printStats.total,
@@ -153,6 +182,8 @@ function getAggregateStats() {
       totalFilamentKg: printStats.totalFilamentKg,
       materialTypes,
       queueItems,
+      slicerJobs,
+      pluginCount,
       ecomActive,
       dbVersion,
       installAgeDays,
@@ -172,6 +203,7 @@ export function sendTelemetryPing() {
   const cpu = cpus();
 
   const payload = {
+    schemaVersion: 2,
     id: getInstallId(),
     version: getVersion(),
     platform: detectPlatform(),
