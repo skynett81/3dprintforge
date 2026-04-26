@@ -1,6 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { isAuthEnabled, getSessionToken, validateSession, getSessionUser, hasPermission } from './auth.js';
-import { onLog, createLogger } from './logger.js';
+import { onLog, offLog, createLogger } from './logger.js';
 import { recordWsConnect, recordWsDisconnect, recordWsMessage } from './analytics.js';
 const log = createLogger('ws');
 
@@ -116,9 +116,9 @@ export class WebSocketHub {
       });
     });
 
-    // Stream server logs to subscribed clients
-    onLog(({ ts, level, prefix, msg }) => {
-      // Skip debug logs to avoid noise
+    // Stream server logs to subscribed clients. Stash the closure so close()
+    // can offLog() it — otherwise re-instantiating the hub leaks closures.
+    this._logListener = ({ ts, level, prefix, msg }) => {
       if (level === 'debug') return;
       const logMsg = JSON.stringify({ type: 'log_entry', data: { ts, level, prefix, msg } });
       for (const ws of this.clients) {
@@ -126,7 +126,21 @@ export class WebSocketHub {
           ws.send(logMsg);
         }
       }
-    });
+    };
+    onLog(this._logListener);
+  }
+
+  // Process-shutdown / re-instantiation cleanup.
+  close() {
+    if (this._logListener) {
+      try { offLog(this._logListener); } catch {}
+      this._logListener = null;
+    }
+    for (const ws of this.clients) {
+      try { ws.terminate(); } catch {}
+    }
+    this.clients.clear();
+    try { this.wss?.close?.(); } catch {}
   }
 
   broadcastMqttDebug(printerId, direction, topic, payload) {

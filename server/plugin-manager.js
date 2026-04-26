@@ -212,11 +212,12 @@ export class PluginManager {
         self._pluginPanels.push({ plugin: dbPlugin.name, id: panelId, title, loader: loaderFn });
       },
 
-      // Timer for background tasks
+      // Timer for background tasks — tracked per-plugin so disable() can
+      // clear only its timers (not all plugins').
       setInterval: (fn, ms) => {
         const timer = setInterval(() => { try { fn(); } catch (e) { self.log?.error(`Plugin ${dbPlugin.name} timer error: ${e.message}`); } }, Math.max(ms, 5000));
         if (!self._pluginTimers) self._pluginTimers = [];
-        self._pluginTimers.push(timer);
+        self._pluginTimers.push({ timer, plugin: dbPlugin.name });
         return timer;
       },
 
@@ -253,12 +254,26 @@ export class PluginManager {
     for (const hookName of HOOK_NAMES) {
       this._hooks[hookName] = this._hooks[hookName].filter(h => h.pluginName !== name);
     }
+    // Clear background timers belonging to this plugin
+    if (this._pluginTimers) {
+      this._pluginTimers = this._pluginTimers.filter(t => {
+        if (t.plugin === name) { try { clearInterval(t.timer); } catch {} return false; }
+        return true;
+      });
+    }
     // Call destroy if exists
     const loaded = this._plugins.get(name);
     if (loaded?.module?.destroy) {
       try { await loaded.module.destroy(); } catch (e) { log.debug('Error in destroy() for plugin ' + name + ': ' + e.message); }
     }
     this._plugins.delete(name);
+  }
+
+  // Process-shutdown helper — clears every plugin timer.
+  shutdown() {
+    if (!this._pluginTimers) return;
+    for (const t of this._pluginTimers) { try { clearInterval(t.timer); } catch {} }
+    this._pluginTimers = [];
   }
 
   // List loaded plugins

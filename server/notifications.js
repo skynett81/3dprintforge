@@ -779,7 +779,9 @@ export class NotificationManager {
   }
 
   shutdown() {
-    if (this._digestTimer) clearInterval(this._digestTimer);
-    if (this._maintenanceTimer) clearInterval(this._maintenanceTimer);
+    if (this._digestTimer) { clearInterval(this._digestTimer); this._digestTimer = null; }
+    if (this._maintenanceTimer) { clearInterval(this._maintenanceTimer); this._maintenanceTimer = null; }
+    if (this._dryingTimer) { clearInterval(this._dryingTimer); this._dryingTimer = null; }
+    if (this._lowStockTimer) { clearInterval(this._lowStockTimer); this._lowStockTimer = null; }
   }
 }

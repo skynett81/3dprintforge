@@ -189,6 +189,14 @@ export class BambuMqttClient {
     this.client.on('connect', () => {
       this.connected = true;
       log.info('Connected to printer');
+      // Reset per-connection dedup state so the firmware-versions object
+      // doesn't grow unbounded across reconnects.
+      this._lastFirmwareVersions = {};
+      this._lastXcamStatus = null;
+      this._authErrorBroadcast = false;
+      // Let the print tracker (registered by printer-manager) clear its
+      // per-session HMS/milestone caches.
+      try { this.onReconnect?.(); } catch { /* ignore */ }
 
       // TOFU cert fingerprint verification (after TLS handshake is complete)
       try {

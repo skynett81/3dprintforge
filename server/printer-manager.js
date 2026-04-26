@@ -220,6 +220,9 @@ export class PrinterManager {
       const { BambuMqttClient } = await import('./mqtt-client.js');
       const { buildCommandFromClientMessage } = await import('./mqtt-commands.js');
       client = new BambuMqttClient({ printer: printerConf, bambuCloud: this._bambuCloud }, connectorHub);
+      // Reset tracker dedup state on every (re)connect so HMS/milestone
+      // sets don't accumulate across reconnects.
+      client.onReconnect = () => { try { tracker?.resetSession?.(); } catch {} };
       client._buildCommand = buildCommandFromClientMessage;
       // Inject Bambu Cloud client for firmware version checks
       if (this._bambuCloud && client.setBambuCloud) {
@@ -393,12 +396,12 @@ export class PrinterManager {
   removePrinter(id) {
     const printer = this.printers.get(id);
     if (!printer) return;
-    if (printer.client?.disconnect) printer.client.disconnect();
-    if (printer.client?.stop) printer.client.stop();
-    if (printer.camera) printer.camera.stop();
-    this.printers.delete(id);
+    const name = printer.config?.name;
+    // _teardown stops sampler + moonCamera + historySync + camera + client and
+    // removes the entry — partial cleanup here used to leak intervals + SSH.
+    this._teardown(id);
     log.info('Printer removed: ' + id);
-    this._dispatchPlugin('onPrinterDisconnected', { printerId: id, printerName: printer.config?.name });
+    this._dispatchPlugin('onPrinterDisconnected', { printerId: id, printerName: name });
   }
 
   getPrinterIds() {

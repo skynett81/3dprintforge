@@ -110,6 +110,14 @@ export class PrintTracker {
     } catch { /* ignore */ }
   }
 
+  // Called externally on MQTT (re)connect so dedup state doesn't accumulate
+  // codes from earlier sessions.
+  resetSession() {
+    this._hmsLogged = new Set();
+    this._milestonesTriggered = new Set();
+    this._nfcProcessed = new Map();
+  }
+
   update(printData) {
     if (!printData) return;
 
