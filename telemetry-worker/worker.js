@@ -259,36 +259,128 @@ async function handleStatsPage(env) {
 <title>3DPrintForge — Telemetry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
+  --c-bg: #04061a;
+  --c-bg-2: #0a0e27;
   --color-primary: #1279ff;
   --color-accent: #00d4ff;
+  --color-cyan-glow: #7ff5ff;
+  --color-orange: #f97316;
+  --color-orange-glow: #ffb36b;
   --color-purple: #9b4dff;
   --color-pink: #ff4db8;
   --color-green: #00e676;
-  --color-orange: #ff9f43;
-  --color-dark: #0a0e27;
-  --color-secondary: #1a1f3a;
+  --color-neon: #fbbf24;
+  --color-dark: #04061a;
+  --color-secondary: #0a0e27;
   --font-heading: 'Orbitron', 'Rajdhani', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Rajdhani', 'Inter', 'Helvetica Neue', Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, monospace;
 }
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family: var(--font-body);
-  background: var(--color-dark);
-  color: #fff;
+  background: var(--c-bg);
+  color: #e2e8f0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
 }
+
+/* === Cyberpunk animated background (skjerm1 port) === */
+.bg-fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg-radar {
+  position: absolute; width: 140vmax; height: 140vmax;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    rgba(249,115,22,0.18) 40deg,
+    rgba(249,115,22,0.08) 60deg,
+    transparent 80deg,
+    transparent 270deg,
+    rgba(0,212,255,0.10) 300deg,
+    rgba(0,212,255,0.05) 320deg,
+    transparent 360deg);
+  filter: blur(30px);
+  animation: radarSpin 18s linear infinite;
+  opacity: 0.7;
+}
+@keyframes radarSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at center, black 30%, transparent 85%);
+  animation: gridPulse 8s ease-in-out infinite, gridDrift 30s linear infinite;
+}
+@keyframes gridDrift { from { background-position: 0 0, 0 0; } to { background-position: 60px 60px, 60px 60px; } }
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(0,212,255,0.3)); }
+}
+.bg-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(90px); pointer-events: none; will-change: transform;
+}
+.bg-orb-1 {
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, var(--color-orange) 0%, transparent 70%);
+  top: -160px; left: -140px; opacity: 0.55;
+  animation: orbMorph1 14s ease-in-out infinite;
+}
+.bg-orb-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
+  bottom: -180px; right: -120px; opacity: 0.5;
+  animation: orbMorph2 18s ease-in-out infinite;
+}
+.bg-orb-3 {
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
+  top: 45%; left: 50%; transform: translate(-50%, -50%);
+  opacity: 0.22;
+  animation: orbMorph3 22s ease-in-out infinite;
+}
+@keyframes orbMorph1 {
+  0%, 100% { transform: translate(0,0) scale(1); border-radius: 50%; }
+  33%      { transform: translate(80px,60px) scale(1.15); border-radius: 42% 58% 52% 48%; }
+  66%      { transform: translate(40px,120px) scale(0.9); border-radius: 60% 40% 45% 55%; }
+}
+@keyframes orbMorph2 {
+  0%, 100% { transform: translate(0,0) scale(1); border-radius: 50%; }
+  50%      { transform: translate(-90px,-60px) scale(1.1); border-radius: 55% 45% 48% 52%; }
+}
+@keyframes orbMorph3 {
+  0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.22; }
+  50%      { transform: translate(-50%,-50%) scale(1.4); opacity: 0.4; }
+}
+.bg-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(to bottom,
+    transparent 0, transparent 3px,
+    rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px);
+  pointer-events: none;
+}
+.bg-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(4,6,26,0.7) 90%);
+}
+header, .hero, .content-section, .content-section-alt, .footer { position: relative; z-index: 1; }
 
 /* Header */
 .header {
-  background: linear-gradient(to bottom, var(--color-dark), var(--color-secondary));
-  border-bottom: 2px solid rgba(18, 121, 255, 0.3);
-  box-shadow: 0 0 20px rgba(18, 121, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(to bottom, rgba(4,6,26,0.95), rgba(10,14,39,0.85));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,212,255,0.3);
+  box-shadow: 0 0 30px rgba(0,212,255,0.15), 0 0 60px rgba(249,115,22,0.08);
   padding: 0 1rem;
 }
 .header-inner {
@@ -346,13 +438,21 @@ body {
 }
 .hero h1 {
   font-family: var(--font-heading);
-  font-size: 2.8rem;
+  font-size: 3.2rem;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: #fff;
-  text-shadow: 0 0 10px rgba(18,121,255,0.8), 0 0 20px rgba(18,121,255,0.6), 0 0 30px rgba(0,212,255,0.4);
+  text-shadow:
+    0 0 14px rgba(249,115,22,0.6),
+    0 0 28px rgba(0,212,255,0.5),
+    0 0 56px rgba(0,212,255,0.3);
   margin-bottom: 0.5rem;
+  animation: titleGlow 4s ease-in-out infinite;
+}
+@keyframes titleGlow {
+  0%, 100% { text-shadow: 0 0 14px rgba(249,115,22,0.6), 0 0 28px rgba(0,212,255,0.5), 0 0 56px rgba(0,212,255,0.3); }
+  50%      { text-shadow: 0 0 22px rgba(249,115,22,0.9), 0 0 44px rgba(0,212,255,0.7), 0 0 80px rgba(0,212,255,0.5); }
 }
 .hero p {
   font-family: var(--font-heading);
@@ -395,29 +495,43 @@ body {
   margin-bottom: 0;
 }
 
-/* Gaming card */
+/* Gaming card — skjerm1-style with orange/cyan dual glow */
 .g-card {
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  background: linear-gradient(135deg, rgba(26,31,58,0.6), rgba(10,14,39,0.8));
-  border: 2px solid rgba(18,121,255,0.3);
+  background: linear-gradient(135deg, rgba(10,14,39,0.7), rgba(4,6,26,0.9));
+  border: 1px solid rgba(0,212,255,0.25);
   position: relative;
   overflow: hidden;
-  transition: all 0.4s;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .g-card:hover {
-  border-color: rgba(0,212,255,0.5);
-  box-shadow: 0 0 20px rgba(18,121,255,0.3), inset 0 0 20px rgba(0,212,255,0.05);
+  border-color: rgba(249,115,22,0.5);
+  box-shadow:
+    0 0 30px rgba(249,115,22,0.25),
+    0 0 60px rgba(0,212,255,0.15),
+    inset 0 0 20px rgba(0,212,255,0.05);
+  transform: translateY(-2px);
 }
 .g-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+  background: linear-gradient(90deg, transparent, var(--color-orange), var(--color-accent), transparent);
   opacity: 0;
   transition: opacity 0.4s;
 }
 .g-card:hover::before { opacity: 1; }
+.g-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 12px; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-orange), transparent);
+  opacity: 0.3;
+}
 .g-card-inner {
   padding: 20px 16px;
   position: relative;
@@ -589,6 +703,17 @@ tr:hover td { background: rgba(18,121,255,0.05); }
 </style>
 </head>
 <body>
+
+<!-- Cyberpunk animated background (skjerm1.no design) -->
+<div class="bg-fx" aria-hidden="true">
+  <div class="bg-radar"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="bg-scanlines"></div>
+  <div class="bg-vignette"></div>
+</div>
 
 <!-- Header -->
 <header class="header">
