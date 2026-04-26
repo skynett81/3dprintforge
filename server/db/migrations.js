@@ -153,11 +153,64 @@ export function ensureBaseSchema(db) {
   `);
 }
 
+// Adds every column that migrations historically tacked onto base tables.
+// Idempotent — duplicate-column errors are silently skipped. Runs once at
+// boot, before the migration chain, so a database that lost a migration
+// (or was created before our base schema covered the column) is repaired
+// in one shot.
+export function ensureBaseSchemaColumns(db) {
+  const adds = [
+    ['printers', 'type', 'TEXT'],
+    ['printers', 'electricity_rate_kwh', 'REAL'],
+    ['printers', 'printer_wattage', 'REAL'],
+    ['printers', 'machine_cost', 'REAL'],
+    ['printers', 'machine_lifetime_hours', 'REAL'],
+    ['printers', 'maintenance_mode', 'INTEGER DEFAULT 0'],
+    ['printers', 'maintenance_note', 'TEXT'],
+    ['printers', 'maintenance_since', 'TEXT'],
+    ['print_history', 'linked_3mf', 'TEXT DEFAULT NULL'],
+    ['print_history', 'estimated_filament_g', 'REAL'],
+    ['print_history', 'filament_accuracy_pct', 'REAL'],
+    ['print_history', 'model_name', 'TEXT'],
+    ['print_history', 'model_url', 'TEXT'],
+    ['print_history', 'plate_compatibility', 'TEXT'],
+    ['print_history', 'review_status', 'TEXT'],
+    ['print_history', 'review_waste_g', 'REAL'],
+    ['print_history', 'review_notes', 'TEXT'],
+    ['print_history', 'reviewed_at', 'TEXT'],
+    ['filament_inventory', 'printer_id', 'TEXT'],
+    ['error_log', 'acknowledged', 'INTEGER DEFAULT 0'],
+    ['error_log', 'context', 'TEXT'],
+    ['nozzle_sessions', 'nozzle_index', 'INTEGER DEFAULT 0'],
+    ['ams_snapshots', 'tray_uuid', 'TEXT'],
+    ['ams_snapshots', 'tray_info_idx', 'TEXT'],
+    ['ams_snapshots', 'tray_weight', 'REAL'],
+    ['ams_snapshots', 'tray_diameter', 'REAL'],
+    ['ams_snapshots', 'drying_temp', 'INTEGER'],
+    ['ams_snapshots', 'drying_time', 'INTEGER'],
+    ['ams_snapshots', 'nozzle_temp_min', 'INTEGER'],
+    ['ams_snapshots', 'nozzle_temp_max', 'INTEGER'],
+    ['ams_snapshots', 'bed_temp_recommend', 'INTEGER'],
+    ['ams_snapshots', 'k_value', 'REAL']
+  ];
+  for (const [table, col, type] of adds) {
+    if (!_tableExists(db, table)) continue;
+    if (_columnExists(db, table, col)) continue;
+    try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`); }
+    catch (e) { log.warn(`ensureBaseSchemaColumns: ${table}.${col} — ${e.message}`); }
+  }
+}
+
+function _columnExists(db, table, col) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === col);
+}
+
 // ---- Migration System ----
 
 export function runMigrations() {
   const db = getDb();
   ensureBaseSchema(db);
+  ensureBaseSchemaColumns(db);
   const row = db.prepare('SELECT MAX(version) as v FROM schema_version').get();
   const currentVersion = row?.v || 0;
 
