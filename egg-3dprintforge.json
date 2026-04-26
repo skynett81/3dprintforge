@@ -14,7 +14,7 @@
   },
   "file_denylist": [],
   "file_blacklist": [],
-  "startup": "NODE_ENV=production node server/index.js",
+  "startup": "if [ \"${AUTO_UPDATE:-true}\" = \"true\" ]; then git config --global --add safe.directory /home/container 2>/dev/null; git pull --ff-only 2>&1 || true; npm install --omit=dev --ignore-scripts --silent 2>&1 | tail -3 || true; fi; NODE_ENV=production node server/index.js",
   "config": {
     "files": "{}",
     "startup": "{\"done\": [\"3DPrintForge v\"]}",
@@ -174,6 +174,16 @@
       "description": "Set to true to disable the anonymous startup ping to the update server (privacy mode).",
       "env_variable": "DISABLE_TELEMETRY",
       "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:true,false",
+      "field_type": "text"
+    },
+    {
+      "name": "Auto Update",
+      "description": "Pull latest code from GitHub on every restart (true) or freeze on the currently installed version (false). When true, restart in Wisp = update.",
+      "env_variable": "AUTO_UPDATE",
+      "default_value": "true",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string|in:true,false",
