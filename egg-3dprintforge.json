@@ -121,12 +121,12 @@
     },
     {
       "name": "Public Host",
-      "description": "Public hostname users connect to (e.g. node2.geektech.no). Shown in the startup banner instead of the internal container IP. Leave blank to auto-detect.",
+      "description": "Public hostname(s) and/or IP(s) users connect to. Comma-separated for multiple, e.g. 'node2.geektech.no,185.243.217.246'. Shown in startup banner instead of internal container IP. Leave blank to auto-detect.",
       "env_variable": "PUBLIC_HOST",
       "default_value": "",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "nullable|string|max:255",
+      "rules": "nullable|string|max:512",
       "field_type": "text"
     }
   ]

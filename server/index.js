@@ -1285,10 +1285,14 @@ function printStartupBanner() {
   const { ips, names } = getLocalAddresses();
   // PUBLIC_HOST overrides banner output for panel/proxy hosts where the
   // internal container hostname/IP isn't reachable from users.
-  const publicHost = process.env.PUBLIC_HOST?.trim();
+  // Comma-separated to advertise multiple addresses (e.g. "node2.example.com,185.243.217.246").
+  const publicHosts = (process.env.PUBLIC_HOST || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
   // Filter out IPv6 for display (too long for banner), keep IPv4 + hostnames
-  const allHosts = publicHost
-    ? [publicHost]
+  const allHosts = publicHosts.length
+    ? [...new Set(publicHosts)]
     : [...new Set([...names, ...ips.filter(ip => !ip.includes(':'))])];
   console.log('');
   console.log('  ╔══════════════════════════════════════════════════╗');
