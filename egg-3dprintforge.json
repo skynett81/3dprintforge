@@ -138,6 +138,46 @@
       "user_editable": true,
       "rules": "required|string|in:eu,us,cn",
       "field_type": "text"
+    },
+    {
+      "name": "Thingiverse API Key",
+      "description": "Optional Thingiverse API key for searching/importing models in the Library. Get one at thingiverse.com/developers/apps.",
+      "env_variable": "THINGIVERSE_API_KEY",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:128",
+      "field_type": "text"
+    },
+    {
+      "name": "Log Level",
+      "description": "Server log verbosity: debug | info (default) | warn | error. Use debug to diagnose connection or migration issues.",
+      "env_variable": "LOG_LEVEL",
+      "default_value": "info",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:debug,info,warn,error",
+      "field_type": "text"
+    },
+    {
+      "name": "Trusted Proxies",
+      "description": "Comma-separated list of upstream proxy IPs (e.g. Cloudflare ranges). Required for correct client IP in logs and rate-limiting when traffic goes through a reverse proxy. Leave blank when accessed directly.",
+      "env_variable": "TRUSTED_PROXIES",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:1024",
+      "field_type": "text"
+    },
+    {
+      "name": "Disable Telemetry",
+      "description": "Set to true to disable the anonymous startup ping to the update server (privacy mode).",
+      "env_variable": "DISABLE_TELEMETRY",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:true,false",
+      "field_type": "text"
     }
   ]
 }
