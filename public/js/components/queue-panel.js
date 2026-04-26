@@ -7,7 +7,7 @@
   let _settingsOpen = false;
 
   function printerName(id) {
-    return window.printerState?._printerMeta?.[id]?.name || id || '--';
+    return window.printerState?.printerMeta?.[id]?.name || id || '--';
   }
 
   function fmtDate(iso) {
@@ -231,7 +231,7 @@
 
   // ═══ Create queue dialog ═══
   window._queueShowCreate = function() {
-    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
+    const printers = Object.entries(window.printerState?.printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
     const printerOpts = printers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 
     const overlay = document.createElement('div');
@@ -285,7 +285,7 @@
 
   // ═══ Add item dialog ═══
   window._queueAddItem = async function(queueId) {
-    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
+    const printers = Object.entries(window.printerState?.printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
     const printerChecks = printers.map(p =>
       `<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-printer-check" value="${p.id}"> ${p.name || p.id}</label>`
     ).join('');
@@ -354,7 +354,7 @@
 
   // ═══ Queue settings renderer ═══
   function _renderQueueSettings(q) {
-    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
+    const printers = Object.entries(window.printerState?.printerMeta || {}).map(([id, m]) => ({ id, name: m.name }));
     const printerOpts = `<option value="">${t('queue.any_printer')}</option>` +
       printers.map(p => `<option value="${p.id}"${p.id === q.target_printer_id ? ' selected' : ''}>${p.name}</option>`).join('');
 
@@ -441,7 +441,7 @@
   window._queueEditDialog = function(id) {
     const q = _queues.find(x => x.id === id);
     if (!q) return;
-    const printers = Object.entries(window.printerState?._printerMeta || {}).map(([pid, m]) => ({ id: pid, name: m.name }));
+    const printers = Object.entries(window.printerState?.printerMeta || {}).map(([pid, m]) => ({ id: pid, name: m.name }));
     const printerOpts = `<option value="">${t('queue.any_printer')}</option>` +
       printers.map(p => `<option value="${p.id}"${p.id === q.target_printer_id ? ' selected' : ''}>${p.name}</option>`).join('');
 

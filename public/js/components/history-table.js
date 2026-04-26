@@ -3,7 +3,7 @@
 
   // ═══ Helpers ═══
   function printerName(id) {
-    return window.printerState?._printerMeta?.[id]?.name || id || '--';
+    return window.printerState?.printerMeta?.[id]?.name || id || '--';
   }
   function statusLabel(status) {
     const map = { completed: 'completed', failed: 'failed', cancelled: 'cancelled' };

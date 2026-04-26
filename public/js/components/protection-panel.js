@@ -142,7 +142,7 @@
       for (const p of _printers) {
         const s = _settings[p.id];
         const enabled = s ? s.enabled : 0;
-        const live = window.printerState?._printers?.[p.id] || {};
+        const live = window.printerState?.printers?.[p.id] || {};
         const gcState = live.gcode_state || 'IDLE';
         const isPrinting = ['RUNNING', 'PAUSE', 'PREPARE', 'HEATING'].includes(gcState);
         const _stateMap = { RUNNING: t('state.running') || 'Printing', IDLE: t('state.idle') || 'Idle', PAUSE: t('state.pause') || 'Paused', FINISH: t('state.finish') || 'Completed', FAILED: t('state.failed') || 'Failed', PREPARE: t('state.prepare') || 'Preparing' };

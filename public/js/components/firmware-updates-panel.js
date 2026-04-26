@@ -298,7 +298,7 @@
       // If the active printer isn't in the updates list, synthesise an "up to date"
       // placeholder so the user knows the panel did see it.
       if (visible.length === 0) {
-        const meta = window.printerState?._printerMeta?.[activeId] || {};
+        const meta = window.printerState?.printerMeta?.[activeId] || {};
         visible = [{
           printer_id: activeId,
           printer_name: meta.name || activeId,

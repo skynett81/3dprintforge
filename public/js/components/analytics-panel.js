@@ -17,7 +17,7 @@
     try {
       // Fetch ALL available data
       const [overview, hourly, topEndpoints, sessions, errors,
-             history, printers, filament, queue, printErrors, sysInfo
+             history, printers, filament, queue, printErrors, sysInfo, spools
       ] = await Promise.all([
         fetch('/api/analytics/overview').then(r => r.json()).catch(() => ({})),
         fetch('/api/analytics/hourly?days=7').then(r => r.json()).catch(() => []),
@@ -30,6 +30,7 @@
         fetch('/api/queue').then(r => r.json()).catch(() => []),
         fetch('/api/errors?limit=20').then(r => r.json()).catch(() => []),
         fetch('/api/system/info').then(r => r.json()).catch(() => ({})),
+        fetch('/api/inventory/spools').then(r => r.json()).catch(() => []),
       ]);
 
       // Ensure API responses are arrays (may return {error:...} on failure)
@@ -38,6 +39,7 @@
       const _filament = Array.isArray(filament) ? filament : [];
       const _queue = Array.isArray(queue) ? queue : [];
       const _printErrors = Array.isArray(printErrors) ? printErrors : [];
+      const _spools = Array.isArray(spools) ? spools : (Array.isArray(spools?.rows) ? spools.rows : []);
 
       // Calculate print stats
       const totalPrints = _history.length;
@@ -46,9 +48,14 @@
       const successRate = totalPrints > 0 ? Math.round((successPrints / totalPrints) * 100) : 0;
       const totalPrintHours = Math.round(_history.reduce((s, h) => s + (h.duration_seconds || 0), 0) / 3600 * 10) / 10;
       const totalFilamentG = Math.round(_history.reduce((s, h) => s + (h.filament_used_g || 0), 0));
-      const totalSpools = _filament.length;
+      const totalSpools = _filament.length + (Array.isArray(_spools) ? _spools.length : 0);
       const activeQueue = _queue.length;
-      const onlinePrinters = Object.keys(window.printerState?.printers || {}).length;
+      // Online = printers whose state object actually has data (not empty {}).
+      const _liveP = window.printerState?.printers || {};
+      let onlinePrinters = 0;
+      for (const id of Object.keys(_liveP)) {
+        if (Object.keys(_liveP[id] || {}).length > 0) onlinePrinters++;
+      }
       const totalPrinters = _printers.length;
 
       let html = '<div class="analytics-layout" style="display:flex;flex-direction:column;gap:12px">';

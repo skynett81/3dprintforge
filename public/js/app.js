@@ -30,7 +30,7 @@ function connect() {
           newMeta[p.id] = { name: p.name, model: p.model || '' };
         }
         // Remove printers that no longer exist
-        const oldIds = [...Object.keys(state._printerMeta), ...Object.keys(state._printers)];
+        const oldIds = [...Object.keys(state.printerMeta), ...Object.keys(state.printers)];
         const newIds = new Set(Object.keys(newMeta));
         for (const id of oldIds) {
           if (!newIds.has(id)) {
@@ -42,8 +42,8 @@ function connect() {
 
         // Ensure new printers have a state entry so they show in selector
         for (const id of Object.keys(newMeta)) {
-          if (!state._printers[id]) {
-            state._printers[id] = {};
+          if (!state.printers[id]) {
+            state.printers[id] = {};
           }
         }
 
@@ -100,11 +100,11 @@ function connect() {
         const printerId = msg.data.printer_id;
         if (printerId) {
           // Ignore status from printers not in our meta (deleted)
-          if (!state._printerMeta[printerId]) return;
+          if (!state.printerMeta[printerId]) return;
           state.updatePrinter(printerId, msg.data);
 
           // Read full merged state (not delta) for dashboard updates
-          const fullState = state._printers[printerId] || {};
+          const fullState = state.printers[printerId] || {};
           const fullPrintData = fullState.print || fullState;
 
           // Check notifications for all printers
@@ -124,7 +124,7 @@ function connect() {
         } else {
           // Legacy single-printer format
           state.updatePrinter('default', msg.data);
-          const fullState = state._printers['default'] || {};
+          const fullState = state.printers['default'] || {};
           updateDashboard(fullState.print || fullState);
         }
       } else if (msg.type === 'connection') {

@@ -355,7 +355,7 @@
 
     // Build printer selector
     let printerOpts = printerIds.map(pid => {
-      const meta = state._printerMeta?.[pid] || {};
+      const meta = state.printerMeta?.[pid] || {};
       return `<option value="${pid}">${meta.name || pid}</option>`;
     }).join('');
 

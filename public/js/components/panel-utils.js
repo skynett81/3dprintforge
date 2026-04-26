@@ -2,7 +2,7 @@
 
 // Resolve printer ID to display name
 window.getPrinterDisplayName = function(id) {
-  return window.printerState?._printerMeta?.[id]?.name || id || '--';
+  return window.printerState?.printerMeta?.[id]?.name || id || '--';
 };
 
 // Build a printer selector dropdown for panels
@@ -22,7 +22,7 @@ window.buildPrinterSelector = function(callbackName, selectedId, showAll) {
     options += `<option value="" ${!selectedId ? 'selected' : ''}>${t('common.all_printers')}</option>`;
   }
   for (const id of ids) {
-    const name = state._printerMeta[id]?.name || id;
+    const name = state.printerMeta[id]?.name || id;
     options += `<option value="${id}" ${id === selectedId ? 'selected' : ''}>${name}</option>`;
   }
 

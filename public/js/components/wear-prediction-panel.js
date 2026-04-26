@@ -80,7 +80,7 @@
     }
 
     const printerNames = {};
-    const meta = window.printerState?._printerMeta || {};
+    const meta = window.printerState?.printerMeta || {};
     for (const id of Object.keys(meta)) printerNames[id] = meta[id]?.name || id;
 
     let html = '';

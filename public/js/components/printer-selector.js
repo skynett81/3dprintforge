@@ -19,8 +19,8 @@
     }
 
     container.innerHTML = ids.map(id => {
-      const meta = state._printerMeta[id] || {};
-      const ps = state._printers[id]?.print || state._printers[id] || {};
+      const meta = state.printerMeta[id] || {};
+      const ps = state.printers[id]?.print || state.printers[id] || {};
       const isActive = id === activeId;
       const dot = getStatusDot(ps);
       const mini = getMiniStatus(ps);

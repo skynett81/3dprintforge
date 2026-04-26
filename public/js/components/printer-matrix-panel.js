@@ -84,7 +84,7 @@
         try { history = histRes ? await histRes.json() : []; } catch (_) { history = []; }
         if (!Array.isArray(history)) history = [];
 
-        const meta = state._printerMeta?.[id] || {};
+        const meta = state.printerMeta?.[id] || {};
         const name = meta.name || id;
 
         // Compute metrics

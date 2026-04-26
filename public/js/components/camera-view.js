@@ -440,7 +440,7 @@
     // Determine the specific reason for no camera
     const printerId = window.printerState?.getActivePrinterId();
     const meta = printerId ? window.printerState.getActivePrinterMeta() : {};
-    const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+    const ps = printerId ? window.printerState?.printers?.[printerId] : null;
     const pd = ps?.print || ps;
     const hasPort = !!meta.cameraPort;
     const probeFailure = reason === 'probe_failed';
@@ -717,7 +717,7 @@
     container.innerHTML = '';
 
     const printerId = window.printerState?.getActivePrinterId();
-    const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+    const ps = printerId ? window.printerState?.printers?.[printerId] : null;
     const pd = ps?.print || ps;
     const fname = pd?.subtask_name || pd?.gcode_file || '';
 
@@ -873,7 +873,7 @@
       if (!modal || !modal.classList.contains('active')) return;
 
       const printerId = window.printerState?.getActivePrinterId();
-      const ps = printerId ? window.printerState?._printers?.[printerId] : null;
+      const ps = printerId ? window.printerState?.printers?.[printerId] : null;
       const pd = ps?.print || ps;
       if (!pd) { _fsAnimId = requestAnimationFrame(update); return; }
 

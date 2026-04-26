@@ -5,7 +5,7 @@
   const _ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => _ESC[c]); }
   function printerName(id) {
-    return window.printerState?._printerMeta?.[id]?.name || id || '--';
+    return window.printerState?.printerMeta?.[id]?.name || id || '--';
   }
   function formatDate(iso) {
     if (!iso) return '--';

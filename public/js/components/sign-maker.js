@@ -96,7 +96,7 @@
       h += `<p class="text-muted" style="font-size:0.85rem">Dashboard URL: <strong>${_esc(location.origin)}</strong></p>`;
     } else if (id === 'printer') {
       const printers = window.printerState ? window.printerState.getPrinterIds().map(pid => {
-        const meta = window.printerState._printerMeta?.[pid];
+        const meta = window.printerState.printerMeta?.[pid];
         return { id: pid, name: meta?.name || pid, model: meta?.model || '', ip: meta?.ip || '' };
       }) : [];
       h += _select('Printer', 'sm-printer', printers.map(p => [p.id, p.name + (p.model ? ' (' + p.model + ')' : '')]));
@@ -356,8 +356,8 @@
 
     } else if (id === 'printer') {
       const pid = _val('sm-printer');
-      const meta = window.printerState?._printerMeta?.[pid] || {};
-      const state = window.printerState?._printers?.[pid];
+      const meta = window.printerState?.printerMeta?.[pid] || {};
+      const state = window.printerState?.printers?.[pid];
       const data = state?.print || state || {};
       const url = location.origin;
       qrData = url;
@@ -665,7 +665,7 @@
       body.qr_data = location.origin;
     } else if (templateId === 'printer') {
       const pid = _val('sm-printer');
-      const meta = window.printerState?._printerMeta?.[pid] || {};
+      const meta = window.printerState?.printerMeta?.[pid] || {};
       body.title = meta.name || pid;
       body.subtitle = meta.model || '';
       body.qr_data = location.origin;

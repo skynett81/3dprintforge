@@ -177,11 +177,11 @@
     const now = new Date().toISOString();
     const printerIds = window.printerState?.getPrinterIds() || [];
     for (const pid of printerIds) {
-      const ps = window.printerState._printers[pid] || {};
+      const ps = window.printerState.printers[pid] || {};
       const printData = ps.print || ps;
       const gcodeState = (printData.gcode_state || '').toUpperCase();
       if (gcodeState === 'RUNNING' || gcodeState === 'PAUSE') {
-        const meta = window.printerState._printerMeta[pid] || {};
+        const meta = window.printerState.printerMeta[pid] || {};
         const filename = printData.gcode_file || printData.subtask_name || '';
         runningEvents.push({
           id: 'run_' + pid,
@@ -416,7 +416,7 @@
       const startStr = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
       const endStr = ev.finished_at ? new Date(ev.finished_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '';
       const timeStr = startStr && endStr ? `${startStr} → ${endStr}` : startStr;
-      const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : '';
+      const printerLabel = ev.printer_id ? (window.printerState?.printerMeta?.[ev.printer_id]?.name || ev.printer_id) : '';
       const progress = ev._progress != null ? ` (${ev._progress}%)` : '';
       const thumbSrc = ev._historyId ? `/api/history/${ev._historyId}/thumbnail` : '';
       const filamentInfo = ev.filament_used_g ? `<span>${Math.round(ev.filament_used_g)}g</span>` : '';
@@ -490,7 +490,7 @@
     const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
     const startTime = ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleString(locale) : '--';
     const endTime = ev.finished_at ? new Date(ev.finished_at).toLocaleString(locale) : null;
-    const printerLabel = ev.printer_id ? (window.printerState?._printerMeta?.[ev.printer_id]?.name || ev.printer_id) : null;
+    const printerLabel = ev.printer_id ? (window.printerState?.printerMeta?.[ev.printer_id]?.name || ev.printer_id) : null;
 
     // Thumbnail for history events + 3D preview button
     let thumbHtml = '';

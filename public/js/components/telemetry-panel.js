@@ -54,7 +54,7 @@
   // ═══ Module builders ═══
   const BUILDERS = {
     'live-values': () => {
-      const ps = window.printerState?._printers?.[_printerId];
+      const ps = window.printerState?.printers?.[_printerId];
       if (!ps) return `<div class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</div>`;
       const pd = ps.print || ps;
 
@@ -79,7 +79,7 @@
     },
 
     'print-status': () => {
-      const ps = window.printerState?._printers?.[_printerId];
+      const ps = window.printerState?.printers?.[_printerId];
       if (!ps) return '';
       const pd = ps.print || ps;
       const state = pd.gcode_state || 'IDLE';
@@ -130,7 +130,7 @@
       if (!data.length) { h += `<p class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</p>`; return h; }
       // Use historical target data from telemetry, fallback to live state
       const last = data[data.length - 1];
-      const ps = window.printerState?._printers?.[_printerId];
+      const ps = window.printerState?.printers?.[_printerId];
       const pd = ps?.print || ps;
       const targets = {
         nozzle_temp: last?.nozzle_target || pd?.nozzle_target_temper || pd?.nozzle_temper_target || 0,
@@ -146,7 +146,7 @@
     },
 
     'fan-dashboard': () => {
-      const ps = window.printerState?._printers?.[_printerId];
+      const ps = window.printerState?.printers?.[_printerId];
       if (!ps) return `<div class="text-muted" style="font-size:0.8rem">${t('telemetry.no_data')}</div>`;
       const pd = ps.print || ps;
 

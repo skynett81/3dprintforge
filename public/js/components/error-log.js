@@ -6,7 +6,7 @@
   function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => _ESC_MAP[c]); }
 
   function printerName(id) {
-    return window.printerState?._printerMeta?.[id]?.name || id || '--';
+    return window.printerState?.printerMeta?.[id]?.name || id || '--';
   }
   function formatDate(iso) {
     if (!iso) return '--';

@@ -74,8 +74,8 @@
     } catch {}
 
     // Get live state
-    if (pid && window.printerState?._printers?.[pid]) {
-      const ps = window.printerState._printers[pid];
+    if (pid && window.printerState?.printers?.[pid]) {
+      const ps = window.printerState.printers[pid];
       telemetryLive = ps.print || ps;
     }
 

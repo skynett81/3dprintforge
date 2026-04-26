@@ -66,7 +66,7 @@
   let _dateFrom = null;
   let _dateTo = null;
   // ═══ Print stats helpers ═══
-  function _printerName(id) { return window.printerState?._printerMeta?.[id]?.name || id || '--'; }
+  function _printerName(id) { return window.printerState?.printerMeta?.[id]?.name || id || '--'; }
   function _fmtDurLong(sec) { if (!sec) return '--'; const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; if (h>0) return `${h}${t('time.h')} ${m}${t('time.m')}`; if (m>0) return `${m}${t('time.m')} ${s}${t('time.s')}`; return `${s}${t('time.s')}`; }
   function _psGetStats(data) {
     const completed = data.filter(r => r.status === 'completed').length;

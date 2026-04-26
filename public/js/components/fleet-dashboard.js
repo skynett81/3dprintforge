@@ -103,7 +103,7 @@
     confirmAction(t('fleet.pause_all_confirm') || 'Pause all running printers?', () => {
       const ids = window.printerState.getPrinterIds();
       for (const id of ids) {
-        const s = window.printerState._printers[id] || {};
+        const s = window.printerState.printers[id] || {};
         const state = (s.print?.gcode_state || s.gcode_state || '').toUpperCase();
         if (state === 'RUNNING') {
           sendCommand('pause', { printer_id: id });
@@ -117,7 +117,7 @@
     confirmAction(t('fleet.resume_all_confirm') || 'Resume all paused printers?', () => {
       const ids = window.printerState.getPrinterIds();
       for (const id of ids) {
-        const s = window.printerState._printers[id] || {};
+        const s = window.printerState.printers[id] || {};
         const state = (s.print?.gcode_state || s.gcode_state || '').toUpperCase();
         if (state === 'PAUSE') {
           sendCommand('resume', { printer_id: id });
@@ -238,8 +238,8 @@
     // Summary counts
     const counts = { printing: 0, idle: 0, offline: 0, error: 0 };
     const printerData = ids.map(id => {
-      const meta = state._printerMeta[id] || {};
-      const ps = state._printers[id] || {};
+      const meta = state.printerMeta[id] || {};
+      const ps = state.printers[id] || {};
       const printState = ps.print || ps;
       const gcodeState = printState.gcode_state || ps.gcode_state || 'OFFLINE';
       if (['RUNNING', 'PREPARE', 'PAUSE'].includes(gcodeState)) counts.printing++;

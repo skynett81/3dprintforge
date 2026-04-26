@@ -23,8 +23,8 @@
   async function _loadHealth(el) {
     // Get all printers
     const printers = [];
-    if (window.printerState?._printers) {
-      for (const [id, ps] of Object.entries(window.printerState._printers)) {
+    if (window.printerState?.printers) {
+      for (const [id, ps] of Object.entries(window.printerState.printers)) {
         const name = ps.print?.name || ps.name || id;
         printers.push({ id, name });
       }

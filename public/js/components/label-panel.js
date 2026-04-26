@@ -228,7 +228,7 @@
 
     let html = '';
     for (const id of ids) {
-      const meta = state._printerMeta[id] || {};
+      const meta = state.printerMeta[id] || {};
       html += `<div class="lbl-card" onclick="_lblToggleCard(event.target)">
         <div class="lbl-card-color-strip" style="background:var(--accent-blue)"></div>
         <div class="lbl-card-body">

@@ -91,8 +91,8 @@
    */
   window.buildPrinterContextMenuItems = function(printerId) {
     const state = window.printerState;
-    const ps = state._printers[printerId]?.print || state._printers[printerId] || {};
-    const meta = state._printerMeta[printerId] || {};
+    const ps = state.printers[printerId]?.print || state.printers[printerId] || {};
+    const meta = state.printerMeta[printerId] || {};
     const gcodeState = ps.gcode_state || 'IDLE';
     const isRunning = gcodeState === 'RUNNING';
     const isPaused = gcodeState === 'PAUSE';

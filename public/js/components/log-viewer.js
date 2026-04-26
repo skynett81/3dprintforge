@@ -172,7 +172,7 @@
         const color = typeColors[e.type] || '#888';
         const icon = typeIcons[e.type] || '•';
         const time = new Date(e.timestamp).toLocaleTimeString((window.i18n?.getLocale() || 'nb').replace('_', '-'), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const printer = e.printer_id ? '<span style="color:var(--text-muted);font-size:0.7rem;margin-left:4px">[' + (window.printerState?._printerMeta?.[e.printer_id]?.name || e.printer_id) + ']</span>' : '';
+        const printer = e.printer_id ? '<span style="color:var(--text-muted);font-size:0.7rem;margin-left:4px">[' + (window.printerState?.printerMeta?.[e.printer_id]?.name || e.printer_id) + ']</span>' : '';
         html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:0.8rem">';
         html += '<span style="color:' + color + ';flex-shrink:0;font-size:0.7rem;margin-top:2px">' + icon + '</span>';
         html += '<span style="color:var(--text-muted);flex-shrink:0;font-size:0.7rem;min-width:60px">' + time + '</span>';
