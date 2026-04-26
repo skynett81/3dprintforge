@@ -16,6 +16,8 @@ export function getPrinters() {
     accessCode: r.access_code,
     model: r.model,
     type: r.type || null,
+    cloudMode: !!r.cloud_mode,
+    region: r.region || null,
     added_at: r.added_at,
     electricity_rate_kwh: r.electricity_rate_kwh,
     printer_wattage: r.printer_wattage,
@@ -26,16 +28,19 @@ export function getPrinters() {
 
 export function addPrinter(p) {
   const db = getDb();
-  return db.prepare('INSERT INTO printers (id, name, ip, serial, access_code, model, type) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-    p.id, p.name, p.ip || null, p.serial || null, p.accessCode || null, p.model || null, p.type || null
+  return db.prepare('INSERT INTO printers (id, name, ip, serial, access_code, model, type, cloud_mode, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+    p.id, p.name, p.ip || null, p.serial || null, p.accessCode || null, p.model || null, p.type || null,
+    p.cloudMode ? 1 : 0, p.region || null
   );
 }
 
 export function updatePrinter(id, p) {
   const db = getDb();
   return db.prepare(`UPDATE printers SET name=?, ip=?, serial=?, access_code=?, model=?, type=?,
+    cloud_mode=?, region=?,
     electricity_rate_kwh=?, printer_wattage=?, machine_cost=?, machine_lifetime_hours=? WHERE id=?`).run(
     p.name, p.ip || null, p.serial || null, p.accessCode || null, p.model || null, p.type || null,
+    p.cloudMode ? 1 : 0, p.region || null,
     p.electricity_rate_kwh ?? null, p.printer_wattage ?? null, p.machine_cost ?? null, p.machine_lifetime_hours ?? null, id
   );
 }

@@ -2178,18 +2178,30 @@
       return;
     }
     let ip = p.ip || '';
-    // Bambu Cloud doesn't know the printer's LAN IP, and SSDP discovery only
-    // works when the server is on the same subnet. Prompt the user when both
-    // failed to provide one.
+    let cloudMode = false;
+    // Bambu Cloud doesn't know the printer's LAN IP. Offer the user a choice:
+    // enter LAN IP, or use Bambu Cloud broker (no LAN required, AMS data
+    // streams from cloud).
     if (!ip) {
-      ip = prompt('Bambu Cloud could not provide the local IP for "' + (p.name || p.serial) + '".\n\nEnter the printer LAN IP (e.g. 192.168.10.193):', '') || '';
-      ip = ip.trim();
-      if (!ip) {
-        showToast('LAN IP required to connect — printer not added', 'warning');
+      const choice = prompt(
+        'Bambu Cloud did not provide a local IP for "' + (p.name || p.serial) + '".\n\n' +
+        'Type:\n' +
+        '  • IP address (e.g. 192.168.10.193) to use LAN MQTT\n' +
+        '  • cloud — to stream via Bambu Cloud broker (no LAN needed)\n' +
+        '  • leave blank to cancel',
+        'cloud'
+      );
+      const v = (choice || '').trim();
+      if (!v) {
+        showToast('Cancelled', 'warning');
         return;
       }
-      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
-        showToast('Invalid IP address: ' + ip, 'error');
+      if (v.toLowerCase() === 'cloud') {
+        cloudMode = true;
+      } else if (/^\d{1,3}(\.\d{1,3}){3}$/.test(v)) {
+        ip = v;
+      } else {
+        showToast('Invalid input — must be an IP or "cloud"', 'error');
         return;
       }
     }
@@ -2199,13 +2211,14 @@
       model: p.model || '',
       ip,
       serial: p.serial,
-      accessCode: p.accessCode || ''
+      accessCode: p.accessCode || '',
+      cloudMode
     };
     if (!body.serial) {
       showToast('Printer is missing serial — cannot add', 'error');
       return;
     }
-    if (!body.accessCode) {
+    if (!body.cloudMode && !body.accessCode) {
       showToast('No access code returned from Bambu Cloud — add manually with the LAN access code from the printer screen', 'warning');
       return;
     }

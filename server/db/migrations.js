@@ -168,6 +168,8 @@ export function ensureBaseSchemaColumns(db) {
     ['printers', 'maintenance_mode', 'INTEGER DEFAULT 0'],
     ['printers', 'maintenance_note', 'TEXT'],
     ['printers', 'maintenance_since', 'TEXT'],
+    ['printers', 'cloud_mode', 'INTEGER DEFAULT 0'],
+    ['printers', 'region', 'TEXT'],
     ['print_history', 'linked_3mf', 'TEXT DEFAULT NULL'],
     ['print_history', 'estimated_filament_g', 'REAL'],
     ['print_history', 'filament_accuracy_pct', 'REAL'],

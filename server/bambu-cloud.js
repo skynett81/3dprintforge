@@ -21,6 +21,39 @@ export class BambuCloud {
     return !!this._token;
   }
 
+  // Decode the access-token JWT to extract the Bambu user ID. The middle
+  // segment is base64url-encoded JSON containing `uid`. Required for
+  // cloud-MQTT auth (username `u_<uid>`).
+  getUserId() {
+    if (!this._token) return null;
+    try {
+      const seg = this._token.split('.')[1];
+      if (!seg) return null;
+      const padded = seg.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(seg.length / 4) * 4, '=');
+      const json = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+      return json.uid || json.userId || null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Credentials for cloud-MQTT broker. Region selects host:
+  //   us → us.mqtt.bambulab.com (default)
+  //   eu → eu.mqtt.bambulab.com
+  //   cn → cn.mqtt.bambulab.com
+  getCloudMqttCredentials(region = 'us') {
+    if (!this.isAuthenticated()) return null;
+    const uid = this.getUserId();
+    if (!uid) return null;
+    const hosts = { us: 'us.mqtt.bambulab.com', eu: 'eu.mqtt.bambulab.com', cn: 'cn.mqtt.bambulab.com' };
+    return {
+      host: hosts[region] || hosts.us,
+      port: 8883,
+      username: `u_${uid}`,
+      password: this._token,
+    };
+  }
+
   isTokenExpiring() {
     if (!this._expiresAt) return false;
     // Token is "expiring" if less than 7 days remain

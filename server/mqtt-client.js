@@ -102,6 +102,11 @@ export class BambuMqttClient {
     this.serial = config.printer.serial;
     this.accessCode = config.printer.accessCode;
     this.developerMode = !!config.printer.developerMode;
+    // Cloud mode: connect to Bambu's cloud broker instead of the printer's
+    // LAN IP. Requires bambuCloud singleton to be authenticated.
+    this.cloudMode = !!config.printer.cloudMode;
+    this.region = config.printer.region || 'us';
+    this.bambuCloud = config.bambuCloud || null;
     this.hub = hub;
     this.client = null;
     this.state = {};
@@ -135,18 +140,36 @@ export class BambuMqttClient {
   }
 
   connect() {
-    const url = `mqtts://${this.ip}:8883`;
-    log.info(`Connecting to ${url}...`);
-    // Bambu Lab printers use self-signed certificates — TLS verification
-    // cannot be enabled without breaking connectivity. This is a known
-    // limitation of the Bambu Lab protocol.
+    // Choose connection target: cloud broker vs LAN IP.
+    let url, username, password;
+    if (this.cloudMode) {
+      const creds = this.bambuCloud?.getCloudMqttCredentials?.(this.region);
+      if (!creds) {
+        log.error('Cloud mode enabled but Bambu Cloud is not authenticated — log in to Bambu Cloud first');
+        this.hub?.broadcast?.('connection', { status: 'auth_error', vendor: 'bambu', message: 'Cloud not authenticated', hint: 'Log in to Bambu Cloud in Settings → Cloud' });
+        return;
+      }
+      url = `mqtts://${creds.host}:${creds.port}`;
+      username = creds.username;
+      password = creds.password;
+      log.info(`Connecting to Bambu Cloud broker (${creds.host}, region=${this.region})...`);
+    } else {
+      url = `mqtts://${this.ip}:8883`;
+      username = 'bblp';
+      password = this.accessCode;
+      log.info(`Connecting to ${url}...`);
+    }
+    // Bambu Lab printers/cloud use TLS but cloud uses Bambu's own CA chain;
+    // LAN uses self-signed. We always disable strict verification because the
+    // protocol does not provide a stable verification path on the LAN side.
 
-    if (!this.developerMode) {
+    if (!this.cloudMode && !this.developerMode) {
       log.warn('Bambu Authorization Control System (2025) requires LAN-only Developer Mode for reliable third-party control. Enable it: printer Settings → General → LAN Only → Developer Mode, then set "developerMode": true in the printer config to silence this warning.');
     }
 
     // TOFU cert pinning: store fingerprint on first connect, verify on subsequent
-    const pinnedFp = this._printerConfig.certFingerprint || null;
+    // (LAN only — cloud cert is Bambu-managed)
+    const pinnedFp = this.cloudMode ? null : (this._printerConfig.certFingerprint || null);
 
     // Explicit, stable client-id keeps Bambu's per-account connection cap
     // diagnostics clear (avoid library-generated random IDs and the flagged
@@ -155,9 +178,9 @@ export class BambuMqttClient {
 
     this.client = mqtt.connect(url, {
       clientId,
-      username: 'bblp',
-      password: this.accessCode,
-      rejectUnauthorized: false, // Required: Bambu printers use self-signed certs
+      username,
+      password,
+      rejectUnauthorized: false,
       keepalive: 30,
       reconnectPeriod: 5000,
       connectTimeout: 10000

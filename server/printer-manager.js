@@ -219,7 +219,7 @@ export class PrinterManager {
     } else {
       const { BambuMqttClient } = await import('./mqtt-client.js');
       const { buildCommandFromClientMessage } = await import('./mqtt-commands.js');
-      client = new BambuMqttClient({ printer: printerConf }, connectorHub);
+      client = new BambuMqttClient({ printer: printerConf, bambuCloud: this._bambuCloud }, connectorHub);
       client._buildCommand = buildCommandFromClientMessage;
       // Inject Bambu Cloud client for firmware version checks
       if (this._bambuCloud && client.setBambuCloud) {
@@ -335,7 +335,10 @@ export class PrinterManager {
       return !!(printerConf.ip && printerConf.accessCode);
     if (type === 'snapmaker-http' || type === 'sacp') return !!printerConf.ip;
     if (type === 'ankermake') return !!printerConf.ip;
-    // Bambu MQTT: needs serial + accessCode
+    // Bambu MQTT — cloud mode skips IP requirement (broker is Bambu's cloud)
+    if (printerConf.cloudMode) {
+      return !!(printerConf.serial && this._bambuCloud?.isAuthenticated?.());
+    }
     return !!(printerConf.ip && printerConf.serial && printerConf.accessCode);
   }
 

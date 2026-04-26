@@ -765,6 +765,16 @@ const bambuCloud = new BambuCloud();
 setBambuCloud(bambuCloud);
 manager.setBambuCloud(bambuCloud);
 
+// Bambu Cloud HTTP poller — falls back to cloud queue/online status when
+// LAN MQTT is unreachable for an account-bound printer.
+try {
+  const { BambuCloudPoller } = await import('./bambu-cloud-poller.js');
+  const cloudPoller = new BambuCloudPoller(bambuCloud, manager, hub);
+  cloudPoller.start();
+} catch (e) {
+  log.warn('Bambu Cloud poller failed to start: ' + e.message);
+}
+
 // Material Recommender Service
 const materialRecommender = new MaterialRecommenderService(broadcastAll);
 setMaterialRecommender(materialRecommender);
