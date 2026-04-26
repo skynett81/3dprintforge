@@ -2150,7 +2150,13 @@
           if (p.alreadyAdded) {
             h += `<span class="badge badge-muted" style="font-size:0.7rem">${t('settings.discovery_already_added')}</span>`;
           } else {
-            h += `<button class="form-btn form-btn-sm" data-ripple onclick="addCloudPrinter(${_esc(JSON.stringify(JSON.stringify(p)))})">${t('settings.discovery_add')}</button>`;
+            // Stash JSON in a data-attribute so HTML escaping can't mangle the
+            // payload. Both " and ' must be escaped so the value survives a
+            // double-quoted HTML attribute regardless of printer-name contents.
+            const payload = JSON.stringify(p)
+              .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            h += `<button class="form-btn form-btn-sm" data-ripple data-printer="${payload}" onclick="addCloudPrinter(this.dataset.printer)">${t('settings.discovery_add')}</button>`;
           }
           h += '</div></div></div>';
         }
@@ -2164,24 +2170,46 @@
   };
 
   window.addCloudPrinter = async function(jsonStr) {
+    let p;
     try {
-      const p = JSON.parse(jsonStr);
-      const body = {
-        id: p.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
-        name: p.name,
-        model: p.model,
-        ip: p.ip || '',
-        serial: p.serial,
-        accessCode: p.accessCode
-      };
-      await fetch('/api/printers', {
+      p = JSON.parse(jsonStr);
+    } catch (e) {
+      showToast('Failed to parse printer data: ' + e.message, 'error');
+      return;
+    }
+    const body = {
+      id: (p.name || p.serial || 'printer').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+      name: p.name || p.serial,
+      model: p.model || '',
+      ip: p.ip || '',
+      serial: p.serial,
+      accessCode: p.accessCode || ''
+    };
+    if (!body.serial) {
+      showToast('Printer is missing serial — cannot add', 'error');
+      return;
+    }
+    if (!body.accessCode) {
+      showToast('No access code returned from Bambu Cloud — add manually with the LAN access code from the printer screen', 'warning');
+      return;
+    }
+    try {
+      const res = await fetch('/api/printers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+      let data = {};
+      try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        showToast(data.error || `Failed to add printer (HTTP ${res.status})`, 'error');
+        return;
+      }
       showToast(t('settings.cloud_added'), 'success');
       loadSettings();
-    } catch { /* ignore */ }
+    } catch (e) {
+      showToast('Network error: ' + e.message, 'error');
+    }
   };
 
   window.bambuCloudLogout = async function() {
