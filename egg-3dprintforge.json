@@ -128,6 +128,16 @@
       "user_editable": true,
       "rules": "nullable|string|max:512",
       "field_type": "text"
+    },
+    {
+      "name": "Bambu Cloud Region",
+      "description": "Region for Bambu Cloud broker when a printer uses Cloud Mode. eu (default) | us | cn. Match this to your Bambu account region.",
+      "env_variable": "BAMBU_REGION",
+      "default_value": "eu",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:eu,us,cn",
+      "field_type": "text"
     }
   ]
 }

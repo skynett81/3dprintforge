@@ -105,7 +105,7 @@ export class BambuMqttClient {
     // Cloud mode: connect to Bambu's cloud broker instead of the printer's
     // LAN IP. Requires bambuCloud singleton to be authenticated.
     this.cloudMode = !!config.printer.cloudMode;
-    this.region = config.printer.region || 'us';
+    this.region = config.printer.region || process.env.BAMBU_REGION || 'eu';
     this.bambuCloud = config.bambuCloud || null;
     this.hub = hub;
     this.client = null;

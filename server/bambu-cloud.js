@@ -38,16 +38,17 @@ export class BambuCloud {
   }
 
   // Credentials for cloud-MQTT broker. Region selects host:
-  //   us → us.mqtt.bambulab.com (default)
-  //   eu → eu.mqtt.bambulab.com
+  //   eu → eu.mqtt.bambulab.com (default)
+  //   us → us.mqtt.bambulab.com
   //   cn → cn.mqtt.bambulab.com
-  getCloudMqttCredentials(region = 'us') {
+  getCloudMqttCredentials(region) {
     if (!this.isAuthenticated()) return null;
     const uid = this.getUserId();
     if (!uid) return null;
+    const r = (region || process.env.BAMBU_REGION || 'eu').toLowerCase();
     const hosts = { us: 'us.mqtt.bambulab.com', eu: 'eu.mqtt.bambulab.com', cn: 'cn.mqtt.bambulab.com' };
     return {
-      host: hosts[region] || hosts.us,
+      host: hosts[r] || hosts.eu,
       port: 8883,
       username: `u_${uid}`,
       password: this._token,
