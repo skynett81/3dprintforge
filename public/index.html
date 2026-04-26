@@ -763,8 +763,11 @@
         </div>
 
         <div class="card" id="camera-card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <h3 class="card-title" data-i18n-key="camera.title">Camera</h3>
+            <button id="camera-toggle-btn" class="btn-icon" title="Show/hide camera" onclick="toggleCameraVisibility()" style="background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:4px 8px;cursor:pointer;color:inherit;font-size:0.75rem;display:none">
+              <span id="camera-toggle-label">Hide</span>
+            </button>
           </div>
           <div class="card-body">
             <div id="camera-container" class="camera-container">

@@ -81,6 +81,7 @@ function connect() {
         updatePrinterSelector();
         updateConnectionBadge('connected');
         scheduleInfoBoxRefresh(50);
+        applyCameraVisibility();
 
         // Trigger initial dashboard update
         const activeState = state.getActivePrinterState();
@@ -202,6 +203,52 @@ function updateConnectionBadge(status) {
   badge.textContent = count > 0 ? `${label} · ${printerWord}` : label;
   badge.className = `badge badge-${_connectionStatus}`;
 }
+
+// ---- Camera visibility ----
+// Cloud-only printers (no LAN IP, or cloudMode flag) usually don't expose
+// a LAN camera stream. Hide the camera card by default for those, but let
+// the user override per printer via the toggle button.
+function _cameraPrefKey(printerId) { return `cameraVisible:${printerId || 'default'}`; }
+
+async function applyCameraVisibility() {
+  const card = document.getElementById('camera-card');
+  const btn = document.getElementById('camera-toggle-btn');
+  const label = document.getElementById('camera-toggle-label');
+  if (!card) return;
+  const printerId = state.getActivePrinterId();
+  if (!printerId) { card.style.display = ''; if (btn) btn.style.display = 'none'; return; }
+  // Look up printer config to decide auto-default
+  let cfg = null;
+  try {
+    const printers = await fetch('/api/printers').then(r => r.json()).catch(() => []);
+    cfg = Array.isArray(printers) ? printers.find(p => p.id === printerId) : null;
+  } catch { /* ignore */ }
+  const isLan = !!(cfg?.ip);
+  const isCloud = !!(cfg?.cloudMode);
+  const autoVisible = isLan && !isCloud;
+  // User override beats auto
+  const stored = localStorage.getItem(_cameraPrefKey(printerId));
+  const visible = stored === null ? autoVisible : stored === 'true';
+  card.style.display = visible ? '' : 'none';
+  if (btn) {
+    btn.style.display = '';
+    if (label) label.textContent = visible ? 'Hide' : 'Show';
+  }
+}
+window.applyCameraVisibility = applyCameraVisibility;
+
+window.toggleCameraVisibility = function() {
+  const printerId = state.getActivePrinterId();
+  const key = _cameraPrefKey(printerId);
+  const card = document.getElementById('camera-card');
+  if (!card) return;
+  const wasVisible = card.style.display !== 'none';
+  const newVisible = !wasVisible;
+  localStorage.setItem(key, String(newVisible));
+  card.style.display = newVisible ? '' : 'none';
+  const label = document.getElementById('camera-toggle-label');
+  if (label) label.textContent = newVisible ? 'Hide' : 'Show';
+};
 
 // ---- Info Box Stats ----
 // Debounced trigger so multiple WS messages in flight only fire one refresh.

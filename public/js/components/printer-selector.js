@@ -105,6 +105,7 @@
 
     // Reset sparkline buffers for new printer
     if (typeof resetSparklineBuffers === 'function') resetSparklineBuffers();
+    if (typeof applyCameraVisibility === 'function') applyCameraVisibility();
 
     // Update dashboard for new printer
     const activeState = state.getActivePrinterState();
