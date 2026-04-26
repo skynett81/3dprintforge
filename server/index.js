@@ -560,7 +560,13 @@ function handleRequest(req, res) {
 
 // Create servers
 const PORT = config.server.port;
-const HTTPS_PORT = config.server.httpsPort || 3443;
+let HTTPS_PORT = config.server.httpsPort || 3443;
+// Single-port mode: panels like Wisp/Pterodactyl/Docker allocate ONE port
+// per server. When SERVER_PORT is injected and no separate HTTPS_PORT is
+// provided, fold both listeners onto that single port (HTTPS only when SSL
+// is available, otherwise plain HTTP).
+const singlePortMode = !!process.env.SERVER_PORT && !process.env.HTTPS_PORT;
+if (singlePortMode) HTTPS_PORT = PORT;
 const certPath = join(CERTS_DIR, 'cert.pem');
 const keyPath = join(CERTS_DIR, 'key.pem');
 const hasSSL = existsSync(certPath) && existsSync(keyPath);
@@ -1262,7 +1268,7 @@ function listenWithRetry(server, port, label, cb) {
   server.listen(port, cb);
 }
 
-listenWithRetry(httpServer, PORT, 'HTTP', () => {
+function printStartupBanner() {
   const printerCount = manager.getPrinterIds().length + (IS_DEMO ? demoMockPrinters.length : 0);
   const { ips, names } = getLocalAddresses();
   // Filter out IPv6 for display (too long for banner), keep IPv4 + hostnames
@@ -1270,7 +1276,14 @@ listenWithRetry(httpServer, PORT, 'HTTP', () => {
   console.log('');
   console.log('  ╔══════════════════════════════════════════════════╗');
   console.log(`  ║   3DPrintForge v${updater.currentVersion.padEnd(30)}║`);
-  if (forceHttps) {
+  if (singlePortMode) {
+    const scheme = httpsServer ? 'https' : 'http';
+    console.log(`  ║   ${scheme.toUpperCase()} on allocated port:                       ║`);
+    for (const h of allHosts) {
+      const url = `${scheme}://${h}:${PORT}`;
+      console.log(`  ║     ${url.padEnd(43)}║`);
+    }
+  } else if (forceHttps) {
     console.log(`  ║   HTTPS (HTTP redirects automatically):         ║`);
     for (const h of allHosts) {
       const url = `https://${h}:${HTTPS_PORT}`;
@@ -1296,17 +1309,24 @@ listenWithRetry(httpServer, PORT, 'HTTP', () => {
   console.log('  ╚══════════════════════════════════════════════════╝');
   console.log('');
 
-  // Send anonymous telemetry ping (fire-and-forget)
   sendTelemetryPing();
-
-  // Dispatch plugin onServerStart hook
   pluginManager.dispatch('onServerStart', { port: PORT }).catch(e => log.warn('Plugin onServerStart dispatch failed', e.message));
-});
+}
 
-if (httpsServer) {
-  listenWithRetry(httpsServer, HTTPS_PORT, 'HTTPS', () => {
-    log.info(`HTTPS active on port ${HTTPS_PORT}`);
-  });
+if (singlePortMode) {
+  // One allocated port — bind HTTPS if SSL is available, otherwise plain HTTP.
+  if (httpsServer) {
+    listenWithRetry(httpsServer, HTTPS_PORT, 'HTTPS', printStartupBanner);
+  } else {
+    listenWithRetry(httpServer, PORT, 'HTTP', printStartupBanner);
+  }
+} else {
+  listenWithRetry(httpServer, PORT, 'HTTP', printStartupBanner);
+  if (httpsServer) {
+    listenWithRetry(httpsServer, HTTPS_PORT, 'HTTPS', () => {
+      log.info(`HTTPS active on port ${HTTPS_PORT}`);
+    });
+  }
 }
 
 // Auto-build Docusaurus docs if build is missing or outdated
