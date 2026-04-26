@@ -2937,8 +2937,16 @@
     const el = document.getElementById('webhooks-section');
     if (!el) return;
     try {
-      const res = await fetch('/api/webhooks');
+      const res = await fetch('/api/webhooks', { cache: 'no-store' });
+      if (!res.ok) {
+        el.innerHTML = `<div class="text-muted">HTTP ${res.status} from /api/webhooks</div>`;
+        return;
+      }
       const webhooks = await res.json();
+      if (!Array.isArray(webhooks)) {
+        el.innerHTML = `<div class="text-muted">Unexpected response: ${JSON.stringify(webhooks).substring(0, 100)}</div>`;
+        return;
+      }
       if (!webhooks.length) {
         el.innerHTML = `<div class="text-muted">${t('settings.no_webhooks')}</div>`;
         return;
