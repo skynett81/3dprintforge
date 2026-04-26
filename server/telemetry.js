@@ -75,6 +75,38 @@ function getEnabledFeatures() {
   return flags;
 }
 
+// Map a printer (model + connector type) to a vendor/brand name.
+// Used by telemetry to roll up "Bambu Lab" instead of showing P1P, P2S, X1C
+// as separate entries.
+function _detectBrand(printer) {
+  const model = (printer.model || '').toLowerCase().trim();
+  const type = (printer.type || '').toLowerCase();
+  if (!model && type === 'moonraker') return 'Generic Klipper';
+  if (!model) return 'Bambu Lab'; // empty model + bambu MQTT default
+  // Specific connector types map directly
+  if (type === 'octoprint') return 'OctoPrint';
+  if (type === 'prusalink') return 'Prusa';
+  if (type === 'duet') return 'Duet/RRF';
+  if (type === 'flashforge') return 'FlashForge';
+  if (type === 'repetier') return 'Repetier';
+  if (type === 'ankermake') return 'AnkerMake';
+  if (type === 'sacp' || type === 'snapmaker-sacp' || type === 'snapmaker-http') return 'Snapmaker';
+  // Model-name pattern matching (works for both moonraker and bambu connectors)
+  if (/^(snapmaker|sm[\s-]|j1|f250|f350|a150|a250|a350|artisan|original)/i.test(model)) return 'Snapmaker';
+  if (/^(p1p|p1s|p2s|p2[a-z]?|x1|x1c|x1e|a1|a1[\s-]?mini|h2[a-z]?)/i.test(model)) return 'Bambu Lab';
+  if (/^(mk[2-4]|mini\+?|xl|core[\s-]?one)/i.test(model)) return 'Prusa';
+  if (/^(ender|cr-|k[12][a-z]?|k2[\s-]plus|hi[\s-]combo)/i.test(model)) return 'Creality';
+  if (/^(neptune|centauri|orangestorm)/i.test(model)) return 'Elegoo';
+  if (/^voron/i.test(model)) return 'Voron';
+  if (/^(v[\s-]?core|v[\s-]?minion|ratrig)/i.test(model)) return 'RatRig';
+  if (/^(q1|q2|x[\s-]?(plus|smart|max)|plus4|qidi)/i.test(model)) return 'QIDI';
+  if (/^(adventurer|guider|creator|flashforge|finder)/i.test(model)) return 'FlashForge';
+  if (/^(m5[a-z]?|v6[a-z]?|ankermake)/i.test(model)) return 'AnkerMake';
+  if (/^duet/i.test(model)) return 'Duet/RRF';
+  if (type === 'moonraker') return 'Generic Klipper';
+  return 'Other';
+}
+
 function getAggregateStats() {
   try {
     const db = getDb();
@@ -93,6 +125,7 @@ function getAggregateStats() {
 
     // Printer models + brand/connector type breakdown + cloud usage
     const models = {};
+    const brands = {};
     const connectors = {};
     let cloudPrinters = 0;
     for (const p of printers) {
@@ -100,6 +133,8 @@ function getAggregateStats() {
       models[m] = (models[m] || 0) + 1;
       const t = p.type || 'bambu';
       connectors[t] = (connectors[t] || 0) + 1;
+      const brand = _detectBrand(p);
+      brands[brand] = (brands[brand] || 0) + 1;
       if (p.cloudMode) cloudPrinters++;
     }
 
@@ -177,6 +212,7 @@ function getAggregateStats() {
     return {
       printerCount: printers.length,
       printerModels: models,
+      printerBrands: brands,
       printerConnectors: connectors,
       cloudPrinters,
       totalSpools: (spools.length || 0) + legacyFilamentRows,
