@@ -33,7 +33,15 @@
   };
 
   function _t(key, fallback) {
-    return (typeof t === 'function' ? t(key, fallback) : null) || fallback || key;
+    // window.t() returns the raw key string when no translation exists
+    // (its second argument is interpolation vars, not a fallback). So
+    // detect that case and use our fallback instead — otherwise the UI
+    // would render literal 'analytics.tab_overview' style keys.
+    if (typeof t === 'function') {
+      const v = t(key);
+      if (v && v !== key) return v;
+    }
+    return fallback || key;
   }
 
   async function _fetchAll() {
