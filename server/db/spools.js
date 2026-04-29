@@ -142,10 +142,13 @@ export function syncNfcSlot(printerId, channel, nfc) {
     ).get(printerId, channel);
 
     if (isEmpty) {
-      // Slot is physically empty — unlink whatever spool was there so the
-      // UI shows the slot in the empty state. We unlink rather than
-      // archive so the user can still see it under "All".
-      if (linked) {
+      // NFC reports the slot as physically empty. Only auto-unlink if the
+      // currently-linked spool was attached *via NFC* in the first place
+      // — non-NFC reels (Elegoo, BambuLab, etc.) the user picked manually
+      // also produce a NONE NFC reading and must not be stripped.
+      // A spool is considered NFC-managed when its lot_number holds the
+      // SKU (a 6-digit Snapmaker SKU like 900000).
+      if (linked && linked.lot_number && /^\d{4,}$/.test(linked.lot_number)) {
         db.prepare('UPDATE spools SET printer_id = NULL, ams_unit = NULL, ams_tray = NULL WHERE id = ?').run(linked.id);
         try { addSpoolEvent(linked.id, 'unlinked', { reason: 'nfc_empty', channel }, null); } catch { /* ignore */ }
       }
