@@ -6334,6 +6334,20 @@ export async function handleApiRequest(req, res) {
           name: s._sm_state_name || null,
           category: s._sm_state_category || null,
         },
+        slicer: {
+          filament_weights: s._slicer_filament_weights ?? null,
+          filament_total_g: s._slicer_filament_total_g ?? null,
+          filament_colours: s._slicer_filament_colours ?? null,
+          filament_names: s._slicer_filament_names ?? null,
+          filament_types: s._slicer_filament_type ?? null,
+          estimated_time: s._slicer_estimated_time ?? null,
+        },
+        print: {
+          gcode_state: s.gcode_state || null,
+          mc_percent: s.mc_percent ?? null,
+          subtask_name: s.subtask_name || null,
+          filament_used_mm: s.filament_used_mm ?? null,
+        },
       });
     }
 
