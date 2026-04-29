@@ -1753,6 +1753,27 @@ export function runMigrations() {
       try { db.exec('ALTER TABLE spools ADD COLUMN color_hex_override TEXT'); } catch (e) { /* exists */ }
       try { db.exec('ALTER TABLE spools ADD COLUMN color_name_override TEXT'); } catch (e) { /* exists */ }
     }},
+
+    { version: 137, up: (db) => {
+      // The per-vendor SMDB importer relies on
+      // `ON CONFLICT(external_id) DO UPDATE` to upsert filament profiles,
+      // but external_id has only a non-unique index. SQLite then throws
+      // "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE
+      // constraint" every refresh tick (every 5 min). Deduplicate any
+      // pre-existing collisions, then add a partial UNIQUE index so the
+      // upsert works without breaking rows whose external_id is NULL.
+      try {
+        db.exec(`UPDATE filament_profiles SET external_id = NULL
+          WHERE id NOT IN (
+            SELECT MIN(id) FROM filament_profiles
+            WHERE external_id IS NOT NULL
+            GROUP BY external_id
+          ) AND external_id IS NOT NULL`);
+      } catch (e) { /* ignore */ }
+      try {
+        db.exec('CREATE UNIQUE INDEX IF NOT EXISTS uniq_fp_external_id ON filament_profiles(external_id) WHERE external_id IS NOT NULL');
+      } catch (e) { /* ignore */ }
+    }},
   ];
 
   for (const m of migrations) {

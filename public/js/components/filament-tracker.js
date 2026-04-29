@@ -33,42 +33,54 @@
 
   // ═══ Constants & Helpers ═══
   // Real-time spool percentage: adjusts for active print consumption
-  function spoolPct(s) {
-    if (!s) return 0;
+  // Live spool calculation shared by spoolPct() and spoolRemainG().
+  // Earlier versions only worked for Bambu AMS (relied on ams.tray_now)
+  // and used the *active* dashboard printer's state regardless of which
+  // printer the spool actually belongs to. Both meant U1/Moonraker spools
+  // never showed live consumption, even mid-print.
+  function _spoolLiveState(s) {
     const init = s.initial_weight_g || 0;
     const rem = s.remaining_weight_g || 0;
-    if (init <= 0) return 0;
-    // Check if this spool is currently active in AMS
-    if (typeof window.realtimeFilament === 'function' && s.printer_id && s.ams_unit != null && s.ams_tray != null) {
-      const state = window.printerState?.getActivePrinterState?.();
-      const ams = state?.ams || state?.print?.ams;
-      if (ams) {
-        const activeIdx = ams.tray_now != null ? parseInt(ams.tray_now) : -1;
-        const spoolIdx = s.ams_unit * 4 + s.ams_tray;
-        const isActive = spoolIdx === activeIdx;
-        const rt = window.realtimeFilament({ remainG: rem, totalG: init, isActive, data: state });
-        return rt.current;
-      }
+    if (init <= 0 || typeof window.realtimeFilament !== 'function') return { rt: null, init, rem };
+    if (!s.printer_id || s.ams_tray == null) return { rt: null, init, rem };
+    // Look up the spool's *own* printer, not the active dashboard one.
+    const printerData = window.printerState?.printers?.[s.printer_id];
+    if (!printerData) return { rt: null, init, rem };
+    const print = printerData.print || printerData;
+    // Determine active tool: Bambu uses ams.tray_now, Moonraker/U1 uses
+    // _active_extruder ('extruder', 'extruder1', ...).
+    let activeIdx = -1;
+    const ams = print?.ams || printerData?.ams;
+    if (ams?.tray_now != null) {
+      activeIdx = parseInt(ams.tray_now);
+    } else if (printerData?._active_extruder) {
+      const m = String(printerData._active_extruder).match(/extruder(\d*)$/);
+      if (m) activeIdx = m[1] === '' ? 0 : parseInt(m[1]);
     }
+    const spoolIdx = (s.ams_unit ?? 0) * 4 + s.ams_tray;
+    const isActive = spoolIdx === activeIdx;
+    const rt = window.realtimeFilament({
+      remainG: rem,
+      totalG: init,
+      isActive,
+      data: print,
+      toolIndex: s.ams_tray,  // use this tool's slicer weight, not the print total
+    });
+    return { rt, init, rem };
+  }
+
+  function spoolPct(s) {
+    if (!s) return 0;
+    const { rt, init, rem } = _spoolLiveState(s);
+    if (rt) return rt.current;
+    if (init <= 0) return 0;
     return Math.max(0, Math.round((rem / init) * 100));
   }
 
-  // Real-time remaining grams for a spool
   function spoolRemainG(s) {
     if (!s) return 0;
-    const init = s.initial_weight_g || 0;
-    const rem = s.remaining_weight_g || 0;
-    if (typeof window.realtimeFilament === 'function' && s.printer_id && s.ams_unit != null && s.ams_tray != null) {
-      const state = window.printerState?.getActivePrinterState?.();
-      const ams = state?.ams || state?.print?.ams;
-      if (ams) {
-        const activeIdx = ams.tray_now != null ? parseInt(ams.tray_now) : -1;
-        const spoolIdx = s.ams_unit * 4 + s.ams_tray;
-        const isActive = spoolIdx === activeIdx;
-        const rt = window.realtimeFilament({ remainG: rem, totalG: init, isActive, data: state });
-        return rt.currentG;
-      }
-    }
+    const { rt, rem } = _spoolLiveState(s);
+    if (rt) return rt.currentG;
     return Math.round(rem);
   }
 
@@ -1625,41 +1637,19 @@
     const name = printerName(printerId);
     const slotLabelKind = _slotLabel(model);
     let inner = '';
-    // Pull the printer's live state once so we can subtract running-print
-    // consumption from each slot's remaining weight (mirrors what the Bambu
-    // AMS panel already does via window.realtimeFilament).
-    const liveData = window.printerState?.printers?.[printerId];
-    const livePrint = liveData?.print || liveData;
-    const isPrinting = (livePrint?.gcode_state || liveData?._sm_state_label) &&
-      ['RUNNING', 'PAUSE', 'PRINTING', 'Printing'].some(s =>
-        String(livePrint?.gcode_state || '').toUpperCase() === s.toUpperCase()
-        || String(liveData?._sm_state_label || '').toUpperCase() === s.toUpperCase());
-
     for (let i = 0; i < count; i++) {
       const linked = _spools.find(sp => sp.printer_id === printerId && sp.ams_tray === i && !sp.archived);
       const slotName = _slotName(model, i);
       const isEmpty = linked && (linked.remaining_weight_g != null && linked.remaining_weight_g <= 5);
       if (linked && !isEmpty) {
         const color = hexToRgbColor(linked.color_hex);
-        // Subtract running-print consumption so the slot reflects what's
-        // actually left right now, not what was left when the print started.
-        let remG = linked.remaining_weight_g || 0;
-        let usedThisPrintG = 0;
-        if (isPrinting && typeof window.realtimeFilament === 'function') {
-          const rt = window.realtimeFilament({
-            remainG: linked.remaining_weight_g,
-            totalG: linked.initial_weight_g,
-            isActive: true,
-            data: livePrint,
-            toolIndex: i,
-          });
-          if (rt && rt.currentG != null) {
-            remG = rt.currentG;
-            usedThisPrintG = Math.max(0, (linked.remaining_weight_g || 0) - rt.currentG);
-          }
-        }
-        const remPct = linked.initial_weight_g > 0
-          ? Math.max(0, Math.round((remG / linked.initial_weight_g) * 100)) : 0;
+        // Use the shared spool-utils helpers — they pick the right printer
+        // state (the spool's own, not the dashboard's active), detect the
+        // active extruder for both AMS and Moonraker, and pass toolIndex
+        // so per-extruder slicer weight is used.
+        const remG = spoolRemainG(linked);
+        const remPct = spoolPct(linked);
+        const usedThisPrintG = Math.max(0, (linked.remaining_weight_g || 0) - remG);
         const remColor = remPct < 20 ? 'var(--accent-orange)' : 'var(--accent-green)';
         const profileText = esc(_cleanProfileName(linked) || linked.profile_name || '');
         const liveBadge = usedThisPrintG > 1
