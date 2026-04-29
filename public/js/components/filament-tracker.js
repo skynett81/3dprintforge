@@ -1349,6 +1349,17 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               QR
             </button>
+            ${s.archived ? `<button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();unarchiveSpoolItem(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
+              ${t('filament.unarchive', 'Unarchive')}
+            </button>
+            <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();deleteSpoolItem(${s.id})" style="color:var(--accent-red)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              ${t('filament.delete', 'Delete')}
+            </button>` : `<button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();archiveSpoolItem(${s.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+              ${t('filament.archive', 'Archive')}
+            </button>`}
           </div>
         </div>
       </div>
