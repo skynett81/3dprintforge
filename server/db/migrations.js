@@ -1788,6 +1788,105 @@ export function runMigrations() {
                  WHERE color_hex_override LIKE '#%'`);
       } catch (e) { /* column might not exist yet — handled by v136 */ }
     }},
+
+    { version: 139, up: (db) => {
+      // Seed a comprehensive eSUN product catalogue. Only 5 eSUN profiles
+      // existed previously (PLA+, PLA-Basic, PLA-Matte, PLA-Marble, PETG).
+      // eSUN ships ~40+ active product lines — adding the rest as colour-
+      // agnostic master profiles. Per-spool colour goes via the override
+      // columns added in v136, so users only need to type the colour
+      // when creating a reel.
+      let vendorRow = null;
+      try {
+        vendorRow = db.prepare("SELECT id FROM vendors WHERE LOWER(name) = 'esun'").get();
+        if (!vendorRow) {
+          const ins = db.prepare('INSERT INTO vendors (name, website, empty_spool_weight_g, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(
+            'eSUN', 'https://www.esun3d.com', 218
+          );
+          vendorRow = { id: Number(ins.lastInsertRowid) };
+        }
+      } catch (e) { /* vendors table missing — bail */ return; }
+
+      const vendorId = vendorRow.id;
+      // Each entry: name, material, density, nozzleMin, nozzleMax,
+      // bedMin, bedMax, weight_g (default spool size).
+      const profiles = [
+        // Standard PLA family
+        ['eSUN PLA+ Pro',  'PLA+',     1.24, 200, 230, 50, 60, 1000],
+        ['eSUN ePLA-Silk', 'PLA Silk', 1.24, 200, 230, 50, 60, 1000],
+        ['eSUN ePLA-Glow', 'PLA Glow', 1.25, 195, 225, 50, 60, 1000],
+        ['eSUN ePLA-Wood', 'PLA Wood', 1.20, 195, 220, 50, 60, 1000],
+        ['eSUN ePLA-Metal','PLA Metal',1.40, 200, 230, 50, 60, 1000],
+        ['eSUN eSilk-PLA', 'PLA Silk', 1.23, 200, 230, 50, 60, 1000],
+        ['eSUN eMarble-PLA','PLA Marble',1.25,200, 230, 50, 60, 1000],
+        ['eSUN ePLA-Lite', 'PLA',      1.20, 190, 210, 50, 60, 1000],
+        ['eSUN PLA-CF',    'PLA-CF',   1.30, 220, 240, 50, 60, 1000],
+        ['eSUN PLA-HS',    'PLA',      1.24, 210, 240, 50, 60, 1000], // High Speed
+        ['eSUN ePLA-Rainbow','PLA Multi-Color',1.24, 200, 230, 50, 60, 1000],
+
+        // PETG family
+        ['eSUN PETG Pro',  'PETG',     1.27, 230, 250, 75, 90, 1000],
+        ['eSUN PETG-CF',   'PETG-CF',  1.32, 240, 260, 75, 90, 1000],
+        ['eSUN ePETG',     'PETG',     1.27, 230, 250, 75, 90, 1000],
+
+        // ABS / ASA
+        ['eSUN ABS+',      'ABS',      1.06, 240, 260, 95,110, 1000],
+        ['eSUN ABS Pro',   'ABS',      1.04, 240, 270, 95,110, 1000],
+        ['eSUN ASA',       'ASA',      1.07, 240, 260, 95,110, 1000],
+
+        // Engineering
+        ['eSUN PC+',       'PC',       1.20, 260, 280,100,115, 1000],
+        ['eSUN PA Pro',    'PA',       1.16, 260, 280, 70, 90, 1000],
+        ['eSUN PA-CF',     'PA-CF',    1.22, 260, 290, 70, 90, 1000],
+        ['eSUN PA-GF',     'PA-GF',    1.30, 260, 290, 70, 90, 1000],
+        ['eSUN ePA-Lite',  'PA',       1.16, 250, 270, 70, 90, 1000],
+        ['eSUN ePA12-CF',  'PA-CF',    1.10, 270, 290, 80,100, 1000],
+
+        // Flexible
+        ['eSUN eTPU-95A',  'TPU',      1.21, 220, 240, 40, 60, 1000],
+        ['eSUN eTPU-90A',  'TPU',      1.20, 220, 240, 40, 60, 1000],
+        ['eSUN eFlex',     'TPU',      1.21, 210, 240, 40, 60, 1000],
+
+        // Support / specialty
+        ['eSUN PVA+',      'PVA',      1.23, 190, 220, 45, 60,  500],
+        ['eSUN HIPS',      'HIPS',     1.04, 230, 245,100,110, 1000],
+        ['eSUN ePOM',      'POM',      1.41, 215, 235, 90,110, 1000],
+        ['eSUN ePEEK',     'PEEK',     1.30, 380, 420,140,160,  500],
+        ['eSUN eGlow-PLA', 'PLA Glow', 1.24, 200, 230, 50, 60, 1000],
+        ['eSUN eFiberWood','PLA Wood', 1.22, 195, 220, 50, 60, 1000],
+
+        // Cleaning / utility
+        ['eSUN Cleaning Filament', 'Cleaning', 1.05, 230, 260, 0, 0, 100],
+      ];
+
+      const upsert = db.prepare(`INSERT INTO filament_profiles
+        (name, vendor_id, material, color_hex, color_name, density, diameter,
+         spool_weight_g, weight_g, nozzle_temp_min, nozzle_temp_max,
+         bed_temp_min, bed_temp_max, source, created_at)
+        VALUES (?, ?, ?, '', '', ?, 1.75, ?, ?, ?, ?, ?, ?, 'seed-esun-v139', datetime('now'))
+        ON CONFLICT(external_id) DO NOTHING`);
+
+      // Without external_id on these rows the ON CONFLICT clause won't
+      // match anything (partial index is WHERE external_id IS NOT NULL),
+      // so duplicates would still be possible. Guard against re-running:
+      // skip rows where (name, vendor_id) already exists.
+      const exists = db.prepare('SELECT 1 FROM filament_profiles WHERE name = ? AND vendor_id = ? LIMIT 1');
+      let added = 0;
+      for (const [name, material, density, nMin, nMax, bMin, bMax, weight] of profiles) {
+        if (exists.get(name, vendorId)) continue;
+        try {
+          db.prepare(`INSERT INTO filament_profiles
+            (name, vendor_id, material, color_hex, color_name, density, diameter,
+             spool_weight_g, weight_g, nozzle_temp_min, nozzle_temp_max,
+             bed_temp_min, bed_temp_max, source, created_at)
+            VALUES (?, ?, ?, '', '', ?, 1.75, ?, ?, ?, ?, ?, ?, 'seed-esun-v139', datetime('now'))`).run(
+            name, vendorId, material, density, weight, weight, nMin, nMax, bMin, bMax
+          );
+          added++;
+        } catch { /* skip on any error */ }
+      }
+      if (added > 0) log.info('Seeded ' + added + ' eSUN filament profiles');
+    }},
   ];
 
   for (const m of migrations) {
