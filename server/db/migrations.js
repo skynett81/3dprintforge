@@ -1774,6 +1774,20 @@ export function runMigrations() {
         db.exec('CREATE UNIQUE INDEX IF NOT EXISTS uniq_fp_external_id ON filament_profiles(external_id) WHERE external_id IS NOT NULL');
       } catch (e) { /* ignore */ }
     }},
+
+    { version: 138, up: (db) => {
+      // The colour-picker form saves '#abcdef' but every other read path
+      // assumes the stored hex is without the '#' (the frontend prepends
+      // it: `'#' + color_hex` → '##abcdef' which is invalid CSS, so
+      // overridden colours rendered as fallback grey on the dashboard).
+      // Normalise existing override values to the prefixless form so they
+      // match filament_profiles.color_hex.
+      try {
+        db.exec(`UPDATE spools
+                 SET color_hex_override = SUBSTR(color_hex_override, 2)
+                 WHERE color_hex_override LIKE '#%'`);
+      } catch (e) { /* column might not exist yet — handled by v136 */ }
+    }},
   ];
 
   for (const m of migrations) {

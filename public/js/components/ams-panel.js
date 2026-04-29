@@ -21,7 +21,43 @@
   }
 
   window.getLinkedSpool = _getLinkedSpool;
+
+  // Also expose a manual refresh so other panels can force a fresh fetch
+  // (e.g. after the user assigns a spool from the slot picker).
+  window.refreshInventorySpools = _loadInventorySpools;
+
+  // Periodic background refresh (covers anything we don't explicitly hook).
   setInterval(() => { if (_inventoryLoaded) _loadInventorySpools(); }, 30000);
+
+  // Refresh the cache whenever a print transitions FROM running TO not-running
+  // — that's when the server writes the final consumption to spool rows via
+  // useSpoolWeight (or moonraker-slicer / ext-estimate variants). Without
+  // this hook the toolhead/AMS panel kept showing pre-print weights for up
+  // to 30s after the print finished, which the user noticed as "doesn't
+  // update after consumption".
+  function _isRunning(stateLike) {
+    if (!stateLike) return false;
+    const g = String(stateLike.gcode_state || stateLike?.print?.gcode_state || '').toUpperCase();
+    if (g === 'RUNNING' || g === 'PAUSE' || g === 'PRINTING') return true;
+    const sm = String(stateLike._sm_state_label || '').toUpperCase();
+    return sm === 'PRINTING' || sm === 'PAUSED';
+  }
+  const _wasRunning = {};
+  if (window.printerState?.subscribe) {
+    window.printerState.subscribe('*', () => {
+      const ids = window.printerState.getPrinterIds?.() || [];
+      for (const id of ids) {
+        const ps = window.printerState.printers?.[id];
+        const running = _isRunning(ps);
+        if (_wasRunning[id] && !running) {
+          // RUNNING → IDLE/FINISH → server has just persisted consumption
+          _loadInventorySpools();
+        }
+        _wasRunning[id] = running;
+      }
+    });
+  }
+
   _loadInventorySpools();
 
   function hexToRgb(hex) {

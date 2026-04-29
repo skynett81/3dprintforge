@@ -2373,7 +2373,7 @@
       storage_method: document.getElementById('sp-storage-new').value || null,
       ams_unit: unitRaw !== undefined && unitRaw !== '' ? parseInt(unitRaw) : (trayRaw !== undefined && trayRaw !== '' ? 0 : null),
       ams_tray: trayRaw !== undefined && trayRaw !== '' ? parseInt(trayRaw) : null,
-      color_hex_override: document.getElementById('sp-color-hex-new')?.value || null,
+      color_hex_override: (document.getElementById('sp-color-hex-new')?.value || '').replace(/^#/, '') || null,
       color_name_override: document.getElementById('sp-color-name-new')?.value?.trim() || null,
       extra_fields: _collectExtraFields('sp-new')
     };
@@ -2415,7 +2415,7 @@
       storage_method: document.getElementById(`sp-storage-${id}`).value || null,
       ams_unit: unitRaw !== undefined && unitRaw !== '' ? parseInt(unitRaw) : (trayRaw !== undefined && trayRaw !== '' ? 0 : null),
       ams_tray: trayRaw !== undefined && trayRaw !== '' ? parseInt(trayRaw) : null,
-      color_hex_override: document.getElementById(`sp-color-hex-${id}`)?.value || null,
+      color_hex_override: (document.getElementById(`sp-color-hex-${id}`)?.value || '').replace(/^#/, '') || null,
       color_name_override: document.getElementById(`sp-color-name-${id}`)?.value?.trim() || null,
       extra_fields: _collectExtraFields(`sp-${id}`)
     };

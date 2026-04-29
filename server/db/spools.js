@@ -54,7 +54,10 @@ function deltaE(hex1, hex2) {
 const SPOOL_SELECT = `SELECT s.*,
   fp.name as profile_name, fp.material,
   COALESCE(s.color_name_override, fp.color_name) as color_name,
-  COALESCE(s.color_hex_override, fp.color_hex) as color_hex,
+  -- Strip a leading '#' from the override so the column always matches
+  -- the legacy hex-without-prefix format used by filament_profiles
+  -- (frontend code does '#' + color_hex).
+  COALESCE(LTRIM(s.color_hex_override, '#'), fp.color_hex) as color_hex,
   fp.color_hex as profile_color_hex, fp.color_name as profile_color_name,
   fp.density, fp.diameter, fp.spool_weight_g as profile_spool_weight_g,
   fp.nozzle_temp_min, fp.nozzle_temp_max, fp.bed_temp_min, fp.bed_temp_max,
