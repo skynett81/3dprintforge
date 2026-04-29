@@ -471,6 +471,10 @@
           <input type="checkbox" ${_showArchived ? 'checked' : ''} onchange="window._invToggleArchived(this.checked)">
           <span>${t('filament.show_archived')}</span>
         </label>
+        <button class="inv-filter-chip" onclick="window._archiveEmptySpools()" title="${t('filament.archive_empty_tooltip') || 'Archive all spools that are empty (≤ 5g)'}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+          ${t('filament.archive_empty') || 'Archive empty'}
+        </button>
         <div class="inv-view-toggle">
           <button class="inv-view-btn ${_viewMode === 'grid' ? 'active' : ''}" onclick="window._invViewMode('grid')" title="${t('filament.view_grid')}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1539,7 +1543,16 @@
       const ps = state.printers[id];
       const printData = ps?.print || ps;
       const amsData = printData?.ams;
-      if (!amsData?.ams || amsData.ams.length === 0) continue;
+      if (!amsData?.ams || amsData.ams.length === 0) {
+        // No AMS payload — fall back to model-derived slots so U1/J1/XL etc.
+        // also show their toolheads in the Active Filament panel.
+        const slotHtml = _renderModelSlots(id);
+        if (slotHtml) {
+          html += slotHtml;
+          hasAny = true;
+        }
+        continue;
+      }
       hasAny = true;
       const name = printerName(id);
       const activeTray = amsData.tray_now;
@@ -1589,6 +1602,123 @@
     if (!hasAny) html += `<p class="text-muted text-sm">${t('common.no_ams_data')}</p>`;
     return html;
   }
+
+  // Render a model-based slot grid for printers that don't expose an AMS
+  // payload (Snapmaker U1/J1/Artisan, Prusa XL, etc.). Each slot shows the
+  // currently linked spool with a click-to-edit / click-to-assign action.
+  function _renderModelSlots(printerId) {
+    const meta = window.printerState?.printerMeta?.[printerId] || {};
+    const model = meta.model;
+    const count = _slotCountForModel(model);
+    if (count <= 1) return '';
+    const name = printerName(printerId);
+    const slotLabelKind = _slotLabel(model);
+    let inner = '';
+    for (let i = 0; i < count; i++) {
+      const linked = _spools.find(sp => sp.printer_id === printerId && sp.ams_tray === i && !sp.archived);
+      const slotName = _slotName(model, i);
+      if (linked) {
+        const color = hexToRgbColor(linked.color_hex);
+        const remPct = linked.initial_weight_g > 0
+          ? Math.max(0, Math.round((linked.remaining_weight_g / linked.initial_weight_g) * 100)) : 0;
+        const remColor = remPct < 20 ? 'var(--accent-orange)' : 'var(--accent-green)';
+        const profileText = esc(_cleanProfileName(linked) || linked.profile_name || '');
+        inner += `<div class="fil-ams-tray" onclick="showEditSpoolForm(${linked.id})" style="cursor:pointer" title="${t('settings.edit')}">
+          <div class="fil-ams-color">${miniSpool(color, 18, remPct)}</div>
+          <div class="fil-ams-info">
+            <span class="fil-ams-type">${profileText}</span>
+            <span class="fil-ams-linked text-muted" style="font-size:0.65rem">${Math.round(linked.remaining_weight_g)}g / ${Math.round(linked.initial_weight_g)}g</span>
+            <div class="fil-ams-remain-row">
+              <div class="fil-ams-remain-bar"><div class="fil-ams-remain-fill" style="width:${remPct}%;background:${remColor}"></div></div>
+              <span class="fil-ams-remain-pct">${remPct}%</span>
+            </div>
+          </div>
+          <span class="fil-ams-slot">${esc(slotName)}</span>
+        </div>`;
+      } else {
+        inner += `<div class="fil-ams-tray" onclick="window._assignSlot('${esc(printerId)}', ${i})" style="cursor:pointer;opacity:0.6;border-style:dashed" title="${t('filament.add_spool') || 'Assign spool'}">
+          <div class="fil-ams-color">${miniSpool('#444', 18, 0)}</div>
+          <div class="fil-ams-info">
+            <span class="fil-ams-type text-muted">${t('common.empty') || 'Empty'}</span>
+            <span class="fil-ams-linked text-muted" style="font-size:0.65rem">+ ${t('filament.add_spool') || 'Assign spool'}</span>
+          </div>
+          <span class="fil-ams-slot">${esc(slotName)}</span>
+        </div>`;
+      }
+    }
+    return `<div class="fil-ams-printer">
+      <div class="fil-ams-name">${esc(name)} <span class="text-muted" style="font-weight:normal;font-size:0.7rem">· ${esc(slotLabelKind)}</span></div>
+      <div class="fil-ams-trays">${inner}</div>
+    </div>`;
+  }
+
+  // Click handler for an empty toolhead slot — opens a small picker so the
+  // user can attach an unassigned spool to this printer + slot directly,
+  // without round-tripping through the spool's edit form.
+  window._assignSlot = function(printerId, trayIndex) {
+    const candidates = _spools.filter(s =>
+      !s.archived && (s.remaining_weight_g == null || s.remaining_weight_g > 5)
+      && (!s.printer_id || (s.printer_id === printerId && s.ams_tray !== trayIndex))
+    );
+    if (candidates.length === 0) {
+      showToast(t('filament.no_spools_available') || 'No spools available — add one first', 'info');
+      return;
+    }
+    document.querySelector('.slot-pick-menu')?.remove();
+    const menu = document.createElement('div');
+    menu.className = 'inv-export-menu slot-pick-menu show';
+    menu.style.cssText = 'min-width:240px;max-height:60vh;overflow:auto;position:fixed;z-index:9999';
+    const ev = window.event;
+    if (ev) {
+      menu.style.left = Math.min(window.innerWidth - 260, ev.clientX) + 'px';
+      menu.style.top = Math.min(window.innerHeight - 300, ev.clientY) + 'px';
+    }
+    for (const s of candidates) {
+      const b = document.createElement('button');
+      const label = `${_cleanProfileName(s) || s.profile_name || ''} — ${Math.round(s.remaining_weight_g || 0)}g`;
+      b.textContent = label;
+      b.onclick = async (e) => {
+        e.stopPropagation();
+        menu.remove();
+        try {
+          await fetch(`/api/inventory/spools/${s.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...s, printer_id: printerId, ams_unit: 0, ams_tray: trayIndex }),
+          });
+          showToast(t('filament.spool_added'), 'success');
+          loadFilament();
+        } catch { showToast(t('filament.save_failed'), 'error'); }
+      };
+      menu.appendChild(b);
+    }
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+  };
+
+  // Bulk-archive every spool whose remaining weight is at most 5g. Useful
+  // for cleaning up the inventory after several prints have drained spools.
+  window._archiveEmptySpools = function() {
+    const empties = _spools.filter(s => !s.archived && s.remaining_weight_g != null && s.remaining_weight_g <= 5);
+    if (empties.length === 0) {
+      showToast(t('filament.no_empty_spools') || 'No empty spools to archive', 'info');
+      return;
+    }
+    const msg = (t('filament.archive_empty_confirm') || 'Archive {count} empty spool(s)?').replace('{count}', empties.length);
+    return confirmAction(msg, async () => {
+      for (const s of empties) {
+        try {
+          await fetch(`/api/inventory/spools/${s.id}/archive`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived: true }),
+          });
+        } catch { /* continue */ }
+      }
+      showToast((t('filament.archived_count') || '{count} archived').replace('{count}', empties.length), 'success');
+      loadFilament();
+    });
+  };
 
   // ═══ Tab switching ═══
   function switchTab(tabId) {
