@@ -139,6 +139,20 @@ export class PrintTracker {
       }
     }
 
+    // Track the physically active extruder for Moonraker/U1 — used at
+    // end-of-print to credit consumption to the right toolhead even when
+    // the slicer plan was on a different extruder index than what the
+    // user physically loaded.
+    if (this.currentPrint && printData._active_extruder) {
+      const m = String(printData._active_extruder).match(/extruder(\d*)$/);
+      if (m) {
+        const idx = m[1] === '' ? 0 : parseInt(m[1]);
+        if (this.lastActiveExtruderIdx !== idx) {
+          this.lastActiveExtruderIdx = idx;
+        }
+      }
+    }
+
     // Track max temperatures during print
     if (this.currentPrint) {
       if (printData.nozzle_temper > this.currentPrint.maxTemp_nozzle) {
@@ -318,6 +332,11 @@ export class PrintTracker {
     this.amsTrayWeights = this._getAmsTrayWeights(data);
     this.colorChanges = 0;
     this.lastTrayId = data.ams?.tray_now != null ? String(data.ams.tray_now) : null;
+    this.lastActiveExtruderIdx = null;
+    if (data._active_extruder) {
+      const m = String(data._active_extruder).match(/extruder(\d*)$/);
+      if (m) this.lastActiveExtruderIdx = m[1] === '' ? 0 : parseInt(m[1]);
+    }
     const filamentInfo = this._getActiveFilament(data);
 
     // Capture estimated time from MQTT (mc_remaining_time is in minutes at print start)
@@ -1381,35 +1400,70 @@ export class PrintTracker {
         const slicerColors = data._slicer_filament_colours ? data._slicer_filament_colours.split(';').map(c => c.replace('#', '').slice(0, 6).toUpperCase()) : null;
         const nfcSlots = data._sm_filament || null;
 
-        if (slicerWeights && slicerColors && nfcSlots) {
-          // Per-extruder deduction: match each slicer extruder to a spool via NFC color
-          for (let ext = 0; ext < slicerWeights.length; ext++) {
-            const extWeight = slicerWeights[ext] || 0;
-            if (extWeight < 0.1) continue;
+        if (slicerWeights) {
+          // Detect single-extruder prints: exactly one slicer extruder has
+          // non-zero filament weight. Earlier we matched the slicer's
+          // *planned* colour to an NFC slot, which broke when the user
+          // physically loaded the same gcode onto a different toolhead
+          // (e.g. slicer plan #FF0000 on extruder 0 → matched T3 red,
+          // while the user actually printed on T1 with grey PETG). For
+          // single-extruder prints, credit consumption to the toolhead
+          // that was *physically active* during the job — that's the
+          // ground truth.
+          const usedExtruders = slicerWeights.filter(w => (w || 0) >= 0.1).length;
+          const isSingleExtruder = usedExtruders === 1;
 
-            // Scale slicer weight by actual completion
+          // Use the print-tracker's recorded active extruder (captured
+          // throughout the print) when available, falling back to the
+          // current state at end-of-print.
+          let activeSlot = null;
+          if (this.lastActiveExtruderIdx != null) {
+            activeSlot = this.lastActiveExtruderIdx;
+          } else if (data._active_extruder) {
+            const m = String(data._active_extruder).match(/extruder(\d*)$/);
+            if (m) activeSlot = m[1] === '' ? 0 : parseInt(m[1]);
+          }
+
+          if (isSingleExtruder && activeSlot != null) {
+            const extIdx = slicerWeights.findIndex(w => (w || 0) >= 0.1);
+            const extWeight = slicerWeights[extIdx];
             const completionFactor = (data.mc_percent || 100) / 100;
             const actualG = extWeight * completionFactor;
-
-            // Match slicer color to NFC slot
-            let bestSlot = ext; // default: extruder index = slot index
-            if (slicerColors[ext] && nfcSlots.length > 0) {
-              let bestDist = Infinity;
-              for (let ch = 0; ch < nfcSlots.length; ch++) {
-                const nfcHex = (nfcSlots[ch].color || '').replace('#', '').toUpperCase();
-                if (nfcHex) {
-                  const dist = _colorDist(slicerColors[ext], nfcHex);
-                  if (dist < bestDist) { bestDist = dist; bestSlot = ch; }
+            const spool = getSpoolBySlot(this.printerId, 0, activeSlot);
+            if (spool) {
+              useSpoolWeight(spool.id, actualG, 'moonraker-active-tool', printHistoryId, this.printerId);
+              trackConsumedSinceWeight(spool.id, actualG);
+              log.info('Spool #' + spool.id + ' slot ' + activeSlot + ' usage: ' + actualG.toFixed(1) + 'g (single-ext print on physically active toolhead)');
+              spoolUpdated = true;
+            }
+          } else if (slicerColors && nfcSlots) {
+            // Multi-colour print — fall back to per-extruder slicer→NFC
+            // colour matching. Without per-extruder extrusion tracking
+            // from Klipper, this is the best we have for distributing
+            // total consumption across multiple physical toolheads.
+            for (let ext = 0; ext < slicerWeights.length; ext++) {
+              const extWeight = slicerWeights[ext] || 0;
+              if (extWeight < 0.1) continue;
+              const completionFactor = (data.mc_percent || 100) / 100;
+              const actualG = extWeight * completionFactor;
+              let bestSlot = ext;
+              if (slicerColors[ext] && nfcSlots.length > 0) {
+                let bestDist = Infinity;
+                for (let ch = 0; ch < nfcSlots.length; ch++) {
+                  const nfcHex = (nfcSlots[ch].color || '').replace('#', '').toUpperCase();
+                  if (nfcHex) {
+                    const dist = _colorDist(slicerColors[ext], nfcHex);
+                    if (dist < bestDist) { bestDist = dist; bestSlot = ch; }
+                  }
                 }
               }
-            }
-
-            const spool = getSpoolBySlot(this.printerId, 0, bestSlot);
-            if (spool) {
-              useSpoolWeight(spool.id, actualG, 'moonraker-slicer', printHistoryId, this.printerId);
-              trackConsumedSinceWeight(spool.id, actualG);
-              log.info('Spool #' + spool.id + ' slot ' + bestSlot + ' usage: ' + actualG.toFixed(1) + 'g (slicer ext' + ext + ')');
-              spoolUpdated = true;
+              const spool = getSpoolBySlot(this.printerId, 0, bestSlot);
+              if (spool) {
+                useSpoolWeight(spool.id, actualG, 'moonraker-slicer', printHistoryId, this.printerId);
+                trackConsumedSinceWeight(spool.id, actualG);
+                log.info('Spool #' + spool.id + ' slot ' + bestSlot + ' usage: ' + actualG.toFixed(1) + 'g (slicer ext' + ext + ')');
+                spoolUpdated = true;
+              }
             }
           }
         }
