@@ -1811,25 +1811,29 @@
 
   // Drop a spool onto a printer toolhead / AMS slot. Whether the slot
   // was empty or already filled, the dropped spool becomes the linked
-  // one; any spool that was previously here gets unlinked. Mirrors the
-  // Storage tab's column DnD so the user gets one consistent gesture
-  // for moving spools between containers.
+  // one; any spool that was previously here gets unlinked but keeps
+  // its storage location so it goes back to the shelf rather than
+  // floating loose. Mirrors the Storage tab's column DnD so the user
+  // gets one consistent gesture for moving spools between containers.
   window._slotDrop = async function(e, printerId, trayIndex) {
     e.preventDefault();
+    e.stopPropagation();
     if (e.currentTarget?.classList) e.currentTarget.classList.remove('inv-dnd-over');
     const spoolId = parseInt(e.dataTransfer.getData('text/plain'));
     if (!spoolId) return;
     const spool = _spools.find(s => s.id === spoolId);
     if (!spool) return;
+    const amsUnit = Math.floor(trayIndex / 4);
+    const amsTray = trayIndex % 4;
     // No-op: already at this slot
-    if (spool.printer_id === printerId && spool.ams_tray === trayIndex) return;
+    if (spool.printer_id === printerId && (spool.ams_unit ?? 0) === amsUnit && spool.ams_tray === amsTray) return;
     try {
       // Detach whatever is currently in the slot so the unique mapping
       // holds (also aligns with how _assignSlot behaves on click).
       const existing = _spools.find(sp =>
         sp.id !== spoolId && sp.printer_id === printerId
-        && (sp.ams_unit ?? 0) === Math.floor(trayIndex / 4)
-        && sp.ams_tray === (trayIndex % 4) && !sp.archived
+        && (sp.ams_unit ?? 0) === amsUnit
+        && sp.ams_tray === amsTray && !sp.archived
       );
       if (existing) {
         await fetch(`/api/inventory/spools/${existing.id}`, {
@@ -1842,11 +1846,21 @@
         body: JSON.stringify({
           ...spool,
           printer_id: printerId,
-          ams_unit: Math.floor(trayIndex / 4),
-          ams_tray: trayIndex % 4,
+          ams_unit: amsUnit,
+          ams_tray: amsTray,
         }),
       });
-      showToast(t('filament.spool_added'), 'success');
+      // Distinct toast for swap vs first-time assign so the user sees
+      // exactly what happened — both spool names included.
+      const newName = _cleanProfileName(spool) || spool.profile_name || 'spool';
+      if (existing) {
+        const oldName = _cleanProfileName(existing) || existing.profile_name || 'spool';
+        const msg = (t('filament.spool_swapped', '{{old}} → {{new}} swapped'))
+          .replace('{{old}}', oldName).replace('{{new}}', newName);
+        showToast(msg, 'success', 4000);
+      } else {
+        showToast(t('filament.spool_added'), 'success');
+      }
       loadFilament();
       window.refreshInventorySpools && window.refreshInventorySpools();
     } catch { showToast(t('filament.save_failed'), 'error'); }

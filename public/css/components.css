@@ -6696,6 +6696,23 @@ html[data-theme="dark"] .theme-toggle-btn:hover {
   background: rgba(0, 174, 66, 0.03);
 }
 
+/* When something is being dragged over an AMS/toolhead slot, switch the
+   border to the accent-blue used elsewhere by .inv-dnd-over so the drop
+   target is unmistakable. The active slot gets a pulse on top so the
+   user can tell when they're about to swap an active spool. */
+.fil-ams-tray.inv-dnd-over {
+  border-color: var(--accent-blue) !important;
+  background: rgba(74, 158, 255, 0.08) !important;
+  transform: scale(1.02);
+}
+.fil-ams-tray-active.inv-dnd-over {
+  animation: fil-slot-pulse 0.7s ease-in-out infinite;
+}
+@keyframes fil-slot-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3); }
+  50%      { box-shadow: 0 0 0 5px rgba(74, 158, 255, 0.5); }
+}
+
 .fil-ams-color {
   flex-shrink: 0;
   display: flex;

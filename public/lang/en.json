@@ -257,6 +257,7 @@
     "slot_drag_hint": "Click to edit · drag to move",
     "slot_drop_hint": "Drop a spool here to assign",
     "card_drag_hint": "Click to view · drag to assign to a slot or location",
+    "spool_swapped": "{{old}} → {{new}} swapped",
     "locations_dnd_title": "Drag spools between locations",
     "unassigned": "Without location",
     "vendors_title": "Vendors",
