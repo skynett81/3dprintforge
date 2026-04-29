@@ -2147,6 +2147,48 @@
     wrapper.innerHTML = renderToolheadSlot(formId, { printer_id: printerId });
   };
 
+  // Re-render only the Active Filament module (slot panel) when printer
+  // state changes during a print, so the live consumption deduction
+  // ticks up without forcing a full inventory reload. Throttled to once
+  // per 2s to keep the WebSocket flood from re-rendering 4 spool rings on
+  // every status frame.
+  let _activeFilamentRefreshTimer = null;
+  function _refreshActiveFilamentPanel() {
+    if (_activeFilamentRefreshTimer) return;
+    _activeFilamentRefreshTimer = setTimeout(() => {
+      _activeFilamentRefreshTimer = null;
+      const containers = document.querySelectorAll('.stats-module');
+      for (const c of containers) {
+        const titleEl = c.querySelector('.ctrl-card-title');
+        if (titleEl && /active filament|aktivt filament/i.test(titleEl.textContent || '')) {
+          // Replace just the panel content after the title.
+          const newHtml = buildActiveFilamentContent();
+          // Drop any prior content nodes after the title and insert the
+          // freshly rendered slot grid.
+          let next = titleEl.nextSibling;
+          while (next) {
+            const toRemove = next;
+            next = next.nextSibling;
+            toRemove.remove();
+          }
+          const wrap = document.createElement('div');
+          wrap.innerHTML = newHtml;
+          while (wrap.firstChild) titleEl.parentNode.appendChild(wrap.firstChild);
+          break;
+        }
+      }
+    }, 2000);
+  }
+  if (window.printerState?.subscribe) {
+    window.printerState.subscribe('*', () => {
+      // Only refresh when on the inventory tab (avoids touching DOM that
+      // might not exist in other tabs).
+      if (document.getElementById('overlay-panel-body')?.querySelector('.stats-module')) {
+        _refreshActiveFilamentPanel();
+      }
+    });
+  }
+
   // ═══ Global API ═══
   window.loadFilamentPanel = loadFilament;
   window.switchFilamentTab = switchTab;
