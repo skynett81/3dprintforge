@@ -1744,6 +1744,15 @@ export function runMigrations() {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_forge_jobs_type ON ai_forge_jobs(job_type)`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_forge_jobs_created ON ai_forge_jobs(created_at DESC)`);
     }},
+
+    { version: 136, up: (db) => {
+      // Per-spool color override. Lets the user pick the actual reel
+      // colour even when the linked filament_profile is colour-agnostic
+      // (e.g. Elegoo Rapid PETG ships in many colours under one profile).
+      // Read paths COALESCE(s.color_hex_override, fp.color_hex).
+      try { db.exec('ALTER TABLE spools ADD COLUMN color_hex_override TEXT'); } catch (e) { /* exists */ }
+      try { db.exec('ALTER TABLE spools ADD COLUMN color_name_override TEXT'); } catch (e) { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

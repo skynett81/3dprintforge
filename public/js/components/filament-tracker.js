@@ -2257,6 +2257,13 @@
               <input class="form-input" id="sp-lot-${id}" value="${spool?.lot_number || ''}">
             </div>
             <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">${t('filament.color') || 'Color'}</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="color" class="form-input" id="sp-color-hex-${id}" value="${spool?.color_hex_override || spool?.color_hex || '#cccccc'}" style="width:42px;padding:2px;flex:0 0 auto;cursor:pointer">
+                <input class="form-input" id="sp-color-name-${id}" value="${spool?.color_name_override || spool?.color_name || ''}" placeholder="${t('filament.color_name_placeholder') || 'White, Yellow, ...'}" style="flex:1 1 auto;min-width:0">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.location')}</label>
               <select class="form-input" id="sp-location-${id}">${buildLocationSelect(spool?.location)}</select>
             </div>
@@ -2329,6 +2336,8 @@
       storage_method: document.getElementById('sp-storage-new').value || null,
       ams_unit: unitRaw !== undefined && unitRaw !== '' ? parseInt(unitRaw) : (trayRaw !== undefined && trayRaw !== '' ? 0 : null),
       ams_tray: trayRaw !== undefined && trayRaw !== '' ? parseInt(trayRaw) : null,
+      color_hex_override: document.getElementById('sp-color-hex-new')?.value || null,
+      color_name_override: document.getElementById('sp-color-name-new')?.value?.trim() || null,
       extra_fields: _collectExtraFields('sp-new')
     };
     const manualRem = document.getElementById('sp-remaining-new')?.value;
@@ -2369,6 +2378,8 @@
       storage_method: document.getElementById(`sp-storage-${id}`).value || null,
       ams_unit: unitRaw !== undefined && unitRaw !== '' ? parseInt(unitRaw) : (trayRaw !== undefined && trayRaw !== '' ? 0 : null),
       ams_tray: trayRaw !== undefined && trayRaw !== '' ? parseInt(trayRaw) : null,
+      color_hex_override: document.getElementById(`sp-color-hex-${id}`)?.value || null,
+      color_name_override: document.getElementById(`sp-color-name-${id}`)?.value?.trim() || null,
       extra_fields: _collectExtraFields(`sp-${id}`)
     };
     // Manual remaining takes priority, otherwise calculate from initial - used

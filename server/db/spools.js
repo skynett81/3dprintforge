@@ -52,7 +52,10 @@ function deltaE(hex1, hex2) {
 // ---- SPOOL_SELECT constant ----
 
 const SPOOL_SELECT = `SELECT s.*,
-  fp.name as profile_name, fp.material, fp.color_name, fp.color_hex,
+  fp.name as profile_name, fp.material,
+  COALESCE(s.color_name_override, fp.color_name) as color_name,
+  COALESCE(s.color_hex_override, fp.color_hex) as color_hex,
+  fp.color_hex as profile_color_hex, fp.color_name as profile_color_name,
   fp.density, fp.diameter, fp.spool_weight_g as profile_spool_weight_g,
   fp.nozzle_temp_min, fp.nozzle_temp_max, fp.bed_temp_min, fp.bed_temp_max,
   fp.article_number, fp.multi_color_hexes, fp.multi_color_direction,
@@ -218,14 +221,15 @@ export function addSpool(s) {
   const result = db.prepare(`INSERT INTO spools
     (filament_profile_id, remaining_weight_g, used_weight_g, initial_weight_g, cost, lot_number,
      purchase_date, location, printer_id, ams_unit, ams_tray, comment, extra_fields, spool_weight,
-     storage_method, short_id, tray_id_name)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     storage_method, short_id, tray_id_name, color_hex_override, color_name_override)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     s.filament_profile_id || null, s.remaining_weight_g ?? s.initial_weight_g ?? 1000,
     s.used_weight_g ?? 0, s.initial_weight_g ?? 1000,
     s.cost || null, s.lot_number || null, s.purchase_date || null,
     s.location || null, s.printer_id || null, s.ams_unit ?? null, s.ams_tray ?? null,
     s.comment || null, s.extra_fields ? JSON.stringify(s.extra_fields) : null,
-    s.spool_weight ?? null, s.storage_method || null, shortId, s.tray_id_name || null);
+    s.spool_weight ?? null, s.storage_method || null, shortId, s.tray_id_name || null,
+    s.color_hex_override || null, s.color_name_override || null);
   const newId = Number(result.lastInsertRowid);
   try { addSpoolEvent(newId, 'created', null, null); } catch (e) { log.warn('Failed to log spool created event', e.message); }
   return { id: newId, short_id: shortId };
@@ -243,14 +247,15 @@ export function updateSpool(id, s) {
   db.prepare(`UPDATE spools SET filament_profile_id=?, remaining_weight_g=?, used_weight_g=?,
     initial_weight_g=?, cost=?, lot_number=?, purchase_date=?, location=?,
     printer_id=?, ams_unit=?, ams_tray=?, archived=?, comment=?, extra_fields=?, spool_weight=?,
-    storage_method=?, tray_id_name=?
+    storage_method=?, tray_id_name=?, color_hex_override=?, color_name_override=?
     WHERE id=?`).run(
     s.filament_profile_id || null, s.remaining_weight_g, s.used_weight_g,
     s.initial_weight_g, s.cost || null, s.lot_number || null, s.purchase_date || null,
     s.location || null, s.printer_id || null, s.ams_unit ?? null, s.ams_tray ?? null,
     s.archived ?? 0, s.comment || null,
     s.extra_fields ? JSON.stringify(s.extra_fields) : null, s.spool_weight ?? null,
-    s.storage_method || null, s.tray_id_name || null, id);
+    s.storage_method || null, s.tray_id_name || null,
+    s.color_hex_override || null, s.color_name_override || null, id);
   try { addSpoolEvent(id, 'edited', null, null); } catch (e) { log.warn('Failed to log spool edit event', e.message); }
 }
 
