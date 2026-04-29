@@ -145,14 +145,14 @@
 
   // ═══ Tab config (alphabetically sorted by translated label at render time) ═══
   const TAB_CONFIG_UNSORTED = {
-    inventory: { label: 'filament.tab_inventory', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
-    storage:   { label: 'filament.tab_storage',   modules: ['storage-dashboard'] },
-    database:  { label: 'filament.tab_database',  modules: ['db-hero', 'db-browser'] },
-    drying:    { label: 'filament.tab_drying',    modules: ['drying-dashboard'] },
-    multicolor:{ label: 'tabs.multicolor',        modules: ['multicolor-panel'], external: true },
-    tools:     { label: 'filament.tab_tools',     modules: ['tools-dashboard'] },
-    manage:    { label: 'filament.tab_manage',    modules: ['manage-dashboard'] },
-    stats:     { label: 'filament.tab_stats',     modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
+    inventory: { label: 'filament.tab_inventory', icon: '📦', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
+    storage:   { label: 'filament.tab_storage',   icon: '🗄️', modules: ['storage-dashboard'] },
+    database:  { label: 'filament.tab_database',  icon: '📚', modules: ['db-hero', 'db-browser'] },
+    drying:    { label: 'filament.tab_drying',    icon: '🌬️', modules: ['drying-dashboard'] },
+    multicolor:{ label: 'tabs.multicolor',        icon: '🎨', modules: ['multicolor-panel'], external: true },
+    tools:     { label: 'filament.tab_tools',     icon: '🛠️', modules: ['tools-dashboard'] },
+    manage:    { label: 'filament.tab_manage',    icon: '⚙️', modules: ['manage-dashboard'] },
+    stats:     { label: 'filament.tab_stats',     icon: '📊', modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
   // Sort tabs: inventory always first, rest alphabetically by translated label
   function _getSortedTabs() {
@@ -2005,7 +2005,7 @@
       // ── Tab bar (sorted alphabetically, inventory first) ──
       html += '<div class="tabs">';
       for (const [id, cfg] of _getSortedTabs()) {
-        html += `<button class="tab-btn filament-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')">${t(cfg.label)}</button>`;
+        html += `<button class="tab-btn filament-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')"><span style="margin-right:4px">${cfg.icon || ''}</span>${t(cfg.label)}</button>`;
       }
       html += '</div>';
 
