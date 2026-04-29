@@ -139,24 +139,28 @@
       const nozzleRange = isHeating ? ext.temp + '–' + ext.target + '°C' : '';
 
       // Remaining % and weight from inventory spool.
-      // Every toolhead that the slicer assigned filament to ticks down as
-      // the print progresses — not just the currently-active one. Pass
-      // the tool index so realtimeFilament picks the per-tool weight
-      // from _slicer_filament_weights[] (U1 uses different amounts per
-      // toolhead — using the job total would over-estimate consumption).
-      // Tools with zero slicer weight (not used in this print) stay at
-      // their DB value.
+      // Live deduction strategy:
+      //  - Physical active toolhead (ext.active = _active_extruder match):
+      //    always tick down — it's currently consuming filament. This
+      //    handles single-extruder prints where the slicer plan was on a
+      //    different extruder index than the user physically loaded.
+      //  - Other toolheads with non-zero slicer weight: tick down too —
+      //    they participated in earlier segments of a multi-tool print.
+      //  - Toolheads with zero slicer weight that aren't physically
+      //    active: stay at the DB value (no live deduction).
       let remainPct, weightG, totalG;
       if (linkedSpool && linkedSpool.initial_weight_g > 0) {
         const rG = linkedSpool.remaining_weight_g || 0;
         const tG = linkedSpool.initial_weight_g;
         const perToolWeights = Array.isArray(data._slicer_filament_weights) ? data._slicer_filament_weights : null;
-        const thisToolUsesFilament = !perToolWeights || (perToolWeights[ext.index] > 0);
+        const thisToolUsesFilament = ext.active
+          || !perToolWeights
+          || (perToolWeights[ext.index] > 0);
         if (typeof window.realtimeFilament === 'function') {
           const rt = window.realtimeFilament({
             remainG: rG,
             totalG: tG,
-            isActive: thisToolUsesFilament,  // tick any tool participating in this print
+            isActive: thisToolUsesFilament,
             data,
             toolIndex: ext.index,
           });
