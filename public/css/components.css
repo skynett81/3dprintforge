@@ -8211,8 +8211,11 @@ tr:hover .filament-edit-btn {
   border: 1px solid var(--border-color);
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
 }
 .inv-modal-header {
   display: flex;
@@ -8221,6 +8224,16 @@ tr:hover .filament-edit-btn {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border-color);
   font-weight: 600;
+  flex-shrink: 0;
+}
+/* The modal body is the only scrollable region — header and footer stay
+   pinned. Targets every direct child between header and footer regardless
+   of whether the markup uses a wrapping div or inline padding. */
+.inv-modal > :not(.inv-modal-header):not(.inv-modal-footer) {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .inv-modal-close {
   background: none;
@@ -8235,6 +8248,7 @@ tr:hover .filament-edit-btn {
   padding: 10px 14px;
   border-top: 1px solid var(--border-color);
   text-align: right;
+  flex-shrink: 0;
 }
 
 /* QR Label */
