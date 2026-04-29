@@ -45,15 +45,20 @@
   const _wasRunning = {};
   if (window.printerState?.subscribe) {
     window.printerState.subscribe('*', () => {
-      const ids = window.printerState.getPrinterIds?.() || [];
-      for (const id of ids) {
-        const ps = window.printerState.printers?.[id];
-        const running = _isRunning(ps);
-        if (_wasRunning[id] && !running) {
-          // RUNNING → IDLE/FINISH → server has just persisted consumption
-          _loadInventorySpools();
+      try {
+        const ids = window.printerState.getPrinterIds?.() || [];
+        for (const id of ids) {
+          const ps = window.printerState.printers?.[id];
+          const running = _isRunning(ps);
+          if (_wasRunning[id] && !running) {
+            // RUNNING → IDLE/FINISH → server has just persisted consumption
+            _loadInventorySpools();
+          }
+          _wasRunning[id] = running;
         }
-        _wasRunning[id] = running;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[ams-panel] state subscribe handler failed:', e);
       }
     });
   }

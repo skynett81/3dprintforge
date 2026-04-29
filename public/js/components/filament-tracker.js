@@ -2238,34 +2238,44 @@
     if (_activeFilamentRefreshTimer) return;
     _activeFilamentRefreshTimer = setTimeout(() => {
       _activeFilamentRefreshTimer = null;
-      const containers = document.querySelectorAll('.stats-module');
-      for (const c of containers) {
-        const titleEl = c.querySelector('.ctrl-card-title');
-        if (titleEl && /active filament|aktivt filament/i.test(titleEl.textContent || '')) {
-          // Replace just the panel content after the title.
-          const newHtml = buildActiveFilamentContent();
-          // Drop any prior content nodes after the title and insert the
-          // freshly rendered slot grid.
-          let next = titleEl.nextSibling;
-          while (next) {
-            const toRemove = next;
-            next = next.nextSibling;
-            toRemove.remove();
+      try {
+        const containers = document.querySelectorAll('.stats-module');
+        for (const c of containers) {
+          const titleEl = c.querySelector('.ctrl-card-title');
+          if (titleEl && /active filament|aktivt filament/i.test(titleEl.textContent || '')) {
+            // Replace just the panel content after the title.
+            const newHtml = buildActiveFilamentContent();
+            // Drop any prior content nodes after the title and insert
+            // the freshly rendered slot grid.
+            let next = titleEl.nextSibling;
+            while (next) {
+              const toRemove = next;
+              next = next.nextSibling;
+              toRemove.remove();
+            }
+            const wrap = document.createElement('div');
+            wrap.innerHTML = newHtml;
+            while (wrap.firstChild) titleEl.parentNode.appendChild(wrap.firstChild);
+            break;
           }
-          const wrap = document.createElement('div');
-          wrap.innerHTML = newHtml;
-          while (wrap.firstChild) titleEl.parentNode.appendChild(wrap.firstChild);
-          break;
         }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[filament] _refreshActiveFilamentPanel render failed:', e);
       }
     }, 2000);
   }
   if (window.printerState?.subscribe) {
     window.printerState.subscribe('*', () => {
-      // Only refresh when on the inventory tab (avoids touching DOM that
-      // might not exist in other tabs).
-      if (document.getElementById('overlay-panel-body')?.querySelector('.stats-module')) {
-        _refreshActiveFilamentPanel();
+      try {
+        // Only refresh when on the inventory tab (avoids touching DOM
+        // that might not exist in other tabs).
+        if (document.getElementById('overlay-panel-body')?.querySelector('.stats-module')) {
+          _refreshActiveFilamentPanel();
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[filament] active-filament refresh failed:', e);
       }
     });
   }
