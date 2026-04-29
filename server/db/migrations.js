@@ -1877,6 +1877,159 @@ export function runMigrations() {
       }
       if (added > 0) log.info('Seeded ' + added + ' eSUN filament profiles');
     }},
+
+    { version: 140, up: (db) => {
+      // Fill gaps across the rest of the consumer-brand catalogue. Many
+      // popular vendors (Prusament, Hatchbox, AmazonBasics, Anycubic,
+      // Creality, Spectrum, 3DJake) had no presence at all, and existing
+      // ones (SUNLU, Overture, Polymaker, Elegoo) only had 4–11 profiles
+      // versus their 20+ active product lines. All are colour-agnostic
+      // master profiles — per-spool colour goes via the override
+      // columns from v136.
+      const upsertVendor = (name, website, emptyG) => {
+        const row = db.prepare("SELECT id FROM vendors WHERE LOWER(name) = LOWER(?)").get(name);
+        if (row) return row.id;
+        try {
+          const r = db.prepare('INSERT INTO vendors (name, website, empty_spool_weight_g, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(name, website, emptyG);
+          return Number(r.lastInsertRowid);
+        } catch { return null; }
+      };
+
+      // [name, material, density, nMin, nMax, bMin, bMax, weight_g]
+      const catalogues = {
+        'Prusament':   [
+          ['Prusament PLA',          'PLA',     1.24, 215, 230, 55, 60, 1000],
+          ['Prusament PLA Galaxy',   'PLA',     1.24, 215, 230, 55, 60, 1000],
+          ['Prusament PLA Blend',    'PLA',     1.24, 215, 230, 55, 60, 1000],
+          ['Prusament PETG',         'PETG',    1.27, 230, 250, 80, 90, 1000],
+          ['Prusament PETG Tungsten 75','PETG-Tungsten',2.97, 235, 250, 80, 90, 1000],
+          ['Prusament PC Blend',     'PC',      1.20, 260, 280,100,115, 1000],
+          ['Prusament PC Blend CF',  'PC-CF',   1.21, 270, 290,100,115, 1000],
+          ['Prusament ASA',          'ASA',     1.07, 250, 270,100,110, 1000],
+          ['Prusament PVB',          'PVB',     1.10, 200, 220, 70, 80, 1000],
+          ['Prusament PA11 CF',      'PA-CF',   1.08, 270, 290, 80,100, 1000],
+          ['Prusament Resin',        'Resin',   1.15,   0,   0,  0,  0, 1000],
+        ],
+        'Hatchbox':    [
+          ['Hatchbox PLA',           'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Hatchbox PLA+',          'PLA+',    1.24, 205, 225, 50, 60, 1000],
+          ['Hatchbox PETG',          'PETG',    1.27, 230, 250, 75, 85, 1000],
+          ['Hatchbox ABS',           'ABS',     1.06, 235, 250, 95,110, 1000],
+          ['Hatchbox TPU 95A',       'TPU',     1.21, 220, 240, 40, 60, 1000],
+          ['Hatchbox Wood',          'PLA Wood',1.20, 195, 220, 50, 60, 1000],
+          ['Hatchbox Silk',          'PLA Silk',1.24, 200, 230, 50, 60, 1000],
+          ['Hatchbox HIPS',          'HIPS',    1.04, 230, 245,100,110, 1000],
+        ],
+        'AmazonBasics':[
+          ['AmazonBasics PLA',       'PLA',     1.24, 195, 220, 50, 60, 1000],
+          ['AmazonBasics PETG',      'PETG',    1.27, 230, 250, 70, 85, 1000],
+          ['AmazonBasics ABS',       'ABS',     1.06, 230, 250, 90,110, 1000],
+          ['AmazonBasics TPU',       'TPU',     1.21, 220, 240, 40, 60, 1000],
+        ],
+        'Anycubic':    [
+          ['Anycubic PLA',           'PLA',     1.24, 200, 230, 50, 60, 1000],
+          ['Anycubic PLA+',          'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['Anycubic Silk PLA',      'PLA Silk',1.24, 200, 230, 50, 60, 1000],
+          ['Anycubic Matte PLA',     'PLA Matte',1.24,200, 230, 50, 60, 1000],
+          ['Anycubic PETG',          'PETG',    1.27, 230, 250, 75, 85, 1000],
+          ['Anycubic HS PLA',        'PLA',     1.24, 210, 240, 50, 60, 1000],
+          ['Anycubic PLA-CF',        'PLA-CF',  1.30, 220, 240, 50, 60, 1000],
+        ],
+        'Creality':    [
+          ['Creality CR-PLA',        'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Creality Ender PLA',     'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Creality Hyper PLA',     'PLA',     1.24, 210, 240, 50, 60, 1000],
+          ['Creality CR-Silk',       'PLA Silk',1.24, 200, 230, 50, 60, 1000],
+          ['Creality Hyper PETG',    'PETG',    1.27, 230, 250, 75, 90, 1000],
+          ['Creality CR-ABS',        'ABS',     1.06, 240, 260, 95,110, 1000],
+          ['Creality CR-TPU',        'TPU',     1.21, 220, 240, 40, 60, 1000],
+          ['Creality CR-Wood',       'PLA Wood',1.20, 195, 220, 50, 60, 1000],
+        ],
+        'Spectrum':    [
+          ['Spectrum PLA',           'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Spectrum PLA Pro',       'PLA+',    1.24, 205, 225, 50, 60, 1000],
+          ['Spectrum PLA Special',   'PLA',     1.24, 200, 230, 50, 60, 1000],
+          ['Spectrum PETG HT100',    'PETG',    1.27, 230, 250, 75, 90, 1000],
+          ['Spectrum ASA 275',       'ASA',     1.07, 250, 275, 95,110, 1000],
+          ['Spectrum PCTG',          'PCTG',    1.23, 240, 260, 75, 95, 1000],
+          ['Spectrum S-Flex 90',     'TPU',     1.22, 220, 240, 40, 60, 1000],
+          ['Spectrum Smart ABS',     'ABS',     1.06, 240, 260, 95,110, 1000],
+        ],
+        'SUNLU':       [
+          ['SUNLU Silk',             'PLA Silk',1.24, 195, 230, 50, 60, 1000],
+          ['SUNLU PLA Meta',         'PLA',     1.24, 210, 230, 50, 60, 1000],
+          ['SUNLU Marble',           'PLA Marble',1.25,200, 230, 50, 60, 1000],
+          ['SUNLU Wood',             'PLA Wood',1.22, 195, 220, 50, 60, 1000],
+          ['SUNLU Glow',             'PLA Glow',1.24, 200, 230, 50, 60, 1000],
+          ['SUNLU PETG',             'PETG',    1.27, 230, 250, 75, 90, 1000],
+          ['SUNLU ABS',              'ABS',     1.06, 230, 250, 95,110, 1000],
+          ['SUNLU TPU',              'TPU',     1.21, 220, 240, 40, 60, 1000],
+          ['SUNLU Translucent PLA',  'PLA',     1.24, 200, 230, 50, 60, 1000],
+          ['SUNLU PETG-CF',          'PETG-CF', 1.32, 240, 260, 75, 90, 1000],
+        ],
+        'Overture':    [
+          ['Overture PLA Pro',       'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['Overture Matte PLA',     'PLA Matte',1.24,200, 230, 50, 60, 1000],
+          ['Overture Silk PLA',      'PLA Silk',1.24, 200, 230, 50, 60, 1000],
+          ['Overture Marble PLA',    'PLA Marble',1.25,200, 230, 50, 60, 1000],
+          ['Overture Wood PLA',      'PLA Wood',1.22, 195, 220, 50, 60, 1000],
+          ['Overture Tough PLA',     'PLA+',    1.24, 210, 230, 50, 60, 1000],
+          ['Overture Easy PLA',      'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Overture HS PLA',        'PLA',     1.24, 220, 240, 50, 60, 1000],
+          ['Overture PETG-CF',       'PETG-CF', 1.32, 240, 260, 75, 90, 1000],
+          ['Overture ABS+',          'ABS',     1.06, 235, 255, 95,110, 1000],
+          ['Overture ASA',           'ASA',     1.07, 245, 265, 95,110, 1000],
+          ['Overture TPU 95A',       'TPU',     1.21, 220, 240, 40, 60, 1000],
+        ],
+        'Polymaker':   [
+          ['PolyLite PLA Pro',       'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['PolyTerra PLA Galaxy',   'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['PolyMax PLA',            'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['PolyMax Tough',          'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['PolyFlex TPU90',         'TPU',     1.20, 220, 235, 40, 60,  750],
+          ['PolyMide PA6-CF',        'PA-CF',   1.20, 280, 300, 70, 90,  500],
+          ['PolyMide PA6-GF',        'PA-GF',   1.30, 280, 300, 70, 90,  500],
+          ['PolyDissolve S1',        'PVA',     1.20, 215, 235, 40, 60,  500],
+          ['PolyMix PC-FR',          'PC',      1.18, 260, 280,100,115, 1000],
+        ],
+        'Elegoo':      [
+          ['Elegoo PLA',             'PLA',     1.24, 200, 220, 50, 60, 1000],
+          ['Elegoo PLA+',            'PLA+',    1.24, 200, 230, 50, 60, 1000],
+          ['Elegoo Silk PLA',        'PLA Silk',1.24, 200, 230, 50, 60, 1000],
+          ['Elegoo Matte PLA',       'PLA Matte',1.24,200, 230, 50, 60, 1000],
+          ['Elegoo Marble PLA',      'PLA Marble',1.25,200, 230, 50, 60, 1000],
+          ['Elegoo Glow PLA',        'PLA Glow',1.24, 200, 230, 50, 60, 1000],
+          ['Elegoo PLA-CF',          'PLA-CF',  1.30, 220, 240, 50, 60, 1000],
+          ['Elegoo Rapid PLA+',      'PLA+',    1.24, 220, 240, 50, 60, 1000],
+          ['Elegoo Hyper PETG',      'PETG',    1.27, 230, 250, 75, 90, 1000],
+          ['Elegoo TPU 95A',         'TPU',     1.21, 220, 240, 40, 60, 1000],
+        ],
+      };
+
+      let totalAdded = 0;
+      const exists = db.prepare('SELECT 1 FROM filament_profiles WHERE name = ? AND vendor_id = ? LIMIT 1');
+      const ins = db.prepare(`INSERT INTO filament_profiles
+        (name, vendor_id, material, color_hex, color_name, density, diameter,
+         spool_weight_g, weight_g, nozzle_temp_min, nozzle_temp_max,
+         bed_temp_min, bed_temp_max, source, created_at)
+        VALUES (?, ?, ?, '', '', ?, 1.75, ?, ?, ?, ?, ?, ?, 'seed-v140', datetime('now'))`);
+
+      for (const [vendorName, profiles] of Object.entries(catalogues)) {
+        const vid = upsertVendor(vendorName, null, 218);
+        if (!vid) continue;
+        let added = 0;
+        for (const [name, material, density, nMin, nMax, bMin, bMax, weight] of profiles) {
+          if (exists.get(name, vid)) continue;
+          try {
+            ins.run(name, vid, material, density, weight, weight, nMin, nMax, bMin, bMax);
+            added++;
+          } catch { /* skip */ }
+        }
+        if (added > 0) log.info('Seeded ' + added + ' ' + vendorName + ' filament profiles');
+        totalAdded += added;
+      }
+      if (totalAdded > 0) log.info('v140: ' + totalAdded + ' total profiles added across ' + Object.keys(catalogues).length + ' vendors');
+    }},
   ];
 
   for (const m of migrations) {
