@@ -6347,6 +6347,8 @@ export async function handleApiRequest(req, res) {
           mc_percent: s.mc_percent ?? null,
           subtask_name: s.subtask_name || null,
           filament_used_mm: s.filament_used_mm ?? null,
+          mc_remaining_time: s.mc_remaining_time ?? null,
+          print_duration_seconds: s.print_duration_seconds ?? null,
         },
       });
     }
