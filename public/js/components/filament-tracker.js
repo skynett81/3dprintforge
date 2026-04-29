@@ -1364,6 +1364,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               QR
             </button>
+            ${!s.archived ? `<button class="form-btn form-btn-sm" data-ripple onclick="window._addAnotherFromSpool(${s.id})" style="background:var(--accent-blue);color:#fff" title="${t('filament.add_another_hint') || 'Register another reel of this same filament — pre-fills profile, colour, weight and price'}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              ${t('filament.add_another') || 'Add another'}
+            </button>` : ''}
             ${s.archived ? `<button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();unarchiveSpoolItem(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
               ${t('filament.unarchive', 'Unarchive')}
@@ -2236,13 +2240,41 @@
   window._invPage = function(dir) { _currentPage += dir; loadFilament(); };
 
   // ═══ Add/Edit Spool ═══
-  window.showAddSpoolForm = function() {
+  window.showAddSpoolForm = function(template) {
     if (_activeTab !== 'inventory') switchTab('inventory');
     const container = document.getElementById('inv-global-form');
     if (!container) return;
     container.style.display = '';
-    container.innerHTML = renderSpoolForm(null);
+    container.innerHTML = renderSpoolForm(null, template || null);
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  // Open the new-spool form pre-filled from an existing spool. Used by
+  // the "Add another" button in the spool detail overlay so the user
+  // can register an additional reel of the same filament without
+  // re-typing profile, colour, weight, price etc. Slot/printer/usage
+  // fields are intentionally cleared so the new reel lands on the shelf
+  // unattached.
+  window._addAnotherFromSpool = function(spoolId) {
+    const src = _spools.find(sp => sp.id === spoolId);
+    if (!src) return;
+    document.querySelector('.ph-detail-overlay')?.remove();
+    const template = {
+      filament_profile_id: src.filament_profile_id,
+      initial_weight_g: src.initial_weight_g,
+      cost: src.cost,
+      spool_weight: src.spool_weight,
+      lot_number: src.lot_number,
+      color_hex: src.color_hex,
+      color_name: src.color_name,
+      color_hex_override: src.color_hex_override || null,
+      color_name_override: src.color_name_override || null,
+      location: src.location,
+      storage_method: src.storage_method,
+      // printer_id / ams_unit / ams_tray intentionally omitted — go to shelf
+      // remaining/used intentionally omitted — start full
+    };
+    window.showAddSpoolForm(template);
   };
 
   window.showQuickCreate = async function(btn) {
@@ -2302,17 +2334,23 @@
     document.body.appendChild(overlay);
   };
 
-  function renderSpoolForm(spool) {
-    const isEdit = !!spool;
+  // When a "template" is provided (without an id), the form renders in
+  // "new spool" mode but pre-filled with the template's profile, colour,
+  // price, weight, and other re-usable fields — used by the "Add another"
+  // button on the spool detail overlay so the user can register a new
+  // reel of the same filament without re-typing everything.
+  function renderSpoolForm(spool, template) {
+    const isEdit = !!(spool && spool.id);
+    const data = spool || template || null;
     const id = isEdit ? spool.id : 'new';
-    const slotsHtml = renderToolheadSlot(id, spool);
+    const slotsHtml = renderToolheadSlot(id, data);
     return `
       <div class="settings-card" style="margin:8px 0">
         <div class="settings-form" style="max-width:none">
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px 12px;align-items:end">
             <div class="form-group" style="grid-column:span 2;min-width:200px;margin-bottom:0">
               <label class="form-label">${t('filament.profile_select')}</label>
-              <select class="form-input" id="sp-profile-${id}" onchange="onSpoolProfileChange('${id}')">${buildProfileSelect(spool?.filament_profile_id)}</select>
+              <select class="form-input" id="sp-profile-${id}" onchange="onSpoolProfileChange('${id}')">${buildProfileSelect(data?.filament_profile_id)}</select>
             </div>
             ${!isEdit ? `<div class="form-group" style="margin-bottom:0">
               <label class="form-label" style="color:var(--accent-blue);font-weight:600">${t('filament.bulk_quantity')}</label>
@@ -2320,65 +2358,65 @@
             </div>` : ''}
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.initial_weight')}</label>
-              <input class="form-input" id="sp-initial-${id}" type="number" value="${spool?.initial_weight_g || 1000}">
+              <input class="form-input" id="sp-initial-${id}" type="number" value="${data?.initial_weight_g || 1000}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.used_g')}</label>
-              <input class="form-input" id="sp-used-${id}" type="number" value="${spool?.used_weight_g || 0}">
+              <input class="form-input" id="sp-used-${id}" type="number" value="${isEdit ? (spool?.used_weight_g || 0) : 0}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.remaining_g') || 'Remaining (g)'}</label>
-              <input class="form-input" id="sp-remaining-${id}" type="number" value="${spool?.remaining_weight_g ?? ''}" placeholder="Auto">
+              <input class="form-input" id="sp-remaining-${id}" type="number" value="${isEdit ? (spool?.remaining_weight_g ?? '') : ''}" placeholder="Auto">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.price_per_spool') || t('filament.price')}</label>
-              <input class="form-input" id="sp-cost-${id}" type="number" value="${spool?.cost || ''}" placeholder="219" title="${t('filament.price_per_spool_hint') || 'Price per spool — applied to every spool when quantity > 1'}">
+              <input class="form-input" id="sp-cost-${id}" type="number" value="${data?.cost || ''}" placeholder="219" title="${t('filament.price_per_spool_hint') || 'Price per spool — applied to every spool when quantity > 1'}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.spool_tare_weight')}</label>
-              <input class="form-input" id="sp-tare-${id}" type="number" value="${spool?.spool_weight || ''}" placeholder="Auto">
+              <input class="form-input" id="sp-tare-${id}" type="number" value="${data?.spool_weight || ''}" placeholder="Auto">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.lot_number')}</label>
-              <input class="form-input" id="sp-lot-${id}" value="${spool?.lot_number || ''}">
+              <input class="form-input" id="sp-lot-${id}" value="${data?.lot_number || ''}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.color') || 'Color'}</label>
               <div style="display:flex;gap:6px;align-items:center">
-                <input type="color" class="form-input" id="sp-color-hex-${id}" value="${spool?.color_hex_override || spool?.color_hex || '#cccccc'}" style="width:42px;padding:2px;flex:0 0 auto;cursor:pointer">
-                <input class="form-input" id="sp-color-name-${id}" value="${spool?.color_name_override || spool?.color_name || ''}" placeholder="${t('filament.color_name_placeholder') || 'White, Yellow, ...'}" style="flex:1 1 auto;min-width:0">
+                <input type="color" class="form-input" id="sp-color-hex-${id}" value="${data?.color_hex_override || (data?.color_hex ? '#' + String(data.color_hex).replace(/^#/, '') : '#cccccc')}" style="width:42px;padding:2px;flex:0 0 auto;cursor:pointer">
+                <input class="form-input" id="sp-color-name-${id}" value="${data?.color_name_override || data?.color_name || ''}" placeholder="${t('filament.color_name_placeholder') || 'White, Yellow, ...'}" style="flex:1 1 auto;min-width:0">
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.location')}</label>
-              <select class="form-input" id="sp-location-${id}">${buildLocationSelect(spool?.location)}</select>
+              <select class="form-input" id="sp-location-${id}">${buildLocationSelect(data?.location)}</select>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('common.printer')}</label>
-              <select class="form-input" id="sp-printer-${id}" onchange="onSpoolPrinterChange('${id}')">${buildPrinterOptions(spool?.printer_id)}</select>
+              <select class="form-input" id="sp-printer-${id}" onchange="onSpoolPrinterChange('${id}')">${buildPrinterOptions(isEdit ? data?.printer_id : null)}</select>
             </div>
             <div id="sp-slot-wrapper-${id}" style="display:contents">${slotsHtml}</div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.purchase_date')}</label>
-              <input class="form-input" id="sp-purchase-${id}" type="date" value="${spool?.purchase_date || ''}">
+              <input class="form-input" id="sp-purchase-${id}" type="date" value="${isEdit ? (data?.purchase_date || '') : ''}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.storage_method')}</label>
               <select class="form-input" id="sp-storage-${id}">
                 <option value="">${t('common.none')}</option>
-                <option value="dry_box" ${spool?.storage_method === 'dry_box' ? 'selected' : ''}>${t('filament.storage_dry_box')}</option>
-                <option value="vacuum_bag" ${spool?.storage_method === 'vacuum_bag' ? 'selected' : ''}>${t('filament.storage_vacuum')}</option>
-                <option value="open_air" ${spool?.storage_method === 'open_air' ? 'selected' : ''}>${t('filament.storage_open_air')}</option>
+                <option value="dry_box" ${data?.storage_method === 'dry_box' ? 'selected' : ''}>${t('filament.storage_dry_box')}</option>
+                <option value="vacuum_bag" ${data?.storage_method === 'vacuum_bag' ? 'selected' : ''}>${t('filament.storage_vacuum')}</option>
+                <option value="open_air" ${data?.storage_method === 'open_air' ? 'selected' : ''}>${t('filament.storage_open_air')}</option>
               </select>
             </div>
             <div class="form-group" style="grid-column:span 2;min-width:200px;margin-bottom:0">
               <label class="form-label">${t('filament.comment')}</label>
-              <input class="form-input" id="sp-comment-${id}" value="${spool?.comment || ''}">
+              <input class="form-input" id="sp-comment-${id}" value="${isEdit ? (data?.comment || '') : ''}">
             </div>
           </div>
           <div id="sp-${id}-extra-fields-section">
             <div style="font-size:0.8rem;margin:4px 0">${t('filament.extra_fields')}</div>
-            <div id="sp-${id}-extra-fields">${_renderExtraFieldInputs(`sp-${id}`, spool?.extra_fields)}</div>
+            <div id="sp-${id}-extra-fields">${_renderExtraFieldInputs(`sp-${id}`, isEdit ? data?.extra_fields : null)}</div>
             <button class="form-btn form-btn-sm" data-ripple style="font-size:0.7rem" onclick="window._addExtraField('sp-${id}')" type="button">+ ${t('filament.add_field')}</button>
           </div>
           <div class="flex gap-sm">
@@ -2446,7 +2484,7 @@
     const trayRaw = document.getElementById(`sp-tray-${id}`)?.value;
     const unitRaw = document.getElementById(`sp-unit-${id}`)?.value;
     const data = {
-      filament_profile_id: parseInt(document.getElementById(`sp-profile-${id}`)?.value) || spool?.filament_profile_id,
+      filament_profile_id: parseInt(document.getElementById(`sp-profile-${id}`)?.value) || data?.filament_profile_id,
       initial_weight_g: parseFloat(document.getElementById(`sp-initial-${id}`).value) || 1000,
       used_weight_g: parseFloat(document.getElementById(`sp-used-${id}`).value) || 0,
       cost: parseFloat(document.getElementById(`sp-cost-${id}`).value) || null,
