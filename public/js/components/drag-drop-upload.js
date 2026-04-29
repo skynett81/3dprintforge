@@ -101,18 +101,34 @@
     xhr.send(file);
   }
 
+  // Only react to drags that actually carry files from the OS — internal
+  // element drags (e.g. spool tiles in the Storage tab) put 'text/plain'
+  // on the dataTransfer, files put 'Files'. Without this guard the
+  // upload overlay hijacks every internal drag and shows "Drop file to
+  // upload" while the user is trying to move spools.
+  function _isFileDrag(e) {
+    const types = e.dataTransfer && e.dataTransfer.types;
+    if (!types) return false;
+    if (typeof types.includes === 'function') return types.includes('Files');
+    for (let i = 0; i < types.length; i++) if (types[i] === 'Files') return true;
+    return false;
+  }
+
   document.addEventListener('dragenter', function(e) {
+    if (!_isFileDrag(e)) return;
     e.preventDefault();
     dragCounter++;
     if (dragCounter === 1) showOverlay();
   });
 
   document.addEventListener('dragover', function(e) {
+    if (!_isFileDrag(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
   });
 
   document.addEventListener('dragleave', function(e) {
+    if (!_isFileDrag(e)) return;
     e.preventDefault();
     dragCounter--;
     if (dragCounter <= 0) {
@@ -122,6 +138,7 @@
   });
 
   document.addEventListener('drop', function(e) {
+    if (!_isFileDrag(e)) return;
     e.preventDefault();
     dragCounter = 0;
 
