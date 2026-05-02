@@ -44,13 +44,26 @@ and falls back to the CLI bridge / native engine when not.
   (`website/docs/forge-slicer-cpp/rest_server.cpp`) — Phase-1 skeleton
   using cpp-httplib + nlohmann/json. CMakeLists fragment + step-by-step
   `main_integration.md` for wiring into the OrcaSlicer entry point
-- **Tests** — 25 new tests across `forge-slicer-client.test.js`,
-  `slicer-resolver.test.js`, `forge-slicer-sync.test.js` covering
-  probe + cache, profile listing, multipart slice, gcode download,
-  PNG preview, auth, disabled state, fallback chain, sync idempotency,
-  archived profile handling
+- **Tests** — 28 new tests across `forge-slicer-client.test.js`,
+  `slicer-resolver.test.js`, `forge-slicer-sync.test.js`, and
+  `forge-slicer-routes.test.js` covering probe + cache, profile
+  listing, multipart slice, gcode download, PNG preview, auth,
+  disabled state, fallback chain, sync idempotency, archived profile
+  handling, and end-to-end HTTP route relay through an in-process
+  mock fork
+- **Pterodactyl egg** (`egg-3dprintforge.json`) — exposes
+  `FORGE_SLICER_URL` and `FORGE_SLICER_TOKEN` so panel users can wire
+  up the integration without editing config.json
+- **Norwegian translations** — `forge_slicer.*` block added to
+  `public/lang/nb.json` (26 keys) so NB-locale users see translated
+  status pills, settings card, and toasts
+- **Docs sidebar** — new "Forge Slicer" category in
+  `website/sidebars.ts` linking the setup guide and REST contract
+- **CI tests** — `.github/workflows/test.yml` runs `npm test` plus
+  JSON validation for language files and the Pterodactyl egg on
+  every push and pull request to main
 
-Service-worker cache bumped to v188.
+Service-worker cache bumped to v192.
 
 ---
 
