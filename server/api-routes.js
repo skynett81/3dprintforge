@@ -7002,20 +7002,30 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/slicer/forge/status') {
       const { probe, getConfig, lastProbe } = await import('./forge-slicer-client.js');
       const fresh = await probe({ force: url.searchParams.get('force') === '1' });
-      return sendJson(res, { config: getConfig(), probe: fresh, last: lastProbe() });
+      // Mask the bearer token — the UI only needs to know whether one is
+      // configured, not its value (matches how config.js masks
+      // auth.password and update.githubToken).
+      const cfg = getConfig();
+      const safeConfig = { ...cfg, token: cfg.token ? '***' : '', token_set: !!cfg.token };
+      return sendJson(res, { config: safeConfig, probe: fresh, last: lastProbe() });
     }
 
     if (method === 'POST' && path === '/api/slicer/forge/configure') {
       return readBody(req, res, async (body) => {
-        const { configure, probe } = await import('./forge-slicer-client.js');
-        configure({ url: body.url, token: body.token, enabled: body.enabled });
+        const { configure, probe, getConfig } = await import('./forge-slicer-client.js');
+        // If the UI sent the masked sentinel back, keep the existing
+        // token instead of wiping it. Empty string from the user
+        // explicitly clears it.
+        let token = body.token;
+        if (token === '***') token = getConfig().token;
+        configure({ url: body.url, token, enabled: body.enabled });
         // Persist to config.json so the setting survives restart.
         try {
           const { saveConfig } = await import('./config.js');
           saveConfig({
             forge_slicer: {
               url: body.url || 'http://127.0.0.1:8765',
-              token: body.token || '',
+              token: token || '',
               enabled: body.enabled !== false,
             },
           });

@@ -3678,6 +3678,7 @@
     "service_url": "Tjeneste-URL",
     "token": "Token (valgfritt)",
     "token_placeholder": "Bearer-token hvis ekstern",
+    "token_set": "Token er satt — la stå for å beholde, tøm for å fjerne",
     "enabled": "Aktiver Forge Slicer",
     "save": "Lagre",
     "test_connection": "Test tilkobling",

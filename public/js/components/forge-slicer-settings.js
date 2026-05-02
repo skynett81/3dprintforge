@@ -70,7 +70,7 @@
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">${t('forge_slicer.token', 'Token (optional)')}</label>
-            <input class="form-input" id="fsl-token" type="password" value="${(cfg.token || '').replace(/"/g, '&quot;')}" placeholder="${t('forge_slicer.token_placeholder', 'Bearer token if remote')}">
+            <input class="form-input" id="fsl-token" type="password" value="${cfg.token_set ? '***' : ''}" placeholder="${cfg.token_set ? t('forge_slicer.token_set', 'Token set — leave to keep, clear to remove') : t('forge_slicer.token_placeholder', 'Bearer token if remote')}">
           </div>
           <div class="form-group" style="margin-bottom:0;align-self:end">
             <label class="form-label" style="display:flex;align-items:center;gap:6px">
