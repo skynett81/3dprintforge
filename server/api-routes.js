@@ -4449,6 +4449,21 @@ export async function handleApiRequest(req, res) {
         dbVersion = getDb().prepare('SELECT MAX(version) as v FROM schema_version').get()?.v || 0;
       } catch { /* ignore */ }
 
+      let forgeSlicer = null;
+      try {
+        const { lastProbe, getConfig: getForgeConfig } = await import('./forge-slicer-client.js');
+        const probe = lastProbe();
+        const fcfg = getForgeConfig();
+        forgeSlicer = {
+          enabled: fcfg?.enabled === true,
+          ok: probe?.ok === true,
+          version: probe?.info?.version || null,
+          upstream: probe?.info?.upstream || null,
+          last_check: probe?.at || null,
+          error: probe?.error || null,
+        };
+      } catch { /* ignore */ }
+
       return sendJson(res, {
         uptime: uptime,
         uptime_seconds: Math.floor(uptime),
@@ -4466,7 +4481,8 @@ export async function handleApiRequest(req, res) {
         memory_mb: Math.round(mem.rss / 1024 / 1024),
         hostname: hn,
         network: addresses,
-        ports: { http: httpPort, https: httpsPort, camera_base: 9001 }
+        ports: { http: httpPort, https: httpsPort, camera_base: 9001 },
+        forge_slicer: forgeSlicer,
       });
     }
 
