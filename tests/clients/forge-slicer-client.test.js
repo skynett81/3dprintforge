@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import {
   configure, probe, lastProbe,
-  listProfiles, getProfile, slice, sliceStream, fetchGcode, preview,
+  listProfiles, getProfile, listPrinters, slice, sliceStream, fetchGcode, preview,
   cancelJob, listJobs,
   stopBackgroundProbe,
 } from '../../server/forge-slicer-client.js';
@@ -102,6 +102,13 @@ function _route(req, res) {
   if (u.pathname === '/api/jobs' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ jobs: [{ id: 'job-running', size: 1234, created_at: Date.now() }] }));
+  }
+  if (u.pathname === '/api/printers' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ printers: [
+      { id: 'u1-04', name: 'Snapmaker U1 0.4', vendor: 'Snapmaker' },
+      { id: 'p1s-04', name: 'Bambu P1S 0.4', vendor: 'Bambu Lab' },
+    ] }));
   }
   if (u.pathname === '/api/jobs/job-running/cancel' && req.method === 'POST') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -247,6 +254,13 @@ describe('forge-slicer-client', () => {
     const data = await listJobs();
     assert.ok(Array.isArray(data.jobs));
     assert.equal(data.jobs[0].id, 'job-running');
+  });
+
+  it('listPrinters() returns the printer-binding list', async () => {
+    const data = await listPrinters();
+    assert.ok(Array.isArray(data.printers));
+    assert.equal(data.printers.length, 2);
+    assert.equal(data.printers[0].id, 'u1-04');
   });
 
   it('cancelJob() returns true on accepted cancel', async () => {
