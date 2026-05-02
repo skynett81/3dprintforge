@@ -130,6 +130,26 @@
       "field_type": "text"
     },
     {
+      "name": "Forge Slicer URL",
+      "description": "URL of a running skynett81/OrcaSlicer fork in service mode (default http://127.0.0.1:8765). Leave blank to disable the integration. See website/docs/forge-slicer-setup.md for setup instructions.",
+      "env_variable": "FORGE_SLICER_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:512",
+      "field_type": "text"
+    },
+    {
+      "name": "Forge Slicer Token",
+      "description": "Bearer token for the Forge Slicer service when run beyond localhost. Optional — leave blank for localhost-only setups (the most common case).",
+      "env_variable": "FORGE_SLICER_TOKEN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:256",
+      "field_type": "text"
+    },
+    {
       "name": "Bambu Cloud Region",
       "description": "Region for Bambu Cloud broker when a printer uses Cloud Mode. eu (default) | us | cn. Match this to your Bambu account region.",
       "env_variable": "BAMBU_REGION",
