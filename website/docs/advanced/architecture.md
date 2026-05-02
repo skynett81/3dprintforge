@@ -89,6 +89,9 @@ Dashboardet kommuniserer med printeren via MQTT over TLS (port 8883) og kameraet
 | `moonraker-camera.js` | Moonraker kameraintegrasjon |
 | `moonraker-history-sync.js` | Moonraker printhistorikk-synkronisering |
 | `wear-prediction.js` | Slitasjepredikering for komponenter |
+| `forge-slicer-client.js` | Node HTTP-klient mot skynett81/OrcaSlicer-fork i tjenestemodus (probe, slice, SSE-streaming, profiler) |
+| `forge-slicer-sync.js` | Synkronisering av fork-profilkatalog inn i lokal `slicer_profiles` (5 min intervall) |
+| `slicer-resolver.js` | Felles innfallsport for slicer-valg: forge → CLI-bro → native motor |
 
 ## Frontend-komponenter (84)
 

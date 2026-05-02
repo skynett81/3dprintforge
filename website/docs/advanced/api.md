@@ -102,6 +102,24 @@ API-et er rate-begrenset for å beskytte serveren:
 | DELETE | `/api/queue/:id` | Fjern jobb |
 | POST | `/api/queue/dispatch` | Tving utsendelse |
 
+### Forge Slicer
+Proxy-endepunkter mot skynett81/OrcaSlicer-fork i tjenestemodus. Se [Forge Slicer-oppsett](../forge-slicer-setup.md) og den fulle [REST-kontrakten](../FORGE_SLICER_API.md).
+
+| Metode | Endepunkt | Beskrivelse |
+|--------|-----------|-------------|
+| GET | `/api/slicer/forge/status` | Probe-status (cachet 60 s) |
+| POST | `/api/slicer/forge/configure` | Oppdater URL/token/enabled (lagres i config.json) |
+| GET | `/api/slicer/forge/profiles` | Profilkatalog fra fork |
+| POST | `/api/slicer/forge/slice` | Slicing (multipart upload) |
+| POST | `/api/slicer/forge/slice/stream` | Slicing med SSE live-progresjon |
+| POST | `/api/slicer/forge/slice-and-send` | Slicing + opplasting til printer i ett kall |
+| GET | `/api/slicer/forge/jobs` | Aktive slice-jobber |
+| GET | `/api/slicer/forge/jobs/:id/gcode` | Last ned ferdig G-code |
+| POST | `/api/slicer/forge/jobs/:id/cancel` | Avbryt pågående slice |
+| GET | `/api/slicer/forge/preview` | PNG/SVG-forhåndsvisning av første lag |
+| POST | `/api/slicer/forge/sync` | Tving synkronisering av profilkatalog |
+| GET | `/api/slicer/forge/sync/status` | Siste synkroniseringsstatus |
+
 ## WebSocket API
 
 I tillegg til REST finnes et WebSocket API for sanntidsdata:

@@ -18,3 +18,7 @@ services:
       # - BAMBU_AUTH_USERNAME=admin
       # Uncomment to run with demo printers (no real hardware needed):
       # - BAMBU_DEMO=true
+      # Uncomment to wire up the Forge Slicer fork in service mode
+      # (see website/docs/forge-slicer-setup.md):
+      # - FORGE_SLICER_URL=http://127.0.0.1:8765
+      # - FORGE_SLICER_TOKEN=optional-bearer-token
