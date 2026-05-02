@@ -45,8 +45,23 @@ function _route(req, res) {
     req.on('data', c => chunks.push(c));
     req.on('end', () => {
       receivedSlice = { contentType: req.headers['content-type'], size: Buffer.concat(chunks).length };
-      // SSE branch when client requests text/event-stream
+      // Test hooks: simulate fork-side errors via printerId encoded in form body.
+      const bodyStr = Buffer.concat(chunks).toString('utf8');
       const accept = (req.headers.accept || '').toLowerCase();
+      if (accept.includes('text/event-stream') && bodyStr.includes('printer-id-error')) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+        res.write(`event: progress\ndata: ${JSON.stringify({ stage: 'loading', pct: 1 })}\n\n`);
+        res.write(`event: error\ndata: ${JSON.stringify({ error: 'mesh is non-manifold', code: 'ERR_MESH_INVALID' })}\n\n`);
+        res.end();
+        return;
+      }
+      if (accept.includes('text/event-stream') && bodyStr.includes('printer-id-truncated')) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+        res.write(`event: progress\ndata: ${JSON.stringify({ stage: 'loading', pct: 1 })}\n\n`);
+        res.end(); // closes without 'done' — client should reject
+        return;
+      }
+      // SSE branch when client requests text/event-stream
       if (accept.includes('text/event-stream')) {
         res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
         const send = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
@@ -241,6 +256,34 @@ describe('forge-slicer-client', () => {
     assert.equal(p.ok, false);
     assert.equal(p.error, 'disabled');
     configure({ enabled: true });  // restore
+  });
+
+  it('sliceStream() rejects with code when the fork emits an error event', async () => {
+    await assert.rejects(
+      sliceStream({
+        modelBuffer: Buffer.from('solid x\nendsolid\n'),
+        printerId: 'printer-id-error',
+        filamentIds: ['pla'],
+        processId: 'normal',
+      }),
+      (e) => {
+        assert.equal(e.message, 'mesh is non-manifold');
+        assert.equal(e.code, 'ERR_MESH_INVALID');
+        return true;
+      },
+    );
+  });
+
+  it('sliceStream() rejects when the SSE stream ends without a done event', async () => {
+    await assert.rejects(
+      sliceStream({
+        modelBuffer: Buffer.from('solid x\nendsolid\n'),
+        printerId: 'printer-id-truncated',
+        filamentIds: ['pla'],
+        processId: 'normal',
+      }),
+      /SSE stream ended without a done event/,
+    );
   });
 
   it('onProbeChange() fires on every probe with prevOk and current state', async () => {

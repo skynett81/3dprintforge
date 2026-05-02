@@ -301,12 +301,20 @@ export async function sliceStream({ modelBuffer, modelFilename = 'model.stl', pr
       let buf = '';
       let currentEvent = 'message';
       let currentData = '';
+      let resolved = false;
       const flush = () => {
         if (!currentData) { currentEvent = 'message'; return; }
         let parsed = currentData;
         try { parsed = JSON.parse(currentData); } catch { /* leave as string */ }
         if (currentEvent === 'done') {
+          resolved = true;
           resolve(typeof parsed === 'object' ? parsed : { ok: true });
+        } else if (currentEvent === 'error') {
+          resolved = true;
+          const msg = (typeof parsed === 'object' && parsed?.error) || String(parsed) || 'slice failed';
+          const err = new Error(msg);
+          if (typeof parsed === 'object' && parsed?.code) err.code = parsed.code;
+          reject(err);
         } else if (typeof onEvent === 'function') {
           try { onEvent({ event: currentEvent, ...(typeof parsed === 'object' ? parsed : { data: parsed }) }); } catch { /* swallow */ }
         }
@@ -324,7 +332,10 @@ export async function sliceStream({ modelBuffer, modelFilename = 'model.stl', pr
           else if (line.startsWith('data:')) currentData += (currentData ? '\n' : '') + line.slice(5).trim();
         }
       });
-      res.on('end', () => { flush(); });
+      res.on('end', () => {
+        flush();
+        if (!resolved) reject(new Error('SSE stream ended without a done event'));
+      });
       res.on('error', reject);
     });
     req.on('error', reject);
