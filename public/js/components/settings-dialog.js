@@ -86,6 +86,7 @@
     { key: 'settings.ecom_title', kw: 'ecommerce shopify woocommerce orders shop', tab: 'system', sub: 'integrations' },
     { key: 'orders.title', kw: 'orders order kanban invoice project management faktura ordrer', tab: 'system', sub: 'integrations' },
     { key: 'settings.spoolman_title', kw: 'spoolman filament sync external', tab: 'system', sub: 'integrations' },
+    { key: 'forge_slicer.title', kw: 'forge slicer orcaslicer fork rest service slice profile', tab: 'system', sub: 'integrations' },
     { key: 'settings.custom_fields_title', kw: 'custom field spool printer profile project', tab: 'system', sub: 'data' },
     { key: 'settings.brand_defaults_title', kw: 'brand default temperature filament material', tab: 'system', sub: 'data' },
     { key: 'settings.courses_title', kw: 'learning center tutorial guide course', tab: 'system', sub: 'data' },
