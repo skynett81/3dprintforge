@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import {
   configure, probe, lastProbe,
   listProfiles, getProfile, slice, sliceStream, fetchGcode, preview,
+  cancelJob, listJobs,
   stopBackgroundProbe,
 } from '../../server/forge-slicer-client.js';
 
@@ -73,6 +74,18 @@ function _route(req, res) {
   if (u.pathname === '/api/jobs/job-abc/gcode') {
     res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
     return res.end(Buffer.from('G1 X10 Y10 Z0.2 E0.5\n'));
+  }
+  if (u.pathname === '/api/jobs' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ jobs: [{ id: 'job-running', size: 1234, created_at: Date.now() }] }));
+  }
+  if (u.pathname === '/api/jobs/job-running/cancel' && req.method === 'POST') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ ok: true, cancelled: true }));
+  }
+  if (u.pathname === '/api/jobs/missing/cancel' && req.method === 'POST') {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'job not found', code: 'ERR_JOB_NOT_FOUND' }));
   }
   if (u.pathname === '/api/preview' && req.method === 'POST') {
     const chunks = [];
@@ -204,6 +217,22 @@ describe('forge-slicer-client', () => {
     assert.equal(events[0].event, 'progress');
     assert.equal(events[0].stage, 'loading');
     assert.ok(events.some(e => e.event === 'layer' && e.layer === 75));
+  });
+
+  it('listJobs() returns the queue snapshot', async () => {
+    const data = await listJobs();
+    assert.ok(Array.isArray(data.jobs));
+    assert.equal(data.jobs[0].id, 'job-running');
+  });
+
+  it('cancelJob() returns true on accepted cancel', async () => {
+    const ok = await cancelJob('job-running');
+    assert.equal(ok, true);
+  });
+
+  it('cancelJob() returns false when the job is gone', async () => {
+    const ok = await cancelJob('missing');
+    assert.equal(ok, false);
   });
 
   it('disabled config short-circuits probe', async () => {

@@ -100,6 +100,7 @@
             <button id="ss-slice" class="form-btn primary" style="width:100%;font-size:0.95rem;padding:10px" disabled>
               ⚡ Slice
             </button>
+            <button id="ss-cancel" class="form-btn" style="width:100%;margin-top:6px;display:none;background:var(--accent-red);color:#fff">⏹ Cancel slicing</button>
             <div id="ss-slice-progress" style="margin-top:8px"></div>
             <div id="ss-result" style="margin-top:14px"></div>
 
@@ -108,6 +109,7 @@
               <select id="ss-target" class="form-control" style="margin-bottom:6px"></select>
               <label style="font-size:0.78rem"><input type="checkbox" id="ss-print"> Auto-start print</label>
               <button id="ss-send" class="form-btn" style="width:100%;margin-top:6px" disabled>📤 Send G-code to printer</button>
+              <button id="ss-slice-and-send" class="form-btn" style="width:100%;margin-top:6px" disabled title="Slice via Forge Slicer and immediately upload the gcode in one step">🚀 Slice & Send to printer</button>
             </div>
           </div>
         </div>
@@ -119,7 +121,9 @@
     document.getElementById('ss-recenter').onclick = _recenterModel;
     document.getElementById('ss-orient').onclick = _autoOrient;
     document.getElementById('ss-slice').onclick = _runSlice;
+    document.getElementById('ss-cancel').onclick = _cancelSlice;
     document.getElementById('ss-send').onclick = _sendToPrinter;
+    document.getElementById('ss-slice-and-send').onclick = _sliceAndSend;
     document.getElementById('ss-save-process').onclick = _saveProcess;
     document.getElementById('ss-printer').onchange = (e) => { _state.selectedPrinter = parseInt(e.target.value, 10) || null; _updateBedFromPrinter(); _populateOverrides(); };
     document.getElementById('ss-filament').onchange = (e) => { _state.selectedFilament = parseInt(e.target.value, 10) || null; _populateOverrides(); };
@@ -431,6 +435,13 @@
       let layers = 0, dur = 0, timeSec = 0, fil = 0, blob = null;
 
       if (useForge) {
+        // Show the Cancel button and hook AbortController so the user
+        // can interrupt mid-stream. The button is hidden again when
+        // slicing finishes (success, error, or cancel).
+        const cancelBtn = document.getElementById('ss-cancel');
+        const _abort = new AbortController();
+        _state.activeSlice = { abort: _abort, jobId: null };
+        if (cancelBtn) cancelBtn.style.display = '';
         // SSE-streaming flow — fetch with text/event-stream Accept,
         // parse each event for live progress updates. The buffered
         // /api/slicer/forge/slice endpoint stays available as a
@@ -450,6 +461,7 @@
             'X-Filename': _state.fileName,
           },
           body: buf,
+          signal: _abort.signal,
         });
         if (!fr.ok) {
           const err = await fr.json().catch(() => ({}));
@@ -527,11 +539,80 @@
       progress.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sliced via ${backendLabel} in ${dur} ms</div>`;
       _renderResult();
       document.getElementById('ss-send').disabled = false;
+      document.getElementById('ss-slice-and-send').disabled = false;
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        progress.innerHTML = `<div style="color:var(--accent-orange)">⏹ Slicing cancelled</div>`;
+      } else {
+        progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+      }
+    } finally {
+      _state.busy = false;
+      _state.activeSlice = null;
+      document.getElementById('ss-slice').disabled = false;
+      const cb = document.getElementById('ss-cancel');
+      if (cb) cb.style.display = 'none';
+    }
+  }
+
+  // Cancel an in-progress SSE slice. Aborts the fetch (which closes the
+  // upstream connection) and POSTs to the fork's cancel endpoint when we
+  // know the job id, so the C++ side can stop the actual slicing work
+  // instead of leaking CPU on a job whose result no one is waiting for.
+  async function _cancelSlice() {
+    const a = _state.activeSlice;
+    if (!a) return;
+    try { a.abort.abort(); } catch { /* ignore */ }
+    if (a.jobId) {
+      fetch(`/api/slicer/forge/jobs/${encodeURIComponent(a.jobId)}/cancel`, { method: 'POST' }).catch(() => {});
+    }
+  }
+
+  // Slice via Forge and immediately upload the resulting gcode to the
+  // selected printer in one server-side step. Avoids the
+  // download-then-upload roundtrip the user otherwise has to do.
+  async function _sliceAndSend() {
+    if (!_state.file) return;
+    const target = document.getElementById('ss-target').value;
+    if (!target) { _toast('Pick a target printer first', 'warning'); return; }
+    _state.busy = true;
+    document.getElementById('ss-slice-and-send').disabled = true;
+    const progress = document.getElementById('ss-slice-progress');
+    progress.innerHTML = '<div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Slicing & uploading…</div>';
+    try {
+      const buf = await _state.file.arrayBuffer();
+      const filIds = _state.selectedFilament ? JSON.stringify([String(_state.selectedFilament)]) : '';
+      const print = document.getElementById('ss-print').checked ? '&print=1' : '';
+      const url = `/api/slicer/forge/slice-and-send?target_printer=${encodeURIComponent(target)}&printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}${print}`;
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': _state.fileName },
+        body: buf,
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</div>`;
+        return;
+      }
+      const sliced = data.slice || {};
+      _state.lastSlice = {
+        blob: new Blob([new Uint8Array(0)]), // gcode already on the printer; we don't keep a local copy
+        filename: data.gcodeFilename || (_state.fileName.replace(/\.[^.]+$/, '') + '.gcode'),
+        layers: 0,
+        dur: 0,
+        timeSec: sliced.estimated_time_s || 0,
+        fil: (sliced.filament_used_g || []).reduce((a, b) => a + b, 0),
+        filamentBreakdown: sliced.filament_used_g || [],
+        sentTo: target,
+        printing: !!data.printing,
+      };
+      progress.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sliced & sent to ${_esc(target)}${data.printing ? ' (printing started)' : ''}</div>`;
+      _renderResult();
     } catch (e) {
       progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
     } finally {
       _state.busy = false;
-      document.getElementById('ss-slice').disabled = false;
+      document.getElementById('ss-slice-and-send').disabled = false;
     }
   }
 
@@ -540,22 +621,37 @@
     if (!r) return;
     const hours = Math.floor(r.timeSec / 3600);
     const mins = Math.floor((r.timeSec % 3600) / 60);
+    // Per-toolhead filament breakdown when slicing returned
+    // filament_used_g[] (multi-extruder prints). Show one line per
+    // tool that consumed > 0.5 g so the user sees how much each
+    // physical reel will use.
+    const breakdown = (r.filamentBreakdown || []).filter(g => g > 0.5);
+    const breakdownHtml = breakdown.length > 1 ? `
+      <div style="margin-top:4px;padding-left:10px;font-size:0.75rem;color:var(--text-muted)">
+        ${breakdown.map((g, i) => `<div>T${i}: ${g.toFixed(1)}g</div>`).join('')}
+      </div>` : '';
     document.getElementById('ss-result').innerHTML = `
       <div style="display:flex;flex-direction:column;gap:4px;font-size:0.82rem">
-        <div><strong>Layers:</strong> ${r.layers}</div>
+        ${r.layers > 0 ? `<div><strong>Layers:</strong> ${r.layers}</div>` : ''}
         <div><strong>Print time:</strong> ${hours}h ${mins}m</div>
-        <div><strong>Filament:</strong> ${r.fil.toFixed(2)} g</div>
-        <div><strong>G-code:</strong> ${(r.blob.size / 1024).toFixed(1)} KB</div>
+        <div><strong>Filament:</strong> ${r.fil.toFixed(2)} g${breakdownHtml}</div>
+        ${r.blob && r.blob.size > 0 ? `<div><strong>G-code:</strong> ${(r.blob.size / 1024).toFixed(1)} KB</div>` : ''}
+        ${r.sentTo ? `<div style="color:var(--accent-green)"><strong>📤 Sent to:</strong> ${_esc(r.sentTo)}${r.printing ? ' (printing)' : ''}</div>` : ''}
       </div>
-      <button class="form-btn" id="ss-download" style="width:100%;margin-top:10px">⬇ Download G-code</button>
+      ${r.blob && r.blob.size > 0 ? '<button class="form-btn" id="ss-download" style="width:100%;margin-top:10px">⬇ Download G-code</button>' : ''}
     `;
-    document.getElementById('ss-download').onclick = () => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(r.blob);
-      a.download = r.filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    };
+    // Only attach the download handler when the button rendered (i.e. we
+    // have a local gcode blob; slice-and-send leaves blob.size == 0).
+    const downloadBtn = document.getElementById('ss-download');
+    if (downloadBtn) {
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(r.blob);
+        a.download = r.filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+    }
   }
 
   async function _sendToPrinter() {
