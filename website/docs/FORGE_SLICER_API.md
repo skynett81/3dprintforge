@@ -155,6 +155,22 @@ not the live network printers). 3DPrintForge mirrors these into
 | `ERR_SLICE_FAILED` | 500 | Slicing crashed |
 | `ERR_INTERNAL` | 500 | Other internal error |
 
+## SSE event types
+
+When the client requests `Accept: text/event-stream` on `/api/slice`,
+the response is a stream of `event:` + `data:` blocks separated by a
+blank line.
+
+| Event | Payload | Meaning |
+|---|---|---|
+| `progress` | `{ stage, pct }` | Stage transitions (loading / repairing / slicing / gcode) and completion percent |
+| `layer` | `{ layer, total_layers }` | Optional per-layer counter for progress UI |
+| `done` | full `/api/slice` response | Slicing finished — final `job_id`, paths, estimated time |
+| `error` | `{ message, code }` | Slicing failed mid-stream — emit and close |
+
+3DPrintForge proxies these events through `/api/slicer/forge/slice/stream`
+to the browser unchanged so an `EventSource` listener works directly.
+
 ## Phased implementation order
 
 Recommended order to avoid having a broken service binary:

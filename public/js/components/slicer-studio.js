@@ -431,12 +431,22 @@
       let layers = 0, dur = 0, timeSec = 0, fil = 0, blob = null;
 
       if (useForge) {
-        progress.innerHTML = '<div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Slicing via Forge Slicer…</div>';
+        // SSE-streaming flow — fetch with text/event-stream Accept,
+        // parse each event for live progress updates. The buffered
+        // /api/slicer/forge/slice endpoint stays available as a
+        // fallback, but SSE is the better UX when supported.
         const filIds = _state.selectedFilament ? JSON.stringify([String(_state.selectedFilament)]) : '';
-        const fr = await fetch(`/api/slicer/forge/slice?printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}`, {
+        const url = `/api/slicer/forge/slice/stream?printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}`;
+        progress.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> <span id="ss-forge-stage">Connecting to Forge Slicer…</span></div>
+          <div style="height:6px;background:var(--bg-tertiary);border-radius:3px"><div id="ss-forge-bar" style="width:0;height:100%;background:var(--accent-blue);border-radius:3px;transition:width 0.2s"></div></div>
+        </div>`;
+
+        const fr = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/octet-stream',
+            'Accept': 'text/event-stream',
             'X-Filename': _state.fileName,
           },
           body: buf,
@@ -446,10 +456,51 @@
           progress.innerHTML = `<div style="color:#ef4444">Forge slice failed: ${_esc(err.error || fr.statusText)}</div>`;
           return;
         }
-        const result = await fr.json();
+
+        // Parse the SSE response stream.
+        const reader = fr.body.getReader();
+        const decoder = new TextDecoder();
+        let leftover = '';
+        let result = null;
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          leftover += decoder.decode(value, { stream: true });
+          let nl;
+          let event = 'message';
+          let data = '';
+          while ((nl = leftover.indexOf('\n\n')) >= 0) {
+            const block = leftover.slice(0, nl);
+            leftover = leftover.slice(nl + 2);
+            event = 'message'; data = '';
+            for (const line of block.split('\n')) {
+              if (line.startsWith('event:')) event = line.slice(6).trim();
+              else if (line.startsWith('data:')) data += (data ? '\n' : '') + line.slice(5).trim();
+            }
+            let parsed = null;
+            try { parsed = JSON.parse(data); } catch { /* leave null */ }
+            if (event === 'progress' && parsed) {
+              const stageEl = document.getElementById('ss-forge-stage');
+              const barEl = document.getElementById('ss-forge-bar');
+              if (stageEl) stageEl.textContent = `${parsed.stage || 'slicing'} — ${parsed.pct ?? 0}%`;
+              if (barEl) barEl.style.width = (parsed.pct || 0) + '%';
+            } else if (event === 'layer' && parsed) {
+              const stageEl = document.getElementById('ss-forge-stage');
+              if (stageEl && parsed.total_layers) stageEl.textContent = `Layer ${parsed.layer}/${parsed.total_layers}`;
+            } else if (event === 'done' && parsed) {
+              result = parsed;
+            } else if (event === 'error' && parsed) {
+              progress.innerHTML = `<div style="color:#ef4444">Forge slice failed: ${_esc(parsed.message || 'Unknown error')}</div>`;
+              return;
+            }
+          }
+        }
+        if (!result) {
+          progress.innerHTML = `<div style="color:#ef4444">Forge slice did not return a 'done' event</div>`;
+          return;
+        }
         timeSec = result.estimated_time_s || 0;
         fil = (result.filament_used_g || []).reduce((a, b) => a + b, 0);
-        // Pull the gcode bytes through the proxy.
         const gr = await fetch(`/api/slicer/forge/jobs/${encodeURIComponent(result.job_id)}/gcode`);
         if (gr.ok) blob = await gr.blob();
         dur = Date.now() - start;

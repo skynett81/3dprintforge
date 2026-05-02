@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import {
   configure, probe, lastProbe,
-  listProfiles, getProfile, slice, fetchGcode, preview,
+  listProfiles, getProfile, slice, sliceStream, fetchGcode, preview,
   stopBackgroundProbe,
 } from '../../server/forge-slicer-client.js';
 
@@ -44,6 +44,23 @@ function _route(req, res) {
     req.on('data', c => chunks.push(c));
     req.on('end', () => {
       receivedSlice = { contentType: req.headers['content-type'], size: Buffer.concat(chunks).length };
+      // SSE branch when client requests text/event-stream
+      const accept = (req.headers.accept || '').toLowerCase();
+      if (accept.includes('text/event-stream')) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+        const send = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
+        send('progress', { stage: 'loading', pct: 5 });
+        send('progress', { stage: 'slicing', pct: 50 });
+        send('layer', { layer: 75, total_layers: 150 });
+        send('progress', { stage: 'gcode', pct: 100 });
+        send('done', {
+          ok: true, job_id: 'job-stream',
+          gcode_path: '/tmp/test.gcode', gcode_size: 512,
+          estimated_time_s: 1800, filament_used_g: [25, 0, 0, 0],
+        });
+        res.end();
+        return;
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         ok: true, gcode_path: '/tmp/forge-slicer/test.gcode',
@@ -169,6 +186,24 @@ describe('forge-slicer-client', () => {
     const p = await probe({ force: true });
     assert.equal(p.ok, true);
     configure({ token: '' });  // restore
+  });
+
+  it('sliceStream() emits progress events and resolves with the done payload', async () => {
+    const events = [];
+    const result = await sliceStream({
+      modelBuffer: Buffer.from('solid test\nendsolid\n'),
+      printerId: 'u1-04',
+      filamentIds: ['pla-generic'],
+      processId: 'normal',
+      onEvent: (e) => events.push(e),
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.job_id, 'job-stream');
+    // 3 progress events + 1 layer event = 4 progress callbacks; done is resolved separately.
+    assert.ok(events.length >= 3);
+    assert.equal(events[0].event, 'progress');
+    assert.equal(events[0].stage, 'loading');
+    assert.ok(events.some(e => e.event === 'layer' && e.layer === 75));
   });
 
   it('disabled config short-circuits probe', async () => {

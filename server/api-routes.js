@@ -7085,6 +7085,57 @@ export async function handleApiRequest(req, res) {
       }
     }
 
+    // POST /api/slicer/forge/slice/stream — SSE pipeline. Browser sends
+    // the model as octet-stream and listens via EventSource for live
+    // progress events. We write each event our Node client emits
+    // straight back to the browser as text/event-stream chunks.
+    if (method === 'POST' && path === '/api/slicer/forge/slice/stream') {
+      try {
+        const { probe, sliceStream } = await import('./forge-slicer-client.js');
+        const p = await probe();
+        if (!p.ok) return sendJson(res, { error: 'forge slicer not reachable' }, 503);
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const buf = Buffer.concat(chunks);
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-store',
+          'Connection': 'keep-alive',
+          'X-Accel-Buffering': 'no',
+        });
+        const filIds = url.searchParams.get('filament_ids');
+        const result = await sliceStream({
+          modelBuffer: buf,
+          modelFilename: req.headers['x-filename'] || 'model.stl',
+          printerId: url.searchParams.get('printer_id'),
+          filamentIds: filIds ? JSON.parse(filIds) : undefined,
+          processId: url.searchParams.get('process_id'),
+          onEvent: (evt) => {
+            try {
+              const eventName = evt.event || 'progress';
+              const { event: _drop, ...payload } = evt;
+              res.write(`event: ${eventName}\n`);
+              res.write(`data: ${JSON.stringify(payload)}\n\n`);
+            } catch { /* swallow — keep slice going */ }
+          },
+        });
+        res.write(`event: done\n`);
+        res.write(`data: ${JSON.stringify(result)}\n\n`);
+        return res.end();
+      } catch (e) {
+        // If headers haven't been sent yet, return a JSON error.
+        if (!res.headersSent) {
+          return sendJson(res, { error: e.message, code: e.code || 'ERR_SLICE_FAILED' }, e.status || 500);
+        }
+        // Otherwise tail an error event onto the stream.
+        try {
+          res.write(`event: error\n`);
+          res.write(`data: ${JSON.stringify({ message: e.message, code: e.code })}\n\n`);
+          res.end();
+        } catch { /* ignore */ }
+      }
+    }
+
     // POST /api/slicer/forge/preview — multipart in, PNG out
     if (method === 'POST' && path === '/api/slicer/forge/preview') {
       try {

@@ -123,22 +123,63 @@ const server = createServer(async (req, res) => {
   // ── /api/slice ──
   if (u.pathname === '/api/slice' && req.method === 'POST') {
     const body = await _readBody(req);
-    // We don't actually slice — just return plausible numbers so the
-    // 3DPrintForge UI can verify its handling.
     const jobId = randomUUID();
     const fakeGcode = Buffer.from(
       ';FORGE-SLICER MOCK GCODE\n' +
       `;MODEL_BYTES=${body.length}\n` +
       'G28\nG1 X10 Y10 Z0.2 E0.5 F1500\nG1 X100 Y10 Z0.2 E10 F1500\nM104 S0\nM140 S0\n'
     );
-    JOBS.set(jobId, { gcode: fakeGcode, createdAt: Date.now() });
-    return _json(res, 200, {
+    const summary = {
       ok: true, job_id: jobId,
       gcode_path: `/tmp/forge-slicer/${jobId}.gcode`,
       gcode_size: fakeGcode.length,
       estimated_time_s: 3600 + Math.floor(Math.random() * 1800),
       filament_used_g: [50 + Math.random() * 30, 0, 0, 0],
-    });
+    };
+    JOBS.set(jobId, { gcode: fakeGcode, createdAt: Date.now() });
+
+    // SSE branch: when the client requests text/event-stream, simulate
+    // a slice progressing through stages. Useful for testing
+    // 3DPrintForge's streaming UI without actually slicing.
+    const accept = (req.headers.accept || '').toLowerCase();
+    if (accept.includes('text/event-stream')) {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+      const send = (event, data) => {
+        res.write(`event: ${event}\n`);
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+      const stages = [
+        { stage: 'loading', pct: 5, delay: 80 },
+        { stage: 'repairing', pct: 12, delay: 100 },
+        { stage: 'slicing', pct: 25, delay: 120 },
+        { stage: 'slicing', pct: 50, delay: 150 },
+        { stage: 'slicing', pct: 75, delay: 150 },
+        { stage: 'gcode', pct: 90, delay: 100 },
+        { stage: 'gcode', pct: 100, delay: 60 },
+      ];
+      let i = 0;
+      const tick = () => {
+        if (i >= stages.length) {
+          send('done', summary);
+          res.end();
+          return;
+        }
+        const s = stages[i++];
+        send('progress', { stage: s.stage, pct: s.pct });
+        if (s.stage === 'slicing' && s.pct > 0) {
+          send('layer', { layer: Math.floor(s.pct * 1.5), total_layers: 150 });
+        }
+        setTimeout(tick, s.delay);
+      };
+      tick();
+      return;
+    }
+    return _json(res, 200, summary);
   }
 
   // ── /api/jobs/:id/gcode ──

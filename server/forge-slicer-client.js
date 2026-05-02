@@ -218,6 +218,100 @@ export async function fetchGcode(jobId) {
 }
 
 /**
+ * Slice with live progress events. Streams Server-Sent Events from the
+ * fork's /api/slice endpoint and invokes onEvent({ stage, pct, layer,
+ * total_layers, ... }) for each. Resolves with the final 'done' event
+ * payload when slicing completes.
+ *
+ * @param {object} args — same as slice()
+ * @param {function} onEvent — called for each progress event
+ * @returns {Promise<{ok:boolean, job_id:string, gcode_path:string, ...}>}
+ */
+export async function sliceStream({ modelBuffer, modelFilename = 'model.stl', printerId, filamentIds, processId, overrides, onEvent }) {
+  if (!Buffer.isBuffer(modelBuffer)) throw new Error('modelBuffer must be a Buffer');
+  const boundary = '----forge-slicer-stream-' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const parts = [];
+  const append = (name, value, headers = {}) => {
+    parts.push(Buffer.from(`--${boundary}\r\n`));
+    let h = `Content-Disposition: form-data; name="${name}"`;
+    if (headers.filename) h += `; filename="${headers.filename}"`;
+    parts.push(Buffer.from(h + '\r\n'));
+    if (headers.contentType) parts.push(Buffer.from(`Content-Type: ${headers.contentType}\r\n`));
+    parts.push(Buffer.from('\r\n'));
+    parts.push(Buffer.isBuffer(value) ? value : Buffer.from(String(value)));
+    parts.push(Buffer.from('\r\n'));
+  };
+  append('model', modelBuffer, { filename: modelFilename, contentType: 'application/octet-stream' });
+  if (printerId) append('printer_id', printerId);
+  if (Array.isArray(filamentIds)) append('filament_ids', JSON.stringify(filamentIds));
+  if (processId) append('process_id', processId);
+  if (overrides) append('overrides', JSON.stringify(overrides));
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  const body = Buffer.concat(parts);
+
+  return new Promise((resolve, reject) => {
+    let urlObj;
+    try { urlObj = new URL('/api/slice', _config.url); } catch (e) { return reject(e); }
+    const opts = {
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Accept': 'text/event-stream',
+      },
+      timeout: 10 * 60_000,
+    };
+    if (_config.token) opts.headers['Authorization'] = `Bearer ${_config.token}`;
+    const reqFn = urlObj.protocol === 'https:' ? httpsRequest : httpRequest;
+    const req = reqFn(urlObj, opts, (res) => {
+      if (res.statusCode >= 400) {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          const err = new Error(`HTTP ${res.statusCode}: ${Buffer.concat(chunks).toString('utf8').slice(0, 200)}`);
+          err.status = res.statusCode;
+          reject(err);
+        });
+        return;
+      }
+      // Parse SSE events incrementally. Each event is delimited by
+      // a blank line; lines starting with 'event:' / 'data:' are part
+      // of the same event.
+      let buf = '';
+      let currentEvent = 'message';
+      let currentData = '';
+      const flush = () => {
+        if (!currentData) { currentEvent = 'message'; return; }
+        let parsed = currentData;
+        try { parsed = JSON.parse(currentData); } catch { /* leave as string */ }
+        if (currentEvent === 'done') {
+          resolve(typeof parsed === 'object' ? parsed : { ok: true });
+        } else if (typeof onEvent === 'function') {
+          try { onEvent({ event: currentEvent, ...(typeof parsed === 'object' ? parsed : { data: parsed }) }); } catch { /* swallow */ }
+        }
+        currentEvent = 'message';
+        currentData = '';
+      };
+      res.on('data', (chunk) => {
+        buf += chunk.toString('utf8');
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (line === '') { flush(); continue; }
+          if (line.startsWith('event:')) currentEvent = line.slice(6).trim();
+          else if (line.startsWith('data:')) currentData += (currentData ? '\n' : '') + line.slice(5).trim();
+        }
+      });
+      res.on('end', () => { flush(); });
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(new Error('timeout')); });
+    req.end(body);
+  });
+}
+
+/**
  * Get a PNG thumbnail for a model.
  */
 export async function preview({ modelBuffer, modelFilename = 'model.stl', width = 512, height = 512 }) {
