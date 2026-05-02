@@ -311,9 +311,12 @@ export async function sliceStream({ modelBuffer, modelFilename = 'model.stl', pr
           resolve(typeof parsed === 'object' ? parsed : { ok: true });
         } else if (currentEvent === 'error') {
           resolved = true;
-          const msg = (typeof parsed === 'object' && parsed?.error) || String(parsed) || 'slice failed';
+          // Contract: { message, code }. Tolerate { error } as a fallback
+          // since older fork builds emitted that shape.
+          const obj = (typeof parsed === 'object' && parsed) || {};
+          const msg = obj.message || obj.error || (typeof parsed === 'string' ? parsed : '') || 'slice failed';
           const err = new Error(msg);
-          if (typeof parsed === 'object' && parsed?.code) err.code = parsed.code;
+          if (obj.code) err.code = obj.code;
           reject(err);
         } else if (typeof onEvent === 'function') {
           try { onEvent({ event: currentEvent, ...(typeof parsed === 'object' ? parsed : { data: parsed }) }); } catch { /* swallow */ }
