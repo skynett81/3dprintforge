@@ -1329,6 +1329,14 @@
         ['PID', info.pid],
         ['Memory', info.memory_mb + ' MB'],
       ];
+      if (info.forge_slicer) {
+        const fs = info.forge_slicer;
+        let label;
+        if (!fs.enabled) label = '<span style="color:var(--text-muted)">disabled</span>';
+        else if (fs.ok) label = `<span style="color:var(--accent-green)">connected</span> v${fs.version || '?'}`;
+        else label = `<span style="color:#ef4444">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
+        rows.push(['Forge Slicer', label]);
+      }
 
       // Build network/ports section
       let netHtml = '';
