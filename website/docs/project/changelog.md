@@ -4,11 +4,11 @@ All notable changes to 3DPrintForge.
 
 ---
 
-## v1.1.21 — Forge Slicer integration, filament overhaul, security hardening (2026-05-03)
+## v1.1.21 — 3DPrintForge Slicer integration, filament overhaul, security hardening (2026-05-03)
 
 Three concurrent tracks: a REST integration with our [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) fork, a top-to-bottom rewrite of the filament inventory experience (Storage tab, drag-and-drop, bulk-add), and a security audit that closed six CVE-class issues. Plus an i18n overhaul that fixed a broken-fallback pattern across 504 call sites, a tabbed Analytics dashboard, and 6 new database migrations.
 
-### Forge Slicer fork integration
+### 3DPrintForge Slicer fork integration
 
 3DPrintForge half of an integration with the
 [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) fork.

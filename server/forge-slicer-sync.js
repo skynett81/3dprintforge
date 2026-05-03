@@ -1,5 +1,5 @@
 /**
- * Forge Slicer profile sync — periodically pulls the profile catalog
+ * 3DPrintForge Slicer profile sync — periodically pulls the profile catalog
  * from the connected fork and mirrors it into the local
  * `slicer_profiles` SQLite table so the user sees the same list in the
  * 3DPrintForge UI as inside the slicer GUI.

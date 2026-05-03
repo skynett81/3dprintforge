@@ -1,9 +1,9 @@
 ---
-title: Forge Slicer setup
+title: 3DPrintForge Slicer setup
 description: Connect the skynett81/OrcaSlicer fork to 3DPrintForge for in-app slicing
 ---
 
-# Forge Slicer setup
+# 3DPrintForge Slicer setup
 
 3DPrintForge can drive a custom OrcaSlicer fork
 ([skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer))
@@ -42,7 +42,7 @@ If you already have the fork built:
 ```
 
 Open 3DPrintForge → look at the header. Within a few seconds the
-🟢 **Forge Slicer** badge appears. Done.
+🟢 **3DPrintForge Slicer** badge appears. Done.
 
 To verify from the command line:
 ```bash
@@ -91,7 +91,7 @@ npm start
 ```
 
 You can also configure it from the UI without editing files:
-**Settings → System → Integrations → Forge Slicer**, or open Slicer
+**Settings → System → Integrations → 3DPrintForge Slicer**, or open Slicer
 Studio (`#slicer/studio`) — the settings card is at the top of both
 panels.
 
@@ -125,7 +125,7 @@ service (Linux):
 ```ini
 # /etc/systemd/system/forge-slicer.service
 [Unit]
-Description=Forge Slicer service
+Description=3DPrintForge Slicer service
 After=network.target
 
 [Service]
@@ -146,19 +146,19 @@ sudo systemctl enable --now forge-slicer
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Badge stays grey ('Forge Slicer offline') | Service isn't reachable on the configured URL | Check `curl http://127.0.0.1:8765/api/health` |
+| Badge stays grey ('3DPrintForge Slicer offline') | Service isn't reachable on the configured URL | Check `curl http://127.0.0.1:8765/api/health` |
 | 'Token required' error | Token mismatch | Ensure 3DPrintForge's token equals what the fork was started with |
 | Profiles don't appear | Sync hasn't run yet, or service started after 3DPrintForge | Click **Test connection** in Settings, then **Sync now** |
 | Slicing fails with 501 | Fork only implements Phase 1-2 (health + profiles) | The fork needs Phase 3 work — slice still falls back to native |
 | Disconnect toast every minute | Service crashes and restarts | Check the fork's stderr; common cause is a bad multipart upload |
-| 'Forge Slicer not reachable' on slice but badge is green | Probe cache stale | Add `?force=1` to /api/slicer/forge/status, or restart 3DPrintForge |
+| '3DPrintForge Slicer not reachable' on slice but badge is green | Probe cache stale | Add `?force=1` to /api/slicer/forge/status, or restart 3DPrintForge |
 
 ## Falling back
 
 If the fork goes down (or you don't run one), 3DPrintForge silently
 falls back to the next available slicer:
 
-1. **Forge Slicer** (REST service) — best UX, live progress
+1. **3DPrintForge Slicer** (REST service) — best UX, live progress
 2. **CLI bridge** — spawns OrcaSlicer / BambuStudio / Snapmaker Orca
    on demand if installed
 3. **Native engine** — pure-JS slicer that always works (slower,
@@ -170,7 +170,7 @@ always know what produced the gcode.
 ## Disabling the integration
 
 If you don't run the fork and don't want to see the offline badge:
-**Settings → System → Integrations → Forge Slicer → uncheck Enable**.
+**Settings → System → Integrations → 3DPrintForge Slicer → uncheck Enable**.
 The header badge hides entirely. Slicer Studio uses bridge or native
 without prompting.
 

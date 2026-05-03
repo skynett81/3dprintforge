@@ -130,8 +130,8 @@
       "field_type": "text"
     },
     {
-      "name": "Forge Slicer URL",
-      "description": "URL of a running skynett81/OrcaSlicer fork in service mode (default http://127.0.0.1:8765). Leave blank to disable the integration. See website/docs/forge-slicer-setup.md for setup instructions.",
+      "name": "3DPrintForge Slicer URL",
+      "description": "URL of a running 3DPrintForge Slicer (skynett81/OrcaSlicer fork) in service mode (default http://127.0.0.1:8765). Leave blank to disable the integration. See website/docs/forge-slicer-setup.md for setup instructions.",
       "env_variable": "FORGE_SLICER_URL",
       "default_value": "",
       "user_viewable": true,
@@ -140,8 +140,8 @@
       "field_type": "text"
     },
     {
-      "name": "Forge Slicer Token",
-      "description": "Bearer token for the Forge Slicer service when run beyond localhost. Optional — leave blank for localhost-only setups (the most common case).",
+      "name": "3DPrintForge Slicer Token",
+      "description": "Bearer token for the 3DPrintForge Slicer service when run beyond localhost. Optional — leave blank for localhost-only setups (the most common case).",
       "env_variable": "FORGE_SLICER_TOKEN",
       "default_value": "",
       "user_viewable": true,

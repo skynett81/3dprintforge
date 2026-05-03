@@ -103,7 +103,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Forge Slicer',
+      label: '3DPrintForge Slicer',
       items: [
         'forge-slicer-setup',
         'FORGE_SLICER_API',

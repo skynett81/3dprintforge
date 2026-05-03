@@ -754,13 +754,13 @@ export class NotificationManager {
 
       case 'forge_slicer_disconnected':
         return {
-          title: 'Forge Slicer offline',
+          title: '3DPrintForge Slicer offline',
           message: `The OrcaSlicer fork in service mode stopped responding — slicing now falls back to the CLI bridge or native engine.${data.error ? '\nError: ' + data.error : ''}`
         };
 
       case 'forge_slicer_reconnected':
         return {
-          title: 'Forge Slicer back online',
+          title: '3DPrintForge Slicer back online',
           message: `The OrcaSlicer fork is reachable again${data.version ? ' (v' + data.version + ')' : ''}. Slicing will resume through the service.`
         };
 

@@ -1,5 +1,5 @@
 /**
- * Forge Slicer client — HTTP/1.1 client for the skynett81/OrcaSlicer
+ * 3DPrintForge Slicer client — HTTP/1.1 client for the skynett81/OrcaSlicer
  * fork running in service mode (see docs/FORGE_SLICER_API.md).
  *
  * Auto-detects the service via /api/health, caches the discovery

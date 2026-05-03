@@ -1,5 +1,5 @@
 /**
- * Forge Slicer Settings — small standalone settings card the user can
+ * 3DPrintForge Slicer Settings — small standalone settings card the user can
  * mount anywhere. Shows the current connection status, lets the user
  * configure URL/token/enabled, and runs a connection test on demand.
  *
@@ -46,9 +46,9 @@
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:1rem;display:flex;align-items:center;gap:6px">
-              🔧 ${t('forge_slicer.title', 'Forge Slicer service')}
+              🔧 ${t('forge_slicer.title', '3DPrintForge Slicer service')}
             </div>
-            <div class="text-muted" style="font-size:0.72rem;margin-top:2px">${t('forge_slicer.subtitle', 'Connect 3DPrintForge to your skynett81/OrcaSlicer fork running in service mode')}</div>
+            <div class="text-muted" style="font-size:0.72rem;margin-top:2px">${t('forge_slicer.subtitle', 'Connect to your 3DPrintForge Slicer running in service mode (skynett81/OrcaSlicer)')}</div>
           </div>
           <span style="${badgeStyle}" title="${dot.title || ''}">
             <span style="width:8px;height:8px;border-radius:50%;background:${dot.color}"></span>
@@ -75,7 +75,7 @@
           <div class="form-group" style="margin-bottom:0;align-self:end">
             <label class="form-label" style="display:flex;align-items:center;gap:6px">
               <input type="checkbox" id="fsl-enabled" ${cfg.enabled ? 'checked' : ''}>
-              ${t('forge_slicer.enabled', 'Enable Forge Slicer')}
+              ${t('forge_slicer.enabled', 'Enable 3DPrintForge Slicer')}
             </label>
           </div>
         </div>
@@ -126,7 +126,7 @@
       const data = await res.json();
       if (typeof showToast === 'function') {
         showToast(data.ok
-          ? t('forge_slicer.connected_toast', 'Forge Slicer connected ✓')
+          ? t('forge_slicer.connected_toast', '3DPrintForge Slicer connected ✓')
           : t('forge_slicer.saved_unreachable', 'Settings saved — service still unreachable'),
           data.ok ? 'success' : 'warning');
       }
@@ -142,7 +142,7 @@
     const status = await _fetchStatus(true);
     if (typeof showToast === 'function') {
       showToast(status?.probe?.ok
-        ? t('forge_slicer.connected_toast', 'Forge Slicer connected ✓')
+        ? t('forge_slicer.connected_toast', '3DPrintForge Slicer connected ✓')
         : (t('forge_slicer.unreachable_toast', 'Unreachable: ') + (status?.probe?.error || 'unknown')),
         status?.probe?.ok ? 'success' : 'error');
     }

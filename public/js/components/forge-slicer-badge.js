@@ -1,5 +1,5 @@
 /**
- * Forge Slicer status badge — small pill rendered in the global
+ * 3DPrintForge Slicer status badge — small pill rendered in the global
  * header / dashboard so the user can see at a glance whether their
  * fork's REST service is connected. Click to navigate to Slicer Studio
  * where the full settings card lives.
@@ -19,7 +19,7 @@
   // Default URL the integration ships with. If the user hasn't changed
   // either the URL or the token, treat that as "never set up" and stay
   // hidden when the probe fails — otherwise every fresh install shows
-  // a permanent "Forge Slicer (offline)" pill that the user has no
+  // a permanent "3DPrintForge Slicer (offline)" pill that the user has no
   // context for.
   const DEFAULT_URL = 'http://127.0.0.1:8765';
 
@@ -40,11 +40,11 @@
     let dotColor, label, title;
     if (probe?.ok) {
       dotColor = 'var(--accent-green)';
-      label = t('forge_slicer.connected_short', 'Forge Slicer');
+      label = t('forge_slicer.connected_short', '3DPrintForge Slicer');
       title = `${probe.info?.service} v${probe.info?.version}\n${probe.info?.upstream || ''}`;
     } else {
       dotColor = 'var(--text-muted)';
-      label = t('forge_slicer.offline_short', 'Forge Slicer (offline)');
+      label = t('forge_slicer.offline_short', '3DPrintForge Slicer (offline)');
       title = probe?.error || t('forge_slicer.not_running', 'Service not running — fallback in use');
     }
     container.innerHTML = `<a href="#slicer/studio" title="${title}" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:14px;background:var(--bg-inset);border:1px solid var(--border-color);font-size:0.72rem;color:var(--text-muted);text-decoration:none;cursor:pointer">
@@ -68,9 +68,9 @@
       if (enabled && _wasOk !== null && _wasOk !== isOk) {
         if (typeof showToast === 'function') {
           if (isOk) {
-            showToast(t('forge_slicer.reconnected_toast', '🔧 Forge Slicer reconnected'), 'success', 3000);
+            showToast(t('forge_slicer.reconnected_toast', '🔧 3DPrintForge Slicer reconnected'), 'success', 3000);
           } else {
-            showToast(t('forge_slicer.disconnected_toast', '🔧 Forge Slicer disconnected — fallback in use'), 'warning', 4000);
+            showToast(t('forge_slicer.disconnected_toast', '🔧 3DPrintForge Slicer disconnected — fallback in use'), 'warning', 4000);
           }
         }
       }

@@ -109,7 +109,7 @@
               <select id="ss-target" class="form-control" style="margin-bottom:6px"></select>
               <label style="font-size:0.78rem"><input type="checkbox" id="ss-print"> Auto-start print</label>
               <button id="ss-send" class="form-btn" style="width:100%;margin-top:6px" disabled>📤 Send G-code to printer</button>
-              <button id="ss-slice-and-send" class="form-btn" style="width:100%;margin-top:6px" disabled title="Slice via Forge Slicer and immediately upload the gcode in one step">🚀 Slice & Send to printer</button>
+              <button id="ss-slice-and-send" class="form-btn" style="width:100%;margin-top:6px" disabled title="Slice via 3DPrintForge Slicer and immediately upload the gcode in one step">🚀 Slice & Send to printer</button>
             </div>
           </div>
         </div>
@@ -138,7 +138,7 @@
     await _initViewport();
     await Promise.all([_loadProfiles(), _loadConnectedPrinters()]);
 
-    // Mount the Forge Slicer settings card at the top so users see the
+    // Mount the 3DPrintForge Slicer settings card at the top so users see the
     // service status (connected / unreachable) every time they open
     // Slicer Studio. Uses the new t(key, fallback) overload internally.
     const fslContainer = body.querySelector('[data-fsl-container]');
@@ -425,7 +425,7 @@
       const buf = await _state.file.arrayBuffer();
       const start = Date.now();
 
-      // Prefer the Forge Slicer service when reachable. Falls through
+      // Prefer the 3DPrintForge Slicer service when reachable. Falls through
       // to the native engine when not — same UX, just a different
       // backend. The status pill at the top of the panel shows which
       // backend is currently active.
@@ -449,7 +449,7 @@
         const filIds = _state.selectedFilament ? JSON.stringify([String(_state.selectedFilament)]) : '';
         const url = `/api/slicer/forge/slice/stream?printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}`;
         progress.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> <span id="ss-forge-stage">Connecting to Forge Slicer…</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> <span id="ss-forge-stage">Connecting to 3DPrintForge Slicer…</span></div>
           <div style="height:6px;background:var(--bg-tertiary);border-radius:3px"><div id="ss-forge-bar" style="width:0;height:100%;background:var(--accent-blue);border-radius:3px;transition:width 0.2s"></div></div>
         </div>`;
 
@@ -535,7 +535,7 @@
       }
 
       _state.lastSlice = { blob, filename: (_state.fileName.replace(/\.[^.]+$/, '') || 'model') + '.gcode', layers, dur, timeSec, fil };
-      const backendLabel = useForge ? 'Forge Slicer' : 'native engine';
+      const backendLabel = useForge ? '3DPrintForge Slicer' : 'native engine';
       progress.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sliced via ${backendLabel} in ${dur} ms</div>`;
       _renderResult();
       document.getElementById('ss-send').disabled = false;

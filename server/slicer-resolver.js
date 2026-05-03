@@ -3,7 +3,7 @@
  * can slice a model". Picks the best available backend in priority
  * order:
  *
- *   1. Forge Slicer service (skynett81/OrcaSlicer fork via REST)
+ *   1. 3DPrintForge Slicer service (skynett81/OrcaSlicer fork via REST)
  *      — Best UX: live progress, no tmp files, profile mirroring
  *   2. Slicer Bridge (CLI: OrcaSlicer / BambuStudio / Snapmaker Orca)
  *      — Available on most desktop installs
@@ -37,14 +37,14 @@ export async function resolveSlicer({ force = false, printerInfo = {} } = {}) {
     return _cached.value;
   }
 
-  // 1. Forge Slicer (REST service)
+  // 1. 3DPrintForge Slicer (REST service)
   try {
     const forge = await import('./forge-slicer-client.js');
     const probeResult = await forge.probe({ force });
     if (probeResult.ok) {
       const value = {
         kind: 'forge',
-        label: probeResult.info?.service || 'Forge Slicer',
+        label: probeResult.info?.service || '3DPrintForge Slicer',
         version: probeResult.info?.version || '',
         backend: forge,
         async slice(args) { return forge.slice(args); },

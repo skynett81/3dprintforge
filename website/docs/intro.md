@@ -47,7 +47,7 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 
 ### Nytt i v1.1.21
 
-- **Forge Slicer-integrasjon** — koble 3DPrintForge til [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) i tjenestemodus med live-progresjon over SSE, Slice & Send i ett klikk, profilkatalog-synkronisering hvert 5. minutt og statuspille i headeren. Se [Forge Slicer-oppsett](./forge-slicer-setup.md) og [REST-kontrakten](./FORGE_SLICER_API.md).
+- **3DPrintForge Slicer-integrasjon** — koble 3DPrintForge til [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) i tjenestemodus med live-progresjon over SSE, Slice & Send i ett klikk, profilkatalog-synkronisering hvert 5. minutt og statuspille i headeren. Se [3DPrintForge Slicer-oppsett](./forge-slicer-setup.md) og [REST-kontrakten](./FORGE_SLICER_API.md).
 
 ### Nytt i v1.1.20
 

@@ -1,4 +1,4 @@
-# Forge Slicer REST API — Contract
+# 3DPrint3DPrintForge Slicer REST API — Contract
 
 This document specifies the HTTP API that the **skynett81/OrcaSlicer**
 fork exposes when launched in service mode. 3DPrintForge talks to this

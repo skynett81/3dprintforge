@@ -1107,9 +1107,9 @@
 
       let h = '<div style="display:flex;flex-direction:column;gap:14px">';
 
-      // Forge Slicer (top — runtime configurable, most actionable)
+      // 3DPrintForge Slicer (top — runtime configurable, most actionable)
       h += `<div data-fsl-container>
-        <div class="text-muted" style="padding:14px;font-size:0.85rem">Loading Forge Slicer settings…</div>
+        <div class="text-muted" style="padding:14px;font-size:0.85rem">Loading 3DPrintForge Slicer settings…</div>
       </div>`;
       // Defer mount until after the panel HTML is in the DOM.
       setTimeout(() => {
@@ -1335,7 +1335,7 @@
         if (!fs.enabled) label = '<span style="color:var(--text-muted)">disabled</span>';
         else if (fs.ok) label = `<span style="color:var(--accent-green)">connected</span> v${fs.version || '?'}`;
         else label = `<span style="color:#ef4444">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
-        rows.push(['Forge Slicer', label]);
+        rows.push(['3DPrintForge Slicer', label]);
       }
 
       // Build network/ports section

@@ -102,8 +102,8 @@ API-et er rate-begrenset for å beskytte serveren:
 | DELETE | `/api/queue/:id` | Fjern jobb |
 | POST | `/api/queue/dispatch` | Tving utsendelse |
 
-### Forge Slicer
-Proxy-endepunkter mot skynett81/OrcaSlicer-fork i tjenestemodus. Se [Forge Slicer-oppsett](../forge-slicer-setup.md) og den fulle [REST-kontrakten](../FORGE_SLICER_API.md).
+### 3DPrintForge Slicer
+Proxy-endepunkter mot skynett81/OrcaSlicer-fork i tjenestemodus. Se [3DPrintForge Slicer-oppsett](../forge-slicer-setup.md) og den fulle [REST-kontrakten](../FORGE_SLICER_API.md).
 
 | Metode | Endepunkt | Beskrivelse |
 |--------|-----------|-------------|
