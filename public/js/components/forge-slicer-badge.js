@@ -16,10 +16,23 @@
   let _timer = null;
   let _wasOk = null;       // previous state — to detect transitions
 
+  // Default URL the integration ships with. If the user hasn't changed
+  // either the URL or the token, treat that as "never set up" and stay
+  // hidden when the probe fails — otherwise every fresh install shows
+  // a permanent "Forge Slicer (offline)" pill that the user has no
+  // context for.
+  const DEFAULT_URL = 'http://127.0.0.1:8765';
+
   function _render(container, status) {
     const probe = status?.probe;
     const cfg = status?.config || {};
+    const intentShown = (cfg.url && cfg.url !== DEFAULT_URL) || cfg.token_set;
     if (cfg.enabled === false) {
+      container.style.display = 'none';
+      return;
+    }
+    if (!probe?.ok && !intentShown) {
+      // Out-of-the-box state with the service not running — hide.
       container.style.display = 'none';
       return;
     }
