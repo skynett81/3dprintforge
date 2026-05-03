@@ -1801,7 +1801,7 @@
       } else {
         inner += `<div class="fil-ams-tray"
           ${dropAttrs}
-          onclick="window._assignSlot('${esc(printerId)}', ${i})" style="cursor:pointer;opacity:0.6;border-style:dashed" title="${t('filament.add_spool', 'Assign spool — click or drag a spool here')}">
+          onclick="window._assignSlot(event, '${esc(printerId)}', ${i})" style="cursor:pointer;opacity:0.6;border-style:dashed" title="${t('filament.add_spool', 'Assign spool — click or drag a spool here')}">
           <div class="fil-ams-color">${miniSpool('#444', 18, 0)}</div>
           <div class="fil-ams-info">
             <span class="fil-ams-type text-muted">${t('common.empty', 'Empty')}</span>
@@ -1877,7 +1877,10 @@
   // Click handler for an empty toolhead slot — opens a small picker so the
   // user can attach an unassigned spool to this printer + slot directly,
   // without round-tripping through the spool's edit form.
-  window._assignSlot = function(printerId, trayIndex) {
+  window._assignSlot = function(ev, printerId, trayIndex) {
+    // Back-compat: if called from older inline code that passed only
+    // (printerId, trayIndex), shift arguments.
+    if (typeof ev === 'string') { trayIndex = printerId; printerId = ev; ev = null; }
     const candidates = _spools.filter(s =>
       !s.archived && (s.remaining_weight_g == null || s.remaining_weight_g > 5)
       && (!s.printer_id || (s.printer_id === printerId && s.ams_tray !== trayIndex))
@@ -1890,8 +1893,9 @@
     const menu = document.createElement('div');
     menu.className = 'inv-export-menu slot-pick-menu show';
     menu.style.cssText = 'min-width:240px;max-height:60vh;overflow:auto;position:fixed;z-index:9999';
-    const ev = window.event;
-    if (ev) {
+    // window.event is non-standard and undefined in Firefox — use the
+    // event explicitly threaded through the inline handler instead.
+    if (ev && typeof ev.clientX === 'number') {
       menu.style.left = Math.min(window.innerWidth - 260, ev.clientX) + 'px';
       menu.style.top = Math.min(window.innerHeight - 300, ev.clientY) + 'px';
     }

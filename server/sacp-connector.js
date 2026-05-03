@@ -28,6 +28,11 @@
 import { createConnection } from 'node:net';
 import dgram from 'node:dgram';
 import { Dispatcher, helper } from '@snapmaker/snapmaker-sacp-sdk';
+// CJS interop: the SDK ships dist/models/ModuleInfo as a CommonJS module
+// where the class lives at module.exports.default. Under Node ESM that
+// becomes nested as `default.default`.
+import _ModuleInfoMod from '@snapmaker/snapmaker-sacp-sdk/dist/models/ModuleInfo.js';
+const ModuleInfo = _ModuleInfoMod?.default || _ModuleInfoMod;
 import { hostname } from 'node:os';
 
 const log = {
@@ -1143,8 +1148,9 @@ export class SacpConnector {
   _parseModules(data) {
     const modules = [];
     try {
-      // Use SDK ModuleInfo parser if available
-      const ModuleInfo = require('@snapmaker/snapmaker-sacp-sdk/dist/models/ModuleInfo').default;
+      // ESM-only project, so ModuleInfo is imported at the top of the file
+      // (was: require('...').default which threw ReferenceError under ESM
+      // and silently routed every Snapmaker connect to the fallback parser).
       if (ModuleInfo?.parseArray) {
         const parsed = ModuleInfo.parseArray(data);
         for (const m of parsed) {

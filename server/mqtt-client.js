@@ -125,7 +125,10 @@ export class BambuMqttClient {
     this.state._printer_model = detectBambuModel(this.serial);
   }
 
-  // Handle a classified auth error: broadcast once until reset.
+  // Handle a classified auth error: broadcast once until reset, then
+  // tear down the client so the mqtt library doesn't retry every 5s.
+  // A wrong access code is permanent — silent infinite reconnect storms
+  // load both the printer and the dashboard.
   _handleAuthError(err) {
     const classified = classifyMqttError(err);
     if (!classified) return;
@@ -137,6 +140,9 @@ export class BambuMqttClient {
       ...classified,
       vendor: 'bambu',
     });
+    // End the client to stop the auto-reconnect loop. User must save new
+    // credentials (which calls connect() again) to retry.
+    try { this.client?.end(true); } catch { /* ignore */ }
   }
 
   connect() {

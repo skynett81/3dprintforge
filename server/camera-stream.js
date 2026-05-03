@@ -481,6 +481,12 @@ export class CameraStream {
     this.ffmpeg.on('error', (err) => {
       log.error('ffmpeg error: ' + err.message);
       this.ffmpeg = null;
+      // Spawn errors like ENOENT (ffmpeg binary missing) do NOT emit a
+      // subsequent 'close' event, so without this the stream silently
+      // dies without ever being scheduled for retry.
+      if (err.code === 'ENOENT' && this.clients.size > 0) {
+        this._scheduleRestart();
+      }
     });
 
     setTimeout(() => {

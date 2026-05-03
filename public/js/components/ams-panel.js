@@ -607,7 +607,12 @@
     const slider = overlay.querySelector('#cal-slider');
     const pctLabel = overlay.querySelector('#cal-pct-label');
     remInput.addEventListener('input', () => {
-      const pct = Math.round((parseFloat(remInput.value) / parseFloat(initInput.value)) * 100);
+      const init = parseFloat(initInput.value);
+      const rem = parseFloat(remInput.value);
+      // Guard division by zero / NaN — initial weight may be 0/empty
+      // while the user is editing. NaN% would then leak into the label.
+      if (!Number.isFinite(init) || init <= 0 || !Number.isFinite(rem)) return;
+      const pct = Math.max(0, Math.min(100, Math.round((rem / init) * 100)));
       slider.value = pct;
       pctLabel.textContent = pct + '%';
     });
@@ -630,14 +635,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initial_weight_g: initG, remaining_weight_g: remG, used_weight_g: usedG })
       });
-      if (typeof showToast === 'function') showToast(`A${amsTray+1} kalibrert: ${Math.round(remG)}g igjen (${Math.round(remG/initG*100)}%)`, 'success');
+      const safePct = initG > 0 ? Math.round(remG / initG * 100) : 0;
+      if (typeof showToast === 'function') showToast(`A${amsTray+1} kalibrert: ${Math.round(remG)}g igjen (${safePct}%)`, 'success');
     } else {
       if (typeof showToast === 'function') showToast('No spools linked to this AMS slot', 'warning');
     }
 
     document.querySelectorAll('.ams-calibrate-overlay').forEach(el => el.remove());
-    // Refresh AMS-visning
-    if (typeof window.updateAmsPanel === 'function') window.updateAmsPanel();
+    // Skip the stale-data refresh — updateAmsPanel(undefined) crashes on
+    // data.ams. The next WebSocket push will rebuild the panel naturally.
   };
 
   // Unload / Load button handlers

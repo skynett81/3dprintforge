@@ -18,7 +18,7 @@
 
   function statusBadge(status) {
     const colors = { active: 'var(--accent-green)', paused: 'var(--accent-orange)', completed: 'var(--text-secondary)', pending: 'var(--text-secondary)', printing: 'var(--accent-blue)', failed: 'var(--accent-red)', skipped: 'var(--text-muted)', cancelled: 'var(--text-muted)' };
-    return `<span class="queue-status-badge" style="background:${colors[status] || 'var(--text-muted)'}33;color:${colors[status] || 'var(--text-muted)'};padding:2px 8px;border-radius:10px;font-size:0.75rem">${t('queue.status_' + status) || status}</span>`;
+    return `<span class="queue-status-badge" style="background:${colors[status] || 'var(--text-muted)'}33;color:${colors[status] || 'var(--text-muted)'};padding:2px 8px;border-radius:10px;font-size:0.75rem">${t('queue.status_' + status, status)}</span>`;
   }
 
   // ═══ Module builders ═══
@@ -150,7 +150,7 @@
 
       container.innerHTML = `<div class="q-items-header">
         <strong>${queue.name}</strong>
-        <span class="q-items-count">${items.length} ${t('queue.items_count', { count: items.length }) || 'items'}</span>
+        <span class="q-items-count">${items.length} ${t('queue.items_count', 'items')}</span>
       </div>
       <div class="q-items-list">${items.map(item => `
         <div class="q-item" data-item-id="${item.id}">
@@ -195,7 +195,7 @@
   };
 
   function _eventLabel(event) {
-    return t('queue.event_' + event) || event.replace(/_/g, ' ');
+    return t('queue.event_' + event, event.replace(/_/g, ' '));
   }
 
   async function _loadCompletedItems() {

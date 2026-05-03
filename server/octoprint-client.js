@@ -124,9 +124,11 @@ export class OctoPrintClient {
         this._startPolling();
       });
 
-      // Give WS 3 seconds to connect, otherwise start polling
+      // Give WS 3 seconds to connect, otherwise start polling.
+      // Extra _pollTimer guard prevents the WS error handler and this
+      // fallback from starting two interleaved poll loops.
       setTimeout(() => {
-        if (!this._wsConnected && !this.connected) this._startPolling();
+        if (!this._wsConnected && !this.connected && !this._pollTimer) this._startPolling();
       }, 3000);
 
     } catch {

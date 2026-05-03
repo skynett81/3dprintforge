@@ -136,7 +136,10 @@ export class RepetierClient {
     const action = commandObj.action || commandObj._repetier_action;
 
     switch (action) {
-      case 'pause':         return this._request(`/printer/api/${slug}?a=continueJob`);
+      // Was inverted: pause used to send 'continueJob' (resume), so the
+      // pause button actually un-paused running jobs. Now pause uses the
+      // correct 'pauseJob' action.
+      case 'pause':         return this._request(`/printer/api/${slug}?a=pauseJob`);
       case 'resume':        return this._request(`/printer/api/${slug}?a=continueJob`);
       case 'stop':          return this._request(`/printer/api/${slug}?a=stopJob`);
       case 'home':          return send('G28');
