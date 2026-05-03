@@ -80,20 +80,16 @@ class StateStore {
   }
 
   set(path, value) {
-    // For connection status etc.
+    // For connection status etc. Routes through updatePrinter so the
+    // write goes through _deepMerge (immutable copy at every level)
+    // instead of mutating the live object — important when multiple
+    // printers share nested object references.
     if (!this._activePrinterId) return;
     if (!path) return;
     const keys = path.split('.');
-    let obj = this._printers[this._activePrinterId];
-    if (!obj) return;
-    for (let i = 0; i < keys.length - 1; i++) {
-      if (obj[keys[i]] == null || typeof obj[keys[i]] !== 'object') {
-        obj[keys[i]] = {};
-      }
-      obj = obj[keys[i]];
-    }
-    obj[keys[keys.length - 1]] = value;
-    this._notify(path, value);
+    // Build {a:{b:{c:value}}} from the path so _deepMerge can fold it in.
+    const nested = keys.reduceRight((acc, key) => ({ [key]: acc }), value);
+    this.updatePrinter(this._activePrinterId, nested);
   }
 
   subscribe(path, callback) {

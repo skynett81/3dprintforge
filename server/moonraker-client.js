@@ -288,6 +288,14 @@ export class MoonrakerClient {
   // ---- WebSocket subscription ----
 
   async _subscribe() {
+    // Capture the socket reference at subscription time. If the printer
+    // reconnects flapping over Wi-Fi, `this.ws` is replaced before this
+    // function exits — the listener and the timeout's removeListener
+    // would otherwise target different sockets, leaving listeners pinned
+    // to the new socket and accumulating one per reconnect.
+    const ws = this.ws;
+    if (!ws) return;
+
     // Step 1: Discover ALL available Klipper objects
     const listId = ++this._subscriptionId;
     this._wsSend({ jsonrpc: '2.0', method: 'printer.objects.list', id: listId });
@@ -297,7 +305,7 @@ export class MoonrakerClient {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg.id !== listId) return;
-        this.ws.removeListener('message', onList);
+        ws.removeListener('message', onList);
 
         const available = msg.result?.objects || [];
         this._availableObjects = available;
@@ -320,11 +328,11 @@ export class MoonrakerClient {
         this.state._discovered_objects = this._categorizeObjects(available);
       } catch { /* ignore */ }
     };
-    this.ws.on('message', onList);
+    ws.on('message', onList);
 
     // Timeout fallback — if object list doesn't arrive in 5s, use static list
     setTimeout(() => {
-      this.ws.removeListener('message', onList);
+      ws.removeListener('message', onList);
       if (!this._availableObjects) {
         log.warn('Object list timeout — falling back to static subscription');
         this._subscribeStatic();

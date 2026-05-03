@@ -347,7 +347,9 @@ export class PrintTracker {
     if (isResume) {
       const pct = parseInt(data.mc_percent) || 0;
       const remainMin = parseInt(data.mc_remaining_time) || 0;
-      if (pct > 0 && remainMin > 0) {
+      // pct < 100 prevents division by zero when resuming on a print that
+      // has already finished but hasn't transitioned to FINISH yet.
+      if (pct > 0 && pct < 100 && remainMin > 0) {
         const totalMinutes = remainMin / (1 - pct / 100);
         const elapsedMs = (totalMinutes * 60 * 1000) * (pct / 100);
         startedAt = new Date(Date.now() - elapsedMs).toISOString();
@@ -678,7 +680,11 @@ export class PrintTracker {
       if (status === 'completed' && this.currentPrint.estimated_seconds && duration > 0) {
         try {
           const est = this.currentPrint.estimated_seconds;
-          const accuracy = Math.round((100 - Math.abs(est - duration) * 100 / est) * 10) / 10;
+          // Clamp to [-100, 100] — a print that took 3× the estimate
+          // would otherwise record accuracy_pct = -200 and skew every
+          // average and chart that aggregates the column.
+          const raw = 100 - Math.abs(est - duration) * 100 / est;
+          const accuracy = Math.round(Math.max(-100, Math.min(100, raw)) * 10) / 10;
           addTimeTracking({
             print_history_id: printHistoryId,
             printer_id: this.printerId,
@@ -711,7 +717,10 @@ export class PrintTracker {
           const diff = startRemain - endRemain;
           if (diff > 0) {
             const [unitId, trayId] = key.split('_').map(Number);
-            const usedG = (diff / 100) * 1000;
+            // Use the actual spool weight, not a hardcoded 1000g —
+            // 750g/2kg/3kg spools were silently misrecorded.
+            const trayWeight = this.amsTrayWeights[key] || 1000;
+            const usedG = (diff / 100) * trayWeight;
             try { updateAmsTrayFilamentUsed(this.printerId, unitId, trayId, usedG); } catch (e) { /* ignore */ }
           }
         }
