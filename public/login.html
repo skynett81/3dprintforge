@@ -107,6 +107,10 @@
     .error-msg.visible { display: block; }
     #username-group { display: none; }
     #username-group.visible { display: block; }
+    #totp-group { display: none; }
+    #totp-group.visible { display: block; }
+    #totp-code { letter-spacing: 0.3em; text-align: center; font-variant-numeric: tabular-nums; }
+    .totp-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -149,6 +153,14 @@
         <input type="password" id="password" name="password"
                autocomplete="current-password" placeholder="Password" required>
       </div>
+      <div class="form-group" id="totp-group">
+        <label class="form-label" for="totp-code">Two-factor code</label>
+        <input type="text" id="totp-code" name="totp_code"
+               inputmode="numeric" autocomplete="one-time-code"
+               pattern="[0-9A-Za-z]{6,16}" maxlength="16"
+               placeholder="000 000">
+        <div class="totp-hint">6-digit code from your authenticator, or a backup code.</div>
+      </div>
       <button type="submit" class="btn-login" id="login-btn">Log in</button>
     </form>
 
@@ -175,6 +187,9 @@
       })
       .catch(() => {});
 
+    const totpGroup = document.getElementById('totp-group');
+    const totpInput = document.getElementById('totp-code');
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.classList.remove('visible');
@@ -184,18 +199,30 @@
       btn.textContent = 'Logging in...';
 
       try {
+        const body = {
+          password: document.getElementById('password').value,
+          username: document.getElementById('username').value || undefined
+        };
+        const totpCode = totpInput.value.trim();
+        if (totpCode) body.totp_code = totpCode;
+
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            password: document.getElementById('password').value,
-            username: document.getElementById('username').value || undefined
-          })
+          body: JSON.stringify(body)
         });
         const data = await res.json();
 
         if (res.ok && data.ok) {
           window.location.href = '/';
+        } else if (data.totpRequired) {
+          // Reveal the TOTP field and let the user enter their code.
+          totpGroup.classList.add('visible');
+          totpInput.required = true;
+          totpInput.value = '';
+          totpInput.focus();
+          errorEl.textContent = data.error || 'Two-factor authentication required';
+          errorEl.classList.add('visible');
         } else {
           errorEl.textContent = data.error || 'Login failed';
           errorEl.classList.add('visible');
