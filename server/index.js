@@ -229,9 +229,19 @@ const MIME_TYPES = {
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'SAMEORIGIN',
-  'X-XSS-Protection': '1; mode=block',
+  // X-XSS-Protection: '0' is the modern recommendation. The legacy
+  // '1; mode=block' filter has known XSS-introduction bugs in IE/older
+  // Edge and is ignored by current browsers; explicitly disabling it
+  // avoids those side effects. CSP carries the actual XSS defence.
+  'X-XSS-Protection': '0',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
+  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=(), payment=()',
+  // Cross-origin isolation policies — prevent cross-origin windows
+  // from accessing this document and force same-site for embedded
+  // resources. same-origin-allow-popups keeps OAuth-style flows
+  // (Bambu Cloud, Thingiverse) functional.
+  'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+  'Cross-Origin-Resource-Policy': 'same-site',
   'Content-Security-Policy': [
     "default-src 'self'",
     // unsafe-inline required: frontend uses inline onclick handlers in 100+ IIFE components
@@ -253,7 +263,10 @@ const SECURITY_HEADERS = {
 
 function applyHttpsHeaders(res) {
   if (forceHttps) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    // 2 year max-age + includeSubDomains + preload makes the cert
+    // commitment HSTS-preload eligible (browser ships the rule, no
+    // first-request downgrade window).
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
 }
 

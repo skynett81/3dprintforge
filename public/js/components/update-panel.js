@@ -86,16 +86,20 @@
       const status = await res.json();
       _updateState = status;
 
+      // GitHub release strings reach this view via the upstream API; if a
+      // MitM or compromised registry returns malicious tag_name/version
+      // values they would otherwise render as HTML. Escape every untrusted
+      // field before interpolation.
       let html = `<div class="update-info-row">
         <span class="update-label">${t('update.current_version')}</span>
-        <span class="update-value">v${status.current}</span>
+        <span class="update-value">v${escapeHtml(String(status.current ?? ''))}</span>
       </div>`;
 
       if (status.available && status.latest) {
         showUpdateBadge(true);
         html += `
           <div class="update-available-banner">
-            <div class="update-available-title">${t('update.new_version', { version: status.latest })}</div>`;
+            <div class="update-available-title">${t('update.new_version', { version: escapeHtml(String(status.latest)) })}</div>`;
         if (status.publishedAt) {
           const d = new Date(status.publishedAt);
           html += `<div class="update-published">${t('update.published')} ${d.toLocaleDateString(window.i18n?.getLocale?.() || 'nb')}</div>`;
@@ -128,7 +132,7 @@
       html += `<div style="margin-top:8px"><button class="form-btn form-btn-sm" onclick="checkForUpdate()">${t('update.check_now')}</button></div>`;
 
       if (status.environment) {
-        html += `<div class="text-muted" style="font-size:0.7rem;margin-top:4px">${t('update.environment')}: ${status.environment}</div>`;
+        html += `<div class="text-muted" style="font-size:0.7rem;margin-top:4px">${t('update.environment')}: ${escapeHtml(String(status.environment))}</div>`;
       }
 
       container.innerHTML = html;

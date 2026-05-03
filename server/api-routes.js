@@ -786,6 +786,13 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/login') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      // Apply the same per-IP login limiter as /api/auth/login so a
+      // compromised admin can't be used to credential-stuff the Bambu
+      // Cloud through us. 5 attempts / 15 min per IP.
+      const clientIp = _getClientIp(req);
+      if (!checkLoginRate(clientIp)) {
+        return sendJson(res, { error: 'Too many login attempts. Try again later.' }, 429);
+      }
       return readBody(req, res, async (body) => {
         const { email, password } = body;
         if (!email || !password) return sendJson(res, { error: 'Email and password required' }, 400);
@@ -800,6 +807,10 @@ export async function handleApiRequest(req, res) {
 
     if (method === 'POST' && path === '/api/bambu-cloud/verify') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      const clientIp = _getClientIp(req);
+      if (!checkLoginRate(clientIp)) {
+        return sendJson(res, { error: 'Too many login attempts. Try again later.' }, 429);
+      }
       return readBody(req, res, async (body) => {
         const { email, code } = body;
         if (!email || !code) return sendJson(res, { error: 'Email and code required' }, 400);
@@ -4303,12 +4314,7 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, listBackups());
     }
     const _backupsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'backups');
-    const _safeBackupPath = (fname) => {
-      // Path traversal guard: resolve and verify the path stays within backups dir
-      const resolved = join(_backupsDir, fname);
-      if (!resolved.startsWith(_backupsDir)) return null;
-      return resolved;
-    };
+    const _safeBackupPath = (fname) => _safeJoin(_backupsDir, fname);
 
     const backupDlMatch = path.match(/^\/api\/backup\/download\/(.+\.db)$/);
     if (backupDlMatch && method === 'GET') {
@@ -9257,9 +9263,11 @@ export async function handleApiRequest(req, res) {
     const libFileMatch = path.match(/^\/api\/library-file\/(.+)$/);
     if (method === 'GET' && libFileMatch) {
       const fname = decodeURIComponent(libFileMatch[1]);
-      const fp = join(DATA_DIR, 'library', fname);
-      if (!fp.startsWith(join(DATA_DIR, 'library')) || !existsSync(fp)) return sendJson(res, { error: 'Not found' }, 404);
-      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${fname}"` });
+      const fp = _safeJoin(join(DATA_DIR, 'library'), fname);
+      if (!fp || !existsSync(fp)) return sendJson(res, { error: 'Not found' }, 404);
+      // Sanitise Content-Disposition filename (no quotes / CR / LF)
+      const safeFname = fname.replace(/[\r\n"]/g, '_');
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${safeFname}"` });
       createReadStream(fp).pipe(res);
       return;
     }
@@ -9284,17 +9292,17 @@ export async function handleApiRequest(req, res) {
             if (existsSync(fp)) { buffer = readFileSync(fp); downloadUrl = `/api/library/${id}/download`; }
           }
         } else if (source === 'slicer' && filename) {
-          // Try uploads dir, then library dir
+          // Try uploads dir, then library dir — guarded against path traversal.
           for (const dir of ['uploads', 'library']) {
-            const fp = join(DATA_DIR, dir, filename);
-            if (existsSync(fp)) { buffer = readFileSync(fp); break; }
+            const fp = _safeJoin(join(DATA_DIR, dir), filename);
+            if (fp && existsSync(fp)) { buffer = readFileSync(fp); break; }
           }
           // Also try with .3mf extension if gcode was given
           if (!buffer && !filename.endsWith('.3mf')) {
             const mfName = filename.replace(/\.gcode$/i, '.3mf');
             for (const dir of ['uploads', 'library']) {
-              const fp = join(DATA_DIR, dir, mfName);
-              if (existsSync(fp)) { buffer = readFileSync(fp); break; }
+              const fp = _safeJoin(join(DATA_DIR, dir), mfName);
+              if (fp && existsSync(fp)) { buffer = readFileSync(fp); break; }
             }
           }
         } else if (source === 'history' && id) {
@@ -9496,8 +9504,8 @@ export async function handleApiRequest(req, res) {
         }
       } else if (source === 'gcode' && filename) {
         for (const dir of ['uploads', 'library']) {
-          const fp = join(DATA_DIR, dir, filename);
-          if (existsSync(fp)) return parseAndCache(readFileSync(fp, 'utf8'), filename);
+          const fp = _safeJoin(join(DATA_DIR, dir), filename);
+          if (fp && existsSync(fp)) return parseAndCache(readFileSync(fp, 'utf8'), filename);
         }
       }
 
@@ -13831,6 +13839,18 @@ function _verifyTotp(secret, code, window = 1) {
     if (String(otp).padStart(6, '0') === String(code).padStart(6, '0')) return true;
   }
   return false;
+}
+
+// ---- Path traversal guard ----
+// Use for any user-controlled filename joined onto a base directory.
+// Returns the resolved path if it stays inside `base`, or null otherwise.
+// The trailing-separator boundary is critical — without it, a path like
+// `/data/library-extra/secret.db` would pass `startsWith('/data/library')`.
+function _safeJoin(base, ...parts) {
+  const resolved = join(base, ...parts);
+  const guard = base.endsWith('/') ? base : base + '/';
+  if (!resolved.startsWith(guard) && resolved !== base) return null;
+  return resolved;
 }
 
 // ---- Notification secret masking ----
