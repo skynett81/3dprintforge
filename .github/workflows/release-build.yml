@@ -125,7 +125,7 @@ jobs:
           find . -type f \( -name '*.exe' -o -name '*.appx' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.flatpak' -o -name '*.zst' -o -name '*.tar.gz' -o -name '*.dmg' -o -name '*.zip' \) -exec sha256sum {} \; | sed 's|\./||' > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - name: Upload to GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: |
