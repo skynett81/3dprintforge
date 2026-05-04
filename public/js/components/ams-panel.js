@@ -63,6 +63,33 @@
     });
   }
 
+  // Listen for inventory broadcasts from the server (POST to recalibrate,
+  // useSpoolWeight, manual edits) — without this, the frontend cache stays
+  // stale until the next 30s tick or a print transition. The AMS panel and
+  // the active-filament widget both read through getLinkedSpool, so
+  // re-fetching here keeps them in sync with API mutations.
+  if (window.printerState?._ws) {
+    window.printerState._ws.addEventListener('message', (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'inventory_update' && msg.entity === 'spool') {
+          _loadInventorySpools().then(() => {
+            // Re-render active-filament against the cached last-state so
+            // the user sees the new remaining immediately, even when the
+            // printer is idle (no MQTT push to retrigger normally).
+            const ids = window.printerState?.getPrinterIds?.() || [];
+            for (const id of ids) {
+              const data = window.printerState?.printers?.[id];
+              if (data && typeof window.updateActiveFilament === 'function') {
+                window.updateActiveFilament(data);
+              }
+            }
+          });
+        }
+      } catch { /* ignore non-JSON or unrelated messages */ }
+    });
+  }
+
   _loadInventorySpools();
 
   function hexToRgb(hex) {
