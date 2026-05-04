@@ -1908,6 +1908,27 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 146, up: (db) => {
+      // Final composite-index pass — picks up the remaining tables that
+      // EXPLAIN flagged with TEMP B-TREE: spool_events (per-spool and
+      // cross-spool), update_history, bed_mesh_data.
+      //
+      //   spool_events    WHERE spool_id = ? ORDER BY timestamp DESC
+      //   spool_events                         ORDER BY timestamp DESC (recent activity)
+      //   update_history                       ORDER BY timestamp DESC
+      //   bed_mesh_data   WHERE printer_id = ? ORDER BY captured_at DESC
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_spool_events_spool_time ON spool_events(spool_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_spool_events_time ON spool_events(timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_update_history_time ON update_history(timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_bmd_printer_time ON bed_mesh_data(printer_id, captured_at DESC)`);
+        // Old leaf indexes subsumed by composite leading column or
+        // replaced entirely.
+        db.exec(`DROP INDEX IF EXISTS idx_spool_events_spool`);
+        db.exec(`DROP INDEX IF EXISTS idx_bmd_printer`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 145, up: (db) => {
       // Last cluster of activity-log queries that EXPLAIN flagged with
       // 'USE TEMP B-TREE FOR ORDER BY':
