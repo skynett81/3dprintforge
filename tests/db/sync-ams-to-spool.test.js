@@ -12,7 +12,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
-import { addSpool, getSpool, syncAmsToSpool } from '../../server/db/spools.js';
+import { addSpool, getSpool, syncAmsToSpool, useSpoolWeight } from '../../server/db/spools.js';
 
 const PRINTER_ID = 'test-printer';
 
@@ -131,6 +131,33 @@ describe('syncAmsToSpool', () => {
       const result = syncAmsToSpool(PRINTER_ID, 0, 0, 60, { actualWeightG: 0 });
       assert.equal(result.source, 'percent');
       assert.equal(result.newWeight, 600);
+    });
+  });
+
+  describe('used_weight_g accounting invariant', () => {
+    it('caps used_weight_g at initial_weight_g (cannot exceed what was loaded)', () => {
+      // Simulate the AMS-2-Pro scenario that produced 1042 g used out of a
+      // 1000 g spool: sync reports near-zero remaining, then the print
+      // tracker keeps deducting more during the same print.
+      const id = freshSpoolWithSlot({ remaining: 50, amsTray: 0 });
+      // Sync first to drain remaining toward 0 (sensor reads 0g — under noise gate
+      // for "remaining drop" if delta < 5, so call useSpoolWeight directly).
+      useSpoolWeight(id, 60); // takes 60 g but spool only had 50 g
+      const row = getSpool(id);
+      assert.equal(row.remaining_weight_g, 0, 'remaining floors at 0');
+      assert.ok(row.used_weight_g <= row.initial_weight_g,
+        `used (${row.used_weight_g}) must not exceed initial (${row.initial_weight_g})`);
+    });
+
+    it('respects the cap when used + amount would exceed initial', () => {
+      // Start near the cap: initial=1000, remaining=50, used=950
+      const id = freshSpoolWithSlot({ remaining: 50 });
+      // Drain 100g in one call — would push used to 1050 without the cap.
+      useSpoolWeight(id, 100);
+      const row = getSpool(id);
+      assert.equal(row.remaining_weight_g, 0, 'remaining floors at 0');
+      // The cap clamps used at initial (1000). Without the fix this was 1050.
+      assert.ok(row.used_weight_g <= row.initial_weight_g);
     });
   });
 

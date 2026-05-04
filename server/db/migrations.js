@@ -1894,6 +1894,20 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 142, up: (db) => {
+      // useSpoolWeight had no cap on used_weight_g, so an active print that
+      // continued after AMS sync set remaining=0 would push used past
+      // initial. Clamp historical rows so the table stops returning
+      // physically-impossible numbers (e.g. 1042 g used out of a 1000 g
+      // spool). The runtime fix in db/spools.js prevents new overruns.
+      try {
+        db.exec(`UPDATE spools
+                 SET used_weight_g = initial_weight_g
+                 WHERE initial_weight_g IS NOT NULL
+                   AND used_weight_g > initial_weight_g`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 140, up: (db) => {
       // Fill gaps across the rest of the consumer-brand catalogue. Many
       // popular vendors (Prusament, Hatchbox, AmazonBasics, Anycubic,

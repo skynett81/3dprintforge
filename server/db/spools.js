@@ -947,12 +947,17 @@ export function getFilamentCostAnalysis() {
 
 export function useSpoolWeight(spoolId, weightG, source = 'auto', printHistoryId = null, printerId = null) {
   const db = getDb();
+  // Keep the basic accounting invariant: used + remaining ≤ initial. Without
+  // capping `used`, an active print that draws past an empty spool — or that
+  // continues after AMS sync zeroed `remaining` — pushes `used` beyond
+  // `initial`, which is physically impossible (the spool didn't grow). The
+  // remaining floor at 0 was already in place; this adds the matching cap.
   db.prepare(`UPDATE spools SET
     remaining_weight_g = MAX(0, remaining_weight_g - ?),
-    used_weight_g = used_weight_g + ?,
+    used_weight_g = MIN(COALESCE(initial_weight_g, used_weight_g + ?), used_weight_g + ?),
     last_used_at = datetime('now'),
     first_used_at = COALESCE(first_used_at, datetime('now'))
-    WHERE id = ?`).run(weightG, weightG, spoolId);
+    WHERE id = ?`).run(weightG, weightG, weightG, spoolId);
 
   db.prepare(`INSERT INTO spool_usage_log (spool_id, print_history_id, printer_id, used_weight_g, source)
     VALUES (?, ?, ?, ?, ?)`).run(spoolId, printHistoryId || null, printerId || null, weightG, source);

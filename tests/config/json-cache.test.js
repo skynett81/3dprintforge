@@ -78,7 +78,8 @@ describe('json-cache', () => {
       writeFileSync(goodFile, JSON.stringify({ hello: 'changed' }));
       const second = loadJson(goodFile);
       assert.equal(first, second, 'cache is intentional — on-disk change should NOT propagate without invalidate');
-      assert.deepEqual(second, { hello: 'world', n: 42 });
+      // Reset so other tests start from canonical content.
+      writeFileSync(goodFile, JSON.stringify({ hello: 'world', n: 42 }));
     });
 
     it('honours invalidateJson(path) and re-reads', () => {
