@@ -246,8 +246,17 @@ function _captureRtsp(printerIp, accessCode, filepath) {
       if (code === 0 && existsSync(filepath)) {
         resolve();
       } else {
+        // Bambu RTSP rejection looks like an I/O error (ffmpeg exit 8)
+        // because the printer disconnects mid-handshake when LAN Live
+        // View is disabled. Map that to the actionable cause so users
+        // don't go hunting for ffmpeg bugs.
+        const stderrLower = stderrData.toLowerCase();
+        const looksLikeLanLiveViewOff =
+          code === 8 || stderrLower.includes('connection reset') ||
+          stderrLower.includes('end of file') || stderrLower.includes('immediate exit');
         const reason = stderrData.includes('401') ? 'Authentication rejected'
-          : stderrData.includes('Connection refused') ? 'Connection refused'
+          : stderrData.includes('Connection refused') ? 'Connection refused — port 322 not open'
+          : looksLikeLanLiveViewOff ? 'RTSP stream rejected — enable LAN Live View on the printer (Settings → General)'
           : `ffmpeg exited with code ${code}`;
         reject(new Error(reason));
       }
