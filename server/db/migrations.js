@@ -1908,6 +1908,23 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 145, up: (db) => {
+      // Last cluster of activity-log queries that EXPLAIN flagged with
+      // 'USE TEMP B-TREE FOR ORDER BY':
+      //
+      //   firmware_history  WHERE printer_id = ? ORDER BY timestamp DESC
+      //   filament_waste    WHERE printer_id = ? ORDER BY timestamp DESC
+      //
+      // Same pattern as v143/v144 — composite (printer_id, timestamp DESC)
+      // returns sorted rows directly from the index.
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_firmware_printer_time ON firmware_history(printer_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_waste_printer_time ON filament_waste(printer_id, timestamp DESC)`);
+        db.exec(`DROP INDEX IF EXISTS idx_firmware_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_waste_printer`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 144, up: (db) => {
       // Same TEMP B-TREE pattern as v143, on the secondary activity-log
       // tables. Each accepted a printer_id filter via a single-column
