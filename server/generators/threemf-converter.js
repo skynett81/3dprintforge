@@ -44,11 +44,19 @@ const U1_DEFAULTS = {
 export async function analyze3mf(buffer) {
   const { default: JSZip } = await import('jszip').catch(() => ({ default: null }));
   if (!JSZip) {
-    // Fallback: parse ZIP manually using built-in zlib
+    // jszip not installed at all — manual string-grep stub
     return _analyzeManual(buffer);
   }
 
-  const zip = await JSZip.loadAsync(buffer);
+  // Wrap the ZIP load itself in a try/catch — corrupt or empty buffers
+  // make jszip throw 'Corrupted zip ?'. Falling back to the manual parser
+  // is more useful than bubbling an exception up to the API caller.
+  let zip;
+  try {
+    zip = await JSZip.loadAsync(buffer);
+  } catch {
+    return _analyzeManual(buffer);
+  }
   const names = Object.keys(zip.files);
 
   const isBambu = names.includes('Metadata/slice_info.config') || names.includes('Metadata/model_settings.config');
