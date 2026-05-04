@@ -2,7 +2,7 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders } from '../server/api-helpers.js';
+import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders } from '../../server/api-helpers.js';
 
 // ---- Mock HTTP response ----
 // Enkel mock som fanger opp writeHead og end-kall

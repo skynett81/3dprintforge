@@ -50,7 +50,7 @@ import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { inflateRawSync } from 'node:zlib';
 import { loadServerJson as _loadServerJson, getHmsCodes as _getHmsCodes, IMMUTABLE_JSON_HEADERS as _IMMUTABLE_JSON_HEADERS } from './json-cache.js';
-import { maybeCompressJson as _maybeCompressJson } from './http-compression.js';
+import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders } from './api-helpers.js';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -156,23 +156,13 @@ const _serverStartTime = new Date().toISOString();
 // API version from package.json
 const _pkgVersion = (() => { try { return JSON.parse(_readPkg(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf-8')).version; } catch { return '0.0.0'; } })();
 
-// ---- Login rate limiter ----
-const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const _loginAttempts = new Map(); // ip -> { count, firstAttempt }
-
-function checkLoginRate(ip) {
-  const now = Date.now();
-  const entry = _loginAttempts.get(ip);
-  if (!entry || now - entry.firstAttempt > LOGIN_WINDOW_MS) {
-    _loginAttempts.set(ip, { count: 1, firstAttempt: now });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= LOGIN_MAX_ATTEMPTS;
-}
+// Login + API rate limiters (sendJson, checkLoginRate, checkApiRate,
+// getApiRateHeaders) live in ./api-helpers.js — extracted so they
+// can be unit-tested without booting up this 14k-line module.
 
 // ---- TOTP rate limiter (keyed on userId:ip) ----
+// Stays here because TOTP-specific cleanup runs alongside the
+// session-table cleanup, which is route-coupled.
 const TOTP_MAX_ATTEMPTS = 5;
 const TOTP_WINDOW_MS = 15 * 60 * 1000;
 const _totpAttempts = new Map();
@@ -181,8 +171,6 @@ function checkTotpRate(key) {
   const now = Date.now();
   const entry = _totpAttempts.get(key);
   if (!entry || now - entry.firstAttempt > TOTP_WINDOW_MS) {
-    // Hard cap so a brute-force from many IPs can't OOM us between
-    // 5-minute cleanup ticks.
     if (_totpAttempts.size >= 10000) {
       const oldest = _totpAttempts.keys().next().value;
       if (oldest !== undefined) _totpAttempts.delete(oldest);
@@ -194,37 +182,13 @@ function checkTotpRate(key) {
   return entry.count <= TOTP_MAX_ATTEMPTS;
 }
 
-// Cleanup stale entries every 5 minutes
+// Cleanup TOTP entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, entry] of _loginAttempts) {
-    if (now - entry.firstAttempt > LOGIN_WINDOW_MS) _loginAttempts.delete(ip);
-  }
   for (const [key, entry] of _totpAttempts) {
     if (now - entry.firstAttempt > TOTP_WINDOW_MS) _totpAttempts.delete(key);
   }
 }, 5 * 60 * 1000);
-
-// ---- General API rate limiter ----
-const API_RATE_MAX = 200;           // max requests per window
-const API_RATE_WINDOW_MS = 60_000;  // 1 minute window
-const _apiRates = new Map();        // ip -> { count, windowStart }
-
-function checkApiRate(ip) {
-  const now = Date.now();
-  const entry = _apiRates.get(ip);
-  if (!entry || now - entry.windowStart > API_RATE_WINDOW_MS) {
-    // Hard cap to prevent unbounded growth from a flood of unique IPs.
-    if (_apiRates.size >= 10000) {
-      const oldest = _apiRates.keys().next().value;
-      if (oldest !== undefined) _apiRates.delete(oldest);
-    }
-    _apiRates.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= API_RATE_MAX;
-}
 
 // RFC 5987-safe Content-Disposition for user-supplied filenames. Strips
 // CR/LF/quote chars (HTTP response splitting) and falls back to a generic
@@ -233,21 +197,6 @@ function contentDispositionAttachment(filename) {
   const safe = String(filename || '').replace(/[\r\n"\\]/g, '').replace(/[\x00-\x1F\x7F]/g, '').trim() || 'download';
   return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
 }
-
-function getApiRateHeaders(ip) {
-  const entry = _apiRates.get(ip);
-  if (!entry) return { 'X-RateLimit-Limit': API_RATE_MAX, 'X-RateLimit-Remaining': API_RATE_MAX };
-  const remaining = Math.max(0, API_RATE_MAX - entry.count);
-  const reset = Math.ceil((entry.windowStart + API_RATE_WINDOW_MS - Date.now()) / 1000);
-  return { 'X-RateLimit-Limit': API_RATE_MAX, 'X-RateLimit-Remaining': remaining, 'X-RateLimit-Reset': Math.max(0, reset) };
-}
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of _apiRates) {
-    if (now - entry.windowStart > API_RATE_WINDOW_MS) _apiRates.delete(ip);
-  }
-}, 60_000);
 
 let _broadcastFn = null;
 let _onPrinterRemoved = null;
@@ -13283,21 +13232,7 @@ function _monthsDiff(d1, d2) {
   return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
 }
 
-function sendJson(res, data, status = 200, extraHeaders = null) {
-  const json = JSON.stringify(data);
-  // res.req is set by node:http for the request paired with this response,
-  // letting maybeCompressJson pick an encoding without changing sendJson's
-  // signature across the ~1000 callers.
-  const { body, headers: encHeaders } = _maybeCompressJson(json, res.req);
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-API-Version': _pkgVersion,
-    ...(extraHeaders || {}),
-    ...encHeaders,
-  };
-  res.writeHead(status, headers);
-  res.end(body);
-}
+// sendJson moved to ./api-helpers.js (imported at top of this file).
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB (screenshots can be large)
 const MAX_AUTH_BODY_SIZE = 8 * 1024;     // 8 KB is plenty for login/totp/etc.
