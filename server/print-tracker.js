@@ -184,21 +184,51 @@ export class PrintTracker {
       }
     }
 
-    // Live AMS weight sync (throttled: max once per 60s per tray)
+    // Live AMS weight sync (throttled: max once per 60s per tray).
+    //
+    // AMS 2 Pro and H2D ship a load cell — `tray.tray_weight` is the
+    // actual weighed gram value. Pass it through opts.actualWeightG so
+    // syncAmsToSpool prefers it over the percentage estimate. AMS Lite /
+    // original AMS don't have a scale and only report `tray.remain` as a
+    // percentage; in that case opts.actualWeightG is undefined and the
+    // function falls back to the percent path.
     if (printData.ams?.ams) {
       if (!this._amsSyncTs) this._amsSyncTs = {};
       const now = Date.now();
-      for (const unit of printData.ams.ams) {
-        for (const tray of (unit.tray || [])) {
-          if (!tray || tray.remain == null || tray.remain < 0) continue;
-          const key = `${unit.id}_${tray.id}`;
-          if (this._amsSyncTs[key] && now - this._amsSyncTs[key] < 60000) continue;
-          const result = syncAmsToSpool(this.printerId, parseInt(unit.id) || 0, parseInt(tray.id) || 0, tray.remain);
-          if (result) {
-            this._amsSyncTs[key] = now;
-            if (this.onBroadcast) this.onBroadcast('spool_weight_synced', { spoolId: result.spoolId, weight: result.newWeight, source: 'ams_live' });
+      const trySync = (unitId, trayId, remainPct, trayWeightRaw) => {
+        const key = `${unitId}_${trayId}`;
+        if (this._amsSyncTs[key] && now - this._amsSyncTs[key] < 60000) return;
+        const trayWeight = parseFloat(trayWeightRaw);
+        const opts = (Number.isFinite(trayWeight) && trayWeight > 0) ? { actualWeightG: trayWeight } : {};
+        const result = syncAmsToSpool(this.printerId, unitId, trayId, remainPct, opts);
+        if (result) {
+          this._amsSyncTs[key] = now;
+          if (this.onBroadcast) {
+            this.onBroadcast('spool_weight_synced', {
+              spoolId: result.spoolId,
+              weight: result.newWeight,
+              source: result.source === 'sensor' ? 'ams_sensor' : 'ams_live',
+            });
           }
         }
+      };
+      for (const unit of printData.ams.ams) {
+        for (const tray of (unit.tray || [])) {
+          if (!tray) continue;
+          // Skip when neither percent nor sensor weight is available — keeps
+          // empty slots from triggering noise-gate misses.
+          const hasPct = tray.remain != null && tray.remain >= 0;
+          const hasWeight = tray.tray_weight != null && parseFloat(tray.tray_weight) > 0;
+          if (!hasPct && !hasWeight) continue;
+          trySync(parseInt(unit.id) || 0, parseInt(tray.id) || 0, tray.remain, tray.tray_weight);
+        }
+      }
+      // External spool (vt_tray): unit 255, tray 0. Bambu reports weight
+      // here on H2D and the AMS 2 Pro's sister sensor; on P2S/A1 with
+      // AMS Lite the firmware doesn't send vt_tray at all.
+      const vt = printData.ams?.vt_tray;
+      if (vt && (vt.remain != null || vt.tray_weight)) {
+        trySync(255, 0, vt.remain, vt.tray_weight);
       }
     }
 

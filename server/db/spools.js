@@ -980,12 +980,52 @@ export function getSpoolBySlot(printerId, amsUnit, amsTray) {
     .get(printerId, amsUnit, amsTray) || null;
 }
 
-export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct) {
+/**
+ * Sync the local spool's remaining_weight_g with what the AMS reports.
+ *
+ * Two data sources, in preference order:
+ *
+ *   1. opts.actualWeightG — direct gram reading from AMS 2 Pro / H2D's
+ *      load-cell sensor. When the printer has weighed the spool itself,
+ *      this is the source of truth and the percentage column becomes
+ *      redundant. The vt_tray on H2D also reports actualWeightG.
+ *
+ *   2. remainPct — percentage 0-100. AMS Lite (P2S/A1) and original AMS
+ *      have no scale, so the firmware estimates remaining as a percentage
+ *      of initial. We multiply by initial_weight_g to get a gram value.
+ *      Less accurate the more filament has been used (extrusion estimates
+ *      drift over a long print).
+ *
+ * Both paths share the same noise gate (< 5 g delta = ignore) and the
+ * "AMS can't add filament" guard (only sync DOWN, never UP).
+ *
+ * @param {string} printerId
+ * @param {number} amsUnit       0..3 for AMS, 255 for vt_tray
+ * @param {number} trayId        0..3 for AMS slots, 0 for vt_tray
+ * @param {number|null} remainPct  percentage 0-100 (may be null when actualWeightG is given)
+ * @param {object} [opts]
+ * @param {number} [opts.actualWeightG]  AMS 2 Pro load-cell reading (grams)
+ * @returns {{spoolId, newWeight, diff, source}|null}
+ */
+export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct, opts = {}) {
   const db = getDb();
   const spool = db.prepare('SELECT id, initial_weight_g, remaining_weight_g, used_weight_g FROM spools WHERE printer_id = ? AND ams_unit = ? AND ams_tray = ? AND archived = 0')
     .get(printerId, amsUnit, trayId);
   if (!spool || !spool.initial_weight_g) return null;
-  const amsWeight = Math.round((remainPct / 100) * spool.initial_weight_g * 10) / 10;
+
+  let amsWeight;
+  let source;
+  const actual = opts.actualWeightG;
+  if (Number.isFinite(actual) && actual > 0) {
+    amsWeight = Math.round(actual * 10) / 10;
+    source = 'sensor';
+  } else if (Number.isFinite(remainPct) && remainPct >= 0) {
+    amsWeight = Math.round((remainPct / 100) * spool.initial_weight_g * 10) / 10;
+    source = 'percent';
+  } else {
+    return null; // No usable signal
+  }
+
   const diff = Math.abs(amsWeight - (spool.remaining_weight_g || 0));
   if (diff < 5) return null; // Ignore noise < 5g
   // Only update if AMS reports LESS remaining than our tracking
@@ -993,7 +1033,7 @@ export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct) {
   if (amsWeight >= (spool.remaining_weight_g || 0)) return null;
   db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = MAX(0, initial_weight_g - ?), last_used_at = datetime(\'now\') WHERE id = ?')
     .run(amsWeight, amsWeight, spool.id);
-  return { spoolId: spool.id, newWeight: amsWeight, diff };
+  return { spoolId: spool.id, newWeight: amsWeight, diff, source };
 }
 
 export function toggleSpoolFavorite(id) {
