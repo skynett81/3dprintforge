@@ -1141,6 +1141,127 @@ export function recalibrateFromHistory(spoolId, opts = {}) {
   return result;
 }
 
+/**
+ * Recalibrate a spool from the best-available signal across:
+ *
+ *   - Latest `ams_snapshots` row for this slot — the firmware's own remain%
+ *     captured periodically. Most reliable for AMS Lite (no scale) and very
+ *     useful for AMS 2 Pro near-empty cases (firmware has hysteresis the
+ *     load cell lacks). Falls back gracefully when there are no snapshots.
+ *
+ *   - Live load-cell weight from the most recent snapshot row when its
+ *     tray_weight column is populated (AMS 2 Pro / H2D).
+ *
+ *   - print_history sum (same as recalibrateFromHistory) — sanity-check
+ *     ceiling. Used when the snapshot says more remaining than is
+ *     physically possible from extrusion accounting.
+ *
+ * Picks the most credible value and persists it (when apply=true). The
+ * returned `signals` object lets callers see why a value was chosen.
+ *
+ * @param {number} spoolId
+ * @param {object} [opts]
+ * @param {boolean} [opts.apply=false]
+ * @param {string} [opts.note]
+ */
+export function recalibrateFromSignals(spoolId, opts = {}) {
+  const db = getDb();
+  const spool = db.prepare('SELECT id, printer_id, ams_unit, ams_tray, initial_weight_g, remaining_weight_g, used_weight_g FROM spools WHERE id = ? AND archived = 0').get(spoolId);
+  if (!spool) return null;
+  if (spool.printer_id == null || spool.ams_tray == null) {
+    return { error: 'Spool has no printer/tray assignment — cannot read signals' };
+  }
+  const initial = spool.initial_weight_g || 0;
+  if (!initial) {
+    return { error: 'Spool has no initial_weight_g — cannot compute remaining' };
+  }
+
+  // Signal 1: latest AMS snapshot for this slot.
+  const snap = db.prepare(`
+    SELECT remain_pct, tray_weight, timestamp
+    FROM ams_snapshots
+    WHERE printer_id = ? AND ams_unit = ? AND tray_id = ?
+    ORDER BY timestamp DESC LIMIT 1
+  `).get(spool.printer_id, spool.ams_unit, spool.ams_tray);
+
+  // Signal 2: print_history sum (history-based ceiling on remaining).
+  const trayKey = String(spool.ams_tray);
+  const histStats = db.prepare(`
+    SELECT COUNT(*) AS prints, COALESCE(SUM(filament_used_g), 0) AS history_used
+    FROM print_history
+    WHERE printer_id = ? AND tray_id = ? AND status = 'completed' AND filament_used_g IS NOT NULL
+  `).get(spool.printer_id, trayKey);
+
+  const signals = {
+    snapshot: snap ? {
+      remainPct: snap.remain_pct,
+      trayWeight: snap.tray_weight,
+      timestamp: snap.timestamp,
+      // tray_weight=initial means the column carries no fresh load-cell
+      // reading — only the static initial-weight metadata. Treat that as
+      // "no sensor signal" for credibility scoring.
+      sensorCredible: snap.tray_weight != null && snap.tray_weight !== initial && snap.tray_weight >= 20,
+      derivedFromPct: snap.remain_pct != null
+        ? Math.round((snap.remain_pct / 100) * initial * 10) / 10
+        : null,
+    } : null,
+    history: {
+      prints: histStats.prints,
+      used: Math.round((histStats.history_used || 0) * 10) / 10,
+      derivedRemaining: Math.max(0, Math.round((initial - (histStats.history_used || 0)) * 10) / 10),
+    },
+  };
+
+  // Decision tree:
+  //   1. Sensor credible → use the load-cell gram value
+  //   2. Snapshot percent present → use percent × initial
+  //   3. Otherwise → fall back to history-derived remaining
+  let newRemaining;
+  let chosen;
+  if (signals.snapshot?.sensorCredible) {
+    newRemaining = Math.round(signals.snapshot.trayWeight * 10) / 10;
+    chosen = 'snapshot_sensor';
+  } else if (signals.snapshot?.remainPct != null) {
+    newRemaining = signals.snapshot.derivedFromPct;
+    chosen = 'snapshot_percent';
+  } else {
+    newRemaining = signals.history.derivedRemaining;
+    chosen = 'history';
+  }
+
+  // Cap remaining ≤ initial; floor at 0.
+  newRemaining = Math.max(0, Math.min(initial, newRemaining));
+  const newUsed = Math.round((initial - newRemaining) * 10) / 10;
+
+  const result = {
+    spoolId,
+    initial,
+    oldRemaining: spool.remaining_weight_g,
+    oldUsed: spool.used_weight_g,
+    newRemaining,
+    newUsed,
+    chosen,
+    signals,
+  };
+
+  if (opts.apply) {
+    db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = ?, last_used_at = datetime(\'now\') WHERE id = ?')
+      .run(newRemaining, newUsed, spoolId);
+    try {
+      addSpoolEvent(spoolId, 'recalibrated', JSON.stringify({
+        method: 'signals',
+        chosen,
+        from: { remaining: spool.remaining_weight_g, used: spool.used_weight_g },
+        to: { remaining: newRemaining, used: newUsed },
+        signals,
+        note: opts.note || null,
+      }), null);
+    } catch (e) { log.warn('Failed to log recalibration event', e.message); }
+    result.applied = true;
+  }
+  return result;
+}
+
 export function toggleSpoolFavorite(id) {
   const db = getDb();
   db.prepare('UPDATE spools SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id);
