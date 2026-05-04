@@ -1064,6 +1064,83 @@ export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct, opts = {})
   return { spoolId: spool.id, newWeight: amsWeight, diff, source };
 }
 
+/**
+ * Recalibrate a spool's remaining_weight_g from the print_history table.
+ *
+ * Sums filament_used_g over completed prints that targeted this spool's
+ * AMS slot (matching printer_id + tray_id), then subtracts from
+ * initial_weight_g. This ignores the spool_usage_log because that log can
+ * accumulate misattributed entries when active-extruder tracking gets
+ * confused (e.g. multi-color prints where the wrong tray was charged).
+ *
+ * Returns { historyUsed, oldRemaining, newRemaining, prints } so the
+ * caller can show a diff before persisting. When `apply: true`, writes
+ * the new values to the row and adds a 'recalibrated' spool event.
+ *
+ * @param {number} spoolId
+ * @param {object} [opts]
+ * @param {boolean} [opts.apply=false]  Persist the new values
+ * @param {string} [opts.note]          Optional reason for the audit log
+ */
+export function recalibrateFromHistory(spoolId, opts = {}) {
+  const db = getDb();
+  const spool = db.prepare('SELECT id, printer_id, ams_unit, ams_tray, initial_weight_g, remaining_weight_g, used_weight_g FROM spools WHERE id = ? AND archived = 0').get(spoolId);
+  if (!spool) return null;
+  if (spool.printer_id == null || spool.ams_tray == null) {
+    return { error: 'Spool has no printer/tray assignment — cannot match print_history' };
+  }
+  const initial = spool.initial_weight_g || 0;
+  if (!initial) {
+    return { error: 'Spool has no initial_weight_g — cannot compute remaining' };
+  }
+
+  // Match by tray_id stored as TEXT (Bambu sends '0'..'3' for AMS slots,
+  // '254' for EXT, '255' for vt_tray). Limit to completed prints — failed
+  // and cancelled rows have unreliable filament_used_g.
+  const trayKey = String(spool.ams_tray);
+  const stats = db.prepare(`
+    SELECT
+      COUNT(*) AS prints,
+      COALESCE(SUM(filament_used_g), 0) AS history_used
+    FROM print_history
+    WHERE printer_id = ?
+      AND tray_id = ?
+      AND status = 'completed'
+      AND filament_used_g IS NOT NULL
+  `).get(spool.printer_id, trayKey);
+
+  const historyUsed = Math.round((stats.history_used || 0) * 10) / 10;
+  const newRemaining = Math.max(0, Math.round((initial - historyUsed) * 10) / 10);
+  const newUsed = Math.min(initial, historyUsed);
+
+  const result = {
+    spoolId,
+    historyUsed,
+    prints: stats.prints,
+    initial,
+    oldRemaining: spool.remaining_weight_g,
+    oldUsed: spool.used_weight_g,
+    newRemaining,
+    newUsed,
+  };
+
+  if (opts.apply) {
+    db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = ?, last_used_at = datetime(\'now\') WHERE id = ?')
+      .run(newRemaining, newUsed, spoolId);
+    try {
+      addSpoolEvent(spoolId, 'recalibrated', JSON.stringify({
+        method: 'history',
+        from: { remaining: spool.remaining_weight_g, used: spool.used_weight_g },
+        to: { remaining: newRemaining, used: newUsed },
+        prints: stats.prints,
+        note: opts.note || null,
+      }), null);
+    } catch (e) { log.warn('Failed to log recalibration event', e.message); }
+    result.applied = true;
+  }
+  return result;
+}
+
 export function toggleSpoolFavorite(id) {
   const db = getDb();
   db.prepare('UPDATE spools SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id);
