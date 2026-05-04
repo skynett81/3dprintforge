@@ -44,7 +44,29 @@ class StateStore {
     }
 
     if (printerId === this._activePrinterId) {
+      // Coalesce notifications via rAF — Bambu MQTT can push 5-10 status
+      // messages per second during a print, and each one previously fired
+      // every wildcard subscriber (AMS panel, active filament, temperature
+      // gauges, print progress, etc.) immediately. Batching to once per
+      // frame caps re-renders at ~60 Hz regardless of push rate, with at
+      // most 16 ms of perceived lag (well below human-noticeable).
+      this._scheduleNotify();
+    }
+  }
+
+  _scheduleNotify() {
+    if (this._notifyScheduled) return;
+    this._notifyScheduled = true;
+    const fire = () => {
+      this._notifyScheduled = false;
       this._notifyAll();
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(fire);
+    } else {
+      // Node test environment fallback — flush synchronously so unit
+      // tests that exercise subscribe() still observe the callback.
+      fire();
     }
   }
 
