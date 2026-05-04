@@ -988,20 +988,22 @@ export function getSpoolBySlot(printerId, amsUnit, amsTray) {
 /**
  * Sync the local spool's remaining_weight_g with what the AMS reports.
  *
- * Two data sources, in preference order:
+ * Three data sources, in preference order:
  *
  *   1. opts.actualWeightG — direct gram reading from AMS 2 Pro / H2D's
- *      load-cell sensor. When the printer has weighed the spool itself,
- *      this is the source of truth and the percentage column becomes
- *      redundant. The vt_tray on H2D also reports actualWeightG.
+ *      load-cell sensor. When above the measurement-credibility floor
+ *      (SENSOR_FLOOR_G), this is the source of truth.
  *
  *   2. remainPct — percentage 0-100. AMS Lite (P2S/A1) and original AMS
  *      have no scale, so the firmware estimates remaining as a percentage
- *      of initial. We multiply by initial_weight_g to get a gram value.
- *      Less accurate the more filament has been used (extrusion estimates
- *      drift over a long print).
+ *      of initial. Multiply by initial_weight_g for a gram value.
  *
- * Both paths share the same noise gate (< 5 g delta = ignore) and the
+ *   3. Tracked remaining (initial - used) — when both AMS signals report
+ *      0/floor but cumulative extrusion tracking still has filament in the
+ *      spool, the AMS is below its measurement resolution rather than
+ *      actually empty. Trust our tracking instead of dropping to 0.
+ *
+ * Both sensor paths share the noise gate (< 5 g delta = ignore) and the
  * "AMS can't add filament" guard (only sync DOWN, never UP).
  *
  * @param {string} printerId
@@ -1012,6 +1014,13 @@ export function getSpoolBySlot(printerId, amsUnit, amsTray) {
  * @param {number} [opts.actualWeightG]  AMS 2 Pro load-cell reading (grams)
  * @returns {{spoolId, newWeight, diff, source}|null}
  */
+// AMS 2 Pro / H2D load cells round to 0 below ~10-20 g of filament — the
+// firmware can't separate spool drag, ribbon weight, and tare drift from
+// the actual remaining filament near empty. Below this floor we don't
+// trust a 0 reading to mean "empty"; we let extrusion tracking deplete
+// the spool instead.
+const SENSOR_FLOOR_G = 20;
+
 export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct, opts = {}) {
   const db = getDb();
   const spool = db.prepare('SELECT id, initial_weight_g, remaining_weight_g, used_weight_g FROM spools WHERE printer_id = ? AND ams_unit = ? AND ams_tray = ? AND archived = 0')
@@ -1021,14 +1030,28 @@ export function syncAmsToSpool(printerId, amsUnit, trayId, remainPct, opts = {})
   let amsWeight;
   let source;
   const actual = opts.actualWeightG;
-  if (Number.isFinite(actual) && actual > 0) {
+  const sensorCredible = Number.isFinite(actual) && actual >= SENSOR_FLOOR_G;
+  const percentCredible = Number.isFinite(remainPct) && remainPct > 0;
+
+  if (sensorCredible) {
     amsWeight = Math.round(actual * 10) / 10;
     source = 'sensor';
-  } else if (Number.isFinite(remainPct) && remainPct >= 0) {
+  } else if (percentCredible) {
     amsWeight = Math.round((remainPct / 100) * spool.initial_weight_g * 10) / 10;
     source = 'percent';
   } else {
-    return null; // No usable signal
+    // Both AMS signals are at floor (0 / null / sub-threshold). The spool
+    // may genuinely be empty, or the AMS just lost resolution. Defer to
+    // extrusion tracking: keep whatever the cumulative-usage column says
+    // is left, even if that's below the AMS floor. The print-tracker
+    // continues to subtract from remaining_weight_g via useSpoolWeight,
+    // so a spool that's actually consumed will reach 0 naturally.
+    if ((spool.remaining_weight_g || 0) > SENSOR_FLOOR_G / 4) {
+      return null;
+    }
+    // Tracking already says ≤ 5g — accept the 0 as confirmation.
+    amsWeight = 0;
+    source = 'sensor_floor';
   }
 
   const diff = Math.abs(amsWeight - (spool.remaining_weight_g || 0));

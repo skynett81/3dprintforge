@@ -134,6 +134,45 @@ describe('syncAmsToSpool', () => {
     });
   });
 
+  describe('sensor-floor guard (AMS load cell loses resolution near empty)', () => {
+    it('ignores sensor readings below SENSOR_FLOOR_G (~20g) — preserves existing remaining', () => {
+      // Spool tracked at 150g remaining. AMS suddenly reports 8g.
+      // The load cell can't reliably distinguish 8g of filament from
+      // tare drift / spool drag below ~20g. Don't trust this 0-ish read.
+      const id = freshSpoolWithSlot({ remaining: 150, amsTray: 1 });
+      const result = syncAmsToSpool(PRINTER_ID, 0, 1, 0, { actualWeightG: 8 });
+      assert.equal(result, null, 'sub-floor sensor read should not trigger a sync');
+      assert.equal(getSpool(id).remaining_weight_g, 150, 'remaining must stay at tracked value');
+    });
+
+    it('still accepts sensor readings AT or ABOVE the floor', () => {
+      const id = freshSpoolWithSlot({ remaining: 500, amsTray: 2 });
+      const result = syncAmsToSpool(PRINTER_ID, 0, 2, 0, { actualWeightG: 25 });
+      // 25g is just above the credibility floor — sync should happen.
+      assert.ok(result, 'sensor at floor+5 should be trusted');
+      assert.equal(result.source, 'sensor');
+      assert.equal(getSpool(id).remaining_weight_g, 25);
+    });
+
+    it('accepts a 0 reading only when tracking already says spool is near-empty', () => {
+      // Spool tracking shows essentially nothing left — AMS 0g confirms it.
+      const id = freshSpoolWithSlot({ remaining: 2, amsTray: 3 });
+      const result = syncAmsToSpool(PRINTER_ID, 0, 3, 0, { actualWeightG: 0 });
+      // Tracking says 2g, sensor says 0. Diff = 2 < noise gate, no update.
+      assert.equal(result, null);
+      assert.equal(getSpool(id).remaining_weight_g, 2);
+    });
+
+    it('with both AMS signals zero, defers to existing remaining when > floor/4', () => {
+      // The user's reported scenario: A1 has filament left but AMS reports
+      // 0% / 0g for both. We must not blow away a credible existing value.
+      const id = freshSpoolWithSlot({ remaining: 80, amsUnit: 1, amsTray: 0 });
+      const result = syncAmsToSpool(PRINTER_ID, 1, 0, 0, { actualWeightG: 0 });
+      assert.equal(result, null, 'should not sync when both AMS signals are at floor');
+      assert.equal(getSpool(id).remaining_weight_g, 80, 'remaining must stay at the tracked value');
+    });
+  });
+
   describe('used_weight_g accounting invariant', () => {
     it('caps used_weight_g at initial_weight_g (cannot exceed what was loaded)', () => {
       // Simulate the AMS-2-Pro scenario that produced 1042 g used out of a
