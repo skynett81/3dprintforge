@@ -5,6 +5,52 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const CONFIG_PATH = join(ROOT, 'config.json');
+const ENV_PATH = join(ROOT, '.env');
+
+// Minimal .env parser (KEY=VALUE per line, # comments, optional surrounding quotes).
+// Avoids a dotenv dependency. Used both at startup and by saveSecretsToEnv.
+function parseEnvFile(content) {
+  const out = {};
+  for (const raw of content.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq < 0) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    }
+    if (key) out[key] = val;
+  }
+  return out;
+}
+
+function serializeEnvFile(obj) {
+  const lines = [];
+  for (const [key, val] of Object.entries(obj)) {
+    const v = String(val ?? '');
+    if (/[\s"'\\#$]/.test(v)) {
+      const escaped = v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      lines.push(`${key}="${escaped}"`);
+    } else {
+      lines.push(`${key}=${v}`);
+    }
+  }
+  return lines.join('\n') + '\n';
+}
+
+// Load .env into process.env BEFORE loadConfig reads env vars, so manual
+// `npm start` runs work the same as systemd's EnvironmentFile=. Systemd-set
+// vars take precedence (we only fill keys that aren't already set).
+if (existsSync(ENV_PATH)) {
+  try {
+    const parsed = parseEnvFile(readFileSync(ENV_PATH, 'utf-8'));
+    for (const [k, v] of Object.entries(parsed)) {
+      if (!(k in process.env)) process.env[k] = v;
+    }
+  } catch { /* ignore — defaults will apply */ }
+}
 
 const DEFAULTS = {
   printers: [],
@@ -127,6 +173,17 @@ function loadConfig() {
   if (process.env.SERVER_PORT) config.server.port = parseInt(process.env.SERVER_PORT);
   if (process.env.GITHUB_TOKEN) config.update.githubToken = process.env.GITHUB_TOKEN;
 
+  // Bambu Cloud tokens — sourced from .env. Auto-refreshed tokens are written
+  // back to .env via saveSecretsToEnv (see bambu-cloud.js), keeping all
+  // secrets in one file (config.json stays free of bearer tokens).
+  if (process.env.BAMBU_CLOUD_ACCESS_TOKEN) config.bambuCloud.accessToken = process.env.BAMBU_CLOUD_ACCESS_TOKEN;
+  if (process.env.BAMBU_CLOUD_REFRESH_TOKEN) config.bambuCloud.refreshToken = process.env.BAMBU_CLOUD_REFRESH_TOKEN;
+  if (process.env.BAMBU_CLOUD_EMAIL) config.bambuCloud.accountEmail = process.env.BAMBU_CLOUD_EMAIL;
+  if (process.env.BAMBU_CLOUD_TOKEN_EXPIRES_AT) {
+    const n = parseInt(process.env.BAMBU_CLOUD_TOKEN_EXPIRES_AT, 10);
+    if (!Number.isNaN(n)) config.bambuCloud.tokenExpiresAt = n;
+  }
+
   // Auth env overrides
   if (process.env.REQUIRE_AUTH === 'true' || process.env.REQUIRE_AUTH === '1') {
     config.auth.enabled = true;
@@ -153,9 +210,13 @@ function loadConfig() {
 
 /** Return config with secrets masked — safe for API responses */
 export function getSafeConfig() {
-  const safe = JSON.parse(JSON.stringify(config));
+  const safe = structuredClone(config);
   // Mask sensitive fields
   if (safe.update?.githubToken) safe.update.githubToken = '***';
+  if (safe.bambuCloud) {
+    if (safe.bambuCloud.accessToken) safe.bambuCloud.accessToken = '***';
+    if (safe.bambuCloud.refreshToken) safe.bambuCloud.refreshToken = '***';
+  }
   if (safe.auth?.password) safe.auth.password = '***';
   if (safe.auth?.users) {
     safe.auth.users = safe.auth.users.map(u => ({ ...u, password: '***' }));
@@ -189,6 +250,35 @@ export function getSafeConfig() {
   return safe;
 }
 
+// Persist secrets to .env (chmod 600). Empty/null values delete the key.
+// Updates are reflected immediately in process.env so the running process
+// can read fresh values without restart. Used for auto-refreshed tokens
+// that must outlive the current session (e.g. Bambu Cloud refresh).
+export function saveSecretsToEnv(updates) {
+  let current = {};
+  if (existsSync(ENV_PATH)) {
+    try { current = parseEnvFile(readFileSync(ENV_PATH, 'utf-8')); } catch { /* start fresh */ }
+  }
+  const merged = { ...current };
+  for (const [key, val] of Object.entries(updates)) {
+    if (val === '' || val == null) {
+      delete merged[key];
+      delete process.env[key];
+    } else {
+      merged[key] = String(val);
+      process.env[key] = String(val);
+    }
+  }
+  // Pass mode at create time so a brand-new .env is born 0600 — closes the
+  // narrow race where another local process could read the file between
+  // writeFileSync (default umask, ~0644) and chmodSync. For an existing
+  // file the OS preserves the prior mode and the chmodSync below normalises
+  // anything that's drifted (e.g. a hand-edited file).
+  writeFileSync(ENV_PATH, serializeEnvFile(merged), { mode: 0o600 });
+  try { chmodSync(ENV_PATH, 0o600); } catch { /* Windows etc. */ }
+  return merged;
+}
+
 export function saveConfig(updates) {
   let current = {};
   if (existsSync(CONFIG_PATH)) {
@@ -197,7 +287,9 @@ export function saveConfig(updates) {
     } catch (e) { /* start fresh */ }
   }
   const merged = deepMerge(current, updates);
-  writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2));
+  // Same reasoning as saveSecretsToEnv: born-0600 closes the umask race
+  // window for first-creation.
+  writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), { mode: 0o600 });
   try { chmodSync(CONFIG_PATH, 0o600); } catch { /* Windows etc. */ }
   return merged;
 }

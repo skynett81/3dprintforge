@@ -5,6 +5,39 @@ import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { networkInterfaces, hostname } from 'node:os';
+import { createGzip, createBrotliCompress, constants as zlibConstants } from 'node:zlib';
+
+// Compress static text assets when the client supports it. Streams the file
+// through zlib so we don't have to buffer entire CSS/JS bundles in memory.
+// Skip already-compressed binary types (images, fonts, video) — re-zipping
+// them is pure CPU waste.
+const COMPRESSIBLE_EXTS = new Set(['.html', '.htm', '.js', '.mjs', '.css', '.svg', '.json', '.xml', '.txt', '.map']);
+const BROTLI_QUALITY_STATIC = 5; // Higher than dynamic — still streams fast, smaller output.
+
+function pickEncoding(req) {
+  const a = req?.headers?.['accept-encoding'] || '';
+  if (a.includes('br')) return 'br';
+  if (a.includes('gzip')) return 'gzip';
+  return null;
+}
+
+function streamWithCompression(req, res, headers, filePath, ext) {
+  const enc = COMPRESSIBLE_EXTS.has(ext) ? pickEncoding(req) : null;
+  if (!enc) {
+    res.writeHead(200, headers);
+    createReadStream(filePath).pipe(res);
+    return;
+  }
+  const merged = { ...headers, 'Content-Encoding': enc, Vary: 'Accept-Encoding' };
+  // Drop Content-Length — it would describe the uncompressed size and break
+  // the response. Chunked transfer takes over automatically.
+  delete merged['Content-Length'];
+  res.writeHead(200, merged);
+  const compressor = enc === 'br'
+    ? createBrotliCompress({ params: { [zlibConstants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY_STATIC } })
+    : createGzip();
+  createReadStream(filePath).pipe(compressor).pipe(res);
+}
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
@@ -448,8 +481,7 @@ function handleRequest(req, res) {
     if (existsSync(filePath)) {
       const ext = extname(filePath);
       const ct = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' });
-      createReadStream(filePath).pipe(res);
+      streamWithCompression(req, res, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' }, filePath, ext);
       return;
     }
     res.writeHead(404);
@@ -470,8 +502,7 @@ function handleRequest(req, res) {
     if (existsSync(filePath)) {
       const ext = extname(filePath);
       const ct = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' });
-      createReadStream(filePath).pipe(res);
+      streamWithCompression(req, res, { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' }, filePath, ext);
       return;
     }
     res.writeHead(404);
@@ -507,8 +538,7 @@ function handleRequest(req, res) {
       const ext = extname(filePath);
       const ct = MIME_TYPES[ext] || 'application/octet-stream';
       const cache = ['.js', '.css', '.woff2', '.png', '.svg', '.jpg', '.jpeg'].includes(ext) ? 'public, max-age=86400' : 'no-cache';
-      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': cache });
-      createReadStream(filePath).pipe(res);
+      streamWithCompression(req, res, { 'Content-Type': ct, 'Cache-Control': cache }, filePath, ext);
       return true;
     };
 
@@ -525,8 +555,8 @@ function handleRequest(req, res) {
     // SPA fallback — use 404.html for client-side routing
     const fallback = join(DOCS_BUILD, '404.html');
     if (existsSync(fallback)) {
-      res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
-      return createReadStream(fallback).pipe(res);
+      streamWithCompression(req, res, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }, fallback, '.html');
+      return;
     }
   }
 
@@ -560,15 +590,13 @@ function handleRequest(req, res) {
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
   try {
-    const content = readFileSync(filePath);
     const headers = { 'Content-Type': contentType };
     // No-cache for dev assets so changes are seen immediately
     if (['.css', '.js', '.html'].includes(ext)) {
       headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
       headers['Pragma'] = 'no-cache';
     }
-    res.writeHead(200, headers);
-    res.end(content);
+    streamWithCompression(req, res, headers, filePath, ext);
   } catch (e) {
     res.writeHead(500);
     res.end('Serverfeil');

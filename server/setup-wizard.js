@@ -257,7 +257,7 @@ function saveConfig(data) {
     notifications: data.notifications || { enabled: false, channels: {} }
   };
 
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
   try { execSync(`chmod 600 "${CONFIG_PATH}"`, { timeout: 2000, stdio: 'pipe' }); } catch {}
   return config;
 }
@@ -277,6 +277,7 @@ ExecStart=${nodePath} server/index.js
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production
+EnvironmentFile=-${ROOT}/.env
 
 [Install]
 WantedBy=multi-user.target

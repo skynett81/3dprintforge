@@ -3,7 +3,7 @@
  * Uses node:https (no external dependencies).
  */
 import https from 'node:https';
-import { saveConfig, config } from './config.js';
+import { saveSecretsToEnv, config } from './config.js';
 
 const API_BASE = 'api.bambulab.com';
 
@@ -139,8 +139,11 @@ export class BambuCloud {
     this._email = '';
     this._expiresAt = 0;
     if (this._refreshTimer) clearInterval(this._refreshTimer);
-    saveConfig({
-      bambuCloud: { accessToken: '', refreshToken: '', accountEmail: '', tokenExpiresAt: 0 }
+    saveSecretsToEnv({
+      BAMBU_CLOUD_ACCESS_TOKEN: '',
+      BAMBU_CLOUD_REFRESH_TOKEN: '',
+      BAMBU_CLOUD_EMAIL: '',
+      BAMBU_CLOUD_TOKEN_EXPIRES_AT: '',
     });
     config.bambuCloud = { accessToken: '', refreshToken: '', accountEmail: '', tokenExpiresAt: 0 };
   }
@@ -483,7 +486,12 @@ export class BambuCloud {
       accountEmail: email,
       tokenExpiresAt: this._expiresAt,
     };
-    saveConfig({ bambuCloud: cloud });
+    saveSecretsToEnv({
+      BAMBU_CLOUD_ACCESS_TOKEN: cloud.accessToken,
+      BAMBU_CLOUD_REFRESH_TOKEN: cloud.refreshToken,
+      BAMBU_CLOUD_EMAIL: cloud.accountEmail,
+      BAMBU_CLOUD_TOKEN_EXPIRES_AT: cloud.tokenExpiresAt,
+    });
     config.bambuCloud = cloud;
   }
 

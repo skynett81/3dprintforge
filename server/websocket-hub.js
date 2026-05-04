@@ -202,10 +202,10 @@ export class WebSocketHub {
           }
         }
         if (!hasChanges) return; // Nothing changed, skip broadcast
-        this._lastState.set(pid, JSON.parse(JSON.stringify(data)));
+        this._lastState.set(pid, structuredClone(data));
         msg = JSON.stringify({ type, data: delta, delta: true });
       } else {
-        this._lastState.set(pid, JSON.parse(JSON.stringify(data)));
+        this._lastState.set(pid, structuredClone(data));
         msg = JSON.stringify({ type, data });
       }
     } else {

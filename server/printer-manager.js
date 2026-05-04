@@ -268,13 +268,14 @@ export class PrinterManager {
     let camera = null;
     let moonCamera = null;
     if (connectorType === 'moonraker') {
-      // Auto-provision camera first, then start MoonrakerCamera
-      try {
-        const ok = await provisionCamera(printerConf.ip, printerConf.port || 80);
-        log.info(`Camera provisioning for ${printerConf.name} (${printerConf.ip}): ${ok ? 'OK' : 'skipped/failed'}`);
-      } catch (e) {
-        log.warn(`Camera provisioning for ${printerConf.name} (${printerConf.ip}) threw: ${e.message}`);
-      }
+      // Provisioning probes nginx/SSH on the printer and can take 10-30s
+      // (timeouts on unreachable boxes). Fire-and-forget so it doesn't gate
+      // server startup; MoonrakerCamera handles "camera not ready yet" via
+      // its own retry loop. Errors are caught — silent fire-and-forget would
+      // swallow real bugs.
+      provisionCamera(printerConf.ip, printerConf.port || 80)
+        .then(ok => log.info(`Camera provisioning for ${printerConf.name} (${printerConf.ip}): ${ok ? 'OK' : 'skipped/failed'}`))
+        .catch(e => log.warn(`Camera provisioning for ${printerConf.name} (${printerConf.ip}) threw: ${e.message}`));
       moonCamera = new MoonrakerCamera({
         ...this.config,
         printer: printerConf

@@ -47,7 +47,7 @@ import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
-import { inflateRawSync } from 'node:zlib';
+import { inflateRawSync, gzipSync as _gzipSync, brotliCompressSync as _brotliCompressSync, constants as _zlibConstants } from 'node:zlib';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -106,6 +106,42 @@ import { withBreaker, getAllBreakerStatus } from './circuit-breaker.js';
 import { validate } from './validate.js';
 import * as _filamentMaterials from './filament-materials.js';
 const log = createLogger('api');
+
+// Static JSON catalogs in server/data/ (HMS codes, Bambu printer DB, brand
+// gcode references, ...) are referenced by 9+ endpoints. Reading and parsing
+// them per-request burns ~1-3ms on a 35KB file like hms-codes.json. They
+// don't change at runtime, so cache them keyed by absolute path. First call
+// pays the disk read; subsequent calls return the cached object directly.
+const _jsonCache = new Map();
+const _SERVER_DIR = dirname(fileURLToPath(import.meta.url));
+
+function _loadJson(absPath) {
+  let cached = _jsonCache.get(absPath);
+  if (cached !== undefined) return cached;
+  try {
+    cached = JSON.parse(readFileSync(absPath, 'utf8'));
+  } catch (e) {
+    log.warn(`Could not load JSON ${absPath}: ${e.message}`);
+    cached = null;
+  }
+  _jsonCache.set(absPath, cached);
+  return cached;
+}
+
+// Convenience wrappers for the most-referenced files. These return the
+// cached object directly — callers pass it to sendJson() unchanged.
+function _loadServerJson(...parts) {
+  return _loadJson(join(_SERVER_DIR, ...parts));
+}
+function _getHmsCodes() {
+  return _loadServerJson('hms-codes.json') || {};
+}
+
+// Cache headers for endpoints that return static JSON catalogs. Browsers
+// keep the response for 24h and don't even ask again — `immutable` blocks
+// the conditional GET that would otherwise still hit the network. Server
+// restart loads fresh JSON, so deploys propagate naturally as TTL expires.
+const _IMMUTABLE_JSON_HEADERS = { 'Cache-Control': 'public, max-age=86400, immutable' };
 
 // ---- Validation schemas ----
 // model is now free-text (maxLength 100) — no enum restriction for multi-brand support
@@ -3426,14 +3462,7 @@ export async function handleApiRequest(req, res) {
 
     // ---- HMS Codes ----
     if (method === 'GET' && path === '/api/hms-codes') {
-      try {
-        const { readFileSync } = await import('node:fs');
-        const { fileURLToPath } = await import('node:url');
-        const { dirname, join } = await import('node:path');
-        const __dir = dirname(fileURLToPath(import.meta.url));
-        const codes = JSON.parse(readFileSync(join(__dir, 'hms-codes.json'), 'utf8'));
-        return sendJson(res, codes);
-      } catch { return sendJson(res, {}); }
+      return sendJson(res, _getHmsCodes(), 200, _IMMUTABLE_JSON_HEADERS);
     }
 
     const hmsMatch = path.match(/^\/api\/hms-codes\/([a-zA-Z0-9_-]+)$/);
@@ -3454,8 +3483,7 @@ export async function handleApiRequest(req, res) {
       if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
       if (filters.limit) {
         const result = getVendors(filters);
-        res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
-        return res.end(JSON.stringify(result.rows));
+        return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
       }
       return sendJson(res, getVendors());
     }
@@ -3493,8 +3521,7 @@ export async function handleApiRequest(req, res) {
       if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
       if (filters.limit) {
         const result = getFilamentProfiles(filters);
-        res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
-        return res.end(JSON.stringify(result.rows));
+        return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
       }
       return sendJson(res, getFilamentProfiles(filters));
     }
@@ -3538,8 +3565,7 @@ export async function handleApiRequest(req, res) {
       if (url.searchParams.get('limit')) filters.limit = parseInt(url.searchParams.get('limit'));
       if (url.searchParams.get('offset')) filters.offset = parseInt(url.searchParams.get('offset'));
       const result = getSpools(filters);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
-      return res.end(JSON.stringify(result.rows));
+      return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
     }
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
     if (spoolMatch && method === 'GET') {
@@ -3818,8 +3844,7 @@ export async function handleApiRequest(req, res) {
       const limit = parseInt(url.searchParams.get('limit')) || 50;
       const offset = parseInt(url.searchParams.get('offset')) || 0;
       const result = searchSpools(q, limit, offset);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'X-Total-Count': String(result.total) });
-      return res.end(JSON.stringify(result.rows));
+      return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
     }
 
     // ---- Filament Matching ----
@@ -7945,12 +7970,9 @@ export async function handleApiRequest(req, res) {
       const brandMap = { prusa: 'prusa-profiles.json', creality: 'creality-profiles.json', voron: 'voron-profiles.json', elegoo: 'elegoo-profiles.json', qidi: 'qidi-profiles.json', anker: 'anker-ratrig-profiles.json', ratrig: 'anker-ratrig-profiles.json', ankermake: 'anker-ratrig-profiles.json' };
       const file = brandMap[brand.toLowerCase()];
       if (file) {
-        try {
-          const { readFileSync } = await import('node:fs');
-          const { join, dirname } = await import('node:path');
-          const { fileURLToPath } = await import('node:url');
-          return sendJson(res, JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'data', file), 'utf8')));
-        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        const data = _loadServerJson('data', file);
+        if (data) return sendJson(res, data, 200, _IMMUTABLE_JSON_HEADERS);
+        return sendJson(res, { error: 'Profile catalog unavailable' }, 500);
       }
     }
 
@@ -8021,38 +8043,24 @@ export async function handleApiRequest(req, res) {
 
     // ── Bambu Printer Database ──
     if (method === 'GET' && path === '/api/bambu/printer-db') {
-      try {
-        const { readFileSync } = await import('node:fs');
-        const { join, dirname } = await import('node:path');
-        const { fileURLToPath } = await import('node:url');
-        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
-        return sendJson(res, JSON.parse(readFileSync(dbPath, 'utf8')));
-      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      const db = _loadServerJson('data', 'bambu-printer-db.json');
+      if (!db) return sendJson(res, { error: 'Printer DB unavailable' }, 500);
+      return sendJson(res, db, 200, _IMMUTABLE_JSON_HEADERS);
     }
 
     if (method === 'GET' && path.startsWith('/api/bambu/printer-db/')) {
-      try {
-        const modelId = decodeURIComponent(path.split('/').pop());
-        const { readFileSync } = await import('node:fs');
-        const { join, dirname } = await import('node:path');
-        const { fileURLToPath } = await import('node:url');
-        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
-        const db = JSON.parse(readFileSync(dbPath, 'utf8'));
-        const printer = db.printers[modelId];
-        if (!printer) return sendJson(res, { error: 'Model not found' }, 404);
-        return sendJson(res, printer);
-      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      const modelId = decodeURIComponent(path.split('/').pop());
+      const db = _loadServerJson('data', 'bambu-printer-db.json');
+      if (!db) return sendJson(res, { error: 'Printer DB unavailable' }, 500);
+      const printer = db.printers?.[modelId];
+      if (!printer) return sendJson(res, { error: 'Model not found' }, 404);
+      return sendJson(res, printer, 200, _IMMUTABLE_JSON_HEADERS);
     }
 
     if (method === 'GET' && path === '/api/bambu/filament-blacklist') {
-      try {
-        const { readFileSync } = await import('node:fs');
-        const { join, dirname } = await import('node:path');
-        const { fileURLToPath } = await import('node:url');
-        const dbPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'bambu-printer-db.json');
-        const db = JSON.parse(readFileSync(dbPath, 'utf8'));
-        return sendJson(res, db.filament_blacklist || {});
-      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      const db = _loadServerJson('data', 'bambu-printer-db.json');
+      if (!db) return sendJson(res, { error: 'Printer DB unavailable' }, 500);
+      return sendJson(res, db.filament_blacklist || {}, 200, _IMMUTABLE_JSON_HEADERS);
     }
 
     // ── Cloudflare Tunnel ──
@@ -8359,31 +8367,22 @@ export async function handleApiRequest(req, res) {
 
       // Filament parameters database (load/unload/clean temps per material)
       if (method === 'GET' && smPath === 'filament-params') {
-        try {
-          const { readFileSync } = await import('node:fs');
-          const { join, dirname } = await import('node:path');
-          const { fileURLToPath } = await import('node:url');
-          const paramsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-filament-params.json');
-          const params = JSON.parse(readFileSync(paramsPath, 'utf8'));
-          return sendJson(res, params);
-        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        const params = _loadServerJson('data', 'sm-filament-params.json');
+        if (!params) return sendJson(res, { error: 'Params catalog unavailable' }, 500);
+        return sendJson(res, params, 200, _IMMUTABLE_JSON_HEADERS);
       }
 
       // Auto-suggest temperatures for a filament type+subtype
       if (method === 'GET' && smPath === 'filament-params/suggest') {
-        try {
-          const url = new URL(req.url, `http://${req.headers.host}`);
-          const type = url.searchParams.get('type') || 'PLA';
-          const subType = url.searchParams.get('subType') || 'Standard';
-          const { readFileSync } = await import('node:fs');
-          const { join, dirname } = await import('node:path');
-          const { fileURLToPath } = await import('node:url');
-          const paramsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-filament-params.json');
-          const params = JSON.parse(readFileSync(paramsPath, 'utf8'));
-          const typeParams = params[type];
-          const suggestion = typeParams?.[subType] || typeParams?.Standard || typeParams?.default || null;
-          return sendJson(res, suggestion || { error: `No params for ${type}/${subType}` });
-        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        const url2 = new URL(req.url, `http://${req.headers.host}`);
+        const type = url2.searchParams.get('type') || 'PLA';
+        const subType = url2.searchParams.get('subType') || 'Standard';
+        const params = _loadServerJson('data', 'sm-filament-params.json');
+        if (!params) return sendJson(res, { error: 'Params catalog unavailable' }, 500);
+        const typeParams = params[type];
+        const suggestion = typeParams?.[subType] || typeParams?.Standard || typeParams?.default || null;
+        if (!suggestion) return sendJson(res, { error: `No params for ${type}/${subType}` }, 404);
+        return sendJson(res, suggestion, 200, _IMMUTABLE_JSON_HEADERS);
       }
 
       // Camera snapshot from defect detection (via Moonraker webcam)
@@ -8419,21 +8418,22 @@ export async function handleApiRequest(req, res) {
 
       // G-code reference for Snapmaker-specific commands
       if (method === 'GET' && smPath === 'gcode-reference') {
-        try {
-          const ref = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-gcode-reference.json'), 'utf8'));
-          const model = url.searchParams.get('model') || '';
-          if (model) {
-            // Filter commands for this model
-            const filtered = {};
-            for (const [cmd, data] of Object.entries(ref.commands)) {
-              if (data.machines.includes('all') || data.machines.some(m => model.includes(m))) {
-                filtered[cmd] = data;
-              }
+        const ref = _loadServerJson('data', 'sm-gcode-reference.json');
+        if (!ref) return sendJson(res, { error: 'G-code reference unavailable' }, 500);
+        const model = url.searchParams.get('model') || '';
+        if (model) {
+          // Filter commands for this model — output is deterministic per model
+          // string, so the browser cache key includes the query and the result
+          // is safely immutable.
+          const filtered = {};
+          for (const [cmd, data] of Object.entries(ref.commands)) {
+            if (data.machines.includes('all') || data.machines.some(m => model.includes(m))) {
+              filtered[cmd] = data;
             }
-            return sendJson(res, { commands: filtered, model });
           }
-          return sendJson(res, ref);
-        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+          return sendJson(res, { commands: filtered, model }, 200, _IMMUTABLE_JSON_HEADERS);
+        }
+        return sendJson(res, ref, 200, _IMMUTABLE_JSON_HEADERS);
       }
 
       // Firmware version check from Snapmaker version-center
@@ -8525,26 +8525,15 @@ export async function handleApiRequest(req, res) {
 
       // All Snapmaker machine definitions
       if (method === 'GET' && smPath === 'machines') {
-        try {
-          const { readFileSync } = await import('node:fs');
-          const { join, dirname } = await import('node:path');
-          const { fileURLToPath } = await import('node:url');
-          const defsPath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-machine-defs.json');
-          return sendJson(res, JSON.parse(readFileSync(defsPath, 'utf8')));
-        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+        const defs = _loadServerJson('data', 'sm-machine-defs.json');
+        if (!defs) return sendJson(res, { error: 'Machine defs unavailable' }, 500);
+        return sendJson(res, defs, 200, _IMMUTABLE_JSON_HEADERS);
       }
 
       if (method === 'GET' && smPath === 'profiles') {
-        try {
-          const { readFileSync } = await import('node:fs');
-          const { join, dirname } = await import('node:path');
-          const { fileURLToPath } = await import('node:url');
-          const profilePath = join(dirname(fileURLToPath(import.meta.url)), 'data', 'sm-u1-profiles.json');
-          const profiles = JSON.parse(readFileSync(profilePath, 'utf8'));
-          return sendJson(res, profiles);
-        } catch (e) {
-          return sendJson(res, { error: 'Profiles not available: ' + e.message }, 500);
-        }
+        const profiles = _loadServerJson('data', 'sm-u1-profiles.json');
+        if (!profiles) return sendJson(res, { error: 'Profiles not available' }, 500);
+        return sendJson(res, profiles, 200, _IMMUTABLE_JSON_HEADERS);
       }
 
       return sendJson(res, { error: 'Unknown Snapmaker endpoint' }, 404);
@@ -13281,9 +13270,41 @@ function _monthsDiff(d1, d2) {
   return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
 }
 
-function sendJson(res, data, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'X-API-Version': _pkgVersion });
-  res.end(JSON.stringify(data));
+// Bodies under this size aren't compressed — TCP/HTTP overhead exceeds the
+// savings, and the CPU cost of compressing is wasted on small payloads.
+const COMPRESS_MIN_BYTES = 1024;
+
+// Brotli quality 4 is the sweet spot for dynamic content: ~3x faster than
+// quality 11 for ~5% larger output. Level 11 is for static pre-compression.
+const BROTLI_DYNAMIC_QUALITY = 4;
+
+function sendJson(res, data, status = 200, extraHeaders = null) {
+  const json = JSON.stringify(data);
+  const headers = { 'Content-Type': 'application/json', 'X-API-Version': _pkgVersion, ...(extraHeaders || {}) };
+
+  if (json.length >= COMPRESS_MIN_BYTES) {
+    // res.req is set by node:http for the request paired with this response,
+    // letting us pick an encoding without changing sendJson's signature
+    // across the ~1000 callers.
+    const accept = res.req?.headers?.['accept-encoding'] || '';
+    if (accept.includes('br')) {
+      headers['Content-Encoding'] = 'br';
+      headers['Vary'] = 'Accept-Encoding';
+      res.writeHead(status, headers);
+      res.end(_brotliCompressSync(json, { params: { [_zlibConstants.BROTLI_PARAM_QUALITY]: BROTLI_DYNAMIC_QUALITY } }));
+      return;
+    }
+    if (accept.includes('gzip')) {
+      headers['Content-Encoding'] = 'gzip';
+      headers['Vary'] = 'Accept-Encoding';
+      res.writeHead(status, headers);
+      res.end(_gzipSync(json));
+      return;
+    }
+  }
+
+  res.writeHead(status, headers);
+  res.end(json);
 }
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB (screenshots can be large)
