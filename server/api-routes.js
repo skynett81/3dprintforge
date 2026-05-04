@@ -47,7 +47,9 @@ import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
-import { inflateRawSync, gzipSync as _gzipSync, brotliCompressSync as _brotliCompressSync, constants as _zlibConstants } from 'node:zlib';
+import { inflateRawSync } from 'node:zlib';
+import { loadServerJson as _loadServerJson, getHmsCodes as _getHmsCodes, IMMUTABLE_JSON_HEADERS as _IMMUTABLE_JSON_HEADERS } from './json-cache.js';
+import { maybeCompressJson as _maybeCompressJson } from './http-compression.js';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -107,41 +109,9 @@ import { validate } from './validate.js';
 import * as _filamentMaterials from './filament-materials.js';
 const log = createLogger('api');
 
-// Static JSON catalogs in server/data/ (HMS codes, Bambu printer DB, brand
-// gcode references, ...) are referenced by 9+ endpoints. Reading and parsing
-// them per-request burns ~1-3ms on a 35KB file like hms-codes.json. They
-// don't change at runtime, so cache them keyed by absolute path. First call
-// pays the disk read; subsequent calls return the cached object directly.
-const _jsonCache = new Map();
-const _SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-
-function _loadJson(absPath) {
-  let cached = _jsonCache.get(absPath);
-  if (cached !== undefined) return cached;
-  try {
-    cached = JSON.parse(readFileSync(absPath, 'utf8'));
-  } catch (e) {
-    log.warn(`Could not load JSON ${absPath}: ${e.message}`);
-    cached = null;
-  }
-  _jsonCache.set(absPath, cached);
-  return cached;
-}
-
-// Convenience wrappers for the most-referenced files. These return the
-// cached object directly — callers pass it to sendJson() unchanged.
-function _loadServerJson(...parts) {
-  return _loadJson(join(_SERVER_DIR, ...parts));
-}
-function _getHmsCodes() {
-  return _loadServerJson('hms-codes.json') || {};
-}
-
-// Cache headers for endpoints that return static JSON catalogs. Browsers
-// keep the response for 24h and don't even ask again — `immutable` blocks
-// the conditional GET that would otherwise still hit the network. Server
-// restart loads fresh JSON, so deploys propagate naturally as TTL expires.
-const _IMMUTABLE_JSON_HEADERS = { 'Cache-Control': 'public, max-age=86400, immutable' };
+// JSON catalog cache and immutable cache headers live in ./json-cache.js.
+// HTTP-compression negotiation lives in ./http-compression.js. Both are
+// imported as `_xxx` aliases above so existing callers compile unchanged.
 
 // ---- Validation schemas ----
 // model is now free-text (maxLength 100) — no enum restriction for multi-brand support
@@ -13270,41 +13240,20 @@ function _monthsDiff(d1, d2) {
   return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
 }
 
-// Bodies under this size aren't compressed — TCP/HTTP overhead exceeds the
-// savings, and the CPU cost of compressing is wasted on small payloads.
-const COMPRESS_MIN_BYTES = 1024;
-
-// Brotli quality 4 is the sweet spot for dynamic content: ~3x faster than
-// quality 11 for ~5% larger output. Level 11 is for static pre-compression.
-const BROTLI_DYNAMIC_QUALITY = 4;
-
 function sendJson(res, data, status = 200, extraHeaders = null) {
   const json = JSON.stringify(data);
-  const headers = { 'Content-Type': 'application/json', 'X-API-Version': _pkgVersion, ...(extraHeaders || {}) };
-
-  if (json.length >= COMPRESS_MIN_BYTES) {
-    // res.req is set by node:http for the request paired with this response,
-    // letting us pick an encoding without changing sendJson's signature
-    // across the ~1000 callers.
-    const accept = res.req?.headers?.['accept-encoding'] || '';
-    if (accept.includes('br')) {
-      headers['Content-Encoding'] = 'br';
-      headers['Vary'] = 'Accept-Encoding';
-      res.writeHead(status, headers);
-      res.end(_brotliCompressSync(json, { params: { [_zlibConstants.BROTLI_PARAM_QUALITY]: BROTLI_DYNAMIC_QUALITY } }));
-      return;
-    }
-    if (accept.includes('gzip')) {
-      headers['Content-Encoding'] = 'gzip';
-      headers['Vary'] = 'Accept-Encoding';
-      res.writeHead(status, headers);
-      res.end(_gzipSync(json));
-      return;
-    }
-  }
-
+  // res.req is set by node:http for the request paired with this response,
+  // letting maybeCompressJson pick an encoding without changing sendJson's
+  // signature across the ~1000 callers.
+  const { body, headers: encHeaders } = _maybeCompressJson(json, res.req);
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Version': _pkgVersion,
+    ...(extraHeaders || {}),
+    ...encHeaders,
+  };
   res.writeHead(status, headers);
-  res.end(json);
+  res.end(body);
 }
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB (screenshots can be large)

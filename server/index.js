@@ -5,39 +5,7 @@ import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { networkInterfaces, hostname } from 'node:os';
-import { createGzip, createBrotliCompress, constants as zlibConstants } from 'node:zlib';
-
-// Compress static text assets when the client supports it. Streams the file
-// through zlib so we don't have to buffer entire CSS/JS bundles in memory.
-// Skip already-compressed binary types (images, fonts, video) — re-zipping
-// them is pure CPU waste.
-const COMPRESSIBLE_EXTS = new Set(['.html', '.htm', '.js', '.mjs', '.css', '.svg', '.json', '.xml', '.txt', '.map']);
-const BROTLI_QUALITY_STATIC = 5; // Higher than dynamic — still streams fast, smaller output.
-
-function pickEncoding(req) {
-  const a = req?.headers?.['accept-encoding'] || '';
-  if (a.includes('br')) return 'br';
-  if (a.includes('gzip')) return 'gzip';
-  return null;
-}
-
-function streamWithCompression(req, res, headers, filePath, ext) {
-  const enc = COMPRESSIBLE_EXTS.has(ext) ? pickEncoding(req) : null;
-  if (!enc) {
-    res.writeHead(200, headers);
-    createReadStream(filePath).pipe(res);
-    return;
-  }
-  const merged = { ...headers, 'Content-Encoding': enc, Vary: 'Accept-Encoding' };
-  // Drop Content-Length — it would describe the uncompressed size and break
-  // the response. Chunked transfer takes over automatically.
-  delete merged['Content-Length'];
-  res.writeHead(200, merged);
-  const compressor = enc === 'br'
-    ? createBrotliCompress({ params: { [zlibConstants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY_STATIC } })
-    : createGzip();
-  createReadStream(filePath).pipe(compressor).pipe(res);
-}
+import { streamWithCompression } from './http-compression.js';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
