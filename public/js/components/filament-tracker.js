@@ -1432,6 +1432,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
               ${t('filament.weigh', 'Weigh')}
             </button>
+            ${(s.printer_id && s.ams_tray != null) ? `<button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();window._showRecalibrateDialog(${s.id})" title="${t('filament.recalibrate_hint', 'Reset remaining weight from AMS snapshot or print history')}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              ${t('filament.recalibrate', 'Recalibrate')}
+            </button>` : ''}
             <button class="form-btn form-btn-sm" data-ripple onclick="this.closest('.ph-detail-overlay').remove();showStartDryingDialog(${s.id})">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
               ${t('filament.dry', 'Dry')}
@@ -2404,6 +2408,84 @@
       }
     });
   }
+
+  // ═══ Recalibrate dialog ═══
+  // Shows the dry-run preview from /api/inventory/spools/:id/recalibrate
+  // (signal-based) so the user can see what would change before applying.
+  // Also exposes the history-only fallback when the user wants to ignore
+  // the AMS snapshot and trust extrusion accounting alone.
+  window._showRecalibrateDialog = async function(spoolId) {
+    let preview;
+    try {
+      const res = await fetch(`/api/inventory/spools/${spoolId}/recalibrate`);
+      if (!res.ok) throw new Error(await res.text());
+      preview = await res.json();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(t('filament.recalibrate_error', 'Recalibrate failed: ') + e.message, 'error');
+      return;
+    }
+
+    const sig = preview.signals || {};
+    const fmtG = (v) => v == null ? '–' : `${Math.round(v * 10) / 10} g`;
+    const overlay = document.createElement('div');
+    overlay.className = 'inv-modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="inv-modal" style="max-width:520px">
+      <div class="inv-modal-header">
+        <span>${t('filament.recalibrate', 'Recalibrate')}</span>
+        <button class="inv-modal-close" onclick="this.closest('.inv-modal-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:14px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <strong>${t('filament.current', 'Current')}:</strong>
+          <div class="text-muted">${fmtG(preview.oldRemaining)} ${t('filament.remaining').toLowerCase()}</div>
+        </div>
+        <div style="border:1px solid var(--accent-blue);border-radius:6px;padding:10px;background:rgba(0,134,214,0.05)">
+          <strong>${t('filament.suggested', 'Suggested')} (${preview.chosen}):</strong>
+          <div style="font-size:1.4rem;color:var(--accent-blue)">${fmtG(preview.newRemaining)}</div>
+        </div>
+        <div style="font-size:0.85rem">
+          <details>
+            <summary style="cursor:pointer;color:var(--text-muted)">${t('filament.signals', 'Signals')}</summary>
+            <div style="padding-top:8px;display:flex;flex-direction:column;gap:6px">
+              ${sig.snapshot ? `<div>📡 AMS snapshot — pct=${sig.snapshot.remainPct ?? '–'}, sensor=${sig.snapshot.sensorCredible ? fmtG(sig.snapshot.trayWeight) : '<span class="text-muted">below floor</span>'}, ts=${sig.snapshot.timestamp || '–'}</div>` : '<div>📡 AMS snapshot — none</div>'}
+              <div>📊 Print history — ${sig.history?.prints || 0} prints, ${fmtG(sig.history?.used)} used → ${fmtG(sig.history?.derivedRemaining)} remaining</div>
+            </div>
+          </details>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="form-btn form-btn-sm" onclick="this.closest('.inv-modal-overlay').remove()">${t('common.cancel', 'Cancel')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-blue);color:#fff" onclick="window._applyRecalibrate(${spoolId}, 'signals', this)">${t('filament.apply_signals', 'Apply (smart)')}</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._applyRecalibrate(${spoolId}, 'history', this)" title="${t('filament.apply_history_hint', 'Use only print history (ignore AMS snapshot)')}">${t('filament.apply_history', 'History only')}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window._applyRecalibrate = async function(spoolId, mode, btn) {
+    if (btn) btn.disabled = true;
+    const path = mode === 'history' ? `/api/inventory/spools/${spoolId}/recalibrate-from-history`
+                                    : `/api/inventory/spools/${spoolId}/recalibrate`;
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: 'recalibrate via UI dialog' }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const result = await res.json();
+      if (typeof showToast === 'function') {
+        showToast(t('filament.recalibrate_done', 'Recalibrated to ') + Math.round(result.newRemaining) + ' g', 'success');
+      }
+      btn?.closest('.inv-modal-overlay')?.remove();
+      // _broadcastInventory on the server side will re-fire loadFilament
+      // and refresh the AMS panel cache — no manual reload needed.
+    } catch (e) {
+      if (btn) btn.disabled = false;
+      if (typeof showToast === 'function') showToast(t('filament.recalibrate_error', 'Recalibrate failed: ') + e.message, 'error');
+    }
+  };
 
   // ═══ Global API ═══
   window.loadFilamentPanel = loadFilament;
@@ -6166,7 +6248,8 @@
       const eventIcons = {
         created: '&#x2795;', edited: '&#x270F;', used: '&#x1F4E6;', dried: '&#x1F4A7;',
         assigned: '&#x1F5A8;', unassigned: '&#x2B05;', archived: '&#x1F4E6;', unarchived: '&#x21A9;',
-        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;'
+        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;',
+        recalibrated: '&#x2696;', // ⚖ scales — visually distinct from edit/used
       };
       let h = '<div class="fil-timeline">';
       for (const ev of events) {
@@ -6197,7 +6280,8 @@
       const eventIcons = {
         created: '&#x2795;', edited: '&#x270F;', used: '&#x1F4E6;', dried: '&#x1F4A7;',
         assigned: '&#x1F5A8;', unassigned: '&#x2B05;', archived: '&#x1F4E6;', unarchived: '&#x21A9;',
-        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;'
+        checked_out: '&#x2197;', checked_in: '&#x2199;', empty: '&#x26A0;',
+        recalibrated: '&#x2696;', // ⚖ scales — visually distinct from edit/used
       };
       let h = '';
       if (!events.length) { h = `<p class="text-muted">${t('filament.timeline_empty')}</p>`; }
