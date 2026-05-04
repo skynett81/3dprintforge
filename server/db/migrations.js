@@ -1908,6 +1908,26 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 144, up: (db) => {
+      // Same TEMP B-TREE pattern as v143, on the secondary activity-log
+      // tables. Each accepted a printer_id filter via a single-column
+      // index but then sorted via temp tree on timestamp. Composite
+      // (printer_id, timestamp DESC) lets SQLite emit sorted rows
+      // straight from the index. Single-column index dropped after
+      // (subsumed by composite leading column).
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_errors_printer_time ON error_log(printer_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_xcam_printer_time ON xcam_events(printer_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_protection_log_printer_time ON protection_log(printer_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_maintenance_printer_time ON maintenance_log(printer_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_queue_log_time ON queue_log(timestamp DESC)`);
+        db.exec(`DROP INDEX IF EXISTS idx_errors_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_xcam_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_protection_log_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_maintenance_printer`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 143, up: (db) => {
       // Composite indexes that match the leading-column + ORDER BY pattern
       // EXPLAIN QUERY PLAN was producing 'USE TEMP B-TREE FOR ORDER BY' on:
