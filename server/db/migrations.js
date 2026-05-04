@@ -1908,6 +1908,36 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 143, up: (db) => {
+      // Composite indexes that match the leading-column + ORDER BY pattern
+      // EXPLAIN QUERY PLAN was producing 'USE TEMP B-TREE FOR ORDER BY' on:
+      //
+      //   getHistory:    SELECT * FROM print_history WHERE printer_id = ?
+      //                  ORDER BY started_at DESC LIMIT ?
+      //   getLatestSnap: SELECT * FROM ams_snapshots WHERE printer_id = ?
+      //                  AND ams_unit = ? AND tray_id = ? ORDER BY timestamp DESC LIMIT 1
+      //   spoolTimeline: SELECT * FROM spool_usage_log WHERE spool_id = ?
+      //                  ORDER BY timestamp DESC LIMIT ?
+      //
+      // The single-column indexes from earlier migrations seek to the right
+      // page but force a temp B-tree to sort. Composite indexes with the
+      // sort column as the trailing key let SQLite return rows in already-
+      // sorted order — no temp tree, no extra memory, faster on small DBs
+      // and orders of magnitude faster as ams_snapshots grows (~700 rows
+      // today, gaining one per MQTT push during prints).
+      //
+      // The old single-column indexes are subsumed by the composite leading
+      // column, so dropping them saves storage and write amplification.
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_history_printer_started ON print_history(printer_id, started_at DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ams_snap_slot ON ams_snapshots(printer_id, ams_unit, tray_id, timestamp DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_sul_spool_time ON spool_usage_log(spool_id, timestamp DESC)`);
+        db.exec(`DROP INDEX IF EXISTS idx_history_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_ams_snap_printer`);
+        db.exec(`DROP INDEX IF EXISTS idx_sul_spool`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 140, up: (db) => {
       // Fill gaps across the rest of the consumer-brand catalogue. Many
       // popular vendors (Prusament, Hatchbox, AmazonBasics, Anycubic,
