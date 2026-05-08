@@ -7,7 +7,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
-import { addSpool, archiveSpool, getSpool, getSpoolBySlot } from '../../server/db/spools.js';
+import { addSpool, archiveSpool, getSpool, getSpoolBySlot } from '../../server/db/spools.js'; // eslint-disable-line no-duplicate-imports
 
 const PRINTER = 'p1';
 
@@ -73,5 +73,31 @@ describe('archiveSpool — slot cleanup', () => {
     // explicitly via the slot picker.
     assert.equal(row.printer_id, null);
     assert.equal(row.ams_tray, null);
+  });
+
+  it('addSpool with conflicting slot evicts the older active claim', () => {
+    // Pre-existing active spool at slot 0.
+    const oldId = spoolAt(0);
+    // Manual create or auto-create targets the same slot — should bump
+    // the old one out, not leave two active rows competing.
+    const newId = spoolAt(0);
+    const oldRow = getSpool(oldId);
+    const newRow = getSpool(newId);
+    assert.equal(oldRow.printer_id, null, 'old spool must be evicted from slot');
+    assert.equal(newRow.printer_id, PRINTER, 'new spool owns the slot');
+    assert.equal(newRow.ams_tray, 0);
+    // getSpoolBySlot returns exactly one row.
+    const bySlot = getSpoolBySlot(PRINTER, 0, 0);
+    assert.ok(bySlot);
+    assert.equal(bySlot.id, newId);
+  });
+
+  it('addSpool without slot fields touches no other rows', () => {
+    const a = spoolAt(0);
+    // Create another spool with no slot — must NOT clear A's slot.
+    addSpool({ initial_weight_g: 1000 });
+    const aRow = getSpool(a);
+    assert.equal(aRow.printer_id, PRINTER);
+    assert.equal(aRow.ams_tray, 0);
   });
 });

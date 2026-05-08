@@ -222,6 +222,19 @@ export function syncNfcSlot(printerId, channel, nfc) {
 export function addSpool(s) {
   const db = getDb();
   const shortId = _generateShortId();
+
+  // If the new spool targets an AMS slot, clear any other active row
+  // that already claims it. Without this, autoCreateSpoolFromTray (which
+  // calls addSpool directly) and a parallel manual create can both
+  // succeed and the slot ends up with two non-archived owners. The
+  // assignSpoolToSlot path already does this; addSpool needs the same
+  // protection so the invariant 'one active row per slot' holds at the
+  // persistence layer regardless of how the spool was inserted.
+  if (s.printer_id != null && s.ams_unit != null && s.ams_tray != null) {
+    db.prepare('UPDATE spools SET printer_id = NULL, ams_unit = NULL, ams_tray = NULL WHERE printer_id = ? AND ams_unit = ? AND ams_tray = ? AND archived = 0')
+      .run(s.printer_id, s.ams_unit, s.ams_tray);
+  }
+
   const result = db.prepare(`INSERT INTO spools
     (filament_profile_id, remaining_weight_g, used_weight_g, initial_weight_g, cost, lot_number,
      purchase_date, location, printer_id, ams_unit, ams_tray, comment, extra_fields, spool_weight,
