@@ -79,6 +79,23 @@ describe('autoCreateSpoolFromTray', () => {
       assert.equal(row.material || row.profile_material, 'PETG');
     });
 
+    it('derives a color_name from the tray hex (FFFFFF → White)', () => {
+      const result = autoCreateSpoolFromTray(elegooTray(), PRINTER, 0, 1);
+      const row = getSpool(result.id);
+      // Profile color_name should be set so the inventory list shows a
+      // human label instead of just '#FFFFFF'.
+      assert.equal(row.color_name, 'White');
+    });
+
+    it('produces a profile_name with material + colour name', () => {
+      const result = autoCreateSpoolFromTray(elegooTray(), PRINTER, 0, 1);
+      const row = getSpool(result.id);
+      // Without a Bambu tray_id_name we want at least "PETG White",
+      // not bare "PETG".
+      assert.match(row.profile_name, /PETG/);
+      assert.match(row.profile_name, /White/);
+    });
+
     it('handles missing tray_weight by defaulting to 1000g', () => {
       const result = autoCreateSpoolFromTray(elegooTray({ tray_weight: null }), PRINTER, 0, 1);
       const row = getSpool(result.id);

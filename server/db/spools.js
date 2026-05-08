@@ -1,5 +1,6 @@
 import { getDb } from './connection.js';
 import { createLogger } from '../logger.js';
+import { basicColorName } from '../color-names.js';
 
 const log = createLogger('db:spools');
 
@@ -590,9 +591,24 @@ export function autoCreateSpoolFromTray(tray, printerId, amsUnit, trayId) {
   const weight = parseInt(tray.tray_weight) || 1000;
   const trayIdName = tray.tray_id_name || null;
 
-  // Find or create filament profile
+  // Find or create filament profile.
+  //
+  // Profile name composition:
+  //   "<brand> <material> <tray_id_name|color_name>"
+  //
+  // For Bambu RFID-tagged spools, tray_id_name (e.g. "A00-B8") is the
+  // canonical identifier and goes at the end. For non-Bambu spools we
+  // fall back to a basic colour name resolved from the hex (Elegoo PETG
+  // 'FFFFFF' → "PETG White") so the inventory page doesn't show a wall
+  // of identical "PETG" / "PLA" entries when the user has multiple
+  // colours of the same material.
   let profileId = null;
-  const profileName = `${brand ? brand + ' ' : ''}${material}${tray.tray_id_name ? ' ' + tray.tray_id_name : ''}`;
+  const colorLabel = trayIdName || basicColorName(colorHex) || null;
+  const profileName = [
+    brand,
+    material,
+    colorLabel,
+  ].filter(Boolean).join(' ');
 
   // Try to find existing profile by tray_id_name first
   if (trayIdName) {
@@ -619,8 +635,9 @@ export function autoCreateSpoolFromTray(tray, printerId, amsUnit, trayId) {
         vendorId = Number(vr.lastInsertRowid);
       }
     }
-    const pr = db.prepare(`INSERT INTO filament_profiles (vendor_id, name, material, color_hex, spool_weight_g, tray_id_name)
-      VALUES (?, ?, ?, ?, ?, ?)`).run(vendorId, profileName, material, colorHex, weight, trayIdName);
+    const colorName = basicColorName(colorHex);
+    const pr = db.prepare(`INSERT INTO filament_profiles (vendor_id, name, material, color_hex, color_name, spool_weight_g, tray_id_name)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(vendorId, profileName, material, colorHex, colorName, weight, trayIdName);
     profileId = Number(pr.lastInsertRowid);
   }
 
