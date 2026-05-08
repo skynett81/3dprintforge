@@ -1908,6 +1908,21 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 147, up: (db) => {
+      // archiveSpool used to leave printer_id/ams_unit/ams_tray populated
+      // on the archived row. Most reads filter archived=0 so the user
+      // wouldn't notice — until two spools claim the same (printer_id,
+      // ams_unit, ams_tray) and a future query that doesn't filter
+      // archived sees both. Clear the slot fields on every existing
+      // archived row so the table converges to "only active spools own
+      // a slot".
+      try {
+        db.exec(`UPDATE spools
+                 SET printer_id = NULL, ams_unit = NULL, ams_tray = NULL
+                 WHERE archived = 1 AND (printer_id IS NOT NULL OR ams_unit IS NOT NULL OR ams_tray IS NOT NULL)`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 146, up: (db) => {
       // Final composite-index pass — picks up the remaining tables that
       // EXPLAIN flagged with TEMP B-TREE: spool_events (per-spool and

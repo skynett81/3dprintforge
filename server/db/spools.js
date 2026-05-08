@@ -270,7 +270,18 @@ export function deleteSpool(id) {
 
 export function archiveSpool(id, archived = true) {
   const db = getDb();
-  db.prepare('UPDATE spools SET archived = ? WHERE id = ?').run(archived ? 1 : 0, id);
+  if (archived) {
+    // Free the AMS slot when archiving — keeping the slot fields populated
+    // creates phantom slot ownership, so a fresh spool inserted in the
+    // same physical slot ends up with two rows claiming the same
+    // (printer_id, ams_unit, ams_tray). Most queries filter on archived=0
+    // so the symptom is invisible until something joins both archives
+    // and active rows. Clear the slot here so the new spool gets a clean
+    // claim.
+    db.prepare('UPDATE spools SET archived = 1, printer_id = NULL, ams_unit = NULL, ams_tray = NULL WHERE id = ?').run(id);
+  } else {
+    db.prepare('UPDATE spools SET archived = 0 WHERE id = ?').run(id);
+  }
   try { addSpoolEvent(id, archived ? 'archived' : 'unarchived', null, null); } catch (e) { log.warn('Failed to log spool archive event', e.message); }
 }
 
