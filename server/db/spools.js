@@ -624,8 +624,15 @@ export function autoCreateSpoolFromTray(tray, printerId, amsUnit, trayId) {
     profileId = Number(pr.lastInsertRowid);
   }
 
-  // Compute remaining weight from AMS percentage
-  const remainPct = Math.max(0, Math.min(100, tray.remain || 0));
+  // Compute remaining weight from AMS percentage. Bambu's firmware sends
+  // tray.remain = -1 when it has no measurement for this slot (typically
+  // non-Bambu spools without an RFID tag — Elegoo, Polymaker, generic
+  // etc.). Treating -1 as 0% would create a spool that's already empty,
+  // which is wrong for what's most likely a freshly-loaded reel. Default
+  // to 100% remaining and let the user adjust if the spool is partial.
+  const rawRemain = tray.remain;
+  const knownPct = rawRemain != null && rawRemain >= 0;
+  const remainPct = knownPct ? Math.max(0, Math.min(100, rawRemain)) : 100;
   const remainG = correctRemainWeight(remainPct, weight);
 
   const result = addSpool({

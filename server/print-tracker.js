@@ -974,7 +974,12 @@ export class PrintTracker {
           if (tagUid && tagUid !== '0000000000000000') continue;
           // Skip empty or invalid trays
           if (!tray.tray_color || tray.tray_color === '00000000') continue;
-          if (tray.tray_uuid === '00000000000000000000000000000000') continue;
+          // Bambu's tray_uuid is empty for non-Bambu spools (Elegoo, Polymaker,
+          // generic etc.). Earlier this filter blocked them entirely. Now we
+          // pass them through — auto-match falls back to color+material so
+          // the user gets a proper spool entry without manual setup.
+          // Truly empty slots are already caught by the !tray_type guard
+          // above and the !tray_color guard just before this comment.
 
           const amsUnit = parseInt(unit.id) || 0;
           const trayId = parseInt(tray.id) || 0;
