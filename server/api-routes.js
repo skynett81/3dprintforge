@@ -7108,9 +7108,10 @@ export async function handleApiRequest(req, res) {
         // Parse query/header for printer/filament/process selection.
         // Accept both query params (easy from JS) and JSON body for
         // flexibility — multipart parsing is left to the fork side.
-        const printerId = url.searchParams.get('printer_id') || req.headers['x-printer-id'];
-        const filamentIds = url.searchParams.get('filament_ids');
-        const processId = url.searchParams.get('process_id') || req.headers['x-process-id'];
+        const sliceUrl = new URL(req.url, 'http://localhost');
+        const printerId = sliceUrl.searchParams.get('printer_id') || req.headers['x-printer-id'];
+        const filamentIds = sliceUrl.searchParams.get('filament_ids');
+        const processId = sliceUrl.searchParams.get('process_id') || req.headers['x-process-id'];
         const result = await slice({
           modelBuffer: buf,
           modelFilename: req.headers['x-filename'] || 'model.stl',
@@ -7158,13 +7159,14 @@ export async function handleApiRequest(req, res) {
           'Connection': 'keep-alive',
           'X-Accel-Buffering': 'no',
         });
-        const filIds = url.searchParams.get('filament_ids');
+        const streamUrl = new URL(req.url, 'http://localhost');
+        const filIds = streamUrl.searchParams.get('filament_ids');
         const result = await sliceStream({
           modelBuffer: buf,
           modelFilename: req.headers['x-filename'] || 'model.stl',
-          printerId: url.searchParams.get('printer_id'),
+          printerId: streamUrl.searchParams.get('printer_id'),
           filamentIds: filIds ? JSON.parse(filIds) : undefined,
-          processId: url.searchParams.get('process_id'),
+          processId: streamUrl.searchParams.get('process_id'),
           onEvent: (evt) => {
             try {
               const eventName = evt.event || 'progress';
@@ -7217,7 +7219,8 @@ export async function handleApiRequest(req, res) {
         const { probe, slice, fetchGcode } = await import('./forge-slicer-client.js');
         const p = await probe();
         if (!p.ok) return sendJson(res, { error: 'forge slicer not reachable', probe: p }, 503);
-        const targetPrinter = url.searchParams.get('target_printer');
+        const sendUrl = new URL(req.url, 'http://localhost');
+        const targetPrinter = sendUrl.searchParams.get('target_printer');
         if (!targetPrinter) return sendJson(res, { error: 'target_printer query param required' }, 400);
         const entry = _printerManager?.printers?.get(targetPrinter);
         if (!entry) return sendJson(res, { error: 'target printer not found' }, 404);
@@ -7227,17 +7230,17 @@ export async function handleApiRequest(req, res) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const buf = Buffer.concat(chunks);
-        const filIds = url.searchParams.get('filament_ids');
+        const filIds = sendUrl.searchParams.get('filament_ids');
         const sliceResult = await slice({
           modelBuffer: buf,
           modelFilename: req.headers['x-filename'] || 'model.stl',
-          printerId: url.searchParams.get('printer_id'),
+          printerId: sendUrl.searchParams.get('printer_id'),
           filamentIds: filIds ? JSON.parse(filIds) : undefined,
-          processId: url.searchParams.get('process_id'),
+          processId: sendUrl.searchParams.get('process_id'),
         });
         const gcodeBuf = await fetchGcode(sliceResult.job_id);
         const gcodeName = (req.headers['x-filename'] || 'model.stl').replace(/\.[^.]+$/, '') + '.gcode';
-        const startPrint = url.searchParams.get('print') === '1' && typeof entry.client.uploadAndPrint === 'function';
+        const startPrint = sendUrl.searchParams.get('print') === '1' && typeof entry.client.uploadAndPrint === 'function';
         const upload = startPrint
           ? await entry.client.uploadAndPrint(gcodeName, gcodeBuf)
           : await entry.client.uploadFile(gcodeName, gcodeBuf);
@@ -7264,8 +7267,9 @@ export async function handleApiRequest(req, res) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const buf = Buffer.concat(chunks);
-        const w = parseInt(url.searchParams.get('width')) || 512;
-        const h = parseInt(url.searchParams.get('height')) || 512;
+        const previewUrl = new URL(req.url, 'http://localhost');
+        const w = parseInt(previewUrl.searchParams.get('width')) || 512;
+        const h = parseInt(previewUrl.searchParams.get('height')) || 512;
         const png = await preview({
           modelBuffer: buf,
           modelFilename: req.headers['x-filename'] || 'model.stl',
