@@ -1923,6 +1923,19 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 148, up: (db) => {
+      // Per-printer, type-specific config (cameraMode, cameraResolution,
+      // developerMode, cloudSync, autoAmsSync, webcamUrl, port, and the
+      // per-brand credentials/options) had no column in `printers`, so the
+      // INSERT/UPDATE silently dropped every extra field and GET
+      // /api/printers never returned them. The edit dialog then re-read
+      // defaults, so settings looked like they never saved (issue #12).
+      // Store the open-ended set as a JSON blob the CRUD layer merges in.
+      try {
+        db.exec(`ALTER TABLE printers ADD COLUMN config_json TEXT`);
+      } catch (e) { /* column already exists */ }
+    }},
+
     { version: 146, up: (db) => {
       // Final composite-index pass — picks up the remaining tables that
       // EXPLAIN flagged with TEMP B-TREE: spool_events (per-spool and

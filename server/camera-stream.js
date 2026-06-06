@@ -19,12 +19,28 @@ const log = createLogger('camera');
  * Clients receive JPEG frames via WebSocket (binary).
  * For RTSP mode, ffmpeg transcodes to MPEG-TS and JSMpeg decodes on client.
  */
+// Map the edit-dialog resolution tokens to the WxH ffmpeg's -s flag needs.
+// Returns null for empty/unknown input so callers fall back to the global
+// default. An explicit WxH string (e.g. '1280x720') passes through as-is.
+const RESOLUTION_TOKENS = { '1080p': '1920x1080', '720p': '1280x720', '480p': '640x480' };
+export function resolvePrinterResolution(value) {
+  if (!value) return null;
+  if (RESOLUTION_TOKENS[value]) return RESOLUTION_TOKENS[value];
+  if (/^\d{2,4}x\d{2,4}$/.test(value)) return value;
+  return null;
+}
+
 export class CameraStream {
   constructor(config) {
     this.ip = config.printer.ip;
     this.accessCode = config.printer.accessCode;
     this.port = config.server.cameraWsPort;
-    this.resolution = config.camera?.resolution || '640x480';
+    // Per-printer override (set via the printer edit dialog) wins over the
+    // global camera default. The dialog stores tokens like '1080p'/'720p'/
+    // '480p'; map those to the WxH ffmpeg expects. Fall back to the global
+    // default unchanged when the printer has no explicit resolution.
+    this.resolution = resolvePrinterResolution(config.printer?.cameraResolution)
+      || config.camera?.resolution || '640x480';
     this.framerate = config.camera?.framerate || 15;
     this.bitrate = config.camera?.bitrate || '1000k';
     this.enabled = config.camera?.enabled !== false;

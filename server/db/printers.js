@@ -5,10 +5,52 @@ const log = createLogger('db:printers');
 
 // ---- Printer CRUD ----
 
+// Keys that map to dedicated `printers` columns. Everything else a caller
+// passes (cameraMode, cameraResolution, developerMode, cloudSync,
+// autoAmsSync, webcamUrl, port, moonrakerApiKey, token, password, …) is
+// open-ended per-brand config and gets serialised into the config_json blob
+// so it survives a round-trip and a server restart (issue #12).
+const COLUMN_FIELDS = new Set([
+  'id', 'name', 'ip', 'serial', 'accessCode', 'access_code', 'model',
+  'type', 'cloudMode', 'cloud_mode', 'region',
+  'electricity_rate_kwh', 'printer_wattage', 'machine_cost', 'machine_lifetime_hours',
+]);
+
+// Managed by dedicated columns/handlers — must never leak into the blob.
+const NON_CONFIG_FIELDS = new Set([
+  'added_at', 'maintenance_mode', 'maintenance_note', 'maintenance_since', 'config_json',
+]);
+
+function extractConfig(p) {
+  const cfg = {};
+  for (const [k, v] of Object.entries(p)) {
+    if (COLUMN_FIELDS.has(k) || NON_CONFIG_FIELDS.has(k)) continue;
+    if (v === undefined) continue;
+    cfg[k] = v;
+  }
+  return cfg;
+}
+
+function parseConfig(raw) {
+  if (!raw) return {};
+  try {
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === 'object' ? obj : {};
+  } catch {
+    return {};
+  }
+}
+
+function serializeConfig(cfg) {
+  return Object.keys(cfg).length ? JSON.stringify(cfg) : null;
+}
+
 export function getPrinters() {
   const db = getDb();
   const rows = db.prepare('SELECT * FROM printers ORDER BY added_at').all();
   return rows.map(r => ({
+    // Type-specific config first; the real columns below win on any overlap.
+    ...parseConfig(r.config_json),
     id: r.id,
     name: r.name,
     ip: r.ip,
@@ -28,20 +70,27 @@ export function getPrinters() {
 
 export function addPrinter(p) {
   const db = getDb();
-  return db.prepare('INSERT INTO printers (id, name, ip, serial, access_code, model, type, cloud_mode, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+  const configJson = serializeConfig(extractConfig(p));
+  return db.prepare('INSERT INTO printers (id, name, ip, serial, access_code, model, type, cloud_mode, region, config_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
     p.id, p.name, p.ip || null, p.serial || null, p.accessCode || null, p.model || null, p.type || null,
-    p.cloudMode ? 1 : 0, p.region || null
+    p.cloudMode ? 1 : 0, p.region || null, configJson
   );
 }
 
 export function updatePrinter(id, p) {
   const db = getDb();
+  // Merge incoming extras over the stored blob so a partial update (e.g. a
+  // brand whose form omits another brand's fields) never wipes config the
+  // caller didn't touch.
+  const existing = db.prepare('SELECT config_json FROM printers WHERE id = ?').get(id);
+  const merged = { ...parseConfig(existing?.config_json), ...extractConfig(p) };
+  const configJson = serializeConfig(merged);
   return db.prepare(`UPDATE printers SET name=?, ip=?, serial=?, access_code=?, model=?, type=?,
     cloud_mode=?, region=?,
-    electricity_rate_kwh=?, printer_wattage=?, machine_cost=?, machine_lifetime_hours=? WHERE id=?`).run(
+    electricity_rate_kwh=?, printer_wattage=?, machine_cost=?, machine_lifetime_hours=?, config_json=? WHERE id=?`).run(
     p.name, p.ip || null, p.serial || null, p.accessCode || null, p.model || null, p.type || null,
     p.cloudMode ? 1 : 0, p.region || null,
-    p.electricity_rate_kwh ?? null, p.printer_wattage ?? null, p.machine_cost ?? null, p.machine_lifetime_hours ?? null, id
+    p.electricity_rate_kwh ?? null, p.printer_wattage ?? null, p.machine_cost ?? null, p.machine_lifetime_hours ?? null, configJson, id
   );
 }
 

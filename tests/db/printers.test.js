@@ -113,6 +113,74 @@ describe('Printer og Printer Groups', () => {
     });
   });
 
+  // Regression: issue #12 — Bambu type-specific settings (LAN Developer
+  // Mode, camera resolution) silently failed to save because the printers
+  // table had no home for them. They now persist in config_json and round
+  // trip through getPrinters().
+  describe('Type-specific config persistence (config_json)', () => {
+    it('addPrinter() persists Bambu config fields and getPrinters() returns them', () => {
+      addPrinter({
+        id: 'bambu-x1c',
+        name: 'X1 Carbon',
+        ip: '192.168.1.50',
+        serial: 'X1CSERIAL',
+        accessCode: '12345678',
+        type: 'bambu',
+        developerMode: true,
+        cameraResolution: '1080p',
+        cameraMode: 'rtsp',
+        cloudSync: false,
+      });
+
+      const p = getPrinters().find(x => x.id === 'bambu-x1c');
+      assert.ok(p, 'printer should exist');
+      assert.strictEqual(p.developerMode, true, 'developerMode should persist');
+      assert.strictEqual(p.cameraResolution, '1080p', 'cameraResolution should persist');
+      assert.strictEqual(p.cameraMode, 'rtsp', 'cameraMode should persist');
+      assert.strictEqual(p.cloudSync, false, 'cloudSync should persist');
+    });
+
+    it('updatePrinter() persists changed Developer Mode + camera resolution', () => {
+      addPrinter({
+        id: 'edit-me', name: 'Edit Me', ip: '192.168.1.60', serial: 'S',
+        accessCode: 'AC', type: 'bambu', developerMode: false, cameraResolution: '720p',
+      });
+
+      updatePrinter('edit-me', {
+        name: 'Edit Me', ip: '192.168.1.60', serial: 'S', accessCode: 'AC',
+        model: null, type: 'bambu',
+        developerMode: true, cameraResolution: '480p',
+      });
+
+      const p = getPrinters().find(x => x.id === 'edit-me');
+      assert.strictEqual(p.developerMode, true, 'developerMode change should be saved');
+      assert.strictEqual(p.cameraResolution, '480p', 'cameraResolution change should be saved');
+    });
+
+    it('updatePrinter() merges config — untouched fields are preserved', () => {
+      addPrinter({
+        id: 'merge-me', name: 'Merge', ip: '1.1.1.1', type: 'bambu',
+        developerMode: true, cameraResolution: '1080p',
+      });
+
+      // A partial update that only changes the name must not drop the
+      // previously stored Bambu config.
+      updatePrinter('merge-me', { name: 'Merge Renamed', ip: '1.1.1.1', type: 'bambu' });
+
+      const p = getPrinters().find(x => x.id === 'merge-me');
+      assert.strictEqual(p.name, 'Merge Renamed');
+      assert.strictEqual(p.developerMode, true, 'developerMode should survive a name-only edit');
+      assert.strictEqual(p.cameraResolution, '1080p', 'cameraResolution should survive a name-only edit');
+    });
+
+    it('printers without extra config have no leftover keys', () => {
+      addPrinter({ id: 'plain', name: 'Plain' });
+      const p = getPrinters().find(x => x.id === 'plain');
+      assert.strictEqual(p.developerMode, undefined, 'no phantom config fields');
+      assert.strictEqual(p.name, 'Plain');
+    });
+  });
+
   describe('Printer Groups', () => {
     it('getPrinterGroups() returnerer tom liste initialt', () => {
       const groups = getPrinterGroups();

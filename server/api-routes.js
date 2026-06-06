@@ -127,6 +127,11 @@ const PRINTER_SCHEMA = {
   type: { type: 'string', enum: PRINTER_TYPES }
 };
 
+// Per-brand credential fields persisted in printers.config_json. Masked to
+// '***' in GET /api/printers and restored on PUT when sent back unchanged,
+// mirroring how accessCode is handled.
+const PRINTER_SECRET_FIELDS = ['moonrakerApiKey', 'token', 'password', 'prusaConnectToken'];
+
 const PRINTER_UPDATE_SCHEMA = {
   name: { type: 'string', minLength: 1, maxLength: 100 },
   ip: { type: 'string', pattern: /^\d{1,3}(\.\d{1,3}){3}$/ },
@@ -1760,10 +1765,17 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/printers') {
-      const printers = getPrinters().map(p => ({
-        ...p,
-        accessCode: p.accessCode ? '***' : ''
-      }));
+      const printers = getPrinters().map(p => {
+        const out = { ...p, accessCode: p.accessCode ? '***' : '' };
+        // Per-brand credentials now persist in config_json, so they would
+        // otherwise be returned in plaintext here. Mask them like accessCode
+        // — the edit form shows '***' and the PUT handler restores the
+        // stored value when an unchanged '***' comes back.
+        for (const f of PRINTER_SECRET_FIELDS) {
+          if (out[f]) out[f] = '***';
+        }
+        return out;
+      });
       return sendJson(res, printers);
     }
 
@@ -1785,10 +1797,14 @@ export async function handleApiRequest(req, res) {
         const vr = validate(PRINTER_UPDATE_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         const id = printerMatch[1];
-        // Preserve existing access code if masked
-        if (body.accessCode === '***') {
+        // Preserve existing access code + per-brand secrets when the form
+        // sends back the masked '***' placeholder (value unchanged).
+        if (body.accessCode === '***' || PRINTER_SECRET_FIELDS.some(f => body[f] === '***')) {
           const existing = getPrinters().find(p => p.id === id);
-          body.accessCode = existing?.accessCode || '';
+          if (body.accessCode === '***') body.accessCode = existing?.accessCode || '';
+          for (const f of PRINTER_SECRET_FIELDS) {
+            if (body[f] === '***') body[f] = existing?.[f] || '';
+          }
         }
         updatePrinter(id, body);
         if (_onPrinterUpdated) _onPrinterUpdated(id, { ...body, id });
