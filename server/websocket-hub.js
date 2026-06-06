@@ -234,4 +234,10 @@ export class WebSocketHub {
   getClientCount() {
     return this.clients.size;
   }
+
+  // Latest broadcast state for a printer (temps/progress/etc.), or null.
+  // Read-only access for HTTP consumers like the slicer Devices panel.
+  getLastState(printerId) {
+    return this._lastState.get(printerId) || null;
+  }
 }

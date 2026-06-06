@@ -276,6 +276,7 @@ function getRoutePermission(method, path) {
   if (path === '/api/waste') return 'controls';
   if (path.match(/^\/api\/printers\/[^/]+\/files/)) return 'controls';
   if (path.match(/^\/api\/printers\/[^/]+\/control$/)) return 'controls';
+  if (path.match(/^\/api\/printers\/[^/]+\/state$/)) return 'view';
 
   // Filament/inventory routes
   if (path.startsWith('/api/filament') || path.startsWith('/api/inventory')) return 'filament';
@@ -1790,6 +1791,15 @@ export async function handleApiRequest(req, res) {
         return out;
       });
       return sendJson(res, printers);
+    }
+
+    // Latest live state (temps/progress/etc.) for a printer — read-only,
+    // from the WebSocket hub's last-broadcast cache. Used by the slicer
+    // Devices panel for status without a WS connection.
+    const stateMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/state$/);
+    if (stateMatch && method === 'GET') {
+      const s = _hub ? _hub.getLastState(stateMatch[1]) : null;
+      return sendJson(res, s || {});
     }
 
     // Print control (pause/resume/stop) for any connected printer. Uses the
