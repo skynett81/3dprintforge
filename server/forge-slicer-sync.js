@@ -23,6 +23,42 @@ let _syncTimer = null;
 let _lastSync = { at: 0, ok: false, imported: 0, error: null };
 
 /**
+ * Upsert a remote profile catalog into `slicer_profiles`
+ * (vendor 'forge-slicer'), archiving rows no longer present. Idempotent
+ * on (kind, name). Used by the slicer's on-demand push endpoint
+ * (POST /api/slicer/profiles/push); syncOnce keeps equivalent inline
+ * logic for the periodic pull.
+ *
+ * @param {Array<{kind:string,name:string,settings?:object}>} remoteProfiles
+ * @returns {{imported:number, updated:number, removed:number}}
+ */
+export function applyRemoteProfiles(remoteProfiles) {
+  const db = getDb();
+  const list = Array.isArray(remoteProfiles) ? remoteProfiles : [];
+  const remoteKeys = new Set(list.filter(p => p && p.kind && p.name).map(p => `${p.kind}::${p.name}`));
+  const existing = db.prepare("SELECT id, kind, name FROM slicer_profiles WHERE vendor = 'forge-slicer'").all();
+  const existingKeys = new Map(existing.map(r => [`${r.kind}::${r.name}`, r.id]));
+
+  let imported = 0, updated = 0, removed = 0;
+  for (const p of list) {
+    if (!p || !p.kind || !p.name) continue;
+    const key = `${p.kind}::${p.name}`;
+    if (existingKeys.has(key)) {
+      try { updateProfile(existingKeys.get(key), { settings: p.settings || {} }); updated++; } catch { /* keep going */ }
+    } else {
+      try { createProfile({ kind: p.kind, name: p.name, vendor: 'forge-slicer', settings: p.settings || {}, is_default: 0 }); imported++; }
+      catch (e) { log.warn(`Could not import profile ${key}: ${e.message}`); }
+    }
+  }
+  for (const [key, id] of existingKeys) {
+    if (!remoteKeys.has(key)) {
+      try { db.prepare("UPDATE slicer_profiles SET vendor = 'forge-slicer-archived' WHERE id = ?").run(id); removed++; } catch { /* ignore */ }
+    }
+  }
+  return { imported, updated, removed };
+}
+
+/**
  * Run a one-shot sync. Safe to call repeatedly — `slicer_profiles`
  * upserts are idempotent on (kind, name).
  *

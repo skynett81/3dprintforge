@@ -5155,6 +5155,20 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getSlicerProfiles());
     }
 
+    // On-demand profile push from the slicer GUI (covers GUI-only mode
+    // where the dashboard can't pull from the slicer's REST server).
+    // Body: { profiles: [{ kind, name, settings? }] } — full catalog.
+    if (method === 'POST' && path === '/api/slicer/profiles/push') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { applyRemoteProfiles } = await import('./forge-slicer-sync.js');
+          const result = applyRemoteProfiles(body.profiles || []);
+          if (_broadcastFn) _broadcastFn('slicer_update', { action: 'profiles_synced' });
+          return sendJson(res, { ok: true, ...result });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
     if (method === 'GET' && path === '/api/slicer/jobs') {
       const limit = parseInt(url.searchParams.get('limit')) || 50;
       return sendJson(res, dbGetSlicerJobs(limit));
