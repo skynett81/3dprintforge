@@ -61,7 +61,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux-installers
-          path: dist-electron/*
+          # Explicit extensions — `dist-electron/*` also sweeps up stray
+          # tool binaries electron-builder caches there (e.g. pagent.exe).
+          path: |
+            dist-electron/*.AppImage
+            dist-electron/*.deb
+            dist-electron/*.rpm
+            dist-electron/*.tar.gz
+            dist-electron/*.flatpak
 
   build-mac:
     runs-on: macos-latest
@@ -79,7 +86,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-installers
-          path: dist-electron/*.{dmg,zip}
+          # upload-artifact globs don't expand braces — list each extension.
+          path: |
+            dist-electron/*.dmg
+            dist-electron/*.zip
 
   build-windows:
     runs-on: windows-latest
@@ -90,14 +100,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build Windows installers (nsis + portable + appx for Microsoft Store)
-        run: npx electron-builder --win nsis portable appx -p never
+      # appx (Microsoft Store) is omitted: its protocol/app Id can't start
+      # with a digit ("3dprintforge"/"3DPrintForge") and Store submission
+      # needs a real publisher identity. nsis + portable are the installers
+      # users actually download.
+      - name: Build Windows installers (nsis + portable)
+        run: npx electron-builder --win nsis portable -p never
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installers-unsigned
-          path: |
-            dist-electron/*.exe
-            dist-electron/*.appx
+          path: dist-electron/*.exe
 
   sign-windows:
     needs: build-windows
