@@ -275,6 +275,7 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/maintenance') || path.startsWith('/api/protection')) return 'controls';
   if (path === '/api/waste') return 'controls';
   if (path.match(/^\/api\/printers\/[^/]+\/files/)) return 'controls';
+  if (path.match(/^\/api\/printers\/[^/]+\/control$/)) return 'controls';
 
   // Filament/inventory routes
   if (path.startsWith('/api/filament') || path.startsWith('/api/inventory')) return 'filament';
@@ -1789,6 +1790,29 @@ export async function handleApiRequest(req, res) {
         return out;
       });
       return sendJson(res, printers);
+    }
+
+    // Print control (pause/resume/stop) for any connected printer. Uses the
+    // same per-connector command path the dashboard UI / print-guard use:
+    // Bambu builds an MQTT command via client._buildCommand({action}),
+    // Moonraker & co. accept {action} directly in sendCommand().
+    const controlMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/control$/);
+    if (controlMatch && method === 'POST') {
+      return readBody(req, res, (body) => {
+        const id = controlMatch[1];
+        const action = body && body.action;
+        if (!['pause', 'resume', 'stop'].includes(action))
+          return sendJson(res, { error: "action must be pause|resume|stop" }, 400);
+        const entry = (_printerManager && _printerManager.printers) ? _printerManager.printers.get(id) : null;
+        if (!entry || !entry.live || !entry.client)
+          return sendJson(res, { error: 'printer not connected' }, 409);
+        try {
+          const cmd = entry.client._buildCommand ? entry.client._buildCommand({ action }) : { action };
+          entry.client.sendCommand(cmd);
+          if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+          return sendJson(res, { ok: true, action });
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
     }
 
     if (method === 'POST' && path === '/api/printers') {
