@@ -1822,6 +1822,50 @@ export async function handleApiRequest(req, res) {
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action });
           }
+          // Fan / light / speed: supported on Bambu (MQTT) and Klipper/Moonraker
+          // (gcode). Lets the slicer Devices panel mirror the Bambu Device tab.
+          if (['set_fan', 'set_light', 'set_speed'].includes(action)) {
+            const type = entry.config && entry.config.type;
+            if (type === 'bambu') {
+              let msg = null;
+              if (action === 'set_fan') {
+                const pct = Number(body.percent);
+                if (Number.isFinite(pct) && pct >= 0 && pct <= 100)
+                  msg = { action: 'set_fan', fan_id: 1, speed: Math.round(pct) };
+              } else if (action === 'set_light') {
+                msg = { action: 'light', node: 'chamber_light', mode: body.on ? 'on' : 'off' };
+              } else if (action === 'set_speed') {
+                const lvl = Number(body.level); // Bambu speed preset 1-4
+                if ([1, 2, 3, 4].includes(lvl)) msg = { action: 'speed', value: lvl };
+              }
+              if (!msg) return sendJson(res, { error: 'invalid control parameters' }, 400);
+              const cmd = entry.client._buildCommand ? entry.client._buildCommand(msg) : msg;
+              if (!cmd) return sendJson(res, { error: 'invalid control parameters' }, 400);
+              entry.client.sendCommand(cmd);
+              if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+              return sendJson(res, { ok: true, action });
+            }
+            if (['moonraker', 'klipper'].includes(type)) {
+              let g = null;
+              if (action === 'set_fan') {
+                const pct = Number(body.percent);
+                if (Number.isFinite(pct) && pct >= 0 && pct <= 100)
+                  g = `M106 S${Math.round((pct / 100) * 255)}`;
+              } else if (action === 'set_speed') {
+                const pct = Number(body.percent);
+                if (Number.isFinite(pct) && pct >= 10 && pct <= 300) g = `M220 S${Math.round(pct)}`;
+              } else if (action === 'set_light') {
+                // Best-effort: most Klipper case lights are an output_pin named
+                // "caselight". Harmless if absent (Klipper logs and ignores).
+                g = `SET_PIN PIN=caselight VALUE=${body.on ? 1 : 0}`;
+              }
+              if (!g) return sendJson(res, { error: 'invalid control parameters' }, 400);
+              entry.client.sendCommand({ action: 'gcode', gcode: g });
+              if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+              return sendJson(res, { ok: true, action });
+            }
+            return sendJson(res, { error: 'not supported for this connector' }, 409);
+          }
           // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
           // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
           if (['home', 'move', 'extrude', 'set_temp', 'select_tool'].includes(action)) {
