@@ -1811,16 +1811,49 @@ export async function handleApiRequest(req, res) {
       return readBody(req, res, (body) => {
         const id = controlMatch[1];
         const action = body && body.action;
-        if (!['pause', 'resume', 'stop'].includes(action))
-          return sendJson(res, { error: "action must be pause|resume|stop" }, 400);
         const entry = (_printerManager && _printerManager.printers) ? _printerManager.printers.get(id) : null;
         if (!entry || !entry.live || !entry.client)
           return sendJson(res, { error: 'printer not connected' }, 409);
         try {
-          const cmd = entry.client._buildCommand ? entry.client._buildCommand({ action }) : { action };
-          entry.client.sendCommand(cmd);
-          if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
-          return sendJson(res, { ok: true, action });
+          // Print control: every connector (Bambu MQTT, Moonraker, etc.).
+          if (['pause', 'resume', 'stop'].includes(action)) {
+            const cmd = entry.client._buildCommand ? entry.client._buildCommand({ action }) : { action };
+            entry.client.sendCommand(cmd);
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, action });
+          }
+          // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
+          // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
+          if (['home', 'move', 'extrude', 'set_temp', 'select_tool'].includes(action)) {
+            if (!['moonraker', 'klipper'].includes(entry.config && entry.config.type))
+              return sendJson(res, { error: 'motion control not supported for this connector' }, 409);
+            let g = null;
+            if (action === 'home') {
+              const axes = String(body.axes || '').toUpperCase().replace(/[^XYZ]/g, '');
+              g = axes ? `G28 ${axes.split('').join(' ')}` : 'G28';
+            } else if (action === 'move') {
+              const ax = String(body.axis || '').toUpperCase(); const d = Number(body.dist);
+              if (['X','Y','Z'].includes(ax) && Number.isFinite(d) && d !== 0 && Math.abs(d) <= 500)
+                g = `G91\nG1 ${ax}${d} F${ax === 'Z' ? 600 : 3000}\nG90`;
+            } else if (action === 'extrude') {
+              const a = Number(body.amount);
+              if (Number.isFinite(a) && a !== 0 && Math.abs(a) <= 200)
+                g = `M83\nG1 E${a} F${a < 0 ? 1800 : 300}`;
+            } else if (action === 'set_temp') {
+              const t = Number(body.temp);
+              if (Number.isFinite(t) && t >= 0 && t <= 350)
+                g = body.heater === 'bed' ? `M140 S${Math.round(t)}`
+                    : `M104${Number.isInteger(body.tool) ? ' T' + body.tool : ''} S${Math.round(t)}`;
+            } else if (action === 'select_tool') {
+              const tool = Number(body.tool);
+              if (Number.isInteger(tool) && tool >= 0 && tool <= 7) g = `T${tool}`;
+            }
+            if (!g) return sendJson(res, { error: 'invalid control parameters' }, 400);
+            entry.client.sendCommand({ action: 'gcode', gcode: g });
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, action });
+          }
+          return sendJson(res, { error: "unknown action" }, 400);
         } catch (e) { return sendJson(res, { error: e.message }, 500); }
       });
     }
