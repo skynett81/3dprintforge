@@ -27,22 +27,29 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install system deps
+      - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm flatpak flatpak-builder
-          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install -y --noninteractive flathub \
+          sudo apt-get install -y rpm
+      - run: npm ci
+      # Build the core installers first — none of these need flatpak, so a
+      # flatpak failure below no longer takes the whole Linux build down.
+      - name: Build Linux installers
+        run: npx electron-builder --linux AppImage deb rpm tar.gz -p never
+      # Flatpak is best-effort: GitHub runners disallow *system* flatpak
+      # config (ConfigureRemote not allowed), so everything runs as --user
+      # and the step is non-fatal.
+      - name: Build Flatpak (best-effort)
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install -y --noninteractive flathub \
             org.freedesktop.Platform//24.08 \
             org.freedesktop.Sdk//24.08 \
             org.electronjs.Electron2.BaseApp//24.08
-      - run: npm ci
-      - name: Build Linux installers
-        run: npx electron-builder --linux AppImage deb rpm tar.gz
-      - name: Build Flatpak
-        run: |
           cd packaging/flatpak
-          flatpak-builder --repo=repo --force-clean build-dir com.geektech.PrintForge3D.yml
+          flatpak-builder --user --repo=repo --force-clean build-dir com.geektech.PrintForge3D.yml
           flatpak build-bundle repo 3dprintforge-${GITHUB_REF_NAME#v}.flatpak com.geektech.PrintForge3D
           cp *.flatpak ../../dist-electron/
       - uses: actions/upload-artifact@v4
@@ -62,7 +69,7 @@ jobs:
       - name: Build macOS installers (unsigned)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npx electron-builder --mac dmg zip
+        run: npx electron-builder --mac dmg zip -p never
       - uses: actions/upload-artifact@v4
         with:
           name: macos-installers
@@ -78,7 +85,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Build Windows installers (nsis + portable + appx for Microsoft Store)
-        run: npx electron-builder --win nsis portable appx
+        run: npx electron-builder --win nsis portable appx -p never
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installers-unsigned
