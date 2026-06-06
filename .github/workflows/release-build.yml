@@ -18,6 +18,12 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# softprops/action-gh-release needs write access to create/update the
+# release and upload installer assets. Without this the publish job fails
+# with "Resource not accessible by integration".
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
