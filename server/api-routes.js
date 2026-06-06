@@ -1765,8 +1765,20 @@ export async function handleApiRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/api/printers') {
+      // Live connection map (printer-manager only holds connected printers).
+      const live = (_printerManager && _printerManager.printers) ? _printerManager.printers : null;
       const printers = getPrinters().map(p => {
-        const out = { ...p, accessCode: p.accessCode ? '***' : '' };
+        const entry = (live && typeof live.get === 'function') ? live.get(p.id) : null;
+        const out = {
+          ...p,
+          accessCode: p.accessCode ? '***' : '',
+          // Surface a brand for HTTP consumers (e.g. the slicer Fleet panel);
+          // live status comes over WebSocket for the dashboard UI, but expose
+          // a coarse online/offline state here too.
+          vendor: p.vendor || p.type || '',
+          state: (entry && entry.live) ? 'online' : 'offline',
+        };
+        if (!out.status) out.status = out.state;
         // Per-brand credentials now persist in config_json, so they would
         // otherwise be returned in plaintext here. Mask them like accessCode
         // — the edit form shows '***' and the PUT handler restores the
