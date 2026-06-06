@@ -4,6 +4,44 @@ All notable changes to 3DPrintForge.
 
 ---
 
+## v1.1.22 — Inventory weight accuracy, DB performance, TOTP login & security hardening (2026-06-06)
+
+A maintenance-and-accuracy release. The headline work is a top-to-bottom pass on AMS/spool weight tracking (direct load-cell readings, recalibration from snapshots + history, sensor-floor guards), a sweep of composite database indexes that removes temp-b-tree sorts from the hottest queries, TOTP two-factor at the login screen, and a security/dependency hardening pass that clears all open npm audit advisories. Also fixes GitHub issue #12 — per-printer settings that wouldn't save.
+
+### Printers & connectivity
+- **Per-printer settings now persist** ([#12](https://github.com/skynett81/3dprintforge/issues/12)) — LAN Developer Mode, Camera Resolution, and every other type-specific field (camera mode, cloud sync, auto-AMS sync, webcam URL, port, per-brand credentials) were sent by the edit dialog but never stored, so re-opening the dialog showed defaults. They now round-trip through a new `config_json` column and survive a restart. Camera Resolution actually drives the stream (1080p/720p/480p)
+- Per-brand credentials are masked in the API response and restored from storage on unchanged edits, mirroring the access-code handling
+- ffmpeg exit code 8 now maps to an actionable "enable LAN Live View" hint instead of a generic camera error
+- 3DPrintForge Slicer: status badge hidden until the integration is configured; local URL scoped correctly in the proxy handlers
+
+### Filament inventory & AMS accuracy
+- AMS 2 Pro / H2D load-cell weight is read directly instead of estimated from percent
+- Recalibrate remaining weight from print history, from live AMS signals, or both combined — with new UI
+- Sensor-floor guard: extrusion tracking is trusted when the load cell drops below ~20 g (it loses resolution near empty)
+- `used_weight_g` capped at the initial spool weight; existing over-counted rows repaired (migration v142)
+- AMS slot ownership cleaned up — archiving frees the slot, and adding a spool evicts a conflicting active claim before insert (migration v147)
+- Non-Bambu spools (Elegoo, Polymaker, generic) auto-detected; auto-created profiles named from the tray hex (e.g. "PETG White")
+
+### Authentication & security
+- TOTP two-factor prompt wired into the login UI, with two silent-failure bugs closed
+- Second-pass NIST/CVE audit fixes and hardened security headers
+- Dependency security upgrades clear all 4 open npm audit advisories (ws, ip-address, tmp, brace-expansion); plus server + website patch upgrades
+- `.env`-based secret handling and HTTP response compression
+
+### Performance
+- Composite database indexes across activity-log, spool-event, history and bed-mesh queries eliminate `USE TEMP B-TREE` on the hottest paths (migrations v143–v146)
+- Frontend: all 188 component scripts deferred on initial load; StateStore notifications coalesced through `requestAnimationFrame`
+
+### Stability & internals
+- 25 functional bugs fixed across three post-release code-review passes
+- 3MF converter declares its `jszip` dependency and hardens against malformed input
+- `sendJson`, the rate limiters, `json-cache` and `http-compression` extracted into focused, testable modules
+- Docs: `/docs/*` aliases redirect to canonical paths
+
+Database migrations in this release: v142–v148.
+
+---
+
 ## v1.1.21 — 3DPrintForge Slicer integration, filament overhaul, security hardening (2026-05-03)
 
 Three concurrent tracks: a REST integration with our [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) fork, a top-to-bottom rewrite of the filament inventory experience (Storage tab, drag-and-drop, bulk-add), and a security audit that closed six CVE-class issues. Plus an i18n overhaul that fixed a broken-fallback pattern across 504 call sites, a tabbed Analytics dashboard, and 6 new database migrations.
