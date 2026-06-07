@@ -105,6 +105,7 @@ import { getRemoteNodeStates, restartRemoteNodes, testRemoteNode } from './remot
 import { getRemoteNodes, getRemoteNode, addRemoteNode, updateRemoteNode, deleteRemoteNode, getScheduledPrints, getScheduledPrint, addScheduledPrint, updateScheduledPrint, deleteScheduledPrint, getFileLibrary, getFileLibraryItem, addFileLibraryItem, updateFileLibraryItem, deleteFileLibraryItem, getFileLibraryCategories, incrementFileLibraryPrintCount, getWidgetLayouts, getActiveWidgetLayout, saveWidgetLayout, setActiveWidgetLayout, deleteWidgetLayout, getTimeTracking, addTimeTracking, getTimeTrackingStats, saveCostEstimate, getCostEstimates, getCostEstimate, deleteCostEstimate, getScreenshots, getScreenshotById, addScreenshot, deleteScreenshot, deleteScreenshotsBulk } from './database.js';
 import { readFileSync as _readPkg } from 'node:fs';
 import { createLogger } from './logger.js';
+import { optimizeColorOrder } from './color-order.js';
 import { withBreaker, getAllBreakerStatus } from './circuit-breaker.js';
 import { validate } from './validate.js';
 import * as _filamentMaterials from './filament-materials.js';
@@ -1407,6 +1408,18 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/filament-analytics/material-efficiency') {
       const params = new URL(req.url, 'http://localhost').searchParams;
       return sendJson(res, getMaterialEfficiency(parseInt(params.get('days')) || 30));
+    }
+
+    // Recommend the lowest-purge colour order for a multi-colour print.
+    // Body: { colors: ["#RRGGBB", ...], density?: number }
+    if (method === 'POST' && path === '/api/filament-analytics/color-order') {
+      return readBody(req, res, (body) => {
+        const colors = Array.isArray(body?.colors) ? body.colors : [];
+        if (colors.length < 2)
+          return sendJson(res, { error: 'Provide at least two colours' }, 400);
+        const density = Number(body?.density) > 0 ? Number(body.density) : 1.24;
+        return sendJson(res, optimizeColorOrder(colors, density));
+      });
     }
 
     if (method === 'GET' && path === '/api/filament-analytics/cost') {
@@ -12731,6 +12744,7 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/filament-analytics/consumption-rates', tag: 'Filament Analytics', summary: 'Rolling avg consumption rates per material', permission: 'view' },
       { method: 'GET', path: '/api/filament-analytics/depletion-forecast', tag: 'Filament Analytics', summary: 'Spool depletion forecast (days until empty)', permission: 'view' },
       { method: 'GET', path: '/api/filament-analytics/waste', tag: 'Filament Analytics', summary: 'Waste analysis by material/status', permission: 'view' },
+      { method: 'POST', path: '/api/filament-analytics/color-order', tag: 'Filament Analytics', summary: 'Recommend the lowest-purge filament colour order (body: colors[], density)', permission: 'filament' },
       { method: 'GET', path: '/api/filament-analytics/material-efficiency', tag: 'Filament Analytics', summary: 'Material efficiency metrics (g/h, success rate)', permission: 'view' },
       { method: 'GET', path: '/api/filament-analytics/cost', tag: 'Filament Analytics', summary: 'Cost analysis by material/vendor', permission: 'view' },
       { method: 'GET', path: '/api/filament-analytics/depletion-events', tag: 'Filament Analytics', summary: 'Spool depletion threshold events', permission: 'view' },
