@@ -1868,7 +1868,7 @@ export async function handleApiRequest(req, res) {
           }
           // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
           // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
-          if (['home', 'move', 'extrude', 'set_temp', 'select_tool'].includes(action)) {
+          if (['home', 'move', 'extrude', 'set_temp', 'select_tool', 'filament'].includes(action)) {
             if (!['moonraker', 'klipper'].includes(entry.config && entry.config.type))
               return sendJson(res, { error: 'motion control not supported for this connector' }, 409);
             let g = null;
@@ -1891,6 +1891,13 @@ export async function handleApiRequest(req, res) {
             } else if (action === 'select_tool') {
               const tool = Number(body.tool);
               if (Number.isInteger(tool) && tool >= 0 && tool <= 7) g = `T${tool}`;
+            } else if (action === 'filament') {
+              const op = String(body.op || '');
+              const tsel = Number.isInteger(body.tool) && body.tool >= 0 && body.tool <= 7
+                           ? `T${body.tool}\n` : '';
+              if (op === 'load')        g = `${tsel}M701`;
+              else if (op === 'unload') g = `${tsel}M702`;
+              else if (op === 'change') g = `${tsel}M600`;
             }
             if (!g) return sendJson(res, { error: 'invalid control parameters' }, 400);
             entry.client.sendCommand({ action: 'gcode', gcode: g });
