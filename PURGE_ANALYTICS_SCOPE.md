@@ -37,10 +37,20 @@ Make per-change waste **hardware-aware**:
 
 This makes the **existing** analytics accurate without touching the UI/API.
 
+## Phase 2 (DONE) — colour-aware single-nozzle purge
+
+`server/flush-calc.js` is a faithful JS port of OrcaSlicer's RGB flush model
+(`calc_flush_vol_rgb`: HSV distance + luminance asymmetry — dark→light needs more
+purge). The tracker accumulates per-change flush volume from the from→to filament
+colours (`flushVolumeMm3`) and, for single-nozzle prints, converts it to grams via
+material density (`default_density_gcm3`, default 1.24) for `waste_g` — instead of
+the flat 5 g/change. Tool changers keep the phase-1 tiny per-change value; falls
+back to the flat estimate when a colour is unknown. Tested.
+
+The same `flushVolumeMm3` model can drive "smart colour ordering" (minimise total
+flush over the sequence) and the pre-print estimate below.
+
 ## Later phases (not in this change)
 
-- Phase 2: derive single-nozzle per-change waste from the slicer's colour-aware
-  flush volumes (the slicer already computes them) when exposed in gcode metadata,
-  instead of a flat 5 g.
 - Phase 3: surface a pre-print "purge X g vs part Y g" estimate from slicer
-  metadata at job start.
+  metadata at job start (reuse `flush-calc.js`).

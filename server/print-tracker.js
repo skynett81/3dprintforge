@@ -1,5 +1,6 @@
 import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, enrichTrayWithVariant } from './database.js';
 import { getDb } from './db/connection.js';
+import { flushVolumeMm3, mm3ToGrams } from './flush-calc.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -84,6 +85,10 @@ export class PrintTracker {
     // nothing per colour change (no purge — each tool keeps its colour), unlike
     // single-nozzle MMU/AMS systems. Used to keep waste_g realistic.
     this.isToolChanger = false;
+    // Accumulated colour-aware purge volume (mm³) for single-nozzle prints —
+    // sum of the slicer-faithful flush model over each observed colour change.
+    this.flushVolumeMm3 = 0;
+    this.lastFilamentColor = null;
 
     // Notification callbacks
     this.onPrintStart = null;
@@ -138,6 +143,14 @@ export class PrintTracker {
       const currentTray = String(printData.ams.tray_now);
       if (this.lastTrayId !== null && currentTray !== this.lastTrayId && currentTray !== '255') {
         this.colorChanges++;
+        // Accumulate the slicer-faithful colour-aware flush for this change
+        // (single-nozzle purge). Falls back to a neutral estimate if a colour
+        // is unknown (flushVolumeMm3 returns its minimum).
+        const newColor = this._getActiveFilament(printData).color;
+        if (this.lastFilamentColor && newColor) {
+          this.flushVolumeMm3 += flushVolumeMm3(this.lastFilamentColor, newColor);
+        }
+        if (newColor) this.lastFilamentColor = newColor;
       }
       if (currentTray !== '255') {
         this.lastTrayId = currentTray;
@@ -378,6 +391,9 @@ export class PrintTracker {
     // Detect a tool changer (multiple physical hotends) so waste_g stays realistic.
     this.isToolChanger = this._detectToolChanger(data);
     const filamentInfo = this._getActiveFilament(data);
+    // Reset the colour-aware purge accumulator for the new print.
+    this.flushVolumeMm3 = 0;
+    this.lastFilamentColor = filamentInfo.color || this.currentPrint?.filament_color || null;
 
     // Capture estimated time from MQTT (mc_remaining_time is in minutes at print start)
     const estimatedSeconds = parseInt(data.mc_remaining_time) > 0 ? parseInt(data.mc_remaining_time) * 60 : null;
@@ -635,10 +651,21 @@ export class PrintTracker {
     // colour change — there is no purge, only a tiny shared prime tower — whereas
     // single-nozzle MMU/AMS systems purge the full nozzle each change.
     const startupPurgeG = parseFloat(getInventorySetting('startup_purge_g')) || 1.0;
-    const wastePerChange = this.isToolChanger
-      ? (parseFloat(getInventorySetting('waste_per_change_toolchanger_g')) || 0.2)
-      : (parseFloat(getInventorySetting('waste_per_change_g')) || this.wastePerChangeG);
-    let wasteG = startupPurgeG + (this.colorChanges * wastePerChange);
+    let wasteG;
+    if (this.isToolChanger) {
+      // Tool changer: ~no purge, tiny per-change prime only.
+      const perChange = parseFloat(getInventorySetting('waste_per_change_toolchanger_g')) || 0.2;
+      wasteG = startupPurgeG + (this.colorChanges * perChange);
+    } else if (this.flushVolumeMm3 > 0) {
+      // Single-nozzle: use the accumulated colour-aware purge volume (slicer
+      // flush model) converted to grams via the material density.
+      const density = parseFloat(getInventorySetting('default_density_gcm3')) || 1.24;
+      wasteG = startupPurgeG + mm3ToGrams(this.flushVolumeMm3, density);
+    } else {
+      // Single-nozzle with no colour data: fall back to the flat per-change estimate.
+      const perChange = parseFloat(getInventorySetting('waste_per_change_g')) || this.wastePerChangeG;
+      wasteG = startupPurgeG + (this.colorChanges * perChange);
+    }
     wasteG = Math.round(wasteG * 10) / 10;
 
     // For failed/cancelled prints: all filament used is effectively waste
