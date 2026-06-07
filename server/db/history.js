@@ -97,8 +97,8 @@ export function addHistory(record) {
       duration_seconds, filament_used_g, filament_type, filament_color, layer_count,
       notes, color_changes, waste_g, nozzle_type, nozzle_diameter, speed_level,
       bed_target, nozzle_target, max_nozzle_temp, max_bed_temp, max_chamber_temp, filament_brand,
-      ams_units_used, tray_id, gcode_file, model_name, model_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ams_units_used, tray_id, gcode_file, model_name, model_url, is_tool_changer)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(record.printer_id || null, record.started_at, record.finished_at, record.filename, record.status,
     record.duration_seconds, record.filament_used_g, record.filament_type,
     record.filament_color, record.layer_count, record.notes || null,
@@ -108,7 +108,7 @@ export function addHistory(record) {
     record.max_nozzle_temp || null, record.max_bed_temp || null, record.max_chamber_temp || null,
     record.filament_brand || null, record.ams_units_used || null,
     record.tray_id || null, record.gcode_file || null,
-    record.model_name || null, record.model_url || null);
+    record.model_name || null, record.model_url || null, record.is_tool_changer || 0);
   return Number(result.lastInsertRowid);
 }
 

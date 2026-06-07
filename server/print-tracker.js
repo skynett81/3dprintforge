@@ -79,6 +79,11 @@ export class PrintTracker {
     this.colorChanges = 0;
     this.lastTrayId = null;
     this.wastePerChangeG = wastePerChangeG;
+    // True once we observe this printer is a tool changer (multiple physical
+    // hotends, e.g. Snapmaker U1) during a print. Tool changers waste almost
+    // nothing per colour change (no purge — each tool keeps its colour), unlike
+    // single-nozzle MMU/AMS systems. Used to keep waste_g realistic.
+    this.isToolChanger = false;
 
     // Notification callbacks
     this.onPrintStart = null;
@@ -152,6 +157,9 @@ export class PrintTracker {
         }
       }
     }
+    // Keep the tool-changer flag sticky once detected during this print.
+    if (this.currentPrint && !this.isToolChanger && this._detectToolChanger(printData))
+      this.isToolChanger = true;
 
     // Track max temperatures during print
     if (this.currentPrint) {
@@ -367,6 +375,8 @@ export class PrintTracker {
       const m = String(data._active_extruder).match(/extruder(\d*)$/);
       if (m) this.lastActiveExtruderIdx = m[1] === '' ? 0 : parseInt(m[1]);
     }
+    // Detect a tool changer (multiple physical hotends) so waste_g stays realistic.
+    this.isToolChanger = this._detectToolChanger(data);
     const filamentInfo = this._getActiveFilament(data);
 
     // Capture estimated time from MQTT (mc_remaining_time is in minutes at print start)
@@ -620,9 +630,14 @@ export class PrintTracker {
       log.warn('No filament data — estimating from duration: ' + filamentUsedG + 'g (' + hours.toFixed(1) + 'h x 30g/h)');
     }
 
-    // Waste = startup purge + color change waste (mechanical waste, always present)
+    // Waste = startup purge + color change waste (mechanical waste, always present).
+    // Tool changers (separate hotends, e.g. Snapmaker U1) barely waste anything per
+    // colour change — there is no purge, only a tiny shared prime tower — whereas
+    // single-nozzle MMU/AMS systems purge the full nozzle each change.
     const startupPurgeG = parseFloat(getInventorySetting('startup_purge_g')) || 1.0;
-    const wastePerChange = parseFloat(getInventorySetting('waste_per_change_g')) || this.wastePerChangeG;
+    const wastePerChange = this.isToolChanger
+      ? (parseFloat(getInventorySetting('waste_per_change_toolchanger_g')) || 0.2)
+      : (parseFloat(getInventorySetting('waste_per_change_g')) || this.wastePerChangeG);
     let wasteG = startupPurgeG + (this.colorChanges * wastePerChange);
     wasteG = Math.round(wasteG * 10) / 10;
 
@@ -650,6 +665,7 @@ export class PrintTracker {
       notes: this._buildNotes(data),
       color_changes: this.colorChanges,
       waste_g: wasteG,
+      is_tool_changer: this.isToolChanger ? 1 : 0,
       nozzle_type: this.currentPrint.nozzle_type,
       nozzle_diameter: this.currentPrint.nozzle_diameter,
       speed_level: this.currentPrint.speed_level,
@@ -1040,6 +1056,20 @@ export class PrintTracker {
     } catch (e) {
       log.error('AMS auto-match error: ' + e.message);
     }
+  }
+
+  // Heuristic: is this printer a tool changer (multiple physical hotends)?
+  // Signals from live state: a populated _extra_extruders array (Snapmaker U1),
+  // or an active extruder index > 0 (extruder1/2/3...). Single-nozzle MMU/AMS
+  // printers report neither.
+  _detectToolChanger(data) {
+    if (!data) return false;
+    if (Array.isArray(data._extra_extruders) && data._extra_extruders.length > 0) return true;
+    if (data._active_extruder) {
+      const m = String(data._active_extruder).match(/extruder(\d+)$/);
+      if (m && parseInt(m[1]) > 0) return true;
+    }
+    return false;
   }
 
   _getActiveFilament(data) {

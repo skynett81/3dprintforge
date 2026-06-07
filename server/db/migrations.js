@@ -1957,6 +1957,15 @@ export function runMigrations() {
       } catch (e) { /* ignore */ }
     }},
 
+    { version: 146, up: (db) => {
+      // Purge-analytics accuracy: mark prints made on a tool changer (separate
+      // hotends, e.g. Snapmaker U1) so waste_g uses the tiny per-change waste
+      // (~0.2 g) instead of the single-nozzle purge estimate (~5 g).
+      try {
+        db.exec(`ALTER TABLE print_history ADD COLUMN is_tool_changer INTEGER DEFAULT 0`);
+      } catch (e) { /* column already exists */ }
+    }},
+
     { version: 145, up: (db) => {
       // Last cluster of activity-log queries that EXPLAIN flagged with
       // 'USE TEMP B-TREE FOR ORDER BY':
