@@ -3909,5 +3909,15 @@
     "view_details": "View details",
     "view_queue": "View queue",
     "view_inventory": "View inventory"
+  },
+  "colororder": {
+    "title": "Lowest-purge colour order",
+    "hint": "Pick the filament colours for a multi-colour print to get the load order that minimises purge waste.",
+    "optimize": "Optimise order",
+    "optimizing": "Optimising…",
+    "saves": "Saves",
+    "already_optimal": "Already near-optimal — no meaningful saving",
+    "purge": "Purge",
+    "failed": "Could not optimise colour order"
   }
 }

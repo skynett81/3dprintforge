@@ -643,6 +643,15 @@
 
       panel.innerHTML = html;
 
+      // Append the lowest-purge colour-order optimiser (reduces waste, vs just
+      // measuring it). Self-contained; renders into its own mount.
+      if (typeof window.renderColorOrderPanel === 'function') {
+        const mount = document.createElement('div');
+        mount.style.marginTop = '12px';
+        panel.appendChild(mount);
+        window.renderColorOrderPanel(mount);
+      }
+
     } catch (e) {
       console.error('[waste] Load failed:', e);
       panel.innerHTML = `<p class="text-muted">${t('waste.load_failed')}</p>`;
