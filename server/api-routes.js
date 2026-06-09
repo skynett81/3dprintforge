@@ -50,7 +50,7 @@ import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { inflateRawSync } from 'node:zlib';
 import { loadServerJson as _loadServerJson, getHmsCodes as _getHmsCodes, IMMUTABLE_JSON_HEADERS as _IMMUTABLE_JSON_HEADERS } from './json-cache.js';
-import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders } from './api-helpers.js';
+import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders, preserveUnchangedCredentials } from './api-helpers.js';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -1940,15 +1940,11 @@ export async function handleApiRequest(req, res) {
         const vr = validate(PRINTER_UPDATE_SCHEMA, body);
         if (!vr.valid) return sendJson(res, { error: 'Validation failed', details: vr.errors }, 400);
         const id = printerMatch[1];
-        // Preserve existing access code + per-brand secrets when the form
-        // sends back the masked '***' placeholder (value unchanged).
-        if (body.accessCode === '***' || PRINTER_SECRET_FIELDS.some(f => body[f] === '***')) {
-          const existing = getPrinters().find(p => p.id === id);
-          if (body.accessCode === '***') body.accessCode = existing?.accessCode || '';
-          for (const f of PRINTER_SECRET_FIELDS) {
-            if (body[f] === '***') body[f] = existing?.[f] || '';
-          }
-        }
+        // The edit form leaves the access code blank and masks per-brand
+        // secrets as '***' — both mean "unchanged", so restore them from the
+        // stored record instead of wiping them (issue #12 follow-up).
+        const existing = getPrinters().find(p => p.id === id);
+        body = preserveUnchangedCredentials(body, existing, PRINTER_SECRET_FIELDS);
         updatePrinter(id, body);
         if (_onPrinterUpdated) _onPrinterUpdated(id, { ...body, id });
         broadcastPrinterMeta();

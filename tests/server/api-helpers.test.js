@@ -2,7 +2,7 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders } from '../../server/api-helpers.js';
+import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders, preserveUnchangedCredentials } from '../../server/api-helpers.js';
 
 // ---- Mock HTTP response ----
 // Enkel mock som fanger opp writeHead og end-kall
@@ -156,5 +156,51 @@ describe('checkLoginRate() — innloggings rate limiter', () => {
   it('ny IP starter med rent slate', () => {
     const ip = `fresh-login-ip-${Date.now()}`;
     assert.strictEqual(checkLoginRate(ip), true, 'fersk IP skal alltid tillates');
+  });
+});
+
+// Regression: issue #12 follow-up — editing an unrelated setting must not
+// wipe the access code (or per-brand secrets) the form leaves blank/masked.
+describe('preserveUnchangedCredentials()', () => {
+  const SECRETS = ['moonrakerApiKey', 'token', 'password', 'prusaConnectToken'];
+  const existing = { accessCode: 'REALCODE', moonrakerApiKey: 'mk-123', token: 'tok-xyz' };
+
+  it('restores access code when the form sends it empty (the wipe bug)', () => {
+    const out = preserveUnchangedCredentials({ name: 'X1C', accessCode: '' }, existing, SECRETS);
+    assert.strictEqual(out.accessCode, 'REALCODE', 'empty access code must be preserved, not cleared');
+  });
+
+  it('restores access code when the form omits it entirely', () => {
+    const out = preserveUnchangedCredentials({ name: 'X1C' }, existing, SECRETS);
+    assert.strictEqual(out.accessCode, 'REALCODE');
+  });
+
+  it('restores access code on the masked placeholder', () => {
+    const out = preserveUnchangedCredentials({ accessCode: '***' }, existing, SECRETS);
+    assert.strictEqual(out.accessCode, 'REALCODE');
+  });
+
+  it('keeps a genuinely new access code', () => {
+    const out = preserveUnchangedCredentials({ accessCode: 'NEWCODE' }, existing, SECRETS);
+    assert.strictEqual(out.accessCode, 'NEWCODE', 'a typed-in code must overwrite the old one');
+  });
+
+  it('restores masked secrets but keeps changed ones', () => {
+    const out = preserveUnchangedCredentials(
+      { accessCode: '***', moonrakerApiKey: '***', token: 'tok-new' }, existing, SECRETS);
+    assert.strictEqual(out.moonrakerApiKey, 'mk-123', 'unchanged secret restored');
+    assert.strictEqual(out.token, 'tok-new', 'changed secret kept');
+  });
+
+  it('does not mutate the input body', () => {
+    const body = { accessCode: '' };
+    const out = preserveUnchangedCredentials(body, existing, SECRETS);
+    assert.strictEqual(body.accessCode, '', 'original body untouched');
+    assert.notStrictEqual(out, body, 'returns a new object');
+  });
+
+  it('tolerates a missing existing record (new-ish printer)', () => {
+    const out = preserveUnchangedCredentials({ accessCode: '' }, null, SECRETS);
+    assert.strictEqual(out.accessCode, '', 'no existing -> stays empty, no throw');
   });
 });

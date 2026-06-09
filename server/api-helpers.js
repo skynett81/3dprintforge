@@ -34,6 +34,33 @@ export function sendJson(res, data, status = 200, extraHeaders = null) {
   res.end(body);
 }
 
+/**
+ * Restore credential fields a printer-update form left unchanged.
+ *
+ * The edit dialog never echoes the stored access code (the field renders
+ * empty for security) and shows per-brand secrets as a masked '***'. So on
+ * PUT an empty/`***` accessCode, or a `***` secret, means "keep current" —
+ * NOT "clear it". Without this, any unrelated edit silently wiped the
+ * access code, breaking MQTT/AMS + camera auth (issue #12 follow-up).
+ *
+ * Pure: returns a new object, does not mutate `body` or `existing`.
+ *
+ * @param {object} body            incoming update payload
+ * @param {object|null} existing   currently-stored printer (real secrets)
+ * @param {string[]} secretFields  per-brand secret keys to preserve on '***'
+ * @returns {object} body with unchanged credentials restored
+ */
+export function preserveUnchangedCredentials(body, existing, secretFields = []) {
+  const out = { ...body };
+  if (!out.accessCode || out.accessCode === '***') {
+    out.accessCode = existing?.accessCode || '';
+  }
+  for (const f of secretFields) {
+    if (out[f] === '***') out[f] = existing?.[f] || '';
+  }
+  return out;
+}
+
 // ---- Login rate limiter (per IP, 5 attempts / 15 min) ----
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
