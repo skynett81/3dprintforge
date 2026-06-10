@@ -160,6 +160,12 @@
      which made the inventory an endless scroll. Halves the page length. */
   .spool-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
+  /* Settings sub-tabs: the desktop grid uses minmax(420px, 1fr), which forces
+     a 420px-wide column on a ~390px phone and clips the right edge of every
+     card. Drop to a single column on phones. */
+  #printer-sub-content, #general-sub-content, #appearance-sub-content,
+  #notif-sub-content, #system-sub-content { grid-template-columns: 1fr; }
+
   /* Reduce card padding globally */
   .card-body { padding: 10px; }
   .card-header { padding: 8px 10px; }
@@ -402,4 +408,20 @@
 }
 @media (min-width: 769px) {
   .hide-desktop { display: none !important; }
+}
+
+/* ---- Layout-scan fixes: content that overflowed its container ---- */
+
+/* Bed-mesh visualisation drew a fixed-size canvas wider than its column
+   (overflowed ~290px even on desktop). Keep it inside its box. */
+#bed-mesh-canvas,
+canvas.bed-mesh-canvas,
+.ctrl-area-bedmesh canvas { max-width: 100%; height: auto; }
+
+/* Wide tables (filament analytics, resources, admin lists) must scroll
+   horizontally on small screens instead of being clipped. Some are wrapped in
+   .table-responsive but had an inline overflow-y that dropped the x axis. */
+@media (max-width: 768px) {
+  .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .fa-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
 }
