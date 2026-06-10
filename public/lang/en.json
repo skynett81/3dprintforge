@@ -20,6 +20,8 @@
     "section_materials": "Materials",
     "section_library": "Library",
     "section_tools": "Tools",
+    "section_admin": "Admin",
+    "pinned": "Pinned",
     "sub_control": "Control",
     "sub_overview": "Overview",
     "sub_statistics": "Statistics",

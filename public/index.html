@@ -384,7 +384,7 @@
               <p>
                 <span data-i18n-key="sidebar.section_tools">Tools</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">6</span>
+                <span class="badge text-bg-secondary sidebar-section-count">7</span>
               </p>
             </a>
             <ul class="nav nav-treeview">
@@ -404,6 +404,12 @@
                 <a href="#" class="nav-link sidebar-btn" data-panel="modelforge" onclick="openPanel('modelforge'); return false;" data-ripple>
                   <i class="nav-icon bi bi-hammer"></i>
                   <p>Model Forge</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="jscad" onclick="openPanel('jscad'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-code-slash"></i>
+                  <p>JSCAD Studio</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -478,10 +484,16 @@
               <p>
                 <span>System</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">12</span>
+                <span class="badge text-bg-secondary sidebar-section-count">5</span>
               </p>
             </a>
             <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="settings" onclick="openPanel('settings'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-gear"></i>
+                  <p data-i18n-key="tabs.settings">Settings</p>
+                </a>
+              </li>
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="plugins" onclick="openPanel('plugins'); return false;" data-ripple>
                   <i class="nav-icon bi bi-puzzle"></i>
@@ -489,15 +501,9 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="analytics" onclick="openPanel('analytics'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-graph-up"></i>
-                  <p>Analytics</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="backup" onclick="openPanel('backup'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-cloud-upload"></i>
-                  <p data-i18n-key="tabs.backup">Backup</p>
+                <a href="#" class="nav-link sidebar-btn" data-panel="octoprint" onclick="openPanel('octoprint'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-plug"></i>
+                  <p>OctoPrint</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -513,15 +519,41 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="jscad" onclick="openPanel('jscad'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-code-slash"></i>
-                  <p>JSCAD Studio</p>
+                <a href="/docs/" target="_blank" class="nav-link" style="text-decoration:none" data-ripple>
+                  <i class="nav-icon bi bi-file-text"></i>
+                  <p>Documentation</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <!-- Admin -->
+          <li class="nav-item sidebar-section" data-section="admin" style="--section-color: #94a3b8">
+            <a href="#" class="nav-link">
+              <i class="nav-icon bi bi-shield-lock"></i>
+              <p>
+                <span data-i18n-key="sidebar.section_admin">Admin</span>
+                <i class="nav-arrow bi bi-chevron-right"></i>
+                <span class="badge text-bg-secondary sidebar-section-count">6</span>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="analytics" onclick="openPanel('analytics'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-graph-up"></i>
+                  <p>Analytics</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="octoprint" onclick="openPanel('octoprint'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-plug"></i>
-                  <p>OctoPrint</p>
+                <a href="#" class="nav-link sidebar-btn" data-panel="backup" onclick="openPanel('backup'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-cloud-upload"></i>
+                  <p data-i18n-key="tabs.backup">Backup</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="logs" onclick="openPanel('logs'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-terminal"></i>
+                  <p data-i18n-key="logs.title">Server Log</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -540,24 +572,6 @@
                 <a href="#" class="nav-link sidebar-btn" data-panel="admin-kb" onclick="openPanel('admin-kb'); return false;" data-ripple>
                   <i class="nav-icon bi bi-journal-richtext"></i>
                   <p>Knowledge base</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="logs" onclick="openPanel('logs'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-terminal"></i>
-                  <p data-i18n-key="logs.title">Server Log</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="/docs/" target="_blank" class="nav-link" style="text-decoration:none" data-ripple>
-                  <i class="nav-icon bi bi-file-text"></i>
-                  <p>Documentation</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="settings" onclick="openPanel('settings'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-gear"></i>
-                  <p data-i18n-key="tabs.settings">Settings</p>
                 </a>
               </li>
             </ul>
