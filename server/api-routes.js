@@ -794,6 +794,7 @@ export async function handleApiRequest(req, res) {
           const result = await _bambuCloud.login(email, password);
           sendJson(res, result);
         } catch (e) {
+          log.warn('Bambu Cloud login failed: ' + e.message);
           sendJson(res, { error: e.message }, 401);
         }
       });
@@ -812,6 +813,7 @@ export async function handleApiRequest(req, res) {
           const result = await _bambuCloud.verify(email, code);
           sendJson(res, result);
         } catch (e) {
+          log.warn('Bambu Cloud verify failed: ' + e.message);
           sendJson(res, { error: e.message }, 401);
         }
       });
