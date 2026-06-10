@@ -185,8 +185,8 @@
 
     r.innerHTML = `
       <div style="display:flex;gap:6px;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._mcPreview3D()" style="background:var(--accent-cyan);color:#fff">\ud83e\uddf1 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._mcDownload()" style="background:var(--accent-green);color:#fff">\u2b07 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._mcPreview3D()">\ud83e\uddf1 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._mcDownload()">\u2b07 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${_parts.length} parts, ${layout} layout</div>
       <div style="border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.2);padding:12px;background:var(--bg-primary)">${svgContent}</div>`;

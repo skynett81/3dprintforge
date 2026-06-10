@@ -553,7 +553,7 @@
         reviewHtml = `<div class="sched-field" id="sched-review-${ev._historyId}" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
           <label>Kvalitetsvurdering</label>
           <div style="display:flex;gap:6px;margin-bottom:8px">
-            <button class="form-btn form-btn-sm" style="background:var(--accent-green);color:#fff" onclick="_schedSubmitReview(${ev._historyId},'approved',this)">&#10003; Approve</button>
+            <button class="form-btn form-btn-sm form-btn-success" onclick="_schedSubmitReview(${ev._historyId},'approved',this)">&#10003; Approve</button>
             <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${ev._historyId},${ev.filament_used_g || 0})">&#10007; Reject</button>
             <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${ev._historyId},0)">&#9680; Partial</button>
           </div>
@@ -753,7 +753,7 @@
     container.innerHTML = `
       <label>Kvalitetsvurdering</label>
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button class="form-btn form-btn-sm" style="background:var(--accent-green);color:#fff" onclick="_schedSubmitReview(${historyId},'approved',this)">&#10003; Godkjenn</button>
+        <button class="form-btn form-btn-sm form-btn-success" onclick="_schedSubmitReview(${historyId},'approved',this)">&#10003; Godkjenn</button>
         <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#10007; Avvis</button>
         <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#9680; Delvis</button>
       </div>

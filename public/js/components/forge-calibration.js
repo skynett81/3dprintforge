@@ -108,8 +108,8 @@
       </div>
       <div style="width:100%;max-width:300px">${fieldsHtml}</div>
       <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._calGenerate('${id}')" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._calDownload('${id}')" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._calGenerate('${id}')">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._calDownload('${id}')">📥 Download 3MF</button>
       </div>`;
   };
 

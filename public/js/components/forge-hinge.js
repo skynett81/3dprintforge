@@ -58,8 +58,8 @@
     }
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._hngPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._hngDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._hngPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._hngDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.plateLength}×${p.plateWidth}mm · ${p.knuckleCount} knuckles · pin ⌀${p.pinRadius*2}mm</div>
       <svg width="${pl+20}" height="${pw*2+kr*2+20}" viewBox="-10 ${-kr-10} ${pl+20} ${pw*2+kr*2+20}">

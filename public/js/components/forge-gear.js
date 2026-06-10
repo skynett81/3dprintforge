@@ -56,8 +56,8 @@
 
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._gearPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._gearDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._gearPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._gearDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.teeth}t · m${p.module} · pitch ⌀${pitchD.toFixed(1)}mm · outer ⌀${outerD.toFixed(1)}mm</div>
       <svg width="${r*2+20}" height="${r*2+20}" viewBox="${-r-10} ${-r-10} ${r*2+20} ${r*2+20}">

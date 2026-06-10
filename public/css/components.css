@@ -4369,6 +4369,14 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Success / info button variants — formalise the two most-repeated inline
+   button styles (background:var(--accent-green|cyan);color:#fff) that were
+   duplicated across ~65 call sites into named classes. */
+.form-btn-success { background: var(--accent-green); color: #fff; }
+.form-btn-success:hover { background: var(--accent-green); filter: brightness(1.06); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+.form-btn-info { background: var(--accent-cyan); color: #fff; }
+.form-btn-info:hover { background: var(--accent-cyan); filter: brightness(1.06); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+
 .form-actions {
   display: flex;
   gap: 10px;

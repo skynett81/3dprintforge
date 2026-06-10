@@ -154,8 +154,8 @@
 
     r.innerHTML = `
       <div style="display:flex;gap:6px;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._thPreview3D()" style="background:var(--accent-cyan);color:#fff">\ud83d\udd0d 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._thDownload()" style="background:var(--accent-green);color:#fff">\u2b07 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._thPreview3D()">\ud83d\udd0d 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._thDownload()">\u2b07 Download 3MF</button>
       </div>
       <div style="font-size:0.85rem;font-weight:600;margin-top:4px">${labels[p.type] || p.type}</div>
       <div style="font-size:0.78rem;color:var(--text-muted)">${p.standard} \u00d7 ${p.length}mm, tolerance \u00b1${p.tolerance}mm${headLabel}</div>

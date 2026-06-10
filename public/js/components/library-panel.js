@@ -369,7 +369,7 @@
       <label style="font-size:0.8rem;display:flex;align-items:center;gap:6px;margin-bottom:12px"><input type="checkbox" id="lib-send-start"> Start printing immediately</label>
       <div style="display:flex;gap:6px;justify-content:flex-end">
         <button class="form-btn form-btn-sm" onclick="this.closest('.lib-dialog-overlay').remove()">Cancel</button>
-        <button class="form-btn form-btn-sm" style="background:var(--accent-cyan);color:#fff" onclick="window._libDoSend(${id},'${filename.replace(/'/g,"\\'")}')">Send</button>
+        <button class="form-btn form-btn-sm form-btn-info" onclick="window._libDoSend(${id},'${filename.replace(/'/g,"\\'")}')">Send</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);

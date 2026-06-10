@@ -102,7 +102,7 @@
         </div>
         <div style="display:flex;gap:6px;margin-top:10px">
           ${data.isBambu ? '<button class="form-btn form-btn-sm" data-ripple onclick="window._convConvert()" style="background:var(--accent-green);color:#fff;padding:6px 20px">🔄 Convert to U1</button>' : ''}
-          <button class="form-btn form-btn-sm" data-ripple onclick="window._convPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
+          <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._convPreview3D()">🧊 3D Preview</button>
         </div>
         ${data.isSnapmaker ? '<div style="font-size:0.75rem;color:var(--accent-blue);margin-top:8px">This file is already in Snapmaker format — no conversion needed.</div>' : ''}
         ${!data.isBambu && !data.isSnapmaker ? '<div style="font-size:0.75rem;color:var(--accent-orange);margin-top:8px">This file may not be a Bambu Lab project. Convert anyway?<br><button class="form-btn form-btn-sm" style="margin-top:4px" onclick="window._convConvert()">Convert Anyway</button></div>' : ''}`;

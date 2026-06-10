@@ -49,8 +49,8 @@
     const h = (p.height + p.wallThickness * 2) * scale;
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._ccPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._ccDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._ccPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._ccDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.length}×${p.width}×${p.height}mm · pin ⌀${p.pinDiameter}mm</div>
       <div style="perspective:400px;margin-top:10px">

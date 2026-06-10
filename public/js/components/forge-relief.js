@@ -71,8 +71,8 @@
 
     r.innerHTML = `
       <div style="display:flex;gap:6px;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._relPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._relDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._relPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._relDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${w}mm wide, ${relief}mm max relief${document.getElementById('rel-mirror')?.checked ? ' (stamp mode)' : ''}</div>
       <div style="width:${pw}px;height:${ph}px;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3);position:relative">

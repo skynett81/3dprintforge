@@ -77,8 +77,8 @@
 
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._tpPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._tpDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._tpPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._tpDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${Math.round(plateW)}×${Math.round(lines.length * p.fontSize * p.lineSpacing + p.padding * 2)}mm — ${lines.length} line${lines.length > 1 ? 's' : ''}</div>
       <div style="width:${pw}px;min-height:${ph}px;background:#eee;color:#222;border-radius:${Math.round(3*scale)}px;padding:${Math.round(p.padding*scale)}px;box-shadow:0 4px 20px rgba(0,0,0,0.3);display:flex;flex-direction:column;justify-content:center;gap:${Math.round(p.fontSize*(p.lineSpacing-1)*scale*0.5)}px;${p.border ? 'border:' + Math.round(1.5*scale) + 'px solid #333;' : ''}">${textHtml}</div>`;

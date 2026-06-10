@@ -644,7 +644,7 @@
             <input type="number" class="form-input" id="ams-dry-dur" value="4" min="1" max="24" step="1" style="font-size:0.82rem">
           </div>
           <div style="display:flex;gap:4px">
-            <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-green);color:#fff" onclick="window._startAmsDry()">Start</button>
+            <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._startAmsDry()">Start</button>
             <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-red);color:#fff" onclick="window._stopAmsDry()">Stop</button>
           </div>
         </div>

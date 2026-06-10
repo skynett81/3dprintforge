@@ -44,8 +44,8 @@
     const lh = p.lipHeight * scale;
     r.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._shPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._shDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._shPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._shDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">Holds ${p.toolWidth}×${p.toolThickness}mm blade · ${p.mountHeight}mm tall</div>
       <svg width="${pw+40}" height="${ph+20}" viewBox="-10 -10 ${pw+40} ${ph+20}">

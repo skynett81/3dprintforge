@@ -68,8 +68,8 @@
 
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._pulPreview3D()" style="background:var(--accent-cyan);color:#fff">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._pulDownload()" style="background:var(--accent-green);color:#fff">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._pulPreview3D()">🧊 3D Preview</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._pulDownload()">📥 Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${PROFILES[p.profile]} · ${p.teeth}t · pitch ⌀${pitchD.toFixed(1)}mm${p.flanges ? ' · flanged' : ''}</div>
       <svg width="${r*2+20}" height="${r*2+20}" viewBox="${-r-10} ${-r-10} ${r*2+20} ${r*2+20}">
