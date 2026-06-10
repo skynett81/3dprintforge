@@ -3564,10 +3564,18 @@ export async function handleApiRequest(req, res) {
       } catch (e) {
         log.warn('History thumb error: ' + e.message);
       }
-      // Return 1x1 transparent PNG placeholder to avoid 404 console noise
-      const placeholder = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualIQAAAABJRU5ErkJggg==', 'base64');
-      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': placeholder.length, 'Cache-Control': 'public, max-age=300' });
-      res.end(placeholder);
+      // No thumbnail available. Return a clean "no preview" placeholder (a
+      // cube wireframe on a neutral tile) at HTTP 200 — not the old 1x1
+      // transparent PNG, which painted black over the dark history card and
+      // made the grid look like a wall of broken tiles. 200 (not 404) keeps
+      // the console quiet.
+      const ph = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'
+        + '<rect width="200" height="200" fill="#3a3f47"/>'
+        + '<g fill="none" stroke="#9ca3af" stroke-width="6" stroke-linejoin="round" opacity="0.5" transform="translate(100,98)">'
+        + '<path d="M0,-44 L40,-21 L40,25 L0,48 L-40,25 L-40,-21 Z"/>'
+        + '<path d="M0,-44 L0,2 M0,2 L40,-21 M0,2 L-40,-21"/></g></svg>';
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' });
+      res.end(ph);
       return;
     }
 
