@@ -772,6 +772,19 @@
               </div>
               <div class="prepare-detail" id="prepare-detail"></div>
             </div>
+            <div class="print-idle-overlay" id="print-idle-overlay" style="display:none">
+              <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M6 9V3h12v6"/>
+                <path d="M6 18H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1"/>
+                <rect x="6" y="14" width="12" height="7" rx="1"/>
+              </svg>
+              <div class="print-idle-title" data-i18n-key="progress.idle_title">No active print</div>
+              <div class="print-idle-sub" data-i18n-key="progress.idle_sub">Start a job to see live progress here</div>
+              <div class="print-idle-actions">
+                <button class="print-idle-btn" onclick="openPanel('queue')" data-i18n-key="progress.idle_queue">Print queue</button>
+                <button class="print-idle-btn print-idle-btn-ghost" onclick="openPanel('library')" data-i18n-key="progress.idle_library">Browse files</button>
+              </div>
+            </div>
             <div class="print-preview-hud" id="print-preview-hud">
               <div class="hud-top">
                 <span class="hud-file" id="hud-file">--</span>

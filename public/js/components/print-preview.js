@@ -119,8 +119,21 @@
       _cachedModelLink = null; _lastModelLinkFetch = 0;
       // Hide model metadata
       renderModelMeta(null, null);
+      // Show the clean "no active print" idle state instead of an empty
+      // dark viewport, and hide the stale last-file HUD so it doesn't read
+      // as if something is loaded.
+      const idleOv = document.getElementById('print-idle-overlay');
+      if (idleOv) idleOv.style.display = 'flex';
+      const hud = document.getElementById('print-preview-hud');
+      if (hud) hud.style.display = 'none';
       return;
     }
+
+    // A print is active — make sure the idle overlay is hidden and the HUD on.
+    const idleOv = document.getElementById('print-idle-overlay');
+    if (idleOv) idleOv.style.display = 'none';
+    const hud = document.getElementById('print-preview-hud');
+    if (hud) hud.style.display = '';
 
     // Track layer colors on every tick
     trackLayerColor(data);
