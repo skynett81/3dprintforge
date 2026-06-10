@@ -408,6 +408,66 @@
     };
   }
 
+  // Reuse the already-open detection WebSocket for JPEG playback instead of
+  // opening a second one. `firstData` is the JPEG frame that triggered
+  // detection, so paint it immediately. (Previously this function was called
+  // but never defined — JPEG/P-series cameras threw a ReferenceError here and
+  // never rendered.)
+  function _startJpegPlayerDirect(container, ws, overlay, firstData) {
+    _removeSkeleton(container);
+    container.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'camera-canvas';
+    img.style.objectFit = 'contain';
+    if (_isMobile()) img.style.maxHeight = '240px';
+    container.appendChild(img);
+    container.appendChild(overlay);
+
+    _jpegWs = ws;
+    streamActive = true;
+
+    const paint = (data) => {
+      if (_isMobile() && _jpegFrameCount++ % 2 !== 0) return;
+      const blob = new Blob([data], { type: 'image/jpeg' });
+      const url = URL.createObjectURL(blob);
+      const old = img.src;
+      img.src = url;
+      if (old && old.startsWith('blob:')) URL.revokeObjectURL(old);
+    };
+
+    paint(firstData);
+
+    // Replace the detection handlers with playback handlers.
+    ws.onmessage = (e) => {
+      if (typeof e.data === 'string') {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.error === 'auth_denied') {
+            ws.close();
+            showPlaceholder(container, 'auth_denied');
+            _reconnectTimer = setTimeout(() => { initCamera(currentPort); }, 65000);
+            return;
+          }
+          if (msg.error === 'stream_unavailable') {
+            ws.close();
+            showPlaceholder(container, 'stream_unavailable');
+            _scheduleReconnect();
+            return;
+          }
+        } catch {}
+        return;
+      }
+      paint(e.data);
+    };
+
+    ws.onclose = () => { streamActive = false; _jpegWs = null; };
+    ws.onerror = () => {
+      streamActive = false;
+      _jpegWs = null;
+      showPlaceholder(container, 'probe_failed');
+    };
+  }
+
   function _startMpegPlayer(container, wsUrl, overlay) {
     _removeSkeleton(container);
     container.innerHTML = '';

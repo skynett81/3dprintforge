@@ -44,6 +44,9 @@ export class CameraStream {
     this.framerate = config.camera?.framerate || 15;
     this.bitrate = config.camera?.bitrate || '1000k';
     this.enabled = config.camera?.enabled !== false;
+    // Per-printer override from the edit dialog: 'rtsp' | 'jpeg' | 'off'.
+    // Anything else (incl. unset) keeps the legacy auto-detect probe.
+    this.cameraMode = config.printer?.cameraMode || 'auto';
 
     this.wss = null;
     this.ffmpeg = null;
@@ -55,6 +58,7 @@ export class CameraStream {
     this.mode = null; // 'jpeg' or 'rtsp'
     this._headerBuf = Buffer.alloc(0);
     this._authDenied = false;
+    this._triedRtsp = false; // auto-detect: fall back JPEG->RTSP only once
     this._authDeniedTimer = null;
     this._watchdogTimer = null;
     this._lastFrameTime = 0;
@@ -99,7 +103,12 @@ export class CameraStream {
       // Auth check: validate session token or API key from query param
       if (isAuthEnabled()) {
         const url = new URL(req.url, 'http://localhost');
-        const token = url.searchParams.get('token');
+        // Browsers can't put the HttpOnly bambu_session cookie into a query
+        // param, but they DO send it on the WS handshake — accept either, so
+        // the camera works when auth is enabled (the dashboard never appended
+        // a ?token=).
+        const token = url.searchParams.get('token')
+          || (req.headers.cookie || '').match(/bambu_session=([a-f0-9]{64})/)?.[1];
         const apiKey = url.searchParams.get('apikey');
         let authenticated = false;
         if (token && validateSession(token)) authenticated = true;
@@ -163,6 +172,27 @@ export class CameraStream {
   _startStream() {
     if (!this.ip) {
       log.warn('No IP address configured');
+      return;
+    }
+
+    // Explicit per-printer override skips auto-detect. Critical for X1/X1E:
+    // their camera is RTSP-only, but some firmware also answers on the JPEG
+    // probe port (6000) and then rejects auth, trapping auto-detect in a
+    // JPEG auth-denied loop. Forcing 'rtsp' avoids the probe entirely.
+    if (this.cameraMode === 'off') {
+      log.info('Camera disabled for this printer (cameraMode=off)');
+      return;
+    }
+    if (this.cameraMode === 'rtsp') {
+      log.info('cameraMode=rtsp — using RTSP directly (skipping JPEG probe)');
+      this.mode = 'rtsp';
+      this._startFfmpeg();
+      return;
+    }
+    if (this.cameraMode === 'jpeg') {
+      log.info('cameraMode=jpeg — using JPEG directly (skipping probe)');
+      this.mode = 'jpeg';
+      this._startJpegStream();
       return;
     }
 
@@ -304,6 +334,16 @@ export class CameraStream {
 
         // Check for error code 0xFFFFFFFF in payload
         if (payloadSize >= 4 && payload.readUInt32LE(0) === 0xFFFFFFFF) {
+          // The printer answered on :6000 but rejected the JPEG auth. On an
+          // X1-series that's expected — its real feed is RTSP — so try RTSP
+          // once before surfacing the LAN-liveview hint (the correct message
+          // for a P-series whose liveview is genuinely off).
+          if (this.cameraMode !== 'jpeg' && !this._triedRtsp) {
+            log.info('JPEG auth rejected — falling back to RTSP (likely an X1-series printer)');
+            this._triedRtsp = true;
+            this._fallbackToRtsp();
+            return;
+          }
           log.warn('Authentication rejected — LAN Live View is likely disabled on the printer');
           this._authDenied = true;
           this._broadcastError('auth_denied');
@@ -314,6 +354,7 @@ export class CameraStream {
           this._authDeniedTimer = setTimeout(() => {
             log.info('Resetting auth-denied — retrying');
             this._authDenied = false;
+            this._triedRtsp = false;
             if (this.clients.size > 0) {
               this._startStream();
             }
@@ -471,12 +512,21 @@ export class CameraStream {
 
     try {
       this.ffmpeg = spawn('ffmpeg', args, {
-        stdio: ['ignore', 'pipe', 'ignore']
+        stdio: ['ignore', 'pipe', 'pipe']
       });
     } catch (e) {
       log.error('Could not start ffmpeg: ' + e.message);
       return;
     }
+
+    // Keep the tail of ffmpeg's stderr so a failed RTSP connection is
+    // diagnosable (auth reject, TLS/cert error, timeout). It used to be
+    // discarded, so "ffmpeg exited (code N)" gave no clue why the X1C
+    // camera wouldn't connect.
+    let stderrTail = '';
+    this.ffmpeg.stderr.on('data', (d) => {
+      stderrTail = (stderrTail + d.toString()).slice(-2000);
+    });
 
     this.ffmpeg.stdout.on('data', (data) => {
       for (const ws of this.clients) {
@@ -487,7 +537,12 @@ export class CameraStream {
     });
 
     this.ffmpeg.on('close', (code) => {
-      log.info('ffmpeg exited (code: ' + code + ')');
+      if (code) {
+        const tail = stderrTail.trim().split('\n').slice(-6).join('\n');
+        log.warn('ffmpeg (RTSP) exited (code: ' + code + ')' + (tail ? ' — last output:\n' + tail : ''));
+      } else {
+        log.info('ffmpeg exited (code: ' + code + ')');
+      }
       this.ffmpeg = null;
       if (this.clients.size > 0) {
         this._scheduleRestart();
@@ -585,5 +640,7 @@ export class CameraStream {
       this.ffmpeg = null;
     }
     this._cleanupJpeg();
+    // Fresh start re-detects from scratch (re-allow one JPEG->RTSP fallback).
+    this._triedRtsp = false;
   }
 }
