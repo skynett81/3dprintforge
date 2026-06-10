@@ -155,6 +155,11 @@
   .dashboard { padding: 8px; gap: 8px; }
   .info-box-strip { padding: 8px; gap: 8px; }
 
+  /* Filament inventory: 2 spool cards per row on phones instead of one giant
+     card per row (minmax(200px) collapses to a single column under ~415px),
+     which made the inventory an endless scroll. Halves the page length. */
+  .spool-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
   /* Reduce card padding globally */
   .card-body { padding: 10px; }
   .card-header { padding: 8px 10px; }
