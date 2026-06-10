@@ -126,6 +126,10 @@
       if (idleOv) idleOv.style.display = 'flex';
       const hud = document.getElementById('print-preview-hud');
       if (hud) hud.style.display = 'none';
+      // Hide the progress ring / % bar too — a stale "100% · No filament
+      // data" next to "No active print" reads as contradictory.
+      const bar = document.querySelector('#progress-card .print-info-bar');
+      if (bar) bar.style.display = 'none';
       return;
     }
 
@@ -134,6 +138,8 @@
     if (idleOv) idleOv.style.display = 'none';
     const hud = document.getElementById('print-preview-hud');
     if (hud) hud.style.display = '';
+    const bar = document.querySelector('#progress-card .print-info-bar');
+    if (bar) bar.style.display = '';
 
     // Track layer colors on every tick
     trackLayerColor(data);
