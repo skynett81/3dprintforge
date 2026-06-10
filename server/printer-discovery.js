@@ -220,36 +220,37 @@ export class PrinterDiscovery {
       for (const iface of list) ipsToProbe.delete(iface.address);
     }
 
-    const results = [];
-    const batchSize = 30;
-    const ips = [...ipsToProbe];
-
-    for (let i = 0; i < ips.length; i += batchSize) {
-      const batch = ips.slice(i, i + batchSize);
-      const probes = batch.map(async (ip) => {
-        try {
-          const res = await fetch(`http://${ip}:80/printer/info`, { signal: AbortSignal.timeout(timeoutMs) });
-          if (!res.ok) return null;
-          const data = await res.json();
-          if (!data?.result?.hostname) return null;
-          return {
-            ip,
-            serial: data.result.hostname || ip,
-            model: 'Moonraker/Klipper',
-            modelCode: '',
-            name: data.result.hostname || ip,
-            signal: null,
-            type: 'moonraker',
-            software_version: data.result.software_version || '',
-            state: data.result.state || '',
-          };
-        } catch { return null; }
-      });
-      const batchResults = await Promise.all(probes);
-      for (const r of batchResults) {
-        if (r) results.push(r);
-      }
+    // Fast TCP pre-filter on port 80 — without it, every dead IP costs the
+    // full HTTP timeout, so a /24 took ~27s and the scan endpoint hung.
+    const all = [...ipsToProbe];
+    const live = [];
+    const BATCH = 64;
+    for (let i = 0; i < all.length; i += BATCH) {
+      const slice = all.slice(i, i + BATCH);
+      await Promise.all(slice.map((ip) => _tcpOpen(ip, 80, 700).then((ok) => { if (ok) live.push(ip); })));
     }
+
+    // HTTP /printer/info only on hosts that actually have port 80 open.
+    const results = [];
+    await Promise.all(live.map(async (ip) => {
+      try {
+        const res = await fetch(`http://${ip}:80/printer/info`, { signal: AbortSignal.timeout(timeoutMs) });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.result?.hostname) return;
+        results.push({
+          ip,
+          serial: data.result.hostname || ip,
+          model: 'Moonraker/Klipper',
+          modelCode: '',
+          name: data.result.hostname || ip,
+          signal: null,
+          type: 'moonraker',
+          software_version: data.result.software_version || '',
+          state: data.result.state || '',
+        });
+      } catch { /* not a Moonraker host */ }
+    }));
 
     return results;
   }
@@ -258,25 +259,46 @@ export class PrinterDiscovery {
    * Combined scan — Bambu SSDP + Moonraker HTTP + Snapmaker SACP broadcast
    */
   async scanAll(timeoutMs = 5000, extraIps = []) {
-    let sacpResults = [];
-    try {
-      const { discoverSacpPrinters } = await import('./sacp-client.js');
-      sacpResults = await discoverSacpPrinters(3000);
-    } catch { /* SACP discovery optional */ }
-
-    // mDNS discovery for Snapmaker Ray (queries _printer._udp.local)
-    let mdnsResults = [];
-    try {
-      mdnsResults = await this._discoverMdns(2000);
-    } catch { /* mDNS optional */ }
-
-    const [bambu, moonraker] = await Promise.all([
-      this.scan(timeoutMs),
-      this.scanMoonraker(extraIps, 3000),
+    // Run every protocol probe in parallel so the slowest (not the sum) bounds
+    // the scan. Each is independently fault-isolated.
+    const [bambu, moonraker, sacpResults, mdnsResults] = await Promise.all([
+      this.scan(timeoutMs).catch(() => []),
+      this.scanMoonraker(extraIps, 3000).catch(() => []),
+      import('./sacp-client.js').then(m => m.discoverSacpPrinters(3000)).catch(() => []),
+      this._discoverMdns(2000).catch(() => []),
     ]);
-    const combined = [...bambu, ...moonraker, ...sacpResults, ...mdnsResults];
+
+    // Active fallback for Bambu printers SSDP didn't surface (multicast is
+    // often blocked, and the printer must be in LAN mode to broadcast).
+    let activeBambu = [];
+    try { activeBambu = await this._activeBambuFallback(bambu); } catch { /* optional */ }
+
+    const combined = [...bambu, ...moonraker, ...sacpResults, ...mdnsResults, ...activeBambu];
     this._cache = combined;
     return combined;
+  }
+
+  /**
+   * Find Bambu printers by port signature when SSDP missed them. A host with
+   * both 8883 (MQTTS) and 990 (FTPS) open is a Bambu printer; we can't read its
+   * serial without the access code, so it's flagged needsCredentials for the
+   * user to complete. Skips IPs already found via SSDP.
+   */
+  async _activeBambuFallback(ssdpResults = []) {
+    const known = new Set((ssdpResults || []).map(b => b.ip));
+    const open8883 = await this.scanBambuActive();
+    const out = [];
+    await Promise.all(open8883.map(async (ip) => {
+      if (known.has(ip)) return;
+      if (await _tcpOpen(ip, 990, 700)) {
+        out.push({
+          ip, serial: '', model: '', modelCode: '',
+          name: `Bambu printer (${ip})`, signal: null,
+          type: 'bambu', needsCredentials: true,
+        });
+      }
+    }));
+    return out;
   }
 
   /**
@@ -287,7 +309,7 @@ export class PrinterDiscovery {
       const found = new Map();
       let udpSocket;
       try {
-        const dgram = require('node:dgram');
+        // `require` isn't defined in ESM — use the module-level dgram import.
         udpSocket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
       } catch { resolve([]); return; }
 

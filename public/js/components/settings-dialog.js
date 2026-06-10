@@ -1617,7 +1617,16 @@
   window.showAddPrinterForm = function() {
     const area = document.getElementById('printer-form-area');
     if (area) renderPrinterForm(area);
+    // Most printers are already on the network, so scan automatically and let
+    // the user one-click a discovered device (which fills in IP/serial/model)
+    // instead of typing the IP by hand. Throttled so it doesn't re-scan on
+    // every click; the manual "Discover" button is always available.
+    if (Date.now() - _lastAutoDiscover > 15000 && typeof window.discoverPrinters === 'function') {
+      _lastAutoDiscover = Date.now();
+      window.discoverPrinters(true);
+    }
   };
+  let _lastAutoDiscover = 0;
 
   function _renderTypeConfig(type, printer) {
     const p = printer || {};
@@ -1921,21 +1930,22 @@
   };
 
   // ═══ Printer Discovery ═══
-  window.discoverPrinters = async function() {
+  window.discoverPrinters = async function(auto = false) {
     const btn = document.getElementById('discover-btn');
     const results = document.getElementById('discovery-results');
     if (!btn || !results) return;
 
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner-sm"></span> ${t('settings.discovering')}`;
-    results.innerHTML = '';
+    if (!auto) results.innerHTML = '';
 
     try {
       const res = await fetch('/api/discovery/scan');
       const data = await res.json();
 
       if (!data.printers || data.printers.length === 0) {
-        results.innerHTML = `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0;font-size:0.85rem">${t('settings.discovery_none')}</p></div>`;
+        // On an auto-scan, stay quiet when nothing turns up — don't clutter.
+        results.innerHTML = auto ? '' : `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0;font-size:0.85rem">${t('settings.discovery_none')}</p></div>`;
       } else {
         let h = `<div class="settings-card" style="margin-bottom:0.75rem"><div class="card-title">${t('settings.discovery_found').replace('{count}', data.printers.length)}</div>`;
         for (const p of data.printers) {
@@ -1955,7 +1965,7 @@
         results.innerHTML = h;
       }
     } catch (e) {
-      results.innerHTML = `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0">${t('settings.discovery_none')}</p></div>`;
+      if (!auto) results.innerHTML = `<div class="settings-card" style="margin-bottom:0.75rem"><p class="text-muted" style="margin:0">${t('settings.discovery_none')}</p></div>`;
     } finally {
       btn.disabled = false;
       btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg> ${t('settings.discover_printers')}`;
@@ -1967,7 +1977,7 @@
       const p = JSON.parse(jsonStr);
       const area = document.getElementById('printer-form-area');
       if (!area) return;
-      renderPrinterForm(area, { name: p.name, model: p.model, ip: p.ip, serial: p.serial });
+      renderPrinterForm(area, { name: p.name, model: p.model, ip: p.ip, serial: p.serial, type: p.type });
       // Focus on access code field
       setTimeout(() => {
         const accessEl = document.getElementById('pf-access');
