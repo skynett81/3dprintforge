@@ -802,6 +802,9 @@ window.filterSidebar = function(query) {
   const menu = document.querySelector('.sidebar-menu');
   if (!menu) return;
   menu.querySelectorAll(':scope > li.nav-item').forEach(li => {
+    // The Pinned shortcuts duplicate real items, so just hide them while
+    // searching (the real items are matched below); restored on clear.
+    if (li.id === 'sidebar-pinned-section') { li.style.display = q ? 'none' : ''; return; }
     const sub = li.querySelector(':scope > ul.nav-treeview');
     if (!sub) {
       // Flat top-level entry (Dashboard).
@@ -830,8 +833,69 @@ window.filterSidebar = function(query) {
       if (sub) sub.style.display = '';
     });
     try { _restoreSidebarSections(); } catch (_) {}
+    try { _renderPinned(); } catch (_) {}
   }
 };
+
+// ---- Sidebar favourites (pin any panel to a "Pinned" section up top) ----
+const PINNED_KEY = 'sidebar-pinned';
+function _getPinned() { try { return JSON.parse(localStorage.getItem(PINNED_KEY)) || []; } catch (_) { return []; } }
+function _isPinned(panel) { return _getPinned().includes(panel); }
+
+window.togglePin = function(panel) {
+  let p = _getPinned();
+  p = p.includes(panel) ? p.filter(x => x !== panel) : [...p, panel];
+  try { localStorage.setItem(PINNED_KEY, JSON.stringify(p)); } catch (_) {}
+  document.querySelectorAll(`.sidebar-menu .nav-treeview .sidebar-btn[data-panel="${panel}"]`)
+    .forEach(b => b.classList.toggle('is-pinned', p.includes(panel)));
+  _renderPinned();
+};
+
+// Rebuild the Pinned list from storage (clones look/label from the originals).
+function _renderPinned() {
+  const list = document.getElementById('sidebar-pinned-list');
+  const section = document.getElementById('sidebar-pinned-section');
+  if (!list || !section) return;
+  list.innerHTML = '';
+  let n = 0;
+  for (const panel of _getPinned()) {
+    const orig = document.querySelector(`.sidebar-menu .nav-treeview .sidebar-btn[data-panel="${panel}"]`);
+    if (!orig) continue;
+    const iconCls = orig.querySelector('.nav-icon')?.className || 'nav-icon bi bi-dot';
+    const label = (orig.querySelector('p')?.textContent || panel).trim();
+    const li = document.createElement('li');
+    li.className = 'nav-item';
+    const a = document.createElement('a');
+    a.href = '#'; a.className = 'nav-link sidebar-btn'; a.dataset.panel = panel;
+    const i = document.createElement('i'); i.className = iconCls;
+    const p = document.createElement('p'); p.textContent = label;
+    const unpin = document.createElement('button');
+    unpin.className = 'sidebar-pin pinned'; unpin.title = 'Unpin';
+    unpin.innerHTML = '<i class="bi bi-pin-angle-fill"></i>';
+    unpin.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePin(panel); });
+    a.append(i, p, unpin);
+    a.addEventListener('click', (e) => { e.preventDefault(); if (window.openPanel) window.openPanel(panel); });
+    li.appendChild(a);
+    list.appendChild(li);
+    n++;
+  }
+  section.style.display = n ? '' : 'none';
+}
+
+// Add a pin toggle to every leaf nav item, then render the Pinned section.
+function _initSidebarPins() {
+  document.querySelectorAll('.sidebar-menu .nav-treeview .sidebar-btn[data-panel]').forEach(btn => {
+    if (btn.querySelector('.sidebar-pin')) return;
+    const panel = btn.dataset.panel;
+    const b = document.createElement('button');
+    b.className = 'sidebar-pin'; b.title = 'Pin to top';
+    b.innerHTML = '<i class="bi bi-pin-angle"></i>';
+    b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePin(panel); });
+    btn.appendChild(b);
+    if (_isPinned(panel)) btn.classList.add('is-pinned');
+  });
+  _renderPinned();
+}
 
 function _saveSidebarSections() {
   try {
@@ -936,6 +1000,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Restore sidebar section collapse state
   _restoreSidebarSections();
+
+  // Wire up "pin to top" favourites on every nav item.
+  _initSidebarPins();
 
   // Listen for AdminLTE treeview events to persist sidebar section state
   document.querySelectorAll('.sidebar-section').forEach(section => {

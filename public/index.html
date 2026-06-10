@@ -110,6 +110,12 @@
         </div>
         <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
 
+          <!-- Pinned favourites (populated from localStorage) -->
+          <li class="nav-item sidebar-pinned-section" id="sidebar-pinned-section" style="display:none">
+            <div class="sidebar-pinned-label" data-i18n-key="sidebar.pinned">Pinned</div>
+            <ul class="nav nav-treeview" id="sidebar-pinned-list"></ul>
+          </li>
+
           <!-- Dashboard -->
           <li class="nav-item">
             <a href="#" class="nav-link sidebar-btn active" data-panel="dashboard" onclick="showDashboard(); return false;" data-ripple>

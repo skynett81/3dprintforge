@@ -9573,6 +9573,38 @@ html.theme-transitioning *::after {
 .app-sidebar.collapsed .sidebar-search,
 body.sidebar-collapse .sidebar-search { display: none; }
 
+/* Sidebar favourites ("Pinned") + per-item pin toggle. */
+.sidebar-pinned-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 6px 16px 2px;
+  opacity: 0.85;
+}
+#sidebar-pinned-list { display: block; }
+.sidebar-pinned-section { border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.07)); margin-bottom: 4px; padding-bottom: 4px; }
+.sidebar-pin {
+  margin-left: auto;
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0;
+  font-size: 0.78rem;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.sidebar-menu .nav-link:hover .sidebar-pin { opacity: 0.55; }
+.sidebar-pin:hover { opacity: 1; color: var(--accent-blue, #3b82f6); }
+.sidebar-btn.is-pinned .sidebar-pin,
+.sidebar-pin.pinned { opacity: 0.9; color: var(--accent-blue, #3b82f6); }
+.app-sidebar.collapsed .sidebar-pin,
+.app-sidebar.collapsed .sidebar-pinned-section,
+body.sidebar-collapse .sidebar-pin,
+body.sidebar-collapse .sidebar-pinned-section { display: none; }
+
 /* Sidebar collapsed state — triggered by AdminLTE sidebar-mini (body.sidebar-collapse)
    or legacy .app-sidebar.collapsed class */
 .app-sidebar.collapsed,
