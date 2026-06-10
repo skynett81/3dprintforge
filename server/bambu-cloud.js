@@ -3,6 +3,7 @@
  * Uses node:https (no external dependencies).
  */
 import https from 'node:https';
+import { spawn } from 'node:child_process';
 import { saveSecretsToEnv, config } from './config.js';
 import { createLogger } from './logger.js';
 
@@ -33,6 +34,19 @@ function _cookieVal(setCookie, name) {
     if (m) return decodeURIComponent(m[1]);
   }
   return '';
+}
+
+// Parse a `curl -D` header dump (status line + headers) into status + cookies.
+function _parseCurlHeaders(headerText) {
+  let statusCode = 0;
+  const setCookie = [];
+  for (const line of (headerText || '').split(/\r?\n/)) {
+    const sm = line.match(/^HTTP\/[\d.]+\s+(\d+)/);
+    if (sm) statusCode = parseInt(sm[1], 10);
+    const cm = line.match(/^set-cookie:\s*(.+)$/i);
+    if (cm) setCookie.push(cm[1]);
+  }
+  return { statusCode, setCookie };
 }
 
 // Seconds until a JWT expires, or a 90-day default if undecodable.
@@ -172,12 +186,15 @@ export class BambuCloud {
   async verifyTfa(code) {
     if (!this._tfaKey) throw new Error('No 2FA session in progress — please log in again.');
 
-    const res = await this._rawRequest(TFA_HOST, '/api/sign-in/tfa', 'POST',
-      { tfaKey: this._tfaKey, tfaCode: String(code).trim() },
-      { 'Origin': `https://${TFA_HOST}`, 'Referer': `https://${TFA_HOST}/en/sign-in` });
+    const res = await this._curlTfa({ tfaKey: this._tfaKey, tfaCode: String(code).trim() });
 
-    const setCookie = res.headers['set-cookie'] || [];
-    const token = _cookieVal(setCookie, 'token') || res.json?.accessToken || res.json?.token || '';
+    // Cloudflare served its JS challenge instead of the API (the curl build on
+    // this host couldn't pass it). Be explicit + point at the workaround.
+    if (!res.json && /just a moment|challenge-platform|cf-mitigated|cf_chl/i.test(res.raw || '')) {
+      throw new Error('Bambu blocked the 2FA request (Cloudflare). As a workaround, switch your Bambu account to email 2-step verification (or disable 2FA), then log in again.');
+    }
+
+    const token = _cookieVal(res.setCookie, 'token') || res.json?.accessToken || res.json?.token || '';
 
     if (!token) {
       // Bambu reports a bad/expired code as JSON { code, error }.
@@ -187,14 +204,14 @@ export class BambuCloud {
       // Otherwise the success shape differs from what we expected — log it
       // (no token material) so we can adapt, and fail clearly.
       log.warn('TFA verify: no token. status=' + res.statusCode + ' set-cookie=' +
-        JSON.stringify(setCookie.map(c => c.split('=')[0])) + ' body=' + _shape(res.json || {}));
+        JSON.stringify((res.setCookie || []).map(c => c.split('=')[0])) + ' body=' + _shape(res.json || {}));
       throw new Error(res.statusCode >= 400 ? `2FA failed (HTTP ${res.statusCode})` : '2FA: no token returned');
     }
 
     this._tfaKey = '';
     this._saveToken(this._email, {
       accessToken: token,
-      refreshToken: _cookieVal(setCookie, 'refreshToken') || res.json?.refreshToken || '',
+      refreshToken: _cookieVal(res.setCookie, 'refreshToken') || res.json?.refreshToken || '',
       expiresIn: _jwtExpiresIn(token),
     });
     return { ok: true, email: this._email };
@@ -599,35 +616,60 @@ export class BambuCloud {
   }
 
   /** HTTPS request helper. Returns parsed JSON body. */
-  // Low-level request that resolves the full response (status + headers +
-  // parsed/raw body) — needed for the 2FA flow, where the token comes back in
-  // a Set-Cookie header rather than the JSON body. Never rejects on HTTP
-  // status; only on transport errors/timeouts.
-  _rawRequest(hostname, path, method, body, extraHeaders = {}) {
+  // POST to the Cloudflare-protected 2FA sign-in endpoint via `curl`.
+  // Node's built-in TLS stack has a JA3 fingerprint Cloudflare bot-management
+  // challenges (verified: every Node https/http2 attempt got a 403 JS
+  // challenge regardless of headers), whereas curl's passes. The POST body
+  // (tfaKey + one-time code) goes over stdin so it never lands in argv/ps;
+  // response headers are dumped to a fd we read separately from the body.
+  _curlTfa(body) {
     return new Promise((resolve, reject) => {
-      const headers = {
-        'Content-Type': 'application/json',
-        'User-Agent': BROWSER_UA,
-        'Accept': 'application/json, text/plain, */*',
-        ...extraHeaders,
-      };
-      const postData = body ? JSON.stringify(body) : null;
-      if (postData) headers['Content-Length'] = Buffer.byteLength(postData);
-
-      const req = https.request({ hostname, port: 443, path, method, headers }, (res) => {
-        const chunks = [];
-        res.on('data', (chunk) => chunks.push(chunk));
-        res.on('end', () => {
-          const raw = Buffer.concat(chunks).toString('utf8');
-          let json = null;
-          try { json = JSON.parse(raw); } catch { /* non-JSON (e.g. HTML) */ }
-          resolve({ statusCode: res.statusCode, headers: res.headers, json, raw });
-        });
+      const url = `https://${TFA_HOST}/api/sign-in/tfa`;
+      const args = [
+        '-s', '-i', '--max-time', '15',
+        '-X', 'POST', url,
+        '-H', 'Content-Type: application/json',
+        '-H', `User-Agent: ${BROWSER_UA}`,
+        '-H', 'Accept: application/json, text/plain, */*',
+        '-H', 'Accept-Language: en-US,en;q=0.9',
+        '-H', `Origin: https://${TFA_HOST}`,
+        '-H', `Referer: https://${TFA_HOST}/en/sign-in`,
+        '-d', '@-', // POST body from stdin (keeps the code out of argv/ps)
+      ];
+      let proc;
+      try {
+        proc = spawn('curl', args);
+      } catch (e) {
+        reject(new Error('Authenticator 2FA needs `curl` installed on the server.'));
+        return;
+      }
+      let stdout = '', stderr = '';
+      proc.stdout.on('data', (d) => { stdout += d; });
+      proc.stderr.on('data', (d) => { stderr += d; });
+      proc.on('error', (e) => {
+        reject(new Error(e.code === 'ENOENT'
+          ? 'Authenticator 2FA needs `curl` installed on the server.'
+          : 'curl failed: ' + e.message));
       });
-      req.on('error', reject);
-      req.setTimeout(15000, () => { req.destroy(); reject(new Error('Request timeout')); });
-      if (postData) req.write(postData);
-      req.end();
+      proc.on('close', (codeN) => {
+        // `-i` prints the header block, a blank line, then the body. The body
+        // is small (no Expect/100-continue), so the first blank line is the
+        // boundary.
+        const idx = stdout.indexOf('\r\n\r\n');
+        const headerText = idx >= 0 ? stdout.slice(0, idx) : '';
+        const bodyText = idx >= 0 ? stdout.slice(idx + 4) : stdout;
+        const { statusCode, setCookie } = _parseCurlHeaders(headerText);
+        if (!statusCode && codeN !== 0) {
+          reject(new Error('curl exited with code ' + codeN + (stderr ? ': ' + stderr.trim().slice(0, 120) : '')));
+          return;
+        }
+        let json = null;
+        try { json = JSON.parse(bodyText); } catch { /* non-JSON (CF html) */ }
+        resolve({ statusCode, setCookie, json, raw: bodyText });
+      });
+      proc.stdin.on('error', () => { /* ignore EPIPE if curl exits early */ });
+      proc.stdin.write(JSON.stringify(body));
+      proc.stdin.end();
     });
   }
 
