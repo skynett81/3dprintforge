@@ -1,9 +1,5 @@
 import { spawn } from 'node:child_process';
 import { connect as tlsConnect } from 'node:tls';
-import net from 'node:net';
-import { createServer as createHttpsServer } from 'node:https';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { createLogger } from './logger.js';
 import { isAuthEnabled, validateSession, validateApiKey } from './auth.js';
@@ -72,98 +68,89 @@ export class CameraStream {
       return;
     }
 
-    // Try WSS first (needed when page is HTTPS), fall back to WS
-    const certsDir = join(import.meta.dirname, '..', 'certs');
-    const certPath = join(certsDir, 'cert.pem');
-    const keyPath = join(certsDir, 'key.pem');
-    let isSecure = false;
+    // The camera WebSocket is served through the MAIN app server (see the
+    // upgrade router in index.js) at /camera/<printerId>, so it rides the
+    // already-trusted TLS cert. Previously each camera ran its own HTTPS
+    // server on a separate port (9001+) with a self-signed cert the browser
+    // silently refused, so the stream never started (issue #18). A noServer
+    // WS just completes the handshakes routed to us.
+    this.wss = new WebSocketServer({ noServer: true });
+    this.wss.on('connection', (ws, req) => this._onWsConnection(ws, req));
+    this.wss.on('error', (err) => { log.warn('Camera WS error: ' + err.message); });
+  }
 
-    if (existsSync(certPath) && existsSync(keyPath)) {
-      try {
-        this._httpsServer = createHttpsServer({ cert: readFileSync(certPath), key: readFileSync(keyPath) });
-        this.wss = new WebSocketServer({ server: this._httpsServer });
-        this._httpsServer.listen(this.port);
-        isSecure = true;
-      } catch (e) {
-        log.warn('WSS setup failed, using WS: ' + e.message);
-        this.wss = new WebSocketServer({ port: this.port });
-      }
-    } else {
-      this.wss = new WebSocketServer({ port: this.port });
-    }
-
-    this.wss.on('error', (err) => {
-      log.warn('WebSocket error on port ' + this.port + ': ' + err.message);
-      this.wss = null;
+  // Called by the central upgrade router in index.js for /camera/<id>.
+  handleUpgrade(req, socket, head) {
+    if (!this.enabled) { try { socket.destroy(); } catch { /* ignore */ } return; }
+    if (!this.wss) this.start();
+    this.wss.handleUpgrade(req, socket, head, (ws) => {
+      this.wss.emit('connection', ws, req);
     });
+  }
 
-    log.info('WebSocket server on port ' + this.port + (isSecure ? ' (WSS)' : ''));
-
-    this.wss.on('connection', (ws, req) => {
-      // Auth check: validate session token or API key from query param
-      if (isAuthEnabled()) {
-        const url = new URL(req.url, 'http://localhost');
-        // Browsers can't put the HttpOnly bambu_session cookie into a query
-        // param, but they DO send it on the WS handshake — accept either, so
-        // the camera works when auth is enabled (the dashboard never appended
-        // a ?token=).
-        const token = url.searchParams.get('token')
-          || (req.headers.cookie || '').match(/bambu_session=([a-f0-9]{64})/)?.[1];
-        const apiKey = url.searchParams.get('apikey');
-        let authenticated = false;
-        if (token && validateSession(token)) authenticated = true;
-        if (apiKey) {
-          const fakeReq = { headers: { 'x-api-key': apiKey } };
-          if (validateApiKey(fakeReq)) authenticated = true;
-        }
-        if (!authenticated) {
-          log.warn('Camera WS connection rejected: authentication required');
-          ws.close(4401, 'Authentication required');
-          return;
-        }
+  _onWsConnection(ws, req) {
+    // Auth check: session cookie / token / API key.
+    if (isAuthEnabled()) {
+      const url = new URL(req.url, 'http://localhost');
+      // Browsers can't put the HttpOnly bambu_session cookie into a query
+      // param, but they DO send it on the WS handshake — accept either, so
+      // the camera works when auth is enabled (the dashboard never appended
+      // a ?token=).
+      const token = url.searchParams.get('token')
+        || (req.headers.cookie || '').match(/bambu_session=([a-f0-9]{64})/)?.[1];
+      const apiKey = url.searchParams.get('apikey');
+      let authenticated = false;
+      if (token && validateSession(token)) authenticated = true;
+      if (apiKey) {
+        const fakeReq = { headers: { 'x-api-key': apiKey } };
+        if (validateApiKey(fakeReq)) authenticated = true;
       }
-
-      this.clients.add(ws);
-      log.info('Client connected (' + this.clients.size + ' total), mode: ' + (this.mode || 'detecting'));
-
-      if (this.stopTimer) {
-        clearTimeout(this.stopTimer);
-        this.stopTimer = null;
-      }
-
-      // If auth was previously denied, tell the new client immediately
-      if (this._authDenied) {
-        ws.send(JSON.stringify({ error: 'auth_denied' }));
+      if (!authenticated) {
+        log.warn('Camera WS connection rejected: authentication required');
+        ws.close(4401, 'Authentication required');
         return;
       }
+    }
 
-      // Start stream if not running
-      if (!this.ffmpeg && !this.tlsSocket) {
-        this._startStream();
+    this.clients.add(ws);
+    log.info('Client connected (' + this.clients.size + ' total), mode: ' + (this.mode || 'detecting'));
+
+    if (this.stopTimer) {
+      clearTimeout(this.stopTimer);
+      this.stopTimer = null;
+    }
+
+    // If auth was previously denied, tell the new client immediately
+    if (this._authDenied) {
+      ws.send(JSON.stringify({ error: 'auth_denied' }));
+      return;
+    }
+
+    // Start stream if not running
+    if (!this.ffmpeg && !this.tlsSocket) {
+      this._startStream();
+    }
+
+    ws.on('close', () => {
+      this.clients.delete(ws);
+      log.info('Client disconnected (' + this.clients.size + ' total)');
+
+      if (this.clients.size === 0 && !this.stopTimer) {
+        this.stopTimer = setTimeout(() => {
+          this._stopStream();
+          this.stopTimer = null;
+        }, 10000);
       }
+    });
 
-      ws.on('close', () => {
-        this.clients.delete(ws);
-        log.info('Client disconnected (' + this.clients.size + ' total)');
-
-        if (this.clients.size === 0 && !this.stopTimer) {
-          this.stopTimer = setTimeout(() => {
-            this._stopStream();
-            this.stopTimer = null;
-          }, 10000);
-        }
-      });
-
-      ws.on('error', () => {
-        this.clients.delete(ws);
-      });
+    ws.on('error', () => {
+      this.clients.delete(ws);
     });
   }
 
   stop() {
     this._stopStream();
     if (this.wss) { this.wss.close(); this.wss = null; }
-    if (this._httpsServer) { this._httpsServer.close(); this._httpsServer = null; }
   }
 
   /**
@@ -436,8 +423,11 @@ export class CameraStream {
     return this._lastFrame;
   }
 
-  /** Add a MJPEG HTTP stream client. */
+  /** Add a MJPEG HTTP stream client (served through the main app port — the
+   *  trusted-cert fallback when the WS path can't connect). Self-starts the
+   *  stream so the endpoint works even if no WS client opened it first. */
   addMjpegClient(res) {
+    if (!this.ffmpeg && !this.tlsSocket && !this._authDenied) this._startStream();
     res.writeHead(200, {
       'Content-Type': 'multipart/x-mixed-replace; boundary=mjpegboundary',
       'Cache-Control': 'no-cache, no-store',

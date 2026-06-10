@@ -125,12 +125,18 @@
     _streamMode = null;
     streamActive = false;
 
-    // Bambu printers: use WebSocket (wss:// on HTTPS, ws:// on HTTP)
+    // Bambu printers: WebSocket through the MAIN app port (trusted cert),
+    // path-routed by printer id. Previously this hit a separate port (9001+)
+    // whose self-signed cert the browser silently refused, so the camera
+    // never connected on HTTPS/Docker installs (issue #18).
+    if (!pid) { showPlaceholder(container); return; }
     const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProto}://${location.hostname}:${port}`;
+    const wsUrl = `${wsProto}://${location.host}/camera/${encodeURIComponent(pid)}`;
 
-    // Single connection — detect mode from first message and keep playing
-    startPlayer(container, wsUrl);
+    // Single connection — detect mode from first message and keep playing.
+    // pid is threaded through so a failed WS can fall back to the MJPEG-over-
+    // HTTP endpoint on this same trusted port.
+    startPlayer(container, wsUrl, pid);
   }
 
   function _startSnapshotPolling(container, printerId) {
@@ -161,7 +167,11 @@
     if (player) { try { player.destroy(); } catch(e) {} player = null; }
     if (_jpegWs) { try { _jpegWs.close(); } catch(e) {} _jpegWs = null; }
     if (_snapshotInterval) { clearInterval(_snapshotInterval); _snapshotInterval = null; }
+    // Abort an in-flight MJPEG-over-HTTP fallback stream by clearing its src.
+    if (_mjpegImg) { try { _mjpegImg.onerror = null; _mjpegImg.src = ''; } catch(e) {} _mjpegImg = null; }
+    _streamMode = null;
   }
+  let _mjpegImg = null;
 
   let _streamMode = null; // 'jpeg', 'mpeg', or 'snapshot'
   let _jpegWs = null;
@@ -247,7 +257,7 @@
     return overlay;
   }
 
-  function startPlayer(container, wsUrl) {
+  function startPlayer(container, wsUrl, pid) {
     try {
       container.innerHTML = '';
 
@@ -328,17 +338,15 @@
       };
 
       ws.onerror = () => {
-        if (!_streamMode) {
-          showPlaceholder(container, 'probe_failed');
-          _scheduleReconnect();
-        }
+        // WS couldn't connect (e.g. cert/port issue) — try the MJPEG-over-
+        // HTTP fallback on the trusted main port before giving up.
+        if (!_streamMode) { try { ws.close(); } catch {} _startMjpegFallback(container, pid); }
       };
 
       ws.onclose = () => {
         if (!_streamMode) {
           // Never got first message — connection lost before detection
-          showPlaceholder(container, 'probe_failed');
-          _scheduleReconnect();
+          _startMjpegFallback(container, pid);
         }
       };
 
@@ -346,15 +354,44 @@
       setTimeout(() => {
         if (!_streamMode && ws.readyState <= 1) {
           ws.close();
-          showPlaceholder(container, 'stream_unavailable');
-          _scheduleReconnect();
+          _startMjpegFallback(container, pid);
         }
       }, 8000);
     } catch (e) {
       console.warn('[camera] Failed to start:', e.message);
-      showPlaceholder(container);
-      _scheduleReconnect();
+      _startMjpegFallback(container, pid);
     }
+  }
+
+  // MJPEG-over-HTTP fallback: a plain <img> on the trusted main port. Works
+  // when the WebSocket can't connect at all. For JPEG-mode printers the
+  // backend self-starts the stream; if even this fails we fall through to the
+  // placeholder + normal reconnect loop.
+  function _startMjpegFallback(container, pid) {
+    if (!pid) { showPlaceholder(container, 'stream_unavailable'); _scheduleReconnect(); return; }
+    if (_streamMode === 'mjpeg-http') return; // already in fallback
+    _removeSkeleton(container);
+    container.innerHTML = '';
+    _streamMode = 'mjpeg-http';
+    const img = document.createElement('img');
+    img.className = 'camera-canvas';
+    img.style.objectFit = 'contain';
+    if (_isMobile()) img.style.maxHeight = '240px';
+    img.onload = () => { streamActive = true; };
+    img.onerror = () => {
+      if (_streamMode === 'mjpeg-http') {
+        _streamMode = null;
+        showPlaceholder(container, 'stream_unavailable');
+        _scheduleReconnect();
+      }
+    };
+    img.src = `/api/printers/${encodeURIComponent(pid)}/stream.mjpeg?t=${Date.now()}`;
+    _mjpegImg = img;
+    container.appendChild(img);
+    container.appendChild(_buildOverlay(container));
+    container.style.cursor = 'pointer';
+    container.onclick = () => { if (streamActive) openFullscreen(); };
+    console.log('[camera] WS unavailable — using MJPEG HTTP fallback');
   }
 
   function _removeSkeleton(container) {

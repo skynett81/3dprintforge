@@ -6,7 +6,11 @@ const log = createLogger('ws');
 
 export class WebSocketHub {
   constructor(server) {
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+    // noServer: the central upgrade router in index.js dispatches '/ws' here
+    // and '/camera/<id>' to the per-printer camera streams, so both share the
+    // main server's trusted TLS endpoint (issue #18). `server` is kept for
+    // signature compatibility but no longer auto-attached.
+    this.wss = new WebSocketServer({ noServer: true });
     this.clients = new Set();
     this.printerStates = {};   // { printerId: state }
     this.printerMeta = {};     // { printerId: { name, model, cameraPort } }
@@ -128,6 +132,13 @@ export class WebSocketHub {
       }
     };
     onLog(this._logListener);
+  }
+
+  // Called by the central upgrade router in index.js for the '/ws' path.
+  handleUpgrade(req, socket, head) {
+    this.wss.handleUpgrade(req, socket, head, (ws) => {
+      this.wss.emit('connection', ws, req);
+    });
   }
 
   // Process-shutdown / re-instantiation cleanup.

@@ -674,6 +674,34 @@ const manager = new PrinterManager(config, broadcastAll, setMetaAll);
 await manager.init();
 manager.startAutoRediscovery();
 
+// Central WebSocket upgrade router. The dashboard hub ('/ws') and the
+// per-printer camera streams ('/camera/<id>') now share the main server's
+// trusted TLS endpoint instead of each camera listening on its own port with
+// an untrusted self-signed cert that browsers silently refused (issue #18).
+function attachUpgradeRouter(srv, dashboardHub) {
+  if (!srv || !dashboardHub) return;
+  srv.on('upgrade', (req, socket, head) => {
+    let pathname;
+    try { pathname = new URL(req.url, 'http://localhost').pathname; }
+    catch { try { socket.destroy(); } catch { /* ignore */ } return; }
+
+    if (pathname === '/ws') {
+      dashboardHub.handleUpgrade(req, socket, head);
+      return;
+    }
+    const camMatch = pathname.match(/^\/camera\/([^/]+)$/);
+    if (camMatch) {
+      const cam = manager?.printers?.get(decodeURIComponent(camMatch[1]))?.camera;
+      if (cam?.handleUpgrade) cam.handleUpgrade(req, socket, head);
+      else { try { socket.destroy(); } catch { /* ignore */ } }
+      return;
+    }
+    try { socket.destroy(); } catch { /* ignore */ }
+  });
+}
+attachUpgradeRouter(httpServer, hub);
+attachUpgradeRouter(httpsServer, hubHttps);
+
 // Wire printer manager ref to PrintTracker for Moonraker thumbnail fetching
 import('./print-tracker.js').then(({ PrintTracker }) => {
   PrintTracker._printerManagerRef = manager;
