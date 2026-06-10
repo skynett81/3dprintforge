@@ -4844,8 +4844,17 @@
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow-sm);
-  transition: all 0.25s var(--ease-out);
+  transition: box-shadow 0.25s var(--ease-out);
+  /* Stack children predictably. Without this, cards whose title is a flex row
+     followed by a description could collapse onto the same line (the title
+     shrank to content width and the description rendered over it). */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
 }
+.settings-card > .card-title { width: 100%; }
 
 .settings-card:hover {
   box-shadow: var(--shadow-md);
