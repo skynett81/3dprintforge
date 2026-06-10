@@ -286,20 +286,26 @@
           </li>
 
           <!-- Library -->
-          <li class="nav-item sidebar-section" data-section="library" style="--section-color: var(--accent-purple)">
+          <li class="nav-item sidebar-section" data-section="prepare" style="--section-color: var(--accent-purple)">
             <a href="#" class="nav-link">
-              <i class="nav-icon bi bi-archive"></i>
+              <i class="nav-icon bi bi-layers"></i>
               <p>
-                <span data-i18n-key="sidebar.section_library">Library</span>
+                <span data-i18n-key="sidebar.section_prepare">Prepare</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">13</span>
+                <span class="badge text-bg-secondary sidebar-section-count">7</span>
               </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="library" onclick="openPanel('library'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-folder"></i>
-                  <p data-i18n-key="tabs.library">File Library</p>
+                <a href="#" class="nav-link sidebar-btn" data-panel="slicer-studio" onclick="openPanel('slicer-studio'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-lightning-charge-fill"></i>
+                  <p>Slicer Studio</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="slicer" onclick="openPanel('slicer'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-cpu"></i>
+                  <p>Slicer Bridge</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -315,21 +321,41 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="calibration" onclick="openPanel('calibration'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-rulers"></i>
-                  <p>Calibration &amp; Tuning</p>
-                </a>
-              </li>
-              <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="preflight" onclick="openPanel('preflight'); return false;" data-ripple>
                   <i class="nav-icon bi bi-clipboard-check"></i>
                   <p>Pre-print Analysis</p>
                 </a>
               </li>
               <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="calibration" onclick="openPanel('calibration'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-rulers"></i>
+                  <p>Calibration &amp; Tuning</p>
+                </a>
+              </li>
+              <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="mesh-repair" onclick="openPanel('mesh-repair'); return false;" data-ripple>
                   <i class="nav-icon bi bi-tools"></i>
                   <p>Mesh Repair Toolkit</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <!-- Library -->
+          <li class="nav-item sidebar-section" data-section="library" style="--section-color: var(--accent-purple)">
+            <a href="#" class="nav-link">
+              <i class="nav-icon bi bi-archive"></i>
+              <p>
+                <span data-i18n-key="sidebar.section_library">Library</span>
+                <i class="nav-arrow bi bi-chevron-right"></i>
+                <span class="badge text-bg-secondary sidebar-section-count">6</span>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="#" class="nav-link sidebar-btn" data-panel="library" onclick="openPanel('library'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-folder"></i>
+                  <p data-i18n-key="tabs.library">File Library</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -345,21 +371,9 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="slicer" onclick="openPanel('slicer'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-cpu"></i>
-                  <p>Slicer Bridge</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="slicer-studio" onclick="openPanel('slicer-studio'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-lightning-charge-fill"></i>
-                  <p>Slicer Studio</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="knowledge" onclick="openPanel('knowledge'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-book"></i>
-                  <p data-i18n-key="nav.knowledge">Knowledge Base</p>
+                <a href="#" class="nav-link sidebar-btn" data-panel="profiles" onclick="openPanel('profiles'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-file-text"></i>
+                  <p data-i18n-key="nav.profiles">Print Profiles</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -369,9 +383,9 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="profiles" onclick="openPanel('profiles'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-file-text"></i>
-                  <p data-i18n-key="nav.profiles">Print Profiles</p>
+                <a href="#" class="nav-link sidebar-btn" data-panel="knowledge" onclick="openPanel('knowledge'); return false;" data-ripple>
+                  <i class="nav-icon bi bi-book"></i>
+                  <p data-i18n-key="nav.knowledge">Knowledge Base</p>
                 </a>
               </li>
             </ul>
