@@ -1994,7 +1994,18 @@
     if (!resultEl) return;
 
     if (!ip || !accessCode) {
-      resultEl.innerHTML = `<span style="color:var(--warning-color,#f0ad4e);font-size:0.8rem">${t('settings.discovery_enter_access')}</span>`;
+      // Be specific about what's actually missing — discovery fills the IP but
+      // can't read the access code (it's the printer's secret), so the common
+      // case is "IP present, access code missing".
+      let msg;
+      if (ip && !accessCode) {
+        msg = t('settings.test_need_access', 'Enter the access code (on the printer: Settings → WLAN → Access Code) to test the connection.');
+      } else if (!ip && accessCode) {
+        msg = t('settings.test_need_ip', 'Enter the IP address to test the connection.');
+      } else {
+        msg = t('settings.discovery_enter_access');
+      }
+      resultEl.innerHTML = `<span style="color:var(--warning-color,#f0ad4e);font-size:0.8rem">${msg}</span>`;
       return;
     }
 

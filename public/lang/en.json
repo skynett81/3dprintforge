@@ -1843,6 +1843,8 @@
     "discovery_add": "Add",
     "discovery_signal": "Signal",
     "discovery_enter_access": "Enter the IP address and access code to test the connection.",
+    "test_need_access": "Enter the access code (on the printer: Settings → WLAN → Access Code) to test the connection.",
+    "test_need_ip": "Enter the IP address to test the connection.",
     "test_connection": "Test Connection",
     "test_success": "Connection successful!",
     "test_failed": "Connection failed. Check the access code and try again.",
