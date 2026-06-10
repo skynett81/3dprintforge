@@ -2105,7 +2105,10 @@
         const el = document.getElementById('cloud-content');
         if (el) _renderCloudConnected(el);
       } else {
-        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_login_failed')}</span>`;
+        // Surface the real reason from Bambu (wrong password, needs
+        // verification, region, etc.) instead of a generic message.
+        const reason = _escapeCloudErr(data.error) || t('settings.cloud_login_failed');
+        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${reason}</span>`;
         if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_login'); }
       }
     } catch {
@@ -2113,6 +2116,12 @@
       if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_login'); }
     }
   };
+
+  // Escape a server-provided error string before inserting via innerHTML.
+  function _escapeCloudErr(s) {
+    if (!s || typeof s !== 'string') return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 200);
+  }
 
   window.bambuCloudVerify = async function() {
     const code = document.getElementById('cloud-code')?.value.trim();
@@ -2136,7 +2145,8 @@
         const el = document.getElementById('cloud-content');
         if (el) _renderCloudConnected(el);
       } else {
-        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed')}</span>`;
+        const reason = _escapeCloudErr(data.error) || t('settings.cloud_verify_failed');
+        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${reason}</span>`;
         if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify'); }
       }
     } catch {

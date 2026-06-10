@@ -533,12 +533,19 @@ export class BambuCloud {
           try {
             const json = JSON.parse(raw);
             if (res.statusCode >= 400) {
-              reject(new Error(json.message || `HTTP ${res.statusCode}`));
+              // Bambu's API returns the human-readable reason under `error`
+              // (e.g. "Incorrect account or password."); `message` is usually
+              // absent. Surface whichever exists so the user sees the real
+              // cause instead of a bare HTTP code.
+              reject(new Error(json.message || json.error || `HTTP ${res.statusCode}`));
             } else {
               resolve(json);
             }
           } catch {
-            reject(new Error(`Invalid response: ${res.statusCode}`));
+            // Non-JSON body (e.g. a Cloudflare/HTML block page) — include a
+            // snippet so it's diagnosable rather than a bare status code.
+            const snippet = raw.replace(/\s+/g, ' ').trim().slice(0, 120);
+            reject(new Error(`Unexpected response (HTTP ${res.statusCode})${snippet ? ': ' + snippet : ''}`));
           }
         });
       });
