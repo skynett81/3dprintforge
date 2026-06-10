@@ -108,6 +108,19 @@ export function upsertProtectionSettings(printerId, settings) {
 
 export function addProtectionLog(entry) {
   const db = getDb();
+  // Collapse repeats: a recurring condition (temp deviation every minute,
+  // filament low every poll) used to stack a new unresolved row each time, so
+  // "Active alerts" grew to dozens of identical entries. If an unresolved
+  // alert of the same type is already active for this printer, refresh it in
+  // place instead — one row per ongoing issue.
+  const existing = db.prepare(
+    'SELECT id FROM protection_log WHERE printer_id = ? AND event_type = ? AND resolved = 0 ORDER BY id DESC LIMIT 1'
+  ).get(entry.printer_id, entry.event_type);
+  if (existing) {
+    return db.prepare(
+      "UPDATE protection_log SET timestamp = datetime('now'), action_taken = ?, notes = ?, print_id = ? WHERE id = ?"
+    ).run(entry.action_taken, entry.notes || null, entry.print_id || null, existing.id);
+  }
   return db.prepare(`INSERT INTO protection_log
     (printer_id, event_type, action_taken, print_id, notes)
     VALUES (?, ?, ?, ?, ?)`).run(

@@ -1936,6 +1936,21 @@ export function runMigrations() {
       } catch (e) { /* column already exists */ }
     }},
 
+    { version: 149, up: (db) => {
+      // Print Guard alerts never deduped, so a recurring condition stacked a
+      // new unresolved row every poll — the "Active alerts" list grew to
+      // dozens of identical entries (e.g. 36 filament-runout, 13 temp
+      // deviation). addProtectionLog now refreshes one row per ongoing issue;
+      // collapse the historical backlog the same way: keep the most recent
+      // unresolved alert per (printer, event_type) and resolve the rest.
+      try {
+        db.exec(`UPDATE protection_log SET resolved = 1, resolved_at = datetime('now')
+                 WHERE resolved = 0 AND id NOT IN (
+                   SELECT MAX(id) FROM protection_log WHERE resolved = 0
+                   GROUP BY printer_id, event_type)`);
+      } catch (e) { /* ignore */ }
+    }},
+
     { version: 146, up: (db) => {
       // Final composite-index pass — picks up the remaining tables that
       // EXPLAIN flagged with TEMP B-TREE: spool_events (per-spool and
