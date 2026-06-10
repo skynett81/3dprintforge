@@ -9540,6 +9540,39 @@ html.theme-transitioning *::after {
               transform 0.15s ease;
 }
 
+/* Sidebar quick-search — jump to any panel by typing. */
+.sidebar-search {
+  position: relative;
+  padding: 6px 12px 8px;
+}
+.sidebar-search > .bi-search {
+  position: absolute;
+  left: 23px;
+  top: calc(50% - 1px);
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.sidebar-search input {
+  width: 100%;
+  padding: 7px 10px 7px 30px;
+  background: var(--bg-tertiary, rgba(0,0,0,0.18));
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+.sidebar-search input::placeholder { color: var(--text-muted); }
+.sidebar-search input:focus {
+  outline: none;
+  border-color: var(--accent-blue, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.18);
+}
+/* Hide the box when the sidebar is collapsed to icons. */
+.app-sidebar.collapsed .sidebar-search,
+body.sidebar-collapse .sidebar-search { display: none; }
+
 /* Sidebar collapsed state — triggered by AdminLTE sidebar-mini (body.sidebar-collapse)
    or legacy .app-sidebar.collapsed class */
 .app-sidebar.collapsed,

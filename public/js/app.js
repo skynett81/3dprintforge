@@ -793,6 +793,46 @@ window.toggleSidebarSection = function(name) {
   if (link) link.click();
 };
 
+// Live-filter the sidebar so the user can jump to any of the ~48 panels by
+// typing, instead of hunting through nine collapsible groups. Matching items
+// stay visible and their group auto-expands; empty groups hide. Clearing the
+// box restores the user's saved expand/collapse state.
+window.filterSidebar = function(query) {
+  const q = (query || '').toLowerCase().trim();
+  const menu = document.querySelector('.sidebar-menu');
+  if (!menu) return;
+  menu.querySelectorAll(':scope > li.nav-item').forEach(li => {
+    const sub = li.querySelector(':scope > ul.nav-treeview');
+    if (!sub) {
+      // Flat top-level entry (Dashboard).
+      const txt = (li.textContent || '').toLowerCase();
+      li.style.display = (!q || txt.includes(q)) ? '' : 'none';
+      return;
+    }
+    let anyMatch = false;
+    sub.querySelectorAll(':scope > li.nav-item').forEach(child => {
+      const m = !q || (child.textContent || '').toLowerCase().includes(q);
+      child.style.display = m ? '' : 'none';
+      if (m) anyMatch = true;
+    });
+    if (q) {
+      li.style.display = anyMatch ? '' : 'none';
+      if (anyMatch) { li.classList.add('menu-open'); sub.style.display = 'block'; }
+    } else {
+      li.style.display = '';
+    }
+  });
+  if (!q) {
+    // Collapse everything, then restore the state the user had open.
+    document.querySelectorAll('.sidebar-section').forEach(s => {
+      s.classList.remove('menu-open');
+      const sub = s.querySelector(':scope > .nav-treeview');
+      if (sub) sub.style.display = '';
+    });
+    try { _restoreSidebarSections(); } catch (_) {}
+  }
+};
+
 function _saveSidebarSections() {
   try {
     const sectionState = {};

@@ -103,6 +103,11 @@
       <!-- Sidebar Wrapper (AdminLTE required) -->
       <div class="sidebar-wrapper">
       <nav class="mt-2" id="sidebar-nav" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-search">
+          <i class="bi bi-search"></i>
+          <input type="search" id="sidebar-search-input" placeholder="Search…" aria-label="Search navigation" autocomplete="off"
+                 oninput="filterSidebar(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSidebar('');this.blur();}">
+        </div>
         <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
 
           <!-- Dashboard -->
