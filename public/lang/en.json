@@ -1855,6 +1855,7 @@
     "cloud_login": "Log In",
     "cloud_logging_in": "Logging in...",
     "cloud_verify_desc": "A verification code has been sent to your email. Enter it below.",
+    "cloud_tfa_desc": "Two-factor authentication is enabled. Enter the 6-digit code from your authenticator app.",
     "cloud_verify": "Verify",
     "cloud_verifying": "Verifying...",
     "cloud_verify_failed": "Invalid verification code. Try again.",

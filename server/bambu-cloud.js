@@ -4,8 +4,45 @@
  */
 import https from 'node:https';
 import { saveSecretsToEnv, config } from './config.js';
+import { createLogger } from './logger.js';
 
+const log = createLogger('bambu-cloud');
 const API_BASE = 'api.bambulab.com';
+// Authenticator-app 2FA ("tfa") is verified on the web sign-in host, which
+// sits behind Cloudflare and challenges obviously-non-browser clients — so a
+// realistic User-Agent is required.
+const TFA_HOST = 'bambulab.com';
+const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
+// Summarise a login response without leaking token material — strings longer
+// than 16 chars (tokens/keys) are replaced with their length.
+function _shape(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    out[k] = (typeof v === 'string' && v.length > 16) ? `<${v.length} chars>` : v;
+  }
+  return JSON.stringify(out);
+}
+
+// Read a cookie value from a Set-Cookie header array (each entry starts with
+// "name=value; …").
+function _cookieVal(setCookie, name) {
+  for (const c of (setCookie || [])) {
+    const m = c.match(new RegExp('^' + name + '=([^;]+)'));
+    if (m) return decodeURIComponent(m[1]);
+  }
+  return '';
+}
+
+// Seconds until a JWT expires, or a 90-day default if undecodable.
+function _jwtExpiresIn(jwt) {
+  try {
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString('utf8'));
+    if (payload.exp) return Math.max(60, payload.exp - Math.floor(Date.now() / 1000));
+  } catch { /* not a decodable JWT */ }
+  return 7776000;
+}
 
 export class BambuCloud {
   constructor() {
@@ -13,6 +50,7 @@ export class BambuCloud {
     this._refreshToken = config.bambuCloud?.refreshToken || '';
     this._email = config.bambuCloud?.accountEmail || '';
     this._expiresAt = config.bambuCloud?.tokenExpiresAt || 0;
+    this._tfaKey = ''; // ephemeral — set during an in-progress 2FA login
     this._refreshTimer = null;
     this._startAutoRefresh();
   }
@@ -87,12 +125,24 @@ export class BambuCloud {
       return { needsVerification: true };
     }
 
+    // Authenticator-app 2FA — the account has TOTP enabled. Bambu returns a
+    // tfaKey here; the code is verified against the web sign-in host.
+    if (res.loginType === 'tfa') {
+      this._email = email;
+      this._tfaKey = res.tfaKey || '';
+      return { needsTfa: true };
+    }
+
     if (res.accessToken) {
       this._saveToken(email, res);
       return { ok: true, email };
     }
 
-    throw new Error(res.message || 'Login failed');
+    // Unrecognised 200-response — log its shape (no token material) so we can
+    // see what Bambu actually returned (e.g. an authenticator-app 2FA flow
+    // the code doesn't yet handle).
+    log.warn('Login: unrecognised response shape: ' + _shape(res));
+    throw new Error(res.message || res.error || 'Login failed');
   }
 
   /**
@@ -111,6 +161,43 @@ export class BambuCloud {
     }
 
     throw new Error(res.message || 'Verification failed');
+  }
+
+  /**
+   * Step 2 (authenticator-app 2FA): submit the 6-digit TOTP code from the
+   * user's authenticator app. Verified against the web sign-in host, which
+   * returns the access token as a Set-Cookie (token=…) rather than JSON.
+   * Returns { ok: true, email } on success.
+   */
+  async verifyTfa(code) {
+    if (!this._tfaKey) throw new Error('No 2FA session in progress — please log in again.');
+
+    const res = await this._rawRequest(TFA_HOST, '/api/sign-in/tfa', 'POST',
+      { tfaKey: this._tfaKey, tfaCode: String(code).trim() },
+      { 'Origin': `https://${TFA_HOST}`, 'Referer': `https://${TFA_HOST}/en/sign-in` });
+
+    const setCookie = res.headers['set-cookie'] || [];
+    const token = _cookieVal(setCookie, 'token') || res.json?.accessToken || res.json?.token || '';
+
+    if (!token) {
+      // Bambu reports a bad/expired code as JSON { code, error }.
+      if (res.json?.error || res.json?.message) {
+        throw new Error(res.json.error || res.json.message);
+      }
+      // Otherwise the success shape differs from what we expected — log it
+      // (no token material) so we can adapt, and fail clearly.
+      log.warn('TFA verify: no token. status=' + res.statusCode + ' set-cookie=' +
+        JSON.stringify(setCookie.map(c => c.split('=')[0])) + ' body=' + _shape(res.json || {}));
+      throw new Error(res.statusCode >= 400 ? `2FA failed (HTTP ${res.statusCode})` : '2FA: no token returned');
+    }
+
+    this._tfaKey = '';
+    this._saveToken(this._email, {
+      accessToken: token,
+      refreshToken: _cookieVal(setCookie, 'refreshToken') || res.json?.refreshToken || '',
+      expiresIn: _jwtExpiresIn(token),
+    });
+    return { ok: true, email: this._email };
   }
 
   /**
@@ -138,6 +225,7 @@ export class BambuCloud {
     this._refreshToken = '';
     this._email = '';
     this._expiresAt = 0;
+    this._tfaKey = '';
     if (this._refreshTimer) clearInterval(this._refreshTimer);
     saveSecretsToEnv({
       BAMBU_CLOUD_ACCESS_TOKEN: '',
@@ -511,9 +599,45 @@ export class BambuCloud {
   }
 
   /** HTTPS request helper. Returns parsed JSON body. */
+  // Low-level request that resolves the full response (status + headers +
+  // parsed/raw body) — needed for the 2FA flow, where the token comes back in
+  // a Set-Cookie header rather than the JSON body. Never rejects on HTTP
+  // status; only on transport errors/timeouts.
+  _rawRequest(hostname, path, method, body, extraHeaders = {}) {
+    return new Promise((resolve, reject) => {
+      const headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': BROWSER_UA,
+        'Accept': 'application/json, text/plain, */*',
+        ...extraHeaders,
+      };
+      const postData = body ? JSON.stringify(body) : null;
+      if (postData) headers['Content-Length'] = Buffer.byteLength(postData);
+
+      const req = https.request({ hostname, port: 443, path, method, headers }, (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8');
+          let json = null;
+          try { json = JSON.parse(raw); } catch { /* non-JSON (e.g. HTML) */ }
+          resolve({ statusCode: res.statusCode, headers: res.headers, json, raw });
+        });
+      });
+      req.on('error', reject);
+      req.setTimeout(15000, () => { req.destroy(); reject(new Error('Request timeout')); });
+      if (postData) req.write(postData);
+      req.end();
+    });
+  }
+
   _request(method, path, body, token) {
     return new Promise((resolve, reject) => {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': BROWSER_UA,
+        'Accept': 'application/json, text/plain, */*',
+      };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const postData = body ? JSON.stringify(body) : null;

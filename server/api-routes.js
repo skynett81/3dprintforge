@@ -819,6 +819,25 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    if (method === 'POST' && path === '/api/bambu-cloud/verify-tfa') {
+      if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
+      const clientIp = _getClientIp(req);
+      if (!checkLoginRate(clientIp)) {
+        return sendJson(res, { error: 'Too many login attempts. Try again later.' }, 429);
+      }
+      return readBody(req, res, async (body) => {
+        const { code } = body;
+        if (!code) return sendJson(res, { error: 'Code required' }, 400);
+        try {
+          const result = await _bambuCloud.verifyTfa(code);
+          sendJson(res, result);
+        } catch (e) {
+          log.warn('Bambu Cloud 2FA verify failed: ' + e.message);
+          sendJson(res, { error: e.message }, 401);
+        }
+      });
+    }
+
     if (method === 'GET' && path === '/api/bambu-cloud/printers') {
       if (!_bambuCloud) return sendJson(res, { error: 'Cloud not available' }, 503);
       if (!_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);

@@ -2061,6 +2061,21 @@
     setTimeout(() => { const c = document.getElementById('cloud-code'); if (c) c.focus(); }, 50);
   }
 
+  // Authenticator-app 2FA (TOTP) — distinct from the email verification code.
+  function _renderCloudTfaForm(el) {
+    el.innerHTML = `
+      <p style="font-size:0.85rem;margin:0 0 0.5rem;color:var(--text-primary)">${t('settings.cloud_tfa_desc', 'Two-factor authentication is enabled. Enter the 6-digit code from your authenticator app.')}</p>
+      <div style="display:flex;gap:0.5rem;align-items:flex-end">
+        <div class="form-group" style="margin:0;flex:1;max-width:200px">
+          <input class="form-input" id="cloud-tfa-code" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="font-size:1rem;letter-spacing:0.2em;text-align:center">
+        </div>
+        <button class="form-btn" data-ripple onclick="bambuCloudVerifyTfa()" id="cloud-tfa-btn">${t('settings.cloud_verify', 'Verify')}</button>
+        <button class="form-btn form-btn-secondary" data-ripple onclick="_resetCloudLogin()">${t('settings.cancel', 'Cancel')}</button>
+      </div>
+      <div id="cloud-error" style="margin-top:0.35rem"></div>`;
+    setTimeout(() => { const c = document.getElementById('cloud-tfa-code'); if (c) c.focus(); }, 50);
+  }
+
   function _renderCloudConnected(el) {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
@@ -2099,6 +2114,11 @@
         _cloudState = 'verify';
         const el = document.getElementById('cloud-content');
         if (el) _renderCloudVerifyForm(el);
+      } else if (data.needsTfa) {
+        _cloudEmail = email;
+        _cloudState = 'tfa';
+        const el = document.getElementById('cloud-content');
+        if (el) _renderCloudTfaForm(el);
       } else if (data.ok) {
         _cloudEmail = data.email || email;
         _cloudState = 'connected';
@@ -2152,6 +2172,38 @@
     } catch {
       if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed')}</span>`;
       if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify'); }
+    }
+  };
+
+  window.bambuCloudVerifyTfa = async function() {
+    const code = document.getElementById('cloud-tfa-code')?.value.trim();
+    const errEl = document.getElementById('cloud-error');
+    if (!code) return;
+
+    const btn = document.getElementById('cloud-tfa-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.cloud_verifying', 'Verifying…'); }
+
+    try {
+      const res = await fetch('/api/bambu-cloud/verify-tfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        _cloudEmail = data.email || _cloudEmail;
+        _cloudState = 'connected';
+        const el = document.getElementById('cloud-content');
+        if (el) _renderCloudConnected(el);
+      } else {
+        const reason = _escapeCloudErr(data.error) || t('settings.cloud_verify_failed', 'Verification failed');
+        if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${reason}</span>`;
+        if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify', 'Verify'); }
+      }
+    } catch {
+      if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed', 'Verification failed')}</span>`;
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify', 'Verify'); }
     }
   };
 
