@@ -2540,6 +2540,7 @@
     "temperatures": "Temperatures",
     "fan_speeds": "Fan Speeds",
     "speed_mag": "Speed Magnitude",
+    "speed_short": "Speed",
     "print_progress": "Print Progress",
     "heatbreak": "Heatbreak fan",
     "live_values": "Live Values",

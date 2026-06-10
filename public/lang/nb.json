@@ -2509,6 +2509,7 @@
     "temperatures": "Temperaturer",
     "fan_speeds": "Viftehastigheter",
     "speed_mag": "Hastighetsmåling",
+    "speed_short": "Hastighet",
     "print_progress": "Utskriftsfremdrift",
     "heatbreak": "Heatbreak-vifte",
     "live_values": "Sanntidsverdier",
