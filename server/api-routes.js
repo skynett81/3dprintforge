@@ -861,6 +861,21 @@ export async function handleApiRequest(req, res) {
             alreadyAdded: existing.includes(p.serial)
           };
         });
+
+        // The Bambu cloud never reports a LAN IP, and SSDP multicast often
+        // doesn't surface the printer. As a fallback, actively sweep the local
+        // subnet for Bambu's MQTTS port and match each still-IP-less printer by
+        // its (cloud-provided) access code — each printer validates its own.
+        const needIp = printers.filter(p => !p.ip && p.accessCode);
+        if (needIp.length && _discovery?.scanBambuActive) {
+          try {
+            const candidates = await _discovery.scanBambuActive();
+            for (const p of needIp) {
+              const ip = await _discovery.matchBambuIp(p.accessCode, candidates);
+              if (ip) p.ip = ip;
+            }
+          } catch { /* best-effort auto-IP */ }
+        }
         sendJson(res, { printers });
       } catch (e) {
         sendJson(res, { error: e.message }, 500);

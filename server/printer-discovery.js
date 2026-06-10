@@ -3,6 +3,8 @@
  * Uses node:dgram (UDP) — no external dependencies.
  */
 import dgram from 'node:dgram';
+import net from 'node:net';
+import os from 'node:os';
 import mqtt from 'mqtt';
 
 const SSDP_ADDR = '239.255.255.250';
@@ -16,10 +18,85 @@ const MODEL_MAP = {
   'N1': 'P2S', 'N2S': 'P2S Combo', 'N7': 'P2S',
 };
 
+// Every IPv4 /24 this host is attached to, expanded to .1–.254 — the set of
+// addresses an active scan probes. Bounded to /24s so we never sweep a /16.
+function _localScanTargets() {
+  const ips = new Set();
+  for (const arr of Object.values(os.networkInterfaces())) {
+    for (const a of arr || []) {
+      if (a.family !== 'IPv4' || a.internal || a.netmask !== '255.255.255.0') continue;
+      const base = a.address.split('.').slice(0, 3).join('.');
+      for (let h = 1; h <= 254; h++) ips.add(`${base}.${h}`);
+    }
+  }
+  return [...ips];
+}
+
+// Resolve true if a TCP connection to ip:port completes within `ms`.
+function _tcpOpen(ip, port, ms) {
+  return new Promise((resolve) => {
+    const s = new net.Socket();
+    let done = false;
+    const fin = (v) => { if (done) return; done = true; try { s.destroy(); } catch { /* ignore */ } resolve(v); };
+    s.setTimeout(ms);
+    s.once('connect', () => fin(true));
+    s.once('timeout', () => fin(false));
+    s.once('error', () => fin(false));
+    s.connect(port, ip);
+  });
+}
+
+// Resolve true if a Bambu printer at `ip` accepts this access code over MQTTS.
+// Each printer validates its own access code, so a successful CONNACK uniquely
+// identifies the printer that owns the code.
+function _mqttAccessOk(ip, accessCode, ms) {
+  return new Promise((resolve) => {
+    let done = false;
+    const fin = (v) => { if (done) return; done = true; try { c.end(true); } catch { /* ignore */ } resolve(v); };
+    const c = mqtt.connect(`mqtts://${ip}:8883`, {
+      username: 'bblp', password: accessCode,
+      rejectUnauthorized: false, connectTimeout: ms, reconnectPeriod: 0,
+    });
+    c.on('connect', () => fin(true));
+    c.on('error', () => fin(false));
+    setTimeout(() => fin(false), ms + 500);
+  });
+}
+
 export class PrinterDiscovery {
   constructor() {
     this._cache = [];
     this._scanning = false;
+  }
+
+  /**
+   * Active TCP sweep of the local /24(s) for Bambu's MQTTS port (8883).
+   * More reliable than SSDP multicast, which many networks/printers (and the
+   * Bambu cloud, which never reports a LAN IP) don't surface. Returns the IPs
+   * with 8883 open.
+   */
+  async scanBambuActive(perProbeMs = 700) {
+    const targets = _localScanTargets();
+    const open = [];
+    const BATCH = 64;
+    for (let i = 0; i < targets.length; i += BATCH) {
+      const slice = targets.slice(i, i + BATCH);
+      await Promise.all(slice.map((ip) => _tcpOpen(ip, 8883, perProbeMs).then((ok) => { if (ok) open.push(ip); })));
+    }
+    return open;
+  }
+
+  /**
+   * Find which candidate IP hosts the Bambu printer with this access code.
+   * Returns the matching IP, or '' if none. Capped at 12 candidates so a busy
+   * subnet can't make this run unbounded.
+   */
+  async matchBambuIp(accessCode, candidateIps, perMs = 3000) {
+    if (!accessCode) return '';
+    for (const ip of candidateIps.slice(0, 12)) {
+      if (await _mqttAccessOk(ip, accessCode, perMs)) return ip;
+    }
+    return '';
   }
 
   /**
