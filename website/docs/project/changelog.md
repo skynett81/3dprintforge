@@ -4,6 +4,73 @@ All notable changes to 3DPrintForge.
 
 ---
 
+## v1.1.24 — Spoolman server, OBS overlay, pressure-advance pattern calibration & a big QoL/accessibility pass (2026-06-11)
+
+A large quality release. 3DPrintForge becomes a drop-in Spoolman server, ships an embeddable OBS/kiosk streaming overlay, adds the line-pattern pressure-advance calibration method, and lands a broad quality-of-life, undo-safety and accessibility sweep across the whole UI — plus authenticator-app 2FA for Bambu Cloud login and several real fixes for features that silently did nothing.
+
+### Spoolman server
+- Serve a Spoolman-compatible v1 API so Klipper front-ends (Mainsail / Fluidd) can read, consume and now fully manage your inventory: create / update / delete spools, filaments and vendors, plus `/use` weight/length reporting
+- Settings toggle to enable the Spoolman server, with copy-to-clipboard for the base URL
+
+### Streaming overlay
+- Embeddable OBS / kiosk streaming overlay per printer (camera + live status), with query options for camera, status-bar position and background
+- "Streaming overlay" entry point from the camera view to grab the URL
+
+### Calibration
+- Pressure-advance / linear-advance **pattern (line) generator** — the Sineos/Ellis method, complementing the existing tuning-tower ramp; each row prints a slow→fast→slow line at a stepped PA value so you pick the cleanest one
+- "Read the guide" links from the pressure-advance, retraction, flow and first-layer tests to Andrew Ellis' Print Tuning Guide
+
+### Quality of life
+- Undo-on-delete across the whole app — spools, queues, printers, filament profiles, tags, backups, KB articles, screenshots, scheduled events, library files, CRM customers, orders and AI jobs (two of these — backups and screenshots — previously deleted on a single click with no confirmation)
+- Sidebar quick-search to jump to any panel, plus a "Pinned" section for favourite panels
+- One-time "What's new" feature-discovery modal and a header button to reveal the keyboard-shortcut help
+- Compact-density toggle, "continue where you left off", persisted filament inventory filters/sort, sticky table headers, auto-focus on the first field when a dialog opens, copy-to-clipboard helpers and hover-for-exact relative timestamps
+
+### UI restructure & fixes
+- Split the overloaded Library and System menus into Prepare + Library and System + Admin
+- Cleaner dashboard idle state (no stale progress ring) and a more legible top stats strip
+- Two-up filament spool cards on phones, content-clipping fixes from a full layout scan, a clean "no preview" history placeholder, de-duplicated print-guard alerts, and a corrected queue counter (counts pending jobs, not queue containers)
+
+### Accessibility
+- Accessible names on icon-only buttons, focus trap and focus restore for dialogs, and a focusable skip-link target
+- WCAG AA contrast: raised muted-text contrast (axe-core audited) and added darker text variants for the accent colours used as text, while surfaces keep the brand colour
+
+### Camera
+- Preserve aspect ratio when transcoding the RTSP stream; the REC badge shows the selected stream resolution rather than the native capture
+
+### Bambu Cloud & discovery
+- Authenticator-app 2FA (TOTP) login support, with the real login/verify error surfaced instead of a generic message
+- Auto-fill the LAN IP for cloud-imported Bambu printers; network discovery no longer hangs
+
+### Fixes for features that silently did nothing
+- **Smart ETA** now actually learns — the slicer-vs-actual recorder was never wired into print completion
+- **Input Shaper Wizard** accepts real Klipper resonance CSVs (the parser expected the wrong column names)
+- **Camera usage analytics** are recorded — the counters were never called
+
+### Maintenance
+- Delete maintenance-log entries and spool core-weight catalog entries, completing their CRUD
+
+## v1.1.23 — Waste analytics, colour-order optimiser & slicer fleet control (2026-06-09)
+
+This release lands purge/waste analytics, a lowest-purge colour-ordering recommender, and a full remote-control surface for the 3DPrintForge Slicer to drive fleet printers. From this release the 3DPrintForge Slicer and Server share one product version and are released together.
+
+### Waste analytics
+- Tool-changer-aware purge accounting for multi-material prints
+- Colour-aware single-nozzle purge accounting
+- Smart colour-ordering recommender that finds the lowest-purge filament sequence, with a dedicated panel
+
+### Slicer ⇄ fleet control
+- Live printer state: `GET /api/printers/:id/state` (read-only)
+- Print control: `POST /api/printers/:id/control` (pause / resume / stop)
+- Rich motion control: home / move / extrude / temperature / tool change
+- Fan, light and speed actions for Bambu + Moonraker printers
+- Filament load / unload / change for G-code printers
+- `GET /api/printers` exposes vendor and online/offline state
+- On-demand profile push: `POST /api/slicer/profiles/push`
+
+### Fixes
+- Preserve printer access code on edit (issue #12 follow-up)
+
 ## v1.1.22 — Inventory weight accuracy, DB performance, TOTP login & security hardening (2026-06-06)
 
 A maintenance-and-accuracy release. The headline work is a top-to-bottom pass on AMS/spool weight tracking (direct load-cell readings, recalibration from snapshots + history, sensor-floor guards), a sweep of composite database indexes that removes temp-b-tree sorts from the hottest queries, TOTP two-factor at the login screen, and a security/dependency hardening pass that clears all open npm audit advisories. Also fixes GitHub issue #12 — per-printer settings that wouldn't save.
