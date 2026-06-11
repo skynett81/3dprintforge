@@ -86,6 +86,10 @@
     setTimeout(show, 1500);
   }
 
+  // Manual entry point (navbar "What's new" button) — re-opens the modal any
+  // time, regardless of whether it has already been auto-shown/dismissed.
+  window.showWhatsNew = show;
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
