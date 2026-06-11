@@ -1021,6 +1021,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (el && d.current) el.textContent = `v${d.current}`;
   }).catch(() => {});
 
+  // Toggle for "continue where you left off" (read in the no-hash branch below)
+  window.setRestoreLastPanel = function (v) { try { localStorage.setItem('restore-last-panel', v ? '1' : '0'); } catch (_) { /* ignore */ } };
+
   // Restore panel from URL hash on load, fallback to localStorage
   const initHash = location.hash.replace('#', '');
   const initBase = initHash.split('/')[0];
@@ -1031,8 +1034,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       openPanel(initBase, true); // skipHash=true to preserve full path
       if (initHash !== initBase) history.replaceState(null, '', '#' + initHash);
     }, 200);
+  } else if (!initHash) {
+    // No hash = stay on dashboard, unless the user opted into "continue where
+    // you left off" — then reopen the last-viewed panel.
+    try {
+      if (localStorage.getItem('restore-last-panel') === '1') {
+        const last = localStorage.getItem('lastPanel');
+        if (last && last !== 'dashboard' && PANEL_TITLES[last]) setTimeout(() => openPanel(last), 200);
+      }
+    } catch (_) { /* ignore */ }
   }
-  // No hash = stay on dashboard (don't redirect to lastPanel)
 
   // ESC key handler
   document.addEventListener('keydown', (e) => {

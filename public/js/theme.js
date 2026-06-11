@@ -332,10 +332,18 @@
   };
 
   // Compact mode toggle
+  function _syncDensityBtn(isCompact) {
+    const btn = document.getElementById('density-toggle-btn');
+    if (btn) btn.classList.toggle('density-active', isCompact);
+  }
   window.toggleCompactMode = function() {
     const isCompact = document.body.classList.toggle('compact-mode');
     try { localStorage.setItem('compact-mode', isCompact ? '1' : '0'); } catch (_) {}
+    _syncDensityBtn(isCompact);
   };
+  // Reflect the persisted state on the header button once the DOM is ready.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => _syncDensityBtn(document.body.classList.contains('compact-mode')));
+  else _syncDensityBtn(document.body.classList.contains('compact-mode'));
 
   // Dashboard columns toggle (2 or 3) — default is 2 for 24-27" monitors
   window.setDashboardColumns = function(cols) {

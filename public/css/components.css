@@ -2554,6 +2554,10 @@
   transform: scale(1.15);
 }
 
+/* Density (compact-mode) header toggle — highlighted when active */
+#density-toggle-btn.density-active,
+#density-toggle-btn.density-active i { color: var(--accent-green) !important; }
+
 .camera-skeleton {
   position: absolute;
   inset: 0;

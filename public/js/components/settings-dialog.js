@@ -465,6 +465,14 @@
       h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">' + (t('settings.compact_mode_desc', 'Denser layout with smaller spacing')) + '</span>';
       h += '</div></div></div>';
 
+      // Continue where you left off
+      h += '<div class="settings-card mt-md"><div class="settings-row">';
+      h += '<div class="settings-label">' + (t('settings.restore_panel', 'Continue where you left off')) + '</div>';
+      h += '<div class="settings-control">';
+      h += '<label class="toggle-switch"><input type="checkbox" id="restore-panel-toggle" ' + (function () { try { return localStorage.getItem('restore-last-panel') === '1' ? 'checked' : ''; } catch (e) { return ''; } })() + ' onchange="setRestoreLastPanel(this.checked)"><span class="toggle-slider"></span></label>';
+      h += '<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">' + (t('settings.restore_panel_desc', 'Reopen the last panel you viewed on reload, instead of the dashboard')) + '</span>';
+      h += '</div></div></div>';
+
       // Dashboard columns selector
       const curCols = typeof getDashboardColumns === 'function' ? getDashboardColumns() : 3;
       h += '<div class="settings-card mt-md">';
