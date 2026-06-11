@@ -30,7 +30,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **590+ API endpoints** — full REST API with OpenAPI docs at `/api/docs`
 - **English UI** — entire application in English, documentation site available in English and Norwegian
 - **Docusaurus documentation** — available at `/docs/` and on GitHub Pages
-- **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 11 npm packages
+- **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 12 npm packages
 - **Desktop app (Electron)** — optional native desktop build for Linux (AppImage, deb, rpm, Flatpak, tar.gz), Windows, macOS with system tray, native notifications, auto-updater, and auto-start at login
 
 ---
@@ -393,7 +393,7 @@ Configure in **Settings > Notifications** in the dashboard:
 | Pushover | API token + user key |
 | SMS | Twilio or generic HTTP gateway |
 
-14 events available including print status, errors, maintenance, queue, and filament alerts. Quiet hours supported.
+13 events available including print status, errors, maintenance, queue, and filament alerts. Quiet hours supported.
 
 ---
 

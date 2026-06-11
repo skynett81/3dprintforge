@@ -103,7 +103,7 @@ Complete feature list for 3DPrintForge v1.1.16.
 | **Pushover** | API token + user key |
 | **SMS** | Twilio or generic HTTP SMS gateway |
 
-14 events: print started, finished, failed, cancelled, printer error, maintenance due, bed cooled, update available, protection alert, drying due, filament low stock, queue item started/completed/failed, queue completed.
+13 events: print started, finished, failed, cancelled, printer error, maintenance due, bed cooled, drying due, filament low stock, queue item started/completed/failed, queue completed.
 
 Quiet hours support — no notifications during specified time window.
 
@@ -137,7 +137,7 @@ Quiet hours support — no notifications during specified time window.
 - **Layout lock** — drag-and-drop module ordering in all panels
 - **Demo mode** — 3 mock printers for testing without hardware
 - **Pterodactyl / wisp.gg** — ready-made egg file for game panel hosting
-- **HMS error database** — 268 error codes with descriptions and wiki links
+- **HMS error database** — 269 error codes with descriptions and wiki links
 
 ## Model Forge (51 tools)
 
@@ -174,7 +174,7 @@ Quiet hours support — no notifications during specified time window.
 
 ## Security
 
-16 hardening improvements (CIS/NIS2 compliant):
+10 hardening improvements (CIS/NIS2 compliant):
 
 - **TOFU cert pinning** — Trust-on-first-use certificate pinning for MQTT connections
 - **First-message WebSocket authentication** — secure WS connection from first message
