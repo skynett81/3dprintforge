@@ -733,11 +733,24 @@
 
   // ---- Delete ----
   window.kbDeleteItem = function(section, id) {
+    document.querySelectorAll('.kb-detail-overlay').forEach(el => el.remove());
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('kb.deleted', 'Article deleted'),
+        commit: async () => {
+          try {
+            await fetch(`/api/kb/${section}/${id}`, { method: 'DELETE' });
+            await loadKnowledgePanel();
+          } catch (e) {
+            if (typeof showToast === 'function') showToast(e.message, 'error');
+          }
+        },
+      });
+    }
     if (typeof confirmAction === 'function') {
       confirmAction(t('kb.confirm_delete'), async () => {
         try {
           await fetch(`/api/kb/${section}/${id}`, { method: 'DELETE' });
-          document.querySelectorAll('.kb-detail-overlay').forEach(el => el.remove());
           if (typeof showToast === 'function') showToast(t('kb.delete'), 'success');
           await loadKnowledgePanel();
         } catch (e) {

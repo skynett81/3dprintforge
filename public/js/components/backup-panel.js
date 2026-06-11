@@ -104,7 +104,7 @@
 
     // Bind delete buttons
     listEl.querySelectorAll('.backup-btn--delete').forEach(btn => {
-      btn.addEventListener('click', () => handleDelete(btn.dataset.filename));
+      btn.addEventListener('click', () => handleDelete(btn.dataset.filename, btn.closest('.backup-item')));
     });
   }
 
@@ -161,14 +161,21 @@
     }
   }
 
-  async function handleDelete(filename) {
-    try {
-      await deleteBackup(filename);
-      showStatus(t('backup.deleted_ok'), 'success');
-      await refreshList();
-    } catch (e) {
-      showStatus(e.message, 'error');
+  function handleDelete(filename, row) {
+    // Backup delete was a one-click immediate action with no confirm — an
+    // accidental click meant a lost backup. Route it through undo instead.
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('backup.deleted_ok', 'Backup deleted'),
+        delay: 7000,
+        onHide: () => { if (row) row.style.display = 'none'; },
+        onRestore: () => { if (row) row.style.display = ''; },
+        commit: async () => {
+          try { await deleteBackup(filename); await refreshList(); } catch (e) { showStatus(e.message, 'error'); }
+        },
+      });
     }
+    deleteBackup(filename).then(() => { showStatus(t('backup.deleted_ok'), 'success'); return refreshList(); }).catch(e => showStatus(e.message, 'error'));
   }
 
   function showRestoreConfirm(filename) {

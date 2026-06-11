@@ -3044,7 +3044,7 @@
       h += '<div class="inv-location-list">';
       for (const tag of _tags) {
         const dot = tag.color ? `<span class="fil-tag-dot" style="background:${esc(tag.color)}"></span>` : '';
-        h += `<div class="fil-tag-item">
+        h += `<div class="fil-tag-item" data-tag-id="${tag.id}">
           ${dot}
           <span style="flex:1"><strong>${esc(tag.name)}</strong> <span class="text-muted" style="font-size:0.75rem">(${esc(tag.category || 'custom')})</span></span>
           <span class="text-muted" style="font-size:0.75rem">${t('filament.tag_usage_count', { count: tag.usage_count || 0 })}</span>
@@ -3505,6 +3505,16 @@
   };
 
   window.deleteProfileItem = function(id) {
+    const card = document.querySelector(`.inv-profile-card[data-profile-id="${id}"]`);
+    document.querySelector('.ph-detail-overlay')?.remove();
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('filament.profile_deleted', 'Profile deleted'),
+        onHide: () => { if (card) card.style.display = 'none'; },
+        onRestore: () => { if (card) card.style.display = ''; },
+        commit: async () => { await fetch(`/api/inventory/filaments/${id}`, { method: 'DELETE' }); loadFilament(); },
+      });
+    }
     return confirmAction(t('filament.profile_delete_confirm'), async () => {
       await fetch(`/api/inventory/filaments/${id}`, { method: 'DELETE' });
       loadFilament();
@@ -6975,6 +6985,17 @@
 
   window.deleteTagItem = function(id) {
     const tag = _tags.find(t => t.id === id);
+    const row = document.querySelector(`.fil-tag-item[data-tag-id="${id}"]`);
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('filament.tag_deleted', 'Tag deleted'),
+        onHide: () => { if (row) row.style.display = 'none'; },
+        onRestore: () => { if (row) row.style.display = ''; },
+        commit: async () => {
+          try { await fetch(`/api/tags/${id}`, { method: 'DELETE' }); loadFilament(); } catch (e) { showToast(e.message, 'error'); }
+        },
+      });
+    }
     confirmAction(t('filament.tag_delete_confirm', { name: tag?.name || '' }), async () => {
       try {
         await fetch(`/api/tags/${id}`, { method: 'DELETE' });
