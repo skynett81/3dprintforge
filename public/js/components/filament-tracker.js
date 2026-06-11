@@ -193,7 +193,9 @@
   let _vendors = [];
   let _profiles = [];
   let _locations = [];
-  let _showArchived = false;
+  // Persisted inventory filters/sort (search stays transient on purpose).
+  const _F = (() => { try { return JSON.parse(localStorage.getItem('inv-filters') || '{}'); } catch (e) { return {}; } })();
+  let _showArchived = !!_F.archived;
   let _dryingSessions = [];
   let _dryingPresets = [];
   let _dryingStatus = [];
@@ -204,14 +206,14 @@
   let _dryingHistory = [];
   let _dryHistoryFilter = { material: '', method: '' };
   let _dryHistorySort = 'date_desc';
-  let _filterMaterial = '';
-  let _filterVendor = '';
-  let _filterLocation = '';
-  let _filterPrinter = 'all';
-  let _filterFavorites = false;
-  let _filterColorFamily = '';
-  let _filterTag = '';
-  let _filterCategory = '';
+  let _filterMaterial = _F.material || '';
+  let _filterVendor = _F.vendor || '';
+  let _filterLocation = _F.location || '';
+  let _filterPrinter = _F.printer || 'all';
+  let _filterFavorites = !!_F.favorites;
+  let _filterColorFamily = _F.colorFamily || '';
+  let _filterTag = _F.tag || '';
+  let _filterCategory = _F.category || '';
   let _tags = [];
   let _viewMode = localStorage.getItem('inv-view-mode') || 'grid';
   let _groupBy = localStorage.getItem('inv-group-by') || 'material';
@@ -331,7 +333,7 @@
     }
     return warnings;
   }
-  let _sortBy = 'recent';
+  let _sortBy = _F.sortBy || 'recent';
   let _searchQuery = '';
   let _currentPage = 0;
   let _pageSize = 50;
@@ -2010,7 +2012,21 @@
   }
 
   // ═══ Main render ═══
+  // Persist the current filter/sort selection so the inventory view sticks
+  // across sessions (search is intentionally left out — it stays transient).
+  function _saveFilters() {
+    try {
+      localStorage.setItem('inv-filters', JSON.stringify({
+        sortBy: _sortBy, material: _filterMaterial, vendor: _filterVendor,
+        location: _filterLocation, printer: _filterPrinter, favorites: _filterFavorites,
+        colorFamily: _filterColorFamily, tag: _filterTag, category: _filterCategory,
+        archived: _showArchived,
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
   async function loadFilament(initialTab) {
+    _saveFilters();
     const panel = document.getElementById('overlay-panel-body');
     if (!panel) return;
 
