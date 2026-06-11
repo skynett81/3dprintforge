@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, enrichTrayWithVariant } from './database.js';
+import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, saveFilamentEstimate, enrichTrayWithVariant } from './database.js';
 import { getDb } from './db/connection.js';
 import { recordCompletion as recordEtaCompletion } from './eta-predictor.js';
 import { flushVolumeMm3, mm3ToGrams } from './flush-calc.js';
@@ -744,6 +744,21 @@ export class PrintTracker {
         } catch (e) {
           log.warn('ETA recordCompletion failed: ' + e.message);
         }
+      }
+
+      // Persist the slicer's filament estimate so the estimate-vs-actual
+      // accuracy analytics work: updateFilamentAccuracy (below) and the
+      // /api/filament-analytics/accuracy endpoint need estimated_filament_g,
+      // and nothing else writes it.
+      try {
+        const sw = data._slicer_filament_weights;
+        if (sw != null) {
+          const arr = Array.isArray(sw) ? sw : [sw];
+          const estimatedG = arr.reduce((sum, x) => sum + (parseFloat(x) || 0), 0);
+          if (estimatedG > 0) saveFilamentEstimate(printHistoryId, estimatedG);
+        }
+      } catch (e) {
+        log.warn('saveFilamentEstimate failed: ' + e.message);
       }
 
       // Save thumbnail from cache if available
