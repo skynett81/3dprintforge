@@ -188,6 +188,10 @@ export function isPublicPath(pathname) {
   if (PUBLIC_PATHS.has(pathname)) return true;
   if (pathname.startsWith('/api/auth/')) return true;
   if (pathname === '/status.html' || pathname === '/api/status/public') return true;
+  // Embeddable streaming overlay (OBS / kiosk). The page itself is public so it
+  // can be dropped into a browser source; its data sources (camera + /ws) keep
+  // their own auth, so no printer state leaks just by serving the HTML shell.
+  if (pathname.startsWith('/overlay/')) return true;
   return false;
 }
 

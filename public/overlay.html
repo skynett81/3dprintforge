@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DPrintForge Overlay</title>
+<!--
+  Embeddable streaming overlay for OBS / kiosks / dashboards.
+  URL:  /overlay/<printerId>
+  Query params:
+    camera=false   status-only (no video)
+    bg=<css>       background colour (default transparent, e.g. bg=%23000 for black)
+    bar=top        put the status bar at the top instead of the bottom
+  Reuses the existing /api/printers/:id/stream.mjpeg feed and the /ws status hub.
+-->
+<style>
+  :root { --acc: #00ae42; --fg: #fff; --muted: rgba(255,255,255,0.7); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; color: var(--fg); }
+  #stage { position: relative; width: 100vw; height: 100vh; }
+  #cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  body.no-cam #cam { display: none; }
+  body.no-cam { background: transparent; }
+
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px;
+    background: linear-gradient(0deg, rgba(8,10,16,0.92) 0%, rgba(8,10,16,0.55) 70%, transparent 100%);
+    display: flex; flex-direction: column; gap: 8px; }
+  body.bar-top #bar { bottom: auto; top: 0;
+    background: linear-gradient(180deg, rgba(8,10,16,0.92) 0%, rgba(8,10,16,0.55) 70%, transparent 100%); }
+  body.no-cam #bar { position: static; height: 100%; justify-content: center;
+    background: rgba(8,10,16,0.92); }
+
+  .row { display: flex; align-items: center; gap: 12px; }
+  #name { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+  #state { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 9px; border-radius: 999px; background: var(--acc); color: #04130a; }
+  #state.idle { background: rgba(255,255,255,0.2); color: #fff; }
+  #state.pause { background: #f0883e; color: #1a0f02; }
+  #state.failed { background: #ff5252; color: #fff; }
+  #file { color: var(--muted); font-size: 0.82rem; margin-left: auto;
+    max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #progwrap { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.16); overflow: hidden; }
+  #prog { height: 100%; width: 0; background: var(--acc); border-radius: 999px; transition: width 0.5s ease; }
+
+  .stats { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
+  .stat { display: flex; align-items: baseline; gap: 5px; }
+  .stat b { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  #pct { color: var(--acc); }
+
+  #offline { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(8,10,16,0.85); font-size: 1rem; color: var(--muted); }
+  body.offline #offline { display: flex; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="cam" alt="">
+  <div id="offline">Waiting for printer…</div>
+  <div id="bar">
+    <div class="row">
+      <span id="name">—</span>
+      <span id="state" class="idle">—</span>
+      <span id="file"></span>
+    </div>
+    <div id="progwrap"><div id="prog"></div></div>
+    <div class="stats">
+      <div class="stat"><b id="pct">0%</b><span>done</span></div>
+      <div class="stat"><b id="layer">—</b><span>layer</span></div>
+      <div class="stat"><b id="eta">—</b><span>remaining</span></div>
+      <div class="stat"><b id="nozzle">—</b><span>nozzle</span></div>
+      <div class="stat"><b id="bed">—</b><span>bed</span></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var parts = location.pathname.split('/').filter(Boolean);
+  var pid = decodeURIComponent(parts[parts.length - 1] || '');
+  var q = new URLSearchParams(location.search);
+  if (q.get('camera') === 'false') document.body.classList.add('no-cam');
+  if (q.get('bar') === 'top') document.body.classList.add('bar-top');
+  if (q.get('bg')) document.body.style.background = q.get('bg');
+
+  var $ = function (id) { return document.getElementById(id); };
+  // /ws sends deltas (only changed fields), so accumulate them into one
+  // object and render that — same as the dashboard. Some printers wrap their
+  // state in { print: … } (Moonraker), others keep it at the root.
+  var acc = {};
+  function getPrint(o) { return (o && o.print) ? o.print : o; }
+  function g(a, b) { var v = acc[a]; if (v === undefined || v === null) v = acc[b]; return v; }
+
+  // Camera (MJPEG) — simplest embed; skipped in status-only mode
+  if (!document.body.classList.contains('no-cam') && pid) {
+    var cam = $('cam');
+    cam.src = '/api/printers/' + encodeURIComponent(pid) + '/stream.mjpeg?t=' + Date.now();
+    cam.onerror = function () { setTimeout(function () { cam.src = '/api/printers/' + encodeURIComponent(pid) + '/stream.mjpeg?t=' + Date.now(); }, 4000); };
+  }
+
+  // Printer name (best-effort; falls back to the id)
+  $('name').textContent = pid || '—';
+  fetch('/api/printers/' + encodeURIComponent(pid)).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (p) { if (p && p.name) $('name').textContent = p.name; }).catch(function () {});
+
+  var STATE = { RUNNING: 'running', PAUSE: 'pause', FINISH: 'idle', FAILED: 'failed', IDLE: 'idle', PREPARE: 'running', HEATING: 'running' };
+  function fmtEta(min) {
+    if (min == null || min <= 0 || !isFinite(min)) return '—';
+    var h = Math.floor(min / 60), m = Math.round(min % 60);
+    return h > 0 ? (h + 'h ' + m + 'm') : (m + 'm');
+  }
+  function temp(cur, tgt) {
+    if (cur == null) return '—';
+    return Math.round(cur) + '°' + (tgt > 0 ? '/' + Math.round(tgt) : '');
+  }
+
+  function render() {
+    var gs = acc.gcode_state || 'IDLE';
+    var stEl = $('state');
+    stEl.textContent = gs;
+    stEl.className = STATE[gs] || 'idle';
+    var pct = Math.max(0, Math.min(100, Math.round(acc.mc_percent || 0)));
+    $('pct').textContent = pct + '%';
+    $('prog').style.width = pct + '%';
+    var ln = acc.layer_num, lt = acc.total_layer_num;
+    $('layer').textContent = (lt > 0) ? ((ln || 0) + '/' + lt) : '—';
+    $('eta').textContent = fmtEta(acc.mc_remaining_time);
+    $('nozzle').textContent = temp(g('nozzle_temper', 'nozzle_temp'), g('nozzle_target_temper', 'nozzle_target'));
+    $('bed').textContent = temp(g('bed_temper', 'bed_temp'), g('bed_target_temper', 'bed_target'));
+    var file = acc.subtask_name || acc.gcode_file || '';
+    $('file').textContent = file ? file.replace(/\.(3mf|gcode)$/i, '') : '';
+    document.body.classList.remove('offline');
+  }
+
+  // Status WebSocket (shared dashboard hub)
+  var ws, retry = 0;
+  function connect() {
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onmessage = function (ev) {
+      try {
+        var msg = JSON.parse(ev.data);
+        if (msg.type === 'init' && msg.data) {
+          var states = msg.data.states || {};
+          if (states[pid]) { Object.assign(acc, getPrint(states[pid])); render(); }
+          var metas = msg.data.printers || {};
+          if (metas[pid] && metas[pid].name) $('name').textContent = metas[pid].name;
+        } else if (msg.type === 'status' && msg.data && msg.data.printer_id === pid) {
+          Object.assign(acc, getPrint(msg.data));
+          render();
+        }
+      } catch (e) { /* ignore */ }
+    };
+    ws.onopen = function () { retry = 0; };
+    ws.onclose = function () { document.body.classList.add('offline'); retry = Math.min(retry + 1, 6); setTimeout(connect, 1000 * retry); };
+    ws.onerror = function () { try { ws.close(); } catch (e) {} };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>

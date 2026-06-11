@@ -405,6 +405,21 @@ function handleRequest(req, res) {
     return handleApiRequest(req, res);
   }
 
+  // /overlay/<printerId> → embeddable OBS / kiosk overlay (camera + live status).
+  // The page reads the printer id from its own path; query params (camera=false,
+  // bar=top, bg=) tune it. Served as a static shell; data comes from /ws + mjpeg.
+  if (pathname.startsWith('/overlay/') && pathname.length > '/overlay/'.length) {
+    try {
+      const overlayPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'overlay.html');
+      const html = readFileSync(overlayPath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+      res.end(html);
+    } catch {
+      res.writeHead(404); res.end('overlay unavailable');
+    }
+    return;
+  }
+
   // /app → app download page with injected server URL
   if (pathname === '/app' || pathname === '/app.html') {
     try {
