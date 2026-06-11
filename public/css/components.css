@@ -2561,6 +2561,11 @@
 /* Relative timestamps reveal the exact time on hover */
 .rel-time[title], .error-card-ago[title] { cursor: help; }
 
+/* The sidebar chrome is dark in every theme, so its muted text needs the
+   light muted value even in light mode (where the global --text-muted is a
+   dark slate tuned for white content). Keeps sidebar labels above WCAG AA. */
+.app-sidebar { --text-muted: #9aa4b1; }
+
 .camera-skeleton {
   position: absolute;
   inset: 0;

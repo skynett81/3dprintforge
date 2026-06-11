@@ -55,6 +55,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "axe-core": "^4.12.1",
     "electron": "^41.5.0",
     "electron-builder": "^26.8.1",
     "electron-updater": "^6.8.3"
