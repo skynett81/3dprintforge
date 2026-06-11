@@ -64,3 +64,48 @@ describe('Spoolman-compatible API', () => {
     assert.strictEqual(handleSpoolmanApi('PUT', '/api/v1/spool/' + id + '/use', Q(), {}).status, 400);
   });
 });
+
+describe('Spoolman-compatible API — CRUD', () => {
+  before(() => { setupTestDb(); });
+
+  it('POST /spool creates a spool', () => {
+    const r = handleSpoolmanApi('POST', '/api/v1/spool', Q(), { initial_weight: 1000, used_weight: 0, location: 'B' });
+    assert.strictEqual(r.status, 201);
+    assert.ok(r.json.id > 0);
+    assert.strictEqual(r.json.remaining_weight, 1000);
+    assert.strictEqual(r.json.location, 'B');
+  });
+
+  it('PATCH /spool updates fields', () => {
+    const c = handleSpoolmanApi('POST', '/api/v1/spool', Q(), { initial_weight: 1000 });
+    const r = handleSpoolmanApi('PATCH', '/api/v1/spool/' + c.json.id, Q(), { location: 'Shelf X', archived: true, remaining_weight: 500 });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.json.location, 'Shelf X');
+    assert.strictEqual(r.json.archived, true);
+    assert.strictEqual(r.json.remaining_weight, 500);
+  });
+
+  it('DELETE /spool removes it', () => {
+    const c = handleSpoolmanApi('POST', '/api/v1/spool', Q(), { initial_weight: 1000 });
+    assert.strictEqual(handleSpoolmanApi('DELETE', '/api/v1/spool/' + c.json.id, Q(), {}).status, 200);
+    assert.strictEqual(handleSpoolmanApi('GET', '/api/v1/spool/' + c.json.id, Q(), null).status, 404);
+  });
+
+  it('POST /vendor + /filament create records a spool can reference', () => {
+    const v = handleSpoolmanApi('POST', '/api/v1/vendor', Q(), { name: 'Acme' });
+    assert.strictEqual(v.status, 201);
+    assert.strictEqual(v.json.name, 'Acme');
+    const f = handleSpoolmanApi('POST', '/api/v1/filament', Q(), { name: 'Acme PLA', material: 'PLA', vendor_id: v.json.id, color_hex: 'FF0000' });
+    assert.strictEqual(f.status, 201);
+    assert.strictEqual(f.json.material, 'PLA');
+    assert.ok(f.json.vendor && f.json.vendor.id === v.json.id);
+    const s = handleSpoolmanApi('POST', '/api/v1/spool', Q(), { filament_id: f.json.id, initial_weight: 1000 });
+    assert.strictEqual(s.status, 201);
+    assert.strictEqual(s.json.filament.id, f.json.id);
+  });
+
+  it('PATCH/DELETE return 404 for unknown ids', () => {
+    assert.strictEqual(handleSpoolmanApi('PATCH', '/api/v1/spool/999999', Q(), {}).status, 404);
+    assert.strictEqual(handleSpoolmanApi('DELETE', '/api/v1/filament/999999', Q(), {}).status, 404);
+  });
+});
