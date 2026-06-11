@@ -338,9 +338,10 @@
     'recent-events': (s, log) => {
       if (!log?.length) return '';
       let h = `<div class="card-title">${t('maintenance.recent_events')}</div>`;
-      h += `<table class="data-table"><thead><tr><th>${t('history.date')}</th><th>${t('maintenance.component')}</th><th>${t('maintenance.action')}</th><th>${t('maintenance.notes')}</th></tr></thead><tbody>`;
+      h += `<table class="data-table"><thead><tr><th>${t('history.date')}</th><th>${t('maintenance.component')}</th><th>${t('maintenance.action')}</th><th>${t('maintenance.notes')}</th><th></th></tr></thead><tbody>`;
       for (const e of log) {
-        h += `<tr><td>${formatDate(e.timestamp)}</td><td>${t('maintenance.comp_' + e.component)}</td><td>${t('maintenance.action_' + e.action)}</td><td>${e.notes || '--'}</td></tr>`;
+        const delLabel = t('settings.delete', 'Delete');
+        h += `<tr data-maint-log-id="${e.id}"><td>${formatDate(e.timestamp)}</td><td>${t('maintenance.comp_' + e.component)}</td><td>${t('maintenance.action_' + e.action)}</td><td>${e.notes || '--'}</td><td style="text-align:right"><button class="filament-delete-btn" onclick="window._maintDeleteLog(${e.id})" aria-label="${delLabel}" title="${delLabel}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td></tr>`;
       }
       h += '</tbody></table>';
       return h;
@@ -579,6 +580,21 @@
   };
 
   // ═══ Global API ═══
+  window._maintDeleteLog = function(id) {
+    const row = document.querySelector(`[data-maint-log-id="${id}"]`);
+    const commit = async () => {
+      try { await fetch(`/api/maintenance/log/${id}`, { method: 'DELETE' }); loadMaintenance(); } catch (e) { /* ignore */ }
+    };
+    if (typeof window.deleteWithUndo === 'function') {
+      window.deleteWithUndo({
+        message: t('maintenance.event_deleted', 'Maintenance entry deleted'),
+        onHide: () => { if (row) row.style.display = 'none'; },
+        onRestore: () => { if (row) row.style.display = ''; },
+        commit,
+      });
+    } else { commit(); }
+  };
+
   window.loadMaintenancePanel = loadMaintenance;
   window.changeMaintPrinter = function(value) { _selectedMaintPrinter = value || null; loadMaintenance(); };
   window.switchMaintTab = switchTab;

@@ -79,6 +79,11 @@ export function getMaintenanceLog(printerId, limit = 50) {
   return db.prepare('SELECT * FROM maintenance_log ORDER BY timestamp DESC LIMIT ?').all(limit);
 }
 
+export function deleteMaintenanceEvent(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM maintenance_log WHERE id = ?').run(id);
+}
+
 export function getMaintenanceSchedule(printerId) {
   const db = getDb();
   return db.prepare('SELECT * FROM maintenance_schedule WHERE printer_id = ? AND enabled = 1 ORDER BY component').all(printerId);
