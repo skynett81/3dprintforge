@@ -63,12 +63,27 @@
       // Completion percentage
       const completionPct = achievements.length > 0 ? Math.round(earned.length / achievements.length * 100) : 0;
 
-      // XP/level system (each earned achievement = 100 XP, progress gives partial)
-      const totalXP = achievements.reduce((sum, a) => sum + (a.earned ? 100 : Math.round(a.progress * 50)), 0);
-      const level = Math.floor(totalXP / 500) + 1;
-      const levelXP = totalXP % 500;
-      const levelTitles = ['Beginner', 'Novice', 'Apprentice', 'Maker', 'Craftsman', 'Expert', 'Master', 'Grandmaster', 'Legend', 'Mythic'];
-      const levelTitle = levelTitles[Math.min(level - 1, levelTitles.length - 1)];
+      // XP/level system — uses the per-achievement xp the backend defines
+      // (earned = full value; in-progress = a quarter, scaled by progress).
+      // Named tiers at increasing cumulative XP so a level reflects real effort.
+      const totalXP = achievements.reduce((sum, a) => {
+        const xp = a.xp || 100;
+        return sum + (a.earned ? xp : Math.round((a.progress || 0) * xp * 0.25));
+      }, 0);
+      const TIERS = [
+        { name: 'Beginner', xp: 0 }, { name: 'Novice', xp: 2000 }, { name: 'Apprentice', xp: 8000 },
+        { name: 'Maker', xp: 20000 }, { name: 'Craftsman', xp: 50000 }, { name: 'Expert', xp: 120000 },
+        { name: 'Master', xp: 280000 }, { name: 'Grandmaster', xp: 600000 }, { name: 'Legend', xp: 1200000 },
+        { name: 'Mythic', xp: 2500000 },
+      ];
+      let tierIdx = 0;
+      for (let i = TIERS.length - 1; i >= 0; i--) { if (totalXP >= TIERS[i].xp) { tierIdx = i; break; } }
+      const level = tierIdx + 1;
+      const levelTitle = TIERS[tierIdx].name;
+      const nextTierXp = tierIdx < TIERS.length - 1 ? TIERS[tierIdx + 1].xp : null;
+      const levelXP = totalXP - TIERS[tierIdx].xp;
+      const levelXPNeeded = nextTierXp ? (nextTierXp - TIERS[tierIdx].xp) : Math.max(1, levelXP);
+      const levelPct = nextTierXp ? Math.min(100, Math.round(levelXP / levelXPNeeded * 100)) : 100;
 
       let h = '<div class="achievements-container"><style>';
       h += `
@@ -144,8 +159,8 @@
         <div class="ach-level-badge">${level}</div>
         <div class="ach-level-info">
           <div class="ach-level-title">${esc(levelTitle)}</div>
-          <div class="ach-level-sub">${totalXP} XP \u2022 ${t('achievements.earned', 'Earned')}: ${earned.length}/${achievements.length}</div>
-          <div class="ach-xp-bar"><div class="ach-xp-fill" style="width:${(levelXP / 500) * 100}%"></div></div>
+          <div class="ach-level-sub">${totalXP.toLocaleString()} XP \u2022 ${nextTierXp ? (levelXP.toLocaleString() + ' / ' + levelXPNeeded.toLocaleString() + ' ' + t('achievements.to_next', 'to next tier')) : t('achievements.max_tier', 'Max tier reached')}</div>
+          <div class="ach-xp-bar"><div class="ach-xp-fill" style="width:${levelPct}%"></div></div>
         </div>
         <div style="text-align:center">
           <div style="font-size:1.4rem;font-weight:800;color: var(--accent-green-text)">${completionPct}%</div>
@@ -244,6 +259,24 @@
 
       h += '</div>';
       panel.innerHTML = h;
+
+      // Celebrate achievements earned since the last visit (client-side diff
+      // on the unique titles). Skips the very first visit so we don't toast a
+      // whole back-catalogue at once.
+      try {
+        const earnedKeys = earned.map(a => a.title);
+        const seen = JSON.parse(localStorage.getItem('ach-seen') || 'null');
+        if (Array.isArray(seen)) {
+          const seenSet = new Set(seen);
+          const fresh = earned.filter(a => !seenSet.has(a.title));
+          if (fresh.length && typeof showToast === 'function') {
+            const top = fresh.slice(0, 3).map(a => a.title).join(', ');
+            const extra = fresh.length > 3 ? ' +' + (fresh.length - 3) : '';
+            showToast(t('achievements.unlocked_toast', 'Achievement unlocked:') + ' ' + top + extra, 'success', 6000);
+          }
+        }
+        localStorage.setItem('ach-seen', JSON.stringify(earnedKeys));
+      } catch (e2) { /* ignore */ }
     } catch (e) {
       panel.innerHTML = emptyState({
         icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0114 0v2"/></svg>',

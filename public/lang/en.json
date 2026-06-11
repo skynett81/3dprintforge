@@ -3428,6 +3428,9 @@
   "achievements": {
     "title": "Achievements",
     "completion": "Completion",
+    "to_next": "to next tier",
+    "max_tier": "Max tier reached",
+    "unlocked_toast": "Achievement unlocked:",
     "earned": "Earned",
     "total": "Total",
     "cat_prints": "Prints",

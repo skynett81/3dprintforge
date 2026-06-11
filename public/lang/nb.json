@@ -3374,6 +3374,9 @@
   "achievements": {
     "title": "Prestasjoner",
     "completion": "FullfÃ¸ring",
+    "to_next": "til neste nivå",
+    "max_tier": "Høyeste nivå nådd",
+    "unlocked_toast": "Prestasjon låst opp:",
     "earned": "Opptjent",
     "total": "Totalt",
     "cat_prints": "Utskrifter",
