@@ -2535,6 +2535,25 @@
   transform: scale(1.15);
 }
 
+.camera-embed-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.camera-embed-btn:hover {
+  background: rgba(0, 174, 66, 0.3);
+  transform: scale(1.15);
+}
+
 .camera-skeleton {
   position: absolute;
   inset: 0;

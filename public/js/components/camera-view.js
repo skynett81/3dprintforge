@@ -245,6 +245,9 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
         </svg>
+      </button>
+      <button class="camera-embed-btn" title="${t('camera.overlay_title', 'Streaming overlay')}" aria-label="${t('camera.overlay_title', 'Streaming overlay')}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2a7 7 0 0 1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a7 7 0 0 1 0 8.5"/><path d="M19.1 4.9a13 13 0 0 1 0 14.2"/></svg>
       </button>`;
     overlay.querySelector('.camera-screenshot-btn').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -254,7 +257,52 @@
       e.stopPropagation();
       openFullscreen();
     });
+    overlay.querySelector('.camera-embed-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openOverlayEmbed(window.printerState?.getActivePrinterId?.());
+    });
     return overlay;
+  }
+
+  // "Streaming overlay" dialog — surfaces the embeddable /overlay/<id> URL
+  // (OBS browser source / kiosk) with a couple of toggles and a copy button.
+  function _openOverlayEmbed(pid) {
+    if (!pid || typeof window.openModal !== 'function') return;
+    const origin = location.origin;
+    const build = () => {
+      const cam = document.getElementById('ov-camera');
+      const bar = document.getElementById('ov-bartop');
+      const q = [];
+      if (cam && !cam.checked) q.push('camera=false');
+      if (bar && bar.checked) q.push('bar=top');
+      return `${origin}/overlay/${encodeURIComponent(pid)}` + (q.length ? '?' + q.join('&') : '');
+    };
+    const refresh = () => { const el = document.getElementById('ov-url'); if (el) el.textContent = build(); };
+    window.openModal(`
+      <div style="padding:20px;max-width:540px">
+        <h3 style="margin:0 0 6px;font-size:1.05rem">${t('camera.overlay_title', 'Streaming overlay')}</h3>
+        <p class="text-muted" style="font-size:0.82rem;margin:0 0 14px">${t('camera.overlay_desc', 'Embed this printer camera and live status as an OBS browser source, kiosk page, or dashboard.')}</p>
+        <div style="display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="ov-camera" checked> ${t('camera.overlay_show_cam', 'Show camera')}</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="ov-bartop"> ${t('camera.overlay_bar_top', 'Status bar on top')}</label>
+        </div>
+        <div style="padding:10px 12px;border-radius:8px;background:var(--bg-inset);margin-bottom:12px"><code id="ov-url" style="font-size:0.8rem;color:var(--accent-green);word-break:break-all"></code></div>
+        <div style="display:flex;gap:8px">
+          <button class="form-btn form-btn-sm form-btn-success" id="ov-copy"><i class="bi bi-clipboard"></i> ${t('camera.overlay_copy', 'Copy URL')}</button>
+          <button class="form-btn form-btn-sm" id="ov-open"><i class="bi bi-box-arrow-up-right"></i> ${t('camera.overlay_open', 'Open')}</button>
+        </div>
+        <p class="text-muted" style="font-size:0.74rem;margin:12px 0 0">${t('camera.overlay_obs_hint', 'In OBS: Sources → + → Browser → paste this URL.')}</p>
+      </div>`, { style: 'max-width:580px;width:92%' });
+    refresh();
+    ['ov-camera', 'ov-bartop'].forEach((id) => { const e = document.getElementById(id); if (e) e.addEventListener('change', refresh); });
+    const copy = document.getElementById('ov-copy');
+    if (copy) copy.addEventListener('click', () => {
+      const u = build();
+      if (navigator.clipboard) navigator.clipboard.writeText(u);
+      if (typeof showToast === 'function') showToast(t('camera.overlay_copied', 'Overlay URL copied'), 'success');
+    });
+    const open = document.getElementById('ov-open');
+    if (open) open.addEventListener('click', () => window.open(build(), '_blank'));
   }
 
   function startPlayer(container, wsUrl, pid) {
