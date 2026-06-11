@@ -766,7 +766,8 @@
         </label>
         ${enabled ? `<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--bg-inset);font-size:0.78rem">
           <div class="text-muted" style="margin-bottom:4px">${t('settings.spoolman_server_point', 'In moonraker.conf, set')} <code>[spoolman] server:</code></div>
-          <code style="font-weight:700;color:var(--accent-green);word-break:break-all">${base}</code>
+          <code class="copy-value" onclick="copyToClipboard('${base}', 'Spoolman URL')" title="Click to copy" style="cursor:pointer;font-weight:700;color:var(--accent-green);word-break:break-all">${base}</code>
+          <i class="bi bi-clipboard" onclick="copyToClipboard('${base}', 'Spoolman URL')" title="Copy" style="cursor:pointer;opacity:0.55;margin-left:6px"></i>
         </div>` : ''}`;
       const cb = c.querySelector('#spoolman-server-toggle');
       if (cb) cb.addEventListener('change', async () => {
