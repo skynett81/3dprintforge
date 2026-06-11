@@ -2280,6 +2280,11 @@ export function addSpoolCoreWeight(name, weightG, type) {
     .run(name, weightG, type || 'plastic');
 }
 
+export function deleteSpoolCoreWeight(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM spool_core_weights WHERE id = ?').run(id);
+}
+
 export function getBambuFilamentCodes(material) {
   const db = getDb();
   if (material) {
