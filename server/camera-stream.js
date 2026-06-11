@@ -18,7 +18,7 @@ const log = createLogger('camera');
 // Map the edit-dialog resolution tokens to the WxH ffmpeg's -s flag needs.
 // Returns null for empty/unknown input so callers fall back to the global
 // default. An explicit WxH string (e.g. '1280x720') passes through as-is.
-const RESOLUTION_TOKENS = { '1080p': '1920x1080', '720p': '1280x720', '480p': '640x480' };
+const RESOLUTION_TOKENS = { '1080p': '1920x1080', '720p': '1280x720', '480p': '854x480' };
 export function resolvePrinterResolution(value) {
   if (!value) return null;
   if (RESOLUTION_TOKENS[value]) return RESOLUTION_TOKENS[value];
@@ -485,6 +485,16 @@ export class CameraStream {
   _startFfmpeg() {
     const mpeg1Fps = this.framerate >= 25 ? this.framerate : 25;
 
+    // Scale to the requested HEIGHT while preserving the source aspect ratio.
+    // The old '-s WxH' force-resized the frame, so 480p (token 640x480, a 4:3
+    // box) stretched the X1C's 16:9 stream — the "480p crops/distorts" report.
+    // scale=-2:H keeps the aspect and lets ffmpeg pick an even width
+    // (1080->1920, 720->1280, 480->854), so each step is a real, undistorted
+    // resolution. (The "1080p" badge in the corner is burned into the stream
+    // by the camera itself — it reflects the printer's native capture, not
+    // this transcode.)
+    const targetH = parseInt(String(this.resolution).split('x')[1], 10) || 720;
+
     const args = [
       '-rtsp_transport', 'tcp',
       '-i', `rtsps://bblp:${this.accessCode}@${this.ip}:322/streaming/live/1`,
@@ -492,7 +502,7 @@ export class CameraStream {
       '-codec:v', 'mpeg1video',
       '-b:v', this.bitrate,
       '-r', String(mpeg1Fps),
-      '-s', this.resolution,
+      '-vf', `scale=-2:${targetH}`,
       '-an',
       '-q:v', '5',
       'pipe:1'
