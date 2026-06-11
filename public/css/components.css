@@ -2863,12 +2863,20 @@
   text-align: left;
   padding: 8px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  /* Opaque base (so scrolling rows don't show through a sticky header) with
+     the original subtle tint layered on top — keeps the look, adds opacity. */
+  background-color: var(--bg-card, var(--bg-secondary, #1a1d24));
+  background-image: linear-gradient(rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.03));
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  /* Stick to the top while the table's scroll container scrolls. No-op when
+     the table isn't in a vertically-scrollable container. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .data-table td {
