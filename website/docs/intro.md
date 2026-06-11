@@ -45,6 +45,29 @@ description: En kraftig, selvdriftet dashboard for alle dine 3D-printere
 - **Engelsk UI** — hele applikasjonen pa engelsk, dokumentasjon tilgjengelig pa norsk og engelsk
 - **Selvdriftet** — ingen sky-avhengighet, dine data pa din maskin
 
+### Nytt i v1.1.24
+
+- **Spoolman-server** — fullt Spoolman-kompatibelt v1 API: Klipper-frontender (Mainsail/Fluidd) kan lese, forbruke og administrere lageret (opprette/redigere/slette spoler, filament og vendor)
+- **OBS-/kiosk-overlay** — innebygd strømme-overlay per printer (kamera + live status) med URL-valg, og et inngangspunkt fra kamera-kortet
+- **Pressure Advance-mønster (linje-metode)** — Sineos/Ellis-metoden i Kalibrering, med «Read the guide»-lenker til Andrew Ellis' Print Tuning Guide
+- **Angre-på-slett overalt** — spoler, køer, printere, profiler, tags, backups, KB-artikler, skjermbilder, planlagte hendelser, bibliotek-filer, CRM-kunder, ordrer og AI-jobber
+- **Tilgjengelighet** — navn på ikon-knapper, fokus-felle i dialoger og WCAG AA-kontrast (axe-core-revidert)
+- **Bambu Cloud 2FA** — innlogging med authenticator-app (TOTP)
+- **Feilrettinger** — Smart ETA lærer nå faktisk av fullførte utskrifter, Input Shaper godtar ekte Klipper-resonans-CSV, og kamera-statistikk registreres
+
+### Nytt i v1.1.23
+
+- **Waste-analyse** — tool-changer-bevisst og fargebevisst purge-regnskap, pluss en anbefaler som finner fargerekkefølgen med lavest purge
+- **Slicer ⇄ fleet-kontroll** — fullt fjernstyrings-API for 3DPrintForge Slicer: live printer-state, pause/resume/stop, bevegelse, vifte/lys/hastighet og filament load/unload
+- **Issue #12-oppfølging** — bevarer printerens access-code ved redigering
+
+### Nytt i v1.1.22
+
+- **Lager-vekt-nøyaktighet** — direkte load-cell-avlesning (AMS 2 Pro/H2D), rekalibrering fra historikk og/eller live AMS, og sensor-gulv-vern
+- **DB-ytelse** — sammensatte indekser fjerner temp-b-tree-sortering fra de tyngste spørringene
+- **TOTP tofaktor på innloggings-skjermen** + sikkerhets- og avhengighets-herding (alle åpne npm-audit-varsler fjernet)
+- **Per-printer-innstillinger lagres nå** ([#12](https://github.com/skynett81/3dprintforge/issues/12)) — kamera-oppløsning driver faktisk strømmen
+
 ### Nytt i v1.1.21
 
 - **3DPrintForge Slicer-integrasjon** — koble 3DPrintForge til [skynett81/OrcaSlicer](https://github.com/skynett81/OrcaSlicer) i tjenestemodus med live-progresjon over SSE, Slice & Send i ett klikk, profilkatalog-synkronisering hvert 5. minutt og statuspille i headeren. Se [3DPrintForge Slicer-oppsett](./forge-slicer-setup.md) og [REST-kontrakten](./FORGE_SLICER_API.md).

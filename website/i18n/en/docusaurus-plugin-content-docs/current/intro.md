@@ -47,6 +47,35 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 - **English UI** — entire application in English, documentation available in English and Norwegian
 - **Self-hosted** — no cloud dependency, your data on your machine
 
+### New in v1.1.24
+
+- **Spoolman server** — full Spoolman-compatible v1 API: Klipper front-ends (Mainsail/Fluidd) can read, consume and manage your inventory (create/edit/delete spools, filaments and vendors)
+- **OBS / kiosk overlay** — embeddable per-printer streaming overlay (camera + live status) with URL options, plus an entry point from the camera card
+- **Pressure-advance pattern (line method)** — the Sineos/Ellis method in Calibration, with "Read the guide" links to Andrew Ellis' Print Tuning Guide
+- **Undo-on-delete everywhere** — spools, queues, printers, profiles, tags, backups, KB articles, screenshots, scheduled events, library files, CRM customers, orders and AI jobs
+- **Accessibility** — accessible names on icon buttons, dialog focus trap, and WCAG AA contrast (axe-core audited)
+- **Bambu Cloud 2FA** — authenticator-app (TOTP) login
+- **Fixes** — Smart ETA now actually learns from completed prints, Input Shaper accepts real Klipper resonance CSVs, and camera usage stats are recorded
+
+### New in v1.1.23
+
+- **Waste analytics** — tool-changer-aware and colour-aware purge accounting, plus a recommender that finds the lowest-purge colour order
+- **Slicer ⇄ fleet control** — full remote-control API for the 3DPrintForge Slicer: live printer state, pause/resume/stop, motion, fan/light/speed and filament load/unload
+- **Issue #12 follow-up** — preserve the printer access code on edit
+
+### New in v1.1.22
+
+- **Inventory weight accuracy** — direct load-cell readings (AMS 2 Pro/H2D), recalibration from history and/or live AMS, and a sensor-floor guard
+- **DB performance** — composite indexes remove temp-b-tree sorts from the hottest queries
+- **TOTP two-factor at the login screen** + a security/dependency hardening pass (all open npm audit advisories cleared)
+- **Per-printer settings now persist** ([#12](https://github.com/skynett81/3dprintforge/issues/12)) — camera resolution actually drives the stream
+
+### New in v1.1.21
+
+- **3DPrintForge Slicer integration** — connect to the custom OrcaSlicer fork in service mode: live SSE progress, one-click Slice & Send, profile-catalog sync every 5 min, and a header status pill
+- **Filament inventory overhaul** plus an analytics dashboard
+- **Security hardening** — six CVE-class fixes, and an i18n cleanup across 504 call sites
+
 ### New in v1.1.20
 
 - **Native slicer** — pure-JS slicing engine built from scratch (mesh→polygon→infill→G-code), runs without external dependencies
