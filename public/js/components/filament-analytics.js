@@ -409,7 +409,7 @@
     }
 
     if (!alerts.length && !expired.length && !expiring.length) {
-      html += emptyState('✅', t('filament_analytics.all_good'), t('filament_analytics.no_storage_alerts'));
+      html += emptyState('<i class="bi bi-check-circle"></i>', t('filament_analytics.all_good'), t('filament_analytics.no_storage_alerts'));
     }
 
     return html;
@@ -495,7 +495,7 @@
       panel.innerHTML = renderPanel();
       renderTabContent();
     } catch (e) {
-      panel.innerHTML = emptyState('⚠️', 'Failed to load data', e.message);
+      panel.innerHTML = emptyState('<i class="bi bi-exclamation-triangle"></i>', 'Failed to load data', e.message);
     }
   }
 

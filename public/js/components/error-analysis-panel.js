@@ -138,7 +138,7 @@
       h += '</div></div>';
       el.innerHTML = h;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, true);
+      el.innerHTML = _emptyState('<i class="bi bi-x-circle"></i>', _t('error_analysis.load_error', 'Could not load data'), e.message, true);
     }
   }
 
@@ -193,7 +193,7 @@
       html += '</div>';
       el.innerHTML = html;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
+      el.innerHTML = _emptyState('<i class="bi bi-x-circle"></i>', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
@@ -239,7 +239,7 @@
       html += '</div>';
       el.innerHTML = html;
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
+      el.innerHTML = _emptyState('<i class="bi bi-x-circle"></i>', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
@@ -305,7 +305,7 @@
       window._epaFilterCorr = (factor) => { activeFactor = factor; render(factor); };
       render(activeFactor);
     } catch (e) {
-      el.innerHTML = _emptyState('❌', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
+      el.innerHTML = _emptyState('<i class="bi bi-x-circle"></i>', _t('error_analysis.load_error', 'Could not load data'), e.message, false);
     }
   }
 
