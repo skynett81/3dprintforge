@@ -377,13 +377,18 @@
     }
   }
 
-  async function _deleteJob(id) {
-    try {
-      const r = await fetch(`/api/ai-forge/jobs/${id}`, { method: 'DELETE' });
-      if (!r.ok) { _toast('Delete failed', 'error'); return; }
-      _toast('Deleted', 'success');
-      await _loadJobs();
-    } catch (e) { _toast(`Delete failed: ${e.message}`, 'error'); }
+  function _deleteJob(id) {
+    const commit = async () => {
+      try {
+        const r = await fetch(`/api/ai-forge/jobs/${id}`, { method: 'DELETE' });
+        if (!r.ok) { _toast('Delete failed', 'error'); return; }
+        await _loadJobs();
+      } catch (e) { _toast(`Delete failed: ${e.message}`, 'error'); }
+    };
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({ message: 'Job deleted', commit });
+    }
+    return commit();
   }
 
   // ── Result rendering helper ─────────────────────────────────────────

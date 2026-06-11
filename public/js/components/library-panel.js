@@ -419,15 +419,21 @@
     }
   };
 
-  window._libDelete = async function(id) {
+  window._libDelete = function(id) {
+    document.querySelector('.lib-dialog-overlay')?.remove();
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('library.deleted', 'File deleted'),
+        commit: async () => {
+          try { await fetch(`/api/library/${id}`, { method: 'DELETE' }); _loadFiles(true); _loadCategories(); } catch {}
+        },
+      });
+    }
     if (!confirm(t('library.confirm_delete'))) return;
-    try {
-      await fetch(`/api/library/${id}`, { method: 'DELETE' });
-      document.querySelector('.lib-dialog-overlay')?.remove();
-      _loadFiles(true);
-      _loadCategories();
+    fetch(`/api/library/${id}`, { method: 'DELETE' }).then(() => {
+      _loadFiles(true); _loadCategories();
       if (typeof showToast === 'function') showToast(t('library.deleted'), 'success');
-    } catch {}
+    }).catch(() => {});
   };
 
   function _typeIcon(type) {

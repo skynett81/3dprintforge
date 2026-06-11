@@ -562,19 +562,19 @@
   };
   window._orderDelete = function() {
     if (!_activeProject) return;
+    const pid = _activeProject.id;
+    const finishDelete = () => apiDeleteProject(pid).then(() => _render()).catch(e => { if (typeof showToast === 'function') showToast(e.message, 'error'); });
+    if (typeof window.deleteWithUndo === 'function') {
+      _activeProject = null; _activeTab = 'orders'; _render();
+      return window.deleteWithUndo({ message: _tl('orders.deleted', 'Order deleted'), commit: finishDelete });
+    }
     if (typeof confirmAction === 'function') {
       confirmAction(_tl('orders.confirm_delete', 'Are you sure you want to delete this order?'), () => {
-        apiDeleteProject(_activeProject.id).then(() => {
-          if (typeof showToast === 'function') showToast(_tl('orders.deleted', 'Order deleted'), 'success');
-          _activeProject = null; _activeTab = 'orders'; _render();
-        }).catch(e => { if (typeof showToast === 'function') showToast(e.message, 'error'); });
+        _activeProject = null; _activeTab = 'orders'; finishDelete();
       });
     } else {
       if (!confirm(_tl('orders.confirm_delete', 'Are you sure you want to delete this order?'))) return;
-      apiDeleteProject(_activeProject.id).then(() => {
-        if (typeof showToast === 'function') showToast(_tl('orders.deleted', 'Order deleted'), 'success');
-        _activeProject = null; _activeTab = 'orders'; _render();
-      }).catch(e => { if (typeof showToast === 'function') showToast(e.message, 'error'); });
+      _activeProject = null; _activeTab = 'orders'; finishDelete();
     }
   };
   window._orderDuplicate = function() {

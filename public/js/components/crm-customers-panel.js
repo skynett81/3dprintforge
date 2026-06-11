@@ -234,16 +234,23 @@
     if (body) renderForm(body, detail);
   };
 
-  window._crmCustDelete = async function(id) {
+  window._crmCustDelete = function(id) {
+    if (typeof window.deleteWithUndo === 'function') {
+      _activeView = 'list';
+      _reload();
+      return window.deleteWithUndo({
+        message: _tl('crm.deleted', 'Customer deleted'),
+        commit: async () => {
+          try { await apiDeleteCustomer(id); await _reload(); } catch (err) { if (typeof showToast === 'function') showToast(err.message, 'danger'); }
+        },
+      });
+    }
     if (!confirm(_tl('crm.confirm_delete', 'Er du sikker?'))) return;
-    try {
-      await apiDeleteCustomer(id);
+    apiDeleteCustomer(id).then(() => {
       if (typeof showToast === 'function') showToast(_tl('crm.deleted', 'Deleted'), 'success');
       _activeView = 'list';
-      await _reload();
-    } catch (err) {
-      if (typeof showToast === 'function') showToast(err.message, 'danger');
-    }
+      return _reload();
+    }).catch(err => { if (typeof showToast === 'function') showToast(err.message, 'danger'); });
   };
 
   async function _reload() {
