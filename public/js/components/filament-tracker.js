@@ -6445,6 +6445,17 @@
     };
 
     if (action === 'delete') {
+      if (typeof window.deleteWithUndo === 'function') {
+        const cards = ids.map(id => document.querySelector(`[data-spool-id="${id}"]`)).filter(Boolean);
+        _selectedSpools.clear(); _updateBulkBar(); _updateSelectAllCheckbox();
+        const msg = ids.length + ' ' + (ids.length === 1 ? t('filament.spool', 'spool') : t('filament.spools', 'spools')) + ' ' + t('filament.deleted_lc', 'deleted');
+        return window.deleteWithUndo({
+          message: msg,
+          onHide: () => cards.forEach(c => { c.style.display = 'none'; }),
+          onRestore: () => cards.forEach(c => { c.style.display = ''; }),
+          commit: () => _doBulk(body),
+        });
+      }
       return confirmAction(t('filament.bulk_delete_confirm', { count: ids.length }), () => _doBulk(body), { danger: true });
     }
     if (action === 'archive') {
