@@ -25,7 +25,7 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 - **Mesh Repair Toolkit** — automatic repair of broken STL/3MF files
 - **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
-- **17 brands / 75+ models** — Bambu Lab, Snapmaker, Prusa, OctoPrint, Creality, Elegoo, Voron, AnkerMake, QIDI, RatRig, Duet/RRF, FlashForge, Repetier-Server, and any Klipper/Moonraker printer
+- **17 brands / 93 models** — Bambu Lab, Snapmaker, Prusa, Creality, Elegoo, Voron, RatRig, QIDI, Sovol, Anycubic, BIQU, Kywoo, Mingda, Tronxy, Two Trees, AnkerMake, FlashForge, plus any Klipper/Moonraker, OctoPrint, Duet/RRF or Repetier-Server host
 - **Security hardened** — CIS/NIS2 aligned: scrypt auth, CSRF, CSP, rate limiting, TOFU cert pinning, SSRF guards
 - **590+ API endpoints** — full REST API with OpenAPI docs at `/api/docs`
 - **English UI** — entire application in English, documentation site available in English and Norwegian

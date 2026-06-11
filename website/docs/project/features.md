@@ -139,9 +139,9 @@ Quiet hours support — no notifications during specified time window.
 - **Pterodactyl / wisp.gg** — ready-made egg file for game panel hosting
 - **HMS error database** — 268 error codes with descriptions and wiki links
 
-## Model Forge (17 tools)
+## Model Forge (51 tools)
 
-Parametric 3D generators built into the dashboard — create custom models without leaving the browser:
+51 parametric 3D generators across 8 categories, built into the dashboard — create custom models without leaving the browser. A selection:
 
 | Tool | Description |
 |------|-------------|

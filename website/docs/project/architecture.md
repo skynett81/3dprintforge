@@ -154,7 +154,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 │   ├── ecom-license.js        # License management
 │   ├── failure-detection.js   # Failure detection
 │   ├── mesh-builder.js        # Parametric 3D mesh generation
-│   ├── generators/            # Model Forge generators (17 tools)
+│   ├── generators/            # Model Forge generators (51 tools)
 │   │   ├── sign-maker.js      # Sign Maker
 │   │   ├── lithophane.js      # Lithophane
 │   │   ├── storage-box.js     # Storage Box
