@@ -2829,10 +2829,16 @@
   };
 
   window.deleteSpoolItem = function(id) {
-    return confirmAction(t('filament.delete_spool_confirm'), async () => {
-      await fetch(`/api/inventory/spools/${id}`, { method: 'DELETE' });
-      loadFilament();
-    }, { danger: true });
+    const card = document.querySelector(`[data-spool-id="${id}"]`);
+    window.deleteWithUndo({
+      message: t('filament.spool_deleted', 'Spool deleted'),
+      onHide: () => { if (card) card.style.display = 'none'; },
+      onRestore: () => { if (card) card.style.display = ''; },
+      commit: async () => {
+        await fetch(`/api/inventory/spools/${id}`, { method: 'DELETE' });
+        loadFilament();
+      },
+    });
   };
 
   window.archiveSpoolItem = async function(id) {

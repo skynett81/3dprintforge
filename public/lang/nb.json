@@ -2550,6 +2550,7 @@
     "signal_weak": "Svakt"
   },
   "common": {
+    "undo": "Angre",
     "printer": "Printer",
     "all_printers": "Alle printere",
     "active_filament": "Aktivt filament per printer",

@@ -2581,6 +2581,7 @@
     "signal_weak": "Weak"
   },
   "common": {
+    "undo": "Undo",
     "printer": "Printer",
     "all_printers": "All printers",
     "active_filament": "Active filament per printer",

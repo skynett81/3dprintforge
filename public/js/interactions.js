@@ -119,6 +119,31 @@
     }
   };
 
+  // Optimistic delete with an Undo toast. The real delete (opts.commit) only
+  // runs after the toast window elapses; Undo cancels it and restores the UI.
+  // opts: { message, commit:async, onHide?, onRestore?, delay? }
+  window.deleteWithUndo = function (opts) {
+    opts = opts || {};
+    const delay = opts.delay || 6000;
+    let undone = false, done = false;
+    if (typeof opts.onHide === 'function') { try { opts.onHide(); } catch (e) { /* ignore */ } }
+    const commit = async () => {
+      if (undone || done) return; done = true;
+      try { if (typeof opts.commit === 'function') await opts.commit(); } catch (e) { /* ignore */ }
+    };
+    const timer = setTimeout(commit, delay);
+    const undoLabel = (typeof window.t === 'function') ? window.t('common.undo', 'Undo') : 'Undo';
+    window.showToast(opts.message || 'Deleted', 'info', delay, [{
+      label: undoLabel,
+      onClick: () => {
+        if (done) return;
+        undone = true;
+        clearTimeout(timer);
+        if (typeof opts.onRestore === 'function') { try { opts.onRestore(); } catch (e) { /* ignore */ } }
+      },
+    }]);
+  };
+
   function _dismissToast(toast) {
     if (toast._dismissed) return;
     toast._dismissed = true;
