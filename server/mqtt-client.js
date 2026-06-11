@@ -494,7 +494,14 @@ export class BambuMqttClient {
         this.state._camera_state = {
           recording: this.state.ipcam.ipcam_record === 'enable',
           timelapse: this.state.ipcam.timelapse === 'enable',
-          resolution: this.state.ipcam.resolution || '',
+          // Show the resolution we actually deliver to the browser (the
+          // per-printer transcode setting) rather than the camera's native
+          // capture. The X1C always captures 1080p, so ipcam.resolution read
+          // "1080p" even when the user picked 480p/720p — the "REC 1080p"
+          // badge then looked stuck (issue #12). Fall back to the native
+          // value when no per-printer resolution is configured.
+          resolution: this._printerConfig?.cameraResolution || this.state.ipcam.resolution || '',
+          nativeResolution: this.state.ipcam.resolution || '',
           dev: this.state.ipcam.ipcam_dev || '',
           tutkServer: this.state.ipcam.tutk_server || '',
         };
