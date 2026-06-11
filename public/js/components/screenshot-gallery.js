@@ -30,7 +30,7 @@
     } else {
       h += '<div class="auto-grid auto-grid--sm" style="--grid-gap:8px">';
       for (const s of shots) {
-        h += `<div class="card" style="padding:0;overflow:hidden;cursor:pointer;position:relative" onclick="_viewScreenshot(${s.id})">`;
+        h += `<div class="card" data-ss-id="${s.id}" style="padding:0;overflow:hidden;cursor:pointer;position:relative" onclick="_viewScreenshot(${s.id})">`;
         h += `<div style="aspect-ratio:16/9;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center">`;
         h += `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
         h += '</div>';
@@ -113,9 +113,23 @@
     }
   };
 
-  window._deleteScreenshot = async function(id) {
-    await fetch(`/api/screenshots/${id}`, { method: 'DELETE' });
-    showToast(t('gallery.deleted', 'Screenshot deleted'), 'success');
-    if (window._activePanel === 'screenshots') loadScreenshotGallery();
+  window._deleteScreenshot = function(id) {
+    const card = document.querySelector(`.card[data-ss-id="${id}"]`);
+    document.querySelector('.ix-modal-overlay')?.remove();
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('gallery.deleted', 'Screenshot deleted'),
+        onHide: () => { if (card) card.style.display = 'none'; },
+        onRestore: () => { if (card) card.style.display = ''; },
+        commit: async () => {
+          await fetch(`/api/screenshots/${id}`, { method: 'DELETE' });
+          if (window._activePanel === 'screenshots') loadScreenshotGallery();
+        },
+      });
+    }
+    fetch(`/api/screenshots/${id}`, { method: 'DELETE' }).then(() => {
+      showToast(t('gallery.deleted', 'Screenshot deleted'), 'success');
+      if (window._activePanel === 'screenshots') loadScreenshotGallery();
+    });
   };
 })();

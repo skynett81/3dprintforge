@@ -703,14 +703,21 @@
     }
   };
 
-  window._schedDelete = async function(id) {
+  window._schedDelete = function(id) {
+    document.querySelector('.sched-dialog-overlay')?.remove();
+    if (typeof window.deleteWithUndo === 'function') {
+      return window.deleteWithUndo({
+        message: t('scheduler.deleted', 'Event deleted'),
+        commit: async () => {
+          try { await fetch(`/api/scheduler/${id}`, { method: 'DELETE' }); _loadEvents(); } catch {}
+        },
+      });
+    }
     if (!confirm(t('scheduler.confirm_delete'))) return;
-    try {
-      await fetch(`/api/scheduler/${id}`, { method: 'DELETE' });
-      document.querySelector('.sched-dialog-overlay')?.remove();
+    fetch(`/api/scheduler/${id}`, { method: 'DELETE' }).then(() => {
       _loadEvents();
       if (typeof showToast === 'function') showToast(t('scheduler.deleted'), 'success');
-    } catch {}
+    }).catch(() => {});
   };
 
   // ═══ Review functions for scheduler ═══
