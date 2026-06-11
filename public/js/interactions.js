@@ -450,20 +450,39 @@
   // ---- Modal Helpers ----
   window.openModal = function(html, options) {
     options = options || {};
+    const prevFocus = document.activeElement; // restore on close (a11y)
     const overlay = document.createElement('div');
     overlay.className = 'ix-modal-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.innerHTML = '<div class="ix-modal-panel" style="' + (options.style || 'max-width:600px;width:90%;padding:24px') + '">' + html + '</div>';
+    overlay.innerHTML = '<div class="ix-modal-panel" tabindex="-1" style="' + (options.style || 'max-width:600px;width:90%;padding:24px') + '">' + html + '</div>';
+    const panel = overlay.querySelector('.ix-modal-panel');
 
+    let closed = false;
     function close() {
+      if (closed) return;
+      closed = true;
       overlay.classList.add('ix-closing');
       setTimeout(() => overlay.remove(), 200);
-      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKey, true);
+      // Return focus to whatever opened the dialog.
+      try { if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus(); } catch (e) { /* ignore */ }
     }
 
+    const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    function focusables() {
+      return Array.prototype.slice.call(overlay.querySelectorAll(FOCUSABLE)).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement);
+    }
+
+    // Trap Tab within the dialog, and close on Escape.
     function onKey(e) {
-      if (e.key === 'Escape') { e.stopPropagation(); close(); }
+      if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const f = focusables();
+      if (!f.length) { e.preventDefault(); panel.focus(); return; }
+      const first = f[0], last = f[f.length - 1], active = document.activeElement;
+      if (e.shiftKey && (active === first || !overlay.contains(active))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (active === last || !overlay.contains(active))) { e.preventDefault(); first.focus(); }
     }
 
     if (options.closeOnBackdrop !== false) {
@@ -478,15 +497,17 @@
       btn.addEventListener('click', close);
     });
 
-    // Auto-focus the first text field so the user can type immediately. Only
-    // real inputs (not checkboxes/buttons), and skip if the dialog opts out
-    // with data-no-autofocus, so confirm dialogs don't grab focus onto a field.
-    if (!options.noAutoFocus) {
-      setTimeout(() => {
-        const f = overlay.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([disabled]), textarea, select');
-        if (f && typeof f.focus === 'function') { try { f.focus(); } catch (e) { /* ignore */ } }
-      }, 60);
-    }
+    // Initial focus stays inside the dialog so keyboard users start there and
+    // Tab is trapped. Prefer the first text field (unless the dialog opts out
+    // so a confirm doesn't grab a destructive button); otherwise the panel.
+    setTimeout(() => {
+      if (closed) return;
+      let target = null;
+      if (!options.noAutoFocus) {
+        target = overlay.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([disabled]), textarea, select');
+      }
+      try { (target || panel).focus(); } catch (e) { /* ignore */ }
+    }, 60);
 
     return { overlay, close };
   };
