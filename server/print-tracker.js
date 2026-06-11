@@ -1,5 +1,6 @@
 import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, enrichTrayWithVariant } from './database.js';
 import { getDb } from './db/connection.js';
+import { recordCompletion as recordEtaCompletion } from './eta-predictor.js';
 import { flushVolumeMm3, mm3ToGrams } from './flush-calc.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -726,6 +727,24 @@ export class PrintTracker {
     try {
       const printHistoryId = addHistory(record);
       log.info('Print ' + status + ': ' + record.filename + ' (' + Math.round(duration / 60) + 'm, ' + filamentUsedG.toFixed(1) + 'g, ' + this.colorChanges + ' color changes, ' + wasteG + 'g waste)');
+
+      // Feed the Smart ETA learner: compare the slicer/firmware time estimate
+      // with the actual print time so predictions for this (printer, material,
+      // nozzle) bucket improve over time. Only clean completions with a real
+      // estimate are usable as samples.
+      if (status === 'completed' && this.currentPrint.estimated_seconds > 0 && duration > 0) {
+        try {
+          recordEtaCompletion(
+            this.printerId,
+            this.currentPrint.filament_type || 'unknown',
+            this.currentPrint.nozzle_diameter || 0.4,
+            this.currentPrint.estimated_seconds / 60,
+            duration / 60,
+          );
+        } catch (e) {
+          log.warn('ETA recordCompletion failed: ' + e.message);
+        }
+      }
 
       // Save thumbnail from cache if available
       this._saveHistoryThumbnail(printHistoryId);

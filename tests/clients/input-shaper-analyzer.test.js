@@ -27,8 +27,22 @@ describe('parseResonanceCsv()', () => {
     assert.ok(data.psd.every(v => Number.isFinite(v)));
   });
 
+  it('parses the real Klipper header (psd_x / psd_xyz)', () => {
+    const csv = 'freq,psd_x,psd_y,psd_z,psd_xyz\n10,1,0.1,0.1,1.2\n50,99,0.2,0.1,99.3\n80,5,0.1,0.1,5.2\n';
+    const x = parseResonanceCsv(csv, 'x');
+    assert.equal(x.freqs.length, 3);
+    assert.deepEqual(x.psd, [1, 99, 5]);
+    // the 'total' axis maps to Klipper's psd_xyz column
+    assert.equal(parseResonanceCsv(csv, 'total').psd[1], 99.3);
+  });
+
+  it('handles a Klipper header with a trailing shapers: section', () => {
+    const csv = 'freq,psd_x,psd_y,psd_z,psd_xyz,shapers:,zv(100.0)\n50,99,0.2,0.1,99.3,,\n';
+    assert.equal(parseResonanceCsv(csv, 'x').psd[0], 99);
+  });
+
   it('rejects when axis column missing', () => {
-    assert.throws(() => parseResonanceCsv('freq, total_psd\n10,1\n', 'x'));
+    assert.throws(() => parseResonanceCsv('freq, foo_psd\n10,1\n', 'x'));
   });
 
   it('skips comment lines and blanks', () => {

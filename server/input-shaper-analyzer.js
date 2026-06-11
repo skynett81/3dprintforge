@@ -2,8 +2,10 @@
  * Input Shaper Analyzer — picks the best Klipper input-shaper from a
  * resonance CSV produced by `TEST_RESONANCES`.
  *
- * Klipper writes `/tmp/resonances_<axis>_<timestamp>.csv` with rows:
- *   `freq, x_psd, y_psd, z_psd, total_psd`  (psd = power spectral density)
+ * Klipper writes `/tmp/resonances_<axis>_<timestamp>.csv` with the header:
+ *   `freq,psd_x,psd_y,psd_z,psd_xyz[,shapers:,...]`  (psd = power spectral density)
+ * Older tools / exports use the reversed `freq,x_psd,...,total_psd` layout, so
+ * both naming conventions are accepted.
  *
  * Strategy:
  *   1. Find the dominant peak frequency for the requested axis.
@@ -45,7 +47,11 @@ export function parseResonanceCsv(csv, axis = 'x') {
     if (!line.trim() || line.startsWith('#')) continue;
     if (!header) {
       header = line.split(/\s*,\s*/).map(s => s.toLowerCase());
-      axisIdx = header.findIndex(h => h === `${axis}_psd` || h === axis);
+      // Klipper uses `psd_x` / `psd_xyz`; older exports use `x_psd` / `total_psd`.
+      const aliases = axis === 'total'
+        ? ['psd_xyz', 'total_psd', 'total', 'xyz']
+        : [`psd_${axis}`, `${axis}_psd`, axis];
+      axisIdx = header.findIndex(h => aliases.includes(h));
       if (axisIdx < 0) throw new Error(`axis '${axis}' not found in header: ${header.join(',')}`);
       continue;
     }
