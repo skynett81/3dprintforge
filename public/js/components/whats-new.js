@@ -1,37 +1,45 @@
 // whats-new.js
 // A one-time, dismissible "What's new" modal that surfaces recently added
-// features users would otherwise never discover (sidebar search, pinned
-// favourites, the streaming overlay, the Spoolman server). Shown once per
-// VERSION to users who have already finished onboarding; bump VERSION to
-// re-announce a new batch.
+// features users would otherwise never discover. Shown once per VERSION to
+// users who have already finished onboarding.
+//
+// KEEP THIS CURRENT: whenever a release adds user-facing features, refresh the
+// FEATURES list with the new batch and bump VERSION so everyone sees it again.
+// VERSION history: 1 = sidebar search/pin, overlay, Spoolman. 2 = v1.1.24.
 (function () {
   'use strict';
 
-  var VERSION = '1';
+  var VERSION = '2';
   var KEY = 'whatsnew-seen-v' + VERSION;
 
   var FEATURES = [
     {
-      icon: 'bi-search',
-      title: 'Quick sidebar search',
-      desc: 'Type in the search box at the top of the sidebar to jump straight to any panel.',
-      action: { label: 'Try it', fn: function () { var i = document.getElementById('sidebar-search-input'); if (i) { i.focus(); } } },
+      icon: 'bi-rulers',
+      title: 'Pressure-advance pattern calibration',
+      desc: 'A new line-method PA/LA test in Calibration & Tuning (the Sineos/Ellis method), with a link to Ellis\' Print Tuning Guide.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('calibration'); } location.hash = '#calibration'; } },
     },
     {
-      icon: 'bi-pin-angle',
-      title: 'Pin favourites',
-      desc: 'Hover any menu item and click the pin to keep your most-used panels at the top.',
+      icon: 'bi-arrow-counterclockwise',
+      title: 'Undo on delete',
+      desc: 'Deleted something by accident? An Undo button now appears in the toast — for spools, queues, backups, screenshots, profiles, tags and more.',
     },
     {
-      icon: 'bi-broadcast',
-      title: 'Streaming overlay',
-      desc: 'On the camera card, the broadcast button gives you an embeddable OBS / kiosk URL with live status.',
+      icon: 'bi-trophy',
+      title: 'Achievements: levels & XP',
+      desc: 'Achievements now earn real XP toward named tiers, and new unlocks are celebrated with a toast.',
+      action: { label: 'View', fn: function () { if (window.openPanel) { window.openPanel('achievements'); } location.hash = '#achievements'; } },
     },
     {
       icon: 'bi-hdd-stack',
-      title: 'Spoolman server',
-      desc: 'Use 3DPrintForge as your Klipper Spoolman server so Mainsail / Fluidd show this inventory.',
+      title: 'Spoolman server — full control',
+      desc: 'Mainsail / Fluidd can now create, edit and delete spools in your inventory, not just read it.',
       action: { label: 'Open settings', fn: function () { if (window.openPanel) { window.openPanel('settings'); } location.hash = '#settings/system/integrations'; } },
+    },
+    {
+      icon: 'bi-wifi-off',
+      title: 'Stays clear when offline',
+      desc: 'A banner now warns you the moment you go offline and reconnects automatically when you are back.',
     },
   ];
 
