@@ -103,5 +103,34 @@ export function copyToClipboard(text, label) {
 }
 window.copyToClipboard = copyToClipboard;
 
+// Compact relative time ("3m ago", "2h ago", "5d ago") — shared so every
+// panel formats timestamps the same way instead of rolling its own.
+export function relativeTime(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return '';
+  const mins = Math.floor((Date.now() - then) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days + 'd ago';
+  if (days < 35) return Math.floor(days / 7) + 'w ago';
+  if (days < 365) return Math.floor(days / 30) + 'mo ago';
+  return Math.floor(days / 365) + 'y ago';
+}
+// Same value wrapped so hovering reveals the exact local timestamp.
+export function relativeTimeHtml(iso) {
+  if (!iso) return '';
+  const rel = relativeTime(iso);
+  if (!rel) return '';
+  let abs = '';
+  try { abs = new Date(iso).toLocaleString(); } catch (e) { abs = String(iso); }
+  return '<span class="rel-time" title="' + String(abs).replace(/"/g, '&quot;') + '">' + rel + '</span>';
+}
+window.relativeTime = relativeTime;
+window.relativeTimeHtml = relativeTimeHtml;
+
 // Expose globally for non-module scripts
 window.esc = esc;

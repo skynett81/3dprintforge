@@ -2558,6 +2558,9 @@
 #density-toggle-btn.density-active,
 #density-toggle-btn.density-active i { color: var(--accent-green) !important; }
 
+/* Relative timestamps reveal the exact time on hover */
+.rel-time[title], .error-card-ago[title] { cursor: help; }
+
 .camera-skeleton {
   position: absolute;
   inset: 0;

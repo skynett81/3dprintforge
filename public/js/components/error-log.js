@@ -344,7 +344,7 @@
           <div class="error-card-body">
             <div class="error-card-top">
               <span class="error-card-message">${esc(entry.message)}</span>
-              <span class="error-card-ago">${timeAgo(entry.timestamp)}</span>
+              <span class="error-card-ago" title="${new Date(entry.timestamp).toLocaleString()}">${timeAgo(entry.timestamp)}</span>
             </div>
             <div class="error-card-meta">
               ${entry.printer_id ? `<span class="printer-tag">${esc(printerName(entry.printer_id))}</span>` : ''}
@@ -572,7 +572,7 @@
           <div class="error-card-body">
             <div class="error-card-top">
               <span class="error-card-message">${esc(e.message) || t('errors.unknown_error')}</span>
-              <span class="error-card-ago">${timeAgo(e.timestamp)}</span>
+              <span class="error-card-ago" title="${new Date(e.timestamp).toLocaleString()}">${timeAgo(e.timestamp)}</span>
             </div>
             <div class="error-card-meta">
               <span class="printer-tag">${esc(printerName(e.printer_id))}</span>
