@@ -44,7 +44,9 @@
     "reconnected": "Tilkobling gjenopprettet",
     "lost": "Tilkobling mistet â kobler til igjen...",
     "printers": "{{count}} printere",
-    "printer": "{{count}} printer"
+    "printer": "{{count}} printer",
+    "offline_banner": "Du er frakoblet — sanntidsoppdateringer er satt på pause og endringer lagres kanskje ikke.",
+    "back_online": "Tilkoblet igjen"
   },
   "state": {
     "idle": "Ledig",

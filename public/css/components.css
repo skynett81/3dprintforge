@@ -2566,6 +2566,26 @@
    dark slate tuned for white content). Keeps sidebar labels above WCAG AA. */
 .app-sidebar { --text-muted: #9aa4b1; }
 
+/* Persistent banner shown while the browser is offline (navigator.onLine). */
+.net-offline-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #b45309; /* amber-700: white text clears WCAG AA (6.2:1) */
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: net-offline-slide 0.2s ease;
+}
+.net-offline-banner svg { flex-shrink: 0; }
+@keyframes net-offline-slide { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
 .camera-skeleton {
   position: absolute;
   inset: 0;

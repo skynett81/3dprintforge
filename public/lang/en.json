@@ -47,7 +47,9 @@
     "reconnected": "Connection restored",
     "lost": "Connection lost â reconnecting...",
     "printers": "{{count}} printers",
-    "printer": "{{count}} printer"
+    "printer": "{{count}} printer",
+    "offline_banner": "You are offline — live updates are paused and changes may not be saved.",
+    "back_online": "Back online"
   },
   "auth_error": {
     "generic": "Printer authentication failed",

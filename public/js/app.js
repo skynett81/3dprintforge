@@ -204,6 +204,42 @@ function updateConnectionBadge(status) {
   badge.className = `badge badge-${_connectionStatus}`;
 }
 
+// ---- Browser network (online/offline) banner ----
+// navigator.onLine flips the moment the OS loses connectivity, before the
+// WebSocket notices. Show a persistent banner so the user knows live updates
+// are paused and writes may fail, and clear it (with an immediate reconnect)
+// on return — the WS backoff alone can leave them staring at stale data.
+function _setOfflineBanner(offline) {
+  let b = document.getElementById('net-offline-banner');
+  if (offline) {
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'net-offline-banner';
+      b.className = 'net-offline-banner';
+      b.setAttribute('role', 'status');
+      b.setAttribute('aria-live', 'assertive');
+      b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>' +
+        '<span>' + t('connection.offline_banner', 'You are offline — live updates are paused and changes may not be saved.') + '</span>';
+      document.body.appendChild(b);
+    }
+  } else if (b) {
+    b.remove();
+  }
+}
+
+function _handleOnline() {
+  _setOfflineBanner(false);
+  if (typeof showToast === 'function') showToast(t('connection.back_online', 'Back online'), 'success', 2500);
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  reconnectDelay = 1000;
+  connect();
+}
+
+function _handleOffline() {
+  _setOfflineBanner(true);
+  updateConnectionBadge('disconnected');
+}
+
 // ---- Camera visibility ----
 // Cloud-only printers (no LAN IP, or cloudMode flag) usually don't expose
 // a LAN camera stream. Hide the camera card by default for those, but let
@@ -987,6 +1023,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   connect();
+
+  // React immediately to the browser losing/regaining connectivity.
+  window.addEventListener('online', _handleOnline);
+  window.addEventListener('offline', _handleOffline);
+  if (!navigator.onLine) _handleOffline();
 
   // Load info-box stats and refresh every 30s
   updateInfoBoxes();
