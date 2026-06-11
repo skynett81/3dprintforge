@@ -95,9 +95,9 @@
             <button class="q-action-btn" onclick="event.stopPropagation();window._queueAddItem(${q.id})" data-ripple>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               ${t('queue.add_item')}</button>
-            <button class="q-action-btn" onclick="event.stopPropagation();window._queueEditDialog(${q.id})" data-ripple>
+            <button class="q-action-btn" onclick="event.stopPropagation();window._queueEditDialog(${q.id})" data-ripple aria-label="${t('queue.edit_queue', 'Edit queue')}" title="${t('queue.edit_queue', 'Edit queue')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="q-action-btn q-action-danger" onclick="event.stopPropagation();window._queueDelete(${q.id})" data-ripple>
+            <button class="q-action-btn q-action-danger" onclick="event.stopPropagation();window._queueDelete(${q.id})" data-ripple aria-label="${t('queue.delete_queue_label', 'Delete queue')}" title="${t('queue.delete_queue_label', 'Delete queue')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
           </div>
         </div>`;

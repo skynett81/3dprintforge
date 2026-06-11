@@ -233,7 +233,7 @@
             <button class="ctrl-motion-btn" data-ripple onclick="sendGcode('G91\\nG0 X-10 F3000\\nG90')" title="X-10">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <button class="ctrl-motion-btn ctrl-motion-home" data-ripple onclick="sendGcode('G28')">
+            <button class="ctrl-motion-btn ctrl-motion-home" data-ripple onclick="sendGcode('G28')" aria-label="${t('controls.qc_home_all', 'Home all axes')}" title="${t('controls.qc_home_all', 'Home all axes')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             </button>
             <button class="ctrl-motion-btn" data-ripple onclick="sendGcode('G91\\nG0 X10 F3000\\nG90')" title="X+10">
