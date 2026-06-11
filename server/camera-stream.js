@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { connect as tlsConnect } from 'node:tls';
+import { recordCameraStart, recordCameraStream } from './analytics.js';
 import { WebSocketServer } from 'ws';
 import { createLogger } from './logger.js';
 import { isAuthEnabled, validateSession, validateApiKey } from './auth.js';
@@ -28,6 +29,7 @@ export function resolvePrinterResolution(value) {
 
 export class CameraStream {
   constructor(config) {
+    this.printerId = config.printer?.id || config.printer?.name || config.printer.ip;
     this.ip = config.printer.ip;
     this.accessCode = config.printer.accessCode;
     this.port = config.server.cameraWsPort;
@@ -161,6 +163,7 @@ export class CameraStream {
       log.warn('No IP address configured');
       return;
     }
+    try { recordCameraStart(this.printerId); } catch (e) { /* analytics is best-effort */ }
 
     // Explicit per-printer override skips auto-detect. Critical for X1/X1E:
     // their camera is RTSP-only, but some firmware also answers on the JPEG
@@ -394,6 +397,7 @@ export class CameraStream {
    */
   _broadcastJpeg(frame) {
     this._lastFrame = frame;
+    try { recordCameraStream(this.printerId, frame ? frame.length : 0); } catch (e) { /* best-effort */ }
 
     // WebSocket clients
     for (const ws of this.clients) {
