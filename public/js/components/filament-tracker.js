@@ -1190,6 +1190,7 @@
     const isLow = (pct > 0 && pct < _lowStockPct);
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const statusColor = isEmpty ? 'var(--accent-red)' : isLow ? 'var(--accent-orange)' : 'var(--accent-green)';
+    const statusTextColor = isEmpty ? 'var(--accent-red-text)' : isLow ? 'var(--accent-orange-text)' : 'var(--accent-green-text)';
     const statusText = isEmpty ? t('filament.status_empty', 'Empty') : isLow ? t('filament.status_low', 'Low') : `${pct}%`;
     const tempInfo = (s.nozzle_temp_min && s.nozzle_temp_max) ? `🔥${s.nozzle_temp_min}–${s.nozzle_temp_max}°C` : '';
 
@@ -1208,7 +1209,7 @@
         <div class="spool-vcard-meta">${esc(vendorName)} · ${remaining}</div>
         ${tempInfo ? `<div class="spool-vcard-meta" style="font-size:0.7rem;opacity:0.7">${tempInfo}</div>` : ''}
         <div class="spool-vcard-bottom">
-          <span class="spool-vcard-pct" style="color:${statusColor}">${statusText}</span>
+          <span class="spool-vcard-pct" style="color:${statusTextColor}">${statusText}</span>
           <div class="spool-vcard-bar"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor}"></div></div>
         </div>
       </div>
@@ -4557,7 +4558,7 @@
         body: JSON.stringify(data)
       });
       const result = await res.json();
-      if (status) status.innerHTML = `<span style="color:var(--accent-green)">${t('filament.imported_count', { count: result.imported || 0 })}</span>`;
+      if (status) status.innerHTML = `<span style="color: var(--accent-green-text)">${t('filament.imported_count', { count: result.imported || 0 })}</span>`;
       setTimeout(() => {
         document.querySelector('.inv-modal-overlay')?.remove();
         loadFilament();
@@ -6226,7 +6227,7 @@
         ]
       });
       showToast(t('filament.nfc_write_success'), 'success');
-      if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color:var(--accent-green)">${t('filament.nfc_write_success')}</div>`;
+      if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color: var(--accent-green-text)">${t('filament.nfc_write_success')}</div>`;
     } catch (e) {
       showToast(t('filament.nfc_write_failed') + ': ' + e.message, 'error');
       if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color:var(--accent-red)">${t('filament.nfc_write_failed')}: ${esc(e.message)}</div>`;
@@ -7482,7 +7483,7 @@
         let style = 'font-size:0.8rem';
         if (isNumeric && v != null && bestVal !== worstVal) {
           const n = parseFloat(v);
-          if (n === bestVal) style += ';color:var(--accent-green);font-weight:600';
+          if (n === bestVal) style += ';color: var(--accent-green-text);font-weight:600';
           else if (n === worstVal) style += ';color:var(--accent-red)';
         }
         html += `<td style="${style}">${display}</td>`;

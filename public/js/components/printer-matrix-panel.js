@@ -52,7 +52,7 @@
       .matrix-table td { padding:10px 14px; font-size:0.82rem; text-align:center; border-top:1px solid var(--border-color); color:var(--text-primary); }
       .matrix-table td:first-child { text-align:left; color:var(--text-muted); font-weight:600; }
       .matrix-table tr:hover { background:var(--bg-tertiary, rgba(255,255,255,0.02)); }
-      .matrix-best { color:var(--accent-green); font-weight:700; }
+      .matrix-best { color: var(--accent-green-text); font-weight:700; }
       .matrix-worst { color:var(--accent-red); font-weight:700; }
       .matrix-printer-name { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; }
     </style>

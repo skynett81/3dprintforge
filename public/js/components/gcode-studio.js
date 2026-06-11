@@ -132,7 +132,7 @@ Open a .gcode file or click a snippet to insert here. Then click Lint or 3D Prev
     if (!el) return;
     if (!_state.issues.length) {
       el.innerHTML = _state.stats
-        ? `<div class="gcs-issue-empty"><strong style="color:var(--accent-green)">✓ No issues</strong><div class="text-muted" style="font-size:0.72rem;margin-top:4px">${_state.stats.commands} commands · ${_state.stats.layers} layers · ${(_state.stats.tools || []).join(', ') || 'single tool'}</div></div>`
+        ? `<div class="gcs-issue-empty"><strong style="color: var(--accent-green-text)">✓ No issues</strong><div class="text-muted" style="font-size:0.72rem;margin-top:4px">${_state.stats.commands} commands · ${_state.stats.layers} layers · ${(_state.stats.tools || []).join(', ') || 'single tool'}</div></div>`
         : '<div class="text-muted">No issues yet — click Lint.</div>';
       return;
     }

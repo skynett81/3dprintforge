@@ -20,7 +20,7 @@
       .fv-drop{border:2px dashed var(--border-color);border-radius:10px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s}
       .fv-drop:hover,.fv-drop.dragover{border-color:var(--accent-blue)}
       .fv-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:600}
-      .fv-badge-valid{background:color-mix(in srgb,var(--accent-green) 20%,transparent);color:var(--accent-green)}
+      .fv-badge-valid{background:color-mix(in srgb,var(--accent-green) 20%,transparent);color: var(--accent-green-text)}
       .fv-badge-invalid{background:color-mix(in srgb,var(--accent-red) 20%,transparent);color:var(--accent-red)}
       .fv-section{margin-top:14px;padding-top:10px;border-top:1px solid var(--border-color)}
       .fv-section h5{margin:0 0 8px;font-size:0.82rem}

@@ -157,7 +157,7 @@
       h += '</div>';
       if (s.current_streak > 0 || s.best_streak > 0) {
         h += `<div class="stats-streak-row">
-          <div class="stats-streak"><span class="stats-streak-val" style="color:var(--accent-green)">${s.current_streak}</span><span class="stats-streak-label">${t('stats.current_streak')}</span></div>
+          <div class="stats-streak"><span class="stats-streak-val" style="color: var(--accent-green-text)">${s.current_streak}</span><span class="stats-streak-label">${t('stats.current_streak')}</span></div>
           <div class="stats-streak"><span class="stats-streak-val" style="color:var(--accent-yellow)">${s.best_streak}</span><span class="stats-streak-label">${t('stats.best_streak')}</span></div>
         </div>`;
       }
@@ -553,7 +553,7 @@
           <div class="waste-hero-label">${t('stats.total_prints')}</div>
         </div>
         <div class="waste-hero-card waste-hero-card--green">
-          <div class="waste-hero-top"><div class="waste-hero-icon" style="background:rgba(63,185,80,0.15);color:var(--accent-green)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="waste-hero-top"><div class="waste-hero-icon" style="background:rgba(63,185,80,0.15);color: var(--accent-green-text)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div>
           <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin:2px 0">
             <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--border-color)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${rateColor}" stroke-width="4" stroke-dasharray="${ratePct * 1.131} ${113.1 - ratePct * 1.131}" stroke-dashoffset="28.3" stroke-linecap="round"/></svg>
             <span style="position:absolute;font-size:0.6rem;font-weight:800;color:${rateColor}">${ps.successRate}%</span>

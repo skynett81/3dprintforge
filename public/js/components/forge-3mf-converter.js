@@ -96,7 +96,7 @@
         <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;width:100%;max-width:400px">
           <div style="font-size:0.9rem;font-weight:600;margin-bottom:8px">${_fileData.name}</div>
           <div style="font-size:0.78rem;color:var(--text-muted)">Size: ${((_fileData.size)/1024).toFixed(0)} KB</div>
-          <div style="font-size:0.78rem;color:var(--text-muted)">Type: ${data.isBambu ? '<span style="color:var(--accent-green)">Bambu Lab ✓</span>' : data.isSnapmaker ? '<span style="color:var(--accent-blue)">Already Snapmaker</span>' : '<span style="color:var(--accent-orange)">Unknown format</span>'}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Type: ${data.isBambu ? '<span style="color: var(--accent-green-text)">Bambu Lab ✓</span>' : data.isSnapmaker ? '<span style="color:var(--accent-blue)">Already Snapmaker</span>' : '<span style="color:var(--accent-orange)">Unknown format</span>'}</div>
           ${data.filaments?.length ? '<div style="font-size:0.78rem;color:var(--text-muted)">Filaments: ' + data.filaments.join(', ') + '</div>' : ''}
           ${data.modelCount ? '<div style="font-size:0.78rem;color:var(--text-muted)">Models: ' + data.modelCount + '</div>' : ''}
         </div>

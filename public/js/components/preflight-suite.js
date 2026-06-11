@@ -109,7 +109,7 @@
         <h4>Mesh integrity</h4>
         <p>${r.integrity.vertices} vertices · ${r.integrity.edges} edges · ${r.integrity.faces} faces · Euler = ${r.integrity.eulerNumber}</p>
         ${r.integrity.isManifold
-          ? '<p style="color:var(--accent-green)"><strong>✓ Closed manifold</strong> — slicer-safe.</p>'
+          ? '<p style="color: var(--accent-green-text)"><strong>✓ Closed manifold</strong> — slicer-safe.</p>'
           : `<p style="color:var(--accent-orange)"><strong>⚠ Non-manifold</strong> — ${r.integrity.openEdges} open edges, ${r.integrity.nonManifoldEdges} bad edges. Repair before slicing.</p>`}
       </div>
 

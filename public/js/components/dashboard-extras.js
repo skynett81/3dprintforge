@@ -268,7 +268,7 @@
     }
     // Snapmaker defect detection
     if (data._sm_defect?.enabled) {
-      html += '<span style="font-size:0.55rem;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,0.7);color:var(--accent-green)">AI Defect</span>';
+      html += '<span style="font-size:0.55rem;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,0.7);color: var(--accent-green-text)">AI Defect</span>';
       if (data._sm_defect.noodle?.probability > 0.5) {
         html += `<span style="font-size:0.55rem;padding:1px 4px;border-radius:4px;background:rgba(255,0,0,0.7);color:#fff">⚠ ${Math.round(data._sm_defect.noodle.probability * 100)}%</span>`;
       }

@@ -125,7 +125,7 @@
 
     let html = '<div style="margin-bottom:12px">';
     for (const w of warnings) html += `<div style="font-size:0.72rem;color:var(--accent-orange);margin-bottom:2px">${w}</div>`;
-    for (const c of checks) html += `<div style="font-size:0.72rem;color:var(--accent-green);margin-bottom:2px">${c}</div>`;
+    for (const c of checks) html += `<div style="font-size:0.72rem;color: var(--accent-green-text);margin-bottom:2px">${c}</div>`;
     html += '</div>';
     return html;
   }

@@ -192,7 +192,7 @@
         </div>
         <div class="waste-hero-card waste-hero-card--green">
           <div class="waste-hero-top">
-            <div class="waste-hero-icon" style="background:rgba(63,185,80,0.15);color:var(--accent-green)">${ICONS.gauge}</div>
+            <div class="waste-hero-icon" style="background:rgba(63,185,80,0.15);color: var(--accent-green-text)">${ICONS.gauge}</div>
           </div>
           <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin:2px 0">
             <svg width="48" height="48" viewBox="0 0 48 48">

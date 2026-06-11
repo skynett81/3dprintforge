@@ -174,8 +174,8 @@
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.error(msg)</td><td style="padding:4px 8px">Log an error</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.state.get(key)</td><td style="padding:4px 8px">Get plugin state value</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-blue)">api.state.set(key, val)</td><td style="padding:4px 8px">Set plugin state value (persists across restarts)</td></tr>
-            <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-green)">api.broadcast(type, data)</td><td style="padding:4px 8px">Send data to all WebSocket clients</td></tr>
-            <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-green)">api.notify(title, msg)</td><td style="padding:4px 8px">Send notification via all channels</td></tr>
+            <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color: var(--accent-green-text)">api.broadcast(type, data)</td><td style="padding:4px 8px">Send data to all WebSocket clients</td></tr>
+            <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color: var(--accent-green-text)">api.notify(title, msg)</td><td style="padding:4px 8px">Send notification via all channels</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-cyan)">api.registerRoute(method, path, handler)</td><td style="padding:4px 8px">Register custom API route at /api/plugins/{name}/{path}</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-cyan)">api.registerPanel(id, title, fn)</td><td style="padding:4px 8px">Register a UI panel in the dashboard</td></tr>
             <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:4px 8px;font-weight:600;font-family:monospace;color:var(--accent-cyan)">api.setInterval(fn, ms)</td><td style="padding:4px 8px">Run a function periodically (min 5s)</td></tr>
@@ -412,7 +412,7 @@ export function destroy(api) {
     const out = document.getElementById('plg-gen-output');
     if (out) {
       out.innerHTML = `
-        <div style="font-size:0.75rem;color:var(--accent-green);margin-bottom:6px">✓ Files generated for "${name}"</div>
+        <div style="font-size:0.75rem;color: var(--accent-green-text);margin-bottom:6px">✓ Files generated for "${name}"</div>
         <div style="display:flex;gap:6px">
           <button class="ce-secondary-btn" style="font-size:0.68rem" onclick="window._downloadText('manifest.json', ${JSON.stringify(manifest)})">📄 manifest.json</button>
           <button class="ce-secondary-btn" style="font-size:0.68rem" onclick="window._downloadText('index.js', ${JSON.stringify(indexJs)})">📄 index.js</button>

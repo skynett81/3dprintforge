@@ -57,7 +57,7 @@
       .cal-tools { display:flex; flex-direction:column; gap:4px; overflow-y:auto; max-height:calc(100vh - 200px); }
       .cal-tool-btn { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; cursor:pointer; transition:all 0.15s; text-align:left; }
       .cal-tool-btn:hover { border-color:var(--accent-blue); }
-      .cal-tool-btn.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); }
+      .cal-tool-btn.active { border-color: var(--accent-green-text); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); }
       .cal-preview { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:16px; min-height:300px; }
       @media (max-width:700px) { .cal-layout { grid-template-columns:1fr; } }
     </style>

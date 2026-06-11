@@ -266,15 +266,15 @@
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
           <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary)">
             <div style="font-size:0.65rem;color:var(--text-muted)">2× margin</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 2))}</div>
+            <div style="font-size:1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(Math.ceil(actualCost * 2))}</div>
           </div>
           <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary);border:2px solid var(--accent-green)">
             <div style="font-size:0.65rem;color:var(--text-muted)">2.5× margin</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 2.5))}</div>
+            <div style="font-size:1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(Math.ceil(actualCost * 2.5))}</div>
           </div>
           <div style="text-align:center;padding:8px;border-radius:var(--radius);background:var(--bg-tertiary)">
             <div style="font-size:0.65rem;color:var(--text-muted)">3× margin</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(Math.ceil(actualCost * 3))}</div>
+            <div style="font-size:1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(Math.ceil(actualCost * 3))}</div>
           </div>
         </div>
       </div>`;

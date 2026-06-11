@@ -179,7 +179,7 @@
       html += `<div class="settings-card" style="padding:10px">
         <div style="font-size:0.85rem;font-weight:600;margin-bottom:6px">${name}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:0.68rem">
-          ${errors > 0 ? `<span style="color:var(--accent-red)">⚠ ${errors} errors</span>` : '<span style="color:var(--accent-green)">✓ No errors</span>'}
+          ${errors > 0 ? `<span style="color:var(--accent-red)">⚠ ${errors} errors</span>` : '<span style="color: var(--accent-green-text)">✓ No errors</span>'}
           ${meshVar !== null ? `<span>Mesh: ${meshVar}mm</span>` : ''}
           ${wifi ? `<span>WiFi: ${wifi}</span>` : ''}
           ${fwVer ? `<span class="text-muted">FW: ${fwVer.slice(0, 20)}</span>` : ''}
@@ -632,7 +632,7 @@
     for (const tip of tips) {
       html += `<div style="display:flex;gap:6px;padding:4px 0;font-size:0.72rem;align-items:flex-start">
         <span style="flex-shrink:0">${tip.icon}</span>
-        <span>${tip.text}${tip.link ? ` <a href="${tip.link}" style="color:var(--accent-green)">→ Open</a>` : ''}</span>
+        <span>${tip.text}${tip.link ? ` <a href="${tip.link}" style="color: var(--accent-green-text)">→ Open</a>` : ''}</span>
       </div>`;
     }
     html += '</div>';

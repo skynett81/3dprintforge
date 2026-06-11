@@ -277,7 +277,7 @@
       <div class="card-title">${_tl('cost_estimator.cost_breakdown', 'Cost breakdown')}</div>
       <div class="ce-cost-grid">
         <div class="ce-cost-item">
-          <div class="ce-cost-icon" style="background:rgba(0,174,66,0.08);color:var(--accent-green)">
+          <div class="ce-cost-icon" style="background:rgba(0,174,66,0.08);color: var(--accent-green-text)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
           </div>
           <div class="ce-cost-detail">
@@ -331,7 +331,7 @@
         <span class="ce-total-label">${_tl('cost_estimator.subtotal', 'Production cost')}</span>
         <span class="ce-total-value">${formatCurrency(c.subtotal || c.total_cost, cur)}</span>
       </div>
-      ${c.markup_amount > 0 ? `<div class="ce-total-row" style="color:var(--accent-green)">
+      ${c.markup_amount > 0 ? `<div class="ce-total-row" style="color: var(--accent-green-text)">
         <span class="ce-total-label">${_tl('cost_estimator.markup', 'Markup')} (${c.markup_pct || 0}%)</span>
         <span class="ce-total-value">+ ${formatCurrency(c.markup_amount, cur)}</span>
       </div>` : ''}
@@ -344,15 +344,15 @@
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div class="ce-price-card" style="text-align:center;padding:10px;border-radius:var(--radius);background:var(--bg-tertiary)">
             <div style="font-size:0.7rem;color:var(--text-muted)">2× margin</div>
-            <div style="font-size:1.1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(c.suggested_prices.low, cur)}</div>
+            <div style="font-size:1.1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(c.suggested_prices.low, cur)}</div>
           </div>
           <div class="ce-price-card" style="text-align:center;padding:10px;border-radius:var(--radius);background:var(--bg-tertiary);border:2px solid var(--accent-green)">
             <div style="font-size:0.7rem;color:var(--text-muted)">2.5× margin</div>
-            <div style="font-size:1.1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(c.suggested_prices.medium, cur)}</div>
+            <div style="font-size:1.1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(c.suggested_prices.medium, cur)}</div>
           </div>
           <div class="ce-price-card" style="text-align:center;padding:10px;border-radius:var(--radius);background:var(--bg-tertiary)">
             <div style="font-size:0.7rem;color:var(--text-muted)">3× margin</div>
-            <div style="font-size:1.1rem;font-weight:700;color:var(--accent-green)">${formatCurrency(c.suggested_prices.high, cur)}</div>
+            <div style="font-size:1.1rem;font-weight:700;color: var(--accent-green-text)">${formatCurrency(c.suggested_prices.high, cur)}</div>
           </div>
         </div>
       </div>` : ''}
@@ -453,7 +453,7 @@
         h += '<div style="font-size:0.7rem;color:var(--text-muted)">\u00F8re/kWh avg today</div>';
         h += '</div>';
         h += '<div style="text-align:center;padding:8px">';
-        h += `<div style="font-size:1.4rem;font-weight:800;color:var(--accent-green)">${(todayRes.min * 100).toFixed(1)}</div>`;
+        h += `<div style="font-size:1.4rem;font-weight:800;color: var(--accent-green-text)">${(todayRes.min * 100).toFixed(1)}</div>`;
         h += '<div style="font-size:0.7rem;color:var(--text-muted)">\u00F8re/kWh cheapest</div>';
         h += '</div>';
       }
@@ -463,7 +463,7 @@
         const end = new Date(cheapestRes.end);
         const fmt = (d) => d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
         h += '<div style="text-align:center;padding:8px;grid-column:1/-1">';
-        h += `<div style="font-size:0.85rem;font-weight:600;color:var(--accent-green)">\uD83D\uDCA1 Cheapest 2h window: ${fmt(start)} \u2013 ${fmt(end)}</div>`;
+        h += `<div style="font-size:0.85rem;font-weight:600;color: var(--accent-green-text)">\uD83D\uDCA1 Cheapest 2h window: ${fmt(start)} \u2013 ${fmt(end)}</div>`;
         h += `<div style="font-size:0.7rem;color:var(--text-muted)">Avg: ${(cheapestRes.avgPrice * 100).toFixed(1)} \u00F8re/kWh</div>`;
         h += '</div>';
       }

@@ -89,7 +89,7 @@
       h += `<div class="act-full">
         <div class="stats-strip act-stats">
           <div class="spark-panel"><span class="spark-label">${_tl('activity.total_prints', 'Total')}</span><span class="spark-value" style="color:var(--accent-blue)">${totalPrints}</span></div>
-          <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Active days')}</span><span class="spark-value" style="color:var(--accent-green)">${activeDays}</span></div>
+          <div class="spark-panel"><span class="spark-label">${_tl('activity.active_days', 'Active days')}</span><span class="spark-value" style="color: var(--accent-green-text)">${activeDays}</span></div>
           <div class="spark-panel"><span class="spark-label">${_tl('activity.current_streak', 'Streak')}</span><span class="spark-value" style="color:var(--accent-yellow, #e6a817)">${currentStreak}d</span></div>
           <div class="spark-panel"><span class="spark-label">${_tl('activity.longest_streak', 'Longest')}</span><span class="spark-value" style="color:var(--accent-purple)">${longestStreak}d</span></div>
           <div class="spark-panel" style="border-right:none"><span class="spark-label">${_tl('activity.success_rate', 'Success rate')}</span><span class="spark-value" style="color:${successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${successRate}%</span></div>

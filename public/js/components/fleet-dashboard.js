@@ -157,10 +157,10 @@
       .fleet-printer-name { font-weight:700; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       .fleet-printer-model { font-size:0.7rem; color:var(--text-muted); }
       .fleet-badge { padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.02em; }
-      .fleet-badge-idle { background:rgba(0,174,66,0.1); color:var(--accent-green); }
+      .fleet-badge-idle { background:rgba(0,174,66,0.1); color: var(--accent-green-text); }
       .fleet-badge-running { background:rgba(18,121,255,0.1); color:var(--accent-blue); }
       .fleet-badge-pause { background:rgba(245,158,11,0.1); color:#f59e0b; }
-      .fleet-badge-finish { background:rgba(0,174,66,0.1); color:var(--accent-green); }
+      .fleet-badge-finish { background:rgba(0,174,66,0.1); color: var(--accent-green-text); }
       .fleet-badge-offline { background:rgba(153,153,153,0.1); color:var(--text-muted); }
       .fleet-badge-failed { background:rgba(229,57,53,0.1); color:var(--accent-red); }
       .fleet-badge-prepare { background:rgba(18,121,255,0.1); color:var(--accent-blue); }

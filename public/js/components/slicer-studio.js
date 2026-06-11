@@ -636,7 +636,7 @@
         <div><strong>Print time:</strong> ${hours}h ${mins}m</div>
         <div><strong>Filament:</strong> ${r.fil.toFixed(2)} g${breakdownHtml}</div>
         ${r.blob && r.blob.size > 0 ? `<div><strong>G-code:</strong> ${(r.blob.size / 1024).toFixed(1)} KB</div>` : ''}
-        ${r.sentTo ? `<div style="color:var(--accent-green)"><strong>📤 Sent to:</strong> ${_esc(r.sentTo)}${r.printing ? ' (printing)' : ''}</div>` : ''}
+        ${r.sentTo ? `<div style="color: var(--accent-green-text)"><strong>📤 Sent to:</strong> ${_esc(r.sentTo)}${r.printing ? ' (printing)' : ''}</div>` : ''}
       </div>
       ${r.blob && r.blob.size > 0 ? '<button class="form-btn" id="ss-download" style="width:100%;margin-top:10px">⬇ Download G-code</button>' : ''}
     `;

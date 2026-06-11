@@ -168,7 +168,7 @@
         <div class="stat-card"><div class="stat-value">${errors.length}</div><div class="stat-label">${t('errors.total')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-red)">${c.fatal + c.critical}</div><div class="stat-label">${t('errors.critical')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-orange)">${c.error}</div><div class="stat-label">${t('errors.errors')}</div></div>
-        <div class="stat-card"><div class="stat-value" style="color:var(--accent-green)">${ackCount}</div><div class="stat-label">${t('errors.acknowledged')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--accent-green-text)">${ackCount}</div><div class="stat-label">${t('errors.acknowledged')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-yellow, #e3b341)">${unackCount}</div><div class="stat-label">${t('errors.unacknowledged')}</div></div>
       </div>`;
     },
@@ -186,7 +186,7 @@
       </div>
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button class="error-filter-btn ${!_showAcknowledged ? 'active' : ''}" data-ripple style="--filter-color:var(--accent-blue)" onclick="toggleErrorAcknowledged(false)">${t('errors.show_active')}</button>
-        <button class="error-filter-btn ${_showAcknowledged ? 'active' : ''}" data-ripple style="--filter-color:var(--accent-green)" onclick="toggleErrorAcknowledged(true)">${t('errors.show_all')}</button>
+        <button class="error-filter-btn ${_showAcknowledged ? 'active' : ''}" data-ripple style="--filter-color: var(--accent-green-text)" onclick="toggleErrorAcknowledged(true)">${t('errors.show_all')}</button>
       </div>`;
       return h;
     },

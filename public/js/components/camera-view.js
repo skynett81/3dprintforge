@@ -286,7 +286,7 @@
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="ov-camera" checked> ${t('camera.overlay_show_cam', 'Show camera')}</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="ov-bartop"> ${t('camera.overlay_bar_top', 'Status bar on top')}</label>
         </div>
-        <div style="padding:10px 12px;border-radius:8px;background:var(--bg-inset);margin-bottom:12px"><code id="ov-url" style="font-size:0.8rem;color:var(--accent-green);word-break:break-all"></code></div>
+        <div style="padding:10px 12px;border-radius:8px;background:var(--bg-inset);margin-bottom:12px"><code id="ov-url" style="font-size:0.8rem;color: var(--accent-green-text);word-break:break-all"></code></div>
         <div style="display:flex;gap:8px">
           <button class="form-btn form-btn-sm form-btn-success" id="ov-copy"><i class="bi bi-clipboard"></i> ${t('camera.overlay_copy', 'Copy URL')}</button>
           <button class="form-btn form-btn-sm" id="ov-open"><i class="bi bi-box-arrow-up-right"></i> ${t('camera.overlay_open', 'Open')}</button>

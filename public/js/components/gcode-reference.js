@@ -254,7 +254,7 @@
         </div>
         <div class="spark-panel">
           <span class="spark-label"><i class="bi bi-cash-coin"></i> Cost</span>
-          <span class="spark-value" style="color:var(--accent-green)">${_esc(_formatMoney(e.cost, e.currency))}</span>
+          <span class="spark-value" style="color: var(--accent-green-text)">${_esc(_formatMoney(e.cost, e.currency))}</span>
         </div>
         <div class="spark-panel">
           <span class="spark-label"><i class="bi bi-bounding-box"></i> Build size</span>

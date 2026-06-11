@@ -74,7 +74,7 @@
     h += '<div class="prefs-row">';
     h += '<span class="prefs-label">' + t('network.rediscovery_interval') + '</span>';
     h += '<div style="display:flex;align-items:center;gap:8px">';
-    h += '<input type="range" id="net-rediscovery-interval" min="10" max="600" step="10" value="' + interval + '" style="width:140px;accent-color:var(--accent-green)" oninput="document.getElementById(\'net-interval-val\').textContent=this.value+\'s\'">';
+    h += '<input type="range" id="net-rediscovery-interval" min="10" max="600" step="10" value="' + interval + '" style="width:140px;accent-color: var(--accent-green-text)" oninput="document.getElementById(\'net-interval-val\').textContent=this.value+\'s\'">';
     h += '<span id="net-interval-val" style="font-size:0.8rem;min-width:35px;opacity:0.7">' + interval + 's</span>';
     h += '</div></div>';
 
@@ -83,7 +83,7 @@
     h += '<div class="prefs-row">';
     h += '<span class="prefs-label">' + t('network.scan_timeout') + '</span>';
     h += '<div style="display:flex;align-items:center;gap:8px">';
-    h += '<input type="range" id="net-scan-timeout" min="1000" max="30000" step="500" value="' + timeout + '" style="width:140px;accent-color:var(--accent-green)" oninput="document.getElementById(\'net-timeout-val\').textContent=(this.value/1000)+\'s\'">';
+    h += '<input type="range" id="net-scan-timeout" min="1000" max="30000" step="500" value="' + timeout + '" style="width:140px;accent-color: var(--accent-green-text)" oninput="document.getElementById(\'net-timeout-val\').textContent=(this.value/1000)+\'s\'">';
     h += '<span id="net-timeout-val" style="font-size:0.8rem;min-width:35px;opacity:0.7">' + (timeout / 1000) + 's</span>';
     h += '</div></div>';
 

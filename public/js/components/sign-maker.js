@@ -34,7 +34,7 @@
       .sm-templates { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
       .sm-tmpl-btn { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:6px 12px; cursor:pointer; transition:all 0.15s; font-size:0.78rem; font-weight:600; display:flex; align-items:center; gap:5px; }
       .sm-tmpl-btn:hover { border-color:var(--accent-blue); }
-      .sm-tmpl-btn.active { border-color:var(--accent-green); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); color:var(--accent-green); }
+      .sm-tmpl-btn.active { border-color: var(--accent-green-text); background:color-mix(in srgb, var(--accent-green) 10%, var(--bg-secondary)); color: var(--accent-green-text); }
       .sm-layout { display:grid; grid-template-columns:360px 1fr; gap:12px; min-height:500px; }
       .sm-sidebar { overflow-y:auto; max-height:calc(100vh - 180px); padding-right:4px; }
       .sm-form { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:10px; padding:12px; }

@@ -245,7 +245,7 @@
         }
         .backup-btn:hover { opacity: 0.8; }
         .backup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .backup-btn--create { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
+        .backup-btn--create { background: var(--accent-green); color: #fff; border-color: var(--accent-green-text); }
         .backup-btn--upload { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
         .backup-btn--download { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
         .backup-btn--restore { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
@@ -261,7 +261,7 @@
           display: none; margin-top: 0.75rem; padding: 0.5rem 0.75rem;
           border-radius: var(--radius); font-size: 0.8rem;
         }
-        .backup-status--success { background: rgba(0, 200, 100, 0.12); color: var(--accent-green); }
+        .backup-status--success { background: rgba(0, 200, 100, 0.12); color: var(--accent-green-text); }
         .backup-status--error { background: rgba(255, 60, 60, 0.12); color: var(--accent-red); }
         .backup-status--info { background: rgba(0, 180, 255, 0.12); color: var(--accent-blue); }
         .backup-empty { color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0; }

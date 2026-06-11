@@ -137,7 +137,7 @@
       .pg-no-response { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-size:0.8rem; }
 
       .pg-json-key { color:var(--accent-blue); }
-      .pg-json-string { color:var(--accent-green); }
+      .pg-json-string { color: var(--accent-green-text); }
       .pg-json-number { color:var(--accent-blue); }
       .pg-json-boolean { color:var(--accent-orange); }
       .pg-json-null { color:var(--accent-red); }

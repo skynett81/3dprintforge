@@ -40,6 +40,10 @@
   --text-primary: var(--bs-body-color, #212529);
   --text-secondary: var(--bs-secondary-color, #495057);
   --text-muted: var(--bs-tertiary-color, #6c757d);
+  /* AA-contrast accents for TEXT (theme.js overrides per theme). Surfaces keep the bright accents. */
+  --accent-green-text: var(--accent-green, #007a30);
+  --accent-red-text: var(--accent-red, #c01d2e);
+  --accent-orange-text: var(--accent-orange, #9a5800);
 
   /* ---- Radius tokens for components ---- */
   --radius: 8px;
@@ -504,7 +508,7 @@
 /* ---- App-specific badge variants ---- */
 .badge-connected {
   background: rgba(25, 135, 84, 0.15) !important;
-  color: var(--accent-green) !important;
+  color: var(--accent-green-text) !important;
 }
 
 .badge-disconnected {
@@ -712,7 +716,7 @@
 }
 
 /* ---- App utility classes (supplement Bootstrap utilities) ---- */
-.text-green { color: var(--accent-green) !important; }
+.text-green { color: var(--accent-green-text) !important; }
 .text-red { color: var(--accent-red) !important; }
 .text-orange { color: var(--accent-orange) !important; }
 .text-blue { color: var(--accent-blue) !important; }

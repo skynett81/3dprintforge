@@ -222,6 +222,26 @@
       const glowVal = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${glowOpacity})`;
       root.style.setProperty('--glow-green', glowVal);
       root.style.setProperty('--glow-cyan', glowVal);
+
+      // Accent used AS text fails WCAG AA on light backgrounds (the brand
+      // green is too light for text on white). Derive a darker text variant
+      // for light themes; keep the accent on dark, where it already passes.
+      // Surfaces (buttons, badges) keep --accent-green; only text colour uses
+      // --accent-green-text.
+      const t2 = (c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0');
+      let tr = rgb.r, tg = rgb.g, tb = rgb.b;
+      if (resolved === 'light') { tr *= 0.6; tg *= 0.6; tb *= 0.6; }
+      root.style.setProperty('--accent-green-text', `#${t2(tr)}${t2(tg)}${t2(tb)}`);
+
+      // The status red/orange also fail AA as text on white. Use darker text
+      // variants on light themes; the bright accents stay for surfaces.
+      if (resolved === 'light') {
+        root.style.setProperty('--accent-red-text', '#c01d2e');
+        root.style.setProperty('--accent-orange-text', '#9a5800');
+      } else {
+        root.style.setProperty('--accent-red-text', 'var(--accent-red)');
+        root.style.setProperty('--accent-orange-text', 'var(--accent-orange)');
+      }
     }
 
     // Radius

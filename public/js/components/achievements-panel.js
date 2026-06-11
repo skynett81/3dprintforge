@@ -108,7 +108,7 @@
         .ach-bar { height:4px; background:var(--bg-tertiary); border-radius:2px; overflow:hidden; }
         .ach-bar-fill { height:100%; background:var(--accent-blue); border-radius:2px; transition:width 0.4s ease; }
         .ach-bar-label { font-size:0.6rem; color:var(--text-muted); margin-top:2px; }
-        .ach-badge { font-size:0.6rem; font-weight:700; color:var(--accent-green); display:flex; align-items:center; gap:4px; }
+        .ach-badge { font-size:0.6rem; font-weight:700; color: var(--accent-green-text); display:flex; align-items:center; gap:4px; }
         .ach-rarity { font-size:0.55rem; font-weight:600; padding:1px 5px; border-radius:3px; margin-left:auto; }
         .ach-section-title { font-size:0.8rem; font-weight:700; margin:16px 0 8px; padding-bottom:4px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:6px; }
         .ach-section-count { font-size:0.65rem; color:var(--text-muted); font-weight:400; }
@@ -148,14 +148,14 @@
           <div class="ach-xp-bar"><div class="ach-xp-fill" style="width:${(levelXP / 500) * 100}%"></div></div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:1.4rem;font-weight:800;color:var(--accent-green)">${completionPct}%</div>
+          <div style="font-size:1.4rem;font-weight:800;color: var(--accent-green-text)">${completionPct}%</div>
           <div style="font-size:0.6rem;color:var(--text-muted)">${t('achievements.completion', 'Completion')}</div>
         </div>
       </div>`;
 
       // Summary cards
       h += '<div class="ach-summary">';
-      h += `<div class="ach-summary-card"><div class="ach-summary-num" style="color:var(--accent-green)">${earned.length}</div><div class="ach-summary-label">${t('achievements.earned', 'Earned')}</div></div>`;
+      h += `<div class="ach-summary-card"><div class="ach-summary-num" style="color: var(--accent-green-text)">${earned.length}</div><div class="ach-summary-label">${t('achievements.earned', 'Earned')}</div></div>`;
       h += `<div class="ach-summary-card"><div class="ach-summary-num" style="color:var(--accent-blue)">${inProgress.length}</div><div class="ach-summary-label">${t('achievements.in_progress', 'In Progress')}</div></div>`;
       h += `<div class="ach-summary-card"><div class="ach-summary-num" style="color:var(--text-muted)">${locked.length}</div><div class="ach-summary-label">${t('achievements.locked', 'Locked')}</div></div>`;
       h += `<div class="ach-summary-card"><div class="ach-summary-num" style="color:var(--accent-purple, #8b5cf6)">${totalXP}</div><div class="ach-summary-label">XP</div></div>`;
@@ -292,7 +292,7 @@
         <div class="ach-detail-stat"><span class="ach-detail-val" style="color:${a.rarityColor}">${a.rarity}</span><span class="ach-detail-lbl">${t('achievements.rarity', 'Rarity')}</span></div>
         <div class="ach-detail-stat"><span class="ach-detail-val">${catName}</span><span class="ach-detail-lbl">${t('achievements.category', 'Category')}</span></div>
       </div>
-      ${!a.earned ? `<div class="ach-detail-hint">${t('achievements.keep_going', 'Keep going! You are ') + pct + '% there.'}</div>` : `<div class="ach-detail-hint" style="color:var(--accent-green)">${t('achievements.completed_msg', 'Congratulations! Achievement unlocked!')}</div>`}
+      ${!a.earned ? `<div class="ach-detail-hint">${t('achievements.keep_going', 'Keep going! You are ') + pct + '% there.'}</div>` : `<div class="ach-detail-hint" style="color: var(--accent-green-text)">${t('achievements.completed_msg', 'Congratulations! Achievement unlocked!')}</div>`}
     `;
 
     document.body.appendChild(popup);

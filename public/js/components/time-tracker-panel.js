@@ -214,7 +214,7 @@
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.best'))}</div>
-        <div class="tt-card-value" style="color:var(--accent-green)">${accs.length > 0 ? best.toFixed(1) + '%' : '--'}</div>
+        <div class="tt-card-value" style="color: var(--accent-green-text)">${accs.length > 0 ? best.toFixed(1) + '%' : '--'}</div>
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.worst'))}</div>
@@ -378,7 +378,7 @@
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.shortest'))}</div>
-        <div class="tt-card-value" style="color:var(--accent-green)">${fmtTime(shortest)}</div>
+        <div class="tt-card-value" style="color: var(--accent-green-text)">${fmtTime(shortest)}</div>
       </div>
       <div class="tt-card">
         <div class="tt-card-label">${_esc(t('timetracker.longest'))}</div>

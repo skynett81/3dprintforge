@@ -125,7 +125,7 @@
       subtitle = healthScore >= 80 ? _t('health.grade_good', 'Good') : healthScore >= 60 ? _t('health.grade_fair', 'OK') : _t('health.grade_poor', 'Poor');
 
       stats = `<div class="diag-card-stats">
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-green)">${successRate}%</div><div class="diag-card-stat-label">${_t('health.success_rate', 'Success rate')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color: var(--accent-green-text)">${successRate}%</div><div class="diag-card-stat-label">${_t('health.success_rate', 'Success rate')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-primary)'}">${overdueCount}</div><div class="diag-card-stat-label">${_t('health.overdue', 'Overdue')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value">${totalPrints}</div><div class="diag-card-stat-label">${_t('health.total_prints', 'Prints')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${recentErrors > 0 ? '#f59e0b' : 'var(--text-primary)'}">${recentErrors}</div><div class="diag-card-stat-label">${_t('health.errors_7d', 'Errors 7d')}</div></div>
@@ -134,7 +134,7 @@
 
     return `<div class="diag-card" onclick="_switchDiagTab('health')">
       <div class="diag-card-header">
-        <div class="diag-card-icon" style="background:rgba(0,174,66,0.1);color:var(--accent-green)">
+        <div class="diag-card-icon" style="background:rgba(0,174,66,0.1);color: var(--accent-green-text)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
         <div>

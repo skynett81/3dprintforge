@@ -1552,7 +1552,7 @@
             <button class="form-btn form-btn-sm" data-ripple style="color:var(--text-muted)" onclick="window._startFilamentChange('${esc(printerId)}')">${t('common.cancel')}</button>
           </div>`;
       } else {
-        el.innerHTML = `<div style="font-size:0.85rem;color:var(--accent-green)">${t('controls.fc_complete')}</div>`;
+        el.innerHTML = `<div style="font-size:0.85rem;color: var(--accent-green-text)">${t('controls.fc_complete')}</div>`;
         showToast(t('controls.fc_complete'), 'success');
       }
     } catch (e) {

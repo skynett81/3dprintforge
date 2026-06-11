@@ -181,7 +181,7 @@
       .mc-compat { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--radius); padding:16px; }
       .mc-compat h4 { margin:0 0 10px; font-size:0.85rem; }
       .mc-compat-row { display:flex; justify-content:space-between; padding:5px 0; font-size:0.78rem; border-bottom:1px solid rgba(0,0,0,0.03); }
-      .mc-compat-ok { color:var(--accent-green); }
+      .mc-compat-ok { color: var(--accent-green-text); }
       .mc-compat-warn { color:#f59e0b; }
       .mc-picker-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; display:flex; align-items:center; justify-content:center; }
       .mc-picker { background:var(--bg-primary); border-radius:12px; padding:20px; width:min(400px,90vw); max-height:70vh; overflow-y:auto; }

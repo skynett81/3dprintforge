@@ -17,7 +17,7 @@
       .cmp-table th { background:var(--bg-tertiary); padding:10px 14px; font-size:0.75rem; font-weight:700; text-align:left; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.02em; }
       .cmp-table td { padding:10px 14px; font-size:0.82rem; border-top:1px solid var(--border-color); }
       .cmp-table td:first-child { color:var(--text-muted); font-weight:600; width:180px; }
-      .cmp-better { color:var(--accent-green); font-weight:700; }
+      .cmp-better { color: var(--accent-green-text); font-weight:700; }
       .cmp-worse { color:var(--accent-red); font-weight:700; }
       .cmp-bar-wrap { display:flex; align-items:center; gap:8px; }
       .cmp-bar { height:8px; border-radius:4px; transition:width 0.5s; }

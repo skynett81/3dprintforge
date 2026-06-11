@@ -420,7 +420,7 @@
     const pros = _parseJson(p.pros);
     const cons = _parseJson(p.cons);
     if (pros.length) {
-      html += '<div class="kb-detail-section"><div class="kb-detail-section-title">' + t('kb.pros') + '</div><ul style="margin:0;padding-left:16px;font-size:0.8rem;color:var(--accent-green)">';
+      html += '<div class="kb-detail-section"><div class="kb-detail-section-title">' + t('kb.pros') + '</div><ul style="margin:0;padding-left:16px;font-size:0.8rem;color: var(--accent-green-text)">';
       pros.forEach(pr => { html += `<li style="color:var(--text-primary)">${_esc(pr)}</li>`; });
       html += '</ul></div>';
     }

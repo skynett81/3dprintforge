@@ -549,7 +549,7 @@
         h += '<div style="display:flex;align-items:center;gap:8px">';
         h += '<label class="settings-checkbox"><input type="checkbox" id="sound-toggle" ' + (ns.isEnabled() ? 'checked' : '') + ' onchange="notificationSound.setEnabled(this.checked);if(this.checked)notificationSound.play(\'print_started\')"><span>' + (t('settings.sound_enable', 'On')) + '</span></label>';
         h += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>';
-        h += '<input type="range" id="sound-volume" min="0" max="100" value="' + Math.round(ns.getVolume() * 100) + '" style="width:100px;accent-color:var(--accent-green)" oninput="notificationSound.setVolume(this.value/100);document.getElementById(\'vol-pct\').textContent=this.value+\'%\'">';
+        h += '<input type="range" id="sound-volume" min="0" max="100" value="' + Math.round(ns.getVolume() * 100) + '" style="width:100px;accent-color: var(--accent-green-text)" oninput="notificationSound.setVolume(this.value/100);document.getElementById(\'vol-pct\').textContent=this.value+\'%\'">';
         h += '<span id="vol-pct" style="font-size:0.75rem;opacity:0.6;min-width:30px">' + Math.round(ns.getVolume() * 100) + '%</span>';
         h += '</div>';
       }
@@ -766,7 +766,7 @@
         </label>
         ${enabled ? `<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--bg-inset);font-size:0.78rem">
           <div class="text-muted" style="margin-bottom:4px">${t('settings.spoolman_server_point', 'In moonraker.conf, set')} <code>[spoolman] server:</code></div>
-          <code class="copy-value" onclick="copyToClipboard('${base}', 'Spoolman URL')" title="Click to copy" style="cursor:pointer;font-weight:700;color:var(--accent-green);word-break:break-all">${base}</code>
+          <code class="copy-value" onclick="copyToClipboard('${base}', 'Spoolman URL')" title="Click to copy" style="cursor:pointer;font-weight:700;color: var(--accent-green-text);word-break:break-all">${base}</code>
           <i class="bi bi-clipboard" onclick="copyToClipboard('${base}', 'Spoolman URL')" title="Copy" style="cursor:pointer;opacity:0.55;margin-left:6px"></i>
         </div>` : ''}`;
       const cb = c.querySelector('#spoolman-server-toggle');
@@ -1279,7 +1279,7 @@
       fetch('/api/eula').then(r => r.json()).then(d => {
         const el2 = document.getElementById('eula-status');
         if (el2) el2.innerHTML = d.accepted
-          ? `<span style="color:var(--accent-green);font-size:0.82rem">✓ Accepted on ${new Date(d.acceptedAt).toLocaleDateString()}</span>`
+          ? `<span style="color: var(--accent-green-text);font-size:0.82rem">✓ Accepted on ${new Date(d.acceptedAt).toLocaleDateString()}</span>`
           : `<span style="color:var(--accent-red);font-size:0.82rem">⚠ Not yet accepted</span>`;
       }).catch(() => {});
     } else if (_systemSubTab === 'tunnel') {
@@ -1385,7 +1385,7 @@
         const fs = info.forge_slicer;
         let label;
         if (!fs.enabled) label = '<span style="color:var(--text-muted)">disabled</span>';
-        else if (fs.ok) label = `<span style="color:var(--accent-green)">connected</span> v${fs.version || '?'}`;
+        else if (fs.ok) label = `<span style="color: var(--accent-green-text)">connected</span> v${fs.version || '?'}`;
         else label = `<span style="color:#ef4444">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
         rows.push(['3DPrintForge Slicer', label]);
       }
@@ -1447,7 +1447,7 @@
     ];
     el.innerHTML = tasks.map(task => `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color)">
       <div style="display:flex;align-items:center;gap:8px">${task.icon}<div><div style="font-size:0.85rem;font-weight:500">${task.name}</div><div class="text-muted" style="font-size:0.75rem">${task.desc}</div></div></div>
-      <span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:${task.active ? 'rgba(0,230,118,0.15);color:var(--accent-green)' : 'rgba(255,82,82,0.15);color:var(--accent-red)'}">${task.active ? t('settings.task_status_active') : t('settings.task_status_disabled')}</span>
+      <span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:${task.active ? 'rgba(0,230,118,0.15);color: var(--accent-green-text)' : 'rgba(255,82,82,0.15);color:var(--accent-red)'}">${task.active ? t('settings.task_status_active') : t('settings.task_status_disabled')}</span>
     </div>`).join('');
   }
 
@@ -1471,7 +1471,7 @@
             <span class="text-muted" style="font-size:0.75rem;flex-shrink:0">${size}</span>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0">
-            <button class="form-btn form-btn-sm" style="font-size:0.75rem;padding:3px 8px;color:var(--accent-green)" onclick="window._restoreBackup('${b.filename}')" title="${t('settings.backup_restore')}">
+            <button class="form-btn form-btn-sm" style="font-size:0.75rem;padding:3px 8px;color: var(--accent-green-text)" onclick="window._restoreBackup('${b.filename}')" title="${t('settings.backup_restore')}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
             </button>
             <a href="/api/backup/download/${encodeURIComponent(b.filename)}" class="form-btn form-btn-sm" style="text-decoration:none;font-size:0.75rem;padding:3px 8px" title="${t('settings.backup_download')}">
@@ -3473,7 +3473,7 @@
       const lic = await res.json();
       if (lic.active) {
         if (badge) { badge.classList.add('active'); badge.textContent = t('settings.ecom_premium') + ' \u2713'; }
-        licArea.innerHTML = `<div style="font-size:0.85rem;color:var(--accent-green)">${t('settings.orders_license_active', 'Lisens aktiv — ordrebehandling tilgjengelig.')}</div>`;
+        licArea.innerHTML = `<div style="font-size:0.85rem;color: var(--accent-green-text)">${t('settings.orders_license_active', 'Lisens aktiv — ordrebehandling tilgjengelig.')}</div>`;
         if (openBtn) openBtn.style.display = '';
       } else {
         if (badge) { badge.classList.remove('active'); }
@@ -3503,7 +3503,7 @@
         licArea.innerHTML = `
           <div class="ecom-license-info" style="font-size:0.85rem;margin-bottom:0.5rem;padding:0.8rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid rgba(0,174,66,0.3)">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="color:var(--accent-green);font-weight:700;font-size:0.9rem">✓ License active</span>
+              <span style="color: var(--accent-green-text);font-weight:700;font-size:0.9rem">✓ License active</span>
               <span style="background:var(--accent-green);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600">${_esc(lic.plan || 'Standard')}</span>
               ${lic.license_type && lic.license_type !== 'none' ? '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;font-size:0.7rem">' + _esc(lic.license_type.toUpperCase()) + '</span>' : ''}
               <button class="form-btn form-btn-sm form-btn-danger" data-ripple onclick="deactivateEcomLicense()" style="margin-left:auto">${t('settings.ecom_deactivate')}</button>
@@ -3521,7 +3521,7 @@
             </div>
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);display:flex;gap:16px;font-size:0.8rem;color:var(--text-muted)">
               <span>Fees this month: <strong>${feeStr}</strong> (${lic.orders_this_month || 0} orders)</span>
-              <span>Provider: <a href="https://geektech.no" target="_blank" rel="noopener" style="color:var(--accent-green)">geektech.no</a></span>
+              <span>Provider: <a href="https://geektech.no" target="_blank" rel="noopener" style="color: var(--accent-green-text)">geektech.no</a></span>
             </div>
           </div>`;
         if (ecomSection) ecomSection.style.display = '';
@@ -4141,7 +4141,7 @@
 
       let h = `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">`;
       h += `<div><span class="text-muted" style="font-size:0.7rem">${t('settings.energy_current')}</span><div style="font-size:1.3rem;font-weight:800;color:${levelColors[data.level] || 'var(--text-primary)'}">${data.current !== null ? data.current.toFixed(2) : '—'} <span style="font-size:0.7rem;font-weight:500">${data.currency}/kWh</span></div><span style="font-size:0.72rem;font-weight:600;color:${levelColors[data.level]}">${levelLabels[data.level]}</span></div>`;
-      h += `<div><span class="text-muted" style="font-size:0.7rem">Min</span><div style="font-size:1rem;font-weight:700;color:var(--accent-green)">${data.min.toFixed(2)} <span style="font-size:0.65rem;font-weight:400">kl ${String(data.minHour).padStart(2,'0')}:00</span></div></div>`;
+      h += `<div><span class="text-muted" style="font-size:0.7rem">Min</span><div style="font-size:1rem;font-weight:700;color: var(--accent-green-text)">${data.min.toFixed(2)} <span style="font-size:0.65rem;font-weight:400">kl ${String(data.minHour).padStart(2,'0')}:00</span></div></div>`;
       h += `<div><span class="text-muted" style="font-size:0.7rem">Max</span><div style="font-size:1rem;font-weight:700;color:var(--accent-red)">${data.max.toFixed(2)} <span style="font-size:0.65rem;font-weight:400">kl ${String(data.maxHour).padStart(2,'0')}:00</span></div></div>`;
       h += `<div><span class="text-muted" style="font-size:0.7rem">${t('settings.energy_avg')}</span><div style="font-size:1rem;font-weight:700">${data.avg.toFixed(2)}</div></div>`;
       h += `</div>`;
@@ -4176,7 +4176,7 @@
         windows.forEach((w, i) => {
           if (w.error) { ch += `<div class="text-muted" style="font-size:0.8rem">${labels[i]}: —</div>`; return; }
           const startHr = new Date(w.startsAt).getHours();
-          ch += `<div style="background:var(--bg-tertiary);padding:8px 12px;border-radius:6px"><div class="text-muted" style="font-size:0.68rem">${t('settings.energy_cheapest')} ${labels[i]}</div><div style="font-size:1rem;font-weight:700;color:var(--accent-green)">kl ${String(startHr).padStart(2,'0')}:00</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('settings.energy_avg')}: ${w.avgPrice.toFixed(2)} ${w.currency}/kWh</div></div>`;
+          ch += `<div style="background:var(--bg-tertiary);padding:8px 12px;border-radius:6px"><div class="text-muted" style="font-size:0.68rem">${t('settings.energy_cheapest')} ${labels[i]}</div><div style="font-size:1rem;font-weight:700;color: var(--accent-green-text)">kl ${String(startHr).padStart(2,'0')}:00</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('settings.energy_avg')}: ${w.avgPrice.toFixed(2)} ${w.currency}/kWh</div></div>`;
         });
         ch += '</div>';
         cheapEl.innerHTML = ch;
@@ -4654,7 +4654,7 @@
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || 'Import failed');
-        if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-green);font-size:0.8rem">${result.applied} settings imported</span>`;
+        if (statusEl) statusEl.innerHTML = `<span style="color: var(--accent-green-text);font-size:0.8rem">${result.applied} settings imported</span>`;
         if (typeof showToast === 'function') showToast(`${result.applied} settings imported`, 'success', 3000);
       } catch (err) {
         if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent-red);font-size:0.8rem">${err.message}</span>`;

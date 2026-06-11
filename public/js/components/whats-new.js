@@ -43,14 +43,14 @@
       var border = i < FEATURES.length - 1 ? 'border-bottom:1px solid var(--border-color)' : '';
       var btn = f.action ? '<button class="form-btn form-btn-sm" data-wn-action="' + i + '" style="align-self:center;white-space:nowrap">' + f.action.label + '</button>' : '';
       return '<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;' + border + '">'
-        + '<div style="width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-tertiary);color:var(--accent-green)"><i class="bi ' + f.icon + '" style="font-size:1.1rem"></i></div>'
+        + '<div style="width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-tertiary);color: var(--accent-green-text)"><i class="bi ' + f.icon + '" style="font-size:1.1rem"></i></div>'
         + '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.9rem">' + f.title + '</div>'
         + '<div class="text-muted" style="font-size:0.78rem">' + f.desc + '</div></div>'
         + btn + '</div>';
     }).join('');
 
     var html = '<div style="padding:22px;max-width:560px">'
-      + '<h3 style="margin:0 0 4px;font-size:1.1rem;display:flex;align-items:center;gap:8px"><i class="bi bi-stars" style="color:var(--accent-green)"></i> What\'s new</h3>'
+      + '<h3 style="margin:0 0 4px;font-size:1.1rem;display:flex;align-items:center;gap:8px"><i class="bi bi-stars" style="color: var(--accent-green-text)"></i> What\'s new</h3>'
       + '<p class="text-muted" style="font-size:0.82rem;margin:0 0 8px">A few recent additions you might have missed.</p>'
       + rows
       + '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="form-btn form-btn-sm form-btn-success" data-wn-dismiss>Got it</button></div>'
