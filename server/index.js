@@ -7,6 +7,7 @@ import { execSync } from 'node:child_process';
 import { networkInterfaces, hostname } from 'node:os';
 import { streamWithCompression } from './http-compression.js';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
+import { handleSpoolmanApi } from './spoolman-api.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
 import { startNightlyBackup } from './backup.js';
@@ -343,6 +344,31 @@ function handleRequest(req, res) {
   if (req.url.startsWith('/api/') && handleCors(req, res)) return;
 
   const pathname = req.url.split('?')[0];
+
+  // Spoolman-compatible API (opt-in) — an unauthenticated machine API so
+  // Moonraker / Klipper front-ends (Mainsail, Fluidd) can use our inventory.
+  // Handled before auth + CSRF because those clients carry neither our session
+  // cookie nor an Origin header. Off unless config.spoolmanServer.enabled or
+  // SPOOLMAN_SERVER=true.
+  if (pathname.startsWith('/api/v1/') && (config.spoolmanServer?.enabled || process.env.SPOOLMAN_SERVER === 'true')) {
+    const query = (() => { try { return new URL(req.url, 'http://localhost').searchParams; } catch { return new URLSearchParams(); } })();
+    const send = (status, json) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(json)); };
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const r = handleSpoolmanApi('GET', pathname, query, null);
+      return r ? send(r.status, r.json) : send(404, { message: 'Not found' });
+    }
+    let raw = '';
+    req.on('data', (c) => { raw += c; if (raw.length > 100000) req.destroy(); });
+    req.on('end', () => {
+      let body = {};
+      try { body = raw ? JSON.parse(raw) : {}; } catch { /* ignore malformed */ }
+      try {
+        const r = handleSpoolmanApi(req.method, pathname, query, body);
+        if (r) send(r.status, r.json); else send(404, { message: 'Not found' });
+      } catch (e) { send(500, { message: e.message }); }
+    });
+    return;
+  }
 
   // CSRF protection — validate Origin header on state-changing requests
   if (req.url.startsWith('/api/') && req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
