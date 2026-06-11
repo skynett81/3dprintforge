@@ -478,6 +478,16 @@
       btn.addEventListener('click', close);
     });
 
+    // Auto-focus the first text field so the user can type immediately. Only
+    // real inputs (not checkboxes/buttons), and skip if the dialog opts out
+    // with data-no-autofocus, so confirm dialogs don't grab focus onto a field.
+    if (!options.noAutoFocus) {
+      setTimeout(() => {
+        const f = overlay.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([disabled]), textarea, select');
+        if (f && typeof f.focus === 'function') { try { f.focus(); } catch (e) { /* ignore */ } }
+      }, 60);
+    }
+
     return { overlay, close };
   };
 
