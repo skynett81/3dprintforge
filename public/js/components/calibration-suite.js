@@ -47,6 +47,8 @@
     },
     'retract-tower': {
       label: 'Retraction Tower', icon: '↩',
+      desc: 'Find the retraction distance that stops stringing without causing clogs or gaps.',
+      guide: 'https://ellis3dp.com/Print-Tuning-Guide/articles/retraction.html',
       params: [
         { key: 'bedTemp', label: 'Bed temp (°C)', type: 'number', value: 60 },
         { key: 'hotendTemp', label: 'Hotend temp (°C)', type: 'number', value: 215 },
@@ -57,6 +59,8 @@
     },
     'flow-test': {
       label: 'Flow Rate Test', icon: '🔄',
+      desc: 'Tune the extrusion multiplier / flow so wall widths come out accurate.',
+      guide: 'https://ellis3dp.com/Print-Tuning-Guide/articles/extrusion_multiplier.html',
       params: [
         { key: 'bedTemp', label: 'Bed temp (°C)', type: 'number', value: 60 },
         { key: 'hotendTemp', label: 'Hotend temp (°C)', type: 'number', value: 215 },
@@ -93,6 +97,8 @@
     },
     'first-layer': {
       label: 'First Layer Test', icon: '◻',
+      desc: 'Dial in first-layer squish and Z-offset for reliable bed adhesion.',
+      guide: 'https://ellis3dp.com/Print-Tuning-Guide/articles/first_layer_squish.html',
       params: [
         { key: 'pattern', label: 'Pattern', type: 'select', options: ['snake', 'square', 'concentric'], value: 'snake' },
         { key: 'bedTemp', label: 'Bed temp (°C)', type: 'number', value: 60 },
