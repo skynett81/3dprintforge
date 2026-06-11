@@ -73,6 +73,39 @@ export function emptyState({ icon, title, desc, actionLabel, actionOnClick }) {
 window.emptyState = emptyState;
 
 /**
+ * Render a friendly "couldn't load" error state into a container, with an
+ * optional Try-again button wired to a callback. Use in a panel's data-load
+ * catch block instead of leaving the panel blank or showing a raw error.
+ * @param {Element|string} container - element or selector to fill
+ * @param {object} [opts]
+ * @param {string} [opts.title]
+ * @param {string} [opts.desc]
+ * @param {string} [opts.retryLabel]
+ * @param {() => void} [opts.onRetry] - called when Try again is clicked
+ */
+export function renderPanelError(container, opts = {}) {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+  const tt = (k, fb) => (typeof window.t === 'function' ? window.t(k, fb) : fb);
+  const title = opts.title || tt('common.load_failed', 'Could not load this');
+  const desc = opts.desc || tt('common.load_failed_desc', 'Something went wrong while loading. Check your connection and try again.');
+  const retryLabel = opts.retryLabel || tt('common.retry', 'Try again');
+  const icon = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  el.innerHTML = '<div class="empty-state panel-error-state">' +
+    '<div class="empty-state-icon">' + icon + '</div>' +
+    '<div class="empty-state-title">' + esc(title) + '</div>' +
+    '<div class="empty-state-desc">' + esc(desc) + '</div>' +
+    (opts.onRetry ? '<div class="empty-state-action"><button class="form-btn panel-error-retry" type="button">' + esc(retryLabel) + '</button></div>' : '') +
+    '</div>';
+  if (opts.onRetry) {
+    const btn = el.querySelector('.panel-error-retry');
+    if (btn) btn.addEventListener('click', () => { try { opts.onRetry(); } catch (e) { /* ignore */ } });
+  }
+}
+
+window.renderPanelError = renderPanelError;
+
+/**
  * Trigger a file download from the given URL.
  * @param {string} url - The URL to download from
  */

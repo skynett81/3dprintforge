@@ -2584,6 +2584,9 @@
   },
   "common": {
     "undo": "Undo",
+    "retry": "Try again",
+    "load_failed": "Could not load this",
+    "load_failed_desc": "Something went wrong while loading. Check your connection and try again.",
     "printer": "Printer",
     "all_printers": "All printers",
     "active_filament": "Active filament per printer",

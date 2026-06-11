@@ -2231,8 +2231,11 @@
       // with a generic "load failed" message.
       // eslint-disable-next-line no-console
       console.error('[filament] loadFilament failed:', e);
-      panel.innerHTML = `<p class="text-muted">${t('filament.load_failed')}</p>
-        <pre style="font-size:0.7rem;color:var(--accent-red);overflow:auto;max-width:100%;white-space:pre-wrap;margin-top:8px">${esc(e?.stack || e?.message || String(e))}</pre>`;
+      if (typeof window.renderPanelError === 'function') {
+        window.renderPanelError(panel, { title: t('filament.load_failed', 'Could not load this'), onRetry: () => window.loadFilamentPanel() });
+      } else {
+        panel.innerHTML = `<p class="text-muted">${t('filament.load_failed')}</p>`;
+      }
     }
   }
 

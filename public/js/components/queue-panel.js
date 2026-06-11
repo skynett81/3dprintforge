@@ -175,6 +175,10 @@
 
     } catch (e) {
       console.error('[queue] Failed to load items:', e);
+      const c = document.getElementById('queue-items-container');
+      if (c && typeof window.renderPanelError === 'function') {
+        window.renderPanelError(c, { onRetry: () => window.loadQueuePanel() });
+      }
     }
   }
 

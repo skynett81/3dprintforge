@@ -1196,7 +1196,11 @@
         }).catch(() => {});
 
     } catch (e) {
-      panel.innerHTML = `<p class="text-muted">${t('history.load_failed')}</p>`;
+      if (typeof window.renderPanelError === 'function') {
+        window.renderPanelError(panel, { title: t('history.load_failed', 'Could not load this'), onRetry: () => window.loadHistoryPanel() });
+      } else {
+        panel.innerHTML = `<p class="text-muted">${t('history.load_failed')}</p>`;
+      }
     }
   }
 

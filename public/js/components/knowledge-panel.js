@@ -58,7 +58,11 @@
       _stats = stats;
       _render(container);
     } catch (e) {
-      container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:40px">${t('kb.load_failed')}</p>`;
+      if (typeof window.renderPanelError === 'function') {
+        window.renderPanelError(container, { title: t('kb.load_failed', 'Could not load this'), onRetry: () => window.loadKnowledgePanel() });
+      } else {
+        container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:40px">${t('kb.load_failed')}</p>`;
+      }
     }
   };
 
