@@ -304,6 +304,93 @@ export function generatePressureAdvanceTower(params = {}) {
 }
 
 /**
+ * Pressure Advance / Linear Advance — PATTERN (line) method.
+ *
+ * Complements the TUNING_TOWER ramp above with the line-pattern approach
+ * popularised by Sineos' Marlin calibration tool and rewritten by Andrew Ellis
+ * (ellis3dp.com Print Tuning Guide, GPL-3.0). Each row prints a slow → fast →
+ * slow line at a stepped pressure_advance value; the cleanest row (no gaps from
+ * under-advance after acceleration, no bulges from over-advance) gives the best
+ * PA. Generally easier to read than the tower because the speed transitions are
+ * isolated per row.
+ *
+ * params: { bedTemp, hotendTemp, paStart, paEnd, paStep, firmware,
+ *           layerHeight, lineWidth, slowFeed, fastFeed, lineSpacing, segmentLength }
+ */
+export function generatePressureAdvancePattern(params = {}) {
+  const p = {
+    bedTemp: 60, hotendTemp: 215,
+    paStart: 0, paEnd: 0.08, paStep: 0.005,
+    firmware: 'klipper',
+    layerHeight: 0.2, lineWidth: 0.45,
+    slowFeed: 1200, fastFeed: 6000, // mm/min — 20 / 100 mm/s
+    lineSpacing: 4, segmentLength: 20,
+    ...params,
+  };
+  if (p.paStart < 0 || p.paEnd > 2 || p.paEnd <= p.paStart) {
+    throw new Error('PA range: start ≥ 0, end ≤ 2, end > start');
+  }
+  if (!['klipper', 'marlin'].includes(p.firmware)) throw new Error('firmware: klipper|marlin');
+  if (!(p.paStep > 0)) throw new Error('paStep must be > 0');
+  if (!(p.fastFeed > p.slowFeed)) throw new Error('fastFeed must exceed slowFeed');
+
+  const steps = Math.floor((p.paEnd - p.paStart) / p.paStep + 1e-9) + 1;
+  if (steps > 100) throw new Error('Too many PA rows (>100); increase paStep or narrow the range');
+
+  const xsec = (p.lineWidth * p.layerHeight) / (Math.PI * 0.875 * 0.875);
+  const seg = p.segmentLength;
+  const lineLen = seg * 3;
+  const cx = 100, cy = 100;
+  const x1 = cx - lineLen / 2;
+  const x2 = x1 + seg, x3 = x1 + 2 * seg, x4 = x1 + 3 * seg;
+  const startY = cy - ((steps - 1) * p.lineSpacing) / 2;
+  const retract = 0.6;
+
+  const setPA = (pa) => (p.firmware === 'klipper'
+    ? `SET_PRESSURE_ADVANCE ADVANCE=${pa.toFixed(4)}\n`
+    : `M900 K${pa.toFixed(4)}\n`);
+
+  let g = HEADER('pressure-advance-pattern', p);
+  g += `; PA pattern (line method) — based on Sineos' Marlin PA tool, rewritten by\n`;
+  g += `; Andrew Ellis (ellis3dp.com Print Tuning Guide), GPL-3.0.\n`;
+  g += `; Each row: slow (${Math.round(p.slowFeed / 60)}mm/s) -> fast (${Math.round(p.fastFeed / 60)}mm/s) -> slow,\n`;
+  g += `; at an increasing pressure_advance. Pick the row with the cleanest speed\n`;
+  g += `; transitions; its PA = paStart + rowIndex * paStep (rows go front -> back).\n`;
+  g += PRELUDE(p.bedTemp, p.hotendTemp);
+  g += `G1 Z${p.layerHeight.toFixed(3)} F1200\n`;
+  g += `G92 E0\n`;
+
+  let E = 0;
+  for (let i = 0; i < steps; i++) {
+    const pa = +(p.paStart + i * p.paStep).toFixed(4);
+    const y = startY + i * p.lineSpacing;
+    g += `; --- row ${i}: PA=${pa} ---\n`;
+    g += setPA(pa);
+    g += `G1 X${x1.toFixed(2)} Y${y.toFixed(2)} F4500\n`; // travel to row start
+    if (i > 0) { E += retract; g += `G1 E${E.toFixed(4)} F1800\n`; } // de-retract
+    E += seg * xsec; g += `G1 X${x2.toFixed(2)} E${E.toFixed(4)} F${p.slowFeed}\n`;
+    E += seg * xsec; g += `G1 X${x3.toFixed(2)} E${E.toFixed(4)} F${p.fastFeed}\n`;
+    E += seg * xsec; g += `G1 X${x4.toFixed(2)} E${E.toFixed(4)} F${p.slowFeed}\n`;
+    E -= retract; g += `G1 E${E.toFixed(4)} F1800\n`; // retract before travel
+  }
+  if (p.firmware === 'klipper') g += `SET_PRESSURE_ADVANCE ADVANCE=0\n`;
+  else g += `M900 K0\n`;
+  g += POSTLUDE;
+
+  const totalLen = steps * lineLen;
+  const paLast = +(p.paStart + (steps - 1) * p.paStep).toFixed(4);
+  return {
+    name: `Pressure Advance Pattern (${p.firmware})`,
+    description: `Line method: ${steps} rows, PA ${p.paStart} → ${paLast} in ${p.paStep} steps (front to back). Print, pick the row with the cleanest slow/fast transitions; its PA = paStart + rowIndex × paStep.`,
+    gcode: g,
+    expected_minutes: Math.max(1, Math.round(steps * lineLen / ((p.slowFeed + p.fastFeed) / 2) + steps * 0.05)),
+    filament_g: +(totalLen * xsec * 1.24).toFixed(1),
+    type: 'pressure-advance-pattern',
+    pa_values: Array.from({ length: steps }, (_, i) => +(p.paStart + i * p.paStep).toFixed(4)),
+  };
+}
+
+/**
  * First-layer test — a single-layer pattern (square, snake, or concentric
  * circles) used to verify bed level and Z-offset.
  */
@@ -428,6 +515,7 @@ const GENERATORS = {
   'retract-tower': generateRetractTower,
   'flow-test': generateFlowTest,
   'pressure-advance': generatePressureAdvanceTower,
+  'pressure-advance-pattern': generatePressureAdvancePattern,
   'first-layer': generateFirstLayerTest,
   'single-line': generateSingleLineTest,
 };

@@ -2585,6 +2585,7 @@
   "common": {
     "undo": "Undo",
     "retry": "Try again",
+    "read_guide": "Read the guide",
     "load_failed": "Could not load this",
     "load_failed_desc": "Something went wrong while loading. Check your connection and try again.",
     "printer": "Printer",

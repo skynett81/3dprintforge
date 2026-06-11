@@ -5,7 +5,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   generateTempTower, generateRetractTower, generateFlowTest,
-  generatePressureAdvanceTower, generateFirstLayerTest, generateSingleLineTest,
+  generatePressureAdvanceTower, generatePressureAdvancePattern,
+  generateFirstLayerTest, generateSingleLineTest,
   generate, listGenerators,
 } from '../../server/calibration-generator.js';
 
@@ -115,6 +116,56 @@ describe('Single-line speed test', () => {
     const out = generateSingleLineTest({ speedStart: 50, speedEnd: 200, lines: 5 });
     assert.match(out.gcode, /; LINE 1 speed=50mm\/s/);
     assert.match(out.gcode, /; LINE 5 speed=200mm\/s/);
+  });
+});
+
+describe('generatePressureAdvancePattern (line method)', () => {
+  it('is registered as a calibration type', () => {
+    assert.ok(listGenerators().includes('pressure-advance-pattern'));
+  });
+
+  it('emits one Klipper SET_PRESSURE_ADVANCE per row with the right values', () => {
+    const out = generatePressureAdvancePattern({ paStart: 0, paEnd: 0.08, paStep: 0.005, firmware: 'klipper' });
+    const rows = out.pa_values;
+    assert.equal(rows.length, 17); // 0..0.08 step 0.005 inclusive
+    assert.equal(rows[0], 0);
+    assert.equal(rows[rows.length - 1], 0.08);
+    // each PA value appears in a SET_PRESSURE_ADVANCE command
+    for (const pa of rows) {
+      assert.ok(out.gcode.includes(`SET_PRESSURE_ADVANCE ADVANCE=${pa.toFixed(4)}`), `missing PA=${pa}`);
+    }
+    // resets PA at the end so the test doesn't leave a stray value active
+    assert.match(out.gcode, /SET_PRESSURE_ADVANCE ADVANCE=0\.0000\n/);
+    // attribution is present in the gcode header
+    assert.match(out.gcode, /Sineos/);
+    assert.match(out.gcode, /Ellis/);
+  });
+
+  it('uses Marlin M900 K when firmware=marlin', () => {
+    const out = generatePressureAdvancePattern({ firmware: 'marlin', paStart: 0, paEnd: 0.04, paStep: 0.01 });
+    assert.match(out.gcode, /M900 K0\.0100/);
+    assert.equal(out.pa_values.length, 5);
+    assert.ok(!out.gcode.includes('SET_PRESSURE_ADVANCE'));
+  });
+
+  it('produces a slow -> fast -> slow speed pattern per row', () => {
+    const out = generatePressureAdvancePattern({ slowFeed: 1200, fastFeed: 6000, paStep: 0.02, paEnd: 0.04 });
+    assert.match(out.gcode, /F1200/);
+    assert.match(out.gcode, /F6000/);
+  });
+
+  it('rejects invalid ranges and feeds', () => {
+    assert.throws(() => generatePressureAdvancePattern({ paStart: 0.1, paEnd: 0.05 }), /PA range/);
+    assert.throws(() => generatePressureAdvancePattern({ paStep: 0 }), /paStep/);
+    assert.throws(() => generatePressureAdvancePattern({ slowFeed: 6000, fastFeed: 1200 }), /fastFeed/);
+    assert.throws(() => generatePressureAdvancePattern({ firmware: 'reprap' }), /firmware/);
+  });
+
+  it('every E move is finite (no NaN in extrusion)', () => {
+    const out = generatePressureAdvancePattern({});
+    const eMoves = out.gcode.match(/E-?\d+\.\d+/g) || [];
+    assert.ok(eMoves.length > 0);
+    for (const m of eMoves) assert.ok(Number.isFinite(parseFloat(m.slice(1))), `bad E: ${m}`);
   });
 });
 

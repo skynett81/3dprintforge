@@ -2554,6 +2554,7 @@
   "common": {
     "undo": "Angre",
     "retry": "Prøv igjen",
+    "read_guide": "Les guiden",
     "load_failed": "Kunne ikke laste dette",
     "load_failed_desc": "Noe gikk galt under lasting. Sjekk tilkoblingen og prøv igjen.",
     "printer": "Printer",

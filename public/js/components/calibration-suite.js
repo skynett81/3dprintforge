@@ -76,6 +76,21 @@
         { key: 'paStep', label: 'PA step per layer', type: 'number', step: 0.001, value: 0.005 },
       ],
     },
+    'pressure-advance-pattern': {
+      label: 'Pressure Advance Pattern (line)', icon: '▤',
+      desc: 'Line method (Sineos/Ellis): one slow→fast→slow row per PA value — usually easier to read than the tower.',
+      guide: 'https://ellis3dp.com/Print-Tuning-Guide/articles/pressure_linear_advance.html',
+      params: [
+        { key: 'firmware', label: 'Firmware', type: 'select', options: ['klipper', 'marlin'], value: 'klipper' },
+        { key: 'bedTemp', label: 'Bed temp (°C)', type: 'number', value: 60 },
+        { key: 'hotendTemp', label: 'Hotend temp (°C)', type: 'number', value: 215 },
+        { key: 'paStart', label: 'PA start', type: 'number', step: 0.001, value: 0 },
+        { key: 'paEnd', label: 'PA end', type: 'number', step: 0.001, value: 0.08 },
+        { key: 'paStep', label: 'PA step per row', type: 'number', step: 0.001, value: 0.005 },
+        { key: 'slowFeed', label: 'Slow speed (mm/min)', type: 'number', value: 1200 },
+        { key: 'fastFeed', label: 'Fast speed (mm/min)', type: 'number', value: 6000 },
+      ],
+    },
     'first-layer': {
       label: 'First Layer Test', icon: '◻',
       params: [
@@ -137,7 +152,10 @@
     const def = GEN_DEFS[_state.genType];
     const el = document.getElementById('cal-params');
     if (!el || !def) return;
-    el.innerHTML = def.params.map(p => `
+    const note = def.desc
+      ? `<div class="cal-param-note text-muted" style="font-size:0.72rem;margin-bottom:8px;line-height:1.4">${_esc(def.desc)}${def.guide ? ` <a href="${_esc(def.guide)}" target="_blank" rel="noopener noreferrer">${_esc(t('common.read_guide', 'Read the guide'))} &#8599;</a>` : ''}</div>`
+      : '';
+    el.innerHTML = note + def.params.map(p => `
       <label class="form-label cal-param">
         <span>${_esc(p.label)}</span>
         ${p.type === 'select'
