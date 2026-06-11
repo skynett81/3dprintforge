@@ -353,7 +353,7 @@
         const prType = pr.type || (pr.serial ? 'bambu' : 'moonraker');
         const prTypeBadge = prType === 'moonraker' ? '<span class="pill pill-info" style="font-size:0.6rem;margin-left:4px">Moonraker</span>' : '<span class="pill pill-completed" style="font-size:0.6rem;margin-left:4px">Bambu MQTT</span>';
         const prConnInfo = prType === 'moonraker' ? (pr.ip ? pr.ip + ' | Moonraker' : t('settings.add_details')) : (pr.ip && pr.serial && pr.accessCode ? pr.ip + ' | ' + t('settings.auto_connect') : t('settings.add_details'));
-        h += `<div class="printer-config-card"><div class="printer-config-header"><div><strong>${pr.name}</strong>${prTypeBadge}<div class="text-muted" style="font-size:0.75rem">${pr.model || ''} | ${prConnInfo}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple title="${t('settings.edit')}" data-bs-toggle="tooltip" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.delete')}" data-bs-toggle="tooltip" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
+        h += `<div class="printer-config-card" data-printer-id="${pr.id}"><div class="printer-config-header"><div><strong>${pr.name}</strong>${prTypeBadge}<div class="text-muted" style="font-size:0.75rem">${pr.model || ''} | ${prConnInfo}</div></div><div class="printer-config-actions"><button class="form-btn form-btn-sm" data-ripple title="${t('settings.edit')}" data-bs-toggle="tooltip" onclick="editPrinter('${pr.id}')">${t('settings.edit')}</button><button class="form-btn form-btn-sm form-btn-danger" data-ripple title="${t('settings.delete')}" data-bs-toggle="tooltip" onclick="removePrinter('${pr.id}')">${t('settings.delete')}</button></div></div></div>`;
       }
       h += '</div>';
       h += '<div id="printer-form-area"></div>';
@@ -1972,13 +1972,23 @@
     if (area) area.innerHTML = '';
   };
 
-  window.removePrinter = async function(id) {
-    return confirmAction(t('settings.confirm_delete'), async () => {
-      try {
-        await fetch(`/api/printers/${id}`, { method: 'DELETE' });
-        loadSettings();
-      } catch (e) { /* ignore */ }
-    }, { danger: true });
+  window.removePrinter = function(id) {
+    const card = document.querySelector(`.printer-config-card[data-printer-id="${id}"]`);
+    if (typeof window.deleteWithUndo === 'function') {
+      window.deleteWithUndo({
+        message: t('settings.printer_deleted', 'Printer removed'),
+        delay: 7000,
+        onHide: () => { if (card) card.style.display = 'none'; },
+        onRestore: () => { if (card) card.style.display = ''; },
+        commit: async () => {
+          try { await fetch(`/api/printers/${id}`, { method: 'DELETE' }); loadSettings(); } catch (e) { /* ignore */ }
+        },
+      });
+    } else {
+      confirmAction(t('settings.confirm_delete'), async () => {
+        try { await fetch(`/api/printers/${id}`, { method: 'DELETE' }); loadSettings(); } catch (e) { /* ignore */ }
+      }, { danger: true });
+    }
   };
 
   // ═══ Printer Discovery ═══

@@ -427,13 +427,22 @@
     }
   };
 
-  window._queueDelete = async function(id) {
-    if (typeof confirmAction === 'function') {
-      confirmAction(t('queue.delete_confirm', 'Delete this queue?'), async () => {
-        await fetch(`/api/queue/${id}`, { method: 'DELETE' });
-        if (typeof showToast === 'function') showToast(t('common.deleted', 'Deleted'), 'success');
-        _reload();
-      }, { danger: true });
+  window._queueDelete = function(id) {
+    const card = document.querySelector(`.q-card[data-queue-id="${id}"]`);
+    // Also close the detail overlay if this queue was open in it.
+    document.querySelector('.ph-detail-overlay')?.remove();
+    if (typeof window.deleteWithUndo === 'function') {
+      window.deleteWithUndo({
+        message: t('queue.queue_deleted', 'Queue deleted'),
+        onHide: () => { if (card) card.style.display = 'none'; },
+        onRestore: () => { if (card) card.style.display = ''; },
+        commit: async () => {
+          await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+          _reload();
+        },
+      });
+    } else {
+      fetch(`/api/queue/${id}`, { method: 'DELETE' }).then(_reload);
     }
   };
 
