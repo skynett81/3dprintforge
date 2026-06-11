@@ -305,8 +305,13 @@ async function updateInfoBoxes() {
     const printsEl = document.getElementById('info-prints-count');
     if (printsEl) printsEl.textContent = activePrints;
 
-    // Queue items
-    const queueCount = Array.isArray(queue) ? queue.length : 0;
+    // Queue items — count pending jobs across all queues, not the number of
+    // queue containers. An empty queue (e.g. a leftover "Test Queue") used to
+    // make the counter read "1 in queue" while the Print Queue panel correctly
+    // showed 0 jobs, which looked like a bug.
+    const queueCount = Array.isArray(queue)
+      ? queue.reduce((sum, q) => sum + Math.max(0, (q.item_count || 0) - (q.completed_count || 0)), 0)
+      : 0;
     const queueEl = document.getElementById('info-queue-count');
     if (queueEl) queueEl.textContent = queueCount;
 
