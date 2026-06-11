@@ -57,7 +57,7 @@
       r.innerHTML = `
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
           <button class="form-btn form-btn-sm form-btn-info" data-ripple id="fc-btn-3d">🧊 3D Preview</button>
-          <button class="form-btn form-btn-sm form-btn-success" data-ripple id="fc-btn-dl">📥 Download 3MF</button>
+          <button class="form-btn form-btn-sm form-btn-success" data-ripple id="fc-btn-dl"><i class="bi bi-download"></i> Download 3MF</button>
         </div>
         ${svg}`;
       document.getElementById('fc-btn-dl').onclick = async () => {

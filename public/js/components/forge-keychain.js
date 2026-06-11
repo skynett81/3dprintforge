@@ -52,7 +52,7 @@
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._kcPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._kcDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._kcDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${p.width}×${p.height}×${p.thickness}mm</div>
       <div style="display:flex;align-items:center">

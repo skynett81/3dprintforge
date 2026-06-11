@@ -316,7 +316,7 @@
       <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
         <button class="lib-btn-save" style="background:var(--accent-cyan)" onclick="_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🖨️ Send to Printer</button>
         <button class="lib-btn-save" style="background:var(--accent-blue)" onclick="_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">📋 Queue</button>
-        <a href="/api/library/${f.id}/download" class="lib-btn-cancel" style="text-decoration:none;text-align:center">📥 Download</a>
+        <a href="/api/library/${f.id}/download" class="lib-btn-cancel" style="text-decoration:none;text-align:center"><i class="bi bi-download"></i> Download</a>
         ${f.file_type === '3mf' ? `<button class="lib-3d-btn" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🧊 3D</button>` : ''}
       </div>
       <div class="lib-dialog-actions" style="margin-top:8px">

@@ -84,7 +84,7 @@
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._sboxPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._sboxDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._sboxDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.width}×${p.depth}×${p.height}mm${p.gridfinity ? ' (Gridfinity)' : ''}${p.stackable ? ' + stackable' : ''}</div>
       <div style="perspective:400px">

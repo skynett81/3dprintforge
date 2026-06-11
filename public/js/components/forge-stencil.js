@@ -72,7 +72,7 @@
     r.innerHTML = `
       <div style="display:flex;gap:6px;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._stenPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._stenDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._stenDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${w}mm wide, threshold ${Math.round(thresh*100)}%</div>
       <div style="width:${pw}px;height:${ph}px;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3);position:relative">

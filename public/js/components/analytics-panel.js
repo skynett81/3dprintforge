@@ -164,7 +164,7 @@
       { label: _t('analytics.print_hours', 'Print hours'), value: totalPrintHours + 'h', icon: '⏱️', color: '' },
       { label: _t('analytics.filament_used', 'Filament used'), value: totalFilamentG + 'g', icon: '🧵', color: '' },
       { label: _t('analytics.spools', 'Spools'), value: spools.length, icon: '🎨', color: '' },
-      { label: _t('analytics.queue', 'Queue'), value: queue.length, icon: '📥', color: queue.length > 0 ? 'var(--accent-blue)' : '' },
+      { label: _t('analytics.queue', 'Queue'), value: queue.length, icon: '<i class="bi bi-download"></i> ', color: queue.length > 0 ? 'var(--accent-blue)' : '' },
       { label: _t('analytics.errors', 'Errors'), value: printErrors.length, icon: '⚠️', color: printErrors.length > 0 ? 'var(--accent-red)' : '' },
       { label: _t('analytics.sessions', 'Sessions'), value: overview.activeSessions || 0, icon: '👥', color: '' },
       { label: _t('analytics.requests', 'Requests'), value: _fmtNum(overview.today?.requests || 0), icon: '📊', color: '' },

@@ -461,8 +461,8 @@
       result.innerHTML = `
         <div class="sm-actions" style="justify-content:center">
           <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._smPreview3D('${id}','frame')">🧊 3D Frame</button>
-          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','frame')">📥 Frame 3MF</button>
-          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
+          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','frame')"><i class="bi bi-download"></i> Frame 3MF</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff"><i class="bi bi-download"></i> All Parts</button>
         </div>
         <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Frame: ${Math.round(plateW + frameW*2+2)}×${Math.round(plateH + frameW*2+2)}mm</div>
         ${hasBorder ? `
@@ -481,8 +481,8 @@
       result.innerHTML = `
         <div class="sm-actions" style="justify-content:center">
           <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._smPreview3D('${id}','stand')">🧊 3D Stand</button>
-          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','stand')">📥 Stand 3MF</button>
-          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
+          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','stand')"><i class="bi bi-download"></i> Stand 3MF</button>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff"><i class="bi bi-download"></i> All Parts</button>
         </div>
         <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Stand: ${Math.round(plateW*0.85)}×${baseD}×${baseH+slotD}mm</div>
         ${hasStand ? `
@@ -503,7 +503,7 @@
       result.innerHTML = `
         <div class="sm-actions" style="justify-content:center">
           <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._smPreview3D('${id}')">🧊 3D All Parts</button>
-          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','all')">📥 All Parts 3MF</button>
+          <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','all')"><i class="bi bi-download"></i> All Parts 3MF</button>
         </div>
         <div style="padding:20px;color:var(--text-muted);font-size:0.85rem;text-align:center">
           Configure magnets, NFC tag, and wall mount holes.<br>These features modify the plate — preview via 3D button above.
@@ -515,10 +515,10 @@
     result.innerHTML = `
       <div class="sm-actions" style="justify-content:center">
         <button class="form-btn form-btn-sm" data-ripple onclick="window._smPrint()">🖨️ Print</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload()">📥 PNG</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload()"><i class="bi bi-download"></i> PNG</button>
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._smPreview3D('${id}','plate')">🧊 3D Plate</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','plate')">📥 Plate 3MF</button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff">📥 All Parts</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._smDownload3MF('${id}','plate')"><i class="bi bi-download"></i> Plate 3MF</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="window._smDownload3MF('${id}','all')" style="background:var(--accent-blue);color:#fff"><i class="bi bi-download"></i> All Parts</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${sizeInfo}${hasBorder ? ' + frame' : ''}${hasStand ? ' + stand' : ''}</div>
       ${hasBorder ? '<div style="background:var(--bg-tertiary);padding:' + Math.round(frameW * scale) + 'px;border-radius:' + Math.round((cornerR + 2) * scale) + 'px;display:inline-block">' : ''}

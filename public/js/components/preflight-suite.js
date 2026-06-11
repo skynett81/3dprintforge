@@ -181,7 +181,7 @@
         </div>
         ${p.sourceUrl.startsWith('internal:')
           ? `<a class="form-btn form-btn-sm" href="#calibration" onclick="openPanel?.('calibration');return false">⚙ Open generator</a>`
-          : `<a class="form-btn form-btn-sm" href="${_esc(p.sourceUrl)}" target="_blank" rel="noopener">📥 Source</a>`}
+          : `<a class="form-btn form-btn-sm" href="${_esc(p.sourceUrl)}" target="_blank" rel="noopener"><i class="bi bi-download"></i> Source</a>`}
       </div>`).join('');
     if (button) {
       document.querySelectorAll('.pf-tag-btn').forEach(b => b.classList.remove('active'));

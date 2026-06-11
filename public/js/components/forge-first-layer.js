@@ -46,7 +46,7 @@
     r.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._flPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._flDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._flDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.plateWidth}×${p.plateDepth}mm · ${p.layerHeight}mm layer</div>
       <svg width="${pw+20}" height="${pd+20}" viewBox="-10 -10 ${pw+20} ${pd+20}">

@@ -58,7 +58,7 @@
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._sprPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._sprDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._sprDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${p.coils} coils · ⌀${p.diameter}mm · wire ${p.wireDiameter}mm · ${h.toFixed(0)}mm tall</div>
       <svg width="${pw+10}" height="${ph+10}" viewBox="-5 -5 ${pw+10} ${ph+10}">${coilsHtml}</svg>`;

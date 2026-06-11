@@ -55,7 +55,7 @@
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._snpPreview3D()">🧊 3D Preview</button>
-        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._snpDownload()">📥 Download 3MF</button>
+        <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._snpDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">Beam ${p.beamLength}×${p.beamWidth}×${p.beamThickness}mm · hook ${p.hookDepth}×${p.hookHeight}mm</div>
       <svg width="${bl + 120}" height="${bw + 30}" viewBox="-5 -5 ${bl + 120} ${bw + 30}">
