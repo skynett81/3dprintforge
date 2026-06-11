@@ -4763,6 +4763,25 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // Spoolman SERVER mode — let this instance act as a Spoolman server for
+    // Klipper front-ends (the inverse of the client config above).
+    if (method === 'GET' && path === '/api/spoolman/server-config') {
+      const httpsPort = config.server?.httpsPort || 3443;
+      return sendJson(res, {
+        enabled: !!config.spoolmanServer?.enabled,
+        url: `http://<this-host>:${config.server?.port || 3000}`,
+        api_base: '/api/v1',
+        https_port: httpsPort,
+      });
+    }
+    if (method === 'PUT' && path === '/api/spoolman/server-config') {
+      return readBody(req, res, (body) => {
+        config.spoolmanServer = { enabled: !!body.enabled };
+        saveConfig({ spoolmanServer: config.spoolmanServer });
+        return sendJson(res, { ok: true, enabled: config.spoolmanServer.enabled });
+      });
+    }
+
     // ---- Print Queue ----
 
     if (method === 'GET' && path === '/api/queue') {

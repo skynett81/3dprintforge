@@ -739,6 +739,43 @@
     _renderSystemSubContent();
   };
 
+  async function _mountSpoolmanServerCard() {
+    const c = document.querySelector('#system-sub-content [data-spoolman-server-container]');
+    if (!c) return;
+    let cfg = { enabled: false };
+    try { cfg = await fetch('/api/spoolman/server-config').then(r => r.json()); } catch (e) { /* offline */ }
+    const base = `${location.protocol}//${location.host}`;
+    const render = (enabled) => {
+      c.innerHTML = `
+        <div class="card-title" style="gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="opacity:0.7"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+          ${t('settings.spoolman_server_title', 'Spoolman Server')}
+        </div>
+        <p class="text-muted" style="font-size:0.8rem;margin:6px 0 10px">${t('settings.spoolman_server_desc', 'Act as a Spoolman server so Klipper front-ends (Mainsail, Fluidd, KlipperScreen) can read this inventory and report filament usage — no separate Spoolman instance needed.')}</p>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="spoolman-server-toggle" ${enabled ? 'checked' : ''}>
+          <span style="font-size:0.85rem;font-weight:600">${enabled ? t('settings.spoolman_server_on', 'Enabled') : t('settings.spoolman_server_off', 'Disabled')}</span>
+        </label>
+        ${enabled ? `<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--bg-inset);font-size:0.78rem">
+          <div class="text-muted" style="margin-bottom:4px">${t('settings.spoolman_server_point', 'In moonraker.conf, set')} <code>[spoolman] server:</code></div>
+          <code style="font-weight:700;color:var(--accent-green);word-break:break-all">${base}</code>
+        </div>` : ''}`;
+      const cb = c.querySelector('#spoolman-server-toggle');
+      if (cb) cb.addEventListener('change', async () => {
+        cb.disabled = true;
+        try {
+          const r = await fetch('/api/spoolman/server-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: cb.checked }) }).then(x => x.json());
+          render(!!r.enabled);
+          if (typeof showToast === 'function') showToast(r.enabled ? t('settings.spoolman_server_enabled_toast', 'Spoolman server enabled') : t('settings.spoolman_server_disabled_toast', 'Spoolman server disabled'), 'success');
+        } catch (e) {
+          cb.checked = !cb.checked; cb.disabled = false;
+          if (typeof showToast === 'function') showToast(t('settings.spoolman_server_error', 'Could not update Spoolman server'), 'error');
+        }
+      });
+    };
+    render(!!cfg.enabled);
+  }
+
   function _renderSystemSubContent() {
     const el = document.getElementById('system-sub-content');
     if (!el) return;
@@ -1118,6 +1155,12 @@
           window.renderForgeSlicerSettings(c);
         }
       }, 0);
+
+      // Spoolman Server (runtime configurable) — let Klipper front-ends use us
+      h += `<div class="settings-card" data-spoolman-server-container>
+        <div class="text-muted" style="padding:14px;font-size:0.85rem">${t('settings.spoolman_server_loading', 'Loading Spoolman server settings…')}</div>
+      </div>`;
+      setTimeout(_mountSpoolmanServerCard, 0);
 
       // Printer Connections
       h += `<div class="settings-card">
