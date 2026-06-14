@@ -29,7 +29,7 @@
   // XCam (camera) events
   const XCAM_EVENTS = ['spaghetti_detected', 'first_layer_issue', 'foreign_object', 'nozzle_clump'];
   // Sensor events
-  const SENSOR_EVENTS = ['temp_deviation', 'filament_runout', 'print_error', 'fan_failure', 'print_stall'];
+  const SENSOR_EVENTS = ['temp_deviation', 'filament_runout', 'print_error', 'fan_failure', 'print_stall', 'surface_defect', 'filament_tangle', 'ams_humidity', 'heater_health'];
   const ALL_EVENTS = [...XCAM_EVENTS, ...SENSOR_EVENTS];
 
   const EVENT_LABELS = {
@@ -41,7 +41,11 @@
     filament_runout:    'protection.filament_runout',
     print_error:        'protection.print_error',
     fan_failure:        'protection.fan_failure',
-    print_stall:        'protection.print_stall'
+    print_stall:        'protection.print_stall',
+    surface_defect:     'protection.surface_defect',
+    filament_tangle:    'protection.filament_tangle',
+    ams_humidity:       'protection.ams_humidity',
+    heater_health:      'protection.heater_health'
   };
 
   const EVENT_ICONS = {
@@ -53,7 +57,11 @@
     filament_runout:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>',
     print_error:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
     fan_failure:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 2C8 2 8 6 8 6s0 2 4 4c4-2 4-4 4-4s0-4-4-4z"/><path d="M12 22c4 0 4-4 4-4s0-2-4-4c-4 2-4 4-4 4s0 4 4 4z"/><path d="M2 12c0 4 4 4 4 4s2 0 4-4c-2-4-4-4-4-4s-4 0-4 4z"/><path d="M22 12c0-4-4-4-4-4s-2 0-4 4c2 4 4 4 4 4s4 0 4-4z"/></svg>',
-    print_stall:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    print_stall:        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    surface_defect:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+    filament_tangle:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7c4 0 4 5 8 5s4-5 8-5"/><path d="M4 17c4 0 4-5 8-5"/></svg>',
+    ams_humidity:       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+    heater_health:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
   };
 
   const ACTION_LABELS = {
@@ -72,7 +80,11 @@
     filament_runout: 'filament_runout_action',
     print_error: 'print_error_action',
     fan_failure: 'fan_failure_action',
-    print_stall: 'print_stall_action'
+    print_stall: 'print_stall_action',
+    surface_defect: 'surface_defect_action',
+    filament_tangle: 'filament_tangle_action',
+    ams_humidity: 'ams_humidity_action',
+    heater_health: 'heater_health_action'
   };
 
   function printerName(id) {
@@ -245,6 +257,8 @@
             ${_settingsRow(p.id, 'first_layer_action', 'protection.first_layer', s.first_layer_action)}
             ${_settingsRow(p.id, 'foreign_object_action', 'protection.foreign_object', s.foreign_object_action)}
             ${_settingsRow(p.id, 'nozzle_clump_action', 'protection.nozzle_clump', s.nozzle_clump_action)}
+            ${_settingsRow(p.id, 'surface_defect_action', 'protection.surface_defect', s.surface_defect_action)}
+            ${_settingsRow(p.id, 'filament_tangle_action', 'protection.filament_tangle', s.filament_tangle_action)}
           </div>`;
 
         // Sensor section
@@ -255,6 +269,8 @@
             ${_settingsRow(p.id, 'print_error_action', 'protection.print_error', s.print_error_action)}
             ${_settingsRow(p.id, 'fan_failure_action', 'protection.fan_failure', s.fan_failure_action)}
             ${_settingsRow(p.id, 'print_stall_action', 'protection.print_stall', s.print_stall_action)}
+            ${_settingsRow(p.id, 'ams_humidity_action', 'protection.ams_humidity', s.ams_humidity_action)}
+            ${_settingsRow(p.id, 'heater_health_action', 'protection.heater_health', s.heater_health_action)}
           </div>`;
 
         // Thresholds section
@@ -268,6 +284,12 @@
             </label>
             <label class="pp-input-label">${t('protection.stall_threshold')}:
               <input type="number" value="${s.stall_minutes ?? 10}" min="3" max="60" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'stall_minutes', parseInt(this.value))">${t('time.m')}
+            </label>
+            <label class="pp-input-label">${t('protection.humidity_threshold', 'Humidity alert')}:
+              <input type="number" value="${s.ams_humidity_threshold ?? 45}" min="20" max="90" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'ams_humidity_threshold', parseInt(this.value))">%
+            </label>
+            <label class="pp-input-label">${t('protection.heater_health_threshold', 'Heater grace')}:
+              <input type="number" value="${s.heater_health_minutes ?? 3}" min="1" max="20" class="pp-input-number" onchange="updateProtectionSetting('${p.id}', 'heater_health_minutes', parseInt(this.value))">${t('time.m')}
             </label>
           </div>`;
 
@@ -406,8 +428,11 @@
       enabled: 1, spaghetti_action: 'pause', first_layer_action: 'notify', foreign_object_action: 'pause', nozzle_clump_action: 'pause',
       temp_deviation_action: 'notify', filament_runout_action: 'notify', print_error_action: 'notify',
       fan_failure_action: 'notify', print_stall_action: 'notify',
+      surface_defect_action: 'notify', filament_tangle_action: 'pause',
+      ams_humidity_action: 'notify', heater_health_action: 'notify',
       cooldown_seconds: 60, auto_resume: 0,
-      temp_deviation_threshold: 15, filament_low_pct: 5, stall_minutes: 10
+      temp_deviation_threshold: 15, filament_low_pct: 5, stall_minutes: 10,
+      ams_humidity_threshold: 45, heater_health_minutes: 3
     };
   }
 
