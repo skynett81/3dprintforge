@@ -1887,18 +1887,34 @@ export async function handleApiRequest(req, res) {
       const existingNames = new Set(existing.map(h => String(h.name || '').toLowerCase()));
       let created = 0;
       for (const a of detected) {
-        if (existingNames.has(String(a.name).toLowerCase())) continue;
-        try {
-          const hwId = addHardwareItem({
-            category: a.category || 'accessory',
-            name: a.name,
-            compatible_printers: [id],
-            specs: { count: a.count, detail: a.detail, auto_detected: true, source: 'accessory-detection' },
-            notes: 'Auto-detected from the printer',
-          });
-          assignHardware(hwId, id);
-          created++;
-        } catch (e) { /* skip individual failures */ }
+        // One inventory row per physical unit so a printer running several of
+        // the same accessory (2x AMS 2 Pro, four filament sensors) tracks each
+        // as its own asset. Name units from the detector's per-unit detail when
+        // present (e.g. "Filament runout sensor (e0_filament)"), else number.
+        const count = Math.max(1, Number(a.count) || 1);
+        let unitNames;
+        if (count === 1) {
+          unitNames = [a.name]; // single unit keeps its plain name
+        } else if (Array.isArray(a.detail) && a.detail.length === count) {
+          unitNames = a.detail.map(d => `${a.name} (${d})`); // e.g. "(e0_filament)"
+        } else {
+          unitNames = Array.from({ length: count }, (_, i) => `${a.name} #${i + 1}`);
+        }
+        for (const unitName of unitNames) {
+          if (existingNames.has(unitName.toLowerCase())) continue;
+          try {
+            const hwId = addHardwareItem({
+              category: a.category || 'accessory',
+              name: unitName,
+              compatible_printers: [id],
+              specs: { auto_detected: true, source: 'accessory-detection', accessory: a.id },
+              notes: 'Auto-detected from the printer',
+            });
+            assignHardware(hwId, id);
+            existingNames.add(unitName.toLowerCase());
+            created++;
+          } catch (e) { /* skip individual failures */ }
+        }
       }
       return sendJson(res, { printer_id: id, detected: detected.length, created, already_present: existing.length });
     }
