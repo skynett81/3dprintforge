@@ -51,6 +51,10 @@ function _matchSpool(printerId, amsUnit, material, color6) {
     const sp = getSpoolBySlot(printerId, amsUnit, tray);
     if (sp) cands.push(sp);
   }
+  // The cloud reports amsId/slotId 0 even for external-spool prints, so also
+  // consider the external spool (ams_unit 255) when matching.
+  const ext = getSpoolBySlot(printerId, 255, 0);
+  if (ext) cands.push(ext);
   return cands.find(sp => _baseMaterial(sp.material) === want && _color6(sp.color_hex) === color6)
     || cands.find(sp => _baseMaterial(sp.material) === want)
     || null;
