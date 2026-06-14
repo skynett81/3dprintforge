@@ -52,7 +52,7 @@
     'ams-stats': 'half', 'xcam-stats': 'half',
     'maintenance-overview': 'full', 'nozzle-health': 'half', 'build-plate-stats': 'half', 'firmware-info': 'half',
     'cost-hero': 'full', 'cost-breakdown': 'half', 'cost-trends': 'half',
-    'cost-by-printer': 'half', 'cost-by-material': 'half',
+    'cost-by-printer': 'full', 'cost-by-material': 'full',
     'ps-hero': 'full', 'ps-status-activity': 'half', 'ps-duration-temp': 'half',
     'ps-filament-breakdown': 'full', 'ps-nozzle-models': 'full', 'ps-print-timeline': 'full'
   };
@@ -499,6 +499,8 @@
       }
       const c = cost.summary;
       const cur = c.currency || 'NOK';
+      const months = Array.isArray(cost.by_month) ? cost.by_month.length : 0;
+      const perMonth = months > 0 ? c.grand_total / months : c.grand_total;
       html += `<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px">
         <button class="form-btn form-btn-sm" data-ripple onclick="window._recalcCosts()" title="${t('stats.cost_recalculate')}" style="font-size:0.75rem">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 11-.57-8.38"/></svg>
@@ -526,6 +528,16 @@
           <div class="stats-hero-value">${c.cost_per_kg.toFixed(2)} ${cur}</div>
           <div class="stats-hero-label">${t('stats.cost_per_kg')}</div>
         </div>
+        <div class="stats-hero-card">
+          <div class="stats-hero-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="stats-hero-value">${perMonth.toFixed(2)} ${cur}</div>
+          <div class="stats-hero-label">${t('stats.cost_per_month', 'Avg / month')}</div>
+        </div>
+        <div class="stats-hero-card">
+          <div class="stats-hero-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/></svg></div>
+          <div class="stats-hero-value">${c.print_count}</div>
+          <div class="stats-hero-label">${t('stats.cost_prints_counted', 'Prints costed')}</div>
+        </div>
       </div>`;
       return html;
     },
@@ -547,6 +559,17 @@
       for (const i of items) {
         const pct = Math.round((i.val / total) * 100);
         html += barRow(i.label, pct, i.clr, `${i.val.toFixed(2)} ${cur} (${pct}%)`);
+      }
+      // Only filament is configured — make clear the figure isn't the true cost
+      // and point to where the missing rates are set (per-printer).
+      const otherCosts = b.electricity + b.depreciation + b.labor + b.markup;
+      if (otherCosts <= 0) {
+        html += `<div style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--bg-tertiary);font-size:0.75rem;color:var(--text-muted)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div style="flex:1">${t('stats.cost_only_filament', 'Only filament cost is included. Add electricity, machine wear and labor per printer to see the true cost.')}
+            <button class="form-btn form-btn-sm" data-ripple onclick="if(window.openPanel)window.openPanel('settings');location.hash='#settings'" style="margin-top:8px;font-size:0.72rem">${t('stats.cost_configure_rates', 'Configure rates')}</button>
+          </div>
+        </div>`;
       }
       html += '</div>';
       return html;
