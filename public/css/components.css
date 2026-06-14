@@ -13847,30 +13847,38 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Sub-heading system — added last so it wins by source order.
-   One consistent treatment for every section eyebrow label and descriptive
-   subtitle across the app. Several of these classes (mat-/fa-/fc-/ach-/
-   backup-section-title) had no CSS at all and inherited whatever font-size
-   their container happened to use, so panels looked uneven and unfinished.
-   Only typography is normalised here — each component keeps its own margins,
-   borders and backgrounds. The uppercase transform also gives every eyebrow
-   the same casing regardless of how the label text was written.
+   Project-wide heading system — added last so it wins by source order.
+   The app accumulated 100+ ad-hoc title/heading classes at sizes from 0.7 to
+   1.3rem with mixed colours, so headings looked uneven and unprofessional.
+   This gives EVERY heading one solid, bold treatment and a small predictable
+   size scale (card title 1rem > section sub-heading 0.9rem), while genuinely
+   larger modal/detail titles keep their own size. The `body` prefix lifts
+   specificity above the per-panel <style> blocks some components inject; each
+   component keeps its own margins, borders and backgrounds. Background is NOT
+   touched here, so panel-bar titles keep their backdrops.
    ════════════════════════════════════════════════════════════════════════ */
 
-/* Section sub-headings. These must read as real headings — bold, primary
-   colour, sentence case — not faint uppercase side-labels. Several panels
-   (mat-/fa-/ach-/backup-section-title) had no shared CSS and rendered at
-   inconsistent sizes; this unifies them as proper sub-headings. The `body`
-   prefix lifts specificity above the single-class rules some panels inject via
-   their own <style> blocks, so the treatment is genuinely uniform while each
-   component keeps its own margins and borders. */
+/* Every title/heading: solid primary colour, bold — never faint or coloured
+   inconsistently. (Sub-labels use *-subtitle and are handled separately.) */
+body [class*="-title"],
+body [class*="-heading"] {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* Card / panel titles → one size across the app. */
+body [class*="card-title"] {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+/* Section sub-headings → one size, sentence case so they read as headings
+   rather than faint uppercase side-labels. */
 body [class*="section-title"] {
   font-size: 0.9rem;
-  font-weight: 700;
   text-transform: none;
   letter-spacing: normal;
   line-height: 1.35;
-  color: var(--text-primary);
 }
 
 /* Small eyebrow label that sits above/under a title (genuine secondary text). */
