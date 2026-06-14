@@ -13939,3 +13939,18 @@ body .ctrl-card-subtitle {
 .act-weekday-fill--peak { background: var(--accent-green, #00e676); }
 .act-weekday-count { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); }
 .act-weekday-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+
+/* ── Achievements sidebar badge — draws attention to the nav item ── */
+.ach-nav-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 16px; padding: 0 5px; margin-left: auto;
+  border-radius: 8px; font-size: 0.62rem; font-weight: 800; line-height: 1;
+  vertical-align: middle; flex-shrink: 0;
+}
+.ach-nav-badge--level { background: var(--bg-tertiary); color: var(--text-secondary); }
+.ach-nav-badge--close { background: var(--accent-orange, #f59e0b); color: #1a1208; }
+.ach-nav-badge--new { background: var(--accent-green, #00c853); color: #08210f; animation: achBadgePulse 1.8s ease-in-out infinite; }
+@keyframes achBadgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.55); }
+  50% { box-shadow: 0 0 0 5px rgba(0, 200, 83, 0); }
+}

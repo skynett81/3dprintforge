@@ -277,6 +277,9 @@
         }
         localStorage.setItem('ach-seen', JSON.stringify(earnedKeys));
       } catch (e2) { /* ignore */ }
+
+      // Refresh the sidebar badge now that "seen" is up to date.
+      if (typeof window.updateAchievementsBadge === 'function') window.updateAchievementsBadge();
     } catch (e) {
       panel.innerHTML = emptyState({
         icon: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0114 0v2"/></svg>',
@@ -285,6 +288,55 @@
       });
     }
   };
+
+  // ── Sidebar badge — surfaces achievement progress so the page gets noticed
+  // even when the user isn't on it: a pulsing green count for freshly unlocked
+  // (unseen) achievements, an amber count for ones almost unlocked, else the
+  // current level. Refreshed on load, every 5 min, and after the panel renders.
+  const _BADGE_TIER_XP = [0, 2000, 8000, 20000, 50000, 120000, 280000, 600000, 1200000, 2500000];
+  function _calcLevel(totalXP) {
+    let idx = 0;
+    for (let i = _BADGE_TIER_XP.length - 1; i >= 0; i--) { if (totalXP >= _BADGE_TIER_XP[i]) { idx = i; break; } }
+    return idx + 1;
+  }
+  window.updateAchievementsBadge = async function() {
+    const badge = document.getElementById('ach-nav-badge');
+    if (!badge) return;
+    try {
+      const res = await fetch('/api/achievements');
+      if (!res.ok) return;
+      const list = await res.json();
+      if (!Array.isArray(list)) return;
+      const earned = list.filter(a => a.earned);
+      const almost = list.filter(a => !a.earned && (a.progress || 0) >= 0.7).length;
+      const totalXP = list.reduce((s, a) => { const xp = a.xp || 100; return s + (a.earned ? xp : Math.round((a.progress || 0) * xp * 0.25)); }, 0);
+      // Only count "new" once a baseline exists (first ever visit sets it),
+      // mirroring the celebration toast so we don't flag the whole back-catalogue.
+      let seen = null;
+      try { seen = JSON.parse(localStorage.getItem('ach-seen') || 'null'); } catch { /* ignore */ }
+      const hasBaseline = Array.isArray(seen);
+      const seenSet = new Set(hasBaseline ? seen : []);
+      const fresh = hasBaseline ? earned.filter(a => !seenSet.has(a.title)).length : 0;
+
+      badge.classList.remove('ach-nav-badge--new', 'ach-nav-badge--close', 'ach-nav-badge--level');
+      if (fresh > 0) {
+        badge.textContent = fresh;
+        badge.title = fresh + ' ' + t('achievements.badge_new', 'newly unlocked — open Achievements');
+        badge.classList.add('ach-nav-badge--new');
+      } else if (almost > 0) {
+        badge.textContent = almost;
+        badge.title = almost + ' ' + t('achievements.badge_close', 'almost unlocked');
+        badge.classList.add('ach-nav-badge--close');
+      } else {
+        badge.textContent = 'Lv ' + _calcLevel(totalXP);
+        badge.title = t('achievements.badge_level', 'Your achievement level');
+        badge.classList.add('ach-nav-badge--level');
+      }
+      badge.style.display = '';
+    } catch { /* ignore */ }
+  };
+  setTimeout(() => window.updateAchievementsBadge(), 1500);
+  setInterval(() => window.updateAchievementsBadge(), 5 * 60 * 1000);
 
   window.showAchievementDetail = function(a) {
     document.querySelectorAll('.ach-detail-popup').forEach(el => el.remove());

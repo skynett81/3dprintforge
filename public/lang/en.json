@@ -3439,6 +3439,9 @@
   },
   "achievements": {
     "title": "Achievements",
+    "badge_new": "newly unlocked — open Achievements",
+    "badge_close": "almost unlocked",
+    "badge_level": "Your achievement level",
     "completion": "Completion",
     "to_next": "to next tier",
     "max_tier": "Max tier reached",
