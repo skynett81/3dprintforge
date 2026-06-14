@@ -112,6 +112,29 @@ export function extractU1FilamentCatalog(fp) {
   return catalog;
 }
 
+// Derive the physical extruder indices actually used by a print, from the
+// Moonraker file metadata's per-tool filament weights. Returns a sorted array
+// of indices with non-zero usage (e.g. [0, 2]); [] when it can't be determined.
+// Used to populate the Snapmaker U1's print_task_config before a print so its
+// firmware auto-feed / end auto-unload / flow-calibration engage. Pure + tested.
+export function deriveUsedExtruders(meta) {
+  if (!meta || typeof meta !== 'object') return [];
+  // Newer Moonraker exposes per-tool weights as filament_weights (array);
+  // older/our parse path uses filament_weight (array or single number/string).
+  let weights = meta.filament_weights ?? meta.filament_weight;
+  if (typeof weights === 'string') {
+    weights = weights.split(/[;,]/).map(s => parseFloat(s.trim()));
+  }
+  if (typeof weights === 'number') weights = [weights];
+  if (!Array.isArray(weights)) return [];
+  const used = [];
+  weights.forEach((w, i) => {
+    const n = typeof w === 'number' ? w : parseFloat(w);
+    if (Number.isFinite(n) && n > 0) used.push(i);
+  });
+  return used;
+}
+
 // Map Klipper states to the internal gcode_state format
 const STATE_MAP = {
   ready: 'IDLE',
@@ -494,6 +517,26 @@ export class MoonrakerClient {
 
       log.info(`Slicer metadata fetched for ${filename}`);
     } catch { /* not critical */ }
+  }
+
+  // Snapmaker U1 only: before a print starts, tell the firmware which tools the
+  // job uses so its auto-feed / end auto-unload / flow-calibration engage. Must
+  // run BEFORE /printer/print/start — the firmware rejects SET_PRINT_USED_EXTRUDERS
+  // once print_stats.state is 'printing'. Best-effort: never throws, never blocks
+  // the print (a no-op for non-U1 printers or when usage can't be determined).
+  async _u1PreparePrintTaskConfig(filename) {
+    if (!this._isSnapmakerU1 || !filename) return;
+    try {
+      const metaRes = await this._apiGet(`/server/files/metadata?filename=${encodeURIComponent(filename)}`);
+      const used = deriveUsedExtruders(metaRes?.result);
+      if (used.length === 0) return;
+      await this._apiPost('/printer/gcode/script', {
+        script: `SET_PRINT_USED_EXTRUDERS EXTRUDERS=${used.join(',')}`,
+      });
+      log.info(`U1 print_task_config: SET_PRINT_USED_EXTRUDERS EXTRUDERS=${used.join(',')} for ${filename}`);
+    } catch (e) {
+      log.warn(`U1 print_task_config prep failed (continuing): ${e?.message || e}`);
+    }
   }
 
   _mergeKlipperState(status) {
@@ -1858,7 +1901,11 @@ export class MoonrakerClient {
         this._apiPost('/printer/firmware_restart');
         break;
       case 'print_file':
-        this._apiPost('/printer/print/start', { filename: commandObj.filename });
+        // U1: populate print_task_config (used tools) BEFORE starting the print,
+        // then start regardless of whether that prep succeeded.
+        this._u1PreparePrintTaskConfig(commandObj.filename)
+          .catch(() => {})
+          .then(() => this._apiPost('/printer/print/start', { filename: commandObj.filename }));
         break;
       case 'speed': {
         const factor = (commandObj.value || 100) / 100;
