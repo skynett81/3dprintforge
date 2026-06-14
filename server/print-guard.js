@@ -12,7 +12,13 @@ const ACTION_MAP = {
   filament_runout: 'filament_runout_action',
   print_error: 'print_error_action',
   fan_failure: 'fan_failure_action',
-  print_stall: 'print_stall_action'
+  print_stall: 'print_stall_action',
+  // Native AI defect detection (Snapmaker U1 defect_detection, etc.)
+  surface_defect: 'surface_defect_action',
+  filament_tangle: 'filament_tangle_action',
+  // Sensor-derived guards
+  ams_humidity: 'ams_humidity_action',
+  heater_health: 'heater_health_action'
 };
 
 const EVENT_LABELS = {
@@ -24,7 +30,11 @@ const EVENT_LABELS = {
   filament_runout: 'Filament low/runout',
   print_error: 'Printer error',
   fan_failure: 'Fan failure',
-  print_stall: 'Print stalled'
+  print_stall: 'Print stalled',
+  surface_defect: 'Surface defect (residue / dirty bed)',
+  filament_tangle: 'Filament tangle',
+  ams_humidity: 'Filament humidity high',
+  heater_health: 'Heater underperforming'
 };
 
 const ACTION_LABELS = { notify: 'Notify only', pause: 'Print paused', stop: 'Print stopped' };
@@ -40,11 +50,17 @@ const DEFAULT_SETTINGS = {
   print_error_action: 'notify',
   fan_failure_action: 'notify',
   print_stall_action: 'notify',
+  surface_defect_action: 'notify',
+  filament_tangle_action: 'pause',
+  ams_humidity_action: 'notify',
+  heater_health_action: 'notify',
   cooldown_seconds: 300,
   auto_resume: 0,
   temp_deviation_threshold: 25,
   filament_low_pct: 5,
-  stall_minutes: 10
+  stall_minutes: 10,
+  ams_humidity_threshold: 45,
+  heater_health_minutes: 3
 };
 
 export class PrintGuardService {
@@ -57,9 +73,9 @@ export class PrintGuardService {
     this._lastErrorCode = new Map(); // printerId → last error code
   }
 
-  // Called from XCam events (camera AI detection)
-  handleEvent(printerId, eventType, printId) {
-    this._processEvent(printerId, eventType, printId);
+  // Called from native AI detection (Bambu xcam, Moonraker defect_detection)
+  handleEvent(printerId, eventType, printId, notes) {
+    this._processEvent(printerId, eventType, printId, notes);
   }
 
   // Called on every MQTT status update — checks all sensor data
@@ -73,9 +89,11 @@ export class PrintGuardService {
 
       // Only monitor sensors during active prints
       if (!isPrinting) {
-        // Clear stall tracking when not printing
+        // Clear per-print tracking when not printing
         this._stallTracking.delete(printerId);
         this._lastErrorCode.delete(printerId);
+        this._heaterHealth?.delete(printerId);
+        this._humidityAlerted?.delete(printerId);
         return;
       }
 
@@ -87,6 +105,8 @@ export class PrintGuardService {
       this._checkPrintError(printerId, state, settings, printId);
       this._checkFans(printerId, state, settings, printId);
       this._checkPrintStall(printerId, state, settings, printId);
+      this._checkHumidity(printerId, state, settings, printId);
+      this._checkHeaterHealth(printerId, state, settings, printId);
     } catch (e) {
       // Silent — don't break MQTT flow
     }
@@ -267,6 +287,51 @@ export class PrintGuardService {
     }
   }
 
+  // Filament moisture — AMS 2 Pro / HT report a real humidity percentage
+  // (humidity_raw); the classic 1-5 level is too coarse to alert on. Fires once
+  // per print (cooldown also applies) since you can't dry filament mid-print.
+  _checkHumidity(printerId, state, settings, printId) {
+    if (settings.ams_humidity_action === 'ignore') return;
+    const threshold = settings.ams_humidity_threshold || 45;
+    const amsUnits = state.ams?.ams;
+    if (!Array.isArray(amsUnits)) return;
+    if (!this._humidityAlerted) this._humidityAlerted = new Map();
+    if (this._humidityAlerted.get(printerId) === printId) return;
+    for (const unit of amsUnits) {
+      const h = unit.humidity_raw != null ? parseFloat(unit.humidity_raw) : null;
+      if (h != null && !isNaN(h) && h >= threshold) {
+        this._humidityAlerted.set(printerId, printId);
+        this._processEvent(printerId, 'ams_humidity', printId,
+          `AMS${unit.id} humidity ${Math.round(h)}% — filament is absorbing moisture`);
+        return;
+      }
+    }
+  }
+
+  // Heater health — target set high but the actual temperature is stuck well
+  // below it for a sustained period (failing element / thermal loss / draft).
+  // Distinct from the instantaneous temp-deviation check.
+  _checkHeaterHealth(printerId, state, settings, printId) {
+    if (settings.heater_health_action === 'ignore') return;
+    if (state.gcode_state !== 'RUNNING') { this._heaterHealth?.delete(printerId); return; }
+    if (!this._heaterHealth) this._heaterHealth = new Map();
+    const minutes = settings.heater_health_minutes || 3;
+    const now = Date.now();
+    const nT = state.nozzle_temper, nTar = state.nozzle_target_temper;
+    const bT = state.bed_temper, bTar = state.bed_target_temper;
+    const nozzleUnder = nTar != null && nTar >= 150 && nT != null && (nTar - nT) > 20;
+    const bedUnder = bTar != null && bTar >= 40 && bT != null && (bTar - bT) > 15;
+    if (!nozzleUnder && !bedUnder) { this._heaterHealth.delete(printerId); return; }
+    const since = this._heaterHealth.get(printerId);
+    if (!since) { this._heaterHealth.set(printerId, now); return; }
+    if (now - since >= minutes * 60000) {
+      const which = nozzleUnder ? `nozzle ${Math.round(nT)}/${nTar}°C` : `bed ${Math.round(bT)}/${bTar}°C`;
+      this._processEvent(printerId, 'heater_health', printId,
+        `Not reaching target for ${minutes}+ min (${which})`);
+      this._heaterHealth.set(printerId, now);
+    }
+  }
+
   _getSettings(printerId) {
     return getProtectionSettings(printerId) || { ...DEFAULT_SETTINGS, printer_id: printerId };
   }
@@ -332,19 +397,23 @@ export class PrintGuardService {
     }
   }
 
+  _isMoonraker(printer) {
+    const t = printer?.config?.type;
+    return t === 'moonraker' || t === 'klipper';
+  }
+
   _pausePrint(printerId) {
     const printer = this.pm.printers.get(printerId);
     if (!printer?.live || !printer.client) return;
-    const cmd = buildPauseCommand();
-    printer.client.sendCommand(cmd);
+    // Moonraker/Klipper take a different command shape than Bambu MQTT.
+    printer.client.sendCommand(this._isMoonraker(printer) ? { _moonraker_action: 'pause' } : buildPauseCommand());
     log.info(`Paused print on ${printerId}`);
   }
 
   _stopPrint(printerId) {
     const printer = this.pm.printers.get(printerId);
     if (!printer?.live || !printer.client) return;
-    const cmd = buildStopCommand();
-    printer.client.sendCommand(cmd);
+    printer.client.sendCommand(this._isMoonraker(printer) ? { _moonraker_action: 'cancel' } : buildStopCommand());
     log.info(`Stopped print on ${printerId}`);
   }
 

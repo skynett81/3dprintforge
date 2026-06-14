@@ -68,8 +68,10 @@ export function upsertProtectionSettings(printerId, settings) {
   db.prepare(`INSERT INTO protection_settings
     (printer_id, enabled, spaghetti_action, first_layer_action, foreign_object_action, nozzle_clump_action,
      cooldown_seconds, auto_resume, temp_deviation_action, filament_runout_action, print_error_action,
-     fan_failure_action, print_stall_action, temp_deviation_threshold, filament_low_pct, stall_minutes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     fan_failure_action, print_stall_action, temp_deviation_threshold, filament_low_pct, stall_minutes,
+     surface_defect_action, filament_tangle_action, ams_humidity_action, heater_health_action,
+     ams_humidity_threshold, heater_health_minutes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(printer_id) DO UPDATE SET
       enabled = excluded.enabled,
       spaghetti_action = excluded.spaghetti_action,
@@ -85,7 +87,13 @@ export function upsertProtectionSettings(printerId, settings) {
       print_stall_action = excluded.print_stall_action,
       temp_deviation_threshold = excluded.temp_deviation_threshold,
       filament_low_pct = excluded.filament_low_pct,
-      stall_minutes = excluded.stall_minutes
+      stall_minutes = excluded.stall_minutes,
+      surface_defect_action = excluded.surface_defect_action,
+      filament_tangle_action = excluded.filament_tangle_action,
+      ams_humidity_action = excluded.ams_humidity_action,
+      heater_health_action = excluded.heater_health_action,
+      ams_humidity_threshold = excluded.ams_humidity_threshold,
+      heater_health_minutes = excluded.heater_health_minutes
   `).run(
     printerId,
     settings.enabled ?? 1,
@@ -102,7 +110,13 @@ export function upsertProtectionSettings(printerId, settings) {
     settings.print_stall_action || 'notify',
     settings.temp_deviation_threshold ?? 15,
     settings.filament_low_pct ?? 5,
-    settings.stall_minutes ?? 10
+    settings.stall_minutes ?? 10,
+    settings.surface_defect_action || 'notify',
+    settings.filament_tangle_action || 'pause',
+    settings.ams_humidity_action || 'notify',
+    settings.heater_health_action || 'notify',
+    settings.ams_humidity_threshold ?? 45,
+    settings.heater_health_minutes ?? 3
   );
 }
 

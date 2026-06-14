@@ -2215,6 +2215,20 @@ export function runMigrations() {
         log.info('v150: added missing print_history.is_tool_changer column');
       }
     }},
+
+    { version: 151, up: (db) => {
+      // Print Guard upgrade: new sensor-derived guards (native AI defect
+      // detection, filament tangle, AMS humidity, heater health). Add their
+      // action + threshold columns idempotently.
+      const cols = db.prepare(`SELECT name FROM pragma_table_info('protection_settings')`).all().map(r => r.name);
+      const add = (name, ddl) => { if (!cols.includes(name)) db.exec(`ALTER TABLE protection_settings ADD COLUMN ${ddl}`); };
+      add('surface_defect_action', `surface_defect_action TEXT NOT NULL DEFAULT 'notify'`);
+      add('filament_tangle_action', `filament_tangle_action TEXT NOT NULL DEFAULT 'pause'`);
+      add('ams_humidity_action', `ams_humidity_action TEXT NOT NULL DEFAULT 'notify'`);
+      add('heater_health_action', `heater_health_action TEXT NOT NULL DEFAULT 'notify'`);
+      add('ams_humidity_threshold', `ams_humidity_threshold INTEGER NOT NULL DEFAULT 45`);
+      add('heater_health_minutes', `heater_health_minutes INTEGER NOT NULL DEFAULT 3`);
+    }},
   ];
 
   for (const m of migrations) {

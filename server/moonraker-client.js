@@ -826,6 +826,7 @@ export class MoonrakerClient {
                 this._printerId, 'entangle', fed.detect_factor > 0.9 ? 'high' : 'warning',
                 { extruder: i, detect_factor: fed.detect_factor }, null, fed.detect_factor
               ));
+              try { this.onDefectEvent?.('entangle', `extruder ${i}, factor ${fed.detect_factor.toFixed(2)}`); } catch { /* ignore */ }
             } catch {}
           }
           if (this[logKey] && Date.now() - this[logKey] > 120000) this[logKey] = null; // re-log after 2min
@@ -1444,6 +1445,9 @@ export class MoonrakerClient {
                 this._printerId, type, 'high', { message: text.trim() }, null, null,
               )).catch(() => {});
             } catch (e) { /* best-effort */ }
+            // Feed Print Guard too, so the firmware's AI detection triggers the
+            // user's configured notify/pause/stop action (cross-brand parity).
+            try { this.onDefectEvent?.(type, text.trim()); } catch { /* ignore */ }
             break;
           }
         }

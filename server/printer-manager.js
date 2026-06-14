@@ -264,6 +264,24 @@ export class PrinterManager {
       } catch (e) { /* ignore */ }
     };
 
+    // Native AI defect detection from Moonraker/Klipper printers (e.g. the
+    // Snapmaker U1's defect_detection + filament entangle sensor). Maps the
+    // firmware's defect types to Print Guard events so they trigger the user's
+    // configured action — the same path Bambu's xcam already uses.
+    client.onDefectEvent = (defectType, detail) => {
+      try {
+        const map = {
+          spaghetti: 'spaghetti_detected', noodle: 'spaghetti_detected',
+          residue: 'surface_defect', dirty_bed: 'surface_defect', dirty_nozzle: 'surface_defect',
+          entangle: 'filament_tangle',
+        };
+        const eventType = map[defectType];
+        if (!eventType) return;
+        const printId = tracker.currentPrint?.id || null;
+        if (this.guard) this.guard.handleEvent(id, eventType, printId, detail);
+      } catch (e) { /* ignore */ }
+    };
+
     // Camera: Bambu uses TLS/RTSP stream, Moonraker uses HTTP snapshot polling
     let camera = null;
     let moonCamera = null;
