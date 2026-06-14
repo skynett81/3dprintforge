@@ -1857,6 +1857,20 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, s || {});
     }
 
+    // Auto-detected accessories connected to a printer (Klipper object list for
+    // Moonraker; model + AMS + camera + chamber for Bambu).
+    const accMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/accessories$/);
+    if (accMatch && method === 'GET') {
+      const id = accMatch[1];
+      const raw = _hub ? _hub.getLastState(id) : null;
+      const st = (raw && raw.print) ? raw.print : (raw || {});
+      const entry = _printerManager?.printers?.get(id);
+      const type = entry?.config?.type || '';
+      const model = st._printer_model || null;
+      const { detectAccessories } = await import('./accessory-detector.js');
+      return sendJson(res, { printer_id: id, type, accessories: detectAccessories({ type, state: st, model }) });
+    }
+
     // Print control (pause/resume/stop) for any connected printer. Uses the
     // same per-connector command path the dashboard UI / print-guard use:
     // Bambu builds an MQTT command via client._buildCommand({action}),

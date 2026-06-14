@@ -332,6 +332,10 @@ export class MoonrakerClient {
 
         const available = msg.result?.objects || [];
         this._availableObjects = available;
+        // Expose the full Klipper object list so accessory auto-detection can
+        // fingerprint what's wired to this printer (probes, accelerometers,
+        // MMU, filament sensors, chamber, LEDs, fans, etc.).
+        this.state._klipper_objects = available;
         log.info(`Klipper objects discovered: ${available.length}`);
 
         // Subscribe to ALL discovered objects (null = all fields)
