@@ -254,6 +254,17 @@
       if (amsMod) amsLabel = MODULE_NAMES[amsMod.name.split('/')[0]];
     }
 
+    // Per-unit model label so mixed setups (AMS 2 Pro + AMS HT, etc.) are
+    // distinguishable. AMS 2 Pro / HT report humidity_raw — HT is a 1-spool
+    // high-temp unit, 2 Pro has 4; classic AMS reports the 1-5 humidity level;
+    // AMS Lite has no humidity sensor. Falls back to the firmware-derived label.
+    const unitLabel = (u) => {
+      const trays = Array.isArray(u?.tray) ? u.tray.filter(t => t).length : 0;
+      if (u && u.humidity_raw != null) return trays <= 1 ? 'AMS HT' : 'AMS 2 Pro';
+      if (u && u.humidity != null && u.humidity !== '') return 'AMS';
+      return amsLabel || 'AMS Lite';
+    };
+
     // Clamp selected unit
     if (_selectedUnit >= amsUnits.length) _selectedUnit = 0;
 
@@ -263,7 +274,7 @@
         let tabsHtml = '';
         for (let i = 0; i < amsUnits.length; i++) {
           const active = i === _selectedUnit ? ' ams-tab-active' : '';
-          tabsHtml += `<button class="ams-tab${active}" data-unit="${i}">${amsLabel} ${i + 1}</button>`;
+          tabsHtml += `<button class="ams-tab${active}" data-unit="${i}">${unitLabel(amsUnits[i])} ${i + 1}</button>`;
         }
         tabsEl.innerHTML = tabsHtml;
         tabsEl.querySelectorAll('.ams-tab').forEach(btn => {
@@ -337,7 +348,7 @@
       const totalTrays = (unit?.tray || []).filter(t => t && t.tray_type).length;
 
       humidityEl.innerHTML = `
-        <span class="ams-info-label">${amsLabel}</span>
+        <span class="ams-info-label">${unitLabel(amsUnits[_selectedUnit])}${amsUnits.length > 1 ? ' ' + (_selectedUnit + 1) : ''}</span>
         <span class="ams-info-divider">·</span>
         <svg class="ams-humidity-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="color:${humidityColor}"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
         <span style="color:${humidityColor};font-weight:600" title="${humidityTip}">${humidityRaw}% RH</span>

@@ -54,24 +54,37 @@ function detectKlipperAccessories(objects) {
   return [...groups.values()];
 }
 
+const AMS_LABELS = { ams_2_pro: 'AMS 2 Pro', ams_ht: 'AMS HT', ams_lite: 'AMS Lite', ams: 'AMS' };
+
+// Resolve a single AMS unit's model from its live fields, used when the printer
+// hasn't reported the module hardware list. AMS 2 Pro / HT report humidity_raw;
+// HT is a single-spool high-temp unit (1 tray) while 2 Pro has 4; the classic
+// AMS reports only the 1-5 humidity level; AMS Lite has no humidity sensor.
+function amsModelFromUnit(unit, printerModel) {
+  const u = unit || {};
+  const trays = Array.isArray(u.tray) ? u.tray.filter(Boolean).length : 0;
+  if (u.humidity_raw != null) return trays <= 1 ? 'ams_ht' : 'ams_2_pro';
+  if (u.humidity != null && u.humidity !== '') return 'ams';
+  return (printerModel && printerModel.amsDefault) || 'ams_lite';
+}
+
 function detectBambuAccessories(state, model) {
   const out = [];
   const s = state || {};
   // AMS units (count + model)
   const amsUnits = (s.ams && Array.isArray(s.ams.ams)) ? s.ams.ams : [];
   if (amsUnits.length > 0) {
-    let amsModel = (s._ams_models && s._ams_models[0]?.model) || null;
-    if (!amsModel) {
-      // Fall back to the live tray data: AMS 2 Pro / HT report humidity_raw (%)
-      // and temp; the classic AMS reports only the 1-5 humidity level; AMS Lite
-      // has no humidity sensor at all.
-      const u0 = amsUnits[0] || {};
-      if (u0.humidity_raw != null) amsModel = 'ams_2_pro';
-      else if (u0.humidity != null && u0.humidity !== '') amsModel = 'ams';
-      else amsModel = (model && model.amsDefault) || 'ams_lite';
+    // Resolve each unit's model independently so mixed setups (e.g. 2x AMS 2 Pro
+    // + 1x AMS HT) show correctly, then group by model with a count.
+    const counts = {};
+    amsUnits.forEach((u, i) => {
+      const fromModule = s._ams_models && s._ams_models[i] && s._ams_models[i].model;
+      const m = (fromModule && fromModule !== 'unknown') ? fromModule : amsModelFromUnit(u, model);
+      counts[m] = (counts[m] || 0) + 1;
+    });
+    for (const [m, count] of Object.entries(counts)) {
+      out.push({ id: 'ams_' + m, name: AMS_LABELS[m] || 'AMS', category: 'multimaterial', count, detail: [] });
     }
-    const label = { ams_2_pro: 'AMS 2 Pro', ams_ht: 'AMS HT', ams_lite: 'AMS Lite', ams: 'AMS' }[amsModel] || 'AMS';
-    out.push({ id: 'ams', name: label, category: 'multimaterial', count: amsUnits.length, detail: [] });
   }
   // External spool
   if (s.vt_tray && s.vt_tray.tray_type) {

@@ -29,10 +29,32 @@ describe('accessory-detector — Klipper/Moonraker', () => {
 
 describe('accessory-detector — Bambu', () => {
   it('labels AMS 2 Pro from humidity_raw when the module map is empty', () => {
-    const state = { ams: { ams: [{ humidity_raw: 27, tray: [] }] }, nozzle_diameter: 0.4, nozzle_type: 'HS01' };
+    const state = { ams: { ams: [{ humidity_raw: 27, tray: [{}, {}, {}, {}] }] }, nozzle_diameter: 0.4, nozzle_type: 'HS01' };
     const acc = detectAccessories({ type: 'bambu', state, model: { amsDefault: 'ams_lite', nozzleCount: 1 } });
-    const ams = acc.find(a => a.id === 'ams');
+    const ams = acc.find(a => a.category === 'multimaterial');
     assert.equal(ams.name, 'AMS 2 Pro');
+    assert.equal(ams.count, 1);
+  });
+
+  it('detects mixed AMS models per unit (2 Pro 4-tray + HT 1-tray)', () => {
+    const state = { ams: { ams: [
+      { humidity_raw: 30, tray: [{}, {}, {}, {}] }, // 4 trays -> AMS 2 Pro
+      { humidity_raw: 12, tray: [{}] },             // 1 tray  -> AMS HT
+    ] } };
+    const ams = detectAccessories({ type: 'bambu', state, model: {} }).filter(a => a.category === 'multimaterial');
+    const byName = Object.fromEntries(ams.map(a => [a.name, a.count]));
+    assert.equal(byName['AMS 2 Pro'], 1);
+    assert.equal(byName['AMS HT'], 1);
+  });
+
+  it('groups identical AMS units with a count (2x AMS 2 Pro)', () => {
+    const state = { ams: { ams: [
+      { humidity_raw: 30, tray: [{}, {}, {}, {}] },
+      { humidity_raw: 28, tray: [{}, {}, {}, {}] },
+    ] } };
+    const ams = detectAccessories({ type: 'bambu', state, model: {} }).find(a => a.category === 'multimaterial');
+    assert.equal(ams.name, 'AMS 2 Pro');
+    assert.equal(ams.count, 2);
   });
   it('detects external spool, camera, chamber and nozzle', () => {
     const state = { vt_tray: { tray_type: 'PLA' }, ipcam: { ipcam_dev: '1' }, chamber_temper: 35, nozzle_diameter: 0.4 };
