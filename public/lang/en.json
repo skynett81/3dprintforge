@@ -199,7 +199,7 @@
     "type_required": "Type is required",
     "load_failed": "Could not load filament inventory.",
     "remaining_of": "remaining of",
-    "unassigned": "Not assigned to printer",
+    "unassigned": "Without location",
     "total_spools": "Spools",
     "total_remaining": "Total remaining",
     "total_value": "Inventory value",
@@ -283,8 +283,7 @@
     "slot_drop_hint": "Drop a spool here to assign",
     "card_drag_hint": "Click to view Â· drag to assign to a slot or location",
     "spool_swapped": "{{old}} â {{new}} swapped",
-    "locations_dnd_title": "Drag spools between locations",
-    "unassigned": "Without location",
+    "locations_dnd_title": "Location overview",
     "vendors_title": "Vendors",
     "vendor_name": "Vendor name",
     "vendor_website": "Website",
@@ -405,7 +404,6 @@
     "add_field": "Add field",
     "field_key": "Key",
     "field_value": "Value",
-    "locations_dnd_title": "Location overview",
     "location_description": "Description",
     "finish": "Finish",
     "finish_matte": "Matte",
@@ -1087,7 +1085,10 @@
     "firmware_load_failed": "Could not load firmware history.",
     "fw_module": "Module",
     "fw_version": "Version",
-    "fw_hw": "HW version"
+    "fw_hw": "HW version",
+    "add_to_inventory": "Add to hardware inventory",
+    "acc_synced": "Added to hardware inventory",
+    "acc_uptodate": "Hardware inventory already up to date"
   },
   "tabs": {
     "controls": "Controls",

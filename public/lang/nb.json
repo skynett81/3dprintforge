@@ -190,7 +190,7 @@
     "type_required": "Type er pÃ¥krevd",
     "load_failed": "Kunne ikke laste filamentlager.",
     "remaining_of": "gjenstÃ¥r av",
-    "unassigned": "Ikke tilknyttet printer",
+    "unassigned": "Uten plassering",
     "total_spools": "Spoler",
     "total_remaining": "Totalt gjenstÃ¥ende",
     "total_value": "Lagerverdi",
@@ -272,8 +272,7 @@
     "slot_drop_hint": "Slipp en spole her for Ã¥ tilordne",
     "card_drag_hint": "Klikk for Ã¥ vise Â· dra til en slot eller plassering",
     "spool_swapped": "{{old}} â {{new}} byttet",
-    "locations_dnd_title": "Dra spoler mellom plasseringer",
-    "unassigned": "Uten plassering",
+    "locations_dnd_title": "Lokasjonsoversikt",
     "vendors_title": "Produsenter",
     "vendor_name": "Produsentnavn",
     "vendor_website": "Nettside",
@@ -394,7 +393,6 @@
     "add_field": "Legg til felt",
     "field_key": "NÃ¸kkel",
     "field_value": "Verdi",
-    "locations_dnd_title": "Lokasjonsoversikt",
     "location_description": "Beskrivelse",
     "finish": "Finish",
     "finish_matte": "Matt",
@@ -1072,7 +1070,10 @@
     "firmware_load_failed": "Kunne ikke laste firmware-historikk.",
     "fw_module": "Modul",
     "fw_version": "Versjon",
-    "fw_hw": "HW-versjon"
+    "fw_hw": "HW-versjon",
+    "add_to_inventory": "Legg til i hardware-inventar",
+    "acc_synced": "Lagt til i hardware-inventaret",
+    "acc_uptodate": "Hardware-inventaret er allerede oppdatert"
   },
   "tabs": {
     "controls": "Kontroller",

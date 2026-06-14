@@ -1871,6 +1871,38 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { printer_id: id, type, accessories: detectAccessories({ type, state: st, model }) });
     }
 
+    // Auto-fill the hardware inventory from detected accessories (idempotent —
+    // skips ones already in the printer's hardware list, deduped by name).
+    const accSyncMatch = path.match(/^\/api\/printers\/([a-zA-Z0-9_-]+)\/accessories\/sync$/);
+    if (accSyncMatch && method === 'POST') {
+      const id = accSyncMatch[1];
+      const raw = _hub ? _hub.getLastState(id) : null;
+      const st = (raw && raw.print) ? raw.print : (raw || {});
+      const entry = _printerManager?.printers?.get(id);
+      const type = entry?.config?.type || '';
+      const model = st._printer_model || null;
+      const { detectAccessories } = await import('./accessory-detector.js');
+      const detected = detectAccessories({ type, state: st, model });
+      const existing = getHardwareForPrinter(id) || [];
+      const existingNames = new Set(existing.map(h => String(h.name || '').toLowerCase()));
+      let created = 0;
+      for (const a of detected) {
+        if (existingNames.has(String(a.name).toLowerCase())) continue;
+        try {
+          const hwId = addHardwareItem({
+            category: a.category || 'accessory',
+            name: a.name,
+            compatible_printers: [id],
+            specs: { count: a.count, detail: a.detail, auto_detected: true, source: 'accessory-detection' },
+            notes: 'Auto-detected from the printer',
+          });
+          assignHardware(hwId, id);
+          created++;
+        } catch (e) { /* skip individual failures */ }
+      }
+      return sendJson(res, { printer_id: id, detected: detected.length, created, already_present: existing.length });
+    }
+
     // Print control (pause/resume/stop) for any connected printer. Uses the
     // same per-connector command path the dashboard UI / print-guard use:
     // Bambu builds an MQTT command via client._buildCommand({action}),

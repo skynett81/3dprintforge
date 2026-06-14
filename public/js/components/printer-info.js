@@ -211,9 +211,27 @@
         const det = (a.detail && a.detail.length) ? `<span class="info-value" style="font-size:0.62rem">${esc(a.detail.slice(0, 4).join(', '))}</span>` : '<span class="info-value"></span>';
         return `<div class="info-item"><span class="info-label">${esc(a.name)}${cnt}</span>${det}</div>`;
       }).join('');
-      slot.innerHTML = `<div style="margin-top:10px"><div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:6px">${t('printer_info.accessories', 'Connected accessories')} (${list.length})</div>${rows}</div>`;
+      slot.innerHTML = `<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">`
+        + `<span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.04em">${t('printer_info.accessories', 'Connected accessories')} (${list.length})</span>`
+        + `<button class="form-btn form-btn-sm" type="button" onclick="window._syncAccessoriesToHardware()" style="font-size:0.6rem;padding:2px 8px" title="${esc(t('printer_info.add_to_inventory', 'Add to hardware inventory'))}">${t('printer_info.add_to_inventory', 'Add to hardware inventory')}</button>`
+        + `</div>${rows}</div>`;
     });
   }
+
+  window._syncAccessoriesToHardware = async function() {
+    const printerId = window.printerState.getActivePrinterId();
+    if (!printerId) return;
+    try {
+      const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/accessories/sync`, { method: 'POST' });
+      const data = await res.json();
+      const msg = data.created > 0
+        ? t('printer_info.acc_synced', 'Added to hardware inventory') + ': ' + data.created
+        : t('printer_info.acc_uptodate', 'Hardware inventory already up to date');
+      if (typeof showToast === 'function') showToast(msg, data.created > 0 ? 'success' : 'info', 3500);
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(t('common.load_failed', 'Could not load this'), 'error');
+    }
+  };
 
   window.updatePrinterInfo = function(data) {
     _lastData = data;
