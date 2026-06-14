@@ -89,7 +89,16 @@ const API_RATE_MAX = 200;
 const API_RATE_WINDOW_MS = 60_000;
 const _apiRates = new Map();
 
+// Loopback = the self-hosted dashboard's own browser on this machine. It is
+// trusted and a single page legitimately bursts well past 200 req/min (the
+// stats view alone fires several calls, plus camera-frame and status polling),
+// so rate-limiting it just breaks the UI with 429s. Remote/LAN clients are
+// still limited. Login + TOTP limiters are separate and always apply.
+const _LOOPBACK_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
+export function isLoopbackIp(ip) { return _LOOPBACK_IPS.has(ip); }
+
 export function checkApiRate(ip) {
+  if (isLoopbackIp(ip)) return true;
   const now = Date.now();
   const entry = _apiRates.get(ip);
   if (!entry || now - entry.windowStart > API_RATE_WINDOW_MS) {

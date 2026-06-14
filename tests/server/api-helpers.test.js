@@ -109,6 +109,15 @@ describe('checkApiRate() — generell rate limiter', () => {
     assert.strictEqual(checkApiRate(ip1), true, 'IP 1 skal tillates');
     assert.strictEqual(checkApiRate(ip2), true, 'IP 2 skal tillates');
   });
+
+  it('rate-limiter aldri loopback (egen dashboard-nettleser)', () => {
+    // Langt over grensen — loopback skal alltid slippe gjennom.
+    for (const ip of ['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']) {
+      let last = true;
+      for (let i = 0; i < 500; i++) last = checkApiRate(ip);
+      assert.strictEqual(last, true, `${ip} skal aldri rate-limites`);
+    }
+  });
 });
 
 describe('getApiRateHeaders()', () => {

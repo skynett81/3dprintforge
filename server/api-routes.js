@@ -588,9 +588,12 @@ export async function handleApiRequest(req, res) {
   const path = url.pathname;
   const method = req.method;
 
-  // General API rate limiting
+  // General API rate limiting. Camera-frame snapshots are polled several times
+  // a second when the live WS stream isn't up, so counting them would exhaust
+  // the per-minute budget on their own and 429 the rest of the UI — skip them.
   const clientIp = _getClientIp(req);
-  if (!checkApiRate(clientIp)) {
+  const _rateExempt = /\/frame\.jpe?g$/.test(path);
+  if (!_rateExempt && !checkApiRate(clientIp)) {
     const headers = getApiRateHeaders(clientIp);
     res.writeHead(429, { 'Content-Type': 'application/json', ...headers });
     res.end(JSON.stringify({ error: 'Too many requests', retry_after: headers['X-RateLimit-Reset'] }));
