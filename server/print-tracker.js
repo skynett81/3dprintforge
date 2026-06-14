@@ -139,6 +139,21 @@ export class PrintTracker {
       this._onStateChange(prevState, currState, printData);
     }
 
+    // Self-heal AMS->spool links when filament is swapped. Auto-match otherwise
+    // only runs at print start, so a swapped tray keeps its stale spool link
+    // (wrong material/weight on the dashboard) until the next print. Re-run the
+    // matcher only when the tray RFID composition actually changes — cheap, and
+    // it works whether or not a print is active.
+    if (printData.ams?.ams) {
+      const sig = printData.ams.ams
+        .map(u => (u.tray || []).map(t => `${t.id}:${t.tray_type || ''}:${t.tray_color || ''}`).join(','))
+        .join('|');
+      if (sig && sig !== this._lastAmsSig) {
+        this._lastAmsSig = sig;
+        try { this._processAmsNfcTags(printData); } catch (e) { /* best-effort */ }
+      }
+    }
+
     // Track color changes during print (254 = external spool, 255 = no tray)
     if (this.currentPrint && printData.ams?.tray_now != null) {
       const currentTray = String(printData.ams.tray_now);
@@ -1064,15 +1079,24 @@ export class PrintTracker {
           // Already assigned?
           const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
           if (existing) {
-            // Check depletion thresholds
-            const remainPct = tray.remain >= 0 ? tray.remain : 100;
-            const events = checkSpoolDepletionThresholds(existing.id, remainPct);
-            if (events.length > 0 && this.onSpoolDepleting) {
-              for (const evt of events) {
-                this.onSpoolDepleting({ ...evt, printer_id: this.printerId, ams_unit: amsUnit, tray_id: trayId });
+            // If the tray's RFID no longer matches the linked spool, the
+            // filament was swapped — unlink the stale spool and fall through to
+            // re-match / re-create the correct one so the slot self-heals.
+            const swapped = existing.material && tray.tray_type &&
+              String(existing.material).toUpperCase() !== String(tray.tray_type).toUpperCase();
+            if (!swapped) {
+              // Same filament — depletion threshold check only.
+              const remainPct = tray.remain >= 0 ? tray.remain : 100;
+              const events = checkSpoolDepletionThresholds(existing.id, remainPct);
+              if (events.length > 0 && this.onSpoolDepleting) {
+                for (const evt of events) {
+                  this.onSpoolDepleting({ ...evt, printer_id: this.printerId, ams_unit: amsUnit, tray_id: trayId });
+                }
               }
+              continue;
             }
-            continue;
+            try { assignSpoolToSlot(existing.id, null, null, null); } catch (e) { /* ignore */ }
+            log.info('AMS ' + amsUnit + ':' + trayId + ' filament changed (' + existing.material + ' -> ' + tray.tray_type + ') — unlinked stale spool #' + existing.id + ', re-matching');
           }
 
           // Try tray_id_name match first
