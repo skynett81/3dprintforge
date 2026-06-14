@@ -6,40 +6,30 @@
 // KEEP THIS CURRENT: whenever a release adds user-facing features, refresh the
 // FEATURES list with the new batch and bump VERSION so everyone sees it again.
 // VERSION history: 1 = sidebar search/pin, overlay, Spoolman. 2 = v1.1.24.
+// 3 = filament insights, connected accessories, reliable print history.
 (function () {
   'use strict';
 
-  var VERSION = '2';
+  var VERSION = '3';
   var KEY = 'whatsnew-seen-v' + VERSION;
 
   var FEATURES = [
     {
-      icon: 'bi-rulers',
-      title: 'Pressure-advance pattern calibration',
-      desc: 'A new line-method PA/LA test in Calibration & Tuning (the Sineos/Ellis method), with a link to Ellis\' Print Tuning Guide.',
-      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('calibration'); } location.hash = '#calibration'; } },
+      icon: 'bi-graph-up',
+      title: 'Filament insights',
+      desc: 'The Statistics → Filament tab now leads with a KPI strip (total used, average per print, waste, waste share, color changes, cost) and a month-by-month consumption chart.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('stats'); } location.hash = '#stats/filament'; } },
     },
     {
-      icon: 'bi-arrow-counterclockwise',
-      title: 'Undo on delete',
-      desc: 'Deleted something by accident? An Undo button now appears in the toast — for spools, queues, backups, screenshots, profiles, tags and more.',
+      icon: 'bi-plugin',
+      title: 'Connected accessories',
+      desc: 'Each printer now detects what is plugged in — AMS units (incl. mixed AMS 2 Pro / HT setups labelled per unit), probes, sensors, cameras and more — and can file them into your hardware inventory.',
     },
     {
-      icon: 'bi-trophy',
-      title: 'Achievements: levels & XP',
-      desc: 'Achievements now earn real XP toward named tiers, and new unlocks are celebrated with a toast.',
-      action: { label: 'View', fn: function () { if (window.openPanel) { window.openPanel('achievements'); } location.hash = '#achievements'; } },
-    },
-    {
-      icon: 'bi-hdd-stack',
-      title: 'Spoolman server — full control',
-      desc: 'Mainsail / Fluidd can now create, edit and delete spools in your inventory, not just read it.',
-      action: { label: 'Open settings', fn: function () { if (window.openPanel) { window.openPanel('settings'); } location.hash = '#settings/system/integrations'; } },
-    },
-    {
-      icon: 'bi-wifi-off',
-      title: 'Stays clear when offline',
-      desc: 'A banner now warns you the moment you go offline and reconnects automatically when you are back.',
+      icon: 'bi-clock-history',
+      title: 'Reliable print history',
+      desc: 'Finished prints are no longer dropped: a recording fault that could hide recent prints is fixed, and a job already finished when the server reconnects is captured retroactively.',
+      action: { label: 'View', fn: function () { if (window.openPanel) { window.openPanel('history'); } location.hash = '#history'; } },
     },
   ];
 
