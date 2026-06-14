@@ -21,7 +21,7 @@
   // ═══ Tab config (alphabetically sorted by translated label, overview first) ═══
   const TAB_CONFIG_UNSORTED = {
     overview:    { label: 'stats.tab_overview',    modules: ['hero-stats','overview','weekly-trends','monthly-trends'], order: 0 },
-    filament:    { label: 'stats.tab_filament',    modules: ['filament-hero','filament-consumption','filament-by-type','filament-by-brand','success-by-filament','success-by-speed','top-files'] },
+    filament:    { label: 'stats.tab_filament',    modules: ['filament-hero','filament-consumption','filament-by-type','success-by-filament','success-by-speed','filament-by-brand','top-files'] },
     activity:    { label: 'stats.tab_activity',    modules: ['day-heatmap','hour-heatmap','avg-time-by-day'] },
     hardware:    { label: 'stats.tab_hardware',    modules: ['temp-records','nozzle-usage','ams-stats','xcam-stats','maintenance-overview','nozzle-health','build-plate-stats','firmware-info'] },
     cost:        { label: 'stats.tab_cost',        modules: ['cost-hero','cost-breakdown','cost-trends','cost-by-printer','cost-by-material'] },
@@ -45,7 +45,7 @@
     'monthly-trends': 'full',
     'filament-hero': 'full', 'filament-consumption': 'half',
     'filament-by-type': 'half', 'success-by-filament': 'half',
-    'success-by-speed': 'half', 'filament-by-brand': 'half',
+    'success-by-speed': 'half', 'filament-by-brand': 'full',
     'top-files': 'full',
     'day-heatmap': 'half', 'hour-heatmap': 'full', 'avg-time-by-day': 'half',
     'temp-records': 'half', 'nozzle-usage': 'half',
