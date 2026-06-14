@@ -17,6 +17,7 @@
   let _activeTab = 'status';
   const _locked = true;
   let _printers = [];
+  let _accessories = {}; // printerId → detected accessories, for sensor-aware hints
   let _alerts = [];
   let _settings = {};
   let _log = [];
@@ -250,6 +251,10 @@
             </label>
           </div>`;
 
+        // Detected sensors for this printer — shows which guards are backed by
+        // real hardware (sensor-aware).
+        h += _sensorBadges(p.id);
+
         // Camera AI section
         h += `<div class="pp-section-label">${t('protection.section_camera')}</div>
           <div class="pp-settings-grid">
@@ -479,6 +484,25 @@
     body.innerHTML = html;
   }
 
+  // Sensor-aware: which guards each printer has real hardware for, from the
+  // accessory detector. Purely informational — guards still default safely.
+  function _sensorBadges(printerId) {
+    const accs = _accessories[printerId] || [];
+    if (!accs.length) return '';
+    const id = (x) => accs.some(a => a.id === x);
+    const cat = (c) => accs.some(a => a.category === c);
+    const fsensor = accs.find(a => a.id === 'filament_sensor');
+    const badges = [];
+    if (id('ai_camera')) badges.push(['◎', t('protection.cap_defect', 'AI defect detection')]);
+    else if (cat('camera')) badges.push(['◎', t('protection.cap_camera', 'Camera')]);
+    if (fsensor) badges.push(['∿', t('protection.cap_runout', 'Filament sensor') + (fsensor.count > 1 ? ' ×' + fsensor.count : '')]);
+    if (id('entangle_sensor')) badges.push(['⌇', t('protection.cap_tangle', 'Entangle sensor')]);
+    if (cat('multimaterial')) badges.push(['☂', t('protection.cap_humidity', 'AMS humidity')]);
+    if (!badges.length) return '';
+    return `<div class="pp-sensors"><span class="pp-sensors-label">${t('protection.detected_sensors', 'Sensors detected')}:</span> ` +
+      badges.map(([ic, lbl]) => `<span class="pp-sensor-badge">${ic} ${esc(lbl)}</span>`).join(' ') + '</div>';
+  }
+
   // ═══ Public functions ═══
   window.switchProtectionTab = function(tabId) {
     _activeTab = tabId;
@@ -562,6 +586,14 @@
         fetch(`/api/protection/log?limit=100${_pid ? '&printer_id=' + _pid : ''}`)
       ]);
       _printers = await printersRes.json();
+      // Detected sensors per printer, for sensor-aware guard hints.
+      _accessories = {};
+      await Promise.all(_printers.map(async (p) => {
+        try {
+          const r = await fetch('/api/printers/' + p.id + '/accessories');
+          if (r.ok) _accessories[p.id] = (await r.json()).accessories || [];
+        } catch { /* ignore */ }
+      }));
       const statusData = await statusRes.json();
       _alerts = statusData.alerts || [];
       _log = await logRes.json();
