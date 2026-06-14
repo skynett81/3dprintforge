@@ -26,6 +26,9 @@
 
   let _currentYear = new Date().getFullYear();
   let _container = null;
+  let _dayMap = {};        // date -> day record, for the click-to-inspect detail
+  let _maxPrints = 0;
+  let _selectedDate = null;
 
   window.loadPrintCalendar = async function(container) {
     if (!container) container = document.getElementById('overlay-panel-body');
@@ -65,6 +68,9 @@
       dayMap[d.date] = d;
       if (d.prints > maxPrints) maxPrints = d.prints;
     }
+    _dayMap = dayMap;
+    _maxPrints = maxPrints;
+    _selectedDate = null;
 
     // Compute stats
     const totalPrints = data.reduce((s, d) => s + d.prints, 0);
@@ -117,10 +123,17 @@
     h += _statCard(_t('activity.avg_per_day', 'Avg per day'), avgPerDay, 'var(--accent-purple)');
     h += '</div>';
 
-    // ── SVG Heatmap ──
+    // ── SVG Heatmap (click a day to inspect) ──
     h += `<div class="card act-heatmap-card">
       <div class="card-title">${_t('activity.year_heatmap', 'Print activity')} — ${year}</div>
       ${_renderHeatmap(dayMap, maxPrints, data)}
+      <div id="act-day-detail" class="act-day-detail">${_renderDayDetailHint()}</div>
+    </div>`;
+
+    // ── Weekday rhythm ──
+    h += `<div class="card act-weekday-card">
+      <div class="card-title">${_t('activity.weekday_rhythm', 'Weekly rhythm')}</div>
+      ${_renderWeekdayRhythm(data)}
     </div>`;
 
     // ── Monthly breakdown ──
@@ -216,7 +229,7 @@
           ? `${dateLabel}: ${count} prints (${(entry.hours || 0).toFixed(1)}${_t('time.h', 't')})`
           : `${dateLabel}: ${_t('calendar.no_prints', 'no prints')}`;
 
-        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-subtle)" stroke-width="0.5"><title>${tooltip}</title></rect>`;
+        svg += `<rect class="act-cell" data-date="${dayStr}" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${color}" stroke="var(--border-subtle)" stroke-width="0.5" onclick="_calSelectDay('${dayStr}')"><title>${tooltip}</title></rect>`;
       });
     });
 
@@ -285,6 +298,73 @@
           </div>
         </div>
         <span class="act-busiest-count">${d.prints}</span>
+      </div>`;
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function _renderDayDetailHint() {
+    return `<div class="act-detail-hint">${_t('activity.click_day_hint', 'Click a day in the heatmap to inspect it')}</div>`;
+  }
+
+  // Click a heatmap cell to inspect that day's breakdown.
+  window._calSelectDay = function(date) {
+    const panel = document.getElementById('act-day-detail');
+    if (!panel) return;
+    document.querySelectorAll('.act-cell.selected').forEach(c => c.classList.remove('selected'));
+    const cell = document.querySelector('.act-cell[data-date="' + date + '"]');
+    if (cell) cell.classList.add('selected');
+    _selectedDate = date;
+
+    const d = _dayMap[date];
+    const prints = d?.prints || 0;
+    const hours = d?.hours || 0;
+    const completed = d?.completed || 0;
+    const failed = d?.failed || 0;
+    const rate = prints > 0 ? Math.round(completed / prints * 100) : 0;
+
+    if (prints === 0) {
+      panel.innerHTML = `<div class="act-detail-head">
+          <span class="act-detail-date">${_dateLabel(date)}</span>
+          <span class="act-detail-empty">${_t('calendar.no_prints', 'No prints this day')}</span>
+        </div>`;
+      return;
+    }
+    const rateColor = rate >= 80 ? 'var(--accent-green)' : rate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+    panel.innerHTML = `<div class="act-detail-head">
+        <span class="act-detail-date">${_dateLabel(date)}</span>
+        <button class="form-btn form-btn-sm" onclick="location.hash='#history'">${_t('activity.view_in_history', 'Open history')}</button>
+      </div>
+      <div class="act-detail-stats">
+        <div class="act-detail-stat"><span class="act-detail-num" style="color:var(--accent-blue)">${prints}</span><span class="act-detail-lbl">${_t('stats.total_prints', 'Prints')}</span></div>
+        <div class="act-detail-stat"><span class="act-detail-num" style="color:var(--accent-green)">${completed}</span><span class="act-detail-lbl">${_t('stats.completed', 'Completed')}</span></div>
+        <div class="act-detail-stat"><span class="act-detail-num" style="color:var(--accent-red)">${failed}</span><span class="act-detail-lbl">${_t('stats.failed', 'Failed')}</span></div>
+        <div class="act-detail-stat"><span class="act-detail-num" style="color:var(--accent-purple)">${hours.toFixed(1)}${_t('time.h','h')}</span><span class="act-detail-lbl">${_t('stats.total_time', 'Hours')}</span></div>
+        <div class="act-detail-stat"><span class="act-detail-num" style="color:${rateColor}">${rate}%</span><span class="act-detail-lbl">${_t('stats.success_rate', 'Success')}</span></div>
+      </div>`;
+  };
+
+  // Total prints per weekday (Mon..Sun) — shows when the user prints most.
+  function _renderWeekdayRhythm(data) {
+    const totals = [0, 0, 0, 0, 0, 0, 0]; // 0 = Monday
+    for (const d of data) {
+      if (!d.prints) continue;
+      const dt = new Date(d.date + 'T00:00:00');
+      totals[(dt.getDay() + 6) % 7] += d.prints;
+    }
+    const max = Math.max(...totals, 1);
+    const peak = totals.indexOf(Math.max(...totals));
+    const labelKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const labelsFb = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    let h = '<div class="act-weekday-bars">';
+    for (let i = 0; i < 7; i++) {
+      const pct = (totals[i] / max) * 100;
+      const isPeak = totals[i] > 0 && i === peak;
+      h += `<div class="act-weekday-col">
+        <div class="act-weekday-track"><div class="act-weekday-fill${isPeak ? ' act-weekday-fill--peak' : ''}" style="height:${Math.max(pct, 2)}%"></div></div>
+        <span class="act-weekday-count">${totals[i]}</span>
+        <span class="act-weekday-label">${_t('day.' + labelKeys[i], labelsFb[i])}</span>
       </div>`;
     }
     h += '</div>';

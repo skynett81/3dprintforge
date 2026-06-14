@@ -13916,3 +13916,26 @@ body .ctrl-card-subtitle {
   color: var(--text-secondary);
   line-height: 1.4;
 }
+
+/* ── Print Activity calendar — interactive heatmap + insights ── */
+.act-cell { cursor: pointer; transition: stroke 0.12s var(--ease-out); }
+.act-cell:hover { stroke: var(--text-primary); stroke-width: 1.4; }
+.act-cell.selected { stroke: var(--accent-blue, #1279ff); stroke-width: 2; }
+
+.act-day-detail { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color); min-height: 38px; }
+.act-detail-hint { color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 4px 0; }
+.act-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.act-detail-date { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+.act-detail-empty { color: var(--text-muted); font-size: 0.82rem; }
+.act-detail-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 10px; }
+.act-detail-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; background: var(--bg-tertiary); border-radius: 8px; }
+.act-detail-num { font-size: 1.05rem; font-weight: 800; }
+.act-detail-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+
+.act-weekday-bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+.act-weekday-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+.act-weekday-track { width: 66%; height: 92px; display: flex; align-items: flex-end; }
+.act-weekday-fill { width: 100%; min-height: 3px; border-radius: 4px 4px 0 0; background: rgba(0, 230, 118, 0.5); transition: height 0.45s var(--ease-out); }
+.act-weekday-fill--peak { background: var(--accent-green, #00e676); }
+.act-weekday-count { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); }
+.act-weekday-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
