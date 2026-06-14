@@ -1064,6 +1064,7 @@
   },
   "printer_info": {
     "title": "Printer Info",
+    "accessories": "Connected accessories",
     "model": "Model",
     "wifi": "WiFi",
     "firmware": "Firmware",

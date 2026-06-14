@@ -179,7 +179,40 @@
       html += `<div id="firmware-history-container" class="firmware-history" style="display:none"></div>`;
     }
 
+    html += '<div id="printer-accessories-card"></div>';
     container.innerHTML = html;
+    _renderAccessories();
+  }
+
+  // Auto-detected connected accessories (GET /api/printers/:id/accessories).
+  // Hardware is static, so cache per printer and only re-fetch on printer change.
+  let _accCache = { id: null, list: null };
+  async function _renderAccessories() {
+    const printerId = window.printerState.getActivePrinterId();
+    if (!printerId) return;
+    if (_accCache.id !== printerId) {
+      _accCache = { id: printerId, list: null };
+      try {
+        const res = await fetch(`/api/printers/${encodeURIComponent(printerId)}/accessories`);
+        const data = await res.json();
+        if (window.printerState.getActivePrinterId() !== printerId) return; // changed mid-fetch
+        _accCache = { id: printerId, list: data.accessories || [] };
+      } catch (e) { _accCache = { id: printerId, list: [] }; }
+    }
+    _paintAccessories();
+  }
+
+  function _paintAccessories() {
+    const list = _accCache.list || [];
+    document.querySelectorAll('#printer-accessories-card').forEach(slot => {
+      if (!list.length) { slot.innerHTML = ''; return; }
+      const rows = list.map(a => {
+        const cnt = a.count > 1 ? ` <span style="color:var(--accent-green-text)">×${a.count}</span>` : '';
+        const det = (a.detail && a.detail.length) ? `<span class="info-value" style="font-size:0.62rem">${esc(a.detail.slice(0, 4).join(', '))}</span>` : '<span class="info-value"></span>';
+        return `<div class="info-item"><span class="info-label">${esc(a.name)}${cnt}</span>${det}</div>`;
+      }).join('');
+      slot.innerHTML = `<div style="margin-top:10px"><div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:6px">${t('printer_info.accessories', 'Connected accessories')} (${list.length})</div>${rows}</div>`;
+    });
   }
 
   window.updatePrinterInfo = function(data) {

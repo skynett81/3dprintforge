@@ -1049,6 +1049,7 @@
   },
   "printer_info": {
     "title": "Printerinfo",
+    "accessories": "Tilkoblet tilbehør",
     "model": "Modell",
     "wifi": "WiFi",
     "firmware": "Firmware",
