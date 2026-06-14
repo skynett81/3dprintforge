@@ -840,21 +840,9 @@ export class MoonrakerClient {
         nozzle: dd.nozzle,
       };
 
-      // Log defect events when probability exceeds threshold (0.5)
-      if (dd.main_enable && this.state.gcode_state === 'RUNNING') {
-        const logThreshold = 0.5;
-        if (dd.noodle?.probability > logThreshold && !this._lastNoodleLog) {
-          this._lastNoodleLog = Date.now();
-          try { import('./db/snapmaker.js').then(m => m.addDefectEvent(this._printerId, 'spaghetti', dd.noodle.probability > 0.8 ? 'high' : 'warning', dd.noodle, null, dd.noodle.probability)); } catch {}
-        }
-        if (dd.residue?.probability > logThreshold && !this._lastResidueLog) {
-          this._lastResidueLog = Date.now();
-          try { import('./db/snapmaker.js').then(m => m.addDefectEvent(this._printerId, 'residue', 'warning', dd.residue, null, dd.residue.probability)); } catch {}
-        }
-        // Reset log flags after 60s to allow re-logging
-        if (this._lastNoodleLog && Date.now() - this._lastNoodleLog > 60000) this._lastNoodleLog = null;
-        if (this._lastResidueLog && Date.now() - this._lastResidueLog > 60000) this._lastResidueLog = null;
-      }
+      // Defect events are recorded from the firmware's pause messages in the
+      // notify_gcode_response handler — defect_detection.get_status exposes only
+      // config (no live probability), so threshold-on-status never worked.
     }
 
     // Timelapse — track active state + auto-capture frames
@@ -1430,6 +1418,30 @@ export class MoonrakerClient {
               this._printerId, 'flow', extruderIdx, kValue, { source: 'flow_calibrator', message: text.trim() },
             )).catch(() => {});
           } catch (e) { /* best-effort */ }
+        }
+      }
+
+      // Snapmaker U1 defect detection. defect_detection.get_status only exposes
+      // config (no live probability), so the old probability-threshold logging
+      // could never fire. The firmware confirms a defect by pausing the print
+      // and emitting one of these messages (defect_detection.py
+      // defect_event_handler) — that is the real signal. Verified from source.
+      if (this.state.gcode_state === 'RUNNING' || this.state.gcode_state === 'PAUSE') {
+        const defects = [
+          [/detected noodle/i, 'spaghetti'],
+          [/detected residue/i, 'residue'],
+          [/detected dirty bed/i, 'dirty_bed'],
+          [/detected dirty nozzle/i, 'dirty_nozzle'],
+        ];
+        for (const [re, type] of defects) {
+          if (re.test(text)) {
+            try {
+              import('./db/snapmaker.js').then(m => m.addDefectEvent(
+                this._printerId, type, 'high', { message: text.trim() }, null, null,
+              )).catch(() => {});
+            } catch (e) { /* best-effort */ }
+            break;
+          }
         }
       }
     }
