@@ -715,6 +715,8 @@ window.openPanel = function(name, skipHash) {
   if (statsStrip) statsStrip.classList.add('view-hidden');
   const infoStrip = document.getElementById('info-box-strip');
   if (infoStrip) infoStrip.classList.add('hidden');
+  const achTeaser = document.getElementById('ach-dash-teaser');
+  if (achTeaser) achTeaser.style.display = 'none';
   panelContent.classList.add('panel-active');
 
   // Show skeleton while content loads — tailored per panel type
@@ -788,6 +790,8 @@ window.showDashboard = function(skipHash) {
   if (statsStrip) statsStrip.classList.remove('view-hidden');
   const infoStrip = document.getElementById('info-box-strip');
   if (infoStrip) infoStrip.classList.remove('hidden');
+  const achTeaser = document.getElementById('ach-dash-teaser');
+  if (achTeaser && achTeaser.querySelector('.ach-teaser-card')) achTeaser.style.display = '';
   panelContent.classList.remove('panel-active');
   window._activePanel = null;
 

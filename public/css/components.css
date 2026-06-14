@@ -13954,3 +13954,33 @@ body .ctrl-card-subtitle {
   0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.55); }
   50% { box-shadow: 0 0 0 5px rgba(0, 200, 83, 0); }
 }
+
+/* ── Achievements dashboard teaser — puts level/XP/next-up on the home screen ── */
+.ach-teaser { margin: 0 0 14px; }
+.ach-teaser-card {
+  display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.15s var(--ease-out), box-shadow 0.15s;
+}
+.ach-teaser-card:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+.ach-teaser-badge {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+.ach-teaser-main { flex: 0 0 250px; min-width: 150px; }
+.ach-teaser-tier { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.ach-teaser-bar { height: 6px; background: var(--bg-tertiary); border-radius: 3px; margin: 5px 0; overflow: hidden; }
+.ach-teaser-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); border-radius: 3px; transition: width 0.5s var(--ease-out); }
+.ach-teaser-sub { font-size: 0.68rem; color: var(--text-muted); }
+.ach-teaser-next { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-left: 14px; border-left: 1px solid var(--border-color); }
+.ach-teaser-next-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-orange); font-weight: 700; }
+.ach-teaser-next-item { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ach-teaser-cta { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: var(--accent-blue); white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 768px) {
+  .ach-teaser-next { display: none; }
+  .ach-teaser-main { flex: 1; }
+  .ach-teaser-cta { display: none; }
+}

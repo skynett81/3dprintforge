@@ -293,23 +293,37 @@
   // even when the user isn't on it: a pulsing green count for freshly unlocked
   // (unseen) achievements, an amber count for ones almost unlocked, else the
   // current level. Refreshed on load, every 5 min, and after the panel renders.
-  const _BADGE_TIER_XP = [0, 2000, 8000, 20000, 50000, 120000, 280000, 600000, 1200000, 2500000];
-  function _calcLevel(totalXP) {
-    let idx = 0;
-    for (let i = _BADGE_TIER_XP.length - 1; i >= 0; i--) { if (totalXP >= _BADGE_TIER_XP[i]) { idx = i; break; } }
-    return idx + 1;
-  }
+  const _ACH_TIERS = [
+    ['Beginner', 0], ['Novice', 2000], ['Apprentice', 8000], ['Maker', 20000],
+    ['Craftsman', 50000], ['Expert', 120000], ['Master', 280000],
+    ['Grandmaster', 600000], ['Legend', 1200000], ['Mythic', 2500000],
+  ];
+  // Fetches achievements once and updates BOTH the sidebar badge and the
+  // dashboard teaser card, so the page is visible wherever the user is.
   window.updateAchievementsBadge = async function() {
     const badge = document.getElementById('ach-nav-badge');
-    if (!badge) return;
+    const teaser = document.getElementById('ach-dash-teaser');
+    if (!badge && !teaser) return;
     try {
       const res = await fetch('/api/achievements');
       if (!res.ok) return;
       const list = await res.json();
       if (!Array.isArray(list)) return;
       const earned = list.filter(a => a.earned);
-      const almost = list.filter(a => !a.earned && (a.progress || 0) >= 0.7).length;
+      const almostList = list.filter(a => !a.earned && (a.progress || 0) >= 0.7).sort((a, b) => b.progress - a.progress);
+      const almost = almostList.length;
       const totalXP = list.reduce((s, a) => { const xp = a.xp || 100; return s + (a.earned ? xp : Math.round((a.progress || 0) * xp * 0.25)); }, 0);
+      const completionPct = list.length ? Math.round(earned.length / list.length * 100) : 0;
+      let ti = 0;
+      for (let i = _ACH_TIERS.length - 1; i >= 0; i--) { if (totalXP >= _ACH_TIERS[i][1]) { ti = i; break; } }
+      const level = ti + 1;
+      const tierName = _ACH_TIERS[ti][0];
+      const nextXp = ti < _ACH_TIERS.length - 1 ? _ACH_TIERS[ti + 1][1] : null;
+      const nextName = ti < _ACH_TIERS.length - 1 ? _ACH_TIERS[ti + 1][0] : null;
+      const levelXP = totalXP - _ACH_TIERS[ti][1];
+      const needed = nextXp ? nextXp - _ACH_TIERS[ti][1] : Math.max(1, levelXP);
+      const levelPct = nextXp ? Math.min(100, Math.round(levelXP / needed * 100)) : 100;
+
       // Only count "new" once a baseline exists (first ever visit sets it),
       // mirroring the celebration toast so we don't flag the whole back-catalogue.
       let seen = null;
@@ -318,21 +332,46 @@
       const seenSet = new Set(hasBaseline ? seen : []);
       const fresh = hasBaseline ? earned.filter(a => !seenSet.has(a.title)).length : 0;
 
-      badge.classList.remove('ach-nav-badge--new', 'ach-nav-badge--close', 'ach-nav-badge--level');
-      if (fresh > 0) {
-        badge.textContent = fresh;
-        badge.title = fresh + ' ' + t('achievements.badge_new', 'newly unlocked — open Achievements');
-        badge.classList.add('ach-nav-badge--new');
-      } else if (almost > 0) {
-        badge.textContent = almost;
-        badge.title = almost + ' ' + t('achievements.badge_close', 'almost unlocked');
-        badge.classList.add('ach-nav-badge--close');
-      } else {
-        badge.textContent = 'Lv ' + _calcLevel(totalXP);
-        badge.title = t('achievements.badge_level', 'Your achievement level');
-        badge.classList.add('ach-nav-badge--level');
+      if (badge) {
+        badge.classList.remove('ach-nav-badge--new', 'ach-nav-badge--close', 'ach-nav-badge--level');
+        if (fresh > 0) {
+          badge.textContent = fresh;
+          badge.title = fresh + ' ' + t('achievements.badge_new', 'newly unlocked — open Achievements');
+          badge.classList.add('ach-nav-badge--new');
+        } else if (almost > 0) {
+          badge.textContent = almost;
+          badge.title = almost + ' ' + t('achievements.badge_close', 'almost unlocked');
+          badge.classList.add('ach-nav-badge--close');
+        } else {
+          badge.textContent = 'Lv ' + level;
+          badge.title = t('achievements.badge_level', 'Your achievement level');
+          badge.classList.add('ach-nav-badge--level');
+        }
+        badge.style.display = '';
       }
-      badge.style.display = '';
+
+      if (teaser) {
+        const sub = nextXp
+          ? `${levelXP.toLocaleString()} / ${needed.toLocaleString()} XP ${t('achievements.to_next', 'to next tier')} (${esc(nextName)})`
+          : t('achievements.max_tier', 'Max tier reached');
+        const next = almostList[0];
+        const nextHtml = next ? `<div class="ach-teaser-next">
+            <span class="ach-teaser-next-label">\u{1F525} ${t('achievements.almost_there', 'Almost there')}</span>
+            <span class="ach-teaser-next-item">${next.icon || ''} ${esc(next.title)} — ${Math.round((next.progress || 0) * 100)}%</span>
+          </div>` : '';
+        teaser.innerHTML = `<div class="ach-teaser-card" onclick="openPanel('achievements')">
+          <div class="ach-teaser-badge">${level}</div>
+          <div class="ach-teaser-main">
+            <div class="ach-teaser-tier">${esc(tierName)} · ${completionPct}% · ${totalXP.toLocaleString()} XP</div>
+            <div class="ach-teaser-bar"><div class="ach-teaser-fill" style="width:${levelPct}%"></div></div>
+            <div class="ach-teaser-sub">${sub}</div>
+          </div>
+          ${nextHtml}
+          <div class="ach-teaser-cta">${t('achievements.title', 'Achievements')} →</div>
+        </div>`;
+        // Only visible on the dashboard, never on top of an open panel.
+        teaser.style.display = window._activePanel ? 'none' : '';
+      }
     } catch { /* ignore */ }
   };
   setTimeout(() => window.updateAchievementsBadge(), 1500);
