@@ -16,8 +16,8 @@
   var FEATURES = [
     {
       icon: 'bi-graph-up',
-      title: 'Filament insights',
-      desc: 'The Statistics → Filament tab now leads with a KPI strip (total used, average per print, waste, waste share, color changes, cost) and a month-by-month consumption chart.',
+      title: 'Richer statistics',
+      desc: 'The Filament tab leads with a KPI strip (used, per print, waste, color changes, cost) and a monthly consumption chart, and the Cost tab adds avg/month, prints costed and a clear note when only filament cost is configured.',
       action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('stats'); } location.hash = '#stats/filament'; } },
     },
     {
