@@ -1411,7 +1411,27 @@ export class MoonrakerClient {
 
     // Print events
     if (msg.method === 'notify_gcode_response') {
-      // G-code response — could be used for error detection
+      const text = Array.isArray(msg.params) ? String(msg.params[0] || '') : '';
+      // Snapmaker U1 flow-calibration result. The U1 Klipper flow_calibrator
+      // module (klippy/extras/flow_calibrator.py) has no get_status — on a
+      // successful run it emits the G-code response "Got pressure advance: <k>"
+      // and applies <k> as the active extruder's pressure_advance. That message
+      // is the only completion signal exposed, so record the K value here (one
+      // row per calibrated extruder). Verified against the official firmware
+      // source, not guessed.
+      const paMatch = text.match(/Got pressure advance:\s*([0-9.]+)/i);
+      if (paMatch) {
+        const kValue = parseFloat(paMatch[1]);
+        const ae = this.state._active_extruder || 'extruder';
+        const extruderIdx = ae === 'extruder' ? 0 : (parseInt(String(ae).replace('extruder', ''), 10) || 0);
+        if (Number.isFinite(kValue)) {
+          try {
+            import('./db/snapmaker.js').then(m => m.addCalibrationResult(
+              this._printerId, 'flow', extruderIdx, kValue, { source: 'flow_calibrator', message: text.trim() },
+            )).catch(() => {});
+          } catch (e) { /* best-effort */ }
+        }
+      }
     }
 
     // Moonraker 0.8+ real-time notifications — surface to dashboard for live UI updates.
