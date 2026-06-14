@@ -369,12 +369,17 @@
       let h = `<div class="card-title">${t('stats.ams_stats')}</div>`;
       if (s.ams_avg_humidity?.length) {
         h += '<div class="stats-detail-list">';
-        for (const a of s.ams_avg_humidity) h += sRow(`AMS${parseInt(a.ams_unit)+1} ${t('stats.ams_humidity_avg')}`, `${a.avg_humidity}%`);
+        // Bambu AMS reports humidity as a 1-5 dryness level, not a percentage —
+        // show it on that scale instead of a misleading "%".
+        for (const a of s.ams_avg_humidity) {
+          const lvl = Math.round((a.avg_humidity || 0) * 10) / 10;
+          h += sRow(`AMS${parseInt(a.ams_unit)+1} ${t('stats.ams_humidity_avg')}`, `${lvl} / 5`);
+        }
         h += '</div>';
       }
       if (s.ams_filament_by_brand?.length) {
         h += `<table class="data-table mt-sm"><thead><tr><th>${t('filament.brand')}</th><th>${t('filament.type')}</th><th>#</th></tr></thead><tbody>`;
-        for (const b of s.ams_filament_by_brand) h += `<tr><td>${b.brand}</td><td>${b.type||'--'}</td><td>${b.snapshots}</td></tr>`;
+        for (const b of s.ams_filament_by_brand) h += `<tr><td>${b.brand}</td><td>${b.type||'--'}</td><td>${b.uses ?? b.snapshots ?? '--'}</td></tr>`;
         h += '</tbody></table>';
       }
       return h;
