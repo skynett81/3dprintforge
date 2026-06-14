@@ -653,6 +653,20 @@ const PANEL_LOADERS = {
 
 window._activePanel = null;
 
+// Panels that must NOT be force-re-rendered by the periodic auto-refresh.
+// They are either static/slow (achievements, calendar, knowledge…) or hold
+// interactive state — a full re-render flickers, resets scroll and discards
+// the user's selection (which read as "the page suddenly shows something
+// else"). Live-telemetry panels keep auto-refreshing. Live data on the
+// active printer still arrives via WebSocket push regardless.
+const NO_AUTO_REFRESH = new Set([
+  'achievements', 'calendar', 'knowledge', 'learning', 'library', 'gallery',
+  'screenshots', 'widgets', 'plugins', 'modelinfo', 'printermatrix',
+  'materialrec', 'settings', 'backup', 'profiles', 'labels', 'signmaker',
+  'modelforge', 'scenecomposer', 'costestimator', 'playground', 'gcode',
+  'comparison', 'bedmesh', 'multicolor',
+]);
+
 window.openPanel = function(name, skipHash) {
   if (!PANEL_TITLES[name]) return;
   const panelContent = document.getElementById('panel-content');
@@ -752,9 +766,9 @@ window.openPanel = function(name, skipHash) {
   // Auto-refresh
   clearInterval(window._autoRefreshInterval);
   const refreshMs = parseInt(localStorage.getItem('autoRefreshMs')) || 0;
-  if (refreshMs > 0 && PANEL_LOADERS[name]) {
+  if (refreshMs > 0 && PANEL_LOADERS[name] && !NO_AUTO_REFRESH.has(name)) {
     window._autoRefreshInterval = setInterval(() => {
-      if (window._activePanel === name && PANEL_LOADERS[name]) {
+      if (window._activePanel === name && PANEL_LOADERS[name] && !NO_AUTO_REFRESH.has(name)) {
         PANEL_LOADERS[name]();
       }
     }, refreshMs);
@@ -793,9 +807,9 @@ window.setAutoRefresh = function(ms) {
   const val = parseInt(ms) || 0;
   localStorage.setItem('autoRefreshMs', val);
   clearInterval(window._autoRefreshInterval);
-  if (val > 0 && window._activePanel && PANEL_LOADERS[window._activePanel]) {
+  if (val > 0 && window._activePanel && PANEL_LOADERS[window._activePanel] && !NO_AUTO_REFRESH.has(window._activePanel)) {
     window._autoRefreshInterval = setInterval(() => {
-      if (window._activePanel && PANEL_LOADERS[window._activePanel]) {
+      if (window._activePanel && PANEL_LOADERS[window._activePanel] && !NO_AUTO_REFRESH.has(window._activePanel)) {
         PANEL_LOADERS[window._activePanel]();
       }
     }, val);
