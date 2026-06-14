@@ -2201,7 +2201,9 @@
 .filament-color-stats { font-size: 0.68rem; opacity: 0.8; }
 .filament-breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .filament-breakdown-col { min-width: 0; }
-.card-subtitle { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 8px; opacity: 0.7; }
+/* Eyebrow sub-subtitle. Muted + opacity 0.7 made this nearly unreadable; use a
+   secondary tone at full opacity for legible, consistent contrast. */
+.card-subtitle { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; }
 @media (max-width: 768px) { .filament-breakdown-grid { grid-template-columns: 1fr; } }
 
 /* Timeline chart */

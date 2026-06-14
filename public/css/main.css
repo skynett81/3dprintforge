@@ -761,13 +761,21 @@
 }
 
 /* ---- Gradient text on card titles ---- */
-.card-title, .card-header .card-title {
-  color: #10b3a4; /* solid fallback */
+/* Canonical sub-heading. Every card / section / stats title shares one size,
+   weight, line-height and bottom spacing plus the brand gradient, so all
+   sub-headings look identical across the app instead of inheriting whatever
+   font-size their container happened to set. More specific contextual rules
+   (collapsible settings headers, the hidden AMS title, etc.) still win. */
+.card-title, .card-header .card-title, .stats-card-title, .section-title {
+  color: #10b3a4; /* solid fallback for the gradient text below */
   background: linear-gradient(115deg, #10b3a4, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 12px;
 }
 
 /* ---- Floating gradient orbs (background decoration) ---- */
