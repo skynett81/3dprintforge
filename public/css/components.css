@@ -13858,12 +13858,25 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
    touched here, so panel-bar titles keep their backdrops.
    ════════════════════════════════════════════════════════════════════════ */
 
-/* Every title/heading: solid primary colour, bold — never faint or coloured
-   inconsistently. (Sub-labels use *-subtitle and are handled separately.) */
+/* Every title/heading: solid primary colour, bold, and a real block heading
+   that sits ABOVE its content. The bundled AdminLTE/Bootstrap floats .card-title
+   left (so it could sit beside .card-tools), which made every card heading read
+   as a side-label with the content running up next to it — clear the float so
+   headings stack above their content. (Sub-labels use *-subtitle, handled
+   separately. The few card-headers that pair a title with .card-tools get a
+   flex fallback below so they stay aligned without the float.) */
 body [class*="-title"],
 body [class*="-heading"] {
   color: var(--text-primary);
   font-weight: 700;
+  float: none;
+}
+.card-header:has(.card-tools) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Card / panel titles → one size across the app. */
