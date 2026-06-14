@@ -385,7 +385,15 @@
         const rgb = hexToRgb(color);
         const light = isLightColor(color);
         const textColor = light ? '#333' : '#fff';
-        const linkedSpool = _getLinkedSpool(printerId, _selectedUnit, i);
+        let linkedSpool = _getLinkedSpool(printerId, _selectedUnit, i);
+        // The AMS RFID is ground truth. If a tray's filament was swapped, the
+        // slot's old inventory link no longer matches what's physically loaded
+        // — drop the stale spool so the panel reflects the printer (correct
+        // type/colour, real weight) instead of the wrong spool's data.
+        if (linkedSpool && tray.tray_type && linkedSpool.material &&
+            String(linkedSpool.material).toUpperCase() !== String(tray.tray_type).toUpperCase()) {
+          linkedSpool = null;
+        }
 
         let remain;
         // Bruk den laveste av AMS-sensor og spoldatabasen
