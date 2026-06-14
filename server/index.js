@@ -869,6 +869,18 @@ const bambuCloud = new BambuCloud();
 setBambuCloud(bambuCloud);
 manager.setBambuCloud(bambuCloud);
 
+// Auto-reconcile filament usage from the cloud for prints the server missed
+// (background sweep + after each retroactive capture), so the AMS/spools stay
+// accurate without the user pressing "Sync filament usage".
+try {
+  const { configureAutoReconcile, startAutoReconcile } = await import('./bambu-cloud-reconcile.js');
+  configureAutoReconcile(
+    () => bambuCloud,
+    () => { try { hub.broadcast('inventory_update', { action: 'update', entity: 'spool', reason: 'cloud-reconcile-auto', ts: Date.now() }); } catch { /* ignore */ } }
+  );
+  startAutoReconcile();
+} catch (e) { log.warn('Auto cloud-reconcile setup failed: ' + e.message); }
+
 // Bambu Cloud HTTP poller — falls back to cloud queue/online status when
 // LAN MQTT is unreachable for an account-bound printer.
 try {

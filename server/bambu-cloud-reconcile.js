@@ -156,3 +156,36 @@ export async function reconcileCloudFilament(cloud, opts = {}) {
   }
   return out;
 }
+
+// ── Automatic reconciliation ──────────────────────────────────────────────
+// Runs in the background so the user never has to press the button: shortly
+// after boot, every 30 min, and (debounced) right after a print is captured
+// retroactively — exactly when a missed deduction is likely.
+let _cloudProvider = null;   // () => BambuCloud
+let _onDeduct = null;        // called with the result when something was deducted
+let _debounce = null;
+
+export function configureAutoReconcile(cloudFn, onDeduct) {
+  _cloudProvider = cloudFn || null;
+  _onDeduct = onDeduct || null;
+}
+
+async function _runAuto() {
+  try {
+    const cloud = _cloudProvider && _cloudProvider();
+    if (!cloud || typeof cloud.isAuthenticated !== 'function' || !cloud.isAuthenticated()) return;
+    const r = await reconcileCloudFilament(cloud, {});
+    if (r.deducted.length && _onDeduct) { try { _onDeduct(r); } catch { /* ignore */ } }
+  } catch (e) { log.warn('Auto-reconcile failed: ' + e.message); }
+}
+
+// Debounced — batches a burst of retroactive captures into one cloud fetch.
+export function triggerAutoReconcile(delayMs = 30000) {
+  if (!_cloudProvider || _debounce) return;
+  _debounce = setTimeout(() => { _debounce = null; _runAuto(); }, delayMs);
+}
+
+export function startAutoReconcile() {
+  setTimeout(() => triggerAutoReconcile(3000), 25000);          // ~25s after boot
+  setInterval(() => triggerAutoReconcile(0), 30 * 60 * 1000);   // every 30 min
+}

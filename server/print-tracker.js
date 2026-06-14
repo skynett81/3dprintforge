@@ -1409,6 +1409,9 @@ export class PrintTracker {
     try {
       addHistory(record);
       log.info('Retroactively captured ' + status + ' print: ' + filename);
+      // A retroactive capture means the live deduction was missed — ask the
+      // cloud reconciler (debounced) to recover the filament usage.
+      import('./bambu-cloud-reconcile.js').then(m => m.triggerAutoReconcile && m.triggerAutoReconcile()).catch(() => {});
       return true;
     } catch (e) {
       log.error('Failed to capture retroactive print: ' + e.message);
