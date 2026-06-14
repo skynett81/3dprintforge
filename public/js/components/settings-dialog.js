@@ -2164,6 +2164,7 @@
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
         <span style="font-size:0.85rem;color:var(--success-color,#28a745)">&#10003; ${t('settings.cloud_connected').replace('{email}', _esc(_cloudEmail))}</span>
         <button class="form-btn form-btn-sm" data-ripple onclick="bambuCloudGetPrinters()" id="cloud-import-btn">${t('settings.cloud_import')}</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="bambuCloudReconcileFilament()" id="cloud-reconcile-btn" title="${t('settings.cloud_reconcile_hint', 'Deduct filament for prints the server missed, using the cloud record')}">${t('settings.cloud_reconcile_filament', 'Sync filament usage')}</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="bambuCloudLogout()">${t('settings.cloud_disconnect')}</button>
       </div>
       <div id="cloud-printer-results" style="margin-top:0.5rem"></div>`;
@@ -2287,6 +2288,45 @@
     } catch {
       if (errEl) errEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">${t('settings.cloud_verify_failed', 'Verification failed')}</span>`;
       if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_verify', 'Verify'); }
+    }
+  };
+
+  // Deduct filament for prints the server missed (finished while it was down),
+  // using the authoritative per-print weights from Bambu Cloud. Idempotent.
+  window.bambuCloudReconcileFilament = async function() {
+    const resultsEl = document.getElementById('cloud-printer-results');
+    const btn = document.getElementById('cloud-reconcile-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.cloud_loading', 'Working…'); }
+    try {
+      const res = await fetch('/api/bambu-cloud/reconcile-filament', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      const ded = data.deducted || [];
+      const unm = data.unmatched || [];
+      const totalG = ded.reduce((s, d) => s + (d.weight || 0), 0);
+      let msg;
+      if (ded.length) {
+        msg = t('settings.cloud_reconcile_done', 'Deducted {g}g across {n} print(s)')
+          .replace('{g}', Math.round(totalG)).replace('{n}', ded.length);
+        if (typeof showToast === 'function') showToast(msg, 'success', 5000);
+      } else {
+        msg = t('settings.cloud_reconcile_none', 'Nothing to reconcile — all prints already tracked');
+        if (typeof showToast === 'function') showToast(msg, 'info', 4000);
+      }
+      if (resultsEl) {
+        let h = `<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">${_esc(msg)}</div>`;
+        if (unm.length) {
+          h += `<div style="font-size:0.75rem;color:var(--accent-orange);margin-top:4px">${t('settings.cloud_reconcile_unmatched', 'No matching spool for:')} ` +
+            unm.map(u => `${_esc(u.type || '?')} ${u.weight}g`).join(', ') + '</div>';
+        }
+        resultsEl.innerHTML = h;
+      }
+      // Refresh any open inventory / AMS views.
+      if (typeof window.loadFilamentPanel === 'function' && window._activePanel === 'filament') window.loadFilamentPanel();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast(e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.cloud_reconcile_filament', 'Sync filament usage'); }
     }
   };
 

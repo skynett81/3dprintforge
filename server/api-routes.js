@@ -965,6 +965,24 @@ export async function handleApiRequest(req, res) {
       }
     }
 
+    // Reconcile filament usage from the cloud for prints the server missed
+    // (finished while it was down). Deducts each cloud print's per-slot weight
+    // from the matching spool, once. ?dryRun=1 previews without writing.
+    if (method === 'POST' && path === '/api/bambu-cloud/reconcile-filament') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const dryRun = url.searchParams.get('dryRun') === '1' || url.searchParams.get('dryRun') === 'true';
+        const { reconcileCloudFilament } = await import('./bambu-cloud-reconcile.js');
+        const result = await reconcileCloudFilament(_bambuCloud, { dryRun });
+        if (!dryRun && result.deducted.length && typeof _broadcastInventory === 'function') {
+          _broadcastInventory('update', 'spool', { reason: 'cloud-reconcile' });
+        }
+        return sendJson(res, { ok: true, dryRun, ...result });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
     if (method === 'POST' && path === '/api/bambu-cloud/logout') {
       if (_bambuCloud) _bambuCloud.logout();
       return sendJson(res, { ok: true });
