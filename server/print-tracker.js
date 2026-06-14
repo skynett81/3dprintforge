@@ -76,6 +76,10 @@ export class PrintTracker {
     this.printerId = printerId;
     this.previousState = null;
     this.currentPrint = null;
+    // True once a finished print sitting in the printer at (re)connect has been
+    // captured retroactively (or confirmed already recorded). Lets us keep
+    // retrying when the first FINISH frame lands before subtask_name is filled.
+    this._retroDone = false;
     this.amsSnapshot = null;
     this.amsTrayWeights = {};
     this.colorChanges = 0;
@@ -137,6 +141,15 @@ export class PrintTracker {
 
     if (prevState !== currState) {
       this._onStateChange(prevState, currState, printData);
+    }
+
+    // Retroactive capture gets only one shot on the state transition, but the
+    // first FINISH/FAILED frame after a (re)connect often arrives before
+    // subtask_name is populated — so that single attempt bails to 'Unknown' and
+    // the print is lost. Keep retrying on later frames (filename now present)
+    // until it's recorded. _retroDone guards against re-recording every frame.
+    if (!this.currentPrint && (currState === 'FINISH' || currState === 'FAILED') && !this._retroDone) {
+      this._retroDone = this._captureRetroactivePrint(currState, printData);
     }
 
     // Self-heal AMS->spool links when filament is swapped. Auto-match otherwise
@@ -369,7 +382,7 @@ export class PrintTracker {
   _onStateChange(prevState, currState, data) {
     // On first connect, capture an already-finished print retroactively
     if (!prevState && (currState === 'FINISH' || currState === 'FAILED') && !this.currentPrint) {
-      this._captureRetroactivePrint(currState, data);
+      this._retroDone = this._captureRetroactivePrint(currState, data);
       return;
     }
 
@@ -393,6 +406,7 @@ export class PrintTracker {
   }
 
   _startPrint(data, isResume = false) {
+    this._retroDone = false; // a fresh print can be retro-captured if it ends across a restart
     this._hmsLogged = new Set();
     this._lastPrintError = null;
     this._milestonesTriggered = new Set();
@@ -1346,15 +1360,18 @@ export class PrintTracker {
     return weights;
   }
 
+  // Returns true once handled (recorded or confirmed already present) so the
+  // caller can stop retrying; false when the filename isn't known yet and we
+  // should try again on a later frame.
   _captureRetroactivePrint(currState, data) {
     const filename = data.subtask_name || data.gcode_file || 'Unknown';
-    if (!filename || filename === 'Unknown') return;
+    if (!filename || filename === 'Unknown') return false;
 
     // Check if this print was already recorded (by filename + printer)
     const recent = getHistory(5, 0, this.printerId);
     if (recent.some(h => h.filename === filename)) {
       log.info('Retroactive print already recorded: ' + filename);
-      return;
+      return true;
     }
 
     const status = currState === 'FINISH' ? 'completed' : 'failed';
@@ -1392,8 +1409,10 @@ export class PrintTracker {
     try {
       addHistory(record);
       log.info('Retroactively captured ' + status + ' print: ' + filename);
+      return true;
     } catch (e) {
       log.error('Failed to capture retroactive print: ' + e.message);
+      return false;
     }
   }
 

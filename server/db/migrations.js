@@ -2200,6 +2200,21 @@ export function runMigrations() {
       }
       if (totalAdded > 0) log.info('v140: ' + totalAdded + ' total profiles added across ' + Object.keys(catalogues).length + ' vendors');
     }},
+
+    { version: 150, up: (db) => {
+      // Heal a missing print_history.is_tool_changer column. v146 adds it, but
+      // on some databases that ALTER never took effect while v146 was still
+      // recorded as applied (the inner try/catch swallowed the failure), so
+      // every addHistory() INSERT — which lists is_tool_changer — has been
+      // throwing "no such column" and silently dropping ALL print history for
+      // ALL printers. Re-add it idempotently by checking the actual columns
+      // instead of relying on a swallowed ALTER error.
+      const cols = db.prepare(`SELECT name FROM pragma_table_info('print_history')`).all().map(r => r.name);
+      if (!cols.includes('is_tool_changer')) {
+        db.exec(`ALTER TABLE print_history ADD COLUMN is_tool_changer INTEGER DEFAULT 0`);
+        log.info('v150: added missing print_history.is_tool_changer column');
+      }
+    }},
   ];
 
   for (const m of migrations) {
