@@ -21,7 +21,7 @@
   // ═══ Tab config (alphabetically sorted by translated label, overview first) ═══
   const TAB_CONFIG_UNSORTED = {
     overview:    { label: 'stats.tab_overview',    modules: ['hero-stats','overview','weekly-trends','monthly-trends'], order: 0 },
-    filament:    { label: 'stats.tab_filament',    modules: ['filament-by-type','success-by-filament','success-by-speed','filament-by-brand','top-files'] },
+    filament:    { label: 'stats.tab_filament',    modules: ['filament-hero','filament-consumption','filament-by-type','filament-by-brand','success-by-filament','success-by-speed','top-files'] },
     activity:    { label: 'stats.tab_activity',    modules: ['day-heatmap','hour-heatmap','avg-time-by-day'] },
     hardware:    { label: 'stats.tab_hardware',    modules: ['temp-records','nozzle-usage','ams-stats','xcam-stats','maintenance-overview','nozzle-health','build-plate-stats','firmware-info'] },
     cost:        { label: 'stats.tab_cost',        modules: ['cost-hero','cost-breakdown','cost-trends','cost-by-printer','cost-by-material'] },
@@ -43,6 +43,7 @@
     'hero-stats': 'full',
     'overview': 'half', 'weekly-trends': 'half',
     'monthly-trends': 'full',
+    'filament-hero': 'full', 'filament-consumption': 'half',
     'filament-by-type': 'half', 'success-by-filament': 'half',
     'success-by-speed': 'half', 'filament-by-brand': 'half',
     'top-files': 'full',
@@ -195,6 +196,55 @@
       h += '<div class="stats-detail-list mt-sm" style="border-top:1px solid rgba(255,255,255,0.04);padding-top:8px">';
       h += sRow(t('stats.period_hours'), `${Math.round(hrs*10)/10}${t('time.h')}`);
       h += sRow(t('stats.period_filament'), fmtW(fil));
+      h += '</div>';
+      return h;
+    },
+
+    // Filament-specific KPI strip — surfaces the consumption/waste/cost figures
+    // that /api/statistics already aggregates but the tab never showed.
+    'filament-hero': (s) => {
+      const totWaste = s.total_waste_g || 0;
+      const denom = (s.total_filament_g || 0) + totWaste;
+      const wastePct = denom > 0 ? Math.round(totWaste / denom * 1000) / 10 : 0;
+      const wasteClr = wastePct < 3 ? 'var(--accent-green-text)' : wastePct < 8 ? 'var(--accent-orange)' : 'var(--accent-red)';
+      const I = {
+        spool: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>',
+        avg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><polyline points="14 4 20 4 20 10"/></svg>',
+        waste: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+        color: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="11.5" r="2.5"/><circle cx="17.5" cy="13.5" r="2.5"/><circle cx="9.5" cy="17.5" r="2.5"/></svg>',
+        cost: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+      };
+      const card = (icon, value, label, color) => `<div class="stats-hero-card">
+          <div class="stats-hero-icon">${icon}</div>
+          <div class="stats-hero-value"${color ? ` style="color:${color}"` : ''}>${value}</div>
+          <div class="stats-hero-label">${label}</div>
+        </div>`;
+      return `<div class="stats-hero-grid">
+        ${card(I.spool, fmtW(s.total_filament_g || 0), t('stats.filament_used'))}
+        ${card(I.avg, fmtW(s.avg_filament_per_print_g || 0), t('stats.avg_filament'))}
+        ${card(I.waste, fmtW(totWaste), t('stats.total_waste'), totWaste > 0 ? 'var(--accent-orange)' : '')}
+        ${card(I.waste, wastePct + '%', t('stats.waste_pct', 'Waste share'), wasteClr)}
+        ${card(I.color, (s.total_color_changes || 0).toLocaleString(), t('stats.color_changes'))}
+        ${card(I.cost, s.estimated_cost_nok > 0 ? formatCurrency(s.estimated_cost_nok, 0) : '--', t('stats.estimated_cost'))}
+      </div>`;
+    },
+
+    // Filament mass consumed per month (grams), distinct from the overview's
+    // monthly print-count chart.
+    'filament-consumption': (s) => {
+      const data = (s.monthly_trends || []).filter(m => (m.total_filament_g || 0) > 0);
+      if (!data.length) return '';
+      const mx = Math.max(...data.map(m => m.total_filament_g || 0));
+      let h = `<div class="card-title">${t('stats.filament_consumption', 'Filament consumption')}</div><div class="week-chart">`;
+      for (const m of data) {
+        const bh = mx > 0 ? ((m.total_filament_g || 0) / mx) * 100 : 0;
+        h += `<div class="week-bar-group"><div class="week-bar-stack" style="height:70px"><div class="week-bar-fg" style="height:${bh}%;background:var(--accent-green)"></div></div><div class="week-bar-label">${m.month.split('-')[1]}</div><div class="week-bar-count">${fmtW(m.total_filament_g || 0)}</div></div>`;
+      }
+      h += '</div>';
+      const tot = data.reduce((a, m) => a + (m.total_filament_g || 0), 0);
+      h += '<div class="stats-detail-list mt-sm" style="border-top:1px solid rgba(255,255,255,0.04);padding-top:8px">';
+      h += sRow(t('stats.avg_per_month', 'Avg / month'), fmtW(tot / data.length));
+      h += sRow(t('stats.total'), fmtW(tot));
       h += '</div>';
       return h;
     },
