@@ -106,7 +106,16 @@
     // Card grid
     const items = _getFilteredItems();
     if (items.length === 0) {
-      html += `<div class="kb-empty">${t('kb.no_results')}</div>`;
+      const hasFilter = !!(_search || (_filter && _filter !== 'all') || _profileFilterPrinter !== 'all' || _profileFilterMaterial !== 'all');
+      html += window.emptyState
+        ? window.emptyState({
+            icon: '📚',
+            title: hasFilter ? t('kb.empty_filtered_title', 'No matching entries') : t('kb.empty_title', 'Nothing here yet'),
+            desc: hasFilter ? t('kb.empty_filtered_desc', 'Try a different search or clear the filters.') : t('kb.empty_desc', 'Add a printer, accessory, filament, or profile to build your knowledge base.'),
+            actionLabel: hasFilter ? undefined : t('kb.add_new', 'Add new'),
+            actionOnClick: hasFilter ? undefined : `kbOpenEdit('${_section}', null)`
+          })
+        : `<div class="kb-empty">${t('kb.no_results')}</div>`;
     } else {
       html += '<div class="kb-card-grid stagger-in">';
       items.forEach((item, i) => {

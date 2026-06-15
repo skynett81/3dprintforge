@@ -84,7 +84,13 @@
     const data = await res.json();
     const rows = Array.isArray(data) ? data : [];
     if (rows.length === 0) {
-      container.innerHTML = `<div class="alert alert-info mb-0">No filament profiles. <button class="btn btn-sm btn-primary ms-2" onclick="window._resRefresh()">Import</button></div>`;
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.filaments_empty_title', 'No filament profiles') : 'No filament profiles'),
+        desc: (window.t ? window.t('resources.filaments_empty_desc', 'Import filament profiles to browse vendor settings.') : 'Import filament profiles to browse vendor settings.'),
+        actionLabel: (window.t ? window.t('resources.import', 'Import') : 'Import'),
+        actionOnClick: 'window._resRefresh()'
+      });
       return;
     }
     container.innerHTML = `
@@ -119,7 +125,11 @@
     const res = await fetch('/api/prusa/print-profiles?limit=200');
     const items = await res.json();
     if (!Array.isArray(items) || items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No print profiles.</div>';
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.print_profiles_empty_title', 'No print profiles') : 'No print profiles'),
+        desc: (window.t ? window.t('resources.print_profiles_empty_desc', 'Refresh resources to import print profiles.') : 'Refresh resources to import print profiles.')
+      });
       return;
     }
     container.innerHTML = `
@@ -146,7 +156,11 @@
     const res = await fetch('/api/prusa/printer-profiles');
     const items = await res.json();
     if (!Array.isArray(items) || items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No printer profiles.</div>';
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.printer_profiles_empty_title', 'No printer models') : 'No printer models'),
+        desc: (window.t ? window.t('resources.printer_profiles_empty_desc', 'Refresh resources to import printer models.') : 'Refresh resources to import printer models.')
+      });
       return;
     }
     container.innerHTML = `
@@ -190,7 +204,11 @@
     const items = Array.isArray(data) ? data : [];
 
     if (items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No OctoPrint plugins imported yet. The catalog is fetched on startup.</div>';
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.plugins_empty_title', 'No plugins yet') : 'No plugins yet'),
+        desc: (window.t ? window.t('resources.plugins_empty_desc', 'No OctoPrint plugins imported yet. The catalog is fetched on startup.') : 'No OctoPrint plugins imported yet. The catalog is fetched on startup.')
+      });
       return;
     }
 
@@ -228,7 +246,11 @@
     const items = Array.isArray(data) ? data : [];
 
     if (items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No error codes imported yet.</div>';
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.errors_empty_title', 'No error codes yet') : 'No error codes yet'),
+        desc: (window.t ? window.t('resources.errors_empty_desc', 'No error codes imported yet. Refresh resources to import them.') : 'No error codes imported yet. Refresh resources to import them.')
+      });
       return;
     }
 
@@ -279,7 +301,11 @@
     const items = Array.isArray(data) ? data : [];
 
     if (items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No G-code reference imported yet.</div>';
+      container.innerHTML = window.emptyState({
+        icon: '🗂️',
+        title: (window.t ? window.t('resources.gcodes_empty_title', 'No G-code reference yet') : 'No G-code reference yet'),
+        desc: (window.t ? window.t('resources.gcodes_empty_desc', 'No G-code reference imported yet. Refresh resources to import them.') : 'No G-code reference imported yet. Refresh resources to import them.')
+      });
       return;
     }
 

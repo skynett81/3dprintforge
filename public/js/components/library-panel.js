@@ -144,7 +144,16 @@
     const grid = document.getElementById('lib-grid');
     if (!grid) return;
     if (!_files.length) {
-      grid.innerHTML = `<div class="lib-empty">${t('library.no_files')}</div>`;
+      const hasFilter = !!(_filter.search || _filter.type || _filter.category);
+      grid.innerHTML = window.emptyState
+        ? window.emptyState({
+            icon: '📁',
+            title: hasFilter ? t('library.empty_filtered_title', 'No matching files') : t('library.empty_title', 'No files yet'),
+            desc: hasFilter ? t('library.empty_filtered_desc', 'Try a different search or clear the filters.') : t('library.empty_desc', 'Upload a model or G-code file to get started.'),
+            actionLabel: hasFilter ? undefined : t('library.upload', 'Upload'),
+            actionOnClick: hasFilter ? undefined : '_libShowUpload()'
+          })
+        : `<div class="lib-empty">${t('library.no_files')}</div>`;
       return;
     }
     let html = '';

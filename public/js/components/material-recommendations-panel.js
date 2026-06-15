@@ -142,10 +142,13 @@
     </div>`;
 
     if (filtered.length === 0) {
-      return html + `<div class="matrec-empty">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-        <p>${_tl('material_rec.no_data', 'No recommendations yet. Needs at least 3 prints per material.')}</p>
-      </div>`;
+      return html + window.emptyState({
+        icon: '🧪',
+        title: _tl('material_rec.empty_title', 'No recommendations yet'),
+        desc: _tl('material_rec.no_data', 'No recommendations yet. Needs at least 3 prints per material.'),
+        actionLabel: _tl('material_rec.recalculate', 'Recalculate'),
+        actionOnClick: '_matRecRecalculate()'
+      });
     }
 
     html += '<div class="auto-grid auto-grid--md" style="margin-top:4px">';

@@ -69,7 +69,11 @@
         <div class="card-title">${_tl('widgets.enabled', 'Active widgets')}</div>
         <div class="wp-enabled-list" id="wp-enabled-list">
           ${enabledWidgets.length === 0
-            ? `<div class="wp-empty-slot">${_tl('widgets.no_widgets', 'No widgets enabled')}</div>`
+            ? window.emptyState({
+                icon: '🧩',
+                title: _tl('widgets.empty_title', 'No widgets enabled'),
+                desc: _tl('widgets.empty_desc', 'Turn on widgets below to customize your dashboard.')
+              })
             : enabledWidgets.map(w => {
               const meta = getMeta(w.id);
               return `<div class="wp-enabled-item" data-widget-id="${w.id}">
