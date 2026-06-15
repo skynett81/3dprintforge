@@ -310,6 +310,24 @@ export function buildSetAutoRecoveryCommand(enabled) {
   return { print: { sequence_id: nextSeq(), command: 'print_option', option: 'auto_recovery', value: enabled ? 1 : 0 } };
 }
 
+// ── Native AI/sensor detection toggles ──
+// Reverse-engineered from OrcaSlicer's MachineObject command_* functions: these
+// enable the printer's own detection features (which then surface in the MQTT
+// push and feed Print Guard). All share the `print_option` command with the
+// flag passed as a JSON boolean, exactly as the printer firmware expects.
+export function buildFilamentTangleDetectCommand(enable) {
+  return { print: { command: 'print_option', sequence_id: nextSeq(), filament_tangle_detect: !!enable } };
+}
+export function buildNozzleBlobDetectCommand(enable) {
+  return { print: { command: 'print_option', sequence_id: nextSeq(), nozzle_blob_detect: !!enable } };
+}
+export function buildAirPrintDetectCommand(enable) {
+  return { print: { command: 'print_option', sequence_id: nextSeq(), air_print_detect: !!enable } };
+}
+export function buildAutoSwitchFilamentCommand(enable) {
+  return { print: { command: 'print_option', sequence_id: nextSeq(), auto_switch_filament: !!enable } };
+}
+
 // ── Fan commands (v3 with air duct modes) ──
 
 /** Fan IDs: 0=heat_break_0, 1=cooling_0, 2=remote_cooling_0, 3=chamber_0, 4=heat_break_1, 5=mc_board_0, 6=inner_loop_0 */
@@ -445,6 +463,11 @@ export function buildCommandFromClientMessage(msg) {
     // 2025–2026 — chamber heater (X1E/H2D/H2S/H2C) and H2D granular xcam toggles
     case 'chamber_temp': return buildChamberTempCommand(msg.target);
     case 'xcam_control': return buildXcamControlCommand(msg.field, msg.enable);
+    // Native detection toggles (reverse-engineered from OrcaSlicer)
+    case 'filament_tangle_detect': return buildFilamentTangleDetectCommand(msg.enable);
+    case 'nozzle_blob_detect': return buildNozzleBlobDetectCommand(msg.enable);
+    case 'air_print_detect': return buildAirPrintDetectCommand(msg.enable);
+    case 'auto_switch_filament': return buildAutoSwitchFilamentCommand(msg.enable);
     default: return null;
   }
 }
