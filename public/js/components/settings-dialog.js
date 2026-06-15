@@ -203,8 +203,8 @@
           { id: 'list', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', label: t('settings.settings_sub_printer_list') },
           { id: 'status', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>', label: t('settings.settings_sub_printer_status') }
         ];
-        html += '<div class="drying-sub-tabs">';
-        for (const tab of ptabs) html += `<button class="drying-sub-tab${_printerSubTab === tab.id ? ' active' : ''}" data-printer-tab="${tab.id}" onclick="window._switchPrinterSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '<div class="settings-subtabs">';
+        for (const tab of ptabs) html += `<button class="settings-subtab${_printerSubTab === tab.id ? ' active' : ''}" data-printer-tab="${tab.id}" onclick="window._switchPrinterSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
         html += '</div>';
         html += '<div id="printer-sub-content"></div>';
       }
@@ -219,8 +219,8 @@
           { id: 'obs', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', label: t('settings.settings_sub_obs') },
           { id: 'network', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', label: t('settings.settings_sub_network', 'Network') }
         ];
-        html += '<div class="drying-sub-tabs">';
-        for (const tab of gtabs) html += `<button class="drying-sub-tab${_generalSubTab === tab.id ? ' active' : ''}" data-general-tab="${tab.id}" onclick="window._switchGeneralSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '<div class="settings-subtabs">';
+        for (const tab of gtabs) html += `<button class="settings-subtab${_generalSubTab === tab.id ? ' active' : ''}" data-general-tab="${tab.id}" onclick="window._switchGeneralSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
         html += '</div>';
         html += '<div id="general-sub-content"></div>';
       }
@@ -233,8 +233,8 @@
           { id: 'theme', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>', label: t('settings.settings_sub_theme') },
           { id: 'customize', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>', label: t('settings.settings_sub_customize') }
         ];
-        html += '<div class="drying-sub-tabs">';
-        for (const tab of atabs) html += `<button class="drying-sub-tab${_appearanceSubTab === tab.id ? ' active' : ''}" data-appearance-tab="${tab.id}" onclick="window._switchAppearanceSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '<div class="settings-subtabs">';
+        for (const tab of atabs) html += `<button class="settings-subtab${_appearanceSubTab === tab.id ? ' active' : ''}" data-appearance-tab="${tab.id}" onclick="window._switchAppearanceSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
         html += '</div>';
         html += '<div id="appearance-sub-content"></div>';
       }
@@ -248,8 +248,8 @@
           { id: 'log', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>', label: t('settings.settings_sub_log') },
           { id: 'webhooks', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>', label: t('settings.settings_sub_webhooks') }
         ];
-        html += '<div class="drying-sub-tabs">';
-        for (const tab of ntabs) html += `<button class="drying-sub-tab${_notifSubTab === tab.id ? ' active' : ''}" data-notif-tab="${tab.id}" onclick="window._switchNotifSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+        html += '<div class="settings-subtabs">';
+        for (const tab of ntabs) html += `<button class="settings-subtab${_notifSubTab === tab.id ? ' active' : ''}" data-notif-tab="${tab.id}" onclick="window._switchNotifSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
         html += '</div>';
         html += '<div id="notif-sub-content"></div>';
       }
@@ -269,10 +269,10 @@
           { id: 'data', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>', label: t('settings.settings_sub_data') },
           { id: 'tunnel', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', label: 'Remote Access' }
         ];
-        html += '<div class="drying-sub-tabs">';
+        html += '<div class="settings-subtabs">';
         for (const tab of stabs) {
           if (tab.admin && !(window._can && window._can('admin'))) continue;
-          html += `<button class="drying-sub-tab${_systemSubTab === tab.id ? ' active' : ''}" data-system-tab="${tab.id}" onclick="window._switchSystemSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
+          html += `<button class="settings-subtab${_systemSubTab === tab.id ? ' active' : ''}" data-system-tab="${tab.id}" onclick="window._switchSystemSubTab('${tab.id}')" style="display:flex;align-items:center;gap:4px">${tab.icon} ${tab.label}</button>`;
         }
         html += '</div>';
         html += '<div id="system-sub-content"></div>';
@@ -2743,7 +2743,7 @@
       html += `
         <div class="notif-channel" id="notif-ch-${ch.key}">
           <div class="notif-channel-header" onclick="toggleNotifChannel('${ch.key}')">
-            <span class="notif-channel-arrow">&#9654;</span>
+            <span class="notif-channel-arrow"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
             <span class="notif-channel-name">${ch.label}</span>
             <input type="checkbox" class="notif-channel-toggle" id="notif-ch-${ch.key}-on" ${chConf.enabled ? 'checked' : ''} onclick="event.stopPropagation()">
             <button class="notif-test-btn" id="notif-test-${ch.key}" onclick="event.stopPropagation(); testNotifChannel('${ch.key}')">${t('settings.notif_test')}</button>

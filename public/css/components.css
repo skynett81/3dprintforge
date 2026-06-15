@@ -5597,7 +5597,8 @@ tr:hover .filament-delete-btn,
 }
 
 .notif-channel-arrow {
-  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
   color: var(--text-muted);
   transition: transform 0.2s;
   flex-shrink: 0;
@@ -9306,6 +9307,25 @@ tr:hover .filament-edit-btn {
   background: var(--accent-blue);
   color: white;
   border-color: var(--accent-blue);
+}
+
+/* Settings sub-tabs — refined, app-consistent (subtle tinted active state
+   instead of a borrowed loud blue pill). */
+.settings-subtabs { display: flex; gap: 5px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.settings-subtab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  font-size: 0.8rem; font-weight: 500;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+}
+.settings-subtab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.settings-subtab.active {
+  background: color-mix(in srgb, var(--accent-blue) 13%, transparent);
+  color: var(--accent-blue);
+  border-color: color-mix(in srgb, var(--accent-blue) 32%, transparent);
+  font-weight: 600;
 }
 
 /* NFC */
