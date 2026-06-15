@@ -10249,28 +10249,27 @@ select:disabled {
   --bs-progress-bg: var(--bg-inset, rgba(0, 0, 0, 0.35));
 }
 
-/* Bootstrap alerts — dark mode overrides */
-[data-bs-theme="dark"] .alert {
-  --bs-alert-bg: var(--bg-tertiary);
-  --bs-alert-border-color: var(--border-subtle);
+/* Unified notice/alert boxes — one refined style across the whole app
+   (subtle tinted surface + accent left border) instead of loud Bootstrap
+   defaults. Theme-agnostic via tokens + color-mix. */
+.alert {
   border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--alert-accent, var(--accent-blue));
+  background: color-mix(in srgb, var(--alert-accent, var(--accent-blue)) 8%, var(--bg-tertiary)) !important;
+  color: var(--text-secondary) !important;
+  padding: 10px 14px;
+  font-size: 0.84rem;
 }
-
-[data-bs-theme="dark"] .alert-info {
-  --bs-alert-color: var(--accent-blue, #4aa3df);
-}
-
-[data-bs-theme="dark"] .alert-warning {
-  --bs-alert-color: #f0883e;
-}
-
-[data-bs-theme="dark"] .alert-danger {
-  --bs-alert-color: var(--accent-red, #e53935);
-}
-
-[data-bs-theme="dark"] .alert-success {
-  --bs-alert-color: var(--accent-green, #00c864);
-}
+.alert-info      { --alert-accent: var(--accent-blue); }
+.alert-warning   { --alert-accent: var(--accent-orange); }
+.alert-danger    { --alert-accent: var(--accent-red); }
+.alert-success   { --alert-accent: var(--accent-green); }
+.alert-secondary { --alert-accent: var(--text-muted); }
+.alert .alert-heading,
+.alert strong,
+.alert b { color: var(--text-primary); }
+.alert a { color: var(--alert-accent, var(--accent-blue)); font-weight: 600; }
 
 /* Bootstrap input-group — dark mode overrides */
 .input-group-text {
