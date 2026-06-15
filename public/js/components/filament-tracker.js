@@ -190,6 +190,7 @@
   let _activeTab = 'inventory';
   const _locked = true;
   let _spools = [];        // New enriched spools from /api/inventory/spools
+  let _nfcBySpool = {};    // spool_id → tag standard, for per-spool NFC badges
   let _vendors = [];
   let _profiles = [];
   let _locations = [];
@@ -1067,6 +1068,7 @@
             <input type="checkbox" class="fil-bulk-check" onclick="toggleSpoolSelect(${s.id}, this)" ${_selectedSpools.has(s.id) ? 'checked' : ''} title="${t('filament.bulk_select')}">
             ${renderColorSwatch(s)}
             <strong>${esc(cleanName)}</strong>
+            ${_nfcBySpool[s.id] ? `<span class="fil-nfc-badge" title="NFC tag (${esc(_nfcBySpool[s.id])})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/></svg></span>` : ''}
           </div>
           <div class="fil-spool-actions">
             <button class="filament-edit-btn fil-fav-btn ${s.is_favorite ? 'fil-fav-active' : ''}" onclick="toggleFavorite(${s.id})" title="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}" title="${s.is_favorite ? t('filament.remove_favorite') : t('filament.add_favorite')}" data-bs-toggle="tooltip">
@@ -1203,6 +1205,7 @@
         ${_spoolSvg(s.color_hex, s.multi_color_hexes, s.multi_color_direction, pct, s.id)}
         <span class="spool-vcard-badge">${esc(s.material || '--')}</span>
         ${s.is_favorite ? '<span class="spool-vcard-fav">♥</span>' : ''}
+        ${_nfcBySpool[s.id] ? `<span class="spool-vcard-nfc fil-nfc-badge" title="NFC tag (${esc(_nfcBySpool[s.id])})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/></svg></span>` : ''}
       </div>
       <div class="spool-vcard-info">
         <div class="spool-vcard-name" title="${esc(cleanName)}">${esc(cleanName)}</div>
@@ -2061,7 +2064,7 @@
       // API layer would also exclude archived/detached spools (printer_id
       // becomes NULL on archive), so the "Show archived" toggle would
       // appear to do nothing for them.
-      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes, alertsRes, settingsRes] = await Promise.all([
+      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes, alertsRes, settingsRes, nfcRes] = await Promise.all([
         fetch('/api/inventory/spools'),
         fetch('/api/inventory/vendors'),
         fetch('/api/inventory/filaments'),
@@ -2071,9 +2074,16 @@
         fetch('/api/inventory/drying/status'),
         fetch('/api/tags'),
         fetch('/api/inventory/location-alerts'),
-        fetch('/api/inventory/settings')
+        fetch('/api/inventory/settings'),
+        fetch('/api/nfc/mappings')
       ]);
       _spools = await spoolsRes.json();
+      // NFC tag status per spool (which spools have a linked tag, and its standard).
+      try {
+        const nfc = await nfcRes.json();
+        _nfcBySpool = {};
+        for (const m of (Array.isArray(nfc) ? nfc : [])) { if (m.spool_id) _nfcBySpool[m.spool_id] = m.standard || 'generic'; }
+      } catch { _nfcBySpool = {}; }
       _vendors = await vendorsRes.json();
       _profiles = await profilesRes.json();
       _locations = await locationsRes.json();
@@ -6279,19 +6289,20 @@
     if (!('NDEFReader' in window)) { showToast(t('filament.nfc_write_unsupported'), 'error'); return; }
     const spool = _spools.find(s => s.id === spoolId);
     if (!spool) return;
-    const host = location.host;
-    const proto = location.protocol;
-    const url = `${proto}//${host}/#filament/spool/${spoolId}`;
+    const url = `${location.protocol}//${location.host}/#filament/spool/${spoolId}`;
     const statusEl = document.getElementById('tag-scanner-result');
     if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center"><span class="text-muted">${t('filament.nfc_hold_to_write')}...</span></div>`;
     try {
+      // Write the standard OpenSpool record (readable by any printer / app),
+      // then our deep-link URL, then a human-readable name.
+      let openspool = null;
+      try { const r = await fetch('/api/nfc/encode/' + spoolId); if (r.ok) openspool = (await r.json()).ndef?.data; } catch { /* fall back to url-only */ }
+      const records = [];
+      if (openspool) records.push({ recordType: 'mime', mediaType: 'application/json', data: openspool });
+      records.push({ recordType: 'url', data: url });
+      records.push({ recordType: 'text', data: `${spool.profile_name || spool.material || 'Spool'} #${spool.short_id || spoolId}` });
       const writer = new NDEFReader();
-      await writer.write({
-        records: [
-          { recordType: 'url', data: url },
-          { recordType: 'text', data: `${spool.profile_name || spool.material || 'Spool'} #${spool.short_id || spoolId}` }
-        ]
-      });
+      await writer.write({ records });
       showToast(t('filament.nfc_write_success'), 'success');
       if (statusEl) statusEl.innerHTML = `<div style="padding:12px;background:var(--bg-secondary);border-radius:8px;text-align:center;color: var(--accent-green-text)">${t('filament.nfc_write_success')}</div>`;
     } catch (e) {

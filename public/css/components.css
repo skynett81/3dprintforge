@@ -13993,3 +13993,9 @@ body .ctrl-card-subtitle {
 
 /* Unified NFC tag manager — standard badges */
 .nfc-std-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 8px; margin-left: 6px; vertical-align: middle; }
+
+/* Per-spool NFC tag indicator */
+.fil-nfc-badge { display: inline-flex; align-items: center; color: var(--accent-blue, #1279ff); margin-left: 4px; vertical-align: middle; flex-shrink: 0; }
+
+/* NFC badge on the grid spool card */
+.spool-vcard-nfc { position: absolute; top: 6px; left: 6px; background: var(--bg-card); border-radius: 50%; padding: 2px; line-height: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
