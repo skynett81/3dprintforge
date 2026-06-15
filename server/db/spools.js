@@ -238,15 +238,16 @@ export function addSpool(s) {
   const result = db.prepare(`INSERT INTO spools
     (filament_profile_id, remaining_weight_g, used_weight_g, initial_weight_g, cost, lot_number,
      purchase_date, location, printer_id, ams_unit, ams_tray, comment, extra_fields, spool_weight,
-     storage_method, short_id, tray_id_name, color_hex_override, color_name_override)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     storage_method, short_id, tray_id_name, color_hex_override, color_name_override, expiry_date, expiry_warn_days)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     s.filament_profile_id || null, s.remaining_weight_g ?? s.initial_weight_g ?? 1000,
     s.used_weight_g ?? 0, s.initial_weight_g ?? 1000,
     s.cost || null, s.lot_number || null, s.purchase_date || null,
     s.location || null, s.printer_id || null, s.ams_unit ?? null, s.ams_tray ?? null,
     s.comment || null, s.extra_fields ? JSON.stringify(s.extra_fields) : null,
     s.spool_weight ?? null, s.storage_method || null, shortId, s.tray_id_name || null,
-    s.color_hex_override || null, s.color_name_override || null);
+    s.color_hex_override || null, s.color_name_override || null,
+    s.expiry_date || null, s.expiry_warn_days ?? null);
   const newId = Number(result.lastInsertRowid);
   try { addSpoolEvent(newId, 'created', null, null); } catch (e) { log.warn('Failed to log spool created event', e.message); }
   return { id: newId, short_id: shortId };
@@ -264,7 +265,7 @@ export function updateSpool(id, s) {
   db.prepare(`UPDATE spools SET filament_profile_id=?, remaining_weight_g=?, used_weight_g=?,
     initial_weight_g=?, cost=?, lot_number=?, purchase_date=?, location=?,
     printer_id=?, ams_unit=?, ams_tray=?, archived=?, comment=?, extra_fields=?, spool_weight=?,
-    storage_method=?, tray_id_name=?, color_hex_override=?, color_name_override=?
+    storage_method=?, tray_id_name=?, color_hex_override=?, color_name_override=?, expiry_date=?, expiry_warn_days=?
     WHERE id=?`).run(
     s.filament_profile_id || null, s.remaining_weight_g, s.used_weight_g,
     s.initial_weight_g, s.cost || null, s.lot_number || null, s.purchase_date || null,
@@ -272,7 +273,8 @@ export function updateSpool(id, s) {
     s.archived ?? 0, s.comment || null,
     s.extra_fields ? JSON.stringify(s.extra_fields) : null, s.spool_weight ?? null,
     s.storage_method || null, s.tray_id_name || null,
-    s.color_hex_override || null, s.color_name_override || null, id);
+    s.color_hex_override || null, s.color_name_override || null,
+    s.expiry_date || null, s.expiry_warn_days ?? null, id);
   try { addSpoolEvent(id, 'edited', null, null); } catch (e) { log.warn('Failed to log spool edit event', e.message); }
 }
 

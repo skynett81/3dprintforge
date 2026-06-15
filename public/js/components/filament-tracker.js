@@ -1149,7 +1149,7 @@
           </div>
           <span class="fil-bar-weight">${spoolRemainG(s)}g / ${Math.round(s.initial_weight_g)}g</span>
         </div>
-        <div class="fil-spool-info">${infoParts.join(' · ')}${dryIcon}${compatIcon}</div>
+        <div class="fil-spool-info">${infoParts.join(' · ')}${dryIcon}${compatIcon}${_expiryBadge(s)}</div>
         <div class="fil-spool-footer">
           <span>${footerLeft}</span>
           <span>${s.cost ? formatCurrency(s.cost) : ''}</span>
@@ -1240,6 +1240,7 @@
         <div class="spool-vcard-name" title="${esc(cleanName)}">${esc(cleanName)}</div>
         <div class="spool-vcard-meta">${esc(vendorName)} · ${remaining}</div>
         ${tempInfo ? `<div class="spool-vcard-meta" style="font-size:0.7rem;opacity:0.7">${tempInfo}</div>` : ''}
+        ${_expiryBadge(s) ? `<div style="margin-top:3px">${_expiryBadge(s)}</div>` : ''}
         <div class="spool-vcard-bottom">
           <span class="spool-vcard-pct" style="color:${statusTextColor}">${statusText}</span>
           <div class="spool-vcard-bar"><div class="spool-vcard-bar-fill" style="width:${pct}%;background:${statusColor}"></div></div>
@@ -1386,6 +1387,10 @@
             ${s.purchase_date ? `<div class="ph-detail-field">
               <span class="ph-detail-label">${t('filament.purchase_date', 'Purchased')}</span>
               <span class="ph-detail-value">${esc(s.purchase_date)}</span>
+            </div>` : ''}
+            ${s.expiry_date ? `<div class="ph-detail-field">
+              <span class="ph-detail-label">${t('filament.expiry_date', 'Expiry date')}</span>
+              <span class="ph-detail-value">${esc(String(s.expiry_date).slice(0,10))} ${_expiryBadge(s)}</span>
             </div>` : ''}
           </div>
           ${ps && ps.total_prints > 0 ? `
@@ -2762,6 +2767,11 @@
               <input class="form-input" id="sp-purchase-${id}" type="date" value="${isEdit ? (data?.purchase_date || '') : ''}">
             </div>
             <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">${t('filament.expiry_date', 'Expiry date')}</label>
+              <input class="form-input" id="sp-expiry-${id}" type="date" value="${isEdit ? (data?.expiry_date || '') : ''}">
+              <button type="button" class="form-btn form-btn-sm" style="margin-top:4px;font-size:0.7rem;background:transparent;color:var(--text-muted)" onclick="window._suggestExpiry('${id}')">${t('filament.expiry_suggest', 'Suggest from shelf life')}</button>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
               <label class="form-label">${t('filament.storage_method')}</label>
               <select class="form-input" id="sp-storage-${id}">
                 <option value="">${t('common.none')}</option>
@@ -2813,6 +2823,7 @@
       printer_id: document.getElementById('sp-printer-new').value || null,
       comment: document.getElementById('sp-comment-new').value || null,
       purchase_date: document.getElementById('sp-purchase-new').value || null,
+      expiry_date: document.getElementById('sp-expiry-new')?.value || null,
       spool_weight: parseFloat(document.getElementById('sp-tare-new').value) || null,
       storage_method: document.getElementById('sp-storage-new').value || null,
       ams_unit: unitRaw !== undefined && unitRaw !== '' ? parseInt(unitRaw) : (trayRaw !== undefined && trayRaw !== '' ? 0 : null),
@@ -2839,6 +2850,55 @@
     loadFilament();
   };
 
+  // Typical sealed-bag shelf life by base material (months). Hygroscopic
+  // materials (TPU, Nylon, PVA, PVB) degrade fastest. Used to pre-fill an
+  // expiry date from the purchase date so users don't have to look it up.
+  const SHELF_LIFE_MONTHS = {
+    PVA: 6, TPU: 12, TPE: 12, PA: 12, NYLON: 12, PVB: 12, PCTG: 18,
+    PLA: 24, PETG: 24, PET: 24, PC: 24, HIPS: 24, ABS: 36, ASA: 36
+  };
+  function _shelfLifeMonths(material) {
+    const m = String(material || '').toUpperCase();
+    const key = Object.keys(SHELF_LIFE_MONTHS).find(k => m.includes(k));
+    return key ? SHELF_LIFE_MONTHS[key] : 24;
+  }
+  // Shelf-life status badge for a spool, based on expiry_date vs now.
+  // Returns '' when no expiry is set or it is comfortably in the future.
+  function _expiryDays(s) {
+    if (!s || !s.expiry_date) return null;
+    const exp = new Date(String(s.expiry_date).replace(' ', 'T'));
+    if (isNaN(exp.getTime())) return null;
+    return Math.round((exp.getTime() - Date.now()) / 86400000);
+  }
+  function _expiryBadge(s) {
+    const days = _expiryDays(s);
+    if (days === null) return '';
+    const warn = Number(s.expiry_warn_days) || 30;
+    if (days < 0) {
+      return `<span class="fil-exp-badge fil-exp-expired" title="${t('filament.expired_on', { date: s.expiry_date })}">&#x26A0; ${t('filament.expired', 'Expired')}</span>`;
+    }
+    if (days <= warn) {
+      return `<span class="fil-exp-badge fil-exp-soon" title="${t('filament.expires_on', { date: s.expiry_date })}">&#x23F3; ${t('filament.expires_in_days', { days })}</span>`;
+    }
+    return '';
+  }
+  window._suggestExpiry = function(id) {
+    const expEl = document.getElementById(`sp-expiry-${id}`);
+    if (!expEl) return;
+    const purchaseEl = document.getElementById(`sp-purchase-${id}`);
+    const base = purchaseEl?.value ? new Date(purchaseEl.value + 'T00:00:00') : new Date();
+    if (isNaN(base.getTime())) return;
+    const pid = parseInt(document.getElementById(`sp-profile-${id}`)?.value);
+    const prof = _profiles.find(p => p.id === pid);
+    const months = _shelfLifeMonths(prof?.material);
+    const exp = new Date(base);
+    exp.setMonth(exp.getMonth() + months);
+    expEl.value = exp.toISOString().slice(0, 10);
+    if (typeof showToast === 'function') {
+      showToast(t('filament.expiry_suggested', { months }), 'info');
+    }
+  };
+
   window.saveSpool = async function(spoolId) {
     const id = spoolId;
     const spool = _spools.find(s => s.id === spoolId);
@@ -2854,6 +2914,7 @@
       printer_id: document.getElementById(`sp-printer-${id}`).value || null,
       comment: document.getElementById(`sp-comment-${id}`).value || null,
       purchase_date: document.getElementById(`sp-purchase-${id}`).value || null,
+      expiry_date: document.getElementById(`sp-expiry-${id}`)?.value || null,
       archived: spool?.archived || 0,
       spool_weight: parseFloat(document.getElementById(`sp-tare-${id}`).value) || null,
       storage_method: document.getElementById(`sp-storage-${id}`).value || null,

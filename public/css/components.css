@@ -8508,6 +8508,9 @@ tr:hover .filament-edit-btn {
 /* ---- Drying Management ---- */
 .fil-dry-badge { font-size: 0.65rem; margin-left: 3px; vertical-align: middle; }
 .fil-dry-overdue { }
+.fil-exp-badge { display: inline-flex; align-items: center; gap: 2px; font-size: 0.62rem; font-weight: 700; line-height: 1; padding: 2px 6px; border-radius: 999px; margin-left: 4px; vertical-align: middle; white-space: nowrap; }
+.fil-exp-expired { background: var(--accent-red, #e3342f); color: #fff; }
+.fil-exp-soon { background: rgba(245, 158, 11, 0.18); color: var(--accent-orange, #f59e0b); border: 1px solid rgba(245, 158, 11, 0.4); }
 
 .fil-drying-card {
   background: var(--card-bg);
