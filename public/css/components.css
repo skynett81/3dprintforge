@@ -4555,6 +4555,16 @@
 .atool-result-ok { color: var(--accent-green); }
 .atool-result-err { color: var(--accent-red); }
 
+/* Analytics compact KPI strip — same design language as the inventory/
+   dashboard KPI cards, sized to fit a dense row of metrics. */
+.an-kpi-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.an-kpi { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; background: linear-gradient(145deg, var(--bg-tertiary), var(--bg-secondary)); border: 1px solid var(--border-color); border-radius: var(--radius); box-shadow: var(--shadow-sm); transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), transform 0.2s var(--ease-out); }
+.an-kpi:hover { border-color: var(--kc); box-shadow: 0 4px 12px color-mix(in srgb, var(--kc) 20%, transparent); transform: translateY(-2px); }
+.an-kpi-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--kc) 14%, transparent); color: var(--kc); }
+.an-kpi-icon svg { width: 17px; height: 17px; }
+.an-kpi-value { font-size: 1.2rem; font-weight: 800; color: var(--kc); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.an-kpi-label { font-size: 0.62rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; text-align: center; }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;

@@ -157,25 +157,38 @@
     const totalPrintHours = Math.round(history.reduce((s, h) => s + (h.duration_seconds || 0), 0) / 3600 * 10) / 10;
     const totalFilamentG = Math.round(history.reduce((s, h) => s + (h.filament_used_g || 0), 0));
 
+    const I = {
+      printer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+      list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+      clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      spool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>',
+      palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 1 2-4h2a4 4 0 0 0 4-4 10 10 0 0 0-12-8z"/></svg>',
+      queue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    };
     const kpis = [
-      { label: _t('analytics.printers', 'Printers'), value: `${onlinePrinters}/${printers.length}`, icon: '🖨️', color: onlinePrinters > 0 ? 'var(--accent-green)' : 'var(--accent-red)' },
-      { label: _t('analytics.total_prints', 'Total prints'), value: totalPrints, icon: '📋', color: '' },
-      { label: _t('analytics.success_rate', 'Success rate'), value: successRate + '%', icon: '✅', color: successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)' },
-      { label: _t('analytics.print_hours', 'Print hours'), value: totalPrintHours + 'h', icon: '⏱️', color: '' },
-      { label: _t('analytics.filament_used', 'Filament used'), value: totalFilamentG + 'g', icon: '🧵', color: '' },
-      { label: _t('analytics.spools', 'Spools'), value: spools.length, icon: '🎨', color: '' },
-      { label: _t('analytics.queue', 'Queue'), value: queue.length, icon: '<i class="bi bi-download"></i> ', color: queue.length > 0 ? 'var(--accent-blue)' : '' },
-      { label: _t('analytics.errors', 'Errors'), value: printErrors.length, icon: '⚠️', color: printErrors.length > 0 ? 'var(--accent-red)' : '' },
-      { label: _t('analytics.sessions', 'Sessions'), value: overview.activeSessions || 0, icon: '👥', color: '' },
-      { label: _t('analytics.requests', 'Requests'), value: _fmtNum(overview.today?.requests || 0), icon: '📊', color: '' },
+      { label: _t('analytics.printers', 'Printers'), value: `${onlinePrinters}/${printers.length}`, icon: I.printer, color: onlinePrinters > 0 ? 'var(--accent-green)' : 'var(--accent-red)' },
+      { label: _t('analytics.total_prints', 'Total prints'), value: totalPrints, icon: I.list, color: 'var(--accent-blue)' },
+      { label: _t('analytics.success_rate', 'Success rate'), value: successRate + '%', icon: I.check, color: successRate >= 80 ? 'var(--accent-green)' : successRate >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)' },
+      { label: _t('analytics.print_hours', 'Print hours'), value: totalPrintHours + 'h', icon: I.clock, color: 'var(--accent-purple)' },
+      { label: _t('analytics.filament_used', 'Filament used'), value: totalFilamentG + 'g', icon: I.spool, color: 'var(--accent-green)' },
+      { label: _t('analytics.spools', 'Spools'), value: spools.length, icon: I.palette, color: 'var(--accent-cyan)' },
+      { label: _t('analytics.queue', 'Queue'), value: queue.length, icon: I.queue, color: queue.length > 0 ? 'var(--accent-blue)' : 'var(--text-muted)' },
+      { label: _t('analytics.errors', 'Errors'), value: printErrors.length, icon: I.alert, color: printErrors.length > 0 ? 'var(--accent-red)' : 'var(--text-muted)' },
+      { label: _t('analytics.sessions', 'Sessions'), value: overview.activeSessions || 0, icon: I.people, color: 'var(--accent-blue)' },
+      { label: _t('analytics.requests', 'Requests'), value: _fmtNum(overview.today?.requests || 0), icon: I.chart, color: 'var(--accent-orange)' },
     ];
 
-    let h = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:12px">';
+    let h = '<div class="an-kpi-strip">';
     for (const k of kpis) {
-      h += `<div class="settings-card" style="padding:10px;text-align:center;border-left:3px solid ${k.color || 'var(--border-color)'}">
-        <div style="font-size:1.4rem;line-height:1">${k.icon}</div>
-        <div style="font-size:1.15rem;font-weight:700;${k.color ? 'color:' + k.color : ''};margin:2px 0">${k.value}</div>
-        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">${k.label}</div>
+      const c = k.color || 'var(--accent-blue)';
+      h += `<div class="an-kpi" style="--kc:${c}">
+        <span class="an-kpi-icon">${k.icon}</span>
+        <span class="an-kpi-value">${k.value}</span>
+        <span class="an-kpi-label">${k.label}</span>
       </div>`;
     }
     h += '</div>';
