@@ -80,7 +80,7 @@
       <div id="slc-tab-native" style="display:none">
         <div class="card">
           <div class="card-body">
-            <h5 style="margin:0 0 8px"><i class="bi bi-lightning-charge"></i> Native Slicer <span class="badge" style="background:#f59e0b;color:#fff;font-size:0.7rem">experimental</span></h5>
+            <h5 style="margin:0 0 8px"><i class="bi bi-lightning-charge"></i> Native Slicer <span class="badge" style="background:var(--accent-orange);color:#fff;font-size:0.7rem">experimental</span></h5>
             <p class="text-muted" style="font-size:0.82rem">3DPrintForge's own pure-JS slicer. No external slicer required. <strong>Limitations</strong>: simple geometry only, basic linear infill, no supports/bridges, no advanced features. Use the Bridge tab for production prints.</p>
 
             <div class="pf-drop" id="slc-n-drop" style="margin-top:8px">
@@ -253,7 +253,7 @@
       });
       if (!r.ok) {
         const errBody = await r.json().catch(() => ({}));
-        status.innerHTML = `<div style="color:#ef4444"><strong>Slice failed:</strong> ${_esc(errBody.error || r.statusText)}</div>${errBody.log ? `<details style="margin-top:6px"><summary>Slicer log</summary><pre style="font-size:0.7rem;background:rgba(0,0,0,0.05);padding:8px;border-radius:4px;overflow:auto;max-height:240px">${_esc(errBody.log)}</pre></details>` : ''}`;
+        status.innerHTML = `<div style="color:var(--accent-red)"><strong>Slice failed:</strong> ${_esc(errBody.error || r.statusText)}</div>${errBody.log ? `<details style="margin-top:6px"><summary>Slicer log</summary><pre style="font-size:0.7rem;background:rgba(0,0,0,0.05);padding:8px;border-radius:4px;overflow:auto;max-height:240px">${_esc(errBody.log)}</pre></details>` : ''}`;
         return;
       }
       if (expectBinary) {
@@ -267,13 +267,13 @@
         a.download = filename;
         a.click();
         URL.revokeObjectURL(a.href);
-        status.innerHTML = `<div style="color:#22c55e">✓ Sliced via <strong>${_esc(slicer)}</strong> in ${dur} ms · ${blob.size.toLocaleString()} bytes · downloaded as <code>${_esc(filename)}</code></div>`;
+        status.innerHTML = `<div style="color:var(--accent-green)">✓ Sliced via <strong>${_esc(slicer)}</strong> in ${dur} ms · ${blob.size.toLocaleString()} bytes · downloaded as <code>${_esc(filename)}</code></div>`;
       } else {
         const data = await r.json();
-        status.innerHTML = `<div style="color:#22c55e">✓ Sliced via <strong>${_esc(data.slicer)}</strong> in ${data.sliceDurationMs} ms · uploaded <code>${_esc(data.gcodeFilename)}</code> (${data.sizeBytes.toLocaleString()} bytes) to printer${data.printing ? ' and started print 🖨️' : ''}</div>`;
+        status.innerHTML = `<div style="color:var(--accent-green)">✓ Sliced via <strong>${_esc(data.slicer)}</strong> in ${data.sliceDurationMs} ms · uploaded <code>${_esc(data.gcodeFilename)}</code> (${data.sizeBytes.toLocaleString()} bytes) to printer${data.printing ? ' and started print 🖨️' : ''}</div>`;
       }
     } catch (e) {
-      status.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+      status.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
     } finally {
       document.getElementById('slc-go').disabled = false;
       document.getElementById('slc-go-send').disabled = false;
@@ -318,7 +318,7 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        status.innerHTML = `<div style="color:#ef4444"><strong>Slice failed:</strong> ${_esc(err.error || r.statusText)}</div>`;
+        status.innerHTML = `<div style="color:var(--accent-red)"><strong>Slice failed:</strong> ${_esc(err.error || r.statusText)}</div>`;
         return;
       }
       const layers = r.headers.get('X-Layer-Count');
@@ -335,7 +335,7 @@
       URL.revokeObjectURL(a.href);
       const hours = Math.floor(timeSec / 3600), mins = Math.floor((timeSec % 3600) / 60);
       status.innerHTML = `
-        <div style="color:#22c55e;font-weight:600">✓ Native slice complete</div>
+        <div style="color:var(--accent-green);font-weight:600">✓ Native slice complete</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px;font-size:0.85rem">
           <div><strong>Layers:</strong> ${layers}</div>
           <div><strong>Triangles:</strong> ${parseInt(tris).toLocaleString()}</div>
@@ -344,9 +344,9 @@
           <div><strong>Filament:</strong> ${fil.toFixed(1)} g</div>
           <div><strong>Output:</strong> <code>${_esc(filename)}</code></div>
         </div>
-        <div style="margin-top:6px;font-size:0.78rem;color:#f59e0b">⚠ Experimental output — verify in your slicer's preview before printing.</div>`;
+        <div style="margin-top:6px;font-size:0.78rem;color:var(--accent-orange)">⚠ Experimental output — verify in your slicer's preview before printing.</div>`;
     } catch (e) {
-      status.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+      status.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
     } finally {
       document.getElementById('slc-n-go').disabled = false;
     }

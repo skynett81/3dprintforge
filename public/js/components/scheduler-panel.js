@@ -102,9 +102,9 @@
     </div>
     <div id="sched-calendar"></div>
     <div class="sched-legend">
-      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:#1279ff"></div> ${t('scheduler.pending')}</div>
-      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:#00ae42"></div> ${t('scheduler.completed')}</div>
-      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:#f59e0b"></div> ${t('scheduler.in_progress')}</div>
+      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:var(--accent-blue)"></div> ${t('scheduler.pending')}</div>
+      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:var(--accent-green)"></div> ${t('scheduler.completed')}</div>
+      <div class="sched-legend-item"><div class="sched-legend-dot" style="background:var(--accent-orange)"></div> ${t('scheduler.in_progress')}</div>
       <div class="sched-legend-item"><div class="sched-legend-dot" style="background:#e53935"></div> ${t('scheduler.failed')}</div>
     </div>`;
 

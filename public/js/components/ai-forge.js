@@ -122,12 +122,12 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</span>`;
         return;
       }
       _renderJobResult(status, data);
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -218,12 +218,12 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</span>`;
         return;
       }
       _renderJobResult(status, data);
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -310,12 +310,12 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</span>`;
         return;
       }
       _renderJobResult(status, data);
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -373,7 +373,7 @@
         btn.onclick = () => _deleteJob(parseInt(btn.dataset.del, 10));
       });
     } catch (e) {
-      t.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      t.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -399,10 +399,10 @@
     const stats = data.stats || {};
     const downloadUrl = j.id ? `/api/ai-forge/jobs/${j.id}/download` : null;
     const generatorBadge = data.generator
-      ? `<span class="badge" style="background:rgba(34,197,94,0.15);color:#22c55e;margin-left:6px">via ${_esc(data.generator)} generator</span>`
+      ? `<span class="badge" style="background:rgba(34,197,94,0.15);color:var(--accent-green);margin-left:6px">via ${_esc(data.generator)} generator</span>`
       : '';
     target.innerHTML = `
-      <div style="color:#22c55e;font-weight:600">✓ Generated ${_esc(j.result_format)} · ${_formatBytes(j.result_size_bytes)} · ${j.duration_ms} ms${generatorBadge}</div>
+      <div style="color:var(--accent-green);font-weight:600">✓ Generated ${_esc(j.result_format)} · ${_formatBytes(j.result_size_bytes)} · ${j.duration_ms} ms${generatorBadge}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.5rem;margin-top:8px;font-size:0.85rem">
         <div><strong>Vertices:</strong> ${(stats.vertices || 0).toLocaleString()}</div>
         <div><strong>Faces:</strong> ${(stats.faces || 0).toLocaleString()}</div>

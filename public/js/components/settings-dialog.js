@@ -1386,7 +1386,7 @@
         let label;
         if (!fs.enabled) label = '<span style="color:var(--text-muted)">disabled</span>';
         else if (fs.ok) label = `<span style="color: var(--accent-green-text)">connected</span> v${fs.version || '?'}`;
-        else label = `<span style="color:#ef4444">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
+        else label = `<span style="color:var(--accent-red)">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
         rows.push(['3DPrintForge Slicer', label]);
       }
 
@@ -2081,7 +2081,7 @@
       });
       const data = await res.json();
       if (data.ok) {
-        resultEl.innerHTML = `<span style="color:var(--success-color,#28a745);font-size:0.8rem">&#10003; ${t('settings.test_success')}</span>`;
+        resultEl.innerHTML = `<span style="color:var(--success-color,var(--accent-green));font-size:0.8rem">&#10003; ${t('settings.test_success')}</span>`;
       } else {
         const err = data.error === 'timeout' ? t('settings.test_timeout') : t('settings.test_failed');
         resultEl.innerHTML = `<span style="color:var(--danger-color,#dc3545);font-size:0.8rem">&#10007; ${err}</span>`;
@@ -2162,7 +2162,7 @@
   function _renderCloudConnected(el) {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-        <span style="font-size:0.85rem;color:var(--success-color,#28a745)">&#10003; ${t('settings.cloud_connected').replace('{email}', _esc(_cloudEmail))}</span>
+        <span style="font-size:0.85rem;color:var(--success-color,var(--accent-green))">&#10003; ${t('settings.cloud_connected').replace('{email}', _esc(_cloudEmail))}</span>
         <button class="form-btn form-btn-sm" data-ripple onclick="bambuCloudGetPrinters()" id="cloud-import-btn">${t('settings.cloud_import')}</button>
         <button class="form-btn form-btn-sm" data-ripple onclick="bambuCloudReconcileFilament()" id="cloud-reconcile-btn" title="${t('settings.cloud_reconcile_hint', 'Deduct filament for prints the server missed, using the cloud record')}">${t('settings.cloud_reconcile_filament', 'Sync filament usage')}</button>
         <button class="form-btn form-btn-sm form-btn-secondary" data-ripple onclick="bambuCloudLogout()">${t('settings.cloud_disconnect')}</button>
@@ -2348,7 +2348,7 @@
         let h = '';
         for (const p of data.printers) {
           const ipInfo = p.ip ? `| ${_esc(p.ip)}` : '';
-          const localBadge = p.ip ? ' <span style="color:var(--success-color,#28a745);font-size:0.7rem">&#9679; LAN</span>' : '';
+          const localBadge = p.ip ? ' <span style="color:var(--success-color,var(--accent-green));font-size:0.7rem">&#9679; LAN</span>' : '';
           h += `<div class="printer-config-card" style="margin-bottom:0.4rem"><div class="printer-config-header"><div>`;
           h += `<strong>${_esc(p.name)}</strong>`;
           h += `<div class="text-muted" style="font-size:0.75rem">${_esc(p.model)} | ${_esc(p.serial)} ${ipInfo}${localBadge}</div>`;

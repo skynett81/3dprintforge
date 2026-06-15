@@ -128,7 +128,7 @@
         <div class="diag-card-stat"><div class="diag-card-stat-value" style="color: var(--accent-green-text)">${successRate}%</div><div class="diag-card-stat-label">${_t('health.success_rate', 'Success rate')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-primary)'}">${overdueCount}</div><div class="diag-card-stat-label">${_t('health.overdue', 'Overdue')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value">${totalPrints}</div><div class="diag-card-stat-label">${_t('health.total_prints', 'Prints')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${recentErrors > 0 ? '#f59e0b' : 'var(--text-primary)'}">${recentErrors}</div><div class="diag-card-stat-label">${_t('health.errors_7d', 'Errors 7d')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:${recentErrors > 0 ? 'var(--accent-orange)' : 'var(--text-primary)'}">${recentErrors}</div><div class="diag-card-stat-label">${_t('health.errors_7d', 'Errors 7d')}</div></div>
       </div>`;
     }
 
@@ -164,16 +164,16 @@
       subtitle = stateLabels[state] || _t('status.idle', 'Idle');
 
       stats = `<div class="diag-card-stats">
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#ff5252">${nozzle}°C</div><div class="diag-card-stat-label">${_t('temperature.nozzle', 'Nozzle')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#1279ff">${bed}°C</div><div class="diag-card-stat-label">${_t('temperature.bed', 'Bed')}</div></div>
-        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:#00e676">${progress}%</div><div class="diag-card-stat-label">${_t('telemetry.print_progress', 'Progress')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-red)">${nozzle}°C</div><div class="diag-card-stat-label">${_t('temperature.nozzle', 'Nozzle')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-blue)">${bed}°C</div><div class="diag-card-stat-label">${_t('temperature.bed', 'Bed')}</div></div>
+        <div class="diag-card-stat"><div class="diag-card-stat-value" style="color:var(--accent-green)">${progress}%</div><div class="diag-card-stat-label">${_t('telemetry.print_progress', 'Progress')}</div></div>
         <div class="diag-card-stat"><div class="diag-card-stat-value">${live.spd_mag || 100}%</div><div class="diag-card-stat-label">${_t('speed.label', 'Speed')}</div></div>
       </div>`;
     }
 
     return `<div class="diag-card" onclick="_switchDiagTab('telemetry')">
       <div class="diag-card-header">
-        <div class="diag-card-icon" style="background:rgba(18,121,255,0.1);color:#1279ff">
+        <div class="diag-card-icon" style="background:rgba(18,121,255,0.1);color:var(--accent-blue)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
         <div>
@@ -211,7 +211,7 @@
 
     return `<div class="diag-card" onclick="_switchDiagTab('bedmesh')">
       <div class="diag-card-header">
-        <div class="diag-card-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b">
+        <div class="diag-card-icon" style="background:rgba(245,158,11,0.1);color:var(--accent-orange)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
         </div>
         <div>

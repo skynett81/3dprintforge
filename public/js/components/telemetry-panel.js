@@ -254,9 +254,9 @@
       );
       // Add signal quality legend
       h += `<div class="text-muted" style="font-size:0.75rem;text-align:center;margin-top:0.25rem">
-        <span style="color:#00e676">\u25cf</span> 70+ ${t('telemetry.signal_excellent')} &nbsp;
-        <span style="color:#e3b341">\u25cf</span> 30-70 ${t('telemetry.signal_good')} &nbsp;
-        <span style="color:#ff5252">\u25cf</span> 0-30 ${t('telemetry.signal_weak')}
+        <span style="color:var(--accent-green)">\u25cf</span> 70+ ${t('telemetry.signal_excellent')} &nbsp;
+        <span style="color:var(--accent-orange)">\u25cf</span> 30-70 ${t('telemetry.signal_good')} &nbsp;
+        <span style="color:var(--accent-red)">\u25cf</span> 0-30 ${t('telemetry.signal_weak')}
       </div>`;
       return h;
     }

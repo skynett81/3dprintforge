@@ -473,7 +473,7 @@
   // Widgets: mini live data widgets
   function _injectWidgets(data) {
     let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">';
-    if (data.nozzle_temper) html += `<div class="settings-card" style="padding:8px;min-width:80px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Nozzle</div><div style="font-size:1.2rem;font-weight:700;color:#ff6b6b">${data.nozzle_temper}°</div></div>`;
+    if (data.nozzle_temper) html += `<div class="settings-card" style="padding:8px;min-width:80px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Nozzle</div><div style="font-size:1.2rem;font-weight:700;color:var(--accent-red)">${data.nozzle_temper}°</div></div>`;
     if (data.bed_temper) html += `<div class="settings-card" style="padding:8px;min-width:80px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Bed</div><div style="font-size:1.2rem;font-weight:700;color:#4ecdc4">${data.bed_temper}°</div></div>`;
     if (data.mc_percent !== undefined) html += `<div class="settings-card" style="padding:8px;min-width:80px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Progress</div><div style="font-size:1.2rem;font-weight:700">${data.mc_percent}%</div></div>`;
     if (data.spd_mag) html += `<div class="settings-card" style="padding:8px;min-width:80px;text-align:center"><div style="font-size:0.6rem;color:var(--text-muted)">Speed</div><div style="font-size:1.2rem;font-weight:700">${data.spd_mag}%</div></div>`;

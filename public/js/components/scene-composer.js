@@ -487,13 +487,13 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</span>`;
         return;
       }
-      status.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sent ${_esc(filename)} (${data.sizeBytes} bytes) to ${_esc(printer.name)}</div>`;
+      status.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sent ${_esc(filename)} (${data.sizeBytes} bytes) to ${_esc(printer.name)}</div>`;
       _toast(`Sent to ${printer.name}`, 'success');
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -1275,17 +1275,17 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</span>`;
         return;
       }
       const j = data.job;
       const stats = data.stats || {};
       status.innerHTML = `
-        <div style="color:#22c55e;font-weight:600">✓ Rendered scene → ${_esc(j.result_format)} · ${j.result_size_bytes} bytes</div>
+        <div style="color:var(--accent-green);font-weight:600">✓ Rendered scene → ${_esc(j.result_format)} · ${j.result_size_bytes} bytes</div>
         <div style="font-size:0.85rem;margin-top:4px">Vertices: ${(stats.vertices || 0).toLocaleString()} · Faces: ${(stats.faces || 0).toLocaleString()}</div>
         <a href="/api/ai-forge/jobs/${j.id}/download" class="form-btn primary" download style="margin-top:6px">Download ${_esc(j.result_format)}</a>`;
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 

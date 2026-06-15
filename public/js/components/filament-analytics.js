@@ -391,7 +391,7 @@
     }
 
     if (expired.length > 0) {
-      html += '<div class="fa-section"><div class="fa-section-title">Expired spools <span class="fa-section-badge critical" style="background:rgba(239,68,68,0.1);color:#ef4444">' + expired.length + '</span></div>';
+      html += '<div class="fa-section"><div class="fa-section-title">Expired spools <span class="fa-section-badge critical" style="background:rgba(239,68,68,0.1);color:var(--accent-red)">' + expired.length + '</span></div>';
       html += '<div class="fa-table-wrap"><table class="fa-table"><thead><tr><th>Spool</th><th>Material</th><th>Supplier</th><th>Expiry date</th></tr></thead><tbody>';
       for (const s of expired) {
         html += `<tr><td><strong>${s.profile_name || '–'}</strong></td><td>${s.material || '–'}</td><td>${s.vendor_name || '–'}</td><td style="color:var(--accent-red)">${fmtDate(s.expiry_date)}</td></tr>`;

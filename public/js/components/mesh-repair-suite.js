@@ -203,7 +203,7 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(err.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(err.error || r.statusText)}</span>`;
         return;
       }
       const reportRaw = r.headers.get('X-Mesh-Report');
@@ -211,12 +211,12 @@
       const blob = await r.blob();
       _downloadBlob(blob, `${_baseName(_state.fileName)}-repaired.${format}`);
       status.innerHTML = `
-        <div style="color:#22c55e;font-weight:600">✓ Repaired and downloaded.</div>
+        <div style="color:var(--accent-green);font-weight:600">✓ Repaired and downloaded.</div>
         <details style="margin-top:6px"><summary>Report</summary>
           <pre style="background:rgba(0,0,0,0.05);padding:8px;border-radius:4px;font-size:0.75rem;overflow:auto">${_esc(JSON.stringify(report, null, 2))}</pre>
         </details>`;
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -312,7 +312,7 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(err.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(err.error || r.statusText)}</span>`;
         return;
       }
       const reportRaw = r.headers.get('X-Mesh-Report');
@@ -320,12 +320,12 @@
       const blob = await r.blob();
       _downloadBlob(blob, `${_baseName(_state.fileName)}-${op}.${format}`);
       status.innerHTML = `
-        <div style="color:#22c55e;font-weight:600">✓ Transform applied and downloaded.</div>
+        <div style="color:var(--accent-green);font-weight:600">✓ Transform applied and downloaded.</div>
         <details style="margin-top:6px"><summary>Report</summary>
           <pre style="background:rgba(0,0,0,0.05);padding:8px;border-radius:4px;font-size:0.75rem;overflow:auto">${_esc(JSON.stringify(report, null, 2))}</pre>
         </details>`;
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -369,15 +369,15 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(err.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(err.error || r.statusText)}</span>`;
         return;
       }
       const blob = await r.blob();
       _downloadBlob(blob, `${_baseName(_state.fileName)}.${format}`);
       const src = r.headers.get('X-Mesh-Source-Format');
-      status.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Converted ${_esc(src)} → ${_esc(format)}.</div>`;
+      status.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Converted ${_esc(src)} → ${_esc(format)}.</div>`;
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -416,11 +416,11 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(err.error || r.statusText)}</span>`;
+        status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(err.error || r.statusText)}</span>`;
         return;
       }
       const data = await r.json();
-      status.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Found ${data.report.components} component(s).</div>`;
+      status.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Found ${data.report.components} component(s).</div>`;
       list.innerHTML = '<table class="table table-sm" style="margin-top:8px"><thead><tr><th>#</th><th>Vertices</th><th>Faces</th><th>Size (mm)</th><th>Download</th></tr></thead><tbody></tbody></table>';
       const tbody = list.querySelector('tbody');
       data.components.forEach((comp, i) => {
@@ -442,7 +442,7 @@
         btn.onclick = () => _downloadComponent(parseInt(btn.dataset.i, 10), btn.dataset.fmt);
       });
     } catch (e) {
-      status.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      status.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 

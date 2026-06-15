@@ -300,7 +300,7 @@
       const tags = await tRes.json();
       if (tags.length > 0) {
         const tagChecks = tags.map(tg =>
-          `<label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-tag-check" value="${tg.id}"> <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tg.color || '#58a6ff'}"></span> ${tg.name}</label>`
+          `<label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;cursor:pointer"><input type="checkbox" class="qi-tag-check" value="${tg.id}"> <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tg.color || 'var(--accent-blue)'}"></span> ${tg.name}</label>`
         ).join('');
         tagsHtml = `<div class="form-group">
           <label>${t('queue.required_tags')}</label>

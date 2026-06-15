@@ -169,7 +169,7 @@
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-red)">${c.fatal + c.critical}</div><div class="stat-label">${t('errors.critical')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color:var(--accent-orange)">${c.error}</div><div class="stat-label">${t('errors.errors')}</div></div>
         <div class="stat-card"><div class="stat-value" style="color: var(--accent-green-text)">${ackCount}</div><div class="stat-label">${t('errors.acknowledged')}</div></div>
-        <div class="stat-card"><div class="stat-value" style="color:var(--accent-yellow, #e3b341)">${unackCount}</div><div class="stat-label">${t('errors.unacknowledged')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent-yellow, var(--accent-orange))">${unackCount}</div><div class="stat-label">${t('errors.unacknowledged')}</div></div>
       </div>`;
     },
 
@@ -179,7 +179,7 @@
         <button class="error-filter-btn ${_activeSeverity === 'all' ? 'active' : ''}" data-ripple onclick="filterErrorSeverity('all')">${t('errors.all')}</button>
         <button class="error-filter-btn ${_activeSeverity === 'critical' ? 'active' : ''}" data-ripple onclick="filterErrorSeverity('critical')" style="--filter-color:var(--accent-red)">${t('errors.critical')} (${c.fatal + c.critical})</button>
         <button class="error-filter-btn ${_activeSeverity === 'error' ? 'active' : ''}" data-ripple onclick="filterErrorSeverity('error')" style="--filter-color:var(--accent-orange)">${t('errors.errors')} (${c.error})</button>
-        <button class="error-filter-btn ${_activeSeverity === 'warning' ? 'active' : ''}" data-ripple onclick="filterErrorSeverity('warning')" style="--filter-color:var(--accent-yellow, #e3b341)">${t('errors.warnings')} (${c.warning})</button>
+        <button class="error-filter-btn ${_activeSeverity === 'warning' ? 'active' : ''}" data-ripple onclick="filterErrorSeverity('warning')" style="--filter-color:var(--accent-yellow, var(--accent-orange))">${t('errors.warnings')} (${c.warning})</button>
       </div>
       <div style="margin-top:8px">
         <input type="text" class="form-input" style="width:100%" placeholder="${t('errors.search_placeholder')}" value="${_searchTerm}" oninput="searchErrors(this.value)">

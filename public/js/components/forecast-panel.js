@@ -305,8 +305,8 @@
     if (legendEl) {
       legendEl.innerHTML = `
         <div class="fc-chart-legend-item"><div class="fc-chart-legend-dot" style="background:rgba(18,121,255,0.7)"></div>${t('forecast.actual', 'Actual')}</div>
-        <div class="fc-chart-legend-item"><div class="fc-chart-legend-dot" style="background:rgba(18,121,255,0.3);border:1px dashed var(--accent-blue,#1279ff)"></div>${t('forecast.projected', 'Projected')}</div>
-        <div class="fc-chart-legend-item"><div class="fc-chart-legend-dot" style="background:#f59e0b"></div>${t('forecast.avg')}</div>
+        <div class="fc-chart-legend-item"><div class="fc-chart-legend-dot" style="background:rgba(18,121,255,0.3);border:1px dashed var(--accent-blue,var(--accent-blue))"></div>${t('forecast.projected', 'Projected')}</div>
+        <div class="fc-chart-legend-item"><div class="fc-chart-legend-dot" style="background:var(--accent-orange)"></div>${t('forecast.avg')}</div>
       `;
     }
 

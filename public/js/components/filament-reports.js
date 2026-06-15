@@ -97,7 +97,7 @@
         <td><strong>${esc(r.material || t('reports.unknown', 'Unknown'))}</strong>${r.brand ? `<div class="proc-notes">${esc(r.brand)}</div>` : ''}</td>
         <td>${g(r.total_used_g)}</td>
         <td>${r.total_prints || 0}</td>
-        <td><span style="color:${sr >= 90 ? 'var(--accent-green)' : sr >= 70 ? '#d29922' : 'var(--accent-red)'}">${sr}%</span></td>
+        <td><span style="color:${sr >= 90 ? 'var(--accent-green)' : sr >= 70 ? 'var(--accent-orange)' : 'var(--accent-red)'}">${sr}%</span></td>
         <td>${r.total_waste_g ? g(r.total_waste_g) + ` <span class="text-muted">(${r.waste_pct || 0}%)</span>` : '–'}</td>
         <td><div class="rep-bar"><div class="rep-bar-fill" style="width:${share}%"></div></div></td>
       </tr>`;

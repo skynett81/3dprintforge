@@ -465,7 +465,7 @@
         });
         if (!fr.ok) {
           const err = await fr.json().catch(() => ({}));
-          progress.innerHTML = `<div style="color:#ef4444">Forge slice failed: ${_esc(err.error || fr.statusText)}</div>`;
+          progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice failed: ${_esc(err.error || fr.statusText)}</div>`;
           return;
         }
 
@@ -502,13 +502,13 @@
             } else if (event === 'done' && parsed) {
               result = parsed;
             } else if (event === 'error' && parsed) {
-              progress.innerHTML = `<div style="color:#ef4444">Forge slice failed: ${_esc(parsed.message || 'Unknown error')}</div>`;
+              progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice failed: ${_esc(parsed.message || 'Unknown error')}</div>`;
               return;
             }
           }
         }
         if (!result) {
-          progress.innerHTML = `<div style="color:#ef4444">Forge slice did not return a 'done' event</div>`;
+          progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice did not return a 'done' event</div>`;
           return;
         }
         timeSec = result.estimated_time_s || 0;
@@ -524,7 +524,7 @@
         });
         if (!r.ok) {
           const err = await r.json().catch(() => ({}));
-          progress.innerHTML = `<div style="color:#ef4444">Slice failed: ${_esc(err.error || r.statusText)}</div>`;
+          progress.innerHTML = `<div style="color:var(--accent-red)">Slice failed: ${_esc(err.error || r.statusText)}</div>`;
           return;
         }
         layers = parseInt(r.headers.get('X-Layer-Count'), 10) || 0;
@@ -536,7 +536,7 @@
 
       _state.lastSlice = { blob, filename: (_state.fileName.replace(/\.[^.]+$/, '') || 'model') + '.gcode', layers, dur, timeSec, fil };
       const backendLabel = useForge ? '3DPrintForge Slicer' : 'native engine';
-      progress.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sliced via ${backendLabel} in ${dur} ms</div>`;
+      progress.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sliced via ${backendLabel} in ${dur} ms</div>`;
       _renderResult();
       document.getElementById('ss-send').disabled = false;
       document.getElementById('ss-slice-and-send').disabled = false;
@@ -544,7 +544,7 @@
       if (e.name === 'AbortError') {
         progress.innerHTML = `<div style="color:var(--accent-orange)">⏹ Slicing cancelled</div>`;
       } else {
-        progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+        progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
       }
     } finally {
       _state.busy = false;
@@ -591,7 +591,7 @@
       });
       const data = await r.json();
       if (!r.ok) {
-        progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(data.error || r.statusText)}</div>`;
+        progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</div>`;
         return;
       }
       const sliced = data.slice || {};
@@ -606,10 +606,10 @@
         sentTo: target,
         printing: !!data.printing,
       };
-      progress.innerHTML = `<div style="color:#22c55e;font-weight:600">✓ Sliced & sent to ${_esc(target)}${data.printing ? ' (printing started)' : ''}</div>`;
+      progress.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sliced & sent to ${_esc(target)}${data.printing ? ' (printing started)' : ''}</div>`;
       _renderResult();
     } catch (e) {
-      progress.innerHTML = `<div style="color:#ef4444">Failed: ${_esc(e.message)}</div>`;
+      progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
     } finally {
       _state.busy = false;
       document.getElementById('ss-slice-and-send').disabled = false;

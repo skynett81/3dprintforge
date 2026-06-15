@@ -17,8 +17,8 @@
       </div>
       <canvas id="temp-graph-canvas" width="400" height="150" style="width:100%;height:150px;border-radius:6px;background:var(--bg-inset)"></canvas>
       <div style="display:flex;gap:10px;margin-top:4px;font-size:0.65rem;flex-wrap:wrap">
-        <span style="color:#ff6b6b">● Nozzle</span>
-        <span style="color:#ff6b6b;opacity:0.4">- - Target</span>
+        <span style="color:var(--accent-red)">● Nozzle</span>
+        <span style="color:var(--accent-red);opacity:0.4">- - Target</span>
         <span style="color:#4ecdc4">● Bed</span>
         <span style="color:#4ecdc4;opacity:0.4">- - Target</span>
         <span style="color:#ffe66d">● Chamber</span>

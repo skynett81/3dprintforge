@@ -90,7 +90,7 @@
       _renderRefTable();
     } catch (e) {
       const t = document.getElementById('gr-table');
-      if (t) t.innerHTML = `<span style="color:#ef4444">Failed to load: ${_esc(e.message)}</span>`;
+      if (t) t.innerHTML = `<span style="color:var(--accent-red)">Failed to load: ${_esc(e.message)}</span>`;
     }
   }
 
@@ -216,13 +216,13 @@
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
-        result.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(err.error || r.statusText)}</span>`;
+        result.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(err.error || r.statusText)}</span>`;
         return;
       }
       _state.estimate = await r.json();
       _renderEstimateResult();
     } catch (e) {
-      result.innerHTML = `<span style="color:#ef4444">Failed: ${_esc(e.message)}</span>`;
+      result.innerHTML = `<span style="color:var(--accent-red)">Failed: ${_esc(e.message)}</span>`;
     }
   }
 

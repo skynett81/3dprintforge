@@ -1229,7 +1229,7 @@
           <span>${footerLeft}</span>
           <span>${s.cost ? formatCurrency(s.cost) : ''}</span>
         </div>
-        ${s.tags && s.tags.length ? `<div class="fil-tag-badges">${s.tags.map(tg => `<span class="fil-tag-badge" style="--tag-color:${esc(tg.color || '#58a6ff')}">${esc(tg.name)}</span>`).join('')}</div>` : ''}
+        ${s.tags && s.tags.length ? `<div class="fil-tag-badges">${s.tags.map(tg => `<span class="fil-tag-badge" style="--tag-color:${esc(tg.color || 'var(--accent-blue)')}">${esc(tg.name)}</span>`).join('')}</div>` : ''}
         ${s.extra_fields ? renderExtraFields(s.extra_fields) : ''}
         <div id="spool-edit-${s.id}" style="display:none"></div>
       </div>`;
@@ -5248,7 +5248,7 @@
         </div>
         <div class="fil-drying-timer" id="drying-timer-${ds.id}">${remainH}h ${String(remainM).padStart(2, '0')}m</div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <div class="filament-bar" style="width:80px;height:6px"><div class="filament-bar-fill" style="width:${pct}%;background:var(--accent-orange,#f0883e)"></div></div>
+          <div class="filament-bar" style="width:80px;height:6px"><div class="filament-bar-fill" style="width:${pct}%;background:var(--accent-orange,var(--accent-orange))"></div></div>
           <button class="form-btn form-btn-sm" data-ripple onclick="completeDryingItem(${ds.id})">${t('filament.drying_complete')}</button>
         </div>
       </div>`;
@@ -5497,7 +5497,7 @@
         h += '<div class="inv-location-list">';
         for (const a of alerts) {
           const colorDot = a.color_hex ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#${a.color_hex};border:1px solid var(--border-color)"></span>` : '';
-          const statusIcon = a.triggered ? `<span style="color:var(--accent-green,#3fb950)" title="${t('filament.price_alert_triggered')}">&#10003;</span>` : '';
+          const statusIcon = a.triggered ? `<span style="color:var(--accent-green,var(--accent-green))" title="${t('filament.price_alert_triggered')}">&#10003;</span>` : '';
           const priceInfo = a.latest_price != null ? `<span class="text-muted">${t('filament.price_current')}: ${a.latest_price}</span>` : '';
           h += `<div class="fil-tag-item">
             ${colorDot}
@@ -5716,7 +5716,7 @@
       for (const s of sortedRows) {
         const isUnused = !(s.avg_daily_g > 0);
         const daysColor = s.days_until_empty != null && s.days_until_empty <= 7 ? '#f85149' : s.days_until_empty != null && s.days_until_empty <= 14 ? '#f0883e' : '';
-        const reorderBadge = s.needs_reorder ? `<span style="background:${s.days_until_empty <= 7 ? '#f85149' : '#f0883e'};color:#fff;padding:1px 6px;border-radius:4px;font-size:0.7rem">${s.days_until_empty <= 7 ? (t('filament.urgency_critical', 'Kritisk')) : (t('filament.needs_reorder', 'Bestill'))}</span>` : '';
+        const reorderBadge = s.needs_reorder ? `<span style="background:${s.days_until_empty <= 7 ? 'var(--accent-red)' : 'var(--accent-orange)'};color:#fff;padding:1px 6px;border-radius:4px;font-size:0.7rem">${s.days_until_empty <= 7 ? (t('filament.urgency_critical', 'Kritisk')) : (t('filament.needs_reorder', 'Bestill'))}</span>` : '';
         const unusedBadge = isUnused ? `<span style="background:var(--bg-tertiary);color:var(--text-muted);padding:1px 6px;border-radius:4px;font-size:0.7rem">${t('filament.unused', 'Unused')}</span>` : '';
         const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
         const wPct = Math.round(s.remaining_weight_g / maxW * 100);
@@ -7474,8 +7474,8 @@
         <div class="inv-modal-header"><h3>${t('filament.tags_title')}</h3></div>
         <div class="inv-modal-body">
           <div class="fil-tag-badges" style="margin-bottom:8px;min-height:24px">
-            ${spoolTags.map(tg => `<span class="fil-tag-chip" style="--tag-color:${esc(tg.color || '#58a6ff')}">
-              <span class="fil-tag-dot" style="background:${esc(tg.color || '#58a6ff')}"></span>
+            ${spoolTags.map(tg => `<span class="fil-tag-chip" style="--tag-color:${esc(tg.color || 'var(--accent-blue)')}">
+              <span class="fil-tag-dot" style="background:${esc(tg.color || 'var(--accent-blue)')}"></span>
               ${esc(tg.name)}
               <span class="fil-tag-chip-remove" onclick="window._removeSpoolTag(${spoolId},${tg.id})">&times;</span>
             </span>`).join('')}
@@ -7705,7 +7705,7 @@
       const badges = [];
       if (f.category) badges.push(`<span class="fil-badge" style="background:var(--bg-tertiary);font-size:0.65rem">${f.category}</span>`);
       if (f.pressure_advance_k != null) badges.push(`<span class="fil-badge" style="background:#2d1f4e;color:#c4b5fd;font-size:0.65rem">K=${f.pressure_advance_k}</span>`);
-      if (f.td_value && f.td_value > 0) badges.push(`<span class="fil-badge" style="background:#3d2e00;color:#e3b341;font-size:0.65rem">TD=${f.td_value}</span>`);
+      if (f.td_value && f.td_value > 0) badges.push(`<span class="fil-badge" style="background:#3d2e00;color:var(--accent-orange);font-size:0.65rem">TD=${f.td_value}</span>`);
       // Slicer settings badges
       if (f.flow_ratio && f.flow_ratio !== 1) badges.push(`<span class="fil-badge" style="background:#1a3a2a;color:#6ee7b7;font-size:0.65rem">${t('filament.flow_ratio')} ${f.flow_ratio}</span>`);
       if (f.max_volumetric_speed) badges.push(`<span class="fil-badge" style="background:#1a2a3a;color:#93c5fd;font-size:0.65rem">${f.max_volumetric_speed} mm³/s</span>`);
