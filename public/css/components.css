@@ -1620,6 +1620,10 @@
   pointer-events: none;
 }
 
+/* Shared button row for brand-specific control cards (replaces a repeated
+   inline display:flex;gap:4px;flex-wrap:wrap). */
+.ctrl-btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
 .ctrl-card-title {
   font-family: 'Inter', sans-serif;
   display: flex;

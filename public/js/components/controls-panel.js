@@ -496,7 +496,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
           ${t('controls.prusa_controls', 'Prusa Controls')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G28'})">${t('controls.prusa_home', 'Home')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G29'})">${t('controls.prusa_mesh_bed', 'Mesh Bed')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:0})">${t('controls.prusa_mmu_load_t0', 'MMU Load T0')}</button>
@@ -514,7 +514,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           ${t('controls.creality_ai', 'Creality AI')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SELF_CHECK')">${t('controls.creality_self_check', 'Self Check')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LEVELING_CALIBRATE')">${t('controls.creality_auto_level', 'Auto Level')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('INPUT_SHAPER_CALIBRATE')">${t('controls.creality_input_shaper', 'Input Shaper')}</button>
@@ -532,7 +532,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
           ${t('controls.voron_tools', 'Voron Tools')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('QUAD_GANTRY_LEVEL')">${t('controls.voron_qgl', 'QGL')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">${t('controls.voron_z_tilt', 'Z-Tilt')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.voron_bed_mesh', 'Bed Mesh')}</button>
@@ -552,7 +552,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/></svg>
           ${t('controls.elegoo_neptune', 'Elegoo Neptune')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.elegoo_home_all', 'Home All')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.elegoo_bed_mesh', 'Bed Mesh')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.elegoo_input_shaper', 'Input Shaper')}</button>
@@ -571,7 +571,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="9" y1="2" x2="9" y2="22"/></svg>
           ${t('controls.qidi_controls', 'QIDI Controls')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.qidi_home_all', 'Home All')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">${t('controls.qidi_z_tilt_align', 'Z-Tilt Align')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.qidi_bed_mesh', 'Bed Mesh')}</button>
@@ -590,7 +590,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
           ${t('controls.ankermake_controls', 'AnkerMake Controls')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.anker_home_all', 'Home All')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.anker_bed_mesh', 'Bed Mesh')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.anker_input_shaper', 'Input Shaper')}</button>
@@ -710,7 +710,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
           ${t('controls.bambu_calibration', 'Calibration')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{bedLeveling:true})">${t('controls.bambu_bed_leveling', 'Bed Leveling')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{vibration:true})">${t('controls.bambu_vibration', 'Vibration')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{motorNoise:true})">${t('controls.bambu_motor_noise', 'Motor Noise')}</button>
@@ -725,7 +725,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           ${t('controls.camera', 'Camera')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:true})">${t('controls.camera_start_recording', 'Start Recording')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:false})">${t('controls.camera_stop_recording', 'Stop Recording')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:true})">${t('controls.camera_timelapse_on', 'Timelapse On')}</button>
@@ -741,7 +741,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06"/></svg>
           ${t('controls.system', 'System')}
         </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <div class="ctrl-btn-row">
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('stop_buzzer')">${t('controls.system_stop_buzzer', 'Stop Buzzer')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:true})">${t('controls.system_auto_recovery_on', 'Auto Recovery On')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:false})">${t('controls.system_auto_recovery_off', 'Auto Recovery Off')}</button>
