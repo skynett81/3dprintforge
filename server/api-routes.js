@@ -5155,6 +5155,47 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // Decode a scanned tag (OpenSpool / OpenPrintTag / OpenTag3D NDEF JSON, or a
+    // TigerTag binary block) into a normalised filament record, and optionally
+    // create + link a spool from it. Body: { json | ndef | bytes, tag_uid?,
+    // create?, printer_id?, ams_unit?, ams_tray? }.
+    if (method === 'POST' && path === '/api/nfc/decode') {
+      return readBody(req, res, async (body) => {
+        try {
+          const { decodeTag } = await import('./nfc-codec.js');
+          const decoded = await decodeTag(body);
+          if (!decoded) return sendJson(res, { error: 'Unrecognised tag', standards: ['openspool', 'openprinttag', 'opentag3d', 'tigertag'] }, 422);
+          const out = { decoded };
+          if (body.tag_uid) {
+            const mapping = lookupNfcTag(body.tag_uid);
+            if (mapping?.spool_id) { out.spool_id = mapping.spool_id; out.spool_name = mapping.spool_name; }
+          }
+          if (body.create && !out.spool_id) {
+            const tray = {
+              tray_color: decoded.color_hex, tray_type: decoded.material,
+              tray_sub_brands: decoded.brand, tray_weight: decoded.weight_g || 1000,
+            };
+            const spool = autoCreateSpoolFromTray(tray, body.printer_id || null, body.ams_unit ?? 0, body.ams_tray ?? 0);
+            const spoolId = spool?.id || spool || null;
+            if (spoolId) {
+              out.spool_id = spoolId; out.created = true;
+              if (body.tag_uid) linkNfcTag(body.tag_uid, spoolId, decoded.standard, JSON.stringify(decoded));
+            }
+          }
+          return sendJson(res, out);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+    }
+
+    // Encode one of our spools as an OpenSpool NDEF record to write to a tag.
+    const nfcEncodeMatch = path.match(/^\/api\/nfc\/encode\/(\d+)$/);
+    if (nfcEncodeMatch && method === 'GET') {
+      const spool = getSpool(parseInt(nfcEncodeMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Spool not found' }, 404);
+      const { encodeOpenSpool } = await import('./nfc-codec.js');
+      return sendJson(res, encodeOpenSpool(spool));
+    }
+
     const nfcUnlinkMatch = path.match(/^\/api\/nfc\/link\/(.+)$/);
     if (nfcUnlinkMatch && method === 'DELETE') {
       unlinkNfcTag(decodeURIComponent(nfcUnlinkMatch[1]));
