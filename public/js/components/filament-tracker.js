@@ -154,6 +154,20 @@
     manage:    { label: 'filament.tab_manage',    icon: '⚙️', modules: ['manage-dashboard'] },
     stats:     { label: 'filament.tab_stats',     icon: '📊', modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
+  // ═══ Tab groups — collapse the 8 tabs into 4 logical sections so the bar
+  // stays uncluttered. Each group reveals its sub-tabs only when active. ═══
+  const TAB_GROUPS = [
+    { key: 'overview', label: 'filament.group_overview', icon: '📦', tabs: ['inventory'] },
+    { key: 'storage',  label: 'filament.group_storage',  icon: '🗄️', tabs: ['storage', 'database'] },
+    { key: 'tools',    label: 'filament.group_tools',    icon: '🛠️', tabs: ['drying', 'multicolor', 'tools', 'manage'] },
+    { key: 'stats',    label: 'filament.group_stats',    icon: '📊', tabs: ['stats'] },
+  ];
+  function _groupOf(tabId) {
+    return TAB_GROUPS.find(g => g.tabs.includes(tabId)) || TAB_GROUPS[0];
+  }
+  // Remember which sub-tab was last open in each group so returning restores it.
+  const _groupLastTab = {};
+
   // Sort tabs: inventory always first, rest alphabetically by translated label
   function _getSortedTabs() {
     const entries = Object.entries(TAB_CONFIG_UNSORTED);
@@ -2049,6 +2063,14 @@
         p.addEventListener('animationend', () => p.classList.remove('ix-tab-panel'), { once: true });
       }
     });
+    // Keep the grouped tab bar in sync: highlight the owning group and
+    // rebuild its sub-tab row (switchTab does a lightweight DOM toggle, not a
+    // full re-render, so cross-group switches must update the bar here).
+    const grp = _groupOf(tabId);
+    _groupLastTab[grp.key] = tabId;
+    document.querySelectorAll('.filament-group-btn').forEach(b => b.classList.toggle('active', b.dataset.group === grp.key));
+    _renderSubtabBar(grp, tabId);
+
     // Load external panel content into tab container
     _loadExternalTab(tabId);
     const slug = tabId === 'inventory' ? 'filament' : `filament/${tabId}`;
@@ -2065,6 +2087,33 @@
       loadFilament();
     }
   }
+
+  // Rebuild the sub-tab row to match the active group (create/replace/remove).
+  function _renderSubtabBar(group, activeTabId) {
+    const groupBar = document.querySelector('.inv-group-tabs');
+    if (!groupBar) return;
+    let sub = document.querySelector('.inv-subtabs');
+    if (group.tabs.length > 1) {
+      const inner = group.tabs.map(id => {
+        const cfg = TAB_CONFIG_UNSORTED[id];
+        if (!cfg) return '';
+        return `<button class="tab-btn filament-tab-btn inv-subtab-btn ${id === activeTabId ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')"><span style="margin-right:4px">${cfg.icon || ''}</span>${t(cfg.label)}</button>`;
+      }).join('');
+      if (!sub) { sub = document.createElement('div'); sub.className = 'tabs inv-subtabs'; groupBar.after(sub); }
+      sub.innerHTML = inner;
+    } else if (sub) {
+      sub.remove();
+    }
+  }
+
+  // Switch to a tab group via its primary button — restore the last sub-tab
+  // used in that group, or fall back to its first tab.
+  window._switchTabGroup = function(groupKey) {
+    const g = TAB_GROUPS.find(x => x.key === groupKey);
+    if (!g || g.tabs.includes(_activeTab)) return;
+    const target = (_groupLastTab[groupKey] && g.tabs.includes(_groupLastTab[groupKey])) ? _groupLastTab[groupKey] : g.tabs[0];
+    switchTab(target);
+  };
 
   function _loadExternalTab(tabId) {
     const cfg = TAB_CONFIG[tabId];
@@ -2241,12 +2290,24 @@
         ? _spools
         : _spools.filter(s => s.printer_id === _filterPrinter || (_showArchived && s.archived));
 
-      // ── Tab bar (sorted alphabetically, inventory first) ──
-      html += '<div class="tabs">';
-      for (const [id, cfg] of _getSortedTabs()) {
-        html += `<button class="tab-btn filament-tab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')"><span style="margin-right:4px">${cfg.icon || ''}</span>${t(cfg.label)}</button>`;
+      // ── Tab bar: 4 primary groups, with a sub-tab row for the active group ──
+      const _activeGroup = _groupOf(_activeTab);
+      html += '<div class="tabs inv-group-tabs">';
+      for (const g of TAB_GROUPS) {
+        const isActive = g.key === _activeGroup.key;
+        html += `<button class="tab-btn filament-group-btn ${isActive ? 'active' : ''}" data-group="${g.key}" onclick="window._switchTabGroup('${g.key}')"><span style="margin-right:4px">${g.icon}</span>${t(g.label)}</button>`;
       }
       html += '</div>';
+      // Sub-tabs (only when the active group has more than one tab)
+      if (_activeGroup.tabs.length > 1) {
+        html += '<div class="tabs inv-subtabs">';
+        for (const id of _activeGroup.tabs) {
+          const cfg = TAB_CONFIG_UNSORTED[id];
+          if (!cfg) continue;
+          html += `<button class="tab-btn filament-tab-btn inv-subtab-btn ${id === _activeTab ? 'active' : ''}" data-tab="${id}" onclick="switchFilamentTab('${id}')"><span style="margin-right:4px">${cfg.icon || ''}</span>${t(cfg.label)}</button>`;
+        }
+        html += '</div>';
+      }
 
       // Global form container
       html += `<div id="inv-global-form" style="display:none"></div>`;

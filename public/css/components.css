@@ -14013,3 +14013,8 @@ body .ctrl-card-subtitle {
 .inv-health-chip-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px color-mix(in srgb, var(--c) 30%, transparent); background: color-mix(in srgb, var(--c) 20%, transparent); }
 .inv-health-chip-on { background: color-mix(in srgb, var(--c) 26%, transparent); border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent); }
 .inv-active-chip-quick { background: var(--accent-blue, #1279ff); color: #fff; border-color: var(--accent-blue, #1279ff); }
+/* Grouped inventory tabs: primary group row + secondary sub-tab row */
+.inv-group-tabs { margin-bottom: 0; }
+.inv-subtabs { margin-top: 4px; margin-bottom: 8px; padding-left: 4px; gap: 4px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+.inv-subtab-btn { font-size: 0.78rem; padding: 4px 12px; opacity: 0.85; }
+.inv-subtab-btn.active { opacity: 1; }
