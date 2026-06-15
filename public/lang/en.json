@@ -1332,7 +1332,14 @@
     "paused": "Paused",
     "progress": "Progress",
     "quality_review": "Quality review",
-    "change_review": "Change review"
+    "change_review": "Change review",
+    "quality_rating": "Quality rating",
+    "approve": "Approve",
+    "reject": "Reject",
+    "partial": "Partial",
+    "waste_grams": "Waste (g)",
+    "event": "event",
+    "events": "events"
   },
   "library": {
     "search_placeholder": "Search files...",
@@ -2705,7 +2712,8 @@
     "error": "Error",
     "refresh": "Refresh",
     "unknown": "Unknown",
-    "replace": "Replace"
+    "replace": "Replace",
+    "optional": "Optional..."
   },
   "update": {
     "title": "Updates",

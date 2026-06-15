@@ -161,15 +161,15 @@
             <span class="lbl-meter-pct" style="color:${pctCol}">${pct}%</span>
           </div>
           <div class="lbl-card-details">
-            <div class="lbl-detail"><span class="lbl-detail-label">Materiale</span><span class="lbl-detail-value">${_esc(sp.material || '--')}</span></div>
-            <div class="lbl-detail"><span class="lbl-detail-label">Vekt</span><span class="lbl-detail-value">${_fmtW(sp.remaining_weight_g)} / ${_fmtW(sp.initial_weight_g)}${lengthM ? ' &middot; ' + lengthM : ''}</span></div>
-            ${vendor ? `<div class="lbl-detail"><span class="lbl-detail-label">Leverandor</span><span class="lbl-detail-value">${_esc(vendor)}</span></div>` : ''}
-            ${sp.color_name ? `<div class="lbl-detail"><span class="lbl-detail-label">Farge</span><span class="lbl-detail-value"><span class="lbl-color-dot" style="background:${color}"></span>${_esc(sp.color_name)}</span></div>` : ''}
-            ${sp.lot_number ? `<div class="lbl-detail"><span class="lbl-detail-label">Lot-nr</span><span class="lbl-detail-value lbl-detail-mono">${_esc(sp.lot_number)}</span></div>` : ''}
-            ${sp.purchase_date ? `<div class="lbl-detail"><span class="lbl-detail-label">Kjopt</span><span class="lbl-detail-value">${_fmtDate(sp.purchase_date)}</span></div>` : ''}
-            ${sp.location || sp.location_name ? `<div class="lbl-detail"><span class="lbl-detail-label">Plassering</span><span class="lbl-detail-value">${_esc(sp.location_name || sp.location)}</span></div>` : ''}
-            ${sp.nozzle_temp_min || sp.nozzle_temp_max ? `<div class="lbl-detail"><span class="lbl-detail-label">Dyse</span><span class="lbl-detail-value">${sp.nozzle_temp_min || '?'}&ndash;${sp.nozzle_temp_max || '?'}&deg;C</span></div>` : ''}
-            ${sp.bed_temp_min || sp.bed_temp_max ? `<div class="lbl-detail"><span class="lbl-detail-label">Seng</span><span class="lbl-detail-value">${sp.bed_temp_min || '?'}&ndash;${sp.bed_temp_max || '?'}&deg;C</span></div>` : ''}
+            <div class="lbl-detail"><span class="lbl-detail-label">${t('filament.filter_material', 'Material')}</span><span class="lbl-detail-value">${_esc(sp.material || '--')}</span></div>
+            <div class="lbl-detail"><span class="lbl-detail-label">${t('filament.weight', 'Weight')}</span><span class="lbl-detail-value">${_fmtW(sp.remaining_weight_g)} / ${_fmtW(sp.initial_weight_g)}${lengthM ? ' &middot; ' + lengthM : ''}</span></div>
+            ${vendor ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('filament.vendor', 'Vendor')}</span><span class="lbl-detail-value">${_esc(vendor)}</span></div>` : ''}
+            ${sp.color_name ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('filament.color', 'Color')}</span><span class="lbl-detail-value"><span class="lbl-color-dot" style="background:${color}"></span>${_esc(sp.color_name)}</span></div>` : ''}
+            ${sp.lot_number ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('filament.lot_number', 'Lot')}</span><span class="lbl-detail-value lbl-detail-mono">${_esc(sp.lot_number)}</span></div>` : ''}
+            ${sp.purchase_date ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('filament.purchase_date', 'Bought')}</span><span class="lbl-detail-value">${_fmtDate(sp.purchase_date)}</span></div>` : ''}
+            ${sp.location || sp.location_name ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('filament.location', 'Location')}</span><span class="lbl-detail-value">${_esc(sp.location_name || sp.location)}</span></div>` : ''}
+            ${sp.nozzle_temp_min || sp.nozzle_temp_max ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('temperature.nozzle', 'Nozzle')}</span><span class="lbl-detail-value">${sp.nozzle_temp_min || '?'}&ndash;${sp.nozzle_temp_max || '?'}&deg;C</span></div>` : ''}
+            ${sp.bed_temp_min || sp.bed_temp_max ? `<div class="lbl-detail"><span class="lbl-detail-label">${t('temperature.bed', 'Bed')}</span><span class="lbl-detail-value">${sp.bed_temp_min || '?'}&ndash;${sp.bed_temp_max || '?'}&deg;C</span></div>` : ''}
           </div>
         </div>
       </div>`;

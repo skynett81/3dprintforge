@@ -444,7 +444,7 @@
     overlay.innerHTML = `<div class="sched-dialog">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 style="margin:0">${dateLabel}</h3>
-        <span style="font-size:0.8rem;color:var(--text-muted)">${dayEvents.length} ${dayEvents.length === 1 ? 'hendelse' : 'hendelser'}</span>
+        <span style="font-size:0.8rem;color:var(--text-muted)">${dayEvents.length} ${dayEvents.length === 1 ? t('scheduler.event', 'event') : t('scheduler.events', 'events')}</span>
       </div>
       ${listHtml}
       <div class="sched-dialog-actions" style="margin-top:12px">
@@ -542,7 +542,7 @@
       if (rs) {
         // Already reviewed — show status
         reviewHtml = `<div class="sched-field" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
-          <label>Kvalitetsvurdering</label>
+          <label>${typeof t === 'function' ? t('scheduler.quality_rating', 'Quality rating') : 'Quality rating'}</label>
           <div>${reviewBadge}</div>
           ${ev.review_notes ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">${_esc(ev.review_notes)}</div>` : ''}
           ${ev.review_waste_g ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">Waste: ${ev.review_waste_g}g</div>` : ''}
@@ -551,7 +551,7 @@
       } else {
         // Not reviewed — show review form
         reviewHtml = `<div class="sched-field" id="sched-review-${ev._historyId}" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
-          <label>Kvalitetsvurdering</label>
+          <label>${typeof t === 'function' ? t('scheduler.quality_rating', 'Quality rating') : 'Quality rating'}</label>
           <div style="display:flex;gap:6px;margin-bottom:8px">
             <button class="form-btn form-btn-sm form-btn-success" onclick="_schedSubmitReview(${ev._historyId},'approved',this)">&#10003; Approve</button>
             <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${ev._historyId},${ev.filament_used_g || 0})">&#10007; Reject</button>
@@ -758,15 +758,15 @@
     const container = btn.closest('.sched-field');
     if (!container) return;
     container.innerHTML = `
-      <label>Kvalitetsvurdering</label>
+      <label>${typeof t === 'function' ? t('scheduler.quality_rating', 'Quality rating') : 'Quality rating'}</label>
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button class="form-btn form-btn-sm form-btn-success" onclick="_schedSubmitReview(${historyId},'approved',this)">&#10003; Godkjenn</button>
-        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#10007; Avvis</button>
-        <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#9680; Delvis</button>
+        <button class="form-btn form-btn-sm form-btn-success" onclick="_schedSubmitReview(${historyId},'approved',this)">&#10003; ${t('scheduler.approve', 'Approve')}</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#10007; ${t('scheduler.reject', 'Reject')}</button>
+        <button class="form-btn form-btn-sm" style="background:var(--accent-orange);color:#fff" onclick="_schedShowRejectForm(${historyId},0)">&#9680; ${t('scheduler.partial', 'Partial')}</button>
       </div>
       <div id="sched-reject-form-${historyId}" style="display:none">
-        <div class="sched-field"><label>Waste (gram)</label><input type="number" id="sched-waste-${historyId}" min="0" step="0.1" placeholder="0"></div>
-        <div class="sched-field"><label>Notater</label><textarea id="sched-notes-${historyId}" rows="2" placeholder="Valgfritt..."></textarea></div>
+        <div class="sched-field"><label>${t('scheduler.waste_grams', 'Waste (g)')}</label><input type="number" id="sched-waste-${historyId}" min="0" step="0.1" placeholder="0"></div>
+        <div class="sched-field"><label>${t('scheduler.notes', 'Notes')}</label><textarea id="sched-notes-${historyId}" rows="2" placeholder="${t('common.optional', 'Optional...')}"></textarea></div>
         <button class="form-btn form-btn-sm" style="background:var(--accent-red);color:#fff" onclick="_schedSubmitReview(${historyId},'rejected',this)">Save</button>
       </div>`;
   };

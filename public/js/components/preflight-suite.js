@@ -125,7 +125,7 @@
               </tr>`).join('')}
           </tbody>
         </table>
-        <p class="text-muted" style="font-size:0.72rem">Topp-orientation = ${r.orientationSuggestions[0].overhangFraction === r.overhang.fraction ? 'din nåværende' : 'bedre enn nåværende'}.</p>
+        <p class="text-muted" style="font-size:0.72rem">Best orientation = ${r.orientationSuggestions[0].overhangFraction === r.overhang.fraction ? 'your current one' : 'better than current'}.</p>
       </div>
 
       <div class="pf-stl-card">
