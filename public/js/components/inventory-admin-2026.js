@@ -20,6 +20,38 @@
 
   const t = (key, fb) => (typeof window.t === 'function' ? window.t(key, fb) : fb);
 
+  // Scoped styling so the admin grid uses the app design system (cards,
+  // tokens, ghost buttons) instead of ad-hoc inline styles.
+  const _iaStyle = () => `<style>
+    .ia-health:empty { display: none; }
+    .ia-health { margin-bottom: 8px; }
+    .ia-actionbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px 14px; margin-bottom: 12px; }
+    .ia-actionbar-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 6px; }
+    .ia-results { margin-left: auto; display: flex; gap: 10px; font-size: 0.76rem; color: var(--text-secondary); align-items: center; }
+    .ia-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); grid-auto-flow: dense; gap: 12px; }
+    .ia-card { padding: 0; margin: 0; overflow: hidden; }
+    .ia-card-head { cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 600; font-size: 0.88rem; list-style: none; user-select: none; }
+    .ia-card-head::-webkit-details-marker { display: none; }
+    .ia-card-icon { color: var(--accent-blue); }
+    .ia-chev { margin-left: auto; color: var(--text-muted); transition: transform 0.2s var(--ease-out); font-size: 0.8rem; }
+    .ia-card[open] .ia-chev { transform: rotate(90deg); }
+    .ia-card-body { padding: 0 14px 14px; font-size: 0.84rem; }
+    .ia-scroll { max-height: 280px; overflow-y: auto; }
+    .ia-toolrow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .ia-climate-grid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 6px; align-items: end; }
+    .ia-vendor-row { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-color); }
+    .ia-vendor-row:last-child { border-bottom: none; }
+    .ia-vendor-name { flex: 1; min-width: 0; }
+    .ia-empty { color: var(--text-muted); font-size: 0.82rem; padding: 14px 0; text-align: center; }
+    .ia-table { width: 100%; font-size: 0.78rem; border-collapse: collapse; }
+    .ia-table th { text-align: left; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.64rem; letter-spacing: 0.4px; padding: 0 8px 5px 0; }
+    .ia-table td { padding: 4px 8px 4px 0; border-top: 1px solid var(--border-color); vertical-align: top; }
+    .ia-field-list { list-style: none; margin: 0; padding: 0; }
+    .ia-field-list li { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 0.78rem; }
+    .ia-field-group { margin-bottom: 10px; }
+    .ia-field-group-title { font-weight: 600; font-size: 0.78rem; text-transform: capitalize; margin-bottom: 2px; }
+  </style>`;
+
   const state = { health: null, duplicates: [], cheapest: [], extraFields: { spool: [], filament: [], vendor: [] }, orcaResults: [], conflicts: [] };
 
   // ────────────────────────────────────────────────
@@ -63,136 +95,114 @@
     state.extraFields = { spool: sfSpool || [], filament: sfFil || [], vendor: sfVen || [] };
     state.conflicts = Array.isArray(conflicts) ? conflicts.filter(s => s.spoolman_sync_error) : [];
 
-    // Compact-card helper — keeps each section's markup short while
-    // maintaining a uniform visual density across the 2-column grid.
+    // Collapsible tool card with a clean header + chevron (no raw <details>
+    // marker). opts.open expands it by default.
     const card = (icon, title, body, opts = {}) => `
-      <details class="card" ${opts.open ? 'open' : ''} style="padding:10px;margin:0">
-        <summary style="cursor:pointer;font-weight:600;font-size:0.88rem"><i class="bi bi-${icon}"></i> ${title}</summary>
-        <div style="margin-top:8px;font-size:0.82rem">${body}</div>
+      <details class="card ia-card" ${opts.open ? 'open' : ''}>
+        <summary class="ia-card-head"><i class="bi bi-${icon} ia-card-icon"></i><span>${title}</span><i class="bi bi-chevron-right ia-chev"></i></summary>
+        <div class="ia-card-body">${body}</div>
       </details>`;
+    const tool = (id, ...buttons) => `<div class="ia-toolrow">${buttons.join('')}</div>`;
+    const ghost = (onclick, label, extra = '') => `<button class="form-btn form-btn-sm form-btn-ghost" onclick="${onclick}" ${extra}>${label}</button>`;
 
     el.innerHTML = `
-      <div id="inv-spoolman-health" style="margin-bottom:8px"></div>
+      ${_iaStyle()}
+      <div id="inv-spoolman-health" class="ia-health"></div>
       ${state.conflicts.length ? renderConflicts() : ''}
 
       <!-- Top action bar — most-used buttons always visible -->
-      <div class="card" style="padding:10px;margin-bottom:10px">
-        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:0.82rem">
-          <strong style="margin-right:6px">Quick actions:</strong>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.importAll()" title="Pull every vendor / filament / spool from Spoolman">
-            <i class="bi bi-cloud-arrow-down"></i> ${t('admin_inv.import_from_spoolman', 'Import from Spoolman')}
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.detectDupes()" title="Find and link duplicate filament profiles">
-            <i class="bi bi-files"></i> ${t('admin_inv.dedupe_profiles', 'Dedupe profiles')}
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.trackPrices()" title="Snapshot current retailer prices">
-            <i class="bi bi-cash-coin"></i> ${t('admin_inv.track_prices', 'Track prices')}
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.syncExtraFields()" title="Pull custom-field schema from Spoolman">
-            <i class="bi bi-sliders"></i> ${t('admin_inv.sync_custom_fields', 'Sync custom fields')}
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.refreshTypeBridge()">
-            <i class="bi bi-arrow-repeat"></i> ${t('admin_inv.refresh_type_bridge', 'Refresh type-bridge')}
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.refreshPerVendor()">
-            <i class="bi bi-arrow-repeat"></i> ${t('admin_inv.refresh_smdb_per_vendor', 'Refresh SMDB per vendor')}
-          </button>
-          <a class="form-btn form-btn-sm" href="/api/spoolman/export" download>
-            <i class="bi bi-box-arrow-down"></i> ${t('admin_inv.export_json', 'Export JSON')}
-          </a>
-          <span style="margin-left:auto;display:flex;gap:8px;font-size:0.78rem">
-            <span id="inv-import-result"></span>
-            <span id="inv-dupe-result"></span>
-            <span id="inv-climate-result"></span>
-          </span>
-        </div>
+      <div class="card ia-actionbar">
+        <span class="ia-actionbar-label">${t('admin_inv.quick_actions', 'Quick actions')}</span>
+        ${ghost("_invAdmin.importAll()", '<i class="bi bi-cloud-arrow-down"></i> ' + t('admin_inv.import_from_spoolman', 'Import from Spoolman'), 'title="Pull every vendor / filament / spool from Spoolman"')}
+        ${ghost("_invAdmin.detectDupes()", '<i class="bi bi-files"></i> ' + t('admin_inv.dedupe_profiles', 'Dedupe profiles'), 'title="Find and link duplicate filament profiles"')}
+        ${ghost("_invAdmin.trackPrices()", '<i class="bi bi-cash-coin"></i> ' + t('admin_inv.track_prices', 'Track prices'), 'title="Snapshot current retailer prices"')}
+        ${ghost("_invAdmin.syncExtraFields()", '<i class="bi bi-sliders"></i> ' + t('admin_inv.sync_custom_fields', 'Sync custom fields'), 'title="Pull custom-field schema from Spoolman"')}
+        ${ghost("_invAdmin.refreshTypeBridge()", '<i class="bi bi-arrow-repeat"></i> ' + t('admin_inv.refresh_type_bridge', 'Refresh type-bridge'))}
+        ${ghost("_invAdmin.refreshPerVendor()", '<i class="bi bi-arrow-repeat"></i> ' + t('admin_inv.refresh_smdb_per_vendor', 'Refresh SMDB per vendor'))}
+        <a class="form-btn form-btn-sm form-btn-ghost" href="/api/spoolman/export" download><i class="bi bi-box-arrow-down"></i> ${t('admin_inv.export_json', 'Export JSON')}</a>
+        <span class="ia-results">
+          <span id="inv-import-result"></span>
+          <span id="inv-dupe-result"></span>
+          <span id="inv-climate-result"></span>
+        </span>
       </div>
 
-      <!-- 2-column grid for everything else (auto-fits to 1 column on narrow viewports) -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));grid-auto-flow:dense;gap:10px">
+      <div class="ia-grid">
 
         ${card('currency-dollar', t('admin_inv.cheapest_retailer_per_filament', 'Cheapest retailer per filament'),
-          `<div style="max-height:280px;overflow-y:auto">${renderCheapest()}</div>`,
-          { open: true })}
+          `<div class="ia-scroll">${renderCheapest()}</div>`, { open: true })}
 
         ${card('shop', t('admin_inv.vendor_spoolman_sync', 'Vendor → Spoolman sync'),
-          `<div id="inv-vendor-list" style="max-height:280px;overflow-y:auto"></div>`,
-          { open: true })}
+          `<div id="inv-vendor-list" class="ia-scroll"></div>`, { open: true })}
 
         ${card('sliders', t('admin_inv.custom_fields_spoolman_compatible', 'Custom fields (Spoolman-compatible)'), renderExtraFields())}
 
         ${card('search', t('admin_inv.orcaslicer_preset_browser', 'OrcaSlicer preset browser'), `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <input class="form-input" id="inv-orca-vendor" placeholder="Vendor (BBL, Prusa…)" style="flex:1;min-width:120px">
-            <input class="form-input" id="inv-orca-material" placeholder="Material (PLA, PETG…)" style="flex:1;min-width:120px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.searchOrca()">Search</button>
-          </div>
-          <div id="inv-orca-results" style="max-height:320px;overflow-y:auto"></div>`)}
+          ${tool('orca',
+            '<input class="form-input form-input-sm" id="inv-orca-vendor" placeholder="' + t('admin_inv.vendor', 'Vendor') + ' (BBL, Prusa…)" style="flex:1;min-width:120px">',
+            '<input class="form-input form-input-sm" id="inv-orca-material" placeholder="' + t('filament.filter_material', 'Material') + ' (PLA, PETG…)" style="flex:1;min-width:120px">',
+            ghost("_invAdmin.searchOrca()", t('common.search', 'Search')))}
+          <div id="inv-orca-results" class="ia-scroll"></div>`)}
 
-        ${card('search-heart', 'Profile compatibility matcher', `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <input class="form-input" id="inv-match-vendor" placeholder="Vendor" style="flex:1;min-width:100px">
-            <input class="form-input" id="inv-match-material" placeholder="Material" style="flex:1;min-width:100px">
-            <input class="form-input" id="inv-match-color" placeholder="color_hex" style="flex:1;min-width:120px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.findMatch()">Match</button>
-          </div>
-          <div id="inv-match-out" style="max-height:260px;overflow-y:auto"></div>`)}
+        ${card('search-heart', t('admin_inv.profile_matcher', 'Profile compatibility matcher'), `
+          ${tool('match',
+            '<input class="form-input form-input-sm" id="inv-match-vendor" placeholder="' + t('admin_inv.vendor', 'Vendor') + '" style="flex:1;min-width:100px">',
+            '<input class="form-input form-input-sm" id="inv-match-material" placeholder="' + t('filament.filter_material', 'Material') + '" style="flex:1;min-width:100px">',
+            '<input class="form-input form-input-sm" id="inv-match-color" placeholder="color_hex" style="flex:1;min-width:120px">',
+            ghost("_invAdmin.findMatch()", t('admin_inv.match', 'Match')))}
+          <div id="inv-match-out" class="ia-scroll"></div>`)}
 
-        ${card('graph-up', 'Price trend (per profile)', `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <input class="form-input" id="inv-trend-id" type="number" placeholder="Profile ID" style="flex:1;min-width:100px">
-            <input class="form-input" id="inv-trend-days" type="number" placeholder="Days" value="30" style="width:80px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.loadTrend()">Load</button>
-          </div>
+        ${card('graph-up', t('admin_inv.price_trend', 'Price trend (per profile)'), `
+          ${tool('trend',
+            '<input class="form-input form-input-sm" id="inv-trend-id" type="number" placeholder="' + t('admin_inv.profile_id', 'Profile ID') + '" style="flex:1;min-width:100px">',
+            '<input class="form-input form-input-sm" id="inv-trend-days" type="number" placeholder="' + t('admin_inv.days', 'Days') + '" value="30" style="width:80px">',
+            ghost("_invAdmin.loadTrend()", t('common.load', 'Load')))}
           <div id="inv-trend-out"></div>`)}
 
-        ${card('thermometer-half', 'Record location climate', `
-          <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:6px;align-items:end">
-            <input class="form-input" id="inv-loc-id" type="number" placeholder="Location ID">
-            <input class="form-input" id="inv-loc-temp" type="number" step="0.1" placeholder="Temp °C">
-            <input class="form-input" id="inv-loc-humid" type="number" step="0.1" placeholder="Humidity %">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.recordClimate()">Record</button>
+        ${card('thermometer-half', t('admin_inv.record_climate', 'Record location climate'), `
+          <div class="ia-climate-grid">
+            <input class="form-input form-input-sm" id="inv-loc-id" type="number" placeholder="${t('admin_inv.location_id', 'Location ID')}">
+            <input class="form-input form-input-sm" id="inv-loc-temp" type="number" step="0.1" placeholder="${t('admin_inv.temp_c', 'Temp °C')}">
+            <input class="form-input form-input-sm" id="inv-loc-humid" type="number" step="0.1" placeholder="${t('admin_inv.humidity_pct', 'Humidity %')}">
+            ${ghost("_invAdmin.recordClimate()", t('admin_inv.record', 'Record'))}
           </div>`)}
 
-        ${card('diagram-3', 'Materials taxonomy & purge matrix', `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.loadTaxonomy()">Load materials</button>
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.loadPurge()">Load purge matrix</button>
-          </div>
-          <div id="inv-taxonomy-out" style="max-height:200px;overflow-y:auto"></div>
-          <div id="inv-purge-out" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>`)}
+        ${card('diagram-3', t('admin_inv.materials_taxonomy', 'Materials taxonomy & purge matrix'), `
+          ${tool('tax',
+            ghost("_invAdmin.loadTaxonomy()", t('admin_inv.load_materials', 'Load materials')),
+            ghost("_invAdmin.loadPurge()", t('admin_inv.load_purge', 'Load purge matrix')))}
+          <div id="inv-taxonomy-out" class="ia-scroll" style="max-height:200px"></div>
+          <div id="inv-purge-out" class="ia-scroll" style="max-height:200px;margin-top:6px"></div>`)}
 
-        ${card('printer', 'Printer presets & MM systems', `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <input class="form-input" id="inv-preset-vendor" placeholder="Vendor (bambu, prusa…)" style="flex:1;min-width:120px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.listPresets()">Presets</button>
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.listMM()">MM systems</button>
-          </div>
-          <div id="inv-preset-out" style="max-height:260px;overflow-y:auto"></div>`)}
+        ${card('printer', t('admin_inv.printer_presets', 'Printer presets & MM systems'), `
+          ${tool('preset',
+            '<input class="form-input form-input-sm" id="inv-preset-vendor" placeholder="' + t('admin_inv.vendor', 'Vendor') + ' (bambu, prusa…)" style="flex:1;min-width:120px">',
+            ghost("_invAdmin.listPresets()", t('admin_inv.presets', 'Presets')),
+            ghost("_invAdmin.listMM()", t('admin_inv.mm_systems', 'MM systems')))}
+          <div id="inv-preset-out" class="ia-scroll"></div>`)}
 
-        ${card('activity', 'Spoolman health history & type-bridge', `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.loadHealthHistory()">Last 50 checks</button>
-            <button class="form-btn form-btn-sm" onclick="_invAdmin.loadTypeBridge()">Type-bridge map</button>
-          </div>
-          <div id="inv-health-out" style="max-height:180px;overflow-y:auto"></div>
-          <div id="inv-bridge-out" style="margin-top:6px;max-height:180px;overflow-y:auto"></div>`)}
+        ${card('activity', t('admin_inv.health_history', 'Spoolman health history & type-bridge'), `
+          ${tool('health',
+            ghost("_invAdmin.loadHealthHistory()", t('admin_inv.last_50', 'Last 50 checks')),
+            ghost("_invAdmin.loadTypeBridge()", t('admin_inv.type_bridge_map', 'Type-bridge map')))}
+          <div id="inv-health-out" class="ia-scroll" style="max-height:180px"></div>
+          <div id="inv-bridge-out" class="ia-scroll" style="max-height:180px;margin-top:6px"></div>`)}
       </div>
     `;
 
     // Async-populate the vendor list
     fetch('/api/vendors').then(r => r.ok ? r.json() : []).then(vendors => {
-      const el = document.getElementById('inv-vendor-list');
-      if (!el) return;
+      const vel = document.getElementById('inv-vendor-list');
+      if (!vel) return;
       if (!Array.isArray(vendors) || vendors.length === 0) {
-        el.innerHTML = '<p class="text-muted">' + t('admin_inv.no_vendors', 'No vendors.') + '</p>';
+        vel.innerHTML = '<div class="ia-empty">' + t('admin_inv.no_vendors', 'No vendors.') + '</div>';
         return;
       }
-      el.innerHTML = '<ul class="mb-0">' + vendors.slice(0, 100).map(v => `
-        <li style="display:flex;gap:6px;align-items:center">
-          <span style="flex:1">${esc(v.name)} ${v.spoolman_id ? `<span class="badge text-bg-success">synced #${esc(v.spoolman_id)}</span>` : ''}</span>
-          <button class="form-btn form-btn-sm" onclick="_invAdmin.syncVendor(${v.id})">Sync to Spoolman</button>
-        </li>`).join('') + '</ul>';
+      vel.innerHTML = vendors.slice(0, 100).map(v => `
+        <div class="ia-vendor-row">
+          <span class="ia-vendor-name">${esc(v.name)} ${v.spoolman_id ? `<span class="badge text-bg-success">synced #${esc(v.spoolman_id)}</span>` : ''}</span>
+          ${ghost(`_invAdmin.syncVendor(${v.id})`, t('admin_inv.sync', 'Sync'))}
+        </div>`).join('');
     }).catch(() => {});
 
     renderHealthBadge();
@@ -209,7 +219,7 @@
   }
 
   function renderCheapest() {
-    if (state.cheapest.length === 0) return '<p class="text-muted">No price data yet. Click "Track prices now" after a seed refresh.</p>';
+    if (state.cheapest.length === 0) return `<div class="ia-empty">${t('admin_inv.no_price_data', 'No price data yet — click Track prices after a sync.')}</div>`;
     const rows = state.cheapest.slice(0, 30).map(c => `
       <tr>
         <td>${esc(c.vendor_name || '')} ${esc(c.name || '')}</td>
@@ -217,15 +227,15 @@
         <td>${c.price != null ? esc(c.price) : '-'} ${esc(c.currency || '')}</td>
         <td>${c.retailer ? `<a href="${esc(c.retailer_url || '#')}" target="_blank" rel="noopener">${esc(c.retailer)}</a>` : '-'}</td>
       </tr>`).join('');
-    return `<table style="width:100%"><thead><tr><th>Filament</th><th>Material</th><th>Price</th><th>Retailer</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="ia-table"><thead><tr><th>${t('filament.tab_filament', 'Filament')}</th><th>${t('filament.filter_material', 'Material')}</th><th>${t('procurement.cost', 'Price')}</th><th>${t('admin_inv.retailer', 'Retailer')}</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   function renderExtraFields() {
     const block = (entity, rows) => `
-      <div style="margin-bottom:8px">
-        <strong style="text-transform:capitalize">${esc(entity)}</strong> (${rows.length})
-        <ul class="mb-0" style="font-size:0.8rem;max-height:120px;overflow-y:auto">
-          ${rows.map(r => `<li><code>${esc(r.key)}</code> &middot; ${esc(r.name)} &middot; ${esc(r.field_type)} <button class="form-btn form-btn-sm" onclick="_invAdmin.delField(${r.id})" title="Delete">&times;</button></li>`).join('') || '<li class="text-muted">none</li>'}
+      <div class="ia-field-group">
+        <div class="ia-field-group-title">${esc(entity)} (${rows.length})</div>
+        <ul class="ia-field-list">
+          ${rows.map(r => `<li><code>${esc(r.key)}</code> &middot; ${esc(r.name)} &middot; ${esc(r.field_type)} <button class="form-btn form-btn-sm form-btn-ghost" onclick="_invAdmin.delField(${r.id})" title="${t('settings.delete', 'Delete')}" style="margin-left:auto;padding:0 6px">&times;</button></li>`).join('') || `<li class="text-muted">${t('common.none', 'none')}</li>`}
         </ul>
       </div>`;
     return block('spool', state.extraFields.spool) + block('filament', state.extraFields.filament) + block('vendor', state.extraFields.vendor);
@@ -281,7 +291,7 @@
       try {
         const rows = await fetch('/api/orcaslicer/filaments?' + qs).then(r => r.json());
         if (!Array.isArray(rows) || rows.length === 0) {
-          target.innerHTML = '<p class="text-muted">No matches.</p>'; return;
+          target.innerHTML = '<div class="ia-empty">No matches.</div>'; return;
         }
         target.innerHTML = '<ul class="mb-0">' + rows.slice(0, 50).map(r => `
           <li>${esc(r.vendor)} / ${esc(r.name)} <span class="text-muted">${esc(r.material || '')}</span>
@@ -341,8 +351,8 @@
       const rows = await fetch('/api/materials/taxonomy').then(r => r.json()).catch(() => []);
       const el = document.getElementById('inv-taxonomy-out');
       if (!el) return;
-      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<p class="text-muted">No materials.</p>'; return; }
-      el.innerHTML = `<table style="width:100%"><thead><tr><th>Material</th><th>Parent</th><th>Density</th><th>Nozzle</th><th>Bed</th><th>Enclosure</th></tr></thead><tbody>` +
+      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<div class="ia-empty">No materials.</div>'; return; }
+      el.innerHTML = `<table class="ia-table"><thead><tr><th>Material</th><th>Parent</th><th>Density</th><th>Nozzle</th><th>Bed</th><th>Enclosure</th></tr></thead><tbody>` +
         rows.map(m => `<tr><td><strong>${esc(m.material)}</strong></td><td>${esc(m.parent_material || '-')}</td><td>${m.density != null ? esc(m.density) : '-'}</td><td>${m.extruder_temp_min || '-'}-${m.extruder_temp_max || '-'}</td><td>${m.bed_temp_min || '-'}-${m.bed_temp_max || '-'}</td><td>${m.enclosure_required ? 'yes' : 'no'}</td></tr>`).join('') + '</tbody></table>';
     },
 
@@ -350,8 +360,8 @@
       const rows = await fetch('/api/filaments/purge-matrix').then(r => r.json()).catch(() => []);
       const el = document.getElementById('inv-purge-out');
       if (!el) return;
-      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<p class="text-muted">No purge values imported yet. Run refresh-modular.</p>'; return; }
-      el.innerHTML = `<table style="width:100%"><thead><tr><th>From</th><th>To</th><th>Volume (mm³)</th><th>Source</th></tr></thead><tbody>` +
+      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<div class="ia-empty">No purge values imported yet. Run refresh-modular.</div>'; return; }
+      el.innerHTML = `<table class="ia-table"><thead><tr><th>From</th><th>To</th><th>Volume (mm³)</th><th>Source</th></tr></thead><tbody>` +
         rows.slice(0, 200).map(r => `<tr><td>${esc(r.from_material)}</td><td>${esc(r.to_material)}</td><td>${esc(r.purge_volume_mm3)}</td><td>${esc(r.source || '')}</td></tr>`).join('') + '</tbody></table>';
     },
 
@@ -362,7 +372,7 @@
       const rows = Array.isArray(data) ? data : (data.capabilities ? [] : [data]);
       const el = document.getElementById('inv-preset-out');
       if (!el) return;
-      if (Array.isArray(data) && data.length === 0) { el.innerHTML = '<p class="text-muted">No presets for this vendor.</p>'; return; }
+      if (Array.isArray(data) && data.length === 0) { el.innerHTML = '<div class="ia-empty">No presets for this vendor.</div>'; return; }
       if (!Array.isArray(data) && data.capabilities) {
         el.innerHTML = '<strong>All capabilities</strong>: ' + data.capabilities.map(c => `<span class="badge text-bg-secondary">${esc(c)}</span>`).join(' ');
         return;
@@ -379,7 +389,7 @@
       const el = document.getElementById('inv-preset-out');
       if (!el) return;
       if (!Array.isArray(data)) { el.innerHTML = '<p class="text-muted">Error loading.</p>'; return; }
-      el.innerHTML = '<table style="width:100%"><thead><tr><th>System</th><th>Vendor</th><th>Slots</th><th>RFID</th><th>Status</th></tr></thead><tbody>' +
+      el.innerHTML = '<table class="ia-table"><thead><tr><th>System</th><th>Vendor</th><th>Slots</th><th>RFID</th><th>Status</th></tr></thead><tbody>' +
         data.map(s => `<tr><td><strong>${esc(s.label || s.id)}</strong></td><td>${esc(s.vendor || '-')}</td><td>${esc(s.slots || '-')}</td><td>${s.rfid ? '✓' : '-'}</td><td>${esc(s.status || '-')}</td></tr>`).join('') + '</tbody></table>';
     },
 
@@ -390,7 +400,7 @@
       const rows = await fetch(`/api/filaments/${encodeURIComponent(id)}/price-trend?days=${days}`).then(r => r.json()).catch(() => []);
       const el = document.getElementById('inv-trend-out');
       if (!el) return;
-      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<p class="text-muted">No price history.</p>'; return; }
+      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<div class="ia-empty">No price history.</div>'; return; }
       // Tiny SVG sparkline
       const w = 320, h = 80;
       const prices = rows.map(r => r.price).filter(p => p != null);
@@ -417,7 +427,7 @@
       const data = await res.json();
       const el = document.getElementById('inv-match-out');
       if (!el) return;
-      if (!data?.candidates || data.candidates.length === 0) { el.innerHTML = '<p class="text-muted">No matches found.</p>'; return; }
+      if (!data?.candidates || data.candidates.length === 0) { el.innerHTML = '<div class="ia-empty">No matches found.</div>'; return; }
       el.innerHTML = '<ol class="mb-0">' + data.candidates.map(c => `<li>${esc(c.manufacturer || '')} — ${esc(c.name || c.color_name || '')} (${esc(c.material || '')}) <code>${esc(c.color_hex || '')}</code></li>`).join('') + '</ol>';
     },
 
@@ -434,8 +444,8 @@
       const rows = await fetch('/api/spoolman/health-history?limit=50').then(r => r.json()).catch(() => []);
       const el = document.getElementById('inv-health-out');
       if (!el) return;
-      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<p class="text-muted">No history yet.</p>'; return; }
-      el.innerHTML = '<table style="width:100%"><thead><tr><th>When</th><th>OK</th><th>Error</th></tr></thead><tbody>' +
+      if (!Array.isArray(rows) || rows.length === 0) { el.innerHTML = '<div class="ia-empty">No history yet.</div>'; return; }
+      el.innerHTML = '<table class="ia-table"><thead><tr><th>When</th><th>OK</th><th>Error</th></tr></thead><tbody>' +
         rows.map(r => `<tr><td>${esc(r.checked_at)}</td><td>${r.ok ? '✓' : '✗'}</td><td>${esc(r.error || '')}</td></tr>`).join('') + '</tbody></table>';
     },
 

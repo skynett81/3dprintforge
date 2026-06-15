@@ -2713,7 +2713,9 @@
     "refresh": "Refresh",
     "unknown": "Unknown",
     "replace": "Replace",
-    "optional": "Optional..."
+    "optional": "Optional...",
+    "search": "Search",
+    "load": "Load"
   },
   "update": {
     "title": "Updates",
@@ -4101,5 +4103,31 @@
     "already_optimal": "Already near-optimal â no meaningful saving",
     "purge": "Purge",
     "failed": "Could not optimise colour order"
+  },
+  "admin_inv": {
+    "quick_actions": "Quick actions",
+    "profile_matcher": "Profile compatibility matcher",
+    "price_trend": "Price trend (per profile)",
+    "record_climate": "Record location climate",
+    "materials_taxonomy": "Materials taxonomy & purge matrix",
+    "printer_presets": "Printer presets & MM systems",
+    "health_history": "Spoolman health history & type-bridge",
+    "vendor": "Vendor",
+    "match": "Match",
+    "profile_id": "Profile ID",
+    "days": "Days",
+    "location_id": "Location ID",
+    "temp_c": "Temp °C",
+    "humidity_pct": "Humidity %",
+    "record": "Record",
+    "load_materials": "Load materials",
+    "load_purge": "Load purge matrix",
+    "presets": "Presets",
+    "mm_systems": "MM systems",
+    "last_50": "Last 50 checks",
+    "type_bridge_map": "Type-bridge map",
+    "sync": "Sync",
+    "retailer": "Retailer",
+    "no_price_data": "No price data yet — click Track prices after a sync."
   }
 }
