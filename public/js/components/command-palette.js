@@ -53,11 +53,7 @@
     // 2026 additions — every panel registered in PANEL_TITLES should be
     // searchable from the Ctrl+K palette so users can jump straight in.
     'ai-forge':         'AI Model Forge',
-    'mesh-repair':      'Mesh Repair Toolkit',
-    'gcode-studio':     'G-code Studio',
-    'gcode-reference':  'G-code Reference & Estimator',
     'calibration':      'Calibration & Tuning',
-    'preflight':        'Pre-print Analysis',
     'analysis':         'Analysis',
     'analytics':        'Analytics',
     'firmware-updates': 'Firmware Updates',
@@ -66,7 +62,6 @@
     'admin-kb':         'Knowledge Base Admin',
     'modelforge':       'Model Forge',
     'signmaker':        'Sign Maker',
-    'slicer':           'Slicer Bridge',
     'slicer-studio':    'Slicer Studio',
     'octoprint':        'OctoPrint Bridge',
     'resources':        'Vendor Resources',
