@@ -4248,6 +4248,9 @@
         <canvas id="qr-scanner-canvas" style="display:none"></canvas>
       </div>
       <div id="qr-scanner-status" class="text-muted" style="font-size:0.8rem;padding:8px;text-align:center">${t('filament.scanning')}</div>
+      <div style="text-align:center;padding:0 8px 8px">
+        <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="closeQrScanner();window._scanManualEntry()">${t('filament.enter_code_manually', 'Enter code manually')}</button>
+      </div>
     </div>`;
     document.body.appendChild(overlay);
     startQrScanning();
@@ -4288,18 +4291,13 @@
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
       if (code) {
-        // Parse spool ID from URL like /#filament/spool/42
-        const match = code.data.match(/#filament\/spool\/(\d+)/);
-        if (match) {
+        // Resolve a spool from several code formats: our spool URL, a plain
+        // numeric id, or a printed short_id — so any label/QR we make scans.
+        const spool = _resolveScannedCode(code.data);
+        if (spool) {
           stream.getTracks().forEach(t => t.stop());
           closeQrScanner();
-          const spoolId = parseInt(match[1]);
-          const spool = _spools.find(s => s.id === spoolId);
-          if (spool) {
-            showEditSpoolForm(spoolId);
-          } else {
-            showToast(t('filament.spool_not_found'), 'warning');
-          }
+          _showScanActionSheet(spool);
           return;
         }
         if (status) status.textContent = t('filament.qr_not_recognized');
@@ -4315,6 +4313,84 @@
       if (video && video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
       overlay.remove();
     }
+  };
+
+  // Resolve a scanned/typed code to a spool: spool URL, plain numeric id,
+  // or printed short_id. Returns the spool object or null.
+  function _resolveScannedCode(raw) {
+    const data = String(raw || '').trim();
+    if (!data) return null;
+    const urlMatch = data.match(/\/spool\/(\d+)/);
+    if (urlMatch) return _spools.find(s => s.id === parseInt(urlMatch[1])) || null;
+    if (/^\d+$/.test(data)) {
+      const byId = _spools.find(s => s.id === parseInt(data));
+      if (byId) return byId;
+    }
+    const up = data.toUpperCase();
+    return _spools.find(s => s.short_id && String(s.short_id).toUpperCase() === up) || null;
+  }
+
+  // Scan-to-act sheet: after a scan resolves a spool, present the common
+  // hands-busy actions (view, edit, check out/in, weigh, mark empty) instead
+  // of forcing one fixed action. Also reachable via a manual code entry.
+  window._showScanActionSheet = function(spool) {
+    if (!spool) return;
+    document.getElementById('scan-action-sheet')?.remove();
+    const pct = spoolPct(spool);
+    const remain = Math.round(spoolRemainG(spool));
+    const checkedOut = !!spool.checked_out_to || !!spool.checked_out;
+    const colorStyle = _buildColorStyle(spool.color_hex, spool.multi_color_hexes, spool.multi_color_direction);
+    const overlay = document.createElement('div');
+    overlay.id = 'scan-action-sheet';
+    overlay.className = 'scan-sheet-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="scan-sheet">
+      <div class="scan-sheet-head">
+        <span class="scan-sheet-swatch" style="${colorStyle}"></span>
+        <div style="min-width:0">
+          <div class="scan-sheet-name" title="${esc(_cleanProfileName(spool))}">${esc(_cleanProfileName(spool))}</div>
+          <div class="scan-sheet-meta">${esc(spool.vendor_name || spool.material || '')} · ${remain}g · ${pct}%${spool.short_id ? ' · ' + esc(spool.short_id) : ''}</div>
+        </div>
+        <button class="scan-sheet-x" onclick="document.getElementById('scan-action-sheet').remove()">&times;</button>
+      </div>
+      <div class="scan-sheet-actions">
+        <button class="scan-act" onclick="document.getElementById('scan-action-sheet').remove();window._showSpoolDetail(${spool.id})">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>${t('filament.view_details', 'Details')}</span>
+        </button>
+        <button class="scan-act" onclick="document.getElementById('scan-action-sheet').remove();window.showEditSpoolForm(${spool.id})">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+          <span>${t('settings.edit', 'Edit')}</span>
+        </button>
+        ${checkedOut
+          ? `<button class="scan-act" onclick="document.getElementById('scan-action-sheet').remove();window.checkinSpoolItem(${spool.id})">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+              <span>${t('filament.checkin', 'Check in')}</span>
+            </button>`
+          : `<button class="scan-act" onclick="document.getElementById('scan-action-sheet').remove();window.checkoutSpoolItem(${spool.id})">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></svg>
+              <span>${t('filament.checkout', 'Check out')}</span>
+            </button>`}
+        <button class="scan-act" onclick="document.getElementById('scan-action-sheet').remove();window._spoolQuickAction(${spool.id},'set-weight')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a4 4 0 0 0-4 4h8a4 4 0 0 0-4-4z"/><path d="M6 7h12l2 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg>
+          <span>${t('filament.weigh_in', 'Weigh in')}</span>
+        </button>
+        <button class="scan-act scan-act-danger" onclick="document.getElementById('scan-action-sheet').remove();window._spoolQuickAction(${spool.id},'empty')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          <span>${t('filament.mark_empty', 'Mark empty')}</span>
+        </button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  // Manual code entry — type a short_id / id when a camera scan isn't handy.
+  window._scanManualEntry = function() {
+    const code = prompt(t('filament.enter_code', 'Enter spool ID or short code'));
+    if (!code) return;
+    const spool = _resolveScannedCode(code);
+    if (spool) window._showScanActionSheet(spool);
+    else showToast(t('filament.spool_not_found', 'Spool not found'), 'warning');
   };
 
   // ═══ Export ═══

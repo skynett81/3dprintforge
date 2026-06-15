@@ -4482,6 +4482,19 @@
 .proc-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .proc-receive-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* Scan-to-act sheet */
+.scan-sheet-overlay { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
+.scan-sheet { width: 100%; max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden; }
+.scan-sheet-head { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border-color); }
+.scan-sheet-swatch { flex: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border-color); }
+.scan-sheet-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scan-sheet-meta { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+.scan-sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted); font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0 4px; }
+.scan-sheet-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px; }
+.scan-act { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; background: var(--bg-tertiary, rgba(127,127,127,0.08)); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-secondary); cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: border-color 0.15s, color 0.15s, transform 0.12s; }
+.scan-act:hover { border-color: var(--accent-blue, #1279ff); color: var(--text-primary); transform: translateY(-1px); }
+.scan-act-danger:hover { border-color: var(--accent-red, #e3342f); color: var(--accent-red, #e3342f); }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;
