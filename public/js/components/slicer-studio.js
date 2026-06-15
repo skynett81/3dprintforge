@@ -86,7 +86,7 @@
           </div>
           <div id="ss-viewport-wrap" style="position:relative;border:1px solid var(--border-color);border-radius:6px;background:#1a1a1a;flex:1;min-height:480px">
             <canvas id="ss-canvas" style="width:100%;height:100%;display:block"></canvas>
-            <div id="ss-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:0.9rem;text-align:center">
+            <div id="ss-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-muted);font-size:0.9rem;text-align:center">
               <div style="font-size:2.5rem;margin-bottom:4px">📐</div>
               Drop or import a model file<br>
               <small style="opacity:0.6">STL · 3MF · OBJ</small>

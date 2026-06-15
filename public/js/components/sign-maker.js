@@ -341,8 +341,8 @@
       signHtml = `
         ${title ? '<div style="font-size:' + Math.round(bfp*1.3) + 'px;font-weight:800">' + _esc(title) + '</div>' : ''}
         <div style="margin:${Math.round(bfp*0.5)}px auto;line-height:0">${_makeQR(url, qcP)}</div>
-        <div style="font-size:${Math.round(bfp*0.7)}px;color:#666;word-break:break-all">${_esc(url)}</div>
-        <div style="font-size:${Math.round(bfp*0.5)}px;color:#aaa;margin-top:4px">Scan to open</div>`;
+        <div style="font-size:${Math.round(bfp*0.7)}px;color:var(--text-secondary);word-break:break-all">${_esc(url)}</div>
+        <div style="font-size:${Math.round(bfp*0.5)}px;color:var(--text-muted);margin-top:4px">Scan to open</div>`;
 
     } else if (id === 'dashboard') {
       qrData = location.origin;
@@ -351,8 +351,8 @@
       signHtml = `
         <div style="font-size:${Math.round(bfp*1.3)}px;font-weight:800">🖥️ 3DPrintForge</div>
         <div style="margin:${Math.round(bfp*0.5)}px auto;line-height:0">${_makeQR(location.origin, qcP)}</div>
-        <div style="font-size:${Math.round(bfp*0.75)}px;color:#666">${_esc(location.origin)}</div>
-        <div style="font-size:${Math.round(bfp*0.5)}px;color:#aaa;margin-top:4px">Scan to open dashboard</div>`;
+        <div style="font-size:${Math.round(bfp*0.75)}px;color:var(--text-secondary)">${_esc(location.origin)}</div>
+        <div style="font-size:${Math.round(bfp*0.5)}px;color:var(--text-muted);margin-top:4px">Scan to open dashboard</div>`;
 
     } else if (id === 'printer') {
       const pid = _val('sm-printer');
@@ -365,13 +365,13 @@
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
         <div style="font-size:${Math.round(bfp*1.2)}px;font-weight:800">🖨️ ${_esc(meta.name || pid)}</div>
-        ${meta.model ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:#666">' + _esc(meta.model) + '</div>' : ''}
+        ${meta.model ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:var(--text-secondary)">' + _esc(meta.model) + '</div>' : ''}
         <div style="margin:${Math.round(bfp*0.5)}px auto;line-height:0">${_makeQR(url, qcP)}</div>
         <div style="font-size:${Math.round(bfp*0.7)}px;text-align:left;display:inline-block;margin-top:4px">
           ${meta.ip ? '<div><strong>IP:</strong> ' + _esc(meta.ip) + '</div>' : ''}
           ${data.gcode_state ? '<div><strong>Status:</strong> ' + _esc(data.gcode_state) + '</div>' : ''}
         </div>
-        <div style="font-size:${Math.round(bfp*0.5)}px;color:#aaa;margin-top:4px">Scan to open dashboard</div>`;
+        <div style="font-size:${Math.round(bfp*0.5)}px;color:var(--text-muted);margin-top:4px">Scan to open dashboard</div>`;
 
     } else if (id === 'filament') {
       const material = _val('sm-material');
@@ -383,7 +383,7 @@
       signHtml = `
         <div style="font-size:${Math.round(bfp*1.3)}px;font-weight:800">🧵 ${_esc(material)}</div>
         ${colour ? '<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px"><span style="width:' + Math.round(bfp*0.9) + 'px;height:' + Math.round(bfp*0.9) + 'px;border-radius:50%;background:' + _esc(colour) + ';border:2px solid #ccc;display:inline-block"></span><span style="font-size:' + Math.round(bfp*0.8) + 'px">' + _esc(colour) + '</span></div>' : ''}
-        ${brand ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:#666;margin-top:2px">' + _esc(brand) + '</div>' : ''}
+        ${brand ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:var(--text-secondary);margin-top:2px">' + _esc(brand) + '</div>' : ''}
         <div style="margin-top:${Math.round(bfp*0.5)}px;font-size:${Math.round(bfp*0.8)}px;text-align:left;display:inline-block;border-top:1px solid #ddd;padding-top:4px">
           ${temp ? '<div>🔥 Nozzle: <strong>' + _esc(temp) + '°C</strong></div>' : ''}
           ${bed ? '<div>🛏️ Bed: <strong>' + _esc(bed) + '°C</strong></div>' : ''}
@@ -411,7 +411,7 @@
       signHtml = `
         ${title ? '<div style="font-size:' + Math.round(bfp*1.4) + 'px;font-weight:800">' + _esc(title) + '</div>' : ''}
         ${qr ? '<div style="margin:' + Math.round(bfp*0.5) + 'px auto;line-height:0">' + _makeQR(qr, qcP) + '</div>' : ''}
-        ${msg ? '<div style="font-size:' + Math.round(bfp*0.8) + 'px;color:#444;margin-top:4px">' + _esc(msg) + '</div>' : ''}`;
+        ${msg ? '<div style="font-size:' + Math.round(bfp*0.8) + 'px;color:var(--text-secondary);margin-top:4px">' + _esc(msg) + '</div>' : ''}`;
 
     } else if (id === 'contact') {
       const name = _val('sm-v-name');
@@ -424,13 +424,13 @@
       const qcP = Math.max(1, Math.round(qrPx / 33));
       signHtml = `
         <div style="font-size:${Math.round(bfp*1.2)}px;font-weight:800">📇 ${_esc(name)}</div>
-        ${company ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:#666">' + _esc(company) + '</div>' : ''}
+        ${company ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;color:var(--text-secondary)">' + _esc(company) + '</div>' : ''}
         <div style="margin:${Math.round(bfp*0.5)}px auto;line-height:0">${_makeQR(vcard, qcP)}</div>
         <div style="font-size:${Math.round(bfp*0.7)}px;text-align:left;display:inline-block">
           ${phone ? '<div>📞 ' + _esc(phone) + '</div>' : ''}
           ${email ? '<div>✉️ ' + _esc(email) + '</div>' : ''}
         </div>
-        <div style="font-size:${Math.round(bfp*0.5)}px;color:#aaa;margin-top:4px">Scan to add contact</div>`;
+        <div style="font-size:${Math.round(bfp*0.5)}px;color:var(--text-muted);margin-top:4px">Scan to add contact</div>`;
 
     } else if (id === 'inventory') {
       const assetId = _val('sm-inv-id');
@@ -440,11 +440,11 @@
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
-        <div style="font-size:${Math.round(bfp*0.6)}px;color:#999;text-transform:uppercase;letter-spacing:2px">Inventory</div>
+        <div style="font-size:${Math.round(bfp*0.6)}px;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px">Inventory</div>
         <div style="font-size:${Math.round(bfp*1.4)}px;font-weight:900;font-family:monospace;margin:2px 0">${_esc(assetId)}</div>
         <div style="margin:${Math.round(bfp*0.4)}px auto;line-height:0">${_makeQR(qrData, qcP)}</div>
         ${desc ? '<div style="font-size:' + Math.round(bfp*0.75) + 'px;margin-top:4px">' + _esc(desc) + '</div>' : ''}
-        ${loc ? '<div style="font-size:' + Math.round(bfp*0.65) + 'px;color:#666">📍 ' + _esc(loc) + '</div>' : ''}`;
+        ${loc ? '<div style="font-size:' + Math.round(bfp*0.65) + 'px;color:var(--text-secondary)">📍 ' + _esc(loc) + '</div>' : ''}`;
     }
 
     // Size info
@@ -467,7 +467,7 @@
         <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Frame: ${Math.round(plateW + frameW*2+2)}×${Math.round(plateH + frameW*2+2)}mm</div>
         ${hasBorder ? `
         <div style="background:#5a5a5f;width:${frameTotalW}px;height:${frameTotalH}px;border-radius:${Math.round((cornerR+2)*scale)}px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(0,0,0,0.3)">
-          <div style="background:#333;width:${previewW + Math.round(2*scale)}px;height:${previewH + Math.round(2*scale)}px;border-radius:${Math.round(cornerR*scale)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(previewW*0.04)}px;color:#666">plate slot</div>
+          <div style="background:#333;width:${previewW + Math.round(2*scale)}px;height:${previewH + Math.round(2*scale)}px;border-radius:${Math.round(cornerR*scale)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(previewW*0.04)}px;color:var(--text-secondary)">plate slot</div>
         </div>` : '<div style="padding:20px;color:var(--text-muted)">Enable frame to see preview</div>'}`;
       return;
     }

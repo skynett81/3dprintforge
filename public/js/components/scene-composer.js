@@ -168,7 +168,7 @@
             <div id="sc-palette" style="border:1px solid var(--border-color);border-radius:6px;padding:8px;overflow:auto"></div>
             <div id="sc-viewport-wrap" style="position:relative;border:1px solid var(--border-color);border-radius:6px;background:#1a1a1a;min-height:540px">
               <canvas id="sc-canvas" style="width:100%;height:100%;display:block"></canvas>
-              <div id="sc-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:0.85rem;display:none">${t('scene.empty_add_shape', 'Add a shape from the palette →')}</div>
+              <div id="sc-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-muted);font-size:0.85rem;display:none">${t('scene.empty_add_shape', 'Add a shape from the palette →')}</div>
             </div>
             <div id="sc-side" style="border:1px solid var(--border-color);border-radius:6px;padding:8px;overflow:auto;max-height:540px"></div>
           </div>

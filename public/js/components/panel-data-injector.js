@@ -465,7 +465,7 @@
   // Logs: MQTT debug + terminal
   function _injectLogs(data) {
     if (!data._terminalLog?.length) return;
-    _inject('injected-logs', `<div style="background:#0d1117;border-radius:6px;padding:6px 8px;font-family:monospace;font-size:0.65rem;color:#8b949e;max-height:120px;overflow-y:auto;margin-bottom:8px">
+    _inject('injected-logs', `<div style="background:#0d1117;border-radius:6px;padding:6px 8px;font-family:monospace;font-size:0.65rem;color:var(--text-muted);max-height:120px;overflow-y:auto;margin-bottom:8px">
       ${data._terminalLog.map(l => `<div>${l}</div>`).join('')}
     </div>`);
   }

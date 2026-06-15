@@ -327,9 +327,9 @@
         <div style="margin:12px auto;display:inline-block">${svg}</div>
         <div style="font-size:0.9rem;margin-top:8px">
           <div style="font-weight:700;font-size:1rem;margin-bottom:2px">${_esc(ssid)}</div>
-          ${pass && enc !== 'nopass' ? '<div style="font-size:0.8rem;color:#666">Password: <strong>' + _esc(pass) + '</strong></div>' : '<div style="font-size:0.8rem;color:#666">Open network — no password</div>'}
+          ${pass && enc !== 'nopass' ? '<div style="font-size:0.8rem;color:var(--text-secondary)">Password: <strong>' + _esc(pass) + '</strong></div>' : '<div style="font-size:0.8rem;color:var(--text-secondary)">Open network — no password</div>'}
         </div>
-        <div style="font-size:0.65rem;color:#999;margin-top:8px">Scan with your phone camera to connect</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Scan with your phone camera to connect</div>
       </div>`;
 
     document.getElementById('wifi-qr-print-btn').style.display = '';
