@@ -440,21 +440,46 @@
   // ═══ Module builders ═══
   const BUILDERS = {
     'spool-summary': (spools) => {
-      let totalRemaining = 0, totalValue = 0, lowStockCount = 0;
+      let totalRemaining = 0, totalValue = 0, lowStockCount = 0, valuedSpools = 0;
       const active = spools.filter(s => !s.archived);
+      const archivedCount = spools.length - active.length;
+      const materials = new Set();
       for (const s of active) {
         totalRemaining += spoolRemainG(s);
-        if (s.cost) totalValue += s.cost;
+        if (s.cost) { totalValue += s.cost; valuedSpools++; }
+        if (s.material) materials.add(s.material);
         const pct = spoolPct(s);
         const rG = spoolRemainG(s);
         if ((pct > 0 && pct < _lowStockPct) || (_lowStockGrams > 0 && rG > 0 && rG < _lowStockGrams)) lowStockCount++;
       }
-      const lowColor = lowStockCount > 0 ? '#f0883e' : '#00e676';
-      return `<div class="fil-hero-grid">
-        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', active.length, t('filament.total_spools'), '#1279ff')}
-        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>', fmtW(totalRemaining), t('filament.total_remaining'), '#00e676')}
-        ${totalValue > 0 ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', formatCurrency(totalValue, 0), t('filament.total_value'), '#e3b341') : ''}
-        ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', lowStockCount, t('filament.low_stock'), lowColor)}
+      const avgVal = valuedSpools ? totalValue / valuedSpools : 0;
+      const lowColor = lowStockCount > 0 ? '#f0883e' : '#22c55e';
+      // Richer, left-aligned KPI card with a sub-metric line. Inventory-only
+      // markup (inv-kpi-*) so the shared .fil-hero-card stays untouched.
+      const kpi = (icon, value, label, sub, color, onclick) => {
+        const tag = onclick ? 'button' : 'div';
+        const attrs = onclick ? ` type="button" onclick="${onclick}"` : '';
+        return `<${tag} class="inv-kpi-card${onclick ? ' inv-kpi-clickable' : ''}" style="--kc:${color}"${attrs}>
+          <span class="inv-kpi-icon">${icon}</span>
+          <span class="inv-kpi-body">
+            <span class="inv-kpi-value">${value}</span>
+            <span class="inv-kpi-label">${label}</span>
+            ${sub ? `<span class="inv-kpi-sub">${sub}</span>` : ''}
+          </span>
+        </${tag}>`;
+      };
+      const I = {
+        spools: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>',
+        weight: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+        value: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+        alert: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        ok: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+      };
+      return `<div class="inv-kpi-grid">
+        ${kpi(I.spools, active.length, t('filament.total_spools'), archivedCount > 0 ? `${active.length} ${t('filament.active', 'active')} · ${archivedCount} ${t('filament.archived', 'archived')}` : t('filament.all_active', 'all active'), '#1279ff')}
+        ${kpi(I.weight, fmtW(totalRemaining), t('filament.total_remaining'), `${materials.size} ${t('filament.materials', 'materials')}`, '#22c55e')}
+        ${totalValue > 0 ? kpi(I.value, formatCurrency(totalValue, 0), t('filament.total_value'), `${formatCurrency(avgVal, 0)} ${t('filament.avg_per_spool', 'avg/spool')}`, '#e3b341') : ''}
+        ${kpi(lowStockCount > 0 ? I.alert : I.ok, lowStockCount, t('filament.low_stock'), lowStockCount > 0 ? t('filament.show_these', 'Show these spools') : t('filament.all_in_stock', 'All well stocked'), lowColor, lowStockCount > 0 ? "window._invQuickFilter('low')" : null)}
       </div>`;
     },
 
