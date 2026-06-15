@@ -4495,6 +4495,10 @@
 .scan-act:hover { border-color: var(--accent-blue, #1279ff); color: var(--text-primary); transform: translateY(-1px); }
 .scan-act-danger:hover { border-color: var(--accent-red, #e3342f); color: var(--accent-red, #e3342f); }
 
+/* Reports material share bar */
+.rep-bar { width: 90px; height: 6px; background: var(--bg-tertiary, rgba(127,127,127,0.15)); border-radius: 3px; overflow: hidden; }
+.rep-bar-fill { height: 100%; background: linear-gradient(90deg, #1279ff, #22c55e); border-radius: 3px; }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;

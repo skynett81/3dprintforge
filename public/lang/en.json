@@ -217,6 +217,7 @@
     "group_tools": "Tools",
     "group_stats": "Statistics",
     "tab_procurement": "Purchases",
+    "tab_reports": "Reports",
     "tab_database": "Database",
     "tab_stats": "Statistics",
     "db_total": "Total filaments",
@@ -1094,6 +1095,25 @@
     "add_to_inventory": "Add to hardware inventory",
     "acc_synced": "Added to hardware inventory",
     "acc_uptodate": "Hardware inventory already up to date"
+  },
+  "reports": {
+    "title": "Reports",
+    "last_30": "Last 30 days",
+    "last_90": "Last 90 days",
+    "last_365": "Last 12 months",
+    "export_csv": "Export CSV",
+    "consumed": "Consumed",
+    "filament_cost": "Filament cost",
+    "success_rate": "Success rate",
+    "waste": "Waste",
+    "prints": "prints",
+    "used": "Used",
+    "success": "Success",
+    "share": "Share",
+    "unknown": "Unknown",
+    "empty": "No print activity in this period yet.",
+    "load_failed": "Could not load reports",
+    "exported": "Report exported"
   },
   "procurement": {
     "title": "Procurement",
