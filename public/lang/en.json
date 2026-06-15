@@ -3763,6 +3763,7 @@
     "expires_on": "Expires {date}",
     "expires_in_days": "Expires in {days} d",
     "show_these": "Show these spools",
+    "recalc_usage": "Recalculate usage",
     "restock_needed": "Restock",
     "needs_drying": "Needs drying",
     "days_remaining": "Days remaining",

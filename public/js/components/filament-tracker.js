@@ -143,24 +143,27 @@
     </div>`;
   }
 
+  // Clean line-icon helper (replaces emoji for a consistent, professional bar).
+  const _gicon = (p) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px">${p}</svg>`;
+
   // ═══ Tab config (alphabetically sorted by translated label at render time) ═══
   const TAB_CONFIG_UNSORTED = {
-    inventory: { label: 'filament.tab_inventory', icon: '📦', modules: ['spool-summary', 'inventory-health', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
-    storage:   { label: 'filament.tab_storage',   icon: '🗄️', modules: ['storage-dashboard'] },
-    database:  { label: 'filament.tab_database',  icon: '📚', modules: ['db-hero', 'db-browser'] },
-    drying:    { label: 'filament.tab_drying',    icon: '🌬️', modules: ['drying-dashboard'] },
-    multicolor:{ label: 'tabs.multicolor',        icon: '🎨', modules: ['multicolor-panel'], external: true },
-    tools:     { label: 'filament.tab_tools',     icon: '🛠️', modules: ['tools-dashboard'] },
-    manage:    { label: 'filament.tab_manage',    icon: '⚙️', modules: ['manage-dashboard'] },
-    stats:     { label: 'filament.tab_stats',     icon: '📊', modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
+    inventory: { label: 'filament.tab_inventory', icon: _gicon('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'), modules: ['spool-summary', 'inventory-health', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
+    storage:   { label: 'filament.tab_storage',   icon: _gicon('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'), modules: ['storage-dashboard'] },
+    database:  { label: 'filament.tab_database',  icon: _gicon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'), modules: ['db-hero', 'db-browser'] },
+    drying:    { label: 'filament.tab_drying',    icon: _gicon('<path d="M12 2.7s5.5 5 5.5 9.3a5.5 5.5 0 0 1-11 0C6.5 7.7 12 2.7 12 2.7z"/>'), modules: ['drying-dashboard'] },
+    multicolor:{ label: 'tabs.multicolor',        icon: _gicon('<circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 1 2-4h2a4 4 0 0 0 4-4 10 10 0 0 0-12-8z"/>'), modules: ['multicolor-panel'], external: true },
+    tools:     { label: 'filament.tab_tools',     icon: _gicon('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'), modules: ['tools-dashboard'] },
+    manage:    { label: 'filament.tab_manage',    icon: _gicon('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15H4a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 6 9l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 11 4.6V4a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 18 6l.06-.06a2 2 0 1 1 2.83 2.83L20.83 9A1.65 1.65 0 0 0 20.4 11H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'), modules: ['manage-dashboard'] },
+    stats:     { label: 'filament.tab_stats',     icon: _gicon('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'), modules: ['type-breakdown', 'brand-breakdown', 'cost-summary', 'stock-health', 'restock-suggestions', 'usage-predictions', 'cost-estimation', 'usage-history'] }
   };
   // ═══ Tab groups — collapse the 8 tabs into 4 logical sections so the bar
   // stays uncluttered. Each group reveals its sub-tabs only when active. ═══
   const TAB_GROUPS = [
-    { key: 'overview', label: 'filament.group_overview', icon: '📦', tabs: ['inventory'] },
-    { key: 'storage',  label: 'filament.group_storage',  icon: '🗄️', tabs: ['storage', 'database'] },
-    { key: 'tools',    label: 'filament.group_tools',    icon: '🛠️', tabs: ['drying', 'multicolor', 'tools', 'manage'] },
-    { key: 'stats',    label: 'filament.group_stats',    icon: '📊', tabs: ['stats'] },
+    { key: 'overview', label: 'filament.group_overview', icon: _gicon('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'), tabs: ['inventory'] },
+    { key: 'storage',  label: 'filament.group_storage',  icon: _gicon('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'), tabs: ['storage', 'database'] },
+    { key: 'tools',    label: 'filament.group_tools',    icon: _gicon('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'), tabs: ['drying', 'multicolor', 'tools', 'manage'] },
+    { key: 'stats',    label: 'filament.group_stats',    icon: _gicon('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'), tabs: ['stats'] },
   ];
   function _groupOf(tabId) {
     return TAB_GROUPS.find(g => g.tabs.includes(tabId)) || TAB_GROUPS[0];
@@ -2223,33 +2226,33 @@
 
       let html = '';
 
-      // ── Top bar ──
-      html += `<div class="tele-top-bar">
-        ${window._can && window._can('filament') ? `<div class="inv-export-dropdown" style="display:inline-block">
-          <button class="form-btn" data-ripple onclick="showAddSpoolForm()" style="display:flex;align-items:center;gap:4px">
+      // ── Top bar: one primary action, two common secondaries, and a single
+      // "More" overflow for export/import/analyze/maintenance. Keeps the bar
+      // calm and professional instead of a row of competing buttons. ──
+      const _canFil = window._can && window._can('filament');
+      html += `<div class="tele-top-bar inv-top-bar">
+        ${_canFil ? `<div class="inv-split-btn">
+          <button class="form-btn form-btn-primary" data-ripple onclick="showAddSpoolForm()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>${t('filament.add_spool')}</span>
           </button>
-          <button class="form-btn form-btn-sm" data-ripple onclick="showQuickCreate(this)" style="padding:2px 4px;margin-left:-4px;border-radius:0 4px 4px 0" title="${t('filament.quick_create')}">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <button class="form-btn form-btn-primary inv-split-caret" data-ripple onclick="showQuickCreate(this)" title="${t('filament.quick_create')}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>` : ''}
-        <button class="form-btn form-btn-sm" data-ripple onclick="importFromAms()" style="display:flex;align-items:center;gap:4px" title="${t('filament.import_ams')}">
+        <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="importFromAms()" title="${t('filament.import_ams')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h4v4h-4z"/></svg>
           <span>${t('filament.import_ams')}</span>
         </button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="switchFilamentTab('database')" style="display:flex;align-items:center;gap:4px" title="${t('filament.tab_database')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-          <span>${t('filament.tab_database')}</span>
+        <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="openQrScanner()" title="${t('filament.scan_qr')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M20 14v7h-7"/></svg>
+          <span>${t('filament.scan_qr', 'Scan')}</span>
         </button>
-        <button class="form-btn form-btn-sm" data-ripple onclick="window._recalcSpoolUsage()" style="display:flex;align-items:center;gap:4px" title="Recalculate spool usage from print history">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
-          <span>Recalculate</span>
-        </button>
+        <div style="flex:1"></div>
         <div class="inv-export-dropdown">
-          <button class="form-btn form-btn-sm" data-ripple onclick="this.nextElementSibling.classList.toggle('show')" style="display:flex;align-items:center;gap:4px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>${t('filament.export')}</span>
+          <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="this.nextElementSibling.classList.toggle('show')" title="${t('common.more', 'More')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            <span>${t('common.more', 'More')}</span>
           </button>
           <div class="inv-export-menu">
             <button onclick="exportInventory('spools','csv')">${t('filament.export_spools_csv')}</button>
@@ -2258,15 +2261,12 @@
             <button onclick="exportInventory('vendors','csv')">${t('filament.export_vendors_csv')}</button>
             <hr style="margin:4px 0;border-color:var(--border-color)">
             <button onclick="showImportDialog()">${t('filament.import')}</button>
-            <hr style="margin:4px 0;border-color:var(--border-color)">
             <button onclick="showAnalyzeFileDialog()">${t('filament.analyze_file')}</button>
+            ${_canFil ? `<hr style="margin:4px 0;border-color:var(--border-color)">
+            <button onclick="window._recalcSpoolUsage()">${t('filament.recalc_usage', 'Recalculate usage')}</button>` : ''}
           </div>
         </div>
-        <button class="form-btn form-btn-sm" data-ripple onclick="openQrScanner()" style="display:flex;align-items:center;gap:4px" title="${t('filament.scan_qr')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M20 14v7h-7"/></svg>
-        </button>
-        <div style="flex:1"></div>
-        <button class="form-btn form-btn-sm" data-ripple onclick="showInventorySettings()" title="${t('filament.settings')}" style="display:flex;align-items:center;gap:4px">
+        <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="showInventorySettings()" title="${t('filament.settings')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
       </div>`;

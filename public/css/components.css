@@ -4422,6 +4422,31 @@
   transform: none;
 }
 
+/* Neutral toolbar button — calm surface so only the primary action pops. */
+.form-btn-ghost {
+  --bs-btn-bg: var(--bg-tertiary, rgba(127, 127, 127, 0.08));
+  --bs-btn-color: var(--text-secondary);
+  --bs-btn-border-color: var(--border-color);
+  --bs-btn-hover-bg: var(--bg-secondary, rgba(127, 127, 127, 0.16));
+  --bs-btn-hover-color: var(--text-primary);
+  --bs-btn-active-bg: rgba(127, 127, 127, 0.22);
+}
+.form-btn-ghost:hover {
+  border-color: var(--border-color);
+  box-shadow: none;
+  transform: none;
+}
+.form-btn-primary { /* explicit teal, same as the default emphasis */ }
+
+/* Split primary button: [ Add spool | v ] as one unit */
+.inv-split-btn { display: inline-flex; align-items: stretch; }
+.inv-split-btn .form-btn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.inv-split-btn .inv-split-caret {
+  border-top-left-radius: 0; border-bottom-left-radius: 0;
+  padding-left: 8px; padding-right: 8px; margin-left: 1px;
+}
+.inv-top-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;

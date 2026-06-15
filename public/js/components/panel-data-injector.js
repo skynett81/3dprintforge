@@ -241,11 +241,13 @@
       html += '</div>';
     }
 
-    // NFC sync indicator
+    // NFC sync indicator — subtle inline note, not a loud alert banner.
     if (data._sm_filament?.length) {
       const synced = data._sm_filament.filter(f => f.sku).length;
-      html += `<div class="alert alert-info" style="font-size:0.72rem;margin-bottom:8px">
-        NFC Filament: ${synced}/${data._sm_filament.length} spools synced to inventory
+      const allOk = synced === data._sm_filament.length;
+      html += `<div class="inv-nfc-note" style="font-size:0.72rem;margin-bottom:8px;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:var(--bg-tertiary,rgba(127,127,127,0.08));border:1px solid var(--border-color);color:var(--text-secondary)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${allOk ? 'var(--accent-green,#22c55e)' : 'var(--text-muted)'}" stroke-width="2"><path d="M6 8.32a7.43 7.43 0 010 7.36"/><path d="M9.46 6.21a11.76 11.76 0 010 11.58"/><path d="M12.91 4.1a16.09 16.09 0 010 15.8"/></svg>
+        NFC ${synced}/${data._sm_filament.length} ${synced === data._sm_filament.length ? 'synced' : 'synced to inventory'}
       </div>`;
     }
 
