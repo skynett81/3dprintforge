@@ -27,78 +27,70 @@
     }
   });
 
+  const t = (key, fb) => (typeof window.t === 'function' ? window.t(key, fb) : fb);
+
   function render() {
     const el = document.getElementById('vendor-diagnostics-2026');
     if (!el) return;
 
-    // Compact-card helper — uniform visual density across the grid.
+    // Collapsible tool card with a clean header + chevron (shared .atool-* styling).
     const card = (icon, title, body, opts = {}) => `
-      <details class="card" ${opts.open !== false ? 'open' : ''} style="padding:10px;margin:0">
-        <summary style="cursor:pointer;font-weight:600;font-size:0.85rem"><i class="bi bi-${icon}"></i> ${title}</summary>
-        <div style="margin-top:8px;font-size:0.82rem">${body}</div>
+      <details class="card atool-card" ${opts.open !== false ? 'open' : ''}>
+        <summary class="atool-card-head"><i class="bi bi-${icon} atool-card-icon"></i><span>${title}</span><i class="bi bi-chevron-right atool-chev"></i></summary>
+        <div class="atool-card-body">${body}</div>
       </details>`;
+    const ghost = (onclick, label, extra = '') => `<button class="form-btn form-btn-sm form-btn-ghost" onclick="${onclick}" ${extra}>${label}</button>`;
+    const danger = (onclick, label, extra = '') => `<button class="form-btn form-btn-sm form-btn-ghost" style="color:var(--accent-red)" onclick="${onclick}" ${extra}>${label}</button>`;
 
     el.innerHTML = `
-      <!-- Quick actions — most-used buttons always visible at the top -->
-      <div class="card" style="padding:10px;margin-bottom:10px">
-        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:0.82rem">
-          <strong style="margin-right:6px">Quick actions:</strong>
-          <button class="form-btn form-btn-sm" onclick="_vd2026.updateRefresh()" title="Refresh Moonraker update-manager status">
-            <i class="bi bi-arrow-clockwise"></i> Refresh updates
-          </button>
-          <button class="form-btn form-btn-sm" onclick="_vd2026.shaperMeasure()" title="MEASURE_AXES_NOISE — captures baseline noise on each axis">
-            <i class="bi bi-soundwave"></i> Measure axes noise
-          </button>
-          <button class="form-btn form-btn-sm form-btn-danger" onclick="_vd2026.updateFull()" title="Run klipper + moonraker + system + web update; reboots services">
-            <i class="bi bi-cloud-download"></i> Run full update
-          </button>
-          <button class="form-btn form-btn-sm form-btn-danger" onclick="_vd2026.historyResetTotals()" title="Reset lifetime filament/time totals — irreversible">
-            <i class="bi bi-eraser"></i> Reset history totals
-          </button>
-        </div>
+      <div class="card atool-actionbar">
+        <span class="atool-actionbar-label">${t('admin_diag.quick_actions', 'Quick actions')}</span>
+        ${ghost('_vd2026.updateRefresh()', '<i class="bi bi-arrow-clockwise"></i> ' + t('admin_diag.refresh_updates', 'Refresh updates'), 'title="Refresh Moonraker update-manager status"')}
+        ${ghost('_vd2026.shaperMeasure()', '<i class="bi bi-soundwave"></i> ' + t('admin_diag.measure_noise', 'Measure axes noise'), 'title="MEASURE_AXES_NOISE — captures baseline noise on each axis"')}
+        ${danger('_vd2026.updateFull()', '<i class="bi bi-cloud-download"></i> ' + t('admin_diag.run_full_update', 'Run full update'), 'title="Run klipper + moonraker + system + web update; reboots services"')}
+        ${danger('_vd2026.historyResetTotals()', '<i class="bi bi-eraser"></i> ' + t('admin_diag.reset_totals', 'Reset history totals'), 'title="Reset lifetime filament/time totals — irreversible"')}
       </div>
 
-      <!-- 2-column auto-grid for the rest -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));grid-auto-flow:dense;gap:10px">
+      <div class="atool-grid">
 
-        ${card('soundwave', 'Input shaper tuning', `
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
-            <button class="form-btn form-btn-sm" onclick="_vd2026.shaperCalibrate('X')">Calibrate X</button>
-            <button class="form-btn form-btn-sm" onclick="_vd2026.shaperCalibrate('Y')">Calibrate Y</button>
-            <button class="form-btn form-btn-sm" onclick="_vd2026.shaperTest('X')">TEST_RESONANCES X</button>
-            <button class="form-btn form-btn-sm" onclick="_vd2026.shaperTest('Y')">TEST_RESONANCES Y</button>
+        ${card('soundwave', t('admin_diag.input_shaper', 'Input shaper tuning'), `
+          <div class="atool-toolgrid">
+            ${ghost("_vd2026.shaperCalibrate('X')", t('admin_diag.calibrate_x', 'Calibrate X'))}
+            ${ghost("_vd2026.shaperCalibrate('Y')", t('admin_diag.calibrate_y', 'Calibrate Y'))}
+            ${ghost("_vd2026.shaperTest('X')", 'TEST_RESONANCES X')}
+            ${ghost("_vd2026.shaperTest('Y')", 'TEST_RESONANCES Y')}
           </div>
-          <small class="text-muted" style="display:block;margin-top:6px;font-size:0.7rem">Results saved to <code>/tmp/resonances_*.csv</code> on the printer host.</small>`)}
+          <div class="atool-hint">${t('admin_diag.shaper_hint', 'Results are saved to')} <code>/tmp/resonances_*.csv</code> ${t('admin_diag.on_host', 'on the printer host')}.</div>`)}
 
-        ${card('hdd-network', 'CAN-bus node scan', `
-          <p class="text-muted" style="font-size:0.78rem;margin:0 0 6px">Detect unassigned Klipper + Katapult nodes on a CAN interface.</p>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <input class="form-input" id="vd-canbus-iface" value="can0" placeholder="can0" style="flex:1;min-width:80px;max-width:120px">
-            <button class="form-btn form-btn-sm" onclick="_vd2026.canbusScan()">Scan</button>
+        ${card('hdd-network', t('admin_diag.canbus_scan', 'CAN-bus node scan'), `
+          <p class="atool-hint">${t('admin_diag.canbus_desc', 'Detect unassigned Klipper + Katapult nodes on a CAN interface.')}</p>
+          <div class="atool-toolrow">
+            <input class="form-input form-input-sm" id="vd-canbus-iface" value="can0" placeholder="can0" style="flex:1;min-width:80px;max-width:120px">
+            ${ghost('_vd2026.canbusScan()', t('admin_diag.scan', 'Scan'))}
           </div>
-          <div id="vd-canbus-result" style="margin-top:8px">${renderCanbus()}</div>`)}
+          <div id="vd-canbus-result" class="atool-result">${renderCanbus()}</div>`)}
 
-        ${card('clock-history', 'Moonraker history', `
-          <p class="text-muted" style="font-size:0.78rem;margin:0 0 6px">Delete a single job by UID. Lifetime totals are reset from the Quick actions bar.</p>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <input class="form-input" id="vd-history-uid" placeholder="Job UID" style="flex:1;min-width:120px">
-            <button class="form-btn form-btn-sm" onclick="_vd2026.historyDelete()">Delete job</button>
+        ${card('clock-history', t('admin_diag.moonraker_history', 'Moonraker history'), `
+          <p class="atool-hint">${t('admin_diag.history_desc', 'Delete a single job by UID. Lifetime totals are reset from the Quick actions bar.')}</p>
+          <div class="atool-toolrow">
+            <input class="form-input form-input-sm" id="vd-history-uid" placeholder="${t('admin_diag.job_uid', 'Job UID')}" style="flex:1;min-width:120px">
+            ${danger('_vd2026.historyDelete()', t('admin_diag.delete_job', 'Delete job'))}
           </div>`)}
 
-        ${card('bell', 'Notifier test', `
-          <p class="text-muted" style="font-size:0.78rem;margin:0 0 6px">Sends a synthetic notification through a notifier defined in <code>moonraker.conf</code>.</p>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <input class="form-input" id="vd-notifier-name" placeholder="Notifier name" style="flex:1;min-width:140px">
-            <button class="form-btn form-btn-sm" onclick="_vd2026.notifierTest()">Send test</button>
+        ${card('bell', t('admin_diag.notifier_test', 'Notifier test'), `
+          <p class="atool-hint">${t('admin_diag.notifier_desc', 'Sends a synthetic notification through a notifier defined in')} <code>moonraker.conf</code>.</p>
+          <div class="atool-toolrow">
+            <input class="form-input form-input-sm" id="vd-notifier-name" placeholder="${t('admin_diag.notifier_name', 'Notifier name')}" style="flex:1;min-width:140px">
+            ${ghost('_vd2026.notifierTest()', t('admin_diag.send_test', 'Send test'))}
           </div>`)}
 
-        ${card('tag', 'TigerTag NFC lookup', `
-          <p class="text-muted" style="font-size:0.78rem;margin:0 0 6px">Resolve a filament NFC tag UID against the offline DB + online TigerTag lookup.</p>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <input class="form-input" id="vd-tigertag-uid" placeholder="Tag UID (DEAD:BEEF:01:02)" style="flex:1;min-width:160px">
-            <button class="form-btn form-btn-sm" onclick="_vd2026.tigertagLookup()">Look up</button>
+        ${card('tag', t('admin_diag.tigertag_lookup', 'TigerTag NFC lookup'), `
+          <p class="atool-hint">${t('admin_diag.tigertag_desc', 'Resolve a filament NFC tag UID against the offline DB + online TigerTag lookup.')}</p>
+          <div class="atool-toolrow">
+            <input class="form-input form-input-sm" id="vd-tigertag-uid" placeholder="${t('admin_diag.tag_uid', 'Tag UID')} (DEAD:BEEF:01:02)" style="flex:1;min-width:160px">
+            ${ghost('_vd2026.tigertagLookup()', t('admin_diag.look_up', 'Look up'))}
           </div>
-          <div id="vd-tigertag-result" style="margin-top:6px">${renderTigerTag()}</div>`)}
+          <div id="vd-tigertag-result" class="atool-result">${renderTigerTag()}</div>`)}
       </div>
     `;
   }
@@ -106,18 +98,18 @@
   function renderCanbus() {
     if (!canbusResult) return '';
     if (canbusResult.ok) {
-      if (!canbusResult.uuids?.length) return `<span style="color:var(--text-muted)">Scan on ${esc(canbusResult.interface)} found no unassigned nodes.</span>`;
+      if (!canbusResult.uuids?.length) return `<span class="atool-empty">${t('admin_diag.no_nodes', 'Scan on')} ${esc(canbusResult.interface)} ${t('admin_diag.found_no_nodes', 'found no unassigned nodes.')}</span>`;
       return canbusResult.uuids.map(u => `<code>${esc(u.uuid)}</code> (${esc(u.application || 'unknown')})`).join(', ');
     }
-    return `<span style="color:var(--accent-red)">Scan failed (${esc(canbusResult.error?.code)}): ${esc(canbusResult.error?.message)}</span>`;
+    return `<span class="atool-result-err">${t('admin_diag.scan_failed', 'Scan failed')} (${esc(canbusResult.error?.code)}): ${esc(canbusResult.error?.message)}</span>`;
   }
 
   function renderTigerTag() {
     if (!tigerTagResult) return '';
-    if (tigerTagResult.error) return `<span style="color:var(--accent-red)">${esc(tigerTagResult.error)}</span>`;
-    if (!tigerTagResult.profile) return `<span style="color:var(--text-muted)">No match in offline DB or online lookup.</span>`;
+    if (tigerTagResult.error) return `<span class="atool-result-err">${esc(tigerTagResult.error)}</span>`;
+    if (!tigerTagResult.profile) return `<span class="atool-empty">${t('admin_diag.no_tag_match', 'No match in offline DB or online lookup.')}</span>`;
     const p = tigerTagResult.profile;
-    return `<strong>${esc(p.vendor || '?')}</strong> ${esc(p.material || '')} ${esc(p.colorName || '')} ${p.color ? '<span style="display:inline-block;width:14px;height:14px;background:#' + esc(p.color) + ';border:1px solid #666;vertical-align:middle"></span>' : ''} — <span class="text-muted">${esc(p.source)}</span>`;
+    return `<strong>${esc(p.vendor || '?')}</strong> ${esc(p.material || '')} ${esc(p.colorName || '')} ${p.color ? '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#' + esc(p.color) + ';border:1px solid var(--border-color);vertical-align:middle"></span>' : ''} — <span class="text-muted">${esc(p.source)}</span>`;
   }
 
   function sendCmd(action, extra = {}) {
