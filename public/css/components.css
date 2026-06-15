@@ -14009,3 +14009,7 @@ body .ctrl-card-subtitle {
 .inv-health-num { font-size: 1.25rem; font-weight: 800; color: var(--c); line-height: 1; }
 .inv-health-lbl { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
 .inv-health-ok { display: flex; align-items: center; gap: 8px; padding: 8px 2px; font-size: 0.85rem; color: var(--text-secondary); }
+.inv-health-chip-btn { cursor: pointer; font: inherit; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+.inv-health-chip-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px color-mix(in srgb, var(--c) 30%, transparent); background: color-mix(in srgb, var(--c) 20%, transparent); }
+.inv-health-chip-on { background: color-mix(in srgb, var(--c) 26%, transparent); border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent); }
+.inv-active-chip-quick { background: var(--accent-blue, #1279ff); color: #fff; border-color: var(--accent-blue, #1279ff); }

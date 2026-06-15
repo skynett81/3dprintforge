@@ -217,6 +217,9 @@
   let _filterColorFamily = _F.colorFamily || '';
   let _filterTag = _F.tag || '';
   let _filterCategory = _F.category || '';
+  // Transient "attention" quick-filter driven by the health overview chips:
+  // '' | 'low' | 'restock' | 'expiring' | 'drying'. Not persisted on purpose.
+  let _quickFilter = '';
   let _tags = [];
   let _viewMode = localStorage.getItem('inv-view-mode') || 'grid';
   let _groupBy = localStorage.getItem('inv-group-by') || 'material';
@@ -393,7 +396,28 @@
   }
 
   function _hasActiveFilters() {
-    return !!(_filterMaterial || _filterVendor || _filterLocation || _filterCategory || _filterTag || _filterColorFamily || _filterFavorites || _searchQuery);
+    return !!(_filterMaterial || _filterVendor || _filterLocation || _filterCategory || _filterTag || _filterColorFamily || _filterFavorites || _searchQuery || _quickFilter);
+  }
+
+  // Does a spool match the active "attention" quick-filter (low/restock/
+  // expiring/drying) chosen from the health overview chips?
+  function _quickFilterMatch(s) {
+    if (!_quickFilter) return true;
+    if (_quickFilter === 'low') {
+      const pct = spoolPct(s) || 100; const rG = spoolRemainG(s);
+      return (pct > 0 && pct < _lowStockPct) || (_lowStockGrams > 0 && rG > 0 && rG < _lowStockGrams);
+    }
+    if (_quickFilter === 'expiring') {
+      return (_expiring || []).some(e => e.id === s.id);
+    }
+    if (_quickFilter === 'restock') {
+      const ids = new Set((_restock || []).map(r => r.profile_id));
+      return ids.has(s.filament_profile_id);
+    }
+    if (_quickFilter === 'drying') {
+      return (_dryingStatus || []).some(d => d.spool_id === s.id && (d.drying_status === 'overdue' || d.drying_status === 'due_soon'));
+    }
+    return true;
   }
 
   // ═══ Module builders ═══
@@ -428,18 +452,23 @@
       const expiring = (_expiring || []).length;
       const needsDrying = (_dryingStatus || []).filter(d => d.drying_status === 'overdue' || d.drying_status === 'due_soon').length;
       const items = [
-        { n: low, label: t('filament.low_stock', 'Low stock'), c: '#f0883e' },
-        { n: restock, label: t('filament.restock_needed', 'Restock'), c: '#1279ff' },
-        { n: expiring, label: t('filament.expiring_soon', 'Expiring'), c: '#e3b341' },
-        { n: needsDrying, label: t('filament.needs_drying', 'Needs drying'), c: '#8b5cf6' },
+        { n: low, key: 'low', label: t('filament.low_stock', 'Low stock'), c: '#f0883e' },
+        { n: restock, key: 'restock', label: t('filament.restock_needed', 'Restock'), c: '#1279ff' },
+        { n: expiring, key: 'expiring', label: t('filament.expiring_soon', 'Expiring'), c: '#e3b341' },
+        { n: needsDrying, key: 'drying', label: t('filament.needs_drying', 'Needs drying'), c: '#8b5cf6' },
       ].filter(i => i.n > 0);
       let h = `<div class="ctrl-card-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> ${t('filament.inventory_health', 'Inventory health')}</div>`;
       if (!items.length) {
         h += `<div class="inv-health-ok"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${t('filament.inventory_all_good', 'Everything is in good shape')}</div>`;
         return h;
       }
+      // Clickable chips: clicking one filters the spool grid to just those
+      // spools, turning the overview into a one-click triage tool.
       h += '<div class="inv-health-chips">';
-      for (const i of items) h += `<div class="inv-health-chip" style="--c:${i.c}"><span class="inv-health-num">${i.n}</span><span class="inv-health-lbl">${esc(i.label)}</span></div>`;
+      for (const i of items) {
+        const on = _quickFilter === i.key ? ' inv-health-chip-on' : '';
+        h += `<button type="button" class="inv-health-chip inv-health-chip-btn${on}" style="--c:${i.c}" onclick="window._invQuickFilter('${i.key}')" title="${t('filament.show_these', 'Show these spools')}"><span class="inv-health-num">${i.n}</span><span class="inv-health-lbl">${esc(i.label)}</span></button>`;
+      }
       h += '</div>';
       return h;
     },
@@ -468,7 +497,7 @@
 
     'spool-grid': (spools) => {
       // Filter bar with search
-      let h = `<div class="ctrl-card-title">
+      let h = `<div class="ctrl-card-title" id="spool-grid-anchor">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         ${t('filament.spool_title')}
       </div>`;
@@ -542,6 +571,7 @@
       // Active filter chips
       if (_hasActiveFilters()) {
         h += `<div class="inv-active-filters">`;
+        if (_quickFilter) { const QL = { low: t('filament.low_stock', 'Low stock'), restock: t('filament.restock_needed', 'Restock'), expiring: t('filament.expiring_soon', 'Expiring'), drying: t('filament.needs_drying', 'Needs drying') }; h += `<span class="inv-active-chip inv-active-chip-quick" onclick="window._invQuickFilter('')">${esc(QL[_quickFilter] || _quickFilter)} &times;</span>`; }
         if (_searchQuery) h += `<span class="inv-active-chip" onclick="window._invSearch('')">${t('filament.search_placeholder')}: "${esc(_searchQuery)}" &times;</span>`;
         if (_filterMaterial) h += `<span class="inv-active-chip" onclick="window._invFilterMaterial('')">${_filterMaterial} &times;</span>`;
         if (_filterCategory) h += `<span class="inv-active-chip" onclick="window._invFilterCategory('')">${_filterCategory} &times;</span>`;
@@ -572,6 +602,7 @@
       // Apply filters
       let filtered = spools.filter(s => {
         if (!_showArchived && s.archived) return false;
+        if (!_quickFilterMatch(s)) return false;
         if (_filterFavorites && !s.is_favorite) return false;
         if (_filterMaterial && s.material !== _filterMaterial) return false;
         if (_filterCategory && !Object.entries(FILAMENT_TYPES).some(([cat, types]) => cat === _filterCategory && types.includes(s.material))) return false;
@@ -2575,7 +2606,21 @@
   window._invFilterColor = function(v) { _filterColorFamily = v; _currentPage = 0; loadFilament(); };
   window._invFilterTag = function(v) { _filterTag = v; _currentPage = 0; loadFilament(); };
   window._invFilterCategory = function(v) { _filterCategory = v; _currentPage = 0; loadFilament(); };
-  window._invResetFilters = function() { _filterMaterial = ''; _filterVendor = ''; _filterLocation = ''; _filterCategory = ''; _filterTag = ''; _filterColorFamily = ''; _filterFavorites = false; _searchQuery = ''; _currentPage = 0; loadFilament(); };
+  window._invResetFilters = function() { _filterMaterial = ''; _filterVendor = ''; _filterLocation = ''; _filterCategory = ''; _filterTag = ''; _filterColorFamily = ''; _filterFavorites = false; _searchQuery = ''; _quickFilter = ''; _currentPage = 0; loadFilament(); };
+
+  // Toggle an "attention" quick-filter from a health-overview chip, then make
+  // sure the spool grid is in view so the result is obvious.
+  window._invQuickFilter = function(key) {
+    _quickFilter = (_quickFilter === key) ? '' : key;
+    _currentPage = 0;
+    loadFilament();
+    if (_quickFilter) {
+      setTimeout(() => {
+        const grid = document.getElementById('spool-grid-anchor') || document.querySelector('.inv-filter-bar');
+        if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    }
+  };
   window._invViewMode = function(mode) { _viewMode = mode; localStorage.setItem('inv-view-mode', mode); loadFilament(); };
 
   function _updateFilterHash() {
