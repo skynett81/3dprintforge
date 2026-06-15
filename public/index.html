@@ -150,6 +150,15 @@
             </a>
           </li>
 
+          <!-- Achievements (top-level shortcut) -->
+          <li class="nav-item">
+            <a href="#" class="nav-link sidebar-btn" data-panel="achievements" onclick="openPanel('achievements'); return false;" data-ripple>
+              <i class="nav-icon bi bi-trophy"></i>
+              <p data-i18n-key="achievements.title">Achievements</p>
+              <span id="ach-nav-badge" class="ach-nav-badge" style="display:none"></span>
+            </a>
+          </li>
+
           <li class="nav-header sidebar-zone-label" data-i18n-key="sidebar.zone_operate">Operate</li>
 
           <!-- Printing -->
@@ -408,7 +417,7 @@
               <p>
                 <span data-i18n-key="sidebar.section_tools">Tools</span>
                 <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">7</span>
+                <span class="badge text-bg-secondary sidebar-section-count">6</span>
               </p>
             </a>
             <ul class="nav nav-treeview">
@@ -446,13 +455,6 @@
                 <a href="#" class="nav-link sidebar-btn" data-panel="playground" onclick="openPanel('playground'); return false;" data-ripple>
                   <i class="nav-icon bi bi-code-slash"></i>
                   <p data-i18n-key="tabs.playground">API Playground</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="achievements" onclick="openPanel('achievements'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-trophy"></i>
-                  <p data-i18n-key="achievements.title">Achievements</p>
-                  <span id="ach-nav-badge" class="ach-nav-badge" style="display:none"></span>
                 </a>
               </li>
             </ul>
@@ -568,7 +570,7 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="analytics" onclick="openPanel('analytics'); return false;" data-ripple>
                   <i class="nav-icon bi bi-graph-up"></i>
-                  <p>Analytics</p>
+                  <p>Usage Analytics</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -586,7 +588,7 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="admin-diagnostics" onclick="openPanel('admin-diagnostics'); return false;" data-ripple>
                   <i class="nav-icon bi bi-wrench-adjustable"></i>
-                  <p>Diagnostics &amp; tuning</p>
+                  <p>Server Diagnostics</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -598,7 +600,7 @@
               <li class="nav-item">
                 <a href="#" class="nav-link sidebar-btn" data-panel="admin-kb" onclick="openPanel('admin-kb'); return false;" data-ripple>
                   <i class="nav-icon bi bi-journal-richtext"></i>
-                  <p>Knowledge base</p>
+                  <p>KB Management</p>
                 </a>
               </li>
             </ul>
