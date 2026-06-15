@@ -1412,9 +1412,10 @@ export async function handleApiRequest(req, res) {
     if (method === 'POST' && path === '/api/filament-tracker/purchased/link') {
       return readBody(req, res, (body) => {
         const { purchased_id, spool_id } = body;
-        if (!purchased_id || !spool_id) return sendJson(res, { error: 'purchased_id and spool_id required' }, 400);
-        linkPurchasedToSpool(purchased_id, spool_id);
-        _broadcastInventory('linked', 'purchased_spool', { purchased_id, spool_id });
+        if (!purchased_id) return sendJson(res, { error: 'purchased_id required' }, 400);
+        // spool_id null/absent unlinks (marks the purchase as not received).
+        linkPurchasedToSpool(purchased_id, spool_id || null);
+        _broadcastInventory(spool_id ? 'linked' : 'unlinked', 'purchased_spool', { purchased_id, spool_id: spool_id || null });
         sendJson(res, { ok: true });
       });
     }

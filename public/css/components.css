@@ -4463,6 +4463,25 @@
 .inv-kpi-label { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
 .inv-kpi-sub { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Procurement view */
+.proc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.proc-table { width: 100%; }
+.proc-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.proc-table td { vertical-align: middle; font-size: 0.82rem; }
+.proc-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; border: 1px solid var(--border-color); }
+.proc-notes { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.proc-badge { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.proc-badge-ok { background: color-mix(in srgb, #22c55e 16%, transparent); color: #22c55e; border: 1px solid color-mix(in srgb, #22c55e 40%, transparent); }
+.proc-badge-pending { background: color-mix(in srgb, #f0883e 16%, transparent); color: #f0883e; border: 1px solid color-mix(in srgb, #f0883e 40%, transparent); }
+.proc-actions { display: flex; gap: 4px; justify-content: flex-end; white-space: nowrap; }
+.proc-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 16px; color: var(--text-muted); text-align: center; }
+.proc-empty p { max-width: 360px; font-size: 0.85rem; }
+.proc-form { padding: 14px; margin: 10px 0; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-tertiary, rgba(127,127,127,0.05)); }
+.proc-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 10px; }
+.proc-form-wide { grid-column: 1 / -1; }
+.proc-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.proc-receive-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;

@@ -151,6 +151,7 @@
     inventory: { label: 'filament.tab_inventory', icon: _gicon('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'), modules: ['spool-summary', 'inventory-health', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
     storage:   { label: 'filament.tab_storage',   icon: _gicon('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'), modules: ['storage-dashboard'] },
     database:  { label: 'filament.tab_database',  icon: _gicon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'), modules: ['db-hero', 'db-browser'] },
+    procurement:{ label: 'filament.tab_procurement', icon: _gicon('<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>'), modules: ['procurement-panel'], external: true },
     drying:    { label: 'filament.tab_drying',    icon: _gicon('<path d="M12 2.7s5.5 5 5.5 9.3a5.5 5.5 0 0 1-11 0C6.5 7.7 12 2.7 12 2.7z"/>'), modules: ['drying-dashboard'] },
     multicolor:{ label: 'tabs.multicolor',        icon: _gicon('<circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 1 2-4h2a4 4 0 0 0 4-4 10 10 0 0 0-12-8z"/>'), modules: ['multicolor-panel'], external: true },
     tools:     { label: 'filament.tab_tools',     icon: _gicon('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'), modules: ['tools-dashboard'] },
@@ -161,7 +162,7 @@
   // stays uncluttered. Each group reveals its sub-tabs only when active. ═══
   const TAB_GROUPS = [
     { key: 'overview', label: 'filament.group_overview', icon: _gicon('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'), tabs: ['inventory'] },
-    { key: 'storage',  label: 'filament.group_storage',  icon: _gicon('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'), tabs: ['storage', 'database'] },
+    { key: 'storage',  label: 'filament.group_storage',  icon: _gicon('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'), tabs: ['storage', 'database', 'procurement'] },
     { key: 'tools',    label: 'filament.group_tools',    icon: _gicon('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'), tabs: ['drying', 'multicolor', 'tools', 'manage'] },
     { key: 'stats',    label: 'filament.group_stats',    icon: _gicon('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'), tabs: ['stats'] },
   ];
@@ -2155,6 +2156,8 @@
     if (tabId === 'multicolor' && typeof loadMulticolorPanel === 'function') loadMulticolorPanel();
     container.id = `filament-tab-${tabId}`;
     if (realBody) realBody.id = 'overlay-panel-body';
+    // Procurement renders directly into its own container (no body swap).
+    if (tabId === 'procurement' && typeof loadProcurementPanel === 'function') loadProcurementPanel(container);
   }
 
   // ═══ Main render ═══
@@ -2976,7 +2979,19 @@
       await fetch('/api/inventory/spools/batch-add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       showToast(t('filament.bulk_added', { count: data.count }), 'success');
     } else {
-      await fetch('/api/inventory/spools', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const res = await fetch('/api/inventory/spools', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      // If this spool was created from the Procurement "receive" flow, link
+      // the new spool back to its purchase so it counts as received.
+      if (window._procPendingLink) {
+        const pid = window._procPendingLink; window._procPendingLink = null;
+        try {
+          const created = await res.json();
+          if (created && created.id) {
+            await fetch('/api/filament-tracker/purchased/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ purchased_id: pid, spool_id: created.id }) });
+            showToast(t('procurement.received_ok', 'Marked as received'), 'success');
+          }
+        } catch (e) { /* non-fatal: spool created, link can be done manually */ }
+      }
     }
     loadFilament();
   };
