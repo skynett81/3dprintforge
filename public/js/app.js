@@ -499,7 +499,6 @@ const PANEL_TITLES = {
   'preflight': 'Pre-print Analysis',
   'mesh-repair': 'Mesh Repair Toolkit',
   'ai-forge': 'AI Model Forge',
-  'scene-composer': 'Scene Composer',
   'slicer': 'Slicer Bridge',
   'slicer-studio': 'Slicer Studio',
   'admin-diagnostics': 'Diagnostics & Tuning',
@@ -524,7 +523,6 @@ const PANEL_TITLES = {
   backup: 'tabs.backup',
   'firmware-updates': 'Firmware Updates',
   'resources': 'Resources',
-  'jscad': 'JSCAD Studio',
   'octoprint': 'OctoPrint',
   playground: 'tabs.playground',
   settings: 'tabs.settings',
@@ -563,7 +561,6 @@ const PANEL_LOADERS = {
   'preflight': () => { if (typeof loadPreflightSuite === 'function') loadPreflightSuite(); },
   'mesh-repair': () => { if (typeof loadMeshRepairSuite === 'function') loadMeshRepairSuite(); },
   'ai-forge': () => { if (typeof loadAiForge === 'function') loadAiForge(); },
-  'scene-composer': () => { if (typeof loadSceneComposer === 'function') loadSceneComposer(); },
   'slicer': () => { if (typeof loadSlicerPanel === 'function') loadSlicerPanel(); },
   'slicer-studio': () => { if (typeof loadSlicerStudio === 'function') loadSlicerStudio(); },
   'admin-diagnostics': () => {
@@ -603,11 +600,6 @@ const PANEL_LOADERS = {
     const body = document.getElementById('overlay-panel-body');
     if (body) body.innerHTML = '<div id="resources-panel"></div>';
     if (typeof loadResourcesPanel === 'function') loadResourcesPanel();
-  },
-  'jscad': () => {
-    const body = document.getElementById('overlay-panel-body');
-    if (body) body.innerHTML = '<div id="jscad-panel"></div>';
-    if (typeof loadJscadPanel === 'function') loadJscadPanel();
   },
   'octoprint': () => {
     const body = document.getElementById('overlay-panel-body');

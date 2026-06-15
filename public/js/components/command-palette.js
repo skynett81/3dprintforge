@@ -54,7 +54,6 @@
     // searchable from the Ctrl+K palette so users can jump straight in.
     'ai-forge':         'AI Model Forge',
     'mesh-repair':      'Mesh Repair Toolkit',
-    'scene-composer':   'Scene Composer',
     'gcode-studio':     'G-code Studio',
     'gcode-reference':  'G-code Reference & Estimator',
     'calibration':      'Calibration & Tuning',
@@ -69,7 +68,6 @@
     'signmaker':        'Sign Maker',
     'slicer':           'Slicer Bridge',
     'slicer-studio':    'Slicer Studio',
-    'jscad':            'JSCAD Studio',
     'octoprint':        'OctoPrint Bridge',
     'resources':        'Vendor Resources',
     'logs':             'Server Logs',
