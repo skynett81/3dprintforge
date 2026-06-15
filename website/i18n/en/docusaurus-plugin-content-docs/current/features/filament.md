@@ -93,3 +93,19 @@ Under **Filament → Statistics** you will find:
 - Consumption per printer
 - Estimated remaining lifetime per spool
 - Most used colors and vendors
+
+## Expiry & shelf-life
+
+Give a spool an expiry date when adding or editing it, or click *Suggest from shelf life* to fill one in from the material's typical shelf life (hygroscopic materials like TPU, Nylon and PVA are shortest; PLA/PETG/ABS longest). Spool cards then show an **Expires in N days** (amber) or **Expired** (red) badge, and the Inventory Health overview counts how many are expiring so you can use them first.
+
+## Purchases (procurement)
+
+The **Purchases** tab (under the Storage group) tracks the order→receive→shelf cycle. Log what you bought (item, brand, cost, date), see pending vs received totals and this month's spend, then **Receive** a purchase to add it to inventory as a new spool or link it to an existing one. You can also press **Buy again** on a low-stock restock suggestion to start a purchase pre-filled.
+
+## Scan to act & stocktake
+
+Scan a spool's QR or short code (or type it) to open a quick-action sheet: view details, edit, check out/in, weigh in, or mark empty. **Stocktake** mode (in the inventory *More* menu) lets you scan through the shelf and tick each spool off with a live counted/uncounted progress list.
+
+## Reports
+
+The **Reports** tab (under the Statistics group) gives a period-scoped (30/90/365-day), exportable summary: consumed weight, filament cost, success rate and waste, plus a per-material table with usage share. Export the table to CSV with one click.

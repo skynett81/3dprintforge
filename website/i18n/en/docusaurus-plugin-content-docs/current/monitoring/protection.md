@@ -77,6 +77,14 @@ Different printers can have different rules:
 2. Turn off **Inherit global rules**
 3. Configure custom rules for this printer
 
+## Test, snooze & reliability
+
+Each printer card in the Print Guard sensor dashboard has three extra controls:
+
+- **Test** — fires a safe test alert that only logs and notifies (it never pauses or stops a real print), so you can confirm your notification channels work. The entry is tagged *[Test]* in the log.
+- **Snooze** — temporarily mutes a printer's guard for 15, 30 or 60 minutes during a known-tricky print, without losing your configuration. A *Snoozed N min — Resume now* state lets you re-enable it at any time.
+- **Reliability summary** — a short line per printer derived from the event log: total incidents, incidents in the last 7 days, the most common issue type, and when the last incident happened.
+
 ## Log and event history
 
 All Print Guard events are logged:

@@ -77,6 +77,14 @@ Ulike printere kan ha ulike regler:
 2. Slå av **Arv globale regler**
 3. Konfigurer egne regler for denne printeren
 
+## Test, snooze og pålitelighet
+
+Hvert printerkort i Print Guard-sensoroversikten har tre ekstra kontroller:
+
+- **Test** — utløser et trygt testvarsel som kun logges og varsles (det setter aldri en ekte print på pause eller stopper den), slik at du kan bekrefte at varselkanalene dine fungerer. Oppføringen merkes *[Test]* i loggen.
+- **Snooze** — demper midlertidig en printers vakt i 15, 30 eller 60 minutter under en kjent vanskelig print, uten å miste konfigurasjonen din. En *Snoozet N min — Gjenoppta nå*-tilstand lar deg aktivere den på nytt når som helst.
+- **Pålitelighets-sammendrag** — en kort linje per printer utledet fra hendelsesloggen: totalt antall hendelser, hendelser de siste 7 dagene, den vanligste problemtypen, og når den siste hendelsen skjedde.
+
 ## Logg og hendelseshistorikk
 
 Alle Print Guard-hendelser logges:

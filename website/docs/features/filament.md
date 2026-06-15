@@ -93,3 +93,19 @@ Under **Filament → Statistikk** finner du:
 - Forbruk per printer
 - Estimert gjenværende levetid per spole
 - Mest brukte farger og leverandører
+
+## Utløp og holdbarhet
+
+Gi en spole en utløpsdato når du legger den til eller redigerer den, eller klikk *Foreslå fra holdbarhet* for å fylle inn en basert på materialets typiske holdbarhet. Hygroskopiske materialer som TPU, Nylon og PVA har kortest holdbarhet, mens PLA/PETG/ABS har lengst. Spolekortene viser deretter et **Utløper om N dager** (gult) eller **Utløpt** (rødt) merke, og Inventory Health-oversikten teller hvor mange som er i ferd med å gå ut, slik at du kan bruke dem først.
+
+## Innkjøp
+
+**Innkjøp**-fanen (under Lager-gruppen) holder styr på syklusen bestilt → mottatt → på hylla. Logg hva du kjøpte (vare, leverandør, kostnad, dato), se ventende kontra mottatte totaler og denne månedens forbruk, og **Motta** så et innkjøp for å legge det til i lageret som en ny spole eller koble det til en eksisterende. Du kan også trykke **Kjøp på nytt** på et restock-forslag ved lav beholdning for å starte et ferdig utfylt innkjøp.
+
+## Skann og opptelling
+
+Skann en spoles QR- eller kortkode (eller skriv den inn) for å åpne et hurtighandlingsark: se detaljer, rediger, sjekk ut/inn, vei inn, eller merk som tom. **Opptelling**-modus (i lagerets *Mer*-meny) lar deg skanne deg gjennom hylla og krysse av hver spole med en levende telt/ikke-telt fremdriftsliste.
+
+## Rapporter
+
+**Rapporter**-fanen (under Statistikk-gruppen) gir et periodeavgrenset (30/90/365 dager), eksporterbart sammendrag: forbrukt vekt, filamentkostnad, suksessrate og svinn, pluss en tabell per materiale med bruksandel. Eksporter tabellen til CSV med ett klikk.
