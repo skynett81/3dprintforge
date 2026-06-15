@@ -5951,16 +5951,24 @@
         el.innerHTML = `<p class="text-muted" style="font-size:0.8rem;padding:8px 0">${t('filament.nfc_no_mappings')}</p>`;
         return;
       }
-      let h = '<div class="fil-nfc-list">';
+      const STD = {
+        bambu: ['Bambu', '#00ae42'], ams: ['Bambu', '#00ae42'], snapmaker: ['Snapmaker', '#fa6800'],
+        openspool: ['OpenSpool', '#1279ff'], openprinttag: ['OpenPrintTag', '#fa5c2f'],
+        opentag3d: ['OpenTag3D', '#8b5cf6'], tigertag: ['TigerTag', '#e6a817'], generic: ['Generic', '#888'],
+      };
+      const stds = [...new Set(mappings.map(m => (STD[m.standard] || STD.generic)[0]))];
+      let h = `<div class="fil-nfc-summary text-muted" style="font-size:0.72rem;margin-bottom:6px">${mappings.length} ${t('filament.nfc_tags', 'tags')} · ${stds.join(' · ')}</div>`;
+      h += '<div class="fil-nfc-list">';
       for (const m of mappings) {
         const color = m.color_hex ? hexToRgb(m.color_hex) : '#888';
+        const [label, hex] = STD[m.standard] || STD.generic;
         h += `<div class="fil-nfc-item">
           ${miniSpool(color, 16)}
           <div class="fil-nfc-info">
-            <strong>${esc(m.spool_name || t('filament.nfc_unlinked'))}</strong>
-            <span class="text-muted" style="font-size:0.75rem">UID: ${esc(m.tag_uid)} · ${esc(m.standard || 'openspool')}</span>
+            <strong>${esc(m.spool_name || t('filament.nfc_unlinked'))} <span class="nfc-std-badge" style="background:${hex}22;color:${hex};border:1px solid ${hex}55">${label}</span></strong>
+            <span class="text-muted" style="font-size:0.72rem">UID: ${esc(m.tag_uid)}${m.last_scanned ? ' · ' + new Date(m.last_scanned + 'Z').toLocaleDateString() : ''}</span>
           </div>
-          <button class="filament-delete-btn" style="opacity:1" onclick="unlinkNfcItem('${esc(m.tag_uid)}')" title="${t('settings.delete')}" title="${t('settings.delete')}" data-bs-toggle="tooltip">
+          <button class="filament-delete-btn" style="opacity:1" onclick="unlinkNfcItem('${esc(m.tag_uid)}')" title="${t('settings.delete')}" data-bs-toggle="tooltip">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>`;
