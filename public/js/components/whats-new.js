@@ -6,30 +6,48 @@
 // KEEP THIS CURRENT: whenever a release adds user-facing features, refresh the
 // FEATURES list with the new batch and bump VERSION so everyone sees it again.
 // VERSION history: 1 = sidebar search/pin, overlay, Spoolman. 2 = v1.1.24.
+// 3 = richer stats, accessories, reliable history. 4 = inventory expiry +
+// procurement + scan/stocktake + reports, Print Guard upgrade, unified UI.
 // 3 = filament insights, connected accessories, reliable print history.
 (function () {
   'use strict';
 
-  var VERSION = '3';
+  var VERSION = '4';
   var KEY = 'whatsnew-seen-v' + VERSION;
 
   var FEATURES = [
     {
-      icon: 'bi-graph-up',
-      title: 'Richer statistics',
-      desc: 'The Filament tab leads with a KPI strip (used, per print, waste, color changes, cost) and a monthly consumption chart, and the Cost tab adds avg/month, prints costed and a clear note when only filament cost is configured.',
-      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('stats'); } location.hash = '#stats/filament'; } },
+      icon: 'bi-hourglass-split',
+      title: 'Filament expiry & shelf-life',
+      desc: 'Give spools an expiry date (or let it suggest one from the material shelf life) and the inventory flags them with "expires in N days" / "expired" badges. The Inventory Health overview counts what is expiring at a glance.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('filament'); } location.hash = '#filament'; } },
     },
     {
-      icon: 'bi-plugin',
-      title: 'Connected accessories',
-      desc: 'Each printer now detects what is plugged in — AMS units (incl. mixed AMS 2 Pro / HT setups labelled per unit), probes, sensors, cameras and more — and can file them into your hardware inventory.',
+      icon: 'bi-cart-check',
+      title: 'Purchases — order to shelf',
+      desc: 'A new Purchases tab (under Storage) tracks what you bought, the cost and when. Mark a purchase received to add it to inventory, or "Buy again" straight from a low-stock restock suggestion.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('filament'); } location.hash = '#filament'; } },
     },
     {
-      icon: 'bi-clock-history',
-      title: 'Reliable print history',
-      desc: 'Finished prints are no longer dropped: a recording fault that could hide recent prints is fixed, and a job already finished when the server reconnects is captured retroactively.',
-      action: { label: 'View', fn: function () { if (window.openPanel) { window.openPanel('history'); } location.hash = '#history'; } },
+      icon: 'bi-upc-scan',
+      title: 'Scan to act + stocktake',
+      desc: 'Scan a spool QR or short code to open a quick-action sheet (details, edit, check out/in, weigh in, mark empty). A new stocktake mode lets you scan through the shelf and tick everything off.',
+    },
+    {
+      icon: 'bi-file-earmark-bar-graph',
+      title: 'Inventory reports',
+      desc: 'A Reports tab (under Statistics) gives a period-scoped, exportable summary — consumed weight, filament cost, success rate, waste — with a per-material breakdown and one-click CSV export.',
+    },
+    {
+      icon: 'bi-shield-check',
+      title: 'Print Guard upgrade',
+      desc: 'Fire a safe test alert to verify your notifications, snooze a printer\'s guard for 15/30/60 min during a tricky print, and see a per-printer reliability summary (incidents, last 7 days, most common issue).',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('protection'); } location.hash = '#protection'; } },
+    },
+    {
+      icon: 'bi-grid-1x2',
+      title: 'Cleaner, unified interface',
+      desc: 'The sidebar is grouped into Operate / Create / Manage zones, and the whole app now shares one design system — consistent colours, cards, badges, notices and empty states from Dashboard to Admin.',
     },
   ];
 
