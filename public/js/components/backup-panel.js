@@ -251,19 +251,19 @@
         .backup-status--info { background: rgba(0, 180, 255, 0.12); color: var(--accent-blue); }
         .backup-empty { color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0; }
         .backup-item {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 0.6rem 0.75rem; border-radius: var(--radius);
+          display: flex; flex-direction: column; gap: 0.6rem;
+          padding: 0.85rem 1rem; border-radius: var(--radius);
           background: var(--bg-secondary); border: 1px solid var(--border-color);
         }
-        .backup-item-info { flex: 1; min-width: 0; }
+        .backup-item-info { min-width: 0; }
         .backup-item-name {
-          font-size: 0.85rem; font-weight: 500; color: var(--text-primary);
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
+          word-break: break-all; line-height: 1.3;
         }
         .backup-item-meta {
-          display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;
+          display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.74rem; color: var(--text-muted); margin-top: 0.3rem;
         }
-        .backup-item-actions { display: flex; gap: 0.4rem; flex-shrink: 0; margin-left: 0.75rem; }
+        .backup-item-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid var(--border-color); }
         .backup-spinner {
           display: inline-block; width: 14px; height: 14px;
           border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
