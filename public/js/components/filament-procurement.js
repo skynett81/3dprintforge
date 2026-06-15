@@ -135,11 +135,27 @@
     </div>`;
   }
 
+  // Open the Procurement tab and log a purchase prefilled from elsewhere
+  // (e.g. a "Buy again" button on a low-stock spool). prefill: {name, brand,
+  // cost, color_hex}.
+  window._procQuickAdd = function (prefill) {
+    window._procPrefill = prefill || null;
+    if (typeof window.switchFilamentTab === 'function') window.switchFilamentTab('procurement');
+    // Wait for the panel (async) to mount, then open the prefilled form.
+    let tries = 0;
+    const tick = () => {
+      if (document.getElementById('proc-form-host')) { window._procShowForm(); }
+      else if (tries++ < 40) setTimeout(tick, 80);
+    };
+    setTimeout(tick, 120);
+  };
+
   // ── Add / edit form ──────────────────────────────────────────────────────
   window._procShowForm = function (id) {
     const host = document.getElementById('proc-form-host');
     if (!host) return;
-    const p = id ? _purchases.find(x => x.id === id) : null;
+    const p = id ? _purchases.find(x => x.id === id) : (window._procPrefill || null);
+    if (!id) window._procPrefill = null;
     const today = new Date().toISOString().slice(0, 10);
     host.innerHTML = `<div class="proc-form card-inset">
       <div class="proc-form-grid">

@@ -5527,6 +5527,7 @@
         <th>${t('filament.restock_days_left')}</th>
         <th>${t('filament.restock_order')}</th>
         <th>${t('filament.restock_urgency')}</th>
+        <th></th>
       </tr></thead><tbody>`;
       for (const s of data) {
         const colorDot = s.color_hex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#${s.color_hex};border:1px solid var(--border-color)"></span>` : '';
@@ -5546,6 +5547,10 @@
           <td style="color:${s.days_until_out != null && s.days_until_out <= 14 ? uColor : ''};font-weight:${s.days_until_out != null && s.days_until_out <= 7 ? '700' : '400'}">${s.days_until_out != null ? s.days_until_out + 'd' : '-'}</td>
           <td>${s.spools_to_order > 0 ? `<strong>${s.spools_to_order}</strong> ${t('filament.spools', 'spoler')}${s.est_cost ? ` <span class="text-muted">(~${Math.round(s.est_cost)})</span>` : ''}` : '-'}</td>
           <td><span style="background:${uColor};color:#fff;padding:1px 8px;border-radius:4px;font-size:0.7rem;text-transform:uppercase">${t('filament.urgency_' + s.urgency) || s.urgency}</span></td>
+          <td>${window._can && window._can('filament') ? `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple title="${t('procurement.buy_again', 'Log a purchase for this filament')}" onclick='window._procQuickAdd(${esc(JSON.stringify({ name: s.profile_name || '', brand: s.vendor_name || null, cost: (s.spools_to_order > 0 && s.est_cost) ? Math.round(s.est_cost / s.spools_to_order) : null, color_hex: s.color_hex || null }))})'>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            ${t('procurement.buy_again_btn', 'Buy again')}
+          </button>` : ''}</td>
         </tr>`;
       }
       h += '</tbody></table>';

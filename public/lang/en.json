@@ -1128,7 +1128,9 @@
     "save_failed": "Save failed",
     "deleted": "Purchase deleted",
     "confirm_delete": "Delete this purchase record?",
-    "load_failed": "Could not load purchases"
+    "load_failed": "Could not load purchases",
+    "buy_again": "Log a purchase for this filament",
+    "buy_again_btn": "Buy again"
   },
   "tabs": {
     "controls": "Controls",
