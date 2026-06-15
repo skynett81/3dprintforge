@@ -15,6 +15,8 @@
 (function () {
   'use strict';
 
+  const t = (k, f) => (window.t ? window.t(k, f) : (typeof f === 'string' ? f : k));
+
   const _state = {
     scene: null,
     sceneId: null,
@@ -54,14 +56,14 @@
   }
 
   function _undo() {
-    if (_state.undoStack.length === 0) return _toast('Nothing to undo', 'info');
+    if (_state.undoStack.length === 0) return _toast(t('scene.nothing_to_undo', 'Nothing to undo'), 'info');
     _state.redoStack.push(_snapshot());
     _restoreFromSnapshot(_state.undoStack.pop());
     _markDirty(); _renderSidePanel(); _rebuildViewport();
   }
 
   function _redo() {
-    if (_state.redoStack.length === 0) return _toast('Nothing to redo', 'info');
+    if (_state.redoStack.length === 0) return _toast(t('scene.nothing_to_redo', 'Nothing to redo'), 'info');
     _state.undoStack.push(_snapshot());
     _restoreFromSnapshot(_state.redoStack.pop());
     _markDirty(); _renderSidePanel(); _rebuildViewport();
@@ -110,29 +112,29 @@
       <div class="card">
         <div class="card-body" style="padding:0.75rem">
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
-            <button class="form-btn" id="sc-new">New</button>
-            <button class="form-btn" id="sc-open">Open…</button>
-            <button class="form-btn" id="sc-save">Save</button>
-            <button class="form-btn" id="sc-gallery" title="Insert from Model Forge generator gallery">Gallery…</button>
-            <button class="form-btn" id="sc-import-stl" title="Import STL/OBJ/3MF as a scene shape">Import…</button>
+            <button class="form-btn" id="sc-new">${t('scene.btn_new', 'New')}</button>
+            <button class="form-btn" id="sc-open">${t('scene.btn_open', 'Open…')}</button>
+            <button class="form-btn" id="sc-save">${t('scene.btn_save', 'Save')}</button>
+            <button class="form-btn" id="sc-gallery" title="Insert from Model Forge generator gallery">${t('scene.btn_gallery', 'Gallery…')}</button>
+            <button class="form-btn" id="sc-import-stl" title="Import STL/OBJ/3MF as a scene shape">${t('scene.btn_import', 'Import…')}</button>
             <input type="file" id="sc-import-file" accept=".stl,.obj,.3mf" style="display:none">
             <span style="border-left:1px solid var(--border-color);height:24px;margin:0 4px"></span>
             <button class="form-btn" id="sc-undo" title="Undo (Ctrl+Z)">↶</button>
             <button class="form-btn" id="sc-redo" title="Redo (Ctrl+Y)">↷</button>
-            <button class="form-btn" id="sc-duplicate" title="Duplicate (Ctrl+D)">Duplicate</button>
+            <button class="form-btn" id="sc-duplicate" title="Duplicate (Ctrl+D)">${t('scene.btn_duplicate', 'Duplicate')}</button>
             <button class="form-btn" id="sc-pattern" title="Pattern array (linear / radial)">Pattern…</button>
-            <button class="form-btn" id="sc-delete" title="Delete (Del)">Delete</button>
+            <button class="form-btn" id="sc-delete" title="Delete (Del)">${t('scene.btn_delete', 'Delete')}</button>
             <span style="border-left:1px solid var(--border-color);height:24px;margin:0 4px"></span>
-            <span style="font-size:0.78rem;opacity:0.7">Mirror:</span>
+            <span style="font-size:0.78rem;opacity:0.7">${t('scene.label_mirror', 'Mirror:')}</span>
             <button class="form-btn" data-mirror="x" title="Mirror across X plane">X</button>
             <button class="form-btn" data-mirror="y" title="Mirror across Y plane">Y</button>
             <button class="form-btn" data-mirror="z" title="Mirror across Z plane">Z</button>
-            <span style="font-size:0.78rem;opacity:0.7">Align:</span>
+            <span style="font-size:0.78rem;opacity:0.7">${t('scene.label_align', 'Align:')}</span>
             <button class="form-btn" data-align="x-center">centerX</button>
             <button class="form-btn" data-align="y-center">centerY</button>
             <button class="form-btn" data-align="z-min">groundZ</button>
             <span style="border-left:1px solid var(--border-color);height:24px;margin:0 4px"></span>
-            <label style="font-size:0.78rem">Snap:
+            <label style="font-size:0.78rem">${t('scene.label_snap', 'Snap:')}
               <select id="sc-snap" class="form-control" style="display:inline-block;width:auto;font-size:0.78rem">
                 <option value="0">off</option>
                 <option value="0.5">0.5</option>
@@ -142,14 +144,14 @@
               </select>
             </label>
             <label style="font-size:0.78rem"><input type="checkbox" id="sc-csg" checked> CSG holes</label>
-            <button class="form-btn" id="sc-group" title="Group selected shapes">Group</button>
-            <button class="form-btn" id="sc-ungroup" title="Ungroup selected">Ungroup</button>
+            <button class="form-btn" id="sc-group" title="Group selected shapes">${t('scene.btn_group', 'Group')}</button>
+            <button class="form-btn" id="sc-ungroup" title="Ungroup selected">${t('scene.btn_ungroup', 'Ungroup')}</button>
             <button class="form-btn primary" id="sc-render" style="margin-left:auto">Render &amp; Download</button>
             <button class="form-btn" id="sc-send-printer" title="Send rendered scene directly to a connected printer">→ Printer</button>
             <span style="font-size:0.85rem;opacity:0.7;margin-left:8px" id="sc-saved-status">●</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:0.78rem">
-            <span style="opacity:0.7">View:</span>
+            <span style="opacity:0.7">${t('scene.label_view', 'View:')}</span>
             <button class="form-btn" data-view="iso">Iso</button>
             <button class="form-btn" data-view="top">Top</button>
             <button class="form-btn" data-view="front">Front</button>
@@ -166,7 +168,7 @@
             <div id="sc-palette" style="border:1px solid var(--border-color);border-radius:6px;padding:8px;overflow:auto"></div>
             <div id="sc-viewport-wrap" style="position:relative;border:1px solid var(--border-color);border-radius:6px;background:#1a1a1a;min-height:540px">
               <canvas id="sc-canvas" style="width:100%;height:100%;display:block"></canvas>
-              <div id="sc-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:0.85rem;display:none">Add a shape from the palette →</div>
+              <div id="sc-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:0.85rem;display:none">${t('scene.empty_add_shape', 'Add a shape from the palette →')}</div>
             </div>
             <div id="sc-side" style="border:1px solid var(--border-color);border-radius:6px;padding:8px;overflow:auto;max-height:540px"></div>
           </div>
@@ -225,13 +227,13 @@
 
   function _renderPalette() {
     const types = [
-      { type: 'box',      label: '◧ Box' },
-      { type: 'sphere',   label: '● Sphere' },
-      { type: 'cylinder', label: '⬭ Cylinder' },
-      { type: 'cone',     label: '▲ Cone' },
-      { type: 'torus',    label: '◯ Torus' },
-      { type: 'prism',    label: '⬡ Prism' },
-      { type: 'pyramid',  label: '△ Pyramid' },
+      { type: 'box',      label: '◧ ' + t('scene.shape_box', 'Box') },
+      { type: 'sphere',   label: '● ' + t('scene.shape_sphere', 'Sphere') },
+      { type: 'cylinder', label: '⬭ ' + t('scene.shape_cylinder', 'Cylinder') },
+      { type: 'cone',     label: '▲ ' + t('scene.shape_cone', 'Cone') },
+      { type: 'torus',    label: '◯ ' + t('scene.shape_torus', 'Torus') },
+      { type: 'prism',    label: '⬡ ' + t('scene.shape_prism', 'Prism') },
+      { type: 'pyramid',  label: '△ ' + t('scene.shape_pyramid', 'Pyramid') },
     ];
     const wrap = document.getElementById('sc-palette');
     wrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:6px;opacity:0.7">Add Shape</div>'
@@ -506,7 +508,7 @@
   // ── Pattern array (linear / radial) ─────────────────────────────────
 
   function _openPatternDialog() {
-    if (_state.selectedIds.size === 0) return _toast('Select a shape first', 'info');
+    if (_state.selectedIds.size === 0) return _toast(t('scene.select_shape_first', 'Select a shape first'), 'info');
     const mode = prompt('Pattern type:\n  1 = Linear (along X)\n  2 = Radial (around Z axis)\n\nEnter 1 or 2:', '1');
     if (mode === '1') {
       const count = parseInt(prompt('Linear count (2–20)?', '4'), 10);

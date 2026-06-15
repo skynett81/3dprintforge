@@ -18,6 +18,8 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  const t = (key, fb) => (typeof window.t === 'function' ? window.t(key, fb) : fb);
+
   const state = { health: null, duplicates: [], cheapest: [], extraFields: { spool: [], filament: [], vendor: [] }, orcaResults: [], conflicts: [] };
 
   // ────────────────────────────────────────────────
@@ -78,25 +80,25 @@
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:0.82rem">
           <strong style="margin-right:6px">Quick actions:</strong>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.importAll()" title="Pull every vendor / filament / spool from Spoolman">
-            <i class="bi bi-cloud-arrow-down"></i> Import from Spoolman
+            <i class="bi bi-cloud-arrow-down"></i> ${t('admin_inv.import_from_spoolman', 'Import from Spoolman')}
           </button>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.detectDupes()" title="Find and link duplicate filament profiles">
-            <i class="bi bi-files"></i> Dedupe profiles
+            <i class="bi bi-files"></i> ${t('admin_inv.dedupe_profiles', 'Dedupe profiles')}
           </button>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.trackPrices()" title="Snapshot current retailer prices">
-            <i class="bi bi-cash-coin"></i> Track prices
+            <i class="bi bi-cash-coin"></i> ${t('admin_inv.track_prices', 'Track prices')}
           </button>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.syncExtraFields()" title="Pull custom-field schema from Spoolman">
-            <i class="bi bi-sliders"></i> Sync custom fields
+            <i class="bi bi-sliders"></i> ${t('admin_inv.sync_custom_fields', 'Sync custom fields')}
           </button>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.refreshTypeBridge()">
-            <i class="bi bi-arrow-repeat"></i> Refresh type-bridge
+            <i class="bi bi-arrow-repeat"></i> ${t('admin_inv.refresh_type_bridge', 'Refresh type-bridge')}
           </button>
           <button class="form-btn form-btn-sm" onclick="_invAdmin.refreshPerVendor()">
-            <i class="bi bi-arrow-repeat"></i> Refresh SMDB per vendor
+            <i class="bi bi-arrow-repeat"></i> ${t('admin_inv.refresh_smdb_per_vendor', 'Refresh SMDB per vendor')}
           </button>
           <a class="form-btn form-btn-sm" href="/api/spoolman/export" download>
-            <i class="bi bi-box-arrow-down"></i> Export JSON
+            <i class="bi bi-box-arrow-down"></i> ${t('admin_inv.export_json', 'Export JSON')}
           </a>
           <span style="margin-left:auto;display:flex;gap:8px;font-size:0.78rem">
             <span id="inv-import-result"></span>
@@ -109,17 +111,17 @@
       <!-- 2-column grid for everything else (auto-fits to 1 column on narrow viewports) -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));grid-auto-flow:dense;gap:10px">
 
-        ${card('currency-dollar', 'Cheapest retailer per filament',
+        ${card('currency-dollar', t('admin_inv.cheapest_retailer_per_filament', 'Cheapest retailer per filament'),
           `<div style="max-height:280px;overflow-y:auto">${renderCheapest()}</div>`,
           { open: true })}
 
-        ${card('shop', 'Vendor → Spoolman sync',
+        ${card('shop', t('admin_inv.vendor_spoolman_sync', 'Vendor → Spoolman sync'),
           `<div id="inv-vendor-list" style="max-height:280px;overflow-y:auto"></div>`,
           { open: true })}
 
-        ${card('sliders', 'Custom fields (Spoolman-compatible)', renderExtraFields())}
+        ${card('sliders', t('admin_inv.custom_fields_spoolman_compatible', 'Custom fields (Spoolman-compatible)'), renderExtraFields())}
 
-        ${card('search', 'OrcaSlicer preset browser', `
+        ${card('search', t('admin_inv.orcaslicer_preset_browser', 'OrcaSlicer preset browser'), `
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
             <input class="form-input" id="inv-orca-vendor" placeholder="Vendor (BBL, Prusa…)" style="flex:1;min-width:120px">
             <input class="form-input" id="inv-orca-material" placeholder="Material (PLA, PETG…)" style="flex:1;min-width:120px">
@@ -183,7 +185,7 @@
       const el = document.getElementById('inv-vendor-list');
       if (!el) return;
       if (!Array.isArray(vendors) || vendors.length === 0) {
-        el.innerHTML = '<p class="text-muted">No vendors.</p>';
+        el.innerHTML = '<p class="text-muted">' + t('admin_inv.no_vendors', 'No vendors.') + '</p>';
         return;
       }
       el.innerHTML = '<ul class="mb-0">' + vendors.slice(0, 100).map(v => `

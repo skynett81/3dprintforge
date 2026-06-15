@@ -159,7 +159,7 @@
       // Cavity temp sensor (read-only for Moonraker)
       if (meta?.type === 'moonraker') {
         html += `<div class="ctrl-temp-row">
-          <span class="ctrl-temp-label">Cavity</span>
+          <span class="ctrl-temp-label">${t('controls.cavity', 'Cavity')}</span>
           <span class="ctrl-temp-current">${chamberTemp}°C</span>
           <span class="ctrl-temp-target" style="opacity:0.5">sensor</span>
         </div>`;
@@ -206,7 +206,7 @@
 
     // Moonraker-specific: cavity fan
     if (data._cavity_fan_speed !== undefined) {
-      html += fanSlider('cavity', 'Cavity Fan', data._cavity_fan_speed, 'cavity_fan');
+      html += fanSlider('cavity', t('controls.cavity_fan', 'Cavity Fan'), data._cavity_fan_speed, 'cavity_fan');
     }
 
     // Moonraker-specific: purifier
@@ -316,28 +316,28 @@
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
         </div>
-        <span class="ctrl-tool-label">Bed Mesh</span>
+        <span class="ctrl-tool-label">${t('controls.tool_bed_mesh', 'Bed Mesh')}</span>
       </button>`;
 
       html += `<button class="ctrl-tool-btn" data-ripple onclick="sendGcode('SHAPER_CALIBRATE')">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c0 0 2-4 5-4s3 8 6 8 5-4 5-4"/><path d="M22 12c0 0-2 4-5 4"/></svg>
         </div>
-        <span class="ctrl-tool-label">Input Shaper</span>
+        <span class="ctrl-tool-label">${t('controls.tool_input_shaper', 'Input Shaper')}</span>
       </button>`;
 
       html += `<button class="ctrl-tool-btn" data-ripple onclick="sendCommand('firmware_restart')">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
         </div>
-        <span class="ctrl-tool-label">FW Restart</span>
+        <span class="ctrl-tool-label">${t('controls.tool_fw_restart', 'FW Restart')}</span>
       </button>`;
 
       html += `<button class="ctrl-tool-btn" data-ripple style="color:var(--accent-red)" onclick="confirmAction('Emergency stop?', () => sendCommand('emergency_stop'), {danger:true})">
         <div class="ctrl-tool-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
         </div>
-        <span class="ctrl-tool-label">E-Stop</span>
+        <span class="ctrl-tool-label">${t('controls.tool_estop', 'E-Stop')}</span>
       </button>`;
     }
 
@@ -494,15 +494,15 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-          Prusa Controls
+          ${t('controls.prusa_controls', 'Prusa Controls')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G28'})">Home</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G29'})">Mesh Bed</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:0})">MMU Load T0</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:1})">MMU Load T1</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:2})">MMU Load T2</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_unload')">MMU Unload</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G28'})">${t('controls.prusa_home', 'Home')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('gcode',{gcode:'G29'})">${t('controls.prusa_mesh_bed', 'Mesh Bed')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:0})">${t('controls.prusa_mmu_load_t0', 'MMU Load T0')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:1})">${t('controls.prusa_mmu_load_t1', 'MMU Load T1')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_load',{slot:2})">${t('controls.prusa_mmu_load_t2', 'MMU Load T2')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('mmu_unload')">${t('controls.prusa_mmu_unload', 'MMU Unload')}</button>
         </div>
       </div>`;
     }
@@ -512,16 +512,16 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          Creality AI
+          ${t('controls.creality_ai', 'Creality AI')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SELF_CHECK')">Self Check</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LEVELING_CALIBRATE')">Auto Level</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('INPUT_SHAPER_CALIBRATE')">Input Shaper</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=220')">PID Nozzle</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=heater_bed TARGET=60')">PID Bed</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SELF_CHECK')">${t('controls.creality_self_check', 'Self Check')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LEVELING_CALIBRATE')">${t('controls.creality_auto_level', 'Auto Level')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('INPUT_SHAPER_CALIBRATE')">${t('controls.creality_input_shaper', 'Input Shaper')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=220')">${t('controls.creality_pid_nozzle', 'PID Nozzle')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=heater_bed TARGET=60')">${t('controls.creality_pid_bed', 'PID Bed')}</button>
         </div>
-        ${caps.crealityLidar ? '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">Lidar first-layer scanning available</div>' : ''}
+        ${caps.crealityLidar ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">${t('controls.creality_lidar_hint', 'Lidar first-layer scanning available')}</div>` : ''}
       </div>`;
     }
 
@@ -530,17 +530,17 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
-          Voron Tools
+          ${t('controls.voron_tools', 'Voron Tools')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('QUAD_GANTRY_LEVEL')">QGL</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">Z-Tilt</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('CLEAN_NOZZLE')">Clean Nozzle</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('STATUS_READY')">LEDs On</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('STATUS_OFF')">LEDs Off</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem;color:var(--accent-red)" onclick="sendGcode('M112')">E-Stop</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('QUAD_GANTRY_LEVEL')">${t('controls.voron_qgl', 'QGL')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">${t('controls.voron_z_tilt', 'Z-Tilt')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.voron_bed_mesh', 'Bed Mesh')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.voron_input_shaper', 'Input Shaper')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('CLEAN_NOZZLE')">${t('controls.voron_clean_nozzle', 'Clean Nozzle')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('STATUS_READY')">${t('controls.voron_leds_on', 'LEDs On')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('STATUS_OFF')">${t('controls.voron_leds_off', 'LEDs Off')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem;color:var(--accent-red)" onclick="sendGcode('M112')">${t('controls.voron_estop', 'E-Stop')}</button>
         </div>
       </div>`;
     }
@@ -550,16 +550,16 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/></svg>
-          Elegoo Neptune
+          ${t('controls.elegoo_neptune', 'Elegoo Neptune')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">PID Nozzle</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=heater_bed TARGET=60')">PID Bed</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LOAD_FILAMENT')">Load Filament</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('UNLOAD_FILAMENT')">Unload Filament</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.elegoo_home_all', 'Home All')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.elegoo_bed_mesh', 'Bed Mesh')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.elegoo_input_shaper', 'Input Shaper')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">${t('controls.elegoo_pid_nozzle', 'PID Nozzle')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=heater_bed TARGET=60')">${t('controls.elegoo_pid_bed', 'PID Bed')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('LOAD_FILAMENT')">${t('controls.elegoo_load_filament', 'Load Filament')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('UNLOAD_FILAMENT')">${t('controls.elegoo_unload_filament', 'Unload Filament')}</button>
         </div>
       </div>`;
     }
@@ -569,16 +569,16 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="9" y1="2" x2="9" y2="22"/></svg>
-          QIDI Controls
+          ${t('controls.qidi_controls', 'QIDI Controls')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">Z-Tilt Align</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=50')">Chamber 50°C</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=0')">Chamber Off</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=250')">PID Nozzle</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.qidi_home_all', 'Home All')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('Z_TILT_ADJUST')">${t('controls.qidi_z_tilt_align', 'Z-Tilt Align')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.qidi_bed_mesh', 'Bed Mesh')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.qidi_input_shaper', 'Input Shaper')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=50')">${t('controls.qidi_chamber_50', 'Chamber 50°C')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SET_HEATER_TEMPERATURE HEATER=chamber TARGET=0')">${t('controls.qidi_chamber_off', 'Chamber Off')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=250')">${t('controls.qidi_pid_nozzle', 'PID Nozzle')}</button>
         </div>
       </div>`;
     }
@@ -588,13 +588,13 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
-          AnkerMake Controls
+          ${t('controls.ankermake_controls', 'AnkerMake Controls')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">Home All</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">Bed Mesh</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">Input Shaper</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">PID Nozzle</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('G28')">${t('controls.anker_home_all', 'Home All')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('BED_MESH_CALIBRATE')">${t('controls.anker_bed_mesh', 'Bed Mesh')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('SHAPER_CALIBRATE')">${t('controls.anker_input_shaper', 'Input Shaper')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendGcode('PID_CALIBRATE HEATER=extruder TARGET=210')">${t('controls.anker_pid_nozzle', 'PID Nozzle')}</button>
         </div>
       </div>`;
     }
@@ -605,12 +605,12 @@
         <div class="ctrl-card-title" style="display:flex;align-items:center;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            Klipper Macros
+            ${t('controls.klipper_macros', 'Klipper Macros')}
           </span>
-          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:2px 6px" data-ripple onclick="window._loadKlipperMacros('${esc(meta?.id || '')}')">Load</button>
+          <button class="form-btn form-btn-sm" style="font-size:0.65rem;padding:2px 6px" data-ripple onclick="window._loadKlipperMacros('${esc(meta?.id || '')}')">${t('controls.klipper_macros_load', 'Load')}</button>
         </div>
         <div id="ctrl-klipper-macros" style="max-height:200px;overflow-y:auto">
-          <span class="text-muted" style="font-size:0.75rem">Click Load to fetch available macros</span>
+          <span class="text-muted" style="font-size:0.75rem">${t('controls.klipper_macros_hint', 'Click Load to fetch available macros')}</span>
         </div>
       </div>`;
     }
@@ -622,12 +622,12 @@
       html += `<div class="ctrl-card ctrl-area-amsdry">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
-          AMS Drying
-          ${isDrying ? '<span class="ctrl-card-badge" style="background:var(--accent-green)">Active</span>' : ''}
+          ${t('controls.ams_drying', 'AMS Drying')}
+          ${isDrying ? `<span class="ctrl-card-badge" style="background:var(--accent-green)">${t('controls.ams_drying_active', 'Active')}</span>` : ''}
         </div>
         <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
           <div style="flex:1;min-width:80px">
-            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">AMS</label>
+            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">${t('controls.ams_drying_ams_label', 'AMS')}</label>
             <select class="form-input" id="ams-dry-id" style="font-size:0.82rem">
               <option value="0">AMS 1</option>
               <option value="1">AMS 2</option>
@@ -636,16 +636,16 @@
             </select>
           </div>
           <div style="flex:1;min-width:80px">
-            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">Temp (°C)</label>
+            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">${t('controls.ams_drying_temp_label', 'Temp (°C)')}</label>
             <input type="number" class="form-input" id="ams-dry-temp" value="55" min="35" max="70" step="5" style="font-size:0.82rem">
           </div>
           <div style="flex:1;min-width:80px">
-            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">Duration (h)</label>
+            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">${t('controls.ams_drying_duration_label', 'Duration (h)')}</label>
             <input type="number" class="form-input" id="ams-dry-dur" value="4" min="1" max="24" step="1" style="font-size:0.82rem">
           </div>
           <div style="display:flex;gap:4px">
-            <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._startAmsDry()">Start</button>
-            <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-red);color:#fff" onclick="window._stopAmsDry()">Stop</button>
+            <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._startAmsDry()">${t('controls.ams_drying_start', 'Start')}</button>
+            <button class="form-btn form-btn-sm" data-ripple style="background:var(--accent-red);color:#fff" onclick="window._stopAmsDry()">${t('controls.ams_drying_stop', 'Stop')}</button>
           </div>
         </div>
         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
@@ -708,14 +708,14 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-          Calibration
+          ${t('controls.bambu_calibration', 'Calibration')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{bedLeveling:true})">Bed Leveling</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{vibration:true})">Vibration</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{motorNoise:true})">Motor Noise</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('pa_calibration',{mode:0})">PA Auto</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('flow_calibration',{tray_index:0,nozzle_temp:220,bed_temp:60})">Flow Cal</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{bedLeveling:true})">${t('controls.bambu_bed_leveling', 'Bed Leveling')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{vibration:true})">${t('controls.bambu_vibration', 'Vibration')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('calibration',{motorNoise:true})">${t('controls.bambu_motor_noise', 'Motor Noise')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('pa_calibration',{mode:0})">${t('controls.bambu_pa_auto', 'PA Auto')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('flow_calibration',{tray_index:0,nozzle_temp:220,bed_temp:60})">${t('controls.bambu_flow_cal', 'Flow Cal')}</button>
         </div>
       </div>`;
 
@@ -723,13 +723,13 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Camera
+          ${t('controls.camera', 'Camera')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:true})">Start Recording</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:false})">Stop Recording</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:true})">Timelapse On</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:false})">Timelapse Off</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:true})">${t('controls.camera_start_recording', 'Start Recording')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_record',{enable:false})">${t('controls.camera_stop_recording', 'Stop Recording')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:true})">${t('controls.camera_timelapse_on', 'Timelapse On')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_timelapse',{enable:false})">${t('controls.camera_timelapse_off', 'Timelapse Off')}</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_resolution',{resolution:'1080p'})">1080p</button>
           <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('camera_resolution',{resolution:'720p'})">720p</button>
         </div>
@@ -739,14 +739,14 @@
       html += `<div class="ctrl-card">
         <div class="ctrl-card-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06"/></svg>
-          System
+          ${t('controls.system', 'System')}
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('stop_buzzer')">Stop Buzzer</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:true})">Auto Recovery On</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:false})">Auto Recovery Off</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:true})">Door Check On</button>
-          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:false})">Door Check Off</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('stop_buzzer')">${t('controls.system_stop_buzzer', 'Stop Buzzer')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:true})">${t('controls.system_auto_recovery_on', 'Auto Recovery On')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_auto_recovery',{enable:false})">${t('controls.system_auto_recovery_off', 'Auto Recovery Off')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:true})">${t('controls.system_door_check_on', 'Door Check On')}</button>
+          <button class="form-btn form-btn-sm" data-ripple style="font-size:0.72rem" onclick="sendCommand('set_door_check',{enable:false})">${t('controls.system_door_check_off', 'Door Check Off')}</button>
         </div>
       </div>`;
     }

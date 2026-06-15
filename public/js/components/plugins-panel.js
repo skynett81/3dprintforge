@@ -6,7 +6,7 @@
   let _hooks = [];
 
   function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-  function _tl(key, fb) { return (typeof window.t === 'function' ? window.t(key) : '') || fb; }
+  function _tl(key, fb) { return (typeof window.t === 'function' ? window.t(key, fb) : fb); }
 
   async function _fetchPlugins() {
     try {
@@ -131,7 +131,7 @@
         <details>
           <summary class="plg-details-summary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            Plugin State
+            ${_tl('plugins.plugin_state', 'Plugin State')}
           </summary>
           <div class="plg-guide" id="plg-state-viewer">
             <p style="font-size:0.75rem;color:var(--text-muted)">Click a plugin to view its stored state:</p>
@@ -149,7 +149,7 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Plugin Logs
+          ${_tl('plugins.plugin_logs', 'Plugin Logs')}
         </summary>
         <div class="plg-guide">
           <p style="font-size:0.75rem;color:var(--text-muted)">Server logs filtered by plugin activity:</p>
@@ -164,7 +164,7 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-          Plugin API Reference
+          ${_tl('plugins.plugin_api_reference', 'Plugin API Reference')}
         </summary>
         <div class="plg-guide">
           <p style="font-size:0.78rem;font-weight:600;margin-bottom:8px">Context object passed to init(api):</p>
@@ -192,7 +192,7 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-          Create New Plugin
+          ${_tl('plugins.create_new_plugin', 'Create New Plugin')}
         </summary>
         <div class="plg-guide">
           <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">Generate a plugin skeleton with one click:</p>
@@ -221,7 +221,7 @@
       <details>
         <summary class="plg-details-summary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Full Plugin Example
+          ${_tl('plugins.full_plugin_example', 'Full Plugin Example')}
         </summary>
         <div class="plg-guide">
           <div class="plg-guide-file">manifest.json</div>

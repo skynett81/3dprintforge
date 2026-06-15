@@ -99,11 +99,11 @@
     if (!state.loaded) { el.innerHTML = '<p class="text-muted">Loading KB…</p>'; return; }
 
     const tabs = [
-      { id: 'filaments', label: 'Filaments',       n: state.lists.filaments.length },
-      { id: 'materials', label: 'Materials',       n: state.lists.materials.length },
-      { id: 'plates',    label: 'Build plates',    n: state.lists.plates.length },
-      { id: 'maint',     label: 'Maintenance',     n: state.lists.maint.length },
-      { id: 'ts',        label: 'Troubleshooting', n: state.lists.ts.length },
+      { id: 'filaments', label: (window.t ? window.t('kb.tab_filaments', 'Filaments') : 'Filaments'),       n: state.lists.filaments.length },
+      { id: 'materials', label: (window.t ? window.t('kb.tab_materials', 'Materials') : 'Materials'),       n: state.lists.materials.length },
+      { id: 'plates',    label: (window.t ? window.t('kb.tab_build_plates', 'Build plates') : 'Build plates'),    n: state.lists.plates.length },
+      { id: 'maint',     label: (window.t ? window.t('kb.tab_maintenance', 'Maintenance') : 'Maintenance'),     n: state.lists.maint.length },
+      { id: 'ts',        label: (window.t ? window.t('kb.tab_troubleshooting', 'Troubleshooting') : 'Troubleshooting'), n: state.lists.ts.length },
     ];
 
     el.innerHTML = `
@@ -130,7 +130,7 @@
       return `
         <div style="margin-bottom:6px;display:flex;gap:6px">
           <input type="text" class="form-input" id="kb-search" placeholder="Search…" value="${esc(state.search)}" oninput="_kb.setSearch(this.value)" style="flex:1;padding:4px 6px;font-size:0.85rem">
-          <label style="font-size:0.75rem;white-space:nowrap"><input type="checkbox" ${state.bambuOnly ? 'checked' : ''} onchange="_kb.toggleBambu()"> Bambu only</label>
+          <label style="font-size:0.75rem;white-space:nowrap"><input type="checkbox" ${state.bambuOnly ? 'checked' : ''} onchange="_kb.toggleBambu()"> ${window.t ? window.t('kb.bambu_only', 'Bambu only') : 'Bambu only'}</label>
         </div>`;
     }
     return `<div style="margin-bottom:6px"><input type="text" class="form-input" id="kb-search" placeholder="Search…" value="${esc(state.search)}" oninput="_kb.setSearch(this.value)" style="width:100%;padding:4px 6px;font-size:0.85rem"></div>`;
@@ -173,7 +173,7 @@
   }
 
   function renderDetail() {
-    if (!state.detail) return '<p class="text-muted">Select an entry from the list.</p>';
+    if (!state.detail) return '<p class="text-muted">' + (window.t ? window.t('kb.select_entry', 'Select an entry from the list.') : 'Select an entry from the list.') + '</p>';
     const d = state.detail;
     if (state.tab === 'filaments') {
       const stars = (n) => n ? '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n)) : '-';

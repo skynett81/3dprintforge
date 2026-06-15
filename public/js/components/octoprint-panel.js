@@ -26,7 +26,7 @@
     _activeTab = tab;
     const content = document.getElementById('octo-tab-content');
     if (!content || !_selectedPrinter) return;
-    content.innerHTML = '<div class="text-center p-3"><i class="bi bi-arrow-repeat spin"></i> Loading…</div>';
+    content.innerHTML = '<div class="text-center p-3"><i class="bi bi-arrow-repeat spin"></i> ' + (window.t ? window.t('octoprint.loading', 'Loading…') : 'Loading…') + '</div>';
 
     try {
       if (tab === 'events') await _renderEvents(content);
@@ -47,7 +47,7 @@
     const events = await res.json();
     const items = Array.isArray(events) ? events : [];
     if (items.length === 0) {
-      container.innerHTML = '<div class="alert alert-info mb-0">No events recorded yet. Events are captured from OctoPrint\'s WebSocket stream.</div>';
+      container.innerHTML = '<div class="alert alert-info mb-0">' + (window.t ? window.t('octoprint.no_events', 'No events recorded yet. Events are captured from OctoPrint\'s WebSocket stream.') : 'No events recorded yet. Events are captured from OctoPrint\'s WebSocket stream.') + '</div>';
       return;
     }
     const eventColor = (type) => {
@@ -87,7 +87,7 @@
         ...(Array.isArray(categories.custom) ? categories.custom : []).map(c => ({ ...c, source: 'custom' })),
       ];
       if (allCmds.length === 0) {
-        container.innerHTML = '<div class="alert alert-info">No system commands registered on this OctoPrint instance.</div>';
+        container.innerHTML = '<div class="alert alert-info">' + (window.t ? window.t('octoprint.no_system_commands', 'No system commands registered on this OctoPrint instance.') : 'No system commands registered on this OctoPrint instance.') + '</div>';
         return;
       }
       container.innerHTML = `
@@ -190,7 +190,7 @@
             </div>`).join('')}
         </div>
         ${Object.keys(pluginData).length > 0 ? `
-          <h6 class="mb-2">Plugin data</h6>
+          <h6 class="mb-2">${window.t ? window.t('octoprint.plugin_data', 'Plugin data') : 'Plugin data'}</h6>
           <pre style="max-height:400px;overflow:auto;background:var(--bs-tertiary-bg);padding:12px;border-radius:6px;font-size:0.8rem">${_esc(JSON.stringify(pluginData, null, 2).slice(0, 5000))}</pre>
         ` : ''}`;
     } catch (e) {
@@ -290,13 +290,13 @@
     }
 
     const tabs = [
-      { id: 'events', label: 'Events', icon: 'bi-activity' },
-      { id: 'system', label: 'System', icon: 'bi-gear' },
-      { id: 'connection', label: 'Connection', icon: 'bi-plug' },
-      { id: 'profiles', label: 'Printer Profiles', icon: 'bi-printer' },
-      { id: 'users', label: 'Users', icon: 'bi-people' },
-      { id: 'plugins', label: 'Plugins', icon: 'bi-puzzle' },
-      { id: 'settings', label: 'Settings', icon: 'bi-sliders' },
+      { id: 'events', label: (window.t ? window.t('octoprint.tab_events', 'Events') : 'Events'), icon: 'bi-activity' },
+      { id: 'system', label: (window.t ? window.t('octoprint.tab_system', 'System') : 'System'), icon: 'bi-gear' },
+      { id: 'connection', label: (window.t ? window.t('octoprint.tab_connection', 'Connection') : 'Connection'), icon: 'bi-plug' },
+      { id: 'profiles', label: (window.t ? window.t('octoprint.tab_printer_profiles', 'Printer Profiles') : 'Printer Profiles'), icon: 'bi-printer' },
+      { id: 'users', label: (window.t ? window.t('octoprint.tab_users', 'Users') : 'Users'), icon: 'bi-people' },
+      { id: 'plugins', label: (window.t ? window.t('octoprint.tab_plugins', 'Plugins') : 'Plugins'), icon: 'bi-puzzle' },
+      { id: 'settings', label: (window.t ? window.t('octoprint.tab_settings', 'Settings') : 'Settings'), icon: 'bi-sliders' },
     ];
 
     container.innerHTML = `
