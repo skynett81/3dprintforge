@@ -1316,10 +1316,10 @@
       const res = await fetch('/api/tunnel/status');
       const d = await res.json();
       let h = '<div class="stats-detail-list">';
-      h += `<div class="stats-detail-row"><span class="stats-detail-label">cloudflared</span><span class="stats-detail-value">${d.available ? '✅ Installed' : '❌ Not found'}</span></div>`;
-      if (d.version) h += `<div class="stats-detail-row"><span class="stats-detail-label">Version</span><span class="stats-detail-value">${d.version}</span></div>`;
-      h += `<div class="stats-detail-row"><span class="stats-detail-label">Status</span><span class="stats-detail-value" style="color:${d.status === 'running' ? 'var(--accent-green)' : d.status === 'starting' ? 'var(--accent-orange)' : 'var(--text-muted)'};font-weight:600">${d.status.toUpperCase()}</span></div>`;
-      if (d.url) h += `<div class="stats-detail-row"><span class="stats-detail-label">Public URL</span><span class="stats-detail-value"><a href="${d.url}" target="_blank" style="color:var(--accent-blue);word-break:break-all">${d.url}</a></span></div>`;
+      h += `<div class="stats-detail-item"><span class="stats-detail-item-label">cloudflared</span><span class="stats-detail-item-value">${d.available ? '✅ Installed' : '❌ Not found'}</span></div>`;
+      if (d.version) h += `<div class="stats-detail-item"><span class="stats-detail-item-label">Version</span><span class="stats-detail-item-value">${d.version}</span></div>`;
+      h += `<div class="stats-detail-item"><span class="stats-detail-item-label">Status</span><span class="stats-detail-item-value" style="color:${d.status === 'running' ? 'var(--accent-green)' : d.status === 'starting' ? 'var(--accent-orange)' : 'var(--text-muted)'};font-weight:600">${d.status.toUpperCase()}</span></div>`;
+      if (d.url) h += `<div class="stats-detail-item"><span class="stats-detail-item-label">Public URL</span><span class="stats-detail-item-value"><a href="${d.url}" target="_blank" style="color:var(--accent-blue);word-break:break-all">${d.url}</a></span></div>`;
       h += '</div>';
       if (d.logs?.length) {
         h += '<div style="margin-top:8px;max-height:120px;overflow-y:auto;background:var(--bg-tertiary);border-radius:6px;padding:6px 8px;font-size:0.65rem;font-family:monospace;color:var(--text-muted)">';
@@ -1395,9 +1395,9 @@
       if (info.ports) {
         netHtml += '<div style="margin-top:12px"><div style="font-size:0.85rem;font-weight:600;margin-bottom:6px">Ports</div>';
         netHtml += '<div class="stats-detail-list">';
-        netHtml += `<div class="stats-detail-row"><span class="stats-detail-label">HTTP</span><span class="stats-detail-value">${info.ports.http}</span></div>`;
-        netHtml += `<div class="stats-detail-row"><span class="stats-detail-label">HTTPS</span><span class="stats-detail-value">${info.ports.https}</span></div>`;
-        netHtml += `<div class="stats-detail-row"><span class="stats-detail-label">Camera (base)</span><span class="stats-detail-value">${info.ports.camera_base}</span></div>`;
+        netHtml += `<div class="stats-detail-item"><span class="stats-detail-item-label">HTTP</span><span class="stats-detail-item-value">${info.ports.http}</span></div>`;
+        netHtml += `<div class="stats-detail-item"><span class="stats-detail-item-label">HTTPS</span><span class="stats-detail-item-value">${info.ports.https}</span></div>`;
+        netHtml += `<div class="stats-detail-item"><span class="stats-detail-item-label">Camera (base)</span><span class="stats-detail-item-value">${info.ports.camera_base}</span></div>`;
         netHtml += '</div></div>';
       }
       if (info.network && info.network.length) {
@@ -1433,7 +1433,7 @@
       }
 
       el.innerHTML = '<div class="stats-detail-list">' + rows.map(([k, v]) =>
-        `<div class="stats-detail-row"><span class="stats-detail-label">${k}</span><span class="stats-detail-value">${v}</span></div>`
+        `<div class="stats-detail-item"><span class="stats-detail-item-label">${k}</span><span class="stats-detail-item-value">${v}</span></div>`
       ).join('') + '</div>' + netHtml;
     } catch { el.innerHTML = `<span class="text-muted">${t('common.error')}</span>`; }
   }
