@@ -60,7 +60,8 @@ const DEFAULT_SETTINGS = {
   filament_low_pct: 5,
   stall_minutes: 10,
   ams_humidity_threshold: 45,
-  heater_health_minutes: 3
+  heater_health_minutes: 3,
+  snooze_until: null
 };
 
 export class PrintGuardService {
@@ -74,8 +75,8 @@ export class PrintGuardService {
   }
 
   // Called from native AI detection (Bambu xcam, Moonraker defect_detection)
-  handleEvent(printerId, eventType, printId, notes) {
-    this._processEvent(printerId, eventType, printId, notes);
+  handleEvent(printerId, eventType, printId, notes, opts) {
+    this._processEvent(printerId, eventType, printId, notes, opts);
   }
 
   // Called on every MQTT status update — checks all sensor data
@@ -337,23 +338,31 @@ export class PrintGuardService {
   }
 
   // Core event processing — shared by XCam and sensor events
-  _processEvent(printerId, eventType, printId, notes) {
+  _processEvent(printerId, eventType, printId, notes, opts = {}) {
     try {
+      const isTest = !!opts.test;
       const settings = this._getSettings(printerId);
-      if (!settings.enabled) return;
+      if (!settings.enabled && !isTest) return;
+
+      // Snooze: temporarily muted (e.g. during a known-tricky print). Tests
+      // bypass snooze so the user can always verify the pipeline.
+      if (!isTest && settings.snooze_until && Date.now() < new Date(settings.snooze_until).getTime()) return;
 
       const actionKey = ACTION_MAP[eventType];
       if (!actionKey) return;
 
-      const action = settings[actionKey] || 'notify';
-      if (action === 'ignore') return;
+      // A test never pauses/stops a real print — it only logs + notifies.
+      const action = isTest ? 'notify' : (settings[actionKey] || 'notify');
+      if (action === 'ignore' && !isTest) return;
 
-      // Check cooldown
-      const cooldownKey = `${printerId}:${eventType}`;
-      const now = Date.now();
-      const lastTime = this._cooldowns.get(cooldownKey) || 0;
-      if (now - lastTime < (settings.cooldown_seconds || 60) * 1000) return;
-      this._cooldowns.set(cooldownKey, now);
+      // Check cooldown (skipped for tests so they always fire)
+      if (!isTest) {
+        const cooldownKey = `${printerId}:${eventType}`;
+        const now = Date.now();
+        const lastTime = this._cooldowns.get(cooldownKey) || 0;
+        if (now - lastTime < (settings.cooldown_seconds || 60) * 1000) return;
+        this._cooldowns.set(cooldownKey, now);
+      }
 
       // Execute action
       if (action === 'pause') {
@@ -368,7 +377,7 @@ export class PrintGuardService {
         event_type: eventType,
         action_taken: action,
         print_id: printId || null,
-        notes: notes || null
+        notes: isTest ? `[Test] ${notes || ''}`.trim() : (notes || null)
       });
 
       // Broadcast to frontend
@@ -433,7 +442,10 @@ export class PrintGuardService {
   }
 
   updateSettings(printerId, settings) {
-    upsertProtectionSettings(printerId, settings);
+    // Merge over existing so partial updates (e.g. just snooze_until) don't
+    // reset the other columns to their defaults.
+    const existing = this._getSettings(printerId);
+    upsertProtectionSettings(printerId, { ...existing, ...settings });
   }
 
   getLog(printerId, limit) {

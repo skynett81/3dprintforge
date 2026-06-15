@@ -13603,6 +13603,18 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 /* Printer card */
 .pp-printer-card { background: var(--bg-tertiary); border-radius: var(--radius); padding: 12px; border: 1px solid var(--border-color); }
 .pp-printer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+/* Guard control row (snooze / test) + reliability summary */
+.pp-guard-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.pp-ctrl-label { font-size: 0.68rem; color: var(--text-muted); }
+.pp-mini-btn { display: inline-flex; align-items: center; gap: 3px; font-size: 0.68rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary, rgba(127,127,127,0.08)); color: var(--text-secondary); cursor: pointer; transition: border-color .15s, color .15s; }
+.pp-mini-btn:hover { border-color: var(--accent-blue, #1279ff); color: var(--text-primary); }
+.pp-test-btn { margin-left: auto; }
+.pp-test-btn:hover { border-color: var(--accent-purple, #8b5cf6); color: var(--accent-purple, #8b5cf6); }
+.pp-snooze-active { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; color: var(--accent-orange, #f59e0b); }
+.pp-reliability { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.68rem; color: var(--text-secondary); padding: 6px 0 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; }
+.pp-reliability-ok { color: var(--text-muted); align-items: center; }
+.pp-rel-stat strong { color: var(--text-primary); }
+.pp-rel-muted { color: var(--text-muted); margin-left: auto; }
 .pp-printer-name { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .pp-state-pill { font-size: 0.6rem; }
 

@@ -70,8 +70,8 @@ export function upsertProtectionSettings(printerId, settings) {
      cooldown_seconds, auto_resume, temp_deviation_action, filament_runout_action, print_error_action,
      fan_failure_action, print_stall_action, temp_deviation_threshold, filament_low_pct, stall_minutes,
      surface_defect_action, filament_tangle_action, ams_humidity_action, heater_health_action,
-     ams_humidity_threshold, heater_health_minutes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ams_humidity_threshold, heater_health_minutes, snooze_until)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(printer_id) DO UPDATE SET
       enabled = excluded.enabled,
       spaghetti_action = excluded.spaghetti_action,
@@ -93,7 +93,8 @@ export function upsertProtectionSettings(printerId, settings) {
       ams_humidity_action = excluded.ams_humidity_action,
       heater_health_action = excluded.heater_health_action,
       ams_humidity_threshold = excluded.ams_humidity_threshold,
-      heater_health_minutes = excluded.heater_health_minutes
+      heater_health_minutes = excluded.heater_health_minutes,
+      snooze_until = excluded.snooze_until
   `).run(
     printerId,
     settings.enabled ?? 1,
@@ -116,7 +117,8 @@ export function upsertProtectionSettings(printerId, settings) {
     settings.ams_humidity_action || 'notify',
     settings.heater_health_action || 'notify',
     settings.ams_humidity_threshold ?? 45,
-    settings.heater_health_minutes ?? 3
+    settings.heater_health_minutes ?? 3,
+    settings.snooze_until ?? null
   );
 }
 

@@ -2229,6 +2229,13 @@ export function runMigrations() {
       add('ams_humidity_threshold', `ams_humidity_threshold INTEGER NOT NULL DEFAULT 45`);
       add('heater_health_minutes', `heater_health_minutes INTEGER NOT NULL DEFAULT 3`);
     }},
+    { version: 152, up: (db) => {
+      // Print Guard: temporary snooze/mute (ISO timestamp; guard is muted
+      // until this time, NULL = active). Lets users silence alerts during a
+      // known-tricky print without losing their config.
+      const cols = db.prepare(`SELECT name FROM pragma_table_info('protection_settings')`).all().map(r => r.name);
+      if (!cols.includes('snooze_until')) db.exec(`ALTER TABLE protection_settings ADD COLUMN snooze_until TEXT`);
+    }},
   ];
 
   for (const m of migrations) {

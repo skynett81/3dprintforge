@@ -161,14 +161,35 @@
         const _stateMap = { RUNNING: t('state.running', 'Printing'), IDLE: t('state.idle', 'Idle'), PAUSE: t('state.pause', 'Paused'), FINISH: t('state.finish', 'Completed'), FAILED: t('state.failed', 'Failed'), PREPARE: t('state.prepare', 'Preparing') };
         const stateLabel = _stateMap[gcState] || gcState;
 
+        const snoozeMs = s?.snooze_until ? new Date(s.snooze_until).getTime() - Date.now() : 0;
+        const snoozed = snoozeMs > 0;
         h += `<div class="pp-printer-card">
           <div class="pp-printer-header">
             <div class="pp-printer-name">
-              <span class="pp-status-dot" style="background:${enabled ? 'var(--accent-green)' : 'var(--text-muted)'}"></span>
+              <span class="pp-status-dot" style="background:${snoozed ? 'var(--accent-orange)' : enabled ? 'var(--accent-green)' : 'var(--text-muted)'}"></span>
               ${esc(p.name)}
             </div>
             <span class="pill ${isPrinting ? 'pill-success' : 'pill-info'} pp-state-pill">${esc(stateLabel)}</span>
           </div>`;
+
+        // Guard control row: snooze state / quick-snooze + a safe test trigger.
+        h += `<div class="pp-guard-controls">`;
+        if (snoozed) {
+          const mins = Math.ceil(snoozeMs / 60000);
+          h += `<span class="pp-snooze-active"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg> ${t('protection.snoozed_for', { mins })}</span>
+            <button class="pp-mini-btn" data-ripple onclick="resumeProtection('${p.id}')">${t('protection.resume_now', 'Resume now')}</button>`;
+        } else {
+          h += `<span class="pp-ctrl-label">${t('protection.snooze', 'Snooze')}:</span>
+            <button class="pp-mini-btn" data-ripple onclick="snoozeProtection('${p.id}',15)">15m</button>
+            <button class="pp-mini-btn" data-ripple onclick="snoozeProtection('${p.id}',30)">30m</button>
+            <button class="pp-mini-btn" data-ripple onclick="snoozeProtection('${p.id}',60)">1h</button>`;
+        }
+        h += `<button class="pp-mini-btn pp-test-btn" data-ripple onclick="testProtection('${p.id}')" title="${t('protection.test_hint', 'Fire a safe test alert (notify only)')}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> ${t('protection.test', 'Test')}</button>`;
+        h += `</div>`;
+
+        // Reliability summary computed from the event log.
+        h += _reliabilityLine(p.id);
 
         // Live sensor readings
         const nTemp = live.nozzle_temper != null ? Math.round(live.nozzle_temper) : null;
@@ -574,6 +595,63 @@
     });
     _settings[printerId] = s;
   };
+
+  // Fire a safe test alert (server forces notify-only, never pauses a print).
+  window.testProtection = async function(printerId) {
+    try {
+      await fetch('/api/protection/test', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: printerId, event_type: 'spaghetti_detected' })
+      });
+      if (window.showToast) showToast(t('protection.test_sent', 'Test alert sent — check your notifications'), 'success');
+      await loadData(); render();
+    } catch (e) { if (window.showToast) showToast(e.message, 'error'); }
+  };
+
+  // Temporarily mute a printer's guard, or resume it now.
+  window.snoozeProtection = async function(printerId, minutes) {
+    try {
+      await fetch('/api/protection/snooze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: printerId, minutes })
+      });
+      if (window.showToast) showToast(t('protection.snoozed', 'Guard snoozed'), 'info');
+      await loadData(); render();
+    } catch (e) { if (window.showToast) showToast(e.message, 'error'); }
+  };
+  window.resumeProtection = async function(printerId) {
+    try {
+      await fetch('/api/protection/snooze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_id: printerId, minutes: 0 })
+      });
+      if (window.showToast) showToast(t('protection.resumed', 'Guard resumed'), 'success');
+      await loadData(); render();
+    } catch (e) { if (window.showToast) showToast(e.message, 'error'); }
+  };
+
+  // Per-printer reliability summary derived from the event log.
+  function _reliabilityLine(pid) {
+    const evts = _log.filter(e => e.printer_id === pid);
+    if (!evts.length) {
+      return `<div class="pp-reliability pp-reliability-ok">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        ${t('protection.no_incidents', 'No incidents logged')}</div>`;
+    }
+    const now = Date.now();
+    const last7 = evts.filter(e => now - new Date(e.timestamp).getTime() < 7 * 86400000).length;
+    const counts = {};
+    for (const e of evts) counts[e.event_type] = (counts[e.event_type] || 0) + 1;
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    const topLabel = t(EVENT_LABELS[top[0]] || top[0]);
+    const last = evts[0]; // log ordered DESC
+    return `<div class="pp-reliability">
+      <span class="pp-rel-stat"><strong>${evts.length}</strong> ${t('protection.incidents_total', 'incidents')}</span>
+      <span class="pp-rel-stat"><strong>${last7}</strong> ${t('protection.last_7d', 'last 7d')}</span>
+      <span class="pp-rel-stat">${t('protection.most_common', 'top')}: ${topLabel}</span>
+      <span class="pp-rel-stat pp-rel-muted">${t('protection.last_incident', 'last')} ${fmtTime(last.timestamp)}</span>
+    </div>`;
+  }
 
   // ═══ Data loading ═══
   async function loadData() {

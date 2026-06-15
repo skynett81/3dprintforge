@@ -2917,8 +2917,23 @@ export async function handleApiRequest(req, res) {
         const printerId = body.printer_id;
         const eventType = body.event_type || 'spaghetti_detected';
         if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
-        _guard.handleEvent(printerId, eventType, null);
+        // Test mode: only logs + notifies, never pauses/stops a real print.
+        _guard.handleEvent(printerId, eventType, null, 'notification test', { test: true });
         return sendJson(res, { ok: true });
+      });
+    }
+
+    // Snooze (temporarily mute) a printer's guard for N minutes, or clear it.
+    if (method === 'POST' && path === '/api/protection/snooze') {
+      if (!_guard) return sendJson(res, { error: 'Guard not initialized' }, 500);
+      return readBody(req, res, (body) => {
+        const printerId = body.printer_id;
+        if (!printerId) return sendJson(res, { error: 'printer_id required' }, 400);
+        const minutes = parseInt(body.minutes) || 0;
+        const until = minutes > 0 ? new Date(Date.now() + minutes * 60000).toISOString() : null;
+        _guard.updateSettings(printerId, { snooze_until: until });
+        _broadcastInventory && _broadcastInventory('snooze', 'protection', { printer_id: printerId, snooze_until: until });
+        return sendJson(res, { ok: true, snooze_until: until });
       });
     }
 
