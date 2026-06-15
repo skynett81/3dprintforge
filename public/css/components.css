@@ -2945,6 +2945,16 @@
 .badge.text-bg-danger  { background: color-mix(in srgb, var(--accent-red) 15%, transparent) !important; color: var(--accent-red) !important; }
 .badge.text-bg-secondary { background: var(--bg-tertiary) !important; color: var(--text-muted) !important; }
 
+/* Align stray Bootstrap buttons (CRM / firmware / etc.) to the app button
+   shape so they read as one system. Scoped to coloured/outline variants —
+   leaves .btn-close, .btn-group and functional classes alone. */
+.btn.btn-primary, .btn.btn-secondary, .btn.btn-success, .btn.btn-danger,
+.btn.btn-warning, .btn.btn-info, .btn[class*="btn-outline-"] {
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+}
+
 /* ---- Protection Log Cards ---- */
 .protection-log-cards { display: grid; gap: 8px; }
 .protection-log-card {
