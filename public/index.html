@@ -142,6 +142,16 @@
             </a>
           </li>
 
+          <!-- History (top-level shortcut) -->
+          <li class="nav-item">
+            <a href="#" class="nav-link sidebar-btn" data-panel="history" onclick="openPanel('history'); return false;" data-ripple>
+              <i class="nav-icon bi bi-clock-history"></i>
+              <p data-i18n-key="tabs.history">History</p>
+            </a>
+          </li>
+
+          <li class="nav-header sidebar-zone-label" data-i18n-key="sidebar.zone_operate">Operate</li>
+
           <!-- Printing -->
           <li class="nav-item sidebar-section" data-section="printing" style="--section-color: var(--accent-blue)">
             <a href="#" class="nav-link">
@@ -175,26 +185,6 @@
                 <a href="#" class="nav-link sidebar-btn" data-panel="fleet" onclick="openPanel('fleet'); return false;" data-ripple>
                   <i class="nav-icon bi bi-display"></i>
                   <p data-i18n-key="tabs.fleet">Fleet</p>
-                </a>
-              </li>
-            </ul>
-          </li>
-
-          <!-- History -->
-          <li class="nav-item sidebar-section" data-section="history" style="--section-color: var(--accent-blue, #06b6d4)">
-            <a href="#" class="nav-link">
-              <i class="nav-icon bi bi-clock-history"></i>
-              <p>
-                <span data-i18n-key="sidebar.section_history">History</span>
-                <i class="nav-arrow bi bi-chevron-right"></i>
-                <span class="badge text-bg-secondary sidebar-section-count">1</span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="#" class="nav-link sidebar-btn" data-panel="history" onclick="openPanel('history'); return false;" data-ripple>
-                  <i class="nav-icon bi bi-clock-history"></i>
-                  <p data-i18n-key="tabs.history">History</p>
                 </a>
               </li>
             </ul>
@@ -270,6 +260,8 @@
               </li>
             </ul>
           </li>
+
+          <li class="nav-header sidebar-zone-label" data-i18n-key="sidebar.zone_create">Create</li>
 
           <!-- Materials -->
           <li class="nav-item sidebar-section" data-section="materials" style="--section-color: var(--accent-green)">
@@ -465,6 +457,8 @@
               </li>
             </ul>
           </li>
+
+          <li class="nav-header sidebar-zone-label" data-i18n-key="sidebar.zone_manage">Manage</li>
 
           <!-- Business — only visible with active ecom license -->
           <li class="nav-item sidebar-section" data-section="business" id="sidebar-business" style="display:none;--section-color: var(--accent-green, #22c55e)">

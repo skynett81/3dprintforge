@@ -9783,6 +9783,25 @@ body.sidebar-collapse .sidebar-search { display: none; }
   padding: 6px 16px 2px;
   opacity: 0.85;
 }
+/* Zone dividers that group the nav sections into Operate / Create / Manage */
+.sidebar-zone-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 14px 16px 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  opacity: 0.7;
+  pointer-events: none;
+  list-style: none;
+}
+.sidebar-zone-label:first-of-type { border-top: none; }
+body.sidebar-collapse .sidebar-zone-label,
+.app-sidebar.collapsed .sidebar-zone-label {
+  font-size: 0; padding: 6px 0; border-top-color: transparent;
+}
 #sidebar-pinned-list { display: block; }
 .sidebar-pinned-section { border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.07)); margin-bottom: 4px; padding-bottom: 4px; }
 .sidebar-pin {
