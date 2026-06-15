@@ -13999,3 +13999,10 @@ body .ctrl-card-subtitle {
 
 /* NFC badge on the grid spool card */
 .spool-vcard-nfc { position: absolute; top: 6px; left: 6px; background: var(--bg-card); border-radius: 50%; padding: 2px; line-height: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
+
+/* Inventory health overview (pro attention panel) */
+.inv-health-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.inv-health-chip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; background: color-mix(in srgb, var(--c) 12%, transparent); border: 1px solid color-mix(in srgb, var(--c) 38%, transparent); }
+.inv-health-num { font-size: 1.25rem; font-weight: 800; color: var(--c); line-height: 1; }
+.inv-health-lbl { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+.inv-health-ok { display: flex; align-items: center; gap: 8px; padding: 8px 2px; font-size: 0.85rem; color: var(--text-secondary); }

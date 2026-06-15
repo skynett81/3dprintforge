@@ -145,7 +145,7 @@
 
   // ═══ Tab config (alphabetically sorted by translated label at render time) ═══
   const TAB_CONFIG_UNSORTED = {
-    inventory: { label: 'filament.tab_inventory', icon: '📦', modules: ['spool-summary', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
+    inventory: { label: 'filament.tab_inventory', icon: '📦', modules: ['spool-summary', 'inventory-health', 'active-filament', 'low-stock-alert', 'spool-grid'], order: 0 },
     storage:   { label: 'filament.tab_storage',   icon: '🗄️', modules: ['storage-dashboard'] },
     database:  { label: 'filament.tab_database',  icon: '📚', modules: ['db-hero', 'db-browser'] },
     drying:    { label: 'filament.tab_drying',    icon: '🌬️', modules: ['drying-dashboard'] },
@@ -168,7 +168,7 @@
   const TAB_CONFIG = TAB_CONFIG_UNSORTED;
   const MODULE_SIZE = {
     'spool-summary': 'full', 'active-filament': 'full',
-    'low-stock-alert': 'full', 'spool-grid': 'full',
+    'inventory-health': 'full', 'low-stock-alert': 'full', 'spool-grid': 'full',
     'db-hero': 'full', 'db-browser': 'full',
     'drying-dashboard': 'full',
     'tools-dashboard': 'full',
@@ -200,6 +200,8 @@
   let _dryingSessions = [];
   let _dryingPresets = [];
   let _dryingStatus = [];
+  let _restock = [];       // restock suggestions, for the inventory-health overview
+  let _expiring = [];      // expiring spools
   let _dryingTimers = {};
   let _dryingSubTab = 'active';
   let _toolsSubTab = 'spools';
@@ -413,6 +415,33 @@
         ${totalValue > 0 ? heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', formatCurrency(totalValue, 0), t('filament.total_value'), '#e3b341') : ''}
         ${heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', lowStockCount, t('filament.low_stock'), lowColor)}
       </div>`;
+    },
+
+    // Consolidated "what needs attention" overview — the pro control panel.
+    'inventory-health': (spools) => {
+      const active = spools.filter(s => !s.archived);
+      const low = active.filter(s => {
+        const pct = spoolPct(s) || 100; const rG = spoolRemainG(s);
+        return (pct > 0 && pct < _lowStockPct) || (_lowStockGrams > 0 && rG > 0 && rG < _lowStockGrams);
+      }).length;
+      const restock = (_restock || []).length;
+      const expiring = (_expiring || []).length;
+      const needsDrying = (_dryingStatus || []).filter(d => d.drying_status === 'overdue' || d.drying_status === 'due_soon').length;
+      const items = [
+        { n: low, label: t('filament.low_stock', 'Low stock'), c: '#f0883e' },
+        { n: restock, label: t('filament.restock_needed', 'Restock'), c: '#1279ff' },
+        { n: expiring, label: t('filament.expiring_soon', 'Expiring'), c: '#e3b341' },
+        { n: needsDrying, label: t('filament.needs_drying', 'Needs drying'), c: '#8b5cf6' },
+      ].filter(i => i.n > 0);
+      let h = `<div class="ctrl-card-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> ${t('filament.inventory_health', 'Inventory health')}</div>`;
+      if (!items.length) {
+        h += `<div class="inv-health-ok"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${t('filament.inventory_all_good', 'Everything is in good shape')}</div>`;
+        return h;
+      }
+      h += '<div class="inv-health-chips">';
+      for (const i of items) h += `<div class="inv-health-chip" style="--c:${i.c}"><span class="inv-health-num">${i.n}</span><span class="inv-health-lbl">${esc(i.label)}</span></div>`;
+      h += '</div>';
+      return h;
     },
 
     'low-stock-alert': (spools) => {
@@ -2064,7 +2093,7 @@
       // API layer would also exclude archived/detached spools (printer_id
       // becomes NULL on archive), so the "Show archived" toggle would
       // appear to do nothing for them.
-      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes, alertsRes, settingsRes, nfcRes] = await Promise.all([
+      const [spoolsRes, vendorsRes, profilesRes, locationsRes, dryingActiveRes, dryingPresetsRes, dryingStatusRes, tagsRes, alertsRes, settingsRes, nfcRes, restockRes, expiringRes] = await Promise.all([
         fetch('/api/inventory/spools'),
         fetch('/api/inventory/vendors'),
         fetch('/api/inventory/filaments'),
@@ -2075,9 +2104,14 @@
         fetch('/api/tags'),
         fetch('/api/inventory/location-alerts'),
         fetch('/api/inventory/settings'),
-        fetch('/api/nfc/mappings')
+        fetch('/api/nfc/mappings'),
+        fetch('/api/inventory/restock'),
+        fetch('/api/inventory/spools/expiring')
       ]);
       _spools = await spoolsRes.json();
+      // Inventory-health intelligence (best-effort).
+      try { _restock = await restockRes.json(); if (!Array.isArray(_restock)) _restock = []; } catch { _restock = []; }
+      try { _expiring = await expiringRes.json(); if (!Array.isArray(_expiring)) _expiring = (_expiring && _expiring.spools) || []; } catch { _expiring = []; }
       // NFC tag status per spool (which spools have a linked tag, and its standard).
       try {
         const nfc = await nfcRes.json();
