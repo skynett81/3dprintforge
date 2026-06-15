@@ -1,5 +1,6 @@
 import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, saveFilamentEstimate, enrichTrayWithVariant } from './database.js';
 import { getDb } from './db/connection.js';
+import { registerNfcTag } from './nfc-registry.js';
 import { recordCompletion as recordEtaCompletion } from './eta-predictor.js';
 import { flushVolumeMm3, mm3ToGrams } from './flush-calc.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -1011,45 +1012,11 @@ export class PrintTracker {
           // Skip if already processed in this slot
           if (this._nfcProcessed.has(cacheKey)) continue;
 
-          const mapping = lookupNfcTag(tagUid);
-
-          if (mapping && mapping.spool_id) {
-            // Tag known and linked to a spool — auto-assign spool to this printer slot
-            const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
-            if (!existing || existing.id !== mapping.spool_id) {
-              assignSpoolToSlot(mapping.spool_id, this.printerId, amsUnit, trayId);
-              log.info('NFC auto-assigned spool #' + mapping.spool_id + ' to AMS ' + amsUnit + ':' + trayId + ' (tag ' + tagUid + ')');
-              if (this.onNfcAutoLinked) {
-                this.onNfcAutoLinked({
-                  action: 'assigned',
-                  printer_id: this.printerId,
-                  ams_unit: amsUnit,
-                  tray_id: trayId,
-                  tag_uid: tagUid,
-                  spool_id: mapping.spool_id,
-                  spool_name: mapping.spool_name || null
-                });
-              }
-            }
-          } else if (!mapping) {
-            // Unknown tag — check if a spool is already assigned to this slot and auto-link
-            const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
-            if (existing) {
-              linkNfcTag(tagUid, existing.id, 'ams', null);
-              log.info('NFC auto-linked tag ' + tagUid + ' to spool #' + existing.id + ' in AMS ' + amsUnit + ':' + trayId);
-              if (this.onNfcAutoLinked) {
-                this.onNfcAutoLinked({
-                  action: 'linked',
-                  printer_id: this.printerId,
-                  ams_unit: amsUnit,
-                  tray_id: trayId,
-                  tag_uid: tagUid,
-                  spool_id: existing.id,
-                  spool_name: existing.name || null
-                });
-              }
-            }
-          }
+          // Unified, brand-agnostic registry handles lookup → assign / link.
+          registerNfcTag({
+            printerId: this.printerId, amsUnit, trayId, tagUid, standard: 'bambu',
+            onEvent: (ev) => { if (this.onNfcAutoLinked) this.onNfcAutoLinked(ev); },
+          });
 
           this._nfcProcessed.set(cacheKey, Date.now());
         }

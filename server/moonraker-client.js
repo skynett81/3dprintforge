@@ -787,6 +787,18 @@ export class MoonrakerClient {
 
           import('./db/spools.js').then(({ syncNfcSlot }) => {
             syncNfcSlot(this._printerId, idx, data);
+            // Register the tag UID in the unified, brand-agnostic registry so the
+            // U1's NFC spools live alongside Bambu's and are cross-recognised.
+            if (data.cardUid) {
+              import('./nfc-registry.js').then(({ registerNfcTag }) => {
+                registerNfcTag({
+                  printerId: this._printerId, amsUnit: 0, trayId: idx,
+                  tagUid: String(data.cardUid), standard: 'snapmaker',
+                  data: { sku: data.sku, type: data.type, color: data.color, vendor: data.vendor },
+                  onEvent: (ev) => { try { this.hub?.broadcast?.('nfc_auto_linked', ev); } catch { /* ignore */ } },
+                });
+              }).catch(() => {});
+            }
           }).catch(() => {});
         } catch { /* ignore */ }
         return data;
