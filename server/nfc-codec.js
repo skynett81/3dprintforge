@@ -40,6 +40,60 @@ export function parseJsonTag(obj) {
   };
 }
 
+// ── OpenPrintTag (Prusa): NDEF mime application/vnd.openprinttag, a CBOR map
+// of fieldKey → value (keys per openprinttag-specification/data/main_fields).
+// Minimal CBOR reader — enough for the uint / text / bytes / map / array /
+// float32 values these tags use (incl. indefinite-length containers). ────────
+function _cborRead(b, p) {
+  const ib = b[p.i++], major = ib >> 5, info = ib & 0x1f;
+  let len = info, indef = false;
+  if (info === 24) len = b[p.i++];
+  else if (info === 25) { len = (b[p.i] << 8) | b[p.i + 1]; p.i += 2; }
+  else if (info === 26) { len = ((b[p.i] << 24) | (b[p.i + 1] << 16) | (b[p.i + 2] << 8) | b[p.i + 3]) >>> 0; p.i += 4; }
+  else if (info === 27) { len = 0; for (let k = 0; k < 8; k++) len = len * 256 + b[p.i++]; }
+  else if (info === 31) indef = true;
+  switch (major) {
+    case 0: return len;
+    case 1: return -1 - len;
+    case 2: { if (indef) { let out = []; while (b[p.i] !== 0xff) out = out.concat([..._cborRead(b, p)]); p.i++; return Uint8Array.from(out); } const o = b.slice(p.i, p.i + len); p.i += len; return o; }
+    case 3: { if (indef) { let s = ''; while (b[p.i] !== 0xff) s += _cborRead(b, p); p.i++; return s; } const o = new TextDecoder().decode(b.slice(p.i, p.i + len)); p.i += len; return o; }
+    case 4: { const a = []; if (indef) { while (b[p.i] !== 0xff) a.push(_cborRead(b, p)); p.i++; } else for (let k = 0; k < len; k++) a.push(_cborRead(b, p)); return a; }
+    case 5: { const m = {}; if (indef) { while (b[p.i] !== 0xff) { const k = _cborRead(b, p); m[k] = _cborRead(b, p); } p.i++; } else for (let k = 0; k < len; k++) { const key = _cborRead(b, p); m[key] = _cborRead(b, p); } return m; }
+    case 6: return _cborRead(b, p); // tag → decode tagged content
+    case 7:
+      if (info === 20) return false; if (info === 21) return true; if (info === 22 || info === 23) return null;
+      if (info === 26) { const dv = new DataView(b.buffer, b.byteOffset + p.i, 4); p.i += 4; return dv.getFloat32(0); }
+      if (info === 27) { const dv = new DataView(b.buffer, b.byteOffset + p.i, 8); p.i += 8; return dv.getFloat64(0); }
+      return len;
+  }
+  return null;
+}
+function _rgbaHex(v) {
+  if (!v || v.length < 3) return null;
+  return [v[0], v[1], v[2]].map(x => Number(x).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+export function parseOpenPrintTag(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes || []);
+  let m;
+  try { m = _cborRead(b, { i: 0 }); } catch { return null; }
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+  const g = (k) => m[k];
+  return {
+    standard: 'openprinttag',
+    material: g(52) || g(10) || null,           // abbreviation, else full name
+    color_hex: _rgbaHex(g(19)),                 // primary_color rgba
+    brand: g(11) || null,                       // brand_name
+    min_temp: _num(g(34)),                       // min_print_temperature
+    max_temp: _num(g(35)),                       // max_print_temperature
+    bed_temp: _num(g(38) ?? g(37)),              // bed temperature
+    dry_temp: _num(g(57)),                       // drying_temperature
+    diameter_mm: 1.75,
+    weight_g: _num(g(17) ?? g(16)),              // actual / nominal net weight
+    remaining_g: _num(g(17)),
+    raw: { keys: Object.keys(m).map(Number) },
+  };
+}
+
 // ── TigerTag: 144-byte block layout (pages 0x04–0x27 on NTAG21x) ─────────────
 // IDs for material/brand are resolved against the public API; the rest is read
 // straight off the bytes. Offsets per the TigerTag RFID Guide.
@@ -126,8 +180,14 @@ export async function decodeTag(input) {
   // NDEF records array
   if (Array.isArray(input.ndef)) {
     for (const rec of input.ndef) {
+      const mt = String(rec.mediaType || '');
+      // OpenPrintTag: CBOR payload under its own mime type.
+      if (/openprinttag/i.test(mt) && rec.bytes) {
+        const opt = parseOpenPrintTag(rec.bytes);
+        if (opt) return opt;
+      }
       const txt = typeof rec.data === 'string' ? rec.data : null;
-      if (txt && /application\/json|^\s*\{/.test(rec.mediaType || txt)) {
+      if (txt && /application\/json|^\s*\{/.test(mt || txt)) {
         try { return parseJsonTag(JSON.parse(txt)); } catch { /* not json */ }
       }
     }

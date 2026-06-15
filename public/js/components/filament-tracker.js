@@ -6090,9 +6090,11 @@
         const records = [];
         try {
           for (const r of (event.message?.records || [])) {
-            let data = null;
+            let data = null, bytes = null;
             try { data = new TextDecoder(r.encoding || 'utf-8').decode(r.data); } catch { /* binary */ }
-            records.push({ recordType: r.recordType, mediaType: r.mediaType || null, data });
+            // Raw bytes too — OpenPrintTag carries a CBOR payload, not text.
+            try { bytes = Array.from(new Uint8Array(r.data.buffer, r.data.byteOffset, r.data.byteLength)); } catch { /* ignore */ }
+            records.push({ recordType: r.recordType, mediaType: r.mediaType || null, data, bytes });
           }
         } catch { /* ignore */ }
         if (records.length) {
