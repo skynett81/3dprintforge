@@ -2931,11 +2931,19 @@
   font-weight: 600;
 }
 
-.pill-completed { background: rgba(25, 135, 84, 0.15); color: #198754; }
-.pill-failed { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
-.pill-cancelled { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
-.pill-warning { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
-.pill-info { background: rgba(13, 110, 253, 0.15); color: #0d6efd; }
+.pill-completed { background: color-mix(in srgb, var(--accent-green) 15%, transparent); color: var(--accent-green); }
+.pill-failed { background: color-mix(in srgb, var(--accent-red) 15%, transparent); color: var(--accent-red); }
+.pill-cancelled { background: color-mix(in srgb, var(--accent-orange) 15%, transparent); color: var(--accent-orange); }
+.pill-warning { background: color-mix(in srgb, var(--accent-orange) 15%, transparent); color: var(--accent-orange); }
+.pill-info { background: color-mix(in srgb, var(--accent-blue) 15%, transparent); color: var(--accent-blue); }
+
+/* Make Bootstrap badges share the subtle pill aesthetic (one badge style
+   across the app instead of loud solid text-bg-* blocks). */
+.badge.text-bg-success { background: color-mix(in srgb, var(--accent-green) 15%, transparent) !important; color: var(--accent-green) !important; }
+.badge.text-bg-info    { background: color-mix(in srgb, var(--accent-blue) 15%, transparent) !important; color: var(--accent-blue) !important; }
+.badge.text-bg-warning { background: color-mix(in srgb, var(--accent-orange) 15%, transparent) !important; color: var(--accent-orange) !important; }
+.badge.text-bg-danger  { background: color-mix(in srgb, var(--accent-red) 15%, transparent) !important; color: var(--accent-red) !important; }
+.badge.text-bg-secondary { background: var(--bg-tertiary) !important; color: var(--text-muted) !important; }
 
 /* ---- Protection Log Cards ---- */
 .protection-log-cards { display: grid; gap: 8px; }
