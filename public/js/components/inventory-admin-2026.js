@@ -25,7 +25,7 @@
   const _iaStyle = () => `<style>
     .ia-health:empty { display: none; }
     .ia-health { margin-bottom: 8px; }
-    .ia-actionbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px 14px; margin-bottom: 12px; }
+    .ia-actionbar { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px 14px; margin-bottom: 12px; }
     .ia-actionbar-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 6px; }
     .ia-results { margin-left: auto; display: flex; gap: 10px; font-size: 0.76rem; color: var(--text-secondary); align-items: center; }
     .ia-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); grid-auto-flow: dense; gap: 12px; }
