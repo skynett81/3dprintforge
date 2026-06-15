@@ -6082,14 +6082,67 @@
     try {
       _tagScannerNdef = new NDEFReader();
       await _tagScannerNdef.scan();
-      _tagScannerNdef.onreading = (event) => {
-        const uid = event.serialNumber || 'unknown';
-        _handleScannedTag(uid);
+      _tagScannerNdef.onreading = async (event) => {
+        const uid = event.serialNumber || null;
+        // Serialise the NDEF records so the server codec can recognise the open
+        // standards (OpenSpool / OpenPrintTag / OpenTag3D / TigerTag), not just
+        // the bare UID. Falls back to UID lookup when there's no usable payload.
+        const records = [];
+        try {
+          for (const r of (event.message?.records || [])) {
+            let data = null;
+            try { data = new TextDecoder(r.encoding || 'utf-8').decode(r.data); } catch { /* binary */ }
+            records.push({ recordType: r.recordType, mediaType: r.mediaType || null, data });
+          }
+        } catch { /* ignore */ }
+        if (records.length) {
+          try {
+            const res = await fetch('/api/nfc/decode', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ndef: records, tag_uid: uid }),
+            });
+            const out = await res.json();
+            if (res.ok && out.decoded) { _showDecodedTag(out, uid); return; }
+          } catch { /* fall through to UID lookup */ }
+        }
+        _handleScannedTag(uid || 'unknown');
       };
     } catch (e) {
       showToast(t('filament.nfc_error') + ': ' + e.message, 'error');
     }
   }
+
+  // Render a tag decoded by the server codec (any open standard).
+  function _showDecodedTag(out, uid) {
+    const d = out.decoded || {};
+    const result = document.getElementById('tag-scanner-result');
+    if (!result) return;
+    const sw = d.color_hex ? `<span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border-color);vertical-align:middle;background:#${d.color_hex}"></span> ` : '';
+    const linked = out.spool_id
+      ? `<div style="color:var(--accent-green-text);font-size:0.8rem;margin-top:6px">${out.created ? t('filament.nfc_created', 'Created & linked spool') : t('filament.nfc_linked', 'Linked to spool')} #${out.spool_id}</div>`
+      : `<button class="form-btn form-btn-sm" style="margin-top:8px" onclick='window._nfcCreateFromDecoded(${JSON.stringify({ ...d, tag_uid: uid }).replace(/'/g, "&#39;")})'>${t('filament.nfc_create_spool', 'Create & link spool')}</button>`;
+    result.innerHTML = `<div class="tag-scan-card" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:12px">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted)">${(d.standard || 'tag').toUpperCase()}</div>
+      <div style="font-weight:700;margin:2px 0">${sw}${esc(d.brand || '')} ${esc(d.material || '?')}</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary)">${d.min_temp ? d.min_temp + '–' + (d.max_temp || d.min_temp) + '°C · ' : ''}${d.diameter_mm || 1.75}mm${d.weight_g ? ' · ' + d.weight_g + 'g' : ''}</div>
+      ${linked}
+    </div>`;
+  }
+
+  window._nfcCreateFromDecoded = async function(d) {
+    try {
+      const res = await fetch('/api/nfc/decode', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ json: d, tag_uid: d.tag_uid, create: true }),
+      });
+      const out = await res.json();
+      if (res.ok && out.spool_id) {
+        showToast(t('filament.nfc_created', 'Created & linked spool') + ' #' + out.spool_id, 'success');
+        _showDecodedTag(out, d.tag_uid);
+        if (typeof window.loadFilamentPanel === 'function') window.loadFilamentPanel();
+      } else { showToast(out.error || 'Failed', 'error'); }
+    } catch (e) { showToast(e.message, 'error'); }
+  };
 
   async function _tagStartCamera() {
     const video = document.getElementById('tag-scanner-video');
