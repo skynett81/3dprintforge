@@ -2290,6 +2290,8 @@
             <button onclick="exportInventory('filaments','csv')">${t('filament.export_profiles_csv')}</button>
             <button onclick="exportInventory('vendors','csv')">${t('filament.export_vendors_csv')}</button>
             <hr style="margin:4px 0;border-color:var(--border-color)">
+            <button onclick="this.closest('.inv-export-menu').classList.remove('show');window._startStocktake()">${t('filament.stocktake', 'Stocktake')}</button>
+            <hr style="margin:4px 0;border-color:var(--border-color)">
             <button onclick="showImportDialog()">${t('filament.import')}</button>
             <button onclick="showAnalyzeFileDialog()">${t('filament.analyze_file')}</button>
             ${_canFil ? `<hr style="margin:4px 0;border-color:var(--border-color)">
@@ -4384,6 +4386,60 @@
       </div>
     </div>`;
     document.body.appendChild(overlay);
+  };
+
+  // ── Stocktake: scan/type through the shelf, tick off each spool, see what
+  // is still uncounted. Session-local (no DB) — a live counting aid. ────────
+  let _stockCounted = new Set();
+  window._startStocktake = function() {
+    _stockCounted = new Set();
+    _renderStocktake();
+  };
+  function _renderStocktake() {
+    document.getElementById('stocktake-overlay')?.remove();
+    const active = _spools.filter(s => !s.archived);
+    const counted = active.filter(s => _stockCounted.has(s.id));
+    const remaining = active.filter(s => !_stockCounted.has(s.id));
+    const pct = active.length ? Math.round((counted.length / active.length) * 100) : 0;
+    const ov = document.createElement('div');
+    ov.className = 'scan-sheet-overlay';
+    ov.id = 'stocktake-overlay';
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    const row = (s, done) => `<div class="stk-row ${done ? 'stk-done' : ''}">
+      <span class="stk-dot" style="background:${s.color_hex ? '#' + String(s.color_hex).replace(/^#/, '') : 'var(--border-color)'}"></span>
+      <span class="stk-name">${esc(_cleanProfileName(s))}</span>
+      <span class="stk-id">${esc(s.short_id || ('#' + s.id))}</span>
+      ${done ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+        : `<button class="stk-tick" onclick="window._stockTick(${s.id})" title="${t('filament.mark_counted', 'Mark counted')}">+</button>`}
+    </div>`;
+    ov.innerHTML = `<div class="scan-sheet" style="max-width:480px">
+      <div class="scan-sheet-head">
+        <div style="min-width:0;flex:1">
+          <div class="scan-sheet-name">${t('filament.stocktake', 'Stocktake')}</div>
+          <div class="scan-sheet-meta">${counted.length}/${active.length} ${t('filament.counted', 'counted')} · ${pct}%</div>
+        </div>
+        <button class="scan-sheet-x" onclick="document.getElementById('stocktake-overlay').remove()">&times;</button>
+      </div>
+      <div style="padding:12px 14px">
+        <div class="stk-progress"><div class="stk-progress-fill" style="width:${pct}%"></div></div>
+        <input class="form-input" id="stk-input" placeholder="${t('filament.scan_or_type', 'Scan or type a code, then Enter')}" style="margin:10px 0" autofocus
+          onkeydown="if(event.key==='Enter'){window._stockScan(this.value);this.value='';}">
+        <div class="stk-list">
+          ${remaining.length ? `<div class="stk-section">${t('filament.uncounted', 'Uncounted')} (${remaining.length})</div>` + remaining.map(s => row(s, false)).join('') : `<div class="inv-health-ok"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${t('filament.stocktake_complete', 'All spools counted')}</div>`}
+          ${counted.length ? `<div class="stk-section">${t('filament.counted', 'Counted')} (${counted.length})</div>` + counted.map(s => row(s, true)).join('') : ''}
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    setTimeout(() => document.getElementById('stk-input')?.focus(), 50);
+  }
+  window._stockTick = function(id) { _stockCounted.add(id); _renderStocktake(); };
+  window._stockScan = function(code) {
+    const spool = _resolveScannedCode(code);
+    if (!spool) { showToast(t('filament.spool_not_found', 'Spool not found'), 'warning'); return; }
+    if (spool.archived) { showToast(t('filament.spool_archived', 'Spool is archived'), 'warning'); return; }
+    _stockCounted.add(spool.id);
+    _renderStocktake();
   };
 
   // Manual code entry — type a short_id / id when a camera scan isn't handy.

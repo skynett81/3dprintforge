@@ -4499,6 +4499,19 @@
 .rep-bar { width: 90px; height: 6px; background: var(--bg-tertiary, rgba(127,127,127,0.15)); border-radius: 3px; overflow: hidden; }
 .rep-bar-fill { height: 100%; background: linear-gradient(90deg, #1279ff, #22c55e); border-radius: 3px; }
 
+/* Stocktake counting session */
+.stk-progress { height: 8px; background: var(--bg-tertiary, rgba(127,127,127,0.15)); border-radius: 4px; overflow: hidden; }
+.stk-progress-fill { height: 100%; background: var(--accent-green, #22c55e); border-radius: 4px; transition: width 0.3s ease; }
+.stk-list { max-height: 46vh; overflow-y: auto; margin-top: 4px; }
+.stk-section { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin: 10px 0 4px; }
+.stk-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--border-color); }
+.stk-done { opacity: 0.6; }
+.stk-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--border-color); }
+.stk-name { flex: 1; min-width: 0; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stk-id { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.stk-tick { flex: none; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary, rgba(127,127,127,0.08)); color: var(--text-secondary); font-size: 1rem; line-height: 1; cursor: pointer; }
+.stk-tick:hover { border-color: var(--accent-green, #22c55e); color: var(--accent-green, #22c55e); }
+
 .form-btn-danger {
   --bs-btn-bg: #dc3545;
   --bs-btn-hover-bg: #bb2d3b;
