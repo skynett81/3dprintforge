@@ -89,9 +89,9 @@
           </div>
         </div>
         <div class="backup-item-actions">
-          <a href="/api/backup/download/${encodeURIComponent(b.filename)}" class="backup-btn backup-btn--download" title="${_esc(t('backup.download'))}">${t('backup.download')}</a>
-          <button class="backup-btn backup-btn--restore" data-filename="${_esc(b.filename)}" title="${_esc(t('backup.restore'))}">${t('backup.restore')}</button>
-          <button class="backup-btn backup-btn--delete" data-filename="${_esc(b.filename)}" title="${_esc(t('backup.delete'))}">${t('backup.delete')}</button>
+          <a href="/api/backup/download/${encodeURIComponent(b.filename)}" class="form-btn form-btn-sm form-btn-ghost" title="${_esc(t('backup.download'))}"><i class="bi bi-download"></i> ${t('backup.download')}</a>
+          <button class="form-btn form-btn-sm form-btn-ghost backup-btn--restore" data-filename="${_esc(b.filename)}" title="${_esc(t('backup.restore'))}"><i class="bi bi-arrow-counterclockwise"></i> ${t('backup.restore')}</button>
+          <button class="form-btn form-btn-sm form-btn-ghost backup-btn--delete" data-filename="${_esc(b.filename)}" style="color:var(--accent-red)" title="${_esc(t('backup.delete'))}"><i class="bi bi-trash"></i> ${t('backup.delete')}</button>
         </div>
       </div>`;
     }
@@ -132,7 +132,7 @@
       showStatus(e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.innerHTML = t('backup.create');
+      btn.innerHTML = '<i class="bi bi-plus-circle"></i> ' + t('backup.create');
     }
   }
 
@@ -156,7 +156,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = t('backup.upload');
+        btn.innerHTML = '<i class="bi bi-upload"></i> ' + t('backup.upload');
       }
     }
   }
@@ -192,8 +192,8 @@
         <div class="backup-dialog-warning">${t('backup.restore_warning')}</div>
         <div class="backup-dialog-file">${_esc(filename)}</div>
         <div class="backup-dialog-actions">
-          <button class="backup-btn backup-btn--cancel" id="backup-cancel-btn">${t('backup.cancel')}</button>
-          <button class="backup-btn backup-btn--confirm" id="backup-confirm-btn">${t('backup.confirm')}</button>
+          <button class="form-btn form-btn-sm form-btn-ghost" id="backup-cancel-btn">${t('backup.cancel')}</button>
+          <button class="form-btn form-btn-sm" id="backup-confirm-btn" style="background:var(--accent-red)">${t('backup.confirm')}</button>
         </div>
       </div>`;
 
@@ -234,24 +234,9 @@
           padding-bottom: 0.5rem;
           border-bottom: 1px solid var(--border-color);
         }
-        .backup-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
-        .backup-btn {
-          display: inline-flex; align-items: center; gap: 0.35rem;
-          padding: 0.4rem 0.85rem; border-radius: var(--radius);
-          font-size: 0.8rem; font-weight: 500; cursor: pointer;
-          border: 1px solid var(--border-color); background: var(--bg-secondary);
-          color: var(--text-primary); transition: opacity 0.15s;
-          text-decoration: none;
-        }
-        .backup-btn:hover { opacity: 0.8; }
-        .backup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .backup-btn--create { background: var(--accent-green); color: #fff; border-color: var(--accent-green-text); }
-        .backup-btn--upload { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
-        .backup-btn--download { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
-        .backup-btn--restore { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
-        .backup-btn--delete { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
-        .backup-btn--confirm { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
-        .backup-btn--cancel { background: var(--bg-secondary); }
+        .backup-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        /* Buttons use the shared .form-btn system; .backup-btn--restore/--delete
+           remain only as markers for the JS event bindings. */
         .backup-file-input { display: none; }
         .backup-file-label {
           display: inline-flex; align-items: center; gap: 0.35rem;
@@ -306,13 +291,13 @@
         <div class="backup-section" style="margin-bottom:1rem">
           <div class="backup-section-title">${t('backup.title')}</div>
           <div class="backup-actions">
-            <button class="backup-btn backup-btn--create" id="backup-create-btn">${t('backup.create')}</button>
-            <button class="backup-btn backup-btn--upload" id="backup-upload-btn" onclick="document.getElementById('backup-file-input').click()">${t('backup.upload')}</button>
+            <button class="form-btn form-btn-sm" id="backup-create-btn"><i class="bi bi-plus-circle"></i> ${t('backup.create')}</button>
+            <button class="form-btn form-btn-sm form-btn-ghost" id="backup-upload-btn" onclick="document.getElementById('backup-file-input').click()"><i class="bi bi-upload"></i> ${t('backup.upload')}</button>
             <input type="file" id="backup-file-input" class="backup-file-input" accept=".db">
             <span style="border-left:1px solid var(--border-color);height:24px;margin:0 4px"></span>
-            <span style="font-size:0.78rem;opacity:0.7">${t('backup.export_title')}:</span>
-            <a href="/api/history/export?format=csv" class="backup-btn backup-btn--download" download>${t('backup.export_csv')}</a>
-            <a href="/api/history/export?format=json" class="backup-btn backup-btn--download" download>${t('backup.export_json')}</a>
+            <span style="font-size:0.78rem;color:var(--text-muted)">${t('backup.export_title')}:</span>
+            <a href="/api/history/export?format=csv" class="form-btn form-btn-sm form-btn-ghost" download>${t('backup.export_csv')}</a>
+            <a href="/api/history/export?format=json" class="form-btn form-btn-sm form-btn-ghost" download>${t('backup.export_json')}</a>
           </div>
           <div class="backup-status" id="backup-status"></div>
         </div>
