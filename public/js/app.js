@@ -494,7 +494,6 @@ const PANEL_TITLES = {
   scheduler: 'tabs.scheduler',
   library: 'tabs.library',
   'calibration': 'Calibration & Tuning',
-  'ai-forge': 'AI Model Forge',
   'slicer-studio': 'Slicer Studio',
   'admin-diagnostics': 'Diagnostics & Tuning',
   'admin-inventory': 'Inventory Admin',
@@ -551,7 +550,6 @@ const PANEL_LOADERS = {
   fleet: () => { if (typeof loadFleetPanel === 'function') loadFleetPanel(); },
   library: () => { if (typeof loadLibraryPanel === 'function') loadLibraryPanel(); },
   'calibration': () => { if (typeof loadCalibrationSuite === 'function') loadCalibrationSuite(); },
-  'ai-forge': () => { if (typeof loadAiForge === 'function') loadAiForge(); },
   'slicer-studio': () => { if (typeof loadSlicerStudio === 'function') loadSlicerStudio(); },
   'admin-diagnostics': () => {
     const body = document.getElementById('overlay-panel-body');
@@ -577,8 +575,6 @@ const PANEL_LOADERS = {
     const sub = hash.startsWith('modelforge/') ? hash.split('/')[1] : null;
     if (typeof loadModelForgePanel === 'function') loadModelForgePanel(sub);
   },
-  widgets: () => { if (typeof loadWidgetsPanel === 'function') loadWidgetsPanel(); },
-  plugins: () => { if (typeof loadPluginsPanel === 'function') loadPluginsPanel(); },
   analytics: () => { if (typeof loadAnalyticsPanel === 'function') loadAnalyticsPanel(); },
   backup: () => { if (typeof loadBackupPanel === 'function') loadBackupPanel(); },
   'firmware-updates': () => {
@@ -596,7 +592,6 @@ const PANEL_LOADERS = {
     if (body) body.innerHTML = '<div id="octoprint-panel"></div>';
     if (typeof loadOctoprintPanel === 'function') loadOctoprintPanel();
   },
-  playground: () => { if (typeof loadPlaygroundPanel === 'function') loadPlaygroundPanel(); },
   costestimator: () => { if (typeof loadCostEstimatorPanel === 'function') loadCostEstimatorPanel(); },
   settings: () => { if (typeof loadSettingsPanel === 'function') loadSettingsPanel(); },
   materialrec: () => { if (typeof loadMaterialRecommendationsPanel === 'function') loadMaterialRecommendationsPanel(); },
@@ -643,9 +638,9 @@ window._activePanel = null;
 // active printer still arrives via WebSocket push regardless.
 const NO_AUTO_REFRESH = new Set([
   'achievements', 'calendar', 'knowledge', 'learning', 'library', 'gallery',
-  'screenshots', 'widgets', 'plugins', 'modelinfo', 'printermatrix',
+  'screenshots', 'modelinfo', 'printermatrix',
   'materialrec', 'settings', 'backup', 'profiles', 'labels', 'signmaker',
-  'modelforge', 'scenecomposer', 'costestimator', 'playground', 'gcode',
+  'modelforge', 'costestimator', 'gcode',
   'comparison', 'bedmesh', 'multicolor',
 ]);
 

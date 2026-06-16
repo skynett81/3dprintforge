@@ -52,7 +52,6 @@
     gallery: 'Gallery',
     // 2026 additions — every panel registered in PANEL_TITLES should be
     // searchable from the Ctrl+K palette so users can jump straight in.
-    'ai-forge':         'AI Model Forge',
     'calibration':      'Calibration & Tuning',
     'analysis':         'Analysis',
     'analytics':        'Analytics',
