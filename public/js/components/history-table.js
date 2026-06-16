@@ -138,6 +138,7 @@
   let _sortDir = localStorage.getItem('history-sort-dir') || 'desc';
   let _historyPage = 1;
   const _HISTORY_PAGE_SIZE = 30;
+  let _crmLicensed = false;
 
   // Load cloud tasks for design title enrichment
   async function _loadCloudTasks() {
@@ -289,20 +290,25 @@
       h += '</div>';
       h += '</div>';
 
-      // Pagination
-      const visibleSorted = sorted.filter(r => _activeFilter === 'all' || r.status === _activeFilter);
+      // Apply status + review filters, then paginate the result
+      const matchesReview = (r) => _activeReviewFilter === 'all'
+        || (_activeReviewFilter === 'unreviewed' && !r.review_status)
+        || (_activeReviewFilter === r.review_status);
+      const visibleSorted = sorted.filter(r =>
+        (_activeFilter === 'all' || r.status === _activeFilter) && matchesReview(r));
       const totalPages = Math.max(1, Math.ceil(visibleSorted.length / _HISTORY_PAGE_SIZE));
       if (_historyPage > totalPages) _historyPage = totalPages;
       const pageStart = (_historyPage - 1) * _HISTORY_PAGE_SIZE;
       const pageItems = visibleSorted.slice(pageStart, pageStart + _HISTORY_PAGE_SIZE);
 
-      if (_viewMode === 'grid') {
+      if (!visibleSorted.length) {
+        h += `<div class="ph-empty-filter text-muted">${t('history.no_match', 'No prints match the current filters.')}</div>`;
+      } else if (_viewMode === 'grid') {
         h += '<div class="ph-grid" id="history-cards">';
-        for (const row of sorted) {
+        for (const row of pageItems) {
           const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
           const cloud = _getCloudMatch(row.filename);
           const displayName = row.model_name || cloud?.designTitle || fname;
-          const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
           const pName = printerName(row.printer_id);
           const duration = formatDuration(row.duration_seconds);
           const dateShort = formatDateShort(row.started_at);
@@ -310,11 +316,7 @@
           const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
           const plateLabel = cloud?.plateIndex ? `Plate ${cloud.plateIndex}` : '';
 
-          const reviewDisplay = (_activeReviewFilter === 'all' ||
-            (_activeReviewFilter === 'unreviewed' && !row.review_status) ||
-            (_activeReviewFilter === row.review_status)) ? '' : 'display:none;';
-          const combinedDisplay = display || reviewDisplay;
-          h += `<div class="ph-card" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" style="${combinedDisplay}" onclick="showHistoryDetail(${row.id})">
+          h += `<div class="ph-card" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" onclick="showHistoryDetail(${row.id})">
             <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
             <button class="ph-crm-order-btn" onclick="event.stopPropagation();window.createOrderFromHistory(${row.id})" title="${t('crm.create_from_history')}" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -336,7 +338,7 @@
               </div>
               <div class="ph-card-review-row">
                 ${reviewBadge(row.review_status)}
-                <button class="ph-review-btn" onclick="event.stopPropagation();window.openReviewDialog(${row.id})" title="Vurder print">
+                <button class="ph-review-btn" onclick="event.stopPropagation();window.openReviewDialog(${row.id})" title="${t('history.review_print')}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
                 </button>
               </div>
@@ -353,11 +355,10 @@
       } else {
         // List view
         h += '<div class="ph-list" id="history-cards">';
-        for (const row of sorted) {
+        for (const row of pageItems) {
           const fname = (row.filename || '--').replace(/\.(3mf|gcode)$/i, '');
           const cloud = _getCloudMatch(row.filename);
           const displayName = row.model_name || cloud?.designTitle || fname;
-          const display = (_activeFilter === 'all' || row.status === _activeFilter) ? '' : 'display:none;';
           const pName = printerName(row.printer_id);
           const duration = formatDuration(row.duration_seconds);
           const dateFull = formatDate(row.started_at);
@@ -365,11 +366,7 @@
           const thumbUrl = `/api/history/${row.id}/thumbnail`;
           const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(row.filament_color));
 
-          const listReviewDisplay = (_activeReviewFilter === 'all' ||
-            (_activeReviewFilter === 'unreviewed' && !row.review_status) ||
-            (_activeReviewFilter === row.review_status)) ? '' : 'display:none;';
-          const listCombinedDisplay = display || listReviewDisplay;
-          h += `<div class="ph-list-row" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" style="${listCombinedDisplay}" onclick="showHistoryDetail(${row.id})">
+          h += `<div class="ph-list-row" data-status="${row.status}" data-review="${row.review_status || ''}" data-id="${row.id}" onclick="showHistoryDetail(${row.id})">
             <input type="checkbox" class="ph-compare-cb" value="${row.id}" onclick="event.stopPropagation();window._updateCompareBtn()" title="Select for compare">
             <button class="ph-crm-order-btn ph-crm-order-btn-list" onclick="event.stopPropagation();window.createOrderFromHistory(${row.id})" title="${t('crm.create_from_history')}" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -377,13 +374,13 @@
             <div class="ph-list-thumb" data-label="">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
             </div>
-            <div class="ph-list-name" data-label="Fil" title="${esc(displayName)}">${esc(displayName)}</div>
-            <div class="ph-list-date" data-label="Dato">${dateFull}</div>
-            <div class="ph-list-duration" data-label="Duration">${duration}</div>
-            <div class="ph-list-filament" data-label="Filament">${filWeight}</div>
-            <div class="ph-list-cost" data-label="Kostnad">${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : '--'}</div>
-            <div class="ph-list-printer" data-label="Printer">${esc(pName)}</div>
-            <div class="ph-list-notes" data-label="Notater" data-id="${row.id}">
+            <div class="ph-list-name" data-label="${t('history.sort_name')}" title="${esc(displayName)}">${esc(displayName)}</div>
+            <div class="ph-list-date" data-label="${t('history.date')}">${dateFull}</div>
+            <div class="ph-list-duration" data-label="${t('history.sort_duration')}">${duration}</div>
+            <div class="ph-list-filament" data-label="${t('history.sort_filament')}">${filWeight}</div>
+            <div class="ph-list-cost" data-label="${t('history.cost', 'Cost')}">${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : '--'}</div>
+            <div class="ph-list-printer" data-label="${t('history.printer', 'Printer')}">${esc(pName)}</div>
+            <div class="ph-list-notes" data-label="${t('history.notes', 'Notes')}" data-id="${row.id}">
               <span class="ph-notes-text" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this)">${row.notes ? esc(row.notes) : ''}</span>
               <span class="ph-notes-edit-icon" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this.previousElementSibling)" title="Edit notes">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1131,8 +1128,7 @@
         return;
       }
 
-      const filteredData = _activePrinter === 'all'
-        ? _data : _data.filter(r => r.printer_id === _activePrinter);
+      const filteredData = _filteredData();
 
       let html = '<div class="history-layout">';
 
@@ -1184,11 +1180,12 @@
       html += '</div>';
       panel.innerHTML = html;
 
-      // Show CRM order buttons if license is active
+      // Show CRM order buttons if license is active (cache result for list re-renders)
       fetch('/api/ecommerce/license')
         .then(r => r.ok ? r.json() : { active: false })
         .then(lic => {
-          if (lic && lic.active) {
+          _crmLicensed = !!(lic && lic.active);
+          if (_crmLicensed) {
             panel.querySelectorAll('.ph-crm-order-btn').forEach(btn => {
               btn.style.display = '';
             });
@@ -1226,7 +1223,7 @@
 
   window._histPage = function(page) {
     _historyPage = Math.max(1, page);
-    loadHistory();
+    _rerenderList();
   };
 
   window.historySort = function(field) {
@@ -1238,17 +1235,18 @@
     }
     localStorage.setItem('history-sort-field', _sortField);
     localStorage.setItem('history-sort-dir', _sortDir);
-    loadHistory();
+    _rerenderList();
   };
 
   window.historyViewMode = function(mode) {
     _viewMode = mode;
     localStorage.setItem('history-view-mode', mode);
-    loadHistory();
+    _rerenderList();
   };
 
   window.filterHistory = function(status, btn) {
     _activeFilter = status;
+    _historyPage = 1;
     const slug = status === 'all' ? 'history' : `history/${status}`;
     if (location.hash !== '#' + slug) history.replaceState(null, '', '#' + slug);
     document.querySelectorAll('.history-filter-btn').forEach(b => b.classList.remove('active'));
@@ -1260,25 +1258,32 @@
         if (match && match[1] === status) b.classList.add('active');
       });
     }
-    _applyVisibilityFilters();
+    _rerenderList();
   };
 
   window.filterHistoryReview = function(reviewStatus, btn) {
     _activeReviewFilter = reviewStatus;
+    _historyPage = 1;
     document.querySelectorAll('.history-review-filter-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    _applyVisibilityFilters();
+    _rerenderList();
   };
 
-  function _applyVisibilityFilters() {
-    document.querySelectorAll('.ph-card, .ph-list-row').forEach(card => {
-      const statusMatch = _activeFilter === 'all' || card.dataset.status === _activeFilter;
-      const reviewVal = card.dataset.review || '';
-      const reviewMatch = _activeReviewFilter === 'all' ||
-        (_activeReviewFilter === 'unreviewed' && !reviewVal) ||
-        (_activeReviewFilter === reviewVal);
-      card.style.display = (statusMatch && reviewMatch) ? '' : 'none';
-    });
+  // Printer-scoped slice of the cached history (no re-fetch)
+  function _filteredData() {
+    return _activePrinter === 'all'
+      ? _data : _data.filter(r => r.printer_id === _activePrinter);
+  }
+
+  // Re-render only the print list from cached data — keeps sort/filter/page/view
+  // changes instant (no API round-trip) and applies real pagination.
+  function _rerenderList() {
+    const main = document.querySelector('.hist-main .stats-module');
+    if (!main || !BUILDERS['history-list']) { loadHistory(); return; }
+    main.innerHTML = BUILDERS['history-list'](_filteredData());
+    if (_crmLicensed) {
+      main.querySelectorAll('.ph-crm-order-btn').forEach(btn => { btn.style.display = ''; });
+    }
   }
 
   // ═══ Review dialog ═══
@@ -1299,7 +1304,7 @@
 
     overlay.innerHTML = `<div class="ph-review-dialog">
       <button class="ph-detail-close" onclick="this.closest('.ph-detail-overlay').remove()">&times;</button>
-      <h3 class="ph-review-title">Vurder print</h3>
+      <h3 class="ph-review-title">${t('history.review_print')}</h3>
       <div class="ph-review-info">
         <div class="ph-review-info-row"><span class="ph-review-info-label">Fil:</span><span class="ph-review-info-value">${esc(displayName)}</span></div>
         <div class="ph-review-info-row"><span class="ph-review-info-label">Printer:</span><span class="ph-review-info-value">${esc(pName)}</span></div>

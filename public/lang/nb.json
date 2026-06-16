@@ -1554,6 +1554,7 @@
   "history": {
     "no_records": "Ingen utskrifter registrert enda.",
     "no_records_desc": "Utskrifter vises her når printerne begynner å skrive ut.",
+    "no_match": "Ingen utskrifter matcher gjeldende filtre.",
     "view": "Vis",
     "date": "Dato",
     "filename": "Filnavn",
@@ -1614,7 +1615,9 @@
     "upload_error": "Feil ved opplasting",
     "confirm_delete_3mf": "Slett lagret 3MF-fil?",
     "3mf_deleted": "3MF slettet",
-    "waste_label": "Svinn"
+    "waste_label": "Svinn",
+    "printer": "Printer",
+    "cost": "Kostnad"
   },
   "stats": {
     "total_prints": "Totalt antall",

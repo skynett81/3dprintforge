@@ -3244,6 +3244,14 @@
   gap: 14px;
 }
 
+.ph-empty-filter {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+}
+
 .ph-card {
   position: relative;
   background: var(--bg-tertiary);

@@ -1650,6 +1650,7 @@
   "history": {
     "no_records": "No prints recorded yet.",
     "no_records_desc": "Prints will appear here when printers start printing.",
+    "no_match": "No prints match the current filters.",
     "view": "View",
     "date": "Date",
     "filename": "Filename",
@@ -1713,7 +1714,9 @@
     "waste_label": "Waste",
     "compare_title": "Compare Prints",
     "filament_type": "Filament type",
-    "notes": "Notes"
+    "notes": "Notes",
+    "printer": "Printer",
+    "cost": "Cost"
   },
   "stats": {
     "total_prints": "Total prints",
