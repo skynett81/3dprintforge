@@ -58,7 +58,6 @@
     'firmware-updates': 'Firmware Updates',
     'admin-diagnostics':'Diagnostics & Tuning (admin)',
     'admin-inventory':  'Inventory Admin',
-    'admin-kb':         'Knowledge Base Admin',
     'modelforge':       'Model Forge',
     'signmaker':        'Sign Maker',
     'slicer-studio':    'Slicer Studio',

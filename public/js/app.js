@@ -497,7 +497,6 @@ const PANEL_TITLES = {
   'slicer-studio': 'Slicer Studio',
   'admin-diagnostics': 'Diagnostics & Tuning',
   'admin-inventory': 'Inventory Admin',
-  'admin-kb': 'Knowledge Base Admin',
   bedmesh: 'tabs.bedmesh',
   gcode: 'tabs.gcode',
   health: 'tabs.health',
@@ -560,11 +559,6 @@ const PANEL_LOADERS = {
     const body = document.getElementById('overlay-panel-body');
     if (body) body.innerHTML = '<div id="inventory-admin-2026"></div>';
     if (typeof window.renderInventoryAdmin2026 === 'function') window.renderInventoryAdmin2026();
-  },
-  'admin-kb': () => {
-    const body = document.getElementById('overlay-panel-body');
-    if (body) body.innerHTML = '<div id="kb-viewer-2026"></div>';
-    if (typeof window.renderKbViewer2026 === 'function') window.renderKbViewer2026();
   },
   diagnostics: () => { if (typeof loadDiagnosticsPanel === 'function') loadDiagnosticsPanel(); },
   labels: () => { if (typeof loadLabelPanel === 'function') loadLabelPanel(); },
