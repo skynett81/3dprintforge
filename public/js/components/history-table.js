@@ -1106,11 +1106,8 @@
     }
 
     try {
-      const activePid = window.printerState?.getActivePrinterId?.();
-      // Sync _activePrinter with sidebar selection unless explicitly set to 'all' via printer tabs
-      if (_activePrinter !== 'all') {
-        _activePrinter = activePid || 'all';
-      }
+      // _activePrinter is driven by the printer tabs / the history/printer/:id hash.
+      // We always fetch the full history and filter client-side via _filteredData().
       // Always fetch all history (allow client-side printer filtering via tabs)
       const [histRes, unreviewedRes] = await Promise.all([fetch('/api/history?limit=200'), fetch('/api/history/unreviewed'), _loadCloudTasks()]);
       _data = await histRes.json();
