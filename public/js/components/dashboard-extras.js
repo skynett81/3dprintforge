@@ -139,8 +139,10 @@
 
     let min = Infinity, max = -Infinity;
     for (const row of data._bed_mesh.meshMatrix) {
-      for (const val of row) { if (val < min) min = val; if (val > max) max = val; }
+      for (const val of row) { if (typeof val !== 'number' || !isFinite(val)) continue; if (val < min) min = val; if (val > max) max = val; }
     }
+    // Matrix present but point-less (e.g. Snapmaker reports [[]] pre-probe) → skip
+    if (!isFinite(min) || !isFinite(max)) return;
     const variance = Math.round((max - min) * 1000) / 1000;
 
     let badge = document.getElementById('dashboard-bedmesh-badge');

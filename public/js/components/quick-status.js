@@ -189,7 +189,7 @@
       const posStr = data._position ? `X:${data._position.x} Y:${data._position.y} Z:${data._position.z}` : '--';
 
       // Extra Moonraker indicators
-      const meshVar = data._bed_mesh?.meshMatrix?.length ? (() => { let mn = Infinity, mx = -Infinity; for (const r of data._bed_mesh.meshMatrix) for (const v of r) { if (v < mn) mn = v; if (v > mx) mx = v; } return Math.round((mx - mn) * 1000) / 1000; })() : null;
+      const meshVar = data._bed_mesh?.meshMatrix?.length ? (() => { let mn = Infinity, mx = -Infinity; for (const r of data._bed_mesh.meshMatrix) for (const v of r) { if (typeof v !== 'number' || !isFinite(v)) continue; if (v < mn) mn = v; if (v > mx) mx = v; } return (isFinite(mn) && isFinite(mx)) ? Math.round((mx - mn) * 1000) / 1000 : null; })() : null;
       const meshStr = meshVar !== null ? `${meshVar}mm` : '--';
       const meshColor = meshVar !== null ? (meshVar < 0.1 ? 'var(--accent-green)' : meshVar < 0.3 ? 'var(--accent-orange)' : 'var(--accent-red)') : 'var(--text-muted)';
       const fsensor = data._filament_sensor;

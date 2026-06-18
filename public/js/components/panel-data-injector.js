@@ -62,13 +62,11 @@
     }
 
     // Bed mesh variance
-    if (data._bed_mesh?.meshMatrix?.length) {
-      let min = Infinity, max = -Infinity;
-      for (const row of data._bed_mesh.meshMatrix) for (const v of row) { if (v < min) min = v; if (v > max) max = v; }
-      const variance = Math.round((max - min) * 1000) / 1000;
-      const color = variance < 0.1 ? 'var(--accent-green)' : variance < 0.3 ? 'var(--accent-orange)' : 'var(--accent-red)';
+    const _bmVariance = _calcMeshVariance(data._bed_mesh);
+    if (_bmVariance !== null) {
+      const color = _bmVariance < 0.1 ? 'var(--accent-green)' : _bmVariance < 0.3 ? 'var(--accent-orange)' : 'var(--accent-red)';
       html += `<div class="settings-card" style="padding:12px"><div style="font-size:0.72rem;color:var(--text-muted)">Bed Mesh Variance</div>
-        <div style="font-size:1.5rem;font-weight:700;color:${color}">${variance}mm</div>
+        <div style="font-size:1.5rem;font-weight:700;color:${color}">${_bmVariance}mm</div>
         <div style="font-size:0.7rem">${data._bed_mesh.meshMatrix.length}×${data._bed_mesh.meshMatrix[0]?.length} points</div>
       </div>`;
     }
@@ -195,7 +193,13 @@
   function _calcMeshVariance(mesh) {
     if (!mesh?.meshMatrix?.length) return null;
     let min = Infinity, max = -Infinity;
-    for (const row of mesh.meshMatrix) for (const v of row) { if (v < min) min = v; if (v > max) max = v; }
+    for (const row of mesh.meshMatrix) for (const v of row) {
+      if (typeof v !== 'number' || !isFinite(v)) continue;
+      if (v < min) min = v; if (v > max) max = v;
+    }
+    // Guard against an empty/point-less matrix (e.g. Snapmaker reports [[]]
+    // before a mesh is probed) which would otherwise yield -Infinity.
+    if (!isFinite(min) || !isFinite(max)) return null;
     return Math.round((max - min) * 1000) / 1000;
   }
 
@@ -333,11 +337,9 @@
   // Analysis: bed mesh trend, TMC trends
   function _injectAnalysis(data) {
     let html = '';
-    if (data._bed_mesh?.meshMatrix?.length) {
-      let min = Infinity, max = -Infinity;
-      for (const r of data._bed_mesh.meshMatrix) for (const v of r) { if (v < min) min = v; if (v > max) max = v; }
-      const v = Math.round((max - min) * 1000) / 1000;
-      html += _badge('Bed Mesh', v + 'mm', v < 0.1 ? 'var(--accent-green)' : 'var(--accent-orange)');
+    const _meshV = _calcMeshVariance(data._bed_mesh);
+    if (_meshV !== null) {
+      html += _badge('Bed Mesh', _meshV + 'mm', _meshV < 0.1 ? 'var(--accent-green)' : 'var(--accent-orange)');
     }
     if (data._input_shaper) {
       html += _badge('Shaper X', (data._input_shaper.shaperFreqX?.toFixed(0) || '?') + 'Hz', '');
