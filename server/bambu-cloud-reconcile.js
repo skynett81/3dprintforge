@@ -45,16 +45,6 @@ function _isCompleted(task) {
 // Match a cloud AMS mapping (the slotId is unreliable, so ignore it) to the
 // linked inventory spool by AMS unit + base material, refined by colour.
 export function _matchSpool(printerId, amsUnit, slotId, material, color6) {
-  // Ground truth first: the cloud tells us the exact AMS slot used (amsId =
-  // unit, slotId = tray). If a spool is linked to that slot, credit it
-  // directly. The previous code ignored slotId and just took the first spool
-  // in the unit that matched the material — so every PLA job was charged to
-  // tray A1 and a second slot (e.g. A2) of the same material was never
-  // deducted. Honour the slot before falling back to colour/material guessing.
-  if (slotId != null && Number.isFinite(Number(slotId))) {
-    const exact = getSpoolBySlot(printerId, amsUnit, Number(slotId));
-    if (exact) return exact;
-  }
   const want = _baseMaterial(material);
   const cands = [];
   for (let tray = 0; tray < 4; tray++) {
@@ -65,9 +55,26 @@ export function _matchSpool(printerId, amsUnit, slotId, material, color6) {
   // consider the external spool (ams_unit 255) when matching.
   const ext = getSpoolBySlot(printerId, 255, 0);
   if (ext) cands.push(ext);
-  return cands.find(sp => _baseMaterial(sp.material) === want && _color6(sp.color_hex) === color6)
-    || cands.find(sp => _baseMaterial(sp.material) === want)
-    || null;
+
+  // 1. Exact slot — but only trust it when the slot's loaded filament COLOUR
+  //    also matches the print. Many printers (notably the P2S / AMS Lite)
+  //    report slotId 0 for *every* job, so the slot alone is meaningless and
+  //    would charge a white A2 print to a grey A1 spool. Colour is the reliable
+  //    key here; require it to agree before honouring the slot.
+  if (slotId != null && Number.isFinite(Number(slotId))) {
+    const exact = getSpoolBySlot(printerId, amsUnit, Number(slotId));
+    if (exact && _baseMaterial(exact.material) === want && _color6(exact.color_hex) === color6) return exact;
+  }
+  // 2. Colour + material across the loaded trays (the dependable discriminator).
+  const byColour = cands.find(sp => _baseMaterial(sp.material) === want && _color6(sp.color_hex) === color6);
+  if (byColour) return byColour;
+  // 3. Exact slot ignoring colour — still better than a blind material guess.
+  if (slotId != null && Number.isFinite(Number(slotId))) {
+    const exact = getSpoolBySlot(printerId, amsUnit, Number(slotId));
+    if (exact && _baseMaterial(exact.material) === want) return exact;
+  }
+  // 4. Material only (last resort).
+  return cands.find(sp => _baseMaterial(sp.material) === want) || null;
 }
 
 function _alreadyReconciled(taskId) {
@@ -181,21 +188,29 @@ export async function reconcileCloudFilament(cloud, opts = {}) {
 // correct baseline after a mis-attribution corrupted the running tally, using
 // the cloud's authoritative per-print slotId+weight. Mass-honest: it never
 // invents filament, it recomputes from ground truth. ?dryRun previews.
-export async function recomputeLoadedSpoolWeights(cloud, { dryRun = false, autoHeal = false } = {}) {
+export async function recomputeLoadedSpoolWeights(cloud, { dryRun = false } = {}) {
   const out = { updated: [], skipped: [], dryRun };
   try {
     if (!cloud || typeof cloud.isAuthenticated !== 'function' || !cloud.isAuthenticated()) return out;
     const tasks = await cloud.getTaskHistory();
     const printers = getPrinters();
     const db = getDb();
+    // Need each loaded spool's colour + material: the cloud's slotId is
+    // unreliable (always 0 on the P2S), so we attribute a print to a spool by
+    // matching the print's filament COLOUR + base material — the real key.
     const spools = db.prepare(
-      `SELECT id, printer_id, ams_unit, ams_tray, initial_weight_g, remaining_weight_g, created_at
-       FROM spools WHERE archived = 0 AND ams_unit IS NOT NULL AND ams_tray IS NOT NULL`
+      `SELECT s.id, s.printer_id, s.ams_unit, s.ams_tray, s.initial_weight_g, s.remaining_weight_g, s.created_at,
+              COALESCE(s.color_hex_override, fp.color_hex) AS color_hex, fp.material AS material
+       FROM spools s LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+       WHERE s.archived = 0 AND s.ams_unit IS NOT NULL AND s.ams_tray IS NOT NULL`
     ).all();
 
     for (const sp of spools) {
       const printer = printers.find(p => p.id === sp.printer_id);
       if (!printer || !printer.serial || !sp.initial_weight_g) continue;
+      const wantMat = _baseMaterial(sp.material);
+      const wantCol = _color6(sp.color_hex);
+      if (!wantCol) { out.skipped.push({ spoolId: sp.id, slot: sp.ams_unit + ':' + sp.ams_tray, currentG: Math.round((sp.remaining_weight_g || 0) * 10) / 10, reason: 'spool has no colour to match cloud prints by' }); continue; }
       const createdMs = _ms(sp.created_at);
       let used = 0, matchedPrints = 0;
       for (const task of tasks) {
@@ -203,11 +218,11 @@ export async function recomputeLoadedSpoolWeights(cloud, { dryRun = false, autoH
         if ((task.deviceId || task.dev_id || '') !== printer.serial) continue;
         const endMs = _ms(task.endTime) || _ms(task.startTime);
         if (Number.isFinite(createdMs) && Number.isFinite(endMs) && endMs < createdMs) continue;
-        let taskSlotG = 0;
+        let taskG = 0;
         for (const m of (task.amsDetailMapping || [])) {
-          if ((m.amsId ?? 0) === sp.ams_unit && Number(m.slotId) === sp.ams_tray) taskSlotG += parseFloat(m.weight) || 0;
+          if (_baseMaterial(m.filamentType) === wantMat && _color6(m.sourceColor) === wantCol) taskG += parseFloat(m.weight) || 0;
         }
-        if (taskSlotG > 0) { used += taskSlotG; matchedPrints++; }
+        if (taskG > 0) { used += taskG; matchedPrints++; }
       }
       // Only correct spools we have positive cloud evidence for. With zero
       // matched prints we can't tell "genuinely full" from "cloud history
@@ -219,11 +234,7 @@ export async function recomputeLoadedSpoolWeights(cloud, { dryRun = false, autoH
       }
       const correct = Math.max(0, Math.round((sp.initial_weight_g - used) * 10) / 10);
       const diff = Math.round((correct - (sp.remaining_weight_g || 0)) * 10) / 10;
-      // Manual run: correct any drift ≥ 5 g, either direction. Automatic heal:
-      // only repair GROSS UNDER-reporting (spool drained far too low because a
-      // mis-attribution charged it for other slots' filament) — upward-only and
-      // ≥ 100 g, so it can never undo a legitimate in-flight live deduction.
-      if (autoHeal ? diff < 100 : Math.abs(diff) < 5) continue;
+      if (Math.abs(diff) < 5) continue; // already correct
       if (!dryRun) {
         db.prepare('UPDATE spools SET remaining_weight_g = ?, used_weight_g = MAX(0, initial_weight_g - ?), last_used_at = datetime(\'now\') WHERE id = ?').run(correct, correct, sp.id);
         try {
@@ -245,7 +256,6 @@ export async function recomputeLoadedSpoolWeights(cloud, { dryRun = false, autoH
 let _cloudProvider = null;   // () => BambuCloud
 let _onDeduct = null;        // called with the result when something was deducted
 let _debounce = null;
-let _didBootHeal = false;    // run the gross-corruption recompute once per boot
 
 export function configureAutoReconcile(cloudFn, onDeduct) {
   _cloudProvider = cloudFn || null;
@@ -257,12 +267,7 @@ async function _runAuto() {
     const cloud = _cloudProvider && _cloudProvider();
     if (!cloud || typeof cloud.isAuthenticated !== 'function' || !cloud.isAuthenticated()) return;
     const r = await reconcileCloudFilament(cloud, {});
-    // Once per boot, self-heal any spool grossly under-reported by a past
-    // mis-attribution (e.g. a slot drained to 0 that the cloud says still has
-    // filament). Upward-only + ≥100 g, so it never fights live deductions.
-    let healed = { updated: [] };
-    if (!_didBootHeal) { _didBootHeal = true; healed = await recomputeLoadedSpoolWeights(cloud, { autoHeal: true }); }
-    if ((r.deducted.length || healed.updated.length) && _onDeduct) { try { _onDeduct(r); } catch { /* ignore */ } }
+    if (r.deducted.length && _onDeduct) { try { _onDeduct(r); } catch { /* ignore */ } }
   } catch (e) { log.warn('Auto-reconcile failed: ' + e.message); }
 }
 
