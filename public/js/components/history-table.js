@@ -57,6 +57,37 @@
     const costNOK = (filamentUsedG / 1000) * pricePerKg;
     return Math.round(costNOK);
   }
+  // The filament colour(s) a print used. Stored on print_history.filament_color
+  // as one hex (e.g. "898989FF") or several separated by ';'/',' for multi-
+  // colour jobs. Returns clean 6-char upper-hex values.
+  function filamentColors(row) {
+    const raw = row && (row.filament_color || row.filament_colors);
+    if (!raw) return [];
+    return String(raw).split(/[;,]/)
+      .map(c => c.replace(/^#/, '').trim().slice(0, 6).toUpperCase())
+      .filter(c => /^[0-9A-F]{6}$/.test(c));
+  }
+  // A thin strip showing the print's real filament colour(s) — segmented for
+  // multi-colour jobs — so the history reads "in the colours it was printed in".
+  function colorStrip(colors) {
+    if (!colors.length) return '';
+    const segs = colors.map(c => `<span style="flex:1;background:#${c}"></span>`).join('');
+    return `<span class="ph-color-strip" title="${colors.map(c => '#' + c).join(' · ')}">${segs}</span>`;
+  }
+  function colorDots(colors) {
+    if (!colors.length) return '';
+    return `<span class="ph-color-dots" title="${colors.map(c => '#' + c).join(' · ')}">${colors.slice(0, 6).map(c => `<span class="ph-color-dot" style="background:#${c}"></span>`).join('')}</span>`;
+  }
+  // Tint the model thumbnail in the filament colour it was printed in. Only for
+  // single-colour prints — a multi-colour job can't be one tint (its strip/dots
+  // show the palette instead). Skip near-white so the render stays legible.
+  function colorTint(colors) {
+    if (colors.length !== 1) return '';
+    const c = colors[0];
+    const lum = (parseInt(c.slice(0, 2), 16) + parseInt(c.slice(2, 4), 16) + parseInt(c.slice(4, 6), 16)) / 3;
+    if (lum > 225) return ''; // near-white: tinting would wash the model out
+    return `<span class="ph-thumb-tint" style="background:#${c}"></span>`;
+  }
   function reviewBadge(status) {
     if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Approved">&#10003; Approved</span>';
     if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Rejected">&#10007; Rejected</span>';
@@ -328,10 +359,12 @@
             </button>
             <div class="ph-card-thumb">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
+              ${colorTint(filamentColors(row))}
               <span class="ph-badge">Gcode</span>
+              ${colorStrip(filamentColors(row))}
             </div>
             <div class="ph-card-info">
-              <div class="ph-card-name" title="${esc(displayName)}">${(row.model_url || cloud?.designId) ? `<a href="${row.model_url || 'https://makerworld.com/en/models/' + cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Open model"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${esc(displayName)}</div>
+              <div class="ph-card-name" title="${esc(displayName)}">${(row.model_url || cloud?.designId) ? `<a href="${row.model_url || 'https://makerworld.com/en/models/' + cloud.designId}" target="_blank" rel="noopener" class="ph-model-link-icon" onclick="event.stopPropagation()" title="Open model"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a> ` : ''}${colorDots(filamentColors(row))}${esc(displayName)}</div>
               <div class="ph-card-meta">
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                 <span class="ph-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="18" x2="6" y2="18.01"/></svg> ${esc(pName)}</span>
@@ -378,8 +411,10 @@
             </button>
             <div class="ph-list-thumb" data-label="">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
+              ${colorTint(filamentColors(row))}
+              ${colorStrip(filamentColors(row))}
             </div>
-            <div class="ph-list-name" data-label="${t('history.sort_name')}" title="${esc(displayName)}">${esc(displayName)}</div>
+            <div class="ph-list-name" data-label="${t('history.sort_name')}" title="${esc(displayName)}">${colorDots(filamentColors(row))}${esc(displayName)}</div>
             <div class="ph-list-date" data-label="${t('history.date')}">${dateFull}</div>
             <div class="ph-list-duration" data-label="${t('history.sort_duration')}">${duration}</div>
             <div class="ph-list-filament" data-label="${t('history.sort_filament')}">${filWeight}</div>
