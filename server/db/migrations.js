@@ -2330,6 +2330,18 @@ export function runMigrations() {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_stock_txn_spool ON stock_transactions(spool_id)`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_stock_txn_created ON stock_transactions(created_at)`);
     }},
+    { version: 156, up: (db) => {
+      // Procurement Phase 4 — per-material minimum stock targets (safety stock).
+      // The reorder engine compares on-hand stock + queued demand against this
+      // target to produce a "what to buy" shortfall list and draft POs.
+      db.exec(`CREATE TABLE IF NOT EXISTS stock_targets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        material TEXT NOT NULL UNIQUE,
+        min_weight_g REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+    }},
   ];
 
   for (const m of migrations) {

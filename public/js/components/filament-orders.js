@@ -22,6 +22,7 @@
   let _orders = [];
   let _suppliers = [];
   let _profiles = [];
+  let _reorder = [];
   let _el = null;
   let _expanded = null;
 
@@ -36,14 +37,16 @@
     if (!_el) return;
     _el.innerHTML = `<div class="text-muted" style="padding:16px">${t('common.loading', 'Loading…')}</div>`;
     try {
-      const [orders, suppliers, profiles] = await Promise.all([
+      const [orders, suppliers, profiles, reorder] = await Promise.all([
         _fetchJson('/api/inventory/purchase-orders'),
         _fetchJson('/api/inventory/suppliers'),
         _fetchJson('/api/inventory/filaments?limit=2000'),
+        _fetchJson('/api/inventory/reorder').catch(() => []),
       ]);
       _orders = Array.isArray(orders) ? orders : [];
       _suppliers = Array.isArray(suppliers) ? suppliers : [];
       _profiles = Array.isArray(profiles) ? profiles : (profiles.rows || profiles.data || []);
+      _reorder = Array.isArray(reorder) ? reorder : [];
     } catch (e) {
       _el.innerHTML = `<div class="alert alert-danger" style="margin:12px">${t('po.load_failed', 'Could not load orders')}: ${esc(e.message)}</div>`;
       return;
@@ -75,6 +78,8 @@
       ${_kpi('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>', onOrderQty, t('po.on_order', 'Spools on order'), '', '#3b82f6')}
       ${_kpi('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', money(committed), t('po.committed', 'Committed spend'), t('po.open_orders', 'open orders'), '#e3b341')}
     </div>`;
+
+    h += _reorderCard();
 
     h += `<div id="po-form-host"></div>`;
 
@@ -175,6 +180,80 @@
     h += `</div>`;
     return h;
   }
+
+  // ── Reorder needs: per-material min stock vs on-hand + queue demand ──
+  function _reorderCard() {
+    const short = _reorder.filter(r => r.below_target);
+    const hasTargets = _reorder.some(r => r.target_g > 0);
+    let body = '';
+    if (!_reorder.length) {
+      body = `<p class="text-muted" style="font-size:0.8rem;margin:8px 0 0">${t('po.reorder_none', 'No materials in stock yet.')}</p>`;
+    } else {
+      body = `<table class="data-table ro-table" style="margin-top:8px"><thead><tr>
+        <th>${t('po.material', 'Material')}</th>
+        <th>${t('po.on_hand', 'On hand')}</th>
+        <th>${t('po.demand', 'Queue')}</th>
+        <th>${t('po.min_target', 'Min target')}</th>
+        <th>${t('po.shortfall', 'Shortfall')}</th>
+        <th>${t('po.buy', 'Buy')}</th>
+      </tr></thead><tbody>`;
+      for (const r of _reorder) {
+        const tgtVal = r.target_g ? Math.round(r.target_g) : '';
+        const shortCell = r.shortfall_g > 0
+          ? `<span class="ro-short">${Math.round(r.shortfall_g)} g</span>`
+          : `<span class="ro-ok">✓</span>`;
+        const buy = r.shortfall_g > 0
+          ? (r.cheapest ? `${r.suggested_spools}× <span class="text-muted">(${esc(r.cheapest.supplier_name || '?')})</span>` : `<span class="text-muted">${t('po.no_supplier', 'no supplier')}</span>`)
+          : '';
+        body += `<tr class="${r.below_target ? 'ro-row-short' : ''}">
+          <td><strong>${esc(r.material)}</strong></td>
+          <td>${Math.round(r.on_hand_g)} g <span class="text-muted">(${r.spools_on_hand})</span></td>
+          <td>${r.queue_demand_g ? Math.round(r.queue_demand_g) + ' g' : '–'}</td>
+          <td><input class="form-input form-input-sm ro-target" data-mat="${esc(r.material)}" type="number" min="0" step="100" value="${tgtVal}" placeholder="0" style="width:90px" onchange="window._poSetTarget(this)"></td>
+          <td>${shortCell}</td>
+          <td>${buy}</td>
+        </tr>`;
+      }
+      body += `</tbody></table>`;
+    }
+    const draftBtn = short.some(r => r.cheapest)
+      ? `<button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="window._poDraftReorder()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          ${t('po.draft_reorder', 'Draft purchase orders')}</button>`
+      : '';
+    return `<details class="ctrl-card ro-card" ${short.length ? 'open' : ''} style="margin-bottom:12px">
+      <summary class="ro-summary">
+        <span class="ctrl-card-title" style="margin:0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>
+          ${t('po.reorder_title', 'Reorder needs')}
+        </span>
+        ${short.length ? `<span class="ro-badge">${short.length} ${t('po.below_target', 'below target')}</span>` : `<span class="ro-badge ro-badge-ok">${t('po.all_ok', 'all stocked')}</span>`}
+        ${draftBtn}
+      </summary>
+      <p class="text-muted" style="font-size:0.76rem;margin:6px 0 0">${t('po.reorder_help', 'Set a minimum stock per material. Shortfall = target + queued demand − on hand.')}</p>
+      ${body}
+    </details>`;
+  }
+
+  window._poSetTarget = async function (input) {
+    const material = input.getAttribute('data-mat');
+    const v = input.value === '' ? 0 : parseFloat(input.value);
+    try {
+      await _fetchJson('/api/inventory/stock-targets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ material, min_weight_g: v }) });
+      await _reload();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window._poDraftReorder = async function () {
+    try {
+      const r = await _fetchJson('/api/inventory/reorder/draft-po', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const n = (r.created || []).length;
+      if (!n) { toast(t('po.reorder_nothing', 'Nothing to order, or no supplier set for short materials'), 'info'); return; }
+      toast(t('po.reorder_drafted', '{{n}} draft order(s) created').replace('{{n}}', n), 'success');
+      if (r.unsourced && r.unsourced.length) toast(t('po.reorder_unsourced', 'No supplier for: ') + r.unsourced.join(', '), 'info');
+      await _reload();
+    } catch (e) { toast(e.message, 'error'); }
+  };
 
   function _kpi(icon, value, label, sub, color) {
     return `<div class="inv-kpi-card" style="--kc:${color}">

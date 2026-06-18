@@ -4541,6 +4541,20 @@
 .po-lines-table { width: 100%; margin-bottom: 10px; }
 .po-status-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
+/* Reorder needs card */
+.ro-card { padding: 12px 14px; }
+.ro-summary { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-wrap: wrap; list-style: none; }
+.ro-summary::-webkit-details-marker { display: none; }
+.ro-badge { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, #f0883e 16%, transparent); color: #f0883e; border: 1px solid color-mix(in srgb, #f0883e 40%, transparent); }
+.ro-badge-ok { background: color-mix(in srgb, #22c55e 16%, transparent); color: #22c55e; border-color: color-mix(in srgb, #22c55e 40%, transparent); }
+.ro-summary .form-btn { margin-left: auto; }
+.ro-table { width: 100%; }
+.ro-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.ro-table td { vertical-align: middle; font-size: 0.82rem; }
+.ro-row-short td { background: color-mix(in srgb, #f0883e 7%, transparent); }
+.ro-short { color: var(--accent-red, #e3342f); font-weight: 800; font-variant-numeric: tabular-nums; }
+.ro-ok { color: #22c55e; font-weight: 800; }
+
 /* Stock activity feed */
 .act-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
 .act-filter { font-size: 0.74rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary, rgba(127,127,127,0.05)); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
