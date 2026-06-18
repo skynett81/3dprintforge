@@ -9,6 +9,7 @@ export * from './history.js';
 export * from './spools.js';
 export * from './filament-profiles.js';
 export * from './suppliers.js';
+export * from './purchase-orders.js';
 export * from './maintenance.js';
 export * from './errors.js';
 export * from './telemetry.js';

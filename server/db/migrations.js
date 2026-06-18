@@ -2272,6 +2272,42 @@ export function runMigrations() {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_parts_supplier ON supplier_parts(supplier_id)`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_parts_profile ON supplier_parts(filament_profile_id)`);
     }},
+    { version: 154, up: (db) => {
+      // Procurement Phase 2 — Purchase Orders (InvenTree-inspired).
+      // A PURCHASE ORDER groups what you buy from one supplier with a status
+      // lifecycle (draft -> placed -> received, or cancelled). Each LINE is a
+      // quantity of one supplier part / filament profile. Receiving a line
+      // creates real spools in inventory (partial receiving supported via
+      // qty_received). Replaces the flat pending/received `purchased_spools`.
+      db.exec(`CREATE TABLE IF NOT EXISTS purchase_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+        reference TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        order_date TEXT,
+        target_date TEXT,
+        received_at TEXT,
+        currency TEXT DEFAULT 'USD',
+        shipping_cost REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE TABLE IF NOT EXISTS purchase_order_lines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        po_id INTEGER NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+        supplier_part_id INTEGER REFERENCES supplier_parts(id) ON DELETE SET NULL,
+        filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+        description TEXT,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        qty_received INTEGER NOT NULL DEFAULT 0,
+        unit_price REAL,
+        weight_g REAL DEFAULT 1000,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_po_supplier ON purchase_orders(supplier_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_po_status ON purchase_orders(status)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_po_lines_po ON purchase_order_lines(po_id)`);
+    }},
   ];
 
   for (const m of migrations) {

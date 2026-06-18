@@ -4527,6 +4527,20 @@
 .sup-parts-table { width: 100%; margin-bottom: 10px; }
 .sup-addpart { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
+/* Purchase orders */
+.po-table { width: 100%; }
+.po-table th, .po-lines-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.po-table td, .po-lines-table td { vertical-align: middle; font-size: 0.82rem; }
+.po-badge { display: inline-flex; align-items: center; font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 9px; border-radius: 999px; }
+.po-badge-draft { background: color-mix(in srgb, var(--text-muted) 16%, transparent); color: var(--text-secondary); border: 1px solid color-mix(in srgb, var(--text-muted) 36%, transparent); }
+.po-badge-placed { background: color-mix(in srgb, #f0883e 16%, transparent); color: #f0883e; border: 1px solid color-mix(in srgb, #f0883e 40%, transparent); }
+.po-badge-received { background: color-mix(in srgb, #22c55e 16%, transparent); color: #22c55e; border: 1px solid color-mix(in srgb, #22c55e 40%, transparent); }
+.po-badge-cancelled { background: color-mix(in srgb, var(--accent-red, #e3342f) 14%, transparent); color: var(--accent-red, #e3342f); border: 1px solid color-mix(in srgb, var(--accent-red, #e3342f) 36%, transparent); }
+.po-detail-row > td { padding: 0 0 10px; }
+.po-detail { padding: 10px 12px; border: 1px dashed var(--border-color); border-radius: var(--radius); background: var(--bg-tertiary, rgba(127,127,127,0.05)); }
+.po-lines-table { width: 100%; margin-bottom: 10px; }
+.po-status-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
 /* Scan-to-act sheet */
 .scan-sheet-overlay { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
 .scan-sheet { width: 100%; max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden; }
