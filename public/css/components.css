@@ -4541,6 +4541,27 @@
 .po-lines-table { width: 100%; margin-bottom: 10px; }
 .po-status-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
+/* Stock activity feed */
+.act-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.act-filter { font-size: 0.74rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary, rgba(127,127,127,0.05)); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.act-filter:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.act-filter.active { background: var(--accent-blue, #1279ff); border-color: var(--accent-blue, #1279ff); color: #fff; }
+.act-feed { display: flex; flex-direction: column; }
+.act-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border-color); }
+.act-row:last-child { border-bottom: none; }
+.act-icon { flex: none; width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.act-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.act-line1 { font-size: 0.84rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.act-line2 { font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.act-type { color: var(--text-secondary); font-weight: 600; }
+.act-swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--border-color); vertical-align: -1px; }
+.act-delta { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 0.78rem; }
+.act-delta.neg { color: var(--accent-red, #e3342f); }
+.act-delta.pos { color: #22c55e; }
+.act-ref { padding: 1px 7px; border-radius: 999px; background: var(--bg-tertiary, rgba(127,127,127,0.08)); border: 1px solid var(--border-color); }
+.act-reason { font-style: italic; }
+.act-time { flex: none; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; margin-top: 2px; }
+
 /* Scan-to-act sheet */
 .scan-sheet-overlay { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
 .scan-sheet { width: 100%; max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden; }
