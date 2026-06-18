@@ -1060,11 +1060,19 @@ export class PrintTracker {
           // Already assigned?
           const existing = getSpoolBySlot(this.printerId, amsUnit, trayId);
           if (existing) {
-            // If the tray's RFID no longer matches the linked spool, the
-            // filament was swapped — unlink the stale spool and fall through to
-            // re-match / re-create the correct one so the slot self-heals.
-            const swapped = existing.material && tray.tray_type &&
+            // If the tray's filament no longer matches the linked spool, a new
+            // spool was loaded (on the printer, in Bambu Handy or Studio) —
+            // unlink the stale spool and fall through to re-match / re-create
+            // the correct one so the slot self-heals. Detect a swap on EITHER
+            // material OR colour: swapping white PETG for black PETG keeps the
+            // same material, so a material-only check would leave the dashboard
+            // showing the old colour.
+            const c6 = (h) => String(h || '').replace(/^#/, '').toUpperCase().slice(0, 6);
+            const matMismatch = existing.material && tray.tray_type &&
               String(existing.material).toUpperCase() !== String(tray.tray_type).toUpperCase();
+            const colMismatch = tray.tray_color && existing.color_hex &&
+              c6(existing.color_hex) !== c6(tray.tray_color);
+            const swapped = matMismatch || colMismatch;
             if (!swapped) {
               // Same filament — depletion threshold check only.
               const remainPct = tray.remain >= 0 ? tray.remain : 100;
@@ -1077,7 +1085,7 @@ export class PrintTracker {
               continue;
             }
             try { assignSpoolToSlot(existing.id, null, null, null); } catch (e) { /* ignore */ }
-            log.info('AMS ' + amsUnit + ':' + trayId + ' filament changed (' + existing.material + ' -> ' + tray.tray_type + ') — unlinked stale spool #' + existing.id + ', re-matching');
+            log.info('AMS ' + amsUnit + ':' + trayId + ' filament changed (' + existing.material + '/' + c6(existing.color_hex) + ' -> ' + tray.tray_type + '/' + c6(tray.tray_color) + ') — unlinked stale spool #' + existing.id + ', re-matching');
           }
 
           // Try tray_id_name match first
@@ -1097,6 +1105,7 @@ export class PrintTracker {
           if (matched) {
             assignSpoolToSlot(matched.id, this.printerId, amsUnit, trayId);
             log.info('Auto-matched spool #' + matched.id + ' to AMS ' + amsUnit + ':' + trayId + ' by color+material');
+            if (this.onBroadcast) this.onBroadcast('inventory_update', { reason: 'ams-load', ams_unit: amsUnit, tray_id: trayId });
           } else {
             // Auto-create spool from AMS tray. Default ON so filament tracking
             // works out of the box — explicitly opt out by setting
@@ -1110,6 +1119,7 @@ export class PrintTracker {
               try {
                 const result = autoCreateSpoolFromTray(tray, this.printerId, amsUnit, trayId);
                 log.info('Auto-created spool #' + result.id + ' from AMS ' + amsUnit + ':' + trayId + ' (' + (tray.tray_type || '?') + ' / ' + (tray.tray_color || '?') + ')');
+                if (this.onBroadcast) this.onBroadcast('inventory_update', { reason: 'ams-load', ams_unit: amsUnit, tray_id: trayId });
               } catch (e) {
                 log.warn('Auto-create spool from AMS ' + amsUnit + ':' + trayId + ' failed: ' + e.message);
               }
