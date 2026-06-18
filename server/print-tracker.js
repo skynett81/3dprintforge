@@ -1616,9 +1616,15 @@ export class PrintTracker {
           }
         }
 
-        // Fallback: single spool deduction using tray_id from print start
+        // Fallback: single spool deduction. Prefer the physically-active slot
+        // (tracked throughout the print, then the print-start tray) over a
+        // hardcoded slot 0 — otherwise a job run on A2/A3/A4 is wrongly charged
+        // to whatever spool sits in A1.
         if (!spoolUpdated) {
-          const trayId = this.currentPrint?.tray_id != null ? parseInt(this.currentPrint.tray_id) : 0;
+          let trayId = this.lastActiveExtruderIdx != null
+            ? this.lastActiveExtruderIdx
+            : (this.currentPrint?.tray_id != null ? parseInt(this.currentPrint.tray_id) : 0);
+          if (!Number.isFinite(trayId) || trayId < 0 || trayId > 3) trayId = 0;
           let spool = getSpoolBySlot(this.printerId, 0, trayId);
           if (!spool) spool = getSpoolBySlot(this.printerId, 0, 0);
           if (!spool) {

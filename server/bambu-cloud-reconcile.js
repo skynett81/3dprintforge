@@ -44,7 +44,17 @@ function _isCompleted(task) {
 
 // Match a cloud AMS mapping (the slotId is unreliable, so ignore it) to the
 // linked inventory spool by AMS unit + base material, refined by colour.
-function _matchSpool(printerId, amsUnit, material, color6) {
+export function _matchSpool(printerId, amsUnit, slotId, material, color6) {
+  // Ground truth first: the cloud tells us the exact AMS slot used (amsId =
+  // unit, slotId = tray). If a spool is linked to that slot, credit it
+  // directly. The previous code ignored slotId and just took the first spool
+  // in the unit that matched the material — so every PLA job was charged to
+  // tray A1 and a second slot (e.g. A2) of the same material was never
+  // deducted. Honour the slot before falling back to colour/material guessing.
+  if (slotId != null && Number.isFinite(Number(slotId))) {
+    const exact = getSpoolBySlot(printerId, amsUnit, Number(slotId));
+    if (exact) return exact;
+  }
   const want = _baseMaterial(material);
   const cands = [];
   for (let tray = 0; tray < 4; tray++) {
@@ -112,7 +122,7 @@ export async function reconcileCloudFilament(cloud, opts = {}) {
 
     // Which mappings map to a known spool?
     const planned = maps
-      .map(m => ({ m, w: parseFloat(m.weight) || 0, sp: _matchSpool(printer.id, m.amsId ?? 0, m.filamentType, _color6(m.sourceColor)) }))
+      .map(m => ({ m, w: parseFloat(m.weight) || 0, sp: _matchSpool(printer.id, m.amsId ?? 0, m.slotId, m.filamentType, _color6(m.sourceColor)) }))
       .filter(x => x.w > 0);
     const matched = planned.filter(x => x.sp);
     const noMatch = planned.filter(x => !x.sp);
