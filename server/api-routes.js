@@ -983,6 +983,25 @@ export async function handleApiRequest(req, res) {
       }
     }
 
+    // Recompute loaded-spool remaining weights from the cloud's per-slot
+    // consumption history (identity-aware: each slot's filament, since the
+    // spool was created). Fixes baselines corrupted by past mis-attribution.
+    // ?dryRun=1 previews without writing.
+    if (method === 'POST' && path === '/api/bambu-cloud/recompute-spools') {
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Not authenticated' }, 401);
+      try {
+        const dryRun = url.searchParams.get('dryRun') === '1' || url.searchParams.get('dryRun') === 'true';
+        const { recomputeLoadedSpoolWeights } = await import('./bambu-cloud-reconcile.js');
+        const result = await recomputeLoadedSpoolWeights(_bambuCloud, { dryRun });
+        if (!dryRun && result.updated.length && typeof _broadcastInventory === 'function') {
+          _broadcastInventory('update', 'spool', { reason: 'recompute' });
+        }
+        return sendJson(res, { ok: true, ...result });
+      } catch (e) {
+        return sendJson(res, { error: e.message }, 500);
+      }
+    }
+
     if (method === 'POST' && path === '/api/bambu-cloud/logout') {
       if (_bambuCloud) _bambuCloud.logout();
       return sendJson(res, { ok: true });
