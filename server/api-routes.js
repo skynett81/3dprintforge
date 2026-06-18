@@ -3592,47 +3592,13 @@ export async function handleApiRequest(req, res) {
           return createReadStream(thumbPath).pipe(res);
         }
       }
-      // On-demand: try Bambu Cloud tasks (cover images), then FTPS
+      // On-demand: prefer the printer's embedded gcode thumbnail (rendered in
+      // the actual filament colours by the slicer), then fall back to the Bambu
+      // Cloud cover (which is sometimes a flat grey render).
       try {
         const row = getHistoryById(parseInt(histId));
         if (row) {
-          // 1) Try Bambu Cloud task matching by title/filename
-          if (_bambuCloud && _bambuCloud.isAuthenticated()) {
-            try {
-              const tasks = await _bambuCloud.getTaskHistory();
-              const taskList = tasks.tasks || tasks;
-              if (Array.isArray(taskList)) {
-                const fn = (row.filename || '').toLowerCase().trim();
-                const match = taskList.find(t => {
-                  const tt = (t.title || '').toLowerCase().trim();
-                  const dt = (t.designTitle || '').toLowerCase().trim();
-                  return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
-                });
-                if (match && match.cover) {
-                  // Download cover image and cache it
-                  const imgBuf = await new Promise((resolve) => {
-                    https.get(match.cover, { timeout: 10000 }, (imgRes) => {
-                      if (imgRes.statusCode !== 200) { imgRes.resume(); return resolve(null); }
-                      const chunks = [];
-                      imgRes.on('data', c => chunks.push(c));
-                      imgRes.on('end', () => resolve(Buffer.concat(chunks)));
-                      imgRes.on('error', () => resolve(null));
-                    }).on('error', () => resolve(null));
-                  });
-                  if (imgBuf && imgBuf.length > 100) {
-                    try { mkdirSync(thumbDir, { recursive: true }); writeFileSync(join(thumbDir, `${histId}.png`), imgBuf); } catch {}
-                    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': imgBuf.length, 'Cache-Control': 'public, max-age=86400' });
-                    res.end(imgBuf);
-                    return;
-                  }
-                }
-              }
-            } catch (e) {
-              log.warn('Cloud thumb fetch error: ' + e.message);
-            }
-          }
-
-          // 2) Fallback: try FTPS from printer
+          // 1) Printer's embedded gcode thumbnail via FTPS — filament-coloured.
           const printers = getPrinters();
           const printer = printers.find(p => p.id === row.printer_id);
           const ac = printer?.accessCode || printer?.access_code;
@@ -3655,6 +3621,41 @@ export async function handleApiRequest(req, res) {
                   return;
                 }
               } catch {}
+            }
+          }
+
+          // 2) Fallback: Bambu Cloud task cover image, matched by title/filename.
+          if (_bambuCloud && _bambuCloud.isAuthenticated()) {
+            try {
+              const tasks = await _bambuCloud.getTaskHistory();
+              const taskList = tasks.tasks || tasks;
+              if (Array.isArray(taskList)) {
+                const fn = (row.filename || '').toLowerCase().trim();
+                const match = taskList.find(t => {
+                  const tt = (t.title || '').toLowerCase().trim();
+                  const dt = (t.designTitle || '').toLowerCase().trim();
+                  return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
+                });
+                if (match && match.cover) {
+                  const imgBuf = await new Promise((resolve) => {
+                    https.get(match.cover, { timeout: 10000 }, (imgRes) => {
+                      if (imgRes.statusCode !== 200) { imgRes.resume(); return resolve(null); }
+                      const chunks = [];
+                      imgRes.on('data', c => chunks.push(c));
+                      imgRes.on('end', () => resolve(Buffer.concat(chunks)));
+                      imgRes.on('error', () => resolve(null));
+                    }).on('error', () => resolve(null));
+                  });
+                  if (imgBuf && imgBuf.length > 100) {
+                    try { mkdirSync(thumbDir, { recursive: true }); writeFileSync(join(thumbDir, `${histId}.png`), imgBuf); } catch {}
+                    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': imgBuf.length, 'Cache-Control': 'public, max-age=86400' });
+                    res.end(imgBuf);
+                    return;
+                  }
+                }
+              }
+            } catch (e) {
+              log.warn('Cloud thumb fetch error: ' + e.message);
             }
           }
         }

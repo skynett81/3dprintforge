@@ -78,16 +78,6 @@
     if (!colors.length) return '';
     return `<span class="ph-color-dots" title="${colors.map(c => '#' + c).join(' · ')}">${colors.slice(0, 6).map(c => `<span class="ph-color-dot" style="background:#${c}"></span>`).join('')}</span>`;
   }
-  // Tint the model thumbnail in the filament colour it was printed in. Only for
-  // single-colour prints — a multi-colour job can't be one tint (its strip/dots
-  // show the palette instead). Skip near-white so the render stays legible.
-  function colorTint(colors) {
-    if (colors.length !== 1) return '';
-    const c = colors[0];
-    const lum = (parseInt(c.slice(0, 2), 16) + parseInt(c.slice(2, 4), 16) + parseInt(c.slice(4, 6), 16)) / 3;
-    if (lum > 225) return ''; // near-white: tinting would wash the model out
-    return `<span class="ph-thumb-tint" style="background:#${c}"></span>`;
-  }
   function reviewBadge(status) {
     if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Approved">&#10003; Approved</span>';
     if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Rejected">&#10007; Rejected</span>';
@@ -359,7 +349,6 @@
             </button>
             <div class="ph-card-thumb">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
-              ${colorTint(filamentColors(row))}
               <span class="ph-badge">Gcode</span>
               ${colorStrip(filamentColors(row))}
             </div>
@@ -411,7 +400,6 @@
             </button>
             <div class="ph-list-thumb" data-label="">
               <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.src='${fallbackThumb}'">
-              ${colorTint(filamentColors(row))}
               ${colorStrip(filamentColors(row))}
             </div>
             <div class="ph-list-name" data-label="${t('history.sort_name')}" title="${esc(displayName)}">${colorDots(filamentColors(row))}${esc(displayName)}</div>

@@ -3231,9 +3231,6 @@
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.3);
 }
 .ph-color-strip > span { display: block; min-width: 0; }
-/* Tint the model render in the filament colour it was printed in. `multiply`
-   keeps the model's shading/depth while shifting it toward the real colour. */
-.ph-thumb-tint { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.62; pointer-events: none; }
 .ph-list-thumb .ph-color-strip { height: 4px; }
 .ph-color-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: -1px; }
 .ph-color-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--border-color); display: inline-block; flex: none; }
