@@ -2308,6 +2308,28 @@ export function runMigrations() {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_po_status ON purchase_orders(status)`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_po_lines_po ON purchase_order_lines(po_id)`);
     }},
+    { version: 155, up: (db) => {
+      // Procurement Phase 3 — canonical Stock Transaction ledger (InvenTree's
+      // StockItemTracking). Every explicit stock change writes one immutable row
+      // with a signed weight delta, the resulting balance, a reason and an
+      // optional reference (print / purchase order / manual). The unified ledger
+      // read-model also folds in the legacy logs (spool_usage_log, spool_events,
+      // spool_checkout_log) so existing spools have a full timeline immediately.
+      db.exec(`CREATE TABLE IF NOT EXISTS stock_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        spool_id INTEGER REFERENCES spools(id) ON DELETE CASCADE,
+        txn_type TEXT NOT NULL,
+        delta_g REAL,
+        balance_g REAL,
+        reason TEXT,
+        ref_type TEXT,
+        ref_id INTEGER,
+        actor TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_stock_txn_spool ON stock_transactions(spool_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_stock_txn_created ON stock_transactions(created_at)`);
+    }},
   ];
 
   for (const m of migrations) {

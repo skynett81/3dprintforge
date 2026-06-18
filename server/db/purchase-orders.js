@@ -8,6 +8,7 @@
 
 import { getDb } from './connection.js';
 import { addSpool } from './spools.js';
+import { recordStockTransaction } from './stock-ledger.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('db:purchase-orders');
@@ -186,13 +187,22 @@ export function receivePurchaseOrderLine(lineId, qty, opts = {}) {
   const po = db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(line.po_id);
   const spoolIds = [];
   for (let i = 0; i < n; i++) {
+    const weight = line.weight_g || 1000;
     const { id } = addSpool({
       filament_profile_id: line.filament_profile_id || null,
-      initial_weight_g: line.weight_g || 1000,
+      initial_weight_g: weight,
       cost: line.unit_price != null ? line.unit_price : null,
       location: opts.location || null,
       purchase_date: (po && po.order_date) || new Date().toISOString().slice(0, 10),
     });
+    // Audit the receipt in the unified stock ledger, linked back to the PO.
+    try {
+      recordStockTransaction({
+        spool_id: id, txn_type: 'receive', delta_g: weight, balance_g: weight,
+        reason: po && po.reference ? `Received from ${po.reference}` : 'Received from purchase order',
+        ref_type: 'po', ref_id: line.po_id, actor: opts.actor || null,
+      });
+    } catch (e) { log.warn('Failed to record receive txn: ' + e.message); }
     spoolIds.push(id);
   }
   db.prepare('UPDATE purchase_order_lines SET qty_received = qty_received + ? WHERE id = ?').run(n, lineId);
