@@ -635,6 +635,10 @@
       }
       if (sliceInfo.estimated_weight_g) {
         chips.push(`<span class="mm-chip" title="${t('model_meta.est_weight')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a4 4 0 00-4 4c0 2 4 4 4 4s4-2 4-4a4 4 0 00-4-4z"/><path d="M5 12h14l-1.5 9h-11z"/></svg> ${sliceInfo.estimated_weight_g}g</span>`);
+        // Estimated filament cost (kr) from real spool prices in inventory.
+        if (typeof window.filamentCostLabel === 'function') {
+          chips.push(`<span class="mm-chip mm-chip-accent" title="${t('model_meta.est_cost', 'Estimated filament cost')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${window.filamentCostLabel(sliceInfo.estimated_weight_g, sliceInfo.filament_type)}</span>`);
+        }
       }
       if (sliceInfo.estimated_time_s) {
         const mins = Math.round(sliceInfo.estimated_time_s / 60);

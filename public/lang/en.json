@@ -2907,6 +2907,7 @@
     "infill": "Infill",
     "filament": "Filament Type",
     "est_weight": "Estimated Weight",
+    "est_cost": "Estimated filament cost",
     "est_time": "Estimated Print Time",
     "supports": "Supports"
   },

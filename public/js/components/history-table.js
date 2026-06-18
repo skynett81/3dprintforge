@@ -47,6 +47,11 @@
   }
   function fmtW(g) { return g >= 1000 ? (g/1000).toFixed(1)+' kg' : Math.round(g)+'g'; }
   function estimatePrintCostBadge(filamentUsedG, filamentType) {
+    // Prefer the shared helper, which uses the user's real spool prices from
+    // inventory (falls back to per-material defaults).
+    if (typeof window.estimateFilamentCostNOK === 'function') {
+      return Math.round(window.estimateFilamentCostNOK(filamentUsedG, filamentType));
+    }
     const prices = { PLA: 200, PETG: 250, ABS: 220, TPU: 350, ASA: 280, PA: 450, PC: 400 };
     const pricePerKg = prices[filamentType] || 230;
     const costNOK = (filamentUsedG / 1000) * pricePerKg;
