@@ -2236,6 +2236,42 @@ export function runMigrations() {
       const cols = db.prepare(`SELECT name FROM pragma_table_info('protection_settings')`).all().map(r => r.name);
       if (!cols.includes('snooze_until')) db.exec(`ALTER TABLE protection_settings ADD COLUMN snooze_until TEXT`);
     }},
+    { version: 153, up: (db) => {
+      // Procurement Phase 1 — Suppliers & Supplier Parts (InvenTree-inspired).
+      // A SUPPLIER is a shop/retailer you buy filament from (distinct from the
+      // manufacturer, which lives in `vendors`). A SUPPLIER PART is one
+      // purchasable SKU from a supplier — a specific filament_profile sold at a
+      // given pack weight/price — enabling cross-shop price comparison and
+      // 1-click reorder links.
+      db.exec(`CREATE TABLE IF NOT EXISTS suppliers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        website TEXT,
+        contact TEXT,
+        currency TEXT DEFAULT 'USD',
+        lead_time_days INTEGER,
+        notes TEXT,
+        archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE TABLE IF NOT EXISTS supplier_parts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplier_id INTEGER NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+        filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+        sku TEXT,
+        product_url TEXT,
+        price REAL,
+        currency TEXT DEFAULT 'USD',
+        weight_g REAL DEFAULT 1000,
+        pack_qty INTEGER NOT NULL DEFAULT 1,
+        in_stock INTEGER,
+        last_checked_at TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_parts_supplier ON supplier_parts(supplier_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_parts_profile ON supplier_parts(filament_profile_id)`);
+    }},
   ];
 
   for (const m of migrations) {

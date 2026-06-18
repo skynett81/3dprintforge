@@ -4512,6 +4512,21 @@
 .proc-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .proc-receive-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* Suppliers & price comparison */
+.sup-table { width: 100%; }
+.sup-table th, .sup-compare-table th, .sup-parts-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.sup-table td, .sup-compare-table td, .sup-parts-table td { vertical-align: middle; font-size: 0.82rem; }
+.sup-link { color: var(--text-muted); vertical-align: -1px; margin-left: 4px; }
+.sup-link:hover { color: var(--accent-blue, #1279ff); }
+.sup-compare-card { padding: 14px; }
+.sup-compare-table { width: 100%; }
+.sup-best-row td { background: color-mix(in srgb, #22c55e 8%, transparent); }
+.sup-best { display: inline-flex; align-items: center; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; background: color-mix(in srgb, #22c55e 18%, transparent); color: #22c55e; border: 1px solid color-mix(in srgb, #22c55e 42%, transparent); }
+.sup-parts-row > td { padding: 0 0 10px; }
+.sup-parts { padding: 10px 12px; border: 1px dashed var(--border-color); border-radius: var(--radius); background: var(--bg-tertiary, rgba(127,127,127,0.05)); }
+.sup-parts-table { width: 100%; margin-bottom: 10px; }
+.sup-addpart { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
 /* Scan-to-act sheet */
 .scan-sheet-overlay { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
 .scan-sheet { width: 100%; max-width: 420px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden; }
