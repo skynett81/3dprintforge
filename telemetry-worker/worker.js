@@ -1140,7 +1140,7 @@ async function getStatsData(env) {
     versions, platforms, nodeVersions, archs, languages, daily, recent,
     totalPrinters, totalSpools, totalProfiles, demoCount, featureRows,
     totalCloudPrinters, totalPluginCount, totalSlicerJobs, connectorRows, brandRows,
-    printActivity, materialTypeRows, ageStats, ecomActiveCount, achievementStats, achievementIdRows] = await Promise.all([
+    printActivity, materialTypeRows, ageStats, ecomActiveCount, achievementStats, achievementIdRows, modelRows] = await Promise.all([
     env.DB.prepare('SELECT COUNT(*) as count FROM installations').first(),
     env.DB.prepare(`SELECT COUNT(*) as count FROM installations WHERE last_seen >= datetime('now', '-1 day')`).first(),
     env.DB.prepare(`SELECT COUNT(*) as count FROM installations WHERE last_seen >= datetime('now', '-7 days')`).first(),
@@ -1170,11 +1170,14 @@ async function getStatsData(env) {
     env.DB.prepare('SELECT COUNT(*) as count FROM installations WHERE ecom_active = 1').first(),
     env.DB.prepare('SELECT SUM(achievements_earned) as total, MAX(achievements_total) as max_total, AVG(achievements_earned) as avg FROM installations').first(),
     env.DB.prepare('SELECT achievements_earned_ids FROM installations WHERE achievements_earned_ids IS NOT NULL AND achievements_earned_ids != \'\'').all(),
+    // Printer models across ALL installs (was previously aggregated from the
+    // last-10 `recent` query, so the hardware breakdown undercounted).
+    env.DB.prepare('SELECT printer_models FROM installations WHERE printer_models IS NOT NULL AND printer_models != \'\'').all(),
   ]);
 
   // Aggregate printer models across all installations
   const printerModelCounts = {};
-  for (const row of (recent?.results || [])) {
+  for (const row of (modelRows?.results || [])) {
     if (row.printer_models) {
       try {
         const models = JSON.parse(row.printer_models);
