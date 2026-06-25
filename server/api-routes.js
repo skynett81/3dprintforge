@@ -2135,6 +2135,8 @@ export async function handleApiRequest(req, res) {
               const opt = optimizeColorOrder(cols);
               row.purge_optimal_g = opt.optimizedFlushG;
               row.purge_saving_g = opt.savedG;
+              row.purge_order = opt.orderedColors;       // recommended sequence
+              row.purge_used_order = cols;               // the as-loaded order
             }
           } catch { /* ignore */ }
         }

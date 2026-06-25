@@ -13587,7 +13587,22 @@ body.compact-mode h2, body.compact-mode h3 { font-size: 0.95rem; }
 /* ═══ Cost Badge ═══ */
 .cost-badge { display: inline-block; font-size: 0.65rem; font-weight: 600; background: rgba(0,212,255,0.1); color: var(--accent-cyan); padding: 2px 6px; border-radius: 10px; margin-left: 6px; }
 .waste-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: 600; background: color-mix(in srgb, #f0883e 14%, transparent); color: #f0883e; padding: 2px 6px; border-radius: 10px; margin-left: 6px; white-space: nowrap; }
-.save-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: 700; background: color-mix(in srgb, #22c55e 14%, transparent); color: #22c55e; padding: 2px 6px; border-radius: 10px; margin-left: 6px; white-space: nowrap; }
+.save-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: 700; background: color-mix(in srgb, #22c55e 14%, transparent); color: #22c55e; padding: 2px 6px; border-radius: 10px; margin-left: 6px; white-space: nowrap; cursor: pointer; }
+.save-badge:hover { background: color-mix(in srgb, #22c55e 24%, transparent); }
+/* Recommended colour-order dialog */
+.co-overlay { display: flex; align-items: center; justify-content: center; }
+.co-dialog { width: 100%; max-width: 380px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.45); padding: 16px; }
+.co-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.co-title { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+.co-x { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 4px; }
+.co-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.co-lbl { flex: none; width: 96px; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.co-lbl-rec { color: #22c55e; font-weight: 700; }
+.co-seq { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.co-sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border-color); flex: none; }
+.co-arrow { color: var(--text-muted); font-size: 0.8rem; }
+.co-saving { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-weight: 700; color: #22c55e; font-size: 0.9rem; }
+.co-note { margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
 .ph-list-cost { font-size: 0.75rem; min-width: 60px; flex-shrink: 0; display: flex; align-items: center; }
 
 /* ═══ Inline Notes ═══ */

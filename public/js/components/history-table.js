@@ -89,9 +89,32 @@
     const g = row.purge_saving_g;
     if (!(g >= 0.5)) return '';
     const kr = (typeof window.estimateFilamentCostNOK === 'function') ? Math.round(window.estimateFilamentCostNOK(g, row.filament_type)) : null;
-    const tip = t('history.save_tip', 'Optimal colour order would have saved this much purge');
-    return `<span class="save-badge" title="${tip}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="19 12 12 19 5 12"/><line x1="12" y1="5" x2="12" y2="19"/></svg> ${t('history.save_label', 'save')} ${g} g${kr ? ' (~' + kr + ' kr)' : ''}</span>`;
+    const tip = t('history.save_tip', 'Optimal colour order would have saved this much purge — click to see the order');
+    return `<span class="save-badge" title="${tip}" onclick="event.stopPropagation();window._showColorOrder(${row.id})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="19 12 12 19 5 12"/><line x1="12" y1="5" x2="12" y2="19"/></svg> ${t('history.save_label', 'save')} ${g} g${kr ? ' (~' + kr + ' kr)' : ''}</span>`;
   }
+  // Dialog: the recommended filament colour order that minimises purge, vs the
+  // order actually loaded, with the per-cycle saving.
+  window._showColorOrder = function (id) {
+    const row = _data.find(r => r.id === id);
+    if (!row || !Array.isArray(row.purge_order) || !row.purge_order.length) return;
+    const norm = (arr) => (arr || []).map(c => String(c).replace(/^#/, '').slice(0, 6).toUpperCase()).filter(c => /^[0-9A-F]{6}$/.test(c));
+    const used = norm(row.purge_used_order && row.purge_used_order.length ? row.purge_used_order : filamentColors(row).map(c => '#' + c));
+    const rec = norm(row.purge_order);
+    const g = row.purge_saving_g;
+    const kr = (typeof window.estimateFilamentCostNOK === 'function') ? Math.round(window.estimateFilamentCostNOK(g, row.filament_type)) : null;
+    const seq = (cols) => cols.map((c, i) => `${i > 0 ? '<span class="co-arrow">→</span>' : ''}<span class="co-sw" style="background:#${c}" title="#${c}"></span>`).join('');
+    const overlay = document.createElement('div');
+    overlay.className = 'ph-detail-overlay co-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `<div class="co-dialog">
+      <div class="co-head"><span class="co-title">${t('history.co_title', 'Recommended colour order')}</span><button class="co-x" onclick="this.closest('.co-overlay').remove()">&times;</button></div>
+      <div class="co-row"><span class="co-lbl">${t('history.co_used', 'As loaded')}</span><div class="co-seq">${seq(used)}</div></div>
+      <div class="co-row"><span class="co-lbl co-lbl-rec">${t('history.co_rec', 'Recommended')}</span><div class="co-seq">${seq(rec)}</div></div>
+      <div class="co-saving"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="19 12 12 19 5 12"/><line x1="12" y1="5" x2="12" y2="19"/></svg> ${t('history.co_saves', 'Saves')} ~${g} g${kr ? ' (~' + kr + ' kr)' : ''} ${t('history.co_per_cycle', 'per colour cycle')}</div>
+      <div class="co-note">${t('history.co_note', 'Purge between two colours is asymmetric (dark→light costs more). Loading filaments in this order minimises total flush.')}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
   function reviewBadge(status) {
     if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Approved">&#10003; Approved</span>';
     if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Rejected">&#10007; Rejected</span>';
