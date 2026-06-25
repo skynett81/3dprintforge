@@ -1060,7 +1060,7 @@ tr:hover td { background: rgba(18,121,255,0.05); }
         <div class="data-section-title">Features Enabled</div>
         <table><thead><tr><th>Feature</th><th>Count</th><th class="bar-cell"></th></tr></thead><tbody>${s.features.map(f => {
           const maxF = s.features[0]?.count || 1;
-          const label = f.feature.replace('notif_', '').replace('_', ' ');
+          const label = featureLabel(f.feature);
           return `<tr><td>${esc(label)}</td><td>${f.count}</td><td class="bar-cell"><div class="bar" style="width:${Math.max(Math.round(f.count/maxF*100), 5)}%"></div></td></tr>`;
         }).join('')}</tbody></table>
       </div>` : ''}
@@ -1118,6 +1118,25 @@ tr:hover td { background: rgba(18,121,255,0.05); }
 function esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Friendly display name for a feature flag. Falls back to title-casing the raw
+// flag (all underscores replaced — the old code only replaced the first).
+const FEATURE_LABELS = {
+  auth: 'Authentication', camera: 'Camera', notifications: 'Notifications',
+  spoolman: 'Spoolman', https: 'HTTPS', homeassistant: 'Home Assistant',
+  failure_detection: 'Failure detection', print_guard: 'Print Guard',
+  timelapse: 'Timelapse', public_host: 'Public host', trusted_proxies: 'Trusted proxies',
+  thingiverse: 'Thingiverse', slicer_bridge: 'Slicer bridge',
+  suppliers: 'Suppliers', purchase_orders: 'Purchase orders',
+  stock_ledger: 'Stock ledger', reorder: 'Reorder engine',
+};
+function featureLabel(flag) {
+  if (FEATURE_LABELS[flag]) return FEATURE_LABELS[flag];
+  if (flag.startsWith('notif_')) return flag.slice(6).replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) + ' (notify)';
+  if (flag.startsWith('energy_')) return 'Energy: ' + flag.slice(7);
+  if (flag.startsWith('region_')) return 'Region: ' + flag.slice(7).toUpperCase();
+  return flag.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
 }
 
 function timeAgo(dateStr) {

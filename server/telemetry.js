@@ -256,7 +256,18 @@ async function getAggregateStats() {
       slicerJobs = db.prepare("SELECT COUNT(*) as c FROM slicer_jobs").get()?.c || 0;
     } catch {}
 
+    // Usage flags for the procurement features (tables may not exist on older
+    // installs, so each probe is guarded). Merged into `features` so the
+    // telemetry feature breakdown shows adoption.
+    const usageFeatures = [];
+    const _used = (sql) => { try { return (db.prepare(sql).get()?.c || 0) > 0; } catch { return false; } };
+    if (_used("SELECT COUNT(*) as c FROM suppliers")) usageFeatures.push('suppliers');
+    if (_used("SELECT COUNT(*) as c FROM purchase_orders")) usageFeatures.push('purchase_orders');
+    if (_used("SELECT COUNT(*) as c FROM stock_transactions")) usageFeatures.push('stock_ledger');
+    if (_used("SELECT COUNT(*) as c FROM stock_targets")) usageFeatures.push('reorder');
+
     return {
+      usageFeatures,
       printerCount: printers.length,
       printerModels: models,
       printerBrands: brands,
@@ -303,6 +314,11 @@ export async function sendTelemetryPing() {
   const stats = await getAggregateStats();
   const cpu = cpus();
 
+  // Combine config-based feature flags with usage-based ones, then drop the
+  // helper field so it isn't sent twice.
+  const usageFeatures = Array.isArray(stats.usageFeatures) ? stats.usageFeatures : [];
+  delete stats.usageFeatures;
+
   const payload = {
     schemaVersion: 2,
     id: getInstallId(),
@@ -316,7 +332,7 @@ export async function sendTelemetryPing() {
     uptimeH: Math.round(osUptime() / 3600),
     processUptimeH: Math.round(process.uptime() / 3600),
     demo: isDemo,
-    features: getEnabledFeatures(),
+    features: [...getEnabledFeatures(), ...usageFeatures],
     ...stats
   };
 
