@@ -78,6 +78,20 @@
     if (!colors.length) return '';
     return `<span class="ph-color-dots" title="${colors.map(c => '#' + c).join(' · ')}">${colors.slice(0, 6).map(c => `<span class="ph-color-dot" style="background:#${c}"></span>`).join('')}</span>`;
   }
+  // Mechanical waste (purge + colour-change flush) recorded for this print.
+  function wasteBadge(row) {
+    const g = Math.round(row.waste_g || 0);
+    if (g < 1) return '';
+    return `<span class="waste-badge" title="${t('history.waste_tip', 'Filament wasted (purge + colour changes)')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> ${g} g</span>`;
+  }
+  // How much purge the optimal filament colour order would have saved.
+  function saveBadge(row) {
+    const g = row.purge_saving_g;
+    if (!(g >= 0.5)) return '';
+    const kr = (typeof window.estimateFilamentCostNOK === 'function') ? Math.round(window.estimateFilamentCostNOK(g, row.filament_type)) : null;
+    const tip = t('history.save_tip', 'Optimal colour order would have saved this much purge');
+    return `<span class="save-badge" title="${tip}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="19 12 12 19 5 12"/><line x1="12" y1="5" x2="12" y2="19"/></svg> ${t('history.save_label', 'save')} ${g} g${kr ? ' (~' + kr + ' kr)' : ''}</span>`;
+  }
   function reviewBadge(status) {
     if (status === 'approved') return '<span class="ph-review-badge ph-review-approved" title="Approved">&#10003; Approved</span>';
     if (status === 'rejected') return '<span class="ph-review-badge ph-review-rejected" title="Rejected">&#10007; Rejected</span>';
@@ -361,6 +375,7 @@
               <div class="ph-card-bottom">
                 <span class="ph-card-date">${plateLabel ? plateLabel + '  ' : ''}${dateShort}</span>
                 ${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : ''}
+                ${wasteBadge(row)}${saveBadge(row)}
                 <span class="ph-card-status" style="color:${statusColor(row.status)}">${statusLabel(row.status)}</span>
               </div>
               <div class="ph-card-review-row">
@@ -406,7 +421,7 @@
             <div class="ph-list-date" data-label="${t('history.date')}">${dateFull}</div>
             <div class="ph-list-duration" data-label="${t('history.sort_duration')}">${duration}</div>
             <div class="ph-list-filament" data-label="${t('history.sort_filament')}">${filWeight}</div>
-            <div class="ph-list-cost" data-label="${t('history.cost', 'Cost')}">${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : '--'}</div>
+            <div class="ph-list-cost" data-label="${t('history.cost', 'Cost')}">${row.filament_used_g ? `<span class="cost-badge">~${estimatePrintCostBadge(row.filament_used_g, row.filament_type)} kr</span>` : '--'} ${wasteBadge(row)}${saveBadge(row)}</div>
             <div class="ph-list-printer" data-label="${t('history.printer', 'Printer')}">${esc(pName)}</div>
             <div class="ph-list-notes" data-label="${t('history.notes', 'Notes')}" data-id="${row.id}">
               <span class="ph-notes-text" onclick="event.stopPropagation();window._editHistoryNote(${row.id}, this)">${row.notes ? esc(row.notes) : ''}</span>

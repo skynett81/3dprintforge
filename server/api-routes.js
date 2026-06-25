@@ -2123,6 +2123,21 @@ export async function handleApiRequest(req, res) {
             }
           } catch { /* ignore */ }
         }
+        // Purge-order optimisation: for a multi-colour single-nozzle print, how
+        // much purge would the optimal filament colour order have saved vs the
+        // order actually used? (Tool changers barely purge, so skip them.)
+        if (!row.is_tool_changer && row.color_changes > 0 && row.filament_color) {
+          try {
+            const cols = [...new Set(String(row.filament_color).split(/[;,]/)
+              .map(c => c.replace(/^#/, '').slice(0, 6).toUpperCase())
+              .filter(c => /^[0-9A-F]{6}$/.test(c)))].map(c => '#' + c);
+            if (cols.length >= 2) {
+              const opt = optimizeColorOrder(cols);
+              row.purge_optimal_g = opt.optimizedFlushG;
+              row.purge_saving_g = opt.savedG;
+            }
+          } catch { /* ignore */ }
+        }
       }
       return sendJson(res, rows);
     }
