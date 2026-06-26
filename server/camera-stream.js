@@ -62,7 +62,29 @@ export class CameraStream {
     this._lastFrameTime = 0;
     this._lastFrame = null; // Last JPEG frame buffer for snapshot/MJPEG
     this._mjpegClients = new Set(); // HTTP MJPEG stream clients
+    this._recorder = null;  // active CameraRecorder, if recording
   }
+
+  // ── Video recording ──────────────────────────────────────────────────────
+  // Attach an already-started CameraRecorder; _broadcastJpeg feeds it frames.
+  attachRecorder(recorder) {
+    this._recorder = recorder;
+    // Recording needs frames flowing even if nobody is watching the stream —
+    // start it if needed and cancel any pending auto-stop.
+    if (this.stopTimer) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    if (!this.ffmpeg && !this.tlsSocket) { try { this._startStream(); } catch { /* ignore */ } }
+    return true;
+  }
+  stopRecording() {
+    const r = this._recorder; this._recorder = null;
+    if (r) r.stop();
+    // Let the stream wind down if nobody is watching it anymore.
+    if (this.clients.size === 0 && !this.stopTimer) {
+      this.stopTimer = setTimeout(() => { this._stopStream(); this.stopTimer = null; }, 10000);
+    }
+    return !!r;
+  }
+  isRecording() { return !!(this._recorder && this._recorder.active); }
 
   start() {
     if (!this.enabled) {
@@ -137,7 +159,7 @@ export class CameraStream {
       this.clients.delete(ws);
       log.info('Client disconnected (' + this.clients.size + ' total)');
 
-      if (this.clients.size === 0 && !this.stopTimer) {
+      if (this.clients.size === 0 && !this._recorder && !this.stopTimer) {
         this.stopTimer = setTimeout(() => {
           this._stopStream();
           this.stopTimer = null;
@@ -398,6 +420,11 @@ export class CameraStream {
   _broadcastJpeg(frame) {
     this._lastFrame = frame;
     try { recordCameraStream(this.printerId, frame ? frame.length : 0); } catch (e) { /* best-effort */ }
+
+    // Feed an active video recording (on-demand MP4 capture).
+    if (this._recorder && this._recorder.active) {
+      try { this._recorder.writeFrame(frame); } catch { /* drop frame */ }
+    }
 
     // WebSocket clients
     for (const ws of this.clients) {

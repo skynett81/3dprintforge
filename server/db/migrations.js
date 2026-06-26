@@ -2342,6 +2342,24 @@ export function runMigrations() {
         created_at TEXT DEFAULT (datetime('now'))
       )`);
     }},
+    { version: 157, up: (db) => {
+      // Camera video recordings — on-demand MP4 captures of a printer's live
+      // camera (distinct from frame-based timelapses).
+      db.exec(`CREATE TABLE IF NOT EXISTS camera_recordings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        printer_id TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        started_at TEXT DEFAULT (datetime('now')),
+        ended_at TEXT,
+        duration_s INTEGER,
+        size_bytes INTEGER,
+        status TEXT NOT NULL DEFAULT 'recording',
+        print_history_id INTEGER,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_camera_rec_printer ON camera_recordings(printer_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_camera_rec_status ON camera_recordings(status)`);
+    }},
   ];
 
   for (const m of migrations) {

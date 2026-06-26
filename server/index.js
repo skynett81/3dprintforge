@@ -197,6 +197,8 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 // Initialize database
 initDatabase();
+// Any camera recording left 'recording' was cut off by a restart/crash.
+try { const { markStaleRecordingsFailed } = await import('./database.js'); markStaleRecordingsFailed(); } catch { /* ignore */ }
 
 // Start nightly backup
 startNightlyBackup();

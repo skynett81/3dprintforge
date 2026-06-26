@@ -241,6 +241,12 @@
           <circle cx="12" cy="13" r="4"/>
         </svg>
       </button>
+      <button class="camera-record-btn" title="${t('camera.record', 'Record video')}" aria-label="${t('camera.record', 'Record video')}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
+      </button>
+      <button class="camera-recordings-btn" title="${t('camera.recordings', 'Recordings')}" aria-label="${t('camera.recordings', 'Recordings')}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+      </button>
       <button class="camera-fullscreen-btn" title="${fullscreenTitle}" aria-label="${fullscreenTitle}">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -253,10 +259,16 @@
       e.stopPropagation();
       _takeScreenshot(container);
     });
-    overlay.querySelector('.camera-fullscreen-btn').addEventListener('click', (e) => {
+    overlay.querySelector('.camera-record-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      openFullscreen();
+      if (window._toggleCameraRecording) window._toggleCameraRecording(window.printerState?.getActivePrinterId?.(), e.currentTarget);
     });
+    overlay.querySelector('.camera-recordings-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window._showRecordings) window._showRecordings(window.printerState?.getActivePrinterId?.());
+    });
+    // Reflect any in-progress recording on this printer.
+    if (window._initRecordBtn) window._initRecordBtn(window.printerState?.getActivePrinterId?.(), overlay.querySelector('.camera-record-btn'));
     overlay.querySelector('.camera-embed-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       _openOverlayEmbed(window.printerState?.getActivePrinterId?.());

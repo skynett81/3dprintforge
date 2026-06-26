@@ -2543,6 +2543,34 @@
   transform: scale(1.15);
 }
 
+/* Record + recordings buttons — share the camera-button look */
+.camera-record-btn, .camera-recordings-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.5);
+  color: white; cursor: pointer; transition: background 0.2s ease, transform 0.2s ease;
+}
+.camera-recordings-btn:hover { background: rgba(0,120,255,0.3); transform: scale(1.15); }
+.camera-record-btn { color: #ff5a5a; }
+.camera-record-btn:hover { background: rgba(220,53,69,0.3); transform: scale(1.15); }
+.camera-record-btn.rec-active { color: #fff; background: var(--accent-red, #dc3545); animation: recPulse 1.4s ease-in-out infinite; }
+@keyframes recPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,53,69,0.6); } 50% { box-shadow: 0 0 0 6px rgba(220,53,69,0); } }
+
+/* Recordings dialog */
+.rec-overlay { display: flex; align-items: center; justify-content: center; }
+.rec-dialog { width: 100%; max-width: 560px; max-height: 80vh; display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+.rec-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
+.rec-title { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+.rec-body { padding: 8px 16px 16px; overflow-y: auto; }
+.rec-item { padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.rec-item:last-child { border-bottom: none; }
+.rec-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rec-item-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rec-meta { font-size: 0.74rem; color: var(--text-muted); }
+.rec-badge { font-size: 0.66rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.rec-badge-live { background: color-mix(in srgb, #dc3545 18%, transparent); color: #ff6b6b; }
+.rec-badge-fail { background: color-mix(in srgb, var(--text-muted) 18%, transparent); color: var(--text-muted); }
+
 .camera-embed-btn {
   display: flex;
   align-items: center;

@@ -12,6 +12,7 @@ export * from './suppliers.js';
 export * from './purchase-orders.js';
 export * from './stock-ledger.js';
 export * from './reorder.js';
+export * from './recordings.js';
 export * from './maintenance.js';
 export * from './errors.js';
 export * from './telemetry.js';
