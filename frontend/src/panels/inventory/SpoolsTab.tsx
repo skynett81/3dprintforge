@@ -21,7 +21,9 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<`${SortKey}:${'asc' | 'desc'}`>('remaining:desc');
   const [lowOnly, setLowOnly] = useState(false);
-  const [view, setView] = useState<'table' | 'cards'>(() => (localStorage.getItem('v2.inv.view') as 'table' | 'cards') || 'table');
+  const [view, setView] = useState<'table' | 'cards'>(() => {
+    try { return (localStorage.getItem('v2.inv.view') as 'table' | 'cards') || 'table'; } catch { return 'table'; }
+  });
   const [openId, setOpenId] = useState<number | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
