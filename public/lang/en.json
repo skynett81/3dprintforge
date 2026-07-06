@@ -354,7 +354,20 @@
       "sup_removed": "Supplier removed",
       "sup_confirm": "Delete this supplier?",
       "website": "Website",
-      "lead": "Lead (d)"
+      "lead": "Lead (d)",
+      "new_po": "+ New PO",
+      "po_created": "Purchase order created",
+      "po_confirm": "Delete this purchase order?",
+      "po_removed": "Purchase order removed",
+      "supplier": "Supplier",
+      "reference": "Reference",
+      "create": "Create",
+      "add_line": "+ Line",
+      "line_added": "Line added",
+      "line_removed": "Line removed",
+      "line_desc": "Description",
+      "qty": "Qty",
+      "unit_cost": "Unit cost"
     },
     "supply": {
       "title": "Supply",

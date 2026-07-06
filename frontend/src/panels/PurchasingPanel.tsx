@@ -23,6 +23,10 @@ export function PurchasingPanel() {
   const [detail, setDetail] = useState<PurchaseOrder | null>(null);
   const [addingSup, setAddingSup] = useState(false);
   const [supForm, setSupForm] = useState({ name: '', website: '', lead_time_days: '' });
+  const [newPoOpen, setNewPoOpen] = useState(false);
+  const [poForm, setPoForm] = useState({ supplier_id: '', reference: '', currency: 'kr' });
+  const [addingLine, setAddingLine] = useState(false);
+  const [lineForm, setLineForm] = useState({ description: '', quantity: '1', unit_cost: '' });
 
   const list = pos ?? [];
   useEffect(() => { if (selected == null && list.length > 0) setSelected(list[0].id); }, [list, selected]);
@@ -53,6 +57,37 @@ export function PurchasingPanel() {
   async function removeSupplier(s: Supplier) {
     if (!confirm(t('v2.purchasing.sup_confirm', `Delete supplier "${s.name}"?`))) return;
     await run(async () => { await api.deleteSupplier(s.id); reloadSuppliers(); }, t('v2.purchasing.sup_removed', 'Supplier removed'));
+  }
+  async function createPo() {
+    await run(async () => {
+      const po = await api.createPurchaseOrder({
+        supplier_id: poForm.supplier_id ? Number(poForm.supplier_id) : undefined,
+        reference: poForm.reference.trim() || undefined,
+        currency: poForm.currency.trim() || 'kr',
+      });
+      setNewPoOpen(false); setPoForm({ supplier_id: '', reference: '', currency: 'kr' });
+      reloadPos(); if (po?.id) { setSelected(po.id); loadDetail(po.id); }
+    }, t('v2.purchasing.po_created', 'Purchase order created'));
+  }
+  async function removePo() {
+    if (selected == null) return;
+    if (!confirm(t('v2.purchasing.po_confirm', 'Delete this purchase order?'))) return;
+    await run(async () => { await api.deletePurchaseOrder(selected); setSelected(null); setDetail(null); reloadPos(); }, t('v2.purchasing.po_removed', 'Purchase order removed'));
+  }
+  async function addLine() {
+    if (selected == null || !lineForm.description.trim()) return;
+    await run(async () => {
+      await api.addPoLine(selected, {
+        description: lineForm.description.trim(),
+        quantity: Number(lineForm.quantity) || 1,
+        unit_cost: lineForm.unit_cost ? Number(lineForm.unit_cost) : 0,
+      });
+      setAddingLine(false); setLineForm({ description: '', quantity: '1', unit_cost: '' });
+      loadDetail(selected); reloadPos();
+    }, t('v2.purchasing.line_added', 'Line added'));
+  }
+  async function removeLine(lineId: number) {
+    await run(async () => { await api.deletePoLine(lineId); if (selected != null) loadDetail(selected); reloadPos(); }, t('v2.purchasing.line_removed', 'Line removed'));
   }
 
   return (
@@ -95,7 +130,22 @@ export function PurchasingPanel() {
 
       <div className="two-col">
         <section className="card">
-          <div className="card-title">{t('v2.purchasing.orders', 'Purchase orders')}</div>
+          <div className="card-head">
+            <div className="card-title">{t('v2.purchasing.orders', 'Purchase orders')}</div>
+            <button className="btn btn--sm btn--primary" onClick={() => setNewPoOpen((v) => !v)}>{newPoOpen ? t('common.close', 'Close') : t('v2.purchasing.new_po', '+ New PO')}</button>
+          </div>
+          {newPoOpen && (
+            <div className="add-form add-form--stack">
+              <label className="field grow"><span className="field-label">{t('v2.purchasing.supplier', 'Supplier')}</span>
+                <select className="input" value={poForm.supplier_id} onChange={(e) => setPoForm({ ...poForm, supplier_id: e.target.value })}>
+                  <option value="">—</option>
+                  {(suppliers ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </label>
+              <label className="field grow"><span className="field-label">{t('v2.purchasing.reference', 'Reference')}</span><input className="input" value={poForm.reference} onChange={(e) => setPoForm({ ...poForm, reference: e.target.value })} placeholder="PO-2026-01" /></label>
+              <button className="btn btn--primary" onClick={createPo}>{t('v2.purchasing.create', 'Create')}</button>
+            </div>
+          )}
           {list.length === 0 ? (
             <p className="muted empty-note">{t('v2.purchasing.no_orders', 'No purchase orders.')}</p>
           ) : (
@@ -121,10 +171,22 @@ export function PurchasingPanel() {
             <>
               <div className="card-head">
                 <div className="card-title">{detail.reference || `PO #${detail.id}`}</div>
-                <select className="input" style={{ width: 'auto' }} value={detail.status} onChange={(e) => setStatus(e.target.value)}>
-                  {PO_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="inv-head-actions">
+                  <select className="input" style={{ width: 'auto' }} value={detail.status} onChange={(e) => setStatus(e.target.value)}>
+                    {PO_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <button className="btn btn--sm" onClick={() => setAddingLine((v) => !v)}>{addingLine ? t('common.close', 'Close') : t('v2.purchasing.add_line', '+ Line')}</button>
+                  <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={removePo}>✕</button>
+                </div>
               </div>
+              {addingLine && (
+                <div className="add-form add-form--stack">
+                  <label className="field grow"><span className="field-label">{t('v2.purchasing.line_desc', 'Description')}</span><input className="input" value={lineForm.description} onChange={(e) => setLineForm({ ...lineForm, description: e.target.value })} placeholder="Bambu PLA Basic — Black" /></label>
+                  <label className="field"><span className="field-label">{t('v2.purchasing.qty', 'Qty')}</span><input className="input" type="number" min={1} value={lineForm.quantity} onChange={(e) => setLineForm({ ...lineForm, quantity: e.target.value })} /></label>
+                  <label className="field"><span className="field-label">{t('v2.purchasing.unit_cost', 'Unit cost')}</span><input className="input" type="number" min={0} value={lineForm.unit_cost} onChange={(e) => setLineForm({ ...lineForm, unit_cost: e.target.value })} /></label>
+                  <button className="btn btn--primary" onClick={addLine}>{t('v2.inv.add_btn', 'Add')}</button>
+                </div>
+              )}
               <div className="poline-list">
                 {(detail.lines ?? []).map((ln) => {
                   const rem = lineRemaining(ln);
@@ -134,9 +196,12 @@ export function PurchasingPanel() {
                         <span className="poline-desc">{ln.description}</span>
                         <span className="muted tnum">{ln.qty_received}/{ln.quantity}{ln.profile_material ? ` · ${ln.profile_material}` : ''}</span>
                       </div>
-                      <button className="btn btn--sm" disabled={rem === 0} onClick={() => receive(ln.id)}>
-                        {rem === 0 ? t('v2.purchasing.done', 'received') : `${t('v2.purchasing.receive', 'Receive')} ${rem}`}
-                      </button>
+                      <div className="inv-head-actions">
+                        <button className="btn btn--sm" disabled={rem === 0} onClick={() => receive(ln.id)}>
+                          {rem === 0 ? t('v2.purchasing.done', 'received') : `${t('v2.purchasing.receive', 'Receive')} ${rem}`}
+                        </button>
+                        <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => removeLine(ln.id)}>✕</button>
+                      </div>
                     </div>
                   );
                 })}

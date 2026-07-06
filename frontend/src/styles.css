@@ -196,6 +196,8 @@ a.hs-badge { text-decoration: none; }
 .fc-days { white-space: nowrap; }
 .fc-rate { white-space: nowrap; font-size: 0.76rem; }
 
+.add-form--stack { flex-wrap: wrap; }
+
 /* Inventory tabs */
 .tab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 4px; flex-wrap: wrap; }
 

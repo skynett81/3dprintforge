@@ -81,6 +81,12 @@ export const api = {
   deleteSupplier: (id: number) => req<{ ok: boolean }>(`/api/inventory/suppliers/${id}`, { method: 'DELETE' }),
   listPurchaseOrders: (): Promise<PurchaseOrder[]> => req<PurchaseOrder[]>('/api/inventory/purchase-orders'),
   getPurchaseOrder: (id: number): Promise<PurchaseOrder> => req<PurchaseOrder>(`/api/inventory/purchase-orders/${id}`),
+  createPurchaseOrder: (body: Record<string, unknown>) =>
+    req<PurchaseOrder>('/api/inventory/purchase-orders', { method: 'POST', body: JSON.stringify(body) }),
+  deletePurchaseOrder: (id: number) => req<{ ok: boolean }>(`/api/inventory/purchase-orders/${id}`, { method: 'DELETE' }),
+  addPoLine: (poId: number, body: Record<string, unknown>) =>
+    req<unknown>(`/api/inventory/purchase-orders/${poId}/lines`, { method: 'POST', body: JSON.stringify(body) }),
+  deletePoLine: (lineId: number) => req<{ ok: boolean }>(`/api/inventory/purchase-order-lines/${lineId}`, { method: 'DELETE' }),
   updatePurchaseOrder: (id: number, body: { status?: string }) =>
     req<PurchaseOrder>(`/api/inventory/purchase-orders/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   receivePoLine: (lineId: number, qty?: number) =>
