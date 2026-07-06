@@ -97,6 +97,8 @@ export const api = {
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getAuthStatus: (): Promise<AuthStatus> => req<AuthStatus>('/api/auth/status'),
   listNotifications: (): Promise<AppNotification[]> => req<AppNotification[]>('/api/notifications/log?limit=30'),
+  getProtectionLog: (): Promise<import('./types').ProtectionEvent[]> => req('/api/protection/log'),
+  resolveProtection: (logId: number) => req<{ ok: boolean }>('/api/protection/resolve', { method: 'POST', body: JSON.stringify({ logId }) }),
   listBackups: (): Promise<import('./types').BackupFile[]> => req('/api/backup/list'),
   createBackup: () => req<{ ok?: boolean }>('/api/backup', { method: 'POST', body: '{}' }),
   listCustomers: (): Promise<import('./types').Customer[]> => req('/api/crm/customers'),

@@ -83,6 +83,16 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface ProtectionEvent {
+  id: number;
+  printer_id: string;
+  timestamp: string;
+  event_type: string;
+  action_taken?: string | null;
+  resolved: number;
+  notes?: string | null;
+}
+
 export interface BackupFile {
   filename: string;
   size: number;

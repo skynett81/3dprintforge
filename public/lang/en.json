@@ -97,6 +97,16 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "guard": {
+      "title": "Print Guard",
+      "open": "open",
+      "events": "events",
+      "none": "No protection events. Prints are running clean.",
+      "detected": "detected",
+      "resolve": "Resolve",
+      "resolved": "Resolved",
+      "done": "resolved"
+    },
     "backup": {
       "title": "Backup",
       "backups": "backups on disk",

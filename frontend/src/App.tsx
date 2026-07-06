@@ -9,6 +9,7 @@ import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { MaintenancePanel } from './panels/MaintenancePanel';
+import { PrintGuardPanel } from './panels/PrintGuardPanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
 import { SchedulerPanel } from './panels/SchedulerPanel';
@@ -30,13 +31,14 @@ import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'firmware' | 'diagnostics' | 'backup' | 'crm' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'firmware' | 'diagnostics' | 'backup' | 'crm' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
   { id: 'production', label: 'Production', icon: <IconLayers /> },
   { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
   { id: 'maintenance', label: 'Maintenance', icon: <IconWrench /> },
+  { id: 'guard', label: 'Print Guard', icon: <IconShield /> },
   { id: 'errors', label: 'Errors', icon: <IconAlert /> },
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
@@ -118,6 +120,7 @@ export function App() {
         {panel === 'production' && <ProductionPanel />}
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel />}
+        {panel === 'guard' && <PrintGuardPanel />}
         {panel === 'inventory' && <InventoryPanel />}
         {panel === 'queue' && <QueuePanel />}
         {panel === 'scheduler' && <SchedulerPanel />}
@@ -168,6 +171,9 @@ function IconFiles() {
 }
 function IconBook() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>;
+}
+function IconShield() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
 }
 function IconAlert() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
