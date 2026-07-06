@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '../i18n';
 import type { NewPart } from '../types';
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export function AddPartForm({ onAdd }: Props) {
+  const t = useT();
   const [name, setName] = useState('');
   const [target, setTarget] = useState(1);
   const [perPlate, setPerPlate] = useState(1);
@@ -23,18 +25,18 @@ export function AddPartForm({ onAdd }: Props) {
   return (
     <form className="add-form" onSubmit={submit}>
       <label className="field grow">
-        <span className="field-label">Part name</span>
+        <span className="field-label">{t('v2.production.part_name', 'Part name')}</span>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Chassis" />
       </label>
       <label className="field">
-        <span className="field-label">Target</span>
+        <span className="field-label">{t('v2.production.target', 'Target')}</span>
         <input className="input" type="number" min={1} value={target} onChange={(e) => setTarget(Number(e.target.value) || 1)} />
       </label>
       <label className="field">
-        <span className="field-label">Per plate</span>
+        <span className="field-label">{t('v2.production.per_plate', 'Per plate')}</span>
         <input className="input" type="number" min={1} value={perPlate} onChange={(e) => setPerPlate(Number(e.target.value) || 1)} />
       </label>
-      <button className="btn btn--primary" type="submit">Add part</button>
+      <button className="btn btn--primary" type="submit">{t('v2.production.add_part_btn', 'Add part')}</button>
     </form>
   );
 }

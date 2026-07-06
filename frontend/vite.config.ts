@@ -21,6 +21,7 @@ export default defineConfig(({ command }) => ({
     proxy: {
       '/api': { target, changeOrigin: true, secure: false },
       '/ws': { target, changeOrigin: true, secure: false, ws: true },
+      '/lang': { target, changeOrigin: true, secure: false },
     },
   },
   test: {

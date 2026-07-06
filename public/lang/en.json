@@ -1,4 +1,26 @@
 {
+  "v2": {
+    "production": {
+      "title": "Production",
+      "subtitle": "Batch quantity tracking — plates credit parts, parts auto-close at target.",
+      "project": "Project",
+      "load_error": "Could not load projects",
+      "start_run": "Start a production run",
+      "no_projects": "No projects yet — create your first one to begin tracking parts.",
+      "add_part": "+ Add part",
+      "add_part_btn": "Add part",
+      "no_parts": "No parts yet — add one to start tracking production.",
+      "part": "Part",
+      "progress": "Progress",
+      "per_plate": "Per plate",
+      "part_name": "Part name",
+      "target": "Target",
+      "completed": "Completed",
+      "done": "done",
+      "plate": "+ plate",
+      "credit_plate_hint": "Record a finished plate"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "new_ui": "New UI",

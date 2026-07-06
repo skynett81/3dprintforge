@@ -28,6 +28,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(qty != null ? { qty } : {}),
     }),
+  updatePart: (partId: number, body: Partial<Pick<Part, 'name' | 'target_qty' | 'parts_per_plate' | 'completed_qty'>>) =>
+    req<{ ok: boolean; part: Part }>(`/api/projects/parts/${partId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   deletePart: (partId: number) =>
     req<{ ok: boolean }>(`/api/projects/parts/${partId}`, { method: 'DELETE' }),
   createProject: (name: string) =>

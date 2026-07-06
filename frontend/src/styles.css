@@ -317,6 +317,16 @@ body {
 .add-wrap { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px; }
 .add-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 
+.edit-row {
+  display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+  background: var(--bg-4); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.edit-row .field { min-width: 76px; }
+.edit-row .field.grow { flex: 2; min-width: 130px; }
+.edit-actions { display: flex; gap: 6px; margin-left: auto; }
+.btn--ghost-quiet { color: var(--faint); }
+.btn--ghost-quiet:hover { color: var(--accent); border-color: var(--accent); }
+
 .btn {
   background: var(--bg-4); border: 1px solid var(--border); color: var(--text);
   border-radius: var(--radius-sm); padding: 9px 14px; font: inherit; cursor: pointer; transition: all 0.15s;
