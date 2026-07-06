@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { useAuth } from './hooks';
+import { useAuth, useResource } from './hooks';
+import { api } from './api';
+import { useT } from './i18n';
+import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
+import { NotificationCenter } from './components/NotificationCenter';
+import type { AppNotification } from './types';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
@@ -21,9 +26,23 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
 ];
 
 export function App() {
+  const t = useT();
   const [panel, setPanel] = useState<PanelId>('dashboard');
   const auth = useAuth();
   const authLabel = auth == null ? '' : auth.user ? auth.user : auth.enabled ? 'Signed in' : 'Local · no login';
+
+  const { data: notifData } = useResource<AppNotification[]>(api.listNotifications, 15000);
+  const notifications = notifData ?? [];
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [seen, setSeen] = useState(getLastSeen());
+  const unread = countUnread(notifications, seen);
+
+  function openNotifications() {
+    setNotifOpen(true);
+    const top = maxId(notifications);
+    setLastSeen(top);
+    setSeen(top);
+  }
 
   return (
     <div className="app-shell">
@@ -34,6 +53,10 @@ export function App() {
             <div className="brand-name">3DPrintForge</div>
             <div className="brand-sub">React PoC</div>
           </div>
+          <button className="bell" onClick={openNotifications} title={t('v2.notify.title', 'Notifications')} aria-label={t('v2.notify.title', 'Notifications')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+            {unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
+          </button>
         </div>
         <nav className="nav">
           {NAV.map((n) => (
@@ -65,6 +88,8 @@ export function App() {
         {panel === 'analytics' && <AnalyticsPanel />}
         {panel === 'history' && <HistoryPanel />}
       </main>
+
+      {notifOpen && <NotificationCenter notifications={notifications} onClose={() => setNotifOpen(false)} />}
     </div>
   );
 }

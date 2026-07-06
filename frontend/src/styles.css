@@ -48,6 +48,24 @@ body {
   font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
   color: var(--accent);
 }
+.bell {
+  margin-left: auto; position: relative; background: none; border: none; color: var(--muted);
+  cursor: pointer; padding: 6px; border-radius: 8px; display: grid; place-items: center;
+}
+.bell:hover { background: var(--bg-2); color: var(--text); }
+.bell-badge {
+  position: absolute; top: -1px; right: -1px; min-width: 16px; height: 16px; padding: 0 4px;
+  background: var(--red); color: #fff; font-size: 0.6rem; font-weight: 700; border-radius: 999px;
+  display: grid; place-items: center; line-height: 1;
+}
+
+.notif-list { display: flex; flex-direction: column; gap: 10px; }
+.notif-row { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 11px 13px; }
+.notif-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.notif-title { font-weight: 600; font-size: 0.88rem; }
+.notif-msg { font-size: 0.82rem; margin-top: 3px; }
+.notif-foot { font-size: 0.7rem; margin-top: 6px; text-transform: capitalize; }
+
 .nav { display: flex; flex-direction: column; gap: 3px; }
 .nav-item {
   display: flex; align-items: center; gap: 11px;

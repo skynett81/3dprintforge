@@ -83,6 +83,18 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface AppNotification {
+  id: number;
+  timestamp: string;
+  event_type: string;
+  channel: string;
+  printer_id?: string | null;
+  title: string;
+  message: string;
+  status: string;
+  error_info?: string | null;
+}
+
 export interface AuthStatus {
   enabled: boolean;
   authenticated: boolean;

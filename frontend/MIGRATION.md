@@ -112,8 +112,11 @@ deep-link `/v2/<panel>` → delete the vanilla component.
   (Production, Queue, Fleet control, Inventory); an **auth-aware** shell
   (`useAuth` reads `/api/auth/status`) shows the signed-in user / local mode
   in the sidebar.
-- Remaining: notification center, and porting the remaining interactive
-  panels (Settings, Calibration, etc.).
+- Notification center DONE: a bell in the shell (unread badge tracked via
+  localStorage) opens a drawer listing recent notifications from
+  `/api/notifications/log`.
+- Remaining: porting the remaining interactive panels (Settings,
+  Calibration, etc.).
 
 ### Phase 4 — Low-churn / heavy panels (large, optional / last)
 - The 51 Model Forge generators and deep calibration wizards are stable and

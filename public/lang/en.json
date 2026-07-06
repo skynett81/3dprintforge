@@ -90,6 +90,10 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "notify": {
+      "title": "Notifications",
+      "empty": "No notifications yet."
+    },
     "history": {
       "title": "History",
       "recent_prints": "recent prints",
