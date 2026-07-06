@@ -83,6 +83,22 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface BackupFile {
+  filename: string;
+  size: number;
+  created_at: string;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  total_orders?: number;
+  total_revenue?: number;
+}
+
 export interface SystemInfo {
   uptime_seconds: number;
   node_version: string;

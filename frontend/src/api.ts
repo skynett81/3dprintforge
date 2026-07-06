@@ -97,6 +97,11 @@ export const api = {
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getAuthStatus: (): Promise<AuthStatus> => req<AuthStatus>('/api/auth/status'),
   listNotifications: (): Promise<AppNotification[]> => req<AppNotification[]>('/api/notifications/log?limit=30'),
+  listBackups: (): Promise<import('./types').BackupFile[]> => req('/api/backup/list'),
+  createBackup: () => req<{ ok?: boolean }>('/api/backup', { method: 'POST', body: '{}' }),
+  listCustomers: (): Promise<import('./types').Customer[]> => req('/api/crm/customers'),
+  addCustomer: (body: { name: string; email?: string; company?: string }) =>
+    req<{ ok?: boolean; id?: number }>('/api/crm/customers', { method: 'POST', body: JSON.stringify(body) }),
   getSystemInfo: (): Promise<import('./types').SystemInfo> => req('/api/system/info'),
   getFirmware: (): Promise<import('./types').FirmwareInfo> => req('/api/firmware/updates'),
   listHardware: (): Promise<import('./types').HardwareItem[]> => req('/api/hardware'),

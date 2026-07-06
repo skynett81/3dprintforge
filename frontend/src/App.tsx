@@ -24,11 +24,13 @@ import { KnowledgePanel } from './panels/KnowledgePanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { FirmwarePanel } from './panels/FirmwarePanel';
 import { DiagnosticsPanel } from './panels/DiagnosticsPanel';
+import { BackupPanel } from './panels/BackupPanel';
+import { CrmPanel } from './panels/CrmPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'firmware' | 'diagnostics' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'firmware' | 'diagnostics' | 'backup' | 'crm' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -41,6 +43,7 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
   { id: 'supply', label: 'Supply', icon: <IconBox /> },
   { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
+  { id: 'crm', label: 'Customers', icon: <IconUsers /> },
   { id: 'hardware', label: 'Hardware', icon: <IconChip /> },
   { id: 'library', label: 'Library', icon: <IconFiles /> },
   { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
@@ -52,6 +55,7 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'history', label: 'History', icon: <IconClock /> },
   { id: 'firmware', label: 'Firmware', icon: <IconDownload /> },
   { id: 'diagnostics', label: 'Diagnostics', icon: <IconServer /> },
+  { id: 'backup', label: 'Backup', icon: <IconSave /> },
   { id: 'settings', label: 'Settings', icon: <IconGear /> },
 ];
 
@@ -130,6 +134,8 @@ export function App() {
         {panel === 'knowledge' && <KnowledgePanel />}
         {panel === 'firmware' && <FirmwarePanel />}
         {panel === 'diagnostics' && <DiagnosticsPanel />}
+        {panel === 'backup' && <BackupPanel />}
+        {panel === 'crm' && <CrmPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
       </main>
@@ -195,6 +201,12 @@ function IconCoins() {
 }
 function IconClock() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>;
+}
+function IconUsers() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+}
+function IconSave() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
 }
 function IconDownload() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;

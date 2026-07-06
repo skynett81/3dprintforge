@@ -97,6 +97,29 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "backup": {
+      "title": "Backup",
+      "backups": "backups on disk",
+      "create": "Create backup",
+      "created": "Backup created",
+      "none": "No backups yet.",
+      "file": "File",
+      "size": "Size",
+      "date": "Created"
+    },
+    "crm": {
+      "title": "Customers",
+      "customers": "customers",
+      "revenue": "revenue",
+      "add": "+ Add customer",
+      "add_btn": "Add",
+      "added": "Customer added",
+      "none": "No customers yet.",
+      "name": "Name",
+      "email": "Email",
+      "company": "Company",
+      "orders": "Orders"
+    },
     "diag": {
       "title": "Diagnostics",
       "subtitle": "Server & system status",
