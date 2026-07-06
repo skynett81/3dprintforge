@@ -166,7 +166,9 @@
       "name": "Name",
       "email": "Email",
       "company": "Company",
-      "orders": "Orders"
+      "orders": "Orders",
+      "confirm": "Remove this customer?",
+      "removed": "Customer removed"
     },
     "diag": {
       "title": "Diagnostics",
@@ -197,7 +199,14 @@
       "title": "Hardware",
       "items": "accessories & parts",
       "none": "No hardware tracked yet.",
-      "for": "For"
+      "for": "For",
+      "add": "+ Add hardware",
+      "added": "Hardware added",
+      "removed": "Hardware removed",
+      "confirm": "Delete this hardware item?",
+      "category": "Category",
+      "brand": "Brand",
+      "price": "Price"
     },
     "library": {
       "title": "Library",

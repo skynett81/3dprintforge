@@ -113,9 +113,14 @@ export const api = {
   listCustomers: (): Promise<import('./types').Customer[]> => req('/api/crm/customers'),
   addCustomer: (body: { name: string; email?: string; company?: string }) =>
     req<{ ok?: boolean; id?: number }>('/api/crm/customers', { method: 'POST', body: JSON.stringify(body) }),
+  updateCustomer: (id: number, body: Record<string, unknown>) =>
+    req<{ ok: boolean }>(`/api/crm/customers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteCustomer: (id: number) => req<{ ok: boolean }>(`/api/crm/customers/${id}`, { method: 'DELETE' }),
   getSystemInfo: (): Promise<import('./types').SystemInfo> => req('/api/system/info'),
   getFirmware: (): Promise<import('./types').FirmwareInfo> => req('/api/firmware/updates'),
   listHardware: (): Promise<import('./types').HardwareItem[]> => req('/api/hardware'),
+  addHardware: (body: Record<string, unknown>) => req<{ id: number }>('/api/hardware', { method: 'POST', body: JSON.stringify(body) }),
+  deleteHardware: (id: number) => req<{ ok: boolean }>(`/api/hardware/${id}`, { method: 'DELETE' }),
   listLibrary: (): Promise<import('./types').LibraryFile[]> => req('/api/library'),
   listKbPrinters: (): Promise<import('./types').KbPrinter[]> => req('/api/kb/printers'),
   listErrors: (): Promise<import('./types').AppError[]> => req('/api/errors'),

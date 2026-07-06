@@ -22,6 +22,11 @@ export function CrmPanel() {
       setAdding(false); setForm({ name: '', email: '', company: '' }); reload();
     } catch (e) { toast((e as Error).message, 'error'); }
   }
+  async function remove(c: Customer) {
+    if (!confirm(t('v2.crm.confirm', `Remove customer "${c.name}"?`))) return;
+    try { await api.deleteCustomer(c.id); toast(t('v2.crm.removed', 'Customer removed'), 'success'); reload(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   return (
     <div>
@@ -49,20 +54,22 @@ export function CrmPanel() {
           <p className="muted empty-note">{t('v2.crm.none', 'No customers yet.')}</p>
         ) : (
           <div className="lib-list">
-            <div className="lib-head" style={{ gridTemplateColumns: '1.4fr 1.2fr 1.4fr 0.7fr 0.9fr' }}>
+            <div className="lib-head" style={{ gridTemplateColumns: '1.4fr 1.2fr 1.4fr 0.6fr 0.8fr auto' }}>
               <span>{t('v2.crm.name', 'Name')}</span>
               <span>{t('v2.crm.company', 'Company')}</span>
               <span>{t('v2.crm.email', 'Email')}</span>
               <span>{t('v2.crm.orders', 'Orders')}</span>
               <span>{t('v2.crm.revenue', 'Revenue')}</span>
+              <span></span>
             </div>
             {customers.map((c) => (
-              <div className="lib-row" key={c.id} style={{ gridTemplateColumns: '1.4fr 1.2fr 1.4fr 0.7fr 0.9fr' }}>
+              <div className="lib-row" key={c.id} style={{ gridTemplateColumns: '1.4fr 1.2fr 1.4fr 0.6fr 0.8fr auto' }}>
                 <span className="lib-name">{c.name}</span>
                 <span className="muted">{c.company || '—'}</span>
                 <span className="muted ellipsis">{c.email || '—'}</span>
                 <span className="tnum">{c.total_orders || 0}</span>
                 <span className="tnum">{Math.round(c.total_revenue || 0)} kr</span>
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(c)}>✕</button>
               </div>
             ))}
           </div>
