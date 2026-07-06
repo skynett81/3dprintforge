@@ -1,22 +1,27 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
+import { OverviewTab } from './inventory/OverviewTab';
 import { SpoolsTab } from './inventory/SpoolsTab';
 import { ProfilesTab } from './inventory/ProfilesTab';
 import { LocationsTab } from './inventory/LocationsTab';
 import { StockActivityTab } from './inventory/ActivityTab';
 
-type Tab = 'spools' | 'profiles' | 'locations' | 'activity';
+type Tab = 'overview' | 'spools' | 'profiles' | 'locations' | 'activity';
 
 export function InventoryPanel() {
   const t = useT();
-  const [tab, setTab] = useState<Tab>('spools');
+  const [tab, setTab] = useState<Tab>('overview');
+  const [focusId, setFocusId] = useState<number | null>(null);
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: t('v2.inv.tab_overview', 'Overview') },
     { id: 'spools', label: t('v2.inv.tab_spools', 'Spools') },
     { id: 'profiles', label: t('v2.inv.tab_profiles', 'Profiles') },
     { id: 'locations', label: t('v2.inv.tab_locations', 'Locations') },
     { id: 'activity', label: t('v2.inv.tab_activity', 'Activity') },
   ];
+
+  function pickSpool(id: number) { setFocusId(id); setTab('spools'); }
 
   return (
     <div>
@@ -32,7 +37,8 @@ export function InventoryPanel() {
         </div>
       </div>
 
-      {tab === 'spools' && <SpoolsTab />}
+      {tab === 'overview' && <OverviewTab onPickSpool={pickSpool} />}
+      {tab === 'spools' && <SpoolsTab focusId={focusId} onFocusConsumed={() => setFocusId(null)} />}
       {tab === 'profiles' && <ProfilesTab />}
       {tab === 'locations' && <LocationsTab />}
       {tab === 'activity' && <StockActivityTab />}

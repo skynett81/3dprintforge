@@ -79,6 +79,7 @@ export interface InventoryStats {
   total_cost: number;
   low_stock_count: number;
   by_material: { material: string; count: number; remaining_g: number }[];
+  by_vendor: { vendor: string | null; count: number; remaining_g: number; total_cost: number }[];
 }
 
 export interface Spool {

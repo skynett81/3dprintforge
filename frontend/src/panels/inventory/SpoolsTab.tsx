@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 import { useResource } from '../../hooks';
 import { useT } from '../../i18n';
 import { useToast } from '../../toast';
 import { toggle } from '../../selection';
+import { spoolPct, isLow, matchesQuery, sortSpools, type SortKey } from '../../inventory';
 import { SpoolDrawer } from '../../components/SpoolDrawer';
 import type { Spool, FilamentProfile, StorageLocation } from '../../types';
 
@@ -12,11 +13,14 @@ function hex(s: Spool) {
   return h ? `#${h}` : '#666';
 }
 
-export function SpoolsTab() {
+export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | null; onFocusConsumed?: () => void }) {
   const t = useT();
   const toast = useToast();
   const { data, error, loading, reload } = useResource<Spool[]>(api.listSpools);
   const [material, setMaterial] = useState<string>('all');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<`${SortKey}:${'asc' | 'desc'}`>('remaining:desc');
+  const [lowOnly, setLowOnly] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -26,14 +30,31 @@ export function SpoolsTab() {
   const { data: locations } = useResource<StorageLocation[]>(api.listLocations, 0);
 
   const spools = useMemo(() => (data ?? []).filter((s) => !s.archived), [data]);
+
+  // Open the drawer for a spool the Overview tab asked us to focus.
+  useEffect(() => {
+    if (focusId != null && spools.some((s) => s.id === focusId)) {
+      setOpenId(focusId);
+      onFocusConsumed?.();
+    }
+  }, [focusId, spools, onFocusConsumed]);
+
   const materials = useMemo(
     () => ['all', ...Array.from(new Set(spools.map((s) => s.material).filter(Boolean) as string[])).sort()],
     [spools],
   );
-  const shown = material === 'all' ? spools : spools.filter((s) => s.material === material);
+  const shown = useMemo(() => {
+    const [key, dir] = sort.split(':') as [SortKey, 'asc' | 'desc'];
+    const filtered = spools
+      .filter((s) => material === 'all' || s.material === material)
+      .filter((s) => matchesQuery(s, query))
+      .filter((s) => !lowOnly || isLow(s));
+    return sortSpools(filtered, key, dir);
+  }, [spools, material, query, lowOnly, sort]);
+
   const open = spools.find((s) => s.id === openId) || null;
   const totalKg = spools.reduce((s, x) => s + (x.remaining_weight_g || 0), 0) / 1000;
-  const lowCount = spools.filter((s) => s.initial_weight_g > 0 && s.remaining_weight_g / s.initial_weight_g < 0.15).length;
+  const lowCount = spools.filter((s) => isLow(s)).length;
 
   function clickTile(s: Spool) {
     if (selectMode) setSelected((sel) => toggle(sel, s.id));
@@ -66,16 +87,28 @@ export function SpoolsTab() {
   return (
     <div>
       <div className="tab-toolbar">
-        <span className="muted">{spools.length} {t('v2.inventory.spools', 'spools')} · {totalKg.toFixed(1)} {t('v2.inventory.on_hand', 'kg on hand')} · {lowCount} {t('v2.inventory.running_low', 'running low')}</span>
+        <span className="muted">{shown.length}/{spools.length} {t('v2.inventory.spools', 'spools')} · {totalKg.toFixed(1)} {t('v2.inventory.on_hand', 'kg on hand')} · {lowCount} {t('v2.inventory.running_low', 'running low')}</span>
         <div className="inv-head-actions">
           <button className="btn btn--sm btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.inv.add_spool', '+ Add spool')}</button>
           <button className="btn btn--sm" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}>
             {selectMode ? t('common.cancel', 'Cancel') : t('v2.inventory.select', 'Select')}
           </button>
-          <select className="input" style={{ width: 'auto' }} value={material} onChange={(e) => setMaterial(e.target.value)}>
-            {materials.map((m) => <option key={m} value={m}>{m === 'all' ? t('v2.inventory.all_materials', 'All materials') : m}</option>)}
-          </select>
         </div>
+      </div>
+
+      <div className="inv-filters">
+        <input className="input" style={{ maxWidth: 240 }} placeholder={t('v2.inv.search_spools', 'Search name, colour, vendor, location…')} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <select className="input" style={{ width: 'auto' }} value={material} onChange={(e) => setMaterial(e.target.value)}>
+          {materials.map((m) => <option key={m} value={m}>{m === 'all' ? t('v2.inventory.all_materials', 'All materials') : m}</option>)}
+        </select>
+        <select className="input" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+          <option value="remaining:desc">{t('v2.inv.sort_most', 'Most remaining')}</option>
+          <option value="remaining:asc">{t('v2.inv.sort_least', 'Least remaining')}</option>
+          <option value="pct:asc">{t('v2.inv.sort_pct', 'Lowest %')}</option>
+          <option value="name:asc">{t('v2.inv.sort_name', 'Name A–Z')}</option>
+          <option value="material:asc">{t('v2.inv.sort_material', 'Material')}</option>
+        </select>
+        <button className={`chip${lowOnly ? ' chip--on' : ''}`} onClick={() => setLowOnly((v) => !v)}>{t('v2.inv.low_only', 'Low stock')}</button>
       </div>
 
       {adding && (
@@ -112,10 +145,11 @@ export function SpoolsTab() {
 
       {error && <div className="error">{error}</div>}
       {loading && !data && <p className="muted">{t('common.loading', 'Loading…')}</p>}
+      {!loading && shown.length === 0 && <p className="muted empty-note">{t('v2.inv.no_match', 'No spools match your filters.')}</p>}
 
       <div className="tile-grid">
         {shown.map((s) => {
-          const pct = s.initial_weight_g > 0 ? Math.max(0, Math.min(100, Math.round((s.remaining_weight_g / s.initial_weight_g) * 100))) : 0;
+          const pct = spoolPct(s);
           const low = pct < 15;
           const sel = selected.has(s.id);
           return (
