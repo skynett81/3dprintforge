@@ -1,7 +1,8 @@
 import { api } from '../api';
 import { useResource, useLivePrinters, useProjects } from '../hooks';
+import { useT } from '../i18n';
 import { readLive, isPrinting } from '../live';
-import type { Printer, Spool, Queue } from '../types';
+import type { Printer, Spool, Queue, ReorderRow, WasteStats } from '../types';
 
 function online(p: Printer) {
   const s = (p.status || p.state || '').toLowerCase();
@@ -9,10 +10,13 @@ function online(p: Printer) {
 }
 function temp(v: number | null) { return v == null ? '—' : `${Math.round(v)}°`; }
 
-export function DashboardPanel() {
+export function DashboardPanel({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const t = useT();
   const { data: printers } = useResource<Printer[]>(api.listPrinters);
   const { data: spools } = useResource<Spool[]>(api.listSpools);
   const { data: queues } = useResource<Queue[]>(api.listQueues);
+  const { data: reorder } = useResource<ReorderRow[]>(api.getReorder, 30000);
+  const { data: waste } = useResource<WasteStats>(api.getWasteStats, 30000);
   const { projects } = useProjects();
   const { live, connected } = useLivePrinters();
 
@@ -24,29 +28,32 @@ export function DashboardPanel() {
   const kg = sp.reduce((a, s) => a + (s.remaining_weight_g || 0), 0) / 1000;
   const low = sp.filter((s) => s.initial_weight_g > 0 && s.remaining_weight_g / s.initial_weight_g < 0.15).length;
   const pending = qs.reduce((a, q) => a + Math.max(0, q.item_count - q.completed_count), 0);
+  const belowTarget = (reorder ?? []).filter((r) => r.below_target).length;
 
   return (
     <div>
       <div className="panel-head">
         <div>
-          <h2 className="panel-title">Dashboard</h2>
-          <p className="muted sub">Farm overview across fleet, filament, queue and production</p>
+          <h2 className="panel-title">{t('v2.dash.title', 'Dashboard')}</h2>
+          <p className="muted sub">{t('v2.dash.subtitle', 'Farm overview — click a card to jump in')}</p>
         </div>
         <span className={`live-pill${connected ? ' live-pill--on' : ''}`}>
-          <span className="live-dot" />{connected ? 'Live' : 'Connecting…'}
+          <span className="live-dot" />{connected ? t('v2.fleet.live', 'Live') : t('v2.fleet.connecting', 'Connecting…')}
         </span>
       </div>
 
-      <div className="kpis kpis--5">
-        <Kpi label="Printers online" value={`${pr.filter(online).length}/${pr.length}`} />
-        <Kpi label="Printing now" value={String(printing)} accent="blue" />
-        <Kpi label="Filament" value={`${kg.toFixed(1)} kg`} sub={`${low} low`} />
-        <Kpi label="Queue pending" value={String(pending)} />
-        <Kpi label="Active projects" value={String(projects.length)} accent="teal" />
+      <div className="kpis kpis--dash">
+        <Kpi label={t('v2.dash.online', 'Printers online')} value={`${pr.filter(online).length}/${pr.length}`} onClick={() => onNavigate?.('fleet')} />
+        <Kpi label={t('v2.dash.printing', 'Printing now')} value={String(printing)} accent="blue" onClick={() => onNavigate?.('fleet')} />
+        <Kpi label={t('v2.dash.queue', 'Queue pending')} value={String(pending)} onClick={() => onNavigate?.('queue')} />
+        <Kpi label={t('v2.dash.filament', 'Filament')} value={`${kg.toFixed(1)} kg`} sub={`${low} ${t('v2.dash.low', 'low')}`} onClick={() => onNavigate?.('inventory')} />
+        <Kpi label={t('v2.dash.reorder', 'To reorder')} value={String(belowTarget)} accent={belowTarget > 0 ? 'blue' : undefined} onClick={() => onNavigate?.('supply')} />
+        <Kpi label={t('v2.dash.waste', 'Waste cost')} value={waste ? `${Math.round(waste.total_cost)} kr` : '—'} onClick={() => onNavigate?.('waste')} />
+        <Kpi label={t('v2.dash.projects', 'Active projects')} value={String(projects.length)} accent="teal" onClick={() => onNavigate?.('production')} />
       </div>
 
       <section className="card">
-        <div className="card-title">Live fleet</div>
+        <div className="card-title">{t('v2.dash.live_fleet', 'Live fleet')}</div>
         <div className="live-list">
           {pr.map((p) => {
             const l = readLive(live[p.id]);
@@ -67,20 +74,21 @@ export function DashboardPanel() {
               </div>
             );
           })}
-          {pr.length === 0 && <p className="muted">No printers.</p>}
+          {pr.length === 0 && <p className="muted">{t('v2.dash.no_printers', 'No printers.')}</p>}
         </div>
       </section>
     </div>
   );
 }
 
-function Kpi({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: 'teal' | 'blue' | 'green' }) {
-  return (
-    <div className="kpi">
+function Kpi({ label, value, sub, accent, onClick }: { label: string; value: string; sub?: string; accent?: 'teal' | 'blue' | 'green'; onClick?: () => void }) {
+  const inner = (
+    <>
       <div className="kpi-label">{label}</div>
-      <div className={`kpi-value${accent ? ` kpi-value--${accent}` : ''}`}>
-        {value}{sub && <span className="kpi-sub"> {sub}</span>}
-      </div>
-    </div>
+      <div className={`kpi-value${accent ? ` kpi-value--${accent}` : ''}`}>{value}{sub && <span className="kpi-sub"> {sub}</span>}</div>
+    </>
   );
+  return onClick
+    ? <button className="kpi kpi--click" onClick={onClick}>{inner}</button>
+    : <div className="kpi">{inner}</div>;
 }

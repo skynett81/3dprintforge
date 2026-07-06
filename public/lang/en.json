@@ -97,6 +97,20 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "dash": {
+      "title": "Dashboard",
+      "subtitle": "Farm overview — click a card to jump in",
+      "online": "Printers online",
+      "printing": "Printing now",
+      "queue": "Queue pending",
+      "filament": "Filament",
+      "low": "low",
+      "reorder": "To reorder",
+      "waste": "Waste cost",
+      "projects": "Active projects",
+      "live_fleet": "Live fleet",
+      "no_printers": "No printers."
+    },
     "waste": {
       "title": "Waste",
       "subtitle": "Filament wasted to purge, colour changes and failures",

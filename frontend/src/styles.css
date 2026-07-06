@@ -307,6 +307,9 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .temp-k { color: var(--faint); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 3px; }
 
 .kpis--5 { grid-template-columns: repeat(5, 1fr); margin-top: 18px; }
+.kpis--dash { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 18px; }
+.kpi--click { text-align: left; cursor: pointer; font: inherit; color: inherit; transition: border-color 0.15s, transform 0.15s; }
+.kpi--click:hover { border-color: var(--accent); transform: translateY(-1px); }
 
 .live-list { display: flex; flex-direction: column; }
 .live-row {

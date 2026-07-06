@@ -94,7 +94,7 @@ export function App() {
       </aside>
 
       <main className="main">
-        {panel === 'dashboard' && <DashboardPanel />}
+        {panel === 'dashboard' && <DashboardPanel onNavigate={(id) => setPanel(id as PanelId)} />}
         {panel === 'production' && <ProductionPanel />}
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel />}
