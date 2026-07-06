@@ -12,8 +12,10 @@ afterEach(() => { vi.restoreAllMocks(); });
 
 describe('SpoolDrawer', () => {
   it('saves edited remaining weight to the spool endpoint', async () => {
+    // The drawer fetches the spool timeline on mount, so return an array by
+    // default; the save call is a separate PUT we assert on below.
     const fetchMock = vi.fn((_url: string, _opts?: RequestInit) =>
-      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ ok: true }) } as Response));
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) } as Response));
     vi.stubGlobal('fetch', fetchMock);
 
     render(<SpoolDrawer spool={spool} onClose={() => {}} onChanged={() => {}} />);
@@ -21,10 +23,10 @@ describe('SpoolDrawer', () => {
     fireEvent.change(remaining, { target: { value: '450' } });
     fireEvent.click(screen.getByText('Save'));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [url, opts] = fetchMock.mock.calls[0];
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, o]) => (o as RequestInit)?.method === 'PUT')).toBe(true));
+    const putCall = fetchMock.mock.calls.find(([, o]) => (o as RequestInit)?.method === 'PUT')!;
+    const [url, opts] = putCall;
     expect(url).toBe('/api/inventory/spools/24');
-    expect((opts as RequestInit).method).toBe('PUT');
-    expect(JSON.parse(String(opts?.body)).remaining_weight_g).toBe(450);
+    expect(JSON.parse(String((opts as RequestInit)?.body)).remaining_weight_g).toBe(450);
   });
 });

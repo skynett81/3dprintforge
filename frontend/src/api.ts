@@ -76,6 +76,7 @@ export const api = {
   deleteLocation: (id: number) => req<{ ok: boolean }>(`/api/inventory/locations/${id}`, { method: 'DELETE' }),
   adjustSpoolStock: (id: number, body: { delta_g?: number; new_remaining_g?: number; reason?: string }) =>
     req<{ ok?: boolean }>(`/api/inventory/spools/${id}/adjust`, { method: 'POST', body: JSON.stringify(body) }),
+  getSpoolTimeline: (id: number): Promise<import('./types').SpoolEvent[]> => req(`/api/inventory/spools/${id}/timeline`),
   getStockActivity: (): Promise<import('./types').StockMovement[]> => req('/api/inventory/stock-activity?limit=40'),
   getInventoryStats: (): Promise<import('./types').InventoryStats> => req('/api/inventory/stats'),
   getReorder: (): Promise<ReorderRow[]> => req<ReorderRow[]>('/api/inventory/reorder'),

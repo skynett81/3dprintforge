@@ -1,8 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { Spool } from '../types';
+import type { Spool, SpoolEvent } from '../types';
+
+function fdate(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso.replace(' ', 'T'));
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function fdatetime(iso: string) {
+  const d = new Date(iso.replace(' ', 'T'));
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 function hex(s: Spool) {
   const h = (s.color_hex || '').replace(/^#/, '');
@@ -24,6 +34,23 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [adjDelta, setAdjDelta] = useState('');
   const [adjReason, setAdjReason] = useState('');
+  const [events, setEvents] = useState<SpoolEvent[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.getSpoolTimeline(spool.id).then((e) => { if (alive) setEvents(e); }).catch(() => { if (alive) setEvents([]); });
+    return () => { alive = false; };
+  }, [spool.id]);
+
+  const meta: [string, string | null][] = [
+    [t('v2.inventory.lot', 'Lot / batch'), spool.lot_number || null],
+    [t('v2.inventory.purchased', 'Purchased'), fdate(spool.purchase_date)],
+    [t('v2.inventory.expiry', 'Expires'), fdate(spool.expiry_date)],
+    [t('v2.inventory.last_dried', 'Last dried'), fdate(spool.last_dried_at)],
+    [t('v2.inventory.k_value', 'K-value'), spool.pressure_advance_k != null ? String(spool.pressure_advance_k) : null],
+    [t('v2.inventory.short_id', 'ID'), spool.short_id || null],
+  ];
+  const shownMeta = meta.filter(([, v]) => v);
 
   const pct = spool.initial_weight_g > 0
     ? Math.max(0, Math.min(100, Math.round((remaining / spool.initial_weight_g) * 100)))
@@ -98,6 +125,35 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
             <input className="input" placeholder={t('v2.inventory.adjust_reason', 'Reason')} value={adjReason} onChange={(e) => setAdjReason(e.target.value)} />
             <button className="btn btn--sm" disabled={busy || !adjDelta} onClick={adjust}>{t('v2.inventory.apply', 'Apply')}</button>
           </div>
+        </div>
+
+        {shownMeta.length > 0 && (
+          <div className="drawer-meta">
+            {shownMeta.map(([k, v]) => (
+              <div className="drawer-meta-row" key={k}><span className="muted">{k}</span><span className="tnum">{v}</span></div>
+            ))}
+          </div>
+        )}
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.inventory.history', 'History')}</div>
+          {events == null ? (
+            <p className="muted">{t('common.loading', 'Loading…')}</p>
+          ) : events.length === 0 ? (
+            <p className="muted empty-note" style={{ margin: 0 }}>{t('v2.inventory.no_history', 'No recorded events yet.')}</p>
+          ) : (
+            <ul className="timeline">
+              {events.slice(0, 40).map((e) => (
+                <li className="timeline-item" key={e.id}>
+                  <span className="timeline-dot" />
+                  <div className="timeline-body">
+                    <span className="timeline-type">{e.event_type}{e.details ? ` · ${e.details}` : ''}</span>
+                    <span className="muted timeline-when">{fdatetime(e.timestamp)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </aside>
     </div>
