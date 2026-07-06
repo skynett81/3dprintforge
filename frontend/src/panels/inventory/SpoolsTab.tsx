@@ -5,7 +5,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../toast';
 import { toggle } from '../../selection';
 import { SpoolDrawer } from '../../components/SpoolDrawer';
-import type { Spool } from '../../types';
+import type { Spool, FilamentProfile, StorageLocation } from '../../types';
 
 function hex(s: Spool) {
   const h = (s.color_hex || '').replace(/^#/, '');
@@ -20,6 +20,10 @@ export function SpoolsTab() {
   const [openId, setOpenId] = useState<number | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({ profile_id: '', weight: '1000', location: '' });
+  const { data: profiles } = useResource<FilamentProfile[]>(api.listFilaments, 0);
+  const { data: locations } = useResource<StorageLocation[]>(api.listLocations, 0);
 
   const spools = useMemo(() => (data ?? []).filter((s) => !s.archived), [data]);
   const materials = useMemo(
@@ -49,12 +53,22 @@ export function SpoolsTab() {
     const loc = prompt(t('v2.inventory.relocate_to', 'Move selected spools to location:'));
     if (loc && loc.trim()) bulk('relocate', { location: loc.trim() });
   }
+  async function addSpool() {
+    if (!addForm.profile_id) return;
+    const weight = Number(addForm.weight) || 1000;
+    try {
+      await api.addSpool({ filament_profile_id: Number(addForm.profile_id), initial_weight_g: weight, remaining_weight_g: weight, location: addForm.location || null });
+      toast(t('v2.inv.spool_added', 'Spool added'), 'success');
+      setAdding(false); setAddForm({ profile_id: '', weight: '1000', location: '' }); reload();
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   return (
     <div>
       <div className="tab-toolbar">
         <span className="muted">{spools.length} {t('v2.inventory.spools', 'spools')} · {totalKg.toFixed(1)} {t('v2.inventory.on_hand', 'kg on hand')} · {lowCount} {t('v2.inventory.running_low', 'running low')}</span>
         <div className="inv-head-actions">
+          <button className="btn btn--sm btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.inv.add_spool', '+ Add spool')}</button>
           <button className="btn btn--sm" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}>
             {selectMode ? t('common.cancel', 'Cancel') : t('v2.inventory.select', 'Select')}
           </button>
@@ -63,6 +77,27 @@ export function SpoolsTab() {
           </select>
         </div>
       </div>
+
+      {adding && (
+        <section className="card">
+          <div className="add-form">
+            <label className="field grow"><span className="field-label">{t('v2.inv.filament', 'Filament')}</span>
+              <select className="input" value={addForm.profile_id} onChange={(e) => setAddForm({ ...addForm, profile_id: e.target.value })}>
+                <option value="">{t('v2.inv.pick_profile', 'Pick a filament…')}</option>
+                {(profiles ?? []).slice(0, 300).map((p) => <option key={p.id} value={p.id}>{p.name}{p.color_name ? ` — ${p.color_name}` : ''}</option>)}
+              </select>
+            </label>
+            <label className="field"><span className="field-label">{t('v2.inv.weight', 'Weight (g)')}</span><input className="input" type="number" min={1} value={addForm.weight} onChange={(e) => setAddForm({ ...addForm, weight: e.target.value })} /></label>
+            <label className="field"><span className="field-label">{t('v2.inv.location', 'Location')}</span>
+              <select className="input" value={addForm.location} onChange={(e) => setAddForm({ ...addForm, location: e.target.value })}>
+                <option value="">—</option>
+                {(locations ?? []).map((l) => <option key={l.id} value={l.name}>{l.name}</option>)}
+              </select>
+            </label>
+            <button className="btn btn--primary" onClick={addSpool}>{t('v2.inv.add_btn', 'Add')}</button>
+          </div>
+        </section>
+      )}
 
       {selectMode && selected.size > 0 && (
         <div className="bulk-bar">
