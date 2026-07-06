@@ -83,6 +83,44 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface HardwareItem {
+  id: number;
+  category: string;
+  name: string;
+  brand?: string | null;
+  model?: string | null;
+  compatible_printers?: string | null;
+  purchase_price?: number | null;
+  rating?: number | null;
+}
+
+export interface LibraryFile {
+  id: number;
+  filename: string;
+  original_name: string;
+  file_type: string;
+  file_size: number;
+  category?: string | null;
+  print_count: number;
+  last_printed?: string | null;
+  estimated_filament_g?: number | null;
+  added_at: string;
+}
+
+export interface KbPrinter {
+  id: number;
+  model: string;
+  full_name: string;
+  release_year?: number | null;
+  build_volume?: string | null;
+  max_speed?: number | null;
+  has_ams?: number;
+  has_enclosure?: number;
+  has_camera?: number;
+  price_usd?: number | null;
+  wiki_url?: string | null;
+}
+
 export interface AppError {
   id: number;
   printer_id: string;

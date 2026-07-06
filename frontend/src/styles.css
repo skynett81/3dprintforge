@@ -80,6 +80,16 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Library */
+.lib-list { display: flex; flex-direction: column; }
+.lib-head, .lib-row { display: grid; grid-template-columns: 2.4fr 0.8fr 0.8fr 0.6fr 0.9fr; align-items: center; gap: 12px; }
+.lib-head { padding: 0 2px 8px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.lib-row { padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.lib-name { font-weight: 500; min-width: 0; }
+
+/* Knowledge base */
+.kb-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
 /* Errors */
 .chk { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--muted); }
 .err-list { display: flex; flex-direction: column; }

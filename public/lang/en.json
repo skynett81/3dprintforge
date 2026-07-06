@@ -97,6 +97,31 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "hw": {
+      "title": "Hardware",
+      "items": "accessories & parts",
+      "none": "No hardware tracked yet.",
+      "for": "For"
+    },
+    "library": {
+      "title": "Library",
+      "files": "files",
+      "none": "No files in the library.",
+      "name": "File",
+      "type": "Type",
+      "size": "Size",
+      "prints": "Prints",
+      "last": "Last printed"
+    },
+    "kb": {
+      "title": "Knowledge base",
+      "printers": "printers",
+      "search": "Search printers…",
+      "enclosed": "enclosed",
+      "camera": "camera",
+      "wiki": "Wiki →",
+      "no_match": "No printers match."
+    },
     "errors": {
       "title": "Errors",
       "unacked": "unacknowledged",

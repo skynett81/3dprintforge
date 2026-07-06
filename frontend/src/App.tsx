@@ -18,12 +18,15 @@ import { WastePanel } from './panels/WastePanel';
 import { ActivityPanel } from './panels/ActivityPanel';
 import { ErrorsPanel } from './panels/ErrorsPanel';
 import { AchievementsPanel } from './panels/AchievementsPanel';
+import { HardwarePanel } from './panels/HardwarePanel';
+import { LibraryPanel } from './panels/LibraryPanel';
+import { KnowledgePanel } from './panels/KnowledgePanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'history' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -36,6 +39,9 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
   { id: 'supply', label: 'Supply', icon: <IconBox /> },
   { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
+  { id: 'hardware', label: 'Hardware', icon: <IconChip /> },
+  { id: 'library', label: 'Library', icon: <IconFiles /> },
+  { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
   { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
   { id: 'costs', label: 'Costs', icon: <IconCoins /> },
   { id: 'waste', label: 'Waste', icon: <IconTrash /> },
@@ -115,6 +121,9 @@ export function App() {
         {panel === 'activity' && <ActivityPanel />}
         {panel === 'errors' && <ErrorsPanel />}
         {panel === 'achievements' && <AchievementsPanel />}
+        {panel === 'hardware' && <HardwarePanel />}
+        {panel === 'library' && <LibraryPanel />}
+        {panel === 'knowledge' && <KnowledgePanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
       </main>
@@ -138,6 +147,15 @@ function IconSpool() {
 }
 function IconQueue() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
+}
+function IconChip() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" /></svg>;
+}
+function IconFiles() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><polyline points="13 2 13 9 20 9" /></svg>;
+}
+function IconBook() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>;
 }
 function IconAlert() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
