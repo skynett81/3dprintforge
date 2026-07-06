@@ -90,6 +90,25 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "supply": {
+      "title": "Supply",
+      "below_target": "below target",
+      "soonest": "soonest runout",
+      "days": "days",
+      "day": "day",
+      "reorder": "Reorder — what to buy",
+      "no_reorder": "Nothing to reorder.",
+      "material": "Material",
+      "on_hand": "On hand",
+      "target": "Target",
+      "shortfall": "Shortfall",
+      "buy": "Buy",
+      "spools": "spools",
+      "low": "low",
+      "forecast": "Consumption forecast",
+      "no_forecast": "Not enough usage data yet.",
+      "no_use": "no recent use"
+    },
     "notify": {
       "title": "Notifications",
       "empty": "No notifications yet."

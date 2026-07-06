@@ -83,6 +83,31 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface ReorderRow {
+  material: string;
+  target_g: number;
+  on_hand_g: number;
+  queue_demand_g: number;
+  shortfall_g: number;
+  spools_on_hand: number;
+  suggested_spools: number;
+  below_target: boolean;
+}
+
+export interface MaterialForecast {
+  material: string;
+  total_used_g: number;
+  active_days: number;
+  avg_daily_g: number;
+  in_stock_g: number;
+  spool_count: number;
+}
+
+export interface Predictions {
+  by_material: MaterialForecast[];
+  per_spool: unknown[];
+}
+
 export interface NotifChannel { enabled?: boolean; [k: string]: unknown; }
 export interface NotificationConfig {
   enabled?: boolean;

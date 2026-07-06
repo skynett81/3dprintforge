@@ -1,4 +1,4 @@
-import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification, NotificationConfig } from './types';
+import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification, NotificationConfig, ReorderRow, Predictions } from './types';
 
 // Thin typed client over the real 3DPrintForge REST API (proxied by Vite).
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
@@ -49,6 +49,8 @@ export const api = {
       body: JSON.stringify({ action, ...extra }),
     }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
+  getReorder: (): Promise<ReorderRow[]> => req<ReorderRow[]>('/api/inventory/reorder'),
+  getPredictions: (): Promise<Predictions> => req<Predictions>('/api/inventory/predictions'),
   updateSpool: (id: number, body: Partial<Pick<Spool, 'remaining_weight_g' | 'cost' | 'location'>>) =>
     req<{ ok: boolean }>(`/api/inventory/spools/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   archiveSpool: (id: number, archived = true) =>

@@ -12,9 +12,10 @@ import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
+import { SupplyPanel } from './panels/SupplyPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue' | 'analytics' | 'history' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue' | 'supply' | 'analytics' | 'history' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -22,6 +23,7 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
+  { id: 'supply', label: 'Supply', icon: <IconBox /> },
   { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
   { id: 'history', label: 'History', icon: <IconClock /> },
   { id: 'settings', label: 'Settings', icon: <IconGear /> },
@@ -87,6 +89,7 @@ export function App() {
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'inventory' && <InventoryPanel />}
         {panel === 'queue' && <QueuePanel />}
+        {panel === 'supply' && <SupplyPanel />}
         {panel === 'analytics' && <AnalyticsPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
@@ -111,6 +114,9 @@ function IconSpool() {
 }
 function IconQueue() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
+}
+function IconBox() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
 }
 function IconChart() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
