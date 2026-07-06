@@ -36,6 +36,51 @@ export interface Printer {
   status?: string | null;
 }
 
+export interface FilamentProfile {
+  id: number;
+  name: string;
+  material: string;
+  color_name?: string | null;
+  color_hex?: string | null;
+  vendor_id?: number | null;
+  density?: number | null;
+  diameter?: number | null;
+  nozzle_temp_min?: number | null;
+  nozzle_temp_max?: number | null;
+}
+
+export interface StorageLocation {
+  id: number;
+  name: string;
+  description?: string | null;
+  min_spools?: number | null;
+  max_spools?: number | null;
+  min_weight_kg?: number | null;
+}
+
+export interface StockMovement {
+  source: string;
+  type: string;
+  delta_g: number;
+  reason?: string | null;
+  ref_type?: string | null;
+  ref_id?: number | null;
+  location_from?: string | null;
+  location_to?: string | null;
+  timestamp: string;
+  spool_label?: string | null;
+  spool_color?: string | null;
+}
+
+export interface InventoryStats {
+  total_spools: number;
+  total_remaining_g: number;
+  total_used_g: number;
+  total_cost: number;
+  low_stock_count: number;
+  by_material: { material: string; count: number; remaining_g: number }[];
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;

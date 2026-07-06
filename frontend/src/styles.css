@@ -196,6 +196,9 @@ a.hs-badge { text-decoration: none; }
 .fc-days { white-space: nowrap; }
 .fc-rate { white-space: nowrap; font-size: 0.76rem; }
 
+/* Inventory tabs */
+.tab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 4px; flex-wrap: wrap; }
+
 /* Inventory bulk selection */
 .inv-head-actions { display: flex; align-items: flex-end; gap: 12px; }
 .bulk-bar {
