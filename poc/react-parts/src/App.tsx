@@ -4,8 +4,10 @@ import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
+import { AnalyticsPanel } from './panels/AnalyticsPanel';
+import { HistoryPanel } from './panels/HistoryPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue' | 'analytics' | 'history';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -13,6 +15,8 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
+  { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
+  { id: 'history', label: 'History', icon: <IconClock /> },
 ];
 
 export function App() {
@@ -51,6 +55,8 @@ export function App() {
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'inventory' && <InventoryPanel />}
         {panel === 'queue' && <QueuePanel />}
+        {panel === 'analytics' && <AnalyticsPanel />}
+        {panel === 'history' && <HistoryPanel />}
       </main>
     </div>
   );
@@ -70,4 +76,10 @@ function IconSpool() {
 }
 function IconQueue() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
+}
+function IconChart() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
+}
+function IconClock() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>;
 }

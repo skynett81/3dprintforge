@@ -69,3 +69,31 @@ export interface BedHold {
   queue_id?: number | null;
   held_at?: string;
 }
+
+export interface HistoryRow {
+  id: number;
+  printer_id: string;
+  filename: string;
+  status: string;
+  started_at: string;
+  finished_at?: string | null;
+  duration_seconds?: number;
+  filament_used_g?: number;
+  filament_type?: string | null;
+  filament_color?: string | null;
+  layer_count?: number;
+}
+
+export interface Stats {
+  total_prints: number;
+  completed_prints: number;
+  failed_prints: number;
+  success_rate: number;
+  total_hours: number;
+  total_filament_g: number;
+  avg_print_minutes: number;
+  estimated_cost_nok?: number;
+  monthly_trends: { month: string; total: number; completed: number; total_seconds: number; total_filament_g: number }[];
+  filament_by_type: { type: string; grams: number; prints: number }[];
+  top_files: { filename: string; count: number; completed: number }[];
+}
