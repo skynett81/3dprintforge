@@ -94,6 +94,15 @@
       "title": "Notifications",
       "empty": "No notifications yet."
     },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Notification channels",
+      "notifications": "Notifications",
+      "enable_all": "Enable notifications",
+      "configured": "configured",
+      "not_configured": "not configured",
+      "note": "Credentials are configured in the classic UI; here you enable/disable channels."
+    },
     "history": {
       "title": "History",
       "recent_prints": "recent prints",

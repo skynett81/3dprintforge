@@ -80,6 +80,23 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Toggle switch + settings channels */
+.toggle { width: 40px; height: 23px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); position: relative; cursor: pointer; padding: 0; transition: background 0.15s, border-color 0.15s; flex: none; }
+.toggle--on { background: var(--accent); border-color: var(--accent); }
+.toggle:disabled { opacity: 0.35; cursor: not-allowed; }
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: var(--text); transition: transform 0.16s; }
+.toggle--on .toggle-knob { transform: translateX(17px); background: var(--accent-ink); }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle-row--main { padding: 4px 0 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 8px; font-weight: 550; }
+.chan-list { display: flex; flex-direction: column; }
+.chan-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border-soft); }
+.chan-row:first-child { border-top: none; }
+.chan-name { text-transform: capitalize; font-weight: 500; }
+.chan-status { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.chan-status--ok { color: var(--green); }
+.chan-status--off { color: var(--faint); }
+
 /* Toasts */
 .toast-stack { position: fixed; top: 18px; right: 18px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
 .toast {

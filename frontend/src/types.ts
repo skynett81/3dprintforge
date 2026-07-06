@@ -83,6 +83,13 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface NotifChannel { enabled?: boolean; [k: string]: unknown; }
+export interface NotificationConfig {
+  enabled?: boolean;
+  channels: Record<string, NotifChannel>;
+  [k: string]: unknown;
+}
+
 export interface AppNotification {
   id: number;
   timestamp: string;

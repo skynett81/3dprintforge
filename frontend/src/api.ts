@@ -1,4 +1,4 @@
-import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification } from './types';
+import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification, NotificationConfig } from './types';
 
 // Thin typed client over the real 3DPrintForge REST API (proxied by Vite).
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
@@ -66,6 +66,9 @@ export const api = {
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getAuthStatus: (): Promise<AuthStatus> => req<AuthStatus>('/api/auth/status'),
   listNotifications: (): Promise<AppNotification[]> => req<AppNotification[]>('/api/notifications/log?limit=30'),
+  getNotificationConfig: (): Promise<NotificationConfig> => req<NotificationConfig>('/api/notifications/config'),
+  saveNotificationConfig: (cfg: NotificationConfig) =>
+    req<{ ok: boolean }>('/api/notifications/config', { method: 'PUT', body: JSON.stringify(cfg) }),
   getStatistics: (): Promise<Stats> => req<Stats>('/api/statistics'),
   listHistory: (): Promise<HistoryRow[]> => req<HistoryRow[]>('/api/history?limit=40'),
 };

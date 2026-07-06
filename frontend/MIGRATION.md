@@ -118,10 +118,14 @@ deep-link `/v2/<panel>` → delete the vanilla component.
 - Remaining: porting the remaining interactive panels (Settings,
   Calibration, etc.).
 
-### Phase 4 — Low-churn / heavy panels (large, optional / last)
-- The 51 Model Forge generators and deep calibration wizards are stable and
-  expensive to port. Either port last, wrap the existing vanilla code in an
-  iframe/mount under `/v2`, or leave on `/` indefinitely. **Explicitly
+### Phase 4 — Low-churn / heavy panels (STARTED, mostly optional)
+- **Settings (notifications)** ported: a Settings panel toggles notification
+  channels on/off (round-trips the masked config via
+  GET/PUT `/api/notifications/config` — never handles raw secrets, which
+  stay editable in the classic UI). `isChannelConfigured` is unit-tested.
+- The 51 Model Forge generators and deep calibration wizards remain stable
+  and expensive to port. Either port last, wrap the existing vanilla code in
+  an iframe/mount under `/v2`, or leave on `/` indefinitely. **Explicitly
   optional** — parity here buys little.
 
 ### Phase 5 — Cutover (small, only when ready)
