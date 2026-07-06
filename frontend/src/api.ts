@@ -49,6 +49,10 @@ export const api = {
       body: JSON.stringify({ action, ...extra }),
     }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
+  updateSpool: (id: number, body: Partial<Pick<Spool, 'remaining_weight_g' | 'cost' | 'location'>>) =>
+    req<{ ok: boolean }>(`/api/inventory/spools/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  archiveSpool: (id: number, archived = true) =>
+    req<{ ok: boolean }>(`/api/inventory/spools/${id}/archive`, { method: 'PUT', body: JSON.stringify({ archived }) }),
   listQueues: (): Promise<Queue[]> => req<Queue[]>('/api/queue'),
   getQueueItems: (queueId: number) => req<QueueItem[]>(`/api/queue/${queueId}/items`),
   updateQueueItem: (itemId: number, body: Partial<Pick<QueueItem, 'copies' | 'priority' | 'status'>>) =>

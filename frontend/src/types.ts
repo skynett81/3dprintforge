@@ -46,6 +46,7 @@ export interface Spool {
   remaining_weight_g: number;
   initial_weight_g: number;
   used_weight_g?: number;
+  cost?: number | null;
   location?: string | null;
   printer_id?: string | null;
   archived?: number;

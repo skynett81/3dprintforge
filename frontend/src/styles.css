@@ -103,6 +103,8 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 }
 @keyframes slidein { from { transform: translateX(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 .drawer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.drawer-title-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.drawer-fields { display: flex; flex-direction: column; gap: 12px; }
 .drawer-title { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
 .drawer-state { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .drawer-prog { display: flex; flex-direction: column; gap: 6px; }

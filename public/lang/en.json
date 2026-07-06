@@ -55,6 +55,22 @@
       "priority": "Priority",
       "pause": "Pause queue",
       "resume": "Resume queue"
+    },
+    "inventory": {
+      "title": "Inventory",
+      "spools": "spools",
+      "on_hand": "kg on hand",
+      "running_low": "running low",
+      "material": "Material",
+      "all_materials": "All materials",
+      "unknown_vendor": "Unknown vendor",
+      "left": "left",
+      "of": "of",
+      "remaining": "Remaining (g)",
+      "cost": "Cost",
+      "location": "Location",
+      "archive": "Archive",
+      "confirm_archive": "Archive this spool?"
     }
   },
   "nav": {
