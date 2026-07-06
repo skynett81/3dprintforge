@@ -61,11 +61,12 @@ Browser ── /v2 ─────► React SPA (public/v2, built by Vite) ┘  
 
 ## 5. Phased plan
 
-### Phase 0 — Foundation (done in PoC / small)
+### Phase 0 — Foundation (DONE)
 - Vite + React + TS scaffold, typed API client, `useResource`/live hooks,
-  design tokens, coexistence at `/v2`. **Already built.**
-- Remaining: promote `poc/react-parts/` → `frontend/`, wire `build:web` into
-  the root `package.json`, add a Vitest + React Testing Library setup.
+  design tokens, coexistence at `/v2`. **Built.**
+- Promoted `poc/react-parts/` → `frontend/`; `npm run build:web` (root) builds
+  it into `public/v2`; Vitest + React Testing Library set up (`npm run web:test`,
+  10 tests green). **Done.**
 
 ### Phase 1 — CI & desktop integration (small–medium)
 - CI builds `public/v2` on every release; Electron packaging includes it.

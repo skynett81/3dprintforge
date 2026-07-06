@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -11,7 +12,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react()],
   base: command === 'build' ? '/v2/' : '/',
   build: {
-    outDir: '../../public/v2',
+    outDir: '../public/v2',
     emptyOutDir: true,
   },
   server: {
@@ -21,5 +22,10 @@ export default defineConfig(({ command }) => ({
       '/api': { target, changeOrigin: true, secure: false },
       '/ws': { target, changeOrigin: true, secure: false, ws: true },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
   },
 }));

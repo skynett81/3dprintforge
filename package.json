@@ -38,7 +38,10 @@
     "electron:build": "electron-builder",
     "electron:build:linux": "electron-builder --linux",
     "electron:build:mac": "electron-builder --mac",
-    "electron:build:win": "electron-builder --win"
+    "electron:build:win": "electron-builder --win",
+  "build:web": "npm --prefix frontend install --no-audit --no-fund && npm --prefix frontend run build",
+  "web:dev": "npm --prefix frontend run dev",
+  "web:test": "npm --prefix frontend test"
   },
   "dependencies": {
     "@3mfconsortium/lib3mf": "^2.5.0-fix.2",

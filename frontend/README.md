@@ -43,7 +43,7 @@ The server's existing static handler (`server/index.js` maps any path to
 current UI, under the existing CSP, sharing the same `/api` and `/ws`.
 
 ```bash
-npm run build                 # → ../../public/v2
+npm run build                 # → ../public/v2
 # with the normal server running:
 #   open http://localhost:3000/v2/
 ```
