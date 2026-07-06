@@ -339,6 +339,9 @@
       </div>
     </div>`;
 
+    // Production / Parts (batch quantity tracking)
+    html += _renderPartsSection(p);
+
     // Timeline
     html += `<div class="card ord-section">
       <div class="card-title">${_tl('orders.timeline', 'Timeline')}</div>`;
@@ -358,6 +361,75 @@
 
     container.innerHTML = html;
   }
+
+  function _renderPartsSection(p) {
+    const parts = p.parts || [];
+    const s = p.parts_summary || { total: 0, closed: 0, target_qty: 0, completed_qty: 0 };
+    let html = `<div class="card ord-section">
+      <div class="card-title">${_tl('orders.production', 'Production')} ${parts.length ? `<span class="text-muted" style="font-weight:400;font-size:0.8rem">— ${s.closed}/${s.total} ${_tl('orders.parts_done', 'parts done')}, ${s.completed_qty}/${s.target_qty}</span>` : ''}</div>`;
+
+    if (parts.length) {
+      html += `<table class="hs-table" style="width:100%"><thead><tr>
+        <th style="text-align:left">${_tl('orders.part', 'Part')}</th>
+        <th>${_tl('orders.progress', 'Progress')}</th>
+        <th>${_tl('orders.per_plate', 'Per plate')}</th>
+        <th></th></tr></thead><tbody>`;
+      for (const pt of parts) {
+        const pct = pt.target_qty > 0 ? Math.min(100, Math.round((pt.completed_qty / pt.target_qty) * 100)) : 0;
+        const closed = pt.state === 'closed';
+        html += `<tr>
+          <td style="text-align:left">${_esc(pt.name)} ${closed ? `<span class="hs-badge hs-badge-good">${_tl('orders.part_closed', 'done')}</span>` : ''}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;min-width:150px">
+              <div style="flex:1;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${closed ? 'var(--accent-green)' : 'var(--accent-blue)'}"></div></div>
+              <span style="font-size:0.72rem;white-space:nowrap">${pt.completed_qty}/${pt.target_qty}</span>
+            </div>
+          </td>
+          <td style="text-align:center">${pt.parts_per_plate}</td>
+          <td style="white-space:nowrap">
+            <button class="ce-secondary-btn" style="padding:3px 8px;font-size:0.72rem" title="${_tl('orders.credit_plate_hint', 'Record a finished plate')}" onclick="window._orderCreditPart(${pt.id})">+${_tl('orders.plate', 'plate')}</button>
+            <button class="ce-secondary-btn" style="padding:3px 8px;font-size:0.72rem" onclick="window._orderDeletePart(${pt.id})">✕</button>
+          </td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+    } else {
+      html += `<div class="ord-empty-note">${_tl('orders.no_parts', 'No parts yet — add one to track production quantity')}</div>`;
+    }
+
+    // Inline add form
+    html += `<div style="display:flex;gap:6px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
+      <div class="ce-field" style="flex:2;min-width:120px"><span class="ce-field-label">${_tl('orders.part_name', 'Part name')}</span><input type="text" class="ce-input" style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 10px" id="part-name"></div>
+      <div class="ce-field" style="flex:1;min-width:70px"><span class="ce-field-label">${_tl('orders.target_qty', 'Target')}</span><input type="number" min="1" class="ce-input" style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 10px" id="part-target" value="1"></div>
+      <div class="ce-field" style="flex:1;min-width:70px"><span class="ce-field-label">${_tl('orders.per_plate', 'Per plate')}</span><input type="number" min="1" class="ce-input" style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 10px" id="part-perplate" value="1"></div>
+      <button class="matrec-recalc-btn" style="margin-left:0" onclick="window._orderAddPart(${p.id})">${_tl('orders.add_part', 'Add part')}</button>
+    </div>`;
+
+    html += '</div>';
+    return html;
+  }
+
+  window._orderAddPart = async function(projectId) {
+    const name = document.getElementById('part-name')?.value?.trim();
+    if (!name) return;
+    const body = {
+      name,
+      target_qty: parseInt(document.getElementById('part-target')?.value, 10) || 1,
+      parts_per_plate: parseInt(document.getElementById('part-perplate')?.value, 10) || 1,
+    };
+    await fetch('/api/projects/' + projectId + '/parts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    _renderDetail(projectId);
+  };
+
+  window._orderCreditPart = async function(partId) {
+    await fetch('/api/projects/parts/' + partId + '/credit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (_activeProject) _renderDetail(_activeProject.id);
+  };
+
+  window._orderDeletePart = async function(partId) {
+    await fetch('/api/projects/parts/' + partId, { method: 'DELETE' });
+    if (_activeProject) _renderDetail(_activeProject.id);
+  };
 
   function _formField(id, label, value, type) {
     return `<div class="ce-field"><span class="ce-field-label">${_esc(label)}</span><input type="${type || 'text'}" class="ce-input" style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:8px 12px" id="order-${id}" value="${_esc(value)}"></div>`;

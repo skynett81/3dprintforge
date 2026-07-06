@@ -39,6 +39,7 @@ export function updateProject(id, updates) {
 export function deleteProject(id) {
   const db = getDb();
   db.prepare('DELETE FROM project_prints WHERE project_id = ?').run(id);
+  db.prepare('DELETE FROM project_parts WHERE project_id = ?').run(id);
   db.prepare('DELETE FROM projects WHERE id = ?').run(id);
 }
 
@@ -71,6 +72,79 @@ export function deleteProjectPrint(id) {
   db.prepare('DELETE FROM project_prints WHERE id = ?').run(id);
 }
 
+// ---- Project Parts (production model) ----
+
+// A Part is 'closed' once completed_qty reaches its target, else 'open'.
+function _partState(completedQty, targetQty) {
+  return completedQty >= targetQty ? 'closed' : 'open';
+}
+
+export function getProjectParts(projectId) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM project_parts WHERE project_id = ? ORDER BY created_at').all(projectId);
+}
+
+export function getProjectPart(id) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM project_parts WHERE id = ?').get(id);
+}
+
+export function addProjectPart(part) {
+  const db = getDb();
+  const target = Math.max(1, parseInt(part.target_qty, 10) || 1);
+  const perPlate = Math.max(1, parseInt(part.parts_per_plate, 10) || 1);
+  const completed = Math.max(0, parseInt(part.completed_qty, 10) || 0);
+  const result = db.prepare(`INSERT INTO project_parts
+    (project_id, name, target_qty, completed_qty, parts_per_plate, state, filename, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    part.project_id, part.name, target, completed, perPlate,
+    _partState(completed, target), part.filename || null, part.notes || null);
+  return Number(result.lastInsertRowid);
+}
+
+export function updateProjectPart(id, updates) {
+  const db = getDb();
+  const current = getProjectPart(id);
+  if (!current) return;
+  const fields = [];
+  const values = [];
+  for (const key of ['name', 'target_qty', 'completed_qty', 'parts_per_plate', 'filename', 'notes']) {
+    if (updates[key] !== undefined) { fields.push(`${key} = ?`); values.push(updates[key]); }
+  }
+  // Recompute state whenever the target or completed count changes, so a
+  // raised target reopens a closed part and vice versa.
+  if (updates.target_qty !== undefined || updates.completed_qty !== undefined) {
+    const target = updates.target_qty !== undefined ? updates.target_qty : current.target_qty;
+    const completed = updates.completed_qty !== undefined ? updates.completed_qty : current.completed_qty;
+    fields.push('state = ?'); values.push(_partState(completed, target));
+  }
+  if (updates.state !== undefined && updates.target_qty === undefined && updates.completed_qty === undefined) {
+    fields.push('state = ?'); values.push(updates.state);
+  }
+  if (fields.length === 0) return;
+  values.push(id);
+  db.prepare(`UPDATE project_parts SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
+// Credit a finished plate (or an explicit quantity) toward a part. Increments
+// completed_qty, auto-closes when the target is reached (overshoot allowed),
+// and returns the updated part row.
+export function creditProjectPart(id, qty) {
+  const db = getDb();
+  const part = getProjectPart(id);
+  if (!part) return null;
+  const add = Math.max(0, parseInt(qty, 10) || part.parts_per_plate || 1);
+  const completed = part.completed_qty + add;
+  db.prepare('UPDATE project_parts SET completed_qty = ?, state = ? WHERE id = ?')
+    .run(completed, _partState(completed, part.target_qty), id);
+  return getProjectPart(id);
+}
+
+export function deleteProjectPart(id) {
+  const db = getDb();
+  db.prepare('DELETE FROM project_parts WHERE id = ?').run(id);
+}
+
 // ---- Order Management ----
 
 export function getProjectWithDetails(id) {
@@ -89,6 +163,13 @@ export function getProjectWithDetails(id) {
   `).all(id);
   p.timeline = db.prepare('SELECT * FROM project_timeline WHERE project_id = ? ORDER BY timestamp DESC LIMIT 50').all(id);
   p.invoices = db.prepare('SELECT * FROM project_invoices WHERE project_id = ? ORDER BY created_at DESC').all(id);
+  p.parts = getProjectParts(id);
+  p.parts_summary = {
+    total: p.parts.length,
+    closed: p.parts.filter(pt => pt.state === 'closed').length,
+    target_qty: p.parts.reduce((s, pt) => s + pt.target_qty, 0),
+    completed_qty: p.parts.reduce((s, pt) => s + pt.completed_qty, 0),
+  };
   return p;
 }
 

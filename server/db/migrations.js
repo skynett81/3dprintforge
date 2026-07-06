@@ -2375,6 +2375,26 @@ export function runMigrations() {
         filename TEXT
       )`);
     }},
+    { version: 159, up: (db) => {
+      // Production model on top of Projects (print-farm batch runs).
+      // A project holds Parts; each Part tracks a target quantity produced
+      // in plates (parts_per_plate copies per successful print). completed_qty
+      // is credited per finished plate and the Part auto-closes when the
+      // target is reached — overshoot is allowed (never half a plate).
+      db.exec(`CREATE TABLE IF NOT EXISTS project_parts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        target_qty INTEGER NOT NULL DEFAULT 1,
+        completed_qty INTEGER NOT NULL DEFAULT 0,
+        parts_per_plate INTEGER NOT NULL DEFAULT 1,
+        state TEXT NOT NULL DEFAULT 'open',
+        filename TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_project_parts_project ON project_parts(project_id)`);
+    }},
   ];
 
   for (const m of migrations) {
