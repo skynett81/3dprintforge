@@ -96,6 +96,42 @@ export interface Spool {
   location?: string | null;
   printer_id?: string | null;
   archived?: number;
+  last_used_at?: string | null;
+  first_used_at?: string | null;
+  purchase_date?: string | null;
+  lot_number?: string | null;
+  expiry_date?: string | null;
+  last_dried_at?: string | null;
+  pressure_advance_k?: number | null;
+  short_id?: string | null;
+  is_favorite?: number;
+}
+
+export interface SpoolEvent {
+  id: number;
+  spool_id: number;
+  event_type: string;
+  details?: string | null;
+  actor?: string | null;
+  timestamp: string;
+}
+
+export interface DryingStatusRow {
+  id: number;
+  last_dried_at?: string | null;
+  profile_name?: string | null;
+  material?: string | null;
+  color_hex?: string | null;
+  vendor_name?: string | null;
+  max_days_without_drying?: number | null;
+  drying_status?: string;
+  days_since_dried?: number | null;
+}
+
+export interface StockTarget {
+  material: string;
+  min_weight_g: number;
+  notes?: string | null;
 }
 
 export interface Queue {

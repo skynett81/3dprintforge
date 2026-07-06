@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { spoolPct, isLow, matchesQuery, sortSpools, materialShare } from './inventory';
+import { spoolPct, isLow, matchesQuery, sortSpools, materialShare, spoolValue } from './inventory';
 import type { Spool } from './types';
 
 function spool(p: Partial<Spool>): Spool {
@@ -38,6 +38,14 @@ describe('sortSpools', () => {
     expect(sortSpools(list, 'remaining', 'asc').map((s) => s.id)).toEqual([3, 1, 2]);
     expect(sortSpools(list, 'remaining', 'desc').map((s) => s.id)).toEqual([2, 1, 3]);
     expect(list.map((s) => s.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('spoolValue', () => {
+  it('pro-rates cost by remaining fraction', () => {
+    expect(spoolValue({ cost: 200, remaining_weight_g: 500, initial_weight_g: 1000 })).toBe(100);
+    expect(spoolValue({ cost: 200, remaining_weight_g: 1000, initial_weight_g: 1000 })).toBe(200);
+    expect(spoolValue({ cost: 0, remaining_weight_g: 500, initial_weight_g: 1000 })).toBe(0);
   });
 });
 

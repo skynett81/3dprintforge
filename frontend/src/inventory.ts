@@ -9,6 +9,13 @@ export function isLow(s: Pick<Spool, 'remaining_weight_g' | 'initial_weight_g'>,
   return s.initial_weight_g > 0 && spoolPct(s) < thresholdPct;
 }
 
+// Value of the filament still on the spool: purchase cost pro-rated by how
+// much material remains. A full spool is worth its cost; a half-empty one half.
+export function spoolValue(s: Pick<Spool, 'remaining_weight_g' | 'initial_weight_g' | 'cost'>): number {
+  if (!s.cost || s.cost <= 0 || !s.initial_weight_g || s.initial_weight_g <= 0) return 0;
+  return Math.round(s.cost * Math.min(1, (s.remaining_weight_g || 0) / s.initial_weight_g));
+}
+
 export function matchesQuery(s: Spool, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;

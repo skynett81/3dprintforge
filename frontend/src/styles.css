@@ -208,6 +208,26 @@ a.hs-badge { text-decoration: none; }
 .chip:hover { color: var(--text); }
 .chip--on { background: rgba(0,179,164,0.18); border-color: var(--accent); color: var(--accent); }
 
+/* View toggle */
+.viewtoggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.viewtoggle-btn { background: var(--bg-3); border: none; color: var(--muted); padding: 5px 10px; cursor: pointer; font-size: 0.95rem; line-height: 1; }
+.viewtoggle-btn--on { background: var(--accent); color: #04211f; }
+
+/* Stock table (ERP-style) */
+.stock-table-wrap { overflow-x: auto; margin-top: 6px; border: 1px solid var(--border-soft); border-radius: var(--radius); }
+.stock-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 720px; }
+.stock-table thead th { text-align: left; padding: 9px 12px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); font-weight: 700; background: var(--bg-2); position: sticky; top: 0; white-space: nowrap; }
+.stock-table th.tnum, .stock-table td.tnum { text-align: right; }
+.th-sort { cursor: pointer; user-select: none; }
+.th-sort:hover { color: var(--muted); }
+.stock-row { border-top: 1px solid var(--border-soft); cursor: pointer; }
+.stock-row:hover { background: var(--bg-3); }
+.stock-table td { padding: 8px 12px; white-space: nowrap; }
+.stock-name { font-weight: 550; max-width: 260px; }
+.mini-bar { display: inline-block; width: 46px; height: 6px; background: var(--bg-3); border-radius: 999px; overflow: hidden; vertical-align: middle; margin-right: 7px; }
+.mini-fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.mini-fill--low { background: var(--danger, #ef4444); }
+
 /* Inventory overview */
 .mat-bars { display: flex; flex-direction: column; gap: 10px; }
 .mat-row { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 12px; font-size: 0.82rem; }

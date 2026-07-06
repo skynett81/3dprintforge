@@ -4,7 +4,7 @@ import { useResource } from '../../hooks';
 import { useT } from '../../i18n';
 import { useToast } from '../../toast';
 import { toggle } from '../../selection';
-import { spoolPct, isLow, matchesQuery, sortSpools, type SortKey } from '../../inventory';
+import { spoolPct, isLow, matchesQuery, sortSpools, spoolValue, type SortKey } from '../../inventory';
 import { SpoolDrawer } from '../../components/SpoolDrawer';
 import type { Spool, FilamentProfile, StorageLocation } from '../../types';
 
@@ -21,6 +21,7 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<`${SortKey}:${'asc' | 'desc'}`>('remaining:desc');
   const [lowOnly, setLowOnly] = useState(false);
+  const [view, setView] = useState<'table' | 'cards'>(() => (localStorage.getItem('v2.inv.view') as 'table' | 'cards') || 'table');
   const [openId, setOpenId] = useState<number | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -61,6 +62,14 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
     else setOpenId(s.id);
   }
   function exitSelect() { setSelectMode(false); setSelected(new Set()); }
+  function setViewPersist(v: 'table' | 'cards') { setView(v); try { localStorage.setItem('v2.inv.view', v); } catch { /* ignore */ } }
+  function sortBy(key: SortKey) {
+    const [curKey, curDir] = sort.split(':') as [SortKey, 'asc' | 'desc'];
+    const dir = curKey === key && curDir === 'asc' ? 'desc' : 'asc';
+    setSort(`${key}:${dir}`);
+  }
+  const [sortKey] = sort.split(':') as [SortKey, 'asc' | 'desc'];
+  const sortArrow = (key: SortKey) => (sortKey === key ? (sort.endsWith('asc') ? ' ↑' : ' ↓') : '');
   async function bulk(action: string, extra?: Record<string, unknown>) {
     const ids = [...selected];
     if (ids.length === 0) return;
@@ -93,6 +102,10 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
           <button className="btn btn--sm" onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}>
             {selectMode ? t('common.cancel', 'Cancel') : t('v2.inventory.select', 'Select')}
           </button>
+          <div className="viewtoggle">
+            <button className={`viewtoggle-btn${view === 'table' ? ' viewtoggle-btn--on' : ''}`} onClick={() => setViewPersist('table')} title={t('v2.inv.view_table', 'Table')}>≣</button>
+            <button className={`viewtoggle-btn${view === 'cards' ? ' viewtoggle-btn--on' : ''}`} onClick={() => setViewPersist('cards')} title={t('v2.inv.view_cards', 'Cards')}>▦</button>
+          </div>
         </div>
       </div>
 
@@ -147,7 +160,49 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
       {loading && !data && <p className="muted">{t('common.loading', 'Loading…')}</p>}
       {!loading && shown.length === 0 && <p className="muted empty-note">{t('v2.inv.no_match', 'No spools match your filters.')}</p>}
 
-      <div className="tile-grid">
+      {view === 'table' && shown.length > 0 && (
+        <div className="stock-table-wrap">
+          <table className="stock-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th className="th-sort" onClick={() => sortBy('name')}>{t('v2.inv.col_name', 'Filament')}{sortArrow('name')}</th>
+                <th className="th-sort" onClick={() => sortBy('material')}>{t('v2.inv.material', 'Material')}{sortArrow('material')}</th>
+                <th className="th-sort tnum" onClick={() => sortBy('remaining')}>{t('v2.inv.col_qty', 'Remaining')}{sortArrow('remaining')}</th>
+                <th className="th-sort tnum" onClick={() => sortBy('pct')}>%{sortArrow('pct')}</th>
+                <th className="tnum">{t('v2.inv.col_value', 'Value')}</th>
+                <th>{t('v2.inv.location', 'Location')}</th>
+                <th>{t('v2.inv.col_vendor', 'Vendor')}</th>
+                <th>{t('v2.inv.col_used', 'Last used')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((s) => {
+                const pct = spoolPct(s);
+                const low = pct < 15;
+                return (
+                  <tr key={s.id} className="stock-row" onClick={() => setOpenId(s.id)}>
+                    <td><span className="swatch swatch--sm" style={{ background: hex(s) }} /></td>
+                    <td className="stock-name ellipsis">{s.profile_name || s.color_name || `Spool #${s.id}`}</td>
+                    <td className="muted">{s.material || '—'}</td>
+                    <td className={`tnum${low ? ' low' : ''}`}>{Math.round(s.remaining_weight_g)} g</td>
+                    <td className="tnum">
+                      <span className="mini-bar"><span className={`mini-fill${low ? ' mini-fill--low' : ''}`} style={{ width: `${pct}%` }} /></span>
+                      <span className={low ? 'low' : 'muted'}>{pct}%</span>
+                    </td>
+                    <td className="tnum muted">{spoolValue(s) ? `${spoolValue(s)} kr` : '—'}</td>
+                    <td className="muted ellipsis">{s.location || '—'}</td>
+                    <td className="muted ellipsis">{s.vendor_name || '—'}</td>
+                    <td className="muted tnum">{s.last_used_at ? new Date(s.last_used_at.replace(' ', 'T')).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {view === 'cards' && <div className="tile-grid">
         {shown.map((s) => {
           const pct = spoolPct(s);
           const low = pct < 15;
@@ -170,7 +225,7 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {open && <SpoolDrawer spool={open} onClose={() => setOpenId(null)} onChanged={reload} />}
     </div>
