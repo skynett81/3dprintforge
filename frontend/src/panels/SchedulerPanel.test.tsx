@@ -7,7 +7,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('SchedulerPanel', () => {
   it('schedules a print via POST /api/scheduler with an ISO datetime', async () => {
-    const fetchMock = vi.fn((url: string, opts?: RequestInit) =>
+    const fetchMock = vi.fn((_url: string, opts?: RequestInit) =>
       Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(opts?.method === 'POST' ? { ok: true, id: 1 } : []) } as Response));
     vi.stubGlobal('fetch', fetchMock);
 
