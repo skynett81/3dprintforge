@@ -83,6 +83,40 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface Supplier {
+  id: number;
+  name: string;
+  website?: string | null;
+  lead_time_days?: number | null;
+  notes?: string | null;
+}
+
+export interface POLine {
+  id: number;
+  po_id: number;
+  description: string;
+  quantity: number;
+  qty_received: number;
+  unit_price?: number | null;
+  profile_material?: string | null;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  supplier_id: number | null;
+  reference?: string | null;
+  status: string;
+  supplier_name?: string | null;
+  line_count: number;
+  total_qty: number;
+  received_qty: number;
+  total_cost: number;
+  order_date?: string | null;
+  target_date?: string | null;
+  currency?: string | null;
+  lines?: POLine[];
+}
+
 export interface ReorderRow {
   material: string;
   target_g: number;

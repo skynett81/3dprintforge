@@ -90,6 +90,19 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "purchasing": {
+      "title": "Purchasing",
+      "suppliers": "suppliers",
+      "orders": "orders",
+      "no_suppliers": "No suppliers yet.",
+      "no_orders": "No purchase orders.",
+      "no_lines": "No lines on this order.",
+      "days_lead": "d lead",
+      "select": "Select an order.",
+      "receive": "Receive",
+      "received": "Received into stock",
+      "done": "received"
+    },
     "supply": {
       "title": "Supply",
       "below_target": "below target",

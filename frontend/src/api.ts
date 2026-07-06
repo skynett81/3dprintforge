@@ -1,4 +1,4 @@
-import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification, NotificationConfig, ReorderRow, Predictions } from './types';
+import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats, AuthStatus, AppNotification, NotificationConfig, ReorderRow, Predictions, Supplier, PurchaseOrder } from './types';
 
 // Thin typed client over the real 3DPrintForge REST API (proxied by Vite).
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
@@ -50,6 +50,13 @@ export const api = {
     }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
   getReorder: (): Promise<ReorderRow[]> => req<ReorderRow[]>('/api/inventory/reorder'),
+  listSuppliers: (): Promise<Supplier[]> => req<Supplier[]>('/api/inventory/suppliers'),
+  listPurchaseOrders: (): Promise<PurchaseOrder[]> => req<PurchaseOrder[]>('/api/inventory/purchase-orders'),
+  getPurchaseOrder: (id: number): Promise<PurchaseOrder> => req<PurchaseOrder>(`/api/inventory/purchase-orders/${id}`),
+  updatePurchaseOrder: (id: number, body: { status?: string }) =>
+    req<PurchaseOrder>(`/api/inventory/purchase-orders/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  receivePoLine: (lineId: number, qty?: number) =>
+    req<unknown>(`/api/inventory/purchase-order-lines/${lineId}/receive`, { method: 'POST', body: JSON.stringify(qty != null ? { qty } : {}) }),
   getPredictions: (): Promise<Predictions> => req<Predictions>('/api/inventory/predictions'),
   updateSpool: (id: number, body: Partial<Pick<Spool, 'remaining_weight_g' | 'cost' | 'location'>>) =>
     req<{ ok: boolean }>(`/api/inventory/spools/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

@@ -13,9 +13,10 @@ import { QueuePanel } from './panels/QueuePanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
+import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue' | 'supply' | 'analytics' | 'history' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'inventory' | 'queue' | 'supply' | 'purchasing' | 'analytics' | 'history' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -24,6 +25,7 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
   { id: 'supply', label: 'Supply', icon: <IconBox /> },
+  { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
   { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
   { id: 'history', label: 'History', icon: <IconClock /> },
   { id: 'settings', label: 'Settings', icon: <IconGear /> },
@@ -90,6 +92,7 @@ export function App() {
         {panel === 'inventory' && <InventoryPanel />}
         {panel === 'queue' && <QueuePanel />}
         {panel === 'supply' && <SupplyPanel />}
+        {panel === 'purchasing' && <PurchasingPanel />}
         {panel === 'analytics' && <AnalyticsPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
@@ -117,6 +120,9 @@ function IconQueue() {
 }
 function IconBox() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
+}
+function IconCart() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>;
 }
 function IconChart() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;

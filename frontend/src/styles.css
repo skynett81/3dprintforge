@@ -80,6 +80,26 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Purchasing */
+.sup-simple { display: flex; flex-direction: column; }
+.supx-row { display: grid; grid-template-columns: 1fr 1.4fr auto; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.supx-row:first-child { border-top: none; }
+.supx-name { font-weight: 550; }
+
+.po-list { display: flex; flex-direction: column; gap: 8px; }
+.po-item { text-align: left; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 11px 13px; cursor: pointer; color: inherit; font: inherit; transition: border-color 0.15s; }
+.po-item:hover { border-color: var(--border); }
+.po-item--on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.po-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.po-ref { font-weight: 600; }
+.po-item-meta { font-size: 0.78rem; margin: 3px 0 8px; }
+
+.poline-list { display: flex; flex-direction: column; }
+.poline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--border-soft); }
+.poline:first-child { border-top: none; }
+.poline-main { min-width: 0; }
+.poline-desc { display: block; font-weight: 500; font-size: 0.88rem; }
+
 /* Supply: reorder + forecast */
 .sup-list, .fc-list { display: flex; flex-direction: column; }
 .sup-head, .sup-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; align-items: center; gap: 12px; }
