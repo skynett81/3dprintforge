@@ -45,3 +45,4 @@ packaging/flatpak/repo/
 packaging/flatpak/build-dir/
 packaging/flatpak/.flatpak-builder/
 packaging/flatpak/*.flatpak
+public/v2/

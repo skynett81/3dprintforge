@@ -35,6 +35,25 @@ changes.
    credit here shows up in the real Orders panel, and a queue job that
    auto-credits a part shows up here (polled every 4 s).
 
+## Coexistence: run it inside the real app (no backend change)
+
+`npm run build` emits into the main server's `public/v2/` with a `/v2/` base.
+The server's existing static handler (`server/index.js` maps any path to
+`public/<path>`) then serves the React app at **`/v2`** — alongside the
+current UI, under the existing CSP, sharing the same `/api` and `/ws`.
+
+```bash
+npm run build                 # → ../../public/v2
+# with the normal server running:
+#   open http://localhost:3000/v2/
+```
+
+No routes, CSP, or server code were changed to make this work — the whole
+point of the proof. This is the incremental "strangler" path: new panels
+ship at `/v2`, the current UI keeps running, both from one Node server.
+(The built `public/v2/` is gitignored — it's build output; rebuild with
+`npm run build`.)
+
 ## What it demonstrates
 
 - **Typed API client** (`src/api.ts` + `src/types.ts`) — compile-time safety
