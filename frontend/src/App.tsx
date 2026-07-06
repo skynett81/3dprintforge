@@ -15,18 +15,22 @@ import { SchedulerPanel } from './panels/SchedulerPanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { CostsPanel } from './panels/CostsPanel';
 import { WastePanel } from './panels/WastePanel';
+import { ActivityPanel } from './panels/ActivityPanel';
+import { ErrorsPanel } from './panels/ErrorsPanel';
+import { AchievementsPanel } from './panels/AchievementsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'history' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'history' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
   { id: 'production', label: 'Production', icon: <IconLayers /> },
   { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
   { id: 'maintenance', label: 'Maintenance', icon: <IconWrench /> },
+  { id: 'errors', label: 'Errors', icon: <IconAlert /> },
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
   { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
@@ -35,6 +39,8 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
   { id: 'costs', label: 'Costs', icon: <IconCoins /> },
   { id: 'waste', label: 'Waste', icon: <IconTrash /> },
+  { id: 'activity', label: 'Activity', icon: <IconActivity /> },
+  { id: 'achievements', label: 'Achievements', icon: <IconTrophy /> },
   { id: 'history', label: 'History', icon: <IconClock /> },
   { id: 'settings', label: 'Settings', icon: <IconGear /> },
 ];
@@ -106,6 +112,9 @@ export function App() {
         {panel === 'analytics' && <AnalyticsPanel />}
         {panel === 'costs' && <CostsPanel />}
         {panel === 'waste' && <WastePanel />}
+        {panel === 'activity' && <ActivityPanel />}
+        {panel === 'errors' && <ErrorsPanel />}
+        {panel === 'achievements' && <AchievementsPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
       </main>
@@ -129,6 +138,15 @@ function IconSpool() {
 }
 function IconQueue() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
+}
+function IconAlert() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
+}
+function IconActivity() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
+}
+function IconTrophy() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2z" /></svg>;
 }
 function IconWrench() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>;

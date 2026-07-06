@@ -80,6 +80,26 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Errors */
+.chk { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--muted); }
+.err-list { display: flex; flex-direction: column; }
+.err-row { display: grid; grid-template-columns: auto auto 1.6fr 1fr auto auto; align-items: center; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--border-soft); font-size: 0.84rem; }
+.err-row:first-child { border-top: none; }
+.err-row--acked { opacity: 0.55; }
+.err-code { color: var(--muted); }
+.err-msg { min-width: 0; }
+
+/* Achievements */
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
+.ach-card { background: linear-gradient(180deg, var(--bg-2), #12151c); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; box-shadow: var(--shadow); opacity: 0.72; }
+.ach-card--earned { opacity: 1; border-color: rgba(0,179,164,0.35); }
+.ach-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ach-title { font-weight: 600; }
+.ach-state { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+.ach-state--on { color: var(--accent); }
+.ach-desc { font-size: 0.8rem; margin: 4px 0 10px; }
+.ach-foot { font-size: 0.7rem; margin-top: 6px; text-align: right; }
+
 /* Costs */
 .cost-list { display: flex; flex-direction: column; }
 .cost-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; padding: 8px 2px; border-top: 1px solid var(--border-soft); font-size: 0.84rem; }

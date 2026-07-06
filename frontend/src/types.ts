@@ -83,6 +83,38 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface AppError {
+  id: number;
+  printer_id: string;
+  timestamp: string;
+  code: string;
+  message: string;
+  severity: string;
+  acknowledged: number;
+}
+
+export interface Achievement {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  target: number;
+  current: number;
+  category: string;
+  earned: boolean;
+  progress: number;
+}
+
+export interface ActivityDay {
+  day: string;
+  prints: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  hours: number;
+  filament_g: number;
+}
+
 export interface WasteStats {
   total_waste_g: number;
   total_cost: number;

@@ -97,6 +97,11 @@ export const api = {
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getAuthStatus: (): Promise<AuthStatus> => req<AuthStatus>('/api/auth/status'),
   listNotifications: (): Promise<AppNotification[]> => req<AppNotification[]>('/api/notifications/log?limit=30'),
+  listErrors: (): Promise<import('./types').AppError[]> => req('/api/errors'),
+  ackError: (id: number) => req<{ ok: boolean }>(`/api/errors/${id}`, { method: 'PATCH' }),
+  ackAllErrors: () => req<{ ok: boolean }>('/api/errors/acknowledge-all', { method: 'POST', body: '{}' }),
+  listAchievements: (): Promise<import('./types').Achievement[]> => req('/api/achievements'),
+  listActivity: (): Promise<import('./types').ActivityDay[]> => req('/api/activity/daily'),
   getNotificationConfig: (): Promise<NotificationConfig> => req<NotificationConfig>('/api/notifications/config'),
   saveNotificationConfig: (cfg: NotificationConfig) =>
     req<{ ok: boolean }>('/api/notifications/config', { method: 'PUT', body: JSON.stringify(cfg) }),

@@ -97,6 +97,34 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "errors": {
+      "title": "Errors",
+      "unacked": "unacknowledged",
+      "total": "total",
+      "show_all": "Show acknowledged",
+      "ack": "Ack",
+      "acked": "ack",
+      "ack_all": "Acknowledge all",
+      "all_acked": "All acknowledged",
+      "none": "No errors. All clear."
+    },
+    "ach": {
+      "title": "Achievements",
+      "unlocked": "unlocked",
+      "all": "all",
+      "earned": "earned",
+      "locked": "locked",
+      "done": "earned"
+    },
+    "activity": {
+      "title": "Activity",
+      "subtitle": "Print activity over time",
+      "active_days": "Active days",
+      "prints": "Prints",
+      "hours": "Print hours",
+      "filament": "Filament",
+      "per_day": "Prints per day (last 30)"
+    },
     "dash": {
       "title": "Dashboard",
       "subtitle": "Farm overview — click a card to jump in",
