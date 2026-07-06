@@ -1,4 +1,4 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities, addBedHold, getBedHold, getBedHolds, clearBedHold } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 import { createLogger } from './logger.js';
 
@@ -13,6 +13,7 @@ export class QueueManager {
     this._activeJobs = new Map(); // printerId -> { queueId, itemId }
     this._cooldownTimers = new Map(); // printerId -> timeout
     this._staggerTimers = new Map(); // queueId -> timestamp of last dispatch
+    this._heldPrinters = new Set(); // printerIds awaiting operator bed-clear confirmation
     this._dispatchInterval = null;
   }
 
@@ -25,12 +26,16 @@ export class QueueManager {
       }
     }
 
+    // Restore bed holds that were awaiting operator confirmation at shutdown —
+    // a finished-but-uncleared bed must stay held across a restart.
+    for (const hold of getBedHolds()) this._heldPrinters.add(hold.printer_id);
+
     // Check dispatch every 10 seconds
     this._dispatchInterval = setInterval(() => this._checkDispatch(), 10000);
     // Initial check after 5 seconds
     setTimeout(() => this._checkDispatch(), 5000);
 
-    log.info('Initialized (' + activeItems.length + ' active jobs resumed)');
+    log.info('Initialized (' + activeItems.length + ' active jobs resumed, ' + this._heldPrinters.size + ' beds held)');
   }
 
   shutdown() {
@@ -74,6 +79,18 @@ export class QueueManager {
     // Check if queue is fully completed
     this._checkQueueCompletion(job.queueId);
 
+    // Operator confirmation gate: if this queue requires a human to confirm
+    // the bed was cleared, hold the printer instead of auto-dispatching. The
+    // next job for this bed only dispatches after confirmBedCleared().
+    if (queue.require_confirmation) {
+      addBedHold(printerId, { queueId: job.queueId, printHistoryId: printHistoryId || null, filename: item.filename });
+      this._heldPrinters.add(printerId);
+      addQueueLog(job.queueId, item.id, printerId, 'bed_hold', 'Awaiting operator bed-clear confirmation');
+      this._broadcast('queue_update', { action: 'bed_hold', queueId: job.queueId, printerId, filename: item.filename });
+      this._notifyEvent('queue_bed_hold', { printerId, filename: item.filename, queueName: queue.name });
+      return;
+    }
+
     // Auto-start next if enabled
     if (queue.auto_start && queue.status === 'active') {
       const cooldown = (queue.cooldown_seconds || 60) * 1000;
@@ -88,6 +105,31 @@ export class QueueManager {
         }
       }, cooldown));
     }
+  }
+
+  // Operator confirms a held bed has been cleared. Releases the hold,
+  // optionally runs the queue's bed-clear gcode, and resumes dispatch.
+  confirmBedCleared(printerId) {
+    if (!this._heldPrinters.has(printerId)) return false;
+    const hold = getBedHold(printerId);
+    clearBedHold(printerId);
+    this._heldPrinters.delete(printerId);
+    if (hold?.queue_id) addQueueLog(hold.queue_id, null, printerId, 'bed_cleared', 'Operator confirmed bed cleared');
+    this._broadcast('queue_update', { action: 'bed_cleared', printerId, queueId: hold?.queue_id || null });
+    // Run the bed-clear gcode if the queue defines one, then dispatch.
+    const queue = hold?.queue_id ? getQueue(hold.queue_id) : null;
+    if (queue?.bed_clear_gcode) {
+      this._sendGcode(printerId, queue.bed_clear_gcode);
+      setTimeout(() => this._checkDispatch(), 5000);
+    } else {
+      this._checkDispatch();
+    }
+    return true;
+  }
+
+  // Printers currently held awaiting operator confirmation (for the UI).
+  getHeldPrinters() {
+    return getBedHolds();
   }
 
   _checkDispatch() {
@@ -125,6 +167,8 @@ export class QueueManager {
       // Skip printers already in active queue jobs or cooldown
       if (this._activeJobs.has(id)) continue;
       if (this._cooldownTimers.has(id)) continue;
+      // Skip printers whose bed is held awaiting operator confirmation
+      if (this._heldPrinters.has(id)) continue;
       // If queue targets a specific printer, only use that one
       if (queue.target_printer_id && queue.target_printer_id !== id) continue;
       // If item targets a specific printer

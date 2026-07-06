@@ -5271,6 +5271,20 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, { ok: true });
     }
 
+    // Beds held awaiting operator confirmation before the next dispatch.
+    if (method === 'GET' && path === '/api/queue/holds') {
+      return sendJson(res, _queueManager ? _queueManager.getHeldPrinters() : []);
+    }
+
+    // Operator confirms a held bed has been cleared → release + resume dispatch.
+    const confirmBedMatch = path.match(/^\/api\/queue\/confirm-bed\/([^/]+)$/);
+    if (confirmBedMatch && method === 'POST') {
+      const printerId = decodeURIComponent(confirmBedMatch[1]);
+      const released = _queueManager ? _queueManager.confirmBedCleared(printerId) : false;
+      if (!released) return sendJson(res, { error: 'No bed hold for this printer' }, 404);
+      return sendJson(res, { ok: true, printerId });
+    }
+
     // ---- Tags ----
 
     if (method === 'GET' && path === '/api/tags') {

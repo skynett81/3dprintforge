@@ -7,12 +7,12 @@ const log = createLogger('db:queue');
 
 export function createQueue(opts) {
   const db = getDb();
-  const r = db.prepare(`INSERT INTO print_queue (name, description, status, auto_start, cooldown_seconds, bed_clear_gcode, priority_mode, target_printer_id, created_by, stagger_seconds)
-    VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?)`).run(
+  const r = db.prepare(`INSERT INTO print_queue (name, description, status, auto_start, cooldown_seconds, bed_clear_gcode, priority_mode, target_printer_id, created_by, stagger_seconds, require_confirmation)
+    VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     opts.name, opts.description || null, opts.auto_start ? 1 : 0,
     opts.cooldown_seconds || 60, opts.bed_clear_gcode || null,
     opts.priority_mode || 'fifo', opts.target_printer_id || null, opts.created_by || null,
-    opts.stagger_seconds || 0
+    opts.stagger_seconds || 0, opts.require_confirmation ? 1 : 0
   );
   return r.lastInsertRowid;
 }
@@ -48,6 +48,7 @@ export function updateQueue(id, opts) {
   if (opts.auto_start !== undefined) { fields.push('auto_start = ?'); values.push(opts.auto_start ? 1 : 0); }
   if (opts.cooldown_seconds !== undefined) { fields.push('cooldown_seconds = ?'); values.push(opts.cooldown_seconds); }
   if (opts.stagger_seconds !== undefined) { fields.push('stagger_seconds = ?'); values.push(opts.stagger_seconds); }
+  if (opts.require_confirmation !== undefined) { fields.push('require_confirmation = ?'); values.push(opts.require_confirmation ? 1 : 0); }
   if (fields.length === 0) return;
   values.push(id);
   db.prepare(`UPDATE print_queue SET ${fields.join(', ')} WHERE id = ?`).run(...values);
@@ -139,6 +140,36 @@ export function getQueueLog(queueId, limit = 50) {
     return db.prepare('SELECT * FROM queue_log WHERE queue_id = ? ORDER BY timestamp DESC LIMIT ?').all(queueId, limit);
   }
   return db.prepare('SELECT * FROM queue_log ORDER BY timestamp DESC LIMIT ?').all(limit);
+}
+
+// ---- Bed holds (operator confirmation before next dispatch) ----
+
+export function addBedHold(printerId, opts = {}) {
+  const db = getDb();
+  db.prepare(`INSERT INTO printer_bed_holds (printer_id, held_at, queue_id, print_history_id, filename)
+    VALUES (?, datetime('now'), ?, ?, ?)
+    ON CONFLICT(printer_id) DO UPDATE SET
+      held_at = datetime('now'),
+      queue_id = excluded.queue_id,
+      print_history_id = excluded.print_history_id,
+      filename = excluded.filename`).run(
+    printerId, opts.queueId ?? null, opts.printHistoryId ?? null, opts.filename ?? null
+  );
+}
+
+export function getBedHold(printerId) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM printer_bed_holds WHERE printer_id = ?').get(printerId);
+}
+
+export function getBedHolds() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM printer_bed_holds ORDER BY held_at').all();
+}
+
+export function clearBedHold(printerId) {
+  const db = getDb();
+  db.prepare('DELETE FROM printer_bed_holds WHERE printer_id = ?').run(printerId);
 }
 
 // ---- Scheduled Prints ----

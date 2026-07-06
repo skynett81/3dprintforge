@@ -2360,6 +2360,21 @@ export function runMigrations() {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_camera_rec_printer ON camera_recordings(printer_id)`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_camera_rec_status ON camera_recordings(status)`);
     }},
+    { version: 158, up: (db) => {
+      // Operator confirmation before next dispatch (print-farm safety).
+      // When a queue has require_confirmation=1, a finished print puts the
+      // printer on a bed-hold: the scheduler will not dispatch the next job
+      // to that bed until an operator confirms it has been cleared. Prevents
+      // dispatching a new print onto an uncleared / failed bed.
+      try { db.exec('ALTER TABLE print_queue ADD COLUMN require_confirmation INTEGER DEFAULT 0'); } catch { /* exists */ }
+      db.exec(`CREATE TABLE IF NOT EXISTS printer_bed_holds (
+        printer_id TEXT PRIMARY KEY,
+        held_at TEXT DEFAULT (datetime('now')),
+        queue_id INTEGER,
+        print_history_id INTEGER,
+        filename TEXT
+      )`);
+    }},
   ];
 
   for (const m of migrations) {

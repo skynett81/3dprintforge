@@ -5,6 +5,7 @@
   let _selectedQueue = null;
   let _historyOpen = false;
   let _settingsOpen = false;
+  let _heldBeds = [];
 
   function printerName(id) {
     return window.printerState?.printerMeta?.[id]?.name || id || '--';
@@ -257,6 +258,9 @@
         <div class="form-group" style="flex:1"><label>${t('queue.cooldown')}</label><input type="number" id="qc-cooldown" class="form-input" value="60" min="0" /></div>
         <div class="form-group" style="flex:1"><label>${t('queue.stagger')}</label><input type="number" id="qc-stagger" class="form-input" value="0" min="0" title="${t('queue.stagger_hint')}" /></div>
       </div>
+      <div class="form-row" style="display:flex;gap:12px;align-items:center">
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="qc-confirm" /> ${t('queue.require_confirmation', 'Require operator confirmation before next print')}</label>
+      </div>
       <div class="form-group"><label>${t('queue.bed_clear_gcode')}</label><textarea id="qc-gcode" class="form-input" rows="3" placeholder="G28\nG1 Z50"></textarea></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="form-btn form-btn-secondary" data-ripple onclick="this.closest('.modal-overlay').remove()">${t('common.cancel')}</button>
@@ -279,6 +283,7 @@
       auto_start: document.getElementById('qc-auto')?.checked || false,
       cooldown_seconds: parseInt(document.getElementById('qc-cooldown')?.value) || 60,
       stagger_seconds: parseInt(document.getElementById('qc-stagger')?.value) || 0,
+      require_confirmation: document.getElementById('qc-confirm')?.checked || false,
       bed_clear_gcode: document.getElementById('qc-gcode')?.value?.trim() || null
     };
 
@@ -405,6 +410,11 @@
         </div>
       </div>
       <div style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="qs-confirm-${q.id}" ${q.require_confirmation ? 'checked' : ''}> ${t('queue.require_confirmation', 'Require operator confirmation before next print')}
+        </label>
+      </div>
+      <div style="margin-top:10px">
         <label class="form-label">${t('queue.bed_clear_gcode')}</label>
         <textarea class="form-input" id="qs-gcode-${q.id}" rows="2" placeholder="G28\nG1 Z50">${q.bed_clear_gcode || ''}</textarea>
       </div>
@@ -420,6 +430,7 @@
       cooldown_seconds: parseInt(document.getElementById(`qs-cooldown-${id}`)?.value) || 60,
       stagger_seconds: parseInt(document.getElementById(`qs-stagger-${id}`)?.value) || 0,
       auto_start: document.getElementById(`qs-auto-${id}`)?.checked ? 1 : 0,
+      require_confirmation: document.getElementById(`qs-confirm-${id}`)?.checked ? 1 : 0,
       bed_clear_gcode: document.getElementById(`qs-gcode-${id}`)?.value?.trim() || null
     };
     try {
@@ -477,6 +488,7 @@
         <div class="form-group" style="flex:1"><label class="form-label">${t('queue.cooldown')}</label><input class="form-input" type="number" id="qe-cooldown" value="${q.cooldown_seconds || 60}" min="0" /></div>
         <div class="form-group" style="flex:1"><label class="form-label">${t('queue.stagger')}</label><input class="form-input" type="number" id="qe-stagger" value="${q.stagger_seconds || 0}" min="0" /></div>
       </div>
+      <div style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="qe-confirm" ${q.require_confirmation ? 'checked' : ''} /> ${t('queue.require_confirmation', 'Require operator confirmation before next print')}</label></div>
       <div class="form-group"><label class="form-label">${t('queue.bed_clear_gcode')}</label><textarea class="form-input" id="qe-gcode" rows="3" placeholder="G28\nG1 Z50">${q.bed_clear_gcode || ''}</textarea></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="form-btn form-btn-secondary" onclick="this.closest('.modal-overlay').remove()">${t('common.cancel', 'Cancel')}</button>
@@ -496,6 +508,7 @@
       auto_start: document.getElementById('qe-auto')?.checked ? 1 : 0,
       cooldown_seconds: parseInt(document.getElementById('qe-cooldown')?.value) || 60,
       stagger_seconds: parseInt(document.getElementById('qe-stagger')?.value) || 0,
+      require_confirmation: document.getElementById('qe-confirm')?.checked ? 1 : 0,
       bed_clear_gcode: document.getElementById('qe-gcode')?.value?.trim() || null
     };
     await fetch(`/api/queue/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -523,6 +536,22 @@
   window._queueForceDispatch = async function() {
     await fetch('/api/queue/dispatch', { method: 'POST' });
   };
+
+  window._queueConfirmBed = async function(printerId) {
+    try {
+      await fetch(`/api/queue/confirm-bed/${encodeURIComponent(printerId)}`, { method: 'POST' });
+      if (typeof showToast === 'function') showToast(t('queue.bed_confirmed', 'Bed confirmed — next job released'), 'success');
+    } catch { /* broadcast will refresh either way */ }
+    _reload();
+  };
+
+  function _esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function _printerName(id) {
+    return window.printerState?.printers?.[id]?.name || id;
+  }
 
   window._queueSkipItem = async function(itemId) {
     await fetch(`/api/queue/items/${itemId}/skip`, { method: 'POST' });
@@ -552,6 +581,25 @@
     html += `<div class="q-section q-col-full">
       <div class="q-section-body">${heroContent}</div>
     </div>`;
+
+    // ── Held beds awaiting operator confirmation (full width, when any) ──
+    if (_heldBeds.length > 0) {
+      const cards = _heldBeds.map(h => {
+        const name = _esc(_printerName(h.printer_id));
+        const file = _esc(h.filename || '');
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--bg-tertiary);border-radius:6px">
+          <div><strong>${name}</strong>${file ? ` — <span class="text-muted">${file}</span>` : ''}</div>
+          <button class="form-btn form-btn-sm" data-ripple onclick="window._queueConfirmBed('${_esc(h.printer_id)}')">${t('queue.confirm_bed_cleared', 'Confirm bed cleared')}</button>
+        </div>`;
+      }).join('');
+      html += `<div class="q-section q-col-full">
+        <div class="q-section-title" style="color:var(--accent-orange)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          ${t('queue.beds_held', 'Beds awaiting confirmation')}
+        </div>
+        <div class="q-section-body" style="display:flex;flex-direction:column;gap:8px">${cards}</div>
+      </div>`;
+    }
 
     // ── Left column: Queues ──
     html += `<div class="q-col-left">
@@ -628,6 +676,11 @@
       const data = await resp.json();
       _queues = Array.isArray(data) ? data : [];
     } catch { _queues = []; }
+    try {
+      const hr = await fetch('/api/queue/holds');
+      const holds = await hr.json();
+      _heldBeds = Array.isArray(holds) ? holds : [];
+    } catch { _heldBeds = []; }
     _render();
     if (_selectedQueue) _loadQueueItems(_selectedQueue);
     if (_historyOpen) _loadCompletedItems();

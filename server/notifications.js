@@ -756,6 +756,12 @@ export class NotificationManager {
           message: `Queue: ${data.queueName || 'Unknown'}\nPrinter: ${data.printerName || 'Unknown'}\nFile: ${data.filename || 'Unknown'}${data.error ? '\nError: ' + data.error : ''}`
         };
 
+      case 'queue_bed_hold':
+        return {
+          title: `Bed hold — confirm to continue — ${data.printerName || 'Unknown'}`,
+          message: `Queue: ${data.queueName || 'Unknown'}\nPrinter: ${data.printerName || 'Unknown'}\nFile: ${data.filename || 'Unknown'}\n\nThe print finished. Clear the bed, then confirm in the dashboard to release the next job.`
+        };
+
       case 'queue_completed':
         return {
           title: `Queue Completed — ${data.queueName || 'Unknown'}`,
