@@ -95,6 +95,7 @@
       "tab_locations": "Locations",
       "tab_activity": "Activity",
       "search_profiles": "Search filaments…",
+      "refine": "refine to see all",
       "profile": "Profile",
       "material": "Material",
       "color": "Colour",
@@ -140,6 +141,7 @@
       "no_expiring": "Nothing expiring soon.",
       "drying": "Needs drying",
       "no_drying": "No spools are overdue for drying.",
+      "no_drying_history": "No drying history tracked yet — mark spools dried to get overdue alerts.",
       "never": "never"
     },
     "inventory": {

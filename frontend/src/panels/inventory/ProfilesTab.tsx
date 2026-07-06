@@ -19,15 +19,16 @@ export function ProfilesTab() {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', material: 'PLA', color_name: '', color_hex: '#00b3a4' });
 
+  const CAP = 500;
   const all = data ?? [];
   const materials = useMemo(() => ['all', ...Array.from(new Set(all.map((p) => p.material).filter(Boolean))).sort()], [all]);
-  const shown = useMemo(() => {
+  const matched = useMemo(() => {
     const s = q.trim().toLowerCase();
     return all
       .filter((p) => (material === 'all' || p.material === material))
-      .filter((p) => !s || (p.name || '').toLowerCase().includes(s) || (p.color_name || '').toLowerCase().includes(s))
-      .slice(0, 200);
+      .filter((p) => !s || (p.name || '').toLowerCase().includes(s) || (p.color_name || '').toLowerCase().includes(s));
   }, [all, q, material]);
+  const shown = matched.slice(0, CAP);
 
   async function run(fn: () => Promise<void>, ok?: string) {
     try { await fn(); if (ok) toast(ok, 'success'); } catch (e) { toast((e as Error).message, 'error'); }
@@ -52,7 +53,7 @@ export function ProfilesTab() {
           <select className="input" style={{ width: 'auto' }} value={material} onChange={(e) => setMaterial(e.target.value)}>
             {materials.map((m) => <option key={m} value={m}>{m === 'all' ? t('v2.inventory.all_materials', 'All materials') : m}</option>)}
           </select>
-          <span className="muted">{shown.length}/{all.length}</span>
+          <span className="muted">{matched.length === all.length ? all.length : `${matched.length}/${all.length}`}{matched.length > CAP ? ` · ${t('v2.inv.refine', 'refine to see all')}` : ''}</span>
         </div>
         <button className="btn btn--sm btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.inv.add_profile', '+ Add profile')}</button>
       </div>
@@ -77,7 +78,7 @@ export function ProfilesTab() {
           </div>
           {shown.map((p) => (
             <div className="lib-row" key={p.id} style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1.2fr 0.9fr auto' }}>
-              <span className="swatch swatch--sm" style={{ background: hex(p.color_hex) }} />
+              <span className={`swatch swatch--sm${p.color_hex ? '' : ' swatch--empty'}`} style={p.color_hex ? { background: hex(p.color_hex) } : undefined} />
               <span className="lib-name ellipsis" title={p.name}>{p.name}</span>
               <span className="muted">{p.material}</span>
               <span className="muted ellipsis">{p.color_name || '—'}</span>

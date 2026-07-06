@@ -44,8 +44,10 @@ export function ControlTab() {
     const short = Math.max(0, tg.min_weight_g - cur);
     return { ...tg, cur, short, pct: Math.min(100, Math.round((cur / (tg.min_weight_g || 1)) * 100)) };
   });
-  const dryOverdue = (drying ?? []).filter((d) => d.drying_status === 'overdue' || d.drying_status === 'due')
+  const dryRows = drying ?? [];
+  const dryOverdue = dryRows.filter((d) => d.drying_status === 'overdue' || d.drying_status === 'due')
     .sort((a, b) => (b.days_since_dried || 0) - (a.days_since_dried || 0));
+  const dryUntracked = dryRows.length > 0 && dryRows.every((d) => !d.last_dried_at);
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -98,7 +100,7 @@ export function ControlTab() {
         <section className="card">
           <div className="card-title">{t('v2.ctl.drying', 'Needs drying')}</div>
           {dryOverdue.length === 0 ? (
-            <p className="muted empty-note">{t('v2.ctl.no_drying', 'No spools are overdue for drying.')}</p>
+            <p className="muted empty-note">{dryUntracked ? t('v2.ctl.no_drying_history', 'No drying history tracked yet — mark spools dried to get overdue alerts.') : t('v2.ctl.no_drying', 'No spools are overdue for drying.')}</p>
           ) : (
             <div className="lib-list">
               {dryOverdue.map((d) => (

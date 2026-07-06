@@ -217,6 +217,8 @@ a.hs-badge { text-decoration: none; }
 .chip:hover { color: var(--text); }
 .chip--on { background: rgba(0,179,164,0.18); border-color: var(--accent); color: var(--accent); }
 
+.swatch--empty { background: transparent !important; border: 1px dashed var(--border); }
+
 /* View toggle */
 .viewtoggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .viewtoggle-btn { background: var(--bg-3); border: none; color: var(--muted); padding: 5px 10px; cursor: pointer; font-size: 0.95rem; line-height: 1; }
