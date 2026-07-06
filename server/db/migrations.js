@@ -2395,6 +2395,12 @@ export function runMigrations() {
       )`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_project_parts_project ON project_parts(project_id)`);
     }},
+    { version: 160, up: (db) => {
+      // Bridge the queue to the production model: a queue item can be tagged
+      // with a project Part. When the item finishes a copy, the scheduler
+      // credits parts_per_plate toward that Part automatically.
+      try { db.exec('ALTER TABLE queue_items ADD COLUMN part_id INTEGER'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

@@ -1,4 +1,4 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities, addBedHold, getBedHold, getBedHolds, clearBedHold } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities, addBedHold, getBedHold, getBedHolds, clearBedHold, creditProjectPart, getProjectPart } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 import { createLogger } from './logger.js';
 
@@ -58,6 +58,15 @@ export class QueueManager {
 
     if (status === 'completed') {
       const newCompleted = (item.copies_completed || 0) + 1;
+      // Auto-credit the linked project part: one finished copy = one plate.
+      if (item.part_id) {
+        try {
+          const part = creditProjectPart(item.part_id, undefined); // defaults to parts_per_plate
+          if (part) {
+            this._broadcast('project_update', { action: 'part_credited', partId: part.id, projectId: part.project_id, completedQty: part.completed_qty, state: part.state });
+          }
+        } catch (e) { log.warn('Part auto-credit failed: ' + e.message); }
+      }
       if (newCompleted >= (item.copies || 1)) {
         updateQueueItem(item.id, { status: 'completed', copies_completed: newCompleted, completed_at: new Date().toISOString(), print_history_id: printHistoryId || null });
         addQueueLog(job.queueId, item.id, printerId, 'item_completed', `Copy ${newCompleted}/${item.copies}`);

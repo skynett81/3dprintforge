@@ -313,11 +313,29 @@
         </div>`;
       }
     } catch (_) {}
+    // Optional link to a project production part — finishing this item then
+    // auto-credits parts_per_plate toward that part.
+    let partsHtml = '';
+    try {
+      const projects = await (await fetch('/api/projects?status=active')).json();
+      const groups = await Promise.all((Array.isArray(projects) ? projects : []).map(async pr => {
+        const parts = await (await fetch(`/api/projects/${pr.id}/parts`)).json();
+        const open = (Array.isArray(parts) ? parts : []).filter(pt => pt.state !== 'closed');
+        if (!open.length) return '';
+        return `<optgroup label="${_esc(pr.name)}">${open.map(pt => `<option value="${pt.id}">${_esc(pt.name)} (${pt.completed_qty}/${pt.target_qty})</option>`).join('')}</optgroup>`;
+      }));
+      const opts = groups.filter(Boolean).join('');
+      if (opts) {
+        partsHtml = `<div class="form-group"><label>${t('queue.link_part', 'Link to production part (auto-credit)')}</label>
+          <select id="qi-part" class="form-input"><option value="">${t('queue.no_part', 'None')}</option>${opts}</select></div>`;
+      }
+    } catch (_) {}
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal-content" style="max-width:450px">
       <h3>${t('queue.add_item')}</h3>
       <div class="form-group"><label>${t('queue.filename')}</label><input type="text" id="qi-filename" class="form-input" placeholder="/sdcard/model.3mf" /></div>
+      ${partsHtml}
       <div class="form-row" style="display:flex;gap:12px">
         <div class="form-group" style="flex:1"><label>${t('queue.copies')}</label><input type="number" id="qi-copies" class="form-input" value="1" min="1" /></div>
         <div class="form-group" style="flex:1"><label>${t('queue.priority_label')}</label><input type="number" id="qi-priority" class="form-input" value="0" min="0" max="100" /></div>
@@ -353,7 +371,8 @@
       required_material: document.getElementById('qi-material')?.value?.trim() || null,
       notes: document.getElementById('qi-notes')?.value?.trim() || null,
       target_printers: selectedPrinters.length > 0 ? selectedPrinters : null,
-      required_tags: selectedTags.length > 0 ? selectedTags : null
+      required_tags: selectedTags.length > 0 ? selectedTags : null,
+      part_id: parseInt(document.getElementById('qi-part')?.value) || null
     };
 
     await fetch(`/api/queue/${queueId}/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

@@ -3083,6 +3083,8 @@
     "auto_start": "Auto-start",
     "manual": "Manual",
     "require_confirmation": "Require operator confirmation before next print",
+    "link_part": "Link to production part (auto-credit)",
+    "no_part": "None",
     "confirm_bed_cleared": "Confirm bed cleared",
     "beds_held": "Beds awaiting confirmation",
     "bed_confirmed": "Bed confirmed — next job released",

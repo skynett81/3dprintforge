@@ -65,12 +65,12 @@ export function addQueueItem(queueId, item) {
   const db = getDb();
   const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM queue_items WHERE queue_id = ?').get(queueId);
   const targetPrinters = item.target_printers ? JSON.stringify(item.target_printers) : null;
-  const r = db.prepare(`INSERT INTO queue_items (queue_id, filename, printer_id, status, priority, copies, estimated_duration_s, estimated_filament_g, required_material, required_nozzle_mm, notes, sort_order, target_printers)
-    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+  const r = db.prepare(`INSERT INTO queue_items (queue_id, filename, printer_id, status, priority, copies, estimated_duration_s, estimated_filament_g, required_material, required_nozzle_mm, notes, sort_order, target_printers, part_id)
+    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     queueId, item.filename, item.printer_id || null, item.priority || 0,
     item.copies || 1, item.estimated_duration_s || null, item.estimated_filament_g || null,
     item.required_material || null, item.required_nozzle_mm || null, item.notes || null,
-    (maxSort?.m || 0) + 1, targetPrinters
+    (maxSort?.m || 0) + 1, targetPrinters, item.part_id || null
   );
   return r.lastInsertRowid;
 }
