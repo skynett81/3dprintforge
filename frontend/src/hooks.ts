@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
-import type { Project, Part } from './types';
+import type { Project, Part, AuthStatus } from './types';
 
 // Generic read-only resource loader with light polling. `loader` must be a
 // stable reference (e.g. an api.* method) so the effect doesn't re-fire.
@@ -24,6 +24,18 @@ export function useResource<T>(loader: () => Promise<T>, pollMs = 5000) {
   }, [reload, pollMs]);
 
   return { data, error, loading, reload };
+}
+
+// Current auth state (auth may be disabled server-side, in which case
+// enabled=false and the app is fully usable without a login).
+export function useAuth() {
+  const [status, setStatus] = useState<AuthStatus | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api.getAuthStatus().then((s) => { if (alive) setStatus(s); }).catch(() => { /* leave null */ });
+    return () => { alive = false; };
+  }, []);
+  return status;
 }
 
 export type LiveState = Record<string, Record<string, unknown>>;

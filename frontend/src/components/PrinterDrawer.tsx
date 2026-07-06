@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import { readLive, isPrinting } from '../live';
 import type { Printer } from '../types';
 
@@ -14,19 +15,19 @@ function temp(v: number | null) { return v == null ? '—' : `${Math.round(v)}°
 
 export function PrinterDrawer({ printer, live, onClose }: Props) {
   const t = useT();
+  const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
   const l = readLive(live);
   const busyPrinting = isPrinting(l);
 
   async function control(action: string, extra?: Record<string, unknown>) {
     if (action === 'stop' && !confirm(t('v2.fleet.confirm_stop', 'Stop the current print? This cannot be undone.'))) return;
-    setBusy(action); setMsg(null);
+    setBusy(action);
     try {
       await api.controlPrinter(printer.id, action, extra);
-      setMsg(t('v2.fleet.sent', 'Command sent'));
+      toast(t('v2.fleet.sent', 'Command sent'), 'success');
     } catch (e) {
-      setMsg((e as Error).message);
+      toast((e as Error).message, 'error');
     } finally {
       setBusy(null);
     }
@@ -71,7 +72,6 @@ export function PrinterDrawer({ printer, live, onClose }: Props) {
           <button className="btn" disabled={busy != null} onClick={() => control('set_light', { on: true })}>{t('v2.fleet.light_on', 'Light on')}</button>
           <button className="btn" disabled={busy != null} onClick={() => control('set_light', { on: false })}>{t('v2.fleet.light_off', 'Light off')}</button>
         </div>
-        {msg && <div className="drawer-msg muted">{msg}</div>}
       </aside>
     </div>
   );

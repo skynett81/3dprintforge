@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useProjects, useParts } from '../hooks';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import { Overview } from '../components/Overview';
 import { PartRow } from '../components/PartRow';
 import { AddPartForm } from '../components/AddPartForm';
@@ -11,6 +12,7 @@ import type { NewPart, Part } from '../types';
 
 export function ProductionPanel() {
   const t = useT();
+  const toast = useToast();
   const { projects, error: projErr, reload: reloadProjects } = useProjects();
   const [selected, setSelected] = useState<number | null>(null);
   const { parts, error: partsErr, reload } = useParts(selected);
@@ -23,27 +25,27 @@ export function ProductionPanel() {
 
   const current = projects.find((p) => p.id === selected) || null;
 
+  async function run(fn: () => Promise<void>, ok?: string) {
+    try { await fn(); if (ok) toast(ok, 'success'); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+
   async function addPart(body: NewPart) {
     if (selected == null) return;
-    await api.addPart(selected, body);
-    setAdding(false);
-    reload();
+    await run(async () => { await api.addPart(selected, body); setAdding(false); reload(); }, t('v2.production.part_added', 'Part added'));
   }
-  async function creditPart(part: Part) { await api.creditPart(part.id); reload(); }
+  async function creditPart(part: Part) {
+    await run(async () => { await api.creditPart(part.id); reload(); });
+  }
   async function deletePart(part: Part) {
     if (!confirm(t('v2.production.confirm_delete', `Delete part "${part.name}"?`))) return;
-    await api.deletePart(part.id);
-    reload();
+    await run(async () => { await api.deletePart(part.id); reload(); }, t('v2.production.part_deleted', 'Part deleted'));
   }
   async function savePart(id: number, body: PartEdit) {
-    await api.updatePart(id, body);
-    setEditingId(null);
-    reload();
+    await run(async () => { await api.updatePart(id, body); setEditingId(null); reload(); }, t('common.saved', 'Saved'));
   }
   async function createProject(name: string) {
-    const { id } = await api.createProject(name);
-    reloadProjects();
-    setSelected(id);
+    await run(async () => { const { id } = await api.createProject(name); reloadProjects(); setSelected(id); }, t('v2.production.project_created', 'Project created'));
   }
 
   return (

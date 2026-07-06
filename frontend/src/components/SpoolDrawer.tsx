@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import type { Spool } from '../types';
 
 function hex(s: Spool) {
@@ -16,30 +17,30 @@ interface Props {
 
 export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
   const t = useT();
+  const toast = useToast();
   const [remaining, setRemaining] = useState(Math.round(spool.remaining_weight_g));
   const [cost, setCost] = useState(spool.cost ?? 0);
   const [location, setLocation] = useState(spool.location ?? '');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
 
   const pct = spool.initial_weight_g > 0
     ? Math.max(0, Math.min(100, Math.round((remaining / spool.initial_weight_g) * 100)))
     : 0;
 
   async function save() {
-    setBusy(true); setMsg(null);
+    setBusy(true);
     try {
       await api.updateSpool(spool.id, { remaining_weight_g: remaining, cost, location: location || null });
-      setMsg(t('common.saved', 'Saved'));
+      toast(t('common.saved', 'Saved'), 'success');
       onChanged();
-    } catch (e) { setMsg((e as Error).message); }
+    } catch (e) { toast((e as Error).message, 'error'); }
     finally { setBusy(false); }
   }
   async function archive() {
     if (!confirm(t('v2.inventory.confirm_archive', 'Archive this spool?'))) return;
-    setBusy(true); setMsg(null);
-    try { await api.archiveSpool(spool.id, true); onChanged(); onClose(); }
-    catch (e) { setMsg((e as Error).message); setBusy(false); }
+    setBusy(true);
+    try { await api.archiveSpool(spool.id, true); toast(t('v2.inventory.archived', 'Spool archived'), 'success'); onChanged(); onClose(); }
+    catch (e) { toast((e as Error).message, 'error'); setBusy(false); }
   }
 
   return (
@@ -74,7 +75,6 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
           <button className="btn btn--primary" disabled={busy} onClick={save}>{t('common.save', 'Save')}</button>
           <button className="btn btn--danger" disabled={busy} onClick={archive}>{t('v2.inventory.archive', 'Archive')}</button>
         </div>
-        {msg && <div className="drawer-msg muted">{msg}</div>}
       </aside>
     </div>
   );

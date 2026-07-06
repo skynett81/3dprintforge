@@ -106,10 +106,14 @@ edge cases, i18n):
 Each panel: build in React → reach parity → flip the old sidebar entry to
 deep-link `/v2/<panel>` → delete the vanilla component.
 
-### Phase 3 — Shared shell & the long tail (medium)
-- Move global chrome (sidebar, notifications, auth state, toasts) into React
-  so `/v2` is a complete app, not panels-in-isolation.
-- Port remaining interactive panels (Settings, Calibration, etc.).
+### Phase 3 — Shared shell & the long tail (IN PROGRESS)
+- Shared shell DONE: a **toast** system (`src/toast.tsx`, `ToastProvider` +
+  `useToast`) now gives cross-panel success/error feedback on every write
+  (Production, Queue, Fleet control, Inventory); an **auth-aware** shell
+  (`useAuth` reads `/api/auth/status`) shows the signed-in user / local mode
+  in the sidebar.
+- Remaining: notification center, and porting the remaining interactive
+  panels (Settings, Calibration, etc.).
 
 ### Phase 4 — Low-churn / heavy panels (large, optional / last)
 - The 51 Model Forge generators and deep calibration wizards are stable and

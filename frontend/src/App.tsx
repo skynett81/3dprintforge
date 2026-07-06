@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from './hooks';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
@@ -21,6 +22,8 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
 
 export function App() {
   const [panel, setPanel] = useState<PanelId>('dashboard');
+  const auth = useAuth();
+  const authLabel = auth == null ? '' : auth.user ? auth.user : auth.enabled ? 'Signed in' : 'Local · no login';
 
   return (
     <div className="app-shell">
@@ -45,6 +48,9 @@ export function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {authLabel && (
+            <div className="auth-chip"><span className="auth-dot" />{authLabel}</div>
+          )}
           <a className="classic-link" href="/">← Classic UI</a>
           <div className="muted" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
         </div>

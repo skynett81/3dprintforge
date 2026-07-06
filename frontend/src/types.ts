@@ -83,6 +83,13 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface AuthStatus {
+  enabled: boolean;
+  authenticated: boolean;
+  requiresUsername: boolean;
+  user: string | null;
+}
+
 export interface HistoryRow {
   id: number;
   printer_id: string;

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import { QueueItemRow } from '../components/QueueItemRow';
 import type { Queue, BedHold, QueueItem } from '../types';
 
 export function QueuePanel() {
   const t = useT();
+  const toast = useToast();
   const { data: queues, error, reload: reloadQueues } = useResource<Queue[]>(api.listQueues, 4000);
   const { data: holds, reload: reloadHolds } = useResource<BedHold[]>(api.listHolds, 4000);
   const [selected, setSelected] = useState<number | null>(null);
@@ -25,19 +27,25 @@ export function QueuePanel() {
   }
   useEffect(() => { if (selected != null) loadItems(selected); }, [selected]);
 
-  async function confirmBed(printerId: string) { await api.confirmBed(printerId); reloadHolds(); }
+  async function run(fn: () => Promise<void>, ok?: string) {
+    try { await fn(); if (ok) toast(ok, 'success'); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function confirmBed(printerId: string) {
+    await run(async () => { await api.confirmBed(printerId); reloadHolds(); }, t('v2.queue.bed_confirmed', 'Bed confirmed'));
+  }
   async function toggleQueue(q: Queue) {
-    if (q.status === 'active') await api.pauseQueue(q.id); else await api.resumeQueue(q.id);
-    reloadQueues();
+    await run(async () => {
+      if (q.status === 'active') await api.pauseQueue(q.id); else await api.resumeQueue(q.id);
+      reloadQueues();
+    });
   }
   async function saveItem(id: number, body: { copies: number; priority: number }) {
-    await api.updateQueueItem(id, body);
-    if (selected != null) loadItems(selected);
+    await run(async () => { await api.updateQueueItem(id, body); if (selected != null) loadItems(selected); }, t('common.saved', 'Saved'));
   }
   async function deleteItem(item: QueueItem) {
     if (!confirm(t('v2.queue.confirm_delete', `Remove "${item.filename}" from the queue?`))) return;
-    await api.deleteQueueItem(item.id);
-    if (selected != null) loadItems(selected);
+    await run(async () => { await api.deleteQueueItem(item.id); if (selected != null) loadItems(selected); }, t('v2.queue.item_removed', 'Item removed'));
   }
 
   return (

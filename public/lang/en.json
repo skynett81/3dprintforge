@@ -18,7 +18,10 @@
       "completed": "Completed",
       "done": "done",
       "plate": "+ plate",
-      "credit_plate_hint": "Record a finished plate"
+      "credit_plate_hint": "Record a finished plate",
+      "part_added": "Part added",
+      "part_deleted": "Part deleted",
+      "project_created": "Project created"
     },
     "fleet": {
       "title": "Fleet",
@@ -54,7 +57,9 @@
       "copies": "Copies",
       "priority": "Priority",
       "pause": "Pause queue",
-      "resume": "Resume queue"
+      "resume": "Resume queue",
+      "bed_confirmed": "Bed confirmed",
+      "item_removed": "Item removed"
     },
     "inventory": {
       "title": "Inventory",
@@ -70,7 +75,8 @@
       "cost": "Cost",
       "location": "Location",
       "archive": "Archive",
-      "confirm_archive": "Archive this spool?"
+      "confirm_archive": "Archive this spool?",
+      "archived": "Spool archived"
     },
     "analytics": {
       "title": "Analytics",
