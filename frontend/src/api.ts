@@ -43,6 +43,13 @@ export const api = {
 
   // Fleet / inventory / queue — read-only panels over existing endpoints.
   listPrinters: (): Promise<Printer[]> => req<Printer[]>('/api/printers'),
+  getMaintenanceStatus: (printerId: string): Promise<import('./types').MaintenanceStatus> =>
+    req(`/api/maintenance/status?printer_id=${encodeURIComponent(printerId)}`),
+  logMaintenance: (printerId: string, component: string) =>
+    req<{ ok: boolean }>('/api/maintenance/log', {
+      method: 'POST',
+      body: JSON.stringify({ printer_id: printerId, component, action: 'maintenance' }),
+    }),
   controlPrinter: (id: string, action: string, extra: Record<string, unknown> = {}) =>
     req<{ ok: boolean; action: string }>(`/api/printers/${encodeURIComponent(id)}/control`, {
       method: 'POST',

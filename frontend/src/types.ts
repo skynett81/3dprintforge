@@ -83,6 +83,23 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface MaintComponent {
+  component: string;
+  label: string;
+  interval_hours: number;
+  hours_since_maintenance: number;
+  percentage: number;
+  overdue: boolean;
+  last_maintenance: string | null;
+}
+
+export interface MaintenanceStatus {
+  total_print_hours: number;
+  total_prints: number;
+  total_filament_g: number;
+  components: MaintComponent[];
+}
+
 export interface Supplier {
   id: number;
   name: string;

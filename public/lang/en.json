@@ -90,6 +90,19 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "maint": {
+      "title": "Maintenance",
+      "overdue": "overdue",
+      "all_ok": "all up to date",
+      "printer": "Printer",
+      "print_hours": "Print hours",
+      "prints": "Prints",
+      "filament": "Filament",
+      "components": "Components",
+      "none": "No maintenance schedule for this printer.",
+      "mark": "Mark serviced",
+      "logged": "Logged as serviced"
+    },
     "purchasing": {
       "title": "Purchasing",
       "suppliers": "suppliers",

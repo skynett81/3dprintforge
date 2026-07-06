@@ -80,6 +80,16 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Maintenance */
+.mnt-list { display: flex; flex-direction: column; }
+.mnt-row { display: grid; grid-template-columns: 1.4fr 2fr auto; align-items: center; gap: 16px; padding: 12px 2px; border-top: 1px solid var(--border-soft); }
+.mnt-row:first-child { border-top: none; }
+.mnt-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mnt-label { font-weight: 550; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+.mnt-bar { height: 8px; background: var(--bg); border: 1px solid var(--border-soft); border-radius: 999px; overflow: hidden; }
+.mnt-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #35e0cf); }
+.mnt-fill--over { background: linear-gradient(90deg, var(--amber), #f5c869); }
+
 /* Purchasing */
 .sup-simple { display: flex; flex-direction: column; }
 .supx-row { display: grid; grid-template-columns: 1fr 1.4fr auto; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
