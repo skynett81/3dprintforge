@@ -55,7 +55,8 @@ export function App() {
       <section className="card">
         <ProjectPicker projects={projects} selected={selected} onSelect={setSelected} />
         {projects.length === 0 && (
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 4 }}>
+            <p className="muted" style={{ marginTop: 0 }}>No projects yet — create your first one to start tracking production.</p>
             <CreateProject onCreate={createProject} />
           </div>
         )}

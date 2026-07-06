@@ -7,9 +7,8 @@ interface Props {
 }
 
 export function ProjectPicker({ projects, selected, onSelect }: Props) {
-  if (projects.length === 0) {
-    return <p className="muted">No active projects. Create one in the main app first.</p>;
-  }
+  // Empty state is handled by the App (it shows a create form instead).
+  if (projects.length === 0) return null;
   return (
     <label className="field">
       <span className="field-label">Project</span>
