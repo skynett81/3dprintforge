@@ -2,6 +2,30 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import type { Project, Part } from './types';
 
+// Generic read-only resource loader with light polling. `loader` must be a
+// stable reference (e.g. an api.* method) so the effect doesn't re-fire.
+export function useResource<T>(loader: () => Promise<T>, pollMs = 5000) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(() => {
+    loader()
+      .then((d) => { setData(d); setError(null); })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [loader]);
+
+  useEffect(() => {
+    reload();
+    if (!pollMs) return;
+    const t = setInterval(reload, pollMs);
+    return () => clearInterval(t);
+  }, [reload, pollMs]);
+
+  return { data, error, loading, reload };
+}
+
 // Load the active projects once.
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);

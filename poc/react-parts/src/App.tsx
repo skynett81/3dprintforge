@@ -1,104 +1,67 @@
-import { useEffect, useState } from 'react';
-import { api } from './api';
-import { useProjects, useParts } from './hooks';
-import { Overview } from './components/Overview';
-import { PartRow } from './components/PartRow';
-import { AddPartForm } from './components/AddPartForm';
-import { CreateProject } from './components/CreateProject';
-import type { NewPart, Part } from './types';
+import { useState } from 'react';
+import { ProductionPanel } from './panels/ProductionPanel';
+import { FleetPanel } from './panels/FleetPanel';
+import { InventoryPanel } from './panels/InventoryPanel';
+import { QueuePanel } from './panels/QueuePanel';
+
+type PanelId = 'production' | 'fleet' | 'inventory' | 'queue';
+
+const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
+  { id: 'production', label: 'Production', icon: <IconLayers /> },
+  { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
+  { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
+  { id: 'queue', label: 'Queue', icon: <IconQueue /> },
+];
 
 export function App() {
-  const { projects, error: projErr, reload: reloadProjects } = useProjects();
-  const [selected, setSelected] = useState<number | null>(null);
-  const { parts, error: partsErr, reload } = useParts(selected);
-  const [adding, setAdding] = useState(false);
-
-  // Auto-select the first project so the populated view shows immediately.
-  useEffect(() => {
-    if (selected == null && projects.length > 0) setSelected(projects[0].id);
-  }, [projects, selected]);
-
-  const current = projects.find((p) => p.id === selected) || null;
-
-  async function addPart(body: NewPart) {
-    if (selected == null) return;
-    await api.addPart(selected, body);
-    setAdding(false);
-    reload();
-  }
-  async function creditPart(part: Part) { await api.creditPart(part.id); reload(); }
-  async function deletePart(part: Part) { await api.deletePart(part.id); reload(); }
-  async function createProject(name: string) {
-    const { id } = await api.createProject(name);
-    reloadProjects();
-    setSelected(id);
-  }
+  const [panel, setPanel] = useState<PanelId>('production');
 
   return (
-    <div className="page">
-      <header className="topbar">
+    <div className="app-shell">
+      <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">3F</div>
-          <div>
-            <h1>Production <span className="tag">React PoC</span></h1>
-            <p className="muted sub">Batch quantity tracking on the live 3DPrintForge API</p>
+          <div className="brand-text">
+            <div className="brand-name">3DPrintForge</div>
+            <div className="brand-sub">React PoC</div>
           </div>
         </div>
-        {projects.length > 0 && (
-          <label className="project-select">
-            <span className="field-label">Project</span>
-            <select className="input" value={selected ?? ''} onChange={(e) => setSelected(Number(e.target.value))}>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
-        )}
-      </header>
+        <nav className="nav">
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+              onClick={() => setPanel(n.id)}
+            >
+              <span className="nav-icon">{n.icon}</span>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-foot muted">
+          Live JSON API · Vite + React + TS
+        </div>
+      </aside>
 
-      {projErr && <div className="error">Could not load projects: {projErr}</div>}
-
-      {projects.length === 0 && !projErr && (
-        <section className="card empty-card">
-          <h2>Start a production run</h2>
-          <p className="muted">No projects yet — create your first one to begin tracking parts.</p>
-          <CreateProject onCreate={createProject} />
-        </section>
-      )}
-
-      {current && (
-        <>
-          <Overview parts={parts} />
-
-          <section className="card">
-            <div className="card-head">
-              <div className="card-title">{current.name}</div>
-              <button className="btn btn--primary" onClick={() => setAdding((v) => !v)}>
-                {adding ? 'Close' : '+ Add part'}
-              </button>
-            </div>
-
-            {adding && (
-              <div className="add-wrap">
-                <AddPartForm onAdd={addPart} />
-              </div>
-            )}
-
-            {partsErr && <div className="error">{partsErr}</div>}
-
-            {parts.length === 0 ? (
-              <p className="muted empty-note">No parts yet — add one to start tracking production.</p>
-            ) : (
-              <div className="part-list">
-                <div className="part-head">
-                  <span>Part</span><span>Progress</span><span>Per plate</span><span></span>
-                </div>
-                {parts.map((p) => (
-                  <PartRow key={p.id} part={p} onCredit={creditPart} onDelete={deletePart} />
-                ))}
-              </div>
-            )}
-          </section>
-        </>
-      )}
+      <main className="main">
+        {panel === 'production' && <ProductionPanel />}
+        {panel === 'fleet' && <FleetPanel />}
+        {panel === 'inventory' && <InventoryPanel />}
+        {panel === 'queue' && <QueuePanel />}
+      </main>
     </div>
   );
+}
+
+function IconLayers() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>;
+}
+function IconPrinter() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>;
+}
+function IconSpool() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /></svg>;
+}
+function IconQueue() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
 }
