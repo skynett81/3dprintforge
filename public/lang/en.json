@@ -36,6 +36,25 @@
       "light_off": "Light off",
       "confirm_stop": "Stop the current print? This cannot be undone.",
       "sent": "Command sent"
+    },
+    "queue": {
+      "title": "Queue",
+      "queues": "queues",
+      "items": "items",
+      "printing": "printing",
+      "beds_waiting": "beds awaiting confirmation",
+      "beds_held": "Beds awaiting operator confirmation",
+      "confirm_bed": "Confirm bed cleared",
+      "auto_start": "auto-start",
+      "confirm_beds": "confirm beds",
+      "no_queues": "No queues.",
+      "no_items": "No items in this queue.",
+      "file": "File",
+      "status": "Status",
+      "copies": "Copies",
+      "priority": "Priority",
+      "pause": "Pause queue",
+      "resume": "Resume queue"
     }
   },
   "nav": {

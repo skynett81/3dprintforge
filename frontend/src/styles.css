@@ -138,6 +138,18 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .hold-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border-soft); font-size: 0.9rem; }
 .hold-row:first-of-type { border-top: none; }
 
+.tile--selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+/* Queue items */
+.qi-list { display: flex; flex-direction: column; }
+.qi-head, .qi-row { display: grid; grid-template-columns: 2.4fr 1fr 0.8fr 0.7fr auto; align-items: center; gap: 12px; }
+.qi-head { padding: 0 2px 8px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.qi-row { padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.qi-row--edit { grid-template-columns: 2fr 90px 90px auto; background: var(--bg-4); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 10px 12px; }
+.qi-file { font-weight: 500; }
+.qi-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.hs-badge-neutral { background: var(--bg-4); color: var(--muted); }
+
 /* Live indicators */
 .live-pill {
   display: inline-flex; align-items: center; gap: 7px; font-size: 0.72rem;

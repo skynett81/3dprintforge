@@ -63,6 +63,18 @@ export interface Queue {
   priority_mode?: string | null;
 }
 
+export interface QueueItem {
+  id: number;
+  queue_id: number;
+  filename: string;
+  status: string;
+  priority: number;
+  copies: number;
+  copies_completed: number;
+  printer_id?: string | null;
+  required_material?: string | null;
+}
+
 export interface BedHold {
   printer_id: string;
   filename?: string | null;

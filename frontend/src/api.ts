@@ -1,4 +1,4 @@
-import type { Project, Part, NewPart, Printer, Spool, Queue, BedHold, HistoryRow, Stats } from './types';
+import type { Project, Part, NewPart, Printer, Spool, Queue, QueueItem, BedHold, HistoryRow, Stats } from './types';
 
 // Thin typed client over the real 3DPrintForge REST API (proxied by Vite).
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
@@ -50,6 +50,15 @@ export const api = {
     }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
   listQueues: (): Promise<Queue[]> => req<Queue[]>('/api/queue'),
+  getQueueItems: (queueId: number) => req<QueueItem[]>(`/api/queue/${queueId}/items`),
+  updateQueueItem: (itemId: number, body: Partial<Pick<QueueItem, 'copies' | 'priority' | 'status'>>) =>
+    req<{ ok: boolean }>(`/api/queue/items/${itemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteQueueItem: (itemId: number) =>
+    req<{ ok: boolean }>(`/api/queue/items/${itemId}`, { method: 'DELETE' }),
+  pauseQueue: (id: number) => req<{ ok: boolean }>(`/api/queue/${id}/pause`, { method: 'POST' }),
+  resumeQueue: (id: number) => req<{ ok: boolean }>(`/api/queue/${id}/resume`, { method: 'POST' }),
+  confirmBed: (printerId: string) =>
+    req<{ ok: boolean }>(`/api/queue/confirm-bed/${encodeURIComponent(printerId)}`, { method: 'POST' }),
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getStatistics: (): Promise<Stats> => req<Stats>('/api/statistics'),
   listHistory: (): Promise<HistoryRow[]> => req<HistoryRow[]>('/api/history?limit=40'),
