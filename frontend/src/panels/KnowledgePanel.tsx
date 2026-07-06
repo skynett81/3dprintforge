@@ -2,12 +2,16 @@ import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import type { KbPrinter } from '../types';
 
 export function KnowledgePanel() {
   const t = useT();
-  const { data } = useResource<KbPrinter[]>(api.listKbPrinters, 0);
+  const toast = useToast();
+  const { data, reload } = useResource<KbPrinter[]>(api.listKbPrinters, 0);
   const [q, setQ] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ full_name: '', model: '', release_year: '', build_volume: '', price_usd: '' });
 
   const all = data ?? [];
   const shown = useMemo(() => {
@@ -16,6 +20,26 @@ export function KnowledgePanel() {
     return [...list].sort((a, b) => (b.release_year || 0) - (a.release_year || 0));
   }, [all, q]);
 
+  async function run(fn: () => Promise<void>, ok?: string) {
+    try { await fn(); if (ok) toast(ok, 'success'); } catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function add() {
+    if (!form.full_name.trim() || !form.model.trim()) { toast(t('v2.kb.need_name', 'Model and full name required'), 'error'); return; }
+    await run(async () => {
+      await api.addKbPrinter({
+        model: form.model.trim(), full_name: form.full_name.trim(),
+        release_year: form.release_year ? Number(form.release_year) : undefined,
+        build_volume: form.build_volume.trim() || undefined,
+        price_usd: form.price_usd ? Number(form.price_usd) : undefined,
+      });
+      setAdding(false); setForm({ full_name: '', model: '', release_year: '', build_volume: '', price_usd: '' }); reload();
+    }, t('v2.kb.added', 'Printer added'));
+  }
+  async function remove(p: KbPrinter) {
+    if (!confirm(t('v2.kb.confirm', `Delete "${p.full_name || p.model}"?`))) return;
+    await run(async () => { await api.deleteKbPrinter(p.id); reload(); }, t('v2.kb.removed', 'Printer removed'));
+  }
+
   return (
     <div>
       <div className="panel-head">
@@ -23,15 +47,34 @@ export function KnowledgePanel() {
           <h2 className="panel-title">{t('v2.kb.title', 'Knowledge base')}</h2>
           <p className="muted sub">{all.length} {t('v2.kb.printers', 'printers')}</p>
         </div>
-        <input className="input" style={{ width: 'auto', minWidth: 200 }} placeholder={t('v2.kb.search', 'Search printers…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="inv-head-actions">
+          <input className="input" style={{ width: 'auto', minWidth: 180 }} placeholder={t('v2.kb.search', 'Search printers…')} value={q} onChange={(e) => setQ(e.target.value)} />
+          <button className="btn btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.kb.add', '+ Add printer')}</button>
+        </div>
       </div>
+
+      {adding && (
+        <section className="card">
+          <div className="add-form">
+            <label className="field grow"><span className="field-label">{t('v2.kb.full_name', 'Full name')}</span><input className="input" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Bambu Lab X1E" /></label>
+            <label className="field"><span className="field-label">{t('v2.kb.model', 'Model')}</span><input className="input" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="X1E" /></label>
+            <label className="field"><span className="field-label">{t('v2.kb.year', 'Year')}</span><input className="input" type="number" value={form.release_year} onChange={(e) => setForm({ ...form, release_year: e.target.value })} /></label>
+            <label className="field"><span className="field-label">{t('v2.kb.volume', 'Build volume')}</span><input className="input" value={form.build_volume} onChange={(e) => setForm({ ...form, build_volume: e.target.value })} placeholder="256x256x256" /></label>
+            <label className="field"><span className="field-label">{t('v2.kb.price', 'Price $')}</span><input className="input" type="number" value={form.price_usd} onChange={(e) => setForm({ ...form, price_usd: e.target.value })} /></label>
+            <button className="btn btn--primary" onClick={add}>{t('v2.inv.add_btn', 'Add')}</button>
+          </div>
+        </section>
+      )}
 
       <div className="tile-grid">
         {shown.map((p) => (
           <div className="tile" key={p.id}>
             <div className="tile-top">
               <span className="tile-tag">{p.release_year || ''}</span>
-              {p.price_usd != null && <span className="muted tnum">${p.price_usd}</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {p.price_usd != null && <span className="muted tnum">${p.price_usd}</span>}
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(p)}>✕</button>
+              </div>
             </div>
             <div className="tile-name">{p.full_name || p.model}</div>
             <div className="tile-meta">{p.build_volume || '—'}{p.max_speed ? ` · ${p.max_speed} mm/s` : ''}</div>

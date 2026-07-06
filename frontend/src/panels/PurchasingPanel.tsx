@@ -17,10 +17,12 @@ function statusClass(s: string) {
 export function PurchasingPanel() {
   const t = useT();
   const toast = useToast();
-  const { data: suppliers } = useResource<Supplier[]>(api.listSuppliers, 0);
+  const { data: suppliers, reload: reloadSuppliers } = useResource<Supplier[]>(api.listSuppliers, 0);
   const { data: pos, reload: reloadPos } = useResource<PurchaseOrder[]>(api.listPurchaseOrders, 15000);
   const [selected, setSelected] = useState<number | null>(null);
   const [detail, setDetail] = useState<PurchaseOrder | null>(null);
+  const [addingSup, setAddingSup] = useState(false);
+  const [supForm, setSupForm] = useState({ name: '', website: '', lead_time_days: '' });
 
   const list = pos ?? [];
   useEffect(() => { if (selected == null && list.length > 0) setSelected(list[0].id); }, [list, selected]);
@@ -41,6 +43,17 @@ export function PurchasingPanel() {
     if (selected == null) return;
     await run(async () => { await api.updatePurchaseOrder(selected, { status }); loadDetail(selected); reloadPos(); }, t('common.saved', 'Saved'));
   }
+  async function addSupplier() {
+    if (!supForm.name.trim()) return;
+    await run(async () => {
+      await api.addSupplier({ name: supForm.name.trim(), website: supForm.website.trim() || undefined, lead_time_days: supForm.lead_time_days ? Number(supForm.lead_time_days) : undefined });
+      setAddingSup(false); setSupForm({ name: '', website: '', lead_time_days: '' }); reloadSuppliers();
+    }, t('v2.purchasing.sup_added', 'Supplier added'));
+  }
+  async function removeSupplier(s: Supplier) {
+    if (!confirm(t('v2.purchasing.sup_confirm', `Delete supplier "${s.name}"?`))) return;
+    await run(async () => { await api.deleteSupplier(s.id); reloadSuppliers(); }, t('v2.purchasing.sup_removed', 'Supplier removed'));
+  }
 
   return (
     <div>
@@ -52,7 +65,18 @@ export function PurchasingPanel() {
       </div>
 
       <section className="card">
-        <div className="card-title">{t('v2.purchasing.suppliers', 'Suppliers')}</div>
+        <div className="card-head">
+          <div className="card-title">{t('v2.purchasing.suppliers', 'Suppliers')}</div>
+          <button className="btn btn--sm btn--primary" onClick={() => setAddingSup((v) => !v)}>{addingSup ? t('common.close', 'Close') : t('v2.purchasing.add_supplier', '+ Add supplier')}</button>
+        </div>
+        {addingSup && (
+          <div className="add-form">
+            <label className="field grow"><span className="field-label">{t('v2.inv.name', 'Name')}</span><input className="input" value={supForm.name} onChange={(e) => setSupForm({ ...supForm, name: e.target.value })} placeholder="3DJake" /></label>
+            <label className="field grow"><span className="field-label">{t('v2.purchasing.website', 'Website')}</span><input className="input" value={supForm.website} onChange={(e) => setSupForm({ ...supForm, website: e.target.value })} placeholder="https://…" /></label>
+            <label className="field"><span className="field-label">{t('v2.purchasing.lead', 'Lead (d)')}</span><input className="input" type="number" min={0} value={supForm.lead_time_days} onChange={(e) => setSupForm({ ...supForm, lead_time_days: e.target.value })} /></label>
+            <button className="btn btn--primary" onClick={addSupplier}>{t('v2.inv.add_btn', 'Add')}</button>
+          </div>
+        )}
         {(suppliers ?? []).length === 0 ? (
           <p className="muted empty-note">{t('v2.purchasing.no_suppliers', 'No suppliers yet.')}</p>
         ) : (
@@ -62,6 +86,7 @@ export function PurchasingPanel() {
                 <span className="supx-name">{s.name}</span>
                 <span className="muted">{s.website || ''}</span>
                 <span className="muted tnum">{s.lead_time_days != null ? `${s.lead_time_days} ${t('v2.purchasing.days_lead', 'd lead')}` : ''}</span>
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => removeSupplier(s)}>✕</button>
               </div>
             ))}
           </div>

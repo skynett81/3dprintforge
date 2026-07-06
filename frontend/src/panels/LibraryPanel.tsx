@@ -1,8 +1,11 @@
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
+import { useToast } from '../toast';
 import { formatBytes } from '../format';
 import type { LibraryFile } from '../types';
+
+const COLS = '2.2fr 0.8fr 0.8fr 0.6fr 0.9fr auto';
 
 function when(iso?: string | null) {
   if (!iso) return '—';
@@ -12,9 +15,16 @@ function when(iso?: string | null) {
 
 export function LibraryPanel() {
   const t = useT();
-  const { data } = useResource<LibraryFile[]>(api.listLibrary, 30000);
+  const toast = useToast();
+  const { data, reload } = useResource<LibraryFile[]>(api.listLibrary, 30000);
   const files = data ?? [];
   const totalSize = files.reduce((a, f) => a + (f.file_size || 0), 0);
+
+  async function remove(f: LibraryFile) {
+    if (!confirm(t('v2.library.confirm', `Delete "${f.original_name}"?`))) return;
+    try { await api.deleteLibrary(f.id); toast(t('v2.library.removed', 'File removed'), 'success'); reload(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   return (
     <div>
@@ -29,20 +39,22 @@ export function LibraryPanel() {
           <p className="muted empty-note">{t('v2.library.none', 'No files in the library.')}</p>
         ) : (
           <div className="lib-list">
-            <div className="lib-head">
+            <div className="lib-head" style={{ gridTemplateColumns: COLS }}>
               <span>{t('v2.library.name', 'File')}</span>
               <span>{t('v2.library.type', 'Type')}</span>
               <span>{t('v2.library.size', 'Size')}</span>
               <span>{t('v2.library.prints', 'Prints')}</span>
               <span>{t('v2.library.last', 'Last printed')}</span>
+              <span></span>
             </div>
             {files.map((f) => (
-              <div className="lib-row" key={f.id}>
+              <div className="lib-row" key={f.id} style={{ gridTemplateColumns: COLS }}>
                 <span className="lib-name ellipsis" title={f.original_name}>{f.original_name}</span>
                 <span><span className="tile-tag">{f.file_type}</span></span>
                 <span className="tnum muted">{formatBytes(f.file_size)}</span>
                 <span className="tnum">{f.print_count}</span>
                 <span className="muted tnum">{when(f.last_printed)}</span>
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(f)}>✕</button>
               </div>
             ))}
           </div>

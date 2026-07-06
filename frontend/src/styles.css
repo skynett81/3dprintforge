@@ -160,7 +160,7 @@ a.hs-badge { text-decoration: none; }
 
 /* Purchasing */
 .sup-simple { display: flex; flex-direction: column; }
-.supx-row { display: grid; grid-template-columns: 1fr 1.4fr auto; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.supx-row { display: grid; grid-template-columns: 1fr 1.4fr auto auto; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
 .supx-row:first-child { border-top: none; }
 .supx-name { font-weight: 550; }
 

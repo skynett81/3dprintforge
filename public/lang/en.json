@@ -216,7 +216,9 @@
       "type": "Type",
       "size": "Size",
       "prints": "Prints",
-      "last": "Last printed"
+      "last": "Last printed",
+      "confirm": "Delete this file?",
+      "removed": "File removed"
     },
     "kb": {
       "title": "Knowledge base",
@@ -225,7 +227,17 @@
       "enclosed": "enclosed",
       "camera": "camera",
       "wiki": "Wiki →",
-      "no_match": "No printers match."
+      "no_match": "No printers match.",
+      "add": "+ Add printer",
+      "added": "Printer added",
+      "removed": "Printer removed",
+      "confirm": "Delete this printer?",
+      "need_name": "Model and full name required",
+      "full_name": "Full name",
+      "model": "Model",
+      "year": "Year",
+      "volume": "Build volume",
+      "price": "Price $"
     },
     "errors": {
       "title": "Errors",
@@ -336,7 +348,13 @@
       "select": "Select an order.",
       "receive": "Receive",
       "received": "Received into stock",
-      "done": "received"
+      "done": "received",
+      "add_supplier": "+ Add supplier",
+      "sup_added": "Supplier added",
+      "sup_removed": "Supplier removed",
+      "sup_confirm": "Delete this supplier?",
+      "website": "Website",
+      "lead": "Lead (d)"
     },
     "supply": {
       "title": "Supply",
