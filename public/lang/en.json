@@ -19,6 +19,23 @@
       "done": "done",
       "plate": "+ plate",
       "credit_plate_hint": "Record a finished plate"
+    },
+    "fleet": {
+      "title": "Fleet",
+      "online": "online",
+      "printing": "printing",
+      "live": "Live",
+      "connecting": "Connecting…",
+      "nozzle": "Nozzle",
+      "bed": "Bed",
+      "chamber": "Chamber",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stop": "Stop",
+      "light_on": "Light on",
+      "light_off": "Light off",
+      "confirm_stop": "Stop the current print? This cannot be undone.",
+      "sent": "Command sent"
     }
   },
   "nav": {

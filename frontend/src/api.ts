@@ -43,6 +43,11 @@ export const api = {
 
   // Fleet / inventory / queue — read-only panels over existing endpoints.
   listPrinters: (): Promise<Printer[]> => req<Printer[]>('/api/printers'),
+  controlPrinter: (id: string, action: string, extra: Record<string, unknown> = {}) =>
+    req<{ ok: boolean; action: string }>(`/api/printers/${encodeURIComponent(id)}/control`, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...extra }),
+    }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
   listQueues: (): Promise<Queue[]> => req<Queue[]>('/api/queue'),
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),

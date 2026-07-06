@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { api } from '../api';
 import { useResource, useLivePrinters } from '../hooks';
+import { useT } from '../i18n';
 import { readLive, isPrinting } from '../live';
+import { PrinterDrawer } from '../components/PrinterDrawer';
 import type { Printer } from '../types';
 
 function online(p: Printer) {
@@ -11,25 +14,28 @@ function online(p: Printer) {
 function temp(v: number | null) { return v == null ? '—' : `${Math.round(v)}°`; }
 
 export function FleetPanel() {
+  const t = useT();
   const { data, error, loading } = useResource<Printer[]>(api.listPrinters);
   const { live, connected } = useLivePrinters();
+  const [openId, setOpenId] = useState<string | null>(null);
   const printers = data ?? [];
   const printing = printers.filter((p) => isPrinting(readLive(live[p.id]))).length;
+  const open = printers.find((p) => p.id === openId) || null;
 
   return (
     <div>
       <div className="panel-head">
         <div>
-          <h2 className="panel-title">Fleet</h2>
-          <p className="muted sub">{printers.filter(online).length}/{printers.length} online · {printing} printing</p>
+          <h2 className="panel-title">{t('v2.fleet.title', 'Fleet')}</h2>
+          <p className="muted sub">{printers.filter(online).length}/{printers.length} {t('v2.fleet.online', 'online')} · {printing} {t('v2.fleet.printing', 'printing')}</p>
         </div>
         <span className={`live-pill${connected ? ' live-pill--on' : ''}`}>
-          <span className="live-dot" />{connected ? 'Live' : 'Connecting…'}
+          <span className="live-dot" />{connected ? t('v2.fleet.live', 'Live') : t('v2.fleet.connecting', 'Connecting…')}
         </span>
       </div>
 
       {error && <div className="error">{error}</div>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <p className="muted">{t('common.loading', 'Loading…')}</p>}
 
       <div className="tile-grid">
         {printers.map((p) => {
@@ -37,7 +43,7 @@ export function FleetPanel() {
           const busy = isPrinting(l);
           const state = (l.gcodeState || p.status || p.state || 'unknown').toLowerCase();
           return (
-            <div key={p.id} className="tile">
+            <button key={p.id} className="tile tile--clickable" onClick={() => setOpenId(p.id)}>
               <div className="tile-top">
                 <span className={`status-chip status-chip--${busy ? 'busy' : online(p) ? 'on' : 'off'}`}>
                   <span className="status-dot" />{state}
@@ -58,14 +64,16 @@ export function FleetPanel() {
               )}
 
               <div className="temps">
-                <span className="temp"><span className="temp-k">Nozzle</span> {temp(l.nozzle)}</span>
-                <span className="temp"><span className="temp-k">Bed</span> {temp(l.bed)}</span>
-                {l.chamber != null && <span className="temp"><span className="temp-k">Chamber</span> {temp(l.chamber)}</span>}
+                <span className="temp"><span className="temp-k">{t('v2.fleet.nozzle', 'Nozzle')}</span> {temp(l.nozzle)}</span>
+                <span className="temp"><span className="temp-k">{t('v2.fleet.bed', 'Bed')}</span> {temp(l.bed)}</span>
+                {l.chamber != null && <span className="temp"><span className="temp-k">{t('v2.fleet.chamber', 'Chamber')}</span> {temp(l.chamber)}</span>}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {open && <PrinterDrawer printer={open} live={live[open.id]} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

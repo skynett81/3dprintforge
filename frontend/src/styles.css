@@ -82,6 +82,37 @@ body {
 .tile-tag { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
 .tile-tag--live { color: var(--blue); }
 
+button.tile { font: inherit; color: inherit; text-align: left; width: 100%; cursor: pointer; }
+.tile--clickable:hover { border-color: var(--accent); }
+
+.btn--danger { border-color: rgba(239,90,90,0.4); color: var(--red); }
+.btn--danger:hover:not(:disabled) { background: rgba(239,90,90,0.14); border-color: var(--red); color: #fff; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Printer detail drawer */
+.drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50;
+  display: flex; justify-content: flex-end;
+}
+.drawer {
+  width: min(380px, 92vw); height: 100%; overflow-y: auto;
+  background: linear-gradient(180deg, var(--bg-2), #10131a);
+  border-left: 1px solid var(--border); padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+  animation: slidein 0.18s ease;
+}
+@keyframes slidein { from { transform: translateX(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+.drawer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.drawer-title { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
+.drawer-state { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.drawer-prog { display: flex; flex-direction: column; gap: 6px; }
+.drawer-temps { display: flex; gap: 10px; }
+.dt { flex: 1; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 10px 12px; }
+.dt-k { display: block; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+.dt-v { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.drawer-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.drawer-msg { font-size: 0.8rem; }
+
 .status-chip {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 0.68rem; padding: 3px 9px; border-radius: 999px; text-transform: capitalize;
