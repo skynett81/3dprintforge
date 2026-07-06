@@ -44,8 +44,9 @@ export function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot muted">
-          Live JSON API · Vite + React + TS
+        <div className="sidebar-foot">
+          <a className="classic-link" href="/">← Classic UI</a>
+          <div className="muted" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
         </div>
       </aside>
 

@@ -59,6 +59,8 @@ body {
 .nav-item--active .nav-icon { color: var(--accent); }
 .nav-icon { display: grid; place-items: center; opacity: 0.9; }
 .sidebar-foot { margin-top: auto; font-size: 0.68rem; padding: 0 6px; line-height: 1.5; }
+.classic-link { color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 500; }
+.classic-link:hover { color: var(--accent); }
 
 .main { padding: 30px 32px 80px; max-width: 1000px; }
 

@@ -35,13 +35,13 @@
     "docs:build": "cd website && npm run build",
     "docs:serve": "cd website && npm run serve",
     "electron:dev": "NODE_ENV=development electron electron/main.cjs",
-    "electron:build": "electron-builder",
-    "electron:build:linux": "electron-builder --linux",
-    "electron:build:mac": "electron-builder --mac",
-    "electron:build:win": "electron-builder --win",
-  "build:web": "npm --prefix frontend install --no-audit --no-fund && npm --prefix frontend run build",
-  "web:dev": "npm --prefix frontend run dev",
-  "web:test": "npm --prefix frontend test"
+    "electron:build": "npm run build:web && electron-builder",
+    "electron:build:linux": "npm run build:web && electron-builder --linux",
+    "electron:build:mac": "npm run build:web && electron-builder --mac",
+    "electron:build:win": "npm run build:web && electron-builder --win",
+    "build:web": "npm --prefix frontend install --no-audit --no-fund && npm --prefix frontend run build",
+    "web:dev": "npm --prefix frontend run dev",
+    "web:test": "npm --prefix frontend test"
   },
   "dependencies": {
     "@3mfconsortium/lib3mf": "^2.5.0-fix.2",

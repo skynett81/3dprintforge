@@ -26,3 +26,8 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('public/lang/nb.json', 'utf8')); console.log('nb.json OK')"
       - name: Validate Pterodactyl egg
         run: node -e "JSON.parse(require('fs').readFileSync('egg-3dprintforge.json', 'utf8')); console.log('egg JSON OK')"
+      - name: Frontend (/v2) type-check & tests
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test

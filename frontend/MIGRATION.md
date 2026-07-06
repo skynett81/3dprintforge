@@ -68,11 +68,15 @@ Browser ── /v2 ─────► React SPA (public/v2, built by Vite) ┘  
   it into `public/v2`; Vitest + React Testing Library set up (`npm run web:test`,
   10 tests green). **Done.**
 
-### Phase 1 — CI & desktop integration (small–medium)
-- CI builds `public/v2` on every release; Electron packaging includes it.
-- Add an entry point into `/v2` from the current UI (a nav link / banner) so
-  users can opt in.
-- Gate: `/v2` reachable in a packaged Electron build and in Docker.
+### Phase 1 — CI & desktop integration (DONE)
+- `release-build.yml` runs `npm run build:web` before packaging in all three
+  desktop jobs; electron-builder already bundles `public/**` so `/v2` ships.
+- `test.yml` gained a frontend gate (type-check + Vitest).
+- `electron:build*` scripts chain `build:web` for local packaging.
+- Entry points both ways: a "New UI (beta)" link in the classic sidebar →
+  `/v2`, and a "← Classic UI" link in the React sidebar → `/`.
+- Remaining gate to confirm post-release: `/v2` reachable inside a packaged
+  Electron build and in Docker (both bundle `public/`, so expected to work).
 
 ### Phase 2 — High-value panels to parity (medium, iterative)
 Port the panels that change most and benefit most from components. The PoC
