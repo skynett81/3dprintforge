@@ -77,6 +77,11 @@ export const api = {
   getPredictions: (): Promise<Predictions> => req<Predictions>('/api/inventory/predictions'),
   updateSpool: (id: number, body: Partial<Pick<Spool, 'remaining_weight_g' | 'cost' | 'location'>>) =>
     req<{ ok: boolean }>(`/api/inventory/spools/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  bulkSpools: (action: string, spoolIds: number[], extra: Record<string, unknown> = {}) =>
+    req<{ ok: boolean; count?: number }>('/api/inventory/spools/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ action, spool_ids: spoolIds, ...extra }),
+    }),
   archiveSpool: (id: number, archived = true) =>
     req<{ ok: boolean }>(`/api/inventory/spools/${id}/archive`, { method: 'PUT', body: JSON.stringify({ archived }) }),
   listQueues: (): Promise<Queue[]> => req<Queue[]>('/api/queue'),

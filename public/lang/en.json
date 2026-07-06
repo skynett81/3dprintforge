@@ -77,7 +77,13 @@
       "location": "Location",
       "archive": "Archive",
       "confirm_archive": "Archive this spool?",
-      "archived": "Spool archived"
+      "archived": "Spool archived",
+      "select": "Select",
+      "selected": "selected",
+      "updated": "spools updated",
+      "relocate": "Relocate",
+      "relocate_to": "Move selected spools to location:",
+      "mark_dried": "Mark dried"
     },
     "analytics": {
       "title": "Analytics",

@@ -135,6 +135,21 @@ body {
 .fc-days { white-space: nowrap; }
 .fc-rate { white-space: nowrap; font-size: 0.76rem; }
 
+/* Inventory bulk selection */
+.inv-head-actions { display: flex; align-items: flex-end; gap: 12px; }
+.bulk-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: rgba(0,179,164,0.1); border: 1px solid rgba(0,179,164,0.3);
+  border-radius: var(--radius); padding: 10px 16px; margin-top: 14px; font-size: 0.86rem;
+}
+.bulk-actions { display: flex; gap: 8px; }
+.tile-check {
+  width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border);
+  display: grid; place-items: center; font-size: 0.72rem; font-weight: 800; color: var(--accent-ink);
+  background: var(--bg-3);
+}
+.tile-check--on { background: var(--accent); border-color: var(--accent); }
+
 /* Printer admin */
 .padd-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .padm-list { display: flex; flex-direction: column; }
