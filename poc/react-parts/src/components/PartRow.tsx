@@ -15,6 +15,7 @@ export function PartRow({ part, onCredit, onDelete }: Props) {
   return (
     <div className={`part-row${closed ? ' part-row--closed' : ''}`}>
       <div className="part-name">
+        <span className={`dot ${closed ? 'dot--done' : 'dot--open'}`} />
         {part.name}
         {closed && <span className="badge badge--done">done</span>}
       </div>
@@ -22,14 +23,13 @@ export function PartRow({ part, onCredit, onDelete }: Props) {
         <div className="bar">
           <div className="bar-fill" style={{ width: `${pct}%` }} />
         </div>
-        <span className="count">{part.completed_qty}/{part.target_qty}</span>
+        <span className="count">{part.completed_qty.toLocaleString()}/{part.target_qty.toLocaleString()}</span>
+        <span className="pct">{pct}%</span>
       </div>
-      <div className="per-plate">{part.parts_per_plate}/plate</div>
+      <div className="per-plate">{part.parts_per_plate}</div>
       <div className="part-actions">
-        <button className="btn" onClick={() => onCredit(part)} title="Record a finished plate">
-          +plate
-        </button>
-        <button className="btn btn--ghost" onClick={() => onDelete(part)}>✕</button>
+        <button className="btn btn--sm" onClick={() => onCredit(part)} title="Record a finished plate">+ plate</button>
+        <button className="btn btn--sm btn--ghost" onClick={() => onDelete(part)} title="Delete part">✕</button>
       </div>
     </div>
   );
