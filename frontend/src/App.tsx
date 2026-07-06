@@ -81,10 +81,24 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
   { label: 'System', items: [{ id: 'settings', label: 'Settings', icon: <IconGear /> }] },
 ];
 
+function loadCollapsed(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
+}
+
 export function App() {
   const t = useT();
   const [panel, setPanel] = useState<PanelId>('dashboard');
+  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const auth = useAuth();
+
+  function toggleGroup(label: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      try { localStorage.setItem('v2.nav.collapsed', JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  }
   const authLabel = auth == null ? '' : auth.user ? auth.user : auth.enabled ? 'Signed in' : 'Local · no login';
 
   const { data: notifData } = useResource<AppNotification[]>(api.listNotifications, 15000);
@@ -115,21 +129,31 @@ export function App() {
           </button>
         </div>
         <nav className="nav">
-          {NAV_GROUPS.map((g, gi) => (
-            <div className="nav-group" key={gi}>
-              {g.label && <div className="nav-section">{g.label}</div>}
-              {g.items.map((n) => (
-                <button
-                  key={n.id}
-                  className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
-                  onClick={() => setPanel(n.id)}
-                >
-                  <span className="nav-icon">{n.icon}</span>
-                  {n.label}
-                </button>
-              ))}
-            </div>
-          ))}
+          {NAV_GROUPS.map((g, gi) => {
+            const isCollapsed = g.label ? collapsed.has(g.label) : false;
+            const hasActive = g.items.some((n) => n.id === panel);
+            return (
+              <div className="nav-group" key={gi}>
+                {g.label && (
+                  <button className="nav-section" onClick={() => toggleGroup(g.label!)} aria-expanded={!isCollapsed}>
+                    <svg className={`nav-chevron${isCollapsed ? '' : ' nav-chevron--open'}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                    <span>{g.label}</span>
+                    {isCollapsed && hasActive && <span className="nav-section-dot" />}
+                  </button>
+                )}
+                {!isCollapsed && g.items.map((n) => (
+                  <button
+                    key={n.id}
+                    className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+                    onClick={() => setPanel(n.id)}
+                  >
+                    <span className="nav-icon">{n.icon}</span>
+                    {n.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </nav>
         <div className="sidebar-foot">
           {authLabel && (

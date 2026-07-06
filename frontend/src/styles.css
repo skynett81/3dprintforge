@@ -69,7 +69,16 @@ body {
 .nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }
 .nav-group + .nav-group { margin-top: 12px; }
-.nav-section { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint); font-weight: 700; padding: 4px 12px 3px; }
+.nav-section {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  background: none; border: none; cursor: pointer;
+  font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint); font-weight: 700;
+  padding: 5px 12px 4px; text-align: left;
+}
+.nav-section:hover { color: var(--muted); }
+.nav-chevron { transition: transform 0.15s; flex: none; opacity: 0.8; }
+.nav-chevron--open { transform: rotate(90deg); }
+.nav-section-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-left: auto; }
 .nav-item {
   display: flex; align-items: center; gap: 11px;
   background: none; border: none; color: var(--muted); font: inherit;

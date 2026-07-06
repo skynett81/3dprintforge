@@ -12,7 +12,7 @@ export function ActivityPanel() {
 
   const days = useMemo(() => [...(data ?? [])].sort((a, b) => (a.day < b.day ? -1 : 1)), [data]);
   const totals = useMemo(() => activityTotals(days), [days]);
-  const chart = days.slice(-30).map((d) => ({ label: d.day.slice(5), value: d.prints, hint: `${d.day}: ${d.prints} prints, ${d.hours.toFixed(1)} h` }));
+  const chart = days.slice(-30).map((d) => ({ label: d.day.slice(5), value: d.prints || 0, hint: `${d.day}: ${d.prints || 0} prints, ${(d.hours || 0).toFixed(1)} h` }));
 
   return (
     <div>

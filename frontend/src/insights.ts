@@ -13,7 +13,7 @@ export interface ActivityTotals { days: number; prints: number; hours: number; f
 
 export function activityTotals(days: ActivityDay[]): ActivityTotals {
   return days.reduce<ActivityTotals>(
-    (t, d) => ({ days: t.days + 1, prints: t.prints + d.prints, hours: t.hours + d.hours, filament_g: t.filament_g + d.filament_g }),
+    (t, d) => ({ days: t.days + 1, prints: t.prints + (d.prints || 0), hours: t.hours + (d.hours || 0), filament_g: t.filament_g + (d.filament_g || 0) }),
     { days: 0, prints: 0, hours: 0, filament_g: 0 },
   );
 }
