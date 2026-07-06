@@ -128,6 +128,14 @@ body {
 .fc-days { white-space: nowrap; }
 .fc-rate { white-space: nowrap; font-size: 0.76rem; }
 
+/* Printer admin */
+.padd-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.padm-list { display: flex; flex-direction: column; }
+.padm-row { display: grid; grid-template-columns: 1.4fr 1fr 1.2fr auto; align-items: center; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.padm-row:first-child { border-top: none; }
+.padm-row--edit { grid-template-columns: 1.4fr 1.2fr auto; }
+.padm-name { font-weight: 550; }
+
 /* Toggle switch + settings channels */
 .toggle { width: 40px; height: 23px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); position: relative; cursor: pointer; padding: 0; transition: background 0.15s, border-color 0.15s; flex: none; }
 .toggle--on { background: var(--accent); border-color: var(--accent); }

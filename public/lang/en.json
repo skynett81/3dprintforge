@@ -139,6 +139,18 @@
       "title": "Notifications",
       "empty": "No notifications yet."
     },
+    "printers": {
+      "title": "Printers",
+      "add": "+ Add printer",
+      "add_btn": "Add",
+      "name": "Name",
+      "ip": "IP address",
+      "type": "Type",
+      "serial": "Serial",
+      "access": "Access code",
+      "added": "Printer added",
+      "removed": "Printer removed"
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "Notification channels",

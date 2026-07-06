@@ -4,6 +4,7 @@ import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import { CHANNELS, isChannelConfigured } from '../settings';
+import { PrinterAdmin } from '../components/PrinterAdmin';
 import type { NotificationConfig } from '../types';
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -30,7 +31,13 @@ export function SettingsPanel() {
   useEffect(() => { if (data) setCfg(structuredClone(data)); }, [data]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!cfg) return <p className="muted">{t('common.loading', 'Loading…')}</p>;
+  if (!cfg) return (
+    <div>
+      <div className="panel-head"><div><h2 className="panel-title">{t('v2.settings.title', 'Settings')}</h2></div></div>
+      <PrinterAdmin />
+      <p className="muted">{t('common.loading', 'Loading…')}</p>
+    </div>
+  );
 
   function toggleChannel(name: string, enabled: boolean) {
     setCfg((c) => c && ({ ...c, channels: { ...c.channels, [name]: { ...(c.channels[name] || {}), enabled } } }));
@@ -51,6 +58,8 @@ export function SettingsPanel() {
           <p className="muted sub">{t('v2.settings.subtitle', 'Notification channels')}</p>
         </div>
       </div>
+
+      <PrinterAdmin />
 
       <section className="card">
         <div className="card-head">
