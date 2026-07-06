@@ -97,6 +97,21 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "costs": {
+      "title": "Costs",
+      "subtitle": "Unit economics across your prints",
+      "grand_total": "Total",
+      "prints": "Prints costed",
+      "avg": "Avg / print",
+      "filament": "Filament",
+      "electricity": "Electricity",
+      "depreciation": "Depreciation",
+      "labor": "Labor",
+      "markup": "Markup",
+      "breakdown": "Cost breakdown",
+      "recent": "Recent print costs",
+      "none": "No costed prints yet."
+    },
     "scheduler": {
       "title": "Scheduler",
       "scheduled": "scheduled prints",

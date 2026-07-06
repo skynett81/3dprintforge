@@ -80,6 +80,12 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Costs */
+.cost-list { display: flex; flex-direction: column; }
+.cost-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; padding: 8px 2px; border-top: 1px solid var(--border-soft); font-size: 0.84rem; }
+.cost-row:first-child { border-top: none; }
+.cost-total { font-weight: 600; }
+
 /* Scheduler */
 .sch-list { display: flex; flex-direction: column; }
 .sch-row { display: grid; grid-template-columns: auto 1.4fr 1.6fr auto auto; align-items: center; gap: 14px; padding: 10px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }

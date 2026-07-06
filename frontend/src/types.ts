@@ -83,6 +83,29 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface CostSummary {
+  print_count: number;
+  total_filament: number;
+  total_electricity: number;
+  total_depreciation: number;
+  total_labor: number;
+  total_markup: number;
+  grand_total: number;
+}
+
+export interface CostRow {
+  id: number;
+  print_history_id: number;
+  filament_cost: number;
+  electricity_cost: number;
+  depreciation_cost: number;
+  labor_cost: number;
+  markup_amount: number;
+  total_cost: number;
+  currency?: string | null;
+  calculated_at: string;
+}
+
 export interface ScheduledPrint {
   id: number;
   title: string;
