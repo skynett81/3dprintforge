@@ -26,6 +26,50 @@ export function useResource<T>(loader: () => Promise<T>, pollMs = 5000) {
   return { data, error, loading, reload };
 }
 
+export type LiveState = Record<string, Record<string, unknown>>;
+
+// Live per-printer state over the dashboard WebSocket (/ws). The server sends
+// a full `init` snapshot then `status` deltas; we accumulate them per printer.
+// Auto-reconnects on drop.
+export function useLivePrinters() {
+  const [live, setLive] = useState<LiveState>({});
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    let closed = false;
+    let ws: WebSocket;
+    let retry: ReturnType<typeof setTimeout>;
+
+    const connect = () => {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}/ws`);
+      ws.onopen = () => setConnected(true);
+      ws.onclose = () => { setConnected(false); if (!closed) retry = setTimeout(connect, 2000); };
+      ws.onerror = () => { try { ws.close(); } catch { /* ignore */ } };
+      ws.onmessage = (ev) => {
+        let m: { type?: string; data?: Record<string, unknown> };
+        try { m = JSON.parse(String(ev.data)); } catch { return; }
+        if (m.type === 'init' && m.data?.states) {
+          const next: LiveState = {};
+          for (const [id, st] of Object.entries(m.data.states as Record<string, { print?: Record<string, unknown> }>)) {
+            next[id] = st?.print ?? {};
+          }
+          setLive(next);
+        } else if (m.type === 'status' && m.data?.printer_id) {
+          const id = String(m.data.printer_id);
+          const delta = (m.data.print as Record<string, unknown>) ?? {};
+          setLive((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...delta } }));
+        }
+      };
+    };
+
+    connect();
+    return () => { closed = true; clearTimeout(retry); try { ws.close(); } catch { /* ignore */ } };
+  }, []);
+
+  return { live, connected };
+}
+
 // Load the active projects once.
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);

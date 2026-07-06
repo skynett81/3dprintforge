@@ -17,6 +17,8 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': { target, changeOrigin: true, secure: false },
+      // Live printer state — WebSocket upgrade proxied to the same server.
+      '/ws': { target, changeOrigin: true, secure: false, ws: true },
     },
   },
 });
