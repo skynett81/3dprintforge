@@ -11,7 +11,7 @@ changes.
 
 ## Run it
 
-1. Start the main 3DPrintForge server as usual (HTTPS on 3443, or HTTP on 3000).
+1. Start the main 3DPrintForge server as usual.
 2. In this folder:
 
    ```bash
@@ -19,14 +19,18 @@ changes.
    npm run dev            # → http://localhost:5174
    ```
 
-   The Vite dev server proxies `/api/*` to `https://localhost:3443`
-   (self-signed cert accepted). Point it elsewhere with:
+   The Vite dev server proxies `/api/*` to **`http://localhost:3000`** by
+   default (plain HTTP — no self-signed cert to accept). Point it at any
+   other port/host with:
 
    ```bash
-   VITE_API_TARGET=http://localhost:3000 npm run dev
+   VITE_API_TARGET=https://localhost:3443 npm run dev
+   VITE_API_TARGET=http://192.168.10.50:3000 npm run dev
    ```
 
-3. Open http://localhost:5174, pick a project, add parts, hit **+plate**.
+3. Open http://localhost:5174. If you have no projects yet, create one
+   right there (the empty state has a "Create project" form), then add
+   parts and hit **+plate**.
    It writes to the same database as the main dashboard — so a part you
    credit here shows up in the real Orders panel, and a queue job that
    auto-credits a part shows up here (polled every 4 s).

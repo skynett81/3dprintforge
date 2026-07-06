@@ -4,10 +4,11 @@ import { useProjects, useParts } from './hooks';
 import { ProjectPicker } from './components/ProjectPicker';
 import { PartRow } from './components/PartRow';
 import { AddPartForm } from './components/AddPartForm';
+import { CreateProject } from './components/CreateProject';
 import type { NewPart, Part } from './types';
 
 export function App() {
-  const { projects, error: projErr } = useProjects();
+  const { projects, error: projErr, reload: reloadProjects } = useProjects();
   const [selected, setSelected] = useState<number | null>(null);
   const { parts, error: partsErr, reload } = useParts(selected);
 
@@ -34,6 +35,12 @@ export function App() {
     reload();
   }
 
+  async function createProject(name: string) {
+    const { id } = await api.createProject(name);
+    reloadProjects();
+    setSelected(id);
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -47,6 +54,11 @@ export function App() {
 
       <section className="card">
         <ProjectPicker projects={projects} selected={selected} onSelect={setSelected} />
+        {projects.length === 0 && (
+          <div style={{ marginTop: 12 }}>
+            <CreateProject onCreate={createProject} />
+          </div>
+        )}
       </section>
 
       {selected != null && (
