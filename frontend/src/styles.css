@@ -80,6 +80,19 @@ body {
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
+/* Diagnostics */
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.diag-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 11px 14px; font-size: 0.85rem; }
+.diag-val { font-weight: 600; }
+
+/* Firmware */
+.fw-list { display: flex; flex-direction: column; }
+.fw-head, .fw-row { display: grid; grid-template-columns: 1.3fr 1fr 0.8fr 0.8fr auto; align-items: center; gap: 12px; }
+.fw-head { padding: 0 2px 8px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.fw-row { padding: 10px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.fw-printer { font-weight: 550; }
+a.hs-badge { text-decoration: none; }
+
 /* Library */
 .lib-list { display: flex; flex-direction: column; }
 .lib-head, .lib-row { display: grid; grid-template-columns: 2.4fr 0.8fr 0.8fr 0.6fr 0.9fr; align-items: center; gap: 12px; }

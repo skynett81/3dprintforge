@@ -83,6 +83,34 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface SystemInfo {
+  uptime_seconds: number;
+  node_version: string;
+  platform: string;
+  printer_count: number;
+  db_size: number;
+  db_version: number;
+  memory_mb: number;
+  hostname: string;
+  pid: number;
+}
+
+export interface FirmwareRow {
+  id: number;
+  printer_id: string;
+  module: string;
+  sw_ver: string;
+  latest_available: string | null;
+  update_available: number;
+  release_url?: string | null;
+}
+
+export interface FirmwareInfo {
+  lastCheckAt: string;
+  inProgress: boolean;
+  availableUpdates: FirmwareRow[];
+}
+
 export interface HardwareItem {
   id: number;
   category: string;

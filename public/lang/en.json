@@ -97,6 +97,31 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "diag": {
+      "title": "Diagnostics",
+      "subtitle": "Server & system status",
+      "db_version": "Schema version",
+      "uptime": "Uptime",
+      "memory": "Memory",
+      "db_size": "Database",
+      "printers": "Printers",
+      "node": "Node",
+      "platform": "Platform",
+      "host": "Host"
+    },
+    "fw": {
+      "title": "Firmware",
+      "updates": "updates available",
+      "checked": "checked",
+      "none": "No firmware info yet.",
+      "printer": "Printer",
+      "module": "Module",
+      "current": "Current",
+      "latest": "Latest",
+      "update": "update →",
+      "available": "available",
+      "uptodate": "up to date"
+    },
     "hw": {
       "title": "Hardware",
       "items": "accessories & parts",

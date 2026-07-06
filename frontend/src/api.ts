@@ -97,6 +97,8 @@ export const api = {
   listHolds: (): Promise<BedHold[]> => req<BedHold[]>('/api/queue/holds'),
   getAuthStatus: (): Promise<AuthStatus> => req<AuthStatus>('/api/auth/status'),
   listNotifications: (): Promise<AppNotification[]> => req<AppNotification[]>('/api/notifications/log?limit=30'),
+  getSystemInfo: (): Promise<import('./types').SystemInfo> => req('/api/system/info'),
+  getFirmware: (): Promise<import('./types').FirmwareInfo> => req('/api/firmware/updates'),
   listHardware: (): Promise<import('./types').HardwareItem[]> => req('/api/hardware'),
   listLibrary: (): Promise<import('./types').LibraryFile[]> => req('/api/library'),
   listKbPrinters: (): Promise<import('./types').KbPrinter[]> => req('/api/kb/printers'),
