@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 import { formatBytes, formatUptime } from '../format';
 import type { SystemInfo } from '../types';
 
-export function DiagnosticsPanel() {
+export function DiagnosticsPanel({ embedded }: { embedded?: boolean } = {}) {
   const t = useT();
   const { data, error } = useResource<SystemInfo>(api.getSystemInfo, 10000);
 
@@ -25,12 +25,14 @@ export function DiagnosticsPanel() {
 
   return (
     <div>
-      <div className="panel-head">
-        <div>
-          <h2 className="panel-title">{t('v2.diag.title', 'Diagnostics')}</h2>
-          <p className="muted sub">{t('v2.diag.subtitle', 'Server & system status')}</p>
+      {!embedded && (
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">{t('v2.diag.title', 'Diagnostics')}</h2>
+            <p className="muted sub">{t('v2.diag.subtitle', 'Server & system status')}</p>
+          </div>
         </div>
-      </div>
+      )}
       <section className="card">
         <div className="diag-grid">
           {rows.map(([k, v]) => (

@@ -9,7 +9,7 @@ function when(iso?: string) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function FirmwarePanel() {
+export function FirmwarePanel({ embedded }: { embedded?: boolean } = {}) {
   const t = useT();
   const { data } = useResource<FirmwareInfo>(api.getFirmware, 60000);
   const rows = data?.availableUpdates ?? [];
@@ -17,14 +17,16 @@ export function FirmwarePanel() {
 
   return (
     <div>
-      <div className="panel-head">
-        <div>
-          <h2 className="panel-title">{t('v2.fw.title', 'Firmware')}</h2>
-          <p className="muted sub">
-            {withUpdate.length} {t('v2.fw.updates', 'updates available')} · {t('v2.fw.checked', 'checked')} {when(data?.lastCheckAt)}
-          </p>
+      {!embedded && (
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">{t('v2.fw.title', 'Firmware')}</h2>
+            <p className="muted sub">
+              {withUpdate.length} {t('v2.fw.updates', 'updates available')} · {t('v2.fw.checked', 'checked')} {when(data?.lastCheckAt)}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       <section className="card">
         {rows.length === 0 ? (
           <p className="muted empty-note">{t('v2.fw.none', 'No firmware info yet.')}</p>

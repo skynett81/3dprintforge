@@ -66,7 +66,10 @@ body {
 .notif-msg { font-size: 0.82rem; margin-top: 3px; }
 .notif-foot { font-size: 0.7rem; margin-top: 6px; text-transform: capitalize; }
 
-.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-group + .nav-group { margin-top: 12px; }
+.nav-section { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint); font-weight: 700; padding: 4px 12px 3px; }
 .nav-item {
   display: flex; align-items: center; gap: 11px;
   background: none; border: none; color: var(--muted); font: inherit;

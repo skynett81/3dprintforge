@@ -23,42 +23,62 @@ import { HardwarePanel } from './panels/HardwarePanel';
 import { LibraryPanel } from './panels/LibraryPanel';
 import { KnowledgePanel } from './panels/KnowledgePanel';
 import { HistoryPanel } from './panels/HistoryPanel';
-import { FirmwarePanel } from './panels/FirmwarePanel';
-import { DiagnosticsPanel } from './panels/DiagnosticsPanel';
-import { BackupPanel } from './panels/BackupPanel';
 import { CrmPanel } from './panels/CrmPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'firmware' | 'diagnostics' | 'backup' | 'crm' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'crm' | 'settings';
 
-const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
-  { id: 'production', label: 'Production', icon: <IconLayers /> },
-  { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
-  { id: 'maintenance', label: 'Maintenance', icon: <IconWrench /> },
-  { id: 'guard', label: 'Print Guard', icon: <IconShield /> },
-  { id: 'errors', label: 'Errors', icon: <IconAlert /> },
-  { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
-  { id: 'queue', label: 'Queue', icon: <IconQueue /> },
-  { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
-  { id: 'supply', label: 'Supply', icon: <IconBox /> },
-  { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
-  { id: 'crm', label: 'Customers', icon: <IconUsers /> },
-  { id: 'hardware', label: 'Hardware', icon: <IconChip /> },
-  { id: 'library', label: 'Library', icon: <IconFiles /> },
-  { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
-  { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
-  { id: 'costs', label: 'Costs', icon: <IconCoins /> },
-  { id: 'waste', label: 'Waste', icon: <IconTrash /> },
-  { id: 'activity', label: 'Activity', icon: <IconActivity /> },
-  { id: 'achievements', label: 'Achievements', icon: <IconTrophy /> },
-  { id: 'history', label: 'History', icon: <IconClock /> },
-  { id: 'firmware', label: 'Firmware', icon: <IconDownload /> },
-  { id: 'diagnostics', label: 'Diagnostics', icon: <IconServer /> },
-  { id: 'backup', label: 'Backup', icon: <IconSave /> },
-  { id: 'settings', label: 'Settings', icon: <IconGear /> },
+type NavItem = { id: PanelId; label: string; icon: JSX.Element };
+const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
+  { items: [{ id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> }] },
+  {
+    label: 'Operate',
+    items: [
+      { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
+      { id: 'guard', label: 'Print Guard', icon: <IconShield /> },
+      { id: 'queue', label: 'Queue', icon: <IconQueue /> },
+      { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
+      { id: 'maintenance', label: 'Maintenance', icon: <IconWrench /> },
+      { id: 'errors', label: 'Errors', icon: <IconAlert /> },
+    ],
+  },
+  {
+    label: 'Inventory',
+    items: [
+      { id: 'inventory', label: 'Filament', icon: <IconSpool /> },
+      { id: 'supply', label: 'Supply', icon: <IconBox /> },
+      { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
+      { id: 'hardware', label: 'Hardware', icon: <IconChip /> },
+    ],
+  },
+  {
+    label: 'Business',
+    items: [
+      { id: 'production', label: 'Production', icon: <IconLayers /> },
+      { id: 'crm', label: 'Customers', icon: <IconUsers /> },
+      { id: 'costs', label: 'Costs', icon: <IconCoins /> },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
+      { id: 'waste', label: 'Waste', icon: <IconTrash /> },
+      { id: 'activity', label: 'Activity', icon: <IconActivity /> },
+      { id: 'history', label: 'History', icon: <IconClock /> },
+      { id: 'achievements', label: 'Achievements', icon: <IconTrophy /> },
+    ],
+  },
+  {
+    label: 'Reference',
+    items: [
+      { id: 'library', label: 'Library', icon: <IconFiles /> },
+      { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
+    ],
+  },
+  { label: 'System', items: [{ id: 'settings', label: 'Settings', icon: <IconGear /> }] },
 ];
 
 export function App() {
@@ -95,15 +115,20 @@ export function App() {
           </button>
         </div>
         <nav className="nav">
-          {NAV.map((n) => (
-            <button
-              key={n.id}
-              className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
-              onClick={() => setPanel(n.id)}
-            >
-              <span className="nav-icon">{n.icon}</span>
-              {n.label}
-            </button>
+          {NAV_GROUPS.map((g, gi) => (
+            <div className="nav-group" key={gi}>
+              {g.label && <div className="nav-section">{g.label}</div>}
+              {g.items.map((n) => (
+                <button
+                  key={n.id}
+                  className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+                  onClick={() => setPanel(n.id)}
+                >
+                  <span className="nav-icon">{n.icon}</span>
+                  {n.label}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-foot">
@@ -135,9 +160,6 @@ export function App() {
         {panel === 'hardware' && <HardwarePanel />}
         {panel === 'library' && <LibraryPanel />}
         {panel === 'knowledge' && <KnowledgePanel />}
-        {panel === 'firmware' && <FirmwarePanel />}
-        {panel === 'diagnostics' && <DiagnosticsPanel />}
-        {panel === 'backup' && <BackupPanel />}
         {panel === 'crm' && <CrmPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}
@@ -210,15 +232,6 @@ function IconClock() {
 }
 function IconUsers() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
-}
-function IconSave() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
-}
-function IconDownload() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
-}
-function IconServer() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>;
 }
 function IconGear() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;

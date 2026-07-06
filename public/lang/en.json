@@ -329,6 +329,9 @@
     "settings": {
       "title": "Settings",
       "subtitle": "Notification channels",
+      "subtitle2": "Printers, notifications and system",
+      "tab_printers": "Printers",
+      "tab_notifications": "Notifications",
       "notifications": "Notifications",
       "enable_all": "Enable notifications",
       "configured": "configured",

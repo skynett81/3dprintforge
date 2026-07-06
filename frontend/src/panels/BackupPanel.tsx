@@ -11,7 +11,7 @@ function when(iso: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function BackupPanel() {
+export function BackupPanel({ embedded }: { embedded?: boolean } = {}) {
   const t = useT();
   const toast = useToast();
   const { data, reload } = useResource<BackupFile[]>(api.listBackups, 0);
@@ -29,7 +29,7 @@ export function BackupPanel() {
     <div>
       <div className="panel-head">
         <div>
-          <h2 className="panel-title">{t('v2.backup.title', 'Backup')}</h2>
+          {!embedded && <h2 className="panel-title">{t('v2.backup.title', 'Backup')}</h2>}
           <p className="muted sub">{backups.length} {t('v2.backup.backups', 'backups on disk')}</p>
         </div>
         <button className="btn btn--primary" disabled={busy} onClick={create}>{t('v2.backup.create', 'Create backup')}</button>
