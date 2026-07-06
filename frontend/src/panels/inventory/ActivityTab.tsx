@@ -1,6 +1,7 @@
 import { api } from '../../api';
 import { useResource } from '../../hooks';
 import { useT } from '../../i18n';
+import { isRealMovement, movementLabel } from '../../inventory';
 import type { StockMovement } from '../../types';
 
 function when(iso: string) {
@@ -15,7 +16,7 @@ function hex(c?: string | null) {
 export function StockActivityTab() {
   const t = useT();
   const { data } = useResource<StockMovement[]>(api.getStockActivity, 15000);
-  const rows = data ?? [];
+  const rows = (data ?? []).filter(isRealMovement).slice(0, 60);
 
   return (
     <section className="card">
@@ -30,8 +31,8 @@ export function StockActivityTab() {
             <div className="lib-row" key={i} style={{ gridTemplateColumns: 'auto 1.8fr 1fr 0.8fr 1fr' }}>
               <span className="swatch swatch--sm" style={{ background: hex(m.spool_color) }} />
               <span className="lib-name ellipsis" title={m.spool_label || ''}>{m.spool_label || `#${m.ref_id ?? ''}`}</span>
-              <span className="muted">{m.reason || m.type}</span>
-              <span className={`tnum ${m.delta_g < 0 ? 'low' : ''}`}>{m.delta_g > 0 ? '+' : ''}{Math.round(m.delta_g)} g</span>
+              <span className="muted ellipsis" title={movementLabel(m)}>{movementLabel(m)}</span>
+              <span className={`tnum ${(m.delta_g ?? 0) < 0 ? 'low' : ''}`}>{(m.delta_g ?? 0) > 0 ? '+' : ''}{Math.round(m.delta_g ?? 0)} g</span>
               <span className="muted tnum">{when(m.timestamp)}</span>
             </div>
           ))}

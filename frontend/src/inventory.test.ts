@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { spoolPct, isLow, matchesQuery, sortSpools, materialShare, spoolValue } from './inventory';
+import { spoolPct, isLow, matchesQuery, sortSpools, materialShare, spoolValue, isRealMovement, movementLabel } from './inventory';
 import type { Spool } from './types';
 
 function spool(p: Partial<Spool>): Spool {
@@ -46,6 +46,22 @@ describe('spoolValue', () => {
     expect(spoolValue({ cost: 200, remaining_weight_g: 500, initial_weight_g: 1000 })).toBe(100);
     expect(spoolValue({ cost: 200, remaining_weight_g: 1000, initial_weight_g: 1000 })).toBe(200);
     expect(spoolValue({ cost: 0, remaining_weight_g: 500, initial_weight_g: 1000 })).toBe(0);
+  });
+});
+
+describe('isRealMovement', () => {
+  it('keeps rows with a delta, drops raw event rows', () => {
+    expect(isRealMovement({ delta_g: -17 })).toBe(true);
+    expect(isRealMovement({ delta_g: null })).toBe(false);
+  });
+});
+
+describe('movementLabel', () => {
+  it('shows clean reasons and never leaks JSON', () => {
+    expect(movementLabel({ type: 'consume', reason: 'Print' })).toBe('Print');
+    expect(movementLabel({ type: 'adjust', reason: '{"from":520,"to":515}' })).toBe('Adjustment');
+    expect(movementLabel({ type: 'consume', reason: null })).toBe('Print');
+    expect(movementLabel({ type: 'weirdo', reason: '' })).toBe('weirdo');
   });
 });
 

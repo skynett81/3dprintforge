@@ -77,7 +77,7 @@ export const api = {
   adjustSpoolStock: (id: number, body: { delta_g?: number; new_remaining_g?: number; reason?: string }) =>
     req<{ ok?: boolean }>(`/api/inventory/spools/${id}/adjust`, { method: 'POST', body: JSON.stringify(body) }),
   getSpoolTimeline: (id: number): Promise<import('./types').SpoolEvent[]> => req(`/api/inventory/spools/${id}/timeline`),
-  getStockActivity: (): Promise<import('./types').StockMovement[]> => req('/api/inventory/stock-activity?limit=40'),
+  getStockActivity: (): Promise<import('./types').StockMovement[]> => req('/api/inventory/stock-activity?limit=120'),
   getInventoryStats: (): Promise<import('./types').InventoryStats> => req('/api/inventory/stats'),
   listStockTargets: (): Promise<import('./types').StockTarget[]> => req('/api/inventory/stock-targets'),
   setStockTarget: (body: { material: string; min_weight_g: number; notes?: string }) =>

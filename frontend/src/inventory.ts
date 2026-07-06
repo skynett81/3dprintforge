@@ -46,6 +46,26 @@ export function sortSpools(list: Spool[], key: SortKey, dir: 'asc' | 'desc'): Sp
   });
 }
 
+// The stock-activity feed unions real ledger movements (with delta_g) and a
+// raw event log (delta_g null, reason = JSON blob). Only the former belong in
+// a human ledger view.
+export function isRealMovement(m: { delta_g: number | null }): boolean {
+  return m.delta_g != null;
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  consume: 'Print', adjust: 'Adjustment', receive: 'Received', relocate: 'Moved',
+  refill: 'Refill', correction: 'Correction', archive: 'Archived',
+};
+
+// A readable label for a movement: prefer a clean reason, but never surface a
+// raw JSON details blob — fall back to a friendly type name.
+export function movementLabel(m: { type: string; reason?: string | null }): string {
+  const r = (m.reason || '').trim();
+  if (r && !r.startsWith('{') && !r.startsWith('[')) return r;
+  return TYPE_LABELS[m.type] || m.type || 'Movement';
+}
+
 export interface MaterialShare { material: string; count: number; remaining_g: number; pct: number; }
 
 export function materialShare(rows: { material: string; count: number; remaining_g: number }[]): MaterialShare[] {

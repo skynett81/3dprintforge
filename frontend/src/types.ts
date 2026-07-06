@@ -61,7 +61,7 @@ export interface StorageLocation {
 export interface StockMovement {
   source: string;
   type: string;
-  delta_g: number;
+  delta_g: number | null;
   reason?: string | null;
   ref_type?: string | null;
   ref_id?: number | null;
