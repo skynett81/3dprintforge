@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
+import { useT } from '../i18n';
+import { filterHistory, type StatusFilter } from '../history-filter';
 import type { HistoryRow } from '../types';
 
 function dur(s?: number) {
@@ -21,36 +23,48 @@ function statusClass(s: string) {
 }
 
 export function HistoryPanel() {
+  const t = useT();
   const { data, error, loading } = useResource<HistoryRow[]>(api.listHistory, 10000);
-  const [filter, setFilter] = useState<'all' | 'completed' | 'failed'>('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [printer, setPrinter] = useState('all');
 
-  const rows = useMemo(() => {
-    const list = data ?? [];
-    if (filter === 'all') return list;
-    if (filter === 'failed') return list.filter((r) => ['failed', 'error', 'cancelled'].includes(r.status.toLowerCase()));
-    return list.filter((r) => ['completed', 'finish'].includes(r.status.toLowerCase()));
-  }, [data, filter]);
+  const all = data ?? [];
+  const printers = useMemo(
+    () => ['all', ...Array.from(new Set(all.map((r) => r.printer_id).filter(Boolean))).sort()],
+    [all],
+  );
+  const rows = useMemo(() => filterHistory(all, status, printer), [all, status, printer]);
 
   return (
     <div>
       <div className="panel-head">
         <div>
-          <h2 className="panel-title">History</h2>
-          <p className="muted sub">{(data ?? []).length} recent prints</p>
+          <h2 className="panel-title">{t('v2.history.title', 'History')}</h2>
+          <p className="muted sub">{all.length} {t('v2.history.recent_prints', 'recent prints')}</p>
         </div>
-        <div className="seg">
-          {(['all', 'completed', 'failed'] as const).map((f) => (
-            <button key={f} className={`seg-btn${filter === f ? ' seg-btn--on' : ''}`} onClick={() => setFilter(f)}>{f}</button>
-          ))}
+        <div className="hist-filters">
+          <select className="input" value={printer} onChange={(e) => setPrinter(e.target.value)}>
+            {printers.map((p) => <option key={p} value={p}>{p === 'all' ? t('v2.history.all_printers', 'All printers') : p}</option>)}
+          </select>
+          <div className="seg">
+            {(['all', 'completed', 'failed'] as const).map((f) => (
+              <button key={f} className={`seg-btn${status === f ? ' seg-btn--on' : ''}`} onClick={() => setStatus(f)}>{t(`v2.history.${f}`, f)}</button>
+            ))}
+          </div>
         </div>
       </div>
 
       {error && <div className="error">{error}</div>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <p className="muted">{t('common.loading', 'Loading…')}</p>}
 
       <section className="card">
         <div className="hist-head">
-          <span>File</span><span>Printer</span><span>Status</span><span>Duration</span><span>Filament</span><span>Date</span>
+          <span>{t('v2.history.file', 'File')}</span>
+          <span>{t('v2.history.printer', 'Printer')}</span>
+          <span>{t('v2.history.status', 'Status')}</span>
+          <span>{t('v2.history.duration', 'Duration')}</span>
+          <span>{t('v2.history.filament', 'Filament')}</span>
+          <span>{t('v2.history.date', 'Date')}</span>
         </div>
         {rows.map((r) => (
           <div className="hist-row" key={r.id}>
@@ -65,7 +79,7 @@ export function HistoryPanel() {
             <span className="muted">{when(r.started_at)}</span>
           </div>
         ))}
-        {rows.length === 0 && !loading && <p className="muted empty-note">No prints match this filter.</p>}
+        {rows.length === 0 && !loading && <p className="muted empty-note">{t('v2.history.no_match', 'No prints match this filter.')}</p>}
       </section>
     </div>
   );

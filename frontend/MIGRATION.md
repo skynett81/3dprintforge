@@ -78,14 +78,21 @@ Browser ── /v2 ─────► React SPA (public/v2, built by Vite) ┘  
 - Remaining gate to confirm post-release: `/v2` reachable inside a packaged
   Electron build and in Docker (both bundle `public/`, so expected to work).
 
-### Phase 2 — High-value panels to parity (IN PROGRESS, iterative)
+### Phase 2 — High-value panels to parity (DONE)
 
-Progress: an **i18n foundation** is in place — `src/i18n.tsx` loads the
-existing `public/lang/*.json` and exposes `t(key, fallback)` (same convention
-as the vanilla app, no key fork). **Production** is the first panel brought to
-parity: create/add/**edit**/credit/delete parts, confirm-on-delete, and full
-i18n via a `v2.production.*` namespace. Remaining panels below follow the same
-pattern.
+An **i18n foundation** (`src/i18n.tsx`) loads the existing `public/lang/*.json`
+and exposes `t(key, fallback)` (same convention as the vanilla app, no key
+fork). All five high-value panels are at parity, each under a `v2.<panel>.*`
+namespace, with a per-component test:
+- **Production** — create/add/edit/credit/delete parts, confirm-on-delete.
+- **Fleet** — printer detail drawer with pause/resume/stop/light control.
+- **Queue** — item list with inline edit (copies/priority), delete, and
+  queue pause/resume; bed-hold confirmation.
+- **Inventory** — spool drawer with editable remaining/cost/location + archive.
+- **Analytics + History** — full i18n; History adds status + printer filters
+  (pure `filterHistory`, unit-tested).
+
+23 frontend tests green.
 
 Port the panels that change most and benefit most from components. The PoC
 already covers the read side of most; bring them to full parity (writes,

@@ -71,6 +71,33 @@
       "location": "Location",
       "archive": "Archive",
       "confirm_archive": "Archive this spool?"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "Print statistics across the fleet",
+      "total_prints": "Total prints",
+      "success_rate": "Success rate",
+      "print_hours": "Print hours",
+      "filament": "Filament",
+      "est_cost": "Est. cost",
+      "prints_per_month": "Prints per month",
+      "filament_by_type": "Filament by type",
+      "top_files": "Top files"
+    },
+    "history": {
+      "title": "History",
+      "recent_prints": "recent prints",
+      "all_printers": "All printers",
+      "all": "all",
+      "completed": "completed",
+      "failed": "failed",
+      "file": "File",
+      "printer": "Printer",
+      "status": "Status",
+      "duration": "Duration",
+      "filament": "Filament",
+      "date": "Date",
+      "no_match": "No prints match this filter."
     }
   },
   "nav": {
