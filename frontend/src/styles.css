@@ -197,6 +197,9 @@ a.hs-badge { text-decoration: none; }
 .fc-rate { white-space: nowrap; font-size: 0.76rem; }
 
 .add-form--stack { flex-wrap: wrap; }
+.drawer-adjust { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.drawer-adjust-row { display: flex; align-items: center; gap: 8px; }
+.drawer-adjust-row .input { flex: 1; }
 
 /* Inventory tabs */
 .tab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 4px; flex-wrap: wrap; }

@@ -22,6 +22,8 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
   const [cost, setCost] = useState(spool.cost ?? 0);
   const [location, setLocation] = useState(spool.location ?? '');
   const [busy, setBusy] = useState(false);
+  const [adjDelta, setAdjDelta] = useState('');
+  const [adjReason, setAdjReason] = useState('');
 
   const pct = spool.initial_weight_g > 0
     ? Math.max(0, Math.min(100, Math.round((remaining / spool.initial_weight_g) * 100)))
@@ -33,6 +35,18 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
       await api.updateSpool(spool.id, { remaining_weight_g: remaining, cost, location: location || null });
       toast(t('common.saved', 'Saved'), 'success');
       onChanged();
+    } catch (e) { toast((e as Error).message, 'error'); }
+    finally { setBusy(false); }
+  }
+  async function adjust() {
+    const delta = Number(adjDelta);
+    if (!delta || !isFinite(delta)) return;
+    setBusy(true);
+    try {
+      await api.adjustSpoolStock(spool.id, { delta_g: delta, reason: adjReason.trim() || 'Manual adjustment' });
+      toast(t('v2.inventory.adjusted', 'Stock adjusted'), 'success');
+      setRemaining((r) => Math.max(0, Math.round(r + delta)));
+      setAdjDelta(''); setAdjReason(''); onChanged();
     } catch (e) { toast((e as Error).message, 'error'); }
     finally { setBusy(false); }
   }
@@ -74,6 +88,16 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
         <div className="drawer-controls">
           <button className="btn btn--primary" disabled={busy} onClick={save}>{t('common.save', 'Save')}</button>
           <button className="btn btn--danger" disabled={busy} onClick={archive}>{t('v2.inventory.archive', 'Archive')}</button>
+        </div>
+
+        <div className="drawer-adjust">
+          <div className="field-label">{t('v2.inventory.adjust', 'Stock adjustment')}</div>
+          <p className="muted empty-note" style={{ margin: '0 0 8px' }}>{t('v2.inventory.adjust_hint', 'Record a +/- gram correction to the ledger (spillage, re-spool, manual count).')}</p>
+          <div className="drawer-adjust-row">
+            <input className="input" type="number" placeholder="±g" value={adjDelta} onChange={(e) => setAdjDelta(e.target.value)} style={{ maxWidth: 90 }} />
+            <input className="input" placeholder={t('v2.inventory.adjust_reason', 'Reason')} value={adjReason} onChange={(e) => setAdjReason(e.target.value)} />
+            <button className="btn btn--sm" disabled={busy || !adjDelta} onClick={adjust}>{t('v2.inventory.apply', 'Apply')}</button>
+          </div>
         </div>
       </aside>
     </div>
