@@ -60,7 +60,6 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 ### New in v1.1.23
 
 - **Waste analytics** — tool-changer-aware and colour-aware purge accounting, plus a recommender that finds the lowest-purge colour order
-- **Slicer ⇄ fleet control** — full remote-control API for the 3DPrintForge Slicer: live printer state, pause/resume/stop, motion, fan/light/speed and filament load/unload
 - **Issue #12 follow-up** — preserve the printer access code on edit
 
 ### New in v1.1.22
@@ -72,7 +71,6 @@ description: A powerful, self-hosted dashboard for all your 3D printers
 
 ### New in v1.1.21
 
-- **3DPrintForge Slicer integration** — connect to the custom OrcaSlicer fork in service mode: live SSE progress, one-click Slice & Send, profile-catalog sync every 5 min, and a header status pill
 - **Filament inventory overhaul** plus an analytics dashboard
 - **Security hardening** — six CVE-class fixes, and an i18n cleanup across 504 call sites
 

@@ -101,14 +101,6 @@ const sidebars: SidebarsConfig = {
       label: 'Avansert',
       items: ['advanced/api', 'advanced/architecture', 'advanced/docker', 'advanced/plugins', 'advanced/changelog'],
     },
-    {
-      type: 'category',
-      label: '3DPrintForge Slicer',
-      items: [
-        'forge-slicer-setup',
-        'FORGE_SLICER_API',
-      ],
-    },
   ],
   kbSidebar: [
     'kb/intro',

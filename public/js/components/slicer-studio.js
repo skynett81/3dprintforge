@@ -46,7 +46,6 @@
     const body = document.getElementById('overlay-panel-body');
     if (!body) return;
     body.innerHTML = `
-      <div data-fsl-container style="margin-bottom:10px"></div>
       <div style="display:grid;grid-template-columns:280px 1fr 280px;gap:10px;min-height:560px">
         <!-- LEFT: profiles + settings -->
         <div class="card" style="overflow-y:auto;max-height:calc(100vh - 140px)">
@@ -100,7 +99,6 @@
             <button id="ss-slice" class="form-btn primary" style="width:100%;font-size:0.95rem;padding:10px" disabled>
               ⚡ Slice
             </button>
-            <button id="ss-cancel" class="form-btn" style="width:100%;margin-top:6px;display:none;background:var(--accent-red);color:#fff">⏹ Cancel slicing</button>
             <div id="ss-slice-progress" style="margin-top:8px"></div>
             <div id="ss-result" style="margin-top:14px"></div>
 
@@ -109,7 +107,6 @@
               <select id="ss-target" class="form-control" style="margin-bottom:6px"></select>
               <label style="font-size:0.78rem"><input type="checkbox" id="ss-print"> Auto-start print</label>
               <button id="ss-send" class="form-btn" style="width:100%;margin-top:6px" disabled>📤 Send G-code to printer</button>
-              <button id="ss-slice-and-send" class="form-btn" style="width:100%;margin-top:6px" disabled title="Slice via 3DPrintForge Slicer and immediately upload the gcode in one step">🚀 Slice & Send to printer</button>
             </div>
           </div>
         </div>
@@ -121,9 +118,7 @@
     document.getElementById('ss-recenter').onclick = _recenterModel;
     document.getElementById('ss-orient').onclick = _autoOrient;
     document.getElementById('ss-slice').onclick = _runSlice;
-    document.getElementById('ss-cancel').onclick = _cancelSlice;
     document.getElementById('ss-send').onclick = _sendToPrinter;
-    document.getElementById('ss-slice-and-send').onclick = _sliceAndSend;
     document.getElementById('ss-save-process').onclick = _saveProcess;
     document.getElementById('ss-printer').onchange = (e) => { _state.selectedPrinter = parseInt(e.target.value, 10) || null; _updateBedFromPrinter(); _populateOverrides(); };
     document.getElementById('ss-filament').onchange = (e) => { _state.selectedFilament = parseInt(e.target.value, 10) || null; _populateOverrides(); };
@@ -137,14 +132,6 @@
 
     await _initViewport();
     await Promise.all([_loadProfiles(), _loadConnectedPrinters()]);
-
-    // Mount the 3DPrintForge Slicer settings card at the top so users see the
-    // service status (connected / unreachable) every time they open
-    // Slicer Studio. Uses the new t(key, fallback) overload internally.
-    const fslContainer = body.querySelector('[data-fsl-container]');
-    if (fslContainer && typeof window.renderForgeSlicerSettings === 'function') {
-      window.renderForgeSlicerSettings(fslContainer);
-    }
   }
 
   // ── Profile loading ────────────────────────────────────────────
@@ -425,194 +412,31 @@
       const buf = await _state.file.arrayBuffer();
       const start = Date.now();
 
-      // Prefer the 3DPrintForge Slicer service when reachable. Falls through
-      // to the native engine when not — same UX, just a different
-      // backend. The status pill at the top of the panel shows which
-      // backend is currently active.
-      const forgeStatus = await fetch('/api/slicer/forge/status').then(r => r.json()).catch(() => null);
-      const useForge = !!forgeStatus?.probe?.ok;
-
-      let layers = 0, dur = 0, timeSec = 0, fil = 0, blob = null;
-
-      if (useForge) {
-        // Show the Cancel button and hook AbortController so the user
-        // can interrupt mid-stream. The button is hidden again when
-        // slicing finishes (success, error, or cancel).
-        const cancelBtn = document.getElementById('ss-cancel');
-        const _abort = new AbortController();
-        _state.activeSlice = { abort: _abort, jobId: null };
-        if (cancelBtn) cancelBtn.style.display = '';
-        // SSE-streaming flow — fetch with text/event-stream Accept,
-        // parse each event for live progress updates. The buffered
-        // /api/slicer/forge/slice endpoint stays available as a
-        // fallback, but SSE is the better UX when supported.
-        const filIds = _state.selectedFilament ? JSON.stringify([String(_state.selectedFilament)]) : '';
-        const url = `/api/slicer/forge/slice/stream?printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}`;
-        progress.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> <span id="ss-forge-stage">Connecting to 3DPrintForge Slicer…</span></div>
-          <div style="height:6px;background:var(--bg-tertiary);border-radius:3px"><div id="ss-forge-bar" style="width:0;height:100%;background:var(--accent-blue);border-radius:3px;transition:width 0.2s"></div></div>
-        </div>`;
-
-        const fr = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Accept': 'text/event-stream',
-            'X-Filename': _state.fileName,
-          },
-          body: buf,
-          signal: _abort.signal,
-        });
-        if (!fr.ok) {
-          const err = await fr.json().catch(() => ({}));
-          progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice failed: ${_esc(err.error || fr.statusText)}</div>`;
-          return;
-        }
-
-        // Parse the SSE response stream.
-        const reader = fr.body.getReader();
-        const decoder = new TextDecoder();
-        let leftover = '';
-        let result = null;
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          leftover += decoder.decode(value, { stream: true });
-          let nl;
-          let event = 'message';
-          let data = '';
-          while ((nl = leftover.indexOf('\n\n')) >= 0) {
-            const block = leftover.slice(0, nl);
-            leftover = leftover.slice(nl + 2);
-            event = 'message'; data = '';
-            for (const line of block.split('\n')) {
-              if (line.startsWith('event:')) event = line.slice(6).trim();
-              else if (line.startsWith('data:')) data += (data ? '\n' : '') + line.slice(5).trim();
-            }
-            let parsed = null;
-            try { parsed = JSON.parse(data); } catch { /* leave null */ }
-            if (event === 'progress' && parsed) {
-              const stageEl = document.getElementById('ss-forge-stage');
-              const barEl = document.getElementById('ss-forge-bar');
-              if (stageEl) stageEl.textContent = `${parsed.stage || 'slicing'} — ${parsed.pct ?? 0}%`;
-              if (barEl) barEl.style.width = (parsed.pct || 0) + '%';
-            } else if (event === 'layer' && parsed) {
-              const stageEl = document.getElementById('ss-forge-stage');
-              if (stageEl && parsed.total_layers) stageEl.textContent = `Layer ${parsed.layer}/${parsed.total_layers}`;
-            } else if (event === 'done' && parsed) {
-              result = parsed;
-            } else if (event === 'error' && parsed) {
-              progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice failed: ${_esc(parsed.message || 'Unknown error')}</div>`;
-              return;
-            }
-          }
-        }
-        if (!result) {
-          progress.innerHTML = `<div style="color:var(--accent-red)">Forge slice did not return a 'done' event</div>`;
-          return;
-        }
-        timeSec = result.estimated_time_s || 0;
-        fil = (result.filament_used_g || []).reduce((a, b) => a + b, 0);
-        const gr = await fetch(`/api/slicer/forge/jobs/${encodeURIComponent(result.job_id)}/gcode`);
-        if (gr.ok) blob = await gr.blob();
-        dur = Date.now() - start;
-      } else {
-        const r = await fetch(`/api/slicer/native/slice?${params.toString()}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/octet-stream' },
-          body: buf,
-        });
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({}));
-          progress.innerHTML = `<div style="color:var(--accent-red)">Slice failed: ${_esc(err.error || r.statusText)}</div>`;
-          return;
-        }
-        layers = parseInt(r.headers.get('X-Layer-Count'), 10) || 0;
-        dur = parseInt(r.headers.get('X-Slice-Duration-Ms'), 10) || (Date.now() - start);
-        timeSec = parseInt(r.headers.get('X-Estimated-Time-Sec'), 10) || 0;
-        fil = parseFloat(r.headers.get('X-Filament-G')) || 0;
-        blob = await r.blob();
-      }
-
-      _state.lastSlice = { blob, filename: (_state.fileName.replace(/\.[^.]+$/, '') || 'model') + '.gcode', layers, dur, timeSec, fil };
-      const backendLabel = useForge ? '3DPrintForge Slicer' : 'native engine';
-      progress.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sliced via ${backendLabel} in ${dur} ms</div>`;
-      _renderResult();
-      document.getElementById('ss-send').disabled = false;
-      document.getElementById('ss-slice-and-send').disabled = false;
-    } catch (e) {
-      if (e.name === 'AbortError') {
-        progress.innerHTML = `<div style="color:var(--accent-orange)">⏹ Slicing cancelled</div>`;
-      } else {
-        progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
-      }
-    } finally {
-      _state.busy = false;
-      _state.activeSlice = null;
-      document.getElementById('ss-slice').disabled = false;
-      const cb = document.getElementById('ss-cancel');
-      if (cb) cb.style.display = 'none';
-    }
-  }
-
-  // Cancel an in-progress SSE slice. Aborts the fetch (which closes the
-  // upstream connection) and POSTs to the fork's cancel endpoint when we
-  // know the job id, so the C++ side can stop the actual slicing work
-  // instead of leaking CPU on a job whose result no one is waiting for.
-  async function _cancelSlice() {
-    const a = _state.activeSlice;
-    if (!a) return;
-    try { a.abort.abort(); } catch { /* ignore */ }
-    if (a.jobId) {
-      fetch(`/api/slicer/forge/jobs/${encodeURIComponent(a.jobId)}/cancel`, { method: 'POST' }).catch(() => {});
-    }
-  }
-
-  // Slice via Forge and immediately upload the resulting gcode to the
-  // selected printer in one server-side step. Avoids the
-  // download-then-upload roundtrip the user otherwise has to do.
-  async function _sliceAndSend() {
-    if (!_state.file) return;
-    const target = document.getElementById('ss-target').value;
-    if (!target) { _toast('Pick a target printer first', 'warning'); return; }
-    _state.busy = true;
-    document.getElementById('ss-slice-and-send').disabled = true;
-    const progress = document.getElementById('ss-slice-progress');
-    progress.innerHTML = '<div style="display:flex;align-items:center;gap:6px"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite"></i> Slicing & uploading…</div>';
-    try {
-      const buf = await _state.file.arrayBuffer();
-      const filIds = _state.selectedFilament ? JSON.stringify([String(_state.selectedFilament)]) : '';
-      const print = document.getElementById('ss-print').checked ? '&print=1' : '';
-      const url = `/api/slicer/forge/slice-and-send?target_printer=${encodeURIComponent(target)}&printer_id=${encodeURIComponent(_state.selectedPrinter || '')}${filIds ? '&filament_ids=' + encodeURIComponent(filIds) : ''}&process_id=${encodeURIComponent(_state.selectedProcess || '')}${print}`;
-      const r = await fetch(url, {
+      const r = await fetch(`/api/slicer/native/slice?${params.toString()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': _state.fileName },
+        headers: { 'Content-Type': 'application/octet-stream' },
         body: buf,
       });
-      const data = await r.json();
       if (!r.ok) {
-        progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(data.error || r.statusText)}</div>`;
+        const err = await r.json().catch(() => ({}));
+        progress.innerHTML = `<div style="color:var(--accent-red)">Slice failed: ${_esc(err.error || r.statusText)}</div>`;
         return;
       }
-      const sliced = data.slice || {};
-      _state.lastSlice = {
-        blob: new Blob([new Uint8Array(0)]), // gcode already on the printer; we don't keep a local copy
-        filename: data.gcodeFilename || (_state.fileName.replace(/\.[^.]+$/, '') + '.gcode'),
-        layers: 0,
-        dur: 0,
-        timeSec: sliced.estimated_time_s || 0,
-        fil: (sliced.filament_used_g || []).reduce((a, b) => a + b, 0),
-        filamentBreakdown: sliced.filament_used_g || [],
-        sentTo: target,
-        printing: !!data.printing,
-      };
-      progress.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sliced & sent to ${_esc(target)}${data.printing ? ' (printing started)' : ''}</div>`;
+      const layers = parseInt(r.headers.get('X-Layer-Count'), 10) || 0;
+      const dur = parseInt(r.headers.get('X-Slice-Duration-Ms'), 10) || (Date.now() - start);
+      const timeSec = parseInt(r.headers.get('X-Estimated-Time-Sec'), 10) || 0;
+      const fil = parseFloat(r.headers.get('X-Filament-G')) || 0;
+      const blob = await r.blob();
+
+      _state.lastSlice = { blob, filename: (_state.fileName.replace(/\.[^.]+$/, '') || 'model') + '.gcode', layers, dur, timeSec, fil };
+      progress.innerHTML = `<div style="color:var(--accent-green);font-weight:600">✓ Sliced via native engine in ${dur} ms</div>`;
       _renderResult();
+      document.getElementById('ss-send').disabled = false;
     } catch (e) {
       progress.innerHTML = `<div style="color:var(--accent-red)">Failed: ${_esc(e.message)}</div>`;
     } finally {
       _state.busy = false;
-      document.getElementById('ss-slice-and-send').disabled = false;
+      document.getElementById('ss-slice').disabled = false;
     }
   }
 

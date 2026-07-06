@@ -86,7 +86,6 @@
     { key: 'settings.ecom_title', kw: 'ecommerce shopify woocommerce orders shop', tab: 'system', sub: 'integrations' },
     { key: 'orders.title', kw: 'orders order kanban invoice project management faktura ordrer', tab: 'system', sub: 'integrations' },
     { key: 'settings.spoolman_title', kw: 'spoolman filament sync external', tab: 'system', sub: 'integrations' },
-    { key: 'forge_slicer.title', kw: 'forge slicer orcaslicer fork rest service slice profile', tab: 'system', sub: 'integrations' },
     { key: 'settings.custom_fields_title', kw: 'custom field spool printer profile project', tab: 'system', sub: 'data' },
     { key: 'settings.brand_defaults_title', kw: 'brand default temperature filament material', tab: 'system', sub: 'data' },
     { key: 'settings.courses_title', kw: 'learning center tutorial guide course', tab: 'system', sub: 'data' },
@@ -1153,18 +1152,6 @@
 
       let h = '<div style="display:flex;flex-direction:column;gap:14px">';
 
-      // 3DPrintForge Slicer (top — runtime configurable, most actionable)
-      h += `<div data-fsl-container>
-        <div class="text-muted" style="padding:14px;font-size:0.85rem">Loading 3DPrintForge Slicer settings…</div>
-      </div>`;
-      // Defer mount until after the panel HTML is in the DOM.
-      setTimeout(() => {
-        const c = document.querySelector('#system-sub-content [data-fsl-container]');
-        if (c && typeof window.renderForgeSlicerSettings === 'function') {
-          window.renderForgeSlicerSettings(c);
-        }
-      }, 0);
-
       // Spoolman Server (runtime configurable) — let Klipper front-ends use us
       h += `<div class="settings-card" data-spoolman-server-container>
         <div class="text-muted" style="padding:14px;font-size:0.85rem">${t('settings.spoolman_server_loading', 'Loading Spoolman server settings…')}</div>
@@ -1381,14 +1368,6 @@
         ['PID', info.pid],
         ['Memory', info.memory_mb + ' MB'],
       ];
-      if (info.forge_slicer) {
-        const fs = info.forge_slicer;
-        let label;
-        if (!fs.enabled) label = '<span style="color:var(--text-muted)">disabled</span>';
-        else if (fs.ok) label = `<span style="color: var(--accent-green-text)">connected</span> v${fs.version || '?'}`;
-        else label = `<span style="color:var(--accent-red)">offline</span>${fs.error ? ' — ' + _esc(fs.error) : ''}`;
-        rows.push(['3DPrintForge Slicer', label]);
-      }
 
       // Build network/ports section
       let netHtml = '';
