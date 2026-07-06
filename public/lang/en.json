@@ -65,6 +65,7 @@
     "inv": {
       "subtitle": "Spools, filament catalog, locations and stock movements",
       "tab_overview": "Overview",
+      "tab_control": "Control",
       "search_spools": "Search name, colour, vendor, location…",
       "sort_most": "Most remaining",
       "sort_least": "Least remaining",
@@ -125,6 +126,18 @@
       "profile_added": "Profile added",
       "profile_confirm": "Delete this profile?",
       "profile_removed": "Profile removed"
+    },
+    "ctl": {
+      "targets": "Minimum stock levels",
+      "set": "Set",
+      "target_saved": "Target saved",
+      "target_removed": "Target removed",
+      "no_targets": "No minimum levels set. Add one to get shortfall alerts.",
+      "expiring": "Expiring within 30 days",
+      "no_expiring": "Nothing expiring soon.",
+      "drying": "Needs drying",
+      "no_drying": "No spools are overdue for drying.",
+      "never": "never"
     },
     "inventory": {
       "title": "Inventory",

@@ -79,6 +79,12 @@ export const api = {
   getSpoolTimeline: (id: number): Promise<import('./types').SpoolEvent[]> => req(`/api/inventory/spools/${id}/timeline`),
   getStockActivity: (): Promise<import('./types').StockMovement[]> => req('/api/inventory/stock-activity?limit=40'),
   getInventoryStats: (): Promise<import('./types').InventoryStats> => req('/api/inventory/stats'),
+  listStockTargets: (): Promise<import('./types').StockTarget[]> => req('/api/inventory/stock-targets'),
+  setStockTarget: (body: { material: string; min_weight_g: number; notes?: string }) =>
+    req<import('./types').StockTarget>('/api/inventory/stock-targets', { method: 'POST', body: JSON.stringify(body) }),
+  deleteStockTarget: (material: string) => req<{ ok: boolean }>(`/api/inventory/stock-targets/${encodeURIComponent(material)}`, { method: 'DELETE' }),
+  getExpiringSpools: (within = 30): Promise<import('./types').Spool[]> => req(`/api/inventory/spools/expiring?within=${within}`),
+  getDryingStatus: (): Promise<import('./types').DryingStatusRow[]> => req('/api/inventory/drying/status'),
   getReorder: (): Promise<ReorderRow[]> => req<ReorderRow[]>('/api/inventory/reorder'),
   listSuppliers: (): Promise<Supplier[]> => req<Supplier[]>('/api/inventory/suppliers'),
   addSupplier: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/suppliers', { method: 'POST', body: JSON.stringify(body) }),
