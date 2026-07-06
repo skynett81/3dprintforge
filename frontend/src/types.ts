@@ -83,6 +83,27 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface WasteStats {
+  total_waste_g: number;
+  total_cost: number;
+  avg_per_print: number;
+  cost_per_g: number;
+  total_prints: number;
+  prints_with_waste: number;
+  total_color_changes: number;
+  waste_breakdown: { purge_g: number; color_change_g: number; failed_g: number; manual_g: number; failed_prints: number };
+  waste_per_day: { day: string; total: number }[];
+}
+
+export interface WasteEvent {
+  id: number;
+  printer_id: string;
+  timestamp: string;
+  waste_g: number;
+  reason?: string | null;
+  notes?: string | null;
+}
+
 export interface CostSummary {
   print_count: number;
   total_filament: number;

@@ -97,6 +97,22 @@
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
     },
+    "waste": {
+      "title": "Waste",
+      "subtitle": "Filament wasted to purge, colour changes and failures",
+      "total": "Total waste",
+      "cost": "Waste cost",
+      "avg": "Avg / print",
+      "affected": "Prints with waste",
+      "breakdown": "Where waste comes from",
+      "color_change": "Colour changes",
+      "failed": "Failed prints",
+      "purge": "Purge",
+      "manual": "Manual",
+      "recent": "Recent waste events",
+      "none": "No waste events yet.",
+      "per_day": "Waste per day (g)"
+    },
     "costs": {
       "title": "Costs",
       "subtitle": "Unit economics across your prints",

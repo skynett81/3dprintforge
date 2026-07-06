@@ -101,6 +101,8 @@ export const api = {
   saveNotificationConfig: (cfg: NotificationConfig) =>
     req<{ ok: boolean }>('/api/notifications/config', { method: 'PUT', body: JSON.stringify(cfg) }),
   getStatistics: (): Promise<Stats> => req<Stats>('/api/statistics'),
+  getWasteStats: (): Promise<import('./types').WasteStats> => req('/api/waste/stats'),
+  getWasteHistory: (): Promise<import('./types').WasteEvent[]> => req('/api/waste/history?limit=20'),
   getCostSummary: (): Promise<import('./types').CostSummary> => req('/api/cost/summary'),
   getCostReport: (): Promise<import('./types').CostRow[]> => req('/api/cost/report'),
   listHistory: (): Promise<HistoryRow[]> => req<HistoryRow[]>('/api/history?limit=40'),
