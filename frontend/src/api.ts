@@ -49,6 +49,10 @@ export const api = {
     req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) }),
   removePrinter: (id: string) =>
     req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  listScheduled: (): Promise<import('./types').ScheduledPrint[]> => req('/api/scheduler'),
+  addScheduled: (body: { title: string; filename: string; scheduled_at: string; printer_id?: string }) =>
+    req<{ ok: boolean; id: number }>('/api/scheduler', { method: 'POST', body: JSON.stringify(body) }),
+  deleteScheduled: (id: number) => req<{ ok: boolean }>(`/api/scheduler/${id}`, { method: 'DELETE' }),
   getMaintenanceStatus: (printerId: string): Promise<import('./types').MaintenanceStatus> =>
     req(`/api/maintenance/status?printer_id=${encodeURIComponent(printerId)}`),
   logMaintenance: (printerId: string, component: string) =>

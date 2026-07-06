@@ -83,6 +83,15 @@ export interface BedHold {
   held_at?: string;
 }
 
+export interface ScheduledPrint {
+  id: number;
+  title: string;
+  filename: string;
+  scheduled_at: string;
+  printer_id?: string | null;
+  status?: string | null;
+}
+
 export interface MaintComponent {
   component: string;
   label: string;

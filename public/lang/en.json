@@ -38,7 +38,8 @@
       "light_on": "Light on",
       "light_off": "Light off",
       "confirm_stop": "Stop the current print? This cannot be undone.",
-      "sent": "Command sent"
+      "sent": "Command sent",
+      "camera": "Camera"
     },
     "queue": {
       "title": "Queue",
@@ -89,6 +90,18 @@
       "prints_per_month": "Prints per month",
       "filament_by_type": "Filament by type",
       "top_files": "Top files"
+    },
+    "scheduler": {
+      "title": "Scheduler",
+      "scheduled": "scheduled prints",
+      "add": "+ Schedule print",
+      "add_btn": "Schedule",
+      "added": "Scheduled",
+      "removed": "Removed",
+      "empty": "No scheduled prints. Add one above.",
+      "title_field": "Title",
+      "file": "File",
+      "at": "When"
     },
     "maint": {
       "title": "Maintenance",

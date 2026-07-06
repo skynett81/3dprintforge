@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
@@ -17,8 +17,16 @@ export function PrinterDrawer({ printer, live, onClose }: Props) {
   const t = useT();
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  const [camFailed, setCamFailed] = useState(false);
   const l = readLive(live);
   const busyPrinting = isPrinting(l);
+
+  // Refresh the camera snapshot every 3s while the drawer is open.
+  useEffect(() => {
+    const iv = setInterval(() => setTick((n) => n + 1), 3000);
+    return () => clearInterval(iv);
+  }, []);
 
   async function control(action: string, extra?: Record<string, unknown>) {
     if (action === 'stop' && !confirm(t('v2.fleet.confirm_stop', 'Stop the current print? This cannot be undone.'))) return;
@@ -50,6 +58,15 @@ export function PrinterDrawer({ printer, live, onClose }: Props) {
           </span>
           {l.file && <span className="muted ellipsis" title={l.file}>{l.file}</span>}
         </div>
+
+        {!camFailed && (
+          <img
+            className="drawer-cam"
+            src={`/api/printers/${encodeURIComponent(printer.id)}/frame.jpeg?t=${tick}`}
+            alt={t('v2.fleet.camera', 'Camera')}
+            onError={() => setCamFailed(true)}
+          />
+        )}
 
         {busyPrinting && l.progress != null && (
           <div className="drawer-prog">

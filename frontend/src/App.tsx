@@ -11,13 +11,14 @@ import { FleetPanel } from './panels/FleetPanel';
 import { MaintenancePanel } from './panels/MaintenancePanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
+import { SchedulerPanel } from './panels/SchedulerPanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'supply' | 'purchasing' | 'analytics' | 'history' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'history' | 'settings';
 
 const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconGrid /> },
@@ -26,6 +27,7 @@ const NAV: { id: PanelId; label: string; icon: JSX.Element }[] = [
   { id: 'maintenance', label: 'Maintenance', icon: <IconWrench /> },
   { id: 'inventory', label: 'Inventory', icon: <IconSpool /> },
   { id: 'queue', label: 'Queue', icon: <IconQueue /> },
+  { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
   { id: 'supply', label: 'Supply', icon: <IconBox /> },
   { id: 'purchasing', label: 'Purchasing', icon: <IconCart /> },
   { id: 'analytics', label: 'Analytics', icon: <IconChart /> },
@@ -94,6 +96,7 @@ export function App() {
         {panel === 'maintenance' && <MaintenancePanel />}
         {panel === 'inventory' && <InventoryPanel />}
         {panel === 'queue' && <QueuePanel />}
+        {panel === 'scheduler' && <SchedulerPanel />}
         {panel === 'supply' && <SupplyPanel />}
         {panel === 'purchasing' && <PurchasingPanel />}
         {panel === 'analytics' && <AnalyticsPanel />}
@@ -123,6 +126,9 @@ function IconQueue() {
 }
 function IconWrench() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>;
+}
+function IconCalendar() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
 }
 function IconBox() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
