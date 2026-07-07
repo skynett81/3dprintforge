@@ -51,7 +51,7 @@ export function LibraryPanel({ selected, onSelect, onBack }: Props = {}) {
         <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {is3mf ? (
             <Suspense fallback={<div className="model-overlay muted" style={{ position: 'static', height: 440 }}>{t('common.loading', 'Loading…')}</div>}>
-              <ModelViewer id={detail.id} />
+              <ModelViewer src={`/api/library/${detail.id}/model`} />
             </Suspense>
           ) : (
             <p className="muted empty-note" style={{ padding: 20 }}>{t('v2.library.no_preview', '3D preview is available for 3MF files only.')}</p>

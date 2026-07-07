@@ -352,6 +352,8 @@
       "title": "Dashboard",
       "now_printing": "Now printing",
       "nothing_printing": "Nothing is printing right now.",
+      "view_3d": "View in 3D",
+      "model_note": "The model is fetched from the printer while a job is running.",
       "unknown_file": "Unknown file",
       "min_left": "min left",
       "subtitle": "Farm overview — click a card to jump in",

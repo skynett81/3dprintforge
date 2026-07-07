@@ -1,8 +1,11 @@
+import { Suspense, lazy, useState } from 'react';
 import { api } from '../api';
 import { useResource, useLivePrinters, useProjects } from '../hooks';
 import { useT } from '../i18n';
 import { readLive, isPrinting } from '../live';
 import type { Printer, Spool, Queue, ReorderRow, WasteStats } from '../types';
+
+const ModelViewer = lazy(() => import('../components/ModelViewer'));
 
 function online(p: Printer) {
   const s = (p.status || p.state || '').toLowerCase();
@@ -19,6 +22,7 @@ export function DashboardPanel({ onNavigate }: { onNavigate?: (id: string) => vo
   const { data: waste } = useResource<WasteStats>(api.getWasteStats, 30000);
   const { projects } = useProjects();
   const { live, connected } = useLivePrinters();
+  const [view3d, setView3d] = useState<string | null>(null);
 
   const pr = printers ?? [];
   const sp = (spools ?? []).filter((s) => !s.archived);
@@ -52,6 +56,21 @@ export function DashboardPanel({ onNavigate }: { onNavigate?: (id: string) => vo
         <Kpi label={t('v2.dash.projects', 'Active projects')} value={String(projects.length)} accent="teal" onClick={() => onNavigate?.('production')} />
       </div>
 
+      {view3d && (
+        <div className="model-modal-backdrop" onClick={() => setView3d(null)}>
+          <div className="model-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="model-modal-head">
+              <span>{pr.find((p) => p.id === view3d)?.name} · {t('v2.dash.now_printing', 'Now printing')}</span>
+              <button className="btn btn--sm btn--ghost" onClick={() => setView3d(null)}>✕</button>
+            </div>
+            <Suspense fallback={<div className="model-overlay muted" style={{ position: 'static', height: 460 }}>{t('common.loading', 'Loading…')}</div>}>
+              <ModelViewer src={`/api/model/${encodeURIComponent(view3d)}`} />
+            </Suspense>
+            <p className="muted micro" style={{ padding: '0 14px 12px' }}>{t('v2.dash.model_note', 'The model is fetched from the printer while a job is running.')}</p>
+          </div>
+        </div>
+      )}
+
       <section className="card">
         <div className="card-title">{t('v2.dash.now_printing', 'Now printing')}</div>
         {(() => {
@@ -75,6 +94,7 @@ export function DashboardPanel({ onNavigate }: { onNavigate?: (id: string) => vo
                         }}
                       />
                       {l.progress != null && <span className="np-pct">{Math.round(l.progress)}%</span>}
+                      <button className="np-3d" title={t('v2.dash.view_3d', 'View in 3D')} onClick={(e) => { e.stopPropagation(); setView3d(p.id); }}>3D</button>
                     </div>
                     <div className="np-body">
                       <div className="np-printer">{p.name} <span className="status-chip status-chip--busy"><span className="status-dot" />{(l.gcodeState || 'printing').toLowerCase()}</span></div>

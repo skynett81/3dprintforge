@@ -2,13 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-interface Mesh { vertices: number[]; triangles: number[]; materialColor: string | null }
-interface ModelData { meshes: Mesh[] }
+interface Mesh { vertices: number[]; triangles: number[]; materialColor?: string | null }
+// Two shapes exist: the library endpoint returns { meshes: [...] }, the live
+// print endpoint (/api/model/:printerId) returns a single { vertices, triangles }.
+interface ModelData { meshes?: Mesh[]; vertices?: number[]; triangles?: number[] }
 
-// Interactive 3D model viewer. Loads pre-parsed mesh JSON from
-// /api/library/:id/model (vertices + triangle indices) and renders it with
-// orbit/zoom. Three.js is bundled locally so it satisfies the /v2 CSP.
-export default function ModelViewer({ id }: { id: number }) {
+function normalizeMeshes(d: ModelData): Mesh[] {
+  if (Array.isArray(d.meshes) && d.meshes.length) return d.meshes;
+  if (Array.isArray(d.vertices) && Array.isArray(d.triangles)) return [{ vertices: d.vertices, triangles: d.triangles, materialColor: null }];
+  return [];
+}
+
+// Interactive 3D model viewer. Loads pre-parsed mesh JSON (vertices + triangle
+// indices) from `src` and renders it with orbit/zoom. Three.js is bundled
+// locally so it satisfies the /v2 CSP.
+export default function ModelViewer({ src }: { src: string }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [err, setErr] = useState('');
@@ -21,16 +29,17 @@ export default function ModelViewer({ id }: { id: number }) {
 
     (async () => {
       try {
-        const res = await fetch(`/api/library/${id}/model`);
+        const res = await fetch(src);
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const data = (await res.json()) as ModelData;
-        if (disposed || !data.meshes?.length) { if (!disposed) { setErr('No mesh data'); setStatus('error'); } return; }
+        const data = (await res.json()) as ModelData | null;
+        const meshes = data ? normalizeMeshes(data) : [];
+        if (disposed || meshes.length === 0) { if (!disposed) { setErr('No mesh data'); setStatus('error'); } return; }
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0e1116);
 
         const group = new THREE.Group();
-        for (const m of data.meshes) {
+        for (const m of meshes) {
           const geo = new THREE.BufferGeometry();
           geo.setAttribute('position', new THREE.Float32BufferAttribute(m.vertices, 3));
           geo.setIndex(m.triangles);
@@ -97,7 +106,7 @@ export default function ModelViewer({ id }: { id: number }) {
     })();
 
     return () => { disposed = true; cleanup(); };
-  }, [id]);
+  }, [src]);
 
   return (
     <div className="model-viewer">
