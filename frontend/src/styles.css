@@ -114,6 +114,9 @@ a.hs-badge { text-decoration: none; }
 
 /* Knowledge base */
 .kb-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.kb-bullets { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 0.85rem; line-height: 1.4; }
+.kb-bullets--pro li::marker { color: var(--accent); }
+.kb-bullets--con li::marker { color: var(--danger, #ef4444); }
 
 /* Errors */
 .chk { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--muted); }

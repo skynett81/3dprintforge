@@ -194,7 +194,7 @@ export function App() {
         {panel === 'achievements' && <AchievementsPanel />}
         {panel === 'hardware' && <HardwarePanel />}
         {panel === 'library' && <LibraryPanel />}
-        {panel === 'knowledge' && <KnowledgePanel />}
+        {panel === 'knowledge' && <KnowledgePanel selected={route.sub} onSelect={(id) => { window.location.hash = buildHash('knowledge', id); }} onBack={() => { window.location.hash = buildHash('knowledge'); }} />}
         {panel === 'crm' && <CrmPanel />}
         {panel === 'history' && <HistoryPanel />}
         {panel === 'settings' && <SettingsPanel />}

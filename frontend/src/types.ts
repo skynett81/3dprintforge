@@ -253,8 +253,20 @@ export interface KbPrinter {
   has_ams?: number;
   has_enclosure?: number;
   has_camera?: number;
+  has_lidar?: number;
   price_usd?: number | null;
   wiki_url?: string | null;
+  nozzle_temp_max?: number | null;
+  heated_bed_max?: number | null;
+  weight_kg?: number | null;
+  nozzle_type?: string | null;
+  supported_nozzle_sizes?: string | null;
+  pros?: string | null;
+  cons?: string | null;
+  tips?: string | null;
+  supported_filaments?: string | null;
+  connectivity?: string | null;
+  image_url?: string | null;
 }
 
 export interface AppError {

@@ -3,9 +3,12 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
+import { KbPrinterDetail } from './knowledge/KbPrinterDetail';
 import type { KbPrinter } from '../types';
 
-export function KnowledgePanel() {
+interface Props { selected?: string | null; onSelect?: (id: string) => void; onBack?: () => void; }
+
+export function KnowledgePanel({ selected, onSelect, onBack }: Props = {}) {
   const t = useT();
   const toast = useToast();
   const { data, reload } = useResource<KbPrinter[]>(api.listKbPrinters, 0);
@@ -40,6 +43,17 @@ export function KnowledgePanel() {
     await run(async () => { await api.deleteKbPrinter(p.id); reload(); }, t('v2.kb.removed', 'Printer removed'));
   }
 
+  const detail = selected ? all.find((p) => String(p.id) === selected) : null;
+  if (selected && all.length > 0) {
+    if (detail) return <KbPrinterDetail printer={detail} onBack={onBack} />;
+    return (
+      <div>
+        <button className="btn btn--sm" onClick={onBack}>← {t('v2.kb.title', 'Knowledge base')}</button>
+        <p className="muted empty-note">{t('v2.kb.gone', 'That printer is no longer in the knowledge base.')}</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="panel-head">
@@ -68,12 +82,12 @@ export function KnowledgePanel() {
 
       <div className="tile-grid">
         {shown.map((p) => (
-          <div className="tile" key={p.id}>
+          <div className="tile tile--clickable" key={p.id} role="button" tabIndex={0} onClick={() => onSelect?.(String(p.id))}>
             <div className="tile-top">
               <span className="tile-tag">{p.release_year || ''}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {p.price_usd != null && <span className="muted tnum">${p.price_usd}</span>}
-                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(p)}>✕</button>
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); remove(p); }}>✕</button>
               </div>
             </div>
             <div className="tile-name">{p.full_name || p.model}</div>
@@ -83,7 +97,7 @@ export function KnowledgePanel() {
               {p.has_enclosure ? <span className="flag">{t('v2.kb.enclosed', 'enclosed')}</span> : null}
               {p.has_camera ? <span className="flag">{t('v2.kb.camera', 'camera')}</span> : null}
             </div>
-            {p.wiki_url && <a className="tile-foot classic-link" href={p.wiki_url} target="_blank" rel="noreferrer">{t('v2.kb.wiki', 'Wiki →')}</a>}
+            <div className="tile-foot muted">{t('v2.inv.view', 'view →')}</div>
           </div>
         ))}
         {shown.length === 0 && <p className="muted">{t('v2.kb.no_match', 'No printers match.')}</p>}
