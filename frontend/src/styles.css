@@ -236,6 +236,11 @@ a.hs-badge { text-decoration: none; }
 .drop-chip--over { background: rgba(0,179,164,0.2); border-color: var(--accent); border-style: solid; color: var(--accent); transform: scale(1.04); }
 .lib-row--sel { background: rgba(0,179,164,0.1); }
 .lib-row--drag { opacity: 0.45; }
+.tile--drop { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(0,179,164,0.3); }
+.loc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 2px; min-height: 16px; }
+.loc-chip { width: 17px; height: 17px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); cursor: grab; transition: transform 0.1s; }
+.loc-chip:hover { transform: scale(1.18); }
+.loc-chip-more { font-size: 0.7rem; color: var(--muted); align-self: center; }
 
 /* Spool graphic */
 .spool-gfx { display: flex; justify-content: center; margin: 8px 0 6px; }

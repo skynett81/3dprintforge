@@ -213,7 +213,16 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
             const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
             const full = cap > 0 && used >= cap;
             return (
-              <div className="tile tile--clickable" key={l.id} onClick={() => onOpen?.(String(l.id))} role="button" tabIndex={0}>
+              <div
+                className={`tile tile--clickable${overLoc === l.name ? ' tile--drop' : ''}`}
+                key={l.id}
+                onClick={() => onOpen?.(String(l.id))}
+                role="button"
+                tabIndex={0}
+                onDragOver={(e) => { e.preventDefault(); setOverLoc(l.name); }}
+                onDragLeave={() => setOverLoc((o) => (o === l.name ? null : o))}
+                onDrop={(e) => { e.preventDefault(); dropOn(l.name); }}
+              >
                 <div className="tile-top">
                   <span className="tile-tag">{t('v2.inv.location', 'Location')}</span>
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -223,6 +232,21 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
                 </div>
                 <div className="tile-name">{l.name}</div>
                 {l.description && <div className="tile-meta">{l.description}</div>}
+                <div className="loc-chips">
+                  {spools.filter((s) => !s.archived && s.location === l.name).slice(0, 14).map((s) => (
+                    <span
+                      key={s.id}
+                      className="loc-chip"
+                      draggable
+                      title={`${s.profile_name || s.color_name || 'Spool'} · ${Math.round(s.remaining_weight_g)} g — drag to move`}
+                      style={{ background: hex(s) }}
+                      onClick={(e) => { e.stopPropagation(); setOpenSpoolId(s.id); }}
+                      onDragStart={(e) => { setDragId(s.id); e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(s.id)); }}
+                      onDragEnd={() => { setDragId(null); setOverLoc(null); }}
+                    />
+                  ))}
+                  {used > 14 && <span className="loc-chip-more">+{used - 14}</span>}
+                </div>
                 <div className="tile-foot" style={{ marginTop: 8 }}>
                   <span className={full ? 'low' : 'muted'}>{used}{cap ? ` / ${cap}` : ''} {t('v2.inv.spools', 'spools')}{full ? ` · ${t('v2.inv.full', 'full')}` : ''}</span>
                   <span className="muted">{t('v2.inv.view', 'view →')}</span>
