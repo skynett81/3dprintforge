@@ -227,6 +227,12 @@ a.hs-badge { text-decoration: none; }
 
 .printer-thumb { display: block; height: 84px; max-width: 100%; margin: 8px auto 6px; object-fit: contain; }
 
+/* 3D model viewer */
+.model-viewer { position: relative; width: 100%; height: 460px; background: #0e1116; }
+.model-canvas { width: 100%; height: 100%; }
+.model-canvas canvas { display: block; }
+.model-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+
 /* Now printing */
 .np-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
 .np-card { display: flex; gap: 12px; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 10px; cursor: pointer; }

@@ -284,7 +284,10 @@
       "prints": "Prints",
       "last": "Last printed",
       "confirm": "Delete this file?",
-      "removed": "File removed"
+      "removed": "File removed",
+      "gone": "That file is no longer in the library.",
+      "download": "Download",
+      "no_preview": "3D preview is available for 3MF files only."
     },
     "kb": {
       "title": "Knowledge base",
