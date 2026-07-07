@@ -8,10 +8,12 @@ import { SupplierDetail } from './purchasing/SupplierDetail';
 import type { Supplier, PurchaseOrder } from '../types';
 
 interface PurchasingProps {
-  supplierDetail?: string | null;
-  onOpenSupplier?: (id: string) => void;
-  onBackSuppliers?: () => void;
+  sub?: string | null;
+  detail?: string | null;
+  onNav?: (slug: string, detail?: string | null) => void;
 }
+type Tab = 'orders' | 'suppliers' | 'reorder';
+const TABS: Tab[] = ['orders', 'suppliers', 'reorder'];
 
 function statusClass(s: string) {
   const t = s.toLowerCase();
@@ -21,10 +23,12 @@ function statusClass(s: string) {
   return 'neutral';
 }
 
-export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSuppliers }: PurchasingProps = {}) {
+export function PurchasingPanel({ sub, detail: routeDetail, onNav }: PurchasingProps = {}) {
   const t = useT();
   const toast = useToast();
+  const tab: Tab = (sub && (TABS as string[]).includes(sub) ? sub : 'orders') as Tab;
   const { data: suppliers, reload: reloadSuppliers } = useResource<Supplier[]>(api.listSuppliers, 0);
+  const { data: reorder } = useResource<import('../types').ReorderRow[]>(api.getReorder, 30000);
   const { data: pos, reload: reloadPos } = useResource<PurchaseOrder[]>(api.listPurchaseOrders, 15000);
   const [selected, setSelected] = useState<number | null>(null);
   const [detail, setDetail] = useState<PurchaseOrder | null>(null);
@@ -105,8 +109,8 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
     await run(async () => { await api.deletePoLine(lineId); if (selected != null) loadDetail(selected); reloadPos(); }, t('v2.purchasing.line_removed', 'Line removed'));
   }
 
-  if (supplierDetail) {
-    return <SupplierDetail supplierId={Number(supplierDetail)} onBack={onBackSuppliers} />;
+  if (sub === 'suppliers' && routeDetail) {
+    return <SupplierDetail supplierId={Number(routeDetail)} onBack={() => onNav?.('suppliers')} />;
   }
 
   return (
@@ -116,8 +120,37 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
           <h2 className="panel-title">{t('v2.purchasing.title', 'Purchasing')}</h2>
           <p className="muted sub">{(suppliers ?? []).length} {t('v2.purchasing.suppliers', 'suppliers')} · {list.length} {t('v2.purchasing.orders', 'orders')}</p>
         </div>
+        <div className="seg">
+          {([['orders', t('v2.purchasing.tab_orders', 'Orders')], ['suppliers', t('v2.purchasing.tab_suppliers', 'Suppliers')], ['reorder', t('v2.purchasing.tab_reorder', 'Reorder')]] as [Tab, string][]).map(([id, label]) => (
+            <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => onNav?.(id)}>{label}</button>
+          ))}
+        </div>
       </div>
 
+      {tab === 'reorder' && (
+        <section className="card">
+          <div className="card-title">{t('v2.purchasing.reorder_title', 'Below target — reorder')}</div>
+          {(reorder ?? []).filter((r) => r.below_target).length === 0 ? (
+            <p className="muted empty-note">{t('v2.purchasing.reorder_ok', 'Everything is at or above target.')}</p>
+          ) : (
+            <div className="lib-list">
+              <div className="lib-head" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+                <span>{t('v2.an.material', 'Material')}</span><span className="tnum">{t('v2.purchasing.on_hand', 'On hand')}</span><span className="tnum">{t('v2.purchasing.target', 'Target')}</span><span className="tnum">{t('v2.purchasing.short', 'Short')}</span>
+              </div>
+              {(reorder ?? []).filter((r) => r.below_target).map((r, i) => (
+                <div className="lib-row" key={i} style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+                  <span className="lib-name">{r.material}</span>
+                  <span className="tnum">{(r.on_hand_g / 1000).toFixed(1)} kg</span>
+                  <span className="muted tnum">{(r.target_g / 1000).toFixed(1)} kg</span>
+                  <span className="low tnum">{(r.shortfall_g / 1000).toFixed(1)} kg</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === 'suppliers' && (
       <section className="card">
         <div className="card-head">
           <div className="card-title">{t('v2.purchasing.suppliers', 'Suppliers')}</div>
@@ -137,7 +170,7 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
         ) : (
           <div className="sup-simple">
             {(suppliers ?? []).map((s) => (
-              <div className="supx-row supx-row--btn" key={s.id} role="button" tabIndex={0} onClick={() => onOpenSupplier?.(String(s.id))}>
+              <div className="supx-row supx-row--btn" key={s.id} role="button" tabIndex={0} onClick={() => onNav?.('suppliers', String(s.id))}>
                 <span className="supx-name">{s.name}</span>
                 <span className="muted">{s.website || ''}</span>
                 <span className="muted tnum">{s.lead_time_days != null ? `${s.lead_time_days} ${t('v2.purchasing.days_lead', 'd lead')}` : ''}</span>
@@ -148,7 +181,9 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
           </div>
         )}
       </section>
+      )}
 
+      {tab === 'orders' && (
       <div className="two-col">
         <section className="card">
           <div className="card-head">
@@ -232,6 +267,7 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }
