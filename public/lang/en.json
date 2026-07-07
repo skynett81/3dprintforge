@@ -431,7 +431,12 @@
       "components": "Components",
       "none": "No maintenance schedule for this printer.",
       "mark": "Mark serviced",
-      "logged": "Logged as serviced"
+      "logged": "Logged as serviced",
+      "last": "last",
+      "never": "never serviced",
+      "history": "Service history",
+      "no_history": "No maintenance logged yet for this printer.",
+      "note_prompt": "Optional note (what you did) — leave blank to skip:"
     },
     "purchasing": {
       "title": "Purchasing",

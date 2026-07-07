@@ -55,11 +55,13 @@ export const api = {
   deleteScheduled: (id: number) => req<{ ok: boolean }>(`/api/scheduler/${id}`, { method: 'DELETE' }),
   getMaintenanceStatus: (printerId: string): Promise<import('./types').MaintenanceStatus> =>
     req(`/api/maintenance/status?printer_id=${encodeURIComponent(printerId)}`),
-  logMaintenance: (printerId: string, component: string) =>
+  logMaintenance: (printerId: string, component: string, notes?: string) =>
     req<{ ok: boolean }>('/api/maintenance/log', {
       method: 'POST',
-      body: JSON.stringify({ printer_id: printerId, component, action: 'maintenance' }),
+      body: JSON.stringify({ printer_id: printerId, component, action: 'maintenance', notes: notes || undefined }),
     }),
+  getMaintenanceLog: (printerId: string, limit = 30): Promise<import('./types').MaintenanceLogEntry[]> =>
+    req(`/api/maintenance/log?printer_id=${encodeURIComponent(printerId)}&limit=${limit}`),
   controlPrinter: (id: string, action: string, extra: Record<string, unknown> = {}) =>
     req<{ ok: boolean; action: string }>(`/api/printers/${encodeURIComponent(id)}/control`, {
       method: 'POST',

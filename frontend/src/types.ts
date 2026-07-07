@@ -366,6 +366,17 @@ export interface MaintComponent {
   last_maintenance: string | null;
 }
 
+export interface MaintenanceLogEntry {
+  id: number;
+  printer_id: string;
+  component: string;
+  action: string;
+  timestamp: string;
+  notes?: string | null;
+  nozzle_type?: string | null;
+  nozzle_diameter?: number | null;
+}
+
 export interface MaintenanceStatus {
   total_print_hours: number;
   total_prints: number;
