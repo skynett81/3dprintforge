@@ -119,13 +119,13 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
         </div>
 
         <div className="drawer-adjust">
-          <div className="field-label">{t('v2.inventory.adjust', 'Stock adjustment')}</div>
-          <p className="muted empty-note" style={{ margin: '0 0 8px' }}>{t('v2.inventory.adjust_hint', 'Record a +/- gram correction to the ledger (spillage, re-spool, manual count).')}</p>
+          <div className="field-label">{t('v2.inventory.adjust', 'Adjust stock')}</div>
           <div className="drawer-adjust-row">
-            <input className="input" type="number" placeholder="±g" value={adjDelta} onChange={(e) => setAdjDelta(e.target.value)} style={{ maxWidth: 90 }} />
-            <input className="input" placeholder={t('v2.inventory.adjust_reason', 'Reason')} value={adjReason} onChange={(e) => setAdjReason(e.target.value)} />
+            <input className="input" type="number" placeholder={t('v2.inventory.adjust_ph', 'grams ±')} aria-label={t('v2.inventory.adjust_ph', 'grams ±')} value={adjDelta} onChange={(e) => setAdjDelta(e.target.value)} style={{ maxWidth: 96 }} />
+            <input className="input" placeholder={t('v2.inventory.adjust_reason', 'Reason (optional)')} value={adjReason} onChange={(e) => setAdjReason(e.target.value)} />
             <button className="btn btn--sm" disabled={busy || !adjDelta} onClick={adjust}>{t('v2.inventory.apply', 'Apply')}</button>
           </div>
+          <p className="muted micro">{t('v2.inventory.adjust_hint', 'Logs a tracked correction — spillage, re-spool or a recount.')}</p>
         </div>
 
         {shownMeta.length > 0 && (

@@ -202,6 +202,7 @@ a.hs-badge { text-decoration: none; }
 .drawer-adjust { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
 .drawer-adjust-row { display: flex; align-items: center; gap: 8px; }
 .drawer-adjust-row .input { flex: 1; }
+.micro { font-size: 0.72rem; margin: 7px 0 0; }
 .drawer-meta { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 6px; }
 .drawer-meta-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.82rem; }
 .drawer-history { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
