@@ -57,6 +57,10 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
     if (!confirm(t('v2.inv.loc_confirm', `Delete location "${l.name}"?`))) return;
     await run(async () => { await api.deleteLocation(l.id); reload(); }, t('v2.inv.loc_removed', 'Location removed'));
   }
+  async function moveSpool(spool: Spool, toName: string) {
+    if (!toName || toName === (spool.location || '')) return;
+    await run(async () => { await api.updateSpool(spool.id, { location: toName }); reloadSpools(); }, `${t('v2.inv.moved', 'Moved to')} ${toName}`);
+  }
 
   // ---- Detail view: one location and the spools stored in it ----
   const detailLoc = detail ? locations.find((l) => String(l.id) === detail) : null;
@@ -85,20 +89,29 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
             <p className="muted empty-note">{t('v2.inv.loc_empty', 'No filament stored here.')}</p>
           ) : (
             <div className="lib-list">
-              <div className="lib-head" style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1fr 0.8fr' }}>
-                <span></span><span>{t('v2.inv.profile', 'Filament')}</span><span>{t('v2.inv.material', 'Material')}</span><span>{t('v2.inv.col_qty', 'Remaining')}</span><span>%</span>
+              <div className="lib-head" style={{ gridTemplateColumns: 'auto 1.8fr 0.7fr 0.9fr 0.5fr 1.1fr' }}>
+                <span></span><span>{t('v2.inv.profile', 'Filament')}</span><span>{t('v2.inv.material', 'Material')}</span><span>{t('v2.inv.col_qty', 'Remaining')}</span><span>%</span><span>{t('v2.inv.move', 'Move to')}</span>
               </div>
               {here.map((s) => {
                 const pct = spoolPct(s);
                 const low = pct < 15;
                 return (
-                  <button className="lib-row lib-row--btn" key={s.id} style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1fr 0.8fr' }} onClick={() => setOpenSpoolId(s.id)}>
+                  <div className="lib-row lib-row--btn" key={s.id} style={{ gridTemplateColumns: 'auto 1.8fr 0.7fr 0.9fr 0.5fr 1.1fr', cursor: 'pointer' }} onClick={() => setOpenSpoolId(s.id)}>
                     <span className="swatch swatch--sm" style={{ background: hex(s) }} />
                     <span className="lib-name ellipsis">{s.profile_name || s.color_name || `Spool #${s.id}`}</span>
                     <span className="muted">{s.material || '—'}</span>
                     <span className={`tnum${low ? ' low' : ''}`}>{Math.round(s.remaining_weight_g)} g</span>
                     <span className={low ? 'low tnum' : 'muted tnum'}>{pct}%</span>
-                  </button>
+                    <select
+                      className="input input--sm"
+                      value=""
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => { e.stopPropagation(); moveSpool(s, e.target.value); }}
+                    >
+                      <option value="">{t('v2.inv.move', 'Move to')}…</option>
+                      {locations.filter((l) => l.name !== detailLoc.name).map((l) => <option key={l.id} value={l.name}>{l.name}</option>)}
+                    </select>
+                  </div>
                 );
               })}
             </div>

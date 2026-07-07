@@ -113,6 +113,8 @@
       "spools": "spools",
       "min": "min",
       "no_activity": "No stock movements yet.",
+      "move": "Move to",
+      "moved": "Moved to",
       "spool": "Spool",
       "type": "Type",
       "change": "Change",

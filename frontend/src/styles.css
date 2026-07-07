@@ -227,6 +227,8 @@ a.hs-badge { text-decoration: none; }
 
 .printer-thumb { display: block; height: 84px; max-width: 100%; margin: 8px auto 6px; object-fit: contain; }
 
+.input--sm { padding: 4px 8px; font-size: 0.78rem; height: auto; }
+
 /* Spool graphic */
 .spool-gfx { display: flex; justify-content: center; margin: 8px 0 6px; }
 
