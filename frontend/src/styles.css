@@ -225,6 +225,8 @@ a.hs-badge { text-decoration: none; }
 
 .swatch--empty { background: transparent !important; border: 1px dashed var(--border); }
 
+.printer-thumb { display: block; height: 84px; max-width: 100%; margin: 8px auto 6px; object-fit: contain; }
+
 /* View toggle */
 .viewtoggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .viewtoggle-btn { background: var(--bg-3); border: none; color: var(--muted); padding: 5px 10px; cursor: pointer; font-size: 0.95rem; line-height: 1; }

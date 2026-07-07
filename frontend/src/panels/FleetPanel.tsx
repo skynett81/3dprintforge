@@ -110,6 +110,13 @@ export function FleetPanel() {
                   <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); removePrinter(p); }}>✕</button>
                 </div>
               </div>
+              <img
+                className="printer-thumb"
+                src={`/api/printer-image/${encodeURIComponent(p.model || p.name)}`}
+                alt={p.name}
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+              />
               <div className="tile-name">{p.name}</div>
               <div className="tile-meta">{p.model || '—'}</div>
 
