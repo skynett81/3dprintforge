@@ -181,6 +181,49 @@ export interface BackupFile {
   created_at: string;
 }
 
+export interface CrmOrderItem {
+  id: number;
+  order_id: number;
+  description: string;
+  quantity: number;
+  material_cost?: number | null;
+  item_cost?: number | null;
+  total_cost?: number | null;
+  filament_type?: string | null;
+}
+
+export interface CrmOrder {
+  id: number;
+  customer_id: number | null;
+  order_number: string;
+  status: string;
+  total_cost: number;
+  currency: string;
+  notes?: string | null;
+  due_date?: string | null;
+  created_at: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_company?: string | null;
+  items?: CrmOrderItem[];
+}
+
+export interface CrmInvoice {
+  id: number;
+  order_id: number;
+  invoice_number: string;
+  status: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  currency: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  created_at: string;
+  order_number?: string | null;
+  customer_name?: string | null;
+}
+
 export interface Customer {
   id: number;
   name: string;

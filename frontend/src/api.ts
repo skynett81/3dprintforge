@@ -149,6 +149,13 @@ export const api = {
   updateCustomer: (id: number, body: Record<string, unknown>) =>
     req<{ ok: boolean }>(`/api/crm/customers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteCustomer: (id: number) => req<{ ok: boolean }>(`/api/crm/customers/${id}`, { method: 'DELETE' }),
+  listCrmOrders: (): Promise<import('./types').CrmOrder[]> => req('/api/crm/orders'),
+  getCrmOrder: (id: number): Promise<import('./types').CrmOrder> => req(`/api/crm/orders/${id}`),
+  createCrmOrder: (body: Record<string, unknown>) => req<{ ok: boolean; id: number }>('/api/crm/orders', { method: 'POST', body: JSON.stringify(body) }),
+  updateCrmOrderStatus: (id: number, status: string) => req<{ ok: boolean }>(`/api/crm/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  addCrmOrderItem: (orderId: number, body: Record<string, unknown>) => req<{ id: number }>(`/api/crm/orders/${orderId}/items`, { method: 'POST', body: JSON.stringify(body) }),
+  createInvoiceFromOrder: (orderId: number) => req<{ ok: boolean; id?: number }>(`/api/crm/orders/${orderId}/invoice`, { method: 'POST', body: '{}' }),
+  listCrmInvoices: (): Promise<import('./types').CrmInvoice[]> => req('/api/crm/invoices'),
   getSystemInfo: (): Promise<import('./types').SystemInfo> => req('/api/system/info'),
   getFirmware: (): Promise<import('./types').FirmwareInfo> => req('/api/firmware/updates'),
   listHardware: (): Promise<import('./types').HardwareItem[]> => req('/api/hardware'),

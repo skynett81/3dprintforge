@@ -195,7 +195,7 @@ export function App() {
         {panel === 'hardware' && <HardwarePanel />}
         {panel === 'library' && <LibraryPanel selected={route.sub} onSelect={(id) => { window.location.hash = buildHash('library', id); }} onBack={() => { window.location.hash = buildHash('library'); }} />}
         {panel === 'knowledge' && <KnowledgePanel selected={route.sub} onSelect={(id) => { window.location.hash = buildHash('knowledge', id); }} onBack={() => { window.location.hash = buildHash('knowledge'); }} />}
-        {panel === 'crm' && <CrmPanel />}
+        {panel === 'crm' && <CrmPanel sub={route.sub} detail={route.detail} onNav={(s, d) => { window.location.hash = buildHash('crm', s, d); }} />}
         {panel === 'history' && <HistoryPanel selected={route.sub} onSelect={(id) => { window.location.hash = buildHash('history', id); }} onBack={() => { window.location.hash = buildHash('history'); }} />}
         {panel === 'settings' && <SettingsPanel />}
       </main>
