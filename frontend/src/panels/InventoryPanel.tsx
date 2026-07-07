@@ -8,11 +8,16 @@ import { ControlTab } from './inventory/ControlTab';
 import { StockActivityTab } from './inventory/ActivityTab';
 
 type Tab = 'overview' | 'spools' | 'profiles' | 'locations' | 'control' | 'activity';
+const TABS: Tab[] = ['overview', 'spools', 'profiles', 'locations', 'control', 'activity'];
 
-export function InventoryPanel() {
+export function InventoryPanel({ sub, onSub }: { sub?: string | null; onSub?: (slug: string) => void } = {}) {
   const t = useT();
-  const [tab, setTab] = useState<Tab>('overview');
   const [focusId, setFocusId] = useState<number | null>(null);
+  // Controlled by the URL when onSub is provided (deep-linkable slugs);
+  // falls back to internal state otherwise (e.g. isolated tests).
+  const [localTab, setLocalTab] = useState<Tab>('overview');
+  const tab: Tab = onSub ? ((sub && (TABS as string[]).includes(sub) ? sub : 'overview') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onSub) onSub(id); else setLocalTab(id); };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('v2.inv.tab_overview', 'Overview') },

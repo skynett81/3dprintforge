@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth, useResource } from './hooks';
+import { parseHash, buildHash } from './router';
 import { api } from './api';
 import { useT } from './i18n';
 import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
@@ -87,7 +88,16 @@ function loadCollapsed(): Set<string> {
 
 export function App() {
   const t = useT();
-  const [panel, setPanel] = useState<PanelId>('dashboard');
+  const [route, setRoute] = useState(() => parseHash(window.location.hash));
+  useEffect(() => {
+    const onHash = () => setRoute(parseHash(window.location.hash));
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const validPanels = new Set<string>(NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id)));
+  const panel: PanelId = (validPanels.has(route.panel) ? route.panel : 'dashboard') as PanelId;
+  const setPanel = (id: PanelId) => { window.location.hash = buildHash(id); };
+  const navigateSub = (sub: string) => { window.location.hash = buildHash('inventory', sub); };
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const auth = useAuth();
 
@@ -170,7 +180,7 @@ export function App() {
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel />}
         {panel === 'guard' && <PrintGuardPanel />}
-        {panel === 'inventory' && <InventoryPanel />}
+        {panel === 'inventory' && <InventoryPanel sub={route.sub} onSub={navigateSub} />}
         {panel === 'queue' && <QueuePanel />}
         {panel === 'scheduler' && <SchedulerPanel />}
         {panel === 'supply' && <SupplyPanel />}
