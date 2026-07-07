@@ -489,7 +489,9 @@
       "serial": "Serial",
       "access": "Access code",
       "added": "Printer added",
-      "removed": "Printer removed"
+      "removed": "Printer removed",
+      "edit": "Edit printer",
+      "confirm_delete": "Remove this printer?"
     },
     "settings": {
       "title": "Settings",
