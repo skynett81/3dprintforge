@@ -272,7 +272,9 @@
       "confirm": "Delete this hardware item?",
       "category": "Category",
       "brand": "Brand",
-      "price": "Price"
+      "price": "Price",
+      "image": "Image URL",
+      "auto": "auto-detected"
     },
     "library": {
       "title": "Library",

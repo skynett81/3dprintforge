@@ -228,6 +228,8 @@ export interface HardwareItem {
   compatible_printers?: string | null;
   purchase_price?: number | null;
   rating?: number | null;
+  image_url?: string | null;
+  specs?: string | null;
 }
 
 export interface LibraryFile {
