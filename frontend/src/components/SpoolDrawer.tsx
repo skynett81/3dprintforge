@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
+import { spoolEventLabel } from '../inventory';
 import type { Spool, SpoolEvent } from '../types';
 
 function fdate(iso?: string | null) {
@@ -147,7 +148,7 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
                 <li className="timeline-item" key={e.id}>
                   <span className="timeline-dot" />
                   <div className="timeline-body">
-                    <span className="timeline-type">{e.event_type}{e.details ? ` · ${e.details}` : ''}</span>
+                    <span className="timeline-type">{spoolEventLabel(e)}</span>
                     <span className="muted timeline-when">{fdatetime(e.timestamp)}</span>
                   </div>
                 </li>

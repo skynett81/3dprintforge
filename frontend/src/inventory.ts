@@ -66,6 +66,32 @@ export function movementLabel(m: { type: string; reason?: string | null }): stri
   return TYPE_LABELS[m.type] || m.type || 'Movement';
 }
 
+// Human label for a spool timeline event. The `details` field is often a raw
+// JSON blob (e.g. {"weight_g":16.6,"source":"moonraker-estimate"}); never show
+// that verbatim — summarise per event type instead.
+export function spoolEventLabel(e: { event_type: string; details?: string | null }): string {
+  const raw = (e.details || '').trim();
+  let d: Record<string, unknown> | null = null;
+  if (raw.startsWith('{')) {
+    try { const p = JSON.parse(raw); if (p && typeof p === 'object') d = p as Record<string, unknown>; } catch { /* not JSON */ }
+  }
+  const num = (v: unknown): number => (typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  switch (e.event_type) {
+    case 'used': { const w = num(d?.weight_g); return Number.isFinite(w) ? `Used ${Math.round(w)} g` : 'Used'; }
+    case 'adjusted': { const a = num(d?.from); const b = num(d?.to); return Number.isFinite(a) && Number.isFinite(b) ? `Adjusted ${Math.round(a)} → ${Math.round(b)} g` : 'Adjusted'; }
+    case 'relocated': return d?.to ? `Moved to ${String(d.to)}` : 'Moved';
+    case 'created': return 'Created';
+    case 'edited': return 'Edited';
+    case 'archived': return 'Archived';
+    case 'dried': return 'Marked dried';
+    default:
+      if (raw && !raw.startsWith('{') && !raw.startsWith('[')) return `${cap(e.event_type)} · ${raw}`;
+      return cap(e.event_type || 'Event');
+  }
+}
+
 export interface MaterialShare { material: string; count: number; remaining_g: number; pct: number; }
 
 export function materialShare(rows: { material: string; count: number; remaining_g: number }[]): MaterialShare[] {

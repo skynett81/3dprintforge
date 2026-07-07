@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { spoolPct, isLow, matchesQuery, sortSpools, materialShare, spoolValue, isRealMovement, movementLabel } from './inventory';
+import { spoolPct, isLow, matchesQuery, sortSpools, materialShare, spoolValue, isRealMovement, movementLabel, spoolEventLabel } from './inventory';
 import type { Spool } from './types';
 
 function spool(p: Partial<Spool>): Spool {
@@ -62,6 +62,18 @@ describe('movementLabel', () => {
     expect(movementLabel({ type: 'adjust', reason: '{"from":520,"to":515}' })).toBe('Adjustment');
     expect(movementLabel({ type: 'consume', reason: null })).toBe('Print');
     expect(movementLabel({ type: 'weirdo', reason: '' })).toBe('weirdo');
+  });
+});
+
+describe('spoolEventLabel', () => {
+  it('summarises events and never leaks JSON', () => {
+    expect(spoolEventLabel({ event_type: 'used', details: '{"weight_g":16.6,"source":"moonraker-estimate"}' })).toBe('Used 17 g');
+    expect(spoolEventLabel({ event_type: 'adjusted', details: '{"from":520.97,"to":515.97,"reason":"count"}' })).toBe('Adjusted 521 → 516 g');
+    expect(spoolEventLabel({ event_type: 'created', details: null })).toBe('Created');
+    expect(spoolEventLabel({ event_type: 'edited' })).toBe('Edited');
+    expect(spoolEventLabel({ event_type: 'relocated', details: '{"to":"Shelf B"}' })).toBe('Moved to Shelf B');
+    // never surface a raw brace
+    expect(spoolEventLabel({ event_type: 'used', details: '{"weight_g":5}' })).not.toContain('{');
   });
 });
 
