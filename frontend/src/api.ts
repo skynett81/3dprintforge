@@ -62,6 +62,12 @@ export const api = {
     }),
   getMaintenanceLog: (printerId: string, limit = 30): Promise<import('./types').MaintenanceLogEntry[]> =>
     req(`/api/maintenance/log?printer_id=${encodeURIComponent(printerId)}&limit=${limit}`),
+  updateMaintSchedule: (body: { printer_id: string; component: string; interval_hours: number; label?: string }) =>
+    req<{ ok: boolean }>('/api/maintenance/schedule', { method: 'PUT', body: JSON.stringify(body) }),
+  getMaintCosts: (printerId: string): Promise<import('./types').MaintenanceCosts> =>
+    req(`/api/wear/costs/${encodeURIComponent(printerId)}`),
+  addMaintCost: (body: { printer_id: string; component: string; cost: number; description?: string }) =>
+    req<{ ok: boolean; id: number }>('/api/wear/costs', { method: 'POST', body: JSON.stringify(body) }),
   controlPrinter: (id: string, action: string, extra: Record<string, unknown> = {}) =>
     req<{ ok: boolean; action: string }>(`/api/printers/${encodeURIComponent(id)}/control`, {
       method: 'POST',

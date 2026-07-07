@@ -436,7 +436,16 @@
       "never": "never serviced",
       "history": "Service history",
       "no_history": "No maintenance logged yet for this printer.",
-      "note_prompt": "Optional note (what you did) — leave blank to skip:"
+      "note_prompt": "Optional note (what you did) — leave blank to skip:",
+      "edit_interval": "Edit interval",
+      "interval_prompt": "Service interval (hours):",
+      "costs": "Maintenance costs",
+      "add_cost": "+ Add cost",
+      "cost_added": "Cost added",
+      "no_costs": "No maintenance costs logged yet.",
+      "amount": "Amount",
+      "desc": "Description",
+      "other": "Other"
     },
     "purchasing": {
       "title": "Purchasing",

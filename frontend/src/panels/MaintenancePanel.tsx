@@ -4,7 +4,7 @@ import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import { overdueCount, barPct } from '../maintenance';
-import type { Printer, MaintenanceStatus, MaintenanceLogEntry } from '../types';
+import type { Printer, MaintenanceStatus, MaintenanceLogEntry, MaintenanceCosts, MaintComponent } from '../types';
 
 function since(iso?: string | null): string {
   if (!iso) return '';
@@ -24,6 +24,9 @@ export function MaintenancePanel() {
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<MaintenanceStatus | null>(null);
   const [log, setLog] = useState<MaintenanceLogEntry[]>([]);
+  const [costs, setCosts] = useState<MaintenanceCosts | null>(null);
+  const [addingCost, setAddingCost] = useState(false);
+  const [costForm, setCostForm] = useState({ component: '', cost: '', description: '' });
 
   const list = printers ?? [];
   useEffect(() => { if (selected == null && list.length > 0) setSelected(list[0].id); }, [list, selected]);
@@ -31,8 +34,27 @@ export function MaintenancePanel() {
   function load(id: string) {
     api.getMaintenanceStatus(id).then(setStatus).catch(() => setStatus(null));
     api.getMaintenanceLog(id).then(setLog).catch(() => setLog([]));
+    api.getMaintCosts(id).then(setCosts).catch(() => setCosts(null));
   }
   useEffect(() => { if (selected) load(selected); }, [selected]);
+
+  async function editInterval(c: MaintComponent) {
+    const raw = prompt(t('v2.maint.interval_prompt', `Service interval for "${c.label}" (hours):`), String(c.interval_hours));
+    const hours = raw == null ? NaN : Number(raw);
+    if (!selected || !Number.isFinite(hours) || hours <= 0) return;
+    try {
+      await api.updateMaintSchedule({ printer_id: selected, component: c.component, interval_hours: hours, label: c.label });
+      toast(t('common.saved', 'Saved'), 'success'); load(selected);
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function addCost() {
+    if (!selected || !costForm.component || !costForm.cost) return;
+    try {
+      await api.addMaintCost({ printer_id: selected, component: costForm.component, cost: Number(costForm.cost), description: costForm.description.trim() || undefined });
+      toast(t('v2.maint.cost_added', 'Cost added'), 'success');
+      setAddingCost(false); setCostForm({ component: '', cost: '', description: '' }); load(selected);
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   async function markServiced(component: string) {
     if (!selected) return;
@@ -90,10 +112,48 @@ export function MaintenancePanel() {
                     <span className="muted micro">{c.last_maintenance ? `${t('v2.maint.last', 'last')}: ${since(c.last_maintenance)}` : t('v2.maint.never', 'never serviced')} · {Math.round(c.hours_since_maintenance)}/{c.interval_hours} h</span>
                   </div>
                   <span className="mnt-bar"><span className={`mnt-fill${c.overdue ? ' mnt-fill--over' : ''}`} style={{ width: `${pct}%` }} /></span>
-                  <button className="btn btn--sm" onClick={() => markServiced(c.component)}>{t('v2.maint.mark', 'Mark serviced')}</button>
+                  <div className="inv-head-actions">
+                    <button className="btn btn--sm btn--ghost" title={t('v2.maint.edit_interval', 'Edit interval')} onClick={() => editInterval(c)}>✎</button>
+                    <button className="btn btn--sm" onClick={() => markServiced(c.component)}>{t('v2.maint.mark', 'Mark serviced')}</button>
+                  </div>
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">{t('v2.maint.costs', 'Maintenance costs')}{costs && costs.total > 0 ? ` · ${Math.round(costs.total)} ${costs.currency || 'kr'}` : ''}</div>
+          <button className="btn btn--sm btn--primary" onClick={() => setAddingCost((v) => !v)}>{addingCost ? t('common.close', 'Close') : t('v2.maint.add_cost', '+ Add cost')}</button>
+        </div>
+        {addingCost && (
+          <div className="add-form add-form--stack">
+            <label className="field"><span className="field-label">{t('v2.maint.component', 'Component')}</span>
+              <select className="input" value={costForm.component} onChange={(e) => setCostForm({ ...costForm, component: e.target.value })}>
+                <option value="">—</option>
+                {components.map((c) => <option key={c.component} value={c.component}>{c.label}</option>)}
+                <option value="other">{t('v2.maint.other', 'Other')}</option>
+              </select>
+            </label>
+            <label className="field"><span className="field-label">{t('v2.maint.amount', 'Amount')}</span><input className="input" type="number" min={0} step="0.01" value={costForm.cost} onChange={(e) => setCostForm({ ...costForm, cost: e.target.value })} /></label>
+            <label className="field grow"><span className="field-label">{t('v2.maint.desc', 'Description')}</span><input className="input" value={costForm.description} onChange={(e) => setCostForm({ ...costForm, description: e.target.value })} placeholder="Replacement nozzle" /></label>
+            <button className="btn btn--primary" onClick={addCost}>{t('v2.inv.add_btn', 'Add')}</button>
+          </div>
+        )}
+        {(!costs || costs.items.length === 0) ? (
+          <p className="muted empty-note">{t('v2.maint.no_costs', 'No maintenance costs logged yet.')}</p>
+        ) : (
+          <div className="lib-list">
+            {costs.items.map((it) => (
+              <div className="lib-row" key={it.id} style={{ gridTemplateColumns: '1.2fr 1.8fr 0.8fr 1fr' }}>
+                <span className="lib-name">{labelFor(it.component)}</span>
+                <span className="muted ellipsis">{it.description || '—'}</span>
+                <span className="tnum">{Math.round(it.cost)} {it.currency || costs.currency || 'kr'}</span>
+                <span className="muted tnum">{it.timestamp ? when(it.timestamp) : ''}</span>
+              </div>
+            ))}
           </div>
         )}
       </section>

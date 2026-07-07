@@ -366,6 +366,22 @@ export interface MaintComponent {
   last_maintenance: string | null;
 }
 
+export interface MaintCostItem {
+  id: number;
+  component: string;
+  cost: number;
+  currency?: string | null;
+  description?: string | null;
+  timestamp?: string | null;
+}
+
+export interface MaintenanceCosts {
+  printer_id: string;
+  total: number;
+  currency: string;
+  items: MaintCostItem[];
+}
+
 export interface MaintenanceLogEntry {
   id: number;
   printer_id: string;
