@@ -17,8 +17,8 @@ function when(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-type Tab = 'components' | 'costs' | 'history';
-const TABS: Tab[] = ['components', 'costs', 'history'];
+type Tab = 'components' | 'nozzles' | 'costs' | 'history';
+const TABS: Tab[] = ['components', 'nozzles', 'costs', 'history'];
 
 export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: (slug: string) => void } = {}) {
   const t = useT();
@@ -33,6 +33,7 @@ export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: 
   const [costs, setCosts] = useState<MaintenanceCosts | null>(null);
   const [addingCost, setAddingCost] = useState(false);
   const [costForm, setCostForm] = useState({ component: '', cost: '', description: '' });
+  const [nozForm, setNozForm] = useState({ nozzle_type: '', nozzle_diameter: '0.4' });
 
   const list = printers ?? [];
   useEffect(() => { if (selected == null && list.length > 0) setSelected(list[0].id); }, [list, selected]);
@@ -72,6 +73,16 @@ export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: 
     } catch (e) { toast((e as Error).message, 'error'); }
   }
   const labelFor = (comp: string) => status?.components.find((c) => c.component === comp)?.label || comp;
+  const nozzleLog = log.filter((e) => e.component === 'nozzle' && e.nozzle_type);
+  const currentNozzle = nozzleLog[0] || null;
+  async function changeNozzle() {
+    if (!selected || !nozForm.nozzle_type.trim() || !nozForm.nozzle_diameter) return;
+    try {
+      await api.changeNozzle({ printer_id: selected, nozzle_type: nozForm.nozzle_type.trim(), nozzle_diameter: Number(nozForm.nozzle_diameter) });
+      toast(t('v2.maint.nozzle_changed', 'Nozzle change logged'), 'success');
+      setNozForm({ nozzle_type: '', nozzle_diameter: '0.4' }); load(selected);
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   const components = status?.components ?? [];
   const overdue = overdueCount(components);
@@ -94,7 +105,7 @@ export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: 
       </div>
 
       <div className="seg" style={{ marginBottom: 4 }}>
-        {([['components', t('v2.maint.tab_components', 'Components')], ['costs', t('v2.maint.tab_costs', 'Costs')], ['history', t('v2.maint.tab_history', 'History')]] as [Tab, string][]).map(([id, label]) => (
+        {([['components', t('v2.maint.tab_components', 'Components')], ['nozzles', t('v2.maint.tab_nozzles', 'Nozzles')], ['costs', t('v2.maint.tab_costs', 'Costs')], ['history', t('v2.maint.tab_history', 'History')]] as [Tab, string][]).map(([id, label]) => (
           <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -135,6 +146,48 @@ export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: 
           </div>
         )}
       </section>
+      )}
+
+      {tab === 'nozzles' && (
+        <>
+          <section className="card">
+            <div className="card-title">{t('v2.maint.current_nozzle', 'Current nozzle')}</div>
+            {currentNozzle ? (
+              <div className="diag-grid" style={{ marginTop: 6 }}>
+                <div className="diag-row"><span className="muted">{t('v2.maint.noz_type', 'Type')}</span><span className="diag-val">{currentNozzle.nozzle_type}</span></div>
+                <div className="diag-row"><span className="muted">{t('v2.maint.noz_dia', 'Diameter')}</span><span className="diag-val">{currentNozzle.nozzle_diameter} mm</span></div>
+                <div className="diag-row"><span className="muted">{t('v2.maint.noz_since', 'Installed')}</span><span className="diag-val">{since(currentNozzle.timestamp)}</span></div>
+              </div>
+            ) : <p className="muted empty-note">{t('v2.maint.no_nozzle', 'No nozzle change logged yet.')}</p>}
+          </section>
+
+          <section className="card">
+            <div className="card-title">{t('v2.maint.change_nozzle', 'Change nozzle')}</div>
+            <div className="add-form add-form--stack">
+              <label className="field grow"><span className="field-label">{t('v2.maint.noz_type', 'Type')}</span><input className="input" value={nozForm.nozzle_type} onChange={(e) => setNozForm({ ...nozForm, nozzle_type: e.target.value })} placeholder="hardened steel / HS01" /></label>
+              <label className="field"><span className="field-label">{t('v2.maint.noz_dia', 'Diameter')}</span>
+                <select className="input" value={nozForm.nozzle_diameter} onChange={(e) => setNozForm({ ...nozForm, nozzle_diameter: e.target.value })}>{['0.2', '0.4', '0.6', '0.8', '1.0'].map((d) => <option key={d} value={d}>{d} mm</option>)}</select></label>
+              <button className="btn btn--primary" onClick={changeNozzle}>{t('v2.maint.log_change', 'Log change')}</button>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="card-title">{t('v2.maint.noz_history', 'Nozzle history')}</div>
+            {nozzleLog.length === 0 ? (
+              <p className="muted empty-note">{t('v2.maint.no_nozzle', 'No nozzle change logged yet.')}</p>
+            ) : (
+              <div className="lib-list">
+                {nozzleLog.map((e) => (
+                  <div className="lib-row" key={e.id} style={{ gridTemplateColumns: '1.4fr 0.8fr 1fr' }}>
+                    <span className="lib-name">{e.nozzle_type}</span>
+                    <span className="muted tnum">{e.nozzle_diameter} mm</span>
+                    <span className="muted tnum">{when(e.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       )}
 
       {tab === 'costs' && (

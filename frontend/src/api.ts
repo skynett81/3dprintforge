@@ -68,6 +68,8 @@ export const api = {
     req(`/api/wear/costs/${encodeURIComponent(printerId)}`),
   addMaintCost: (body: { printer_id: string; component: string; cost: number; description?: string }) =>
     req<{ ok: boolean; id: number }>('/api/wear/costs', { method: 'POST', body: JSON.stringify(body) }),
+  changeNozzle: (body: { printer_id: string; nozzle_type: string; nozzle_diameter: number; notes?: string }) =>
+    req<{ ok: boolean }>('/api/maintenance/nozzle-change', { method: 'POST', body: JSON.stringify(body) }),
   controlPrinter: (id: string, action: string, extra: Record<string, unknown> = {}) =>
     req<{ ok: boolean; action: string }>(`/api/printers/${encodeURIComponent(id)}/control`, {
       method: 'POST',

@@ -448,7 +448,17 @@
       "other": "Other",
       "tab_components": "Components",
       "tab_costs": "Costs",
-      "tab_history": "History"
+      "tab_history": "History",
+      "tab_nozzles": "Nozzles",
+      "current_nozzle": "Current nozzle",
+      "change_nozzle": "Change nozzle",
+      "log_change": "Log change",
+      "noz_history": "Nozzle history",
+      "noz_type": "Type",
+      "noz_dia": "Diameter",
+      "noz_since": "Installed",
+      "no_nozzle": "No nozzle change logged yet.",
+      "nozzle_changed": "Nozzle change logged"
     },
     "purchasing": {
       "title": "Purchasing",
