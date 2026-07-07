@@ -264,6 +264,8 @@
       "for": "For",
       "add": "+ Add hardware",
       "added": "Hardware added",
+      "saved": "Hardware saved",
+      "edit": "Edit hardware",
       "removed": "Hardware removed",
       "confirm": "Delete this hardware item?",
       "category": "Category",

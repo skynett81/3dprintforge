@@ -141,6 +141,7 @@ export const api = {
   getFirmware: (): Promise<import('./types').FirmwareInfo> => req('/api/firmware/updates'),
   listHardware: (): Promise<import('./types').HardwareItem[]> => req('/api/hardware'),
   addHardware: (body: Record<string, unknown>) => req<{ id: number }>('/api/hardware', { method: 'POST', body: JSON.stringify(body) }),
+  updateHardware: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/hardware/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteHardware: (id: number) => req<{ ok: boolean }>(`/api/hardware/${id}`, { method: 'DELETE' }),
   listLibrary: (): Promise<import('./types').LibraryFile[]> => req('/api/library'),
   deleteLibrary: (id: number) => req<{ ok: boolean }>(`/api/library/${id}`, { method: 'DELETE' }),

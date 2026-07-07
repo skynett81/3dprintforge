@@ -17,18 +17,31 @@ export function HardwarePanel() {
   const toast = useToast();
   const { data, reload } = useResource<HardwareItem[]>(api.listHardware, 30000);
   const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', category: 'nozzle', brand: '', model: '', purchase_price: '' });
   const items = data ?? [];
+  const EMPTY = { name: '', category: 'nozzle', brand: '', model: '', purchase_price: '' };
 
   async function run(fn: () => Promise<void>, ok?: string) {
     try { await fn(); if (ok) toast(ok, 'success'); } catch (e) { toast((e as Error).message, 'error'); }
   }
-  async function add() {
+  function toggleAdd() {
+    if (adding) { setAdding(false); setEditId(null); setForm(EMPTY); }
+    else { setEditId(null); setForm(EMPTY); setAdding(true); }
+  }
+  function startEdit(h: HardwareItem) {
+    setEditId(h.id);
+    setForm({ name: h.name, category: h.category || 'nozzle', brand: h.brand || '', model: h.model || '', purchase_price: h.purchase_price != null ? String(h.purchase_price) : '' });
+    setAdding(true);
+  }
+  async function submit() {
     if (!form.name.trim()) return;
+    const body = { name: form.name.trim(), category: form.category, brand: form.brand.trim() || undefined, model: form.model.trim() || undefined, purchase_price: form.purchase_price ? Number(form.purchase_price) : undefined };
     await run(async () => {
-      await api.addHardware({ name: form.name.trim(), category: form.category, brand: form.brand.trim() || undefined, model: form.model.trim() || undefined, purchase_price: form.purchase_price ? Number(form.purchase_price) : undefined });
-      setAdding(false); setForm({ name: '', category: 'nozzle', brand: '', model: '', purchase_price: '' }); reload();
-    }, t('v2.hw.added', 'Hardware added'));
+      if (editId != null) await api.updateHardware(editId, body);
+      else await api.addHardware(body);
+      setAdding(false); setEditId(null); setForm(EMPTY); reload();
+    }, editId != null ? t('v2.hw.saved', 'Hardware saved') : t('v2.hw.added', 'Hardware added'));
   }
   async function remove(h: HardwareItem) {
     if (!confirm(t('v2.hw.confirm', `Delete "${h.name}"?`))) return;
@@ -42,18 +55,19 @@ export function HardwarePanel() {
           <h2 className="panel-title">{t('v2.hw.title', 'Hardware')}</h2>
           <p className="muted sub">{items.length} {t('v2.hw.items', 'accessories & parts')}</p>
         </div>
-        <button className="btn btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.hw.add', '+ Add hardware')}</button>
+        <button className="btn btn--primary" onClick={toggleAdd}>{adding ? t('common.close', 'Close') : t('v2.hw.add', '+ Add hardware')}</button>
       </div>
 
       {adding && (
         <section className="card">
+          {editId != null && <div className="card-title">{t('v2.hw.edit', 'Edit hardware')}</div>}
           <div className="add-form">
             <label className="field grow"><span className="field-label">{t('v2.inv.name', 'Name')}</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
             <label className="field"><span className="field-label">{t('v2.hw.category', 'Category')}</span>
               <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
             <label className="field grow"><span className="field-label">{t('v2.hw.brand', 'Brand')}</span><input className="input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} /></label>
             <label className="field"><span className="field-label">{t('v2.hw.price', 'Price')}</span><input className="input" type="number" min={0} value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: e.target.value })} /></label>
-            <button className="btn btn--primary" onClick={add}>{t('v2.inv.add_btn', 'Add')}</button>
+            <button className="btn btn--primary" onClick={submit}>{editId != null ? t('common.save', 'Save') : t('v2.inv.add_btn', 'Add')}</button>
           </div>
         </section>
       )}
@@ -66,7 +80,10 @@ export function HardwarePanel() {
             <div className="tile" key={h.id}>
               <div className="tile-top">
                 <span className="tile-tag">{h.category}</span>
-                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(h)}>✕</button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="btn btn--sm btn--ghost" title={t('common.edit', 'Edit')} onClick={() => startEdit(h)}>✎</button>
+                  <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(h)}>✕</button>
+                </div>
               </div>
               <div className="tile-name">{h.name}</div>
               <div className="tile-meta">{[h.brand, h.model].filter(Boolean).join(' ') || '—'}</div>
