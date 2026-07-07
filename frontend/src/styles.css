@@ -229,6 +229,14 @@ a.hs-badge { text-decoration: none; }
 
 .input--sm { padding: 4px 8px; font-size: 0.78rem; height: auto; }
 
+/* Move spools between locations */
+.drop-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+.drop-chip { background: var(--bg-3); border: 1px dashed var(--border); border-radius: 999px; padding: 7px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.12s; }
+.drop-chip:hover { border-color: var(--accent); color: var(--text); }
+.drop-chip--over { background: rgba(0,179,164,0.2); border-color: var(--accent); border-style: solid; color: var(--accent); transform: scale(1.04); }
+.lib-row--sel { background: rgba(0,179,164,0.1); }
+.lib-row--drag { opacity: 0.45; }
+
 /* Spool graphic */
 .spool-gfx { display: flex; justify-content: center; margin: 8px 0 6px; }
 

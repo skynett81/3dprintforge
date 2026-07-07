@@ -115,6 +115,8 @@
       "no_activity": "No stock movements yet.",
       "move": "Move to",
       "moved": "Moved to",
+      "move_selected": "Move selected to",
+      "drag_hint": "Drag spools onto a location (or select several and click one):",
       "spool": "Spool",
       "type": "Type",
       "change": "Change",
