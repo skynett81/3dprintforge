@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
@@ -11,10 +11,16 @@ function when(iso: string) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function CostsPanel() {
+type Tab = 'overview' | 'prints';
+const TABS: Tab[] = ['overview', 'prints'];
+
+export function CostsPanel({ sub, onNav }: { sub?: string | null; onNav?: (slug: string) => void } = {}) {
   const t = useT();
   const { data: summary, error } = useResource<CostSummary>(api.getCostSummary, 30000);
   const { data: report } = useResource<CostRow[]>(api.getCostReport, 30000);
+  const [localTab, setLocalTab] = useState<Tab>('overview');
+  const tab: Tab = onNav ? ((sub && (TABS as string[]).includes(sub) ? sub : 'overview') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onNav) onNav(id); else setLocalTab(id); };
 
   const breakdown = useMemo(() => (summary ? costBreakdown(summary) : []), [summary]);
   const max = Math.max(1, ...breakdown.map((b) => b.value));
@@ -41,16 +47,21 @@ export function CostsPanel() {
           <h2 className="panel-title">{t('v2.costs.title', 'Costs')}</h2>
           <p className="muted sub">{t('v2.costs.subtitle', 'Unit economics across your prints')}</p>
         </div>
+        <div className="seg">
+          {([['overview', t('v2.costs.tab_overview', 'Overview')], ['prints', t('v2.costs.tab_prints', 'Print costs')]] as [Tab, string][]).map(([id, lb]) => (
+            <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => setTab(id)}>{lb}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="kpis">
-        <Kpi label={t('v2.costs.grand_total', 'Total')} value={money(summary.grand_total)} accent="teal" />
-        <Kpi label={t('v2.costs.prints', 'Prints costed')} value={String(summary.print_count)} />
-        <Kpi label={t('v2.costs.avg', 'Avg / print')} value={money(avgPerPrint(summary))} />
-        <Kpi label={t('v2.costs.filament', 'Filament')} value={money(summary.total_filament)} />
-      </div>
+      {tab === 'overview' && (<>
+        <div className="kpis">
+          <Kpi label={t('v2.costs.grand_total', 'Total')} value={money(summary.grand_total)} accent="teal" />
+          <Kpi label={t('v2.costs.prints', 'Prints costed')} value={String(summary.print_count)} />
+          <Kpi label={t('v2.costs.avg', 'Avg / print')} value={money(avgPerPrint(summary))} />
+          <Kpi label={t('v2.costs.filament', 'Filament')} value={money(summary.total_filament)} />
+        </div>
 
-      <div className="two-col">
         <section className="card">
           <div className="card-title">{t('v2.costs.breakdown', 'Cost breakdown')}</div>
           <div className="breakdown">
@@ -63,7 +74,9 @@ export function CostsPanel() {
             ))}
           </div>
         </section>
+      </>)}
 
+      {tab === 'prints' && (
         <section className="card">
           <div className="card-title">{t('v2.costs.recent', 'Recent print costs')}</div>
           {recent.length === 0 ? (
@@ -80,7 +93,7 @@ export function CostsPanel() {
             </div>
           )}
         </section>
-      </div>
+      )}
     </div>
   );
 }

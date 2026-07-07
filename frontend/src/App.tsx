@@ -187,8 +187,8 @@ export function App() {
         {panel === 'supply' && <SupplyPanel />}
         {panel === 'purchasing' && <PurchasingPanel sub={route.sub} detail={route.detail} onNav={navigatePur} />}
         {panel === 'analytics' && <AnalyticsPanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('analytics', s); }} />}
-        {panel === 'costs' && <CostsPanel />}
-        {panel === 'waste' && <WastePanel />}
+        {panel === 'costs' && <CostsPanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('costs', s); }} />}
+        {panel === 'waste' && <WastePanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('waste', s); }} />}
         {panel === 'activity' && <ActivityPanel />}
         {panel === 'errors' && <ErrorsPanel />}
         {panel === 'achievements' && <AchievementsPanel />}

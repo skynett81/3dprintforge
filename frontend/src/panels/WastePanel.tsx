@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
@@ -11,10 +11,16 @@ function when(iso: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function WastePanel() {
+type Tab = 'overview' | 'events';
+const TABS: Tab[] = ['overview', 'events'];
+
+export function WastePanel({ sub, onNav }: { sub?: string | null; onNav?: (slug: string) => void } = {}) {
   const t = useT();
   const { data: stats, error } = useResource<WasteStats>(api.getWasteStats, 30000);
   const { data: history } = useResource<WasteEvent[]>(api.getWasteHistory, 30000);
+  const [localTab, setLocalTab] = useState<Tab>('overview');
+  const tab: Tab = onNav ? ((sub && (TABS as string[]).includes(sub) ? sub : 'overview') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onNav) onNav(id); else setLocalTab(id); };
 
   const breakdown = useMemo(() => (stats ? wasteBreakdown(stats.waste_breakdown) : []), [stats]);
   const maxB = Math.max(1, ...breakdown.map((b) => b.value));
@@ -40,16 +46,21 @@ export function WastePanel() {
           <h2 className="panel-title">{t('v2.waste.title', 'Waste')}</h2>
           <p className="muted sub">{t('v2.waste.subtitle', 'Filament wasted to purge, colour changes and failures')}</p>
         </div>
+        <div className="seg">
+          {([['overview', t('v2.waste.tab_overview', 'Overview')], ['events', t('v2.waste.tab_events', 'Events')]] as [Tab, string][]).map(([id, lb]) => (
+            <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => setTab(id)}>{lb}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="kpis">
-        <Kpi label={t('v2.waste.total', 'Total waste')} value={`${Math.round(stats.total_waste_g)} g`} accent="blue" />
-        <Kpi label={t('v2.waste.cost', 'Waste cost')} value={`${Math.round(stats.total_cost)} kr`} />
-        <Kpi label={t('v2.waste.avg', 'Avg / print')} value={`${stats.avg_per_print.toFixed(1)} g`} />
-        <Kpi label={t('v2.waste.affected', 'Prints with waste')} value={`${stats.prints_with_waste}/${stats.total_prints}`} />
-      </div>
+      {tab === 'overview' && (<>
+        <div className="kpis">
+          <Kpi label={t('v2.waste.total', 'Total waste')} value={`${Math.round(stats.total_waste_g)} g`} accent="blue" />
+          <Kpi label={t('v2.waste.cost', 'Waste cost')} value={`${Math.round(stats.total_cost)} kr`} />
+          <Kpi label={t('v2.waste.avg', 'Avg / print')} value={`${stats.avg_per_print.toFixed(1)} g`} />
+          <Kpi label={t('v2.waste.affected', 'Prints with waste')} value={`${stats.prints_with_waste}/${stats.total_prints}`} />
+        </div>
 
-      <div className="two-col">
         <section className="card">
           <div className="card-title">{t('v2.waste.breakdown', 'Where waste comes from')}</div>
           <div className="breakdown">
@@ -63,6 +74,13 @@ export function WastePanel() {
           </div>
         </section>
 
+        <section className="card">
+          <div className="card-title">{t('v2.waste.per_day', 'Waste per day (g)')}</div>
+          <BarChart data={perDay} />
+        </section>
+      </>)}
+
+      {tab === 'events' && (
         <section className="card">
           <div className="card-title">{t('v2.waste.recent', 'Recent waste events')}</div>
           {(history ?? []).length === 0 ? (
@@ -79,12 +97,7 @@ export function WastePanel() {
             </div>
           )}
         </section>
-      </div>
-
-      <section className="card">
-        <div className="card-title">{t('v2.waste.per_day', 'Waste per day (g)')}</div>
-        <BarChart data={perDay} />
-      </section>
+      )}
     </div>
   );
 }

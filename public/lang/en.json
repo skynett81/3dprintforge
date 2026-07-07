@@ -418,7 +418,9 @@
       "manual": "Manual",
       "recent": "Recent waste events",
       "none": "No waste events yet.",
-      "per_day": "Waste per day (g)"
+      "per_day": "Waste per day (g)",
+      "tab_overview": "Overview",
+      "tab_events": "Events"
     },
     "costs": {
       "title": "Costs",
@@ -433,7 +435,9 @@
       "markup": "Markup",
       "breakdown": "Cost breakdown",
       "recent": "Recent print costs",
-      "none": "No costed prints yet."
+      "none": "No costed prints yet.",
+      "tab_overview": "Overview",
+      "tab_prints": "Print costs"
     },
     "scheduler": {
       "title": "Scheduler",
@@ -3485,7 +3489,6 @@
     "delete_confirm": "Confirm deletion",
     "deleted": "Deleted",
     "disable": "Disable",
-    "edit": "Edit",
     "enable": "Enable",
     "loading": "Loading...",
     "name": "Name",
