@@ -227,6 +227,18 @@ a.hs-badge { text-decoration: none; }
 
 .printer-thumb { display: block; height: 84px; max-width: 100%; margin: 8px auto 6px; object-fit: contain; }
 
+/* Now printing */
+.np-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.np-card { display: flex; gap: 12px; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 10px; cursor: pointer; }
+.np-card:hover { border-color: var(--accent); }
+.np-thumb-wrap { position: relative; width: 100px; height: 100px; flex: none; background: var(--bg-2); border-radius: var(--radius-sm); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.np-thumb { width: 100%; height: 100%; object-fit: contain; }
+.np-pct { position: absolute; bottom: 4px; right: 5px; background: rgba(0,0,0,0.62); color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 999px; }
+.np-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+.np-printer { font-weight: 600; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.np-file { font-size: 0.8rem; }
+.np-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; margin-top: 2px; }
+
 /* View toggle */
 .viewtoggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .viewtoggle-btn { background: var(--bg-3); border: none; color: var(--muted); padding: 5px 10px; cursor: pointer; font-size: 0.95rem; line-height: 1; }

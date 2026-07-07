@@ -347,6 +347,10 @@
     },
     "dash": {
       "title": "Dashboard",
+      "now_printing": "Now printing",
+      "nothing_printing": "Nothing is printing right now.",
+      "unknown_file": "Unknown file",
+      "min_left": "min left",
       "subtitle": "Farm overview — click a card to jump in",
       "online": "Printers online",
       "printing": "Printing now",

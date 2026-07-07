@@ -53,6 +53,47 @@ export function DashboardPanel({ onNavigate }: { onNavigate?: (id: string) => vo
       </div>
 
       <section className="card">
+        <div className="card-title">{t('v2.dash.now_printing', 'Now printing')}</div>
+        {(() => {
+          const active = pr.filter((p) => isPrinting(readLive(live[p.id])));
+          if (active.length === 0) return <p className="muted empty-note">{t('v2.dash.nothing_printing', 'Nothing is printing right now.')}</p>;
+          return (
+            <div className="np-grid">
+              {active.map((p) => {
+                const l = readLive(live[p.id]);
+                return (
+                  <div className="np-card" key={p.id} role="button" tabIndex={0} onClick={() => onNavigate?.('fleet')}>
+                    <div className="np-thumb-wrap">
+                      <img
+                        className="np-thumb"
+                        src={`/api/thumbnail/${encodeURIComponent(p.id)}?f=${encodeURIComponent(l.file || '')}`}
+                        alt={l.file || p.name}
+                        onError={(e) => {
+                          const img = e.currentTarget as HTMLImageElement;
+                          if (!img.dataset.fb) { img.dataset.fb = '1'; img.src = `/api/printer-image/${encodeURIComponent(p.model || p.name)}`; }
+                          else { img.style.visibility = 'hidden'; }
+                        }}
+                      />
+                      {l.progress != null && <span className="np-pct">{Math.round(l.progress)}%</span>}
+                    </div>
+                    <div className="np-body">
+                      <div className="np-printer">{p.name} <span className="status-chip status-chip--busy"><span className="status-dot" />{(l.gcodeState || 'printing').toLowerCase()}</span></div>
+                      <div className="np-file ellipsis" title={l.file || ''}>{l.file || t('v2.dash.unknown_file', 'Unknown file')}</div>
+                      {l.progress != null && <div className="spool-bar"><div className="spool-fill" style={{ width: `${l.progress}%` }} /></div>}
+                      <div className="np-meta muted">
+                        {l.remainingMin != null && <span>{Math.round(l.remainingMin)} {t('v2.dash.min_left', 'min left')}</span>}
+                        <span>N {temp(l.nozzle)} · B {temp(l.bed)}{l.chamber != null ? ` · C ${temp(l.chamber)}` : ''}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </section>
+
+      <section className="card">
         <div className="card-title">{t('v2.dash.live_fleet', 'Live fleet')}</div>
         <div className="live-list">
           {pr.map((p) => {
