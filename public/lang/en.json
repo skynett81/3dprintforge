@@ -430,6 +430,21 @@
       "qty": "Qty",
       "unit_cost": "Unit cost"
     },
+    "sup": {
+      "prices": "Prices",
+      "add_price": "+ Add price",
+      "price_added": "Price added",
+      "price_removed": "Price removed",
+      "no_prices": "No prices recorded for this supplier yet.",
+      "sku": "SKU",
+      "price": "Price",
+      "url": "Link",
+      "open": "open →",
+      "orders": "Purchase orders",
+      "no_orders": "No purchase orders from this supplier yet.",
+      "received": "received",
+      "gone": "That supplier no longer exists."
+    },
     "supply": {
       "title": "Supply",
       "below_target": "below target",

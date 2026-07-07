@@ -363,8 +363,24 @@ export interface Supplier {
   id: number;
   name: string;
   website?: string | null;
+  contact?: string | null;
+  currency?: string | null;
   lead_time_days?: number | null;
   notes?: string | null;
+  part_count?: number;
+}
+
+export interface SupplierPart {
+  id: number;
+  supplier_id: number;
+  filament_profile_id?: number | null;
+  sku?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  url?: string | null;
+  in_stock?: number | null;
+  profile_name?: string | null;
+  material?: string | null;
 }
 
 export interface POLine {

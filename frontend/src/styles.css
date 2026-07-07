@@ -163,6 +163,8 @@ a.hs-badge { text-decoration: none; }
 .supx-row { display: grid; grid-template-columns: 1fr 1.4fr auto auto; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
 .supx-row:first-child { border-top: none; }
 .supx-name { font-weight: 550; }
+.supx-row--btn { cursor: pointer; }
+.supx-row--btn:hover { background: var(--bg-3); }
 
 .po-list { display: flex; flex-direction: column; gap: 8px; }
 .po-item { text-align: left; background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 11px 13px; cursor: pointer; color: inherit; font: inherit; transition: border-color 0.15s; }

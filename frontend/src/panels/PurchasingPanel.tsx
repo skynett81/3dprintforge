@@ -4,7 +4,14 @@ import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import { poReceivedPct, lineRemaining, PO_STATUSES } from '../purchasing';
+import { SupplierDetail } from './purchasing/SupplierDetail';
 import type { Supplier, PurchaseOrder } from '../types';
+
+interface PurchasingProps {
+  supplierDetail?: string | null;
+  onOpenSupplier?: (id: string) => void;
+  onBackSuppliers?: () => void;
+}
 
 function statusClass(s: string) {
   const t = s.toLowerCase();
@@ -14,7 +21,7 @@ function statusClass(s: string) {
   return 'neutral';
 }
 
-export function PurchasingPanel() {
+export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSuppliers }: PurchasingProps = {}) {
   const t = useT();
   const toast = useToast();
   const { data: suppliers, reload: reloadSuppliers } = useResource<Supplier[]>(api.listSuppliers, 0);
@@ -90,6 +97,10 @@ export function PurchasingPanel() {
     await run(async () => { await api.deletePoLine(lineId); if (selected != null) loadDetail(selected); reloadPos(); }, t('v2.purchasing.line_removed', 'Line removed'));
   }
 
+  if (supplierDetail) {
+    return <SupplierDetail supplierId={Number(supplierDetail)} onBack={onBackSuppliers} />;
+  }
+
   return (
     <div>
       <div className="panel-head">
@@ -117,11 +128,11 @@ export function PurchasingPanel() {
         ) : (
           <div className="sup-simple">
             {(suppliers ?? []).map((s) => (
-              <div className="supx-row" key={s.id}>
+              <div className="supx-row supx-row--btn" key={s.id} role="button" tabIndex={0} onClick={() => onOpenSupplier?.(String(s.id))}>
                 <span className="supx-name">{s.name}</span>
                 <span className="muted">{s.website || ''}</span>
                 <span className="muted tnum">{s.lead_time_days != null ? `${s.lead_time_days} ${t('v2.purchasing.days_lead', 'd lead')}` : ''}</span>
-                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => removeSupplier(s)}>✕</button>
+                <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); removeSupplier(s); }}>✕</button>
               </div>
             ))}
           </div>

@@ -89,6 +89,9 @@ export const api = {
   listSuppliers: (): Promise<Supplier[]> => req<Supplier[]>('/api/inventory/suppliers'),
   addSupplier: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/suppliers', { method: 'POST', body: JSON.stringify(body) }),
   deleteSupplier: (id: number) => req<{ ok: boolean }>(`/api/inventory/suppliers/${id}`, { method: 'DELETE' }),
+  listSupplierParts: (supplierId: number): Promise<import('./types').SupplierPart[]> => req(`/api/inventory/supplier-parts?supplier_id=${supplierId}`),
+  addSupplierPart: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/supplier-parts', { method: 'POST', body: JSON.stringify(body) }),
+  deleteSupplierPart: (id: number) => req<{ ok: boolean }>(`/api/inventory/supplier-parts/${id}`, { method: 'DELETE' }),
   listPurchaseOrders: (): Promise<PurchaseOrder[]> => req<PurchaseOrder[]>('/api/inventory/purchase-orders'),
   getPurchaseOrder: (id: number): Promise<PurchaseOrder> => req<PurchaseOrder>(`/api/inventory/purchase-orders/${id}`),
   createPurchaseOrder: (body: Record<string, unknown>) =>

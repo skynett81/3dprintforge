@@ -98,6 +98,7 @@ export function App() {
   const panel: PanelId = (validPanels.has(route.panel) ? route.panel : 'dashboard') as PanelId;
   const setPanel = (id: PanelId) => { window.location.hash = buildHash(id); };
   const navigateInv = (sub: string, detail?: string | null) => { window.location.hash = buildHash('inventory', sub, detail); };
+  const navigatePur = (sub: string, detail?: string | null) => { window.location.hash = buildHash('purchasing', sub, detail); };
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const auth = useAuth();
 
@@ -184,7 +185,7 @@ export function App() {
         {panel === 'queue' && <QueuePanel />}
         {panel === 'scheduler' && <SchedulerPanel />}
         {panel === 'supply' && <SupplyPanel />}
-        {panel === 'purchasing' && <PurchasingPanel />}
+        {panel === 'purchasing' && <PurchasingPanel supplierDetail={route.sub === 'suppliers' ? route.detail : null} onOpenSupplier={(id) => navigatePur('suppliers', id)} onBackSuppliers={() => navigatePur('')} />}
         {panel === 'analytics' && <AnalyticsPanel />}
         {panel === 'costs' && <CostsPanel />}
         {panel === 'waste' && <WastePanel />}
