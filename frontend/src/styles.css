@@ -227,6 +227,9 @@ a.hs-badge { text-decoration: none; }
 
 .printer-thumb { display: block; height: 84px; max-width: 100%; margin: 8px auto 6px; object-fit: contain; }
 
+/* Spool graphic */
+.spool-gfx { display: flex; justify-content: center; margin: 8px 0 6px; }
+
 /* Hardware visual + status */
 .hw-visual { display: flex; justify-content: center; margin: 8px 0 6px; }
 .hw-img { height: 74px; max-width: 100%; object-fit: contain; border-radius: var(--radius-sm); }

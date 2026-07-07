@@ -6,6 +6,7 @@ import { useToast } from '../../toast';
 import { toggle } from '../../selection';
 import { spoolPct, isLow, matchesQuery, sortSpools, spoolValue, type SortKey } from '../../inventory';
 import { SpoolDrawer } from '../../components/SpoolDrawer';
+import { SpoolGraphic } from '../../components/SpoolGraphic';
 import type { Spool, FilamentProfile, StorageLocation } from '../../types';
 
 function hex(s: Spool) {
@@ -217,12 +218,11 @@ export function SpoolsTab({ focusId, onFocusConsumed }: { focusId?: number | nul
                   ? <span className={`tile-check${sel ? ' tile-check--on' : ''}`}>{sel ? '✓' : ''}</span>
                   : <span className="tile-tag">{s.material || '—'}</span>}
               </div>
-              <div className="tile-name">{s.profile_name || s.color_name || `Spool #${s.id}`}</div>
-              <div className="tile-meta">{s.vendor_name || t('v2.inventory.unknown_vendor', 'Unknown vendor')}{s.location ? ` · ${s.location}` : ''}</div>
-              <div className="spool-bar"><div className={`spool-fill${low ? ' spool-fill--low' : ''}`} style={{ width: `${pct}%` }} /></div>
-              <div className="tile-foot">
+              <div className="spool-gfx"><SpoolGraphic colorHex={s.color_hex} pct={pct} /></div>
+              <div className="tile-name" style={{ textAlign: 'center' }}>{s.profile_name || s.color_name || `Spool #${s.id}`}</div>
+              <div className="tile-meta" style={{ textAlign: 'center' }}>{s.vendor_name || t('v2.inventory.unknown_vendor', 'Unknown vendor')}{s.location ? ` · ${s.location}` : ''}</div>
+              <div className="tile-foot" style={{ justifyContent: 'center' }}>
                 <span className={low ? 'low' : 'muted'}>{Math.round(s.remaining_weight_g)} g {t('v2.inventory.left', 'left')}</span>
-                <span className="muted"> · {pct}%</span>
               </div>
             </button>
           );
