@@ -496,7 +496,7 @@ export function getCrmDashboard() {
      UNION ALL
      SELECT 'invoice' as type, i.id, i.invoice_number as ref_number, i.status, i.total as amount, i.created_at, c.name as customer_name
      FROM crm_invoices i LEFT JOIN crm_orders o ON i.order_id = o.id LEFT JOIN crm_customers c ON o.customer_id = c.id
-     ORDER BY created_at DESC LIMIT 10`
+     ORDER BY 6 DESC LIMIT 10`
   ).all();
 
   return {
