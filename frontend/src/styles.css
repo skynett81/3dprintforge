@@ -237,6 +237,7 @@ a.hs-badge { text-decoration: none; }
 .lib-row--sel { background: rgba(0,179,164,0.1); }
 .lib-row--drag { opacity: 0.45; }
 .tile--drop { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(0,179,164,0.3); }
+.tile--dashed { border-style: dashed; }
 .loc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 2px; min-height: 16px; }
 .loc-chip { width: 17px; height: 17px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); cursor: grab; transition: transform 0.1s; }
 .loc-chip:hover { transform: scale(1.18); }

@@ -61,22 +61,37 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
     if (!confirm(t('v2.inv.loc_confirm', `Delete location "${l.name}"?`))) return;
     await run(async () => { await api.deleteLocation(l.id); reload(); }, t('v2.inv.loc_removed', 'Location removed'));
   }
+  // Would moving `ids` into `toName` exceed its capacity? Confirm if so.
+  // Empty toName = the Unassigned zone (no capacity).
+  function capacityOk(toName: string, ids: number[]): boolean {
+    if (!toName) return true;
+    const loc = locations.find((l) => l.name === toName);
+    if (!loc?.max_spools) return true;
+    const incoming = ids.filter((id) => spools.find((s) => s.id === id)?.location !== toName).length;
+    const willBe = (counts[toName] || 0) + incoming;
+    if (willBe <= loc.max_spools) return true;
+    return confirm(t('v2.inv.full_confirm', `${toName} would exceed capacity (${willBe}/${loc.max_spools}). Move anyway?`));
+  }
   async function moveSpool(spool: Spool, toName: string) {
     if (!toName || toName === (spool.location || '')) return;
+    if (!capacityOk(toName, [spool.id])) return;
     await run(async () => { await api.updateSpool(spool.id, { location: toName }); reloadSpools(); }, `${t('v2.inv.moved', 'Moved to')} ${toName}`);
   }
   async function bulkMove(toName: string) {
     const ids = [...selected];
     if (!toName || ids.length === 0) return;
+    if (!capacityOk(toName, ids)) return;
     await run(async () => { await api.bulkSpools('relocate', ids, { location: toName }); setSelected(new Set()); reloadSpools(); }, `${ids.length} → ${toName}`);
   }
-  // Drop a dragged spool onto a location chip.
+  // Drop dragged/selected spools onto a location chip (or '' = Unassigned).
   async function dropOn(toName: string) {
     setOverLoc(null);
     const ids = dragId != null ? (selected.has(dragId) ? [...selected] : [dragId]) : [...selected];
     setDragId(null);
     if (ids.length === 0) return;
-    await run(async () => { await api.bulkSpools('relocate', ids, { location: toName }); setSelected(new Set()); reloadSpools(); }, `${ids.length} → ${toName}`);
+    if (!capacityOk(toName, ids)) return;
+    const label = toName || t('v2.inv.unassigned_short', 'Unassigned');
+    await run(async () => { await api.bulkSpools('relocate', ids, { location: toName || null }); setSelected(new Set()); reloadSpools(); }, `${ids.length} → ${label}`);
   }
 
   // ---- Detail view: one location and the spools stored in it ----
@@ -255,7 +270,36 @@ export function LocationsTab({ detail, onOpen, onBack }: Props = {}) {
               </div>
             );
           })}
+
+          {/* Unassigned zone — drop here to clear a spool's location */}
+          <div
+            className={`tile tile--dashed${overLoc === '' ? ' tile--drop' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setOverLoc(''); }}
+            onDragLeave={() => setOverLoc((o) => (o === '' ? null : o))}
+            onDrop={(e) => { e.preventDefault(); dropOn(''); }}
+          >
+            <div className="tile-name">{t('v2.inv.unassigned_short', 'Unassigned')}</div>
+            <div className="tile-meta">{t('v2.inv.unassigned_hint', 'Drop here to remove a spool from its location')}</div>
+            <div className="loc-chips">
+              {spools.filter((s) => !s.archived && !s.location).slice(0, 14).map((s) => (
+                <span
+                  key={s.id}
+                  className="loc-chip"
+                  draggable
+                  title={`${s.profile_name || s.color_name || 'Spool'} · ${Math.round(s.remaining_weight_g)} g — drag to a location`}
+                  style={{ background: hex(s) }}
+                  onClick={(e) => { e.stopPropagation(); setOpenSpoolId(s.id); }}
+                  onDragStart={(e) => { setDragId(s.id); e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(s.id)); }}
+                  onDragEnd={() => { setDragId(null); setOverLoc(null); }}
+                />
+              ))}
+            </div>
+            <div className="tile-foot" style={{ marginTop: 8 }}><span className="muted">{unassigned} {t('v2.inv.spools', 'spools')}</span></div>
+          </div>
         </div>
+      )}
+      {openSpoolId != null && spools.find((s) => s.id === openSpoolId) && (
+        <SpoolDrawer spool={spools.find((s) => s.id === openSpoolId)!} onClose={() => setOpenSpoolId(null)} onChanged={reloadSpools} />
       )}
     </div>
   );
