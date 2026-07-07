@@ -170,6 +170,10 @@ export const api = {
   saveNotificationConfig: (cfg: NotificationConfig) =>
     req<{ ok: boolean }>('/api/notifications/config', { method: 'PUT', body: JSON.stringify(cfg) }),
   getStatistics: (): Promise<Stats> => req<Stats>('/api/statistics'),
+  getFilConsumptionByPrinter: (): Promise<import('./types').FilByPrinter[]> => req('/api/filament-analytics/consumption-by-printer'),
+  getFilWeeklyTrend: (): Promise<import('./types').FilWeekly[]> => req('/api/filament-analytics/weekly-trend'),
+  getFilCost: (): Promise<import('./types').FilCostRow[]> => req('/api/filament-analytics/cost'),
+  getMaterialEfficiency: (): Promise<import('./types').MaterialEfficiency[]> => req('/api/filament-analytics/material-efficiency'),
   getWasteStats: (): Promise<import('./types').WasteStats> => req('/api/waste/stats'),
   getWasteHistory: (): Promise<import('./types').WasteEvent[]> => req('/api/waste/history?limit=20'),
   getCostSummary: (): Promise<import('./types').CostSummary> => req('/api/cost/summary'),

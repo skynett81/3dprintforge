@@ -1,23 +1,27 @@
+import { useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { BarChart } from '../components/BarChart';
+import { ConsumptionTab, CostsTab, EfficiencyTab } from './analytics/AnalyticsTabs';
 import type { Stats } from '../types';
 
-export function AnalyticsPanel() {
+type Tab = 'stats' | 'consumption' | 'costs' | 'efficiency';
+const TABS: Tab[] = ['stats', 'consumption', 'costs', 'efficiency'];
+
+export function AnalyticsPanel({ sub, onNav }: { sub?: string | null; onNav?: (slug: string) => void } = {}) {
   const t = useT();
   const { data, error, loading } = useResource<Stats>(api.getStatistics, 15000);
+  const [localTab, setLocalTab] = useState<Tab>('stats');
+  const tab: Tab = onNav ? ((sub && (TABS as string[]).includes(sub) ? sub : 'stats') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onNav) onNav(id); else setLocalTab(id); };
 
-  if (error) return <div className="error">{error}</div>;
-  if (loading && !data) return <p className="muted">{t('common.loading', 'Loading…')}</p>;
-  if (!data) return null;
-
-  const months = data.monthly_trends.map((m) => ({
-    label: m.month.slice(5), // MM
+  const months = (data?.monthly_trends ?? []).map((m) => ({
+    label: m.month.slice(5),
     value: m.total,
     hint: `${m.month}: ${m.total} prints, ${Math.round(m.total_filament_g)} g`,
   }));
-  const maxFil = Math.max(1, ...data.filament_by_type.map((f) => f.grams));
+  const maxFil = Math.max(1, ...(data?.filament_by_type ?? []).map((f) => f.grams));
 
   return (
     <div>
@@ -26,8 +30,20 @@ export function AnalyticsPanel() {
           <h2 className="panel-title">{t('v2.analytics.title', 'Analytics')}</h2>
           <p className="muted sub">{t('v2.analytics.subtitle', 'Print statistics across the fleet')}</p>
         </div>
+        <div className="seg">
+          {([['stats', t('v2.an.tab_stats', 'Statistics')], ['consumption', t('v2.an.tab_consumption', 'Consumption')], ['costs', t('v2.an.tab_costs', 'Costs')], ['efficiency', t('v2.an.tab_efficiency', 'Efficiency')]] as [Tab, string][]).map(([id, label]) => (
+            <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => setTab(id)}>{label}</button>
+          ))}
+        </div>
       </div>
 
+      {tab === 'consumption' && <ConsumptionTab />}
+      {tab === 'costs' && <CostsTab />}
+      {tab === 'efficiency' && <EfficiencyTab />}
+
+      {tab === 'stats' && error && <div className="error">{error}</div>}
+      {tab === 'stats' && loading && !data && <p className="muted">{t('common.loading', 'Loading…')}</p>}
+      {tab === 'stats' && data && (<>
       <div className="kpis kpis--5">
         <Kpi label={t('v2.analytics.total_prints', 'Total prints')} value={String(data.total_prints)} />
         <Kpi label={t('v2.analytics.success_rate', 'Success rate')} value={`${data.success_rate}%`} accent={data.success_rate >= 90 ? 'green' : 'teal'} />
@@ -68,6 +84,7 @@ export function AnalyticsPanel() {
           </div>
         </section>
       </div>
+      </>)}
     </div>
   );
 }

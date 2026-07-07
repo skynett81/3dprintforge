@@ -366,6 +366,44 @@ export interface MaintComponent {
   last_maintenance: string | null;
 }
 
+export interface FilByPrinter {
+  printer_id: string;
+  material: string;
+  total_used_g: number;
+  total_waste_g: number;
+  total_prints: number;
+  avg_daily_g: number;
+}
+
+export interface FilWeekly {
+  week: string;
+  material: string;
+  used_g: number;
+  waste_g: number;
+  prints: number;
+  success_rate: number;
+}
+
+export interface FilCostRow {
+  material: string;
+  vendor: string | null;
+  spool_count: number;
+  avg_cost_per_g: number;
+  min_cost_per_g: number;
+  max_cost_per_g: number;
+  total_spent: number;
+}
+
+export interface MaterialEfficiency {
+  material: string;
+  brand: string | null;
+  print_count: number;
+  avg_g_per_print: number;
+  g_per_hour: number;
+  avg_print_minutes: number;
+  success_rate: number;
+}
+
 export interface MaintCostItem {
   id: number;
   component: string;
