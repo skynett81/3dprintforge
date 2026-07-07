@@ -97,7 +97,7 @@ export function App() {
   const validPanels = new Set<string>(NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id)));
   const panel: PanelId = (validPanels.has(route.panel) ? route.panel : 'dashboard') as PanelId;
   const setPanel = (id: PanelId) => { window.location.hash = buildHash(id); };
-  const navigateSub = (sub: string) => { window.location.hash = buildHash('inventory', sub); };
+  const navigateInv = (sub: string, detail?: string | null) => { window.location.hash = buildHash('inventory', sub, detail); };
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const auth = useAuth();
 
@@ -180,7 +180,7 @@ export function App() {
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel />}
         {panel === 'guard' && <PrintGuardPanel />}
-        {panel === 'inventory' && <InventoryPanel sub={route.sub} onSub={navigateSub} />}
+        {panel === 'inventory' && <InventoryPanel sub={route.sub} detail={route.detail} onNav={navigateInv} />}
         {panel === 'queue' && <QueuePanel />}
         {panel === 'scheduler' && <SchedulerPanel />}
         {panel === 'supply' && <SupplyPanel />}

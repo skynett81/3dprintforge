@@ -10,14 +10,14 @@ import { StockActivityTab } from './inventory/ActivityTab';
 type Tab = 'overview' | 'spools' | 'profiles' | 'locations' | 'control' | 'activity';
 const TABS: Tab[] = ['overview', 'spools', 'profiles', 'locations', 'control', 'activity'];
 
-export function InventoryPanel({ sub, onSub }: { sub?: string | null; onSub?: (slug: string) => void } = {}) {
+export function InventoryPanel({ sub, detail, onNav }: { sub?: string | null; detail?: string | null; onNav?: (slug: string, detail?: string | null) => void } = {}) {
   const t = useT();
   const [focusId, setFocusId] = useState<number | null>(null);
-  // Controlled by the URL when onSub is provided (deep-linkable slugs);
+  // Controlled by the URL when onNav is provided (deep-linkable slugs);
   // falls back to internal state otherwise (e.g. isolated tests).
   const [localTab, setLocalTab] = useState<Tab>('overview');
-  const tab: Tab = onSub ? ((sub && (TABS as string[]).includes(sub) ? sub : 'overview') as Tab) : localTab;
-  const setTab = (id: Tab) => { if (onSub) onSub(id); else setLocalTab(id); };
+  const tab: Tab = onNav ? ((sub && (TABS as string[]).includes(sub) ? sub : 'overview') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onNav) onNav(id); else setLocalTab(id); };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('v2.inv.tab_overview', 'Overview') },
@@ -47,7 +47,7 @@ export function InventoryPanel({ sub, onSub }: { sub?: string | null; onSub?: (s
       {tab === 'overview' && <OverviewTab onPickSpool={pickSpool} />}
       {tab === 'spools' && <SpoolsTab focusId={focusId} onFocusConsumed={() => setFocusId(null)} />}
       {tab === 'profiles' && <ProfilesTab />}
-      {tab === 'locations' && <LocationsTab />}
+      {tab === 'locations' && <LocationsTab detail={detail} onOpen={(id) => onNav?.('locations', id)} onBack={() => onNav?.('locations')} />}
       {tab === 'control' && <ControlTab />}
       {tab === 'activity' && <StockActivityTab />}
     </div>

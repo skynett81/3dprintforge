@@ -5,15 +5,16 @@
 export interface Route {
   panel: string;
   sub: string | null;
+  detail: string | null;
 }
 
 export function parseHash(hash: string): Route {
   const cleaned = (hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
   const segs = cleaned.split('/').filter(Boolean).map((s) => decodeURIComponent(s));
-  return { panel: segs[0] || 'dashboard', sub: segs[1] || null };
+  return { panel: segs[0] || 'dashboard', sub: segs[1] || null, detail: segs[2] || null };
 }
 
-export function buildHash(panel: string, sub?: string | null): string {
-  const p = encodeURIComponent(panel);
-  return sub ? `#/${p}/${encodeURIComponent(sub)}` : `#/${p}`;
+export function buildHash(panel: string, sub?: string | null, detail?: string | null): string {
+  const parts = [panel, sub, detail].filter((p): p is string => !!p).map((p) => encodeURIComponent(p));
+  return `#/${parts.join('/')}`;
 }
