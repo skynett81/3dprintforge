@@ -17,11 +17,17 @@ function when(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function MaintenancePanel() {
+type Tab = 'components' | 'costs' | 'history';
+const TABS: Tab[] = ['components', 'costs', 'history'];
+
+export function MaintenancePanel({ sub, onNav }: { sub?: string | null; onNav?: (slug: string) => void } = {}) {
   const t = useT();
   const toast = useToast();
   const { data: printers } = useResource<Printer[]>(api.listPrinters, 0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [localTab, setLocalTab] = useState<Tab>('components');
+  const tab: Tab = onNav ? ((sub && (TABS as string[]).includes(sub) ? sub : 'components') as Tab) : localTab;
+  const setTab = (id: Tab) => { if (onNav) onNav(id); else setLocalTab(id); };
   const [status, setStatus] = useState<MaintenanceStatus | null>(null);
   const [log, setLog] = useState<MaintenanceLogEntry[]>([]);
   const [costs, setCosts] = useState<MaintenanceCosts | null>(null);
@@ -87,7 +93,13 @@ export function MaintenancePanel() {
         )}
       </div>
 
-      {status && (
+      <div className="seg" style={{ marginBottom: 4 }}>
+        {([['components', t('v2.maint.tab_components', 'Components')], ['costs', t('v2.maint.tab_costs', 'Costs')], ['history', t('v2.maint.tab_history', 'History')]] as [Tab, string][]).map(([id, label]) => (
+          <button key={id} className={`seg-btn${tab === id ? ' seg-btn--on' : ''}`} onClick={() => setTab(id)}>{label}</button>
+        ))}
+      </div>
+
+      {tab === 'components' && status && (
         <div className="kpis kpis--5">
           <Kpi label={t('v2.maint.print_hours', 'Print hours')} value={status.total_print_hours.toFixed(1)} />
           <Kpi label={t('v2.maint.prints', 'Prints')} value={String(status.total_prints)} />
@@ -97,6 +109,7 @@ export function MaintenancePanel() {
         </div>
       )}
 
+      {tab === 'components' && (
       <section className="card">
         <div className="card-title">{t('v2.maint.components', 'Components')}</div>
         {components.length === 0 ? (
@@ -122,7 +135,9 @@ export function MaintenancePanel() {
           </div>
         )}
       </section>
+      )}
 
+      {tab === 'costs' && (
       <section className="card">
         <div className="card-head">
           <div className="card-title">{t('v2.maint.costs', 'Maintenance costs')}{costs && costs.total > 0 ? ` · ${Math.round(costs.total)} ${costs.currency || 'kr'}` : ''}</div>
@@ -157,7 +172,9 @@ export function MaintenancePanel() {
           </div>
         )}
       </section>
+      )}
 
+      {tab === 'history' && (
       <section className="card">
         <div className="card-title">{t('v2.maint.history', 'Service history')}</div>
         {log.length === 0 ? (
@@ -174,6 +191,7 @@ export function MaintenancePanel() {
           </div>
         )}
       </section>
+      )}
     </div>
   );
 }

@@ -445,7 +445,10 @@
       "no_costs": "No maintenance costs logged yet.",
       "amount": "Amount",
       "desc": "Description",
-      "other": "Other"
+      "other": "Other",
+      "tab_components": "Components",
+      "tab_costs": "Costs",
+      "tab_history": "History"
     },
     "purchasing": {
       "title": "Purchasing",

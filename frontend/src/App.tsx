@@ -179,7 +179,7 @@ export function App() {
         {panel === 'dashboard' && <DashboardPanel onNavigate={(id) => setPanel(id as PanelId)} />}
         {panel === 'production' && <ProductionPanel />}
         {panel === 'fleet' && <FleetPanel />}
-        {panel === 'maintenance' && <MaintenancePanel />}
+        {panel === 'maintenance' && <MaintenancePanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('maintenance', s); }} />}
         {panel === 'guard' && <PrintGuardPanel />}
         {panel === 'inventory' && <InventoryPanel sub={route.sub} detail={route.detail} onNav={navigateInv} />}
         {panel === 'queue' && <QueuePanel />}
