@@ -255,6 +255,8 @@ a.hs-badge { text-decoration: none; }
 .mat-val { white-space: nowrap; }
 .lib-row--btn { background: none; border: none; border-top: 1px solid var(--border-soft); width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .lib-row--btn:hover { background: var(--bg-3); }
+.hist-row--btn { cursor: pointer; }
+.hist-row--btn:hover { background: var(--bg-3); }
 .kpi-value--warn { color: var(--warn, #f59e0b); }
 
 /* Inventory bulk selection */

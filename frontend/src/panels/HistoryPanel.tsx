@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { filterHistory, type StatusFilter } from '../history-filter';
+import { HistoryDetail } from './history/HistoryDetail';
 import type { HistoryRow } from '../types';
 
 function dur(s?: number) {
@@ -22,13 +23,26 @@ function statusClass(s: string) {
   return 'warn';
 }
 
-export function HistoryPanel() {
+interface Props { selected?: string | null; onSelect?: (id: string) => void; onBack?: () => void; }
+
+export function HistoryPanel({ selected, onSelect, onBack }: Props = {}) {
   const t = useT();
   const { data, error, loading } = useResource<HistoryRow[]>(api.listHistory, 10000);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [printer, setPrinter] = useState('all');
 
   const all = data ?? [];
+
+  const detail = selected ? all.find((r) => String(r.id) === selected) : null;
+  if (selected && all.length > 0) {
+    if (detail) return <HistoryDetail row={detail} onBack={onBack} />;
+    return (
+      <div>
+        <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
+        <p className="muted empty-note">{t('v2.hist.gone', 'That print is no longer in the history.')}</p>
+      </div>
+    );
+  }
   const printers = useMemo(
     () => ['all', ...Array.from(new Set(all.map((r) => r.printer_id).filter(Boolean))).sort()],
     [all],
@@ -67,7 +81,7 @@ export function HistoryPanel() {
           <span>{t('v2.history.date', 'Date')}</span>
         </div>
         {rows.map((r) => (
-          <div className="hist-row" key={r.id}>
+          <div className="hist-row hist-row--btn" key={r.id} role="button" tabIndex={0} onClick={() => onSelect?.(String(r.id))}>
             <span className="hist-file">
               {r.filament_color && <span className="swatch swatch--sm" style={{ background: `#${String(r.filament_color).replace(/^#/, '')}` }} />}
               <span className="ellipsis" title={r.filename}>{r.filename}</span>

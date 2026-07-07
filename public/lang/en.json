@@ -503,6 +503,22 @@
       "not_configured": "not configured",
       "note": "Credentials are configured in the classic UI; here you enable/disable channels."
     },
+    "hist": {
+      "started": "Started",
+      "finished": "Finished",
+      "layers": "Layers",
+      "color_changes": "Colour changes",
+      "nozzle": "Nozzle",
+      "max_temps": "Max nozzle / bed",
+      "used": "Used",
+      "estimated": "Estimated",
+      "accuracy": "Accuracy",
+      "waste": "Waste",
+      "print": "Print",
+      "notes": "Notes",
+      "model": "Model →",
+      "gone": "That print is no longer in the history."
+    },
     "history": {
       "title": "History",
       "recent_prints": "recent prints",

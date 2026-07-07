@@ -483,7 +483,20 @@ export interface HistoryRow {
   filament_used_g?: number;
   filament_type?: string | null;
   filament_color?: string | null;
+  filament_brand?: string | null;
   layer_count?: number;
+  waste_g?: number | null;
+  color_changes?: number | null;
+  nozzle_type?: string | null;
+  nozzle_diameter?: number | null;
+  max_nozzle_temp?: number | null;
+  max_bed_temp?: number | null;
+  speed_level?: number | null;
+  notes?: string | null;
+  model_name?: string | null;
+  model_url?: string | null;
+  estimated_filament_g?: number | null;
+  filament_accuracy_pct?: number | null;
 }
 
 export interface Stats {
