@@ -133,7 +133,9 @@
       "add_profile": "+ Add profile",
       "profile_added": "Profile added",
       "profile_confirm": "Delete this profile?",
-      "profile_removed": "Profile removed"
+      "profile_removed": "Profile removed",
+      "profile_edit": "Edit profile",
+      "profile_saved": "Profile saved"
     },
     "ctl": {
       "targets": "Minimum stock levels",
@@ -307,6 +309,8 @@
       "removed": "Printer removed",
       "confirm": "Delete this printer?",
       "need_name": "Model and full name required",
+      "saved": "Printer saved",
+      "edit": "Edit printer",
       "full_name": "Full name",
       "model": "Model",
       "year": "Year",
@@ -427,6 +431,8 @@
       "sup_added": "Supplier added",
       "sup_removed": "Supplier removed",
       "sup_confirm": "Delete this supplier?",
+      "sup_saved": "Supplier saved",
+      "sup_edit": "Edit supplier",
       "website": "Website",
       "lead": "Lead (d)",
       "new_po": "+ New PO",

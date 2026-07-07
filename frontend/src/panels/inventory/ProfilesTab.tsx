@@ -17,7 +17,9 @@ export function ProfilesTab() {
   const [q, setQ] = useState('');
   const [material, setMaterial] = useState('all');
   const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', material: 'PLA', color_name: '', color_hex: '#00b3a4' });
+  const EMPTY = { name: '', material: 'PLA', color_name: '', color_hex: '#00b3a4' };
 
   const CAP = 500;
   const all = data ?? [];
@@ -33,12 +35,23 @@ export function ProfilesTab() {
   async function run(fn: () => Promise<void>, ok?: string) {
     try { await fn(); if (ok) toast(ok, 'success'); } catch (e) { toast((e as Error).message, 'error'); }
   }
-  async function add() {
+  function toggleAdd() {
+    if (adding) { setAdding(false); setEditId(null); setForm(EMPTY); }
+    else { setEditId(null); setForm(EMPTY); setAdding(true); }
+  }
+  function startEdit(p: FilamentProfile) {
+    setEditId(p.id);
+    setForm({ name: p.name || '', material: p.material || 'PLA', color_name: p.color_name || '', color_hex: p.color_hex ? `#${String(p.color_hex).replace(/^#/, '')}` : '#00b3a4' });
+    setAdding(true);
+  }
+  async function submit() {
     if (!form.name.trim()) return;
+    const body = { name: form.name.trim(), material: form.material, color_name: form.color_name.trim() || undefined, color_hex: form.color_hex.replace(/^#/, '') };
     await run(async () => {
-      await api.addFilament({ name: form.name.trim(), material: form.material, color_name: form.color_name.trim() || undefined, color_hex: form.color_hex.replace(/^#/, '') });
-      setAdding(false); setForm({ name: '', material: 'PLA', color_name: '', color_hex: '#00b3a4' }); reload();
-    }, t('v2.inv.profile_added', 'Profile added'));
+      if (editId != null) await api.updateFilament(editId, body);
+      else await api.addFilament(body);
+      setAdding(false); setEditId(null); setForm(EMPTY); reload();
+    }, editId != null ? t('v2.inv.profile_saved', 'Profile saved') : t('v2.inv.profile_added', 'Profile added'));
   }
   async function remove(p: FilamentProfile) {
     if (!confirm(t('v2.inv.profile_confirm', `Delete profile "${p.name}"?`))) return;
@@ -55,34 +68,36 @@ export function ProfilesTab() {
           </select>
           <span className="muted">{matched.length === all.length ? all.length : `${matched.length}/${all.length}`}{matched.length > CAP ? ` · ${t('v2.inv.refine', 'refine to see all')}` : ''}</span>
         </div>
-        <button className="btn btn--sm btn--primary" onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : t('v2.inv.add_profile', '+ Add profile')}</button>
+        <button className="btn btn--sm btn--primary" onClick={toggleAdd}>{adding ? t('common.close', 'Close') : t('v2.inv.add_profile', '+ Add profile')}</button>
       </div>
 
       {adding && (
         <section className="card">
+          {editId != null && <div className="card-title">{t('v2.inv.profile_edit', 'Edit profile')}</div>}
           <div className="add-form">
             <label className="field grow"><span className="field-label">{t('v2.inv.name', 'Name')}</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bambu PLA Basic" /></label>
             <label className="field"><span className="field-label">{t('v2.inv.material', 'Material')}</span>
               <select className="input" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })}>{['PLA', 'PETG', 'ABS', 'ASA', 'TPU', 'PC', 'PA'].map((m) => <option key={m} value={m}>{m}</option>)}</select></label>
             <label className="field grow"><span className="field-label">{t('v2.inv.color', 'Colour')}</span><input className="input" value={form.color_name} onChange={(e) => setForm({ ...form, color_name: e.target.value })} placeholder="Matte Black" /></label>
             <label className="field"><span className="field-label">Hex</span><input className="input" type="color" value={form.color_hex} onChange={(e) => setForm({ ...form, color_hex: e.target.value })} /></label>
-            <button className="btn btn--primary" onClick={add}>{t('v2.inv.add_btn', 'Add')}</button>
+            <button className="btn btn--primary" onClick={submit}>{editId != null ? t('common.save', 'Save') : t('v2.inv.add_btn', 'Add')}</button>
           </div>
         </section>
       )}
 
       <section className="card">
         <div className="lib-list">
-          <div className="lib-head" style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1.2fr 0.9fr auto' }}>
-            <span></span><span>{t('v2.inv.profile', 'Profile')}</span><span>{t('v2.inv.material', 'Material')}</span><span>{t('v2.inv.color', 'Colour')}</span><span>{t('v2.inv.temp', 'Nozzle')}</span><span></span>
+          <div className="lib-head" style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1.2fr 0.9fr auto auto' }}>
+            <span></span><span>{t('v2.inv.profile', 'Profile')}</span><span>{t('v2.inv.material', 'Material')}</span><span>{t('v2.inv.color', 'Colour')}</span><span>{t('v2.inv.temp', 'Nozzle')}</span><span></span><span></span>
           </div>
           {shown.map((p) => (
-            <div className="lib-row" key={p.id} style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1.2fr 0.9fr auto' }}>
+            <div className="lib-row" key={p.id} style={{ gridTemplateColumns: 'auto 2fr 0.8fr 1.2fr 0.9fr auto auto' }}>
               <span className={`swatch swatch--sm${p.color_hex ? '' : ' swatch--empty'}`} style={p.color_hex ? { background: hex(p.color_hex) } : undefined} />
               <span className="lib-name ellipsis" title={p.name}>{p.name}</span>
               <span className="muted">{p.material}</span>
               <span className="muted ellipsis">{p.color_name || '—'}</span>
               <span className="muted tnum">{p.nozzle_temp_min && p.nozzle_temp_max ? `${p.nozzle_temp_min}–${p.nozzle_temp_max}°` : '—'}</span>
+              <button className="btn btn--sm btn--ghost" title={t('common.edit', 'Edit')} onClick={() => startEdit(p)}>✎</button>
               <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={() => remove(p)}>✕</button>
             </div>
           ))}

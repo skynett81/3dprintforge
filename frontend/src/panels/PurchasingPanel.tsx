@@ -29,6 +29,7 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
   const [selected, setSelected] = useState<number | null>(null);
   const [detail, setDetail] = useState<PurchaseOrder | null>(null);
   const [addingSup, setAddingSup] = useState(false);
+  const [editSupId, setEditSupId] = useState<number | null>(null);
   const [supForm, setSupForm] = useState({ name: '', website: '', lead_time_days: '' });
   const [newPoOpen, setNewPoOpen] = useState(false);
   const [poForm, setPoForm] = useState({ supplier_id: '', reference: '', currency: 'kr' });
@@ -54,12 +55,19 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
     if (selected == null) return;
     await run(async () => { await api.updatePurchaseOrder(selected, { status }); loadDetail(selected); reloadPos(); }, t('common.saved', 'Saved'));
   }
+  function startEditSupplier(s: Supplier) {
+    setEditSupId(s.id);
+    setSupForm({ name: s.name, website: s.website || '', lead_time_days: s.lead_time_days != null ? String(s.lead_time_days) : '' });
+    setAddingSup(true);
+  }
   async function addSupplier() {
     if (!supForm.name.trim()) return;
+    const body = { name: supForm.name.trim(), website: supForm.website.trim() || undefined, lead_time_days: supForm.lead_time_days ? Number(supForm.lead_time_days) : undefined };
     await run(async () => {
-      await api.addSupplier({ name: supForm.name.trim(), website: supForm.website.trim() || undefined, lead_time_days: supForm.lead_time_days ? Number(supForm.lead_time_days) : undefined });
-      setAddingSup(false); setSupForm({ name: '', website: '', lead_time_days: '' }); reloadSuppliers();
-    }, t('v2.purchasing.sup_added', 'Supplier added'));
+      if (editSupId != null) await api.updateSupplier(editSupId, body);
+      else await api.addSupplier(body);
+      setAddingSup(false); setEditSupId(null); setSupForm({ name: '', website: '', lead_time_days: '' }); reloadSuppliers();
+    }, editSupId != null ? t('v2.purchasing.sup_saved', 'Supplier saved') : t('v2.purchasing.sup_added', 'Supplier added'));
   }
   async function removeSupplier(s: Supplier) {
     if (!confirm(t('v2.purchasing.sup_confirm', `Delete supplier "${s.name}"?`))) return;
@@ -113,14 +121,15 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
       <section className="card">
         <div className="card-head">
           <div className="card-title">{t('v2.purchasing.suppliers', 'Suppliers')}</div>
-          <button className="btn btn--sm btn--primary" onClick={() => setAddingSup((v) => !v)}>{addingSup ? t('common.close', 'Close') : t('v2.purchasing.add_supplier', '+ Add supplier')}</button>
+          <button className="btn btn--sm btn--primary" onClick={() => { setEditSupId(null); setSupForm({ name: '', website: '', lead_time_days: '' }); setAddingSup((v) => !v); }}>{addingSup ? t('common.close', 'Close') : t('v2.purchasing.add_supplier', '+ Add supplier')}</button>
         </div>
         {addingSup && (
           <div className="add-form">
+            {editSupId != null && <div className="card-title" style={{ width: '100%' }}>{t('v2.purchasing.sup_edit', 'Edit supplier')}</div>}
             <label className="field grow"><span className="field-label">{t('v2.inv.name', 'Name')}</span><input className="input" value={supForm.name} onChange={(e) => setSupForm({ ...supForm, name: e.target.value })} placeholder="3DJake" /></label>
             <label className="field grow"><span className="field-label">{t('v2.purchasing.website', 'Website')}</span><input className="input" value={supForm.website} onChange={(e) => setSupForm({ ...supForm, website: e.target.value })} placeholder="https://…" /></label>
             <label className="field"><span className="field-label">{t('v2.purchasing.lead', 'Lead (d)')}</span><input className="input" type="number" min={0} value={supForm.lead_time_days} onChange={(e) => setSupForm({ ...supForm, lead_time_days: e.target.value })} /></label>
-            <button className="btn btn--primary" onClick={addSupplier}>{t('v2.inv.add_btn', 'Add')}</button>
+            <button className="btn btn--primary" onClick={addSupplier}>{editSupId != null ? t('common.save', 'Save') : t('v2.inv.add_btn', 'Add')}</button>
           </div>
         )}
         {(suppliers ?? []).length === 0 ? (
@@ -132,6 +141,7 @@ export function PurchasingPanel({ supplierDetail, onOpenSupplier, onBackSupplier
                 <span className="supx-name">{s.name}</span>
                 <span className="muted">{s.website || ''}</span>
                 <span className="muted tnum">{s.lead_time_days != null ? `${s.lead_time_days} ${t('v2.purchasing.days_lead', 'd lead')}` : ''}</span>
+                <button className="btn btn--sm btn--ghost" title={t('common.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); startEditSupplier(s); }}>✎</button>
                 <button className="btn btn--sm btn--ghost" title={t('common.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); removeSupplier(s); }}>✕</button>
               </div>
             ))}
