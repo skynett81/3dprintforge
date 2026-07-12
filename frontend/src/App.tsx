@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useAuth, useResource } from './hooks';
 import { parseHash, buildHash } from './router';
 import { api } from './api';
@@ -92,6 +92,24 @@ const SHORTCUT_PANELS: PanelId[] = ['dashboard', 'fleet', 'guard', 'queue', 'inv
 // Web NFC (Chrome-on-Android) — used for the OpenSpool spool-scan action.
 const NFC_SUPPORTED = typeof window !== 'undefined' && 'NDEFReader' in window;
 
+// Panels with in-page sub-sections that expand as a tree in the sidebar.
+type SubItem = { sub: string; label: string };
+const SUBNAV: Partial<Record<PanelId, SubItem[]>> = {
+  inventory: [
+    { sub: 'overview', label: 'Overview' }, { sub: 'spools', label: 'Spools' }, { sub: 'profiles', label: 'Profiles' },
+    { sub: 'locations', label: 'Locations' }, { sub: 'control', label: 'Control' }, { sub: 'activity', label: 'Activity' },
+  ],
+  purchasing: [{ sub: 'orders', label: 'Orders' }, { sub: 'suppliers', label: 'Suppliers' }, { sub: 'reorder', label: 'Reorder' }],
+  crm: [{ sub: 'overview', label: 'Overview' }, { sub: 'customers', label: 'Customers' }, { sub: 'orders', label: 'Orders' }, { sub: 'invoices', label: 'Invoices' }],
+  analytics: [{ sub: 'stats', label: 'Statistics' }, { sub: 'consumption', label: 'Consumption' }, { sub: 'costs', label: 'Costs' }, { sub: 'efficiency', label: 'Efficiency' }],
+  costs: [{ sub: 'overview', label: 'Overview' }, { sub: 'prints', label: 'Prints' }],
+  maintenance: [{ sub: 'components', label: 'Components' }, { sub: 'nozzles', label: 'Nozzles' }, { sub: 'costs', label: 'Costs' }, { sub: 'history', label: 'History' }],
+  waste: [{ sub: 'overview', label: 'Overview' }, { sub: 'events', label: 'Events' }],
+};
+function loadExpandedSub(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem('v2.nav.subopen') || '[]')); } catch { return new Set(); }
+}
+
 function loadCollapsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
 }
@@ -157,6 +175,21 @@ export function App() {
       return next;
     });
   }, [route.panel]);
+
+  // Expandable sub-navigation (tree) for panels with in-page sub-sections.
+  const [expandedSub, setExpandedSub] = useState<Set<string>>(loadExpandedSub);
+  useEffect(() => {
+    if (!SUBNAV[route.panel as PanelId]) return;
+    setExpandedSub((prev) => (prev.has(route.panel) ? prev : new Set(prev).add(route.panel)));
+  }, [route.panel]);
+  function toggleSub(id: string) {
+    setExpandedSub((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem('v2.nav.subopen', JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  }
 
   // Pinned panels (user favourites) shown in a group at the top of the sidebar.
   const [pinned, setPinned] = useState<string[]>(loadPinned);
@@ -316,24 +349,52 @@ export function App() {
                 {showItems && g.items.map((n) => {
                   const b = badges[n.id];
                   const isPinned = pinned.includes(n.id);
+                  const subs = SUBNAV[n.id as PanelId];
+                  const subOpen = !!subs && expandedSub.has(n.id);
+                  const activeSub = panel === n.id ? (route.sub || subs?.[0]?.sub) : null;
                   return (
-                    <button
-                      key={n.id}
-                      className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
-                      onClick={() => setPanel(n.id)}
-                      title={rail ? n.label : undefined}
-                    >
-                      <span className="nav-icon">{n.icon}</span>
-                      <span className="nav-label">{n.label}</span>
-                      {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
-                      <span
-                        className={`nav-pin${isPinned ? ' nav-pin--on' : ''}`}
-                        onClick={(e) => { e.stopPropagation(); togglePin(n.id); }}
-                        title={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
-                        role="button"
-                        aria-label={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
-                      >★</span>
-                    </button>
+                    <Fragment key={n.id}>
+                      <button
+                        className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+                        onClick={() => setPanel(n.id)}
+                        title={rail ? n.label : undefined}
+                      >
+                        <span className="nav-icon">{n.icon}</span>
+                        <span className="nav-label">{n.label}</span>
+                        {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
+                        {subs && (
+                          <span
+                            className={`nav-caret${subOpen ? ' nav-caret--open' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); toggleSub(n.id); }}
+                            role="button"
+                            aria-label={t('v2.nav.toggle_sub', 'Toggle sub-menu')}
+                            aria-expanded={subOpen}
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                          </span>
+                        )}
+                        <span
+                          className={`nav-pin${isPinned ? ' nav-pin--on' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); togglePin(n.id); }}
+                          title={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                          role="button"
+                          aria-label={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                        >★</span>
+                      </button>
+                      {subs && subOpen && (
+                        <div className="nav-sub">
+                          {subs.map((s) => (
+                            <button
+                              key={s.sub}
+                              className={`nav-subitem${activeSub === s.sub ? ' nav-subitem--active' : ''}`}
+                              onClick={() => { window.location.hash = buildHash(n.id, s.sub); }}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </Fragment>
                   );
                 })}
               </div>
