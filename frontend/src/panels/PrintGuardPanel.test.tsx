@@ -29,7 +29,7 @@ describe('PrintGuardPanel', () => {
   it('shows a per-printer guard card with status, reliability and actions', async () => {
     render(<I18nProvider lang="en"><ToastProvider><PrintGuardPanel /></ToastProvider></I18nProvider>);
     expect(await screen.findByText('P2S')).toBeInTheDocument();
-    expect(await screen.findByText('Active')).toBeInTheDocument();      // guard state
+    expect(await screen.findByText('Armed')).toBeInTheDocument();       // guard on, not printing
     expect(screen.getByText('Test alert')).toBeInTheDocument();          // action
     expect(screen.getByText('Incidents (7d)')).toBeInTheDocument();      // reliability
     // The recent spaghetti event counts toward the 7-day reliability.

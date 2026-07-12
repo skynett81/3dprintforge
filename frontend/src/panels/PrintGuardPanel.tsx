@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, Fragment } from 'react';
 import { api } from '../api';
-import { useResource } from '../hooks';
+import { useResource, useLivePrinters } from '../hooks';
+import { readLive, isPrinting } from '../live';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { ProtectionEvent, GuardStatus, Printer } from '../types';
+
+const temp = (v?: number | null) => (v == null ? '—' : `${Math.round(v)}°`);
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -23,6 +26,7 @@ export function PrintGuardPanel() {
   const toast = useToast();
   const { data: printersData } = useResource<Printer[]>(api.listPrinters, 30000);
   const { data: logData, reload } = useResource<ProtectionEvent[]>(api.getProtectionLog, 15000);
+  const { live, connected } = useLivePrinters();
   const [statuses, setStatuses] = useState<Record<string, GuardStatus>>({});
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,12 +72,14 @@ export function PrintGuardPanel() {
     return { total: week.length, top: top?.[0] ?? null, lastAt: week[0]?.timestamp ?? null };
   }
 
-  function guardState(s?: GuardStatus): { text: string; cls: string } {
+  function watchState(s: GuardStatus | undefined, printing: boolean, activeAlerts: number): { text: string; cls: string } {
     if (!s || !s.settings) return { text: t('v2.guard.unknown', 'Unknown'), cls: 'neutral' };
     if (!s.settings.enabled) return { text: t('v2.guard.off', 'Off'), cls: 'neutral' };
     const sn = s.settings.snooze_until;
     if (sn && Date.now() < new Date(sn).getTime()) return { text: `${t('v2.guard.snoozed', 'Snoozed')} → ${hm(sn)}`, cls: 'warn' };
-    return { text: t('v2.guard.active', 'Active'), cls: 'good' };
+    if (activeAlerts > 0) return { text: `⚠ ${t('v2.guard.alert', 'Alert')}`, cls: 'bad' };
+    if (printing) return { text: `● ${t('v2.guard.watching', 'Watching')}`, cls: 'good' };
+    return { text: t('v2.guard.armed', 'Armed'), cls: 'neutral' };
   }
 
   const openAlerts = events.filter((e) => !e.resolved).length;
@@ -86,26 +92,50 @@ export function PrintGuardPanel() {
           <h2 className="panel-title">{t('v2.guard.title', 'Print Guard')}</h2>
           <p className="muted sub">{printers.length} {t('v2.guard.printers', 'printers')} · {openAlerts} {t('v2.guard.open', 'open alerts')}</p>
         </div>
+        <span className={`live-pill${connected ? ' live-pill--on' : ''}`} style={{ marginLeft: 'auto' }}>
+          <span className="live-dot" />{connected ? t('v2.guard.live', 'Live') : t('v2.guard.connecting', 'Connecting…')}
+        </span>
       </div>
 
       {/* Per-printer guard cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, marginBottom: 20 }}>
         {printers.map((p) => {
           const s = statuses[p.id];
-          const st = guardState(s);
+          const l = readLive(live[p.id]);
+          const printing = isPrinting(l);
+          const activeAlerts = s?.alerts?.filter((a) => !a.resolved).length ?? 0;
+          const st = watchState(s, printing, activeAlerts);
           const rel = reliability(p.id);
           const settings = s?.settings ?? {};
           const intervening = Object.keys(settings)
             .filter((k) => k.endsWith('_action') && (settings[k] === 'pause' || settings[k] === 'stop'))
             .map(label);
-          const activeAlerts = s?.alerts?.filter((a) => !a.resolved).length ?? 0;
-          const snoozed = st.cls === 'warn';
+          const snoozed = Boolean(s?.settings?.snooze_until && Date.now() < new Date(s.settings.snooze_until).getTime());
           return (
             <section className="card" key={p.id} style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="panel-title" style={{ fontSize: '1rem', margin: 0 }}>{p.name || p.id}</span>
                 <span className={`hs-badge hs-badge-${st.cls}`} style={{ marginLeft: 'auto' }}>{st.text}</span>
               </div>
+
+              {printing && (
+                <div style={{ fontSize: '0.82rem' }}>
+                  {l.file && <div className="ellipsis muted" title={l.file}>{l.file}</div>}
+                  {l.progress != null && (
+                    <div style={{ margin: '5px 0' }}>
+                      <div className="spool-bar"><div className="spool-fill" style={{ width: `${Math.max(0, Math.min(100, l.progress))}%` }} /></div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                        <span>{Math.round(l.progress)}%</span>
+                        {l.remainingMin != null && <span className="muted">{Math.round(l.remainingMin)} {t('v2.guard.min_left', 'min left')}</span>}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 14 }}>
+                    <span className="muted">{t('v2.guard.nozzle', 'Nozzle')} {temp(l.nozzle)}</span>
+                    <span className="muted">{t('v2.guard.bed', 'Bed')} {temp(l.bed)}</span>
+                  </div>
+                </div>
+              )}
 
               {activeAlerts > 0 && (
                 <div className="hs-badge hs-badge-bad" style={{ alignSelf: 'flex-start' }}>{activeAlerts} {t('v2.guard.active_alerts', 'active alert(s)')}</div>

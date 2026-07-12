@@ -48,6 +48,7 @@ export function useLivePrinters() {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+    if (typeof WebSocket === 'undefined') return; // e.g. test env without WS
     let closed = false;
     let ws: WebSocket;
     let retry: ReturnType<typeof setTimeout>;
