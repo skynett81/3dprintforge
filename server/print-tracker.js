@@ -19,6 +19,11 @@ function _colorDist(hex1, hex2) {
 }
 let HMS_CODES = {};
 try { HMS_CODES = JSON.parse(readFileSync(join(__dirname, 'hms-codes.json'), 'utf8')); } catch (e) { log.warn('Failed to load HMS codes', e.message); }
+// Full Bambu error + HMS table (~5800 codes), keyed by raw uppercase hex with
+// no separators (8 hex = print error, 16 hex = HMS). See tools/update-hms-codes.mjs.
+let HMS_FULL = {};
+try { HMS_FULL = JSON.parse(readFileSync(join(__dirname, 'hms-codes-full.json'), 'utf8')); } catch (e) { log.warn('Failed to load full HMS codes', e.message); }
+function _rawHex(attr) { return String(attr).replace(/^HMS[_-]/i, '').replace(/[_-]/g, '').toUpperCase(); }
 
 export function hmsAttrToHex(attr) {
   if (!attr) return null;
@@ -41,6 +46,9 @@ export function hmsAttrToHex(attr) {
 
 export function lookupHmsCode(attr) {
   if (!attr) return null;
+  // Full table first (covers print_error + HMS, ~5800 codes).
+  const raw = _rawHex(attr);
+  if (HMS_FULL[raw]) return HMS_FULL[raw];
   const hexKey = hmsAttrToHex(attr);
   if (!hexKey) return null;
   // Direct lookup
@@ -59,9 +67,11 @@ export function lookupHmsCode(attr) {
 }
 
 export function getHmsWikiUrl(attr) {
-  const hexCode = hmsAttrToHex(attr) || String(attr);
-  const parts = hexCode.replace(/[_-]/g, '+');
-  return `https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${hexCode.replace('_', '_').toLowerCase()}`;
+  // Bambu's official error lookup page handles both HMS and print-error codes
+  // for every printer (returns 200). The old wiki deep-link 404'd for print
+  // errors and non-X1 printers.
+  const code = String(attr).replace(/^HMS[_-]/i, '');
+  return `https://e.bambulab.com/?e=${encodeURIComponent(code)}`;
 }
 
 const ABRASIVE_TYPES = ['PA-CF', 'PA-GF', 'PET-CF', 'PLA-CF', 'PAHT-CF', 'PA6-CF', 'PA6-GF', 'PPA-CF', 'PPA-GF'];
