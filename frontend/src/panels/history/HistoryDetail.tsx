@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useT } from '../../i18n';
 import type { HistoryRow } from '../../types';
 
@@ -21,6 +22,8 @@ function when(iso?: string | null) {
 export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () => void }) {
   const t = useT();
   const r = row;
+  // Slicer/G-code preview of what was printed. Hidden if this print has none.
+  const [thumbOk, setThumbOk] = useState(true);
   const specs: [string, string][] = [
     [t('v2.history.printer', 'Printer'), r.printer_id || '—'],
     [t('v2.hist.started', 'Started'), when(r.started_at)],
@@ -52,6 +55,18 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         </div>
         {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{r.model_name || t('v2.hist.model', 'Model →')}</a>}
       </div>
+
+      {thumbOk && (
+        <section className="card" style={{ display: 'flex', justifyContent: 'center', padding: 12, marginBottom: 12 }}>
+          <img
+            src={`/api/history/${r.id}/thumbnail`}
+            alt={t('v2.hist.preview', 'Print preview')}
+            onError={() => setThumbOk(false)}
+            loading="lazy"
+            style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8 }}
+          />
+        </section>
+      )}
 
       <div className="two-col">
         <section className="card">
