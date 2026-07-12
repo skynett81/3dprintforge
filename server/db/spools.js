@@ -1998,6 +1998,29 @@ export function getSpoolTimeline(spoolId, limit = 100) {
   return db.prepare('SELECT * FROM spool_events WHERE spool_id = ? ORDER BY timestamp DESC LIMIT ?').all(spoolId, limit);
 }
 
+// Actual filament(s) used in a print, resolved from the spool-usage log to the
+// real spool colour + material — so history can render what was printed in the
+// correct colours even when print_history.filament_color is blank. Hex is
+// returned without a leading '#', per the storage convention.
+export function getPrintFilamentsUsed(printHistoryId) {
+  const db = getDb();
+  return db.prepare(`
+    SELECT s.id AS spool_id,
+           COALESCE(LTRIM(s.color_hex_override, '#'), fp.color_hex) AS color_hex,
+           fp.multi_color_hexes AS multi_color_hexes,
+           fp.material AS material,
+           fp.name AS name,
+           fp.color_name AS color_name,
+           ROUND(SUM(sul.used_weight_g), 1) AS used_g
+    FROM spool_usage_log sul
+    JOIN spools s ON sul.spool_id = s.id
+    LEFT JOIN filament_profiles fp ON s.filament_profile_id = fp.id
+    WHERE sul.print_history_id = ?
+    GROUP BY s.id
+    ORDER BY used_g DESC
+  `).all(printHistoryId);
+}
+
 export function getSpoolPrintStats(spoolId) {
   const db = getDb();
   // Get usage log entries linked to print history

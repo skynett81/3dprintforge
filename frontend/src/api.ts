@@ -186,4 +186,6 @@ export const api = {
   getCostSummary: (): Promise<import('./types').CostSummary> => req('/api/cost/summary'),
   getCostReport: (): Promise<import('./types').CostRow[]> => req('/api/cost/report'),
   listHistory: (): Promise<HistoryRow[]> => req<HistoryRow[]>('/api/history?limit=40'),
+  getHistoryFilaments: (id: number | string): Promise<import('./types').FilamentUsed[]> =>
+    req<import('./types').FilamentUsed[]>(`/api/history/${id}/filaments`),
 };

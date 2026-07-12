@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../../api';
 import { useT } from '../../i18n';
-import type { HistoryRow } from '../../types';
+import type { HistoryRow, FilamentUsed } from '../../types';
+
+const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 
 function statusClass(s: string) {
   const x = (s || '').toLowerCase();
@@ -24,6 +27,16 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   const r = row;
   // Slicer/G-code preview of what was printed. Hidden if this print has none.
   const [thumbOk, setThumbOk] = useState(true);
+  // Real filament(s)/colours used, resolved from the spool-usage log — so we
+  // show what was printed in the correct colours even when the history row's
+  // own filament_color is blank.
+  const [filaments, setFilaments] = useState<FilamentUsed[]>([]);
+  useEffect(() => {
+    let alive = true;
+    api.getHistoryFilaments(r.id).then((f) => { if (alive) setFilaments(f); }).catch(() => {});
+    return () => { alive = false; };
+  }, [r.id]);
+  const headerColor = r.filament_color || filaments[0]?.color_hex || null;
   const specs: [string, string][] = [
     [t('v2.history.printer', 'Printer'), r.printer_id || '—'],
     [t('v2.hist.started', 'Started'), when(r.started_at)],
@@ -48,7 +61,7 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         <div>
           <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
           <h2 className="panel-title" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            {r.filament_color && <span className="swatch" style={{ background: `#${String(r.filament_color).replace(/^#/, '')}`, width: 20, height: 20 }} />}
+            {headerColor && <span className="swatch" style={{ background: hex(headerColor), width: 20, height: 20 }} />}
             <span className="ellipsis">{r.filename}</span>
           </h2>
           <p className="muted sub"><span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span></p>
@@ -65,6 +78,32 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
             loading="lazy"
             style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8 }}
           />
+        </section>
+      )}
+
+      {filaments.length > 0 && (
+        <section className="card" style={{ marginBottom: 12 }}>
+          <div className="card-title">{t('v2.hist.printed_with', 'Printed with')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+            {filaments.map((f) => {
+              const multi = (f.multi_color_hexes || '').split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+              return (
+                <div key={f.spool_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {multi.length > 1 ? (
+                    <span style={{ display: 'inline-flex', borderRadius: 5, overflow: 'hidden', width: 24, height: 24, border: '1px solid rgba(128,128,128,0.4)' }}>
+                      {multi.map((c, i) => <span key={i} style={{ flex: 1, background: hex(c) }} />)}
+                    </span>
+                  ) : (
+                    <span className="swatch" style={{ background: hex(f.color_hex), width: 24, height: 24, border: '1px solid rgba(128,128,128,0.4)' }} />
+                  )}
+                  <span>
+                    <span style={{ fontWeight: 600 }}>{f.name || [f.material, f.color_name].filter(Boolean).join(' ') || t('v2.hist.filament_unknown', 'Filament')}</span>
+                    {f.used_g != null && <span className="muted"> · {Math.round(f.used_g)} g</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 

@@ -582,6 +582,16 @@ export interface AuthStatus {
   user: string | null;
 }
 
+export interface FilamentUsed {
+  spool_id: number;
+  color_hex: string | null;
+  multi_color_hexes?: string | null;
+  material: string | null;
+  name: string | null;
+  color_name: string | null;
+  used_g: number | null;
+}
+
 export interface HistoryRow {
   id: number;
   printer_id: string;
