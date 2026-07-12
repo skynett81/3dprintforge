@@ -322,6 +322,7 @@ export interface AppError {
   message: string;
   severity: string;
   acknowledged: number;
+  context?: string | null;
 }
 
 export interface Achievement {
