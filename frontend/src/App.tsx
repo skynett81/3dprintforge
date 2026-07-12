@@ -215,7 +215,7 @@ export function App() {
       <button className="drawer-toggle" onClick={() => setDrawer(true)} aria-label={t('v2.nav.menu', 'Open menu')}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
       </button>
-      <div className="drawer-backdrop" onClick={() => setDrawer(false)} />
+      <div className="nav-drawer-backdrop" onClick={() => setDrawer(false)} />
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">3F</div>

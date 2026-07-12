@@ -201,7 +201,7 @@ body {
 .app-shell--rail .theme-toggle .nav-label { display: none; }
 
 /* Mobile drawer (hidden on desktop) */
-.drawer-toggle, .drawer-backdrop { display: none; }
+.drawer-toggle, .nav-drawer-backdrop { display: none; }
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
@@ -680,7 +680,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
     transform: translateX(-100%); transition: transform 0.22s ease;
   }
   .app-shell--drawer .sidebar { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.6); }
-  .app-shell--drawer .drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.5); }
+  .app-shell--drawer .nav-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.5); }
   .main { padding: 64px 16px 60px; max-width: 100%; }
   /* Rail is a desktop feature — always show the full sidebar in the mobile drawer. */
   .app-shell--rail .sidebar { width: 268px; padding: 20px 14px; }
