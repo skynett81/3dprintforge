@@ -60,7 +60,7 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission, invalidateUserSessions } from './auth.js';
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
-import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand } from './mqtt-commands.js';
+import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand } from './mqtt-commands.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
 import { verifySimplyPrintWebhook } from './simplyprint-webhook.js';
@@ -1992,6 +1992,15 @@ export async function handleApiRequest(req, res) {
             entry.client.sendCommand(cmd);
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action });
+          }
+          // Toggle a Bambu xcam AI detector (spaghetti / first-layer / etc.).
+          if (action === 'xcam_control') {
+            if ((entry.config && entry.config.type) !== 'bambu') return sendJson(res, { error: 'xcam is only available on Bambu printers' }, 400);
+            const ALLOWED_XCAM = ['spaghetti_detector', 'first_layer_inspector', 'buildplate_marker_detector', 'printing_monitor'];
+            if (!ALLOWED_XCAM.includes(body.field)) return sendJson(res, { error: 'invalid xcam field' }, 400);
+            entry.client.sendCommand(buildXcamControlCommand(body.field, !!body.enable));
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, field: body.field, enable: !!body.enable });
           }
           // Fan / light / speed: supported on Bambu (MQTT) and Klipper/Moonraker
           // (gcode). Lets the slicer Devices panel mirror the Bambu Device tab.

@@ -146,6 +146,8 @@ export const api = {
   snoozeGuard: (printerId: string, minutes: number) => req<{ ok: boolean; snooze_until: string | null }>('/api/protection/snooze', { method: 'POST', body: JSON.stringify({ printer_id: printerId, minutes }) }),
   setGuardEnabled: (printerId: string, enabled: boolean) => req<{ ok: boolean }>('/api/protection/settings', { method: 'PUT', body: JSON.stringify({ printer_id: printerId, enabled: enabled ? 1 : 0 }) }),
   updateGuardSettings: (printerId: string, patch: Record<string, unknown>) => req<{ ok: boolean }>('/api/protection/settings', { method: 'PUT', body: JSON.stringify({ printer_id: printerId, ...patch }) }),
+  setXcam: (printerId: string, field: string, enable: boolean) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(printerId)}/control`, { method: 'POST', body: JSON.stringify({ action: 'xcam_control', field, enable }) }),
+  getTelemetry: (printerId: string, fromIso: string, toIso: string): Promise<import('./types').TelemetryPoint[]> => req(`/api/telemetry?printer_id=${encodeURIComponent(printerId)}&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`),
   listBackups: (): Promise<import('./types').BackupFile[]> => req('/api/backup/list'),
   createBackup: () => req<{ ok?: boolean }>('/api/backup', { method: 'POST', body: '{}' }),
   listCustomers: (): Promise<import('./types').Customer[]> => req('/api/crm/customers'),

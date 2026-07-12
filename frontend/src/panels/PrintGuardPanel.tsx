@@ -5,30 +5,12 @@ import { readLive, isPrinting } from '../live';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { ProtectionEvent, GuardStatus, Printer } from '../types';
+import { CameraSnapshot } from './guard/CameraSnapshot';
+import { SensorGraph } from './guard/SensorGraph';
+import { WallMode, type WallTile } from './guard/WallMode';
+import { useAlertNotifications } from './guard/useAlertNotifications';
 
 const temp = (v?: number | null) => (v == null ? '—' : `${Math.round(v)}°`);
-
-// Best-effort live camera: the snapshot endpoint serves the latest stream
-// frame (available while the camera is streaming, e.g. during a print). Polls
-// every 2s, hides on error and retries so it recovers when the stream starts.
-function CameraSnapshot({ printerId }: { printerId: string }) {
-  const [tick, setTick] = useState(0);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    const poll = setInterval(() => setTick((x) => x + 1), 2000);
-    const retry = setInterval(() => setFailed(false), 8000);
-    return () => { clearInterval(poll); clearInterval(retry); };
-  }, []);
-  if (failed) return null;
-  return (
-    <img
-      src={`/api/printers/${encodeURIComponent(printerId)}/camera?t=${tick}`}
-      alt="live camera"
-      onError={() => setFailed(true)}
-      style={{ width: '100%', borderRadius: 8, aspectRatio: '16 / 10', objectFit: 'cover', background: '#000' }}
-    />
-  );
-}
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -54,12 +36,23 @@ export function PrintGuardPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [graphFor, setGraphFor] = useState<string | null>(null);
+  const [wall, setWall] = useState(false);
+  const [notify, setNotify] = useState(false);
 
   // Save one setting, optimistically updating the local card.
   async function saveSetting(pid: string, key: string, value: unknown) {
     setStatuses((prev) => (prev[pid] ? { ...prev, [pid]: { ...prev[pid], settings: { ...prev[pid].settings, [key]: value } } } : prev));
     try { await api.updateGuardSettings(pid, { [key]: value }); }
     catch (e) { toast((e as Error).message, 'error'); setTick((n) => n + 1); }
+  }
+
+  // Toggle a Bambu xcam AI detector straight from the card.
+  async function toggleXcam(pid: string, field: string, enable: boolean) {
+    try {
+      await api.setXcam(pid, field, enable);
+      toast(enable ? t('v2.guard.detector_on', 'Detector enabled') : t('v2.guard.detector_off', 'Detector disabled'), 'success');
+    } catch (e) { toast((e as Error).message, 'error'); }
   }
 
   const THRESHOLDS: [string, string][] = [
@@ -69,6 +62,14 @@ export function PrintGuardPanel() {
 
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const events = useMemo(() => [...(logData ?? [])].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [logData]);
+  const { permission, request: requestNotify } = useAlertNotifications(events, notify);
+
+  async function toggleNotify() {
+    if (notify) { setNotify(false); return; }
+    const p = permission === 'granted' ? 'granted' : await requestNotify();
+    setNotify(true);
+    if (p === 'denied') toast(t('v2.guard.notify_blocked', 'Notifications are blocked in the browser; sound only'), 'error');
+  }
 
   // Fetch each printer's guard status (settings + active alerts).
   useEffect(() => {
@@ -107,6 +108,14 @@ export function PrintGuardPanel() {
   const openAlerts = events.filter((e) => !e.resolved).length;
   const rows = showResolved ? events : events.filter((e) => !e.resolved);
 
+  const tiles: WallTile[] = printers.map((p) => {
+    const s = statuses[p.id];
+    const l = readLive((live[p.id] ?? {}) as Record<string, unknown>);
+    const printing = isPrinting(l);
+    const activeAlerts = s?.alerts?.filter((a) => !a.resolved).length ?? 0;
+    return { id: p.id, name: p.name || p.id, printing, progress: l.progress, file: l.file, nozzle: l.nozzle, bed: l.bed, state: watchState(s, printing, activeAlerts), alerts: activeAlerts };
+  });
+
   return (
     <div>
       <div className="panel-head">
@@ -114,10 +123,18 @@ export function PrintGuardPanel() {
           <h2 className="panel-title">{t('v2.guard.title', 'Print Guard')}</h2>
           <p className="muted sub">{printers.length} {t('v2.guard.printers', 'printers')} · {openAlerts} {t('v2.guard.open', 'open alerts')}</p>
         </div>
-        <span className={`live-pill${connected ? ' live-pill--on' : ''}`} style={{ marginLeft: 'auto' }}>
-          <span className="live-dot" />{connected ? t('v2.guard.live', 'Live') : t('v2.guard.connecting', 'Connecting…')}
-        </span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
+          <button className={`btn btn--sm${notify ? '' : ' btn--ghost'}`} onClick={toggleNotify} title={t('v2.guard.notify_hint', 'Sound + browser notification on new alerts')}>
+            {notify ? t('v2.guard.notify_on', '🔔 Alerts on') : t('v2.guard.notify_off', '🔕 Alerts off')}
+          </button>
+          <button className="btn btn--sm" disabled={printers.length === 0} onClick={() => setWall(true)}>{t('v2.guard.wall', 'Wall mode')}</button>
+          <span className={`live-pill${connected ? ' live-pill--on' : ''}`}>
+            <span className="live-dot" />{connected ? t('v2.guard.live', 'Live') : t('v2.guard.connecting', 'Connecting…')}
+          </span>
+        </div>
       </div>
+
+      {wall && <WallMode tiles={tiles} onClose={() => setWall(false)} />}
 
       {/* Per-printer guard cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, marginBottom: 20 }}>
@@ -127,12 +144,12 @@ export function PrintGuardPanel() {
           const l = readLive(raw);
           const printing = isPrinting(l);
           const xc = (raw._xcam ?? {}) as Record<string, unknown>;
-          const detectors = ([
-            [t('v2.guard.d_spaghetti', 'Spaghetti'), xc.spaghettiDetector],
-            [t('v2.guard.d_firstlayer', 'First layer'), xc.firstLayerInspector],
-            [t('v2.guard.d_buildplate', 'Buildplate'), xc.buildplateMarkerDetector],
-            [t('v2.guard.d_clump', 'Clump'), xc.clumpDetector],
-          ] as [string, unknown][]).filter(([, v]) => v);
+          const hasXcam = Object.keys(xc).length > 0;
+          const detectors: [string, string, boolean][] = [
+            [t('v2.guard.d_spaghetti', 'Spaghetti'), 'spaghetti_detector', !!xc.spaghettiDetector],
+            [t('v2.guard.d_firstlayer', 'First layer'), 'first_layer_inspector', !!xc.firstLayerInspector],
+            [t('v2.guard.d_buildplate', 'Buildplate'), 'buildplate_marker_detector', !!xc.buildplateMarkerDetector],
+          ];
           const sensitivity = ((raw.xcam ?? {}) as Record<string, unknown>).halt_print_sensitivity as string | undefined;
           const fans = ([
             [t('v2.guard.f_part', 'Part'), raw._fan_part],
@@ -156,10 +173,20 @@ export function PrintGuardPanel() {
                 <span className={`hs-badge hs-badge-${st.cls}`} style={{ marginLeft: 'auto' }}>{st.text}</span>
               </div>
 
-              {detectors.length > 0 && (
+              {hasXcam && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
                   <span className="muted" style={{ fontSize: '0.72rem' }}>{t('v2.guard.ai', 'AI monitors')}:</span>
-                  {detectors.map(([name]) => <span key={name} className="hs-badge hs-badge-good">{name}</span>)}
+                  {detectors.map(([name, field, on]) => (
+                    <button
+                      key={field}
+                      className={`hs-badge hs-badge-${on ? 'good' : 'neutral'}`}
+                      title={on ? t('v2.guard.click_disable', 'Click to disable') : t('v2.guard.click_enable', 'Click to enable')}
+                      style={{ cursor: 'pointer', border: 'none', opacity: on ? 1 : 0.55 }}
+                      onClick={() => toggleXcam(p.id, field, !on)}
+                    >
+                      {on ? '● ' : '○ '}{name}
+                    </button>
+                  ))}
                   {sensitivity && <span className="muted" style={{ fontSize: '0.72rem' }}>· {sensitivity}</span>}
                 </div>
               )}
@@ -216,8 +243,16 @@ export function PrintGuardPanel() {
                   ))
                 )}
                 <button className="btn btn--sm" disabled={busy === `en-${p.id}`} onClick={() => act(`en-${p.id}`, () => api.setGuardEnabled(p.id, !settings.enabled), settings.enabled ? t('v2.guard.disabled', 'Guard disabled') : t('v2.guard.enabled', 'Guard enabled'))}>{settings.enabled ? t('v2.guard.turn_off', 'Turn off') : t('v2.guard.turn_on', 'Turn on')}</button>
+                <button className="btn btn--sm btn--ghost" onClick={() => setGraphFor(graphFor === p.id ? null : p.id)}>{t('v2.guard.graph', 'Sensors')} {graphFor === p.id ? '▴' : '▾'}</button>
                 <button className="btn btn--sm btn--ghost" onClick={() => setExpanded(expanded === p.id ? null : p.id)}>{t('v2.guard.configure', 'Configure')} {expanded === p.id ? '▴' : '▾'}</button>
               </div>
+
+              {graphFor === p.id && (
+                <div style={{ borderTop: '1px solid var(--border, rgba(128,128,128,0.2))', paddingTop: 10, marginTop: 2 }}>
+                  <div className="muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>{t('v2.guard.sensor_history', 'Sensor history (3h)')}</div>
+                  <SensorGraph printerId={p.id} />
+                </div>
+              )}
 
               {expanded === p.id && s && (
                 <div style={{ borderTop: '1px solid var(--border, rgba(128,128,128,0.2))', paddingTop: 10, marginTop: 2 }}>

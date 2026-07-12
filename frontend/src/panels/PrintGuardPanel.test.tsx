@@ -34,5 +34,10 @@ describe('PrintGuardPanel', () => {
     expect(screen.getByText('Incidents (7d)')).toBeInTheDocument();      // reliability
     // The recent spaghetti event counts toward the 7-day reliability.
     expect(screen.getAllByText('Spaghetti Detected').length).toBeGreaterThan(0);
+    // Wall mode + alerts opt-in live in the header.
+    expect(screen.getByText('Wall mode')).toBeInTheDocument();
+    expect(screen.getByText(/Alerts o(n|ff)/)).toBeInTheDocument();
+    // Per-card sensor-history toggle.
+    expect(screen.getByText(/Sensors/)).toBeInTheDocument();
   });
 });

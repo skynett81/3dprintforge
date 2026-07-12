@@ -185,6 +185,17 @@ export interface GuardStatus {
   alerts: ProtectionEvent[];
 }
 
+export interface TelemetryPoint {
+  time_bucket: string;
+  nozzle_temp?: number | null;
+  bed_temp?: number | null;
+  chamber_temp?: number | null;
+  fan_cooling?: number | null;
+  fan_aux?: number | null;
+  fan_chamber?: number | null;
+  print_progress?: number | null;
+}
+
 export interface BackupFile {
   filename: string;
   size: number;
