@@ -2441,6 +2441,14 @@ export function runMigrations() {
       try { db.exec('ALTER TABLE crm_order_items ADD COLUMN product_id INTEGER'); } catch { /* exists */ }
       try { db.exec('ALTER TABLE crm_order_items ADD COLUMN queue_item_id INTEGER'); } catch { /* exists */ }
     }},
+    { version: 163, up: (db) => {
+      // Purchase-order shipment tracking (Fase 3.1): a 'shipped' stage between
+      // placed and received, with carrier + tracking number so a retailer
+      // shipment can be followed and then received.
+      try { db.exec('ALTER TABLE purchase_orders ADD COLUMN carrier TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE purchase_orders ADD COLUMN tracking_number TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE purchase_orders ADD COLUMN shipped_at TEXT'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

@@ -1880,7 +1880,15 @@
     "deleted": "Order deleted",
     "save_failed": "Save failed",
     "confirm_delete": "Delete this purchase order?",
-    "load_failed": "Could not load orders"
+    "load_failed": "Could not load orders",
+    "track": "Track",
+    "mark_shipped": "Mark as shipped",
+    "edit_shipping": "Edit shipping",
+    "carrier": "Carrier",
+    "tracking_number": "Tracking number",
+    "confirm_shipped": "Confirm shipped",
+    "shipped_ok": "Marked as shipped",
+    "status_shipped": "Shipped"
   },
   "suppliers": {
     "title": "Suppliers",

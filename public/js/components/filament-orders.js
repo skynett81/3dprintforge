@@ -15,13 +15,17 @@
   const STATUS = {
     draft: { label: 'Draft', cls: 'po-badge-draft' },
     placed: { label: 'Placed', cls: 'po-badge-placed' },
+    shipped: { label: 'Shipped', cls: 'po-badge-placed' },
     received: { label: 'Received', cls: 'po-badge-received' },
     cancelled: { label: 'Cancelled', cls: 'po-badge-cancelled' },
   };
 
+  const CARRIERS = ['PostNord', 'Posten', 'Bring', 'DHL', 'UPS', 'FedEx', 'GLS', 'USPS'];
+
   let _orders = [];
   let _suppliers = [];
   let _profiles = [];
+  let _shipForm = null; // PO id currently showing the "mark shipped" form
   let _reorder = [];
   let _el = null;
   let _expanded = null;
@@ -170,13 +174,37 @@
       </div>`;
     }
 
+    // Shipment info (carrier + tracking) once the PO is shipped
+    if (o.carrier || o.tracking_number) {
+      h += `<div class="po-ship-info" style="font-size:0.8rem;margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <span>${esc(o.carrier || '')}${o.tracking_number ? ` · <strong>${esc(o.tracking_number)}</strong>` : ''}</span>
+        ${o.tracking_url ? `<a class="form-btn form-btn-sm form-btn-ghost" href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${t('po.track', 'Track')}</a>` : ''}
+      </div>`;
+    }
+
     // Status controls
     h += `<div class="po-status-bar">`;
     if (o.status === 'draft') h += `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="window._poSetStatus(${o.id}, 'placed')">${t('po.mark_placed', 'Mark as placed')}</button>`;
+    if (o.status !== 'received' && o.status !== 'cancelled') h += `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="window._poShipForm(${o.id})">${o.status === 'shipped' ? t('po.edit_shipping', 'Edit shipping') : t('po.mark_shipped', 'Mark as shipped')}</button>`;
     if (o.status !== 'received' && o.status !== 'cancelled') h += `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple style="color:var(--accent-red)" onclick="window._poSetStatus(${o.id}, 'cancelled')">${t('po.cancel_order', 'Cancel order')}</button>`;
     if (o.status === 'cancelled') h += `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="window._poSetStatus(${o.id}, 'draft')">${t('po.reopen', 'Reopen')}</button>`;
     if (o.notes) h += `<span class="proc-notes" style="margin-left:auto">${esc(o.notes)}</span>`;
     h += `</div>`;
+
+    // Inline "mark shipped" form
+    if (_shipForm === o.id) {
+      h += `<div class="po-ship-form" style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)">
+        <label style="font-size:0.72rem">${t('po.carrier', 'Carrier')}<br>
+          <select class="form-input form-input-sm" id="po-ship-carrier-${o.id}" style="min-width:120px">
+            ${CARRIERS.map(c => `<option ${o.carrier && o.carrier.toLowerCase() === c.toLowerCase() ? 'selected' : ''}>${c}</option>`).join('')}
+          </select></label>
+        <label style="font-size:0.72rem;flex:1;min-width:140px">${t('po.tracking_number', 'Tracking number')}<br>
+          <input class="form-input form-input-sm" id="po-ship-track-${o.id}" value="${esc(o.tracking_number || '')}" style="width:100%"></label>
+        <button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="window._poShip(${o.id})">${t('po.confirm_shipped', 'Confirm shipped')}</button>
+        <button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="window._poShipCancel()">${t('settings.cancel', 'Cancel')}</button>
+      </div>`;
+    }
     h += `</div>`;
     return h;
   }
@@ -327,6 +355,19 @@
   window._poSetStatus = async function (id, status) {
     try {
       await _fetchJson(`/api/inventory/purchase-orders/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+      await _reload();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window._poShipForm = function (id) { _shipForm = id; _expanded = id; _reload(); };
+  window._poShipCancel = function () { _shipForm = null; _reload(); };
+  window._poShip = async function (id) {
+    const carrier = document.getElementById(`po-ship-carrier-${id}`)?.value || null;
+    const tracking_number = document.getElementById(`po-ship-track-${id}`)?.value?.trim() || null;
+    try {
+      await _fetchJson(`/api/inventory/purchase-orders/${id}/ship`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ carrier, tracking_number }) });
+      _shipForm = null;
+      toast(t('po.shipped_ok', 'Marked as shipped'), 'success');
       await _reload();
     } catch (e) { toast(e.message, 'error'); }
   };

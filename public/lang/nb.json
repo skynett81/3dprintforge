@@ -3778,5 +3778,15 @@
     "nothing_to_dispatch": "Ingenting å sende",
     "filename": "Printfil (sendes til kø)",
     "open_storefront": "Åpne butikk"
+  },
+  "po": {
+    "track": "Spor",
+    "mark_shipped": "Merk som sendt",
+    "edit_shipping": "Rediger frakt",
+    "carrier": "Transportør",
+    "tracking_number": "Sporingsnummer",
+    "confirm_shipped": "Bekreft sendt",
+    "shipped_ok": "Merket som sendt",
+    "status_shipped": "Sendt"
   }
 }

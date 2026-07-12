@@ -13,7 +13,31 @@ import { createLogger } from '../logger.js';
 
 const log = createLogger('db:purchase-orders');
 
-export const PO_STATUSES = ['draft', 'placed', 'received', 'cancelled'];
+export const PO_STATUSES = ['draft', 'placed', 'shipped', 'received', 'cancelled'];
+
+// Tracking-URL templates for carriers we can deep-link. `{n}` is the
+// URL-encoded tracking number. Unknown carriers get no link.
+const CARRIER_TRACKING = {
+  postnord: 'https://www.postnord.no/en/track-and-trace#shipmentId={n}',
+  posten: 'https://sporing.posten.no/sporing/{n}',
+  bring: 'https://tracking.bring.com/tracking/{n}',
+  dhl: 'https://www.dhl.com/en/express/tracking.html?AWB={n}',
+  ups: 'https://www.ups.com/track?tracknum={n}',
+  fedex: 'https://www.fedex.com/fedextrack/?trknbr={n}',
+  gls: 'https://gls-group.com/track?match={n}',
+  usps: 'https://tools.usps.com/go/TrackConfirmAction?tLabels={n}',
+};
+
+/**
+ * Build a tracking URL for a carrier + number, or null when the carrier is
+ * unknown or the number is missing. Carrier match is case-insensitive.
+ */
+export function trackingUrl(carrier, number) {
+  if (!carrier || !number) return null;
+  const tpl = CARRIER_TRACKING[String(carrier).trim().toLowerCase()];
+  if (!tpl) return null;
+  return tpl.replace('{n}', encodeURIComponent(String(number).trim()));
+}
 
 // ---- Purchase orders ----
 
@@ -34,7 +58,7 @@ export function getPurchaseOrders(filters = {}) {
   const orders = db.prepare(`${PO_SELECT}${where} ORDER BY po.created_at DESC`).all(...params);
   // Attach lines so the UI can render order detail without a second round-trip
   // (PO counts are small for a filament dashboard).
-  for (const po of orders) po.lines = getPurchaseOrderLines(po.id);
+  for (const po of orders) { po.lines = getPurchaseOrderLines(po.id); po.tracking_url = trackingUrl(po.carrier, po.tracking_number); }
   return orders;
 }
 
@@ -43,6 +67,7 @@ export function getPurchaseOrder(id) {
   const po = db.prepare(`${PO_SELECT} WHERE po.id = ?`).get(id);
   if (!po) return null;
   po.lines = getPurchaseOrderLines(id);
+  po.tracking_url = trackingUrl(po.carrier, po.tracking_number);
   return po;
 }
 
@@ -92,6 +117,23 @@ export function updatePurchaseOrder(id, po) {
     m.notes || null,
     id
   );
+  return getPurchaseOrder(id);
+}
+
+/**
+ * Mark a PO as shipped with carrier + tracking number. Valid from any state
+ * except received or cancelled.
+ */
+export function markPurchaseOrderShipped(id, { carrier = null, tracking_number = null } = {}) {
+  const db = getDb();
+  const po = db.prepare('SELECT status FROM purchase_orders WHERE id = ?').get(id);
+  if (!po) throw new Error('Purchase order not found');
+  if (po.status === 'received' || po.status === 'cancelled') {
+    throw new Error(`Cannot ship a ${po.status} purchase order`);
+  }
+  db.prepare(
+    "UPDATE purchase_orders SET status = 'shipped', carrier = ?, tracking_number = ?, shipped_at = ? WHERE id = ?"
+  ).run(carrier || null, tracking_number || null, new Date().toISOString(), id);
   return getPurchaseOrder(id);
 }
 
