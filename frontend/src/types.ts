@@ -244,6 +244,21 @@ export interface Checkout {
   location_name?: string | null;
 }
 
+export interface TigerTagParsed {
+  protocol: string;
+  type?: string | null;
+  variant?: string | null;
+  brand?: string | null;
+  colorHex?: string | null;
+  minTemp?: number | null;
+  maxTemp?: number | null;
+  bedMin?: number | null;
+  bedMax?: number | null;
+  diameter?: string | null;
+  weightG?: number | null;
+  uid?: string | null;
+}
+
 export interface ShopProduct {
   id: number;
   name: string;

@@ -55,6 +55,7 @@
     "mqtt": "^5.15.1",
     "qrcode": "^1.5.4",
     "ssh2": "^1.17.0",
+    "tigertag": "^1.1.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {

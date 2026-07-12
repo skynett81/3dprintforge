@@ -62,6 +62,7 @@ import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroy
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
 import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
 import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
+import { parseTigerTagDump } from './tigertag.js';
 import QRCode from 'qrcode';
 import { ensureQr, resolveCode } from './inventory-qr.js';
 import {
@@ -309,7 +310,7 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/price-history') || path.startsWith('/api/price-alerts') || path.startsWith('/api/build-plates')) return 'filament';
   if (path.startsWith('/api/dryer-models') || path.startsWith('/api/storage-conditions')) return 'filament';
   if (path.startsWith('/api/tags') || path.startsWith('/api/nfc')) return 'filament';
-  if (path.startsWith('/api/openspool')) return 'filament';
+  if (path.startsWith('/api/openspool') || path.startsWith('/api/tigertag')) return 'filament';
   if (path.startsWith('/api/palette')) return 'filament';
   if (path.startsWith('/api/spoolman')) return 'filament';
 
@@ -4351,6 +4352,16 @@ export async function handleApiRequest(req, res) {
       if (!spool) return sendJson(res, { error: 'Not found' }, 404);
       const tag = buildOpenSpoolTag(spool);
       return sendJson(res, { tag, preview_url: openSpoolPreviewUrl(tag) });
+    }
+    // Decode a scanned TigerTag RFID dump, optionally matching it to a spool.
+    if (method === 'POST' && (path === '/api/tigertag/parse' || path === '/api/tigertag/match')) {
+      return readBody(req, res, (body) => {
+        let parsed;
+        try { parsed = parseTigerTagDump(body.dump ?? body); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+        if (path === '/api/tigertag/parse') return sendJson(res, parsed);
+        const result = matchSpoolToTag(parsed, getSpools({}).rows);
+        sendJson(res, { parsed, matched_id: result.matched?.id ?? null, matched: result.matched, candidates: result.candidates });
+      });
     }
     // Match a scanned OpenSpool tag to a spool in inventory.
     if (method === 'POST' && path === '/api/openspool/match') {
