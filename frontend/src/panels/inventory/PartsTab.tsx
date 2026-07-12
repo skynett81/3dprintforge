@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 import { useResource } from '../../hooks';
 import { useT } from '../../i18n';
@@ -9,7 +9,7 @@ import { PartDrawer } from '../../components/PartDrawer';
 const TYPES = ['component', 'tool', 'consumable', 'material', 'product'];
 const UNITS = ['pcs', 'g', 'kg', 'm', 'ml', 'set'];
 
-export function PartsTab() {
+export function PartsTab({ openPartId }: { openPartId?: number | null } = {}) {
   const t = useT();
   const toast = useToast();
   const { data: partsData, reload } = useResource<InvPart[]>(api.listInvParts, 0);
@@ -20,7 +20,8 @@ export function PartsTab() {
   const [q, setQ] = useState('');
   const [catFilter, setCatFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(openPartId ?? null);
+  useEffect(() => { if (openPartId) setOpenId(openPartId); }, [openPartId]);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', ipn: '', category_id: '', type: 'component', unit: 'pcs', min_stock: '' });
   const [newCat, setNewCat] = useState('');

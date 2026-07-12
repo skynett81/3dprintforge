@@ -62,6 +62,8 @@ import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroy
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
 import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
 import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
+import QRCode from 'qrcode';
+import { ensureQr, resolveCode } from './inventory-qr.js';
 import {
   addPartCategory, getPartCategories, updatePartCategory, deletePartCategory,
   addPart, getParts, getPart, updatePart, deletePart,
@@ -4157,6 +4159,35 @@ export async function handleApiRequest(req, res) {
       if (!r) return sendJson(res, { error: 'Not found' }, 404);
       _broadcastInventory('updated', 'stock_item', { id: parseInt(stockMoveMatch[1]) }); sendJson(res, r);
     });
+    // QR labels (Fase 2): assign a code, render the image, resolve a scan.
+    const qrAssignMatch = path.match(/^\/api\/inventory\/(parts|stock-items|locations)\/(\d+)\/qr$/);
+    if (qrAssignMatch && method === 'POST') {
+      const type = { parts: 'part', 'stock-items': 'stock', locations: 'location' }[qrAssignMatch[1]];
+      const r = ensureQr(type, parseInt(qrAssignMatch[2]));
+      return r ? sendJson(res, r) : sendJson(res, { error: 'Not found' }, 404);
+    }
+    const qrImgMatch = path.match(/^\/api\/inventory\/qr\/([A-Za-z0-9]+)(\.svg|\.png)?$/);
+    if (qrImgMatch && method === 'GET') {
+      const code = qrImgMatch[1].toUpperCase();
+      const host = req.headers.host || 'localhost:3443';
+      const target = `https://${host}/qr/${code}`;
+      const png = qrImgMatch[2] === '.png' || url.searchParams.get('format') === 'png';
+      if (png) {
+        QRCode.toBuffer(target, { type: 'png', margin: 1, width: 256 })
+          .then((buf) => { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' }); res.end(buf); })
+          .catch(() => sendJson(res, { error: 'qr failed' }, 500));
+      } else {
+        QRCode.toString(target, { type: 'svg', margin: 1, width: 256 })
+          .then((svg) => { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-cache' }); res.end(svg); })
+          .catch(() => sendJson(res, { error: 'qr failed' }, 500));
+      }
+      return;
+    }
+    const qrResolveMatch = path.match(/^\/api\/inventory\/resolve\/(.+)$/);
+    if (qrResolveMatch && method === 'GET') {
+      const r = resolveCode(decodeURIComponent(qrResolveMatch[1]));
+      return r ? sendJson(res, r) : sendJson(res, { error: 'Not found' }, 404);
+    }
 
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
     if (spoolMatch && method === 'GET') {

@@ -235,6 +235,13 @@ body {
 
 /* Parts drawer — stock entries */
 .stock-entry { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 7px; }
+.part-qr { display: flex; gap: 14px; align-items: center; }
+.part-qr img { background: #fff; border-radius: 8px; padding: 6px; flex: none; }
+
+/* QR scan modal */
+.qr-scan { width: min(420px, 92vw); background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 60px -12px rgba(0,0,0,0.6); }
+.qr-scan-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border-soft); }
+.qr-scan-video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #000; display: block; }
 
 /* OpenSpool tag section in the spool drawer */
 .drawer-openspool { border-top: 1px solid var(--border-soft); padding-top: 12px; }

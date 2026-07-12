@@ -9,6 +9,7 @@ import { useNavBadges } from './nav-badges';
 import { NotificationCenter } from './components/NotificationCenter';
 import { CommandPalette, type CommandItem } from './components/CommandPalette';
 import { initialTheme, applyTheme, type Theme } from './theme';
+import { QrScanModal, QR_SCAN_SUPPORTED } from './components/QrScanModal';
 import type { AppNotification } from './types';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
@@ -152,6 +153,7 @@ export function App() {
 
   const [cmdOpen, setCmdOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [qrScan, setQrScan] = useState(false);
   // Ctrl/Cmd+K toggles the command palette anywhere in the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -291,6 +293,7 @@ export function App() {
     { id: 'act:notify', label: t('v2.cmd.a_notify', 'Open notifications'), group: 'Actions', run: openNotifications, hint: unread > 0 ? String(unread) : undefined },
     { id: 'act:classic', label: t('v2.cmd.a_classic', 'Open Classic UI'), group: 'Actions', run: () => { window.location.href = '/'; } },
     ...(NFC_SUPPORTED ? [{ id: 'act:scan', label: t('v2.cmd.a_scan', 'Scan spool tag (NFC)'), group: 'Actions', run: scanNfc }] : []),
+    ...(QR_SCAN_SUPPORTED ? [{ id: 'act:qrscan', label: t('v2.cmd.a_qrscan', 'Scan QR label (camera)'), group: 'Actions', run: () => setQrScan(true) }] : []),
   ];
 
   return (
@@ -448,6 +451,7 @@ export function App() {
 
       {notifOpen && <NotificationCenter notifications={notifications} onClose={() => setNotifOpen(false)} />}
       <CommandPalette open={cmdOpen} items={cmdItems} onSelect={go} onClose={() => setCmdOpen(false)} search={searchData} recent={recentItems} actions={actionItems} />
+      {qrScan && <QrScanModal onClose={() => setQrScan(false)} />}
     </div>
   );
 }

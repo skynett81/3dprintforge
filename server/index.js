@@ -11,6 +11,7 @@ import { handleSpoolmanApi } from './spoolman-api.js';
 import { WebSocketHub } from './websocket-hub.js';
 import { initDatabase, getPrinters, addPrinter as dbAddPrinter, getSpoolsDryingStatus, getLowStockSpools, getInventorySetting, setInventorySetting, getPushSubscriptions, deletePushSubscriptionById, autoTrashEmptySpools } from './database.js';
 import { startNightlyBackup } from './backup.js';
+import { resolveCode as resolveInventoryCode } from './inventory-qr.js';
 import { handleApiRequest, handleAuthApiRequest, setApiBroadcast, setOnPrinterRemoved, setOnPrinterAdded, setOnPrinterUpdated, setOnDemoPurge, setNotifier, setUpdater, setFirmwareChecker, setHub, setGuard, setQueueManager, setTimelapseService, setEcomLicense, setPrinterManager, setFailureDetector, setDiscovery, setBambuCloud, setMaterialRecommender, setWearPrediction, setErrorPatternAnalyzer, setPluginManager, dispatchWebhooksForEvent } from './api-routes.js';
 import { FirmwareChecker } from './firmware-checker.js';
 import { PluginManager } from './plugin-manager.js';
@@ -401,6 +402,17 @@ function handleRequest(req, res) {
   // never 404s. Kept before the auth gate so it works when signed out.
   if (pathname === '/favicon.ico') {
     res.writeHead(302, { Location: '/assets/favicon.svg' });
+    res.end();
+    return;
+  }
+
+  // Scanned inventory QR labels (/qr/<CODE>) redirect into the /v2 app at the
+  // matching item/location. Kept before the auth gate so a scan just opens.
+  if (pathname.startsWith('/qr/')) {
+    const code = decodeURIComponent(pathname.slice('/qr/'.length));
+    let loc = '/v2/#/inventory';
+    try { const r = resolveInventoryCode(code); if (r) loc = `/v2/${r.hash}`; } catch { /* fall through */ }
+    res.writeHead(302, { Location: loc });
     res.end();
     return;
   }

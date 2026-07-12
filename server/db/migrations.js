@@ -2533,6 +2533,14 @@ export function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_stock_moves_part ON stock_moves(part_id);
       `);
     }},
+    { version: 167, up: (db) => {
+      // Inventory Fase 2: QR codes on parts and locations (stock_items already
+      // has qr_uid from v166) so any item or bin can be labelled and scanned.
+      try { db.exec('ALTER TABLE parts ADD COLUMN qr_uid TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE locations ADD COLUMN qr_uid TEXT'); } catch { /* exists */ }
+      try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_parts_qr ON parts(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
+      try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_qr ON locations(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

@@ -52,6 +52,19 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
     if (!confirm(t('v2.parts.confirm_del_stock', 'Delete this stock entry?'))) return;
     try { await api.deleteStockItem(item.id); refresh(); } catch (e) { toast((e as Error).message, 'error'); }
   }
+  async function genQr() {
+    try { await api.assignPartQr(partId); refresh(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  function printLabel() {
+    const qr = part?.qr_uid;
+    if (!qr || !part) return;
+    const w = window.open('', '_blank', 'width=380,height=420');
+    if (!w) { toast(t('v2.parts.popup_blocked', 'Allow pop-ups to print labels'), 'error'); return; }
+    const esc = (s: string) => s.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] || c));
+    w.document.write(`<!doctype html><html><head><title>${esc(part.name)}</title><style>body{font-family:system-ui,sans-serif;text-align:center;padding:18px;margin:0}img{width:190px;height:190px}.n{font-weight:600;margin-top:10px;font-size:15px}.c{color:#666;font-size:12px;margin-top:2px}</style></head><body><img src="${location.origin}${api.qrImageUrl(qr)}" alt="QR"/><div class="n">${esc(part.name)}</div><div class="c">${esc(qr)}${part.ipn ? ' · ' + esc(part.ipn) : ''}</div><script>window.onload=function(){setTimeout(function(){window.print()},150)}</script></body></html>`);
+    w.document.close();
+  }
   async function removePart() {
     if (!confirm(t('v2.parts.confirm_del', 'Delete this part and all its stock?'))) return;
     try { await api.deleteInvPart(partId); toast(t('v2.parts.deleted', 'Part deleted'), 'success'); onChanged(); onClose(); }
@@ -132,6 +145,22 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
             </ul>
           </div>
         )}
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.parts.qr', 'QR label')}</div>
+          {part?.qr_uid ? (
+            <div className="part-qr">
+              <img src={api.qrImageUrl(part.qr_uid)} alt="QR" width={110} height={110} />
+              <div>
+                <div className="tnum" style={{ fontWeight: 600 }}>{part.qr_uid}</div>
+                <p className="muted micro" style={{ margin: '4px 0 8px' }}>{t('v2.parts.qr_hint', 'Scan to open this part, or set an AMS/bin.')}</p>
+                <button className="btn btn--sm" onClick={printLabel}>{t('v2.parts.print', 'Print label')}</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn--sm" onClick={genQr}>{t('v2.parts.gen_qr', 'Generate QR label')}</button>
+          )}
+        </div>
 
         <div className="drawer-controls" style={{ marginTop: 4 }}>
           <button className="btn btn--danger" onClick={removePart}>{t('v2.parts.delete', 'Delete part')}</button>

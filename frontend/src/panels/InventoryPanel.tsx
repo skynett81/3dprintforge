@@ -49,7 +49,7 @@ export function InventoryPanel({ sub, detail, onNav }: { sub?: string | null; de
       </div>
 
       {tab === 'overview' && <OverviewTab onPickSpool={pickSpool} />}
-      {tab === 'parts' && <PartsTab />}
+      {tab === 'parts' && <PartsTab openPartId={sub === 'parts' && detail ? Number(detail) : null} />}
       {tab === 'stock' && <StockTab />}
       {tab === 'spools' && <SpoolsTab focusId={focusId ?? (sub === 'spools' && detail ? Number(detail) : null)} onFocusConsumed={() => setFocusId(null)} />}
       {tab === 'profiles' && <ProfilesTab />}

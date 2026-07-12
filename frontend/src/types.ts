@@ -106,6 +106,7 @@ export interface InvPart {
   is_active: number;
   filament_profile_id?: number | null;
   shop_product_id?: number | null;
+  qr_uid?: string | null;
   category_name?: string | null;
   total_stock: number;
   stock_item_count?: number;
