@@ -4,13 +4,19 @@ import { I18nProvider } from '../../i18n';
 import type { HistoryRow } from '../../types';
 
 const getHistoryDetail = vi.fn();
-vi.mock('../../api', () => ({ api: { getHistoryDetail: (...a: unknown[]) => getHistoryDetail(...a) } }));
+const getCloudTasks = vi.fn();
+vi.mock('../../api', () => ({
+  api: {
+    getHistoryDetail: (...a: unknown[]) => getHistoryDetail(...a),
+    getCloudTasks: (...a: unknown[]) => getCloudTasks(...a),
+  },
+}));
 
 import { HistoryDetail } from './HistoryDetail';
 
 const row = {
   id: 785,
-  filename: 'Test print',
+  filename: '0.28mm layer, 2 walls, 10% infill',
   status: 'completed',
   printer_id: 'p1',
   started_at: '2026-07-05T15:19:55Z',
@@ -21,7 +27,10 @@ function renderDetail() {
 }
 
 describe('HistoryDetail', () => {
-  beforeEach(() => getHistoryDetail.mockReset());
+  beforeEach(() => {
+    getHistoryDetail.mockReset();
+    getCloudTasks.mockReset().mockResolvedValue([]);
+  });
 
   it('shows the real filament colour used and an actual-colour toggle', async () => {
     getHistoryDetail.mockResolvedValue({
@@ -30,7 +39,6 @@ describe('HistoryDetail', () => {
     });
     renderDetail();
     expect(await screen.findByText('PETG Gray')).toBeInTheDocument();
-    // Single-colour print → the preview offers to recolour to the real colour.
     expect(await screen.findByText('Actual colour')).toBeInTheDocument();
   });
 
@@ -40,8 +48,18 @@ describe('HistoryDetail', () => {
       cost: { filament_cost: 5.96, electricity_cost: 0, depreciation_cost: 0, labor_cost: 0, markup_amount: 0, total_cost: 5.96, currency: 'NOK' },
     });
     renderDetail();
-    // Appears as both the filament line and the total.
     expect((await screen.findAllByText('5.96 NOK')).length).toBeGreaterThan(0);
     expect(screen.getByText('Total')).toBeInTheDocument();
+  });
+
+  it('uses the Bambu cloud design name and colour cover when matched', async () => {
+    getHistoryDetail.mockResolvedValue({ filaments_used: [], cost: null });
+    getCloudTasks.mockResolvedValue([
+      { title: '0.28mm layer, 2 walls, 10% infill', designTitle: 'Smart Watch Charging stand', cover: 'https://cloud/cover.png' },
+    ]);
+    renderDetail();
+    expect(await screen.findByText('Smart Watch Charging stand')).toBeInTheDocument();
+    const img = await screen.findByRole('img');
+    expect(img).toHaveAttribute('src', 'https://cloud/cover.png');
   });
 });

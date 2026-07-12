@@ -582,6 +582,12 @@ export interface AuthStatus {
   user: string | null;
 }
 
+export interface CloudTask {
+  title?: string;
+  designTitle?: string;
+  cover?: string;
+}
+
 export interface PrintCost {
   filament_cost?: number;
   electricity_cost?: number;

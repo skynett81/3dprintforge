@@ -190,4 +190,6 @@ export const api = {
     id: number | string,
   ): Promise<HistoryRow & { filaments_used?: import('./types').FilamentUsed[]; cost?: import('./types').PrintCost | null }> =>
     req(`/api/history/${id}`),
+  getCloudTasks: (): Promise<{ tasks?: import('./types').CloudTask[] } | import('./types').CloudTask[]> =>
+    req('/api/bambu-cloud/tasks'),
 };

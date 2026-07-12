@@ -1,7 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { useT } from '../../i18n';
-import type { HistoryRow, FilamentUsed, PrintCost } from '../../types';
+import type { HistoryRow, FilamentUsed, PrintCost, CloudTask } from '../../types';
+
+// Match a print to a Bambu cloud task (by title/design title) — the source of
+// the real design name and a full-colour cover render. Mirrors the main app.
+function matchCloud(filename: string | undefined, tasks: CloudTask[]): CloudTask | null {
+  if (!filename) return null;
+  const fn = filename.toLowerCase().trim();
+  return tasks.find((t) => {
+    const tt = (t.title || '').toLowerCase().trim();
+    const dt = (t.designTitle || '').toLowerCase().trim();
+    return (tt.length > 3 && (tt === fn || fn.includes(tt) || tt.includes(fn)))
+      || (dt.length > 3 && (dt === fn || fn.includes(dt) || dt.includes(fn)));
+  }) || null;
+}
 
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
@@ -114,6 +127,20 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
     return () => { alive = false; };
   }, [r.id]);
 
+  // Bambu cloud enrichment: real design name + full-colour cover render.
+  const [cloud, setCloud] = useState<CloudTask | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api.getCloudTasks().then((d) => {
+      if (!alive) return;
+      const tasks = Array.isArray(d) ? d : (d.tasks ?? []);
+      setCloud(matchCloud(r.filename, tasks));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [r.filename]);
+  const cloudTitle = cloud?.designTitle && cloud.designTitle !== cloud.title ? cloud.designTitle : null;
+  const coverUrl = cloud?.cover || null;
+
   const headerColor = r.filament_color || filaments[0]?.color_hex || null;
   // Only tint when the print used exactly one colour.
   const distinctColours = Array.from(new Set(filaments.map((f) => norm(f.color_hex)).filter(Boolean)));
@@ -121,7 +148,7 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
 
   const SPEED = ['—', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
   const cleanName = (r.filename || '').replace(/\.(3mf|gcode)$/i, '');
-  const title = r.model_name || cleanName || t('v2.hist.untitled', 'Untitled print');
+  const title = cloudTitle || r.model_name || cleanName || t('v2.hist.untitled', 'Untitled print');
   // Only rows with real data (keeps the panel honest instead of a wall of "—").
   const specs: [string, string][] = ([
     [t('v2.history.printer', 'Printer'), r.printer_id],
@@ -170,7 +197,13 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{r.model_name || t('v2.hist.model', 'Model →')}</a>}
       </div>
 
-      <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
+      {coverUrl ? (
+        <section className="card" style={{ display: 'flex', justifyContent: 'center', padding: 12, marginBottom: 12 }}>
+          <img src={coverUrl} alt={title} loading="lazy" style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 8 }} />
+        </section>
+      ) : (
+        <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
+      )}
 
       {filaments.length > 0 && (
         <section className="card" style={{ marginBottom: 12 }}>
