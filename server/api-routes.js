@@ -62,6 +62,11 @@ import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroy
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
 import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
 import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
+import {
+  addPartCategory, getPartCategories, updatePartCategory, deletePartCategory,
+  addPart, getParts, getPart, updatePart, deletePart,
+  addStockItem, getStockItems, updateStockItem, deleteStockItem, adjustStock, moveStock, getStockMoves,
+} from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
 import { verifySimplyPrintWebhook } from './simplyprint-webhook.js';
@@ -4082,6 +4087,77 @@ export async function handleApiRequest(req, res) {
       const result = getSpools(filters);
       return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
     }
+    // ── Inventory Fase 1: generic parts, categories & physical stock ──
+    if (path === '/api/inventory/part-categories') {
+      if (method === 'GET') return sendJson(res, getPartCategories());
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.name) return sendJson(res, { error: 'name required' }, 400);
+        const r = addPartCategory(b); _broadcastInventory('created', 'part_category', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const partCatMatch = path.match(/^\/api\/inventory\/part-categories\/(\d+)$/);
+    if (partCatMatch) {
+      const id = parseInt(partCatMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updatePartCategory(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'part_category', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deletePartCategory(id); _broadcastInventory('deleted', 'part_category', { id }); return sendJson(res, { ok: true }); }
+    }
+    if (path === '/api/inventory/parts') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('category_id')) f.category_id = parseInt(url.searchParams.get('category_id'));
+        if (url.searchParams.get('type')) f.type = url.searchParams.get('type');
+        if (url.searchParams.get('q')) f.q = url.searchParams.get('q');
+        if (url.searchParams.get('includeInactive') === '1') f.includeInactive = true;
+        return sendJson(res, getParts(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.name) return sendJson(res, { error: 'name required' }, 400);
+        const r = addPart(b); _broadcastInventory('created', 'part', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const partMatch = path.match(/^\/api\/inventory\/parts\/(\d+)$/);
+    if (partMatch) {
+      const id = parseInt(partMatch[1]);
+      if (method === 'GET') { const p = getPart(id); return p ? sendJson(res, p) : sendJson(res, { error: 'Not found' }, 404); }
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updatePart(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'part', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deletePart(id); _broadcastInventory('deleted', 'part', { id }); return sendJson(res, { ok: true }); }
+    }
+    const partStockMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/stock$/);
+    if (partStockMatch && method === 'GET') return sendJson(res, getStockItems({ part_id: parseInt(partStockMatch[1]) }));
+    const partMovesMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/moves$/);
+    if (partMovesMatch && method === 'GET') return sendJson(res, getStockMoves({ part_id: parseInt(partMovesMatch[1]), limit: 100 }));
+    if (path === '/api/inventory/stock-items') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('part_id')) f.part_id = parseInt(url.searchParams.get('part_id'));
+        if (url.searchParams.get('location_id')) f.location_id = parseInt(url.searchParams.get('location_id'));
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        return sendJson(res, getStockItems(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.part_id) return sendJson(res, { error: 'part_id required' }, 400);
+        const r = addStockItem(b); _broadcastInventory('created', 'stock_item', { id: r.id, part_id: b.part_id }); sendJson(res, r, 201);
+      });
+    }
+    const stockMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)$/);
+    if (stockMatch) {
+      const id = parseInt(stockMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateStockItem(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'stock_item', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deleteStockItem(id); _broadcastInventory('deleted', 'stock_item', { id }); return sendJson(res, { ok: true }); }
+    }
+    const stockAdjMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)\/adjust$/);
+    if (stockAdjMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = adjustStock(parseInt(stockAdjMatch[1]), Number(b.delta), b.reason, b.actor);
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'stock_item', { id: r.id }); sendJson(res, r);
+    });
+    const stockMoveMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)\/move$/);
+    if (stockMoveMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = moveStock(parseInt(stockMoveMatch[1]), b.location_id != null ? parseInt(b.location_id) : null, b.actor);
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'stock_item', { id: parseInt(stockMoveMatch[1]) }); sendJson(res, r);
+    });
+
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
     if (spoolMatch && method === 'GET') {
       const spool = getSpool(parseInt(spoolMatch[1]));

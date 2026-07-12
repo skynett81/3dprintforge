@@ -233,6 +233,9 @@ body {
 .cmd-section { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--faint); padding: 10px 12px 4px; }
 .cmd-hint { font-size: 0.66rem; font-weight: 700; color: var(--faint); background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 6px; margin-left: auto; }
 
+/* Parts drawer — stock entries */
+.stock-entry { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 7px; }
+
 /* OpenSpool tag section in the spool drawer */
 .drawer-openspool { border-top: 1px solid var(--border-soft); padding-top: 12px; }
 .openspool-toggle { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; font: inherit; display: inline-flex; align-items: center; gap: 4px; }

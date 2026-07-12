@@ -96,7 +96,8 @@ const NFC_SUPPORTED = typeof window !== 'undefined' && 'NDEFReader' in window;
 type SubItem = { sub: string; label: string };
 const SUBNAV: Partial<Record<PanelId, SubItem[]>> = {
   inventory: [
-    { sub: 'overview', label: 'Overview' }, { sub: 'spools', label: 'Spools' }, { sub: 'profiles', label: 'Profiles' },
+    { sub: 'overview', label: 'Overview' }, { sub: 'parts', label: 'Parts' }, { sub: 'stock', label: 'Stock' },
+    { sub: 'spools', label: 'Spools' }, { sub: 'profiles', label: 'Profiles' },
     { sub: 'locations', label: 'Locations' }, { sub: 'control', label: 'Control' }, { sub: 'activity', label: 'Activity' },
   ],
   purchasing: [{ sub: 'orders', label: 'Orders' }, { sub: 'suppliers', label: 'Suppliers' }, { sub: 'reorder', label: 'Reorder' }],

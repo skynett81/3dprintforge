@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
 import { OverviewTab } from './inventory/OverviewTab';
+import { PartsTab } from './inventory/PartsTab';
+import { StockTab } from './inventory/StockTab';
 import { SpoolsTab } from './inventory/SpoolsTab';
 import { ProfilesTab } from './inventory/ProfilesTab';
 import { LocationsTab } from './inventory/LocationsTab';
 import { ControlTab } from './inventory/ControlTab';
 import { StockActivityTab } from './inventory/ActivityTab';
 
-type Tab = 'overview' | 'spools' | 'profiles' | 'locations' | 'control' | 'activity';
-const TABS: Tab[] = ['overview', 'spools', 'profiles', 'locations', 'control', 'activity'];
+type Tab = 'overview' | 'parts' | 'stock' | 'spools' | 'profiles' | 'locations' | 'control' | 'activity';
+const TABS: Tab[] = ['overview', 'parts', 'stock', 'spools', 'profiles', 'locations', 'control', 'activity'];
 
 export function InventoryPanel({ sub, detail, onNav }: { sub?: string | null; detail?: string | null; onNav?: (slug: string, detail?: string | null) => void } = {}) {
   const t = useT();
@@ -21,6 +23,8 @@ export function InventoryPanel({ sub, detail, onNav }: { sub?: string | null; de
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('v2.inv.tab_overview', 'Overview') },
+    { id: 'parts', label: t('v2.inv.tab_parts', 'Parts') },
+    { id: 'stock', label: t('v2.inv.tab_stock', 'Stock') },
     { id: 'spools', label: t('v2.inv.tab_spools', 'Spools') },
     { id: 'profiles', label: t('v2.inv.tab_profiles', 'Profiles') },
     { id: 'locations', label: t('v2.inv.tab_locations', 'Locations') },
@@ -45,6 +49,8 @@ export function InventoryPanel({ sub, detail, onNav }: { sub?: string | null; de
       </div>
 
       {tab === 'overview' && <OverviewTab onPickSpool={pickSpool} />}
+      {tab === 'parts' && <PartsTab />}
+      {tab === 'stock' && <StockTab />}
       {tab === 'spools' && <SpoolsTab focusId={focusId ?? (sub === 'spools' && detail ? Number(detail) : null)} onFocusConsumed={() => setFocusId(null)} />}
       {tab === 'profiles' && <ProfilesTab />}
       {tab === 'locations' && <LocationsTab detail={detail} onOpen={(id) => onNav?.('locations', id)} onBack={() => onNav?.('locations')} />}

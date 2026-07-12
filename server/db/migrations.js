@@ -2449,6 +2449,90 @@ export function runMigrations() {
       try { db.exec('ALTER TABLE purchase_orders ADD COLUMN tracking_number TEXT'); } catch { /* exists */ }
       try { db.exec('ALTER TABLE purchase_orders ADD COLUMN shipped_at TEXT'); } catch { /* exists */ }
     }},
+    { version: 164, up: (db) => {
+      // Inventory Fase 1: nested part categories. Generic (any item, not just
+      // filament) so the shop + personal inventory share one taxonomy.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS part_categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          parent_id INTEGER REFERENCES part_categories(id) ON DELETE SET NULL,
+          icon TEXT,
+          default_location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          default_unit TEXT DEFAULT 'pcs',
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_part_categories_parent ON part_categories(parent_id);
+      `);
+    }},
+    { version: 165, up: (db) => {
+      // Inventory Fase 1: the Part catalog (InvenTree-style). A part is a
+      // catalog entry (what a thing IS); physical quantity lives in stock_items.
+      // type: component|tool|consumable|material|product. Optional links let a
+      // part represent a filament profile or a shop product without duplication.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS parts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ipn TEXT,
+          name TEXT NOT NULL,
+          description TEXT,
+          category_id INTEGER REFERENCES part_categories(id) ON DELETE SET NULL,
+          type TEXT DEFAULT 'component',
+          unit TEXT DEFAULT 'pcs',
+          min_stock REAL DEFAULT 0,
+          image TEXT,
+          notes TEXT,
+          is_active INTEGER DEFAULT 1,
+          filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+          shop_product_id INTEGER REFERENCES shop_products(id) ON DELETE SET NULL,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_parts_ipn ON parts(ipn) WHERE ipn IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_parts_category ON parts(category_id);
+        CREATE INDEX IF NOT EXISTS idx_parts_active ON parts(is_active);
+      `);
+    }},
+    { version: 166, up: (db) => {
+      // Inventory Fase 1: physical stock at a location + a qty-based move ledger.
+      // Kept separate from the filament-specific stock_transactions (grams).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS stock_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          quantity REAL DEFAULT 0,
+          batch TEXT,
+          serial TEXT,
+          status TEXT DEFAULT 'ok',
+          purchase_price REAL,
+          supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+          po_line_id INTEGER,
+          expiry TEXT,
+          qr_uid TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_stock_items_part ON stock_items(part_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_items_location ON stock_items(location_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_items_qr ON stock_items(qr_uid) WHERE qr_uid IS NOT NULL;
+
+        CREATE TABLE IF NOT EXISTS stock_moves (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          stock_item_id INTEGER REFERENCES stock_items(id) ON DELETE SET NULL,
+          part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL,
+          delta REAL NOT NULL,
+          balance REAL,
+          reason TEXT,
+          ref_type TEXT,
+          ref_id INTEGER,
+          actor TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_stock_moves_item ON stock_moves(stock_item_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_moves_part ON stock_moves(part_id);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

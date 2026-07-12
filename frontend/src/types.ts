@@ -82,6 +82,65 @@ export interface InventoryStats {
   by_vendor: { vendor: string | null; count: number; remaining_g: number; total_cost: number }[];
 }
 
+export interface PartCategory {
+  id: number;
+  name: string;
+  parent_id?: number | null;
+  icon?: string | null;
+  default_location_id?: number | null;
+  default_unit?: string;
+  part_count?: number;
+}
+
+export interface InvPart {
+  id: number;
+  ipn?: string | null;
+  name: string;
+  description?: string | null;
+  category_id?: number | null;
+  type: string;
+  unit: string;
+  min_stock: number;
+  image?: string | null;
+  notes?: string | null;
+  is_active: number;
+  filament_profile_id?: number | null;
+  shop_product_id?: number | null;
+  category_name?: string | null;
+  total_stock: number;
+  stock_item_count?: number;
+  low?: number;
+}
+
+export interface StockItem {
+  id: number;
+  part_id: number;
+  location_id?: number | null;
+  quantity: number;
+  batch?: string | null;
+  serial?: string | null;
+  status: string;
+  purchase_price?: number | null;
+  supplier_id?: number | null;
+  expiry?: string | null;
+  qr_uid?: string | null;
+  part_name?: string;
+  part_unit?: string;
+  part_ipn?: string | null;
+  location_name?: string | null;
+}
+
+export interface StockMove {
+  id: number;
+  stock_item_id?: number | null;
+  part_id?: number | null;
+  delta: number;
+  balance?: number | null;
+  reason?: string | null;
+  ref_type?: string | null;
+  created_at: string;
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;
