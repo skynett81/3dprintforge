@@ -7,15 +7,15 @@ import { matchCloud, cloudTasksOf } from '../../history-name';
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
 
-// Hue + saturation of a hex colour (lightness comes from the thumbnail).
-function hueSat(h: string): [number, number] {
+// Full HSL of a hex colour.
+function toHsl(h: string): [number, number, number] {
   const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
-  if (d === 0) return [0, 0];
+  if (d === 0) return [0, 0, l];
   const s = d / (1 - Math.abs(2 * l - 1));
   let hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
   hue *= 60; if (hue < 0) hue += 360;
-  return [hue, s];
+  return [hue, s, l];
 }
 // HSL -> RGB with lightness supplied per pixel.
 function hslPixel(hue: number, s: number, l: number): [number, number, number] {
@@ -43,10 +43,10 @@ function when(iso?: string | null) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// Slicer/G-code preview. For a single-colour print we recolour it to the real
-// filament colour (luminance-preserving multiply) so it shows what was actually
-// printed, with a toggle back to the original slicer render.
-function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null; alt: string }) {
+// Slicer/G-code preview, recoloured to the real filament colour. The render's
+// shading is kept but the colour's hue/saturation AND overall lightness are
+// applied, so a white filament reads as white (not the grey slicer render).
+function PrintPreview({ id, tintHex, alt, onZoom }: { id: number; tintHex: string | null; alt: string; onZoom?: () => void }) {
   const t = useT();
   const [ok, setOk] = useState(true);
   const [tint, setTint] = useState<boolean>(Boolean(tintHex));
@@ -55,9 +55,7 @@ function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null
 
   useEffect(() => {
     if (!tint || !tintHex) return;
-    // Same-origin: no crossOrigin (setting it would force a CORS request the
-    // server doesn't answer, tainting the canvas and blocking getImageData).
-    const img = new Image();
+    const img = new Image(); // same-origin: no crossOrigin (would taint the canvas)
     img.onload = () => {
       const cv = canvasRef.current; if (!cv) return;
       cv.width = img.naturalWidth; cv.height = img.naturalHeight;
@@ -66,11 +64,11 @@ function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null
       try {
         const d = ctx.getImageData(0, 0, cv.width, cv.height);
         const p = d.data;
-        const [hue, sat] = hueSat(tintHex);
-        // Keep each pixel's lightness (the render's shading) but apply the
-        // filament's hue+saturation. A grey filament (sat 0) stays grey.
+        const [hue, sat, lT] = toHsl(tintHex);
         for (let i = 0; i < p.length; i += 4) {
-          const l = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
+          const lum = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
+          // Base lightness on the target colour, darkened by the render's shading.
+          const l = Math.min(1, Math.max(0, lT - (1 - lum) * 0.45));
           const [nr, ng, nb] = hslPixel(hue, sat, l);
           p[i] = nr; p[i + 1] = ng; p[i + 2] = nb;
         }
@@ -82,17 +80,18 @@ function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null
   }, [id, tintHex, tint, src]);
 
   if (!ok) return null;
+  const imgStyle = { maxWidth: '100%', maxHeight: 340, objectFit: 'contain' as const, borderRadius: 8, cursor: onZoom ? 'zoom-in' : 'default' };
   return (
-    <section className="card" style={{ padding: 12, marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <section className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', margin: 0, padding: 12 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onZoom}>
         {tint && tintHex
-          ? <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 8 }} />
-          : <img src={src} alt={alt} onError={() => setOk(false)} loading="lazy" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8 }} />}
+          ? <canvas ref={canvasRef} style={imgStyle} />
+          : <img src={src} alt={alt} onError={() => setOk(false)} loading="lazy" style={imgStyle} />}
       </div>
       {tintHex && (
         <div className="seg" style={{ justifyContent: 'center', marginTop: 10 }}>
           <button className={`seg-btn${tint ? ' seg-btn--on' : ''}`} onClick={() => setTint(true)}>{t('v2.hist.actual_colour', 'Actual colour')}</button>
-          <button className={`seg-btn${!tint ? ' seg-btn--on' : ''}`} onClick={() => setTint(false)}>{t('v2.hist.original', 'Original')}</button>
+          <button className={`seg-btn${!tint ? ' seg-btn--on' : ''}`} onClick={() => setTint(false)}>{t('v2.hist.original', 'Slicer render')}</button>
         </div>
       )}
     </section>
@@ -127,6 +126,16 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   }, [r.filename]);
   const cloudTitle = cloud?.designTitle && cloud.designTitle !== cloud.title ? cloud.designTitle : null;
   const coverUrl = cloud?.cover || null;
+  const [zoom, setZoom] = useState(false); // lightbox open
+
+  // The Bambu cover is rendered in the *sliced* colour. When the AMS remapped
+  // to a different real filament, the cover shows the wrong colour — fall back
+  // to the recoloured (same-origin) thumbnail so we show what was printed.
+  const colorMismatch = (cloud?.amsDetailMapping ?? []).some(
+    (m) => m.targetColor && (norm(m.sourceColor) || '').slice(0, 6) !== (norm(m.targetColor) || '').slice(0, 6),
+  );
+  const useCover = Boolean(coverUrl) && !colorMismatch;
+  const zoomSrc = coverUrl || `/api/history/${r.id}/thumbnail`;
 
   // The AMS mapping records the colour actually loaded at print time
   // (targetColor) — more accurate than the spool matched from the usage log,
@@ -194,12 +203,13 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
     [t('v2.hist.layers', 'Layers'), r.layer_count != null ? String(r.layer_count) : null],
   ] as [string, string | null][]).filter((x): x is [string, string] => Boolean(x[1]));
 
-  const preview = coverUrl ? (
+  const preview = useCover ? (
     <section className="card" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, margin: 0 }}>
-      <img src={coverUrl} alt={title} loading="lazy" style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 8 }} />
+      <img src={coverUrl!} alt={title} loading="lazy" onClick={() => setZoom(true)}
+        style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 8, cursor: 'zoom-in' }} />
     </section>
   ) : (
-    <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
+    <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} onZoom={() => setZoom(true)} />
   );
 
   const chip = (f: FilamentUsed) => {
@@ -248,6 +258,12 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
           {shownFilaments.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>{shownFilaments.map(chip)}</div>
           )}
+          {r.notes && (
+            <div>
+              <div className="muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>{t('v2.hist.notes', 'Notes')}</div>
+              <p style={{ margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{r.notes}</p>
+            </div>
+          )}
           {heroStats.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(88px,1fr))', gap: 12, marginTop: 'auto' }}>
               {heroStats.map(([k, v]) => (
@@ -276,13 +292,16 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
             </div>
           </section>
         )}
-        {r.notes && (
-          <section className="card" style={{ margin: 0 }}>
-            <div className="card-title">{t('v2.hist.notes', 'Notes')}</div>
-            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>{r.notes}</p>
-          </section>
-        )}
       </div>
+
+      {zoom && (
+        <div
+          onClick={() => setZoom(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24, cursor: 'zoom-out' }}
+        >
+          <img src={zoomSrc} alt={title} style={{ maxWidth: '95%', maxHeight: '95%', objectFit: 'contain', borderRadius: 8 }} />
+        </div>
+      )}
     </div>
   );
 }
