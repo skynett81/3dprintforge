@@ -244,10 +244,16 @@
       }
       body += `</tbody></table>`;
     }
-    const draftBtn = short.some(r => r.cheapest)
+    const hasSourced = short.some(r => r.cheapest);
+    const draftBtn = hasSourced
       ? `<button class="form-btn form-btn-sm form-btn-primary" data-ripple onclick="window._poDraftReorder()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           ${t('po.draft_reorder', 'Draft purchase orders')}</button>`
+      : '';
+    const listBtn = hasSourced
+      ? `<button class="form-btn form-btn-sm form-btn-ghost" data-ripple onclick="event.preventDefault();window._poShoppingList()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          ${t('po.shopping_list', 'Shopping list')}</button>`
       : '';
     return `<details class="ctrl-card ro-card" ${short.length ? 'open' : ''} style="margin-bottom:12px">
       <summary class="ro-summary">
@@ -256,10 +262,12 @@
           ${t('po.reorder_title', 'Reorder needs')}
         </span>
         ${short.length ? `<span class="ro-badge">${short.length} ${t('po.below_target', 'below target')}</span>` : `<span class="ro-badge ro-badge-ok">${t('po.all_ok', 'all stocked')}</span>`}
+        ${listBtn}
         ${draftBtn}
       </summary>
       <p class="text-muted" style="font-size:0.76rem;margin:6px 0 0">${t('po.reorder_help', 'Set a minimum stock per material. Shortfall = target + queued demand − on hand.')}</p>
       ${body}
+      <div id="ro-shopping-list" style="margin-top:10px"></div>
     </details>`;
   }
 
@@ -281,6 +289,41 @@
       if (r.unsourced && r.unsourced.length) toast(t('po.reorder_unsourced', 'No supplier for: ') + r.unsourced.join(', '), 'info');
       await _reload();
     } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window._poShoppingList = async function () {
+    const el = document.getElementById('ro-shopping-list');
+    if (!el) return;
+    const moneyC = (v, c) => `${(Number(v) || 0).toFixed(2)} ${c || ''}`.trim();
+    el.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('common.loading', 'Loading…')}</p>`;
+    try {
+      const list = await _fetchJson('/api/inventory/shopping-list');
+      if (!list.suppliers.length && !list.unsourced.length) {
+        el.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${t('po.shopping_empty', 'Nothing to buy — all materials are at target.')}</p>`;
+        return;
+      }
+      let h = `<div style="font-weight:600;font-size:0.82rem;margin-bottom:6px">${t('po.shopping_list', 'Shopping list')}</div>`;
+      for (const s of list.suppliers) {
+        h += `<div class="ctrl-card" style="padding:8px 10px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <strong>${esc(s.supplier_name || t('suppliers.supplier', 'Supplier'))}</strong>
+            <span style="margin-left:auto;font-weight:700">${moneyC(s.subtotal, s.currency)}</span>
+          </div>
+          <table class="data-table" style="width:100%;font-size:0.8rem"><tbody>${s.lines.map(l => `<tr>
+            <td><strong>${esc(l.material)}</strong>${l.sku ? ` <span class="text-muted">${esc(l.sku)}</span>` : ''}</td>
+            <td style="text-align:center">${l.qty}×</td>
+            <td style="text-align:right">${moneyC(l.line_cost, s.currency)}</td>
+            <td style="text-align:right">${l.product_url ? `<a class="form-btn form-btn-sm form-btn-ghost" href="${esc(l.product_url)}" target="_blank" rel="noopener">${t('po.buy', 'Buy')}</a>` : ''}</td>
+          </tr>`).join('')}</tbody></table>
+        </div>`;
+      }
+      const totals = Object.entries(list.totals_by_currency || {}).map(([c, v]) => moneyC(v, c)).join('  +  ');
+      if (totals) h += `<div style="text-align:right;font-weight:700;margin-top:2px">${t('po.total', 'Total')}: ${totals}</div>`;
+      if (list.unsourced && list.unsourced.length) {
+        h += `<p class="text-muted" style="font-size:0.76rem;margin-top:6px">${t('po.unsourced', 'No supplier for')}: ${list.unsourced.map(u => esc(u.material)).join(', ')}</p>`;
+      }
+      el.innerHTML = h;
+    } catch (e) { el.innerHTML = `<p class="text-muted" style="font-size:0.8rem">${esc(e.message)}</p>`; }
   };
 
   function _kpi(icon, value, label, sub, color) {

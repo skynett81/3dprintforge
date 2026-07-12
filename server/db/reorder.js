@@ -6,11 +6,13 @@
 
 import { getDb } from './connection.js';
 import { addPurchaseOrder } from './purchase-orders.js';
+import { getSupplierPart } from './suppliers.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('db:reorder');
 
 const DEFAULT_SPOOL_G = 1000;
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 function _base(material) {
   const m = String(material || '').toUpperCase();
@@ -145,6 +147,52 @@ export function getReorderReport() {
   // Shortfalls first (largest), then the rest alphabetically.
   report.sort((a, b) => (b.shortfall_g - a.shortfall_g) || a.material.localeCompare(b.material));
   return report;
+}
+
+// Consolidated cross-supplier shopping list: take the below-target shortfalls,
+// pick the cheapest supplier part per material, and group them into a per-shop
+// basket with buy links, suggested quantity, line cost and subtotals. A
+// read-only companion to draftReorderPurchaseOrders (which actually creates POs).
+export function getShoppingList() {
+  const bySupplier = new Map();
+  const unsourced = [];
+  let itemCount = 0;
+
+  for (const r of getReorderReport()) {
+    if (!r.below_target) continue;
+    if (!r.cheapest) { unsourced.push({ material: r.material, shortfall_g: r.shortfall_g }); continue; }
+
+    const c = r.cheapest;
+    const part = getSupplierPart(c.supplier_part_id) || {};
+    const qty = r.suggested_spools || 0;
+    const price = c.price != null ? c.price : (part.price != null ? part.price : 0);
+    const lineCost = round2(price * qty);
+    const currency = part.currency || 'USD';
+
+    let g = bySupplier.get(c.supplier_id);
+    if (!g) {
+      g = { supplier_id: c.supplier_id, supplier_name: c.supplier_name || part.supplier_name || null, currency, lines: [], subtotal: 0 };
+      bySupplier.set(c.supplier_id, g);
+    }
+    g.lines.push({
+      material: r.material,
+      supplier_part_id: c.supplier_part_id,
+      sku: part.sku || null,
+      product_url: part.product_url || null,
+      price,
+      weight_g: c.weight_g,
+      qty,
+      line_cost: lineCost,
+    });
+    g.subtotal = round2(g.subtotal + lineCost);
+    itemCount++;
+  }
+
+  const suppliers = [...bySupplier.values()];
+  const totals_by_currency = {};
+  for (const s of suppliers) totals_by_currency[s.currency] = round2((totals_by_currency[s.currency] || 0) + s.subtotal);
+
+  return { suppliers, unsourced, totals_by_currency, item_count: itemCount };
 }
 
 // Draft purchase orders from the shortfall list. Materials that have a cheapest

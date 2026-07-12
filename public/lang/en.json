@@ -1888,7 +1888,10 @@
     "tracking_number": "Tracking number",
     "confirm_shipped": "Confirm shipped",
     "shipped_ok": "Marked as shipped",
-    "status_shipped": "Shipped"
+    "status_shipped": "Shipped",
+    "shopping_list": "Shopping list",
+    "shopping_empty": "Nothing to buy — all materials are at target.",
+    "unsourced": "No supplier for"
   },
   "suppliers": {
     "title": "Suppliers",

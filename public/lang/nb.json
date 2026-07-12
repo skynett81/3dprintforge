@@ -3787,6 +3787,10 @@
     "tracking_number": "Sporingsnummer",
     "confirm_shipped": "Bekreft sendt",
     "shipped_ok": "Merket som sendt",
-    "status_shipped": "Sendt"
+    "status_shipped": "Sendt",
+    "shopping_list": "Handleliste",
+    "shopping_empty": "Ingenting å kjøpe — alle materialer er på mål.",
+    "total": "Total",
+    "unsourced": "Ingen leverandør for"
   }
 }
