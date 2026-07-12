@@ -198,6 +198,14 @@ body {
 .cmd-section { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--faint); padding: 10px 12px 4px; }
 .cmd-hint { font-size: 0.66rem; font-weight: 700; color: var(--faint); background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 6px; margin-left: auto; }
 
+/* OpenSpool tag section in the spool drawer */
+.drawer-openspool { border-top: 1px solid var(--border-soft); padding-top: 12px; }
+.openspool-toggle { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; font: inherit; display: inline-flex; align-items: center; gap: 4px; }
+.openspool-toggle:hover { color: var(--text); }
+.openspool-body { margin-top: 8px; }
+.openspool-json { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem; line-height: 1.5; overflow-x: auto; margin: 0 0 8px; color: var(--text); }
+.openspool-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
 /* Theme toggle */
 .theme-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 10px;
