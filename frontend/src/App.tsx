@@ -106,13 +106,11 @@ const SUBNAV: Partial<Record<PanelId, SubItem[]>> = {
   maintenance: [{ sub: 'components', label: 'Components' }, { sub: 'nozzles', label: 'Nozzles' }, { sub: 'costs', label: 'Costs' }, { sub: 'history', label: 'History' }],
   waste: [{ sub: 'overview', label: 'Overview' }, { sub: 'events', label: 'Events' }],
 };
-function loadExpandedSub(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem('v2.nav.subopen') || '[]')); } catch { return new Set(); }
-}
 
-function loadCollapsed(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
-}
+// panel id → its group label, for auto-opening the active group (accordion).
+const PANEL_GROUP: Record<string, string> = {};
+NAV_GROUPS.forEach((g) => { if (g.label) g.items.forEach((n) => { PANEL_GROUP[n.id] = g.label!; }); });
+const FIRST_GROUP = NAV_GROUPS.find((g) => g.label)?.label ?? null;
 function loadRecent(): string[] {
   try { const r = JSON.parse(localStorage.getItem('v2.nav.recent') || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : []; } catch { return []; }
 }
@@ -137,18 +135,15 @@ export function App() {
   const setPanel = (id: PanelId) => { window.location.hash = buildHash(id); };
   const navigateInv = (sub: string, detail?: string | null) => { window.location.hash = buildHash('inventory', sub, detail); };
   const navigatePur = (sub: string, detail?: string | null) => { window.location.hash = buildHash('purchasing', sub, detail); };
-  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
+  // Accordion: only one top-level group is open at a time to keep the menu
+  // short (no scrolling). The active panel's group opens automatically.
+  const [openGroup, setOpenGroup] = useState<string | null>(() => PANEL_GROUP[parseHash(window.location.hash).panel] ?? FIRST_GROUP);
   const [rail, setRail] = useState<boolean>(loadRail);
   const auth = useAuth();
   const { badges, health } = useNavBadges();
 
   function toggleGroup(label: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label); else next.add(label);
-      try { localStorage.setItem('v2.nav.collapsed', JSON.stringify([...next])); } catch { /* ignore */ }
-      return next;
-    });
+    setOpenGroup((prev) => (prev === label ? null : label));
   }
   function toggleRail() {
     setRail((prev) => { const next = !prev; try { localStorage.setItem('v2.nav.rail', next ? '1' : '0'); } catch { /* ignore */ } return next; });
@@ -166,6 +161,8 @@ export function App() {
   }, []);
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setDrawer(false); }, [route.panel]);
+  // Accordion: opening the active panel's group when you navigate to it.
+  useEffect(() => { const g = PANEL_GROUP[route.panel]; if (g) setOpenGroup(g); }, [route.panel]);
   // Track recently visited panels (most-recent first) for the palette.
   const [recent, setRecent] = useState<string[]>(loadRecent);
   useEffect(() => {
@@ -176,20 +173,10 @@ export function App() {
     });
   }, [route.panel]);
 
-  // Expandable sub-navigation (tree) for panels with in-page sub-sections.
-  const [expandedSub, setExpandedSub] = useState<Set<string>>(loadExpandedSub);
-  useEffect(() => {
-    if (!SUBNAV[route.panel as PanelId]) return;
-    setExpandedSub((prev) => (prev.has(route.panel) ? prev : new Set(prev).add(route.panel)));
-  }, [route.panel]);
-  function toggleSub(id: string) {
-    setExpandedSub((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem('v2.nav.subopen', JSON.stringify([...next])); } catch { /* ignore */ }
-      return next;
-    });
-  }
+  // Expandable sub-navigation (accordion): one panel's sub-tree open at a time.
+  const [openSub, setOpenSub] = useState<string | null>(() => (SUBNAV[parseHash(window.location.hash).panel as PanelId] ? parseHash(window.location.hash).panel : null));
+  useEffect(() => { if (SUBNAV[route.panel as PanelId]) setOpenSub(route.panel); }, [route.panel]);
+  function toggleSub(id: string) { setOpenSub((prev) => (prev === id ? null : id)); }
 
   // Pinned panels (user favourites) shown in a group at the top of the sidebar.
   const [pinned, setPinned] = useState<string[]>(loadPinned);
@@ -333,7 +320,8 @@ export function App() {
         </button>
         <nav className="nav">
           {navGroups.map((g, gi) => {
-            const isCollapsed = g.label ? collapsed.has(g.label) : false;
+            // Accordion: Pinned stays open; other groups open one at a time.
+            const isCollapsed = g.label && g.label !== 'Pinned' ? openGroup !== g.label : false;
             const hasActive = g.items.some((n) => n.id === panel);
             // In rail mode groups always show their icons (labels/headers hide via CSS).
             const showItems = rail || !isCollapsed;
@@ -350,7 +338,7 @@ export function App() {
                   const b = badges[n.id];
                   const isPinned = pinned.includes(n.id);
                   const subs = SUBNAV[n.id as PanelId];
-                  const subOpen = !!subs && expandedSub.has(n.id);
+                  const subOpen = !!subs && openSub === n.id;
                   const activeSub = panel === n.id ? (route.sub || subs?.[0]?.sub) : null;
                   return (
                     <Fragment key={n.id}>

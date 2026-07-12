@@ -64,7 +64,7 @@ body {
 .sidebar {
   border-right: 1px solid var(--border);
   background: var(--sidebar-bg);
-  padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
+  padding: 18px 14px; display: flex; flex-direction: column; gap: 16px;
   position: sticky; top: 0; height: 100vh;
 }
 .sidebar .brand { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
@@ -91,7 +91,8 @@ body {
 .notif-msg { font-size: 0.82rem; margin-top: 3px; }
 .notif-foot { font-size: 0.7rem; margin-top: 6px; text-transform: capitalize; }
 
-.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }
 .nav-group + .nav-group { margin-top: 12px; }
 .nav-section {
@@ -107,7 +108,7 @@ body {
 .nav-item {
   display: flex; align-items: center; gap: 11px;
   background: none; border: none; color: var(--muted); font: inherit;
-  padding: 10px 12px; border-radius: 9px; cursor: pointer; text-align: left; transition: all 0.14s;
+  padding: 8px 12px; border-radius: 9px; cursor: pointer; text-align: left; transition: all 0.14s;
 }
 .nav-item:hover { background: var(--bg-2); color: var(--text); }
 .nav-item--active { background: rgba(0,179,164,0.12); color: var(--accent); font-weight: 600; }
@@ -140,7 +141,7 @@ body {
 }
 .nav-subitem {
   text-align: left; background: none; border: none; color: var(--muted); font: inherit; font-size: 0.82rem;
-  padding: 6px 10px; border-radius: 7px; cursor: pointer;
+  padding: 5px 10px; border-radius: 7px; cursor: pointer;
 }
 .nav-subitem:hover { background: var(--bg-2); color: var(--text); }
 .nav-subitem--active { color: var(--accent); font-weight: 600; }
