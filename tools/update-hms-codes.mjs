@@ -1,37 +1,49 @@
 #!/usr/bin/env node
-// Update server/hms-codes-full.json from the ha-bambulab error/HMS text table.
+// Update server/hms-codes-full.json directly from Bambu Lab's own error text
+// service (no third-party aggregator).
 //
-// Source: https://github.com/greghesp/ha-bambulab
-//   custom_components/bambu_lab/pybambu/hms_error_text/hms_en.json.gz
-// which aggregates Bambu Lab's own device_error (print errors) + device_hms
-// text. The data is Bambu's factual error strings; ha-bambulab is the
-// aggregator. Re-run this to refresh the table.
+// Origin: https://e.bambulab.com/query.php?lang=en&d=<serial_prefix>
+// returns { result: 0, data: { device_error: {...}, device_hms: {...} } } for
+// one printer family. The table is split per device, so we fetch every family
+// and merge. Device serial prefixes are Bambu's own (see Bambu Studio /
+// e.bambulab). Re-run to refresh.
 //
-// Output: { "<HEXCODE>": "<description>" } — HEXCODE is uppercase with no
-// separators (8 hex = print error, 16 hex = HMS), matched by lookupHmsCode.
+// Output: { "<HEXCODE>": "<description>" } — HEXCODE uppercase, no separators
+// (8 hex = print error, 16 hex = HMS), matched by lookupHmsCode.
 
 import { writeFileSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const SRC = 'https://raw.githubusercontent.com/greghesp/ha-bambulab/main/custom_components/bambu_lab/pybambu/hms_error_text/hms_en.json.gz';
-
-const res = await fetch(SRC);
-if (!res.ok) { console.error('Download failed:', res.status); process.exit(1); }
-const data = JSON.parse(gunzipSync(Buffer.from(await res.arrayBuffer())).toString('utf8'));
+const DEVICE_PREFIXES = ['00M', '03W', '039', '030', '01S', '01P', '22E', '093', '094'];
+const LANG = 'en';
 
 const out = {};
-const take = (dict) => {
-  for (const [code, entry] of Object.entries(dict || {})) {
-    let desc = null;
-    if (entry && typeof entry === 'object') desc = Object.keys(entry)[0] || null;
-    else if (typeof entry === 'string') desc = entry;
-    if (desc) out[String(code).toUpperCase()] = desc;
+// Bambu returns { device_error: { en: [{ ecode, intro }] }, device_hms: {...} }.
+const take = (section) => {
+  const arr = (section && section.en) || [];
+  for (const item of arr) {
+    const code = String(item?.ecode || '').toUpperCase();
+    if (!/^[0-9A-F]{8,16}$/.test(code)) continue; // 8 hex = print error, 16 = HMS
+    const desc = item?.intro || item?.desc || null;
+    if (desc && !out[code]) out[code] = desc;
   }
 };
-take(data.device_error);
-take(data.device_hms);
+
+for (const d of DEVICE_PREFIXES) {
+  try {
+    const res = await fetch(`https://e.bambulab.com/query.php?lang=${LANG}&d=${d}`);
+    if (!res.ok) { console.warn(`  ${d}: HTTP ${res.status}, skipping`); continue; }
+    const json = await res.json();
+    if (json.result !== 0 || typeof json.data !== 'object') { console.warn(`  ${d}: no data`); continue; }
+    const before = Object.keys(out).length;
+    take(json.data.device_error);
+    take(json.data.device_hms);
+    console.log(`  ${d}: +${Object.keys(out).length - before} codes`);
+  } catch (e) {
+    console.warn(`  ${d}: ${e.message}`);
+  }
+}
 
 const outPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'server', 'hms-codes-full.json');
 writeFileSync(outPath, JSON.stringify(out));
