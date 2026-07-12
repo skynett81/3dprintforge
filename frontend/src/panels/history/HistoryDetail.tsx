@@ -2,19 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { useT } from '../../i18n';
 import type { HistoryRow, FilamentUsed, PrintCost, CloudTask } from '../../types';
-
-// Match a print to a Bambu cloud task (by title/design title) — the source of
-// the real design name and a full-colour cover render. Mirrors the main app.
-function matchCloud(filename: string | undefined, tasks: CloudTask[]): CloudTask | null {
-  if (!filename) return null;
-  const fn = filename.toLowerCase().trim();
-  return tasks.find((t) => {
-    const tt = (t.title || '').toLowerCase().trim();
-    const dt = (t.designTitle || '').toLowerCase().trim();
-    return (tt.length > 3 && (tt === fn || fn.includes(tt) || tt.includes(fn)))
-      || (dt.length > 3 && (dt === fn || fn.includes(dt) || dt.includes(fn)));
-  }) || null;
-}
+import { matchCloud, cloudTasksOf } from '../../history-name';
 
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
@@ -133,8 +121,7 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
     let alive = true;
     api.getCloudTasks().then((d) => {
       if (!alive) return;
-      const tasks = Array.isArray(d) ? d : (d.tasks ?? []);
-      setCloud(matchCloud(r.filename, tasks));
+      setCloud(matchCloud(r.filename, cloudTasksOf(d)));
     }).catch(() => {});
     return () => { alive = false; };
   }, [r.filename]);

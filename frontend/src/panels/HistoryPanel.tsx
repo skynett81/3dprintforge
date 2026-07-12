@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { filterHistory, type StatusFilter } from '../history-filter';
+import { displayName, cloudTasksOf } from '../history-name';
 import { HistoryDetail } from './history/HistoryDetail';
 import type { HistoryRow } from '../types';
 
@@ -28,10 +29,12 @@ interface Props { selected?: string | null; onSelect?: (id: string) => void; onB
 export function HistoryPanel({ selected, onSelect, onBack }: Props = {}) {
   const t = useT();
   const { data, error, loading } = useResource<HistoryRow[]>(api.listHistory, 10000);
+  const { data: cloudData } = useResource(api.getCloudTasks, 60_000);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [printer, setPrinter] = useState('all');
 
   const all = data ?? [];
+  const cloudTasks = cloudTasksOf(cloudData);
 
   const detail = selected ? all.find((r) => String(r.id) === selected) : null;
   // NOTE: all hooks must run on every render (Rules of Hooks). Keep these
@@ -89,7 +92,7 @@ export function HistoryPanel({ selected, onSelect, onBack }: Props = {}) {
           <div className="hist-row hist-row--btn" key={r.id} role="button" tabIndex={0} onClick={() => onSelect?.(String(r.id))}>
             <span className="hist-file">
               {r.filament_color && <span className="swatch swatch--sm" style={{ background: `#${String(r.filament_color).replace(/^#/, '')}` }} />}
-              <span className="ellipsis" title={r.filename}>{r.filename}</span>
+              <span className="ellipsis" title={r.filename}>{displayName(r, cloudTasks)}</span>
             </span>
             <span className="muted">{r.printer_id}</span>
             <span><span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span></span>

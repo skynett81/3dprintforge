@@ -9,7 +9,10 @@ vi.mock('./history/HistoryDetail', () => ({
 vi.mock('../api', () => ({
   api: {
     listHistory: () => Promise.resolve([
-      { id: 792, filename: 'Test print', status: 'completed', printer_id: 'p1', started_at: '2026-07-12T10:00:00Z' },
+      { id: 792, filename: '0.2mm layer, 2 walls', status: 'completed', printer_id: 'p1', started_at: '2026-07-12T10:00:00Z' },
+    ]),
+    getCloudTasks: () => Promise.resolve([
+      { title: '0.2mm layer, 2 walls', designTitle: 'Phone Stand' },
     ]),
   },
 }));
@@ -26,5 +29,12 @@ describe('HistoryPanel', () => {
       <I18nProvider lang="en"><HistoryPanel selected="792" /></I18nProvider>,
     );
     expect(await screen.findByText('DETAIL VIEW')).toBeInTheDocument();
+  });
+
+  it('lists prints by their real design name, not the profile-string filename', async () => {
+    render(<I18nProvider lang="en"><HistoryPanel /></I18nProvider>);
+    // Filename is "0.2mm layer, 2 walls" but the cloud task design title wins.
+    expect(await screen.findByText('Phone Stand')).toBeInTheDocument();
+    expect(screen.queryByText('0.2mm layer, 2 walls')).toBeNull();
   });
 });
