@@ -2635,6 +2635,14 @@ export function runMigrations() {
       // sale deducts real inventory stock and margin can use the BOM cost.
       try { db.exec('ALTER TABLE shop_products ADD COLUMN part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL'); } catch { /* exists */ }
     }},
+    { version: 173, up: (db) => {
+      // Model library ↔ inventory (Manyfold-inspired): link a product part to
+      // its printable file, and enrich library files with provenance metadata.
+      try { db.exec('ALTER TABLE parts ADD COLUMN model_file_id INTEGER REFERENCES file_library(id) ON DELETE SET NULL'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN source_url TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN license TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN designer TEXT'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

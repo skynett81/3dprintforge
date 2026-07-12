@@ -219,6 +219,7 @@ export const api = {
   deleteHardware: (id: number) => req<{ ok: boolean }>(`/api/hardware/${id}`, { method: 'DELETE' }),
   listLibrary: (): Promise<import('./types').LibraryFile[]> => req('/api/library'),
   deleteLibrary: (id: number) => req<{ ok: boolean }>(`/api/library/${id}`, { method: 'DELETE' }),
+  updateLibrary: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/library/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   listKbPrinters: (): Promise<import('./types').KbPrinter[]> => req('/api/kb/printers'),
   addKbPrinter: (body: Record<string, unknown>) => req<{ id: number }>('/api/kb/printers', { method: 'POST', body: JSON.stringify(body) }),
   updateKbPrinter: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/kb/printers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

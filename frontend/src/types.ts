@@ -107,6 +107,9 @@ export interface InvPart {
   filament_profile_id?: number | null;
   shop_product_id?: number | null;
   qr_uid?: string | null;
+  model_file_id?: number | null;
+  model_name?: string | null;
+  model_file_type?: string | null;
   category_name?: string | null;
   total_stock: number;
   stock_item_count?: number;
@@ -452,6 +455,12 @@ export interface LibraryFile {
   last_printed?: string | null;
   estimated_filament_g?: number | null;
   added_at: string;
+  tags?: string | null;
+  notes?: string | null;
+  source_url?: string | null;
+  license?: string | null;
+  designer?: string | null;
+  used_by?: number;
 }
 
 export interface KbPrinter {

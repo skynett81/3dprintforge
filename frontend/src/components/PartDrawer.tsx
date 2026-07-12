@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment, ShopProduct } from '../types';
+import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment, ShopProduct, LibraryFile } from '../types';
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -47,17 +47,24 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
   const [warranties, setWarranties] = useState<Warranty[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [shopProducts, setShopProducts] = useState<ShopProduct[]>([]);
+  const [libFiles, setLibFiles] = useState<LibraryFile[]>([]);
+  const [modelSel, setModelSel] = useState('');
   const [wForm, setWForm] = useState({ provider: '', end_date: '' });
   const [aForm, setAForm] = useState({ title: '', url: '', kind: 'manual' });
   const [linkSel, setLinkSel] = useState('');
   useEffect(() => {
     let alive = true;
     const eid = String(partId);
-    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid), api.listShopProducts().catch(() => [])])
-      .then(([w, a, sp]) => { if (alive) { setWarranties(w); setAttachments(a); setShopProducts(sp); } })
+    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid), api.listShopProducts().catch(() => []), api.listLibrary().catch(() => [])])
+      .then(([w, a, sp, lf]) => { if (alive) { setWarranties(w); setAttachments(a); setShopProducts(sp); setLibFiles(lf); } })
       .catch(() => {});
     return () => { alive = false; };
   }, [partId, tick]);
+
+  async function linkModel(fid: number | null) {
+    try { await api.updateInvPart(partId, { model_file_id: fid }); setModelSel(''); refresh(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   const linkedProduct = shopProducts.find((p) => p.part_id === partId) || null;
   async function linkProduct(pid: number) {
@@ -209,6 +216,25 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
             <input className="input" type="number" value={bl.waste} onChange={(e) => setBl({ ...bl, waste: e.target.value })} title={t('v2.bom.waste', 'Waste %')} style={{ maxWidth: 64 }} />
             <button className="btn btn--sm" onClick={addBomLine}>{t('v2.bom.add', 'Add')}</button>
           </div>
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.model.title', 'Printable file')}</div>
+          {part?.model_file_id ? (
+            <div className="err-row" style={{ gridTemplateColumns: 'auto 1.4fr auto', padding: '6px 0' }}>
+              <span className="hs-badge hs-badge-neutral">{part.model_file_type || 'file'}</span>
+              <a className="err-msg" href={`#/library/${part.model_file_id}`} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{part.model_name || `#${part.model_file_id}`}</a>
+              <button className="btn btn--sm btn--ghost" onClick={() => linkModel(null)}>{t('v2.model.unlink', 'Unlink')}</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+              <select className="input" value={modelSel} onChange={(e) => setModelSel(e.target.value)} style={{ flex: '1 1 150px', minWidth: 0 }}>
+                <option value="">{t('v2.model.pick', 'Link a printable file…')}</option>
+                {libFiles.map((f) => <option key={f.id} value={f.id}>{f.original_name} ({f.file_type})</option>)}
+              </select>
+              <button className="btn btn--sm" disabled={!modelSel} onClick={() => linkModel(Number(modelSel))}>{t('v2.model.link', 'Link')}</button>
+            </div>
+          )}
         </div>
 
         {moves.length > 0 && (

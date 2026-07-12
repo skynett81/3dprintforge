@@ -46,10 +46,12 @@ export function deletePartCategory(id) {
 // Shared SELECT: catalog columns + category name + rolled-up physical stock.
 const PART_SELECT = `
   SELECT p.*, pc.name AS category_name,
+    fl.original_name AS model_name, fl.file_type AS model_file_type,
     COALESCE((SELECT SUM(si.quantity) FROM stock_items si WHERE si.part_id = p.id), 0) AS total_stock,
     (SELECT COUNT(*) FROM stock_items si WHERE si.part_id = p.id) AS stock_item_count
   FROM parts p
-  LEFT JOIN part_categories pc ON pc.id = p.category_id`;
+  LEFT JOIN part_categories pc ON pc.id = p.category_id
+  LEFT JOIN file_library fl ON fl.id = p.model_file_id`;
 
 function withLow(row) {
   if (!row) return row;
@@ -72,18 +74,22 @@ export function getPart(id) {
 
 export function addPart(p) {
   const r = getDb().prepare(`
-    INSERT INTO parts (ipn, name, description, category_id, type, unit, min_stock, cost, image, notes, is_active, filament_profile_id, shop_product_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    INSERT INTO parts (ipn, name, description, category_id, type, unit, min_stock, cost, image, notes, is_active, filament_profile_id, shop_product_id, model_file_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     p.ipn ?? null, p.name, p.description ?? null, p.category_id ?? null,
     p.type ?? 'component', p.unit ?? 'pcs', p.min_stock ?? 0, p.cost ?? null, p.image ?? null, p.notes ?? null,
     p.is_active === undefined ? 1 : (p.is_active ? 1 : 0),
-    p.filament_profile_id ?? null, p.shop_product_id ?? null,
+    p.filament_profile_id ?? null, p.shop_product_id ?? null, p.model_file_id ?? null,
   );
   return { id: Number(r.lastInsertRowid) };
 }
 
-const PART_FIELDS = ['ipn', 'name', 'description', 'category_id', 'type', 'unit', 'min_stock', 'cost', 'image', 'notes', 'is_active', 'filament_profile_id', 'shop_product_id'];
+const PART_FIELDS = ['ipn', 'name', 'description', 'category_id', 'type', 'unit', 'min_stock', 'cost', 'image', 'notes', 'is_active', 'filament_profile_id', 'shop_product_id', 'model_file_id'];
+
+export function getPartsUsingFile(fileId) {
+  return getDb().prepare('SELECT id, name FROM parts WHERE model_file_id = ?').all(fileId);
+}
 
 export function updatePart(id, p) {
   const cur = getDb().prepare('SELECT * FROM parts WHERE id = ?').get(id);

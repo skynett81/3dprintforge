@@ -221,7 +221,7 @@ export function deleteScheduledPrint(id) {
 
 export function getFileLibrary(opts = {}) {
   const db = getDb();
-  let sql = 'SELECT * FROM file_library WHERE 1=1';
+  let sql = 'SELECT *, (SELECT COUNT(*) FROM parts p WHERE p.model_file_id = file_library.id) AS used_by FROM file_library WHERE 1=1';
   const params = [];
   if (opts.category) { sql += ' AND category = ?'; params.push(opts.category); }
   if (opts.file_type) { sql += ' AND file_type = ?'; params.push(opts.file_type); }
@@ -253,7 +253,7 @@ export function updateFileLibraryItem(id, item) {
   const db = getDb();
   const fields = [];
   const vals = [];
-  for (const key of ['original_name', 'category', 'tags', 'notes', 'estimated_time_s', 'estimated_filament_g', 'filament_type', 'print_count', 'last_printed', 'thumbnail_path']) {
+  for (const key of ['original_name', 'category', 'tags', 'notes', 'estimated_time_s', 'estimated_filament_g', 'filament_type', 'print_count', 'last_printed', 'thumbnail_path', 'source_url', 'license', 'designer']) {
     if (item[key] !== undefined) { fields.push(`${key} = ?`); vals.push(item[key]); }
   }
   if (!fields.length) return;
