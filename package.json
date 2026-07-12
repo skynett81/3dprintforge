@@ -41,12 +41,14 @@
     "electron:build:win": "npm run build:web && electron-builder --win",
     "build:web": "npm --prefix frontend install --no-audit --no-fund && npm --prefix frontend run build",
     "web:dev": "npm --prefix frontend run dev",
-    "web:test": "npm --prefix frontend test"
+    "web:test": "npm --prefix frontend test",
+    "mcp": "node server/mcp-server.js"
   },
   "dependencies": {
     "@3mfconsortium/lib3mf": "^2.5.0-fix.2",
     "@jscad/modeling": "^2.13.0",
     "@jscad/stl-serializer": "^2.1.23",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@snapmaker/snapmaker-sacp-sdk": "^0.1.1",
     "admin-lte": "^4.0.0-rc7",
     "basic-ftp": "^6.0.1",
