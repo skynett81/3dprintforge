@@ -6,6 +6,7 @@ import { useT } from './i18n';
 import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
 import { useNavBadges } from './nav-badges';
 import { NotificationCenter } from './components/NotificationCenter';
+import { CommandPalette, type CommandItem } from './components/CommandPalette';
 import type { AppNotification } from './types';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
@@ -119,6 +120,21 @@ export function App() {
   function toggleRail() {
     setRail((prev) => { const next = !prev; try { localStorage.setItem('v2.nav.rail', next ? '1' : '0'); } catch { /* ignore */ } return next; });
   }
+
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  // Ctrl/Cmd+K toggles the command palette anywhere in the app.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); setCmdOpen((o) => !o); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => { setDrawer(false); }, [route.panel]);
+  const cmdItems: CommandItem[] = NAV_GROUPS.flatMap((g) => g.items.map((n) => ({ id: n.id, label: n.label, group: g.label, icon: n.icon })));
+  function go(id: string) { setPanel(id as PanelId); }
   const authLabel = auth == null ? '' : auth.user ? auth.user : auth.enabled ? 'Signed in' : 'Local · no login';
 
   const { data: notifData } = useResource<AppNotification[]>(api.listNotifications, 15000);
@@ -135,7 +151,11 @@ export function App() {
   }
 
   return (
-    <div className={`app-shell${rail ? ' app-shell--rail' : ''}`}>
+    <div className={`app-shell${rail ? ' app-shell--rail' : ''}${drawer ? ' app-shell--drawer' : ''}`}>
+      <button className="drawer-toggle" onClick={() => setDrawer(true)} aria-label={t('v2.nav.menu', 'Open menu')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+      </button>
+      <div className="drawer-backdrop" onClick={() => setDrawer(false)} />
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">3F</div>
@@ -151,6 +171,11 @@ export function App() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><polyline points={rail ? '9 6 15 12 9 18' : '15 6 9 12 15 18'} /></svg>
           </button>
         </div>
+        <button className="nav-search" onClick={() => setCmdOpen(true)} title={t('v2.cmd.open', 'Search / jump to…')}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          <span className="nav-search-label">{t('v2.cmd.search', 'Search')}</span>
+          <kbd className="nav-search-kbd">⌘K</kbd>
+        </button>
         <nav className="nav">
           {NAV_GROUPS.map((g, gi) => {
             const isCollapsed = g.label ? collapsed.has(g.label) : false;
@@ -220,6 +245,7 @@ export function App() {
       </main>
 
       {notifOpen && <NotificationCenter notifications={notifications} onClose={() => setNotifOpen(false)} />}
+      <CommandPalette open={cmdOpen} items={cmdItems} onSelect={go} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }
