@@ -26,6 +26,7 @@
   let _suppliers = [];
   let _profiles = [];
   let _shipForm = null; // PO id currently showing the "mark shipped" form
+  let _settings = {};   // inventory settings (auto_reorder_*)
   let _reorder = [];
   let _el = null;
   let _expanded = null;
@@ -41,16 +42,18 @@
     if (!_el) return;
     _el.innerHTML = `<div class="text-muted" style="padding:16px">${t('common.loading', 'Loading…')}</div>`;
     try {
-      const [orders, suppliers, profiles, reorder] = await Promise.all([
+      const [orders, suppliers, profiles, reorder, settings] = await Promise.all([
         _fetchJson('/api/inventory/purchase-orders'),
         _fetchJson('/api/inventory/suppliers'),
         _fetchJson('/api/inventory/filaments?limit=2000'),
         _fetchJson('/api/inventory/reorder').catch(() => []),
+        _fetchJson('/api/inventory/settings').catch(() => ({})),
       ]);
       _orders = Array.isArray(orders) ? orders : [];
       _suppliers = Array.isArray(suppliers) ? suppliers : [];
       _profiles = Array.isArray(profiles) ? profiles : (profiles.rows || profiles.data || []);
       _reorder = Array.isArray(reorder) ? reorder : [];
+      _settings = settings && typeof settings === 'object' ? settings : {};
     } catch (e) {
       _el.innerHTML = `<div class="alert alert-danger" style="margin:12px">${t('po.load_failed', 'Could not load orders')}: ${esc(e.message)}</div>`;
       return;
@@ -209,6 +212,26 @@
     return h;
   }
 
+  // Auto-reorder settings row (persisted via inventory settings).
+  function _autoReorderControls() {
+    const enabled = _settings.auto_reorder_enabled === 'true';
+    const mode = _settings.auto_reorder_mode || 'notify';
+    const hours = _settings.auto_reorder_interval_hours || '24';
+    return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:var(--bg-tertiary,rgba(0,0,0,0.03));border-radius:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" ${enabled ? 'checked' : ''} onchange="window._poSaveAutoSetting('auto_reorder_enabled', this.checked ? 'true' : 'false')">
+        <strong>${t('po.auto_reorder', 'Auto-reorder')}</strong></label>
+      <label style="font-size:0.78rem;display:flex;align-items:center;gap:4px">${t('po.mode', 'Mode')}
+        <select class="form-input form-input-sm" ${enabled ? '' : 'disabled'} onchange="window._poSaveAutoSetting('auto_reorder_mode', this.value)">
+          <option value="notify" ${mode === 'notify' ? 'selected' : ''}>${t('po.mode_notify', 'Notify')}</option>
+          <option value="draft" ${mode === 'draft' ? 'selected' : ''}>${t('po.mode_draft', 'Draft POs')}</option>
+        </select></label>
+      <label style="font-size:0.78rem;display:flex;align-items:center;gap:4px">${t('po.every_hours', 'Every (h)')}
+        <input type="number" min="1" class="form-input form-input-sm" style="width:64px" value="${esc(hours)}" ${enabled ? '' : 'disabled'} onchange="window._poSaveAutoSetting('auto_reorder_interval_hours', this.value)"></label>
+      <span class="text-muted" style="font-size:0.72rem">${t('po.auto_reorder_hint', 'Interval change applies on next restart')}</span>
+    </div>`;
+  }
+
   // ── Reorder needs: per-material min stock vs on-hand + queue demand ──
   function _reorderCard() {
     const short = _reorder.filter(r => r.below_target);
@@ -266,6 +289,7 @@
         ${draftBtn}
       </summary>
       <p class="text-muted" style="font-size:0.76rem;margin:6px 0 0">${t('po.reorder_help', 'Set a minimum stock per material. Shortfall = target + queued demand − on hand.')}</p>
+      ${_autoReorderControls()}
       ${body}
       <div id="ro-shopping-list" style="margin-top:10px"></div>
     </details>`;
@@ -276,6 +300,15 @@
     const v = input.value === '' ? 0 : parseFloat(input.value);
     try {
       await _fetchJson('/api/inventory/stock-targets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ material, min_weight_g: v }) });
+      await _reload();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window._poSaveAutoSetting = async function (key, value) {
+    try {
+      await _fetchJson('/api/inventory/settings/' + key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) });
+      _settings[key] = String(value);
+      toast(t('po.setting_saved', 'Saved'), 'success');
       await _reload();
     } catch (e) { toast(e.message, 'error'); }
   };

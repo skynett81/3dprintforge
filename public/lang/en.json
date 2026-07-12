@@ -1891,7 +1891,14 @@
     "status_shipped": "Shipped",
     "shopping_list": "Shopping list",
     "shopping_empty": "Nothing to buy — all materials are at target.",
-    "unsourced": "No supplier for"
+    "unsourced": "No supplier for",
+    "auto_reorder": "Auto-reorder",
+    "mode": "Mode",
+    "mode_notify": "Notify",
+    "mode_draft": "Draft POs",
+    "every_hours": "Every (h)",
+    "auto_reorder_hint": "Interval change applies on next restart",
+    "setting_saved": "Saved"
   },
   "suppliers": {
     "title": "Suppliers",

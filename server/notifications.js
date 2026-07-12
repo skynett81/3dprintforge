@@ -768,6 +768,15 @@ export class NotificationManager {
           message: `All items in queue "${data.queueName}" have been printed.`
         };
 
+      case 'reorder_needed': {
+        const drafted = data.drafted ? `\nDrafted ${data.drafted} purchase order(s).` : '';
+        const uns = data.unsourced ? `\nNo supplier for: ${data.unsourced}` : '';
+        return {
+          title: `Reorder needed — ${data.count || 0} material(s) below target`,
+          message: `Below target: ${data.materials || 'unknown'}${drafted}${uns}`
+        };
+      }
+
       default:
         return { title: `3DPrintForge: ${eventType}`, message: JSON.stringify(data) };
     }

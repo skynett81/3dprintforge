@@ -3791,6 +3791,13 @@
     "shopping_list": "Handleliste",
     "shopping_empty": "Ingenting å kjøpe — alle materialer er på mål.",
     "total": "Total",
-    "unsourced": "Ingen leverandør for"
+    "unsourced": "Ingen leverandør for",
+    "auto_reorder": "Auto-bestilling",
+    "mode": "Modus",
+    "mode_notify": "Varsle",
+    "mode_draft": "Draft PO-er",
+    "every_hours": "Hver (t)",
+    "auto_reorder_hint": "Intervallendring trer i kraft ved neste omstart",
+    "setting_saved": "Lagret"
   }
 }

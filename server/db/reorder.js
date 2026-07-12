@@ -5,7 +5,7 @@
 // purchase orders from it (grouped by the cheapest supplier per material).
 
 import { getDb } from './connection.js';
-import { addPurchaseOrder } from './purchase-orders.js';
+import { addPurchaseOrder, getPurchaseOrders } from './purchase-orders.js';
 import { getSupplierPart } from './suppliers.js';
 import { createLogger } from '../logger.js';
 
@@ -193,6 +193,35 @@ export function getShoppingList() {
   for (const s of suppliers) totals_by_currency[s.currency] = round2((totals_by_currency[s.currency] || 0) + s.subtotal);
 
   return { suppliers, unsourced, totals_by_currency, item_count: itemCount };
+}
+
+// Automatic reorder decision, called on a schedule. In 'notify' mode it just
+// summarises what is below target; in 'draft' mode it drafts POs, but is
+// deduped so repeated ticks don't stack drafts (it skips while a prior
+// auto-reorder PO is still open).
+export function runAutoReorder({ mode = 'notify', reference = 'Auto-reorder' } = {}) {
+  const shortfalls = getReorderReport().filter((r) => r.below_target);
+  if (shortfalls.length === 0) return { action: 'none', below_target: 0 };
+
+  const sourced = shortfalls.filter((r) => r.cheapest);
+  const summary = {
+    below_target: shortfalls.length,
+    sourced: sourced.length,
+    unsourced: shortfalls.filter((r) => !r.cheapest).map((r) => r.material),
+    materials: shortfalls.map((r) => ({ material: r.material, shortfall_g: r.shortfall_g })),
+  };
+
+  if (mode === 'draft') {
+    if (sourced.length === 0) return { action: 'none_sourced', ...summary };
+    const openAuto = getPurchaseOrders().some(
+      (po) => po.reference === reference && ['draft', 'placed', 'shipped'].includes(po.status)
+    );
+    if (openAuto) return { action: 'skipped', reason: 'auto_po_open', ...summary };
+    const { created } = draftReorderPurchaseOrders({ reference });
+    return { action: 'drafted', created: created.map((p) => p.id), ...summary };
+  }
+
+  return { action: 'notify', ...summary };
 }
 
 // Draft purchase orders from the shortfall list. Materials that have a cheapest

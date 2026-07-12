@@ -790,6 +790,10 @@ startBrandRefresh();
 const { startFilamentDbScheduler } = await import('./filament-db-refresh.js');
 startFilamentDbScheduler();
 
+// Auto-reorder scheduler — drafts POs or notifies when filament is below target
+const { startReorderScheduler } = await import('./reorder-service.js');
+startReorderScheduler({ notifier });
+
 // Spoolman health monitor — alerts via notifications when Spoolman goes offline/online
 const { startSpoolmanHealthMonitor, setHub: setSpoolmanHub, setNotifier: setSpoolmanNotifier } = await import('./spoolman-health-monitor.js');
 setSpoolmanHub(hub);
