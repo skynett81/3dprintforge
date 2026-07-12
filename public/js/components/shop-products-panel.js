@@ -120,9 +120,10 @@
           ${_numField('shop-time', _tl('shop.print_time', 'Print time (min)'), p.print_time_min, '1')}
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:0.75rem">
-          ${_txtField('shop-image', _tl('shop.image_url', 'Image URL'), p.image_url)}
+          ${_txtField('shop-filename', _tl('shop.filename', 'Print file (dispatched to queue)'), p.filename)}
           ${_numField('shop-stock', _tl('shop.stock', 'Stock (blank = made to order)'), p.stock_qty, '1')}
         </div>
+        ${_txtField('shop-image', _tl('shop.image_url', 'Image URL'), p.image_url)}
         <div class="form-group"><label class="form-label">${_esc(_tl('shop.description', 'Description'))}</label>
           <textarea class="form-input" id="shop-desc" rows="3" style="resize:vertical">${_esc(p.description || '')}</textarea></div>
         <label style="display:flex;align-items:center;gap:8px;margin:0.5rem 0"><input type="checkbox" id="shop-active" ${p.active === 0 ? '' : 'checked'}> ${_esc(_tl('shop.active', 'Active'))}</label>
@@ -144,7 +145,8 @@
       material_cost: num('shop-material') || 0, labor_cost: num('shop-labor') || 0,
       electricity_cost: num('shop-electricity') || 0, wear_cost: num('shop-wear') || 0,
       filament_type: str('shop-filament'), filament_weight_g: num('shop-weight'),
-      print_time_min: num('shop-time'), image_url: str('shop-image'), stock_qty: num('shop-stock'),
+      print_time_min: num('shop-time'), filename: str('shop-filename'),
+      image_url: str('shop-image'), stock_qty: num('shop-stock'),
       description: str('shop-desc'), active: document.getElementById('shop-active')?.checked ? 1 : 0,
     };
   }

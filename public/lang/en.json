@@ -5051,6 +5051,7 @@
     "in_queue": "In print queue",
     "product_added": "Product added",
     "dispatched_n": "line(s) sent to queue",
-    "nothing_to_dispatch": "Nothing to dispatch"
+    "nothing_to_dispatch": "Nothing to dispatch",
+    "filename": "Print file (dispatched to queue)"
   }
 }
