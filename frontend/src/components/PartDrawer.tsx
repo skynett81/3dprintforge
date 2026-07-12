@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment } from '../types';
+import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment, ShopProduct } from '../types';
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -46,16 +46,32 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
 
   const [warranties, setWarranties] = useState<Warranty[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [shopProducts, setShopProducts] = useState<ShopProduct[]>([]);
   const [wForm, setWForm] = useState({ provider: '', end_date: '' });
   const [aForm, setAForm] = useState({ title: '', url: '', kind: 'manual' });
+  const [linkSel, setLinkSel] = useState('');
   useEffect(() => {
     let alive = true;
     const eid = String(partId);
-    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid)])
-      .then(([w, a]) => { if (alive) { setWarranties(w); setAttachments(a); } })
+    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid), api.listShopProducts().catch(() => [])])
+      .then(([w, a, sp]) => { if (alive) { setWarranties(w); setAttachments(a); setShopProducts(sp); } })
       .catch(() => {});
     return () => { alive = false; };
   }, [partId, tick]);
+
+  const linkedProduct = shopProducts.find((p) => p.part_id === partId) || null;
+  async function linkProduct(pid: number) {
+    try { await api.updateShopProduct(pid, { part_id: partId }); setLinkSel(''); refresh(); toast(t('v2.shop.linked', 'Linked to shop product'), 'success'); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function unlinkProduct(pid: number) {
+    try { await api.updateShopProduct(pid, { part_id: null }); refresh(); } catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function createProductFromPart() {
+    if (!part) return;
+    try { await api.createShopProduct({ name: part.name, price: 0, part_id: partId }); refresh(); toast(t('v2.shop.created', 'Shop product created — set a price in Shop'), 'success'); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   async function addW() {
     if (!wForm.end_date && !wForm.provider) { toast(t('v2.warr.need', 'Enter a provider or end date'), 'error'); return; }
@@ -265,6 +281,29 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
             <input className="input" placeholder="https://…" value={aForm.url} onChange={(e) => setAForm({ ...aForm, url: e.target.value })} style={{ flex: '1 1 130px', minWidth: 0 }} />
             <button className="btn btn--sm" onClick={addA}>{t('v2.att.add', 'Add')}</button>
           </div>
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.shop.title', 'Sell as product')}</div>
+          {linkedProduct ? (
+            <div>
+              <div className="err-row" style={{ gridTemplateColumns: '1.4fr auto auto', padding: '6px 0' }}>
+                <span className="err-msg" style={{ fontWeight: 600 }}>{linkedProduct.name}</span>
+                <span className="tnum">{linkedProduct.price} {linkedProduct.currency || ''}{linkedProduct.margin != null ? ` · ${t('v2.shop.margin', 'margin')} ${linkedProduct.margin.toFixed(2)}` : ''}</span>
+                <button className="btn btn--sm btn--ghost" onClick={() => unlinkProduct(linkedProduct.id)}>{t('v2.shop.unlink', 'Unlink')}</button>
+              </div>
+              <p className="muted micro" style={{ margin: '4px 0 0' }}>{t('v2.shop.sellable', 'Sellable stock')}: {part?.total_stock ?? 0} {part?.unit}. {t('v2.shop.sale_hint', 'Selling deducts this stock; margin uses the BOM cost.')}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+              <select className="input" value={linkSel} onChange={(e) => setLinkSel(e.target.value)} style={{ flex: '1 1 150px', minWidth: 0 }}>
+                <option value="">{t('v2.shop.link_existing', 'Link existing product…')}</option>
+                {shopProducts.filter((p) => p.part_id == null).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <button className="btn btn--sm" disabled={!linkSel} onClick={() => linkProduct(Number(linkSel))}>{t('v2.shop.link', 'Link')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={createProductFromPart}>{t('v2.shop.create', '+ New product')}</button>
+            </div>
+          )}
         </div>
 
         <div className="drawer-controls" style={{ marginTop: 4 }}>

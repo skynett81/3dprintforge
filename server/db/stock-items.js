@@ -91,6 +91,23 @@ export function moveStock(id, toLocationId, actor) {
   return { ok: true, location_id: toLocationId ?? null };
 }
 
+/**
+ * Consume `qty` of a part across its stock items, oldest first (FIFO), clamped
+ * at zero. Each touched item gets a logged move. Returns how much was actually
+ * consumed and any shortage.
+ */
+export function consumePartStock(partId, qty, reason, actor) {
+  let remaining = Number(qty) || 0;
+  if (remaining <= 0) return { consumed: 0, shortage: 0 };
+  const items = getStockItems({ part_id: partId }).slice().reverse(); // oldest first
+  for (const item of items) {
+    if (remaining <= 1e-9) break;
+    const take = Math.min(item.quantity || 0, remaining);
+    if (take > 0) { adjustStock(item.id, -take, reason, actor); remaining -= take; }
+  }
+  return { consumed: (Number(qty) || 0) - remaining, shortage: remaining > 1e-9 ? remaining : 0 };
+}
+
 export function getStockMoves(filters = {}) {
   let where = ' WHERE 1=1';
   const params = [];

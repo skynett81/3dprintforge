@@ -213,6 +213,20 @@ export interface Attachment {
   url: string;
 }
 
+export interface ShopProduct {
+  id: number;
+  name: string;
+  price: number;
+  currency?: string;
+  part_id?: number | null;
+  part_stock?: number | null;
+  bom_cost?: number | null;
+  unit_cogs?: number;
+  margin?: number;
+  margin_pct?: number;
+  active?: number;
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;

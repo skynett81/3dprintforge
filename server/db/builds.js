@@ -5,7 +5,7 @@
 
 import { getDb } from './connection.js';
 import { getBom } from './bom.js';
-import { adjustStock, addStockItem, getStockItems } from './stock-items.js';
+import { addStockItem, consumePartStock } from './stock-items.js';
 
 const BUILD_SELECT = `SELECT bo.*, p.name AS part_name, p.unit AS part_unit FROM build_orders bo LEFT JOIN parts p ON p.id = bo.part_id`;
 
@@ -61,15 +61,9 @@ export function completeBuild(id, actor) {
     if (line.component_part_id == null) continue; // filament: informational only
     const need = (line.quantity || 0) * buildQty * (1 + (line.waste_pct || 0) / 100);
     if (need <= 0) continue;
-    let remaining = need;
-    // FIFO: getStockItems is newest-first, so consume from the oldest backwards.
-    for (const item of getStockItems({ part_id: line.component_part_id }).slice().reverse()) {
-      if (remaining <= 1e-9) break;
-      const take = Math.min(item.quantity || 0, remaining);
-      if (take > 0) { adjustStock(item.id, -take, `build #${id}`, actor); remaining -= take; }
-    }
-    consumed.push({ part_id: line.component_part_id, part_name: line.component_name, needed: need, consumed: need - remaining });
-    if (remaining > 1e-9) shortages.push({ part_id: line.component_part_id, part_name: line.component_name, needed: need, available: need - remaining });
+    const r = consumePartStock(line.component_part_id, need, `build #${id}`, actor);
+    consumed.push({ part_id: line.component_part_id, part_name: line.component_name, needed: need, consumed: r.consumed });
+    if (r.shortage > 1e-9) shortages.push({ part_id: line.component_part_id, part_name: line.component_name, needed: need, available: r.consumed });
   }
 
   // Produce the finished goods as a new stock item for the product part.

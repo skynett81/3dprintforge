@@ -2630,6 +2630,11 @@ export function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
       `);
     }},
+    { version: 172, up: (db) => {
+      // Inventory ↔ Shop loop: link a shop product to a finished-good part so a
+      // sale deducts real inventory stock and margin can use the BOM cost.
+      try { db.exec('ALTER TABLE shop_products ADD COLUMN part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {
