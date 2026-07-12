@@ -175,6 +175,16 @@ export interface ProtectionEvent {
   notes?: string | null;
 }
 
+export interface GuardSettings {
+  enabled: number;
+  snooze_until?: string | null;
+  [k: string]: unknown;
+}
+export interface GuardStatus {
+  settings: GuardSettings;
+  alerts: ProtectionEvent[];
+}
+
 export interface BackupFile {
   filename: string;
   size: number;
