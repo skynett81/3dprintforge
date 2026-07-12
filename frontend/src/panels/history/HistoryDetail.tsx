@@ -6,6 +6,25 @@ import type { HistoryRow, FilamentUsed, PrintCost } from '../../types';
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
 
+// Hue + saturation of a hex colour (lightness comes from the thumbnail).
+function hueSat(h: string): [number, number] {
+  const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  if (d === 0) return [0, 0];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  hue *= 60; if (hue < 0) hue += 360;
+  return [hue, s];
+}
+// HSL -> RGB with lightness supplied per pixel.
+function hslPixel(hue: number, s: number, l: number): [number, number, number] {
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((hue / 60) % 2) - 1)), m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (hue < 60) { r = c; g = x; } else if (hue < 120) { r = x; g = c; } else if (hue < 180) { g = c; b = x; }
+  else if (hue < 240) { g = x; b = c; } else if (hue < 300) { r = x; b = c; } else { r = c; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
 function statusClass(s: string) {
   const x = (s || '').toLowerCase();
   if (x === 'completed' || x === 'finished') return 'good';
@@ -35,8 +54,9 @@ function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null
 
   useEffect(() => {
     if (!tint || !tintHex) return;
+    // Same-origin: no crossOrigin (setting it would force a CORS request the
+    // server doesn't answer, tainting the canvas and blocking getImageData).
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       const cv = canvasRef.current; if (!cv) return;
       cv.width = img.naturalWidth; cv.height = img.naturalHeight;
@@ -45,13 +65,16 @@ function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null
       try {
         const d = ctx.getImageData(0, 0, cv.width, cv.height);
         const p = d.data;
-        const tr = parseInt(tintHex.slice(0, 2), 16), tg = parseInt(tintHex.slice(2, 4), 16), tb = parseInt(tintHex.slice(4, 6), 16);
+        const [hue, sat] = hueSat(tintHex);
+        // Keep each pixel's lightness (the render's shading) but apply the
+        // filament's hue+saturation. A grey filament (sat 0) stays grey.
         for (let i = 0; i < p.length; i += 4) {
-          const lum = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
-          p[i] = Math.round(tr * lum); p[i + 1] = Math.round(tg * lum); p[i + 2] = Math.round(tb * lum);
+          const l = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
+          const [nr, ng, nb] = hslPixel(hue, sat, l);
+          p[i] = nr; p[i + 1] = ng; p[i + 2] = nb;
         }
         ctx.putImageData(d, 0, 0);
-      } catch { /* cross-origin taint — leave as drawn */ }
+      } catch { /* tainted — leave as drawn */ }
     };
     img.onerror = () => setOk(false);
     img.src = src;
@@ -96,16 +119,24 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   const distinctColours = Array.from(new Set(filaments.map((f) => norm(f.color_hex)).filter(Boolean)));
   const tintHex = distinctColours.length === 1 ? distinctColours[0] : null;
 
-  const specs: [string, string][] = [
-    [t('v2.history.printer', 'Printer'), r.printer_id || '—'],
+  const SPEED = ['—', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
+  const cleanName = (r.filename || '').replace(/\.(3mf|gcode)$/i, '');
+  const title = r.model_name || cleanName || t('v2.hist.untitled', 'Untitled print');
+  // Only rows with real data (keeps the panel honest instead of a wall of "—").
+  const specs: [string, string][] = ([
+    [t('v2.history.printer', 'Printer'), r.printer_id],
+    [t('v2.hist.file', 'File'), r.filename],
     [t('v2.hist.started', 'Started'), when(r.started_at)],
     [t('v2.hist.finished', 'Finished'), when(r.finished_at)],
-    [t('v2.history.duration', 'Duration'), dur(r.duration_seconds)],
-    [t('v2.hist.layers', 'Layers'), r.layer_count != null ? String(r.layer_count) : '—'],
-    [t('v2.hist.color_changes', 'Colour changes'), r.color_changes != null ? String(r.color_changes) : '—'],
-    [t('v2.hist.nozzle', 'Nozzle'), [r.nozzle_type, r.nozzle_diameter ? `${r.nozzle_diameter} mm` : ''].filter(Boolean).join(' · ') || '—'],
-    [t('v2.hist.max_temps', 'Max nozzle / bed'), [r.max_nozzle_temp ? `${r.max_nozzle_temp}°` : null, r.max_bed_temp ? `${r.max_bed_temp}°` : null].filter(Boolean).join(' / ') || '—'],
-  ];
+    [t('v2.history.duration', 'Duration'), r.duration_seconds ? dur(r.duration_seconds) : null],
+    [t('v2.hist.layers', 'Layers'), r.layer_count != null ? String(r.layer_count) : null],
+    [t('v2.hist.color_changes', 'Colour changes'), r.color_changes != null ? String(r.color_changes) : null],
+    [t('v2.hist.speed', 'Speed'), r.speed_level != null ? (SPEED[r.speed_level] || String(r.speed_level)) : null],
+    [t('v2.hist.tray', 'AMS tray'), r.tray_id != null && r.tray_id !== 255 && r.tray_id !== 254 ? String(r.tray_id) : null],
+    [t('v2.hist.nozzle', 'Nozzle'), [r.nozzle_type, r.nozzle_diameter ? `${r.nozzle_diameter} mm` : ''].filter(Boolean).join(' · ') || null],
+    [t('v2.hist.max_temps', 'Max nozzle / bed'), [r.max_nozzle_temp ? `${r.max_nozzle_temp}°` : null, r.max_bed_temp ? `${r.max_bed_temp}°` : null].filter(Boolean).join(' / ') || null],
+    [t('v2.hist.chamber', 'Max chamber'), r.max_chamber_temp ? `${r.max_chamber_temp}°` : null],
+  ] as [string, string | null][]).filter((x): x is [string, string] => Boolean(x[1]));
   const filament: [string, string][] = [
     [t('v2.hist.used', 'Used'), r.filament_used_g != null ? `${Math.round(r.filament_used_g)} g` : '—'],
     [t('v2.hist.estimated', 'Estimated'), r.estimated_filament_g != null ? `${Math.round(r.estimated_filament_g)} g` : '—'],
@@ -132,7 +163,7 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
           <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
           <h2 className="panel-title" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
             {headerColor && <span className="swatch" style={{ background: hex(headerColor), width: 20, height: 20 }} />}
-            <span className="ellipsis">{r.filename}</span>
+            <span className="ellipsis" title={title}>{title}</span>
           </h2>
           <p className="muted sub"><span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span></p>
         </div>

@@ -621,7 +621,9 @@ export interface HistoryRow {
   nozzle_diameter?: number | null;
   max_nozzle_temp?: number | null;
   max_bed_temp?: number | null;
+  max_chamber_temp?: number | null;
   speed_level?: number | null;
+  tray_id?: number | null;
   notes?: string | null;
   model_name?: string | null;
   model_url?: string | null;
