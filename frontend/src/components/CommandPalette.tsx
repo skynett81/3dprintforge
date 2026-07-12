@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../i18n';
 
 export interface CommandItem {
@@ -7,6 +7,10 @@ export interface CommandItem {
   group?: string;
   keywords?: string;
   icon?: JSX.Element;
+  /** If set, invoked instead of onSelect (for quick actions). */
+  run?: () => void;
+  /** Right-aligned hint, e.g. a keyboard shortcut. */
+  hint?: string;
 }
 
 interface CommandPaletteProps {
@@ -16,6 +20,10 @@ interface CommandPaletteProps {
   onClose: () => void;
   /** Optional async data search (spools, history, customers …). */
   search?: (query: string) => Promise<CommandItem[]>;
+  /** Shown (with actions) when the query is empty. */
+  recent?: CommandItem[];
+  /** Quick actions shown when the query is empty. */
+  actions?: CommandItem[];
 }
 
 // Substring match, ranked: label prefix > label contains > keyword/group contains.
@@ -34,7 +42,7 @@ function score(item: CommandItem, q: string): number {
  * substring and supports full keyboard control: type to filter, arrows to
  * move, Enter to go, Esc to close.
  */
-export function CommandPalette({ open, items, onSelect, onClose, search }: CommandPaletteProps) {
+export function CommandPalette({ open, items, onSelect, onClose, search, recent, actions }: CommandPaletteProps) {
   const t = useT();
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
@@ -51,7 +59,13 @@ export function CommandPalette({ open, items, onSelect, onClose, search }: Comma
       .sort((a, b) => b.s - a.s)
       .map((r) => r.it);
   }, [items, q]);
-  const results = useMemo(() => [...navResults, ...dynamic], [navResults, dynamic]);
+  const results = useMemo(() => {
+    if (!q.trim()) {
+      const base = [...(recent ?? []), ...(actions ?? [])];
+      return base.length ? base : navResults;
+    }
+    return [...navResults, ...dynamic];
+  }, [q, recent, actions, navResults, dynamic]);
 
   // Debounced async data search (needs ≥2 chars to avoid hammering the API).
   useEffect(() => {
@@ -81,7 +95,9 @@ export function CommandPalette({ open, items, onSelect, onClose, search }: Comma
 
   function choose(idx: number) {
     const item = results[idx];
-    if (item) { onSelect(item.id); onClose(); }
+    if (!item) return;
+    if (item.run) item.run(); else onSelect(item.id);
+    onClose();
   }
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)); }
@@ -108,18 +124,23 @@ export function CommandPalette({ open, items, onSelect, onClose, search }: Comma
         <div className="cmd-list" ref={listRef}>
           {results.length === 0 ? (
             <div className="cmd-empty">{loading ? t('v2.cmd.searching', 'Searching…') : t('v2.cmd.none', 'No matches')}</div>
-          ) : results.map((it, i) => (
-            <button
-              key={it.id}
-              className={`cmd-row${i === active ? ' cmd-row--active' : ''}`}
-              onMouseEnter={() => setActive(i)}
-              onClick={() => choose(i)}
-            >
-              {it.icon && <span className="cmd-icon">{it.icon}</span>}
-              <span className="cmd-label">{it.label}</span>
-              {it.group && <span className="cmd-group">{it.group}</span>}
-            </button>
-          ))}
+          ) : results.map((it, i) => {
+            const showHeader = !!it.group && it.group !== results[i - 1]?.group;
+            return (
+              <Fragment key={it.id}>
+                {showHeader && <div className="cmd-section">{it.group}</div>}
+                <button
+                  className={`cmd-row${i === active ? ' cmd-row--active' : ''}`}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => choose(i)}
+                >
+                  {it.icon && <span className="cmd-icon">{it.icon}</span>}
+                  <span className="cmd-label">{it.label}</span>
+                  {it.hint && <kbd className="cmd-hint">{it.hint}</kbd>}
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
       </div>
     </div>

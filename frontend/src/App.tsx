@@ -85,8 +85,13 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
   { label: 'System', items: [{ id: 'settings', label: 'Settings', icon: <IconGear /> }] },
 ];
 
+const NAV_LOOKUP: Record<string, NavItem> = Object.fromEntries(NAV_GROUPS.flatMap((g) => g.items).map((n) => [n.id, n]));
+
 function loadCollapsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
+}
+function loadRecent(): string[] {
+  try { const r = JSON.parse(localStorage.getItem('v2.nav.recent') || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : []; } catch { return []; }
 }
 function loadRail(): boolean {
   try { return localStorage.getItem('v2.nav.rail') === '1'; } catch { return false; }
@@ -134,6 +139,15 @@ export function App() {
   }, []);
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setDrawer(false); }, [route.panel]);
+  // Track recently visited panels (most-recent first) for the palette.
+  const [recent, setRecent] = useState<string[]>(loadRecent);
+  useEffect(() => {
+    setRecent((prev) => {
+      const next = [route.panel, ...prev.filter((p) => p !== route.panel)].filter((p) => NAV_LOOKUP[p]).slice(0, 6);
+      try { localStorage.setItem('v2.nav.recent', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, [route.panel]);
   const cmdItems: CommandItem[] = NAV_GROUPS.flatMap((g) => g.items.map((n) => ({ id: n.id, label: n.label, group: g.label, icon: n.icon })));
   function go(id: string) {
     if (id.startsWith('#')) { window.location.hash = id; return; }
@@ -183,6 +197,18 @@ export function App() {
     setLastSeen(top);
     setSeen(top);
   }
+
+  // Palette empty-state: recently visited panels + app quick actions.
+  const recentItems: CommandItem[] = recent
+    .filter((id) => id !== panel && NAV_LOOKUP[id])
+    .slice(0, 5)
+    .map((id) => ({ id, label: NAV_LOOKUP[id].label, group: 'Recent', icon: NAV_LOOKUP[id].icon }));
+  const actionItems: CommandItem[] = [
+    { id: 'act:theme', label: theme === 'dark' ? t('v2.cmd.a_light', 'Switch to light theme') : t('v2.cmd.a_dark', 'Switch to dark theme'), group: 'Actions', run: toggleTheme },
+    { id: 'act:rail', label: rail ? t('v2.cmd.a_expand', 'Expand sidebar') : t('v2.cmd.a_collapse', 'Collapse sidebar'), group: 'Actions', run: toggleRail },
+    { id: 'act:notify', label: t('v2.cmd.a_notify', 'Open notifications'), group: 'Actions', run: openNotifications, hint: unread > 0 ? String(unread) : undefined },
+    { id: 'act:classic', label: t('v2.cmd.a_classic', 'Open Classic UI'), group: 'Actions', run: () => { window.location.href = '/'; } },
+  ];
 
   return (
     <div className={`app-shell${rail ? ' app-shell--rail' : ''}${drawer ? ' app-shell--drawer' : ''}`}>
@@ -285,7 +311,7 @@ export function App() {
       </main>
 
       {notifOpen && <NotificationCenter notifications={notifications} onClose={() => setNotifOpen(false)} />}
-      <CommandPalette open={cmdOpen} items={cmdItems} onSelect={go} onClose={() => setCmdOpen(false)} search={searchData} />
+      <CommandPalette open={cmdOpen} items={cmdItems} onSelect={go} onClose={() => setCmdOpen(false)} search={searchData} recent={recentItems} actions={actionItems} />
     </div>
   );
 }

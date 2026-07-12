@@ -51,6 +51,29 @@ describe('CommandPalette', () => {
     expect(screen.getByText('No matches')).toBeInTheDocument();
   });
 
+  it('shows recents + actions on empty query and runs an action', () => {
+    const themeRun = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <I18nProvider lang="en">
+        <CommandPalette
+          open
+          items={items}
+          onSelect={onSelect}
+          onClose={vi.fn()}
+          recent={[{ id: 'fleet', label: 'Fleet', group: 'Recent' }]}
+          actions={[{ id: 'act:theme', label: 'Switch to light theme', group: 'Actions', run: themeRun }]}
+        />
+      </I18nProvider>,
+    );
+    // Section headers from the grouped empty-state.
+    expect(screen.getByText('Recent')).toBeInTheDocument();
+    expect(screen.getByText('Actions')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Switch to light theme'));
+    expect(themeRun).toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled(); // run() takes precedence
+  });
+
   it('merges async data-search results and deep-links on select', async () => {
     const onSelect = vi.fn();
     const search = vi.fn(async (): Promise<CommandItem[]> => [

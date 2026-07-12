@@ -186,6 +186,8 @@ body {
 .cmd-icon { display: grid; place-items: center; opacity: 0.85; flex: none; }
 .cmd-label { flex: 1 1 auto; }
 .cmd-group { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.cmd-section { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--faint); padding: 10px 12px 4px; }
+.cmd-hint { font-size: 0.66rem; font-weight: 700; color: var(--faint); background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 6px; margin-left: auto; }
 
 /* Theme toggle */
 .theme-toggle {
