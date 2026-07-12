@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
@@ -27,6 +27,19 @@ export function PrintGuardPanel() {
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Save one setting, optimistically updating the local card.
+  async function saveSetting(pid: string, key: string, value: unknown) {
+    setStatuses((prev) => (prev[pid] ? { ...prev, [pid]: { ...prev[pid], settings: { ...prev[pid].settings, [key]: value } } } : prev));
+    try { await api.updateGuardSettings(pid, { [key]: value }); }
+    catch (e) { toast((e as Error).message, 'error'); setTick((n) => n + 1); }
+  }
+
+  const THRESHOLDS: [string, string][] = [
+    ['temp_deviation_threshold', '°C'], ['filament_low_pct', '%'], ['stall_minutes', 'min'],
+    ['ams_humidity_threshold', '%'], ['heater_health_minutes', 'min'], ['cooldown_seconds', 'sec'],
+  ];
 
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const events = useMemo(() => [...(logData ?? [])].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [logData]);
@@ -120,7 +133,37 @@ export function PrintGuardPanel() {
                   ))
                 )}
                 <button className="btn btn--sm" disabled={busy === `en-${p.id}`} onClick={() => act(`en-${p.id}`, () => api.setGuardEnabled(p.id, !settings.enabled), settings.enabled ? t('v2.guard.disabled', 'Guard disabled') : t('v2.guard.enabled', 'Guard enabled'))}>{settings.enabled ? t('v2.guard.turn_off', 'Turn off') : t('v2.guard.turn_on', 'Turn on')}</button>
+                <button className="btn btn--sm btn--ghost" onClick={() => setExpanded(expanded === p.id ? null : p.id)}>{t('v2.guard.configure', 'Configure')} {expanded === p.id ? '▴' : '▾'}</button>
               </div>
+
+              {expanded === p.id && s && (
+                <div style={{ borderTop: '1px solid var(--border, rgba(128,128,128,0.2))', paddingTop: 10, marginTop: 2 }}>
+                  <div className="muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>{t('v2.guard.on_detect', 'When detected')}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 10px', alignItems: 'center' }}>
+                    {Object.keys(settings).filter((k) => k.endsWith('_action')).map((k) => (
+                      <Fragment key={k}>
+                        <span style={{ fontSize: '0.82rem' }}>{label(k)}</span>
+                        <select className="input" style={{ padding: '2px 6px', fontSize: '0.8rem' }} value={String(settings[k] ?? 'notify')} onChange={(e) => saveSetting(p.id, k, e.target.value)}>
+                          <option value="notify">{t('v2.guard.notify', 'Notify')}</option>
+                          <option value="pause">{t('v2.guard.pause', 'Pause')}</option>
+                          <option value="stop">{t('v2.guard.stop', 'Stop')}</option>
+                        </select>
+                      </Fragment>
+                    ))}
+                  </div>
+                  <div className="muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em', margin: '10px 0 6px' }}>{t('v2.guard.thresholds', 'Thresholds')}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 10px', alignItems: 'center' }}>
+                    {THRESHOLDS.filter(([k]) => settings[k] !== undefined).map(([k, unit]) => (
+                      <Fragment key={k}>
+                        <span style={{ fontSize: '0.82rem' }}>{label(k)} <span className="muted">({unit})</span></span>
+                        <input className="input" type="number" style={{ width: 78, padding: '2px 6px', fontSize: '0.8rem' }} defaultValue={Number(settings[k] ?? 0)} onBlur={(e) => saveSetting(p.id, k, Number(e.target.value))} />
+                      </Fragment>
+                    ))}
+                    <span style={{ fontSize: '0.82rem' }}>{t('v2.guard.auto_resume', 'Auto-resume after pause')}</span>
+                    <input type="checkbox" checked={!!settings.auto_resume} onChange={(e) => saveSetting(p.id, 'auto_resume', e.target.checked ? 1 : 0)} />
+                  </div>
+                </div>
+              )}
             </section>
           );
         })}
