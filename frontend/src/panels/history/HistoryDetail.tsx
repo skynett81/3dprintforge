@@ -199,87 +199,103 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   ];
   const hasCost = cost && (cost.total_cost != null || cost.filament_cost != null);
 
+  // Headline stats for the hero summary (only those with data).
+  const heroStats = ([
+    [t('v2.history.duration', 'Duration'), r.duration_seconds ? dur(r.duration_seconds) : null],
+    [t('v2.hist.used', 'Filament'), r.filament_used_g != null ? `${Math.round(r.filament_used_g)} g` : null],
+    [t('v2.hist.cost', 'Cost'), hasCost ? money(cost?.total_cost ?? cost?.filament_cost) : null],
+    [t('v2.hist.layers', 'Layers'), r.layer_count != null ? String(r.layer_count) : null],
+  ] as [string, string | null][]).filter((x): x is [string, string] => Boolean(x[1]));
+
+  const preview = coverUrl ? (
+    <section className="card" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, margin: 0 }}>
+      <img src={coverUrl} alt={title} loading="lazy" style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 8 }} />
+    </section>
+  ) : (
+    <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
+  );
+
+  const chip = (f: FilamentUsed) => {
+    const multi = (f.multi_color_hexes || '').split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+    return (
+      <div key={f.spool_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {multi.length > 1 ? (
+          <span style={{ display: 'inline-flex', borderRadius: 5, overflow: 'hidden', width: 22, height: 22, border: '1px solid rgba(128,128,128,0.4)' }}>
+            {multi.map((c, i) => <span key={i} style={{ flex: 1, background: hex(c) }} />)}
+          </span>
+        ) : (
+          <span className="swatch" style={{ background: hex(f.color_hex), width: 22, height: 22, border: '1px solid rgba(128,128,128,0.4)' }} />
+        )}
+        <span style={{ fontWeight: 600 }}>{f.name || [f.material, f.color_name].filter(Boolean).join(' ') || t('v2.hist.filament_unknown', 'Filament')}</span>
+      </div>
+    );
+  };
+
+  const detailCard = (titleKey: string, fallback: string, rows: [string, string][]) => (
+    <section className="card" style={{ margin: 0 }}>
+      <div className="card-title">{t(titleKey, fallback)}</div>
+      <div className="diag-grid">
+        {rows.map(([k, v]) => <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{v}</span></div>)}
+      </div>
+    </section>
+  );
+
   return (
     <div>
-      <div className="panel-head">
-        <div>
-          <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
-          <h2 className="panel-title" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            {headerColor && <span className="swatch" style={{ background: hex(headerColor), width: 20, height: 20 }} />}
-            <span className="ellipsis" title={title}>{title}</span>
-          </h2>
-          <p className="muted sub"><span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span></p>
+      <div className="panel-head" style={{ marginBottom: 14 }}>
+        <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
+        <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
+          <span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span>
+          {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{t('v2.hist.model', 'Model →')}</a>}
         </div>
-        {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{r.model_name || t('v2.hist.model', 'Model →')}</a>}
       </div>
 
-      {coverUrl ? (
-        <section className="card" style={{ display: 'flex', justifyContent: 'center', padding: 12, marginBottom: 12 }}>
-          <img src={coverUrl} alt={title} loading="lazy" style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 8 }} />
-        </section>
-      ) : (
-        <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
-      )}
-
-      {shownFilaments.length > 0 && (
-        <section className="card" style={{ marginBottom: 12 }}>
-          <div className="card-title">{t('v2.hist.printed_with', 'Printed with')}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-            {shownFilaments.map((f) => {
-              const multi = (f.multi_color_hexes || '').split(/[,;]/).map((x) => x.trim()).filter(Boolean);
-              return (
-                <div key={f.spool_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {multi.length > 1 ? (
-                    <span style={{ display: 'inline-flex', borderRadius: 5, overflow: 'hidden', width: 24, height: 24, border: '1px solid rgba(128,128,128,0.4)' }}>
-                      {multi.map((c, i) => <span key={i} style={{ flex: 1, background: hex(c) }} />)}
-                    </span>
-                  ) : (
-                    <span className="swatch" style={{ background: hex(f.color_hex), width: 24, height: 24, border: '1px solid rgba(128,128,128,0.4)' }} />
-                  )}
-                  <span>
-                    <span style={{ fontWeight: 600 }}>{f.name || [f.material, f.color_name].filter(Boolean).join(' ') || t('v2.hist.filament_unknown', 'Filament')}</span>
-                    {f.used_g != null && <span className="muted"> · {Math.round(f.used_g)} g</span>}
-                  </span>
+      {/* Hero: preview + summary side by side, stacks on narrow screens */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16, alignItems: 'stretch' }}>
+        <div style={{ flex: '1 1 260px', maxWidth: 440, display: 'flex' }}>{preview}</div>
+        <section className="card" style={{ flex: '2 1 300px', display: 'flex', flexDirection: 'column', gap: 14, margin: 0 }}>
+          <h2 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0 }} title={title}>
+            {headerColor && <span className="swatch" style={{ background: hex(headerColor), width: 22, height: 22, flex: '0 0 auto' }} />}
+            <span className="ellipsis">{title}</span>
+          </h2>
+          {shownFilaments.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>{shownFilaments.map(chip)}</div>
+          )}
+          {heroStats.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(88px,1fr))', gap: 12, marginTop: 'auto' }}>
+              {heroStats.map(([k, v]) => (
+                <div key={k}>
+                  <div className="muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{k}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{v}</div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <div className="two-col">
-        <section className="card">
-          <div className="card-title">{t('v2.hist.print', 'Print')}</div>
-          <div className="diag-grid">
-            {specs.map(([k, v]) => <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{v}</span></div>)}
-          </div>
-        </section>
-        <section className="card">
-          <div className="card-title">{t('v2.history.filament', 'Filament')}</div>
-          <div className="diag-grid">
-            {filament.map(([k, v]) => <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{v}</span></div>)}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
-      {hasCost && (
-        <section className="card" style={{ marginTop: 12 }}>
-          <div className="card-title">{t('v2.hist.cost', 'Cost')}</div>
-          <div className="diag-grid">
-            {costRows.filter(([, v]) => v != null && v > 0).map(([k, v]) => (
-              <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{money(v)}</span></div>
-            ))}
-            <div className="diag-row" style={{ fontWeight: 700 }}><span>{t('v2.hist.cost_total', 'Total')}</span><span className="diag-val">{money(cost?.total_cost ?? cost?.filament_cost)}</span></div>
-          </div>
-        </section>
-      )}
-
-      {r.notes && (
-        <section className="card" style={{ marginTop: 12 }}>
-          <div className="card-title">{t('v2.hist.notes', 'Notes')}</div>
-          <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>{r.notes}</p>
-        </section>
-      )}
+      {/* Details in a responsive grid rather than a long vertical stack */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 16 }}>
+        {detailCard('v2.hist.print', 'Print', specs)}
+        {detailCard('v2.history.filament', 'Filament', filament)}
+        {hasCost && (
+          <section className="card" style={{ margin: 0 }}>
+            <div className="card-title">{t('v2.hist.cost', 'Cost')}</div>
+            <div className="diag-grid">
+              {costRows.filter(([, v]) => v != null && v > 0).map(([k, v]) => (
+                <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{money(v)}</span></div>
+              ))}
+              <div className="diag-row" style={{ fontWeight: 700 }}><span>{t('v2.hist.cost_total', 'Total')}</span><span className="diag-val">{money(cost?.total_cost ?? cost?.filament_cost)}</span></div>
+            </div>
+          </section>
+        )}
+        {r.notes && (
+          <section className="card" style={{ margin: 0 }}>
+            <div className="card-title">{t('v2.hist.notes', 'Notes')}</div>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>{r.notes}</p>
+          </section>
+        )}
+      </div>
     </div>
   );
 }
