@@ -113,7 +113,7 @@ export function App() {
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
   const [rail, setRail] = useState<boolean>(loadRail);
   const auth = useAuth();
-  const badges = useNavBadges();
+  const { badges, health } = useNavBadges();
 
   function toggleGroup(label: string) {
     setCollapsed((prev) => {
@@ -271,6 +271,22 @@ export function App() {
           })}
         </nav>
         <div className="sidebar-foot">
+          {health.total > 0 && (() => {
+            const bad = !health.connected || health.offline > 0;
+            const txt = !health.connected
+              ? t('v2.health.offline', 'Live feed offline')
+              : `${health.online}/${health.total} ${t('v2.health.online', 'online')}${health.printing > 0 ? ` · ${health.printing} ${t('v2.health.printing', 'printing')}` : ''}${health.offline > 0 ? ` · ${health.offline} ${t('v2.health.down', 'down')}` : ''}`;
+            return (
+              <button
+                className={`fleet-health fleet-health--${bad ? 'bad' : 'ok'}`}
+                onClick={() => setPanel('fleet')}
+                title={txt}
+              >
+                <span className={`fh-dot${health.connected ? ' fh-dot--live' : ''}`} />
+                <span className="nav-label">{txt}</span>
+              </button>
+            );
+          })()}
           <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? t('v2.theme.light', 'Light theme') : t('v2.theme.dark', 'Dark theme')} aria-label={theme === 'dark' ? t('v2.theme.light', 'Light theme') : t('v2.theme.dark', 'Dark theme')}>
             {theme === 'dark'
               ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
