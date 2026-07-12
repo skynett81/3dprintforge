@@ -582,10 +582,17 @@ export interface AuthStatus {
   user: string | null;
 }
 
+export interface AmsDetail {
+  sourceColor?: string;   // colour assigned in the slice (RGBA hex)
+  targetColor?: string;   // actual AMS filament colour used at print time (RGBA hex)
+  filamentType?: string;
+  weight?: number;
+}
 export interface CloudTask {
   title?: string;
   designTitle?: string;
   cover?: string;
+  amsDetailMapping?: AmsDetail[];
 }
 
 export interface PrintCost {

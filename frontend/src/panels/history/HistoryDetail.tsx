@@ -141,9 +141,25 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   const cloudTitle = cloud?.designTitle && cloud.designTitle !== cloud.title ? cloud.designTitle : null;
   const coverUrl = cloud?.cover || null;
 
-  const headerColor = r.filament_color || filaments[0]?.color_hex || null;
+  // The AMS mapping records the colour actually loaded at print time
+  // (targetColor) — more accurate than the spool matched from the usage log,
+  // since the AMS can remap the sliced colour to a different real filament.
+  const cloudFilaments: FilamentUsed[] = (cloud?.amsDetailMapping ?? [])
+    .map((m, i): FilamentUsed => ({
+      spool_id: -1 - i,
+      color_hex: (norm(m.targetColor || m.sourceColor) || '').slice(0, 6) || null,
+      multi_color_hexes: null,
+      material: m.filamentType || null,
+      name: null,
+      color_name: null,
+      used_g: null,
+    }))
+    .filter((f) => f.color_hex);
+  const shownFilaments = cloudFilaments.length ? cloudFilaments : filaments;
+
+  const headerColor = r.filament_color || shownFilaments[0]?.color_hex || null;
   // Only tint when the print used exactly one colour.
-  const distinctColours = Array.from(new Set(filaments.map((f) => norm(f.color_hex)).filter(Boolean)));
+  const distinctColours = Array.from(new Set(shownFilaments.map((f) => norm(f.color_hex)).filter(Boolean)));
   const tintHex = distinctColours.length === 1 ? distinctColours[0] : null;
 
   const SPEED = ['—', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
@@ -205,11 +221,11 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
       )}
 
-      {filaments.length > 0 && (
+      {shownFilaments.length > 0 && (
         <section className="card" style={{ marginBottom: 12 }}>
           <div className="card-title">{t('v2.hist.printed_with', 'Printed with')}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-            {filaments.map((f) => {
+            {shownFilaments.map((f) => {
               const multi = (f.multi_color_hexes || '').split(/[,;]/).map((x) => x.trim()).filter(Boolean);
               return (
                 <div key={f.spool_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

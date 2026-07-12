@@ -52,6 +52,20 @@ describe('HistoryDetail', () => {
     expect(screen.getByText('Total')).toBeInTheDocument();
   });
 
+  it('shows the real AMS colour (targetColor), overriding the mis-matched spool', async () => {
+    // Usage log matched a grey spool, but the AMS actually loaded white PETG.
+    getHistoryDetail.mockResolvedValue({
+      filaments_used: [{ spool_id: 24, color_hex: '898989', multi_color_hexes: null, material: 'PETG', name: 'PETG Gray', color_name: 'Gray', used_g: 16.6 }],
+      cost: null,
+    });
+    getCloudTasks.mockResolvedValue([
+      { title: '0.28mm layer, 2 walls, 10% infill', amsDetailMapping: [{ sourceColor: '898989FF', targetColor: 'FFFFFFFF', filamentType: 'PETG', weight: 59 }] },
+    ]);
+    renderDetail();
+    expect(await screen.findByText('PETG')).toBeInTheDocument();      // from the AMS mapping
+    expect(screen.queryByText('PETG Gray')).toBeNull();              // spool-log colour overridden
+  });
+
   it('uses the Bambu cloud design name and colour cover when matched', async () => {
     getHistoryDetail.mockResolvedValue({ filaments_used: [], cost: null });
     getCloudTasks.mockResolvedValue([
