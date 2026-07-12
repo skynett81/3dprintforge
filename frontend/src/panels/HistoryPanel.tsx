@@ -34,6 +34,16 @@ export function HistoryPanel({ selected, onSelect, onBack }: Props = {}) {
   const all = data ?? [];
 
   const detail = selected ? all.find((r) => String(r.id) === selected) : null;
+  // NOTE: all hooks must run on every render (Rules of Hooks). Keep these
+  // useMemo calls ABOVE the conditional early-return below — otherwise opening
+  // a print detail skips them and React throws #300 ("fewer hooks than the
+  // previous render"), blanking the page.
+  const printers = useMemo(
+    () => ['all', ...Array.from(new Set(all.map((r) => r.printer_id).filter(Boolean))).sort()],
+    [all],
+  );
+  const rows = useMemo(() => filterHistory(all, status, printer), [all, status, printer]);
+
   if (selected && all.length > 0) {
     if (detail) return <HistoryDetail row={detail} onBack={onBack} />;
     return (
@@ -43,11 +53,6 @@ export function HistoryPanel({ selected, onSelect, onBack }: Props = {}) {
       </div>
     );
   }
-  const printers = useMemo(
-    () => ['all', ...Array.from(new Set(all.map((r) => r.printer_id).filter(Boolean))).sort()],
-    [all],
-  );
-  const rows = useMemo(() => filterHistory(all, status, printer), [all, status, printer]);
 
   return (
     <div>
