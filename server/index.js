@@ -396,6 +396,15 @@ function handleRequest(req, res) {
     }
   }
 
+  // Browsers request /favicon.ico by default on any page (including /v2, /shop,
+  // login) that has no explicit icon link. Point it at the SVG favicon so it
+  // never 404s. Kept before the auth gate so it works when signed out.
+  if (pathname === '/favicon.ico') {
+    res.writeHead(302, { Location: '/assets/favicon.svg' });
+    res.end();
+    return;
+  }
+
   // Public auth API routes (login, logout, status) - always accessible
   if (pathname === '/api/auth/status' || pathname === '/api/auth/login' || pathname === '/api/auth/logout') {
     return handleAuthApiRequest(req, res);

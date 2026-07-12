@@ -2157,6 +2157,13 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, rows);
     }
 
+    // ---- Single print history record ----
+    const histGetMatch = path.match(/^\/api\/history\/(\d+)$/);
+    if (histGetMatch && method === 'GET') {
+      const row = getHistoryById(parseInt(histGetMatch[1], 10));
+      return row ? sendJson(res, row) : sendJson(res, { error: 'Not found' }, 404);
+    }
+
     // ---- Update history notes ----
     const histUpdateMatch = path.match(/^\/api\/history\/(\d+)$/);
     if (histUpdateMatch && method === 'PUT') {
@@ -13198,6 +13205,7 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/bambu/print-stages', tag: 'Bambu Lab', summary: '36 print-stage koder med norske/engelske beskrivelser', permission: 'view' },
       // BamBuddy features
       { method: 'POST', path: '/api/screenshots/:id/link', tag: 'Screenshots', summary: 'Link screenshot to print history', permission: 'controls' },
+      { method: 'GET', path: '/api/history/:id', tag: 'History', summary: 'Get a single print history record', permission: 'view' },
       { method: 'GET', path: '/api/history/:id/photos', tag: 'History', summary: 'Get photos for a print', permission: 'view' },
       { method: 'GET', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Get MQTT debug log', permission: 'admin' },
       { method: 'DELETE', path: '/api/mqtt-debug/:printerId', tag: 'Debug', summary: 'Delete MQTT debug log', permission: 'admin' },
