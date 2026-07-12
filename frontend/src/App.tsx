@@ -3,6 +3,7 @@ import { useAuth, useResource } from './hooks';
 import { parseHash, buildHash } from './router';
 import { api } from './api';
 import { useT } from './i18n';
+import { useToast } from './toast';
 import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
 import { useNavBadges } from './nav-badges';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -88,6 +89,8 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
 const NAV_LOOKUP: Record<string, NavItem> = Object.fromEntries(NAV_GROUPS.flatMap((g) => g.items).map((n) => [n.id, n]));
 // Alt+1..9 quick-jump targets, in order.
 const SHORTCUT_PANELS: PanelId[] = ['dashboard', 'fleet', 'guard', 'queue', 'inventory', 'purchasing', 'analytics', 'history', 'settings'];
+// Web NFC (Chrome-on-Android) — used for the OpenSpool spool-scan action.
+const NFC_SUPPORTED = typeof window !== 'undefined' && 'NDEFReader' in window;
 
 function loadCollapsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
@@ -104,6 +107,7 @@ function loadRail(): boolean {
 
 export function App() {
   const t = useT();
+  const toast = useToast();
   const [route, setRoute] = useState(() => parseHash(window.location.hash));
   useEffect(() => {
     const onHash = () => setRoute(parseHash(window.location.hash));
@@ -187,6 +191,29 @@ export function App() {
   const [theme, setTheme] = useState<Theme>(initialTheme);
   function toggleTheme() { setTheme((prev) => { const next: Theme = prev === 'dark' ? 'light' : 'dark'; applyTheme(next); return next; }); }
 
+  // Scan an OpenSpool NFC tag (Web NFC) → match it to a spool → open it.
+  async function scanNfc() {
+    if (!NFC_SUPPORTED) return;
+    try {
+      const Reader = (window as unknown as { NDEFReader: new () => { scan: () => Promise<void>; onreading: ((e: { message: { records: { data?: BufferSource }[] } }) => void) | null } }).NDEFReader;
+      const ndef = new Reader();
+      await ndef.scan();
+      toast(t('v2.openspool.scan_wait', 'Hold a spool tag to the phone…'), 'success');
+      ndef.onreading = async (e) => {
+        for (const rec of e.message.records) {
+          if (!rec.data) continue;
+          try {
+            const json = new TextDecoder().decode(rec.data);
+            const res = await api.matchOpenspool(JSON.parse(json));
+            if (res.matched_id) { window.location.hash = `#/inventory/spools/${res.matched_id}`; toast(t('v2.openspool.scan_matched', 'Matched a spool'), 'success'); }
+            else { window.location.hash = '#/inventory/spools'; toast(t('v2.openspool.scan_nomatch', 'Tag read — no matching spool'), 'error'); }
+          } catch { toast(t('v2.openspool.scan_bad', 'Not an OpenSpool tag'), 'error'); }
+          break;
+        }
+      };
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
+
   // Global data search: spools, print history and customers → deep-link results.
   const searchData = useCallback(async (query: string): Promise<CommandItem[]> => {
     const ql = query.toLowerCase();
@@ -242,6 +269,7 @@ export function App() {
     { id: 'act:rail', label: rail ? t('v2.cmd.a_expand', 'Expand sidebar') : t('v2.cmd.a_collapse', 'Collapse sidebar'), group: 'Actions', run: toggleRail },
     { id: 'act:notify', label: t('v2.cmd.a_notify', 'Open notifications'), group: 'Actions', run: openNotifications, hint: unread > 0 ? String(unread) : undefined },
     { id: 'act:classic', label: t('v2.cmd.a_classic', 'Open Classic UI'), group: 'Actions', run: () => { window.location.href = '/'; } },
+    ...(NFC_SUPPORTED ? [{ id: 'act:scan', label: t('v2.cmd.a_scan', 'Scan spool tag (NFC)'), group: 'Actions', run: scanNfc }] : []),
   ];
 
   return (
