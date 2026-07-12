@@ -9556,6 +9556,43 @@ export async function handleApiRequest(req, res) {
     }
 
     // Upload 3MF linked to a history entry
+    // Fetch this print's 3MF model from Bambu cloud (matched by design) and
+    // link it, so the 3D preview works even when no local model was saved.
+    const histFetch3mfMatch = path.match(/^\/api\/history\/(\d+)\/fetch-3mf$/);
+    if (histFetch3mfMatch && method === 'POST') {
+      const histId = parseInt(histFetch3mfMatch[1], 10);
+      const hist = getHistoryById(histId);
+      if (!hist) return sendJson(res, { error: 'History not found' }, 404);
+      if (hist.linked_3mf) return sendJson(res, { ok: true, filename: hist.linked_3mf, cached: true });
+      if (!_bambuCloud || !_bambuCloud.isAuthenticated()) return sendJson(res, { error: 'Bambu cloud not connected' }, 400);
+      try {
+        const fn = String(hist.filename || '').toLowerCase().trim();
+        const tasks = await _bambuCloud.getTaskHistory();
+        const task = (tasks || []).find((tk) => {
+          const tt = String(tk.title || '').toLowerCase().trim();
+          const dt = String(tk.designTitle || '').toLowerCase().trim();
+          return (tt.length > 3 && (tt === fn || fn.includes(tt) || tt.includes(fn)))
+            || (dt.length > 3 && (dt === fn || fn.includes(dt) || dt.includes(fn)));
+        });
+        if (!task || !task.instanceId) return sendJson(res, { error: 'No matching cloud model for this print' }, 404);
+        const dl = await _bambuCloud.getDesign3mf(task.instanceId);
+        if (!dl?.url) return sendJson(res, { error: 'Cloud did not return a 3MF URL' }, 502);
+        const resp = await fetch(dl.url);
+        if (!resp.ok) return sendJson(res, { error: `3MF download failed (${resp.status})` }, 502);
+        const buffer = Buffer.from(await resp.arrayBuffer());
+        const dir = join(DATA_DIR, 'history-models');
+        mkdirSync(dir, { recursive: true });
+        const fname = `hist_${histId}.3mf`;
+        writeFileSync(join(dir, fname), buffer);
+        const db = (await import('./db/connection.js')).getDb();
+        db.prepare('UPDATE print_history SET linked_3mf = ? WHERE id = ?').run(fname, histId);
+        if (!hist.model_name && task.designTitle) {
+          db.prepare('UPDATE print_history SET model_name = ? WHERE id = ?').run(task.designTitle, histId);
+        }
+        return sendJson(res, { ok: true, filename: fname, name: dl.name || null, bytes: buffer.length });
+      } catch (e) { return sendJson(res, { error: e.message }, 500); }
+    }
+
     const histModelMatch = path.match(/^\/api\/history\/(\d+)\/model-3mf$/);
     if (histModelMatch && method === 'POST') {
       const histId = parseInt(histModelMatch[1]);

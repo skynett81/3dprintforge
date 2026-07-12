@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { useT } from '../../i18n';
 import type { HistoryRow, FilamentUsed, PrintCost, CloudTask } from '../../types';
 import { matchCloud, cloudTasksOf } from '../../history-name';
+import { Model3D } from './Model3D';
 
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
 const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
@@ -127,6 +128,8 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   const cloudTitle = cloud?.designTitle && cloud.designTitle !== cloud.title ? cloud.designTitle : null;
   const coverUrl = cloud?.cover || null;
   const [zoom, setZoom] = useState(false); // lightbox open
+  const [show3D, setShow3D] = useState(false);
+  const [busy3D, setBusy3D] = useState(false);
 
   // The Bambu cover is rendered in the *sliced* colour. When the AMS remapped
   // to a different real filament, the cover shows the wrong colour — fall back
@@ -136,6 +139,17 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
   );
   const useCover = Boolean(coverUrl) && !colorMismatch;
   const zoomSrc = coverUrl || `/api/history/${r.id}/thumbnail`;
+
+  // A cloud match means we can fetch the model's 3MF and show a real 3D view.
+  const has3D = Boolean(cloud);
+  const open3D = async () => {
+    setBusy3D(true);
+    try {
+      await fetch(`/api/history/${r.id}/fetch-3mf`, { method: 'POST' });
+      setShow3D(true);
+    } catch { /* Model3D surfaces its own error */ } finally { setBusy3D(false); }
+  };
+  const onImageClick = () => (has3D ? open3D() : setZoom(true));
 
   // The AMS mapping records the colour actually loaded at print time
   // (targetColor) — more accurate than the spool matched from the usage log,
@@ -205,11 +219,11 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
 
   const preview = useCover ? (
     <section className="card" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, margin: 0 }}>
-      <img src={coverUrl!} alt={title} loading="lazy" onClick={() => setZoom(true)}
-        style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 8, cursor: 'zoom-in' }} />
+      <img src={coverUrl!} alt={title} loading="lazy" onClick={onImageClick}
+        style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 8, cursor: has3D ? 'pointer' : 'zoom-in' }} />
     </section>
   ) : (
-    <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} onZoom={() => setZoom(true)} />
+    <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} onZoom={onImageClick} />
   );
 
   const chip = (f: FilamentUsed) => {
@@ -243,6 +257,11 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         <button className="btn btn--sm" onClick={onBack}>← {t('v2.history.title', 'History')}</button>
         <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
           <span className={`hs-badge hs-badge-${statusClass(r.status)}`}>{r.status}</span>
+          {has3D && (
+            <button className="btn btn--sm" onClick={open3D} disabled={busy3D}>
+              {busy3D ? t('common.loading', 'Loading…') : `▶ ${t('v2.hist.view_3d', '3D')}`}
+            </button>
+          )}
           {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{t('v2.hist.model', 'Model →')}</a>}
         </div>
       </div>
@@ -302,6 +321,8 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
           <img src={zoomSrc} alt={title} style={{ maxWidth: '95%', maxHeight: '95%', objectFit: 'contain', borderRadius: 8 }} />
         </div>
       )}
+
+      {show3D && <Model3D id={r.id} onClose={() => setShow3D(false)} />}
     </div>
   );
 }
