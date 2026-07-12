@@ -48,14 +48,29 @@ const PART_SELECT = `
   SELECT p.*, pc.name AS category_name,
     fl.original_name AS model_name, fl.file_type AS model_file_type,
     COALESCE((SELECT SUM(si.quantity) FROM stock_items si WHERE si.part_id = p.id), 0) AS total_stock,
-    (SELECT COUNT(*) FROM stock_items si WHERE si.part_id = p.id) AS stock_item_count
+    (SELECT COUNT(*) FROM stock_items si WHERE si.part_id = p.id) AS stock_item_count,
+    COALESCE((SELECT SUM(bl.quantity * bo.quantity * (1 + COALESCE(bl.waste_pct, 0) / 100.0))
+      FROM build_orders bo JOIN bom_lines bl ON bl.parent_part_id = bo.part_id
+      WHERE bo.status IN ('planned', 'in_progress') AND bl.component_part_id = p.id), 0) AS reserved
   FROM parts p
   LEFT JOIN part_categories pc ON pc.id = p.category_id
   LEFT JOIN file_library fl ON fl.id = p.model_file_id`;
 
+const round4 = (n) => Math.round(n * 1e4) / 1e4;
+
+// Attach derived stock figures: reserved (by open builds), available and the
+// low / over-reserved flags.
 function withLow(row) {
   if (!row) return row;
-  return { ...row, low: row.min_stock > 0 && row.total_stock < row.min_stock ? 1 : 0 };
+  const reserved = round4(row.reserved || 0);
+  const available = round4((row.total_stock || 0) - reserved);
+  return {
+    ...row,
+    reserved,
+    available,
+    low: row.min_stock > 0 && row.total_stock < row.min_stock ? 1 : 0,
+    over_reserved: available < 0 ? 1 : 0,
+  };
 }
 
 export function getParts(filters = {}) {

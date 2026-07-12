@@ -17,6 +17,7 @@ export * from './builds.js';
 export * from './stocktake.js';
 export * from './assets.js';
 export * from './checkouts.js';
+export * from './reservations.js';
 export * from './stock-ledger.js';
 export * from './reorder.js';
 export * from './recordings.js';

@@ -74,6 +74,7 @@ import {
   getWarranties, addWarranty, deleteWarranty, getExpiringWarranties,
   getAttachments, addAttachment, deleteAttachment,
   checkOut, checkIn, getCheckouts, getOverdueCheckouts,
+  getBuildShoppingList,
 } from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
@@ -4326,6 +4327,7 @@ export async function handleApiRequest(req, res) {
         catch (e) { sendJson(res, { error: e.message }, 400); }
       });
     }
+    if (path === '/api/inventory/build-shopping-list' && method === 'GET') return sendJson(res, getBuildShoppingList());
     if (path === '/api/inventory/checkouts/overdue' && method === 'GET') return sendJson(res, getOverdueCheckouts());
     const checkinMatch = path.match(/^\/api\/inventory\/checkouts\/(\d+)\/checkin$/);
     if (checkinMatch && method === 'POST') return readBody(req, res, (b) => {

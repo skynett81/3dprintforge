@@ -113,7 +113,19 @@ export interface InvPart {
   category_name?: string | null;
   total_stock: number;
   stock_item_count?: number;
+  reserved?: number;
+  available?: number;
+  over_reserved?: number;
   low?: number;
+}
+
+export interface BuildShoppingItem {
+  part_id: number;
+  part_name: string;
+  unit?: string | null;
+  needed: number;
+  on_hand: number;
+  shortfall: number;
 }
 
 export interface StockItem {

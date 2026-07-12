@@ -128,8 +128,8 @@ export function PartsTab({ openPartId }: { openPartId?: number | null } = {}) {
                 <span className="err-msg" style={{ fontWeight: 600 }}>{p.name}{p.ipn ? <span className="muted" style={{ fontWeight: 400 }}> · {p.ipn}</span> : null}</span>
                 <span className="muted">{p.category_name || '—'}</span>
                 <span className="hs-badge hs-badge-neutral">{p.type}</span>
-                <span className="tnum" style={{ fontWeight: 600 }}>{p.total_stock} {p.unit}</span>
-                {p.low ? <span className="hs-badge hs-badge-bad">{t('v2.parts.low', 'low')}</span> : <span />}
+                <span className="tnum" style={{ fontWeight: 600 }} title={p.reserved ? `${p.reserved} ${p.unit} ${t('v2.parts.reserved_short', 'reserved')} · ${p.available} ${t('v2.parts.available', 'available')}` : undefined}>{p.total_stock} {p.unit}{p.reserved ? <span className="muted" style={{ fontWeight: 400 }}> ({p.available})</span> : null}</span>
+                {p.over_reserved ? <span className="hs-badge hs-badge-bad">{t('v2.parts.over', 'over')}</span> : p.low ? <span className="hs-badge hs-badge-bad">{t('v2.parts.low', 'low')}</span> : <span />}
               </div>
             ))}
           </div>

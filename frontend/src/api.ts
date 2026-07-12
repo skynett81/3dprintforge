@@ -223,6 +223,7 @@ export const api = {
   listCheckouts: (q?: Record<string, string>) => req<import('./types').Checkout[]>('/api/inventory/checkouts' + (q && Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')),
   checkOut: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/checkouts', { method: 'POST', body: JSON.stringify(body) }),
   checkIn: (id: number, notes?: string) => req<{ ok: boolean }>(`/api/inventory/checkouts/${id}/checkin`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  getBuildShoppingList: () => req<import('./types').BuildShoppingItem[]>('/api/inventory/build-shopping-list'),
   listKbPrinters: (): Promise<import('./types').KbPrinter[]> => req('/api/kb/printers'),
   addKbPrinter: (body: Record<string, unknown>) => req<{ id: number }>('/api/kb/printers', { method: 'POST', body: JSON.stringify(body) }),
   updateKbPrinter: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/kb/printers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

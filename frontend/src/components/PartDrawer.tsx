@@ -164,6 +164,12 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
         {part && (
           <div className="diag-grid">
             <div className="diag-row"><span className="muted">{t('v2.parts.total_stock', 'Total stock')}</span><span className="diag-val">{part.total_stock} {unit}</span></div>
+            {!!part.reserved && (
+              <>
+                <div className="diag-row"><span className="muted">{t('v2.parts.reserved', 'Reserved (builds)')}</span><span className="diag-val">{part.reserved} {unit}</span></div>
+                <div className="diag-row"><span className="muted">{t('v2.parts.available', 'Available')}</span><span className={`diag-val${part.over_reserved ? ' low' : ''}`}>{part.available} {unit}{part.over_reserved ? <span className="hs-badge hs-badge-bad" style={{ marginLeft: 8 }}>{t('v2.parts.over', 'over-committed')}</span> : null}</span></div>
+              </>
+            )}
             <div className="diag-row"><span className="muted">{t('v2.parts.min_stock', 'Min stock')}</span><span className="diag-val">{part.min_stock} {unit}{part.low ? <span className="hs-badge hs-badge-bad" style={{ marginLeft: 8 }}>{t('v2.parts.low', 'low')}</span> : null}</span></div>
           </div>
         )}
