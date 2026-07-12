@@ -4567,7 +4567,16 @@
     "filament_weight_g": "Weight (g)",
     "estimated_time_min": "Time (min)",
     "unit_price": "Price",
-    "calculate": "Calculate"
+    "calculate": "Calculate",
+    "profitability": "Profitability",
+    "revenue": "Revenue",
+    "cogs": "Cost (COGS)",
+    "margin": "Margin",
+    "margin_pct": "Margin %",
+    "margin_by_month": "Margin by month",
+    "top_products_margin": "Most profitable products",
+    "product": "Product",
+    "units": "Units"
   },
   "insights.low_stock_title": "Low Stock Alert",
   "insights.low_stock_message": "{count} spool(s) will run out within 14 days at current usage rate.",

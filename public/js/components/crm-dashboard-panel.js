@@ -165,13 +165,118 @@
     </div>`;
   }
 
+  // ---- Profitability (revenue - COGS) ----
+
+  async function fetchMarginSummary() {
+    try {
+      const r = await fetch('/api/crm/margins/summary');
+      if (!r.ok) throw new Error('Failed');
+      return r.json();
+    } catch {
+      return { orders: 0, revenue: 0, cogs: 0, margin: 0, margin_pct: 0, by_month: [] };
+    }
+  }
+  async function fetchProductMargins() {
+    try {
+      const r = await fetch('/api/crm/margins/products?limit=8');
+      if (!r.ok) throw new Error('Failed');
+      return r.json();
+    } catch {
+      return [];
+    }
+  }
+
+  function _marginColor(v) { return (v || 0) < 0 ? 'var(--accent-red, #ef4444)' : 'var(--accent-green, #22c55e)'; }
+
+  function renderMarginCards(m) {
+    const cards = [
+      { label: _tl('crm.revenue', 'Revenue'), value: formatCurrency(m.revenue), color: 'var(--accent-blue)', icon: 'bi-cash-stack' },
+      { label: _tl('crm.cogs', 'Cost (COGS)'), value: formatCurrency(m.cogs), color: 'var(--accent-orange)', icon: 'bi-box-seam' },
+      { label: _tl('crm.margin', 'Margin'), value: formatCurrency(m.margin), color: _marginColor(m.margin), icon: 'bi-graph-up-arrow' },
+      { label: _tl('crm.margin_pct', 'Margin %'), value: (m.margin_pct || 0).toFixed(1) + ' %', color: _marginColor(m.margin), icon: 'bi-percent' }
+    ];
+    return '<div class="stats-strip" style="margin-bottom:1rem">' +
+      cards.map(c =>
+        `<div class="spark-panel">
+          <span class="spark-label"><i class="bi ${c.icon}" style="margin-right:4px"></i>${_esc(c.label)}</span>
+          <span class="spark-value" style="color:${c.color}">${_esc(String(c.value))}</span>
+        </div>`
+      ).join('') + '</div>';
+  }
+
+  function renderMarginByMonth(byMonth) {
+    if (!byMonth || byMonth.length === 0) return '';
+    const maxVal = Math.max(...byMonth.map(d => Math.abs(d.margin || 0)), 1);
+    const barHeight = 120;
+    const bars = byMonth.map(d => {
+      const h = Math.max(2, (Math.abs(d.margin || 0) / maxVal) * barHeight);
+      const color = _marginColor(d.margin);
+      return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:46px">
+        <span style="font-size:0.68rem;margin-bottom:4px;opacity:0.7">${_esc((d.margin_pct || 0).toFixed(0))}%</span>
+        <div style="width:70%;height:${barHeight}px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${h}px;background:${color};border-radius:4px 4px 0 0;transition:height 0.3s" title="${_esc(formatCurrency(d.margin))}"></div>
+        </div>
+        <span style="font-size:0.72rem;margin-top:6px;font-weight:500">${_esc(d.month || '')}</span>
+      </div>`;
+    }).join('');
+    return `<div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-bar-chart-line" style="margin-right:6px"></i>${_esc(_tl('crm.margin_by_month', 'Margin by month'))}</h3></div>
+      <div class="card-body"><div style="display:flex;gap:4px;align-items:flex-end;padding:0.5rem 0">${bars}</div></div>
+    </div>`;
+  }
+
+  function renderTopProductMargins(products) {
+    if (!products || products.length === 0) return '';
+    const rows = products.map((p, i) => {
+      const name = p.description || p.product_key || '--';
+      return `<tr>
+        <td style="font-weight:600">${i + 1}.</td>
+        <td>${_esc(name)}</td>
+        <td style="text-align:center">${p.units || 0}</td>
+        <td style="text-align:right">${formatCurrency(p.revenue)}</td>
+        <td style="text-align:right;font-weight:600;color:${_marginColor(p.margin)}">${formatCurrency(p.margin)}</td>
+        <td style="text-align:right;color:${_marginColor(p.margin)}">${(p.margin_pct || 0).toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+    return `<div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-trophy" style="margin-right:6px"></i>${_esc(_tl('crm.top_products_margin', 'Most profitable products'))}</h3></div>
+      <div class="card-body" style="padding:0">
+        <table class="table table-sm" style="margin:0">
+          <thead><tr>
+            <th style="width:30px">#</th>
+            <th>${_esc(_tl('crm.product', 'Product'))}</th>
+            <th style="text-align:center">${_esc(_tl('crm.units', 'Units'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.total_revenue', 'Revenue'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.margin', 'Margin'))}</th>
+            <th style="text-align:right">${_esc(_tl('crm.margin_pct', 'Margin %'))}</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  function renderProfitabilitySection(summary, products) {
+    if (!summary || !summary.orders) return '';
+    let html = `<div style="margin-top:1.25rem;margin-bottom:0.5rem;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;opacity:0.6">
+      <i class="bi bi-piggy-bank" style="margin-right:6px"></i>${_esc(_tl('crm.profitability', 'Profitability'))}</div>`;
+    html += renderMarginCards(summary);
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
+    html += renderMarginByMonth(summary.by_month || []);
+    html += renderTopProductMargins(products || []);
+    html += '</div>';
+    return html;
+  }
+
   async function loadCrmDashboardPanel() {
     const body = document.getElementById('overlay-panel-body');
     if (!body) return;
 
     body.innerHTML = `<div style="text-align:center;padding:2rem;opacity:0.6">${_tl('common.loading')}</div>`;
 
-    const data = await fetchDashboard();
+    const [data, marginSummary, productMargins] = await Promise.all([
+      fetchDashboard(), fetchMarginSummary(), fetchProductMargins()
+    ]);
 
     let html = renderStatsCards(data);
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
@@ -182,6 +287,7 @@
     html += renderTopCustomers(data.top_customers || []);
     html += renderRecentActivity(data.recent_activity || []);
     html += '</div>';
+    html += renderProfitabilitySection(marginSummary, productMargins);
 
     body.innerHTML = html;
   }

@@ -25,4 +25,5 @@ export * from './ecommerce.js';
 export * from './misc.js';
 export * from './activity-log.js';
 export * from './crm.js';
+export * from './order-margins.js';
 export * from './gcode-snippets.js';

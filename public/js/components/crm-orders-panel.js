@@ -23,6 +23,7 @@
   let _activeView = 'list'; // list | detail | form
   let _selectedOrder = null;
   let _orderItems = [];
+  let _orderMargin = null;
   let _customers = [];
   let _formItems = []; // items being added in the form
 
@@ -41,6 +42,11 @@
   async function fetchOrderItems(id) {
     try { const r = await fetch('/api/crm/orders/' + id + '/items'); return r.ok ? r.json() : []; }
     catch { return []; }
+  }
+
+  async function fetchOrderMargin(id) {
+    try { const r = await fetch('/api/crm/orders/' + id + '/margin'); return r.ok ? r.json() : null; }
+    catch { return null; }
   }
 
   async function fetchCustomers() {
@@ -183,6 +189,23 @@
       itemsHtml = `<div style="text-align:center;padding:1rem;opacity:0.6">${_esc(_tl('crm.no_items', 'No items'))}</div>`;
     }
 
+    // Profitability card (revenue - COGS)
+    let marginHtml = '';
+    const m = _orderMargin;
+    if (m) {
+      const mc = (m.margin || 0) < 0 ? 'var(--accent-red, #ef4444)' : 'var(--accent-green, #22c55e)';
+      const row = (label, value, color) => `<div class="stats-detail-item"><span class="stats-detail-item-label">${_esc(label)}</span><span class="stats-detail-item-value"${color ? ` style="color:${color}"` : ''}>${value}</span></div>`;
+      marginHtml = `<div class="card">
+        <div class="card-header"><h3 class="card-title"><i class="bi bi-piggy-bank" style="margin-right:6px"></i>${_esc(_tl('crm.profitability', 'Profitability'))}</h3></div>
+        <div class="card-body">
+          ${row(_tl('crm.revenue', 'Revenue'), formatCurrency(m.revenue, o.currency))}
+          ${row(_tl('crm.cogs', 'Cost (COGS)'), formatCurrency(m.cogs, o.currency))}
+          ${row(_tl('crm.margin', 'Margin'), '<strong>' + formatCurrency(m.margin, o.currency) + '</strong>', mc)}
+          ${row(_tl('crm.margin_pct', 'Margin %'), '<strong>' + (m.margin_pct || 0).toFixed(1) + ' %</strong>', mc)}
+        </div>
+      </div>`;
+    }
+
     // Status change buttons
     const nextStatuses = { draft: ['pending'], pending: ['printing', 'cancelled'], printing: ['completed', 'cancelled'], completed: ['shipped'], shipped: [] };
     const statusBtns = (nextStatuses[o.status] || []).map(s => {
@@ -210,6 +233,7 @@
           <div class="card-header"><h3 class="card-title">${_esc(_tl('crm.items', 'Items'))}</h3></div>
           <div class="card-body" style="padding:0">${itemsHtml}</div>
         </div>
+        ${marginHtml}
       </div>`;
   }
 
@@ -347,6 +371,7 @@
   window._crmOrdDetail = async function(id) {
     _selectedOrder = await fetchOrderDetail(id);
     _orderItems = await fetchOrderItems(id);
+    _orderMargin = await fetchOrderMargin(id);
     _activeView = 'detail';
     const body = document.getElementById('overlay-panel-body');
     if (body) renderDetail(body);
@@ -365,6 +390,7 @@
       if (typeof showToast === 'function') showToast(_tl('crm.status_changed', 'Status endret'), 'success');
       _selectedOrder = await fetchOrderDetail(id);
       _orderItems = await fetchOrderItems(id);
+      _orderMargin = await fetchOrderMargin(id);
       const body = document.getElementById('overlay-panel-body');
       if (body) renderDetail(body);
     } catch (err) {

@@ -3569,7 +3569,16 @@
     "filament_weight_g": "Vekt (g)",
     "estimated_time_min": "Tid (min)",
     "unit_price": "Pris",
-    "calculate": "Kalkuler"
+    "calculate": "Kalkuler",
+    "profitability": "Lønnsomhet",
+    "revenue": "Inntekt",
+    "cogs": "Kostnad (COGS)",
+    "margin": "Margin",
+    "margin_pct": "Margin %",
+    "margin_by_month": "Margin per måned",
+    "top_products_margin": "Mest lønnsomme produkter",
+    "product": "Produkt",
+    "units": "Antall"
   },
   "insights.low_stock_title": "Lavt lagerbeholdning",
   "insights.low_stock_message": "{count} spole(r) vil gå tom innen 14 dager med nåværende brukstakt.",
