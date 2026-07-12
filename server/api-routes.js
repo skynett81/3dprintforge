@@ -60,7 +60,8 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission, invalidateUserSessions } from './auth.js';
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
-import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand } from './mqtt-commands.js';
+import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
+import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
 import { verifySimplyPrintWebhook } from './simplyprint-webhook.js';
@@ -294,6 +295,7 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/price-history') || path.startsWith('/api/price-alerts') || path.startsWith('/api/build-plates')) return 'filament';
   if (path.startsWith('/api/dryer-models') || path.startsWith('/api/storage-conditions')) return 'filament';
   if (path.startsWith('/api/tags') || path.startsWith('/api/nfc')) return 'filament';
+  if (path.startsWith('/api/openspool')) return 'filament';
   if (path.startsWith('/api/palette')) return 'filament';
   if (path.startsWith('/api/spoolman')) return 'filament';
 
@@ -2001,6 +2003,20 @@ export async function handleApiRequest(req, res) {
             entry.client.sendCommand(buildXcamControlCommand(body.field, !!body.enable));
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, field: body.field, enable: !!body.enable });
+          }
+          // Apply an OpenSpool tag to an AMS slot (same MQTT setting OpenSpool
+          // pushes: tray colour / type / nozzle temps). Bambu only.
+          if (action === 'openspool_apply') {
+            if ((entry.config && entry.config.type) !== 'bambu') return sendJson(res, { error: 'AMS setting is only available on Bambu printers' }, 400);
+            let parsed;
+            try { parsed = parseOpenSpoolTag(body.tag); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+            const amsId = Number.isFinite(Number(body.ams_id)) ? Number(body.ams_id) : 0;
+            const slotId = Number(body.slot_id);
+            if (!Number.isInteger(slotId) || slotId < 0 || slotId > 3) return sendJson(res, { error: 'slot_id (0-3) required' }, 400);
+            const color6 = (parsed.colorHex || 'FFFFFF').slice(0, 6);
+            entry.client.sendCommand(buildAmsFilamentSettingCommand(amsId, slotId, `${color6}FF`, parsed.type || 'PLA', parsed.minTemp ?? 190, parsed.maxTemp ?? 230));
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, applied: { ams_id: amsId, slot_id: slotId, type: parsed.type, color_hex: color6 } });
           }
           // Fan / light / speed: supported on Bambu (MQTT) and Klipper/Moonraker
           // (gcode). Lets the slicer Devices panel mirror the Bambu Device tab.
@@ -4071,6 +4087,24 @@ export async function handleApiRequest(req, res) {
       const spool = getSpool(parseInt(spoolMatch[1]));
       if (!spool) return sendJson(res, { error: 'Not found' }, 404);
       return sendJson(res, spool);
+    }
+    // OpenSpool NFC tag payload for a spool (write to an NTAG 215/216, or scan
+    // with the OpenSpool reader / Web NFC). https://github.com/spuder/OpenSpool
+    const openspoolTagMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/openspool-tag$/);
+    if (openspoolTagMatch && method === 'GET') {
+      const spool = getSpool(parseInt(openspoolTagMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Not found' }, 404);
+      const tag = buildOpenSpoolTag(spool);
+      return sendJson(res, { tag, preview_url: openSpoolPreviewUrl(tag) });
+    }
+    // Match a scanned OpenSpool tag to a spool in inventory.
+    if (method === 'POST' && path === '/api/openspool/match') {
+      return readBody(req, res, (body) => {
+        let parsed;
+        try { parsed = parseOpenSpoolTag(body.tag ?? body); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+        const result = matchSpoolToTag(parsed, getSpools({}).rows);
+        sendJson(res, { parsed, matched_id: result.matched?.id ?? null, matched: result.matched, candidates: result.candidates });
+      });
     }
     if (method === 'POST' && path === '/api/inventory/spools') {
       return readBody(req, res, (body) => {
