@@ -73,6 +73,7 @@ import {
   createStocktake, getStocktakes, getStocktake, setStocktakeCount, applyStocktake, cancelStocktake,
   getWarranties, addWarranty, deleteWarranty, getExpiringWarranties,
   getAttachments, addAttachment, deleteAttachment,
+  checkOut, checkIn, getCheckouts, getOverdueCheckouts,
 } from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
@@ -4310,6 +4311,28 @@ export async function handleApiRequest(req, res) {
       }
       _broadcastInventory('created', 'part', { imported: created });
       sendJson(res, { created });
+    });
+    // ── Asset check-out / custody ──
+    if (path === '/api/inventory/checkouts') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        if (url.searchParams.get('entity_type')) f.entity_type = url.searchParams.get('entity_type');
+        if (url.searchParams.get('entity_id')) f.entity_id = url.searchParams.get('entity_id');
+        return sendJson(res, getCheckouts(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        try { const r = checkOut(b); _broadcastInventory('created', 'checkout', { id: r.id }); sendJson(res, r, 201); }
+        catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+    if (path === '/api/inventory/checkouts/overdue' && method === 'GET') return sendJson(res, getOverdueCheckouts());
+    const checkinMatch = path.match(/^\/api\/inventory\/checkouts\/(\d+)\/checkin$/);
+    if (checkinMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = checkIn(parseInt(checkinMatch[1]), b.notes);
+      if (!r) return sendJson(res, { error: 'Not found or already returned' }, 400);
+      _broadcastInventory('updated', 'checkout', { id: parseInt(checkinMatch[1]) });
+      sendJson(res, r);
     });
 
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);

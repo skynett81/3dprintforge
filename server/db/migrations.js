@@ -2643,6 +2643,27 @@ export function runMigrations() {
       try { db.exec('ALTER TABLE file_library ADD COLUMN license TEXT'); } catch { /* exists */ }
       try { db.exec('ALTER TABLE file_library ADD COLUMN designer TEXT'); } catch { /* exists */ }
     }},
+    { version: 174, up: (db) => {
+      // Inventory: asset check-out / custody (Snipe-IT style). Track who holds a
+      // tool / piece of equipment, with an optional due date and return.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS asset_checkouts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          holder TEXT NOT NULL,
+          quantity REAL DEFAULT 1,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          status TEXT DEFAULT 'out',
+          notes TEXT,
+          checked_out_at TEXT DEFAULT (datetime('now')),
+          due_at TEXT,
+          checked_in_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_checkouts_entity ON asset_checkouts(entity_type, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_checkouts_status ON asset_checkouts(status);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

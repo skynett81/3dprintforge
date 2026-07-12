@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment, ShopProduct, LibraryFile } from '../types';
+import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment, ShopProduct, LibraryFile, Checkout } from '../types';
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -48,6 +48,8 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [shopProducts, setShopProducts] = useState<ShopProduct[]>([]);
   const [libFiles, setLibFiles] = useState<LibraryFile[]>([]);
+  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
+  const [coForm, setCoForm] = useState({ holder: '', due: '' });
   const [modelSel, setModelSel] = useState('');
   const [wForm, setWForm] = useState({ provider: '', end_date: '' });
   const [aForm, setAForm] = useState({ title: '', url: '', kind: 'manual' });
@@ -55,11 +57,21 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
   useEffect(() => {
     let alive = true;
     const eid = String(partId);
-    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid), api.listShopProducts().catch(() => []), api.listLibrary().catch(() => [])])
-      .then(([w, a, sp, lf]) => { if (alive) { setWarranties(w); setAttachments(a); setShopProducts(sp); setLibFiles(lf); } })
+    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid), api.listShopProducts().catch(() => []), api.listLibrary().catch(() => []), api.listCheckouts({ entity_type: 'part', entity_id: eid }).catch(() => [])])
+      .then(([w, a, sp, lf, co]) => { if (alive) { setWarranties(w); setAttachments(a); setShopProducts(sp); setLibFiles(lf); setCheckouts(co); } })
       .catch(() => {});
     return () => { alive = false; };
   }, [partId, tick]);
+
+  const activeCheckout = checkouts.find((c) => c.status === 'out') || null;
+  async function doCheckOut() {
+    if (!coForm.holder.trim()) { toast(t('v2.custody.holder_req', 'Enter who is taking it'), 'error'); return; }
+    try { await api.checkOut({ entity_type: 'part', entity_id: String(partId), holder: coForm.holder.trim(), due_at: coForm.due || undefined }); setCoForm({ holder: '', due: '' }); refresh(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function doCheckIn(id: number) {
+    try { await api.checkIn(id); refresh(); } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   async function linkModel(fid: number | null) {
     try { await api.updateInvPart(partId, { model_file_id: fid }); setModelSel(''); refresh(); }
@@ -288,6 +300,23 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
             <input className="input" type="date" value={wForm.end_date} onChange={(e) => setWForm({ ...wForm, end_date: e.target.value })} style={{ maxWidth: 150 }} />
             <button className="btn btn--sm" onClick={addW}>{t('v2.warr.add', 'Add')}</button>
           </div>
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.custody.title', 'Custody')}</div>
+          {activeCheckout ? (
+            <div className="err-row" style={{ gridTemplateColumns: '1.4fr auto auto', padding: '6px 0' }}>
+              <span className="err-msg">{t('v2.custody.out_to', 'Out to')} <strong>{activeCheckout.holder}</strong></span>
+              <span className={activeCheckout.due_at && new Date(activeCheckout.due_at).getTime() < Date.now() ? 'low tnum' : 'muted tnum'}>{activeCheckout.due_at ? `${t('v2.custody.due', 'due')} ${activeCheckout.due_at}` : ''}</span>
+              <button className="btn btn--sm" onClick={() => doCheckIn(activeCheckout.id)}>{t('v2.custody.checkin', 'Check in')}</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+              <input className="input" placeholder={t('v2.custody.holder', 'Who is taking it?')} value={coForm.holder} onChange={(e) => setCoForm({ ...coForm, holder: e.target.value })} style={{ flex: '1 1 130px', minWidth: 0 }} />
+              <input className="input" type="date" value={coForm.due} onChange={(e) => setCoForm({ ...coForm, due: e.target.value })} title={t('v2.custody.due_date', 'Due date')} style={{ maxWidth: 150 }} />
+              <button className="btn btn--sm" onClick={doCheckOut}>{t('v2.custody.checkout', 'Check out')}</button>
+            </div>
+          )}
         </div>
 
         <div className="drawer-history">

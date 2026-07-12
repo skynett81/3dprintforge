@@ -216,6 +216,22 @@ export interface Attachment {
   url: string;
 }
 
+export interface Checkout {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  holder: string;
+  quantity?: number;
+  location_id?: number | null;
+  status: string;
+  notes?: string | null;
+  checked_out_at: string;
+  due_at?: string | null;
+  checked_in_at?: string | null;
+  entity_name?: string | null;
+  location_name?: string | null;
+}
+
 export interface ShopProduct {
   id: number;
   name: string;
