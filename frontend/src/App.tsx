@@ -4,6 +4,7 @@ import { parseHash, buildHash } from './router';
 import { api } from './api';
 import { useT } from './i18n';
 import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
+import { useNavBadges } from './nav-badges';
 import { NotificationCenter } from './components/NotificationCenter';
 import type { AppNotification } from './types';
 import { DashboardPanel } from './panels/DashboardPanel';
@@ -85,6 +86,9 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
 function loadCollapsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
 }
+function loadRail(): boolean {
+  try { return localStorage.getItem('v2.nav.rail') === '1'; } catch { return false; }
+}
 
 export function App() {
   const t = useT();
@@ -100,7 +104,9 @@ export function App() {
   const navigateInv = (sub: string, detail?: string | null) => { window.location.hash = buildHash('inventory', sub, detail); };
   const navigatePur = (sub: string, detail?: string | null) => { window.location.hash = buildHash('purchasing', sub, detail); };
   const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
+  const [rail, setRail] = useState<boolean>(loadRail);
   const auth = useAuth();
+  const badges = useNavBadges();
 
   function toggleGroup(label: string) {
     setCollapsed((prev) => {
@@ -109,6 +115,9 @@ export function App() {
       try { localStorage.setItem('v2.nav.collapsed', JSON.stringify([...next])); } catch { /* ignore */ }
       return next;
     });
+  }
+  function toggleRail() {
+    setRail((prev) => { const next = !prev; try { localStorage.setItem('v2.nav.rail', next ? '1' : '0'); } catch { /* ignore */ } return next; });
   }
   const authLabel = auth == null ? '' : auth.user ? auth.user : auth.enabled ? 'Signed in' : 'Local · no login';
 
@@ -126,7 +135,7 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${rail ? ' app-shell--rail' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">3F</div>
@@ -138,11 +147,16 @@ export function App() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
             {unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
           </button>
+          <button className="rail-toggle" onClick={toggleRail} title={rail ? t('v2.nav.expand', 'Expand menu') : t('v2.nav.collapse', 'Collapse menu')} aria-label={rail ? t('v2.nav.expand', 'Expand menu') : t('v2.nav.collapse', 'Collapse menu')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><polyline points={rail ? '9 6 15 12 9 18' : '15 6 9 12 15 18'} /></svg>
+          </button>
         </div>
         <nav className="nav">
           {NAV_GROUPS.map((g, gi) => {
             const isCollapsed = g.label ? collapsed.has(g.label) : false;
             const hasActive = g.items.some((n) => n.id === panel);
+            // In rail mode groups always show their icons (labels/headers hide via CSS).
+            const showItems = rail || !isCollapsed;
             return (
               <div className="nav-group" key={gi}>
                 {g.label && (
@@ -152,16 +166,21 @@ export function App() {
                     {isCollapsed && hasActive && <span className="nav-section-dot" />}
                   </button>
                 )}
-                {!isCollapsed && g.items.map((n) => (
-                  <button
-                    key={n.id}
-                    className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
-                    onClick={() => setPanel(n.id)}
-                  >
-                    <span className="nav-icon">{n.icon}</span>
-                    {n.label}
-                  </button>
-                ))}
+                {showItems && g.items.map((n) => {
+                  const b = badges[n.id];
+                  return (
+                    <button
+                      key={n.id}
+                      className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+                      onClick={() => setPanel(n.id)}
+                      title={rail ? n.label : undefined}
+                    >
+                      <span className="nav-icon">{n.icon}</span>
+                      <span className="nav-label">{n.label}</span>
+                      {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
+                    </button>
+                  );
+                })}
               </div>
             );
           })}
@@ -170,8 +189,8 @@ export function App() {
           {authLabel && (
             <div className="auth-chip"><span className="auth-dot" />{authLabel}</div>
           )}
-          <a className="classic-link" href="/">← Classic UI</a>
-          <div className="muted" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
+          <a className="classic-link" href="/" title={t('v2.nav.classic', 'Classic UI')}>← <span className="nav-label">{t('v2.nav.classic', 'Classic UI')}</span></a>
+          <div className="muted foot-meta" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
         </div>
       </aside>
 

@@ -87,8 +87,39 @@ body {
 .nav-item:hover { background: var(--bg-2); color: var(--text); }
 .nav-item--active { background: rgba(0,179,164,0.12); color: var(--accent); font-weight: 600; }
 .nav-item--active .nav-icon { color: var(--accent); }
-.nav-icon { display: grid; place-items: center; opacity: 0.9; }
+.nav-icon { display: grid; place-items: center; opacity: 0.9; flex: none; }
+.nav-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-badge {
+  flex: none; margin-left: auto; min-width: 19px; height: 18px; padding: 0 6px;
+  border-radius: 999px; font-size: 0.66rem; font-weight: 700; line-height: 1;
+  display: grid; place-items: center;
+}
+.nav-badge--accent { background: rgba(0,179,164,0.18); color: var(--accent); }
+.nav-badge--blue { background: rgba(59,130,246,0.2); color: #7fb0ff; }
+.nav-badge--red { background: var(--red); color: #fff; }
+.rail-toggle {
+  margin-left: 2px; background: none; border: none; color: var(--faint); cursor: pointer;
+  padding: 6px; border-radius: 8px; display: grid; place-items: center;
+}
+.rail-toggle:hover { background: var(--bg-2); color: var(--text); }
 .sidebar-foot { margin-top: auto; font-size: 0.68rem; padding: 0 6px; line-height: 1.5; }
+
+/* Collapsed icon-rail mode */
+.app-shell--rail { grid-template-columns: 68px 1fr; }
+.app-shell--rail .sidebar { padding: 20px 10px; }
+.app-shell--rail .brand { flex-direction: column; gap: 10px; padding: 0; }
+.app-shell--rail .brand-text,
+.app-shell--rail .nav-section,
+.app-shell--rail .nav-label,
+.app-shell--rail .foot-meta,
+.app-shell--rail .auth-chip { display: none; }
+.app-shell--rail .nav-group + .nav-group { margin-top: 6px; border-top: 1px solid var(--border-soft); padding-top: 6px; }
+.app-shell--rail .nav-item { justify-content: center; padding: 11px 0; position: relative; }
+.app-shell--rail .nav-badge {
+  position: absolute; top: 5px; right: 12px; min-width: 8px; height: 8px; padding: 0;
+  font-size: 0; border: 2px solid #0e1016;
+}
+.app-shell--rail .classic-link { justify-content: center; }
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
 .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
@@ -363,7 +394,7 @@ a.hs-badge { text-decoration: none; }
 .toast--success::before { content: '✓ '; color: var(--green); font-weight: 700; }
 .toast--error { border-color: rgba(239,90,90,0.4); }
 .toast--error::before { content: '✕ '; color: var(--red); font-weight: 700; }
-.classic-link { color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 500; }
+.classic-link { color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 4px; }
 .classic-link:hover { color: var(--accent); }
 
 .main { padding: 30px 32px 80px; max-width: 1000px; }
