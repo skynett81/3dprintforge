@@ -84,6 +84,28 @@ export function checkLoginRate(ip) {
   return entry.count <= LOGIN_MAX_ATTEMPTS;
 }
 
+// ---- Public storefront order limiter (per IP, 10 orders / 10 min) ----
+// The order endpoint is unauthenticated and writes rows + decrements stock,
+// so it gets a much tighter cap than the generic API limiter.
+const ORDER_MAX = 10;
+const ORDER_WINDOW_MS = 10 * 60 * 1000;
+const _orderAttempts = new Map();
+
+export function checkOrderRate(ip) {
+  const now = Date.now();
+  const entry = _orderAttempts.get(ip);
+  if (!entry || now - entry.firstAttempt > ORDER_WINDOW_MS) {
+    if (_orderAttempts.size >= 10000) {
+      const oldest = _orderAttempts.keys().next().value;
+      if (oldest !== undefined) _orderAttempts.delete(oldest);
+    }
+    _orderAttempts.set(ip, { count: 1, firstAttempt: now });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= ORDER_MAX;
+}
+
 // ---- General API rate limiter (per IP, 200 / minute) ----
 const API_RATE_MAX = 200;
 const API_RATE_WINDOW_MS = 60_000;
@@ -126,6 +148,7 @@ export function getApiRateHeaders(ip) {
 export function _resetRateLimiters() {
   _loginAttempts.clear();
   _apiRates.clear();
+  _orderAttempts.clear();
 }
 
 // Cleanup stale entries every 5 minutes. unref() so this timer doesn't

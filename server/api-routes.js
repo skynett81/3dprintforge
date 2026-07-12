@@ -42,7 +42,7 @@ import { CameraRecorder } from './camera-recorder.js';
 import { recalibrateFromHistory, recalibrateFromSignals } from './database.js';
 import { getCrmCustomers, getCrmCustomer, createCrmCustomer, updateCrmCustomer, deleteCrmCustomer, getCrmOrders, getCrmOrder, createCrmOrder, updateCrmOrder, updateCrmOrderStatus, createCrmOrderFromHistory, addCrmOrderItem, updateCrmOrderItem, removeCrmOrderItem, createCrmInvoice, getCrmInvoice, getCrmInvoices, updateCrmInvoiceStatus, getCrmDashboard, getCrmSettings, updateCrmSettings, getOrderMargin, getProductMargins, getMarginSummary,
   createShopProduct, getShopProduct, updateShopProduct, listShopProducts, setShopProductActive, deleteShopProduct,
-  addProductToOrder, dispatchOrderToQueue } from './database.js';
+  addProductToOrder, dispatchOrderToQueue, publicProduct, createShopOrder } from './database.js';
 import { listGcodeSnippets, getGcodeSnippet, createGcodeSnippet, updateGcodeSnippet, deleteGcodeSnippet, getGcodeSnippetCategories } from './database.js';
 import { generateInvoiceHtml } from './crm-invoice.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
@@ -53,7 +53,7 @@ import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
 import { inflateRawSync } from 'node:zlib';
 import { loadServerJson as _loadServerJson, getHmsCodes as _getHmsCodes, IMMUTABLE_JSON_HEADERS as _IMMUTABLE_JSON_HEADERS } from './json-cache.js';
-import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders, preserveUnchangedCredentials } from './api-helpers.js';
+import { sendJson, checkApiRate, checkLoginRate, checkOrderRate, getApiRateHeaders, preserveUnchangedCredentials } from './api-helpers.js';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, statSync, createReadStream, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -668,8 +668,13 @@ export async function handleApiRequest(req, res) {
     path === '/api/webhook/simplyprint'
   );
 
+  // Public storefront: an unauthenticated shopper can list active products
+  // and place an order. These handlers expose only public-safe fields and
+  // validate all input; everything else under /api/shop stays admin-gated.
+  const isPublicStorefront = path.startsWith('/api/shop/public/');
+
   // Centralized permission check for all API routes
-  if (isAuthEnabled() && !isIncomingWebhook) {
+  if (isAuthEnabled() && !isIncomingWebhook && !isPublicStorefront) {
     const perm = getRoutePermission(method, path);
     if (!requirePerm(req, res, perm)) return;
   }
@@ -10457,6 +10462,35 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Public storefront (Fase 2.3, unauthenticated) ----
+    if (path.startsWith('/api/shop/public/')) {
+      // Storefront is a premium feature; hide it when the licence is inactive.
+      if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Storefront not available' }, 403);
+
+      if (method === 'GET' && path === '/api/shop/public/products') {
+        try {
+          const category = url.searchParams.get('category') || null;
+          const search = url.searchParams.get('search') || null;
+          const products = listShopProducts({ active: true, category, search, limit: 500 }).map(publicProduct);
+          return sendJson(res, products);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+
+      if (method === 'POST' && path === '/api/shop/public/orders') {
+        if (!checkOrderRate(_getClientIp(req))) {
+          return sendJson(res, { error: 'Too many orders. Please try again later.' }, 429);
+        }
+        // Cart payloads are tiny; cap the body well below the 10MB default.
+        return readBody(req, res, (body) => {
+          try {
+            const result = createShopOrder(body || {});
+            return sendJson(res, { ok: true, order_number: result.order_number }, 201);
+          } catch (e) { return sendJson(res, { error: e.message }, 400); }
+        }, 64 * 1024);
+      }
+      return sendJson(res, { error: 'Not found' }, 404);
+    }
+
     // ---- Storefront product catalog (Fase 2.1) ----
     if (path.startsWith('/api/shop/products')) {
       // List
@@ -13312,6 +13346,8 @@ function _getApiDocs() {
       { method: 'POST', path: '/api/crm/orders/:id/dispatch', tag: 'Shop', summary: 'Dispatch an order\'s printable lines to the print queue', permission: 'admin' },
       { method: 'GET', path: '/api/crm/margins/products', tag: 'CRM', summary: 'Margin per product, most profitable first', permission: 'view' },
       { method: 'GET', path: '/api/crm/margins/summary', tag: 'CRM', summary: 'Overall margin totals plus by-month time series', permission: 'view' },
+      { method: 'GET', path: '/api/shop/public/products', tag: 'Shop', summary: 'Public storefront: list active products (public-safe fields only)', permission: null },
+      { method: 'POST', path: '/api/shop/public/orders', tag: 'Shop', summary: 'Public storefront: place an order (creates a pending CRM order)', permission: null },
       { method: 'GET', path: '/api/shop/products', tag: 'Shop', summary: 'List storefront products (with unit COGS and margin)', permission: 'view' },
       { method: 'POST', path: '/api/shop/products', tag: 'Shop', summary: 'Create a storefront product', permission: 'admin' },
       { method: 'GET', path: '/api/shop/products/:id', tag: 'Shop', summary: 'Get a storefront product', permission: 'view' },

@@ -62,6 +62,7 @@
       <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
         <button class="btn btn-sm btn-primary" onclick="window._shopNew()"><i class="bi bi-plus-lg"></i> ${_esc(_tl('shop.new_product', 'New product'))}</button>
         <input class="form-control form-control-sm" style="max-width:220px" placeholder="${_esc(_tl('common.search', 'Search'))}" value="${_esc(_search)}" oninput="window._shopSearch(this.value)">
+        <a class="btn btn-sm btn-outline-secondary" href="/shop" target="_blank" rel="noopener"><i class="bi bi-shop"></i> ${_esc(_tl('shop.open_storefront', 'Open storefront'))}</a>
         <span style="margin-left:auto;opacity:0.6;font-size:0.85rem">${_products.length} ${_esc(_tl('shop.products', 'products'))}</span>
       </div>
       ${_products.length ? `<div class="card"><div class="card-body" style="padding:0">

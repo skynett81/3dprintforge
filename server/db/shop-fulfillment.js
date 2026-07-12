@@ -10,8 +10,64 @@
 
 import { getDb } from './connection.js';
 import { getShopProduct } from './shop-products.js';
-import { addCrmOrderItem, updateCrmOrderStatus } from './crm.js';
+import { addCrmOrderItem, updateCrmOrderStatus, createCrmCustomer, createCrmOrder } from './crm.js';
 import { addQueueItem } from './queue.js';
+
+// Guardrails for untrusted storefront submissions.
+const MAX_ITEM_QTY = 1000;
+const MAX_ORDER_ITEMS = 50;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/**
+ * Public-safe view of a product for the unauthenticated storefront. Cost,
+ * margin, file and stock internals are deliberately omitted.
+ */
+export function publicProduct(p) {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || null,
+    category: p.category || null,
+    price: p.price || 0,
+    currency: p.currency || 'NOK',
+    image_url: p.image_url || null,
+    in_stock: p.stock_qty === null || p.stock_qty === undefined ? true : p.stock_qty > 0,
+  };
+}
+
+/**
+ * Create a CRM order from an untrusted storefront cart. Everything is
+ * validated before any row is written, so a bad item can't leave a partial
+ * order or a spurious stock deduction behind.
+ * @returns {{order_id:number, order_number:string}}
+ */
+export function createShopOrder({ customer = {}, items = [], notes = null } = {}) {
+  const name = String(customer.name ?? '').trim().slice(0, 200);
+  if (!name) throw new Error('Customer name is required');
+  const email = customer.email ? String(customer.email).trim().slice(0, 200) : null;
+  const phone = customer.phone ? String(customer.phone).trim().slice(0, 200) : null;
+  if (email && !EMAIL_RE.test(email)) throw new Error('Invalid email address');
+  if (!Array.isArray(items) || items.length === 0) throw new Error('Order must contain at least one item');
+  if (items.length > MAX_ORDER_ITEMS) throw new Error('Too many items in one order');
+
+  // Resolve + validate every line before creating anything.
+  const resolved = items.map((it) => {
+    const product = getShopProduct(parseInt(it.product_id, 10));
+    if (!product || !product.active) throw new Error('Product not available');
+    const qty = it.quantity === undefined ? 1 : parseInt(it.quantity, 10);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_ITEM_QTY) throw new Error('Invalid quantity');
+    // Enforce stock server-side — in_stock in the public catalog is only a hint.
+    if (product.stock_qty !== null && product.stock_qty !== undefined && product.stock_qty < qty) {
+      throw new Error('Insufficient stock');
+    }
+    return { product, qty };
+  });
+
+  const customerId = createCrmCustomer({ name, email, phone });
+  const order = createCrmOrder({ customer_id: customerId, status: 'pending', notes: notes ? String(notes).slice(0, 2000) : 'Storefront order' });
+  for (const r of resolved) addProductToOrder(order.id, r.product.id, r.qty);
+  return { order_id: order.id, order_number: order.order_number };
+}
 
 /**
  * Add or remove tracked stock. No-op (returns null) for made-to-order
@@ -22,7 +78,7 @@ export function adjustProductStock(productId, delta) {
   const db = getDb();
   const row = db.prepare('SELECT stock_qty FROM shop_products WHERE id = ?').get(productId);
   if (!row || row.stock_qty === null || row.stock_qty === undefined) return null;
-  const next = row.stock_qty + delta;
+  const next = Math.max(0, row.stock_qty + delta); // never let stock go negative
   db.prepare("UPDATE shop_products SET stock_qty = ?, updated_at = datetime('now') WHERE id = ?").run(next, productId);
   return next;
 }

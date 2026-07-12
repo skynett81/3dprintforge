@@ -571,7 +571,9 @@ function handleRequest(req, res) {
     }
   }
 
-  let filePath = join(PUBLIC_DIR, req.url === '/' ? 'index.html' : pathname);
+  // Friendly URL for the public storefront: /shop -> shop.html
+  const _staticName = req.url === '/' ? 'index.html' : (pathname === '/shop' ? 'shop.html' : pathname);
+  let filePath = join(PUBLIC_DIR, _staticName);
 
   // Trailing-separator boundary: prevents `/app/public-extra/secret`
   // from passing `startsWith('/app/public')`.

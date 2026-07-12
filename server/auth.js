@@ -185,9 +185,17 @@ const PUBLIC_PATHS = new Set([
 ]);
 
 export function isPublicPath(pathname) {
+  // The caller passes an unnormalized path; never classify a dot-segment
+  // traversal (e.g. /api/shop/public/../admin) as public — that would skip
+  // the session gate before the router re-normalizes the path.
+  if (pathname.includes('..')) return false;
   if (PUBLIC_PATHS.has(pathname)) return true;
   if (pathname.startsWith('/api/auth/')) return true;
   if (pathname === '/status.html' || pathname === '/api/status/public') return true;
+  // Public storefront: the customer-facing shop page and its read/order API.
+  // The API handlers expose only public-safe fields and validate all input.
+  if (pathname === '/shop' || pathname === '/shop.html') return true;
+  if (pathname.startsWith('/api/shop/public/')) return true;
   // Embeddable streaming overlay (OBS / kiosk). The page itself is public so it
   // can be dropped into a browser source; its data sources (camera + /ws) keep
   // their own auth, so no printer state leaks just by serving the HTML shell.

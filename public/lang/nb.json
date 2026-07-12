@@ -3776,6 +3776,7 @@
     "product_added": "Produkt lagt til",
     "dispatched_n": "linje(r) sendt til kø",
     "nothing_to_dispatch": "Ingenting å sende",
-    "filename": "Printfil (sendes til kø)"
+    "filename": "Printfil (sendes til kø)",
+    "open_storefront": "Åpne butikk"
   }
 }

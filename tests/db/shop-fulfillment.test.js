@@ -136,4 +136,10 @@ describe('adjustProductStock', () => {
     assert.equal(adjustProductStock(id, -1), null);
     assert.equal(getShopProduct(id).stock_qty, null);
   });
+
+  it('never drops below zero', () => {
+    const id = createShopProduct({ name: 'Z', price: 1, stock_qty: 3 }).id;
+    assert.equal(adjustProductStock(id, -10), 0);
+    assert.equal(getShopProduct(id).stock_qty, 0);
+  });
 });

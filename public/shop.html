@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — 3DPrintForge</title>
+  <style>
+    :root {
+      --bg: #0f1115; --surface: #191c22; --surface-2: #21252d; --border: #2c313b;
+      --text: #e8eaed; --muted: #9aa0ab; --accent: #009789; --accent-hover: #00b3a3;
+      --danger: #ef4444; --radius: 12px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg:#f4f5f7; --surface:#fff; --surface-2:#f0f1f4; --border:#e2e5ea; --text:#1a1d23; --muted:#606770; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    header { position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; }
+    header .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+    .cart-btn { margin-left: auto; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .cart-btn:hover { background: var(--accent-hover); }
+    .cart-count { background: rgba(255,255,255,0.25); border-radius: 999px; padding: 1px 8px; margin-left: 6px; font-size: 0.8rem; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+    .card .thumb { aspect-ratio: 4/3; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .card .thumb .ph { color: var(--muted); font-size: 2.4rem; }
+    .card .body { padding: 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .card .name { font-weight: 650; }
+    .card .cat { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .card .desc { font-size: 0.85rem; color: var(--muted); flex: 1; }
+    .card .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+    .card .price { font-weight: 700; font-size: 1.05rem; }
+    .add { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+    .add:hover { background: var(--accent-hover); }
+    .add:disabled { background: var(--surface-2); color: var(--muted); cursor: not-allowed; }
+    .oos { font-size: 0.78rem; color: var(--danger); font-weight: 600; }
+    .empty, .msg { text-align: center; color: var(--muted); padding: 60px 20px; }
+    /* Cart drawer */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 20; }
+    .overlay.open { display: block; }
+    .drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(420px, 100%); background: var(--surface); border-left: 1px solid var(--border); transform: translateX(100%); transition: transform .25s ease; z-index: 21; display: flex; flex-direction: column; }
+    .drawer.open { transform: translateX(0); }
+    .drawer h2 { font-size: 1.05rem; padding: 16px 18px; margin: 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+    .drawer .close { margin-left: auto; background: none; border: none; color: var(--text); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+    .drawer .items { flex: 1; overflow-y: auto; padding: 8px 18px; }
+    .line { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .line .ln { flex: 1; min-width: 0; }
+    .line .ln .nm { font-weight: 600; font-size: 0.9rem; }
+    .line .ln .pr { font-size: 0.8rem; color: var(--muted); }
+    .qty { display: flex; align-items: center; gap: 6px; }
+    .qty button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 1rem; }
+    .qty span { min-width: 22px; text-align: center; font-weight: 600; }
+    .rm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; }
+    .drawer .foot { border-top: 1px solid var(--border); padding: 16px 18px; }
+    .total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+    .field input, .field textarea { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .checkout { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 700; cursor: pointer; font-size: 0.95rem; }
+    .checkout:hover { background: var(--accent-hover); }
+    .checkout:disabled { opacity: 0.6; cursor: not-allowed; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; z-index: 30; opacity: 0; transition: opacity .2s; }
+    .toast.show { opacity: 1; }
+    .toast.err { background: var(--danger); }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand-dot"></span>
+    <h1>Shop</h1>
+    <button class="cart-btn" onclick="openCart()">Cart<span class="cart-count" id="cart-count">0</span></button>
+  </header>
+  <main>
+    <div id="catalog" class="grid"></div>
+    <div id="catalog-empty" class="empty" style="display:none">No products available right now.</div>
+  </main>
+
+  <div class="overlay" id="overlay" onclick="closeCart()"></div>
+  <aside class="drawer" id="drawer" aria-label="Cart">
+    <h2>Your cart <button class="close" onclick="closeCart()" aria-label="Close">&times;</button></h2>
+    <div class="items" id="cart-items"></div>
+    <div class="foot" id="cart-foot"></div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    'use strict';
+    const state = { products: [], cart: {} }; // cart: productId -> qty
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; };
+    // Attribute-safe image URL: only http(s), quotes escaped so it can't break
+    // out of the src="" attribute. Returns '' for anything else.
+    function safeImg(url) {
+      try { const u = new URL(String(url), location.origin); if (u.protocol !== 'http:' && u.protocol !== 'https:') return ''; return u.href.replace(/"/g, '%22'); }
+      catch { return ''; }
+    }
+    function money(v, cur) {
+      try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: cur || 'NOK' }).format(Number(v) || 0); }
+      catch { return (Number(v) || 0).toFixed(2) + ' ' + (cur || ''); }
+    }
+    function toast(msg, isErr) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (isErr ? ' err' : ''); setTimeout(() => { t.className = 'toast'; }, 2600); }
+
+    async function loadProducts() {
+      try {
+        const r = await fetch('/api/shop/public/products');
+        state.products = r.ok ? await r.json() : [];
+      } catch { state.products = []; }
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const grid = $('catalog');
+      if (!state.products.length) { grid.innerHTML = ''; $('catalog-empty').style.display = 'block'; return; }
+      $('catalog-empty').style.display = 'none';
+      grid.innerHTML = state.products.map(p => `
+        <div class="card">
+          <div class="thumb">${safeImg(p.image_url) ? `<img src="${safeImg(p.image_url)}" alt="${esc(p.name)}" loading="lazy">` : '<span class="ph">&#9634;</span>'}</div>
+          <div class="body">
+            ${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}
+            <span class="name">${esc(p.name)}</span>
+            ${p.description ? `<span class="desc">${esc(p.description)}</span>` : '<span class="desc"></span>'}
+            <div class="foot">
+              <span class="price">${money(p.price, p.currency)}</span>
+              ${p.in_stock ? `<button class="add" onclick="addToCart(${p.id})">Add</button>` : '<span class="oos">Sold out</span>'}
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    function cartCount() { return Object.values(state.cart).reduce((a, b) => a + b, 0); }
+    function updateCount() { $('cart-count').textContent = cartCount(); }
+
+    function addToCart(id) { state.cart[id] = (state.cart[id] || 0) + 1; updateCount(); renderCart(); toast('Added to cart'); }
+    function setQty(id, q) { if (q <= 0) delete state.cart[id]; else state.cart[id] = q; updateCount(); renderCart(); }
+
+    function renderCart() {
+      const wrap = $('cart-items'), foot = $('cart-foot');
+      const ids = Object.keys(state.cart);
+      if (!ids.length) { wrap.innerHTML = '<div class="msg">Your cart is empty.</div>'; foot.innerHTML = ''; return; }
+      let total = 0, cur = 'NOK';
+      wrap.innerHTML = ids.map(id => {
+        const p = state.products.find(x => x.id == id); if (!p) return '';
+        const q = state.cart[id]; total += (p.price || 0) * q; cur = p.currency || cur;
+        return `<div class="line">
+          <div class="ln"><div class="nm">${esc(p.name)}</div><div class="pr">${money(p.price, p.currency)}</div></div>
+          <div class="qty"><button onclick="setQty(${id},${q - 1})">&minus;</button><span>${q}</span><button onclick="setQty(${id},${q + 1})">+</button></div>
+          <button class="rm" onclick="setQty(${id},0)" aria-label="Remove">&times;</button>
+        </div>`;
+      }).join('');
+      foot.innerHTML = `
+        <div class="total"><span>Total</span><span>${money(total, cur)}</span></div>
+        <div class="field"><label>Name *</label><input id="c-name" autocomplete="name"></div>
+        <div class="field"><label>Email</label><input id="c-email" type="email" autocomplete="email"></div>
+        <div class="field"><label>Phone</label><input id="c-phone" type="tel" autocomplete="tel"></div>
+        <div class="field"><label>Notes</label><textarea id="c-notes" rows="2"></textarea></div>
+        <button class="checkout" id="c-submit" onclick="placeOrder()">Place order</button>`;
+    }
+
+    function openCart() { $('overlay').classList.add('open'); $('drawer').classList.add('open'); renderCart(); }
+    function closeCart() { $('overlay').classList.remove('open'); $('drawer').classList.remove('open'); }
+
+    async function placeOrder() {
+      const name = ($('c-name').value || '').trim();
+      if (!name) { toast('Please enter your name', true); return; }
+      const items = Object.entries(state.cart).map(([product_id, quantity]) => ({ product_id: Number(product_id), quantity }));
+      if (!items.length) { toast('Your cart is empty', true); return; }
+      const btn = $('c-submit'); btn.disabled = true; btn.textContent = 'Placing…';
+      try {
+        const r = await fetch('/api/shop/public/orders', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer: { name, email: ($('c-email').value || '').trim(), phone: ($('c-phone').value || '').trim() },
+            items, notes: ($('c-notes').value || '').trim()
+          })
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || 'Order failed');
+        state.cart = {}; updateCount(); closeCart();
+        $('catalog').insertAdjacentHTML('beforebegin', `<div class="msg" id="ok-msg">Thank you! Your order <strong>${esc(data.order_number)}</strong> has been received. We will be in touch.</div>`);
+        setTimeout(() => loadProducts(), 400);
+        toast('Order placed');
+      } catch (e) {
+        toast(e.message, true);
+      } finally { btn.disabled = false; btn.textContent = 'Place order'; }
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
