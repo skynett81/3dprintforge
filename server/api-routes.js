@@ -3730,8 +3730,11 @@ export async function handleApiRequest(req, res) {
     const hmsMatch = path.match(/^\/api\/hms-codes\/([a-zA-Z0-9_-]+)$/);
     if (hmsMatch && method === 'GET') {
       const code = hmsMatch[1];
-      const description = lookupHmsCode(code);
-      const wikiUrl = getHmsWikiUrl(code);
+      // Codes are stored in mixed shapes (e.g. "HMS_0300_9600"); strip the
+      // prefix so the dictionary lookup matches the "XXXX_XXXX" keys.
+      const clean = code.replace(/^HMS[_-]/i, '');
+      const description = lookupHmsCode(clean);
+      const wikiUrl = getHmsWikiUrl(clean);
       return sendJson(res, { code, description: description || null, wiki_url: wikiUrl });
     }
 

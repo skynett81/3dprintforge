@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { AppError } from '../types';
+import type { AppError, HmsInfo } from '../types';
 
 function sevClass(s: string) {
   const v = s.toLowerCase();
@@ -29,6 +29,17 @@ export function ErrorsPanel() {
   const { data, reload } = useResource<AppError[]>(api.listErrors, 20000);
   const [showAcked, setShowAcked] = useState(false);
   const [selected, setSelected] = useState<AppError | null>(null);
+  const [hms, setHms] = useState<HmsInfo | null>(null);
+
+  // Resolve the code to a human description (local HMS dictionary) when a
+  // detail popup opens.
+  useEffect(() => {
+    if (!selected) { setHms(null); return; }
+    let alive = true;
+    setHms(null);
+    api.getHmsInfo(selected.code).then((d) => { if (alive) setHms(d); }).catch(() => {});
+    return () => { alive = false; };
+  }, [selected]);
 
   const all = data ?? [];
   const unacked = all.filter((e) => !e.acknowledged).length;
@@ -89,7 +100,16 @@ export function ErrorsPanel() {
               <span className="tnum" style={{ fontWeight: 700, fontSize: '1.1rem' }}>{selected.code}</span>
               <button className="btn btn--sm" style={{ marginLeft: 'auto' }} onClick={() => setSelected(null)}>✕</button>
             </div>
-            <p style={{ margin: '4px 0 12px', lineHeight: 1.5 }}>{selected.message}</p>
+            <p style={{ margin: '4px 0 10px', lineHeight: 1.5 }}>{selected.message}</p>
+
+            {hms?.description ? (
+              <div style={{ background: 'var(--surface-2, rgba(0,0,0,0.05))', borderLeft: '3px solid var(--accent, #009789)', borderRadius: 6, padding: '10px 12px', margin: '0 0 12px', lineHeight: 1.55 }}>
+                <div className="muted" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>{t('v2.errors.what_means', 'What it means')}</div>
+                {hms.description}
+              </div>
+            ) : hms ? (
+              <p className="muted" style={{ margin: '0 0 12px', fontSize: '0.85rem' }}>{t('v2.errors.no_desc', 'No stored description for this code — try the troubleshooting link.')}</p>
+            ) : null}
 
             <div className="diag-grid">
               <div className="diag-row"><span className="muted">{t('v2.errors.printer', 'Printer')}</span><span className="diag-val">{selected.printer_id}</span></div>
@@ -100,7 +120,7 @@ export function ErrorsPanel() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-              {wikiUrl && <a className="btn btn--sm btn--primary" href={wikiUrl} target="_blank" rel="noreferrer">{t('v2.errors.troubleshoot', 'Troubleshooting guide →')}</a>}
+              {(hms?.wiki_url || wikiUrl) && <a className="btn btn--sm btn--primary" href={hms?.wiki_url || wikiUrl!} target="_blank" rel="noreferrer">{t('v2.errors.troubleshoot', 'Troubleshooting guide →')}</a>}
               {!selected.acknowledged && (
                 <button className="btn btn--sm" onClick={() => run(async () => { await api.ackError(selected.id); reload(); setSelected(null); }, t('v2.errors.acked_one', 'Acknowledged'))}>{t('v2.errors.ack', 'Acknowledge')}</button>
               )}

@@ -171,6 +171,7 @@ export const api = {
   listErrors: (): Promise<import('./types').AppError[]> => req('/api/errors'),
   ackError: (id: number) => req<{ ok: boolean }>(`/api/errors/${id}`, { method: 'PATCH' }),
   ackAllErrors: () => req<{ ok: boolean }>('/api/errors/acknowledge-all', { method: 'POST', body: '{}' }),
+  getHmsInfo: (code: string): Promise<import('./types').HmsInfo> => req(`/api/hms-codes/${encodeURIComponent(code)}`),
   listAchievements: (): Promise<import('./types').Achievement[]> => req('/api/achievements'),
   listActivity: (): Promise<import('./types').ActivityDay[]> => req('/api/activity/daily'),
   getNotificationConfig: (): Promise<NotificationConfig> => req<NotificationConfig>('/api/notifications/config'),

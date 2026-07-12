@@ -314,6 +314,12 @@ export interface KbPrinter {
   image_url?: string | null;
 }
 
+export interface HmsInfo {
+  code: string;
+  description: string | null;
+  wiki_url?: string;
+}
+
 export interface AppError {
   id: number;
   printer_id: string;
