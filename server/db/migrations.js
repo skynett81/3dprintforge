@@ -2401,6 +2401,38 @@ export function runMigrations() {
       // credits parts_per_plate toward that Part automatically.
       try { db.exec('ALTER TABLE queue_items ADD COLUMN part_id INTEGER'); } catch { /* exists */ }
     }},
+    { version: 161, up: (db) => {
+      // Storefront product catalog (Fase 2.1). A product is a sellable item
+      // with a sale price and an estimated per-unit COGS (material + labor +
+      // electricity + wear). Margin is derived at read time. file_hash links
+      // a product to a model/print file so orders can dispatch to the queue.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS shop_products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sku TEXT,
+          name TEXT NOT NULL,
+          description TEXT,
+          category TEXT,
+          price REAL DEFAULT 0,
+          currency TEXT DEFAULT 'NOK',
+          file_hash TEXT,
+          filament_type TEXT,
+          filament_weight_g REAL,
+          print_time_min REAL,
+          material_cost REAL DEFAULT 0,
+          labor_cost REAL DEFAULT 0,
+          electricity_cost REAL DEFAULT 0,
+          wear_cost REAL DEFAULT 0,
+          image_url TEXT,
+          stock_qty INTEGER,
+          active INTEGER DEFAULT 1,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_shop_products_sku ON shop_products(sku) WHERE sku IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_shop_products_active ON shop_products(active);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

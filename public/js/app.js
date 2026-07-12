@@ -533,7 +533,8 @@ const PANEL_TITLES = {
   'crm-customers': 'crm.customers',
   'crm-orders': 'crm.orders',
   'crm-invoices': 'crm.invoices',
-  'crm-settings': 'crm.company_settings'
+  'crm-settings': 'crm.company_settings',
+  'shop-products': 'shop.products_title'
 };
 
 const PANEL_LOADERS = {
@@ -620,6 +621,7 @@ const PANEL_LOADERS = {
   'crm-orders': () => { if (typeof loadCrmOrdersPanel === 'function') loadCrmOrdersPanel(); },
   'crm-invoices': () => { if (typeof loadCrmInvoicesPanel === 'function') loadCrmInvoicesPanel(); },
   'crm-settings': () => { if (typeof loadCrmSettingsPanel === 'function') loadCrmSettingsPanel(); },
+  'shop-products': () => { if (typeof loadShopProductsPanel === 'function') loadShopProductsPanel(); },
 };
 
 window._activePanel = null;

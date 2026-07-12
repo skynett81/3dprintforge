@@ -40,7 +40,8 @@
 import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatistics, getFilament, addFilament, updateFilament, deleteFilament, getErrors, acknowledgeError, deleteError, acknowledgeAllErrors, getPrinters, addPrinter, updatePrinter, deletePrinter, addWaste, deleteWaste, getWasteStats, getWasteHistory, getMaintenanceStatus, addMaintenanceEvent, deleteMaintenanceEvent, getMaintenanceLog, getMaintenanceSchedule, upsertMaintenanceSchedule, getActiveNozzleSession, retireNozzleSession, createNozzleSession, getTelemetry, getComponentWear, getFirmwareHistory, getXcamEvents, getXcamStats, getAmsTrayLifetime, getDemoPrinterIds, purgeDemoData, getNotificationLog, getUpdateHistory, getModelLink, setModelLink, deleteModelLink, getRecentModelLinks, getVendors, addVendor, updateVendor, deleteVendor, getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile, getSpools, getSpool, addSpool, updateSpool, deleteSpool, archiveSpool, useSpoolWeight, assignSpoolToSlot, getSpoolUsageLog, getLocations, addLocation, updateLocation, deleteLocation, getInventoryStats, searchSpools, duplicateSpool, measureSpoolWeight, getAllSpoolsForExport, getAllFilamentProfilesForExport, getAllVendorsForExport, findSimilarColors, getDistinctMaterials, getDistinctLotNumbers, getDistinctArticleNumbers, getInventorySetting, setInventorySetting, getAllInventorySettings, importSpools, importFilamentProfiles, importVendors, getFieldSchemas, addFieldSchema, deleteFieldSchema, lengthToWeight, getDryingSessions, getActiveDryingSessions, startDryingSession, completeDryingSession, deleteDryingSession, getDryingPresets, getDryingPreset, upsertDryingPreset, deleteDryingPreset, getSpoolsDryingStatus, getUsagePredictions, getRestockSuggestions, estimatePrintCost, createQueue, getQueues, getQueue, updateQueue, deleteQueue, addQueueItem, getQueueItem, updateQueueItem, deleteQueueItem, reorderQueueItems, getActiveQueueItems, addQueueLog, getQueueLog, getNextPendingItem, getTags, createTag, updateTag, deleteTag, assignTag, unassignTag, getEntityTags, getEntitiesByTag, getNfcMappings, lookupNfcTag, linkNfcTag, unlinkNfcTag, updateNfcScan, checkoutSpool, checkinSpool, getCheckedOutSpools, getCheckoutLog, addSpoolEvent, getSpoolTimeline, getSpoolPrintStats, estimateFilamentFromHistory, backfillFilamentUsage, syncSpoolWeightsFromLog, getRecentSpoolEvents, bulkDeleteSpools, bulkArchiveSpools, bulkRelocateSpools, bulkMarkDried, bulkEditSpools, bulkAssignTag, bulkUnassignTag, bulkDeleteProfiles, bulkEditProfiles, bulkDeleteVendors, bulkStartDrying, getSpoolsForExportByIds, toggleSpoolFavorite, batchAddSpools, createSharedPalette, getSharedPalette, deleteSharedPalette, getSharedPaletteSpools, getMacros, getMacro, addMacro, updateMacro, deleteMacro, getWebhookConfigs, getWebhookConfig, addWebhookConfig, updateWebhookConfig, deleteWebhookConfig, getActiveWebhooks, addWebhookDelivery, updateWebhookDelivery, getWebhookDeliveries, savePrintCost, getPrintCost, getCostReport, getCostSummary, getCostStatistics, estimatePrintCostAdvanced, getMaterials, getMaterial, getMaterialByName, updateMaterial, addMaterial, getHardwareItems, getHardwareItem, addHardwareItem, updateHardwareItem, deleteHardwareItem, assignHardware, unassignHardware, getHardwareForPrinter, getHardwareAssignments, getRoles, getRole, addRole, updateRole, deleteRole, getUsers, getUser, addUser, updateUser, deleteUser, getApiKeys, addApiKey, deleteApiKey, deactivateApiKey, getEcommerceConfigs, getEcommerceConfig, addEcommerceConfig, updateEcommerceConfig, deleteEcommerceConfig, getEcommerceOrders, getEcommerceOrder, addEcommerceOrder, updateEcommerceOrder, getTimelapseRecordings, getTimelapseRecording, deleteTimelapseRecording, getPushSubscriptions, addPushSubscription, deletePushSubscription, getCommunityFilaments, getCommunityFilament, searchCommunityByColor, getCommunityManufacturers, getCommunityMaterials, addCommunityFilament, updateCommunityFilament, deleteCommunityFilament, getCommunityFilamentStats, getOwnedCommunityIds, upsertCommunityFilament, clearCommunityFilaments, getCommunityFilamentCategories, getBrandDefaults, getBrandDefault, upsertBrandDefault, deleteBrandDefault, getCustomFieldDefs, getCustomFieldDef, addCustomFieldDef, updateCustomFieldDef, deleteCustomFieldDef, getCustomFieldValues, setCustomFieldValue, deleteCustomFieldValues, getPrinterGroups, getPrinterGroup, addPrinterGroup, updatePrinterGroup, deletePrinterGroup, addPrinterToGroup, removePrinterFromGroup, getGroupMembers, getPrinterGroupsForPrinter, getProjects, getProject, addProject, updateProject, deleteProject, getProjectPrints, addProjectPrint, updateProjectPrint, deleteProjectPrint, getProjectParts, getProjectPart, addProjectPart, updateProjectPart, deleteProjectPart, creditProjectPart, getExportTemplates, getExportTemplate, addExportTemplate, deleteExportTemplate, getUserQuota, upsertUserQuota, addUserTransaction, getUserTransactions, getFailureDetections, getFailureDetection, addFailureDetection, acknowledgeFailureDetection, deleteFailureDetection, getPriceHistory, addPriceEntry, getLowestPrice, getPriceStats, getPriceAlerts, getPriceAlert, addPriceAlert, updatePriceAlert, deletePriceAlert, checkPriceAlerts, triggerPriceAlert, getBuildPlates, getBuildPlate, addBuildPlate, updateBuildPlate, deleteBuildPlate, incrementBuildPlatePrintCount, getDryerModels, getDryerModel, addDryerModel, updateDryerModel, deleteDryerModel, getStorageConditions, getLatestStorageCondition, addStorageCondition, deleteStorageCondition, getCourses, getCourse, addCourse, updateCourse, deleteCourse, getCourseProgress, upsertCourseProgress, getUserCourseProgress, getAllCoursesWithProgress, searchSpoolsByColor, generateSpoolName, getEcomFees, getEcomFeesSummary, getEcomFeesTotal, getKbPrinters, getKbPrinter, addKbPrinter, updateKbPrinter, deleteKbPrinter, getKbAccessories, getKbAccessory, addKbAccessory, updateKbAccessory, deleteKbAccessory, getKbFilaments, getKbFilament, addKbFilament, updateKbFilament, deleteKbFilament, getKbProfiles, getKbProfile, addKbProfile, updateKbProfile, deleteKbProfile, searchKb, getKbStats, getKbTags, addKbTag, deleteKbTag, seedKbData, addBedMesh, getBedMeshHistory, getLatestBedMesh, deleteBedMesh, createFilamentChange, updateFilamentChange, getActiveFilamentChange, getFilamentChangeHistory, shareFilamentProfile, rateCommunityFilament, getCommunityFilamentRatings, submitTdVote, getTdVotes, importCommunityToInventory, mergeSpools, getFifoSpool, getCompatibilityMatrix, addCompatibilityRule, updateCompatibilityRule, deleteCompatibilityRule, getTemperatureGuide, matchPrinterForFilament, autoTrashEmptySpools, getRecentProfiles, getLocationAlerts, getSpoolBySlot, addLayerPause, getLayerPauses, getActiveLayerPauses, deleteLayerPause, deactivateLayerPauses, refillSpool, recalculateAllCosts, getHardwareStats, deduplicateHmsErrors, backfillWaste, getDailyActivity, getActivityStreaks, acknowledgeWearAlert, addMaintenanceCost, getMaintenanceCosts, getTotalMaintenanceCost, getProjectWithDetails, generateShareToken, getProjectByShareToken, createInvoice, getInvoice, getProjectInvoices, updateInvoiceStatus, addTimelineEvent, getProjectTimeline, getProjectCostSummary, getOverdueProjects, getProjectDashboard, getPlugins, getPlugin, getPluginById, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginSettings, setPluginSettings, getProfiles, getProfileById, addProfile, updateProfile, deleteProfile, incrementProfileUse, addFilamentUsageSnapshot, getFilamentUsageHistory, getFilamentUsageTrend, getSpoolByTrayIdName, getPurchasedSpools, addPurchasedSpool, updatePurchasedSpool, deletePurchasedSpool, importPurchasedSpools, linkPurchasedToSpool, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, aggregateDailyFilamentUsage, backfillDailyUsage, getDailyFilamentUsage, getFilamentConsumptionSummary, getFilamentConsumptionByPrinter, getFilamentWeeklyTrend, updateConsumptionRates, getConsumptionRates, getSpoolDepletionForecast, getWasteAnalysis, getMaterialEfficiency, checkSpoolDepletionThresholds, getSpoolDepletionEvents, markDepletionNotified, getFilamentCostAnalysis, getExpiredSpools, getExpiringSpools, getMaterialSubstitutions, addMaterialSubstitution, deleteMaterialSubstitution, findSubstitutesForMaterial, getRalColors, findClosestRal, getStorageAlerts, getSpoolmanPerSpoolMetrics, getSpoolCoreWeights, addSpoolCoreWeight, deleteSpoolCoreWeight, getBambuFilamentCodes, lookupBambuCode, getSpoolKCalibrations, upsertSpoolKCalibration, getBestKValue, recordWeighing, getFilamentAccuracyStats, saveFilamentEstimate, getBambuVariants, lookupBambuVariant, lookupBambuByProductCode, enrichTrayWithVariant, getBambuMaterialNames, getBambuColorsByMaterial, linkScreenshotToPrint, getScreenshotsForPrint, addMqttDebugEntry, getMqttDebugLog, clearMqttDebugLog, checkFirmwareUpdate, setMaintenanceMode, getMaintenanceModePrinters, getActivityLog, reviewPrint, getUnreviewedPrints, getSuppliers, getSupplier, addSupplier, updateSupplier, deleteSupplier, getSupplierParts, getSupplierPart, addSupplierPart, updateSupplierPart, deleteSupplierPart, getPriceComparison, getPurchaseOrders, getPurchaseOrder, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, addPurchaseOrderLine, updatePurchaseOrderLine, deletePurchaseOrderLine, receivePurchaseOrderLine, getStockLedger, getStockActivity, adjustSpoolStock, getStockTargets, setStockTarget, deleteStockTarget, getReorderReport, draftReorderPurchaseOrders, addRecording, finalizeRecording, getRecordings, getRecording, deleteRecording } from './database.js';
 import { CameraRecorder } from './camera-recorder.js';
 import { recalibrateFromHistory, recalibrateFromSignals } from './database.js';
-import { getCrmCustomers, getCrmCustomer, createCrmCustomer, updateCrmCustomer, deleteCrmCustomer, getCrmOrders, getCrmOrder, createCrmOrder, updateCrmOrder, updateCrmOrderStatus, createCrmOrderFromHistory, addCrmOrderItem, updateCrmOrderItem, removeCrmOrderItem, createCrmInvoice, getCrmInvoice, getCrmInvoices, updateCrmInvoiceStatus, getCrmDashboard, getCrmSettings, updateCrmSettings, getOrderMargin, getProductMargins, getMarginSummary } from './database.js';
+import { getCrmCustomers, getCrmCustomer, createCrmCustomer, updateCrmCustomer, deleteCrmCustomer, getCrmOrders, getCrmOrder, createCrmOrder, updateCrmOrder, updateCrmOrderStatus, createCrmOrderFromHistory, addCrmOrderItem, updateCrmOrderItem, removeCrmOrderItem, createCrmInvoice, getCrmInvoice, getCrmInvoices, updateCrmInvoiceStatus, getCrmDashboard, getCrmSettings, updateCrmSettings, getOrderMargin, getProductMargins, getMarginSummary,
+  createShopProduct, getShopProduct, updateShopProduct, listShopProducts, setShopProductActive, deleteShopProduct } from './database.js';
 import { listGcodeSnippets, getGcodeSnippet, createGcodeSnippet, updateGcodeSnippet, deleteGcodeSnippet, getGcodeSnippetCategories } from './database.js';
 import { generateInvoiceHtml } from './crm-invoice.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
@@ -259,6 +260,9 @@ function getRoutePermission(method, path) {
   if (path === '/api/update/apply') return 'admin';
   if (path === '/api/demo') return 'admin';
   if (path === '/api/hub/settings') return 'admin';
+
+  // Storefront catalog management is admin-only (reads are 'view' above)
+  if (path.startsWith('/api/shop/')) return 'admin';
 
   // Print routes
   if (path.match(/^\/api\/printers\/[^/]+\/files\/print$/)) return 'print';
@@ -10452,6 +10456,55 @@ export async function handleApiRequest(req, res) {
       });
     }
 
+    // ---- Storefront product catalog (Fase 2.1) ----
+    if (path.startsWith('/api/shop/products')) {
+      // List
+      if (method === 'GET' && path === '/api/shop/products') {
+        const active = url.searchParams.has('active') ? url.searchParams.get('active') !== 'false' : null;
+        const category = url.searchParams.get('category') || null;
+        const search = url.searchParams.get('search') || null;
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '200', 10) || 200, 1000);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10) || 0;
+        try { return sendJson(res, listShopProducts({ active, category, search, limit, offset })); }
+        catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+      // Create
+      if (method === 'POST' && path === '/api/shop/products') {
+        return readBody(req, res, (body) => {
+          try { return sendJson(res, createShopProduct(body), 201); }
+          catch (e) { return sendJson(res, { error: e.message }, 400); }
+        });
+      }
+      const shopIdMatch = path.match(/^\/api\/shop\/products\/(\d+)$/);
+      const shopActiveMatch = path.match(/^\/api\/shop\/products\/(\d+)\/active$/);
+      // Get one
+      if (shopIdMatch && method === 'GET') {
+        const p = getShopProduct(parseInt(shopIdMatch[1], 10));
+        return p ? sendJson(res, p) : sendJson(res, { error: 'Product not found' }, 404);
+      }
+      // Update
+      if (shopIdMatch && method === 'PUT') {
+        const id = parseInt(shopIdMatch[1], 10);
+        return readBody(req, res, (body) => {
+          try { return sendJson(res, updateShopProduct(id, body)); }
+          catch (e) { return sendJson(res, { error: e.message }, e.message === 'Product not found' ? 404 : 400); }
+        });
+      }
+      // Toggle active
+      if (shopActiveMatch && method === 'PATCH') {
+        const id = parseInt(shopActiveMatch[1], 10);
+        return readBody(req, res, (body) => {
+          try { return sendJson(res, setShopProductActive(id, !!body.active)); }
+          catch (e) { return sendJson(res, { error: e.message }, e.message === 'Product not found' ? 404 : 400); }
+        });
+      }
+      // Delete
+      if (shopIdMatch && method === 'DELETE') {
+        try { deleteShopProduct(parseInt(shopIdMatch[1], 10)); return sendJson(res, { ok: true }); }
+        catch (e) { return sendJson(res, { error: e.message }, 500); }
+      }
+    }
+
     // ---- CRM ----
     if (path.startsWith('/api/crm/')) {
       if (_ecomLicense && !_ecomLicense.isActive()) return sendJson(res, { error: 'Active e-commerce license required' }, 403);
@@ -13234,6 +13287,12 @@ function _getApiDocs() {
       { method: 'GET', path: '/api/crm/orders/:id/margin', tag: 'CRM', summary: 'Order profitability (revenue, COGS, margin) with per-item breakdown', permission: 'view' },
       { method: 'GET', path: '/api/crm/margins/products', tag: 'CRM', summary: 'Margin per product, most profitable first', permission: 'view' },
       { method: 'GET', path: '/api/crm/margins/summary', tag: 'CRM', summary: 'Overall margin totals plus by-month time series', permission: 'view' },
+      { method: 'GET', path: '/api/shop/products', tag: 'Shop', summary: 'List storefront products (with unit COGS and margin)', permission: 'view' },
+      { method: 'POST', path: '/api/shop/products', tag: 'Shop', summary: 'Create a storefront product', permission: 'admin' },
+      { method: 'GET', path: '/api/shop/products/:id', tag: 'Shop', summary: 'Get a storefront product', permission: 'view' },
+      { method: 'PUT', path: '/api/shop/products/:id', tag: 'Shop', summary: 'Update a storefront product', permission: 'admin' },
+      { method: 'PATCH', path: '/api/shop/products/:id/active', tag: 'Shop', summary: 'Toggle a product active/inactive', permission: 'admin' },
+      { method: 'DELETE', path: '/api/shop/products/:id', tag: 'Shop', summary: 'Delete a storefront product', permission: 'admin' },
       { method: 'PUT', path: '/api/crm/orders/:id', tag: 'CRM', summary: 'Update CRM order', permission: 'admin' },
       { method: 'PATCH', path: '/api/crm/orders/:id/status', tag: 'CRM', summary: 'Update order status', permission: 'admin' },
       { method: 'POST', path: '/api/crm/orders/:id/items', tag: 'CRM', summary: 'Add order item', permission: 'admin' },
