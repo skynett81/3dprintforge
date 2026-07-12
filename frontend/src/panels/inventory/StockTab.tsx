@@ -4,6 +4,7 @@ import { useResource } from '../../hooks';
 import { useT } from '../../i18n';
 import { useToast } from '../../toast';
 import type { StockItem, StorageLocation } from '../../types';
+import { StocktakeModal } from '../../components/StocktakeModal';
 
 export function StockTab() {
   const t = useT();
@@ -14,6 +15,7 @@ export function StockTab() {
   const locs = locData ?? [];
   const [locFilter, setLocFilter] = useState('');
   const [q, setQ] = useState('');
+  const [stocktake, setStocktake] = useState(false);
 
   const filtered = stock.filter((s) => {
     if (locFilter && String(s.location_id ?? '') !== locFilter) return false;
@@ -32,6 +34,7 @@ export function StockTab() {
     <div>
       <div className="panel-head" style={{ marginBottom: 12 }}>
         <p className="muted sub" style={{ margin: 0 }}>{filtered.length} {t('v2.stock.entries', 'stock entries')} · {totalUnits} {t('v2.stock.units', 'units')}</p>
+        <button className="btn btn--sm" style={{ marginLeft: 'auto' }} disabled={stock.length === 0} onClick={() => setStocktake(true)}>{t('v2.stock.stocktake', 'Stocktake')}</button>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <input className="input" placeholder={t('v2.stock.search', 'Search part…')} value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 240 }} />
@@ -60,6 +63,8 @@ export function StockTab() {
           </div>
         )}
       </section>
+
+      {stocktake && <StocktakeModal locationId={locFilter ? Number(locFilter) : null} onClose={() => setStocktake(false)} onApplied={reload} />}
     </div>
   );
 }

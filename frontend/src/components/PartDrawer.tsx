@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { InvPart, StockItem, StockMove, StorageLocation, BomLine } from '../types';
+import type { InvPart, StockItem, StockMove, StorageLocation, BomLine, Warranty, Attachment } from '../types';
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -43,6 +43,32 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
   async function delBomLine(id: number) {
     try { await api.deleteBomLine(id); refresh(); } catch (e) { toast((e as Error).message, 'error'); }
   }
+
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [wForm, setWForm] = useState({ provider: '', end_date: '' });
+  const [aForm, setAForm] = useState({ title: '', url: '', kind: 'manual' });
+  useEffect(() => {
+    let alive = true;
+    const eid = String(partId);
+    Promise.all([api.listWarranties('part', eid), api.listAttachments('part', eid)])
+      .then(([w, a]) => { if (alive) { setWarranties(w); setAttachments(a); } })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [partId, tick]);
+
+  async function addW() {
+    if (!wForm.end_date && !wForm.provider) { toast(t('v2.warr.need', 'Enter a provider or end date'), 'error'); return; }
+    try { await api.addWarranty({ entity_type: 'part', entity_id: String(partId), provider: wForm.provider || undefined, end_date: wForm.end_date || undefined }); setWForm({ provider: '', end_date: '' }); refresh(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function delW(id: number) { try { await api.deleteWarranty(id); refresh(); } catch (e) { toast((e as Error).message, 'error'); } }
+  async function addA() {
+    if (!aForm.url.trim()) { toast(t('v2.att.url_req', 'Enter a URL'), 'error'); return; }
+    try { await api.addAttachment({ entity_type: 'part', entity_id: String(partId), kind: aForm.kind, title: aForm.title || undefined, url: aForm.url.trim() }); setAForm({ title: '', url: '', kind: 'manual' }); refresh(); }
+    catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function delA(id: number) { try { await api.deleteAttachment(id); refresh(); } catch (e) { toast((e as Error).message, 'error'); } }
 
   function refresh() { setTick((n) => n + 1); onChanged(); }
 
@@ -200,6 +226,45 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
           ) : (
             <button className="btn btn--sm" onClick={genQr}>{t('v2.parts.gen_qr', 'Generate QR label')}</button>
           )}
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.warr.title', 'Warranty')}</div>
+          {warranties.map((w) => {
+            const exp = w.end_date ? new Date(w.end_date) : null;
+            const expired = exp ? exp.getTime() < Date.now() : false;
+            return (
+              <div key={w.id} className="err-row" style={{ gridTemplateColumns: '1.4fr auto auto', padding: '6px 0' }}>
+                <span className="err-msg">{w.provider || t('v2.warr.warranty', 'Warranty')}</span>
+                <span className={expired ? 'low tnum' : 'muted tnum'}>{w.end_date || '—'}{expired ? ` · ${t('v2.warr.expired', 'expired')}` : ''}</span>
+                <button className="btn btn--sm btn--ghost" onClick={() => delW(w.id)}>✕</button>
+              </div>
+            );
+          })}
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+            <input className="input" placeholder={t('v2.warr.provider', 'Provider')} value={wForm.provider} onChange={(e) => setWForm({ ...wForm, provider: e.target.value })} style={{ flex: '1 1 120px', minWidth: 0 }} />
+            <input className="input" type="date" value={wForm.end_date} onChange={(e) => setWForm({ ...wForm, end_date: e.target.value })} style={{ maxWidth: 150 }} />
+            <button className="btn btn--sm" onClick={addW}>{t('v2.warr.add', 'Add')}</button>
+          </div>
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label">{t('v2.att.title', 'Attachments')}</div>
+          {attachments.map((a) => (
+            <div key={a.id} className="err-row" style={{ gridTemplateColumns: 'auto 1.4fr auto', padding: '6px 0' }}>
+              <span className="hs-badge hs-badge-neutral">{a.kind}</span>
+              <a className="err-msg" href={a.url} target="_blank" rel="noreferrer" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title || a.url}</a>
+              <button className="btn btn--sm btn--ghost" onClick={() => delA(a.id)}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+            <select className="input" value={aForm.kind} onChange={(e) => setAForm({ ...aForm, kind: e.target.value })} style={{ maxWidth: 110 }}>
+              {['manual', 'receipt', 'photo', 'link'].map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+            <input className="input" placeholder={t('v2.att.titlep', 'Title')} value={aForm.title} onChange={(e) => setAForm({ ...aForm, title: e.target.value })} style={{ maxWidth: 120 }} />
+            <input className="input" placeholder="https://…" value={aForm.url} onChange={(e) => setAForm({ ...aForm, url: e.target.value })} style={{ flex: '1 1 130px', minWidth: 0 }} />
+            <button className="btn btn--sm" onClick={addA}>{t('v2.att.add', 'Add')}</button>
+          </div>
         </div>
 
         <div className="drawer-controls" style={{ marginTop: 4 }}>

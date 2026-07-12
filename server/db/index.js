@@ -14,6 +14,8 @@ export * from './parts.js';
 export * from './stock-items.js';
 export * from './bom.js';
 export * from './builds.js';
+export * from './stocktake.js';
+export * from './assets.js';
 export * from './stock-ledger.js';
 export * from './reorder.js';
 export * from './recordings.js';

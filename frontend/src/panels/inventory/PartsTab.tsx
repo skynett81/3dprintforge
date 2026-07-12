@@ -54,13 +54,29 @@ export function PartsTab({ openPartId }: { openPartId?: number | null } = {}) {
     catch (e) { toast((e as Error).message, 'error'); }
   }
 
+  async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const r = await api.importPartsCsv(text);
+      toast(`${r.created} ${t('v2.parts.imported', 'parts imported')}`, 'success');
+      reload();
+    } catch (err) { toast((err as Error).message, 'error'); }
+  }
+
   return (
     <div>
       <div className="panel-head" style={{ marginBottom: 12 }}>
         <p className="muted sub" style={{ margin: 0 }}>
           {parts.length} {t('v2.parts.parts', 'parts')}{lowCount > 0 ? ` · ${lowCount} ${t('v2.parts.low', 'low on stock')}` : ''}
         </p>
-        <button className="btn btn--primary btn--sm" style={{ marginLeft: 'auto' }} onClick={() => setAdding((a) => !a)}>{adding ? t('common.cancel', 'Cancel') : t('v2.parts.add', '+ Add part')}</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <a className="btn btn--sm btn--ghost" href={api.exportPartsCsvUrl()} download>{t('v2.parts.export', 'Export CSV')}</a>
+          <label className="btn btn--sm btn--ghost" style={{ cursor: 'pointer' }}>{t('v2.parts.import', 'Import CSV')}<input type="file" accept=".csv,text/csv" hidden onChange={onImport} /></label>
+          <button className="btn btn--primary btn--sm" onClick={() => setAdding((a) => !a)}>{adding ? t('common.cancel', 'Cancel') : t('v2.parts.add', '+ Add part')}</button>
+        </div>
       </div>
 
       {adding && (

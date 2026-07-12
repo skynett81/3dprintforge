@@ -2580,6 +2580,56 @@ export function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_build_status ON build_orders(status);
       `);
     }},
+    { version: 170, up: (db) => {
+      // Inventory Fase 4: stocktake / physical audit. A stocktake snapshots the
+      // expected quantities; applying it reconciles counted vs expected.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS stocktakes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          status TEXT DEFAULT 'open',
+          created_at TEXT DEFAULT (datetime('now')),
+          applied_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS stocktake_lines (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          stocktake_id INTEGER NOT NULL REFERENCES stocktakes(id) ON DELETE CASCADE,
+          stock_item_id INTEGER REFERENCES stock_items(id) ON DELETE SET NULL,
+          part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL,
+          expected REAL,
+          counted REAL
+        );
+        CREATE INDEX IF NOT EXISTS idx_stocktake_lines_st ON stocktake_lines(stocktake_id);
+      `);
+    }},
+    { version: 171, up: (db) => {
+      // Inventory Fase 4: warranties + (link-based) attachments for parts and
+      // printers — manuals, receipts, photos (personal-use inventory).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS warranties (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          provider TEXT,
+          start_date TEXT,
+          end_date TEXT,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_warranties_entity ON warranties(entity_type, entity_id);
+        CREATE TABLE IF NOT EXISTS attachments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          kind TEXT DEFAULT 'link',
+          title TEXT,
+          url TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

@@ -70,6 +70,9 @@ import {
   addStockItem, getStockItems, updateStockItem, deleteStockItem, adjustStock, moveStock, getStockMoves,
   getBom, getBomCost, addBomLine, updateBomLine, deleteBomLine,
   getBuilds, getBuild, addBuild, updateBuild, cancelBuild, completeBuild,
+  createStocktake, getStocktakes, getStocktake, setStocktakeCount, applyStocktake, cancelStocktake,
+  getWarranties, addWarranty, deleteWarranty, getExpiringWarranties,
+  getAttachments, addAttachment, deleteAttachment,
 } from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
@@ -4239,6 +4242,75 @@ export async function handleApiRequest(req, res) {
       _broadcastInventory('updated', 'build', { id: parseInt(buildCancelMatch[1]) });
       return sendJson(res, r);
     }
+    // ── Stocktake (Fase 4) ──
+    if (path === '/api/inventory/stocktakes') {
+      if (method === 'GET') { const f = {}; if (url.searchParams.get('status')) f.status = url.searchParams.get('status'); return sendJson(res, getStocktakes(f)); }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        const r = createStocktake({ name: b.name, location_id: b.location_id != null ? parseInt(b.location_id) : null });
+        _broadcastInventory('created', 'stocktake', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const stMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)$/);
+    if (stMatch && method === 'GET') { const s = getStocktake(parseInt(stMatch[1])); return s ? sendJson(res, s) : sendJson(res, { error: 'Not found' }, 404); }
+    const stLineMatch = path.match(/^\/api\/inventory\/stocktake-lines\/(\d+)$/);
+    if (stLineMatch && method === 'PUT') return readBody(req, res, (b) => { setStocktakeCount(parseInt(stLineMatch[1]), b.counted); sendJson(res, { ok: true }); });
+    const stApplyMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)\/apply$/);
+    if (stApplyMatch && method === 'POST') { const r = applyStocktake(parseInt(stApplyMatch[1])); if (!r) return sendJson(res, { error: 'Cannot apply' }, 400); _broadcastInventory('updated', 'stocktake', { id: parseInt(stApplyMatch[1]) }); return sendJson(res, r); }
+    const stCancelMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)\/cancel$/);
+    if (stCancelMatch && method === 'POST') { const r = cancelStocktake(parseInt(stCancelMatch[1])); if (!r) return sendJson(res, { error: 'Cannot cancel' }, 400); return sendJson(res, r); }
+    // ── Warranties & attachments (Fase 4) ──
+    if (path === '/api/inventory/warranties') {
+      if (method === 'GET') {
+        if (url.searchParams.get('expiring')) return sendJson(res, getExpiringWarranties(parseInt(url.searchParams.get('expiring')) || 60));
+        return sendJson(res, getWarranties(url.searchParams.get('entity_type'), url.searchParams.get('entity_id')));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.entity_type || b.entity_id == null) return sendJson(res, { error: 'entity_type & entity_id required' }, 400);
+        const r = addWarranty(b); sendJson(res, r, 201);
+      });
+    }
+    const warrMatch = path.match(/^\/api\/inventory\/warranties\/(\d+)$/);
+    if (warrMatch && method === 'DELETE') { deleteWarranty(parseInt(warrMatch[1])); return sendJson(res, { ok: true }); }
+    if (path === '/api/inventory/attachments') {
+      if (method === 'GET') return sendJson(res, getAttachments(url.searchParams.get('entity_type'), url.searchParams.get('entity_id')));
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.entity_type || b.entity_id == null || !b.url) return sendJson(res, { error: 'entity_type, entity_id & url required' }, 400);
+        try { const r = addAttachment(b); sendJson(res, r, 201); } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+    const attMatch = path.match(/^\/api\/inventory\/attachments\/(\d+)$/);
+    if (attMatch && method === 'DELETE') { deleteAttachment(parseInt(attMatch[1])); return sendJson(res, { ok: true }); }
+    // ── CSV export / import for parts (Fase 4) ──
+    if (path === '/api/inventory/parts/export.csv' && method === 'GET') {
+      const cols = ['name', 'ipn', 'type', 'unit', 'min_stock', 'cost', 'category_name', 'total_stock'];
+      const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const csv = cols.join(',') + '\n' + getParts({ includeInactive: true }).map((p) => cols.map((c) => esc(p[c])).join(',')).join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="parts.csv"' });
+      return res.end(csv);
+    }
+    if (path === '/api/inventory/parts/import' && method === 'POST') return readBody(req, res, (b) => {
+      const text = typeof b === 'string' ? b : b.csv;
+      if (!text) return sendJson(res, { error: 'csv required' }, 400);
+      const splitLine = (line) => { const out = []; let cur = ''; let q = false; for (let i = 0; i < line.length; i++) { const c = line[i]; if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === ',') { out.push(cur); cur = ''; } else if (c === '"') q = true; else cur += c; } out.push(cur); return out; };
+      const lines = String(text).split(/\r?\n/).filter((l) => l.trim());
+      if (!lines.length) return sendJson(res, { error: 'empty csv' }, 400);
+      const headers = splitLine(lines[0]).map((h) => h.trim().toLowerCase());
+      let created = 0;
+      for (const line of lines.slice(1)) {
+        const cells = splitLine(line);
+        const row = {};
+        headers.forEach((h, i) => { row[h] = cells[i]; });
+        if (!row.name || !row.name.trim()) continue;
+        addPart({
+          name: row.name.trim(), ipn: row.ipn || undefined, type: row.type || 'component',
+          unit: row.unit || 'pcs', min_stock: row.min_stock ? Number(row.min_stock) : 0,
+          cost: row.cost ? Number(row.cost) : undefined,
+        });
+        created++;
+      }
+      _broadcastInventory('created', 'part', { imported: created });
+      sendJson(res, { created });
+    });
 
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
     if (spoolMatch && method === 'GET') {

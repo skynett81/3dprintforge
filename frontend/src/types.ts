@@ -171,6 +171,48 @@ export interface Build {
   part_unit?: string;
 }
 
+export interface StocktakeLine {
+  id: number;
+  stock_item_id?: number | null;
+  part_id?: number | null;
+  expected?: number | null;
+  counted?: number | null;
+  part_name?: string;
+  part_unit?: string;
+  location_name?: string | null;
+}
+
+export interface Stocktake {
+  id: number;
+  name?: string | null;
+  location_id?: number | null;
+  location_name?: string | null;
+  status: string;
+  created_at: string;
+  applied_at?: string | null;
+  line_count?: number;
+  lines?: StocktakeLine[];
+}
+
+export interface Warranty {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  provider?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
+}
+
+export interface Attachment {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  kind: string;
+  title?: string | null;
+  url: string;
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;
