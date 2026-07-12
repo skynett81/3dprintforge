@@ -86,12 +86,17 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
 ];
 
 const NAV_LOOKUP: Record<string, NavItem> = Object.fromEntries(NAV_GROUPS.flatMap((g) => g.items).map((n) => [n.id, n]));
+// Alt+1..9 quick-jump targets, in order.
+const SHORTCUT_PANELS: PanelId[] = ['dashboard', 'fleet', 'guard', 'queue', 'inventory', 'purchasing', 'analytics', 'history', 'settings'];
 
 function loadCollapsed(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
 }
 function loadRecent(): string[] {
   try { const r = JSON.parse(localStorage.getItem('v2.nav.recent') || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : []; } catch { return []; }
+}
+function loadPinned(): string[] {
+  try { const r = JSON.parse(localStorage.getItem('v2.nav.pinned') || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : []; } catch { return []; }
 }
 function loadRail(): boolean {
   try { return localStorage.getItem('v2.nav.rail') === '1'; } catch { return false; }
@@ -148,7 +153,32 @@ export function App() {
       return next;
     });
   }, [route.panel]);
-  const cmdItems: CommandItem[] = NAV_GROUPS.flatMap((g) => g.items.map((n) => ({ id: n.id, label: n.label, group: g.label, icon: n.icon })));
+
+  // Pinned panels (user favourites) shown in a group at the top of the sidebar.
+  const [pinned, setPinned] = useState<string[]>(loadPinned);
+  function togglePin(id: string) {
+    setPinned((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try { localStorage.setItem('v2.nav.pinned', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }
+  // Alt+1..9 jump to the shortcut panels.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key >= '1' && e.key <= '9') {
+        const id = SHORTCUT_PANELS[Number(e.key) - 1];
+        if (id) { e.preventDefault(); setPanel(id); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const cmdItems: CommandItem[] = NAV_GROUPS.flatMap((g) => g.items.map((n) => {
+    const si = SHORTCUT_PANELS.indexOf(n.id);
+    return { id: n.id, label: n.label, group: g.label, icon: n.icon, hint: si >= 0 ? `Alt+${si + 1}` : undefined };
+  }));
   function go(id: string) {
     if (id.startsWith('#')) { window.location.hash = id; return; }
     setPanel(id as PanelId);
@@ -198,6 +228,10 @@ export function App() {
     setSeen(top);
   }
 
+  // Pinned favourites render as a group above the standard nav groups.
+  const pinnedItems = pinned.map((id) => NAV_LOOKUP[id]).filter(Boolean);
+  const navGroups = pinnedItems.length ? [{ label: 'Pinned', items: pinnedItems }, ...NAV_GROUPS] : NAV_GROUPS;
+
   // Palette empty-state: recently visited panels + app quick actions.
   const recentItems: CommandItem[] = recent
     .filter((id) => id !== panel && NAV_LOOKUP[id])
@@ -237,13 +271,13 @@ export function App() {
           <kbd className="nav-search-kbd">⌘K</kbd>
         </button>
         <nav className="nav">
-          {NAV_GROUPS.map((g, gi) => {
+          {navGroups.map((g, gi) => {
             const isCollapsed = g.label ? collapsed.has(g.label) : false;
             const hasActive = g.items.some((n) => n.id === panel);
             // In rail mode groups always show their icons (labels/headers hide via CSS).
             const showItems = rail || !isCollapsed;
             return (
-              <div className="nav-group" key={gi}>
+              <div className="nav-group" key={g.label ?? `g${gi}`}>
                 {g.label && (
                   <button className="nav-section" onClick={() => toggleGroup(g.label!)} aria-expanded={!isCollapsed}>
                     <svg className={`nav-chevron${isCollapsed ? '' : ' nav-chevron--open'}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
@@ -253,6 +287,7 @@ export function App() {
                 )}
                 {showItems && g.items.map((n) => {
                   const b = badges[n.id];
+                  const isPinned = pinned.includes(n.id);
                   return (
                     <button
                       key={n.id}
@@ -263,6 +298,13 @@ export function App() {
                       <span className="nav-icon">{n.icon}</span>
                       <span className="nav-label">{n.label}</span>
                       {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
+                      <span
+                        className={`nav-pin${isPinned ? ' nav-pin--on' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); togglePin(n.id); }}
+                        title={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                        role="button"
+                        aria-label={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                      >★</span>
                     </button>
                   );
                 })}

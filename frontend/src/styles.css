@@ -119,6 +119,15 @@ body {
   border-radius: 999px; font-size: 0.66rem; font-weight: 700; line-height: 1;
   display: grid; place-items: center;
 }
+.nav-pin {
+  flex: none; margin-left: 4px; font-size: 0.8rem; line-height: 1; color: var(--faint);
+  opacity: 0; transition: opacity 0.12s, color 0.12s; cursor: pointer; padding: 2px;
+}
+.nav-item:hover .nav-pin { opacity: 0.55; }
+.nav-pin:hover { color: var(--amber); opacity: 1; }
+.nav-pin--on { opacity: 1; color: var(--amber); }
+.nav-badge + .nav-pin { margin-left: 4px; }
+.app-shell--rail .nav-pin { display: none; }
 .nav-badge--accent { background: rgba(0,179,164,0.18); color: var(--accent); }
 .nav-badge--blue { background: rgba(59,130,246,0.2); color: #7fb0ff; }
 .nav-badge--red { background: var(--red); color: #fff; }
