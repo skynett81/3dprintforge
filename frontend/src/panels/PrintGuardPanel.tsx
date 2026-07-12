@@ -8,6 +8,28 @@ import type { ProtectionEvent, GuardStatus, Printer } from '../types';
 
 const temp = (v?: number | null) => (v == null ? '—' : `${Math.round(v)}°`);
 
+// Best-effort live camera: the snapshot endpoint serves the latest stream
+// frame (available while the camera is streaming, e.g. during a print). Polls
+// every 2s, hides on error and retries so it recovers when the stream starts.
+function CameraSnapshot({ printerId }: { printerId: string }) {
+  const [tick, setTick] = useState(0);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const poll = setInterval(() => setTick((x) => x + 1), 2000);
+    const retry = setInterval(() => setFailed(false), 8000);
+    return () => { clearInterval(poll); clearInterval(retry); };
+  }, []);
+  if (failed) return null;
+  return (
+    <img
+      src={`/api/printers/${encodeURIComponent(printerId)}/camera?t=${tick}`}
+      alt="live camera"
+      onError={() => setFailed(true)}
+      style={{ width: '100%', borderRadius: 8, aspectRatio: '16 / 10', objectFit: 'cover', background: '#000' }}
+    />
+  );
+}
+
 function when(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -101,8 +123,23 @@ export function PrintGuardPanel() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, marginBottom: 20 }}>
         {printers.map((p) => {
           const s = statuses[p.id];
-          const l = readLive(live[p.id]);
+          const raw = (live[p.id] ?? {}) as Record<string, unknown>;
+          const l = readLive(raw);
           const printing = isPrinting(l);
+          const xc = (raw._xcam ?? {}) as Record<string, unknown>;
+          const detectors = ([
+            [t('v2.guard.d_spaghetti', 'Spaghetti'), xc.spaghettiDetector],
+            [t('v2.guard.d_firstlayer', 'First layer'), xc.firstLayerInspector],
+            [t('v2.guard.d_buildplate', 'Buildplate'), xc.buildplateMarkerDetector],
+            [t('v2.guard.d_clump', 'Clump'), xc.clumpDetector],
+          ] as [string, unknown][]).filter(([, v]) => v);
+          const sensitivity = ((raw.xcam ?? {}) as Record<string, unknown>).halt_print_sensitivity as string | undefined;
+          const fans = ([
+            [t('v2.guard.f_part', 'Part'), raw._fan_part],
+            [t('v2.guard.f_aux', 'Aux'), raw._fan_aux],
+            [t('v2.guard.f_chamber', 'Chamber'), raw._fan_chamber],
+          ] as [string, unknown][]).filter(([, v]) => v != null && String(v) !== '');
+          const wifi = raw._wifi_rssi as string | undefined;
           const activeAlerts = s?.alerts?.filter((a) => !a.resolved).length ?? 0;
           const st = watchState(s, printing, activeAlerts);
           const rel = reliability(p.id);
@@ -113,10 +150,19 @@ export function PrintGuardPanel() {
           const snoozed = Boolean(s?.settings?.snooze_until && Date.now() < new Date(s.settings.snooze_until).getTime());
           return (
             <section className="card" key={p.id} style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {printing && <CameraSnapshot printerId={p.id} />}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="panel-title" style={{ fontSize: '1rem', margin: 0 }}>{p.name || p.id}</span>
                 <span className={`hs-badge hs-badge-${st.cls}`} style={{ marginLeft: 'auto' }}>{st.text}</span>
               </div>
+
+              {detectors.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                  <span className="muted" style={{ fontSize: '0.72rem' }}>{t('v2.guard.ai', 'AI monitors')}:</span>
+                  {detectors.map(([name]) => <span key={name} className="hs-badge hs-badge-good">{name}</span>)}
+                  {sensitivity && <span className="muted" style={{ fontSize: '0.72rem' }}>· {sensitivity}</span>}
+                </div>
+              )}
 
               {printing && (
                 <div style={{ fontSize: '0.82rem' }}>
@@ -130,10 +176,17 @@ export function PrintGuardPanel() {
                       </div>
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 14 }}>
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                     <span className="muted">{t('v2.guard.nozzle', 'Nozzle')} {temp(l.nozzle)}</span>
                     <span className="muted">{t('v2.guard.bed', 'Bed')} {temp(l.bed)}</span>
+                    {l.chamber != null && <span className="muted">{t('v2.guard.chamber_t', 'Chamber')} {temp(l.chamber)}</span>}
                   </div>
+                  {(fans.length > 0 || wifi) && (
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 3 }}>
+                      {fans.map(([name, v]) => <span key={name} className="muted">{name} {t('v2.guard.fan', 'fan')} {String(v)}</span>)}
+                      {wifi && <span className="muted">{t('v2.guard.wifi', 'Wi-Fi')} {wifi}</span>}
+                    </div>
+                  )}
                 </div>
               )}
 
