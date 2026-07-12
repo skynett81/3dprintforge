@@ -14,6 +14,8 @@ interface CommandPaletteProps {
   items: CommandItem[];
   onSelect: (id: string) => void;
   onClose: () => void;
+  /** Optional async data search (spools, history, customers …). */
+  search?: (query: string) => Promise<CommandItem[]>;
 }
 
 // Substring match, ranked: label prefix > label contains > keyword/group contains.
@@ -32,14 +34,16 @@ function score(item: CommandItem, q: string): number {
  * substring and supports full keyboard control: type to filter, arrows to
  * move, Enter to go, Esc to close.
  */
-export function CommandPalette({ open, items, onSelect, onClose }: CommandPaletteProps) {
+export function CommandPalette({ open, items, onSelect, onClose, search }: CommandPaletteProps) {
   const t = useT();
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
+  const [dynamic, setDynamic] = useState<CommandItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const results = useMemo(() => {
+  const navResults = useMemo(() => {
     const query = q.trim().toLowerCase();
     return items
       .map((it) => ({ it, s: score(it, query) }))
@@ -47,9 +51,25 @@ export function CommandPalette({ open, items, onSelect, onClose }: CommandPalett
       .sort((a, b) => b.s - a.s)
       .map((r) => r.it);
   }, [items, q]);
+  const results = useMemo(() => [...navResults, ...dynamic], [navResults, dynamic]);
+
+  // Debounced async data search (needs ≥2 chars to avoid hammering the API).
+  useEffect(() => {
+    const query = q.trim();
+    if (!search || query.length < 2) { setDynamic([]); setLoading(false); return; }
+    setLoading(true);
+    let alive = true;
+    const id = setTimeout(() => {
+      search(query)
+        .then((r) => { if (alive) setDynamic(r); })
+        .catch(() => { if (alive) setDynamic([]); })
+        .finally(() => { if (alive) setLoading(false); });
+    }, 220);
+    return () => { alive = false; clearTimeout(id); };
+  }, [q, search]);
 
   useEffect(() => {
-    if (open) { setQ(''); setActive(0); const id = setTimeout(() => inputRef.current?.focus(), 20); return () => clearTimeout(id); }
+    if (open) { setQ(''); setActive(0); setDynamic([]); const id = setTimeout(() => inputRef.current?.focus(), 20); return () => clearTimeout(id); }
   }, [open]);
   useEffect(() => { setActive(0); }, [q]);
   useEffect(() => {
@@ -87,7 +107,7 @@ export function CommandPalette({ open, items, onSelect, onClose }: CommandPalett
         </div>
         <div className="cmd-list" ref={listRef}>
           {results.length === 0 ? (
-            <div className="cmd-empty">{t('v2.cmd.none', 'No matches')}</div>
+            <div className="cmd-empty">{loading ? t('v2.cmd.searching', 'Searching…') : t('v2.cmd.none', 'No matches')}</div>
           ) : results.map((it, i) => (
             <button
               key={it.id}

@@ -17,6 +17,31 @@
   --radius: 12px;
   --radius-sm: 8px;
   --shadow: 0 1px 0 rgba(255,255,255,0.02), 0 8px 24px -12px rgba(0,0,0,0.6);
+  --sidebar-bg: linear-gradient(180deg, #10131a, #0c0e13);
+  --glow: rgba(0,179,164,0.08);
+  --card-grad: #12151c;
+}
+
+:root[data-theme="light"] {
+  --bg: #f4f6f9;
+  --bg-2: #ffffff;
+  --bg-3: #eef1f5;
+  --bg-4: #e2e7ee;
+  --border: #d6dbe4;
+  --border-soft: #e5e9f0;
+  --text: #1a2029;
+  --muted: #5c6675;
+  --faint: #97a0af;
+  --accent: #009486;
+  --accent-ink: #ffffff;
+  --blue: #2f6bff;
+  --green: #1eaa62;
+  --amber: #c98a12;
+  --red: #dc4646;
+  --shadow: 0 1px 0 rgba(0,0,0,0.02), 0 8px 24px -14px rgba(20,30,50,0.25);
+  --sidebar-bg: linear-gradient(180deg, #ffffff, #f1f4f8);
+  --glow: rgba(0,148,134,0.08);
+  --card-grad: #f2f5f9;
 }
 
 * { box-sizing: border-box; }
@@ -25,7 +50,7 @@ html, body { height: 100%; }
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 500px at 80% -10%, rgba(0,179,164,0.08), transparent 60%),
+    radial-gradient(1200px 500px at 80% -10%, var(--glow), transparent 60%),
     var(--bg);
   color: var(--text);
   font: 14px/1.55 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -38,7 +63,7 @@ body {
 .app-shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
 .sidebar {
   border-right: 1px solid var(--border);
-  background: linear-gradient(180deg, #10131a, #0c0e13);
+  background: var(--sidebar-bg);
   padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
   position: sticky; top: 0; height: 100vh;
 }
@@ -117,7 +142,7 @@ body {
 .app-shell--rail .nav-item { justify-content: center; padding: 11px 0; position: relative; }
 .app-shell--rail .nav-badge {
   position: absolute; top: 5px; right: 12px; min-width: 8px; height: 8px; padding: 0;
-  font-size: 0; border: 2px solid #0e1016;
+  font-size: 0; border: 2px solid var(--bg-2);
 }
 .app-shell--rail .classic-link { justify-content: center; }
 
@@ -162,6 +187,17 @@ body {
 .cmd-label { flex: 1 1 auto; }
 .cmd-group { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
 
+/* Theme toggle */
+.theme-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 10px;
+  background: var(--bg-2); border: 1px solid var(--border-soft); color: var(--muted);
+  padding: 7px 10px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 0.78rem;
+  transition: border-color 0.14s, color 0.14s;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+.app-shell--rail .theme-toggle { justify-content: center; padding: 7px 0; }
+.app-shell--rail .theme-toggle .nav-label { display: none; }
+
 /* Mobile drawer (hidden on desktop) */
 .drawer-toggle, .drawer-backdrop { display: none; }
 .auth-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.76rem; color: var(--muted); margin-bottom: 10px; }
@@ -204,7 +240,7 @@ a.hs-badge { text-decoration: none; }
 
 /* Achievements */
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
-.ach-card { background: linear-gradient(180deg, var(--bg-2), #12151c); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; box-shadow: var(--shadow); opacity: 0.72; }
+.ach-card { background: linear-gradient(180deg, var(--bg-2), var(--card-grad)); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; box-shadow: var(--shadow); opacity: 0.72; }
 .ach-card--earned { opacity: 1; border-color: rgba(0,179,164,0.35); }
 .ach-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ach-title { font-weight: 600; }
@@ -449,7 +485,7 @@ a.hs-badge { text-decoration: none; }
 /* Tile grid (fleet / inventory / queue) */
 .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 18px; }
 .tile {
-  background: linear-gradient(180deg, var(--bg-2), #12151c);
+  background: linear-gradient(180deg, var(--bg-2), var(--card-grad));
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px 15px; box-shadow: var(--shadow); transition: border-color 0.15s, transform 0.15s;
 }
@@ -475,7 +511,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 }
 .drawer {
   width: min(380px, 92vw); height: 100%; overflow-y: auto;
-  background: linear-gradient(180deg, var(--bg-2), #10131a);
+  background: linear-gradient(180deg, var(--bg-2), var(--card-grad));
   border-left: 1px solid var(--border); padding: 20px;
   display: flex; flex-direction: column; gap: 16px;
   animation: slidein 0.18s ease;
@@ -683,7 +719,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 /* Cards */
 .card {
-  background: linear-gradient(180deg, var(--bg-2), #12151c);
+  background: linear-gradient(180deg, var(--bg-2), var(--card-grad));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px;
@@ -700,7 +736,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .overview { margin-top: 18px; }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .kpi {
-  background: linear-gradient(180deg, var(--bg-2), #12151c);
+  background: linear-gradient(180deg, var(--bg-2), var(--card-grad));
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px 16px; box-shadow: var(--shadow);
 }

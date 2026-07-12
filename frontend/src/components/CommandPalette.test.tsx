@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nProvider } from '../i18n';
 import { CommandPalette, type CommandItem } from './CommandPalette';
 
@@ -49,5 +49,22 @@ describe('CommandPalette', () => {
     renderPalette();
     fireEvent.change(screen.getByPlaceholderText('Jump to…'), { target: { value: 'zzzzz' } });
     expect(screen.getByText('No matches')).toBeInTheDocument();
+  });
+
+  it('merges async data-search results and deep-links on select', async () => {
+    const onSelect = vi.fn();
+    const search = vi.fn(async (): Promise<CommandItem[]> => [
+      { id: '#/history/42', label: 'Benchy hull', group: 'History' },
+    ]);
+    render(
+      <I18nProvider lang="en">
+        <CommandPalette open items={items} onSelect={onSelect} onClose={vi.fn()} search={search} />
+      </I18nProvider>,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Jump to…'), { target: { value: 'benchy' } });
+    await waitFor(() => expect(search).toHaveBeenCalledWith('benchy'));
+    const row = await screen.findByText('Benchy hull');
+    fireEvent.click(row);
+    expect(onSelect).toHaveBeenCalledWith('#/history/42');
   });
 });
