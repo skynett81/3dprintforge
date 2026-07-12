@@ -41,7 +41,8 @@ import { getHistory, getHistoryById, addHistory, updateHistoryNotes, getStatisti
 import { CameraRecorder } from './camera-recorder.js';
 import { recalibrateFromHistory, recalibrateFromSignals } from './database.js';
 import { getCrmCustomers, getCrmCustomer, createCrmCustomer, updateCrmCustomer, deleteCrmCustomer, getCrmOrders, getCrmOrder, createCrmOrder, updateCrmOrder, updateCrmOrderStatus, createCrmOrderFromHistory, addCrmOrderItem, updateCrmOrderItem, removeCrmOrderItem, createCrmInvoice, getCrmInvoice, getCrmInvoices, updateCrmInvoiceStatus, getCrmDashboard, getCrmSettings, updateCrmSettings, getOrderMargin, getProductMargins, getMarginSummary,
-  createShopProduct, getShopProduct, updateShopProduct, listShopProducts, setShopProductActive, deleteShopProduct } from './database.js';
+  createShopProduct, getShopProduct, updateShopProduct, listShopProducts, setShopProductActive, deleteShopProduct,
+  addProductToOrder, dispatchOrderToQueue } from './database.js';
 import { listGcodeSnippets, getGcodeSnippet, createGcodeSnippet, updateGcodeSnippet, deleteGcodeSnippet, getGcodeSnippetCategories } from './database.js';
 import { generateInvoiceHtml } from './crm-invoice.js';
 import { createBackup, listBackups, restoreBackup, uploadBackup } from './backup.js';
@@ -10526,6 +10527,28 @@ export async function handleApiRequest(req, res) {
         catch (e) { log.error('CRM product margins error', e.message); return sendJson(res, { error: e.message }, 500); }
       }
 
+      // Add a catalog product as an order line
+      const crmOrderProductMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/products$/);
+      if (crmOrderProductMatch && method === 'POST') {
+        const orderId = parseInt(crmOrderProductMatch[1], 10);
+        return readBody(req, res, (body) => {
+          if (!body.product_id) return sendJson(res, { error: 'product_id is required' }, 400);
+          try { return sendJson(res, addProductToOrder(orderId, parseInt(body.product_id, 10), parseInt(body.quantity, 10) || 1), 201); }
+          catch (e) { return sendJson(res, { error: e.message }, e.message === 'Product not found' ? 404 : 400); }
+        });
+      }
+
+      // Dispatch an order's printable lines to the print queue
+      const crmOrderDispatchMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/dispatch$/);
+      if (crmOrderDispatchMatch && method === 'POST') {
+        const orderId = parseInt(crmOrderDispatchMatch[1], 10);
+        return readBody(req, res, (body) => {
+          if (!body.queue_id) return sendJson(res, { error: 'queue_id is required' }, 400);
+          try { return sendJson(res, dispatchOrderToQueue(orderId, parseInt(body.queue_id, 10))); }
+          catch (e) { return sendJson(res, { error: e.message }, 400); }
+        });
+      }
+
       // Margin for a single order (with per-item breakdown)
       const crmOrderMarginMatch = path.match(/^\/api\/crm\/orders\/(\d+)\/margin$/);
       if (crmOrderMarginMatch && method === 'GET') {
@@ -13285,6 +13308,8 @@ function _getApiDocs() {
       { method: 'POST', path: '/api/crm/orders', tag: 'CRM', summary: 'Create CRM order', permission: 'admin' },
       { method: 'GET', path: '/api/crm/orders/:id', tag: 'CRM', summary: 'Get CRM order', permission: 'view' },
       { method: 'GET', path: '/api/crm/orders/:id/margin', tag: 'CRM', summary: 'Order profitability (revenue, COGS, margin) with per-item breakdown', permission: 'view' },
+      { method: 'POST', path: '/api/crm/orders/:id/products', tag: 'Shop', summary: 'Add a catalog product as an order line (deducts tracked stock)', permission: 'admin' },
+      { method: 'POST', path: '/api/crm/orders/:id/dispatch', tag: 'Shop', summary: 'Dispatch an order\'s printable lines to the print queue', permission: 'admin' },
       { method: 'GET', path: '/api/crm/margins/products', tag: 'CRM', summary: 'Margin per product, most profitable first', permission: 'view' },
       { method: 'GET', path: '/api/crm/margins/summary', tag: 'CRM', summary: 'Overall margin totals plus by-month time series', permission: 'view' },
       { method: 'GET', path: '/api/shop/products', tag: 'Shop', summary: 'List storefront products (with unit COGS and margin)', permission: 'view' },

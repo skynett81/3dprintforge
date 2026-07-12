@@ -11,7 +11,7 @@ import { computeMargin } from './order-margins.js';
 
 // Columns a client may set on create/update (id/timestamps are managed here).
 const WRITABLE = [
-  'sku', 'name', 'description', 'category', 'price', 'currency', 'file_hash',
+  'sku', 'name', 'description', 'category', 'price', 'currency', 'file_hash', 'filename',
   'filament_type', 'filament_weight_g', 'print_time_min', 'material_cost',
   'labor_cost', 'electricity_cost', 'wear_cost', 'image_url', 'stock_qty', 'active',
 ];
@@ -61,10 +61,10 @@ export function createShopProduct(data = {}) {
   try {
     const result = db.prepare(
       `INSERT INTO shop_products
-        (sku, name, description, category, price, currency, file_hash, filament_type,
+        (sku, name, description, category, price, currency, file_hash, filename, filament_type,
          filament_weight_g, print_time_min, material_cost, labor_cost, electricity_cost,
          wear_cost, image_url, stock_qty, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       data.sku ? String(data.sku).trim() : null,
       name,
@@ -73,6 +73,7 @@ export function createShopProduct(data = {}) {
       price,
       data.currency || 'NOK',
       data.file_hash || null,
+      data.filename || null,
       data.filament_type || null,
       data.filament_weight_g ?? null,
       data.print_time_min ?? null,

@@ -2433,6 +2433,14 @@ export function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_shop_products_active ON shop_products(active);
       `);
     }},
+    { version: 162, up: (db) => {
+      // Fulfillment bridge (Fase 2.2): a product carries the printable file it
+      // dispatches, and a CRM order line remembers which product it came from
+      // and which queue item was created when it was sent to production.
+      try { db.exec('ALTER TABLE shop_products ADD COLUMN filename TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE crm_order_items ADD COLUMN product_id INTEGER'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE crm_order_items ADD COLUMN queue_item_id INTEGER'); } catch { /* exists */ }
+    }},
   ];
 
   for (const m of migrations) {

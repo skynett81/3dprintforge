@@ -5039,6 +5039,18 @@
     "deleted": "Product deleted",
     "confirm_delete": "Delete this product?",
     "saved": "Saved",
-    "name_required": "Name is required"
+    "name_required": "Name is required",
+    "production": "Production",
+    "lines_dispatched": "lines dispatched",
+    "add_product": "Add product",
+    "qty": "Qty",
+    "add": "Add",
+    "target_queue": "Target queue",
+    "no_queues": "No active queue",
+    "dispatch": "Dispatch to queue",
+    "in_queue": "In print queue",
+    "product_added": "Product added",
+    "dispatched_n": "line(s) sent to queue",
+    "nothing_to_dispatch": "Nothing to dispatch"
   }
 }

@@ -27,4 +27,5 @@ export * from './activity-log.js';
 export * from './crm.js';
 export * from './order-margins.js';
 export * from './shop-products.js';
+export * from './shop-fulfillment.js';
 export * from './gcode-snippets.js';

@@ -3763,6 +3763,18 @@
     "deleted": "Produkt slettet",
     "confirm_delete": "Slette dette produktet?",
     "saved": "Lagret",
-    "name_required": "Navn er påkrevd"
+    "name_required": "Navn er påkrevd",
+    "production": "Produksjon",
+    "lines_dispatched": "linjer sendt",
+    "add_product": "Legg til produkt",
+    "qty": "Ant",
+    "add": "Legg til",
+    "target_queue": "Målkø",
+    "no_queues": "Ingen aktiv kø",
+    "dispatch": "Send til kø",
+    "in_queue": "I printkø",
+    "product_added": "Produkt lagt til",
+    "dispatched_n": "linje(r) sendt til kø",
+    "nothing_to_dispatch": "Ingenting å sende"
   }
 }

@@ -24,6 +24,8 @@
   let _selectedOrder = null;
   let _orderItems = [];
   let _orderMargin = null;
+  let _shopProducts = [];
+  let _queues = [];
   let _customers = [];
   let _formItems = []; // items being added in the form
 
@@ -47,6 +49,25 @@
   async function fetchOrderMargin(id) {
     try { const r = await fetch('/api/crm/orders/' + id + '/margin'); return r.ok ? r.json() : null; }
     catch { return null; }
+  }
+
+  async function fetchActiveProducts() {
+    try { const r = await fetch('/api/shop/products?active=true'); return r.ok ? r.json() : []; }
+    catch { return []; }
+  }
+  async function fetchQueues() {
+    try { const r = await fetch('/api/queue?status=active'); return r.ok ? r.json() : []; }
+    catch { return []; }
+  }
+  async function apiAddProduct(orderId, productId, quantity) {
+    const r = await fetch('/api/crm/orders/' + orderId + '/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product_id: productId, quantity }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed');
+    return r.json();
+  }
+  async function apiDispatch(orderId, queueId) {
+    const r = await fetch('/api/crm/orders/' + orderId + '/dispatch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ queue_id: queueId }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed');
+    return r.json();
   }
 
   async function fetchCustomers() {
@@ -172,7 +193,7 @@
           <th style="text-align:right">${_esc(_tl('crm.total', 'Total'))}</th>
         </tr></thead>
         <tbody>${_orderItems.map(it => `<tr>
-          <td>${_esc(it.description)}${it.filename ? ` <small style="opacity:0.6">(${_esc(it.filename)})</small>` : ''}</td>
+          <td>${_esc(it.description)}${it.filename ? ` <small style="opacity:0.6">(${_esc(it.filename)})</small>` : ''}${it.queue_item_id ? ` <span class="badge badge-status badge-status-printing" title="${_esc(_tl('shop.in_queue', 'In print queue'))}"><i class="bi bi-printer"></i> #Q${it.queue_item_id}</span>` : ''}</td>
           <td>${it.quantity || 1}</td>
           <td>${_esc(it.filament_type || '--')} ${_esc(it.filament_color || '')}</td>
           <td style="text-align:right">${formatCurrency(it.total_cost)}</td>
@@ -206,6 +227,30 @@
       </div>`;
     }
 
+    // Production card — add products from the catalog and dispatch to the queue
+    const dispatchedCount = _orderItems.filter(it => it.queue_item_id).length;
+    const printable = _orderItems.filter(it => it.filename && !it.queue_item_id).length;
+    const prodOptions = _shopProducts.map(p => `<option value="${p.id}">${_esc(p.name)}${p.sku ? ' (' + _esc(p.sku) + ')' : ''} — ${formatCurrency(p.price, p.currency)}</option>`).join('');
+    const queueOptions = _queues.map(q => `<option value="${q.id}">${_esc(q.name)}${q.item_count != null ? ' (' + q.item_count + ')' : ''}</option>`).join('');
+    const productionHtml = `<div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="bi bi-hammer" style="margin-right:6px"></i>${_esc(_tl('shop.production', 'Production'))}</h3></div>
+      <div class="card-body">
+        <div style="font-size:0.8rem;opacity:0.7;margin-bottom:0.5rem">${dispatchedCount}/${_orderItems.length} ${_esc(_tl('shop.lines_dispatched', 'lines dispatched'))}</div>
+        <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-bottom:0.75rem">
+          <div style="flex:2;min-width:140px"><label class="form-label" style="font-size:0.7rem">${_esc(_tl('shop.add_product', 'Add product'))}</label>
+            <select class="form-control form-control-sm" id="crm-add-product">${prodOptions || '<option value="">' + _esc(_tl('shop.no_products', 'No products')) + '</option>'}</select></div>
+          <div style="width:70px"><label class="form-label" style="font-size:0.7rem">${_esc(_tl('shop.qty', 'Qty'))}</label>
+            <input class="form-control form-control-sm" id="crm-add-qty" type="number" min="1" value="1"></div>
+          <button class="btn btn-sm btn-outline-primary" ${prodOptions ? '' : 'disabled'} onclick="window._crmOrdAddProduct(${o.id})"><i class="bi bi-plus-lg"></i> ${_esc(_tl('shop.add', 'Add'))}</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--border-color, rgba(0,0,0,0.08));padding-top:0.75rem">
+          <div style="flex:2;min-width:140px"><label class="form-label" style="font-size:0.7rem">${_esc(_tl('shop.target_queue', 'Target queue'))}</label>
+            <select class="form-control form-control-sm" id="crm-dispatch-queue">${queueOptions || '<option value="">' + _esc(_tl('shop.no_queues', 'No active queue')) + '</option>'}</select></div>
+          <button class="btn btn-sm btn-primary" ${queueOptions && printable ? '' : 'disabled'} onclick="window._crmOrdDispatch(${o.id})"><i class="bi bi-printer"></i> ${_esc(_tl('shop.dispatch', 'Dispatch to queue'))}${printable ? ' (' + printable + ')' : ''}</button>
+        </div>
+      </div>
+    </div>`;
+
     // Status change buttons
     const nextStatuses = { draft: ['pending'], pending: ['printing', 'cancelled'], printing: ['completed', 'cancelled'], completed: ['shipped'], shipped: [] };
     const statusBtns = (nextStatuses[o.status] || []).map(s => {
@@ -234,6 +279,7 @@
           <div class="card-body" style="padding:0">${itemsHtml}</div>
         </div>
         ${marginHtml}
+        ${productionHtml}
       </div>`;
   }
 
@@ -372,6 +418,7 @@
     _selectedOrder = await fetchOrderDetail(id);
     _orderItems = await fetchOrderItems(id);
     _orderMargin = await fetchOrderMargin(id);
+    [_shopProducts, _queues] = await Promise.all([fetchActiveProducts(), fetchQueues()]);
     _activeView = 'detail';
     const body = document.getElementById('overlay-panel-body');
     if (body) renderDetail(body);
@@ -391,11 +438,43 @@
       _selectedOrder = await fetchOrderDetail(id);
       _orderItems = await fetchOrderItems(id);
       _orderMargin = await fetchOrderMargin(id);
+      [_shopProducts, _queues] = await Promise.all([fetchActiveProducts(), fetchQueues()]);
       const body = document.getElementById('overlay-panel-body');
       if (body) renderDetail(body);
     } catch (err) {
       if (typeof showToast === 'function') showToast(err.message, 'danger');
     }
+  };
+
+  async function _refreshDetail(id) {
+    _selectedOrder = await fetchOrderDetail(id);
+    _orderItems = await fetchOrderItems(id);
+    _orderMargin = await fetchOrderMargin(id);
+    [_shopProducts, _queues] = await Promise.all([fetchActiveProducts(), fetchQueues()]);
+    const body = document.getElementById('overlay-panel-body');
+    if (body) renderDetail(body);
+  }
+
+  window._crmOrdAddProduct = async function(orderId) {
+    const productId = parseInt(document.getElementById('crm-add-product')?.value, 10);
+    const quantity = parseInt(document.getElementById('crm-add-qty')?.value, 10) || 1;
+    if (!productId) return;
+    try {
+      await apiAddProduct(orderId, productId, quantity);
+      if (typeof showToast === 'function') showToast(_tl('shop.product_added', 'Product added'), 'success');
+      await _refreshDetail(orderId);
+    } catch (err) { if (typeof showToast === 'function') showToast(err.message, 'danger'); }
+  };
+
+  window._crmOrdDispatch = async function(orderId) {
+    const queueId = parseInt(document.getElementById('crm-dispatch-queue')?.value, 10);
+    if (!queueId) return;
+    try {
+      const res = await apiDispatch(orderId, queueId);
+      const n = (res.dispatched || []).length;
+      if (typeof showToast === 'function') showToast(n ? `${n} ${_tl('shop.dispatched_n', 'line(s) sent to queue')}` : _tl('shop.nothing_to_dispatch', 'Nothing to dispatch'), n ? 'success' : 'warning');
+      await _refreshDetail(orderId);
+    } catch (err) { if (typeof showToast === 'function') showToast(err.message, 'danger'); }
   };
 
   window._crmOrdGenerateInvoice = async function(orderId) {
