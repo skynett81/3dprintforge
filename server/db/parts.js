@@ -72,18 +72,18 @@ export function getPart(id) {
 
 export function addPart(p) {
   const r = getDb().prepare(`
-    INSERT INTO parts (ipn, name, description, category_id, type, unit, min_stock, image, notes, is_active, filament_profile_id, shop_product_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    INSERT INTO parts (ipn, name, description, category_id, type, unit, min_stock, cost, image, notes, is_active, filament_profile_id, shop_product_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     p.ipn ?? null, p.name, p.description ?? null, p.category_id ?? null,
-    p.type ?? 'component', p.unit ?? 'pcs', p.min_stock ?? 0, p.image ?? null, p.notes ?? null,
+    p.type ?? 'component', p.unit ?? 'pcs', p.min_stock ?? 0, p.cost ?? null, p.image ?? null, p.notes ?? null,
     p.is_active === undefined ? 1 : (p.is_active ? 1 : 0),
     p.filament_profile_id ?? null, p.shop_product_id ?? null,
   );
   return { id: Number(r.lastInsertRowid) };
 }
 
-const PART_FIELDS = ['ipn', 'name', 'description', 'category_id', 'type', 'unit', 'min_stock', 'image', 'notes', 'is_active', 'filament_profile_id', 'shop_product_id'];
+const PART_FIELDS = ['ipn', 'name', 'description', 'category_id', 'type', 'unit', 'min_stock', 'cost', 'image', 'notes', 'is_active', 'filament_profile_id', 'shop_product_id'];
 
 export function updatePart(id, p) {
   const cur = getDb().prepare('SELECT * FROM parts WHERE id = ?').get(id);

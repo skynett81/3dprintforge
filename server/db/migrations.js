@@ -2541,6 +2541,45 @@ export function runMigrations() {
       try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_parts_qr ON parts(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
       try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_qr ON locations(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
     }},
+    { version: 168, up: (db) => {
+      // Inventory Fase 3: a part's bill of materials + a unit cost for rollups.
+      // A BOM line is a component part OR a filament profile, with qty + waste.
+      try { db.exec('ALTER TABLE parts ADD COLUMN cost REAL'); } catch { /* exists */ }
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS bom_lines (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          parent_part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          component_part_id INTEGER REFERENCES parts(id) ON DELETE CASCADE,
+          filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+          quantity REAL DEFAULT 1,
+          unit TEXT,
+          waste_pct REAL DEFAULT 0,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_bom_parent ON bom_lines(parent_part_id);
+      `);
+    }},
+    { version: 169, up: (db) => {
+      // Inventory Fase 3: build orders. Completing one consumes component stock
+      // (FIFO) and produces finished-good stock for the product part.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS build_orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          quantity REAL DEFAULT 1,
+          status TEXT DEFAULT 'planned',
+          printer_id TEXT,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          started_at TEXT,
+          completed_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_build_part ON build_orders(part_id);
+        CREATE INDEX IF NOT EXISTS idx_build_status ON build_orders(status);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

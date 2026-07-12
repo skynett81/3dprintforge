@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { InvPart, StockItem, StockMove, StorageLocation } from '../types';
+import type { InvPart, StockItem, StockMove, StorageLocation, BomLine } from '../types';
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -17,6 +17,9 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
   const [part, setPart] = useState<InvPart | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
   const [moves, setMoves] = useState<StockMove[]>([]);
+  const [bom, setBom] = useState<{ lines: BomLine[]; cost: number }>({ lines: [], cost: 0 });
+  const [allParts, setAllParts] = useState<InvPart[]>([]);
+  const [bl, setBl] = useState({ component: '', qty: '1', waste: '0' });
   const [tick, setTick] = useState(0);
   const [addLoc, setAddLoc] = useState('');
   const [addQty, setAddQty] = useState('');
@@ -24,11 +27,22 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.getInvPart(partId), api.listPartStock(partId), api.listPartMoves(partId)])
-      .then(([p, s, m]) => { if (alive) { setPart(p); setStock(s); setMoves(m); } })
+    Promise.all([api.getInvPart(partId), api.listPartStock(partId), api.listPartMoves(partId), api.getPartBom(partId), api.listInvParts()])
+      .then(([p, s, m, bo, ps]) => { if (alive) { setPart(p); setStock(s); setMoves(m); setBom(bo); setAllParts(ps.filter((x) => x.id !== partId)); } })
       .catch((e) => toast((e as Error).message, 'error'));
     return () => { alive = false; };
   }, [partId, tick, toast]);
+
+  async function addBomLine() {
+    if (!bl.component) { toast(t('v2.bom.pick', 'Pick a component'), 'error'); return; }
+    try {
+      await api.addBomLine(partId, { component_part_id: Number(bl.component), quantity: Number(bl.qty) || 1, waste_pct: Number(bl.waste) || 0 });
+      setBl({ component: '', qty: '1', waste: '0' }); refresh();
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
+  async function delBomLine(id: number) {
+    try { await api.deleteBomLine(id); refresh(); } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   function refresh() { setTick((n) => n + 1); onChanged(); }
 
@@ -127,6 +141,32 @@ export function PartDrawer({ partId, onClose, onChanged }: { partId: number; onC
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="drawer-history">
+          <div className="field-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {t('v2.bom.title', 'Bill of materials')}
+            {bom.cost > 0 && <span className="muted" style={{ marginLeft: 'auto', fontWeight: 400 }}>{t('v2.bom.cost', 'Material cost')}: {bom.cost.toFixed(2)}</span>}
+          </div>
+          {bom.lines.length === 0 ? (
+            <p className="muted empty-note" style={{ margin: 0 }}>{t('v2.bom.empty', 'No components. Add a recipe to build this from stock.')}</p>
+          ) : bom.lines.map((l) => (
+            <div key={l.id} className="err-row" style={{ gridTemplateColumns: '1.5fr auto auto auto', padding: '6px 0' }}>
+              <span className="err-msg">{l.component_name || l.filament_name || `#${l.component_part_id ?? l.filament_profile_id}`}</span>
+              <span className="muted tnum">{l.quantity}{l.waste_pct ? ` +${l.waste_pct}%` : ''}</span>
+              <span className="tnum">{l.line_cost ? l.line_cost.toFixed(2) : '—'}</span>
+              <button className="btn btn--sm btn--ghost" onClick={() => delBomLine(l.id)}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+            <select className="input" value={bl.component} onChange={(e) => setBl({ ...bl, component: e.target.value })} style={{ flex: '1 1 130px', minWidth: 0 }}>
+              <option value="">{t('v2.bom.component', 'Component…')}</option>
+              {allParts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            </select>
+            <input className="input" type="number" value={bl.qty} onChange={(e) => setBl({ ...bl, qty: e.target.value })} title={t('v2.bom.qty', 'Qty')} style={{ maxWidth: 70 }} />
+            <input className="input" type="number" value={bl.waste} onChange={(e) => setBl({ ...bl, waste: e.target.value })} title={t('v2.bom.waste', 'Waste %')} style={{ maxWidth: 64 }} />
+            <button className="btn btn--sm" onClick={addBomLine}>{t('v2.bom.add', 'Add')}</button>
+          </div>
         </div>
 
         {moves.length > 0 && (

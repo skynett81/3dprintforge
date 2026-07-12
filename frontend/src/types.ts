@@ -142,6 +142,35 @@ export interface StockMove {
   created_at: string;
 }
 
+export interface BomLine {
+  id: number;
+  parent_part_id: number;
+  component_part_id?: number | null;
+  filament_profile_id?: number | null;
+  quantity: number;
+  unit?: string | null;
+  waste_pct: number;
+  notes?: string | null;
+  component_name?: string | null;
+  component_unit?: string | null;
+  filament_name?: string | null;
+  line_cost: number;
+}
+
+export interface Build {
+  id: number;
+  part_id: number;
+  quantity: number;
+  status: string;
+  printer_id?: string | null;
+  location_id?: number | null;
+  notes?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  part_name?: string;
+  part_unit?: string;
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;

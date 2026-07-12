@@ -68,6 +68,8 @@ import {
   addPartCategory, getPartCategories, updatePartCategory, deletePartCategory,
   addPart, getParts, getPart, updatePart, deletePart,
   addStockItem, getStockItems, updateStockItem, deleteStockItem, adjustStock, moveStock, getStockMoves,
+  getBom, getBomCost, addBomLine, updateBomLine, deleteBomLine,
+  getBuilds, getBuild, addBuild, updateBuild, cancelBuild, completeBuild,
 } from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
@@ -4187,6 +4189,55 @@ export async function handleApiRequest(req, res) {
     if (qrResolveMatch && method === 'GET') {
       const r = resolveCode(decodeURIComponent(qrResolveMatch[1]));
       return r ? sendJson(res, r) : sendJson(res, { error: 'Not found' }, 404);
+    }
+    // ── BOM & Build orders (Fase 3) ──
+    const bomMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/bom$/);
+    if (bomMatch) {
+      const pid = parseInt(bomMatch[1]);
+      if (method === 'GET') return sendJson(res, { lines: getBom(pid), cost: getBomCost(pid) });
+      if (method === 'POST') return readBody(req, res, (b) => {
+        const r = addBomLine({ ...b, parent_part_id: pid });
+        _broadcastInventory('updated', 'bom', { part_id: pid });
+        sendJson(res, r, 201);
+      });
+    }
+    const bomLineMatch = path.match(/^\/api\/inventory\/bom-lines\/(\d+)$/);
+    if (bomLineMatch) {
+      const id = parseInt(bomLineMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateBomLine(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'bom', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deleteBomLine(id); _broadcastInventory('updated', 'bom', { id }); return sendJson(res, { ok: true }); }
+    }
+    if (path === '/api/inventory/builds') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        if (url.searchParams.get('part_id')) f.part_id = parseInt(url.searchParams.get('part_id'));
+        return sendJson(res, getBuilds(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.part_id) return sendJson(res, { error: 'part_id required' }, 400);
+        const r = addBuild(b); _broadcastInventory('created', 'build', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const buildMatch = path.match(/^\/api\/inventory\/builds\/(\d+)$/);
+    if (buildMatch) {
+      const id = parseInt(buildMatch[1]);
+      if (method === 'GET') { const bo = getBuild(id); return bo ? sendJson(res, bo) : sendJson(res, { error: 'Not found' }, 404); }
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateBuild(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'build', { id }); sendJson(res, r); });
+    }
+    const buildCompleteMatch = path.match(/^\/api\/inventory\/builds\/(\d+)\/complete$/);
+    if (buildCompleteMatch && method === 'POST') {
+      const r = completeBuild(parseInt(buildCompleteMatch[1]));
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'build', { id: parseInt(buildCompleteMatch[1]) });
+      return sendJson(res, r);
+    }
+    const buildCancelMatch = path.match(/^\/api\/inventory\/builds\/(\d+)\/cancel$/);
+    if (buildCancelMatch && method === 'POST') {
+      const r = cancelBuild(parseInt(buildCancelMatch[1]));
+      if (!r) return sendJson(res, { error: 'Cannot cancel' }, 400);
+      _broadcastInventory('updated', 'build', { id: parseInt(buildCancelMatch[1]) });
+      return sendJson(res, r);
     }
 
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
