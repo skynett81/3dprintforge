@@ -2157,11 +2157,13 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, rows);
     }
 
-    // ---- Single print history record ----
+    // ---- Single print history record (enriched with cost + filaments used) ----
     const histGetMatch = path.match(/^\/api\/history\/(\d+)$/);
     if (histGetMatch && method === 'GET') {
-      const row = getHistoryById(parseInt(histGetMatch[1], 10));
-      return row ? sendJson(res, row) : sendJson(res, { error: 'Not found' }, 404);
+      const id = parseInt(histGetMatch[1], 10);
+      const row = getHistoryById(id);
+      if (!row) return sendJson(res, { error: 'Not found' }, 404);
+      return sendJson(res, { ...row, filaments_used: getPrintFilamentsUsed(id), cost: getPrintCost(id) || null });
     }
 
     // ---- Actual filament(s)/colours used in a print (from the usage log) ----

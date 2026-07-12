@@ -582,6 +582,16 @@ export interface AuthStatus {
   user: string | null;
 }
 
+export interface PrintCost {
+  filament_cost?: number;
+  electricity_cost?: number;
+  depreciation_cost?: number;
+  labor_cost?: number;
+  markup_amount?: number;
+  total_cost?: number;
+  currency?: string;
+}
+
 export interface FilamentUsed {
   spool_id: number;
   color_hex: string | null;

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { useT } from '../../i18n';
-import type { HistoryRow, FilamentUsed } from '../../types';
+import type { HistoryRow, FilamentUsed, PrintCost } from '../../types';
 
 const hex = (h?: string | null) => (h ? `#${String(h).replace(/^#/, '')}` : 'transparent');
+const norm = (h?: string | null) => (h ? String(h).replace(/^#/, '') : null);
 
 function statusClass(s: string) {
   const x = (s || '').toLowerCase();
@@ -22,21 +23,79 @@ function when(iso?: string | null) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+// Slicer/G-code preview. For a single-colour print we recolour it to the real
+// filament colour (luminance-preserving multiply) so it shows what was actually
+// printed, with a toggle back to the original slicer render.
+function PrintPreview({ id, tintHex, alt }: { id: number; tintHex: string | null; alt: string }) {
+  const t = useT();
+  const [ok, setOk] = useState(true);
+  const [tint, setTint] = useState<boolean>(Boolean(tintHex));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const src = `/api/history/${id}/thumbnail`;
+
+  useEffect(() => {
+    if (!tint || !tintHex) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const cv = canvasRef.current; if (!cv) return;
+      cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+      const ctx = cv.getContext('2d'); if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      try {
+        const d = ctx.getImageData(0, 0, cv.width, cv.height);
+        const p = d.data;
+        const tr = parseInt(tintHex.slice(0, 2), 16), tg = parseInt(tintHex.slice(2, 4), 16), tb = parseInt(tintHex.slice(4, 6), 16);
+        for (let i = 0; i < p.length; i += 4) {
+          const lum = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
+          p[i] = Math.round(tr * lum); p[i + 1] = Math.round(tg * lum); p[i + 2] = Math.round(tb * lum);
+        }
+        ctx.putImageData(d, 0, 0);
+      } catch { /* cross-origin taint — leave as drawn */ }
+    };
+    img.onerror = () => setOk(false);
+    img.src = src;
+  }, [id, tintHex, tint, src]);
+
+  if (!ok) return null;
+  return (
+    <section className="card" style={{ padding: 12, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {tint && tintHex
+          ? <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 8 }} />
+          : <img src={src} alt={alt} onError={() => setOk(false)} loading="lazy" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8 }} />}
+      </div>
+      {tintHex && (
+        <div className="seg" style={{ justifyContent: 'center', marginTop: 10 }}>
+          <button className={`seg-btn${tint ? ' seg-btn--on' : ''}`} onClick={() => setTint(true)}>{t('v2.hist.actual_colour', 'Actual colour')}</button>
+          <button className={`seg-btn${!tint ? ' seg-btn--on' : ''}`} onClick={() => setTint(false)}>{t('v2.hist.original', 'Original')}</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () => void }) {
   const t = useT();
   const r = row;
-  // Slicer/G-code preview of what was printed. Hidden if this print has none.
-  const [thumbOk, setThumbOk] = useState(true);
-  // Real filament(s)/colours used, resolved from the spool-usage log — so we
-  // show what was printed in the correct colours even when the history row's
-  // own filament_color is blank.
+  // Enriched detail (real filament colours + cost), fetched by id.
   const [filaments, setFilaments] = useState<FilamentUsed[]>([]);
+  const [cost, setCost] = useState<PrintCost | null>(null);
   useEffect(() => {
     let alive = true;
-    api.getHistoryFilaments(r.id).then((f) => { if (alive) setFilaments(f); }).catch(() => {});
+    api.getHistoryDetail(r.id).then((d) => {
+      if (!alive) return;
+      setFilaments(d.filaments_used ?? []);
+      setCost(d.cost ?? null);
+    }).catch(() => {});
     return () => { alive = false; };
   }, [r.id]);
+
   const headerColor = r.filament_color || filaments[0]?.color_hex || null;
+  // Only tint when the print used exactly one colour.
+  const distinctColours = Array.from(new Set(filaments.map((f) => norm(f.color_hex)).filter(Boolean)));
+  const tintHex = distinctColours.length === 1 ? distinctColours[0] : null;
+
   const specs: [string, string][] = [
     [t('v2.history.printer', 'Printer'), r.printer_id || '—'],
     [t('v2.hist.started', 'Started'), when(r.started_at)],
@@ -55,6 +114,17 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
     [t('v2.history.filament', 'Type'), [r.filament_brand, r.filament_type].filter(Boolean).join(' ') || '—'],
   ];
 
+  const cur = cost?.currency || 'NOK';
+  const money = (v?: number) => `${(v ?? 0).toFixed(2)} ${cur}`;
+  const costRows: [string, number | undefined][] = [
+    [t('v2.hist.cost_filament', 'Filament'), cost?.filament_cost],
+    [t('v2.hist.cost_electricity', 'Electricity'), cost?.electricity_cost],
+    [t('v2.hist.cost_wear', 'Wear'), cost?.depreciation_cost],
+    [t('v2.hist.cost_labour', 'Labour'), cost?.labor_cost],
+    [t('v2.hist.cost_markup', 'Markup'), cost?.markup_amount],
+  ];
+  const hasCost = cost && (cost.total_cost != null || cost.filament_cost != null);
+
   return (
     <div>
       <div className="panel-head">
@@ -69,17 +139,7 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         {r.model_url && <a className="btn btn--sm" href={r.model_url} target="_blank" rel="noreferrer">{r.model_name || t('v2.hist.model', 'Model →')}</a>}
       </div>
 
-      {thumbOk && (
-        <section className="card" style={{ display: 'flex', justifyContent: 'center', padding: 12, marginBottom: 12 }}>
-          <img
-            src={`/api/history/${r.id}/thumbnail`}
-            alt={t('v2.hist.preview', 'Print preview')}
-            onError={() => setThumbOk(false)}
-            loading="lazy"
-            style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8 }}
-          />
-        </section>
-      )}
+      <PrintPreview key={tintHex ?? 'plain'} id={r.id} tintHex={tintHex} alt={t('v2.hist.preview', 'Print preview')} />
 
       {filaments.length > 0 && (
         <section className="card" style={{ marginBottom: 12 }}>
@@ -122,8 +182,20 @@ export function HistoryDetail({ row, onBack }: { row: HistoryRow; onBack?: () =>
         </section>
       </div>
 
+      {hasCost && (
+        <section className="card" style={{ marginTop: 12 }}>
+          <div className="card-title">{t('v2.hist.cost', 'Cost')}</div>
+          <div className="diag-grid">
+            {costRows.filter(([, v]) => v != null && v > 0).map(([k, v]) => (
+              <div className="diag-row" key={k}><span className="muted">{k}</span><span className="diag-val">{money(v)}</span></div>
+            ))}
+            <div className="diag-row" style={{ fontWeight: 700 }}><span>{t('v2.hist.cost_total', 'Total')}</span><span className="diag-val">{money(cost?.total_cost ?? cost?.filament_cost)}</span></div>
+          </div>
+        </section>
+      )}
+
       {r.notes && (
-        <section className="card">
+        <section className="card" style={{ marginTop: 12 }}>
           <div className="card-title">{t('v2.hist.notes', 'Notes')}</div>
           <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>{r.notes}</p>
         </section>
