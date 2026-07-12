@@ -8,46 +8,42 @@
 // VERSION history: 1 = sidebar search/pin, overlay, Spoolman. 2 = v1.1.24.
 // 3 = richer stats, accessories, reliable history. 4 = inventory expiry +
 // procurement + scan/stocktake + reports, Print Guard upgrade, unified UI.
-// 3 = filament insights, connected accessories, reliable print history.
+// 5 = v1.1.25: order profitability/margins, storefront + product catalog,
+// order-to-queue fulfilment, PO shipment tracking, shopping list + auto-reorder.
 (function () {
   'use strict';
 
-  var VERSION = '4';
+  var VERSION = '5';
   var KEY = 'whatsnew-seen-v' + VERSION;
 
   var FEATURES = [
     {
-      icon: 'bi-hourglass-split',
-      title: 'Filament expiry & shelf-life',
-      desc: 'Give spools an expiry date (or let it suggest one from the material shelf life) and the inventory flags them with "expires in N days" / "expired" badges. The Inventory Health overview counts what is expiring at a glance.',
-      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('filament'); } location.hash = '#filament'; } },
+      icon: 'bi-graph-up-arrow',
+      title: 'Order profitability & margins',
+      desc: 'The CRM dashboard now shows revenue vs real cost of goods — margin and margin % per order, a margin-by-month chart and your most profitable products. Every order detail carries its own profitability card, using the actual filament cost.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('crm-dashboard'); } } },
+    },
+    {
+      icon: 'bi-shop',
+      title: 'Storefront & product catalog',
+      desc: 'A new Products catalog (Business → Products) with per-unit cost and live margin, and a customer-facing shop at /shop where visitors browse and order. Orders land straight in your CRM as pending, ready to price and produce.',
+      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('shop-products'); } } },
+    },
+    {
+      icon: 'bi-printer',
+      title: 'Orders straight to the print queue',
+      desc: 'Add catalog products to an order, then dispatch its printable lines to the print queue in one click — stock is deducted and each line shows an "in queue" badge so you can track fulfilment from order to print.',
+    },
+    {
+      icon: 'bi-truck',
+      title: 'Purchase order shipment tracking',
+      desc: 'Purchase orders gain a Shipped stage: record the carrier and tracking number and get a one-click Track link (PostNord, Posten, Bring, DHL, UPS, FedEx, GLS, USPS) between placing and receiving.',
     },
     {
       icon: 'bi-cart-check',
-      title: 'Purchases — order to shelf',
-      desc: 'A new Purchases tab (under Storage) tracks what you bought, the cost and when. Mark a purchase received to add it to inventory, or "Buy again" straight from a low-stock restock suggestion.',
+      title: 'Shopping list & auto-reorder',
+      desc: 'Turn low stock into a per-shop shopping basket — the cheapest supplier per material with buy links and totals. Or switch on Auto-reorder to have the server draft purchase orders (or notify you) automatically when filament drops below target.',
       action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('filament'); } location.hash = '#filament'; } },
-    },
-    {
-      icon: 'bi-upc-scan',
-      title: 'Scan to act + stocktake',
-      desc: 'Scan a spool QR or short code to open a quick-action sheet (details, edit, check out/in, weigh in, mark empty). A new stocktake mode lets you scan through the shelf and tick everything off.',
-    },
-    {
-      icon: 'bi-file-earmark-bar-graph',
-      title: 'Inventory reports',
-      desc: 'A Reports tab (under Statistics) gives a period-scoped, exportable summary — consumed weight, filament cost, success rate, waste — with a per-material breakdown and one-click CSV export.',
-    },
-    {
-      icon: 'bi-shield-check',
-      title: 'Print Guard upgrade',
-      desc: 'Fire a safe test alert to verify your notifications, snooze a printer\'s guard for 15/30/60 min during a tricky print, and see a per-printer reliability summary (incidents, last 7 days, most common issue).',
-      action: { label: 'Open', fn: function () { if (window.openPanel) { window.openPanel('protection'); } location.hash = '#protection'; } },
-    },
-    {
-      icon: 'bi-grid-1x2',
-      title: 'Cleaner, unified interface',
-      desc: 'The sidebar is grouped into Operate / Create / Manage zones, and the whole app now shares one design system — consistent colours, cards, badges, notices and empty states from Dashboard to Admin.',
     },
   ];
 
