@@ -2078,6 +2078,20 @@ export async function handleApiRequest(req, res) {
             }
             return sendJson(res, { error: 'not supported for this connector' }, 409);
           }
+          // Bambu AMS load / unload / change — the slicer Device tab's AMS
+          // buttons. Load/change switches to a tray (ams_change_filament);
+          // unload runs the retract-and-cool sequence.
+          if (action === 'filament' && (entry.config && entry.config.type) === 'bambu') {
+            const op = String(body.op || '');
+            const tray = Number.isInteger(body.tool) ? body.tool : 0;
+            let cmd = null;
+            if (op === 'load' || op === 'change') cmd = buildAmsTrayChangeCommand(tray);
+            else if (op === 'unload') cmd = buildGcodeMultiLine(buildFilamentUnloadSequence(body.temp || 220));
+            if (!cmd) return sendJson(res, { error: 'invalid filament op' }, 400);
+            entry.client.sendCommand(cmd);
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, action, op, tray });
+          }
           // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
           // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
           if (['home', 'move', 'extrude', 'set_temp', 'select_tool', 'filament'].includes(action)) {
