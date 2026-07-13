@@ -1292,3 +1292,8 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice .btn--danger { background: #e05a5a; border-color: #e05a5a; color: #fff; }
 .oslice .btn--danger:hover:not(:disabled) { filter: brightness(1.06); color: #fff; }
 .oslice .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
+
+/* Nozzle diameter + flow row in the printer card */
+.oslice-nozzlerow { display: flex; gap: 8px; margin-top: 6px; }
+.oslice-nozzlerow label { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.oslice-nozzlerow select { width: 100%; }

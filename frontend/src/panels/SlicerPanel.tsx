@@ -372,6 +372,19 @@ export function SlicerPanel() {
                   {slicerPrinters.map((p) => <option key={p.id} value={p.id}>{p.name}{p.buildVolume ? ` (${p.buildVolume.x}×${p.buildVolume.y})` : ''}</option>)}
                 </select>
               ) : <div className="oslice-preset-sel">{t('v2.slicer.generic', 'Generic 256×256')}</div>}
+              <div className="oslice-nozzlerow">
+                <label><span className="oslice-sectlbl">{t('v2.slicer.nozzle_dia', 'Nozzle')}</span>
+                  <select className="oset-input" value={(settings.nozzle_diameter as number) ?? 0.4} onChange={(e) => { const d = Number(e.target.value); setSettings((s) => ({ ...s, nozzle_diameter: d, line_width: +(d * 1.05).toFixed(2), outer_wall_line_width: +(d * 1.05).toFixed(2), inner_wall_line_width: +(d * 1.125).toFixed(2) })); }}>
+                    {[0.2, 0.4, 0.6, 0.8].map((d) => <option key={d} value={d}>{d} mm</option>)}
+                  </select>
+                </label>
+                <label><span className="oslice-sectlbl">{t('v2.slicer.flow', 'Flow')}</span>
+                  <select className="oset-input" value={(settings.flow_ratio as number) ?? 1} onChange={(e) => setSettings((s) => ({ ...s, flow_ratio: Number(e.target.value) }))}>
+                    <option value={1}>{t('v2.slicer.flow_std', 'Standard')}</option>
+                    <option value={1.05}>{t('v2.slicer.flow_high', 'High flow')}</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
 

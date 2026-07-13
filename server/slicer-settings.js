@@ -130,6 +130,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('solidInfillLineWidth', num(s.internal_solid_infill_line_width));
   set('initialLayerLineWidth', num(s.initial_layer_line_width));
   set('lineWidth', num(s.line_width));
+  set('flowRatio', num(s.flow_ratio ?? s.print_flow_ratio));
   // Retraction / travel.
   set('retraction', num(s.retraction_length));
   set('zHop', num(s.z_hop));

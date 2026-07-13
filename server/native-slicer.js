@@ -143,8 +143,10 @@ export function layersToGcode(layers, settings) {
     return a && a > 0 ? a : s.acceleration;
   };
   // Extrusion factor: volume of a 1 mm path = lineWidth * layerHeight,
-  // E (mm filament) = volume / (π · (filamentDiam/2)²).
-  const efOf = (w) => (w * s.layerHeight) / (PI * (s.filamentDiam / 2) ** 2);
+  // E (mm filament) = volume / (π · (filamentDiam/2)²). Scaled by the global
+  // flow ratio (print_flow_ratio) so under/over-extrusion can be dialled in.
+  const flowRatio = s.flowRatio ?? 1;
+  const efOf = (w) => (w * s.layerHeight * flowRatio) / (PI * (s.filamentDiam / 2) ** 2);
   const efactor = efOf(s.lineWidth);
   // Per-feature line widths (extrusion width). Fall back to lineWidth.
   const LW = {
