@@ -1201,3 +1201,20 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-devprog-fill { height: 100%; background: var(--o-accent); transition: width 0.3s; }
 .oslice-devprog-row { display: flex; align-items: center; font-size: 0.8rem; }
 @media (max-width: 900px) { .oslice-devgrid { grid-template-columns: 1fr; } }
+
+/* ── Slicer Filament Manager tab ───────────────────────────────────── */
+.oslice-filmgr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: hidden; }
+.oslice-filmgr-head { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--o-border); }
+.oslice-filmgr-body { flex: 1; overflow: auto; padding: 12px; }
+.oslice-filmgr-grp { margin-bottom: 16px; }
+.oslice-filmgr-grph { font-size: 0.78rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+.oslice-filmgr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.oslice-filcard { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); cursor: pointer; text-align: left; }
+.oslice-filcard:hover { border-color: var(--o-accent); }
+.oslice-filcard-sw { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.72rem; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); flex-shrink: 0; }
+.oslice-filcard-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.oslice-filcard-name { font-size: 0.82rem; font-weight: 600; color: var(--o-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oslice-filcard-sub { font-size: 0.68rem; color: var(--o-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oslice-filcard-bar { height: 4px; background: var(--o-panel-2); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+.oslice-filcard-fill { display: block; height: 100%; }
+.oslice-filcard-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.72rem; flex-shrink: 0; }
