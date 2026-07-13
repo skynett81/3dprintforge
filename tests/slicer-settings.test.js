@@ -122,4 +122,13 @@ describe('buildNativeSettings', () => {
     assert.equal(n.overhangFanSpeed, 100);
     assert.equal(n.overhangDetect, true);
   });
+
+  test('maps support tuning keys', () => {
+    const n = buildNativeSettings({ support_threshold: 40, support_base_density: 25, support_interface_top_layers: 3, support_z_gap_layers: 2, support_object_xy_distance: 0.6 });
+    assert.equal(n.supportThreshold, 40);
+    assert.equal(n.supportDensity, 0.25);   // % → fraction
+    assert.equal(n.supportInterface, 3);
+    assert.equal(n.supportZGap, 2);
+    assert.equal(n.supportXYGap, 0.6);
+  });
 });

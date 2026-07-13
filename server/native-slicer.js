@@ -371,6 +371,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const { generateSupports } = await import('./native-slicer-support.js');
     supportSegs = generateSupports(layerRegions, {
       lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
+      layerHeight, thresholdAngle: s.supportThreshold ?? 40,
     });
   }
 

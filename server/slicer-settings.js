@@ -109,6 +109,13 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (anyWall !== undefined) set('printSpeed', anyWall);
   if (s.seam_position) out.seamPosition = String(s.seam_position);
   if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
+  // Support tuning.
+  set('supportThreshold', num(s.support_threshold_angle ?? s.support_threshold));
+  set('supportInterface', num(s.support_interface_top_layers ?? s.support_interface));
+  set('supportZGap', num(s.support_z_gap_layers ?? s.support_z_gap));
+  set('supportXYGap', num(s.support_object_xy_distance ?? s.support_xy_gap));
+  const supDens = num(s.support_base_density ?? s.support_density);
+  if (supDens !== undefined) out.supportDensity = supDens > 1 ? supDens / 100 : supDens;
   // Per-feature line widths.
   set('outerWallLineWidth', num(s.outer_wall_line_width));
   set('innerWallLineWidth', num(s.inner_wall_line_width));

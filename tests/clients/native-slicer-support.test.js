@@ -45,6 +45,19 @@ describe('native-slicer: generateSupports', () => {
     assert.ok(gap1[5].length > 0, 'columns below the gap remain');
   });
 
+  it('threshold angle: gentle overhangs self-support, steep ones still get support', () => {
+    // Inverted cones (widening circles) — smooth edges so the raster is not
+    // grid-quantised. `grow` = radius added per layer (mm).
+    const CIRCLE = (r) => { const p = []; for (let k = 0; k < 48; k++) { const a = (k / 48) * 2 * Math.PI; p.push([r * Math.cos(a), r * Math.sin(a)]); } return p; };
+    const cone = (grow) => { const layers = []; for (let i = 0; i < 30; i++) layers.push([{ outer: CIRCLE(4 + i * grow), holes: [] }]); return layers; };
+    const count = (layers, thr) => generateSupports(layers, { gridRes: 2, layerHeight: 0.3, thresholdAngle: thr, xyGap: 0 }).reduce((n, s) => n + s.length, 0);
+    const gentle = cone(0.06);   // ~11° from vertical
+    const steep = cone(0.7);     // ~67° from vertical
+    assert.ok(count(gentle, 0) > 0, 'gentle overhang needs support with no threshold');
+    assert.ok(count(gentle, 40) < count(gentle, 0) * 0.25, 'gentle slope mostly self-supports at 40°');
+    assert.ok(count(steep, 40) > count(gentle, 40) * 3, 'steep overhang still needs support at 40°');
+  });
+
   it('interface layers under the overhang are denser than deep support', () => {
     const layers = [];
     for (let i = 0; i < 10; i++) layers.push([]);

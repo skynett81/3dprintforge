@@ -73,6 +73,37 @@ export function generateSupports(layerRegions, opts = {}) {
     model[i] = grid;
   }
 
+  // Threshold angle (from vertical): an overhang only starts a NEW support
+  // column when the model above is NOT self-supported. `thresholdAngle` 0
+  // means "support every overhang" (legacy). Because the grid step is far
+  // larger than the layer height, a single-layer neighbour test can't resolve
+  // the angle — so we walk DOWN a widening cone (radius = depth·layerHeight·
+  // tan(angle)) and call the overhang self-supported if solid material is
+  // found inside that cone before it fades out. Material reachable within the
+  // threshold cone can carry the overhang; material only beyond it cannot.
+  const layerHeight = opts.layerHeight ?? 0.2;
+  const thresholdAngle = Math.max(0, Math.min(89, opts.thresholdAngle ?? 0));
+  const useThreshold = thresholdAngle > 0;
+  const reachPerLayer = layerHeight * Math.tan(thresholdAngle * Math.PI / 180);  // mm/layer
+  const checkDepth = useThreshold ? Math.min(40, Math.max(1, Math.ceil(gridRes / Math.max(1e-3, reachPerLayer)))) : 0;
+  const selfSupported = (i, idx) => {
+    if (!useThreshold) return false;
+    const c0 = idx % cols, r0 = (idx / cols) | 0;
+    for (let k = 1; k <= checkDepth; k++) {
+      const j = i - k; if (j < 0) break;               // hit the bed → unsupported
+      const rc = Math.round((k * reachPerLayer) / gridRes);
+      const grid = model[j];
+      for (let dr = -rc; dr <= rc; dr++) {
+        for (let dc = -rc; dc <= rc; dc++) {
+          const rr = r0 + dr, cc = c0 + dc;
+          if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue;
+          if (grid[rr * cols + cc]) return true;        // material inside the cone below
+        }
+      }
+    }
+    return false;
+  };
+
   // Grow support columns downward from overhangs.
   const support = new Array(n);
   support[n - 1] = new Uint8Array(cols * rows);
@@ -80,7 +111,10 @@ export function generateSupports(layerRegions, opts = {}) {
     const s = new Uint8Array(cols * rows);
     const here = model[i], above = model[i + 1], supAbove = support[i + 1];
     for (let idx = 0; idx < s.length; idx++) {
-      if (!here[idx] && (above[idx] || supAbove[idx])) s[idx] = 1;
+      if (here[idx]) continue;
+      // Continue an existing column, or start one under a true (non-self-
+      // supported) overhang.
+      if (supAbove[idx] || (above[idx] && !selfSupported(i, idx))) s[idx] = 1;
     }
     support[i] = s;
   }
