@@ -1247,16 +1247,21 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-purge-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 3px; vertical-align: middle; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
 .oslice-purge-cell { width: 52px; border: 1px solid var(--o-border); border-radius: 4px; padding: 2px 4px; font-size: 0.72rem; text-align: right; }
 
-/* Device AMS — Bambu-style cartridge slots */
-.oslice-amsunit { background: var(--o-panel-2); border-radius: 12px; padding: 10px; }
-.oslice-amsslots { display: flex; gap: 8px; flex-wrap: wrap; }
-.oslice-amscart { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.oslice-amscart-mat { font-size: 0.6rem; font-weight: 600; color: var(--o-muted); }
-.oslice-amscart-spool { width: 46px; height: 54px; border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.12); }
-.oslice-amscart-hole { width: 16px; height: 16px; border-radius: 50%; border: 3px solid; }
-.oslice-amscart-slot { font-size: 0.64rem; font-weight: 700; color: var(--o-muted); }
 
-/* AMS row + external spool unit */
-.oslice-amsrow { display: flex; gap: 8px; align-items: stretch; }
-.oslice-amsext { display: flex; flex-direction: column; }
-.oslice-amsext-h { font-size: 0.6rem; font-weight: 700; color: var(--o-muted); text-align: center; margin-bottom: 4px; }
+
+/* Device AMS — faithful BambuStudio layout */
+.oslice-amsrow { display: flex; gap: 10px; align-items: flex-start; }
+.oslice-amsunit { background: var(--o-panel-2); border-radius: 12px; padding: 8px 10px 6px; }
+.oslice-amsunit-top { display: flex; align-items: center; gap: 4px; font-size: 0.66rem; color: var(--o-muted); font-weight: 600; margin-bottom: 6px; min-height: 12px; }
+.oslice-amsdrop { width: 9px; height: 9px; background: #38b6e6; border-radius: 50% 50% 50% 0; transform: rotate(45deg); display: inline-block; }
+.oslice-amsslots { display: flex; gap: 8px; }
+.oslice-amsslot { display: flex; flex-direction: column; align-items: center; }
+.oslice-amsslot-tab { font-size: 0.6rem; font-weight: 700; color: var(--o-text); background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px 8px 0 0; padding: 1px 10px; }
+.oslice-amsslot-cart { width: 50px; background: var(--o-panel); border: 1px solid var(--o-border); border-top: none; border-radius: 0 0 8px 8px; padding: 5px 4px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.oslice-amsslot-mat { font-size: 0.62rem; font-weight: 600; color: var(--o-text); }
+.oslice-amsslot-color { width: 100%; height: 20px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.16); }
+.oslice-amsslot-feed { width: 2px; height: 12px; background: var(--o-border); }
+.oslice-amsnozzle { width: 14px; height: 10px; margin: -2px auto 0; background: var(--o-muted); clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%); opacity: 0.6; }
+.oslice-amsext { }
+.oslice-amsext-h { font-size: 0.62rem; font-weight: 700; color: var(--o-muted); text-align: center; margin-bottom: 6px; min-height: 12px; }
+.oslice-amsbtns { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
