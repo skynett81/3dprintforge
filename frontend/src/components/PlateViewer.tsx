@@ -8,6 +8,7 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { useT } from '../i18n';
 import { gradientBackground, buildPlate } from './plate-scene';
+import { parse3mfColors } from '../lib/tmf-colors';
 
 export interface ObjInfo {
   posX: number; posY: number;
@@ -200,23 +201,31 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         // real multi-colour look is preserved.
         const obj = new ThreeMFLoader().parse(buf);
         obj.updateMatrixWorld(true);
+        // Real per-part colours from the Bambu/Orca config (extruder → filament colour).
+        const cfg = parse3mfColors(buf);
+        const meshes: THREE.Mesh[] = [];
+        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+        const useCfg = !!cfg && cfg.colors.length > 0 && cfg.extruders.length === meshes.length;
         const geoms: THREE.BufferGeometry[] = [];
-        obj.traverse((o) => {
-          const m = o as THREE.Mesh;
-          if (!m.isMesh) return;
+        meshes.forEach((m, idx) => {
           const src = m.geometry.clone().applyMatrix4(m.matrixWorld).toNonIndexed();
           const pos = src.getAttribute('position');
           const g2 = new THREE.BufferGeometry();
           g2.setAttribute('position', pos.clone());
           const existing = src.getAttribute('color');
-          if (existing) {
+          if (useCfg) {
+            const ext = cfg!.extruders[idx] || 1;
+            const col = new THREE.Color(cfg!.colors[(ext - 1) % cfg!.colors.length] || '#9aa4b2');
+            const n = pos.count; const colors = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) { colors[i * 3] = col.r; colors[i * 3 + 1] = col.g; colors[i * 3 + 2] = col.b; }
+            g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+          } else if (existing) {
             g2.setAttribute('color', existing.clone());
           } else {
             const col = new THREE.Color(0x9aa4b2);
             const mat = Array.isArray(m.material) ? m.material[0] : m.material;
             if (mat && (mat as THREE.MeshStandardMaterial).color) col.copy((mat as THREE.MeshStandardMaterial).color);
-            const n = pos.count;
-            const colors = new Float32Array(n * 3);
+            const n = pos.count; const colors = new Float32Array(n * 3);
             for (let i = 0; i < n; i++) { colors[i * 3] = col.r; colors[i * 3 + 1] = col.g; colors[i * 3 + 2] = col.b; }
             g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
           }
