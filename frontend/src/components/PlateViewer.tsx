@@ -145,18 +145,23 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0 };
     ctx.current = c;
 
-    // click-to-select
+    // click-to-select — only on a clean click (not an orbit drag), decided
+    // on pointerUP, so rotating the view never changes the selection.
     const ray = new THREE.Raycaster();
-    function onDown(ev: PointerEvent) {
+    let downX = 0, downY = 0;
+    const onPointerDown = (ev: PointerEvent) => { downX = ev.clientX; downY = ev.clientY; };
+    const onPointerUp = (ev: PointerEvent) => {
       if (tcontrols.dragging) return;
+      if (Math.abs(ev.clientX - downX) > 5 || Math.abs(ev.clientY - downY) > 5) return; // was a drag
       const r = renderer.domElement.getBoundingClientRect();
       const nx = ((ev.clientX - r.left) / r.width) * 2 - 1;
       const ny = -((ev.clientY - r.top) / r.height) * 2 + 1;
       ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
       const hit = ray.intersectObjects(c.objects, false)[0];
       select(hit ? (hit.object as THREE.Mesh) : null);
-    }
-    renderer.domElement.addEventListener('pointerdown', onDown);
+    };
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
 
     const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
     loop();
@@ -169,7 +174,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       cancelAnimationFrame(c.raf);
       window.removeEventListener('resize', onResize);
       ro.disconnect();
-      renderer.domElement.removeEventListener('pointerdown', onDown);
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.dispose();
       el.removeChild(renderer.domElement);
       ctx.current = null;

@@ -31,7 +31,8 @@ function plateTexture(bed: number, accentCss: string): THREE.Texture {
   g.fillStyle = '#212429';
   g.fillRect(inset, inset, size - inset * 2, size - inset * 2);
 
-  // Fine grid every 10 mm, heavier every 50 mm.
+  // Fine grid every 10 mm, heavier every 50 mm. (No baked text — it mirrors
+  // depending on the view; the plate number is drawn as an HTML overlay.)
   const cells = Math.max(8, Math.round(bed / 10));
   for (let i = 0; i <= cells; i++) {
     const p = inset + (i / cells) * (size - inset * 2);
@@ -41,30 +42,7 @@ function plateTexture(bed: number, accentCss: string): THREE.Texture {
     g.beginPath(); g.moveTo(p, inset); g.lineTo(p, size - inset);
     g.moveTo(inset, p); g.lineTo(size - inset, p); g.stroke();
   }
-
-  // Left-edge vertical branding (flipY=false → draw upright).
-  g.save();
-  g.translate(size * 0.055, size * 0.5);
-  g.rotate(-Math.PI / 2);
-  g.fillStyle = 'rgba(255,255,255,0.16)';
-  g.font = '600 26px "Segoe UI", system-ui, sans-serif';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText('3DPrintForge Textured PEI Plate', 0, 0);
-  g.restore();
-
-  // Plate number, front-right.
-  g.fillStyle = accentCss;
-  g.font = '700 52px "Segoe UI", system-ui, sans-serif';
-  g.textAlign = 'right'; g.textBaseline = 'alphabetic';
-  g.fillText('01', size - 28, size - 26);
-
-  // Front material strip.
-  g.fillStyle = 'rgba(255,255,255,0.5)';
-  g.font = '600 20px "Segoe UI", system-ui, sans-serif';
-  g.textAlign = 'left'; g.textBaseline = 'bottom';
-  g.fillText('PLA / PETG / ABS', size * 0.30, size - 20);
-  g.textAlign = 'right';
-  g.fillText('HOT SURFACE', size * 0.66, size - 20);
+  void accentCss;
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

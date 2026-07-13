@@ -394,6 +394,9 @@ select.oset-rowinput { text-align: left; }
 
 /* Axis triad, bottom-left of scene */
 .oslice-axis { position: absolute; left: 12px; bottom: 12px; z-index: 5; opacity: 0.9; }
+/* Static, always-readable plate labels */
+.oslice-platename { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 5; font-size: 0.72rem; color: rgba(255,255,255,0.4); pointer-events: none; white-space: nowrap; }
+.oslice-plateno { position: absolute; right: 16px; bottom: 10px; z-index: 5; font-size: 1.4rem; font-weight: 800; color: var(--o-accent); pointer-events: none; }
 
 /* Fullscreen button parks bottom-right when embedded */
 .oslice-scenebar, .oslice-bottom { display: none; }

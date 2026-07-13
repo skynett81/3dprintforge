@@ -310,6 +310,9 @@ export function SlicerPanel() {
               <line x1="12" y1="28" x2="12" y2="8" stroke="#3d8bd8" strokeWidth="2" /><text x="6" y="9" fill="#3d8bd8" fontSize="8">Z</text>
             </svg>
           </div>
+          {/* Static plate label overlays (readable, never mirror) */}
+          <div className="oslice-platename" aria-hidden>3DPrintForge Textured PEI Plate · {bed}×{bed}</div>
+          <div className="oslice-plateno" aria-hidden>01</div>
         </div>
       </div>
 
