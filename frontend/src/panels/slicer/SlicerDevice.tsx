@@ -138,9 +138,15 @@ export function SlicerDevice({ printer, live }: Props) {
             </div>
           )}
 
-          {/* AMS — faithful to BambuStudio: A1-A4 tab, cartridge (material top,
-              colour body), feed lines to the nozzle, separate Ext, buttons. */}
+          {/* AMS — faithful to BambuStudio: unit selector, humidity + dry, A1-A4
+              tabs, cartridge (material + colour + edit), converging feed lines to
+              the nozzle, separate Ext, and the Auto-refill / Unload / Load row. */}
           {(printer.ams?.length ?? 0) > 0 && (() => {
+            const N = printer.ams!.length;
+            const SW = 50, GAP = 8, stepX = SW + GAP, W = N * SW + (N - 1) * GAP;
+            const pen = (
+              <svg className="oslice-amspen" viewBox="0 0 24 24" width="9" height="9"><path d="M3 17.2V21h3.8L18 9.8l-3.8-3.8L3 17.2zM20.7 6.3a1 1 0 000-1.4l-2.6-2.6a1 1 0 00-1.4 0l-1.8 1.8L18.9 8l1.8-1.7z" fill="currentColor" /></svg>
+            );
             const cart = (color: string, mat: string, label: string, key: string) => {
               const c = color?.startsWith('#') ? color : '#' + String(color || 'cccccc').replace(/^#/, '');
               return (
@@ -148,22 +154,32 @@ export function SlicerDevice({ printer, live }: Props) {
                   <div className="oslice-amsslot-tab">{label}</div>
                   <div className="oslice-amsslot-cart" title={mat}>
                     <div className="oslice-amsslot-mat">{mat}</div>
-                    <div className="oslice-amsslot-color" style={{ background: c }} />
+                    <div className="oslice-amsslot-color" style={{ background: c }}>{pen}</div>
                   </div>
-                  <div className="oslice-amsslot-feed" />
                 </div>
               );
             };
             return (
               <div className="oslice-devsec">
                 <div className="oslice-devsec-h">{printer.multiTool ? t('v2.dev.tools', 'Tools') : t('v2.dev.ams', 'AMS')}</div>
+                {/* AMS unit selector pill with the loaded colours as dots */}
+                <div className="oslice-amssel">
+                  {printer.ams!.map((a) => <span key={a.slot} className="oslice-amsseldot" style={{ background: a.color?.startsWith('#') ? a.color : '#' + String(a.color || 'ccc').replace(/^#/, '') }} />)}
+                </div>
                 <div className="oslice-amsrow">
                   <div className="oslice-amsunit">
-                    <div className="oslice-amsunit-top"><span className="oslice-amsdrop" />{printer.amsHumidity != null ? `${Math.round(printer.amsHumidity)}%` : ''}</div>
+                    <div className="oslice-amsunit-top">
+                      <span className="oslice-amsdrop" />{printer.amsHumidity != null ? `${Math.round(printer.amsHumidity)}%` : ''}
+                      <svg className="oslice-amssun" viewBox="0 0 24 24" width="11" height="11"><circle cx="12" cy="12" r="4.5" fill="#f0a83a" /><g stroke="#f0a83a" strokeWidth="1.6" strokeLinecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" /></g></svg>
+                    </div>
                     <div className="oslice-amsslots">
                       {printer.ams!.map((a) => cart(a.color, a.material, printer.multiTool ? `T${a.slot - 1}` : `A${a.slot}`, String(a.slot)))}
                     </div>
-                    <div className="oslice-amsnozzle" />
+                    {/* converging feed lines → nozzle */}
+                    <svg className="oslice-amsfeed" viewBox={`0 0 ${W} 26`} width={W} height="26" preserveAspectRatio="none">
+                      {printer.ams!.map((_, i) => { const x = i * stepX + SW / 2; return <path key={i} d={`M${x} 0 C ${x} 13 ${W / 2} 10 ${W / 2} 20`} stroke="var(--o-border)" strokeWidth="2" fill="none" />; })}
+                      <path d={`M${W / 2 - 5} 20 h10 l-5 6 z`} fill="var(--o-muted)" opacity="0.6" />
+                    </svg>
                   </div>
                   {printer.external && (
                     <div className="oslice-amsunit oslice-amsext">
