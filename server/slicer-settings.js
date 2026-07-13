@@ -174,6 +174,11 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('acceleration', num(s.acceleration ?? s.default_acceleration));
   set('initialLayerAccel', num(s.initial_layer_acceleration ?? s.initial_layer_accel));
   set('travelAccel', num(s.travel_acceleration ?? s.travel_accel));
+  // Per-feature acceleration (M204 switched per feature).
+  set('outerWallAccel', num(s.outer_wall_acceleration));
+  set('innerWallAccel', num(s.inner_wall_acceleration));
+  set('topSurfaceAccel', num(s.top_surface_acceleration));
+  set('sparseInfillAccel', num(s.sparse_infill_acceleration));
   set('jerk', num(s.jerk ?? s.default_jerk));
   // Retraction / wipe.
   set('retractionSpeed', num(s.retraction_speed));

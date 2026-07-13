@@ -120,6 +120,17 @@ export function layersToGcode(layers, settings) {
     wall: P,
   };
   const featSpeed = (feature, layerIdx) => (layerIdx === 0 ? s.firstLayerSpeed : (SP[feature] ?? P));
+  // Per-feature acceleration (M204). Undefined features fall back to the
+  // steady acceleration; the loop only emits M204 when it actually changes.
+  const ACC = {
+    'outer-wall': s.outerWallAccel, 'inner-wall': s.innerWallAccel, wall: s.outerWallAccel,
+    solid: s.topSurfaceAccel, sparse: s.sparseInfillAccel,
+  };
+  const featAccel = (feature, layerIdx) => {
+    if (layerIdx === 0) return s.initialLayerAccel || s.acceleration;
+    const a = ACC[feature];                 // 0 / undefined → fall back to steady accel
+    return a && a > 0 ? a : s.acceleration;
+  };
   // Extrusion factor: volume of a 1 mm path = lineWidth * layerHeight,
   // E (mm filament) = volume / (π · (filamentDiam/2)²).
   const efOf = (w) => (w * s.layerHeight) / (PI * (s.filamentDiam / 2) ** 2);
@@ -153,6 +164,7 @@ export function layersToGcode(layers, settings) {
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
+  let curAccelG = -1; // last-emitted M204 P value, for per-feature acceleration
   let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
   let combCache = null;      // that layer's lazily-built waypoints + visibility graph
   const combing = s.avoidCrossingWalls !== false;
@@ -311,6 +323,11 @@ export function layersToGcode(layers, settings) {
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
+      // Per-feature acceleration switch (only when any per-feature accel is set).
+      if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel)) {
+        const fa = Math.round(featAccel(path.feature, layerIdx));
+        if (fa > 0 && fa !== curAccelG) { g += `M204 P${fa}\n`; curAccelG = fa; }
+      }
       const isCooled = path.feature === 'bridge' || path.overhang;
       // Overhang / bridge cooling: boost the part fan over these moves, restore after.
       if (s.overhangFanSpeed != null && layerIdx > 0) {

@@ -94,6 +94,14 @@ describe('buildNativeSettings', () => {
     assert.equal(n.fanOffLayers, 3);
   });
 
+  test('maps per-feature acceleration', () => {
+    const n = buildNativeSettings({ outer_wall_acceleration: 3000, inner_wall_acceleration: 6000, top_surface_acceleration: 2000, sparse_infill_acceleration: 8000 });
+    assert.equal(n.outerWallAccel, 3000);
+    assert.equal(n.innerWallAccel, 6000);
+    assert.equal(n.topSurfaceAccel, 2000);
+    assert.equal(n.sparseInfillAccel, 8000);
+  });
+
   test('maps acceleration, jerk, cooling slow-down, retraction/wipe and gcode hooks', () => {
     const n = buildNativeSettings({
       default_acceleration: 4000, initial_layer_acceleration: 600, travel_acceleration: 8000, default_jerk: 12,
