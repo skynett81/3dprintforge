@@ -75,11 +75,14 @@ export function SlicerPanel() {
   const [full, setFull] = useState(false);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
-  const [profiles, setProfiles] = useState<import('../types').SlicerProfile[]>([]);
-  const [profileId, setProfileId] = useState<number | null>(null);
+  type ProfKind = 'process' | 'filament';
+  const [profiles, setProfiles] = useState<Record<ProfKind, import('../types').SlicerProfile[]>>({ process: [], filament: [] });
+  const [profileId, setProfileId] = useState<Record<ProfKind, number | null>>({ process: null, filament: null });
+  const [bindings, setBindings] = useState<Record<string, { process?: number | null; filament?: number | null }>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.bindings') || '{}'); } catch { return {}; } });
   const plateRef = useRef<PlateHandle>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const lastPrinterSync = useRef<string>('');
+  const lastBindingApplied = useRef<string>('');
 
   const bed = useMemo(() => {
     const p = slicerPrinters.find((sp) => sp.id === profilePrinter) ?? slicerPrinters[0];
@@ -136,6 +139,20 @@ export function SlicerPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selPrinter]);
 
+  // Auto-apply the process + filament profiles pinned to the selected printer
+  // (once the profile lists have loaded). Guarded so it applies once per change.
+  useEffect(() => {
+    const pid = selPrinter?.id; if (!pid) return;
+    if (!profiles.process.length && !profiles.filament.length) return;
+    const b = bindings[pid]; if (!b) return;
+    const sig = `${pid}:${b.process ?? ''}:${b.filament ?? ''}`;
+    if (sig === lastBindingApplied.current) return;
+    lastBindingApplied.current = sig;
+    if (b.process != null && profiles.process.some((p) => p.id === b.process)) applyProfile('process', b.process);
+    if (b.filament != null && profiles.filament.some((p) => p.id === b.filament)) applyProfile('filament', b.filament);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selPrinter, profiles, bindings]);
+
   function setSlot(i: number, patch: Partial<{ color: string; material: string }>) {
     setFilaments((prev) => {
       const next = prev.map((f, k) => (k === i ? { ...f, ...patch } : f));
@@ -170,42 +187,67 @@ export function SlicerPanel() {
     if (!p) return;
     setSettings((s) => ({ ...s, quality: id, layer_height: p.layerHeight, infill_density: p.infill }));
   }
-  // ── Process profiles (server-persisted, editable) ───────────────────
+  // ── Profiles (server-persisted, editable): process + filament ───────
+  // A filament profile owns the material/temp/retraction/cooling keys; a
+  // process profile owns everything else. Split so they compose cleanly.
+  const FILAMENT_KEYS = ['material', 'nozzle_temp', 'bed_temp', 'nozzle_temp_initial', 'bed_temp_initial', 'fan_speed', 'fan_off_layers', 'retraction_length'];
   async function loadProfiles() {
-    try { const r = await api.listSlicerProfiles('process'); setProfiles(r.profiles ?? []); } catch { /* offline */ }
+    try {
+      const [pr, fil] = await Promise.all([api.listSlicerProfiles('process'), api.listSlicerProfiles('filament')]);
+      setProfiles({ process: pr.profiles ?? [], filament: fil.profiles ?? [] });
+    } catch { /* offline */ }
   }
   useEffect(() => { loadProfiles(); }, []);
 
-  function applyProfile(id: number | null) {
-    setProfileId(id);
+  function applyProfile(kind: ProfKind, id: number | null) {
+    setProfileId((p) => ({ ...p, [kind]: id }));
     if (id == null) return;
-    const p = profiles.find((x) => x.id === id);
+    const p = profiles[kind].find((x) => x.id === id);
     if (!p) return;
-    try { const s = JSON.parse(p.settings_json || '{}'); setSettings((prev) => ({ ...prev, ...s })); } catch { /* bad json */ }
+    try {
+      const s = JSON.parse(p.settings_json || '{}') as SliceSettings;
+      setSettings((prev) => ({ ...prev, ...s }));
+      // Keep the filament slot's material label in step with a filament profile.
+      if (kind === 'filament' && s.material) setFilaments((prev) => (prev.length ? prev.map((f, i) => (i === 0 ? { ...f, material: String(s.material) } : f)) : prev));
+    } catch { /* bad json */ }
   }
 
-  async function saveProfile() {
-    const sel = profileId != null ? profiles.find((p) => p.id === profileId) : null;
-    // With a profile selected, offer to update it in place; otherwise save a new one.
+  function profilePayload(kind: ProfKind): Record<string, unknown> {
+    const entries = Object.entries(settings).filter(([k]) => (kind === 'filament' ? FILAMENT_KEYS.includes(k) : !FILAMENT_KEYS.includes(k)));
+    return Object.fromEntries(entries);
+  }
+
+  async function saveProfile(kind: ProfKind) {
+    const sel = profileId[kind] != null ? profiles[kind].find((p) => p.id === profileId[kind]) : null;
+    const payload = profilePayload(kind);
     if (sel && window.confirm(t('v2.slset.update_profile', 'Update profile "{name}"? Cancel = save as new').replace('{name}', sel.name))) {
-      try { await api.updateSlicerProfile(sel.id, { settings: settings as Record<string, unknown> }); toast(t('v2.slset.profile_updated', 'Profile updated'), 'success'); await loadProfiles(); }
+      try { await api.updateSlicerProfile(sel.id, { settings: payload }); toast(t('v2.slset.profile_updated', 'Profile updated'), 'success'); await loadProfiles(); }
       catch (e) { toast((e as Error).message, 'error'); }
       return;
     }
     const name = window.prompt(t('v2.slset.profile_name', 'Profile name'))?.trim(); if (!name) return;
     try {
-      const created = await api.createSlicerProfile({ kind: 'process', name, settings: settings as Record<string, unknown> });
-      await loadProfiles(); setProfileId(created.id ?? null);
+      const created = await api.createSlicerProfile({ kind, name, settings: payload });
+      await loadProfiles(); setProfileId((p) => ({ ...p, [kind]: created.id ?? null }));
       toast(t('v2.slset.profile_saved', 'Profile saved'), 'success');
     } catch (e) { toast((e as Error).message, 'error'); }
   }
 
-  async function deleteProfile() {
-    const sel = profileId != null ? profiles.find((p) => p.id === profileId) : null;
+  async function deleteProfile(kind: ProfKind) {
+    const sel = profileId[kind] != null ? profiles[kind].find((p) => p.id === profileId[kind]) : null;
     if (!sel) return;
     if (!window.confirm(t('v2.slset.delete_profile', 'Delete profile "{name}"?').replace('{name}', sel.name))) return;
-    try { await api.deleteSlicerProfile(sel.id); setProfileId(null); await loadProfiles(); toast(t('v2.slset.profile_deleted', 'Profile deleted'), 'success'); }
+    try { await api.deleteSlicerProfile(sel.id); setProfileId((p) => ({ ...p, [kind]: null })); await loadProfiles(); toast(t('v2.slset.profile_deleted', 'Profile deleted'), 'success'); }
     catch (e) { toast((e as Error).message, 'error'); }
+  }
+
+  // Pin the current process + filament profiles to the selected printer, so
+  // picking that printer later auto-applies them (persisted per browser).
+  function pinToPrinter() {
+    const pid = selPrinter?.id; if (!pid) return;
+    const next = { ...bindings, [pid]: { process: profileId.process, filament: profileId.filament } };
+    setBindings(next); localStorage.setItem('v2.slicer.bindings', JSON.stringify(next));
+    toast(t('v2.slset.pinned', 'Profiles pinned to {name}').replace('{name}', selPrinter?.name ?? pid), 'success');
   }
 
   async function slicePreview() {
@@ -354,13 +396,32 @@ export function SlicerPanel() {
           <div className="oslice-goTabs">
             <button className={`oslice-goTab${side === 'global' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('global')}>{t('v2.slicer.global', 'Global')}</button>
             <button className={`oslice-goTab${side === 'objects' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('objects')}>{t('v2.slicer.objects', 'Objects')}</button>
-            <div className="oslice-presetctl">
-              <select className="oset-input" style={{ maxWidth: 110 }} value={profileId ?? ''} onChange={(e) => applyProfile(e.target.value ? Number(e.target.value) : null)} title={t('v2.slset.profile', 'Process profile')}>
-                <option value="">{profiles.length ? t('v2.slset.load_profile', 'Profile…') : t('v2.slset.none_saved', 'no profiles')}</option>
-                {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}{p.is_default ? ' ★' : ''}</option>)}
-              </select>
-              <button className="btn btn--sm btn--ghost" onClick={saveProfile} title={t('v2.slset.save_profile_hint', 'Save current settings as a profile')}>{t('v2.slset.save', 'Save')}</button>
-              {profileId != null && <button className="btn btn--sm btn--ghost" onClick={deleteProfile} title={t('v2.slset.delete', 'Delete')}>×</button>}
+            <div className="oslice-presetctl" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span className="oslice-sectlbl" style={{ minWidth: 54, fontSize: '0.6rem' }}>{t('v2.slset.process', 'Process')}</span>
+                <select className="oset-input" style={{ maxWidth: 110 }} value={profileId.process ?? ''} onChange={(e) => applyProfile('process', e.target.value ? Number(e.target.value) : null)} title={t('v2.slset.profile', 'Process profile')}>
+                  <option value="">{profiles.process.length ? t('v2.slset.load_profile', 'Profile…') : t('v2.slset.none_saved', 'no profiles')}</option>
+                  {profiles.process.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <button className="btn btn--sm btn--ghost" onClick={() => saveProfile('process')} title={t('v2.slset.save_profile_hint', 'Save current settings as a profile')}>{t('v2.slset.save', 'Save')}</button>
+                {profileId.process != null && <button className="btn btn--sm btn--ghost" onClick={() => deleteProfile('process')} title={t('v2.slset.delete', 'Delete')}>×</button>}
+              </div>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span className="oslice-sectlbl" style={{ minWidth: 54, fontSize: '0.6rem' }}>{t('v2.slset.filament_short', 'Filament')}</span>
+                <select className="oset-input" style={{ maxWidth: 110 }} value={profileId.filament ?? ''} onChange={(e) => applyProfile('filament', e.target.value ? Number(e.target.value) : null)} title={t('v2.slset.filament_profile', 'Filament profile (temps, retraction, cooling)')}>
+                  <option value="">{profiles.filament.length ? t('v2.slset.load_profile', 'Profile…') : t('v2.slset.none_saved', 'no profiles')}</option>
+                  {profiles.filament.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <button className="btn btn--sm btn--ghost" onClick={() => saveProfile('filament')} title={t('v2.slset.save_filament_hint', 'Save material temps/retraction/cooling as a filament profile')}>{t('v2.slset.save', 'Save')}</button>
+                {profileId.filament != null && <button className="btn btn--sm btn--ghost" onClick={() => deleteProfile('filament')} title={t('v2.slset.delete', 'Delete')}>×</button>}
+              </div>
+              {(profileId.process != null || profileId.filament != null) && selPrinter?.id && (
+                <button className="btn btn--sm btn--ghost" style={{ fontSize: '0.62rem', alignSelf: 'flex-start' }} onClick={pinToPrinter} title={t('v2.slset.pin_hint', 'Auto-apply these profiles when this printer is selected')}>
+                  {bindings[selPrinter.id]?.process === profileId.process && bindings[selPrinter.id]?.filament === profileId.filament
+                    ? t('v2.slset.pinned_to', 'Pinned to {name}').replace('{name}', selPrinter.name)
+                    : t('v2.slset.pin_to', 'Pin to {name}').replace('{name}', selPrinter.name)}
+                </button>
+              )}
             </div>
           </div>
 
