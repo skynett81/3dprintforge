@@ -172,6 +172,18 @@ export function layersToGcode(layers, settings) {
   const deretractFeed = (s.deretractionSpeed ?? s.retractionSpeed ?? s.travelSpeed) * 60;
   const wipeFeed = (s.wipeSpeed ?? s.travelSpeed) * 60;
   let lastPath = null;   // points of the path just printed, for wipe-on-retract
+  // Close a loop back to its start, optionally leaving a small seam gap so the
+  // seam is a clean butt-joint instead of an over-extruded overlap.
+  const closeLoop = (first, ef, speed) => {
+    const d = Math.hypot(first[0] - curX, first[1] - curY);
+    if (d <= EPS) return;
+    const gap = s.seamGap ?? 0;
+    if (gap > 0 && d <= gap) return;                 // whole closing move is within the gap
+    const target = gap > 0 ? [curX + (first[0] - curX) * (d - gap) / d, curY + (first[1] - curY) * (d - gap) / d] : first;
+    e += (gap > 0 ? d - gap : d) * ef;
+    g += `G1 X${target[0].toFixed(3)} Y${target[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+    curX = target[0]; curY = target[1];
+  };
   const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow) => {
     if (pts.length < 2) return;
     const first = pts[0];
@@ -185,7 +197,7 @@ export function layersToGcode(layers, settings) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
         for (let i = 1; i < pts.length; i++) { const p = pts[i]; e += Math.hypot(p[0] - curX, p[1] - curY) * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`; curX = p[0]; curY = p[1]; }
-        if (closed) { const d = Math.hypot(first[0] - curX, first[1] - curY); if (d > EPS) { e += d * ef; g += `G1 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`; curX = first[0]; curY = first[1]; } }
+        if (closed) closeLoop(first, ef, speed);
         lastPath = closed ? [...pts, first] : pts;
         return;
       }
@@ -220,14 +232,7 @@ export function layersToGcode(layers, settings) {
       g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
       curX = p[0]; curY = p[1];
     }
-    if (closed) {
-      const d = Math.hypot(first[0] - curX, first[1] - curY);
-      if (d > EPS) {
-        e += d * ef;
-        g += `G1 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
-        curX = first[0]; curY = first[1];
-      }
-    }
+    if (closed) closeLoop(first, ef, speed);
     lastPath = closed ? [...pts, first] : pts;
   };
 
@@ -312,6 +317,9 @@ export function layersToGcode(layers, settings) {
       }
       let pspeed = featSpeed(path.feature, layerIdx);
       if (path.overhang && s.overhangSpeed) pspeed = Math.min(pspeed, s.overhangSpeed);
+      // Small-perimeter slowdown: tiny closed loops (holes, pillars) print
+      // cleaner slower because the head can't accelerate over the short path.
+      if (path.closed && s.smallPerimeterSpeed && String(path.feature).includes('wall') && pathLen(path.pts, true) < (s.smallPerimeterThreshold ?? 15)) pspeed = Math.min(pspeed, s.smallPerimeterSpeed);
       if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
       const ef = efFeat(path.feature, layerIdx) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
@@ -474,6 +482,12 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         const comp = offsetPolygon(outerBoundary, -s.elephantFoot);
         if (comp && comp.length >= 3) outerBoundary = comp;
       }
+      // XY contour compensation: grow/shrink the outline to hit target
+      // dimensions (offsets shrink from the squish/flow of the outer wall).
+      if (s.xyContourCompensation) {
+        const c = offsetPolygon(outerBoundary, s.xyContourCompensation);
+        if (c && c.length >= 3) outerBoundary = c;
+      }
       // Vase / spiral mode: a single continuous outer wall that ramps up in
       // Z, above the solid base layers. No inner walls, infill, or top.
       if (s.spiralMode && i >= s.bottomLayers) {
@@ -500,7 +514,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       // Hole walls: grow each hole outward into the solid.
       const grownHoles = [];
       for (const hole of region.holes) {
+        // XY hole compensation: positive enlarges holes (counteracts the
+        // tendency of holes to print undersized).
         let hw = hole;
+        if (s.xyHoleCompensation) { const c = offsetPolygon(hole, s.xyHoleCompensation); if (c && c.length >= 3) hw = c; }
         walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(hw, seam) });
         for (let p = 1; p < wallLoops; p++) {
           hw = offsetPolygon(hw, lw);

@@ -88,6 +88,26 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: XY compensation, small-perimeter, seam gap', () => {
+  it('XY contour compensation changes the sliced outline', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 3), {});
+    const b = await sliceMeshToGcode(box(20, 20, 3), { xyContourCompensation: -0.1 });
+    assert.notEqual(a.gcode, b.gcode);
+  });
+
+  it('small closed perimeters print at the small-perimeter speed', async () => {
+    const { cylinder } = await import('../../server/mesh-primitives.js');
+    const r = await sliceMeshToGcode(cylinder(2, 6, 24), { outerWallSpeed: 120, smallPerimeterSpeed: 20, smallPerimeterThreshold: 20 });
+    assert.match(r.gcode, / F1200\b/);   // 20 mm/s
+  });
+
+  it('seam gap changes the loop-closing output', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 3), { seamGap: 0 });
+    const b = await sliceMeshToGcode(box(20, 20, 3), { seamGap: 0.3 });
+    assert.notEqual(a.gcode, b.gcode);
+  });
+});
+
 describe('native-slicer: avoid-crossing-walls travel (combing)', () => {
   it('routes a travel around a hole instead of across it', async () => {
     const { routeInside } = await import('../../server/native-slicer-geo.js');

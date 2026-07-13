@@ -141,6 +141,13 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Avoid-crossing-walls travel (combing).
   if (s.avoid_crossing_walls !== undefined && s.avoid_crossing_walls !== '') out.avoidCrossingWalls = !!s.avoid_crossing_walls;
   else if (s.reduce_crossing_wall !== undefined && s.reduce_crossing_wall !== '') out.avoidCrossingWalls = !!s.reduce_crossing_wall;
+  // XY dimensional compensation (positive contour = grow outline; positive hole = enlarge holes).
+  set('xyContourCompensation', num(s.xy_contour_compensation));
+  set('xyHoleCompensation', num(s.xy_hole_compensation));
+  // Small-perimeter slowdown + seam gap.
+  set('smallPerimeterSpeed', num(s.small_perimeter_speed));
+  set('smallPerimeterThreshold', num(s.small_perimeter_threshold));
+  set('seamGap', num(s.seam_gap));
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   // Initial-layer temperatures and part-cooling fan — critical per material.

@@ -125,6 +125,15 @@ describe('buildNativeSettings', () => {
     assert.equal(n.overhangDetect, true);
   });
 
+  test('maps XY compensation, small-perimeter and seam-gap keys', () => {
+    const n = buildNativeSettings({ xy_hole_compensation: 0.1, xy_contour_compensation: -0.05, small_perimeter_speed: 20, small_perimeter_threshold: 12, seam_gap: 0.15 });
+    assert.equal(n.xyHoleCompensation, 0.1);
+    assert.equal(n.xyContourCompensation, -0.05);
+    assert.equal(n.smallPerimeterSpeed, 20);
+    assert.equal(n.smallPerimeterThreshold, 12);
+    assert.equal(n.seamGap, 0.15);
+  });
+
   test('maps ironing, infill/wall overlap and shell thickness keys', () => {
     const n = buildNativeSettings({ ironing_flow: 12, ironing_spacing: 0.15, ironing_direction: 90, infill_wall_overlap: 25, top_shell_thickness: 1.2, bottom_shell_thickness: 0.8 });
     assert.equal(n.ironingFlow, 0.12);          // % → fraction

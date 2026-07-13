@@ -69,6 +69,7 @@ export function SlicerPanel() {
     support_threshold: 40, support_base_density: 20, support_interface_top_layers: 2, support_z_gap_layers: 1, support_object_xy_distance: 0.8,
     ironing_flow: 10, ironing_spacing: 0.1, ironing_direction: 45, infill_wall_overlap: 15, top_shell_thickness: 0, bottom_shell_thickness: 0,
     avoid_crossing_walls: true,
+    xy_hole_compensation: 0, xy_contour_compensation: 0, small_perimeter_speed: 25, small_perimeter_threshold: 15, seam_gap: 0.1,
     flush_into_infill: true, flush_volume: 80,
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
