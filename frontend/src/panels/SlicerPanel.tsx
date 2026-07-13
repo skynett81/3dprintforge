@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { Printer, SlicerStatus, SliceResult } from '../types';
+import type { PlateHandle } from '../components/PlateViewer';
+
+const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 
 type RowState = { status: 'slicing' | 'done' | 'error'; result?: SliceResult; error?: string };
 
@@ -22,6 +25,7 @@ export function SlicerPanel() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [busy, setBusy] = useState(false);
+  const plateRef = useRef<PlateHandle>(null);
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
@@ -31,10 +35,12 @@ export function SlicerPanel() {
     if (selected.size === 0) { toast(t('v2.slicer.pick_printer', 'Select at least one printer'), 'error'); return; }
     setBusy(true);
     const ids = [...selected];
+    // Send the arranged plate (baked STL) when the 3D editor has it, else the raw file.
+    const toSend = plateRef.current?.exportSTL(file.name) ?? file;
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     await Promise.all(ids.map(async (id) => {
       try {
-        const result = await api.sliceAndSend(id, file, { print: startPrint });
+        const result = await api.sliceAndSend(id, toSend, { print: startPrint });
         setRows((r) => ({ ...r, [id]: { status: 'done', result } }));
       } catch (e) {
         setRows((r) => ({ ...r, [id]: { status: 'error', error: (e as Error).message } }));
@@ -66,7 +72,14 @@ export function SlicerPanel() {
           <input type="file" accept={formats.join(',')} hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           {file ? <span>{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</span> : <span className="muted">{t('v2.slicer.choose', 'Click to choose an STL / 3MF / OBJ / STEP file')}</span>}
         </label>
-        <p className="muted micro" style={{ margin: '8px 0 0' }}>{t('v2.slicer.default_profile', 'Slices with the printer’s default profile. Plate arrangement + full settings (layer height, infill, supports) arrive in later phases.')}</p>
+        {file && (
+          <div style={{ marginTop: 12 }}>
+            <Suspense fallback={<div className="plate-canvas" style={{ display: 'grid', placeItems: 'center' }}><span className="muted">{t('common.loading', 'Loading…')}</span></div>}>
+              <PlateViewer ref={plateRef} file={file} />
+            </Suspense>
+          </div>
+        )}
+        <p className="muted micro" style={{ margin: '8px 0 0' }}>{t('v2.slicer.default_profile', 'Arrange on the plate, then slice with the printer’s default profile. Full print settings (layer height, infill, supports) arrive in a later phase.')}</p>
       </section>
 
       <section className="card" style={{ marginBottom: 14 }}>
