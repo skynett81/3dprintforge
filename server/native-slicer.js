@@ -238,7 +238,11 @@ function _interp(tpl, s) {
  * End-to-end slicing: mesh → G-code. Repairs + recenters the mesh, then
  * slices into walls / shells / infill / skirt.
  */
-export async function sliceMeshToGcode(mesh, settings = {}) {
+/** Slice a mesh into typed per-layer paths (no G-code). Reusable so several
+ *  objects can be sliced with their own settings and combined. `opts.offset`
+ *  applies a shared recenter (keeps multiple objects aligned); `opts.numLayers`
+ *  forces a common layer count. */
+export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const s = {
     layerHeight: 0.2, lineWidth: 0.4, perimeters: 2, infillDensity: 0.2,
     infillAngle: 45, infillPattern: 'grid', topLayers: 4, bottomLayers: 4,
@@ -256,10 +260,17 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
   const { autoRepair } = await import('./mesh-repair.js');
   const { recenterToOrigin, meshStats } = await import('./mesh-transforms.js');
   const repaired = autoRepair(mesh).mesh;
-  const recentered = recenterToOrigin(repaired).mesh;
+  let recentered;
+  if (opts.offset) {
+    const p = Array.from(repaired.positions);
+    for (let i = 0; i < p.length; i += 3) { p[i] -= opts.offset[0]; p[i + 1] -= opts.offset[1]; p[i + 2] -= opts.offset[2]; }
+    recentered = { positions: p, indices: repaired.indices };
+  } else {
+    recentered = recenterToOrigin(repaired).mesh;
+  }
   const stats = meshStats(recentered);
   const layerHeight = s.layerHeight;
-  const numLayers = Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
+  const numLayers = opts.numLayers || Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
 
   // Pass 1 — slice every layer into regions (needed up-front for supports).
   const layerRegions = [];
@@ -421,14 +432,52 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     layers.push({ paths: [...adhesion, ...walls, ...fills, ...support] });
   }
 
-  const gcode = layersToGcode(layers, s);
-  return {
-    gcode,
-    layers: layers.length,
-    bbox: stats.bbox,
-    triangles: recentered.indices.length / 3,
-    supported: !!s.supports,
-  };
+  return { layers, s, bbox: stats.bbox, numLayers, triangles: recentered.indices.length / 3 };
+}
+
+/** End-to-end single-mesh slice → G-code. */
+export async function sliceMeshToGcode(mesh, settings = {}) {
+  const { layers, s, bbox, triangles } = await sliceMeshToLayers(mesh, settings);
+  return { gcode: layersToGcode(layers, s), layers: layers.length, bbox, triangles, supported: !!s.supports };
+}
+
+/**
+ * Slice several objects on one plate, each with its own settings (merged over
+ * the global settings), into a single G-code. Path-affecting overrides (walls,
+ * infill, top/bottom, supports, pattern, ironing…) are honoured per object;
+ * layer height stays global so the layers interleave. Objects keep their
+ * relative positions via a shared recenter.
+ *
+ * @param {Array<{mesh:object, settings?:object}>} objects
+ */
+export async function sliceObjectsGcode(objects, globalSettings = {}) {
+  const lh = globalSettings.layerHeight ?? 0.2;
+  let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (const o of objects) {
+    const p = o.mesh.positions;
+    for (let i = 0; i < p.length; i += 3) {
+      if (p[i] < minX) minX = p[i]; if (p[i] > maxX) maxX = p[i];
+      if (p[i + 1] < minY) minY = p[i + 1]; if (p[i + 1] > maxY) maxY = p[i + 1];
+      if (p[i + 2] < minZ) minZ = p[i + 2]; if (p[i + 2] > maxZ) maxZ = p[i + 2];
+    }
+  }
+  const offset = [(minX + maxX) / 2, (minY + maxY) / 2, minZ];
+  const numLayers = Math.max(1, Math.floor((maxZ - minZ) / lh));
+
+  const perObj = [];
+  for (const o of objects) {
+    const settings = { ...globalSettings, ...(o.settings || {}), layerHeight: lh };
+    const { layers } = await sliceMeshToLayers(o.mesh, settings, { offset, numLayers });
+    perObj.push(layers);
+  }
+
+  const combined = [];
+  for (let i = 0; i < numLayers; i++) {
+    const paths = [];
+    for (const layers of perObj) if (layers[i] && layers[i].paths) paths.push(...layers[i].paths);
+    combined.push({ paths });
+  }
+  return { gcode: layersToGcode(combined, { ...globalSettings, layerHeight: lh }), layers: numLayers, objects: objects.length };
 }
 
 export const _internals = { _chainSegments, _signedArea, _isCCW, _near, _bbox, _pointInPoly, EPS };

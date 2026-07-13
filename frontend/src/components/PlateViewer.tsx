@@ -21,6 +21,7 @@ export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; n
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   exportMaterials: (name: string) => { extruder: number; file: File }[];
+  exportEach: (name: string) => { index: number; file: File }[];
   hasMaterials: () => boolean;
   count: () => number;
   addFile: (f: File) => Promise<void>;
@@ -349,6 +350,17 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       }
       const stl = new STLExporter().parse(group, { binary: false }) as string;
       return new File([stl], name.replace(/\.[^.]+$/, '') + '.stl', { type: 'model/stl' });
+    },
+    exportEach: (name: string) => {
+      const c = ctx.current; if (!c || !c.objects.length) return [];
+      const exp = new STLExporter();
+      const bn = name.replace(/\.[^.]+$/, '');
+      return c.objects.map((m, index) => {
+        m.updateMatrixWorld(true);
+        const group = new THREE.Group();
+        group.add(new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld)));
+        return { index, file: new File([exp.parse(group, { binary: false }) as string], `${bn}_obj${index}.stl`, { type: 'model/stl' }) };
+      });
     },
     hasMaterials: () => {
       const c = ctx.current; if (!c) return false;

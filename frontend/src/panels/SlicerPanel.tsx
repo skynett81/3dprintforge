@@ -60,6 +60,7 @@ export function SlicerPanel() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
   const [obj, setObj] = useState<ObjInfo | null>(null);
+  const [objOverrides, setObjOverrides] = useState<Record<number, SliceSettings>>({});
   const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1 });
   const [full, setFull] = useState(false);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
@@ -84,7 +85,7 @@ export function SlicerPanel() {
   const material = String((settings.material as string) || 'PLA');
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
-  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); }
+  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); }
   async function addModels(files: FileList | null) {
     if (!files || !files.length) return;
     for (const f of Array.from(files)) { await plateRef.current?.addFile(f); }
@@ -127,13 +128,17 @@ export function SlicerPanel() {
     const ids = [...selected];
     const multi = plateRef.current?.hasMaterials() ?? false;
     const materials = multi ? (plateRef.current?.exportMaterials(file.name) ?? []) : [];
+    const usePerObject = !multi && Object.keys(objOverrides).length > 0 && toolState.count > 0;
+    const perObj = usePerObject ? (plateRef.current?.exportEach(file.name) ?? []) : [];
     const toSend = plateRef.current?.exportSTL(file.name) ?? file;
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     const results = await Promise.all(ids.map(async (id): Promise<boolean> => {
       try {
         const result = multi && materials.length > 1
           ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings })
-          : await api.sliceAndSend(id, toSend, { print: startPrint, settings });
+          : perObj.length
+            ? await api.sliceObjectsAndSend(id, file.name, perObj.map((o) => ({ file: o.file, settings: { ...settings, ...(objOverrides[o.index] ?? {}) } })), { print: startPrint, settings })
+            : await api.sliceAndSend(id, toSend, { print: startPrint, settings });
         setRows((r) => ({ ...r, [id]: { status: 'done', result } })); return true;
       }
       catch (e) { setRows((r) => ({ ...r, [id]: { status: 'error', error: (e as Error).message } })); return false; }
@@ -251,6 +256,23 @@ export function SlicerPanel() {
                 {obj
                   ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} onScaleToFit={() => plateRef.current?.scaleToFit()} onRotate90={(a) => plateRef.current?.rotate90(a)} onDuplicate={() => plateRef.current?.duplicateN(1)} />
                   : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object to edit it.')}</p>}
+                {obj && toolState.selIndex >= 0 && (() => {
+                  const ov = objOverrides[toolState.selIndex] ?? {};
+                  const setOv = (k: string, v: string | boolean) => setObjOverrides((prev) => ({ ...prev, [toolState.selIndex]: { ...(prev[toolState.selIndex] ?? {}), [k]: v } }));
+                  return (
+                    <section className="card slicer-card">
+                      <div className="obj-group-label" style={{ marginTop: 0 }}>{t('v2.obj.overrides', 'Per-object print settings')}</div>
+                      <p className="muted micro" style={{ margin: '0 0 8px' }}>{t('v2.obj.overrides_hint', 'Override the global settings for this object only.')}</p>
+                      <div className="slset-grid">
+                        <label className="field"><span className="field-label">{t('v2.slset.infill', 'Infill')} (%)</span><input className="input" type="number" step={5} value={(ov.infill_density as string) ?? ''} placeholder={String(settings.infill_density ?? '')} onChange={(e) => setOv('infill_density', e.target.value)} /></label>
+                        <label className="field"><span className="field-label">{t('v2.slset.walls', 'Wall loops')}</span><input className="input" type="number" step={1} value={(ov.wall_loops as string) ?? ''} placeholder={String(settings.wall_loops ?? '')} onChange={(e) => setOv('wall_loops', e.target.value)} /></label>
+                        <label className="chk" style={{ alignSelf: 'end' }}><input type="checkbox" checked={!!ov.supports} onChange={(e) => setOv('supports', e.target.checked)} /> {t('v2.slset.supports', 'Supports')}</label>
+                        <label className="chk" style={{ alignSelf: 'end' }}><input type="checkbox" checked={!!ov.spiral_mode} onChange={(e) => setOv('spiral_mode', e.target.checked)} /> {t('v2.slset.vase', 'Vase')}</label>
+                      </div>
+                      {objOverrides[toolState.selIndex] && <button className="btn btn--sm btn--ghost" style={{ marginTop: 8 }} onClick={() => setObjOverrides((prev) => { const n = { ...prev }; delete n[toolState.selIndex]; return n; })}>{t('v2.obj.clear_override', 'Clear overrides')}</button>}
+                    </section>
+                  );
+                })()}
               </>
             )}
           </div>
