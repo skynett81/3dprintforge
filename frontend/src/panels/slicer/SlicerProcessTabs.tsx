@@ -10,9 +10,10 @@ const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 
 type Field =
   | { tab: string; group: string; k: string; label: string; type: 'num'; unit?: string; step?: number; dep?: string }
   | { tab: string; group: string; k: string; label: string; type: 'bool'; dep?: string }
-  | { tab: string; group: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
+  | { tab: string; group: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string }
+  | { tab: string; group: string; k: string; label: string; type: 'text'; rows?: number; dep?: string };
 
-const TABS = ['Quality', 'Strength', 'Speed', 'Temperature', 'Support', 'Others'] as const;
+const TABS = ['Quality', 'Strength', 'Speed', 'Temperature', 'Support', 'Others', 'G-code'] as const;
 
 const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
@@ -44,12 +45,18 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Other', k: 'initial_layer_speed', label: 'Initial layer', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'ironing_speed', label: 'Ironing', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'travel_speed', label: 'Travel', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Acceleration', k: 'default_acceleration', label: 'Default acceleration', type: 'num', unit: 'mm/s²', step: 100 },
+  { tab: 'Speed', group: 'Acceleration', k: 'initial_layer_acceleration', label: 'Initial layer acceleration', type: 'num', unit: 'mm/s²', step: 100 },
+  { tab: 'Speed', group: 'Acceleration', k: 'travel_acceleration', label: 'Travel acceleration', type: 'num', unit: 'mm/s²', step: 100 },
+  { tab: 'Speed', group: 'Jerk', k: 'default_jerk', label: 'Jerk (max)', type: 'num', unit: 'mm/s', step: 1 },
   { tab: 'Temperature', group: 'Nozzle', k: 'nozzle_temp', label: 'Nozzle temperature', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Nozzle', k: 'nozzle_temp_initial', label: 'Nozzle temp — initial layer', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp', label: 'Bed temperature', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp_initial', label: 'Bed temp — initial layer', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_speed', label: 'Part cooling fan', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_off_layers', label: 'Fan off for first N layers', type: 'num', step: 1 },
+  { tab: 'Temperature', group: 'Cooling', k: 'slow_down_layer_time', label: 'Slow down if layer faster than', type: 'num', unit: 's', step: 1 },
+  { tab: 'Temperature', group: 'Cooling', k: 'slow_down_min_speed', label: 'Min print speed (slow-down floor)', type: 'num', unit: 'mm/s', step: 1 },
   { tab: 'Support', group: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
   { tab: 'Support', group: 'Support', k: 'support_type', label: 'Type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle', type: 'num', unit: '°', step: 1, dep: 'supports' },
@@ -62,11 +69,18 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Adhesion', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
   { tab: 'Others', group: 'Adhesion', k: 'draft_shield', label: 'Draft shield', type: 'bool' },
   { tab: 'Others', group: 'Retraction', k: 'retraction_length', label: 'Retraction length', type: 'num', unit: 'mm', step: 0.1 },
+  { tab: 'Others', group: 'Retraction', k: 'retraction_speed', label: 'Retraction speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Others', group: 'Retraction', k: 'deretraction_speed', label: 'Deretraction speed', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Others', group: 'Retraction', k: 'z_hop', label: 'Z hop', type: 'num', unit: 'mm', step: 0.05 },
+  { tab: 'Others', group: 'Retraction', k: 'wipe', label: 'Wipe while retracting', type: 'bool' },
+  { tab: 'Others', group: 'Retraction', k: 'wipe_distance', label: 'Wipe distance', type: 'num', unit: 'mm', step: 0.5, dep: 'wipe' },
   { tab: 'Others', group: 'Reduce waste', k: 'reduce_waste', label: 'Skip prime line', type: 'bool' },
   { tab: 'Others', group: 'Reduce waste', k: 'prime_line_length', label: 'Prime line length', type: 'num', unit: 'mm', step: 5 },
   { tab: 'Others', group: 'Multi-colour', k: 'flush_into_infill', label: 'Flush into infill (waste as infill)', type: 'bool' },
   { tab: 'Others', group: 'Multi-colour', k: 'flush_volume', label: 'Flush volume', type: 'num', unit: 'mm³', step: 10, dep: 'flush_into_infill' },
+  { tab: 'G-code', group: 'Custom G-code', k: 'start_gcode', label: 'Start G-code', type: 'text', rows: 5 },
+  { tab: 'G-code', group: 'Custom G-code', k: 'layer_change_gcode', label: 'Layer change G-code', type: 'text', rows: 3 },
+  { tab: 'G-code', group: 'Custom G-code', k: 'end_gcode', label: 'End G-code', type: 'text', rows: 5 },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each
@@ -85,6 +99,15 @@ export function SlicerProcessTabs({ value, onChange }: { value: SliceSettings; o
 
   const row = (f: Field) => {
     const disabled = 'dep' in f && f.dep ? !value[f.dep] : false;
+    if (f.type === 'text') {
+      return (
+        <div className="oset-row" key={f.k} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+          <span className="oset-rowlabel">{t(`v2.f.${f.k}`, f.label)}</span>
+          <textarea className="oset-rowinput" style={{ width: '100%', minHeight: (f.rows ?? 3) * 20, fontFamily: 'monospace', fontSize: '0.72rem', resize: 'vertical' }}
+            value={(value[f.k] as string) ?? ''} onChange={(e) => set(f.k, e.target.value)} spellCheck={false} placeholder="; G-code…" />
+        </div>
+      );
+    }
     let control;
     if (f.type === 'bool') control = <input className="oset-toggle" type="checkbox" checked={!!value[f.k]} onChange={(e) => set(f.k, e.target.checked)} />;
     else if (f.type === 'sel') control = (

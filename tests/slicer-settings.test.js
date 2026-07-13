@@ -91,4 +91,26 @@ describe('buildNativeSettings', () => {
     assert.equal(n.fanSpeed, 60);
     assert.equal(n.fanOffLayers, 3);
   });
+
+  test('maps acceleration, jerk, cooling slow-down, retraction/wipe and gcode hooks', () => {
+    const n = buildNativeSettings({
+      default_acceleration: 4000, initial_layer_acceleration: 600, travel_acceleration: 8000, default_jerk: 12,
+      slow_down_layer_time: 8, slow_down_min_speed: 12,
+      retraction_speed: 40, deretraction_speed: 30, wipe: true, wipe_distance: 2.5,
+      start_gcode: '; hi', end_gcode: '; bye', layer_change_gcode: '; L[layer_num]',
+    });
+    assert.equal(n.acceleration, 4000);
+    assert.equal(n.initialLayerAccel, 600);
+    assert.equal(n.travelAccel, 8000);
+    assert.equal(n.jerk, 12);
+    assert.equal(n.minLayerTime, 8);
+    assert.equal(n.minPrintSpeed, 12);
+    assert.equal(n.retractionSpeed, 40);
+    assert.equal(n.deretractionSpeed, 30);
+    assert.equal(n.wipe, true);
+    assert.equal(n.wipeDistance, 2.5);
+    assert.equal(n.startGcode, '; hi');
+    assert.equal(n.endGcode, '; bye');
+    assert.equal(n.layerChangeGcode, '; L[layer_num]');
+  });
 });

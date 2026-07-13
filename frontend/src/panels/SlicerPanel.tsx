@@ -62,6 +62,9 @@ export function SlicerPanel() {
     support_speed: 80, initial_layer_speed: 30, ironing_speed: 20, travel_speed: 250, seam_position: 'aligned',
     line_width: 0.42, outer_wall_line_width: 0.42, inner_wall_line_width: 0.45, sparse_infill_line_width: 0.45,
     initial_layer_line_width: 0.5, retraction_length: 0.8, z_hop: 0,
+    retraction_speed: 40, deretraction_speed: 40, wipe: false, wipe_distance: 2,
+    default_acceleration: 5000, initial_layer_acceleration: 500, travel_acceleration: 8000, default_jerk: 9,
+    slow_down_layer_time: 5, slow_down_min_speed: 10,
     flush_into_infill: true, flush_volume: 80,
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');

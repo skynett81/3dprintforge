@@ -125,8 +125,26 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Initial-layer temperatures and part-cooling fan — critical per material.
   set('nozzleTempInitial', num(s.nozzle_temp_initial));
   set('bedTempInitial', num(s.bed_temp_initial));
-  set('fanSpeed', num(s.fan_speed));
-  set('fanOffLayers', num(s.fan_off_layers));
+  set('fanSpeed', num(s.fan_speed ?? s.fan_max_speed));
+  set('fanOffLayers', num(s.fan_off_layers ?? s.close_fan_the_first_x_layers));
+  // Cooling: minimum layer time slow-down.
+  set('minLayerTime', num(s.min_layer_time ?? s.slow_down_layer_time));
+  set('minPrintSpeed', num(s.min_print_speed ?? s.slow_down_min_speed));
+  // Acceleration / jerk (M204 / M205).
+  set('acceleration', num(s.acceleration ?? s.default_acceleration));
+  set('initialLayerAccel', num(s.initial_layer_acceleration ?? s.initial_layer_accel));
+  set('travelAccel', num(s.travel_acceleration ?? s.travel_accel));
+  set('jerk', num(s.jerk ?? s.default_jerk));
+  // Retraction / wipe.
+  set('retractionSpeed', num(s.retraction_speed));
+  set('deretractionSpeed', num(s.deretraction_speed));
+  if (s.wipe !== undefined && s.wipe !== '') out.wipe = !!s.wipe;
+  set('wipeDistance', num(s.wipe_distance));
+  set('wipeSpeed', num(s.wipe_speed));
+  // Custom G-code hooks.
+  if (s.start_gcode || s.machine_start_gcode) out.startGcode = String(s.start_gcode ?? s.machine_start_gcode);
+  if (s.end_gcode || s.machine_end_gcode) out.endGcode = String(s.end_gcode ?? s.machine_end_gcode);
+  if (s.layer_change_gcode) out.layerChangeGcode = String(s.layer_change_gcode);
   if (s.material) out.material = String(s.material);
 
   return out;

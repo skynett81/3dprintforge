@@ -64,3 +64,26 @@ describe('native-slicer: initial-layer temps and fan-off layers', () => {
     assert.match(g, /M140 S60/);
   });
 });
+
+describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
+  it('emits M204/M205 and interpolates layer-change / start / end gcode', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 2), {
+      acceleration: 4000, initialLayerAccel: 600, travelAccel: 8000, jerk: 12,
+      startGcode: '; custom start [nozzle_temperature]', endGcode: '; custom end',
+      layerChangeGcode: '; layer [layer_num] z [layer_z]', nozzleTemp: 215,
+    });
+    const g = r.gcode;
+    assert.match(g, /M204 P600 T8000/);   // initial-layer acceleration
+    assert.match(g, /M204 P4000/);        // steady acceleration after layer 1
+    assert.match(g, /M205 X12 Y12/);
+    assert.match(g, /; custom start 215/);
+    assert.match(g, /; custom end/);
+    assert.match(g, /; layer 1 z 0\.200/);
+  });
+
+  it('wipe-on-retract retracts along the previous path (no stationary retract)', async () => {
+    const withWipe = await sliceMeshToGcode(box(20, 20, 1), { wipe: true, wipeDistance: 2, retraction: 1 });
+    const noWipe = await sliceMeshToGcode(box(20, 20, 1), { wipe: false, retraction: 1 });
+    assert.notEqual(withWipe.gcode, noWipe.gcode);
+  });
+});

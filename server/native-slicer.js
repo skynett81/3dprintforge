@@ -140,6 +140,12 @@ export function layersToGcode(layers, settings) {
   g += `; estimated_time: 0\n`;
   g += (s.startGcode ? _interp(s.startGcode, s) + '\n' : _defaultStart(s));
 
+  // Acceleration / jerk control (Marlin M204/M205). Emitted regardless of a
+  // custom start block so per-feature motion tuning still applies. The first
+  // layer can use its own (usually lower) acceleration for adhesion.
+  if (s.acceleration) g += `M204 P${s.initialLayerAccel ?? s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
+  if (s.jerk) g += `M205 X${s.jerk} Y${s.jerk}\n`;
+
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
 
@@ -155,15 +161,35 @@ export function layersToGcode(layers, settings) {
     curX = 20 + primeLen; curY = 20; curZ = 0.3;
   }
 
+  const retractFeed = (s.retractionSpeed ?? s.travelSpeed) * 60;
+  const deretractFeed = (s.deretractionSpeed ?? s.retractionSpeed ?? s.travelSpeed) * 60;
+  const wipeFeed = (s.wipeSpeed ?? s.travelSpeed) * 60;
+  let lastPath = null;   // points of the path just printed, for wipe-on-retract
   const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow) => {
     if (pts.length < 2) return;
     const first = pts[0];
-    // Retract (+ optional Z-hop), travel, unretract.
-    e -= s.retraction; g += `G1 E${e.toFixed(4)} F${(s.travelSpeed * 60).toFixed(0)}\n`;
+    // Wipe-on-retract: draw the nozzle back over the path just printed while
+    // retracting, so the pressure bleeds onto existing extrusion (no blob/ooze
+    // at the seam) instead of a stationary retract.
+    if (s.wipe && lastPath && lastPath.length >= 2 && s.retraction > 0) {
+      const rev = [...lastPath].reverse();
+      const wipeDist = s.wipeDistance ?? 2;
+      const wipePts = [rev[0]]; let acc = 0;
+      for (let i = 1; i < rev.length && acc < wipeDist; i++) { acc += Math.hypot(rev[i][0] - rev[i - 1][0], rev[i][1] - rev[i - 1][1]); wipePts.push(rev[i]); }
+      const total = acc || 1; const startE = e; let done = 0;
+      for (let i = 1; i < wipePts.length; i++) {
+        done += Math.hypot(wipePts[i][0] - wipePts[i - 1][0], wipePts[i][1] - wipePts[i - 1][1]);
+        const eNow = startE - s.retraction * Math.min(1, done / total);
+        g += `G1 X${wipePts[i][0].toFixed(3)} Y${wipePts[i][1].toFixed(3)} E${eNow.toFixed(4)} F${wipeFeed}\n`;
+      }
+      e = startE - s.retraction; curX = wipePts[wipePts.length - 1][0]; curY = wipePts[wipePts.length - 1][1];
+    } else {
+      e -= s.retraction; g += `G1 E${e.toFixed(4)} F${retractFeed.toFixed(0)}\n`;
+    }
     if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${s.travelSpeed * 60}\n`;
     g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
     if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${s.travelSpeed * 60}\n`;
-    e += s.retraction; g += `G1 E${e.toFixed(4)} F${(s.travelSpeed * 60).toFixed(0)}\n`;
+    e += s.retraction; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
@@ -180,6 +206,7 @@ export function layersToGcode(layers, settings) {
         curX = first[0]; curY = first[1];
       }
     }
+    lastPath = closed ? [...pts, first] : pts;
   };
 
   // Continuous spiral (vase mode): ramp Z across the loop, no retract.
@@ -201,6 +228,13 @@ export function layersToGcode(layers, settings) {
     }
   };
 
+  const pathLen = (pts, closed) => {
+    let L = 0;
+    for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    if (closed && pts.length > 2) L += Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]);
+    return L;
+  };
+
   layers.forEach((layer, layerIdx) => {
     const z = (layerIdx + 1) * s.layerHeight;
     const paths = layer.paths || [
@@ -209,20 +243,41 @@ export function layersToGcode(layers, settings) {
     ];
     const spiral = paths.some((p) => p.spiral);
     g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
+    g += `;LAYER_CHANGE\n;Z:${z.toFixed(3)}\n`;
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
-    // After the first layer, drop from initial-layer temps to steady temps.
+    // Custom per-layer G-code hook (e.g. timelapse snapshot, Z-offset tweak).
+    if (s.layerChangeGcode) g += _interp(s.layerChangeGcode, s, { layer_num: layerIdx + 1, layer_z: z.toFixed(3), total_layer_count: layers.length }) + '\n';
+    // After the first layer, drop from initial-layer temps to steady temps and
+    // switch from the first-layer acceleration to the steady one.
     if (layerIdx === 1) {
       if (s.nozzleTempInitial != null && s.nozzleTempInitial !== s.nozzleTemp) g += `M104 S${s.nozzleTemp}\n`;
       if (s.bedTempInitial != null && s.bedTempInitial !== s.bedTemp) g += `M140 S${s.bedTemp}\n`;
+      if (s.acceleration && s.initialLayerAccel && s.initialLayerAccel !== s.acceleration) g += `M204 P${s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
     }
     // Enable the part-cooling fan once past the fan-off layers.
     if (layerIdx === (s.fanOffLayers ?? 1)) g += `M106 S${Math.round((s.fanSpeed ?? 100) * 2.55)}\n`;
+
+    // Cooling: if a layer would print faster than the minimum layer time, slow
+    // it down (clamped to the minimum print speed) so small layers get time to
+    // cool — the same logic a desktop slicer uses for tiny top caps / spires.
+    let speedScale = 1;
+    if (s.minLayerTime > 0 && layerIdx > 0 && !spiral) {
+      let tSec = 0;
+      for (const path of paths) {
+        if (!path.pts || path.pts.length < 2) continue;
+        const sp = featSpeed(path.feature, layerIdx);
+        if (sp > 0) tSec += pathLen(path.pts, !!path.closed) / sp;
+      }
+      if (tSec > 0 && tSec < s.minLayerTime) speedScale = tSec / s.minLayerTime;
+    }
+    const minSpeed = s.minPrintSpeed ?? 10;
 
     let curFeature = null;
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
-      const pspeed = featSpeed(path.feature, layerIdx);
+      let pspeed = featSpeed(path.feature, layerIdx);
+      if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
       const ef = efFeat(path.feature, layerIdx) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
       emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef);
@@ -238,10 +293,15 @@ export function layersToGcode(layers, settings) {
 
 /** Substitute common profile placeholders in start/end G-code. Tokens
  *  must be bracketed ([name] or {name}) so we consume them whole. */
-function _interp(tpl, s) {
+function _interp(tpl, s, extra = {}) {
   const nozzle = /[\[{]\s*(nozzle_temperature_initial_layer|nozzle_temperature|first_layer_temperature|temperature)\s*[\]}]/gi;
   const bed = /[\[{]\s*(bed_temperature_initial_layer|bed_temperature|first_layer_bed_temperature)\s*[\]}]/gi;
-  return String(tpl).replace(nozzle, s.nozzleTemp).replace(bed, s.bedTemp);
+  let out = String(tpl).replace(nozzle, s.nozzleTemp).replace(bed, s.bedTemp);
+  // Layer-change tokens (used by layer_change_gcode).
+  for (const [k, v] of Object.entries(extra)) {
+    out = out.replace(new RegExp(`[\\[{]\\s*${k}\\s*[\\]}]`, 'gi'), String(v));
+  }
+  return out;
 }
 
 // ── Pipeline orchestrator ───────────────────────────────────────────
