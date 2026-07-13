@@ -139,6 +139,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Top / bottom shell thickness (mm) — the pipeline converts to layer counts.
   set('topShellThickness', num(s.top_shell_thickness));
   set('bottomShellThickness', num(s.bottom_shell_thickness));
+  // Gap fill (solid-fill thin features that can't hold sparse infill).
+  if (s.gap_fill_enabled !== undefined && s.gap_fill_enabled !== '') out.gapFill = !!s.gap_fill_enabled;
+  set('gapFillSpeed', num(s.gap_infill_speed ?? s.gap_fill_speed));
   // Avoid-crossing-walls travel (combing).
   if (s.avoid_crossing_walls !== undefined && s.avoid_crossing_walls !== '') out.avoidCrossingWalls = !!s.avoid_crossing_walls;
   else if (s.reduce_crossing_wall !== undefined && s.reduce_crossing_wall !== '') out.avoidCrossingWalls = !!s.reduce_crossing_wall;

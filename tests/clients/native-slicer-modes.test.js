@@ -88,6 +88,24 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: gap fill', () => {
+  it('solid-fills a thin rib but leaves a thick part on sparse infill', async () => {
+    const { sliceMeshToLayers } = await import('../../server/native-slicer.js');
+    const thin = await sliceMeshToLayers(box(1.6, 24, 8), { layerHeight: 0.3, perimeters: 2, infillDensity: 0.15, lineWidth: 0.4 });
+    const thick = await sliceMeshToLayers(box(30, 30, 6), { layerHeight: 0.3, infillDensity: 0.15 });
+    const count = (r, f) => { let c = 0; for (const L of r.layers) for (const p of L.paths) if (p.feature === f) c++; return c; };
+    assert.ok(count(thin, 'gap') > 0, 'thin rib gets gap fill');
+    assert.equal(count(thin, 'sparse'), 0, 'thin rib is not left as sparse');
+    assert.equal(count(thick, 'gap'), 0, 'thick part gets no gap fill');
+    assert.ok(count(thick, 'sparse') > 0, 'thick part keeps sparse infill');
+  });
+
+  it('gap fill can be disabled', async () => {
+    const r = await sliceMeshToGcode(box(1.6, 24, 8), { gapFill: false, layerHeight: 0.3 });
+    assert.doesNotMatch(r.gcode, /FEATURE:gap/);
+  });
+});
+
 describe('native-slicer: arc fitting (G2/G3)', () => {
   it('fits a clean quarter-circle to one exact arc', async () => {
     const { fitArcs } = await import('../../server/native-slicer-arc.js');

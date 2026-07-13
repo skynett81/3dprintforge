@@ -144,6 +144,12 @@ describe('buildNativeSettings', () => {
     assert.equal(n.seamGap, 0.15);
   });
 
+  test('maps gap fill keys', () => {
+    const n = buildNativeSettings({ gap_fill_enabled: false, gap_infill_speed: 30 });
+    assert.equal(n.gapFill, false);
+    assert.equal(n.gapFillSpeed, 30);
+  });
+
   test('maps ironing, infill/wall overlap and shell thickness keys', () => {
     const n = buildNativeSettings({ ironing_flow: 12, ironing_spacing: 0.15, ironing_direction: 90, infill_wall_overlap: 25, top_shell_thickness: 1.2, bottom_shell_thickness: 0.8 });
     assert.equal(n.ironingFlow, 0.12);          // % → fraction

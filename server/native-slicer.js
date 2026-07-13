@@ -114,6 +114,7 @@ export function layersToGcode(layers, settings) {
     support: s.supportSpeed ?? P,
     ironing: s.ironingSpeed ?? Math.max(15, P * 0.4),
     bridge: s.bridgeSpeed ?? Math.max(15, P * 0.5),
+    gap: s.gapFillSpeed ?? Math.max(15, P * 0.5),
     skirt: s.outerWallSpeed ?? P,
     brim: s.outerWallSpeed ?? P,
     wall: P,
@@ -564,7 +565,16 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         };
         const solidConcentric = s.topSurfacePattern === 'concentric';
-        if (!surfaces || globalSolid) {
+        // Gap fill: a thin infill region (its own inward offset collapses, i.e.
+        // narrower than ~2 line widths) can't hold meaningful sparse infill —
+        // it would print as air. Fill it solid instead, the way a real slicer's
+        // gap fill closes thin ribs and necks. Only on sparse layers; solid
+        // shells are already dense.
+        const thinProbe = offsetPolygon(infOuter, -lw);
+        const thinRegion = s.gapFill !== false && !globalSolid && (!thinProbe || thinProbe.length < 3);
+        if (thinRegion) {
+          for (const sg of solidInfill(infRegion, baseAngle, lw)) fills.push({ feature: 'gap', closed: false, pts: sg, flow: s.gapFillFlow ?? 1 });
+        } else if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.
           if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
