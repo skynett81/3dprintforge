@@ -178,25 +178,28 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
   }));
 
-  const btn = (m: typeof mode, label: string) => (
-    <button className={`btn btn--sm${mode === m ? ' btn--primary' : ''}`} onClick={() => setMode(m)}>{label}</button>
+  const modeBtn = (m: typeof mode, label: string, title: string) => (
+    <button className={`plate-tool${mode === m ? ' plate-tool--on' : ''}`} title={title} onClick={() => setMode(m)}>{label}</button>
   );
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
-        {btn('translate', t('v2.plate.move', 'Move'))}
-        {btn('rotate', t('v2.plate.rotate', 'Rotate'))}
-        {btn('scale', t('v2.plate.scale', 'Scale'))}
-        <span style={{ width: 8 }} />
-        <button className="btn btn--sm btn--ghost" disabled={!sel} onClick={layFlat}>{t('v2.plate.flat', 'Lay flat')}</button>
-        <button className="btn btn--sm btn--ghost" disabled={!sel} onClick={center}>{t('v2.plate.center', 'Center')}</button>
-        <button className="btn btn--sm btn--ghost" disabled={!sel} onClick={duplicate}>{t('v2.plate.dup', 'Duplicate')}</button>
-        <button className="btn btn--sm btn--ghost" disabled={count < 2} onClick={arrange}>{t('v2.plate.arrange', 'Arrange')}</button>
-        <button className="btn btn--sm btn--ghost" disabled={!sel} onClick={removeSel}>{t('v2.plate.del', 'Delete')}</button>
-        <span className="muted" style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: '0.78rem' }}>{count} {t('v2.plate.objects', 'object(s)')}</span>
+    <div className="plate-root">
+      <div className="plate-stage-wrap">
+        {/* Left tool rail — transform modes + object actions, like a desktop slicer. */}
+        <div className="plate-rail">
+          {modeBtn('translate', t('v2.plate.move', 'Move'), t('v2.plate.move', 'Move'))}
+          {modeBtn('rotate', t('v2.plate.rotate', 'Rotate'), t('v2.plate.rotate', 'Rotate'))}
+          {modeBtn('scale', t('v2.plate.scale', 'Scale'), t('v2.plate.scale', 'Scale'))}
+          <span className="plate-rail-sep" />
+          <button className="plate-tool" disabled={!sel} title={t('v2.plate.flat', 'Lay flat')} onClick={layFlat}>{t('v2.plate.flat', 'Flat')}</button>
+          <button className="plate-tool" disabled={!sel} title={t('v2.plate.center', 'Center')} onClick={center}>{t('v2.plate.center', 'Center')}</button>
+          <button className="plate-tool" disabled={!sel} title={t('v2.plate.dup', 'Duplicate')} onClick={duplicate}>{t('v2.plate.copy', 'Copy')}</button>
+          <button className="plate-tool" disabled={count < 2} title={t('v2.plate.arrange', 'Auto-arrange')} onClick={arrange}>{t('v2.plate.tidy', 'Tidy')}</button>
+          <button className="plate-tool plate-tool--danger" disabled={!sel} title={t('v2.plate.del', 'Delete')} onClick={removeSel}>{t('v2.plate.del', 'Delete')}</button>
+        </div>
+        <div ref={mount} className="plate-canvas" />
+        <div className="plate-count">{count} {t('v2.plate.objects', 'object(s)')}</div>
       </div>
-      <div ref={mount} className="plate-canvas" />
     </div>
   );
 });
