@@ -141,6 +141,12 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.wipe !== undefined && s.wipe !== '') out.wipe = !!s.wipe;
   set('wipeDistance', num(s.wipe_distance));
   set('wipeSpeed', num(s.wipe_speed));
+  // Bridges + overhang perimeters.
+  set('bridgeSpeed', num(s.bridge_speed));
+  set('bridgeFlow', num(s.bridge_flow));
+  set('overhangSpeed', num(s.overhang_speed));
+  set('overhangFanSpeed', num(s.overhang_fan_speed));
+  if (s.detect_overhang_wall !== undefined && s.detect_overhang_wall !== '') out.overhangDetect = !!s.detect_overhang_wall;
   // Custom G-code hooks.
   if (s.start_gcode || s.machine_start_gcode) out.startGcode = String(s.start_gcode ?? s.machine_start_gcode);
   if (s.end_gcode || s.machine_end_gcode) out.endGcode = String(s.end_gcode ?? s.machine_end_gcode);

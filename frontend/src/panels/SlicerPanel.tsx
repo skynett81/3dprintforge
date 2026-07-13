@@ -65,6 +65,7 @@ export function SlicerPanel() {
     retraction_speed: 40, deretraction_speed: 40, wipe: false, wipe_distance: 2,
     default_acceleration: 5000, initial_layer_acceleration: 500, travel_acceleration: 8000, default_jerk: 9,
     slow_down_layer_time: 5, slow_down_min_speed: 10,
+    detect_overhang_wall: true, overhang_speed: 25, overhang_fan_speed: 100, bridge_flow: 0.7, bridge_speed: 25,
     flush_into_infill: true, flush_volume: 80,
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');

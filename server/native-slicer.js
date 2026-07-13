@@ -112,6 +112,7 @@ export function layersToGcode(layers, settings) {
     sparse: s.sparseInfillSpeed ?? P,
     support: s.supportSpeed ?? P,
     ironing: s.ironingSpeed ?? Math.max(15, P * 0.4),
+    bridge: s.bridgeSpeed ?? Math.max(15, P * 0.5),
     skirt: s.outerWallSpeed ?? P,
     brim: s.outerWallSpeed ?? P,
     wall: P,
@@ -128,6 +129,7 @@ export function layersToGcode(layers, settings) {
     solid: s.solidInfillLineWidth ?? s.lineWidth,
     sparse: s.sparseInfillLineWidth ?? s.lineWidth,
     support: s.supportLineWidth ?? s.lineWidth,
+    bridge: s.bridgeLineWidth ?? s.lineWidth,
   };
   const efFeat = (feature, layerIdx) => (layerIdx === 0 && s.initialLayerLineWidth)
     ? efOf(s.initialLayerLineWidth) : efOf(LW[feature] ?? s.lineWidth);
@@ -148,6 +150,7 @@ export function layersToGcode(layers, settings) {
 
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
+  let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
 
   // Prime line (skip when a custom start gcode already primes, or when
   // reduce-waste is on). A shorter prime line also cuts wasted filament.
@@ -254,8 +257,9 @@ export function layersToGcode(layers, settings) {
       if (s.bedTempInitial != null && s.bedTempInitial !== s.bedTemp) g += `M140 S${s.bedTemp}\n`;
       if (s.acceleration && s.initialLayerAccel && s.initialLayerAccel !== s.acceleration) g += `M204 P${s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
     }
-    // Enable the part-cooling fan once past the fan-off layers.
-    if (layerIdx === (s.fanOffLayers ?? 1)) g += `M106 S${Math.round((s.fanSpeed ?? 100) * 2.55)}\n`;
+    // Enable the part-cooling fan once past the fan-off layers. When overhang
+    // cooling is active the per-path logic below owns the fan instead.
+    if (layerIdx === (s.fanOffLayers ?? 1) && s.overhangFanSpeed == null) { const v = Math.round((s.fanSpeed ?? 100) * 2.55); g += `M106 S${v}\n`; curFanG = v; }
 
     // Cooling: if a layer would print faster than the minimum layer time, slow
     // it down (clamped to the minimum print speed) so small layers get time to
@@ -272,11 +276,21 @@ export function layersToGcode(layers, settings) {
     }
     const minSpeed = s.minPrintSpeed ?? 10;
 
+    // Fan level that applies to normal features on this layer.
+    const layerFanPct = layerIdx >= (s.fanOffLayers ?? 1) ? (s.fanSpeed ?? 100) : 0;
+
     let curFeature = null;
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
+      const isCooled = path.feature === 'bridge' || path.overhang;
+      // Overhang / bridge cooling: boost the part fan over these moves, restore after.
+      if (s.overhangFanSpeed != null && layerIdx > 0) {
+        const wantFan = isCooled ? Math.round(Math.max(layerFanPct, s.overhangFanSpeed) * 2.55) : Math.round(layerFanPct * 2.55);
+        if (wantFan !== curFanG) { g += `M106 S${wantFan}\n`; curFanG = wantFan; }
+      }
       let pspeed = featSpeed(path.feature, layerIdx);
+      if (path.overhang && s.overhangSpeed) pspeed = Math.min(pspeed, s.overhangSpeed);
       if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
       const ef = efFeat(path.feature, layerIdx) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
@@ -367,6 +381,37 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   });
   const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
 
+  // Distance from a point to the nearest edge of a polygon (unsigned).
+  const _distPtSeg = (p, a, b) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1]; const l2 = dx * dx + dy * dy;
+    let t = l2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t;
+    return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+  };
+  const _distToPoly = (p, poly) => { let m = Infinity; for (let i = 0; i < poly.length; i++) { const d = _distPtSeg(p, poly[i], poly[(i + 1) % poly.length]); if (d < m) m = d; } return m; };
+  // Is (x,y) supported by solid material on the given regions? A point counts as
+  // supported when it is inside an outer contour (and not deep inside a hole),
+  // OR within a line-width of a contour edge — the tolerance keeps vertical
+  // walls (whose contour matches the layer below) from being flagged as
+  // overhangs, while a wall/skin that juts clearly past the layer below is not
+  // supported. `offsetPolygon` is deliberately avoided (its miter over-grows
+  // smooth contours). `tol` defaults to one line width.
+  const supportedBy = (x, y, regions, tol) => {
+    if (!regions) return true;
+    const p = [x, y];
+    for (const r of regions) {
+      if (_pointInPoly(p, r.outer)) {
+        let deepInHole = false;
+        for (const h of (r.holes || [])) { if (_pointInPoly(p, h) && _distToPoly(p, h) >= tol) { deepInHole = true; break; } }
+        if (!deepInHole) return true;
+      } else if (_distToPoly(p, r.outer) < tol) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const bridgeDetect = s.bridgeDetect !== false;
+  const overhangDetect = s.overhangDetect !== false;
+
   // Pass 2 — walls + shells + infill (+ supports) per layer, as typed
   // paths so the preview can colour each feature like a desktop slicer.
   const layers = [];
@@ -381,6 +426,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const combN = Math.max(1, s.infillCombination | 0);
     const doSparse = (i % combN) === 0;
     const sparseFlow = combN;
+    // Layer below — bottom skin over air (bridge) and overhang walls reference it.
+    const below = i > 0 ? layerRegions[i - 1] : null;
+    const segMidUnsupported = (sg) => !supportedBy((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, below, lw * 0.75);
+    const wallOverhangFrac = (pts) => { if (!(overhangDetect && below)) return 0; let un = 0; for (const p of pts) if (!supportedBy(p[0], p[1], below, lw)) un++; return pts.length ? un / pts.length : 0; };
+    // Push solid segments, splitting bottom-over-air lines out as bridges
+    // (their own flow + speed + cooling).
+    const pushSolid = (segs) => {
+      for (const sg of segs) {
+        if (bridgeDetect && below && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
+        else fills.push({ feature: 'solid', closed: false, pts: sg });
+      }
+    };
 
     for (const region of regions) {
       // Elephant-foot compensation: pull the first layer's outer wall in a
@@ -406,6 +463,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         if (!inner || inner.length < 3) break;
         mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(inner, seam) });
       }
+      // Overhang perimeters: flag walls that jut out over air so they print
+      // slower with more cooling.
+      if (overhangDetect && below) for (const w of mainWalls) if (wallOverhangFrac(w.pts) > (s.overhangThreshold ?? 0.5)) w.overhang = true;
       // Wall print order: inner-first (better dimensional accuracy) or
       // outer-first (better surface). OrcaSlicer's wall_infill_order.
       if (s.wallOrder === 'inner-outer' && mainWalls.length > 1) walls.push(...mainWalls.slice(1), mainWalls[0]);
@@ -444,7 +504,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
           else if (globalSolid) {
-            for (const sg of solidInfill(infRegion, baseAngle, lw)) fills.push({ feature: 'solid', closed: false, pts: sg });
+            pushSolid(solidInfill(infRegion, baseAngle, lw));
           } else if (doSparse) {
             const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
@@ -452,7 +512,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
           const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
-          for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
+          pushSolid(solidSegs);
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse) {
             const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));

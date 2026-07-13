@@ -21,12 +21,13 @@ const FEATURE_COLOR: Record<Feature, number> = {
   skirt: 0x9aa4b2,
   brim: 0x9aa4b2,
   ironing: 0xc084fc,
+  bridge: 0x22b8cf,
 };
 const FEATURE_LABEL: Record<Feature, string> = {
   'outer-wall': 'Outer wall', 'inner-wall': 'Inner wall', wall: 'Wall',
-  solid: 'Top/bottom', sparse: 'Infill', support: 'Support', skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing',
+  solid: 'Top/bottom', sparse: 'Infill', support: 'Support', skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing', bridge: 'Bridge',
 };
-const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wall'];
+const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wall'];
 
 /**
  * G-code toolpath preview: renders extrusion moves layer-by-layer, coloured

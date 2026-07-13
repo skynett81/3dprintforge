@@ -87,3 +87,32 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
     assert.notEqual(withWipe.gcode, noWipe.gcode);
   });
 });
+
+describe('native-slicer: overhang and bridge detection', () => {
+  it('flags overhang walls on a steep inverted cone but not on a vertical box', async () => {
+    const cone = (await import('../../server/mesh-primitives.js')).cone;
+    const steep = await import('../../server/native-slicer.js').then((m) => m.sliceMeshToLayers(cone(2, 30, 12, 48), { layerHeight: 0.3 }));
+    let coneOverhang = 0;
+    for (const L of steep.layers) for (const p of L.paths) if (p.overhang) coneOverhang++;
+    assert.ok(coneOverhang > 0, 'steep overhang cone should flag overhang walls');
+
+    const boxL = await import('../../server/native-slicer.js').then((m) => m.sliceMeshToLayers(box(20, 20, 6), { layerHeight: 0.3 }));
+    let boxOverhang = 0;
+    for (const L of boxL.layers) for (const p of L.paths) if (p.overhang) boxOverhang++;
+    assert.equal(boxOverhang, 0, 'vertical walls must not be flagged as overhangs');
+  });
+
+  it('applies overhang speed + fan boost in the g-code', async () => {
+    const cone = (await import('../../server/mesh-primitives.js')).cone;
+    const r = await sliceMeshToGcode(cone(2, 30, 12, 48), { overhangSpeed: 25, overhangFanSpeed: 100, fanSpeed: 50, outerWallSpeed: 120, layerHeight: 0.3 });
+    assert.match(r.gcode, / F1500\b/);     // 25 mm/s overhang moves
+    assert.match(r.gcode, /M106 S255/);    // 100% fan boost over overhangs
+  });
+
+  it('detects bottom-over-air skin as bridges', async () => {
+    const { box: b, unionMeshes, offset } = await import('../../server/mesh-primitives.js');
+    const bridge = unionMeshes([offset(b(6, 6, 12), -14, 0, 0), offset(b(6, 6, 12), 14, 0, 0), offset(b(40, 6, 3), 0, 0, 7.5)]);
+    const r = await sliceMeshToGcode(bridge, { bridgeFlow: 0.7, bridgeSpeed: 20, layerHeight: 0.3 });
+    assert.match(r.gcode, /FEATURE:bridge/);
+  });
+});

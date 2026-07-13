@@ -113,4 +113,13 @@ describe('buildNativeSettings', () => {
     assert.equal(n.endGcode, '; bye');
     assert.equal(n.layerChangeGcode, '; L[layer_num]');
   });
+
+  test('maps bridge and overhang keys', () => {
+    const n = buildNativeSettings({ bridge_speed: 20, bridge_flow: 0.7, overhang_speed: 25, overhang_fan_speed: 100, detect_overhang_wall: true });
+    assert.equal(n.bridgeSpeed, 20);
+    assert.equal(n.bridgeFlow, 0.7);
+    assert.equal(n.overhangSpeed, 25);
+    assert.equal(n.overhangFanSpeed, 100);
+    assert.equal(n.overhangDetect, true);
+  });
 });
