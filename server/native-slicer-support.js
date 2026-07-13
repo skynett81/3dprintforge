@@ -162,6 +162,31 @@ export function generateSupports(layerRegions, opts = {}) {
     }
   }
 
+  // Remove small overhangs: drop support islands smaller than a minimum area
+  // (flood-fill connected components per layer), so tiny overhangs that don't
+  // really need support aren't cluttered with fiddly little columns.
+  const minArea = opts.removeSmallOverhangs ? (opts.minOverhangArea ?? 3) : 0;   // mm²
+  if (minArea > 0) {
+    const minCells = Math.max(1, Math.round(minArea / (gridRes * gridRes)));
+    for (let i = 0; i < n; i++) {
+      const s = support[i]; if (!s) continue;
+      const seen = new Uint8Array(cols * rows);
+      for (let idx = 0; idx < s.length; idx++) {
+        if (!s[idx] || seen[idx]) continue;
+        const stack = [idx], comp = []; seen[idx] = 1;
+        while (stack.length) {
+          const cur = stack.pop(); comp.push(cur);
+          const r = (cur / cols) | 0, c = cur % cols;
+          if (c + 1 < cols && s[cur + 1] && !seen[cur + 1]) { seen[cur + 1] = 1; stack.push(cur + 1); }
+          if (c > 0 && s[cur - 1] && !seen[cur - 1]) { seen[cur - 1] = 1; stack.push(cur - 1); }
+          if (r + 1 < rows && s[cur + cols] && !seen[cur + cols]) { seen[cur + cols] = 1; stack.push(cur + cols); }
+          if (r > 0 && s[cur - cols] && !seen[cur - cols]) { seen[cur - cols] = 1; stack.push(cur - cols); }
+        }
+        if (comp.length < minCells) for (const ci of comp) s[ci] = 0;
+      }
+    }
+  }
+
   // Support on build plate only: drop any column that would rest on the model
   // (i.e. has model somewhere below it) rather than reaching the bed.
   if (opts.onPlateOnly) {

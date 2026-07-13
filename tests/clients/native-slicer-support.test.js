@@ -69,6 +69,16 @@ describe('native-slicer: generateSupports', () => {
     assert.ok(closedCount(walled[5]) > 0, 'wallCount adds closed loops');
   });
 
+  it('remove small overhangs drops tiny support islands', () => {
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }, { outer: SQUARE(2, 60, 60), holes: [] }]);
+    const off = generateSupports(layers, { gridRes: 2, removeSmallOverhangs: false, zGapLayers: 0, xyGap: 0 });
+    const on = generateSupports(layers, { gridRes: 2, removeSmallOverhangs: true, minOverhangArea: 10, zGapLayers: 0, xyGap: 0 });
+    const cnt = (f) => f.slice(0, 10).reduce((a, seg) => a + seg.length, 0);
+    assert.ok(cnt(on) < cnt(off), 'the tiny 4mm² nub loses its support');
+  });
+
   it('interface layers under the overhang are denser than deep support', () => {
     const layers = [];
     for (let i = 0; i < 10; i++) layers.push([]);

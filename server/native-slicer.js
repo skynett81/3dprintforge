@@ -452,6 +452,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     supportSegs = generateSupports(layerRegions, {
       lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
       layerHeight, thresholdAngle: s.supportThreshold ?? 40, wallCount: s.supportWallCount ?? 0,
+      removeSmallOverhangs: !!s.supportRemoveSmall, minOverhangArea: s.supportMinArea ?? 3,
+      // Top Z distance in mm overrides the layer-count gap when provided.
+      ...(s.supportTopZDist != null ? { zGapLayers: Math.max(0, Math.round(s.supportTopZDist / layerHeight)) } : {}),
     });
   }
 

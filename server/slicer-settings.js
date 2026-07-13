@@ -120,6 +120,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   const supDens = num(s.support_base_density ?? s.support_density);
   if (supDens !== undefined) out.supportDensity = supDens > 1 ? supDens / 100 : supDens;
   set('supportWallCount', num(s.support_wall_count));
+  if (s.support_remove_small_overhangs !== undefined && s.support_remove_small_overhangs !== '') out.supportRemoveSmall = !!s.support_remove_small_overhangs;
+  set('supportMinArea', num(s.support_min_overhang_area));
+  set('supportTopZDist', num(s.support_top_z_distance));
   // Per-feature line widths.
   set('outerWallLineWidth', num(s.outer_wall_line_width));
   set('innerWallLineWidth', num(s.inner_wall_line_width));
