@@ -546,7 +546,7 @@ export function SlicerPanel() {
               <GcodePreview gcode={preview.gcode} bed={bed} />
             </Suspense>
           )}
-          {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} />}
+          {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
           {tab === 'filaments' && <SlicerFilaments spools={spools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
           {tab === 'calibration' && <SlicerCalibration onPreview={(r) => setPreview({ gcode: r.gcode, layers: 0, timeSec: r.timeSec, filamentG: r.filamentG, wasteG: 0, durationMs: 0 })} />}
           {!file && tab === 'prepare' && (

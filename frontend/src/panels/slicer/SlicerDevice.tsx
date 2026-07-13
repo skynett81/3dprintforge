@@ -16,13 +16,13 @@ function pick(live: Live, ...keys: string[]): number | null {
   return null;
 }
 
-interface Props { printer: SlicerPrinter | undefined; live: Live | undefined; }
+interface Props { printer: SlicerPrinter | undefined; live: Live | undefined; printers?: SlicerPrinter[]; onSelect?: (id: string) => void; }
 
 /** Bambu-Studio-style Device tab: live camera, temps, motion, extruder,
  *  filament load/unload and print control for the selected printer. Motion,
  *  temperature and extrusion are Klipper/Moonraker (e.g. Snapmaker U1); Bambu
  *  printers get print control, fan and light (the server enforces this). */
-export function SlicerDevice({ printer, live }: Props) {
+export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
   const t = useT();
   const toast = useToast();
   const [step, setStep] = useState(10);
@@ -72,7 +72,12 @@ export function SlicerDevice({ printer, live }: Props) {
         {/* Control column */}
         <div className="oslice-devctl">
           <div className="oslice-devsec">
-            <div className="oslice-devsec-h">{printer.name} · {state || (printing ? 'PRINTING' : 'IDLE')}</div>
+            <div className="oslice-devsec-h" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {printers && printers.length > 1
+                ? <select className="oset-input" style={{ maxWidth: 160, textTransform: 'none' }} value={printer.id} onChange={(e) => onSelect?.(e.target.value)}>{printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                : <span>{printer.name}</span>}
+              <span style={{ color: printing ? 'var(--o-accent)' : 'var(--o-muted)' }}>{state || (printing ? 'PRINTING' : 'IDLE')}</span>
+            </div>
             <div className="oslice-devtemps">
               <span><b>{t('v2.dev.nozzle', 'Nozzle')}</b> {T(nozzle, nozzleT)}</span>
               <span><b>{t('v2.dev.bed', 'Bed')}</b> {T(bed, bedT)}</span>
