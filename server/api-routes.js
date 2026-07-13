@@ -6082,6 +6082,7 @@ export async function handleApiRequest(req, res) {
       // Connected printers with slicer-relevant info (build volume) so the
       // web slicer can pick a target and size its bed accordingly.
       const { getCapabilities } = await import('./printer-capabilities.js');
+      const { getExtruderSlots } = await import('./db/printers.js');
       const normHex = (c) => '#' + String(c).replace(/^#/, '').slice(0, 6).toUpperCase();
       const normMat = (m) => String(m || 'PLA').split(/[\s/_-]/)[0] || 'PLA';
       const list = [];
@@ -6099,8 +6100,19 @@ export async function handleApiRequest(req, res) {
             }))
           : [];
         // Toolchangers / multi-extruder printers (e.g. Snapmaker U1) have no live
-        // AMS feed — fall back to colours from spools assigned to their tools.
+        // AMS feed — fall back to the per-tool colours stored for the printer,
+        // then to colours from spools assigned to their tools.
         let source = ams.length ? 'ams' : null;
+        if (!ams.length) {
+          try {
+            const slots = getExtruderSlots(id) || [];
+            const bySlot = slots
+              .filter((s) => s.color_hex)
+              .sort((a, b) => Number(a.slot_index) - Number(b.slot_index))
+              .map((s) => ({ slot: Number(s.slot_index) + 1, color: normHex(s.color_hex), material: normMat(s.filament_type) }));
+            if (bySlot.length) { ams = bySlot; source = 'slots'; }
+          } catch { /* extruder slots optional */ }
+        }
         if (!ams.length) {
           try {
             const spools = getSpools({ printer_id: id, archived: 0 }).rows || [];

@@ -276,7 +276,7 @@ export interface SlicerPrinter {
   colorSlots?: number;
   multiTool?: boolean;
   ams?: { slot: number; color: string; material: string }[];
-  amsSource?: 'ams' | 'spools' | null;
+  amsSource?: 'ams' | 'slots' | 'spools' | null;
 }
 
 
