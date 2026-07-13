@@ -48,8 +48,9 @@ export function SlicerPanel() {
   const [settings, setSettings] = useState<SliceSettings>({
     material: 'PLA', nozzle_temp: 210, bed_temp: 60,
     layer_height: 0.2, initial_layer_height: 0.24, wall_loops: 2, top_layers: 4, bottom_layers: 4,
-    infill_density: 15, infill_pattern: 'grid', skirt_loops: 1,
-    outer_wall_speed: 120, inner_wall_speed: 150, infill_speed: 180, travel_speed: 250,
+    infill_density: 15, infill_pattern: 'grid', infill_direction: 45, skirt_loops: 1, skirt_distance: 3, elephant_foot: 0,
+    outer_wall_speed: 120, inner_wall_speed: 150, sparse_infill_speed: 180, internal_solid_infill_speed: 140,
+    support_speed: 80, initial_layer_speed: 30, ironing_speed: 20, travel_speed: 250, seam_position: 'aligned',
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');

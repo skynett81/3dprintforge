@@ -34,6 +34,26 @@ const FILAMENT_DIAM = 1.75;
 // Re-export the geometry primitives so existing importers/tests keep working.
 export { sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, buildRegions };
 
+/**
+ * Rotate a closed wall loop so it starts at the chosen seam vertex, so the
+ * seam lands consistently (aligned/back) or scattered (random). 'nearest'
+ * (default) leaves the loop as-is.
+ */
+export function seamStart(poly, mode) {
+  if (!poly || poly.length < 3) return poly;
+  let idx = -1;
+  if (mode === 'back' || mode === 'rear' || mode === 'aligned') {
+    let best = -Infinity;
+    for (let i = 0; i < poly.length; i++) if (poly[i][1] > best) { best = poly[i][1]; idx = i; }
+  } else if (mode === 'random') {
+    // Deterministic pseudo-random by the loop's own geometry (no Math.random).
+    const seed = Math.abs(Math.round((poly[0][0] + poly[1][1]) * 131) + poly.length * 977);
+    idx = seed % poly.length;
+  }
+  if (idx <= 0) return poly;
+  return poly.slice(idx).concat(poly.slice(0, idx));
+}
+
 // ── G-code emission ─────────────────────────────────────────────────
 
 function _defaultStart(s) {
@@ -77,6 +97,20 @@ export function layersToGcode(layers, settings) {
     startGcode: null, endGcode: null,
     ...settings,
   };
+  // Per-feature speeds (mm/s) — like a desktop slicer. Fall back to printSpeed.
+  const P = s.printSpeed;
+  const SP = {
+    'outer-wall': s.outerWallSpeed ?? P,
+    'inner-wall': s.innerWallSpeed ?? (s.outerWallSpeed ? s.outerWallSpeed * 1.4 : P),
+    solid: s.solidInfillSpeed ?? P,
+    sparse: s.sparseInfillSpeed ?? P,
+    support: s.supportSpeed ?? P,
+    ironing: s.ironingSpeed ?? Math.max(15, P * 0.4),
+    skirt: s.outerWallSpeed ?? P,
+    brim: s.outerWallSpeed ?? P,
+    wall: P,
+  };
+  const featSpeed = (feature, layerIdx) => (layerIdx === 0 ? s.firstLayerSpeed : (SP[feature] ?? P));
   // Extrusion factor: volume of a 1 mm path = lineWidth * layerHeight,
   // E (mm filament) = volume / (π · (filamentDiam/2)²).
   const efactor = (s.lineWidth * s.layerHeight) / (PI * (s.filamentDiam / 2) ** 2);
@@ -148,7 +182,6 @@ export function layersToGcode(layers, settings) {
 
   layers.forEach((layer, layerIdx) => {
     const z = (layerIdx + 1) * s.layerHeight;
-    const speed = layerIdx === 0 ? s.firstLayerSpeed : s.printSpeed;
     const paths = layer.paths || [
       ...(layer.perimeters || []).map((p) => ({ feature: 'wall', closed: true, pts: p })),
       ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
@@ -162,9 +195,8 @@ export function layersToGcode(layers, settings) {
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
-      if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, speed); continue; }
-      // Ironing runs at the print speed but scaled down for a fine finish.
-      const pspeed = path.feature === 'ironing' ? Math.max(20, speed * 0.4) : speed;
+      const pspeed = featSpeed(path.feature, layerIdx);
+      if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
       emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1);
     }
   });
@@ -223,7 +255,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
   if (s.supports) {
     const { generateSupports } = await import('./native-slicer-support.js');
     supportSegs = generateSupports(layerRegions, {
-      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface,
+      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
     });
   }
 
@@ -259,22 +291,23 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
         continue;
       }
       // Outer walls: shrink inward wall-by-wall (negative = inward).
+      const seam = s.seamPosition;
       let inner = outerBoundary;
-      walls.push({ feature: 'outer-wall', closed: true, pts: inner });
+      walls.push({ feature: 'outer-wall', closed: true, pts: seamStart(inner, seam) });
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
-        walls.push({ feature: 'inner-wall', closed: true, pts: inner });
+        walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(inner, seam) });
       }
       // Hole walls: grow each hole outward into the solid.
       const grownHoles = [];
       for (const hole of region.holes) {
         let hw = hole;
-        walls.push({ feature: 'inner-wall', closed: true, pts: hw });
+        walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(hw, seam) });
         for (let p = 1; p < wallLoops; p++) {
           hw = offsetPolygon(hw, lw);
           if (!hw || hw.length < 3) break;
-          walls.push({ feature: 'inner-wall', closed: true, pts: hw });
+          walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(hw, seam) });
         }
         grownHoles.push(hw);
       }

@@ -128,6 +128,19 @@ export function generateSupports(layerRegions, opts = {}) {
     }
   }
 
+  // Support on build plate only: drop any column that would rest on the model
+  // (i.e. has model somewhere below it) rather than reaching the bed.
+  if (opts.onPlateOnly) {
+    const modelBelow = new Uint8Array(cols * rows);
+    for (let i = 0; i < n; i++) {
+      const s = support[i], here = model[i];
+      for (let idx = 0; idx < s.length; idx++) {
+        if (modelBelow[idx] && s[idx]) s[idx] = 0;
+        if (here[idx]) modelBelow[idx] = 1;
+      }
+    }
+  }
+
   // Interface cells: the top `interfaceLayers` of each column, just below
   // the Z-gap under the overhang. Filled solid for a smoother underside.
   const interfaceLayers = Math.max(0, Math.round(opts.interfaceLayers ?? 2));

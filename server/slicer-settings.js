@@ -77,14 +77,27 @@ export function buildNativeSettings(s = {}, base = {}) {
 
   set('brimWidth', num(s.brim_width));
   set('skirtLoops', num(s.skirt_loops));
+  set('skirtGap', num(s.skirt_distance));
+  set('infillAngle', num(s.infill_direction));
+  set('raftLayers', num(s.raft_layers));
   if (s.supports !== undefined && s.supports !== '') out.supports = !!s.supports;
   if (s.ironing !== undefined && s.ironing !== '') out.ironing = !!s.ironing;
   if (s.spiral_mode !== undefined && s.spiral_mode !== '') out.spiralMode = !!s.spiral_mode;
   set('elephantFoot', num(s.elephant_foot));
 
-  const wallSpeed = num(s.outer_wall_speed) ?? num(s.inner_wall_speed);
-  set('printSpeed', wallSpeed);
+  // Per-feature speeds.
+  set('outerWallSpeed', num(s.outer_wall_speed));
+  set('innerWallSpeed', num(s.inner_wall_speed));
+  set('sparseInfillSpeed', num(s.sparse_infill_speed) ?? num(s.infill_speed));
+  set('solidInfillSpeed', num(s.internal_solid_infill_speed) ?? num(s.solid_infill_speed));
+  set('supportSpeed', num(s.support_speed));
+  set('ironingSpeed', num(s.ironing_speed));
   set('travelSpeed', num(s.travel_speed));
+  set('firstLayerSpeed', num(s.initial_layer_speed) ?? num(s.first_layer_speed));
+  const anyWall = num(s.outer_wall_speed) ?? num(s.inner_wall_speed);
+  if (anyWall !== undefined) set('printSpeed', anyWall);
+  if (s.seam_position) out.seamPosition = String(s.seam_position);
+  if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   if (s.material) out.material = String(s.material);

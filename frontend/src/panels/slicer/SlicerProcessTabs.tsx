@@ -9,7 +9,7 @@ const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 
 
 type Field =
   | { tab: string; group: string; k: string; label: string; type: 'num'; unit?: string; step?: number; dep?: string }
-  | { tab: string; group: string; k: string; label: string; type: 'bool' }
+  | { tab: string; group: string; k: string; label: string; type: 'bool'; dep?: string }
   | { tab: string; group: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
 
 const TABS = ['Quality', 'Strength', 'Speed', 'Support', 'Others'] as const;
@@ -25,16 +25,24 @@ const FIELDS: Field[] = [
   { tab: 'Strength', group: 'Top/bottom shells', k: 'bottom_layers', label: 'Bottom shell layers', type: 'num', step: 1 },
   { tab: 'Strength', group: 'Infill', k: 'infill_density', label: 'Sparse infill density', type: 'num', unit: '%', step: 5 },
   { tab: 'Strength', group: 'Infill', k: 'infill_pattern', label: 'Sparse infill pattern', type: 'sel', opts: INFILL_PATTERNS },
-  { tab: 'Speed', group: 'Walls', k: 'outer_wall_speed', label: 'Outer wall speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', group: 'Walls', k: 'inner_wall_speed', label: 'Inner wall speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', group: 'Infill', k: 'infill_speed', label: 'Sparse infill speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', group: 'Travel', k: 'travel_speed', label: 'Travel speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Strength', group: 'Infill', k: 'infill_direction', label: 'Infill direction', type: 'num', unit: '°', step: 5 },
+  { tab: 'Speed', group: 'Walls', k: 'outer_wall_speed', label: 'Outer wall', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Walls', k: 'inner_wall_speed', label: 'Inner wall', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Infill', k: 'sparse_infill_speed', label: 'Sparse infill', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Infill', k: 'internal_solid_infill_speed', label: 'Solid infill', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Support', k: 'support_speed', label: 'Support', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Other', k: 'initial_layer_speed', label: 'Initial layer', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Other', k: 'ironing_speed', label: 'Ironing', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Other', k: 'travel_speed', label: 'Travel', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Support', group: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
   { tab: 'Support', group: 'Support', k: 'support_type', label: 'Type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle', type: 'num', unit: '°', step: 1, dep: 'supports' },
+  { tab: 'Support', group: 'Support', k: 'support_on_plate', label: 'On build plate only', type: 'bool', dep: 'supports' },
+  { tab: 'Others', group: 'Seam', k: 'seam_position', label: 'Seam position', type: 'sel', opts: [['nearest', 'Nearest'], ['aligned', 'Aligned'], ['back', 'Rear'], ['random', 'Random']] },
   { tab: 'Others', group: 'Adhesion', k: 'brim_type', label: 'Brim type', type: 'sel', opts: BRIM_TYPES },
   { tab: 'Others', group: 'Adhesion', k: 'brim_width', label: 'Brim width', type: 'num', unit: 'mm', step: 0.5 },
   { tab: 'Others', group: 'Adhesion', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
+  { tab: 'Others', group: 'Adhesion', k: 'skirt_distance', label: 'Skirt distance', type: 'num', unit: 'mm', step: 0.5 },
   { tab: 'Others', group: 'Adhesion', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
 ];
 
