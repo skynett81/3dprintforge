@@ -61,11 +61,12 @@ export function SlicerDevice({ printer, live }: Props) {
   return (
     <div className="oslice-devwrap">
       <div className="oslice-devgrid">
-        {/* Camera */}
+        {/* Camera (MJPEG); a placeholder shows through when there is no feed. */}
         <div className="oslice-devcam">
+          <span className="oslice-devcam-ph">{t('v2.dev.nocam', 'No camera feed')}</span>
           <img src={`/api/printers/${encodeURIComponent(id)}/stream.mjpeg`} alt="camera"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', borderRadius: 8 }} />
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+            style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain', borderRadius: 8 }} />
         </div>
 
         {/* Control column */}

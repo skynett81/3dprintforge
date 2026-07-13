@@ -561,16 +561,19 @@ export function SlicerPanel() {
             </div>
           )}
 
-          <div className="oslice-axis" aria-hidden>
-            <svg viewBox="0 0 40 40" width="48" height="48">
-              <line x1="12" y1="28" x2="30" y2="28" stroke="#e0603a" strokeWidth="2" /><text x="31" y="31" fill="#e0603a" fontSize="8">X</text>
-              <line x1="12" y1="28" x2="20" y2="14" stroke="#37a66b" strokeWidth="2" /><text x="21" y="13" fill="#37a66b" fontSize="8">Y</text>
-              <line x1="12" y1="28" x2="12" y2="8" stroke="#3d8bd8" strokeWidth="2" /><text x="6" y="9" fill="#3d8bd8" fontSize="8">Z</text>
-            </svg>
-          </div>
-          {/* Static plate label overlays (readable, never mirror) */}
-          <div className="oslice-platename" aria-hidden>3DPrintForge Textured PEI Plate · {bed}×{bed}</div>
-          <div className="oslice-plateno" aria-hidden>01</div>
+          {/* Plate overlays (axis gizmo, plate label + number) belong to the
+              3D plate views only — hide them on Device / Filaments / Calibration. */}
+          {(tab === 'prepare' || tab === 'preview') && (<>
+            <div className="oslice-axis" aria-hidden>
+              <svg viewBox="0 0 40 40" width="48" height="48">
+                <line x1="12" y1="28" x2="30" y2="28" stroke="#e0603a" strokeWidth="2" /><text x="31" y="31" fill="#e0603a" fontSize="8">X</text>
+                <line x1="12" y1="28" x2="20" y2="14" stroke="#37a66b" strokeWidth="2" /><text x="21" y="13" fill="#37a66b" fontSize="8">Y</text>
+                <line x1="12" y1="28" x2="12" y2="8" stroke="#3d8bd8" strokeWidth="2" /><text x="6" y="9" fill="#3d8bd8" fontSize="8">Z</text>
+              </svg>
+            </div>
+            <div className="oslice-platename" aria-hidden>3DPrintForge Textured PEI Plate · {bed}×{bed}</div>
+            <div className="oslice-plateno" aria-hidden>01</div>
+          </>)}
         </div>
       </div>
 

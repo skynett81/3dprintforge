@@ -1275,3 +1275,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-amsslot-cart { cursor: pointer; font: inherit; text-align: center; }
 .oslice-amsslot-cart--on { border-color: var(--o-accent); box-shadow: 0 0 0 1px var(--o-accent); }
 .oslice-amsslot-tab--on { border-color: var(--o-accent); color: var(--o-accent); }
+
+/* Device camera placeholder */
+.oslice-devcam { position: relative; }
+.oslice-devcam-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; }
