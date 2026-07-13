@@ -88,6 +88,21 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: shell thickness and infill/wall overlap', () => {
+  it('top/bottom shell thickness (mm) raises the solid layer counts', async () => {
+    const { sliceMeshToLayers } = await import('../../server/native-slicer.js');
+    const { s } = await sliceMeshToLayers(box(20, 20, 8), { layerHeight: 0.2, topLayers: 4, bottomLayers: 4, topShellThickness: 1.2, bottomShellThickness: 0.8 });
+    assert.equal(s.topLayers, 6);       // ceil(1.2/0.2)
+    assert.equal(s.bottomLayers, 4);    // ceil(0.8/0.2)=4, not below configured
+  });
+
+  it('infill/wall overlap changes the sliced output', async () => {
+    const a = await sliceMeshToGcode(box(30, 30, 4), { infillWallOverlap: 0, infillDensity: 0.2 });
+    const b = await sliceMeshToGcode(box(30, 30, 4), { infillWallOverlap: 0.4, infillDensity: 0.2 });
+    assert.notEqual(a.gcode, b.gcode);
+  });
+});
+
 describe('native-slicer: real infill patterns', () => {
   it('gyroid / honeycomb / cubic all produce sparse infill', async () => {
     for (const pattern of ['gyroid', 'honeycomb', 'cubic']) {

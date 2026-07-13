@@ -358,6 +358,11 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const layerHeight = s.layerHeight;
   const numLayers = opts.numLayers || Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
 
+  // Top/bottom shell thickness (mm) overrides the layer counts when it implies
+  // more shells than the configured counts (matches OrcaSlicer's *_shell_thickness).
+  if (s.topShellThickness > 0) s.topLayers = Math.max(s.topLayers, Math.ceil(s.topShellThickness / layerHeight));
+  if (s.bottomShellThickness > 0) s.bottomLayers = Math.max(s.bottomLayers, Math.ceil(s.bottomShellThickness / layerHeight));
+
   // Pass 1 — slice every layer into regions (needed up-front for supports).
   const layerRegions = [];
   for (let i = 0; i < numLayers; i++) {
@@ -483,9 +488,12 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         }
         grownHoles.push(hw);
       }
-      // Infill region = innermost outer wall shrunk half a line, holes grown half a line.
-      const infOuter = offsetPolygon(inner, -lw * 0.5);
-      const infHoles = grownHoles.map(h => offsetPolygon(h, lw * 0.5)).filter(h => h && h.length >= 3);
+      // Infill region = innermost outer wall shrunk by the infill/wall gap,
+      // holes grown by the same. `infillWallOverlap` (0..0.5 of a line width)
+      // closes that gap so infill bonds to the walls instead of leaving a void.
+      const infGap = lw * Math.max(0, 0.5 - (s.infillWallOverlap ?? 0));
+      const infOuter = offsetPolygon(inner, -infGap);
+      const infHoles = grownHoles.map(h => offsetPolygon(h, infGap)).filter(h => h && h.length >= 3);
       if (infOuter && infOuter.length >= 3) {
         const infRegion = { outer: infOuter, holes: infHoles };
         const baseAngle = s.infillAngle + (i % 2) * 90;
@@ -521,9 +529,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         }
         // Ironing: a fine, low-flow pass over the true top skin to smooth it.
+        // Direction and line spacing are configurable (ironing_direction /
+        // ironing_spacing); default is a 45° cross-hatch at half a line width.
         if (s.ironing && surfaces) {
-          const ironAngle = s.infillAngle + 45 + (i % 2) * 90;
-          const ironSegs = regionInfill(infRegion, 1.0, ironAngle, lw * (s.ironingSpacingFactor ?? 0.5))
+          const ironBase = s.ironingDirection != null ? s.ironingDirection : s.infillAngle + 45;
+          const ironAngle = ironBase + (i % 2) * 90;
+          const ironSpacing = s.ironingSpacing != null ? s.ironingSpacing : lw * (s.ironingSpacingFactor ?? 0.5);
+          const ironSegs = regionInfill(infRegion, 1.0, ironAngle, ironSpacing)
             .filter((sg) => surfaces.isTopPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
           for (const sg of ironSegs) fills.push({ feature: 'ironing', closed: false, pts: sg, flow: s.ironingFlow ?? 0.15 });
         }

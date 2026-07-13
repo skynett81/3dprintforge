@@ -125,6 +125,16 @@ describe('buildNativeSettings', () => {
     assert.equal(n.overhangDetect, true);
   });
 
+  test('maps ironing, infill/wall overlap and shell thickness keys', () => {
+    const n = buildNativeSettings({ ironing_flow: 12, ironing_spacing: 0.15, ironing_direction: 90, infill_wall_overlap: 25, top_shell_thickness: 1.2, bottom_shell_thickness: 0.8 });
+    assert.equal(n.ironingFlow, 0.12);          // % → fraction
+    assert.equal(n.ironingSpacing, 0.15);
+    assert.equal(n.ironingDirection, 90);
+    assert.equal(n.infillWallOverlap, 0.25);    // % → fraction
+    assert.equal(n.topShellThickness, 1.2);
+    assert.equal(n.bottomShellThickness, 0.8);
+  });
+
   test('maps support tuning keys', () => {
     const n = buildNativeSettings({ support_threshold: 40, support_base_density: 25, support_interface_top_layers: 3, support_z_gap_layers: 2, support_object_xy_distance: 0.6 });
     assert.equal(n.supportThreshold, 40);

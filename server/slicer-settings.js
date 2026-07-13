@@ -127,7 +127,17 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Retraction / travel.
   set('retraction', num(s.retraction_length));
   set('zHop', num(s.z_hop));
-  set('ironingFlow', num(s.ironing_flow));
+  // Ironing (top-surface smoothing pass).
+  const ifl = num(s.ironing_flow);
+  if (ifl !== undefined) out.ironingFlow = ifl > 1 ? ifl / 100 : ifl;
+  set('ironingSpacing', num(s.ironing_spacing));
+  set('ironingDirection', num(s.ironing_direction));
+  // Infill / wall overlap (fraction of a line width the infill grows toward walls).
+  const iov = num(s.infill_wall_overlap);
+  if (iov !== undefined) out.infillWallOverlap = iov > 1 ? iov / 100 : iov;
+  // Top / bottom shell thickness (mm) — the pipeline converts to layer counts.
+  set('topShellThickness', num(s.top_shell_thickness));
+  set('bottomShellThickness', num(s.bottom_shell_thickness));
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   // Initial-layer temperatures and part-cooling fan — critical per material.
