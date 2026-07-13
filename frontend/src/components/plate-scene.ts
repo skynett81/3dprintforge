@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /** A subtle top→bottom dark gradient for the 3D scene background, like the
  *  studio look of Bambu Studio / OrcaSlicer. */
-export function gradientBackground(top = '#24282f', bottom = '#0c0e12'): THREE.Texture {
+export function gradientBackground(top = '#4a4e54', bottom = '#26282c'): THREE.Texture {
   const c = document.createElement('canvas');
   c.width = 2; c.height = 512;
   const g = c.getContext('2d')!;
@@ -16,24 +16,77 @@ export function gradientBackground(top = '#24282f', bottom = '#0c0e12'): THREE.T
   return tex;
 }
 
-/** Build a desktop-slicer build plate: a dark filled bed, an accent border
- *  frame, and a fine grid. Z-up, centred at the origin. */
-export function buildPlate(scene: THREE.Scene, bed: number, accent = 0x00b3a4) {
+/** Build a realistic textured PEI build plate baked into a canvas texture,
+ *  mirroring Bambu Studio: dark bed, fine grid, edge branding and a plate
+ *  number. Z-up, centred at the origin. */
+function plateTexture(bed: number, accentCss: string): THREE.Texture {
+  const size = 1024;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  // Bed base.
+  g.fillStyle = '#191b1f';
+  g.fillRect(0, 0, size, size);
+  const inset = 6;
+  g.fillStyle = '#212429';
+  g.fillRect(inset, inset, size - inset * 2, size - inset * 2);
+
+  // Fine grid every 10 mm, heavier every 50 mm.
+  const cells = Math.max(8, Math.round(bed / 10));
+  for (let i = 0; i <= cells; i++) {
+    const p = inset + (i / cells) * (size - inset * 2);
+    const heavy = i % 5 === 0;
+    g.strokeStyle = heavy ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.05)';
+    g.lineWidth = heavy ? 1.5 : 1;
+    g.beginPath(); g.moveTo(p, inset); g.lineTo(p, size - inset);
+    g.moveTo(inset, p); g.lineTo(size - inset, p); g.stroke();
+  }
+
+  // Left-edge vertical branding (flipY=false → draw upright).
+  g.save();
+  g.translate(size * 0.055, size * 0.5);
+  g.rotate(-Math.PI / 2);
+  g.fillStyle = 'rgba(255,255,255,0.16)';
+  g.font = '600 26px "Segoe UI", system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('3DPrintForge Textured PEI Plate', 0, 0);
+  g.restore();
+
+  // Plate number, front-right.
+  g.fillStyle = accentCss;
+  g.font = '700 52px "Segoe UI", system-ui, sans-serif';
+  g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+  g.fillText('01', size - 28, size - 26);
+
+  // Front material strip.
+  g.fillStyle = 'rgba(255,255,255,0.5)';
+  g.font = '600 20px "Segoe UI", system-ui, sans-serif';
+  g.textAlign = 'left'; g.textBaseline = 'bottom';
+  g.fillText('PLA / PETG / ABS', size * 0.30, size - 20);
+  g.textAlign = 'right';
+  g.fillText('HOT SURFACE', size * 0.66, size - 20);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** Add the build plate + a soft drop shadow under it. */
+export function buildPlate(scene: THREE.Scene, bed: number, accent = 0x2ecc71) {
+  const accentCss = '#' + accent.toString(16).padStart(6, '0');
   const plate = new THREE.Mesh(
     new THREE.PlaneGeometry(bed, bed),
-    new THREE.MeshBasicMaterial({ color: 0x15181d }),
+    new THREE.MeshBasicMaterial({ map: plateTexture(bed, accentCss) }),
   );
-  plate.position.z = -0.05;
+  plate.position.z = -0.04;
   scene.add(plate);
 
+  // Accent edge frame.
   const border = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.PlaneGeometry(bed, bed)),
-    new THREE.LineBasicMaterial({ color: accent, transparent: true, opacity: 0.75 }),
+    new THREE.LineBasicMaterial({ color: accent, transparent: true, opacity: 0.55 }),
   );
   scene.add(border);
-
-  const cells = Math.max(8, Math.round(bed / 10));
-  const grid = new THREE.GridHelper(bed, cells, 0x39404a, 0x22272e);
-  grid.rotation.x = Math.PI / 2;
-  scene.add(grid);
 }
