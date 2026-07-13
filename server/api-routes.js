@@ -63,6 +63,7 @@ import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, upload
 import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
 import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
 import { parseTigerTagDump } from './tigertag.js';
+import { buildOrcaProcessJson } from './slicer-settings.js';
 import QRCode from 'qrcode';
 import { ensureQr, resolveCode } from './inventory-qr.js';
 import {
@@ -8028,12 +8029,14 @@ export async function handleApiRequest(req, res) {
           }
           if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
 
+          let processSettings = null;
+          try { const raw = url.searchParams.get('settings'); if (raw) processSettings = buildOrcaProcessJson(JSON.parse(raw)); } catch { /* ignore bad settings */ }
           const result = await sliceModel({
             modelBuffer: buf,
             modelFilename: filename,
             slicer,
             printerInfo: { model: printerModel, type: printerType },
-            printerProfile, filamentProfile, processProfile,
+            printerProfile, filamentProfile, processProfile, processSettings,
           });
           if (!result.ok) return sendJson(res, result, 500);
 
@@ -8197,6 +8200,8 @@ export async function handleApiRequest(req, res) {
           const slicer = await pickSlicer({ model: entry.config?.model, type: entry.config?.type });
           if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
 
+          let processSettings = null;
+          try { const raw = url.searchParams.get('settings'); if (raw) processSettings = buildOrcaProcessJson(JSON.parse(raw)); } catch { /* ignore bad settings */ }
           const result = await sliceModel({
             modelBuffer: buf,
             modelFilename: url.searchParams.get('filename') || 'model.stl',
@@ -8205,6 +8210,7 @@ export async function handleApiRequest(req, res) {
             printerProfile: url.searchParams.get('printerProfile') || null,
             filamentProfile: url.searchParams.get('filamentProfile') || null,
             processProfile: url.searchParams.get('processProfile') || null,
+            processSettings,
           });
           if (!result.ok) return sendJson(res, result, 500);
 

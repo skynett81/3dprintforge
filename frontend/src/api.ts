@@ -76,9 +76,10 @@ export const api = {
       body: JSON.stringify({ action, ...extra }),
     }),
   getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
-  sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean }): Promise<import('./types').SliceResult> => {
+  sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
     const q = new URLSearchParams({ printerId, filename: file.name });
     if (opts?.print) q.set('print', '1');
+    if (opts?.settings && Object.keys(opts.settings).length) q.set('settings', JSON.stringify(opts.settings));
     const res = await fetch(`/api/slicer/bridge/slice-and-send?${q.toString()}`, { method: 'POST', body: file });
     const text = await res.text();
     let data: unknown;

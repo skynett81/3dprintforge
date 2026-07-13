@@ -210,6 +210,14 @@ export async function sliceModel(args) {
   const settingsParts = [];
   if (printerProf) settingsParts.push(printerProf);
   if (processProf) settingsParts.push(processProf);
+  // Server-generated per-slice overrides from the web slicer's settings UI.
+  // Trusted (we write it) so it bypasses the profileDir path check; layered
+  // last so it overrides the base profiles.
+  if (args.processSettings && typeof args.processSettings === 'object') {
+    const genPath = join(workDir, 'forge-process.json');
+    writeFileSync(genPath, JSON.stringify(args.processSettings));
+    settingsParts.push(genPath);
+  }
   const cliArgs = ['--slice', '0', '--outputdir', outDir];
   if (settingsParts.length) cliArgs.push('--load-settings', settingsParts.join(';'));
   if (filamentProf) cliArgs.push('--load-filaments', filamentProf);

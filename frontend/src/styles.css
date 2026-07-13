@@ -263,6 +263,9 @@ body {
 .slicer-printer--on { border-color: var(--accent); background: rgba(0,179,164,0.08); }
 .plate-canvas { width: 100%; height: 420px; border-radius: var(--radius-sm); overflow: hidden; background: #0e1116; }
 .plate-canvas canvas { display: block; }
+.slset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 12px; }
+.slset-grid .field-label { font-size: 0.72rem; }
+.slset-grid .input { padding: 5px 8px; }
 
 /* OpenSpool tag section in the spool drawer */
 .drawer-openspool { border-top: 1px solid var(--border-soft); padding-top: 12px; }

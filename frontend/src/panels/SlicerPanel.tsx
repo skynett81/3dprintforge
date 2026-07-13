@@ -5,6 +5,7 @@ import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { Printer, SlicerStatus, SliceResult } from '../types';
 import type { PlateHandle } from '../components/PlateViewer';
+import { SlicerSettings, type SliceSettings } from './slicer/SlicerSettings';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 
@@ -25,6 +26,7 @@ export function SlicerPanel() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [busy, setBusy] = useState(false);
+  const [settings, setSettings] = useState<SliceSettings>({});
   const plateRef = useRef<PlateHandle>(null);
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
@@ -40,7 +42,7 @@ export function SlicerPanel() {
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     await Promise.all(ids.map(async (id) => {
       try {
-        const result = await api.sliceAndSend(id, toSend, { print: startPrint });
+        const result = await api.sliceAndSend(id, toSend, { print: startPrint, settings });
         setRows((r) => ({ ...r, [id]: { status: 'done', result } }));
       } catch (e) {
         setRows((r) => ({ ...r, [id]: { status: 'error', error: (e as Error).message } }));
@@ -81,6 +83,8 @@ export function SlicerPanel() {
         )}
         <p className="muted micro" style={{ margin: '8px 0 0' }}>{t('v2.slicer.default_profile', 'Arrange on the plate, then slice with the printer’s default profile. Full print settings (layer height, infill, supports) arrive in a later phase.')}</p>
       </section>
+
+      {file && <SlicerSettings value={settings} onChange={setSettings} status={status ?? undefined} />}
 
       <section className="card" style={{ marginBottom: 14 }}>
         <div className="field-label">{t('v2.slicer.printers', 'Send to printers')}</div>
