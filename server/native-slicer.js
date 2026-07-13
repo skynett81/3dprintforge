@@ -391,6 +391,20 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const layerHeight = s.layerHeight;
   const numLayers = opts.numLayers || Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
 
+  // Centre the model on the bed. recenterToOrigin drops the model into the
+  // [0,0] corner; real printers expect bed coordinates, so shift it to the bed
+  // centre. Skipped for the multi-object path (that owns its own layout) and
+  // when centreOnBed is explicitly disabled.
+  const bedX = (Array.isArray(s.bedSize) && s.bedSize[0]) || (s.buildVolume && (s.buildVolume[0] ?? s.buildVolume.x)) || 0;
+  const bedY = (Array.isArray(s.bedSize) && s.bedSize[1]) || (s.buildVolume && (s.buildVolume[1] ?? s.buildVolume.y)) || 0;
+  if (!opts.offset && s.centerOnBed !== false && bedX > 0 && bedY > 0) {
+    const dx = bedX / 2 - stats.bbox.size[0] / 2;
+    const dy = bedY / 2 - stats.bbox.size[1] / 2;
+    const P = Array.from(recentered.positions);
+    for (let i = 0; i < P.length; i += 3) { P[i] += dx; P[i + 1] += dy; }
+    recentered = { positions: P, indices: recentered.indices };
+  }
+
   // Top/bottom shell thickness (mm) overrides the layer counts when it implies
   // more shells than the configured counts (matches OrcaSlicer's *_shell_thickness).
   if (s.topShellThickness > 0) s.topLayers = Math.max(s.topLayers, Math.ceil(s.topShellThickness / layerHeight));

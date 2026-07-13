@@ -194,6 +194,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.end_gcode || s.machine_end_gcode) out.endGcode = String(s.end_gcode ?? s.machine_end_gcode);
   if (s.layer_change_gcode) out.layerChangeGcode = String(s.layer_change_gcode);
   if (s.material) out.material = String(s.material);
+  // Bed size (for centring the model on the plate). Accept [x,y] or {x,y}.
+  if (Array.isArray(s.bed_size) && s.bed_size.length >= 2) out.bedSize = [Number(s.bed_size[0]), Number(s.bed_size[1])];
+  else if (s.bed_size && s.bed_size.x) out.bedSize = [Number(s.bed_size.x), Number(s.bed_size.y)];
 
   return out;
 }

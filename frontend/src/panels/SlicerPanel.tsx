@@ -261,12 +261,19 @@ export function SlicerPanel() {
     toast(t('v2.slset.pinned', 'Profiles pinned to {name}').replace('{name}', selPrinter?.name ?? pid), 'success');
   }
 
+  // Inject a target printer's bed size so the slicer centres the model on the
+  // right plate (the engine defaults to origin-corner when it's unknown).
+  function settingsForPrinter(pid: string | undefined, base: SliceSettings = settings): Record<string, unknown> {
+    const bv = slicerPrinters.find((p) => p.id === pid)?.buildVolume;
+    return bv ? { ...base, bed_size: [bv.x, bv.y] } : base;
+  }
+
   async function slicePreview() {
     if (!file) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
     setSlicing(true);
     try {
       const toSend = plateRef.current?.exportSTL(file.name) ?? file;
-      const p = await api.sliceGcode(toSend, settings);
+      const p = await api.sliceGcode(toSend, settingsForPrinter(selPrinter?.id));
       setPreview(p); setTab('preview');
     } catch (e) { toast((e as Error).message || t('v2.slicer.slice_fail', 'Slicing failed'), 'error'); }
     finally { setSlicing(false); }
@@ -285,11 +292,12 @@ export function SlicerPanel() {
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     const results = await Promise.all(ids.map(async (id): Promise<boolean> => {
       try {
+        const s = settingsForPrinter(id);
         const result = multi && materials.length > 1
-          ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings })
+          ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings: s })
           : perObj.length
-            ? await api.sliceObjectsAndSend(id, file.name, perObj.map((o) => ({ file: o.file, settings: { ...settings, ...(objOverrides[o.index] ?? {}) } })), { print: startPrint, settings })
-            : await api.sliceAndSend(id, toSend, { print: startPrint, settings });
+            ? await api.sliceObjectsAndSend(id, file.name, perObj.map((o) => ({ file: o.file, settings: { ...s, ...(objOverrides[o.index] ?? {}) } })), { print: startPrint, settings: s })
+            : await api.sliceAndSend(id, toSend, { print: startPrint, settings: s });
         setRows((r) => ({ ...r, [id]: { status: 'done', result } })); return true;
       }
       catch (e) { setRows((r) => ({ ...r, [id]: { status: 'error', error: (e as Error).message } })); return false; }
