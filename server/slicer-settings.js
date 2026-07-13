@@ -190,6 +190,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('bridgeSpeed', num(s.bridge_speed));
   set('bridgeFlow', num(s.bridge_flow));
   set('overhangSpeed', num(s.overhang_speed));
+  // Graduated overhang speeds (BambuStudio overhang_1_4 .. 4_4). Any set → table.
+  const ov = [num(s.overhang_1_4_speed), num(s.overhang_2_4_speed), num(s.overhang_3_4_speed), num(s.overhang_4_4_speed)];
+  if (ov.some((v) => v !== undefined)) out.overhangSpeeds = ov.map((v) => v ?? 0);
   set('overhangFanSpeed', num(s.overhang_fan_speed));
   const ba = num(s.bridge_angle);
   if (ba) out.bridgeAngle = ba;                 // 0 = auto (keep the layer base angle)

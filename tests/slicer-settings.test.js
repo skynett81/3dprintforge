@@ -94,6 +94,12 @@ describe('buildNativeSettings', () => {
     assert.equal(n.fanOffLayers, 3);
   });
 
+  test('maps graduated overhang speeds into a table', () => {
+    const n = buildNativeSettings({ overhang_1_4_speed: 0, overhang_2_4_speed: 50, overhang_3_4_speed: 30, overhang_4_4_speed: 10 });
+    assert.deepEqual(n.overhangSpeeds, [0, 50, 30, 10]);
+    assert.equal('overhangSpeeds' in buildNativeSettings({}), false);   // none set → no table
+  });
+
   test('maps per-feature acceleration', () => {
     const n = buildNativeSettings({ outer_wall_acceleration: 3000, inner_wall_acceleration: 6000, top_surface_acceleration: 2000, sparse_infill_acceleration: 8000 });
     assert.equal(n.outerWallAccel, 3000);

@@ -120,6 +120,17 @@ export function layersToGcode(layers, settings) {
     wall: P,
   };
   const featSpeed = (feature, layerIdx) => (layerIdx === 0 ? s.firstLayerSpeed : (SP[feature] ?? P));
+  // Graduated overhang speed: bucket the overhang fraction into the configured
+  // speed levels (BambuStudio's overhang_1_4..4_4). 0 in a bucket = no
+  // slow-down there. Falls back to the single overhangSpeed when no table set.
+  const gradedOverhangSpeed = (frac) => {
+    const arr = s.overhangSpeeds;
+    if (Array.isArray(arr) && arr.length) {
+      const idx = Math.min(arr.length - 1, Math.max(0, Math.floor(frac * arr.length)));
+      return arr[idx] > 0 ? arr[idx] : 0;
+    }
+    return (frac > (s.overhangThreshold ?? 0.5) && s.overhangSpeed) ? s.overhangSpeed : 0;
+  };
   // Per-feature acceleration (M204). Undefined features fall back to the
   // steady acceleration; the loop only emits M204 when it actually changes.
   const ACC = {
@@ -335,7 +346,7 @@ export function layersToGcode(layers, settings) {
         if (wantFan !== curFanG) { g += `M106 S${wantFan}\n`; curFanG = wantFan; }
       }
       let pspeed = featSpeed(path.feature, layerIdx);
-      if (path.overhang && s.overhangSpeed) pspeed = Math.min(pspeed, s.overhangSpeed);
+      if (path.overhangFrac != null) { const os = gradedOverhangSpeed(path.overhangFrac); if (os > 0) pspeed = Math.min(pspeed, os); }
       // Small-perimeter slowdown: tiny closed loops (holes, pillars) print
       // cleaner slower because the head can't accelerate over the short path.
       if (path.closed && s.smallPerimeterSpeed && String(path.feature).includes('wall') && pathLen(path.pts, true) < (s.smallPerimeterThreshold ?? 15)) pspeed = Math.min(pspeed, s.smallPerimeterSpeed);
@@ -554,9 +565,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         if (!inner || inner.length < 3) break;
         mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam) });
       }
-      // Overhang perimeters: flag walls that jut out over air so they print
-      // slower with more cooling.
-      if (overhangDetect && below) for (const w of mainWalls) if (wallOverhangFrac(w.pts) > (s.overhangThreshold ?? 0.5)) w.overhang = true;
+      // Overhang perimeters: record how much each wall juts over air. The
+      // fraction drives a graduated slow-down (BambuStudio's overhang speed
+      // table) and, past the threshold, the cooling-fan boost.
+      if (overhangDetect && below) for (const w of mainWalls) { const f = wallOverhangFrac(w.pts); if (f > 0.1) { w.overhangFrac = f; if (f > (s.overhangThreshold ?? 0.5)) w.overhang = true; } }
       // Wall print order: inner-first (better dimensional accuracy) or
       // outer-first (better surface). OrcaSlicer's wall_infill_order.
       if (s.wallOrder === 'inner-outer' && mainWalls.length > 1) walls.push(...mainWalls.slice(1), mainWalls[0]);
