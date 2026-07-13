@@ -23,6 +23,7 @@ export interface PlateHandle {
   exportMaterials: (name: string) => { extruder: number; file: File }[];
   exportEach: (name: string) => { index: number; file: File }[];
   hasMaterials: () => boolean;
+  recolor: (colors: string[]) => void;
   count: () => number;
   addFile: (f: File) => Promise<void>;
   setMode: (m: PlateMode) => void;
@@ -63,10 +64,12 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void }>(function PlateViewer({ file, bed = 256, onObject, onState }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; slotColors?: string[] }>(function PlateViewer({ file, bed = 256, onObject, onState, slotColors }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
+  const slotColorsRef = useRef<string[] | undefined>(slotColors);
+  slotColorsRef.current = slotColors;
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
   const onStateRef = useRef(onState);
@@ -222,7 +225,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
           const existing = src.getAttribute('color');
           if (useCfg) {
             const ext = cfg!.extruders[idx] || 1;
-            const col = new THREE.Color(cfg!.colors[(ext - 1) % cfg!.colors.length] || '#9aa4b2');
+            const sc = slotColorsRef.current;
+            const col = new THREE.Color((sc && sc[ext - 1]) || cfg!.colors[(ext - 1) % cfg!.colors.length] || '#9aa4b2');
             const n = pos.count; const colors = new Float32Array(n * 3);
             for (let i = 0; i < n; i++) { colors[i * 3] = col.r; colors[i * 3 + 1] = col.g; colors[i * 3 + 2] = col.b; }
             g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -361,6 +365,23 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         group.add(new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld)));
         return { index, file: new File([exp.parse(group, { binary: false }) as string], `${bn}_obj${index}.stl`, { type: 'model/stl' }) };
       });
+    },
+    recolor: (colors: string[]) => {
+      const c = ctx.current; if (!c) return;
+      for (const m of c.objects) {
+        const mats = m.userData.materials as { extruder: number; geometry: THREE.BufferGeometry }[] | undefined;
+        if (!mats || !mats.length) continue;
+        const parts = mats.map((mm) => {
+          const g = mm.geometry.clone();
+          const col = new THREE.Color(colors[(mm.extruder - 1) % colors.length] || '#9aa4b2');
+          const n = g.getAttribute('position').count; const cols = new Float32Array(n * 3);
+          for (let i = 0; i < n; i++) { cols[i * 3] = col.r; cols[i * 3 + 1] = col.g; cols[i * 3 + 2] = col.b; }
+          g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+          return g;
+        });
+        const merged = mergeGeometries(parts, false);
+        if (merged) { merged.computeVertexNormals(); m.geometry.dispose(); m.geometry = merged; }
+      }
     },
     hasMaterials: () => {
       const c = ctx.current; if (!c) return false;

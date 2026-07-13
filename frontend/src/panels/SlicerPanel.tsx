@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
@@ -23,6 +23,7 @@ const MATERIALS: Record<string, { temps: [number, number]; color: string }> = {
   TPU: { temps: [230, 40], color: '#9b6ad8' }, PC: { temps: [270, 110], color: '#4bb3c4' },
   Nylon: { temps: [260, 80], color: '#c4b04b' },
 };
+const DEFAULT_SLOT_COLORS = ['#000000', '#0080FF', '#E53935', '#43A047', '#FDD835', '#FB8C00', '#8E24AA', '#00ACC1'];
 
 function fmtTime(sec: number): string {
   if (!sec) return '—';
@@ -61,6 +62,7 @@ export function SlicerPanel() {
   const [slicing, setSlicing] = useState(false);
   const [obj, setObj] = useState<ObjInfo | null>(null);
   const [objOverrides, setObjOverrides] = useState<Record<number, SliceSettings>>({});
+  const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
   const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1 });
   const [full, setFull] = useState(false);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
@@ -82,7 +84,18 @@ export function SlicerPanel() {
   const cost = preview && pricePerGram > 0 ? preview.filamentG * pricePerGram : 0;
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
-  const material = String((settings.material as string) || 'PLA');
+  const slotColors = useMemo(() => filaments.map((f) => f.color), [filaments]);
+  useEffect(() => { plateRef.current?.recolor(slotColors); }, [slotColors]);
+
+  function setSlot(i: number, patch: Partial<{ color: string; material: string }>) {
+    setFilaments((prev) => {
+      const next = prev.map((f, k) => (k === i ? { ...f, ...patch } : f));
+      if (i === 0 && patch.material) { const m = MATERIALS[patch.material]; setSettings((s) => ({ ...s, material: patch.material!, ...(m ? { nozzle_temp: m.temps[0], bed_temp: m.temps[1] } : {}) })); }
+      return next;
+    });
+  }
+  function addSlot() { setFilaments((prev) => (prev.length >= 16 ? prev : [...prev, { color: DEFAULT_SLOT_COLORS[prev.length % DEFAULT_SLOT_COLORS.length], material: prev[0]?.material ?? 'PLA' }])); }
+  function removeSlot(i: number) { setFilaments((prev) => (prev.length <= 1 ? prev : prev.filter((_, k) => k !== i))); }
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
   function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); }
@@ -96,10 +109,6 @@ export function SlicerPanel() {
     await plateRef.current?.addFile(f); setPreview(null); setTab('prepare');
   }
 
-  function applyMaterial(mat: string) {
-    const m = MATERIALS[mat];
-    setSettings((s) => ({ ...s, material: mat, ...(m ? { nozzle_temp: m.temps[0], bed_temp: m.temps[1] } : {}) }));
-  }
   function applyQuality(id: string) {
     const p = status?.qualityPresets?.find((q) => q.id === id);
     if (!p) return;
@@ -201,13 +210,22 @@ export function SlicerPanel() {
 
           {/* Filament + temps */}
           <div className="oslice-filaments">
-            <div className="oslice-sectlbl" style={{ marginBottom: 6 }}>{t('v2.slset.material', 'Filament')}</div>
-            <div className="oslice-filrow">
-              <span className="oslice-filbadge" style={{ background: MATERIALS[material]?.color ?? '#888' }}>1</span>
-              <select className="oslice-preset-sel oslice-filname" value={material} onChange={(e) => applyMaterial(e.target.value)}>
-                {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
+            <div className="oslice-sectlbl" style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
+              {t('v2.slset.filament', 'Filament / AMS')}
+              <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} style={{ marginLeft: 'auto' }}>+</button>
             </div>
+            {filaments.map((f, i) => (
+              <div className="oslice-filrow" key={i}>
+                <label className="oslice-filbadge" style={{ background: f.color, cursor: 'pointer' }}>
+                  {i + 1}
+                  <input type="color" value={f.color} onChange={(e) => setSlot(i, { color: e.target.value })} style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} />
+                </label>
+                <select className="oslice-preset-sel oslice-filname" value={f.material} onChange={(e) => setSlot(i, { material: e.target.value })}>
+                  {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                {filaments.length > 1 && <button className="oslice-filadd" title={t('v2.slset.remove', 'Remove')} onClick={() => removeSlot(i)}>−</button>}
+              </div>
+            ))}
             <div className="oslice-temps" style={{ marginTop: 8 }}>
               <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.nozzle', 'Nozzle °C')}</span><input className="oset-input" type="number" value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, nozzle_temp: e.target.value }))} /></label>
               <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.bed', 'Bed °C')}</span><input className="oset-input" type="number" value={(settings.bed_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, bed_temp: e.target.value }))} /></label>
@@ -314,7 +332,7 @@ export function SlicerPanel() {
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} />
+              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} slotColors={slotColors} />
             </Suspense>
           )}
           {tab === 'preview' && preview && (
