@@ -78,6 +78,7 @@ export function SlicerPanel() {
   const [presets, setPresets] = useState<Record<string, SliceSettings>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.presets') || '{}'); } catch { return {}; } });
   const plateRef = useRef<PlateHandle>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
+  const lastPrinterSync = useRef<string>('');
 
   const bed = useMemo(() => {
     const p = slicerPrinters.find((sp) => sp.id === profilePrinter) ?? slicerPrinters[0];
@@ -94,6 +95,28 @@ export function SlicerPanel() {
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
   const slotColors = useMemo(() => filaments.map((f) => f.color), [filaments]);
   useEffect(() => { plateRef.current?.recolor(slotColors); }, [slotColors]);
+
+  const selPrinter = slicerPrinters.find((p) => p.id === profilePrinter) ?? slicerPrinters[0];
+
+  // Keep the filament slots consistent with the selected printer so cost/waste
+  // is computed against the right machine: a printer with a live AMS (or spools
+  // assigned to its tools) loads those exact colours; a multi-tool printer
+  // (e.g. Snapmaker U1) expands to its physical tool count. Guarded by a
+  // signature so a background refresh never clobbers manual edits.
+  useEffect(() => {
+    const p = selPrinter;
+    if (!p?.id) return;
+    const sig = `${p.id}|${(p.ams ?? []).map((a) => a.color + a.material).join(',')}|${p.colorSlots ?? 1}`;
+    if (sig === lastPrinterSync.current) return;
+    lastPrinterSync.current = sig;
+    if (p.ams?.length) {
+      loadFromAms(p.ams);
+    } else {
+      const n = Math.max(1, p.colorSlots ?? 1);
+      setFilaments((prev) => Array.from({ length: n }, (_, i) => prev[i] ?? { color: DEFAULT_SLOT_COLORS[i % DEFAULT_SLOT_COLORS.length], material: prev[0]?.material ?? 'PLA' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selPrinter]);
 
   function setSlot(i: number, patch: Partial<{ color: string; material: string }>) {
     setFilaments((prev) => {
@@ -179,8 +202,6 @@ export function SlicerPanel() {
   const action = (icon: ReactNode, label: string, fn: () => void, disabled = false) => (
     <button className="oslice-tool" title={label} disabled={disabled} onClick={fn}>{icon}</button>
   );
-
-  const selPrinter = slicerPrinters.find((p) => p.id === profilePrinter) ?? slicerPrinters[0];
 
   return (
     <div className={`oslice${full ? ' oslice--full' : ''}`}>
