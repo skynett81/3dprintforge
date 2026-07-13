@@ -138,6 +138,26 @@ export function SlicerDevice({ printer, live }: Props) {
             </div>
           )}
 
+          {/* AMS / tool slots with live colours */}
+          {(printer.ams?.length ?? 0) > 0 && (
+            <div className="oslice-devsec">
+              <div className="oslice-devsec-h">{printer.multiTool ? t('v2.dev.tools', 'Tools') : t('v2.dev.ams', 'AMS')}</div>
+              <div className="oslice-devams">
+                {printer.ams!.map((a) => {
+                  const c = a.color?.startsWith('#') ? a.color : '#' + String(a.color || 'cccccc').replace(/^#/, '');
+                  const x = c.replace(/^#/, ''); const r = parseInt(x.slice(0, 2), 16) || 0, gg = parseInt(x.slice(2, 4), 16) || 0, b = parseInt(x.slice(4, 6), 16) || 0;
+                  const ink = 0.2126 * r + 0.7152 * gg + 0.0722 * b > 150 ? '#1a1a1a' : '#fff';
+                  return (
+                    <div key={a.slot} className="oslice-devamsslot" style={{ background: c, color: ink }} title={`${a.material}`}>
+                      <span className="oslice-devamsn">{a.slot}</span>
+                      <span className="oslice-devamsm">{a.material}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Fan + light — all connectors */}
           <div className="oslice-devsec">
             <div className="oslice-devsec-h">{t('v2.dev.misc', 'Fan / light')}</div>
