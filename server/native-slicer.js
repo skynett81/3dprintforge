@@ -27,6 +27,7 @@ import {
   patternInfill, buildRegions, EPS, PI, _bbox, _isCCW, _signedArea, _near,
   _chainSegments, _pointInPoly,
 } from './native-slicer-geo.js';
+import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 
 const FILAMENT_DIAM = 1.75;
 
@@ -204,6 +205,13 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     });
   }
 
+  // Surface classifier — marks infill solid on real top/bottom faces
+  // (including over holes/steps), not just the global first/last N layers.
+  const surfaces = s.solidSurfaces === false ? null : buildSurfaceClassifier(layerRegions, {
+    gridRes: s.surfaceGridRes ?? 2, topLayers: s.topLayers, bottomLayers: s.bottomLayers,
+  });
+  const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
+
   // Pass 2 — walls + shells + infill (+ supports) per layer, as typed
   // paths so the preview can colour each feature like a desktop slicer.
   const layers = [];
@@ -212,7 +220,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     const adhesion = [];   // skirt/brim (layer 0)
     const walls = [];      // outer/inner/hole walls
     const fills = [];      // solid/sparse infill
-    const isSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
+    const globalSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
 
     for (const region of regions) {
       // Outer walls: shrink inward wall-by-wall (negative = inward).
@@ -241,11 +249,20 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       if (infOuter && infOuter.length >= 3) {
         const infRegion = { outer: infOuter, holes: infHoles };
         const baseAngle = s.infillAngle + (i % 2) * 90;
-        const segs = isSolid
-          ? solidInfill(infRegion, baseAngle, lw)
-          : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
-        const feat = isSolid ? 'solid' : 'sparse';
-        for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
+        if (!surfaces || globalSolid) {
+          // No surface detection (or a global shell layer): fill uniformly.
+          const segs = globalSolid
+            ? solidInfill(infRegion, baseAngle, lw)
+            : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
+          const feat = globalSolid ? 'solid' : 'sparse';
+          for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
+        } else {
+          // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
+          const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
+          const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
+          for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
+          for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
+        }
       }
     }
 
