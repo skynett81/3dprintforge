@@ -278,25 +278,29 @@ export function SlicerPanel() {
             <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { if (!file) pickFile(e.target.files?.[0] ?? null); else addModels(e.target.files); e.currentTarget.value = ''; }} />
           </div>
 
-          {!file && (
-            <label className="oslice-drop">
-              <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-              <div style={{ textAlign: 'center' }}>
-                <div className="oslice-drop-plus">+</div>
-                <div>{t('v2.slicer.choose', 'Click to choose an STL / 3MF / OBJ / STEP file')}</div>
-                <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={(e) => { e.preventDefault(); setShowLibrary(true); }}>{t('v2.slicer.from_library', 'Import from library')}</button>
-              </div>
-            </label>
-          )}
-          {file && tab === 'prepare' && (
+          {/* The build plate is always visible, like Bambu Studio. */}
+          {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
               <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} />
             </Suspense>
           )}
-          {file && tab === 'preview' && preview && (
+          {tab === 'preview' && preview && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
               <GcodePreview gcode={preview.gcode} bed={bed} />
             </Suspense>
+          )}
+          {!file && tab === 'prepare' && (
+            <div className="oslice-empty">
+              <div className="oslice-emptycard">
+                <div className="oslice-drop-plus">+</div>
+                <div className="oslice-emptytitle">{t('v2.slicer.choose', 'Add a model to this plate')}</div>
+                <div className="oslice-emptybtns">
+                  <button type="button" className="oslice-printplate" onClick={() => addInputRef.current?.click()}>{t('v2.slicer.add_model', 'Add model')}</button>
+                  <button type="button" className="btn btn--sm" onClick={() => setShowLibrary(true)}>{t('v2.slicer.from_library', 'From library')}</button>
+                </div>
+                <div className="muted micro" style={{ marginTop: 6 }}>STL · 3MF · OBJ · STEP</div>
+              </div>
+            </div>
           )}
 
           <div className="oslice-axis" aria-hidden>
