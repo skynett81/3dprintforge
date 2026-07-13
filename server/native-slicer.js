@@ -163,6 +163,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     layerHeight: 0.2, lineWidth: 0.4, perimeters: 2, infillDensity: 0.2,
     infillAngle: 45, infillPattern: 'grid', topLayers: 4, bottomLayers: 4,
     skirtLoops: 1, skirtGap: 3, brimWidth: 0,
+    supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8,
     ...settings,
   };
   const wallLoops = Math.max(1, s.perimeters | 0);
@@ -176,11 +177,26 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
   const layerHeight = s.layerHeight;
   const numLayers = Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
 
+  // Pass 1 — slice every layer into regions (needed up-front for supports).
+  const layerRegions = [];
+  for (let i = 0; i < numLayers; i++) {
+    const z = (i + 0.5) * layerHeight;
+    layerRegions.push(buildRegions(sliceLayer(recentered, z)));
+  }
+
+  // Supports (optional) — overhang columns down to the bed.
+  let supportSegs = null;
+  if (s.supports) {
+    const { generateSupports } = await import('./native-slicer-support.js');
+    supportSegs = generateSupports(layerRegions, {
+      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap,
+    });
+  }
+
+  // Pass 2 — walls + shells + infill (+ supports) per layer.
   const layers = [];
   for (let i = 0; i < numLayers; i++) {
-    const z = (i + 0.5) * layerHeight; // sample mid-layer
-    const polygons = sliceLayer(recentered, z);
-    const regions = buildRegions(polygons);
+    const regions = layerRegions[i];
     const perimeters = [];
     const infill = [];
     const isSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
@@ -244,6 +260,9 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       perimeters.unshift(...adhesion);
     }
 
+    // Support hatch (printed as infill-style moves).
+    if (supportSegs && supportSegs[i]) for (const sg of supportSegs[i]) infill.push(sg);
+
     layers.push({ perimeters, infill });
   }
 
@@ -253,6 +272,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     layers: layers.length,
     bbox: stats.bbox,
     triangles: recentered.indices.length / 3,
+    supported: !!s.supports,
   };
 }
 

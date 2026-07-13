@@ -8141,6 +8141,13 @@ export async function handleApiRequest(req, res) {
             material:       url.searchParams.get('material') || merged.material || 'PLA',
             ...(merged.buildVolume ? { buildVolume: merged.buildVolume } : {}),
           };
+          // The /v2 web slicer sends a single `settings` JSON blob (UI keys);
+          // overlay it via the shared UI→native mapper so preview and
+          // slice-and-send stay in lock-step.
+          try {
+            const raw = url.searchParams.get('settings');
+            if (raw) Object.assign(settings, buildNativeSettings(JSON.parse(raw)));
+          } catch { /* ignore bad settings blob */ }
 
           const start = Date.now();
           const { bufferToMesh } = await import('./format-converter.js');

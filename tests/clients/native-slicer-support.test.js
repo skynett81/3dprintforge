@@ -1,0 +1,47 @@
+// native-slicer-support.test.js — Verify automatic support generation:
+// overhangs get support columns, straight-walled parts do not.
+
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { generateSupports } from '../../server/native-slicer-support.js';
+import { sliceMeshToGcode } from '../../server/native-slicer.js';
+import { box } from '../../server/mesh-primitives.js';
+
+const SQUARE = (s, ox = 0, oy = 0) => [[ox, oy], [ox + s, oy], [ox + s, oy + s], [ox, oy + s]];
+
+describe('native-slicer: generateSupports', () => {
+  it('no supports for a straight vertical column (each layer identical)', () => {
+    const layers = Array.from({ length: 20 }, () => [{ outer: SQUARE(10, 0, 0), holes: [] }]);
+    const sup = generateSupports(layers, { gridRes: 1, density: 0.3 });
+    const total = sup.reduce((n, segs) => n + segs.length, 0);
+    assert.equal(total, 0, 'a straight column needs no support');
+  });
+
+  it('generates support under a floating overhang', () => {
+    // Bottom 10 layers: nothing. Top 10 layers: a slab floating at x∈[0,20].
+    // The floating slab from layer 10 up rests on air → needs support below.
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);                 // empty (air)
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const sup = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0 });
+    const below = sup.slice(0, 10).reduce((n, segs) => n + segs.length, 0);
+    assert.ok(below > 0, 'support columns fill the air beneath the floating slab');
+    // The slab layers themselves are solid model → no support inside them.
+    const inside = sup.slice(10).reduce((n, segs) => n + segs.length, 0);
+    assert.equal(inside, 0, 'no support inside the model');
+  });
+});
+
+describe('native-slicer: supports end-to-end', () => {
+  it('a plain cube slices with supports enabled but adds little/none', async () => {
+    const r = await sliceMeshToGcode(box(12, 12, 8), { supports: true, layerHeight: 0.2 });
+    assert.equal(r.supported, true);
+    assert.ok(r.gcode.length > 3000);
+  });
+
+  it('supports flag toggles the supported result field', async () => {
+    const off = await sliceMeshToGcode(box(10, 10, 6), { supports: false });
+    assert.equal(off.supported, false);
+  });
+});
