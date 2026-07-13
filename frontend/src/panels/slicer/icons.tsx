@@ -14,3 +14,6 @@ export const IconCenter = () => (<svg {...S}><circle cx="12" cy="12" r="3" /><pa
 export const IconPrinter = () => (<svg {...S}><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 15h10v6H7z" /></svg>);
 export const IconFilament = () => (<svg {...S}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="2.5" /></svg>);
 export const IconProcess = () => (<svg {...S}><path d="M4 6h16M4 12h16M4 18h10" /></svg>);
+export const IconExpand = () => (<svg {...S}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>);
+export const IconCollapse = () => (<svg {...S}><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>);
+export const IconEye = () => (<svg {...S}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>);

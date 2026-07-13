@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useT } from '../../i18n';
 
 export type SliceSettings = Record<string, string | number | boolean>;
@@ -7,89 +7,83 @@ const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'l
 const SUPPORT_TYPES = [['normal(auto)', 'Normal'], ['tree(auto)', 'Tree']];
 const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 'Ears']];
 
-const TABS = [
-  { id: 'quality', label: 'Quality' },
-  { id: 'strength', label: 'Strength' },
-  { id: 'speed', label: 'Speed' },
-  { id: 'support', label: 'Support' },
-  { id: 'others', label: 'Others' },
-] as const;
+type Field =
+  | { tab: string; k: string; label: string; type: 'num'; unit?: string; step?: number; dep?: string }
+  | { tab: string; k: string; label: string; type: 'bool' }
+  | { tab: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
 
-function Num({ label, k, v, onChange, step, unit, disabled }: { label: string; k: string; v: SliceSettings; onChange: (k: string, val: string) => void; step?: number; unit?: string; disabled?: boolean }) {
-  return (
-    <label className="oset-field">
-      <span className="oset-label">{label}{unit ? ` (${unit})` : ''}</span>
-      <input className="oset-input" type="number" step={step ?? 0.01} value={(v[k] as string) ?? ''} disabled={disabled} onChange={(e) => onChange(k, e.target.value)} />
-    </label>
-  );
-}
+const TABS = ['Quality', 'Strength', 'Speed', 'Support', 'Others'] as const;
 
-/** Process settings organised into OrcaSlicer-style tabs. */
+const FIELDS: Field[] = [
+  { tab: 'Quality', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', k: 'initial_layer_height', label: 'First layer height', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
+  { tab: 'Strength', k: 'wall_loops', label: 'Wall loops', type: 'num', step: 1 },
+  { tab: 'Strength', k: 'top_layers', label: 'Top shell layers', type: 'num', step: 1 },
+  { tab: 'Strength', k: 'bottom_layers', label: 'Bottom shell layers', type: 'num', step: 1 },
+  { tab: 'Strength', k: 'infill_density', label: 'Infill density', type: 'num', unit: '%', step: 5 },
+  { tab: 'Strength', k: 'infill_pattern', label: 'Infill pattern', type: 'sel', opts: INFILL_PATTERNS },
+  { tab: 'Speed', k: 'outer_wall_speed', label: 'Outer wall speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', k: 'inner_wall_speed', label: 'Inner wall speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', k: 'infill_speed', label: 'Infill speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', k: 'travel_speed', label: 'Travel speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
+  { tab: 'Support', k: 'support_type', label: 'Support type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
+  { tab: 'Support', k: 'support_threshold', label: 'Overhang angle', type: 'num', unit: '°', step: 1, dep: 'supports' },
+  { tab: 'Others', k: 'brim_type', label: 'Brim type', type: 'sel', opts: BRIM_TYPES },
+  { tab: 'Others', k: 'brim_width', label: 'Brim width', type: 'num', unit: 'mm', step: 0.5 },
+  { tab: 'Others', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
+  { tab: 'Others', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
+];
+
+/** OrcaSlicer-style process settings: category tabs + a search box, each
+ *  setting a label-left / value-right row. */
 export function SlicerProcessTabs({ value, onChange }: { value: SliceSettings; onChange: (next: SliceSettings) => void }) {
   const t = useT();
-  const [tab, setTab] = useState<typeof TABS[number]['id']>('quality');
-  const set = (k: string, val: string) => onChange({ ...value, [k]: val });
-  const setBool = (k: string, val: boolean) => onChange({ ...value, [k]: val });
-  const Sel = ({ k, opts, label }: { k: string; opts: (string | string[])[]; label: string }) => (
-    <label className="oset-field">
-      <span className="oset-label">{label}</span>
-      <select className="oset-input" value={(value[k] as string) ?? ''} onChange={(e) => set(k, e.target.value)}>
+  const [tab, setTab] = useState<string>('Quality');
+  const [q, setQ] = useState('');
+  const set = (k: string, val: string | boolean) => onChange({ ...value, [k]: val });
+
+  const shown = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (needle) return FIELDS.filter((f) => f.label.toLowerCase().includes(needle));
+    return FIELDS.filter((f) => f.tab === tab);
+  }, [q, tab]);
+
+  const row = (f: Field) => {
+    const disabled = 'dep' in f && f.dep ? !value[f.dep] : false;
+    let control;
+    if (f.type === 'bool') control = <input className="oset-toggle" type="checkbox" checked={!!value[f.k]} onChange={(e) => set(f.k, e.target.checked)} />;
+    else if (f.type === 'sel') control = (
+      <select className="oset-rowinput" value={(value[f.k] as string) ?? ''} disabled={disabled} onChange={(e) => set(f.k, e.target.value)}>
         <option value="">{t('v2.slset.default', 'default')}</option>
-        {opts.map((o) => { const [val, lab] = Array.isArray(o) ? o : [o, o]; return <option key={val} value={val}>{lab}</option>; })}
+        {f.opts.map((o) => { const [val, lab] = Array.isArray(o) ? o : [o, o]; return <option key={val} value={val}>{lab}</option>; })}
       </select>
-    </label>
-  );
+    );
+    else control = <input className="oset-rowinput" type="number" step={f.step ?? 0.01} disabled={disabled} value={(value[f.k] as string) ?? ''} onChange={(e) => set(f.k, e.target.value)} />;
+    return (
+      <div className={`oset-row${disabled ? ' oset-row--off' : ''}`} key={f.k}>
+        <span className="oset-rowlabel">{t(`v2.f.${f.k}`, f.label)}{'unit' in f && f.unit ? ` (${f.unit})` : ''}</span>
+        {control}
+      </div>
+    );
+  };
 
   return (
     <div className="oset">
-      <div className="oset-tabs">
-        {TABS.map((tb) => (
-          <button key={tb.id} className={`oset-tab${tab === tb.id ? ' oset-tab--on' : ''}`} onClick={() => setTab(tb.id)}>
-            {t(`v2.oset.${tb.id}`, tb.label)}
-          </button>
-        ))}
+      <div className="oset-search">
+        <input className="oset-searchinput" placeholder={t('v2.oset.search', 'Search settings…')} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-
-      <div className="oset-body">
-        {tab === 'quality' && (
-          <div className="oset-grid">
-            <Num label={t('v2.slset.layer', 'Layer height')} k="layer_height" v={value} onChange={set} unit="mm" />
-            <Num label={t('v2.slset.initial', 'First layer')} k="initial_layer_height" v={value} onChange={set} unit="mm" />
-            <label className="oset-check"><input type="checkbox" checked={!!value.ironing} onChange={(e) => setBool('ironing', e.target.checked)} /> {t('v2.slset.ironing', 'Ironing (smooth top)')}</label>
-          </div>
-        )}
-        {tab === 'strength' && (
-          <div className="oset-grid">
-            <Num label={t('v2.slset.walls', 'Wall loops')} k="wall_loops" v={value} onChange={set} step={1} />
-            <Num label={t('v2.slset.top', 'Top layers')} k="top_layers" v={value} onChange={set} step={1} />
-            <Num label={t('v2.slset.bottom', 'Bottom layers')} k="bottom_layers" v={value} onChange={set} step={1} />
-            <Num label={t('v2.slset.infill', 'Infill')} k="infill_density" v={value} onChange={set} step={1} unit="%" />
-            <Sel k="infill_pattern" opts={INFILL_PATTERNS} label={t('v2.slset.pattern', 'Infill pattern')} />
-          </div>
-        )}
-        {tab === 'speed' && (
-          <div className="oset-grid">
-            <Num label={t('v2.slset.outer', 'Outer wall')} k="outer_wall_speed" v={value} onChange={set} step={1} unit="mm/s" />
-            <Num label={t('v2.slset.inner', 'Inner wall')} k="inner_wall_speed" v={value} onChange={set} step={1} unit="mm/s" />
-            <Num label={t('v2.slset.infill_speed', 'Infill')} k="infill_speed" v={value} onChange={set} step={1} unit="mm/s" />
-            <Num label={t('v2.slset.travel', 'Travel')} k="travel_speed" v={value} onChange={set} step={1} unit="mm/s" />
-          </div>
-        )}
-        {tab === 'support' && (
-          <div className="oset-grid">
-            <label className="oset-check"><input type="checkbox" checked={!!value.supports} onChange={(e) => setBool('supports', e.target.checked)} /> {t('v2.slset.supports', 'Enable supports')}</label>
-            <Sel k="support_type" opts={SUPPORT_TYPES} label={t('v2.slset.support_type', 'Type')} />
-            <Num label={t('v2.slset.threshold', 'Overhang angle')} k="support_threshold" v={value} onChange={set} step={1} unit="°" disabled={!value.supports} />
-          </div>
-        )}
-        {tab === 'others' && (
-          <div className="oset-grid">
-            <Sel k="brim_type" opts={BRIM_TYPES} label={t('v2.slset.brim', 'Brim')} />
-            <Num label={t('v2.slset.brim_w', 'Brim width')} k="brim_width" v={value} onChange={set} step={0.5} unit="mm" />
-            <Num label={t('v2.slset.skirt', 'Skirt loops')} k="skirt_loops" v={value} onChange={set} step={1} />
-            <Num label={t('v2.slset.raft', 'Raft layers')} k="raft_layers" v={value} onChange={set} step={1} />
-          </div>
-        )}
+      {!q && (
+        <div className="oset-tabs">
+          {TABS.map((tb) => (
+            <button key={tb} className={`oset-tab${tab === tb ? ' oset-tab--on' : ''}`} onClick={() => setTab(tb)}>{t(`v2.oset.${tb.toLowerCase()}`, tb)}</button>
+          ))}
+        </div>
+      )}
+      <div className="oset-rows">
+        {shown.map(row)}
+        {shown.length === 0 && <p className="muted micro" style={{ padding: 12 }}>{t('v2.oset.nomatch', 'No matching settings.')}</p>}
       </div>
     </div>
   );

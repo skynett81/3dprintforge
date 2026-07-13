@@ -9,7 +9,7 @@ import type { SliceSettings } from './slicer/SlicerProcessTabs';
 import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
 import { ObjectPanel } from './slicer/ObjectPanel';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
-import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconPrinter, IconFilament, IconProcess } from './slicer/icons';
+import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconPrinter, IconFilament, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -45,13 +45,19 @@ export function SlicerPanel() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [busy, setBusy] = useState(false);
-  const [settings, setSettings] = useState<SliceSettings>({ material: 'PLA', nozzle_temp: 210, bed_temp: 60 });
+  const [settings, setSettings] = useState<SliceSettings>({
+    material: 'PLA', nozzle_temp: 210, bed_temp: 60,
+    layer_height: 0.2, initial_layer_height: 0.24, wall_loops: 2, top_layers: 4, bottom_layers: 4,
+    infill_density: 15, infill_pattern: 'grid', skirt_loops: 1,
+    outer_wall_speed: 120, inner_wall_speed: 150, infill_speed: 180, travel_speed: 250,
+  });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
   const [obj, setObj] = useState<ObjInfo | null>(null);
-  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate' });
+  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1 });
+  const [full, setFull] = useState(false);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
   const [presets, setPresets] = useState<Record<string, SliceSettings>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.presets') || '{}'); } catch { return {}; } });
@@ -135,14 +141,15 @@ export function SlicerPanel() {
   );
 
   return (
-    <div className="oslice">
+    <div className={`oslice${full ? ' oslice--full' : ''}`}>
       {/* Top bar */}
       <div className="oslice-top">
+        <span className="oslice-logo">3DPrintForge <span>Slicer</span></span>
         <div className="oslice-toptabs">
           <button className={`oslice-toptab${tab === 'prepare' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('prepare')}>{t('v2.slicer.prepare', 'Prepare')}</button>
           <button className={`oslice-toptab${tab === 'preview' ? ' oslice-toptab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
         </div>
-        <span className="oslice-brand">{status?.slicer ?? t('v2.slicer.native_name', '3DPrintForge native slicer')}</span>
+        <button className="oslice-fullbtn" title={full ? t('v2.slicer.exit_full', 'Exit fullscreen') : t('v2.slicer.fullscreen', 'Fullscreen')} onClick={() => setFull((f) => !f)}>{full ? <IconCollapse /> : <IconExpand />}</button>
       </div>
 
       <div className="oslice-body">
@@ -243,9 +250,21 @@ export function SlicerPanel() {
 
           <div className="oslice-panelbody">
             {side === 'global' && <SlicerProcessTabs value={settings} onChange={setSettings} />}
-            {side === 'objects' && (obj
-              ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} />
-              : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object on the plate to edit it.')}</p>)}
+            {side === 'objects' && (
+              <>
+                <div className="oslice-objlist">
+                  {toolState.names.length === 0 && <p className="muted micro" style={{ padding: 10 }}>{t('v2.slicer.no_objects', 'No objects on the plate.')}</p>}
+                  {toolState.names.map((n, i) => (
+                    <button key={i} className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}`} onClick={() => plateRef.current?.selectAt(i)}>
+                      <span className="ellipsis">{n}</span>
+                    </button>
+                  ))}
+                </div>
+                {obj
+                  ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} />
+                  : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object to edit it.')}</p>}
+              </>
+            )}
           </div>
 
           {/* Send targets */}

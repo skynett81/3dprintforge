@@ -14,7 +14,7 @@ export interface ObjInfo {
   dimX: number; dimY: number; dimZ: number;    // mm (world)
 }
 export type PlateMode = 'translate' | 'rotate' | 'scale';
-export interface PlateState { count: number; hasSel: boolean; mode: PlateMode }
+export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   count: () => number;
@@ -23,6 +23,7 @@ export interface PlateHandle {
   duplicate: () => void;
   remove: () => void;
   arrange: () => void;
+  selectAt: (i: number) => void;
   layFlat: () => void;
   center: () => void;
   setPos: (x: number, y: number) => void;
@@ -67,7 +68,9 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   function emitState(nextMode = mode) {
     const c = ctx.current;
-    onStateRef.current?.({ count: c?.objects.length ?? 0, hasSel: !!c?.selected, mode: nextMode });
+    const names = (c?.objects ?? []).map((o, i) => o.name || `Object ${i + 1}`);
+    const selIndex = c?.selected ? c.objects.indexOf(c.selected) : -1;
+    onStateRef.current?.({ count: c?.objects.length ?? 0, hasSel: !!c?.selected, mode: nextMode, names, selIndex });
   }
   function setMode(m: PlateMode) { setModeState(m); ctx.current?.tcontrols.setMode(m); emitState(m); }
 
@@ -97,11 +100,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     emitState();
   }
 
-  function addMesh(geom: THREE.BufferGeometry) {
+  function addMesh(geom: THREE.BufferGeometry, name?: string) {
     const c = ctx.current; if (!c) return;
     geom.computeVertexNormals();
     geom.center();
     const mesh = new THREE.Mesh(geom, MAT());
+    mesh.name = name || `Object ${c.objects.length + 1}`;
     // Keep the model's authored orientation (slicers load STL as-is, Z-up); the
     // user can rotate. Just sit it on the plate.
     c.scene.add(mesh);
@@ -175,13 +179,15 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   async function loadFileBuffer(f: File) {
     const c = ctx.current; if (!c) return;
     const buf = await f.arrayBuffer();
-    const name = f.name.toLowerCase();
+    const lower = f.name.toLowerCase();
+    const base = f.name.replace(/\.[^.]+$/, '');
     try {
-      if (name.endsWith('.3mf')) {
+      if (lower.endsWith('.3mf')) {
         const obj = new ThreeMFLoader().parse(buf);
-        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) addMesh((o as THREE.Mesh).geometry.clone()); });
+        let n = 0;
+        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) { addMesh((o as THREE.Mesh).geometry.clone(), ++n > 1 ? `${base} ${n}` : base); } });
       } else {
-        addMesh(new STLLoader().parse(buf));
+        addMesh(new STLLoader().parse(buf), base);
       }
     } catch { /* unsupported/parse error — leave as-is */ }
   }
@@ -229,6 +235,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     duplicate: () => duplicate(),
     remove: () => removeSel(),
     arrange: () => arrange(),
+    selectAt: (i: number) => { const c = ctx.current; if (c && c.objects[i]) select(c.objects[i]); },
     layFlat: () => layFlat(),
     center: () => center(),
     setPos: (x: number, y: number) => { const m = ctx.current?.selected; if (!m) return; m.position.x = x; m.position.y = y; emitObject(); },
