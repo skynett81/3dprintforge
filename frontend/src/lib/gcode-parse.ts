@@ -11,6 +11,10 @@ export interface GcodeLayer {
   z: number;
   /** Extrusion segments per feature, flat: [ax, ay, bx, by, ...] */
   feats: Partial<Record<Feature, number[]>>;
+  /** All extrusion segments, flat: [ax, ay, bx, by, ...] (for speed mode) */
+  allSeg: number[];
+  /** Print speed (mm/s) per extrusion segment, aligned with allSeg. */
+  allSpeed: number[];
   /** Travel segments, flat: [ax, ay, bx, by, ...] */
   travel: number[];
 }
@@ -18,6 +22,7 @@ export interface GcodeLayer {
 export interface ParsedGcode {
   layers: GcodeLayer[];
   features: Feature[];
+  speedRange: { min: number; max: number };
   bbox: { minX: number; minY: number; maxX: number; maxY: number; maxZ: number };
 }
 
@@ -37,9 +42,11 @@ export function parseGcode(text: string): ParsedGcode {
   const layerFor = (zz: number): GcodeLayer => {
     const key = Math.round(zz * 100) / 100;
     let l = layerByZ.get(key);
-    if (!l) { l = { z: key, feats: {}, travel: [] }; layerByZ.set(key, l); layers.push(l); }
+    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], travel: [] }; layerByZ.set(key, l); layers.push(l); }
     return l;
   };
+  let feed = 0;          // current feedrate (mm/min)
+  let sMin = Infinity, sMax = 0;
 
   const gated = text.includes('--- layer');
   let inPrint = !gated;
@@ -77,6 +84,7 @@ export function parseGcode(text: string): ParsedGcode {
         case 'Y': ny = absXYZ ? v : y + v; break;
         case 'Z': nz = absXYZ ? v : z + v; break;
         case 'E': ne = absE ? v : e + v; hasE = true; break;
+        case 'F': feed = v; break;
       }
     }
 
@@ -88,6 +96,9 @@ export function parseGcode(text: string): ParsedGcode {
         if (extruding) {
           const arr = cur.feats[feature] ?? (cur.feats[feature] = []);
           arr.push(x, y, nx, ny);
+          const spd = feed / 60;
+          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd);
+          if (spd > 0) { if (spd < sMin) sMin = spd; if (spd > sMax) sMax = spd; }
           seen.add(feature);
           if (x < minX) minX = x; if (x > maxX) maxX = x;
           if (y < minY) minY = y; if (y > maxY) maxY = y;
@@ -103,7 +114,8 @@ export function parseGcode(text: string): ParsedGcode {
   }
 
   if (!Number.isFinite(minX)) { minX = minY = 0; maxX = maxY = 0; }
+  if (!Number.isFinite(sMin)) sMin = 0;
   const nonEmpty = layers.filter((l) => Object.keys(l.feats).length || l.travel.length);
   nonEmpty.sort((a, b) => a.z - b.z);
-  return { layers: nonEmpty, features: [...seen], bbox: { minX, minY, maxX, maxY, maxZ } };
+  return { layers: nonEmpty, features: [...seen], speedRange: { min: sMin, max: sMax }, bbox: { minX, minY, maxX, maxY, maxZ } };
 }
