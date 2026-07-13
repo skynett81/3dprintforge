@@ -24,7 +24,7 @@
 
 import {
   sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill,
-  patternInfill, buildRegions, EPS, PI, _bbox, _isCCW, _signedArea, _near,
+  patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
   _chainSegments, _pointInPoly,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
@@ -230,6 +230,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1, supportInterface: 2,
     ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
     spiralMode: false, elephantFoot: 0,
+    fuzzySkin: false, fuzzySkinThickness: 0.3, draftShield: false, draftShieldGap: 4,
     ...settings,
   };
   const wallLoops = Math.max(1, s.perimeters | 0);
@@ -293,7 +294,8 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       // Outer walls: shrink inward wall-by-wall (negative = inward).
       const seam = s.seamPosition;
       let inner = outerBoundary;
-      walls.push({ feature: 'outer-wall', closed: true, pts: seamStart(inner, seam) });
+      const outerPts = s.fuzzySkin ? fuzzifyPolygon(outerBoundary, s.fuzzySkinThickness, Math.max(0.3, lw)) : outerBoundary;
+      walls.push({ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam) });
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
@@ -372,6 +374,14 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
           adhesion.push({ feature: 'skirt', closed: true, pts: sk });
           sk = offsetPolygon(sk, lw);
         }
+      }
+    }
+
+    // Draft shield: a wall around the object on every layer, blocking drafts.
+    if (s.draftShield) {
+      for (const region of regions) {
+        const ring = offsetPolygon(region.outer, s.draftShieldGap);
+        if (ring && ring.length >= 3) adhesion.push({ feature: 'skirt', closed: true, pts: ring });
       }
     }
 

@@ -224,6 +224,34 @@ export function buildRegions(polygons) {
   return regions.map(({ outer, holes }) => ({ outer, holes }));
 }
 
+/**
+ * Fuzzy skin: resample a closed outline and jitter each point in/out along
+ * its outward normal, giving the outer wall a rough textured surface.
+ * Deterministic (no Math.random) so slices are reproducible.
+ */
+export function fuzzifyPolygon(poly, thickness = 0.3, pointDist = 0.4) {
+  if (!poly || poly.length < 3 || thickness <= 0) return poly;
+  const ccw = _isCCW(poly) ? 1 : -1;
+  const n = poly.length;
+  const out = [];
+  let seed = 0x9e3779b9 ^ Math.round((poly[0][0] + poly[1][1]) * 1000);
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed / 0x3fffffff) - 1; };
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    if (len < EPS) continue;
+    const nx = (dy / len) * ccw, ny = (-dx / len) * ccw;   // outward normal
+    const steps = Math.max(1, Math.round(len / pointDist));
+    for (let s = 0; s < steps; s++) {
+      const t = s / steps;
+      const j = rnd() * thickness;
+      out.push([a[0] + dx * t + nx * j, a[1] + dy * t + ny * j]);
+    }
+  }
+  return out.length >= 3 ? out : poly;
+}
+
 // ── Infill ─────────────────────────────────────────────────────────
 
 /**
@@ -287,13 +315,19 @@ export function solidInfill(region, angleDeg, lineWidth = 0.4) {
 }
 
 /**
- * Pattern dispatcher for sparse infill. 'grid' adds a second pass at
- * +90°, 'lines'/default is a single direction.
+ * Pattern dispatcher for sparse infill. 'grid' = two passes 90° apart,
+ * 'triangles' = three passes 60° apart, 'lines'/default = one direction.
  */
 export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines') {
-  const first = regionInfill(region, pattern === 'grid' ? density / 2 : density, angleDeg, lineWidth);
   if (pattern === 'grid') {
-    return first.concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth));
+    return regionInfill(region, density / 2, angleDeg, lineWidth)
+      .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth));
   }
-  return first;
+  if (pattern === 'triangles' || pattern === 'star') {
+    const d = density / 3;
+    return regionInfill(region, d, angleDeg, lineWidth)
+      .concat(regionInfill(region, d, angleDeg + 60, lineWidth))
+      .concat(regionInfill(region, d, angleDeg + 120, lineWidth));
+  }
+  return regionInfill(region, density, angleDeg, lineWidth);
 }

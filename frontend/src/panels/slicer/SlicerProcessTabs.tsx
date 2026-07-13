@@ -19,6 +19,8 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'initial_layer_height', label: 'Initial layer height', type: 'num', unit: 'mm', step: 0.02 },
   { tab: 'Quality', group: 'Precision', k: 'elephant_foot', label: 'Elephant foot compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Surface', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
+  { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin', label: 'Fuzzy skin', type: 'bool' },
+  { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin_thickness', label: 'Fuzzy skin thickness', type: 'num', unit: 'mm', step: 0.05, dep: 'fuzzy_skin' },
   { tab: 'Quality', group: 'Special mode', k: 'spiral_mode', label: 'Spiral vase mode', type: 'bool' },
   { tab: 'Strength', group: 'Walls', k: 'wall_loops', label: 'Wall loops', type: 'num', step: 1 },
   { tab: 'Strength', group: 'Top/bottom shells', k: 'top_layers', label: 'Top shell layers', type: 'num', step: 1 },
@@ -44,6 +46,7 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Adhesion', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
   { tab: 'Others', group: 'Adhesion', k: 'skirt_distance', label: 'Skirt distance', type: 'num', unit: 'mm', step: 0.5 },
   { tab: 'Others', group: 'Adhesion', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
+  { tab: 'Others', group: 'Adhesion', k: 'draft_shield', label: 'Draft shield', type: 'bool' },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each

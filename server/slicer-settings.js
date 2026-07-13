@@ -48,8 +48,9 @@ export function hasOverrides(s = {}) {
 // OrcaSlicer patterns collapse to the closest of the two.
 const NATIVE_PATTERN = {
   grid: 'grid', cubic: 'grid', honeycomb: 'grid', '3dhoneycomb': 'grid',
-  triangles: 'lines', line: 'lines', lines: 'lines', concentric: 'concentric',
-  gyroid: 'lines', zigzag: 'lines',
+  triangles: 'triangles', 'tri-hexagon': 'triangles', star: 'triangles',
+  line: 'lines', lines: 'lines', concentric: 'concentric',
+  gyroid: 'grid', zigzag: 'lines',
 };
 
 /**
@@ -84,6 +85,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.ironing !== undefined && s.ironing !== '') out.ironing = !!s.ironing;
   if (s.spiral_mode !== undefined && s.spiral_mode !== '') out.spiralMode = !!s.spiral_mode;
   set('elephantFoot', num(s.elephant_foot));
+  if (s.fuzzy_skin !== undefined && s.fuzzy_skin !== '') out.fuzzySkin = !!s.fuzzy_skin;
+  set('fuzzySkinThickness', num(s.fuzzy_skin_thickness));
+  if (s.draft_shield !== undefined && s.draft_shield !== '') out.draftShield = !!s.draft_shield;
 
   // Per-feature speeds.
   set('outerWallSpeed', num(s.outer_wall_speed));

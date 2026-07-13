@@ -52,7 +52,7 @@ describe('buildNativeSettings', () => {
     assert.equal(n.topLayers, 5);
     assert.equal(n.bottomLayers, 4);
     assert.equal(n.infillDensity, 0.15);        // % → fraction
-    assert.equal(n.infillPattern, 'lines');     // gyroid collapses to lines
+    assert.equal(n.infillPattern, 'grid');      // gyroid approximated as grid
     assert.equal(n.brimWidth, 5);
     assert.equal(n.skirtLoops, 2);
     assert.equal(n.printSpeed, 120);
