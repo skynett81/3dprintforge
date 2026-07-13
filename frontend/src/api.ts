@@ -75,6 +75,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, ...extra }),
     }),
+  getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
+  sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean }): Promise<import('./types').SliceResult> => {
+    const q = new URLSearchParams({ printerId, filename: file.name });
+    if (opts?.print) q.set('print', '1');
+    const res = await fetch(`/api/slicer/bridge/slice-and-send?${q.toString()}`, { method: 'POST', body: file });
+    const text = await res.text();
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as import('./types').SliceResult;
+  },
   listPrinterFiles: (id: string) => req<Array<{ name?: string } | string>>(`/api/printers/${encodeURIComponent(id)}/files`),
   printFile: (id: string, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}/files/print`, { method: 'POST', body: JSON.stringify(body) }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),

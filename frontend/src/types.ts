@@ -244,6 +244,26 @@ export interface Checkout {
   location_name?: string | null;
 }
 
+export interface SlicerStatus {
+  available: boolean;
+  slicer?: string;
+  path?: string;
+  supportedFormats?: string[];
+  printFormats?: string[];
+  qualityPresets?: { id: string; label: string; layerHeight: number; infill: number; speed: string }[];
+  profiles?: number;
+}
+
+export interface SliceResult {
+  ok: boolean;
+  slicer?: string;
+  gcodeFilename?: string;
+  sizeBytes?: number;
+  sliceDurationMs?: number;
+  uploaded?: boolean;
+  printing?: boolean;
+}
+
 export interface TigerTagParsed {
   protocol: string;
   type?: string | null;

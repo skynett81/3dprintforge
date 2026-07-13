@@ -17,6 +17,7 @@ import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { MaintenancePanel } from './panels/MaintenancePanel';
 import { PrintGuardPanel } from './panels/PrintGuardPanel';
+import { SlicerPanel } from './panels/SlicerPanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
 import { SchedulerPanel } from './panels/SchedulerPanel';
@@ -35,7 +36,7 @@ import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'crm' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'slicer' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'crm' | 'settings';
 
 type NavItem = { id: PanelId; label: string; icon: JSX.Element };
 const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
@@ -44,6 +45,7 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
     label: 'Operate',
     items: [
       { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
+      { id: 'slicer', label: 'Slicer', icon: <IconLayers /> },
       { id: 'guard', label: 'Print Guard', icon: <IconShield /> },
       { id: 'queue', label: 'Queue', icon: <IconQueue /> },
       { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
@@ -430,6 +432,7 @@ export function App() {
       <main className="main">
         {panel === 'dashboard' && <DashboardPanel onNavigate={(id) => setPanel(id as PanelId)} />}
         {panel === 'production' && <ProductionPanel />}
+        {panel === 'slicer' && <SlicerPanel />}
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('maintenance', s); }} />}
         {panel === 'guard' && <PrintGuardPanel />}
