@@ -1282,3 +1282,13 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 /* Full-width tabs — hide the settings panel (Device/Filaments/Calibration) */
 .oslice-panel--hidden { display: none; }
+
+/* ── Slicer buttons: light theme (the global .btn uses dark vars → black) ── */
+.oslice .btn { background: var(--o-accent); border: 1px solid var(--o-accent); color: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; transition: filter .12s, background .12s, border-color .12s; }
+.oslice .btn:hover:not(:disabled) { filter: brightness(1.06); border-color: var(--o-accent); color: #fff; }
+.oslice .btn--sm { padding: 5px 10px; font-size: 0.8rem; }
+.oslice .btn--ghost { background: var(--o-panel-2); border-color: var(--o-border); color: var(--o-text); filter: none; }
+.oslice .btn--ghost:hover:not(:disabled) { background: var(--o-panel); border-color: var(--o-accent); color: var(--o-text); filter: none; }
+.oslice .btn--danger { background: #e05a5a; border-color: #e05a5a; color: #fff; }
+.oslice .btn--danger:hover:not(:disabled) { filter: brightness(1.06); color: #fff; }
+.oslice .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
