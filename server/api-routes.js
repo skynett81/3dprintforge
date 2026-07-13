@@ -6082,26 +6082,52 @@ export async function handleApiRequest(req, res) {
       // Connected printers with slicer-relevant info (build volume) so the
       // web slicer can pick a target and size its bed accordingly.
       const { getCapabilities } = await import('./printer-capabilities.js');
+      const normHex = (c) => '#' + String(c).replace(/^#/, '').slice(0, 6).toUpperCase();
+      const normMat = (m) => String(m || 'PLA').split(/[\s/_-]/)[0] || 'PLA';
       const list = [];
       for (const [id, entry] of (_printerManager?.printers ?? new Map())) {
         const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
         const bv = Array.isArray(caps?.buildVolume) ? caps.buildVolume : null;
+        const feat = caps?.features || {};
         // Live AMS slots (Bambu) → the slicer can load the real loaded colours.
         const st = entry.client?.state || {};
-        const ams = Array.isArray(st._ams_trays)
+        let ams = Array.isArray(st._ams_trays)
           ? st._ams_trays.filter((tr) => tr && tr.color).map((tr, i) => ({
               slot: i + 1,
-              color: '#' + String(tr.color).replace(/^#/, '').slice(0, 6).toUpperCase(),
-              material: String(tr.type || 'PLA').split(/[\s-]/)[0] || 'PLA',
+              color: normHex(tr.color),
+              material: normMat(tr.type),
             }))
           : [];
+        // Toolchangers / multi-extruder printers (e.g. Snapmaker U1) have no live
+        // AMS feed — fall back to colours from spools assigned to their tools.
+        let source = ams.length ? 'ams' : null;
+        if (!ams.length) {
+          try {
+            const spools = getSpools({ printer_id: id, archived: 0 }).rows || [];
+            const byTray = spools
+              .filter((s) => s.ams_tray != null && s.color_hex)
+              .sort((a, b) => Number(a.ams_tray) - Number(b.ams_tray))
+              .map((s) => ({ slot: Number(s.ams_tray) + 1, color: normHex(s.color_hex), material: normMat(s.material) }));
+            if (byTray.length) { ams = byTray; source = 'spools'; }
+          } catch { /* inventory optional */ }
+        }
+        // Max colours the printer can print with (AMS trays or physical toolheads).
+        const colorSlots =
+          ams.length ? Math.max(ams.length, feat.toolheads || 0)
+          : feat.toolheads ? feat.toolheads
+          : (feat.idex || feat.dualNozzle) ? 2
+          : caps?.ams ? 4
+          : 1;
         list.push({
           id,
           name: entry.config?.name || id,
           model: entry.config?.model || null,
           type: entry.config?.type || null,
           buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
+          colorSlots,
+          multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),
           ams,
+          amsSource: source,
         });
       }
       return sendJson(res, list);

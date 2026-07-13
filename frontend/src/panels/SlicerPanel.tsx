@@ -227,10 +227,19 @@ export function SlicerPanel() {
           <div className="oslice-filaments">
             <div className="oslice-sectlbl" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               {t('v2.slset.filament', 'Filament / AMS')}
-              {(selPrinter?.ams?.length ?? 0) > 0 && (
-                <button className="btn btn--sm btn--ghost" style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => loadFromAms(selPrinter!.ams!)}>{t('v2.slset.from_ams', 'From AMS')}</button>
+              {(selPrinter?.colorSlots ?? 0) > 1 && (
+                <span style={{ fontSize: '0.62rem', fontWeight: 400, color: 'var(--text-dim, #999)', letterSpacing: 0 }}>
+                  {selPrinter?.multiTool
+                    ? t('v2.slset.tools_n', '{n} tools').replace('{n}', String(selPrinter?.colorSlots))
+                    : t('v2.slset.ams_n', 'AMS · {n}').replace('{n}', String(selPrinter?.colorSlots))}
+                </span>
               )}
-              <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} style={{ marginLeft: (selPrinter?.ams?.length ?? 0) > 0 ? '0' : 'auto' }}>+</button>
+              {(selPrinter?.ams?.length ?? 0) > 0 && (
+                <button className="btn btn--sm btn--ghost" style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => loadFromAms(selPrinter!.ams!)}>
+                  {selPrinter?.multiTool ? t('v2.slset.from_tools', 'From tools') : t('v2.slset.from_ams', 'From AMS')}
+                </button>
+              )}
+              <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} disabled={filaments.length >= (selPrinter?.colorSlots ?? 8)} style={{ marginLeft: (selPrinter?.ams?.length ?? 0) > 0 ? '0' : 'auto' }}>+</button>
             </div>
             {filaments.map((f, i) => (
               <div className="oslice-filrow" key={i}>
