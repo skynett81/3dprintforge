@@ -57,6 +57,8 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Adhesion', k: 'draft_shield', label: 'Draft shield', type: 'bool' },
   { tab: 'Others', group: 'Retraction', k: 'retraction_length', label: 'Retraction length', type: 'num', unit: 'mm', step: 0.1 },
   { tab: 'Others', group: 'Retraction', k: 'z_hop', label: 'Z hop', type: 'num', unit: 'mm', step: 0.05 },
+  { tab: 'Others', group: 'Reduce waste', k: 'reduce_waste', label: 'Skip prime line', type: 'bool' },
+  { tab: 'Others', group: 'Reduce waste', k: 'prime_line_length', label: 'Prime line length', type: 'num', unit: 'mm', step: 5 },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each

@@ -91,6 +91,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.draft_shield !== undefined && s.draft_shield !== '') out.draftShield = !!s.draft_shield;
   if (s.wall_infill_order) out.wallOrder = /inner/i.test(String(s.wall_infill_order)) && /outer/i.test(String(s.wall_infill_order)) && String(s.wall_infill_order).toLowerCase().indexOf('inner') < String(s.wall_infill_order).toLowerCase().indexOf('outer') ? 'inner-outer' : String(s.wall_infill_order);
   if (s.top_surface_pattern) out.topSurfacePattern = String(s.top_surface_pattern);
+  if (s.reduce_waste !== undefined && s.reduce_waste !== '') out.reduceWaste = !!s.reduce_waste;
+  set('primeLineLength', num(s.prime_line_length));
 
   // Per-feature speeds.
   set('outerWallSpeed', num(s.outer_wall_speed));

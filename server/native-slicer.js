@@ -137,14 +137,16 @@ export function layersToGcode(layers, settings) {
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
 
-  // Prime line (skip when a custom start gcode already primes).
-  if (!s.startGcode) {
+  // Prime line (skip when a custom start gcode already primes, or when
+  // reduce-waste is on). A shorter prime line also cuts wasted filament.
+  if (!s.startGcode && !s.reduceWaste) {
+    const primeLen = s.primeLineLength ?? 60;
     g += `; --- prime line ---\n`;
     g += `G1 Z0.3 F${s.travelSpeed * 60}\n`;
     g += `G1 X20 Y20 F${s.travelSpeed * 60}\n`;
-    g += `G1 X80 Y20 E${(60 * efactor).toFixed(4)} F${s.firstLayerSpeed * 60}\n`;
+    g += `G1 X${20 + primeLen} Y20 E${(primeLen * efactor).toFixed(4)} F${s.firstLayerSpeed * 60}\n`;
     g += `G92 E0\n`;
-    curX = 80; curY = 20; curZ = 0.3;
+    curX = 20 + primeLen; curY = 20; curZ = 0.3;
   }
 
   const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow) => {
