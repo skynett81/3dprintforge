@@ -309,12 +309,16 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       const seam = s.seamPosition;
       let inner = outerBoundary;
       const outerPts = s.fuzzySkin ? fuzzifyPolygon(outerBoundary, s.fuzzySkinThickness, Math.max(0.3, lw)) : outerBoundary;
-      walls.push({ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam) });
+      const mainWalls = [{ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam) }];
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
-        walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(inner, seam) });
+        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(inner, seam) });
       }
+      // Wall print order: inner-first (better dimensional accuracy) or
+      // outer-first (better surface). OrcaSlicer's wall_infill_order.
+      if (s.wallOrder === 'inner-outer' && mainWalls.length > 1) walls.push(...mainWalls.slice(1), mainWalls[0]);
+      else walls.push(...mainWalls);
       // Hole walls: grow each hole outward into the solid.
       const grownHoles = [];
       for (const hole of region.holes) {
@@ -333,18 +337,21 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       if (infOuter && infOuter.length >= 3) {
         const infRegion = { outer: infOuter, holes: infHoles };
         const baseAngle = s.infillAngle + (i % 2) * 90;
-        // Concentric sparse infill = closed rings stepping inward.
-        const concentric = (region2, feat) => {
-          const spacing = Math.max(lw, lw / Math.max(0.05, Math.min(1, s.infillDensity)));
+        // Concentric infill = closed rings stepping inward. `dense` fills solid
+        // (spacing = line width) for solid/top-surface rings.
+        const concentric = (region2, feat, dense) => {
+          const spacing = dense ? lw : Math.max(lw, lw / Math.max(0.05, Math.min(1, s.infillDensity)));
           let ring = offsetPolygon(region2.outer, -spacing);
           while (ring && ring.length >= 3) {
             fills.push({ feature: feat, closed: true, pts: ring });
             ring = offsetPolygon(ring, -spacing);
           }
         };
+        const solidConcentric = s.topSurfacePattern === 'concentric';
         if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.
-          if (!globalSolid && s.infillPattern === 'concentric') { concentric(infRegion, 'sparse'); }
+          if (!globalSolid && s.infillPattern === 'concentric') { concentric(infRegion, 'sparse', false); }
+          else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
           else {
             const segs = globalSolid
               ? solidInfill(infRegion, baseAngle, lw)
@@ -356,7 +363,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
           const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
           for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
-          if (s.infillPattern === 'concentric') { concentric(infRegion, 'sparse'); }
+          if (s.infillPattern === 'concentric') { concentric(infRegion, 'sparse', false); }
           else {
             const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
