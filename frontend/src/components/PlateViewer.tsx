@@ -160,11 +160,15 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
     const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
     loop();
-    const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
+    const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
     window.addEventListener('resize', onResize);
+    // Resize with the container (fullscreen toggle, sidebar changes) — not
+    // just the window, so the canvas always fills the scene.
+    const ro = new ResizeObserver(onResize); ro.observe(el);
     return () => {
       cancelAnimationFrame(c.raf);
       window.removeEventListener('resize', onResize);
+      ro.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onDown);
       renderer.dispose();
       el.removeChild(renderer.domElement);

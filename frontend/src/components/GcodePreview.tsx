@@ -64,11 +64,13 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
     ctx.current = c;
     const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
     loop();
-    const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
+    const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
     window.addEventListener('resize', onResize);
+    const ro = new ResizeObserver(onResize); ro.observe(el);
     return () => {
       cancelAnimationFrame(c.raf);
       window.removeEventListener('resize', onResize);
+      ro.disconnect();
       renderer.dispose();
       el.removeChild(renderer.domElement);
       ctx.current = null;
