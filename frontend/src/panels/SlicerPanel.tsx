@@ -356,8 +356,10 @@ export function SlicerPanel() {
       </div>
 
       <div className="oslice-body">
-        {/* LEFT — settings panel (white) */}
-        <aside className="oslice-panel">
+        {/* LEFT — settings panel (white). Hidden on the full-width tabs
+            (Device / Filaments / Calibration) so they span the whole area like
+            BambuStudio; kept mounted so its state survives tab switches. */}
+        <aside className={`oslice-panel${tab === 'prepare' || tab === 'preview' ? '' : ' oslice-panel--hidden'}`}>
           {/* Printer card with image */}
           <div className="oslice-printercard">
             {selPrinter?.model

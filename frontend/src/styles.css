@@ -1279,3 +1279,6 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 /* Device camera placeholder */
 .oslice-devcam { position: relative; }
 .oslice-devcam-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+
+/* Full-width tabs — hide the settings panel (Device/Filaments/Calibration) */
+.oslice-panel--hidden { display: none; }
