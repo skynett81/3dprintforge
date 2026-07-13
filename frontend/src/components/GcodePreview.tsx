@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useT } from '../i18n';
 import { parseGcode, type ParsedGcode, type Feature } from '../lib/gcode-parse';
+import { gradientBackground, buildPlate } from './plate-scene';
 
 interface Ctx {
   scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer;
@@ -47,7 +48,7 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
     const el = mount.current; if (!el) return;
     const w = el.clientWidth || 640; const h = el.clientHeight || 440;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e1116);
+    scene.background = gradientBackground();
     const camera = new THREE.PerspectiveCamera(45, w / h, 1, 5000);
     camera.up.set(0, 0, 1);
     camera.position.set(bed * 0.8, -bed * 1.0, bed * 0.8);
@@ -55,8 +56,7 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
-    const grid = new THREE.GridHelper(bed, 16, 0x2a3340, 0x1b2028);
-    grid.rotation.x = Math.PI / 2; scene.add(grid);
+    buildPlate(scene, bed);
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.1);
     const group = new THREE.Group(); scene.add(group);

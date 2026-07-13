@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { useT } from '../i18n';
+import { gradientBackground, buildPlate } from './plate-scene';
 
 export interface ObjInfo {
   posX: number; posY: number;
@@ -121,7 +122,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const el = mount.current; if (!el) return;
     const w = el.clientWidth || 640; const h = el.clientHeight || 440;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e1116);
+    scene.background = gradientBackground();
     const camera = new THREE.PerspectiveCamera(45, w / h, 1, 5000);
     camera.up.set(0, 0, 1);
     camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
@@ -131,11 +132,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     el.appendChild(renderer.domElement);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 1.1));
     const dir = new THREE.DirectionalLight(0xffffff, 1.4); dir.position.set(1, -1, 2); scene.add(dir);
-    // plate
-    const grid = new THREE.GridHelper(bed, 16, 0x2a3340, 0x1b2028);
-    grid.rotation.x = Math.PI / 2; scene.add(grid);
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(bed, bed), new THREE.MeshBasicMaterial({ color: 0x11151b, transparent: true, opacity: 0.6 }));
-    scene.add(plate);
+    buildPlate(scene, bed);
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.15);
     const tcontrols = new TransformControls(camera, renderer.domElement);

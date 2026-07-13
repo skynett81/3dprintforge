@@ -9,7 +9,7 @@ import type { SliceSettings } from './slicer/SlicerProcessTabs';
 import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
 import { ObjectPanel } from './slicer/ObjectPanel';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
-import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconPrinter, IconFilament, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
+import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -140,85 +140,66 @@ export function SlicerPanel() {
     <button className="oslice-tool" title={label} disabled={disabled} onClick={fn}>{icon}</button>
   );
 
+  const selPrinter = slicerPrinters.find((p) => p.id === profilePrinter) ?? slicerPrinters[0];
+
   return (
     <div className={`oslice${full ? ' oslice--full' : ''}`}>
-      {/* Top bar */}
+      {/* Top bar (dark) — tabs left, Slice/Print plate right */}
       <div className="oslice-top">
         <span className="oslice-logo">3DPrintForge <span>Slicer</span></span>
         <div className="oslice-toptabs">
           <button className={`oslice-toptab${tab === 'prepare' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('prepare')}>{t('v2.slicer.prepare', 'Prepare')}</button>
           <button className={`oslice-toptab${tab === 'preview' ? ' oslice-toptab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
         </div>
-        <button className="oslice-fullbtn" title={full ? t('v2.slicer.exit_full', 'Exit fullscreen') : t('v2.slicer.fullscreen', 'Fullscreen')} onClick={() => setFull((f) => !f)}>{full ? <IconCollapse /> : <IconExpand />}</button>
+        <div className="oslice-topright">
+          {preview && (
+            <span className="oslice-topest">
+              <span><strong>{fmtTime(preview.timeSec)}</strong></span>
+              <span><strong>{preview.filamentG ? `${preview.filamentG.toFixed(1)}g` : '—'}</strong></span>
+              {cost > 0 && <span><strong>{cost.toFixed(1)} kr</strong></span>}
+            </span>
+          )}
+          <button className="oslice-sliceplate" disabled={!file || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
+          <button className="oslice-printplate" disabled={!canRun} title={t('v2.slicer.printplate_hint', 'Slice and send to the selected printer(s)')} onClick={() => run(false)}>{t('v2.slicer.print_plate', 'Print plate')}</button>
+          <button className="oslice-fullbtn" title={full ? t('v2.slicer.exit_full', 'Exit fullscreen') : t('v2.slicer.fullscreen', 'Fullscreen')} onClick={() => setFull((f) => !f)}>{full ? <IconCollapse /> : <IconExpand />}</button>
+        </div>
       </div>
 
       <div className="oslice-body">
-        {/* Left tool rail */}
-        <div className="oslice-rail">
-          {action(<IconAdd />, t('v2.slicer.add_model', 'Add model'), () => addInputRef.current?.click())}
-          {action(<IconDuplicate />, t('v2.plate.dup', 'Duplicate'), () => plateRef.current?.duplicate(), !toolState.hasSel)}
-          {action(<IconArrange />, t('v2.plate.arrange', 'Auto-arrange'), () => plateRef.current?.arrange(), toolState.count < 2)}
-          {action(<IconDelete />, t('v2.plate.del', 'Delete'), () => plateRef.current?.remove(), !toolState.hasSel)}
-          <span className="oslice-rail-sep" />
-          {tool('translate', <IconMove />, t('v2.plate.move', 'Move'))}
-          {tool('rotate', <IconRotate />, t('v2.plate.rotate', 'Rotate'))}
-          {tool('scale', <IconScale />, t('v2.plate.scale', 'Scale'))}
-          {action(<IconLayFlat />, t('v2.plate.flat', 'Lay flat'), () => plateRef.current?.layFlat(), !toolState.hasSel)}
-          {action(<IconCenter />, t('v2.plate.center', 'Center'), () => plateRef.current?.center(), !toolState.hasSel)}
-          <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { if (!file) pickFile(e.target.files?.[0] ?? null); else addModels(e.target.files); e.currentTarget.value = ''; }} />
-        </div>
-
-        {/* Viewport */}
-        <div className="oslice-stage">
-          {!file && (
-            <label className="oslice-drop">
-              <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-              <div style={{ textAlign: 'center' }}>
-                <div className="oslice-drop-plus">+</div>
-                <div>{t('v2.slicer.choose', 'Click to choose an STL / 3MF / OBJ / STEP file')}</div>
-                <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={(e) => { e.preventDefault(); setShowLibrary(true); }}>{t('v2.slicer.from_library', 'Import from library')}</button>
-              </div>
-            </label>
-          )}
-          {file && tab === 'prepare' && (
-            <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} />
-            </Suspense>
-          )}
-          {file && tab === 'preview' && preview && (
-            <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <GcodePreview gcode={preview.gcode} bed={bed} />
-            </Suspense>
-          )}
-        </div>
-
-        {/* Right settings panel */}
+        {/* LEFT — settings panel (white) */}
         <aside className="oslice-panel">
-          {/* Preset bar */}
+          {/* Printer card with image */}
+          <div className="oslice-printercard">
+            {selPrinter?.model
+              ? <img className="oslice-printerimg" src={`/api/printer-image/${encodeURIComponent(selPrinter.model)}`} alt="" onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
+              : <span className="oslice-printerimg" />}
+            <div className="oslice-printersel">
+              <div className="oslice-sectlbl">{t('v2.slicer.printer', 'Printer')}</div>
+              {slicerPrinters.length ? (
+                <select className="oslice-preset-sel" value={profilePrinter} onChange={(e) => setProfilePrinter(e.target.value)}>
+                  {slicerPrinters.map((p) => <option key={p.id} value={p.id}>{p.name}{p.buildVolume ? ` (${p.buildVolume.x}×${p.buildVolume.y})` : ''}</option>)}
+                </select>
+              ) : <div className="oslice-preset-sel">{t('v2.slicer.generic', 'Generic 256×256')}</div>}
+            </div>
+          </div>
+
+          {/* Filament + temps */}
+          <div className="oslice-filaments">
+            <div className="oslice-sectlbl" style={{ marginBottom: 6 }}>{t('v2.slset.material', 'Filament')}</div>
+            <div className="oslice-filrow">
+              <span className="oslice-filbadge" style={{ background: MATERIALS[material]?.color ?? '#888' }}>1</span>
+              <select className="oslice-preset-sel oslice-filname" value={material} onChange={(e) => applyMaterial(e.target.value)}>
+                {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="oslice-temps" style={{ marginTop: 8 }}>
+              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.nozzle', 'Nozzle °C')}</span><input className="oset-input" type="number" value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, nozzle_temp: e.target.value }))} /></label>
+              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.bed', 'Bed °C')}</span><input className="oset-input" type="number" value={(settings.bed_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, bed_temp: e.target.value }))} /></label>
+            </div>
+          </div>
+
+          {/* Process preset */}
           <div className="oslice-presets">
-            <div className="oslice-preset">
-              <span className="oslice-preset-ic"><IconPrinter /></span>
-              <div className="oslice-preset-main">
-                <span className="oslice-preset-lbl">{t('v2.slicer.printer', 'Printer')}</span>
-                {slicerPrinters.length ? (
-                  <select className="oslice-preset-sel" value={profilePrinter} onChange={(e) => setProfilePrinter(e.target.value)}>
-                    {slicerPrinters.map((p) => <option key={p.id} value={p.id}>{p.name}{p.buildVolume ? ` (${p.buildVolume.x}×${p.buildVolume.y})` : ''}</option>)}
-                  </select>
-                ) : <span className="oslice-preset-sel">{t('v2.slicer.generic', 'Generic')}</span>}
-              </div>
-            </div>
-            <div className="oslice-preset">
-              <span className="oslice-preset-ic" style={{ color: MATERIALS[material]?.color }}><IconFilament /></span>
-              <div className="oslice-preset-main">
-                <span className="oslice-preset-lbl">{t('v2.slset.material', 'Filament')}</span>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <span className="oslice-chip" style={{ background: MATERIALS[material]?.color ?? '#888' }} />
-                  <select className="oslice-preset-sel" value={material} onChange={(e) => applyMaterial(e.target.value)}>
-                    {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
             <div className="oslice-preset">
               <span className="oslice-preset-ic"><IconProcess /></span>
               <div className="oslice-preset-main">
@@ -229,10 +210,6 @@ export function SlicerPanel() {
                 </select>
               </div>
             </div>
-            <div className="oslice-temps">
-              <label className="oset-field"><span className="oset-label">{t('v2.slset.nozzle', 'Nozzle °C')}</span><input className="oset-input" type="number" value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, nozzle_temp: e.target.value }))} /></label>
-              <label className="oset-field"><span className="oset-label">{t('v2.slset.bed', 'Bed °C')}</span><input className="oset-input" type="number" value={(settings.bed_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, bed_temp: e.target.value }))} /></label>
-            </div>
           </div>
 
           {/* Global / Objects */}
@@ -240,7 +217,7 @@ export function SlicerPanel() {
             <button className={`oslice-goTab${side === 'global' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('global')}>{t('v2.slicer.global', 'Global')}</button>
             <button className={`oslice-goTab${side === 'objects' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('objects')}>{t('v2.slicer.objects', 'Objects')}</button>
             <div className="oslice-presetctl">
-              <select className="oset-input" style={{ maxWidth: 110 }} value="" onChange={(e) => { if (e.target.value && presets[e.target.value]) setSettings({ ...presets[e.target.value] }); }}>
+              <select className="oset-input" style={{ maxWidth: 100 }} value="" onChange={(e) => { if (e.target.value && presets[e.target.value]) setSettings({ ...presets[e.target.value] }); }}>
                 <option value="">{Object.keys(presets).length ? t('v2.slset.load_preset', 'Presets…') : t('v2.slset.none_saved', 'no presets')}</option>
                 {Object.keys(presets).map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -284,24 +261,51 @@ export function SlicerPanel() {
             {printers.length === 0 && <p className="muted micro">{t('v2.slicer.no_printers', 'No printers connected.')}</p>}
           </div>
         </aside>
-      </div>
 
-      {/* Bottom bar */}
-      <div className="oslice-bottom">
-        <div className="oslice-est">
-          {preview ? (
-            <>
-              <span><strong>{fmtTime(preview.timeSec)}</strong> {t('v2.slicer.time', 'time')}</span>
-              <span><strong>{preview.filamentG ? `${preview.filamentG.toFixed(1)} g` : '—'}</strong></span>
-              {cost > 0 && <span><strong>{cost.toFixed(1)} kr</strong></span>}
-              <span><strong>{preview.layers}</strong> {t('v2.slicer.layers', 'layers')}</span>
-            </>
-          ) : <span className="muted micro">{t('v2.slicer.slice_hint', 'Slice to preview the toolpath and estimate time / filament.')}</span>}
-        </div>
-        <div className="oslice-actions">
-          <button className="btn" disabled={!file || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
-          <button className="oslice-print" disabled={!canRun} onClick={() => run(false)}>{t('v2.slicer.slice_send', 'Slice & send')}</button>
-          <button className="btn" disabled={!canRun} onClick={() => run(true)}>{t('v2.slicer.slice_print', 'Send & start')}</button>
+        {/* RIGHT — 3D scene (dark) with horizontal top toolbar */}
+        <div className="oslice-stage">
+          <div className="oslice-rail">
+            {action(<IconAdd />, t('v2.slicer.add_model', 'Add model'), () => addInputRef.current?.click())}
+            {action(<IconDuplicate />, t('v2.plate.dup', 'Duplicate'), () => plateRef.current?.duplicate(), !toolState.hasSel)}
+            {action(<IconArrange />, t('v2.plate.arrange', 'Auto-arrange'), () => plateRef.current?.arrange(), toolState.count < 2)}
+            {action(<IconDelete />, t('v2.plate.del', 'Delete'), () => plateRef.current?.remove(), !toolState.hasSel)}
+            <span className="oslice-rail-sep" />
+            {tool('translate', <IconMove />, t('v2.plate.move', 'Move'))}
+            {tool('rotate', <IconRotate />, t('v2.plate.rotate', 'Rotate'))}
+            {tool('scale', <IconScale />, t('v2.plate.scale', 'Scale'))}
+            {action(<IconLayFlat />, t('v2.plate.flat', 'Lay flat'), () => plateRef.current?.layFlat(), !toolState.hasSel)}
+            {action(<IconCenter />, t('v2.plate.center', 'Center'), () => plateRef.current?.center(), !toolState.hasSel)}
+            <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { if (!file) pickFile(e.target.files?.[0] ?? null); else addModels(e.target.files); e.currentTarget.value = ''; }} />
+          </div>
+
+          {!file && (
+            <label className="oslice-drop">
+              <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
+              <div style={{ textAlign: 'center' }}>
+                <div className="oslice-drop-plus">+</div>
+                <div>{t('v2.slicer.choose', 'Click to choose an STL / 3MF / OBJ / STEP file')}</div>
+                <button type="button" className="btn btn--sm" style={{ marginTop: 12 }} onClick={(e) => { e.preventDefault(); setShowLibrary(true); }}>{t('v2.slicer.from_library', 'Import from library')}</button>
+              </div>
+            </label>
+          )}
+          {file && tab === 'prepare' && (
+            <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
+              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} />
+            </Suspense>
+          )}
+          {file && tab === 'preview' && preview && (
+            <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
+              <GcodePreview gcode={preview.gcode} bed={bed} />
+            </Suspense>
+          )}
+
+          <div className="oslice-axis" aria-hidden>
+            <svg viewBox="0 0 40 40" width="48" height="48">
+              <line x1="12" y1="28" x2="30" y2="28" stroke="#e0603a" strokeWidth="2" /><text x="31" y="31" fill="#e0603a" fontSize="8">X</text>
+              <line x1="12" y1="28" x2="20" y2="14" stroke="#37a66b" strokeWidth="2" /><text x="21" y="13" fill="#37a66b" fontSize="8">Y</text>
+              <line x1="12" y1="28" x2="12" y2="8" stroke="#3d8bd8" strokeWidth="2" /><text x="6" y="9" fill="#3d8bd8" fontSize="8">Z</text>
+            </svg>
+          </div>
         </div>
       </div>
 

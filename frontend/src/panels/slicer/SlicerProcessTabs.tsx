@@ -8,32 +8,32 @@ const SUPPORT_TYPES = [['normal(auto)', 'Normal'], ['tree(auto)', 'Tree']];
 const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 'Ears']];
 
 type Field =
-  | { tab: string; k: string; label: string; type: 'num'; unit?: string; step?: number; dep?: string }
-  | { tab: string; k: string; label: string; type: 'bool' }
-  | { tab: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
+  | { tab: string; group: string; k: string; label: string; type: 'num'; unit?: string; step?: number; dep?: string }
+  | { tab: string; group: string; k: string; label: string; type: 'bool' }
+  | { tab: string; group: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
 
 const TABS = ['Quality', 'Strength', 'Speed', 'Support', 'Others'] as const;
 
 const FIELDS: Field[] = [
-  { tab: 'Quality', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
-  { tab: 'Quality', k: 'initial_layer_height', label: 'First layer height', type: 'num', unit: 'mm', step: 0.02 },
-  { tab: 'Quality', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
-  { tab: 'Strength', k: 'wall_loops', label: 'Wall loops', type: 'num', step: 1 },
-  { tab: 'Strength', k: 'top_layers', label: 'Top shell layers', type: 'num', step: 1 },
-  { tab: 'Strength', k: 'bottom_layers', label: 'Bottom shell layers', type: 'num', step: 1 },
-  { tab: 'Strength', k: 'infill_density', label: 'Infill density', type: 'num', unit: '%', step: 5 },
-  { tab: 'Strength', k: 'infill_pattern', label: 'Infill pattern', type: 'sel', opts: INFILL_PATTERNS },
-  { tab: 'Speed', k: 'outer_wall_speed', label: 'Outer wall speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', k: 'inner_wall_speed', label: 'Inner wall speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', k: 'infill_speed', label: 'Infill speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Speed', k: 'travel_speed', label: 'Travel speed', type: 'num', unit: 'mm/s', step: 5 },
-  { tab: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
-  { tab: 'Support', k: 'support_type', label: 'Support type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
-  { tab: 'Support', k: 'support_threshold', label: 'Overhang angle', type: 'num', unit: '°', step: 1, dep: 'supports' },
-  { tab: 'Others', k: 'brim_type', label: 'Brim type', type: 'sel', opts: BRIM_TYPES },
-  { tab: 'Others', k: 'brim_width', label: 'Brim width', type: 'num', unit: 'mm', step: 0.5 },
-  { tab: 'Others', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
-  { tab: 'Others', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
+  { tab: 'Quality', group: 'Layer height', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Layer height', k: 'initial_layer_height', label: 'Initial layer height', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Surface', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
+  { tab: 'Strength', group: 'Walls', k: 'wall_loops', label: 'Wall loops', type: 'num', step: 1 },
+  { tab: 'Strength', group: 'Top/bottom shells', k: 'top_layers', label: 'Top shell layers', type: 'num', step: 1 },
+  { tab: 'Strength', group: 'Top/bottom shells', k: 'bottom_layers', label: 'Bottom shell layers', type: 'num', step: 1 },
+  { tab: 'Strength', group: 'Infill', k: 'infill_density', label: 'Sparse infill density', type: 'num', unit: '%', step: 5 },
+  { tab: 'Strength', group: 'Infill', k: 'infill_pattern', label: 'Sparse infill pattern', type: 'sel', opts: INFILL_PATTERNS },
+  { tab: 'Speed', group: 'Walls', k: 'outer_wall_speed', label: 'Outer wall speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Walls', k: 'inner_wall_speed', label: 'Inner wall speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Infill', k: 'infill_speed', label: 'Sparse infill speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Travel', k: 'travel_speed', label: 'Travel speed', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Support', group: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
+  { tab: 'Support', group: 'Support', k: 'support_type', label: 'Type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
+  { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle', type: 'num', unit: '°', step: 1, dep: 'supports' },
+  { tab: 'Others', group: 'Adhesion', k: 'brim_type', label: 'Brim type', type: 'sel', opts: BRIM_TYPES },
+  { tab: 'Others', group: 'Adhesion', k: 'brim_width', label: 'Brim width', type: 'num', unit: 'mm', step: 0.5 },
+  { tab: 'Others', group: 'Adhesion', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
+  { tab: 'Others', group: 'Adhesion', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each
@@ -82,7 +82,13 @@ export function SlicerProcessTabs({ value, onChange }: { value: SliceSettings; o
         </div>
       )}
       <div className="oset-rows">
-        {shown.map(row)}
+        {shown.map((f, i) => {
+          const prev = shown[i - 1];
+          const header = !q && (i === 0 || prev.group !== f.group)
+            ? <div className="oset-group" key={`g-${f.group}`}>{t(`v2.g.${f.group}`, f.group)}</div>
+            : null;
+          return <div key={f.k}>{header}{row(f)}</div>;
+        })}
         {shown.length === 0 && <p className="muted micro" style={{ padding: 12 }}>{t('v2.oset.nomatch', 'No matching settings.')}</p>}
       </div>
     </div>
