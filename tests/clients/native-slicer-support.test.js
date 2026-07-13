@@ -58,6 +58,17 @@ describe('native-slicer: generateSupports', () => {
     assert.ok(count(steep, 40) > count(gentle, 40) * 3, 'steep overhang still needs support at 40°');
   });
 
+  it('support wall count adds closed perimeter loops around the columns', () => {
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const none = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0, zGapLayers: 0, wallCount: 0 });
+    const walled = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0, zGapLayers: 0, wallCount: 2 });
+    const closedCount = (frame) => frame.filter((el) => el.closed).length;
+    assert.equal(closedCount(none[5]), 0, 'no walls without wallCount');
+    assert.ok(closedCount(walled[5]) > 0, 'wallCount adds closed loops');
+  });
+
   it('interface layers under the overhang are denser than deep support', () => {
     const layers = [];
     for (let i = 0; i < 10; i++) layers.push([]);

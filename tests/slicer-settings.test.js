@@ -155,11 +155,17 @@ describe('buildNativeSettings', () => {
   });
 
   test('maps support tuning keys', () => {
-    const n = buildNativeSettings({ support_threshold: 40, support_base_density: 25, support_interface_top_layers: 3, support_z_gap_layers: 2, support_object_xy_distance: 0.6 });
+    const n = buildNativeSettings({ support_threshold: 40, support_base_density: 25, support_interface_top_layers: 3, support_z_gap_layers: 2, support_object_xy_distance: 0.6, support_wall_count: 2 });
     assert.equal(n.supportThreshold, 40);
     assert.equal(n.supportDensity, 0.25);   // % → fraction
     assert.equal(n.supportInterface, 3);
     assert.equal(n.supportZGap, 2);
     assert.equal(n.supportXYGap, 0.6);
+    assert.equal(n.supportWallCount, 2);
+  });
+
+  test('bridge_angle: a real angle forces direction, 0 means auto', () => {
+    assert.equal(buildNativeSettings({ bridge_angle: 90 }).bridgeAngle, 90);
+    assert.equal('bridgeAngle' in buildNativeSettings({ bridge_angle: 0 }), false);
   });
 });

@@ -408,7 +408,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const { generateSupports } = await import('./native-slicer-support.js');
     supportSegs = generateSupports(layerRegions, {
       lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
-      layerHeight, thresholdAngle: s.supportThreshold ?? 40,
+      layerHeight, thresholdAngle: s.supportThreshold ?? 40, wallCount: s.supportWallCount ?? 0,
     });
   }
 
@@ -468,10 +468,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const below = i > 0 ? layerRegions[i - 1] : null;
     const segMidUnsupported = (sg) => !supportedBy((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, below, lw * 0.75);
     const wallOverhangFrac = (pts) => { if (!(overhangDetect && below)) return 0; let un = 0; for (const p of pts) if (!supportedBy(p[0], p[1], below, lw)) un++; return pts.length ? un / pts.length : 0; };
-    // Push solid segments, splitting bottom-over-air lines out as bridges
-    // (their own flow + speed + cooling).
-    const pushSolid = (segs) => {
-      for (const sg of segs) {
+    // Hatch a solid region, splitting bottom-over-air lines out as bridges
+    // (their own flow + speed + cooling). When bridge_angle is set the bridge
+    // lines are hatched in that forced direction (a second pass), so they span
+    // the gap the strong way regardless of the layer's base angle.
+    const pushSolidRegion = (region, angle, keep) => {
+      const forced = bridgeDetect && below && s.bridgeAngle != null;
+      if (forced) {
+        for (const sg of solidInfill(region, s.bridgeAngle, lw)) if ((!keep || keep(sg)) && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
+        for (const sg of solidInfill(region, angle, lw)) if ((!keep || keep(sg)) && !segMidUnsupported(sg)) fills.push({ feature: 'solid', closed: false, pts: sg });
+        return;
+      }
+      for (const sg of solidInfill(region, angle, lw)) {
+        if (keep && !keep(sg)) continue;
         if (bridgeDetect && below && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
         else fills.push({ feature: 'solid', closed: false, pts: sg });
       }
@@ -560,15 +569,14 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
           else if (globalSolid) {
-            pushSolid(solidInfill(infRegion, baseAngle, lw));
+            pushSolidRegion(infRegion, baseAngle);
           } else if (doSparse) {
             const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight });
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
-          const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
-          pushSolid(solidSegs);
+          pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg));
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse) {
             const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight }).filter((sg) => !midSolid(surfaces, i, sg));
@@ -618,7 +626,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
 
     // Support hatch.
     const support = [];
-    if (supportSegs && supportSegs[i]) for (const sg of supportSegs[i]) support.push({ feature: 'support', closed: false, pts: sg });
+    if (supportSegs && supportSegs[i]) for (const el of supportSegs[i]) support.push({ feature: 'support', closed: !!el.closed, pts: el.pts });
 
     // Print order: adhesion → walls → infill → support. `regions` rides along
     // so the G-code stage can route avoid-crossing-walls travel.

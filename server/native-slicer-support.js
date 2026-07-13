@@ -11,7 +11,7 @@
  * simple-to-medium parts entirely within our own engine.
  */
 
-import { _pointInPoly } from './native-slicer-geo.js';
+import { _pointInPoly, offsetPolygon, _chainSegments } from './native-slicer-geo.js';
 
 /** Is a point inside the region's solid (inside outer, outside holes)? */
 function inRegion(pt, region) {
@@ -194,6 +194,37 @@ export function generateSupports(layerRegions, opts = {}) {
     iface[i] = grid;
   }
 
+  // Walls around the support island: trace the mask's boundary (edges between
+  // an on-cell and an off-cell), chain into loops, and add `wallCount` loops
+  // stepping inward. Gives the support columns a perimeter for strength and
+  // clean removal. Returns closed loops in world coordinates.
+  const wallCount = Math.max(0, Math.round(opts.wallCount ?? 0));
+  const maskWalls = (mask) => {
+    if (!wallCount) return [];
+    const on = (r, c) => (r >= 0 && c >= 0 && r < rows && c < cols) ? mask[r * cols + c] : 0;
+    const g = gridRes;
+    const segs = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!mask[r * cols + c]) continue;
+        const x0 = cx(c) - g / 2, x1 = cx(c) + g / 2, y0 = cy(r) - g / 2, y1 = cy(r) + g / 2;
+        if (!on(r, c - 1)) segs.push([[x0, y0], [x0, y1]]);
+        if (!on(r, c + 1)) segs.push([[x1, y0], [x1, y1]]);
+        if (!on(r - 1, c)) segs.push([[x0, y0], [x1, y0]]);
+        if (!on(r + 1, c)) segs.push([[x0, y1], [x1, y1]]);
+      }
+    }
+    const loops = _chainSegments(segs);
+    const walls = [];
+    for (const loop of loops) {
+      if (loop.length < 3) continue;
+      walls.push(loop);
+      let ring = loop;
+      for (let w = 1; w < wallCount; w++) { ring = offsetPolygon(ring, -lineWidth); if (!ring || ring.length < 3) break; walls.push(ring); }
+    }
+    return walls;
+  };
+
   // Convert each layer's mask to horizontal hatch lines. Normal support is
   // sparse (row step = lineWidth / density); interface cells fill every row.
   const step = Math.max(1, Math.round((lineWidth / density) / gridRes));
@@ -201,7 +232,8 @@ export function generateSupports(layerRegions, opts = {}) {
   for (let i = 0; i < n; i++) {
     const s = support[i];
     const inf = iface[i];
-    const segs = [];
+    const parts = [];
+    for (const loop of maskWalls(s)) parts.push({ pts: loop, closed: true });
     for (let r = 0; r < rows; r++) {
       const dense = r % step === 0;
       let runStart = -1;
@@ -210,12 +242,12 @@ export function generateSupports(layerRegions, opts = {}) {
         const on = c < cols && s[idx] && (dense || inf[idx]);
         if (on && runStart < 0) runStart = c;
         else if (!on && runStart >= 0) {
-          segs.push([[cx(runStart), cy(r)], [cx(c - 1), cy(r)]]);
+          parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false });
           runStart = -1;
         }
       }
     }
-    out[i] = segs;
+    out[i] = parts;
   }
   return out;
 }

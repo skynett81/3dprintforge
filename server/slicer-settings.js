@@ -117,6 +117,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('supportXYGap', num(s.support_object_xy_distance ?? s.support_xy_gap));
   const supDens = num(s.support_base_density ?? s.support_density);
   if (supDens !== undefined) out.supportDensity = supDens > 1 ? supDens / 100 : supDens;
+  set('supportWallCount', num(s.support_wall_count));
   // Per-feature line widths.
   set('outerWallLineWidth', num(s.outer_wall_line_width));
   set('innerWallLineWidth', num(s.inner_wall_line_width));
@@ -182,6 +183,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('bridgeFlow', num(s.bridge_flow));
   set('overhangSpeed', num(s.overhang_speed));
   set('overhangFanSpeed', num(s.overhang_fan_speed));
+  const ba = num(s.bridge_angle);
+  if (ba) out.bridgeAngle = ba;                 // 0 = auto (keep the layer base angle)
   if (s.detect_overhang_wall !== undefined && s.detect_overhang_wall !== '') out.overhangDetect = !!s.detect_overhang_wall;
   // Custom G-code hooks.
   if (s.start_gcode || s.machine_start_gcode) out.startGcode = String(s.start_gcode ?? s.machine_start_gcode);
