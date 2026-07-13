@@ -127,25 +127,42 @@ export function layersToGcode(layers, settings) {
     }
   };
 
+  // Continuous spiral (vase mode): ramp Z across the loop, no retract.
+  const emitSpiral = (pts, zStart, zEnd, speed) => {
+    if (pts.length < 2) return;
+    const loop = [...pts, pts[0]];
+    let L = 0;
+    for (let i = 1; i < loop.length; i++) L += Math.hypot(loop[i][0] - loop[i - 1][0], loop[i][1] - loop[i - 1][1]);
+    if (L < EPS) return;
+    g += `G1 X${loop[0][0].toFixed(3)} Y${loop[0][1].toFixed(3)} Z${zStart.toFixed(3)} F${speed * 60}\n`;
+    curX = loop[0][0]; curY = loop[0][1]; curZ = zStart;
+    let acc = 0;
+    for (let i = 1; i < loop.length; i++) {
+      const d = Math.hypot(loop[i][0] - curX, loop[i][1] - curY);
+      acc += d; e += d * efactor;
+      const zz = zStart + (acc / L) * (zEnd - zStart);
+      g += `G1 X${loop[i][0].toFixed(3)} Y${loop[i][1].toFixed(3)} Z${zz.toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+      curX = loop[i][0]; curY = loop[i][1]; curZ = zz;
+    }
+  };
+
   layers.forEach((layer, layerIdx) => {
     const z = (layerIdx + 1) * s.layerHeight;
     const speed = layerIdx === 0 ? s.firstLayerSpeed : s.printSpeed;
-    g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
-    g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`;
-    curZ = z;
-    if (layerIdx === 1) g += `M106 S${Math.round(s.fanSpeed * 2.55)}\n`;
-
-    // Typed paths (new) carry a per-feature tag so the preview can colour
-    // walls / infill / support / skirt distinctly, like a desktop slicer.
-    // Legacy {perimeters, infill} layers still work.
     const paths = layer.paths || [
       ...(layer.perimeters || []).map((p) => ({ feature: 'wall', closed: true, pts: p })),
       ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
     ];
+    const spiral = paths.some((p) => p.spiral);
+    g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
+    if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
+    if (layerIdx === 1) g += `M106 S${Math.round(s.fanSpeed * 2.55)}\n`;
+
     let curFeature = null;
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
+      if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, speed); continue; }
       // Ironing runs at the print speed but scaled down for a fine finish.
       const pspeed = path.feature === 'ironing' ? Math.max(20, speed * 0.4) : speed;
       emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1);
@@ -180,6 +197,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     skirtLoops: 1, skirtGap: 3, brimWidth: 0,
     supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1, supportInterface: 2,
     ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
+    spiralMode: false, elephantFoot: 0,
     ...settings,
   };
   const wallLoops = Math.max(1, s.perimeters | 0);
@@ -227,8 +245,21 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     const globalSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
 
     for (const region of regions) {
+      // Elephant-foot compensation: pull the first layer's outer wall in a
+      // touch so a squished first layer doesn't bulge past the model.
+      let outerBoundary = region.outer;
+      if (i === 0 && s.elephantFoot > 0) {
+        const comp = offsetPolygon(outerBoundary, -s.elephantFoot);
+        if (comp && comp.length >= 3) outerBoundary = comp;
+      }
+      // Vase / spiral mode: a single continuous outer wall that ramps up in
+      // Z, above the solid base layers. No inner walls, infill, or top.
+      if (s.spiralMode && i >= s.bottomLayers) {
+        walls.push({ feature: 'outer-wall', closed: false, spiral: true, pts: outerBoundary });
+        continue;
+      }
       // Outer walls: shrink inward wall-by-wall (negative = inward).
-      let inner = region.outer;
+      let inner = outerBoundary;
       walls.push({ feature: 'outer-wall', closed: true, pts: inner });
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
@@ -253,19 +284,34 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
       if (infOuter && infOuter.length >= 3) {
         const infRegion = { outer: infOuter, holes: infHoles };
         const baseAngle = s.infillAngle + (i % 2) * 90;
+        // Concentric sparse infill = closed rings stepping inward.
+        const concentric = (region2, feat) => {
+          const spacing = Math.max(lw, lw / Math.max(0.05, Math.min(1, s.infillDensity)));
+          let ring = offsetPolygon(region2.outer, -spacing);
+          while (ring && ring.length >= 3) {
+            fills.push({ feature: feat, closed: true, pts: ring });
+            ring = offsetPolygon(ring, -spacing);
+          }
+        };
         if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.
-          const segs = globalSolid
-            ? solidInfill(infRegion, baseAngle, lw)
-            : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
-          const feat = globalSolid ? 'solid' : 'sparse';
-          for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
+          if (!globalSolid && s.infillPattern === 'concentric') { concentric(infRegion, 'sparse'); }
+          else {
+            const segs = globalSolid
+              ? solidInfill(infRegion, baseAngle, lw)
+              : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
+            const feat = globalSolid ? 'solid' : 'sparse';
+            for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
+          }
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
           const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
-          const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
           for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
-          for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
+          if (s.infillPattern === 'concentric') { concentric(infRegion, 'sparse'); }
+          else {
+            const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
+            for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
+          }
         }
         // Ironing: a fine, low-flow pass over the true top skin to smooth it.
         if (s.ironing && surfaces) {
