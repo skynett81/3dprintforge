@@ -16,6 +16,7 @@ export interface ObjInfo {
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   count: () => number;
+  addFile: (f: File) => Promise<void>;
   setPos: (x: number, y: number) => void;
   setRot: (x: number, y: number, z: number) => void;   // degrees
   setScalePct: (pct: number) => void;
@@ -153,22 +154,27 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     };
   }, [bed]);
 
-  // ── load file ──
+  // Load a model buffer into the plate (append). Returns a promise.
+  async function loadFileBuffer(f: File) {
+    const c = ctx.current; if (!c) return;
+    const buf = await f.arrayBuffer();
+    const name = f.name.toLowerCase();
+    try {
+      if (name.endsWith('.3mf')) {
+        const obj = new ThreeMFLoader().parse(buf);
+        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) addMesh((o as THREE.Mesh).geometry.clone()); });
+      } else {
+        addMesh(new STLLoader().parse(buf));
+      }
+    } catch { /* unsupported/parse error — leave as-is */ }
+  }
+
+  // ── load the primary file (replaces the plate) ──
   useEffect(() => {
     const c = ctx.current; if (!c || !file) return;
     for (const m of c.objects) c.scene.remove(m);
     c.objects = []; select(null); setCount(0);
-    file.arrayBuffer().then((buf) => {
-      const name = file.name.toLowerCase();
-      try {
-        if (name.endsWith('.3mf')) {
-          const obj = new ThreeMFLoader().parse(buf);
-          obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) addMesh((o as THREE.Mesh).geometry.clone()); });
-        } else {
-          addMesh(new STLLoader().parse(buf));
-        }
-      } catch { /* unsupported/parse error — leave empty */ }
-    });
+    loadFileBuffer(file);
   }, [file]);
 
   useEffect(() => { ctx.current?.tcontrols.setMode(mode); }, [mode]);
@@ -201,6 +207,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   useImperativeHandle(ref, () => ({
     count: () => ctx.current?.objects.length ?? 0,
+    addFile: (f: File) => loadFileBuffer(f),
     setPos: (x: number, y: number) => { const m = ctx.current?.selected; if (!m) return; m.position.x = x; m.position.y = y; emitObject(); },
     setRot: (x: number, y: number, z: number) => { const m = ctx.current?.selected; if (!m) return; const D = Math.PI / 180; m.rotation.set(x * D, y * D, z * D); dropToPlate(m); emitObject(); },
     setScalePct: (pct: number) => { const m = ctx.current?.selected; if (!m || !(pct > 0)) return; const s = pct / 100; m.scale.set(s, s, s); dropToPlate(m); emitObject(); },

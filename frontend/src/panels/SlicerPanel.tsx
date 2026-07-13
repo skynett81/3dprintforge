@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { Printer, SlicerStatus, SliceResult, SlicerPrinter } from '../types';
+import type { Printer, SlicerStatus, SliceResult, SlicerPrinter, Spool } from '../types';
 import type { PlateHandle, ObjInfo } from '../components/PlateViewer';
 import { SlicerSettings, type SliceSettings } from './slicer/SlicerSettings';
 import { ObjectPanel } from './slicer/ObjectPanel';
@@ -31,8 +31,10 @@ export function SlicerPanel() {
   const { data: status } = useResource<SlicerStatus>(api.getSlicerStatus, 0);
   const { data: printersData } = useResource<Printer[]>(api.listPrinters, 30000);
   const { data: slicerPrintersData } = useResource<SlicerPrinter[]>(api.getSlicerPrinters, 60000);
+  const { data: spoolsData } = useResource<Spool[]>(api.listSpools, 60000);
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const slicerPrinters = useMemo(() => slicerPrintersData ?? [], [slicerPrintersData]);
+  const spools = useMemo(() => spoolsData ?? [], [spoolsData]);
   const [file, setFile] = useState<File | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<Record<string, RowState>>({});
@@ -43,6 +45,7 @@ export function SlicerPanel() {
   const [slicing, setSlicing] = useState(false);
   const [obj, setObj] = useState<ObjInfo | null>(null);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
+  const [extraModels, setExtraModels] = useState<string[]>([]);
   const plateRef = useRef<PlateHandle>(null);
 
   // Bed size from the chosen slice-profile printer (falls back to 256).
@@ -50,6 +53,17 @@ export function SlicerPanel() {
     const p = slicerPrinters.find((sp) => sp.id === profilePrinter) ?? slicerPrinters[0];
     return p?.buildVolume?.x ?? 256;
   }, [slicerPrinters, profilePrinter]);
+
+  // Filament cost = grams × average price/gram for the chosen material.
+  const pricePerGram = useMemo(() => {
+    const mat = String((settings.material as string) || 'PLA').toUpperCase();
+    const rows = spools
+      .filter((s) => (s.material || '').toUpperCase() === mat && (s.cost ?? 0) > 0 && (s.initial_weight_g ?? 0) > 0)
+      .map((s) => (s.cost as number) / (s.initial_weight_g as number));
+    if (!rows.length) return 0;
+    return rows.reduce((a, b) => a + b, 0) / rows.length;
+  }, [spools, settings.material]);
+  const cost = preview && pricePerGram > 0 ? preview.filamentG * pricePerGram : 0;
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
@@ -60,6 +74,17 @@ export function SlicerPanel() {
     setTab('prepare');
     setRows({});
     setObj(null);
+    setExtraModels([]);
+  }
+
+  async function addModels(files: FileList | null) {
+    if (!files || !files.length) return;
+    for (const f of Array.from(files)) {
+      await plateRef.current?.addFile(f);
+      setExtraModels((prev) => [...prev, f.name]);
+    }
+    setPreview(null);
+    setTab('prepare');
   }
 
   // Slice for preview only (no printer). Uses the arranged plate.
@@ -147,6 +172,15 @@ export function SlicerPanel() {
               <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
               {file ? <span className="ellipsis">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</span> : <span className="muted">{t('v2.slicer.choose_short', 'Choose model…')}</span>}
             </label>
+            {file && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <label className="btn btn--sm btn--ghost" style={{ cursor: 'pointer' }}>
+                  <input type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { addModels(e.target.files); e.currentTarget.value = ''; }} />
+                  + {t('v2.slicer.add_model', 'Add model')}
+                </label>
+                {extraModels.length > 0 && <span className="muted micro">{extraModels.length} {t('v2.slicer.added', 'added')}</span>}
+              </div>
+            )}
             {slicerPrinters.length > 0 && (
               <label className="field" style={{ marginTop: 10 }}>
                 <span className="field-label">{t('v2.slicer.profile_printer', 'Printer (bed & profile)')}</span>
@@ -202,6 +236,7 @@ export function SlicerPanel() {
             <>
               <span title={t('v2.slicer.est_time', 'Estimated print time')}><strong>{fmtTime(est.timeSec)}</strong> {t('v2.slicer.time', 'time')}</span>
               <span title={t('v2.slicer.est_filament', 'Estimated filament')}><strong>{est.filamentG ? `${est.filamentG.toFixed(1)} g` : '—'}</strong> {t('v2.slicer.filament', 'filament')}</span>
+              {cost > 0 && <span title={t('v2.slicer.est_cost', 'Estimated material cost from your spool prices')}><strong>{cost.toFixed(1)} kr</strong> {t('v2.slicer.cost', 'cost')}</span>}
               <span><strong>{est.layers}</strong> {t('v2.slicer.layers', 'layers')}</span>
               <span className="muted micro">{t('v2.slicer.sliced_in', 'sliced in')} {(est.durationMs / 1000).toFixed(1)}s</span>
             </>

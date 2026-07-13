@@ -23,11 +23,34 @@ function Num({ label, k, v, onChange, step, unit }: { label: string; k: string; 
 }
 
 /** Grouped OrcaSlicer print settings for the web slicer. */
+const PRESET_KEY = 'v2.slicer.presets';
+function loadPresets(): Record<string, SliceSettings> {
+  try { return JSON.parse(localStorage.getItem(PRESET_KEY) || '{}'); } catch { return {}; }
+}
+
 export function SlicerSettings({ value, onChange, status }: { value: SliceSettings; onChange: (next: SliceSettings) => void; status?: SlicerStatus }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [presets, setPresets] = useState<Record<string, SliceSettings>>(() => loadPresets());
   const set = (k: string, val: string) => onChange({ ...value, [k]: val });
   const setBool = (k: string, val: boolean) => onChange({ ...value, [k]: val });
+
+  function savePreset() {
+    const name = window.prompt(t('v2.slset.preset_name', 'Preset name'))?.trim();
+    if (!name) return;
+    const next = { ...presets, [name]: value };
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+  }
+  function applyUserPreset(name: string) {
+    if (!name || !presets[name]) return;
+    onChange({ ...presets[name] });
+  }
+  function deletePreset(name: string) {
+    const next = { ...presets }; delete next[name];
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+  }
 
   function applyPreset(id: string) {
     const p = status?.qualityPresets?.find((q) => q.id === id);
@@ -50,6 +73,20 @@ export function SlicerSettings({ value, onChange, status }: { value: SliceSettin
 
       {open && (
         <div style={{ marginTop: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <span className="field-label" style={{ margin: 0 }}>{t('v2.slset.presets', 'My presets')}</span>
+            <select className="input" style={{ flex: 1, maxWidth: 150 }} value="" onChange={(e) => applyUserPreset(e.target.value)}>
+              <option value="">{Object.keys(presets).length ? t('v2.slset.load_preset', 'Load…') : t('v2.slset.none_saved', 'none saved')}</option>
+              {Object.keys(presets).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <button className="btn btn--sm btn--ghost" onClick={savePreset}>{t('v2.slset.save', 'Save')}</button>
+            {Object.keys(presets).length > 0 && (
+              <select className="input btn--sm" style={{ maxWidth: 34 }} title={t('v2.slset.delete_preset', 'Delete a preset')} value="" onChange={(e) => { if (e.target.value) deletePreset(e.target.value); }}>
+                <option value="">×</option>
+                {Object.keys(presets).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            )}
+          </div>
           <div className="slset-grid" style={{ marginBottom: 8 }}>
             <label className="field">
               <span className="field-label">{t('v2.slset.quality', 'Quality preset')}</span>
