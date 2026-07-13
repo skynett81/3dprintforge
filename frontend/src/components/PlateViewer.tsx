@@ -5,6 +5,7 @@ import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { useT } from '../i18n';
 import { gradientBackground, buildPlate } from './plate-scene';
 
@@ -101,11 +102,14 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     emitState();
   }
 
-  function addMesh(geom: THREE.BufferGeometry, name?: string) {
+  function addMesh(geom: THREE.BufferGeometry, name?: string, vertexColors = false) {
     const c = ctx.current; if (!c) return;
     geom.computeVertexNormals();
     geom.center();
-    const mesh = new THREE.Mesh(geom, MAT());
+    const material = vertexColors
+      ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, flatShading: false })
+      : MAT();
+    const mesh = new THREE.Mesh(geom, material);
     mesh.name = name || `Object ${c.objects.length + 1}`;
     // Keep the model's authored orientation (slicers load STL as-is, Z-up); the
     // user can rotate. Just sit it on the plate.
@@ -190,9 +194,38 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const base = f.name.replace(/\.[^.]+$/, '');
     try {
       if (lower.endsWith('.3mf')) {
+        // A 3MF is usually ONE model that may be split into several coloured
+        // parts. Merge the parts into a single object so it drops / lays flat
+        // as a whole, and bake each part's colour into vertex colours so the
+        // real multi-colour look is preserved.
         const obj = new ThreeMFLoader().parse(buf);
-        let n = 0;
-        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) { addMesh((o as THREE.Mesh).geometry.clone(), ++n > 1 ? `${base} ${n}` : base); } });
+        obj.updateMatrixWorld(true);
+        const geoms: THREE.BufferGeometry[] = [];
+        obj.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (!m.isMesh) return;
+          const src = m.geometry.clone().applyMatrix4(m.matrixWorld).toNonIndexed();
+          const pos = src.getAttribute('position');
+          const g2 = new THREE.BufferGeometry();
+          g2.setAttribute('position', pos.clone());
+          const existing = src.getAttribute('color');
+          if (existing) {
+            g2.setAttribute('color', existing.clone());
+          } else {
+            const col = new THREE.Color(0x9aa4b2);
+            const mat = Array.isArray(m.material) ? m.material[0] : m.material;
+            if (mat && (mat as THREE.MeshStandardMaterial).color) col.copy((mat as THREE.MeshStandardMaterial).color);
+            const n = pos.count;
+            const colors = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) { colors[i * 3] = col.r; colors[i * 3 + 1] = col.g; colors[i * 3 + 2] = col.b; }
+            g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+          }
+          geoms.push(g2);
+        });
+        if (geoms.length) {
+          const merged = mergeGeometries(geoms, false);
+          if (merged) addMesh(merged, base, true);
+        }
       } else {
         addMesh(new STLLoader().parse(buf), base);
       }
