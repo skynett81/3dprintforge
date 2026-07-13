@@ -100,7 +100,7 @@ export function SlicerPanel() {
             <button className={`slicer-tab${tab === 'prepare' ? ' slicer-tab--on' : ''}`} onClick={() => setTab('prepare')}>{t('v2.slicer.prepare', 'Prepare')}</button>
             <button className={`slicer-tab${tab === 'preview' ? ' slicer-tab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
             <span className="slicer-engine-pill" title={t('v2.slicer.native_note', 'Slices on the built-in engine — no external slicer required')}>
-              {status?.slicer ?? t('v2.slicer.native_name', '3DPrintForge native slicer')}
+              {t('v2.slicer.native_name', '3DPrintForge native slicer')}
             </span>
           </div>
 
