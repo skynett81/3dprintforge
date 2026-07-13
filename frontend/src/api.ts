@@ -75,6 +75,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, ...extra }),
     }),
+  listPrinterFiles: (id: string) => req<Array<{ name?: string } | string>>(`/api/printers/${encodeURIComponent(id)}/files`),
+  printFile: (id: string, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}/files/print`, { method: 'POST', body: JSON.stringify(body) }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
   // Inventory Fase 1: generic parts, categories & physical stock.
   listPartCategories: () => req<import('./types').PartCategory[]>('/api/inventory/part-categories'),

@@ -6061,7 +6061,12 @@ export async function handleApiRequest(req, res) {
         if (!body.filename) return sendJson(res, { error: 'filename required' }, 400);
         // Send print command via WebSocket to client which forwards to MQTT
         if (_broadcastFn) {
-          _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: { action: 'print_file', filename: body.filename, plate_id: body.plate_id } });
+          _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: {
+            action: 'print_file', filename: body.filename, plate_id: body.plate_id,
+            ams_mapping: Array.isArray(body.ams_mapping) ? body.ams_mapping : undefined,
+            use_ams: body.use_ams, timelapse: body.timelapse, bed_leveling: body.bed_leveling,
+            flow_cali: body.flow_cali, vibration_cali: body.vibration_cali, layer_inspect: body.layer_inspect,
+          } });
         }
         return sendJson(res, { ok: true });
       });
