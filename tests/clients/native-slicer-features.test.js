@@ -8,10 +8,28 @@ import assert from 'node:assert/strict';
 import {
   buildRegions, regionInfill, solidInfill, sliceMeshToGcode, layersToGcode,
 } from '../../server/native-slicer.js';
-import { _pointInPoly } from '../../server/native-slicer-geo.js';
+import { _pointInPoly, offsetPolygon } from '../../server/native-slicer-geo.js';
 import { box } from '../../server/mesh-primitives.js';
 
 const SQUARE = (s, o = 0) => [[o, o], [o + s, o], [o + s, o + s], [o, o + s]];
+
+describe('native-slicer: offsetPolygon miter limit', () => {
+  it('growing a smooth circle outward stays hugging the outline (no spikes)', () => {
+    // 48-gon circle r10; grow by 3mm. Without a miter limit, near-parallel
+    // edges make vertices spike far out (the skirt-off-the-bed bug).
+    const circle = [];
+    for (let k = 0; k < 48; k++) { const a = k / 48 * 2 * Math.PI; circle.push([10 * Math.cos(a), 10 * Math.sin(a)]); }
+    const grown = offsetPolygon(circle, 3);
+    let maxR = 0;
+    for (const [x, y] of grown) maxR = Math.max(maxR, Math.hypot(x, y));
+    assert.ok(maxR < 10 + 3 * 2 + 0.5, `grown radius ${maxR.toFixed(1)} must stay near r+3, not spike`);
+  });
+  it('shrinking still collapses to nothing (walls/concentric depend on it)', () => {
+    let ring = SQUARE(2, 0);
+    for (let i = 0; i < 5 && ring && ring.length >= 3; i++) ring = offsetPolygon(ring, -0.4);
+    assert.ok(!ring || ring.length < 3, 'a 2mm square shrinks away within a few offsets');
+  });
+});
 
 describe('native-slicer: region / hole grouping', () => {
   it('groups an outer square with an inner hole into one region + one hole', () => {

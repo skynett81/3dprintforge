@@ -25,7 +25,7 @@
 import {
   sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
-  _chainSegments, _pointInPoly, routeInside, combWaypoints,
+  _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { fitArcs } from './native-slicer-arc.js';
@@ -154,7 +154,7 @@ export function layersToGcode(layers, settings) {
   let curX = 0, curY = 0, curZ = 0;
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
   let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
-  let combWP = null;         // that layer's cached detour waypoints
+  let combCache = null;      // that layer's lazily-built waypoints + visibility graph
   const combing = s.avoidCrossingWalls !== false;
   const combTol = Math.max(0.3, s.lineWidth);
 
@@ -194,7 +194,7 @@ export function layersToGcode(layers, settings) {
     // retractions. Falls back to the retract/wipe path when no interior route
     // exists (e.g. the first travel from the prime line).
     if (combing && combBoundary) {
-      const route = routeInside([curX, curY], first, combBoundary, { tol: combTol, waypoints: combWP });
+      const route = routeInside([curX, curY], first, combBoundary, { tol: combTol, cache: combCache });
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
@@ -272,7 +272,7 @@ export function layersToGcode(layers, settings) {
     ];
     const spiral = paths.some((p) => p.spiral);
     combBoundary = spiral ? null : (layer.regions || null);
-    combWP = (combing && combBoundary) ? combWaypoints(combBoundary, combTol) : null;
+    combCache = (combing && combBoundary) ? {} : null;   // lazy per-layer detour cache
     g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
     g += `;LAYER_CHANGE\n;Z:${z.toFixed(3)}\n`;
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }

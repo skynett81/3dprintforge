@@ -10,6 +10,7 @@
 
 export const EPS = 0.001;          // mm tolerance for polygon-loop closure
 export const PI = Math.PI;
+const MITER_LIMIT = 2;             // cap offset miters so smooth curves don't spike
 
 // ── Layer slicing ──────────────────────────────────────────────────
 
@@ -128,7 +129,16 @@ export function offsetPolygon(poly, distance) {
     bx /= bl; by /= bl;
     const cosA = n1x * n2x + n1y * n2y;
     const halfSin = Math.sqrt(Math.max(0.001, (1 - cosA) / 2));
-    const scale = -distance / Math.max(0.001, halfSin);
+    let scale = -distance / Math.max(0.001, halfSin);
+    // Miter limit (outward offsets only): on smooth curves the turn angle is
+    // tiny, so an un-clamped miter shoots the vertex far out (spikes) — cap the
+    // displacement so a skirt/brim/grow stays hugging the outline instead of
+    // ballooning into huge spurs off the bed. Inward offsets are left alone so
+    // walls/concentric rings still shrink to nothing (the loops depend on it).
+    if (distance > 0) {
+      const maxMiter = distance * MITER_LIMIT;
+      if (Math.abs(scale) > maxMiter) scale = (scale < 0 ? -maxMiter : maxMiter);
+    }
     out.push([curr[0] + bx * scale, curr[1] + by * scale]);
   }
   if (_signedArea(out) * _signedArea(poly) < 0) return [];
@@ -351,6 +361,32 @@ export function combWaypoints(regions, tol = 0.3, cap = 40) {
   return wp;
 }
 
+/**
+ * Precompute the waypoint-to-waypoint visibility graph for a layer once, so
+ * every travel that needs a detour reuses it (Dijkstra then only adds edges
+ * for its own start/end). Returns adjacency: adj[i] = [[j, dist], …].
+ */
+export function buildCombGraph(regions, waypoints, opts = {}) {
+  const step = opts.step ?? 1.5;
+  const inside = (p) => {
+    for (const r of regions) { if (_pointInPoly(p, r.outer)) { let inHole = false; for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; } if (!inHole) return true; } }
+    return false;
+  };
+  const segOk = (p, q) => {
+    const n = Math.max(2, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / step));
+    for (let i = 1; i < n; i++) { const t = i / n; if (!inside([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])])) return false; }
+    return true;
+  };
+  const N = waypoints.length;
+  const adj = Array.from({ length: N }, () => []);
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      if (segOk(waypoints[i], waypoints[j])) { const d = Math.hypot(waypoints[i][0] - waypoints[j][0], waypoints[i][1] - waypoints[j][1]); adj[i].push([j, d]); adj[j].push([i, d]); }
+    }
+  }
+  return adj;
+}
+
 export function routeInside(a, b, regions, opts = {}) {
   if (!regions || !regions.length) return null;
   const tol = opts.tol ?? 0.3;
@@ -375,23 +411,40 @@ export function routeInside(a, b, regions, opts = {}) {
   if (segOk(a, b)) return [a, b];
   // Waypoints (boundary vertices nudged a hair into the solid). Reused across
   // every travel in a layer when the caller precomputes them via combWaypoints.
-  const wp = opts.waypoints || combWaypoints(regions, tol);
-  const nodes = [a, ...wp, b];
-  const N = nodes.length, B = N - 1;
-  const dist = new Array(N).fill(Infinity), prev = new Array(N).fill(-1), done = new Uint8Array(N);
-  dist[0] = 0;
-  for (let it = 0; it < N; it++) {
+  // Waypoints + visibility graph. When a per-layer `cache` object is passed
+  // they are built lazily on the first travel that actually needs a detour and
+  // reused for the rest of the layer (most travels are straight and never get
+  // here), which keeps combing cheap on complex models.
+  let wp, adj;
+  if (opts.cache) {
+    if (!opts.cache.wp) opts.cache.wp = combWaypoints(regions, tol);
+    if (!opts.cache.adj) opts.cache.adj = buildCombGraph(regions, opts.cache.wp, { step });
+    wp = opts.cache.wp; adj = opts.cache.adj;
+  } else {
+    wp = opts.waypoints || combWaypoints(regions, tol);
+    adj = opts.adj || null;
+  }
+  const M = wp.length, S = M, T = M + 1, total = M + 2;   // start=M, target=M+1
+  const posOf = (u) => u < M ? wp[u] : (u === S ? a : b);
+  const dist = new Array(total).fill(Infinity), prev = new Array(total).fill(-1), done = new Uint8Array(total);
+  dist[S] = 0;
+  const dist2 = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+  for (let it = 0; it < total; it++) {
     let u = -1, best = Infinity;
-    for (let i = 0; i < N; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
-    if (u < 0) break; done[u] = 1; if (u === B) break;
-    for (let v = 0; v < N; v++) {
-      if (done[v] || v === u) continue;
-      const d = Math.hypot(nodes[v][0] - nodes[u][0], nodes[v][1] - nodes[u][1]);
-      if (dist[u] + d < dist[v] && segOk(nodes[u], nodes[v])) { dist[v] = dist[u] + d; prev[v] = u; }
+    for (let i = 0; i < total; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+    if (u < 0 || u === T) break; done[u] = 1;
+    const relax = (v, d) => { if (!done[v] && dist[u] + d < dist[v]) { dist[v] = dist[u] + d; prev[v] = u; } };
+    if (u < M) {
+      // Waypoint: cached edges to other waypoints, plus an edge to the target.
+      if (adj) { for (const [j, d] of adj[u]) relax(j, d); }
+      else { for (let v = 0; v < M; v++) if (v !== u && segOk(wp[u], wp[v])) relax(v, dist2(wp[u], wp[v])); }
+      if (segOk(wp[u], b)) relax(T, dist2(wp[u], b));
+    } else if (u === S) {
+      for (let v = 0; v < M; v++) if (segOk(a, wp[v])) relax(v, dist2(a, wp[v]));
     }
   }
-  if (dist[B] === Infinity) return null;
-  const path = []; let cur = B; while (cur >= 0) { path.push(nodes[cur]); cur = prev[cur]; } path.reverse();
+  if (dist[T] === Infinity) return null;
+  const path = []; let cur = T; while (cur >= 0) { path.push(posOf(cur)); cur = prev[cur]; } path.reverse();
   return path;
 }
 
