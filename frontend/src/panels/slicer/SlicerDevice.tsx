@@ -30,6 +30,7 @@ export function SlicerDevice({ printer, live }: Props) {
   const [nozzleSet, setNozzleSet] = useState('');
   const [bedSet, setBedSet] = useState('');
   const [busy, setBusy] = useState(false);
+  const [selSlot, setSelSlot] = useState(0);   // active AMS/tool slot for load/unload
 
   if (!printer) return <div className="oslice-panelbody"><p className="muted" style={{ padding: 16 }}>{t('v2.dev.no_printer', 'No printer connected.')}</p></div>;
   const st = live ?? {};
@@ -147,15 +148,16 @@ export function SlicerDevice({ printer, live }: Props) {
             const pen = (
               <svg className="oslice-amspen" viewBox="0 0 24 24" width="9" height="9"><path d="M3 17.2V21h3.8L18 9.8l-3.8-3.8L3 17.2zM20.7 6.3a1 1 0 000-1.4l-2.6-2.6a1 1 0 00-1.4 0l-1.8 1.8L18.9 8l1.8-1.7z" fill="currentColor" /></svg>
             );
-            const cart = (color: string, mat: string, label: string, key: string) => {
+            const cart = (color: string, mat: string, label: string, key: string, idx: number) => {
               const c = color?.startsWith('#') ? color : '#' + String(color || 'cccccc').replace(/^#/, '');
+              const on = idx >= 0 && idx === selSlot;
               return (
                 <div key={key} className="oslice-amsslot">
-                  <div className="oslice-amsslot-tab">{label}</div>
-                  <div className="oslice-amsslot-cart" title={mat}>
+                  <div className={`oslice-amsslot-tab${on ? ' oslice-amsslot-tab--on' : ''}`}>{label}</div>
+                  <button className={`oslice-amsslot-cart${on ? ' oslice-amsslot-cart--on' : ''}`} title={mat} onClick={() => idx >= 0 && setSelSlot(idx)}>
                     <div className="oslice-amsslot-mat">{mat}</div>
                     <div className="oslice-amsslot-color" style={{ background: c }}>{pen}</div>
-                  </div>
+                  </button>
                 </div>
               );
             };
@@ -173,7 +175,7 @@ export function SlicerDevice({ printer, live }: Props) {
                       <svg className="oslice-amssun" viewBox="0 0 24 24" width="11" height="11"><circle cx="12" cy="12" r="4.5" fill="#f0a83a" /><g stroke="#f0a83a" strokeWidth="1.6" strokeLinecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" /></g></svg>
                     </div>
                     <div className="oslice-amsslots">
-                      {printer.ams!.map((a) => cart(a.color, a.material, printer.multiTool ? `T${a.slot - 1}` : `A${a.slot}`, String(a.slot)))}
+                      {printer.ams!.map((a) => cart(a.color, a.material, printer.multiTool ? `T${a.slot - 1}` : `A${a.slot}`, String(a.slot), a.slot - 1))}
                     </div>
                     {/* converging feed lines → nozzle */}
                     <svg className="oslice-amsfeed" viewBox={`0 0 ${W} 26`} width={W} height="26" preserveAspectRatio="none">
@@ -184,15 +186,16 @@ export function SlicerDevice({ printer, live }: Props) {
                   {printer.external && (
                     <div className="oslice-amsunit oslice-amsext">
                       <div className="oslice-amsext-h">{t('v2.dev.ext', 'Ext')}</div>
-                      <div className="oslice-amsslots">{cart(printer.external.color, printer.external.material, 'Ext', 'ext')}</div>
+                      <div className="oslice-amsslots">{cart(printer.external.color, printer.external.material, 'Ext', 'ext', -1)}</div>
                     </div>
                   )}
                 </div>
                 <div className="oslice-amsbtns">
-                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'change', tool: 0 })}>{t('v2.dev.autorefill', 'Auto-refill')}</button>
+                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'change', tool: selSlot })}>{t('v2.dev.autorefill', 'Auto-refill')}</button>
+                  <span className="muted micro" style={{ marginLeft: 6 }}>{printer.multiTool ? `T${selSlot}` : `A${selSlot + 1}`}</span>
                   <span style={{ flex: 1 }} />
-                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'unload', tool: 0 })}>{t('v2.dev.unload', 'Unload')}</button>
-                  <button className="btn btn--sm" disabled={busy} onClick={() => ctl('filament', { op: 'load', tool: 0 })}>{t('v2.dev.load', 'Load')}</button>
+                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'unload', tool: selSlot })}>{t('v2.dev.unload', 'Unload')}</button>
+                  <button className="btn btn--sm" disabled={busy} onClick={() => ctl('filament', { op: 'load', tool: selSlot })}>{t('v2.dev.load', 'Load')}</button>
                 </div>
               </div>
             );

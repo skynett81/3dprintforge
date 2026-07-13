@@ -1270,3 +1270,8 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-amssun { margin-left: 2px; }
 .oslice-amspen { position: absolute; right: 2px; bottom: 2px; color: rgba(0,0,0,0.35); }
 .oslice-amsfeed { display: block; margin: 2px auto 0; overflow: visible; }
+
+/* AMS slot selection */
+.oslice-amsslot-cart { cursor: pointer; font: inherit; text-align: center; }
+.oslice-amsslot-cart--on { border-color: var(--o-accent); box-shadow: 0 0 0 1px var(--o-accent); }
+.oslice-amsslot-tab--on { border-color: var(--o-accent); color: var(--o-accent); }
