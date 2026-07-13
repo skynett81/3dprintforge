@@ -8,6 +8,11 @@ const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'l
 const SUPPORT_TYPES = [['normal(auto)', 'Normal'], ['tree(auto)', 'Tree']];
 const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 'Ears']];
 
+// Material → [nozzle °C, bed °C] presets, applied when the material changes.
+const MATERIALS: Record<string, [number, number]> = {
+  PLA: [210, 60], PETG: [240, 80], ABS: [250, 100], ASA: [250, 100], TPU: [230, 40], PC: [270, 110], Nylon: [260, 80],
+};
+
 function Num({ label, k, v, onChange, step, unit }: { label: string; k: string; v: SliceSettings; onChange: (k: string, val: string) => void; step?: number; unit?: string }) {
   return (
     <label className="field">
@@ -30,6 +35,12 @@ export function SlicerSettings({ value, onChange, status }: { value: SliceSettin
     onChange({ ...value, quality: id, layer_height: p.layerHeight, infill_density: p.infill });
   }
 
+  function applyMaterial(mat: string) {
+    const temps = MATERIALS[mat];
+    if (!temps) { onChange({ ...value, material: mat }); return; }
+    onChange({ ...value, material: mat, nozzle_temp: temps[0], bed_temp: temps[1] });
+  }
+
   return (
     <section className="card" style={{ marginBottom: 14 }}>
       <button className="field-label" style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', width: '100%', alignItems: 'center', gap: 6 }} onClick={() => setOpen((o) => !o)}>
@@ -39,13 +50,23 @@ export function SlicerSettings({ value, onChange, status }: { value: SliceSettin
 
       {open && (
         <div style={{ marginTop: 10 }}>
-          <label className="field" style={{ maxWidth: 240 }}>
-            <span className="field-label">{t('v2.slset.quality', 'Quality preset')}</span>
-            <select className="input" value={(value.quality as string) ?? ''} onChange={(e) => applyPreset(e.target.value)}>
-              <option value="">{t('v2.slset.custom', 'Custom')}</option>
-              {(status?.qualityPresets ?? []).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
-          </label>
+          <div className="slset-grid" style={{ marginBottom: 8 }}>
+            <label className="field">
+              <span className="field-label">{t('v2.slset.quality', 'Quality preset')}</span>
+              <select className="input" value={(value.quality as string) ?? ''} onChange={(e) => applyPreset(e.target.value)}>
+                <option value="">{t('v2.slset.custom', 'Custom')}</option>
+                {(status?.qualityPresets ?? []).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="field-label">{t('v2.slset.material', 'Material')}</span>
+              <select className="input" value={(value.material as string) ?? 'PLA'} onChange={(e) => applyMaterial(e.target.value)}>
+                {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </label>
+            <Num label={t('v2.slset.nozzle', 'Nozzle temp')} k="nozzle_temp" v={value} onChange={set} step={1} unit="°C" />
+            <Num label={t('v2.slset.bed', 'Bed temp')} k="bed_temp" v={value} onChange={set} step={1} unit="°C" />
+          </div>
 
           <div className="slset-grid">
             <Num label={t('v2.slset.layer', 'Layer height')} k="layer_height" v={value} onChange={set} unit="mm" />

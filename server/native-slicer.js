@@ -133,8 +133,19 @@ export function layersToGcode(layers, settings) {
     curZ = z;
     if (layerIdx === 1) g += `M106 S${Math.round(s.fanSpeed * 2.55)}\n`;
 
-    for (const poly of layer.perimeters || []) emitPath(poly, speed, true);
-    for (const seg of layer.infill || []) emitPath(seg, speed, false);
+    // Typed paths (new) carry a per-feature tag so the preview can colour
+    // walls / infill / support / skirt distinctly, like a desktop slicer.
+    // Legacy {perimeters, infill} layers still work.
+    const paths = layer.paths || [
+      ...(layer.perimeters || []).map((p) => ({ feature: 'wall', closed: true, pts: p })),
+      ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
+    ];
+    let curFeature = null;
+    for (const path of paths) {
+      if (!path.pts || path.pts.length < 2) continue;
+      if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
+      emitPath(path.pts, speed, !!path.closed);
+    }
   });
 
   g += `; --- finished ---\n`;
@@ -193,33 +204,34 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     });
   }
 
-  // Pass 2 — walls + shells + infill (+ supports) per layer.
+  // Pass 2 — walls + shells + infill (+ supports) per layer, as typed
+  // paths so the preview can colour each feature like a desktop slicer.
   const layers = [];
   for (let i = 0; i < numLayers; i++) {
     const regions = layerRegions[i];
-    const perimeters = [];
-    const infill = [];
+    const adhesion = [];   // skirt/brim (layer 0)
+    const walls = [];      // outer/inner/hole walls
+    const fills = [];      // solid/sparse infill
     const isSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
 
     for (const region of regions) {
       // Outer walls: shrink inward wall-by-wall (negative = inward).
       let inner = region.outer;
-      perimeters.push(inner);
+      walls.push({ feature: 'outer-wall', closed: true, pts: inner });
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
-        perimeters.push(inner);
+        walls.push({ feature: 'inner-wall', closed: true, pts: inner });
       }
-      // Hole walls: grow each hole outward, into the solid (positive =
-      // grow the enclosed pocket, moving the wall away from the void).
+      // Hole walls: grow each hole outward into the solid.
       const grownHoles = [];
       for (const hole of region.holes) {
         let hw = hole;
-        perimeters.push(hw);
+        walls.push({ feature: 'inner-wall', closed: true, pts: hw });
         for (let p = 1; p < wallLoops; p++) {
           hw = offsetPolygon(hw, lw);
           if (!hw || hw.length < 3) break;
-          perimeters.push(hw);
+          walls.push({ feature: 'inner-wall', closed: true, pts: hw });
         }
         grownHoles.push(hw);
       }
@@ -232,38 +244,36 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
         const segs = isSolid
           ? solidInfill(infRegion, baseAngle, lw)
           : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
-        for (const sg of segs) infill.push(sg);
+        const feat = isSolid ? 'solid' : 'sparse';
+        for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
       }
     }
 
     // Skirt + brim on the first layer only.
     if (i === 0) {
-      const adhesion = [];
       for (const region of regions) {
-        // Brim: loops hugging the object (gap ~0), fused for adhesion.
         const brimLoops = Math.max(0, Math.round((s.brimWidth || 0) / lw));
         let ring = region.outer;
         for (let b = 0; b < brimLoops; b++) {
           ring = offsetPolygon(ring, lw);
           if (!ring || ring.length < 3) break;
-          adhesion.push(ring);
+          adhesion.push({ feature: 'brim', closed: true, pts: ring });
         }
-        // Skirt: a few loops offset outward by a gap, priming the nozzle.
         let sk = offsetPolygon(region.outer, s.skirtGap + (brimLoops * lw));
         for (let k = 0; k < s.skirtLoops; k++) {
           if (!sk || sk.length < 3) break;
-          adhesion.push(sk);
+          adhesion.push({ feature: 'skirt', closed: true, pts: sk });
           sk = offsetPolygon(sk, lw);
         }
       }
-      // Adhesion prints first.
-      perimeters.unshift(...adhesion);
     }
 
-    // Support hatch (printed as infill-style moves).
-    if (supportSegs && supportSegs[i]) for (const sg of supportSegs[i]) infill.push(sg);
+    // Support hatch.
+    const support = [];
+    if (supportSegs && supportSegs[i]) for (const sg of supportSegs[i]) support.push({ feature: 'support', closed: false, pts: sg });
 
-    layers.push({ perimeters, infill });
+    // Print order: adhesion → walls → infill → support.
+    layers.push({ paths: [...adhesion, ...walls, ...fills, ...support] });
   }
 
   const gcode = layersToGcode(layers, s);

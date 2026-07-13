@@ -306,6 +306,16 @@ body {
 .slicer-estimate strong { color: var(--text); font-size: 0.98rem; }
 .slicer-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 
+/* G-code preview feature legend */
+.gpreview-wrap { position: relative; flex: 1; display: flex; }
+.gpreview-legend {
+  position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px; background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); backdrop-filter: blur(3px); pointer-events: none;
+}
+.gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; }
+.gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+
 @media (max-width: 900px) {
   .slicer-main { grid-template-columns: 1fr; }
   .slicer-sidebar { max-height: none; overflow: visible; }
