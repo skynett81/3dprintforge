@@ -2088,7 +2088,8 @@ export async function handleApiRequest(req, res) {
             if (op === 'load' || op === 'change') cmd = buildAmsTrayChangeCommand(tray);
             else if (op === 'unload') cmd = buildGcodeMultiLine(buildFilamentUnloadSequence(body.temp || 220));
             if (!cmd) return sendJson(res, { error: 'invalid filament op' }, 400);
-            entry.client.sendCommand(cmd);
+            if (Array.isArray(cmd)) for (const c of cmd) entry.client.sendCommand(c);
+            else entry.client.sendCommand(cmd);
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action, op, tray });
           }
