@@ -267,7 +267,116 @@ body {
 .slset-grid .field-label { font-size: 0.72rem; }
 .slset-grid .input { padding: 5px 8px; }
 
-/* Slicer — professional app layout (viewport + settings + action bar) */
+/* ============================================================
+   Slicer — OrcaSlicer-style dark professional UI
+   ============================================================ */
+.oslice {
+  --o-bg: #1c1d20; --o-panel: #26272b; --o-panel-2: #2d2f34; --o-border: #3a3d43;
+  --o-text: #e4e6e9; --o-muted: #9aa0a7; --o-accent: #00b3a4; --o-accent-ink: #04231f;
+  display: flex; flex-direction: column;
+  height: calc(100vh - 96px); min-height: 560px;
+  background: var(--o-bg); color: var(--o-text);
+  border: 1px solid var(--o-border); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 18px 50px -20px rgba(0,0,0,0.5);
+}
+.oslice * { scrollbar-width: thin; scrollbar-color: #4a4d53 transparent; }
+.oslice ::-webkit-scrollbar { width: 8px; height: 8px; }
+.oslice ::-webkit-scrollbar-thumb { background: #4a4d53; border-radius: 4px; }
+
+/* Top bar */
+.oslice-top { display: flex; align-items: center; height: 46px; padding: 0 12px; background: var(--o-panel); border-bottom: 1px solid var(--o-border); position: relative; }
+.oslice-toptabs { display: flex; gap: 2px; margin: 0 auto; background: var(--o-bg); border-radius: 9px; padding: 3px; }
+.oslice-toptab { padding: 6px 26px; border: none; background: none; color: var(--o-muted); font-weight: 600; font-size: 0.9rem; border-radius: 7px; cursor: pointer; }
+.oslice-toptab--on { background: var(--o-accent); color: var(--o-accent-ink); }
+.oslice-toptab:disabled { opacity: 0.4; cursor: not-allowed; }
+.oslice-brand { position: absolute; right: 14px; font-size: 0.74rem; color: var(--o-muted); }
+
+.oslice-body { display: flex; flex: 1; min-height: 0; }
+
+/* Left tool rail */
+.oslice-rail { width: 50px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; background: var(--o-panel); border-right: 1px solid var(--o-border); }
+.oslice-tool { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 9px; background: none; color: var(--o-muted); cursor: pointer; transition: background 0.12s, color 0.12s; }
+.oslice-tool:hover:not(:disabled) { background: var(--o-panel-2); color: var(--o-text); }
+.oslice-tool--on { background: var(--o-accent); color: var(--o-accent-ink); }
+.oslice-tool:disabled { opacity: 0.3; cursor: not-allowed; }
+.oslice-rail-sep { width: 26px; height: 1px; background: var(--o-border); margin: 5px 0; }
+
+/* Viewport */
+.oslice-stage { flex: 1; display: flex; position: relative; min-width: 0; background: #0e1116; }
+.oslice-stage .plate-root, .oslice-stage > div { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.oslice-stage .plate-canvas { flex: 1; height: auto; border-radius: 0; }
+.oslice-stage .plate-count { color: #cbd5e1; }
+.oslice-loading { flex: 1; display: grid; place-items: center; color: var(--o-muted); }
+.oslice-drop { flex: 1; display: grid; place-items: center; cursor: pointer; color: var(--o-muted); border: 2px dashed var(--o-border); margin: 16px; border-radius: 10px; }
+.oslice-drop:hover { border-color: var(--o-accent); color: var(--o-text); }
+.oslice-drop-plus { font-size: 2.4rem; opacity: 0.5; }
+.oslice-stage .gpreview-wrap { flex: 1; }
+.oslice-stage input[type=range] { accent-color: var(--o-accent); }
+
+/* Right settings panel */
+.oslice-panel { width: 328px; display: flex; flex-direction: column; background: var(--o-panel); border-left: 1px solid var(--o-border); min-height: 0; }
+.oslice-presets { padding: 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 8px; }
+.oslice-preset { display: flex; align-items: center; gap: 10px; }
+.oslice-preset-ic { width: 30px; height: 30px; display: grid; place-items: center; background: var(--o-panel-2); border-radius: 8px; color: var(--o-muted); flex: none; }
+.oslice-preset-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.oslice-preset-lbl { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--o-muted); }
+.oslice-preset-sel { background: var(--o-panel-2); border: 1px solid var(--o-border); color: var(--o-text); border-radius: 6px; padding: 5px 8px; font-size: 0.84rem; width: 100%; }
+.oslice-chip { width: 14px; height: 14px; border-radius: 4px; flex: none; border: 1px solid rgba(255,255,255,0.2); }
+.oslice-temps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Global / Objects tabs + preset controls */
+.oslice-goTabs { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--o-border); }
+.oslice-goTab { padding: 5px 14px; border: none; background: var(--o-panel-2); color: var(--o-muted); font-weight: 600; font-size: 0.82rem; border-radius: 7px; cursor: pointer; }
+.oslice-goTab--on { background: var(--o-accent); color: var(--o-accent-ink); }
+.oslice-presetctl { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.oslice-panelbody { flex: 1; overflow-y: auto; min-height: 0; }
+
+/* Process setting tabs */
+.oset-tabs { display: flex; gap: 0; padding: 8px 6px 0; overflow-x: auto; border-bottom: 1px solid var(--o-border); }
+.oset-tab { padding: 7px 9px; border: none; background: none; color: var(--o-muted); font-size: 0.76rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+.oset-tab--on { color: var(--o-text); border-bottom-color: var(--o-accent); }
+.oset-body { padding: 12px 10px; }
+.oset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oset-field { display: flex; flex-direction: column; gap: 3px; }
+.oset-label { font-size: 0.7rem; color: var(--o-muted); }
+.oset-input { background: var(--o-panel-2); border: 1px solid var(--o-border); color: var(--o-text); border-radius: 6px; padding: 5px 8px; font-size: 0.82rem; width: 100%; }
+.oset-input:disabled { opacity: 0.5; }
+.oset-check { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--o-text); }
+.oset-check input, .oslice-temps input, .oslice-preset-sel { accent-color: var(--o-accent); }
+
+/* Object panel inside dark theme */
+.oslice-panelbody .card { background: none; border: none; padding: 12px 10px; margin: 0; }
+.oslice-panelbody .field-label, .oslice-panelbody .obj-group-label { color: var(--o-muted); }
+.oslice-panelbody .slset-grid .input, .oslice-panelbody .input { background: var(--o-panel-2); border: 1px solid var(--o-border); color: var(--o-text); }
+
+/* Send targets */
+.oslice-printers { border-top: 1px solid var(--o-border); padding: 10px; display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; }
+.oslice-printers-lbl { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--o-muted); }
+.oslice-printer { display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: var(--o-panel-2); border: 1px solid var(--o-border); border-radius: 7px; cursor: pointer; font-size: 0.84rem; }
+.oslice-printer--on { border-color: var(--o-accent); background: rgba(0,179,164,0.12); }
+.oslice-printer input { accent-color: var(--o-accent); }
+
+/* Bottom bar */
+.oslice-bottom { display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 14px; background: var(--o-panel); border-top: 1px solid var(--o-border); }
+.oslice-est { display: flex; align-items: center; gap: 16px; font-size: 0.82rem; color: var(--o-muted); flex-wrap: wrap; }
+.oslice-est strong { color: var(--o-text); font-size: 0.96rem; }
+.oslice-actions { display: flex; gap: 8px; margin-left: auto; }
+.oslice-bottom .btn { background: var(--o-panel-2); border: 1px solid var(--o-border); color: var(--o-text); }
+.oslice-bottom .btn:hover:not(:disabled) { border-color: var(--o-accent); }
+.oslice-print { padding: 9px 22px; border: none; border-radius: 8px; background: var(--o-accent); color: var(--o-accent-ink); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+.oslice-print:disabled { opacity: 0.4; cursor: not-allowed; }
+.oslice-bottom .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 940px) {
+  .oslice { height: auto; }
+  .oslice-body { flex-direction: column; }
+  .oslice-rail { flex-direction: row; width: auto; border-right: none; border-bottom: 1px solid var(--o-border); }
+  .oslice-rail-sep { width: 1px; height: 26px; margin: 0 5px; }
+  .oslice-stage { min-height: 360px; }
+  .oslice-panel { width: auto; }
+}
+
+/* Slicer — professional app layout (legacy, superseded by .oslice) */
 .slicer-app { display: flex; flex-direction: column; gap: 12px; min-height: calc(100vh - 150px); }
 .slicer-main {
   display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; flex: 1; min-height: 0;

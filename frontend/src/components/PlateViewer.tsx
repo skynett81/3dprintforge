@@ -13,10 +13,18 @@ export interface ObjInfo {
   scalePct: number;                            // uniform, from X
   dimX: number; dimY: number; dimZ: number;    // mm (world)
 }
+export type PlateMode = 'translate' | 'rotate' | 'scale';
+export interface PlateState { count: number; hasSel: boolean; mode: PlateMode }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   count: () => number;
   addFile: (f: File) => Promise<void>;
+  setMode: (m: PlateMode) => void;
+  duplicate: () => void;
+  remove: () => void;
+  arrange: () => void;
+  layFlat: () => void;
+  center: () => void;
   setPos: (x: number, y: number) => void;
   setRot: (x: number, y: number, z: number) => void;   // degrees
   setScalePct: (pct: number) => void;
@@ -45,15 +53,23 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void }>(function PlateViewer({ file, bed = 256, onObject }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void }>(function PlateViewer({ file, bed = 256, onObject, onState }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
-  const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const onStateRef = useRef(onState);
+  onStateRef.current = onState;
+  const [mode, setModeState] = useState<PlateMode>('translate');
   const [count, setCount] = useState(0);
   const [sel, setSel] = useState(false);
+
+  function emitState(nextMode = mode) {
+    const c = ctx.current;
+    onStateRef.current?.({ count: c?.objects.length ?? 0, hasSel: !!c?.selected, mode: nextMode });
+  }
+  function setMode(m: PlateMode) { setModeState(m); ctx.current?.tcontrols.setMode(m); emitState(m); }
 
   // Report the selected object's live transform to the parent (Object panel).
   function emitObject() {
@@ -78,6 +94,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     if (mesh) c.tcontrols.attach(mesh); else c.tcontrols.detach();
     setSel(!!mesh);
     emitObject();
+    emitState();
   }
 
   function addMesh(geom: THREE.BufferGeometry) {
@@ -208,6 +225,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   useImperativeHandle(ref, () => ({
     count: () => ctx.current?.objects.length ?? 0,
     addFile: (f: File) => loadFileBuffer(f),
+    setMode: (m: PlateMode) => setMode(m),
+    duplicate: () => duplicate(),
+    remove: () => removeSel(),
+    arrange: () => arrange(),
+    layFlat: () => layFlat(),
+    center: () => center(),
     setPos: (x: number, y: number) => { const m = ctx.current?.selected; if (!m) return; m.position.x = x; m.position.y = y; emitObject(); },
     setRot: (x: number, y: number, z: number) => { const m = ctx.current?.selected; if (!m) return; const D = Math.PI / 180; m.rotation.set(x * D, y * D, z * D); dropToPlate(m); emitObject(); },
     setScalePct: (pct: number) => { const m = ctx.current?.selected; if (!m || !(pct > 0)) return; const s = pct / 100; m.scale.set(s, s, s); dropToPlate(m); emitObject(); },
@@ -236,27 +259,11 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
   }));
 
-  const modeBtn = (m: typeof mode, label: string, title: string) => (
-    <button className={`plate-tool${mode === m ? ' plate-tool--on' : ''}`} title={title} onClick={() => setMode(m)}>{label}</button>
-  );
-
   return (
     <div className="plate-root">
       <div className="plate-stage-wrap">
-        {/* Left tool rail — transform modes + object actions, like a desktop slicer. */}
-        <div className="plate-rail">
-          {modeBtn('translate', t('v2.plate.move', 'Move'), t('v2.plate.move', 'Move'))}
-          {modeBtn('rotate', t('v2.plate.rotate', 'Rotate'), t('v2.plate.rotate', 'Rotate'))}
-          {modeBtn('scale', t('v2.plate.scale', 'Scale'), t('v2.plate.scale', 'Scale'))}
-          <span className="plate-rail-sep" />
-          <button className="plate-tool" disabled={!sel} title={t('v2.plate.flat', 'Lay flat')} onClick={layFlat}>{t('v2.plate.flat', 'Flat')}</button>
-          <button className="plate-tool" disabled={!sel} title={t('v2.plate.center', 'Center')} onClick={center}>{t('v2.plate.center', 'Center')}</button>
-          <button className="plate-tool" disabled={!sel} title={t('v2.plate.dup', 'Duplicate')} onClick={duplicate}>{t('v2.plate.copy', 'Copy')}</button>
-          <button className="plate-tool" disabled={count < 2} title={t('v2.plate.arrange', 'Auto-arrange')} onClick={arrange}>{t('v2.plate.tidy', 'Tidy')}</button>
-          <button className="plate-tool plate-tool--danger" disabled={!sel} title={t('v2.plate.del', 'Delete')} onClick={removeSel}>{t('v2.plate.del', 'Delete')}</button>
-        </div>
         <div ref={mount} className="plate-canvas" />
-        <div className="plate-count">{count} {t('v2.plate.objects', 'object(s)')}</div>
+        <div className="plate-count">{count} {t('v2.plate.objects', 'object(s)')}{sel ? ` · ${t('v2.plate.selected', 'selected')}` : ''}</div>
       </div>
     </div>
   );
