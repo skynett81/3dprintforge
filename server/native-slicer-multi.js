@@ -138,15 +138,21 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
       const { fills, walls } = materialLayerPaths(regions, s, i, isSolid, lw);
       if (!fills.length && !walls.length) continue;
 
-      // Tool change + flush.
+      // Tool change + flush. The purge volume can come from a per-pair matrix
+      // (BambuStudio "purging volumes") so similar colours waste less; falls
+      // back to the single flushVolume when no matrix is supplied.
       let flush = 0;
       if (ext !== curTool) {
-        g += `; TOOL_CHANGE ${curTool} -> ${ext}\n`;
+        const mtx = s.flushMatrix;
+        const vol = (Array.isArray(mtx) && Array.isArray(mtx[curTool - 1]) && mtx[curTool - 1][ext - 1] != null)
+          ? Number(mtx[curTool - 1][ext - 1]) : s.flushVolume;
+        const thisFlushE = (vol || 0) / (PI * (s.filamentDiam / 2) ** 2);
+        g += `; TOOL_CHANGE ${curTool} -> ${ext} (purge ${Math.round(vol || 0)}mm3)\n`;
         g += `T${ext - 1}\n`;
         curTool = ext;
-        flush = s.flushIntoInfill ? flushE : 0;
-        if (!s.flushIntoInfill && flushE > 0) { // waste tower fallback: purge in place
-          e += flushE; g += `G1 E${e.toFixed(4)} F${s.firstLayerSpeed * 60} ; purge\n`;
+        flush = s.flushIntoInfill ? thisFlushE : 0;
+        if (!s.flushIntoInfill && thisFlushE > 0) { // waste tower fallback: purge in place
+          e += thisFlushE; g += `G1 E${e.toFixed(4)} F${s.firstLayerSpeed * 60} ; purge\n`;
         }
       }
       g += `; FEATURE:${isSolid ? 'solid' : 'sparse'}\n`;

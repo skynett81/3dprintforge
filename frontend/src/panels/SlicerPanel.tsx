@@ -11,6 +11,7 @@ import { ObjectPanel } from './slicer/ObjectPanel';
 import { SlicerDevice } from './slicer/SlicerDevice';
 import { SlicerFilaments } from './slicer/SlicerFilaments';
 import { SlicerCalibration } from './slicer/SlicerCalibration';
+import { SlicerPurge } from './slicer/SlicerPurge';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
 import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
 
@@ -91,6 +92,8 @@ export function SlicerPanel() {
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
   type ProfKind = 'process' | 'filament';
+  const [purgeOpen, setPurgeOpen] = useState(false);
+  const [flushMatrix, setFlushMatrix] = useState<number[][] | null>(null);
   const [profiles, setProfiles] = useState<Record<ProfKind, import('../types').SlicerProfile[]>>({ process: [], filament: [] });
   const [profileId, setProfileId] = useState<Record<ProfKind, number | null>>({ process: null, filament: null });
   const [bindings, setBindings] = useState<Record<string, { process?: number | null; filament?: number | null }>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.bindings') || '{}'); } catch { return {}; } });
@@ -269,7 +272,9 @@ export function SlicerPanel() {
   // right plate (the engine defaults to origin-corner when it's unknown).
   function settingsForPrinter(pid: string | undefined, base: SliceSettings = settings): Record<string, unknown> {
     const bv = slicerPrinters.find((p) => p.id === pid)?.buildVolume;
-    return bv ? { ...base, bed_size: [bv.x, bv.y] } : base;
+    const out: Record<string, unknown> = bv ? { ...base, bed_size: [bv.x, bv.y] } : { ...base };
+    if (flushMatrix) out.flush_matrix = flushMatrix;
+    return out;
   }
 
   async function slicePreview() {
@@ -386,6 +391,11 @@ export function SlicerPanel() {
               )}
               <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} disabled={filaments.length >= (selPrinter?.colorSlots ?? 8)} style={{ marginLeft: (selPrinter?.ams?.length ?? 0) > 0 ? '0' : 'auto' }}>+</button>
             </div>
+            {filaments.length > 1 && (
+              <button className="btn btn--sm btn--ghost" style={{ fontSize: '0.66rem', padding: '2px 8px', marginBottom: 6, alignSelf: 'flex-start' }} onClick={() => setPurgeOpen(true)} title={t('v2.slset.purge_hint', 'Flush volumes per colour change (waste as infill)')}>
+                {t('v2.slset.purge', 'Purge volumes')}{flushMatrix ? ' ●' : ''}
+              </button>
+            )}
             {filaments.map((f, i) => (
               <div className="oslice-filrow" key={i}>
                 <label className="oslice-filbadge" style={{ background: f.color, color: badgeTextColor(f.color), boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.18)', cursor: 'pointer' }}>
@@ -563,6 +573,7 @@ export function SlicerPanel() {
       </div>
 
       {showLibrary && <LibraryImportModal onClose={() => setShowLibrary(false)} onImport={importFromLibrary} />}
+      {purgeOpen && <SlicerPurge colors={slotColors} matrix={flushMatrix} onChange={setFlushMatrix} onClose={() => setPurgeOpen(false)} />}
     </div>
   );
 }
