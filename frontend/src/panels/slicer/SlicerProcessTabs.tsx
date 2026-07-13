@@ -12,7 +12,7 @@ type Field =
   | { tab: string; group: string; k: string; label: string; type: 'bool'; dep?: string }
   | { tab: string; group: string; k: string; label: string; type: 'sel'; opts: (string | string[])[]; dep?: string };
 
-const TABS = ['Quality', 'Strength', 'Speed', 'Support', 'Others'] as const;
+const TABS = ['Quality', 'Strength', 'Speed', 'Temperature', 'Support', 'Others'] as const;
 
 const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
@@ -44,6 +44,12 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Other', k: 'initial_layer_speed', label: 'Initial layer', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'ironing_speed', label: 'Ironing', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'travel_speed', label: 'Travel', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Temperature', group: 'Nozzle', k: 'nozzle_temp', label: 'Nozzle temperature', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Nozzle', k: 'nozzle_temp_initial', label: 'Nozzle temp — initial layer', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Bed', k: 'bed_temp', label: 'Bed temperature', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Bed', k: 'bed_temp_initial', label: 'Bed temp — initial layer', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Cooling', k: 'fan_speed', label: 'Part cooling fan', type: 'num', unit: '%', step: 5 },
+  { tab: 'Temperature', group: 'Cooling', k: 'fan_off_layers', label: 'Fan off for first N layers', type: 'num', step: 1 },
   { tab: 'Support', group: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
   { tab: 'Support', group: 'Support', k: 'support_type', label: 'Type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle', type: 'num', unit: '°', step: 1, dep: 'supports' },

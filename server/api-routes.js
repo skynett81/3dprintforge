@@ -8127,7 +8127,11 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/slicer/native/profiles') {
       const { listProfiles } = await import('./db/slicer-profiles.js');
       const kind = url.searchParams.get('kind');
-      return sendJson(res, { profiles: listProfiles(kind) });
+      let profiles = listProfiles(kind);
+      // user=1 → only the user's own editable profiles (seeded vendor presets
+      // all carry a vendor; user-created ones have none).
+      if (url.searchParams.get('user') === '1') profiles = profiles.filter((p) => !p.vendor);
+      return sendJson(res, { profiles });
     }
 
     const profIdMatch = path.match(/^\/api\/slicer\/native\/profiles\/(\d+)$/);

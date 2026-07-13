@@ -122,6 +122,11 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('ironingFlow', num(s.ironing_flow));
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
+  // Initial-layer temperatures and part-cooling fan — critical per material.
+  set('nozzleTempInitial', num(s.nozzle_temp_initial));
+  set('bedTempInitial', num(s.bed_temp_initial));
+  set('fanSpeed', num(s.fan_speed));
+  set('fanOffLayers', num(s.fan_off_layers));
   if (s.material) out.material = String(s.material);
 
   return out;

@@ -45,3 +45,22 @@ describe('buildNativeSettings: new modes', () => {
     assert.equal(n.infillPattern, 'concentric');
   });
 });
+
+describe('native-slicer: initial-layer temps and fan-off layers', () => {
+  it('heats to initial temps, switches to steady after layer 1, delays fan', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 3), {
+      nozzleTemp: 210, bedTemp: 60, nozzleTempInitial: 230, bedTempInitial: 65,
+      fanSpeed: 80, fanOffLayers: 2,
+    });
+    const g = r.gcode;
+    // Start block heats to the initial-layer temps.
+    assert.match(g, /M109 S230/);
+    assert.match(g, /M190 S65/);
+    // Fan is off at start (fanOffLayers > 0) and enabled later at 80% (=204).
+    assert.match(g, /M107/);
+    assert.match(g, /M106 S204/);
+    // Steady temps are applied after the first layer.
+    assert.match(g, /M104 S210/);
+    assert.match(g, /M140 S60/);
+  });
+});

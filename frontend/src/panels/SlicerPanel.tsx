@@ -55,7 +55,7 @@ export function SlicerPanel() {
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [busy, setBusy] = useState(false);
   const [settings, setSettings] = useState<SliceSettings>({
-    material: 'PLA', nozzle_temp: 210, bed_temp: 60,
+    material: 'PLA', nozzle_temp: 210, bed_temp: 60, nozzle_temp_initial: 215, bed_temp_initial: 60, fan_speed: 100, fan_off_layers: 1,
     layer_height: 0.2, initial_layer_height: 0.24, wall_loops: 2, top_layers: 4, bottom_layers: 4,
     infill_density: 15, infill_pattern: 'grid', infill_direction: 45, skirt_loops: 1, skirt_distance: 3, elephant_foot: 0,
     outer_wall_speed: 120, inner_wall_speed: 150, sparse_infill_speed: 180, internal_solid_infill_speed: 140,
@@ -75,7 +75,8 @@ export function SlicerPanel() {
   const [full, setFull] = useState(false);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
-  const [presets, setPresets] = useState<Record<string, SliceSettings>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.presets') || '{}'); } catch { return {}; } });
+  const [profiles, setProfiles] = useState<import('../types').SlicerProfile[]>([]);
+  const [profileId, setProfileId] = useState<number | null>(null);
   const plateRef = useRef<PlateHandle>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const lastPrinterSync = useRef<string>('');
@@ -169,9 +170,42 @@ export function SlicerPanel() {
     if (!p) return;
     setSettings((s) => ({ ...s, quality: id, layer_height: p.layerHeight, infill_density: p.infill }));
   }
-  function savePreset() {
-    const name = window.prompt(t('v2.slset.preset_name', 'Preset name'))?.trim(); if (!name) return;
-    const next = { ...presets, [name]: settings }; setPresets(next); localStorage.setItem('v2.slicer.presets', JSON.stringify(next));
+  // ── Process profiles (server-persisted, editable) ───────────────────
+  async function loadProfiles() {
+    try { const r = await api.listSlicerProfiles('process'); setProfiles(r.profiles ?? []); } catch { /* offline */ }
+  }
+  useEffect(() => { loadProfiles(); }, []);
+
+  function applyProfile(id: number | null) {
+    setProfileId(id);
+    if (id == null) return;
+    const p = profiles.find((x) => x.id === id);
+    if (!p) return;
+    try { const s = JSON.parse(p.settings_json || '{}'); setSettings((prev) => ({ ...prev, ...s })); } catch { /* bad json */ }
+  }
+
+  async function saveProfile() {
+    const sel = profileId != null ? profiles.find((p) => p.id === profileId) : null;
+    // With a profile selected, offer to update it in place; otherwise save a new one.
+    if (sel && window.confirm(t('v2.slset.update_profile', 'Update profile "{name}"? Cancel = save as new').replace('{name}', sel.name))) {
+      try { await api.updateSlicerProfile(sel.id, { settings: settings as Record<string, unknown> }); toast(t('v2.slset.profile_updated', 'Profile updated'), 'success'); await loadProfiles(); }
+      catch (e) { toast((e as Error).message, 'error'); }
+      return;
+    }
+    const name = window.prompt(t('v2.slset.profile_name', 'Profile name'))?.trim(); if (!name) return;
+    try {
+      const created = await api.createSlicerProfile({ kind: 'process', name, settings: settings as Record<string, unknown> });
+      await loadProfiles(); setProfileId(created.id ?? null);
+      toast(t('v2.slset.profile_saved', 'Profile saved'), 'success');
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
+
+  async function deleteProfile() {
+    const sel = profileId != null ? profiles.find((p) => p.id === profileId) : null;
+    if (!sel) return;
+    if (!window.confirm(t('v2.slset.delete_profile', 'Delete profile "{name}"?').replace('{name}', sel.name))) return;
+    try { await api.deleteSlicerProfile(sel.id); setProfileId(null); await loadProfiles(); toast(t('v2.slset.profile_deleted', 'Profile deleted'), 'success'); }
+    catch (e) { toast((e as Error).message, 'error'); }
   }
 
   async function slicePreview() {
@@ -321,11 +355,12 @@ export function SlicerPanel() {
             <button className={`oslice-goTab${side === 'global' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('global')}>{t('v2.slicer.global', 'Global')}</button>
             <button className={`oslice-goTab${side === 'objects' ? ' oslice-goTab--on' : ''}`} onClick={() => setSide('objects')}>{t('v2.slicer.objects', 'Objects')}</button>
             <div className="oslice-presetctl">
-              <select className="oset-input" style={{ maxWidth: 100 }} value="" onChange={(e) => { if (e.target.value && presets[e.target.value]) setSettings({ ...presets[e.target.value] }); }}>
-                <option value="">{Object.keys(presets).length ? t('v2.slset.load_preset', 'Presets…') : t('v2.slset.none_saved', 'no presets')}</option>
-                {Object.keys(presets).map((n) => <option key={n} value={n}>{n}</option>)}
+              <select className="oset-input" style={{ maxWidth: 110 }} value={profileId ?? ''} onChange={(e) => applyProfile(e.target.value ? Number(e.target.value) : null)} title={t('v2.slset.profile', 'Process profile')}>
+                <option value="">{profiles.length ? t('v2.slset.load_profile', 'Profile…') : t('v2.slset.none_saved', 'no profiles')}</option>
+                {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}{p.is_default ? ' ★' : ''}</option>)}
               </select>
-              <button className="btn btn--sm btn--ghost" onClick={savePreset}>{t('v2.slset.save', 'Save')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={saveProfile} title={t('v2.slset.save_profile_hint', 'Save current settings as a profile')}>{t('v2.slset.save', 'Save')}</button>
+              {profileId != null && <button className="btn btn--sm btn--ghost" onClick={deleteProfile} title={t('v2.slset.delete', 'Delete')}>×</button>}
             </div>
           </div>
 

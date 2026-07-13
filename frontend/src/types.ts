@@ -267,6 +267,17 @@ export interface SliceResult {
   printing?: boolean;
 }
 
+export interface SlicerProfile {
+  id: number;
+  kind: string;
+  name: string;
+  vendor?: string | null;
+  settings_json: string;
+  is_default: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface SlicerPrinter {
   id: string;
   name: string;

@@ -77,6 +77,12 @@ export const api = {
     }),
   getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
   getSlicerPrinters: () => req<import('./types').SlicerPrinter[]>('/api/slicer/printers'),
+  listSlicerProfiles: (kind = 'process') => req<{ profiles: import('./types').SlicerProfile[] }>(`/api/slicer/native/profiles?kind=${encodeURIComponent(kind)}&user=1`),
+  createSlicerProfile: (body: { kind: string; name: string; settings: Record<string, unknown>; is_default?: number }) =>
+    req<import('./types').SlicerProfile>('/api/slicer/native/profiles', { method: 'POST', body: JSON.stringify(body) }),
+  updateSlicerProfile: (id: number, body: { name?: string; settings?: Record<string, unknown>; is_default?: number }) =>
+    req<import('./types').SlicerProfile>(`/api/slicer/native/profiles/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteSlicerProfile: (id: number) => req<{ ok: boolean }>(`/api/slicer/native/profiles/${id}`, { method: 'DELETE' }),
   downloadLibraryModel: async (id: number, name: string): Promise<File> => {
     const res = await fetch(`/api/library/${id}/download`);
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

@@ -57,16 +57,22 @@ export function seamStart(poly, mode) {
 // ── G-code emission ─────────────────────────────────────────────────
 
 function _defaultStart(s) {
+  // Heat to the initial-layer temps first (often hotter for adhesion); the
+  // layer loop switches to the steady temps after layer 0.
+  const bed0 = s.bedTempInitial ?? s.bedTemp;
+  const noz0 = s.nozzleTempInitial ?? s.nozzleTemp;
+  const fanOff = s.fanOffLayers ?? 1;
   return [
-    `M140 S${s.bedTemp}`,
-    `M104 S${s.nozzleTemp}`,
+    `M140 S${bed0}`,
+    `M104 S${noz0}`,
     `G28 ; home`,
-    `M190 S${s.bedTemp}`,
-    `M109 S${s.nozzleTemp}`,
+    `M190 S${bed0}`,
+    `M109 S${noz0}`,
     `G92 E0`,
     `G90`,
     `M82`,
-    `M106 S${Math.round(s.fanSpeed * 2.55)}`,
+    // Part-cooling fan: off while printing the first fanOff layer(s).
+    fanOff > 0 ? `M107` : `M106 S${Math.round((s.fanSpeed ?? 100) * 2.55)}`,
   ].join('\n') + '\n';
 }
 
@@ -204,7 +210,13 @@ export function layersToGcode(layers, settings) {
     const spiral = paths.some((p) => p.spiral);
     g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
-    if (layerIdx === 1) g += `M106 S${Math.round(s.fanSpeed * 2.55)}\n`;
+    // After the first layer, drop from initial-layer temps to steady temps.
+    if (layerIdx === 1) {
+      if (s.nozzleTempInitial != null && s.nozzleTempInitial !== s.nozzleTemp) g += `M104 S${s.nozzleTemp}\n`;
+      if (s.bedTempInitial != null && s.bedTempInitial !== s.bedTemp) g += `M140 S${s.bedTemp}\n`;
+    }
+    // Enable the part-cooling fan once past the fan-off layers.
+    if (layerIdx === (s.fanOffLayers ?? 1)) g += `M106 S${Math.round((s.fanSpeed ?? 100) * 2.55)}\n`;
 
     let curFeature = null;
     for (const path of paths) {

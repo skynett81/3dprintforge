@@ -78,4 +78,17 @@ describe('buildNativeSettings', () => {
     assert.equal('perimeters' in n, false);
     assert.equal('infillDensity' in n, false);
   });
+
+  test('maps temperature and cooling keys', () => {
+    const n = buildNativeSettings({
+      nozzle_temp: 240, bed_temp: 80, nozzle_temp_initial: 245, bed_temp_initial: 85,
+      fan_speed: 60, fan_off_layers: 3,
+    });
+    assert.equal(n.nozzleTemp, 240);
+    assert.equal(n.bedTemp, 80);
+    assert.equal(n.nozzleTempInitial, 245);
+    assert.equal(n.bedTempInitial, 85);
+    assert.equal(n.fanSpeed, 60);
+    assert.equal(n.fanOffLayers, 3);
+  });
 });
