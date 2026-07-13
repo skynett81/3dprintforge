@@ -136,4 +136,23 @@ G1 X100 Y0 E5 F1200
     assert.ok(r.slicerHeader.slicerTimeSeconds >= 5400);
     assert.ok(r.slicerHeader.slicerFilamentMm > 1000);
   });
+
+  it('tallies waste from prime block and inline flush without leaking', () => {
+    // prime block (+5), a part infill move (+5), an inline flush move (+5),
+    // then a part move with no comment (+2) that must NOT be counted as waste.
+    const gcode = [
+      '; --- prime line ---',
+      'G1 X20 Y20 F1200',
+      'G1 X80 Y20 E5 F1200',                       // prime → waste
+      ';LAYER:0',
+      '; FEATURE:Infill',
+      'G1 X10 Y10 E10 F1800',                      // part (+5), not waste
+      'G1 X30 Y30 E15 F1800 ; flush into infill',  // inline flush (+5) → waste
+      'G1 X40 Y40 E17 F1800',                      // part (+2), no comment → not waste (no leak)
+    ].join('\n');
+    const r = estimate(gcode, { filamentDensityGcm3: 1.24 });
+    assert.equal(r.extrudeLengthMm, 17);           // 5 + 5 + 5 + 2
+    assert.equal(r.wasteLengthMm, 10);             // 5 prime + 5 flush only
+    assert.ok(r.wasteWeightG > 0 && r.wasteWeightG < r.weightG);
+  });
 });

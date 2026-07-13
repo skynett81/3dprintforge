@@ -94,7 +94,7 @@ export const api = {
     if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
     return data as import('./types').SliceResult;
   },
-  sliceGcode: async (file: File, settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; durationMs: number }> => {
+  sliceGcode: async (file: File, settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number }> => {
     const q = new URLSearchParams({ filename: file.name });
     if (settings && Object.keys(settings).length) q.set('settings', JSON.stringify(settings));
     const res = await fetch(`/api/slicer/native/slice?${q.toString()}`, { method: 'POST', body: file });
@@ -109,6 +109,7 @@ export const api = {
       layers: Number(res.headers.get('X-Layer-Count') || 0),
       timeSec: Number(res.headers.get('X-Estimated-Time-Sec') || 0),
       filamentG: Number(res.headers.get('X-Filament-G') || 0),
+      wasteG: Number(res.headers.get('X-Waste-G') || 0),
       durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
     };
   },

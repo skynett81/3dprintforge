@@ -8224,8 +8224,11 @@ export async function handleApiRequest(req, res) {
           const elapsed = Date.now() - start;
 
           // Optional time/material estimate via the existing estimator.
+          // Use the print material's density so weight/waste are per-material.
           const { estimate } = await import('./gcode-time-estimator.js');
-          const est = estimate(result.gcode);
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14, PVA: 1.23, HIPS: 1.04 };
+          const matKey = String(settings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
 
           const gcodeBuf = Buffer.from(result.gcode, 'utf-8');
           const outName = filename.replace(/\.[^.]+$/, '') + '.gcode';
@@ -8238,6 +8241,7 @@ export async function handleApiRequest(req, res) {
             'X-Triangles': String(result.triangles),
             'X-Estimated-Time-Sec': String(est.timeSeconds),
             'X-Filament-G': String(est.weightG),
+            'X-Waste-G': String(est.wasteWeightG ?? 0),
           });
           return res.end(gcodeBuf);
         } catch (e) {

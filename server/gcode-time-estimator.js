@@ -97,6 +97,8 @@ export function estimate(src, opts = {}) {
   // Outputs.
   let timeSeconds = 0;
   let extrudeLengthMm = 0;
+  let wasteLengthMm = 0;     // filament spent on prime line / purge / flush / wipe
+  let wasteCtx = false;      // inside a persistent waste section (e.g. prime block)
   let travelDistanceMm = 0;
   let printDistanceMm = 0;
   let minX = +Infinity, minY = +Infinity, minZ = +Infinity;
@@ -111,13 +113,22 @@ export function estimate(src, opts = {}) {
     const cIdx = line.indexOf(';');
     let comment = '';
     if (cIdx >= 0) { comment = line.slice(cIdx).toLowerCase(); line = line.slice(0, cIdx); }
+    const hadCode = line.trim().length > 0;
     if (comment) {
       // Slic3r/PrusaSlicer/OrcaSlicer use ";LAYER_CHANGE" or ";LAYER:"
       if (comment.includes(';layer:') || comment.includes(';layer_change') || comment.includes('layer_change')) {
         layerCount++;
         layerCommentSeen = true;
       }
+      // Waste sections: a standalone comment opens/closes a persistent waste
+      // block (prime line / wipe tower). Inline waste (flush/purge on a move
+      // line) is handled per-move below so it doesn't leak into the next move.
+      if (!hadCode) {
+        if (/prime line|wipe tower|wipe_tower/.test(comment)) wasteCtx = true;
+        else if (/feature:|;layer|---/.test(comment) && !/prime|purge|flush|wipe/.test(comment)) wasteCtx = false;
+      }
     }
+    const inlineWaste = !!comment && /flush|purge|wipe/.test(comment);
     line = line.trim();
     if (!line) continue;
 
@@ -182,6 +193,7 @@ export function estimate(src, opts = {}) {
       if (eDelta > 0) {
         extrudeLengthMm += eDelta;
         printDistanceMm += dist;
+        if (wasteCtx || inlineWaste) wasteLengthMm += eDelta;
       } else {
         travelDistanceMm += dist;
       }
@@ -202,8 +214,10 @@ export function estimate(src, opts = {}) {
 
   // Convert filament length → volume → weight → cost.
   const radius = cfg.filamentDiameterMm / 2;
-  const volumeMm3 = extrudeLengthMm * Math.PI * radius * radius;
+  const filArea = Math.PI * radius * radius;
+  const volumeMm3 = extrudeLengthMm * filArea;
   const weightG = (volumeMm3 / 1000) * cfg.filamentDensityGcm3;  // mm³ → cm³ → g
+  const wasteWeightG = (wasteLengthMm * filArea / 1000) * cfg.filamentDensityGcm3;
   const costPerG = cfg.filamentPricePerKg / 1000;
   const cost = weightG * costPerG;
 
@@ -215,6 +229,8 @@ export function estimate(src, opts = {}) {
     extrudeLengthMm: Math.round(extrudeLengthMm * 100) / 100,
     extrudeVolumeMm3: Math.round(volumeMm3 * 100) / 100,
     weightG: Math.round(weightG * 1000) / 1000,
+    wasteWeightG: Math.round(wasteWeightG * 1000) / 1000,
+    wasteLengthMm: Math.round(wasteLengthMm * 100) / 100,
     cost: Math.round(cost * 100) / 100,
     currency: cfg.filamentCurrency,
     layerCount,

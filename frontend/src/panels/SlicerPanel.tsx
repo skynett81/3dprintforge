@@ -15,7 +15,7 @@ const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => (
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
 
 type RowState = { status: 'slicing' | 'done' | 'error'; result?: SliceResult; error?: string };
-type Preview = { gcode: string; layers: number; timeSec: number; filamentG: number; durationMs: number };
+type Preview = { gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number };
 
 const MATERIALS: Record<string, { temps: [number, number]; color: string }> = {
   PLA: { temps: [210, 60], color: '#37a66b' }, PETG: { temps: [240, 80], color: '#3d8bd8' },
@@ -85,12 +85,29 @@ export function SlicerPanel() {
     return p?.buildVolume?.x ?? 256;
   }, [slicerPrinters, profilePrinter]);
 
+  // Per-printer price/gram: price each loaded filament slot from the closest
+  // matching inventory spool (same material, nearest colour), then average the
+  // slots. This reflects the actual filaments on the SELECTED printer instead
+  // of an inventory-wide single-material average, so cost tracks the machine.
   const pricePerGram = useMemo(() => {
-    const mat = String((settings.material as string) || 'PLA').toUpperCase();
-    const rows = spools.filter((s) => (s.material || '').toUpperCase() === mat && (s.cost ?? 0) > 0 && (s.initial_weight_g ?? 0) > 0).map((s) => (s.cost as number) / (s.initial_weight_g as number));
-    return rows.length ? rows.reduce((a, b) => a + b, 0) / rows.length : 0;
-  }, [spools, settings.material]);
+    const pg = (s: typeof spools[number]) => ((s.cost ?? 0) > 0 && (s.initial_weight_g ?? 0) > 0 ? (s.cost as number) / (s.initial_weight_g as number) : 0);
+    const rgb = (h: string) => { const x = String(h).replace(/^#/, ''); return [parseInt(x.slice(0, 2), 16) || 0, parseInt(x.slice(2, 4), 16) || 0, parseInt(x.slice(4, 6), 16) || 0]; };
+    const dist = (a: string, b: string) => { const [r1, g1, b1] = rgb(a), [r2, g2, b2] = rgb(b); return (r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2; };
+    const anyPriced = spools.filter((s) => pg(s) > 0);
+    if (!anyPriced.length) return 0;
+    const globalAvg = anyPriced.reduce((a, s) => a + pg(s), 0) / anyPriced.length;
+    const perSlot = filaments.map((f) => {
+      const mat = (f.material || 'PLA').toUpperCase();
+      const cand = spools.filter((s) => (s.material || '').toUpperCase() === mat && pg(s) > 0);
+      if (!cand.length) return globalAvg; // no same-material spool → inventory average
+      let best = cand[0], bd = Infinity;
+      for (const s of cand) { const c = s.color_hex; if (!c) continue; const d = dist(f.color, c.startsWith('#') ? c : '#' + c); if (d < bd) { bd = d; best = s; } }
+      return pg(best);
+    });
+    return perSlot.reduce((a, b) => a + b, 0) / perSlot.length;
+  }, [spools, filaments]);
   const cost = preview && pricePerGram > 0 ? preview.filamentG * pricePerGram : 0;
+  const wasteCost = preview && pricePerGram > 0 ? (preview.wasteG || 0) * pricePerGram : 0;
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
   const slotColors = useMemo(() => filaments.map((f) => f.color), [filaments]);
@@ -218,6 +235,11 @@ export function SlicerPanel() {
               <span><strong>{fmtTime(preview.timeSec)}</strong></span>
               <span><strong>{preview.filamentG ? `${preview.filamentG.toFixed(1)}g` : '—'}</strong></span>
               {cost > 0 && <span><strong>{cost.toFixed(1)} kr</strong></span>}
+              {(preview.wasteG ?? 0) >= 0.05 && (
+                <span title={t('v2.slicer.waste_hint', 'Waste (prime/purge). Flush-into-infill keeps colour-change purge out of waste.')} style={{ opacity: 0.75 }}>
+                  {t('v2.slicer.waste', 'waste')} <strong>{preview.wasteG.toFixed(1)}g</strong>{wasteCost > 0 ? ` (${wasteCost.toFixed(1)} kr)` : ''}
+                </span>
+              )}
             </span>
           )}
           <button className="oslice-sliceplate" disabled={!file || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
