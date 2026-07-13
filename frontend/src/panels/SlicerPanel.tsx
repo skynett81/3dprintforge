@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api';
-import { useResource } from '../hooks';
+import { useResource, useLivePrinters } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { Printer, SlicerStatus, SliceResult, SlicerPrinter, Spool } from '../types';
@@ -8,6 +8,7 @@ import type { PlateHandle, ObjInfo, PlateState } from '../components/PlateViewer
 import type { SliceSettings } from './slicer/SlicerProcessTabs';
 import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
 import { ObjectPanel } from './slicer/ObjectPanel';
+import { SlicerDevice } from './slicer/SlicerDevice';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
 import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
 
@@ -45,6 +46,7 @@ export function SlicerPanel() {
   const { data: status } = useResource<SlicerStatus>(api.getSlicerStatus, 0);
   const { data: printersData } = useResource<Printer[]>(api.listPrinters, 30000);
   const { data: slicerPrintersData } = useResource<SlicerPrinter[]>(api.getSlicerPrinters, 60000);
+  const { live: livePrinters } = useLivePrinters();
   const { data: spoolsData } = useResource<Spool[]>(api.listSpools, 60000);
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const slicerPrinters = useMemo(() => slicerPrintersData ?? [], [slicerPrintersData]);
@@ -75,7 +77,7 @@ export function SlicerPanel() {
     gap_fill_enabled: true, gap_infill_speed: 40,
     flush_into_infill: true, flush_volume: 80,
   });
-  const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
+  const [tab, setTab] = useState<'prepare' | 'preview' | 'device'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
@@ -323,6 +325,7 @@ export function SlicerPanel() {
         <div className="oslice-toptabs">
           <button className={`oslice-toptab${tab === 'prepare' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('prepare')}>{t('v2.slicer.prepare', 'Prepare')}</button>
           <button className={`oslice-toptab${tab === 'preview' ? ' oslice-toptab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
+          <button className={`oslice-toptab${tab === 'device' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('device')}>{t('v2.slicer.device', 'Device')}</button>
         </div>
         <div className="oslice-topright">
           {preview && (
@@ -525,6 +528,7 @@ export function SlicerPanel() {
               <GcodePreview gcode={preview.gcode} bed={bed} />
             </Suspense>
           )}
+          {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} />}
           {!file && tab === 'prepare' && (
             <div className="oslice-empty">
               <div className="oslice-emptycard">

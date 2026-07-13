@@ -1,0 +1,169 @@
+import { useState } from 'react';
+import { api } from '../../api';
+import { useT } from '../../i18n';
+import { useToast } from '../../toast';
+import type { SlicerPrinter } from '../../types';
+
+type Live = Record<string, unknown>;
+
+function num(v: unknown): number | null {
+  const n = typeof v === 'string' ? parseFloat(v) : (v as number);
+  return Number.isFinite(n) ? n : null;
+}
+/** First finite value among the candidate keys. */
+function pick(live: Live, ...keys: string[]): number | null {
+  for (const k of keys) { const n = num(live[k]); if (n != null) return n; }
+  return null;
+}
+
+interface Props { printer: SlicerPrinter | undefined; live: Live | undefined; }
+
+/** Bambu-Studio-style Device tab: live camera, temps, motion, extruder,
+ *  filament load/unload and print control for the selected printer. Motion,
+ *  temperature and extrusion are Klipper/Moonraker (e.g. Snapmaker U1); Bambu
+ *  printers get print control, fan and light (the server enforces this). */
+export function SlicerDevice({ printer, live }: Props) {
+  const t = useT();
+  const toast = useToast();
+  const [step, setStep] = useState(10);
+  const [extAmt, setExtAmt] = useState(10);
+  const [nozzleSet, setNozzleSet] = useState('');
+  const [bedSet, setBedSet] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (!printer) return <div className="oslice-panelbody"><p className="muted" style={{ padding: 16 }}>{t('v2.dev.no_printer', 'No printer connected.')}</p></div>;
+  const st = live ?? {};
+  const id = printer.id;
+  const isBambu = printer.type === 'bambu';
+  const tools = printer.colorSlots ?? (printer.multiTool ? 4 : 1);
+
+  async function ctl(action: string, extra: Record<string, unknown> = {}) {
+    setBusy(true);
+    try { await api.controlPrinter(id, action, extra); }
+    catch (e) { toast((e as Error).message, 'error'); }
+    finally { setBusy(false); }
+  }
+
+  const nozzle = pick(st, 'nozzle_temp', 'nozzle_temper');
+  const nozzleT = pick(st, 'nozzle_target', 'nozzle_temp_target', 'nozzle_target_temper');
+  const bed = pick(st, 'bed_temp', 'bed_temper');
+  const bedT = pick(st, 'bed_target', 'bed_temp_target', 'bed_target_temper');
+  const chamber = pick(st, 'chamber_temp', 'chamber_temper');
+  const progress = pick(st, 'mc_percent', 'print_progress', 'progress', '_percent');
+  const remain = pick(st, 'mc_remaining_time', 'remaining_time');
+  const state = String(st.gcode_state ?? st.state ?? st.print_status ?? st.stg_cur ?? '').toUpperCase();
+  const printing = /RUN|PRINT|PAUSE|BUSY/.test(state) || (progress != null && progress > 0 && progress < 100);
+  const paused = /PAUSE/.test(state);
+
+  const T = (cur: number | null, tgt: number | null) => `${cur == null ? '—' : Math.round(cur)}${tgt != null && tgt > 0 ? ` / ${Math.round(tgt)}` : ''}°`;
+
+  return (
+    <div className="oslice-devwrap">
+      <div className="oslice-devgrid">
+        {/* Camera */}
+        <div className="oslice-devcam">
+          <img src={`/api/printers/${encodeURIComponent(id)}/stream.mjpeg`} alt="camera"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', borderRadius: 8 }} />
+        </div>
+
+        {/* Control column */}
+        <div className="oslice-devctl">
+          <div className="oslice-devsec">
+            <div className="oslice-devsec-h">{printer.name} · {state || (printing ? 'PRINTING' : 'IDLE')}</div>
+            <div className="oslice-devtemps">
+              <span><b>{t('v2.dev.nozzle', 'Nozzle')}</b> {T(nozzle, nozzleT)}</span>
+              <span><b>{t('v2.dev.bed', 'Bed')}</b> {T(bed, bedT)}</span>
+              {chamber != null && <span><b>{t('v2.dev.chamber', 'Chamber')}</b> {Math.round(chamber)}°</span>}
+            </div>
+          </div>
+
+          {/* Temperature set — Klipper/Moonraker only */}
+          {!isBambu && (
+            <div className="oslice-devsec">
+              <div className="oslice-devsec-h">{t('v2.dev.temperature', 'Temperature')}</div>
+              <div className="oslice-devrow">
+                <span>{t('v2.dev.nozzle', 'Nozzle')}</span>
+                <input className="oset-input" style={{ width: 64 }} type="number" placeholder={nozzle != null ? String(Math.round(nozzle)) : '°C'} value={nozzleSet} onChange={(e) => setNozzleSet(e.target.value)} />
+                <button className="btn btn--sm" disabled={busy} onClick={() => ctl('set_temp', { heater: 'nozzle', temp: Number(nozzleSet) })}>{t('v2.dev.set', 'Set')}</button>
+                <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_temp', { heater: 'nozzle', temp: 0 })}>{t('v2.dev.off', 'Off')}</button>
+              </div>
+              <div className="oslice-devrow">
+                <span>{t('v2.dev.bed', 'Bed')}</span>
+                <input className="oset-input" style={{ width: 64 }} type="number" placeholder={bed != null ? String(Math.round(bed)) : '°C'} value={bedSet} onChange={(e) => setBedSet(e.target.value)} />
+                <button className="btn btn--sm" disabled={busy} onClick={() => ctl('set_temp', { heater: 'bed', temp: Number(bedSet) })}>{t('v2.dev.set', 'Set')}</button>
+                <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_temp', { heater: 'bed', temp: 0 })}>{t('v2.dev.off', 'Off')}</button>
+              </div>
+            </div>
+          )}
+
+          {/* Motion — Klipper/Moonraker only */}
+          {!isBambu && (
+            <div className="oslice-devsec">
+              <div className="oslice-devsec-h">{t('v2.dev.motion', 'Motion')}</div>
+              <div className="oslice-devstep">
+                {[0.1, 1, 10, 50].map((s) => <button key={s} className={`btn btn--sm${step === s ? '' : ' btn--ghost'}`} onClick={() => setStep(s)}>{s}</button>)}
+                <span className="muted micro">mm</span>
+              </div>
+              <div className="oslice-devjog">
+                <button className="oslice-jogb" style={{ gridArea: 'yp' }} disabled={busy} onClick={() => ctl('move', { axis: 'Y', dist: step })}>Y+</button>
+                <button className="oslice-jogb" style={{ gridArea: 'xm' }} disabled={busy} onClick={() => ctl('move', { axis: 'X', dist: -step })}>X−</button>
+                <button className="oslice-jogb oslice-jogb--home" style={{ gridArea: 'ho' }} disabled={busy} onClick={() => ctl('home', {})}>{t('v2.dev.home', 'Home')}</button>
+                <button className="oslice-jogb" style={{ gridArea: 'xp' }} disabled={busy} onClick={() => ctl('move', { axis: 'X', dist: step })}>X+</button>
+                <button className="oslice-jogb" style={{ gridArea: 'ym' }} disabled={busy} onClick={() => ctl('move', { axis: 'Y', dist: -step })}>Y−</button>
+                <button className="oslice-jogb" style={{ gridArea: 'zp' }} disabled={busy} onClick={() => ctl('move', { axis: 'Z', dist: step })}>Z+</button>
+                <button className="oslice-jogb" style={{ gridArea: 'zm' }} disabled={busy} onClick={() => ctl('move', { axis: 'Z', dist: -step })}>Z−</button>
+              </div>
+            </div>
+          )}
+
+          {/* Extruder + filament */}
+          {!isBambu && (
+            <div className="oslice-devsec">
+              <div className="oslice-devsec-h">{t('v2.dev.extruder', 'Extruder / filament')}</div>
+              <div className="oslice-devrow">
+                <input className="oset-input" style={{ width: 56 }} type="number" value={extAmt} onChange={(e) => setExtAmt(Number(e.target.value))} />
+                <span className="muted micro">mm</span>
+                <button className="btn btn--sm" disabled={busy} onClick={() => ctl('extrude', { amount: Math.abs(extAmt) })}>{t('v2.dev.extrude', 'Extrude')}</button>
+                <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('extrude', { amount: -Math.abs(extAmt) })}>{t('v2.dev.retract', 'Retract')}</button>
+              </div>
+              {Array.from({ length: tools }).map((_, i) => (
+                <div className="oslice-devrow" key={i}>
+                  <span style={{ minWidth: 44 }}>{tools > 1 ? `T${i}` : t('v2.dev.filament', 'Filament')}</span>
+                  {tools > 1 && <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('select_tool', { tool: i })}>{t('v2.dev.select', 'Select')}</button>}
+                  <button className="btn btn--sm" disabled={busy} onClick={() => ctl('filament', { op: 'load', tool: i })}>{t('v2.dev.load', 'Load')}</button>
+                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'unload', tool: i })}>{t('v2.dev.unload', 'Unload')}</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Fan + light — all connectors */}
+          <div className="oslice-devsec">
+            <div className="oslice-devsec-h">{t('v2.dev.misc', 'Fan / light')}</div>
+            <div className="oslice-devstep">
+              {[0, 50, 100].map((p) => <button key={p} className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_fan', { percent: p })}>{t('v2.dev.fan', 'Fan')} {p}%</button>)}
+            </div>
+            <div className="oslice-devstep">
+              <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_light', { on: true })}>{t('v2.dev.light_on', 'Light on')}</button>
+              <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_light', { on: false })}>{t('v2.dev.light_off', 'Light off')}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Print progress + control */}
+      <div className="oslice-devprog">
+        <div className="oslice-devprog-bar"><div className="oslice-devprog-fill" style={{ width: `${Math.max(0, Math.min(100, progress ?? 0))}%` }} /></div>
+        <div className="oslice-devprog-row">
+          <span>{progress != null ? `${Math.round(progress)}%` : '—'}{remain != null && remain > 0 ? ` · ${Math.round(remain)} min ${t('v2.dev.left', 'left')}` : ''}</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            {printing && !paused && <button className="btn btn--sm" disabled={busy} onClick={() => ctl('pause')}>{t('v2.dev.pause', 'Pause')}</button>}
+            {paused && <button className="btn btn--sm" disabled={busy} onClick={() => ctl('resume')}>{t('v2.dev.resume', 'Resume')}</button>}
+            {printing && <button className="btn btn--sm btn--danger" disabled={busy} onClick={() => { if (window.confirm(t('v2.dev.stop_confirm', 'Stop the print?'))) ctl('stop'); }}>{t('v2.dev.stop', 'Stop')}</button>}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}

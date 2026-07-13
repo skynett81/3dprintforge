@@ -1178,3 +1178,26 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
   .part-row { grid-template-columns: 1fr; gap: 8px; }
   .part-actions { justify-content: flex-start; }
 }
+
+/* ── Slicer Device tab ─────────────────────────────────────────────── */
+.oslice-devwrap { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: auto; }
+.oslice-devgrid { display: grid; grid-template-columns: 1fr 340px; gap: 12px; padding: 12px; flex: 1; min-height: 0; }
+.oslice-devcam { background: #000; border-radius: 8px; min-height: 280px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.oslice-devctl { display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.oslice-devsec { background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 10px; padding: 10px; }
+.oslice-devsec-h { font-size: 0.72rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+.oslice-devtemps { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.9rem; }
+.oslice-devtemps b { color: var(--o-muted); font-weight: 600; font-size: 0.72rem; }
+.oslice-devrow { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
+.oslice-devstep { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.oslice-devjog { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 36px); gap: 4px; justify-content: center;
+  grid-template-areas: '.  yp zp' 'xm ho xp' '.  ym zm'; margin: 4px auto; }
+.oslice-jogb { border: 1px solid var(--o-border); background: var(--o-panel-2); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; color: var(--o-text); }
+.oslice-jogb:hover:not(:disabled) { border-color: var(--o-accent); }
+.oslice-jogb:disabled { opacity: 0.5; cursor: default; }
+.oslice-jogb--home { background: var(--o-accent); color: #fff; font-size: 0.62rem; }
+.oslice-devprog { padding: 10px 12px; border-top: 1px solid var(--o-border); background: var(--o-panel); }
+.oslice-devprog-bar { height: 8px; background: var(--o-panel-2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.oslice-devprog-fill { height: 100%; background: var(--o-accent); transition: width 0.3s; }
+.oslice-devprog-row { display: flex; align-items: center; font-size: 0.8rem; }
+@media (max-width: 900px) { .oslice-devgrid { grid-template-columns: 1fr; } }
