@@ -81,6 +81,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('skirtGap', num(s.skirt_distance));
   set('infillAngle', num(s.infill_direction));
   set('raftLayers', num(s.raft_layers));
+  set('infillCombination', num(s.infill_combination));
   if (s.supports !== undefined && s.supports !== '') out.supports = !!s.supports;
   if (s.ironing !== undefined && s.ironing !== '') out.ironing = !!s.ironing;
   if (s.spiral_mode !== undefined && s.spiral_mode !== '') out.spiralMode = !!s.spiral_mode;

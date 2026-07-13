@@ -35,6 +35,9 @@ export interface PlateHandle {
   setDim: (axis: 'x' | 'y' | 'z', mm: number, uniform: boolean) => void;
   mirror: (axis: 'x' | 'y' | 'z') => void;
   resetXform: () => void;
+  scaleToFit: () => void;
+  rotate90: (axis: 'x' | 'y' | 'z') => void;
+  duplicateN: (n: number) => void;
 }
 
 interface Ctx {
@@ -302,6 +305,16 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
     mirror: (axis: 'x' | 'y' | 'z') => { const m = ctx.current?.selected; if (!m) return; m.scale[axis] *= -1; dropToPlate(m); emitObject(); },
     resetXform: () => { const m = ctx.current?.selected; if (!m) return; m.rotation.set(0, 0, 0); m.scale.set(1, 1, 1); m.position.x = 0; m.position.y = 0; dropToPlate(m); emitObject(); },
+    scaleToFit: () => {
+      const m = ctx.current?.selected; if (!m) return;
+      m.updateMatrixWorld(true);
+      const size = new THREE.Vector3(); new THREE.Box3().setFromObject(m).getSize(size);
+      const maxXY = Math.max(size.x, size.y); if (!(maxXY > 0)) return;
+      const factor = (bed * 0.9) / maxXY;
+      m.scale.multiplyScalar(factor); dropToPlate(m); emitObject();
+    },
+    rotate90: (axis: 'x' | 'y' | 'z') => { const m = ctx.current?.selected; if (!m) return; m.rotation[axis] += Math.PI / 2; dropToPlate(m); emitObject(); },
+    duplicateN: (n: number) => { for (let i = 0; i < n; i++) duplicate(); },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
       const group = new THREE.Group();

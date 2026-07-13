@@ -245,6 +245,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
     spiralMode: false, elephantFoot: 0,
     fuzzySkin: false, fuzzySkinThickness: 0.3, draftShield: false, draftShieldGap: 4,
+    infillCombination: 1,
     ...settings,
   };
   const wallLoops = Math.max(1, s.perimeters | 0);
@@ -290,6 +291,11 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     const walls = [];      // outer/inner/hole walls
     const fills = [];      // solid/sparse infill
     const globalSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
+    // Combine infill every N layers: only lay sparse infill on every Nth layer
+    // (at N× flow) to speed up prints. Solid shells are unaffected.
+    const combN = Math.max(1, s.infillCombination | 0);
+    const doSparse = (i % combN) === 0;
+    const sparseFlow = combN;
 
     for (const region of regions) {
       // Elephant-foot compensation: pull the first layer's outer wall in a
@@ -350,23 +356,22 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
         const solidConcentric = s.topSurfacePattern === 'concentric';
         if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.
-          if (!globalSolid && s.infillPattern === 'concentric') { concentric(infRegion, 'sparse', false); }
+          if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
-          else {
-            const segs = globalSolid
-              ? solidInfill(infRegion, baseAngle, lw)
-              : patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
-            const feat = globalSolid ? 'solid' : 'sparse';
-            for (const sg of segs) fills.push({ feature: feat, closed: false, pts: sg });
+          else if (globalSolid) {
+            for (const sg of solidInfill(infRegion, baseAngle, lw)) fills.push({ feature: 'solid', closed: false, pts: sg });
+          } else if (doSparse) {
+            const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
+            for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
           const solidSegs = solidInfill(infRegion, baseAngle, lw).filter((sg) => midSolid(surfaces, i, sg));
           for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
-          if (s.infillPattern === 'concentric') { concentric(infRegion, 'sparse', false); }
-          else {
+          if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
+          else if (doSparse) {
             const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
-            for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
+            for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         }
         // Ironing: a fine, low-flow pass over the true top skin to smooth it.

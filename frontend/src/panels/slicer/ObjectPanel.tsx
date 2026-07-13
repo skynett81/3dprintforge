@@ -10,6 +10,9 @@ interface Props {
   onDim: (axis: 'x' | 'y' | 'z', mm: number, uniform: boolean) => void;
   onMirror: (axis: 'x' | 'y' | 'z') => void;
   onReset: () => void;
+  onScaleToFit?: () => void;
+  onRotate90?: (axis: 'x' | 'y' | 'z') => void;
+  onDuplicate?: () => void;
 }
 
 function Field({ label, value, onCommit, step }: { label: string; value: number; onCommit: (v: number) => void; step?: number }) {
@@ -35,7 +38,7 @@ function Field({ label, value, onCommit, step }: { label: string; value: number;
  * panel. Values are live: dragging the gizmo updates them and typing here
  * moves the model.
  */
-export function ObjectPanel({ info, onPos, onRot, onScalePct, onDim, onMirror, onReset }: Props) {
+export function ObjectPanel({ info, onPos, onRot, onScalePct, onDim, onMirror, onReset, onScaleToFit, onRotate90, onDuplicate }: Props) {
   const t = useT();
   const [uniform, setUniform] = useState(true);
 
@@ -73,7 +76,14 @@ export function ObjectPanel({ info, onPos, onRot, onScalePct, onDim, onMirror, o
         <Field label="Z" value={info.dimZ} onCommit={(v) => onDim('z', v, uniform)} step={0.5} />
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+      <div className="obj-group-label">{t('v2.obj.quick', 'Quick actions')}</div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {onScaleToFit && <button className="btn btn--sm btn--ghost" onClick={onScaleToFit}>{t('v2.obj.fit', 'Scale to fit')}</button>}
+        {onRotate90 && <button className="btn btn--sm btn--ghost" onClick={() => onRotate90('z')}>{t('v2.obj.rot90z', 'Rotate 90° Z')}</button>}
+        {onRotate90 && <button className="btn btn--sm btn--ghost" onClick={() => onRotate90('x')}>{t('v2.obj.rot90x', 'Rotate 90° X')}</button>}
+        {onDuplicate && <button className="btn btn--sm btn--ghost" onClick={onDuplicate}>{t('v2.obj.dup', 'Duplicate')}</button>}
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn btn--sm btn--ghost" onClick={() => onMirror('x')}>{t('v2.obj.mirror_x', 'Mirror X')}</button>
         <button className="btn btn--sm btn--ghost" onClick={() => onMirror('y')}>{t('v2.obj.mirror_y', 'Mirror Y')}</button>
         <button className="btn btn--sm btn--ghost" onClick={() => onMirror('z')}>{t('v2.obj.mirror_z', 'Mirror Z')}</button>

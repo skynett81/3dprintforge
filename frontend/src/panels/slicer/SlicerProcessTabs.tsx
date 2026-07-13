@@ -28,6 +28,7 @@ const FIELDS: Field[] = [
   { tab: 'Strength', group: 'Infill', k: 'infill_density', label: 'Sparse infill density', type: 'num', unit: '%', step: 5 },
   { tab: 'Strength', group: 'Infill', k: 'infill_pattern', label: 'Sparse infill pattern', type: 'sel', opts: INFILL_PATTERNS },
   { tab: 'Strength', group: 'Infill', k: 'infill_direction', label: 'Infill direction', type: 'num', unit: '°', step: 5 },
+  { tab: 'Strength', group: 'Infill', k: 'infill_combination', label: 'Combine infill every N layers', type: 'num', step: 1 },
   { tab: 'Strength', group: 'Walls', k: 'wall_infill_order', label: 'Wall order', type: 'sel', opts: [['outer-inner', 'Outer / inner'], ['inner-outer', 'Inner / outer']] },
   { tab: 'Strength', group: 'Top/bottom shells', k: 'top_surface_pattern', label: 'Top surface pattern', type: 'sel', opts: [['rectilinear', 'Rectilinear'], ['concentric', 'Concentric']] },
   { tab: 'Quality', group: 'Line width', k: 'line_width', label: 'Default', type: 'num', unit: 'mm', step: 0.02 },
