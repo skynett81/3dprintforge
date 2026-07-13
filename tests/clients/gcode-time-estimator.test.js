@@ -137,6 +137,16 @@ G1 X100 Y0 E5 F1200
     assert.ok(r.slicerHeader.slicerFilamentMm > 1000);
   });
 
+  it('honours M204 acceleration from the g-code (higher accel → faster estimate)', () => {
+    const moves = ['G90', 'M82', 'G92 E0'];
+    let e = 0;
+    for (let i = 0; i < 40; i++) { e += 1; moves.push(`G1 X${(i % 2 ? 100 : 0)} Y${i} E${e.toFixed(2)} F9000`); }
+    const body = moves.join('\n');
+    const slow = estimate('M204 P500\n' + body).timeSeconds;
+    const fast = estimate('M204 P8000\n' + body).timeSeconds;
+    assert.ok(fast < slow, `high accel (${fast}s) should estimate faster than low accel (${slow}s)`);
+  });
+
   it('tallies waste from prime block and inline flush without leaking', () => {
     // prime block (+5), a part infill move (+5), an inline flush move (+5),
     // then a part move with no comment (+2) that must NOT be counted as waste.

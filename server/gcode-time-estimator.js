@@ -93,6 +93,10 @@ export function estimate(src, opts = {}) {
   let layerCount = 0;
   let absXYZ = true, absE = true;
   let feedrate = 60; // mm/min
+  // Live acceleration — starts at the configured default but tracks M204 P/S
+  // from the g-code, so the estimate reflects the real (usually much higher)
+  // acceleration the slicer set instead of a conservative constant.
+  let accel = cfg.maxAcceleration;
 
   // Outputs.
   let timeSeconds = 0;
@@ -142,6 +146,7 @@ export function estimate(src, opts = {}) {
       args[tok[0].toUpperCase()] = parseFloat(tok.slice(1));
     }
 
+    if (cmd === 'M204') { const a = 'P' in args ? args.P : ('S' in args ? args.S : 0); if (a > 0) accel = a; continue; }
     if (cmd === 'G90') { absXYZ = true; continue; }
     if (cmd === 'G91') { absXYZ = false; continue; }
     if (cmd === 'M82') { absE = true; continue; }
@@ -187,7 +192,7 @@ export function estimate(src, opts = {}) {
       if (v <= 0) v = 1;
 
       const moveDist = dist > 0 ? dist : Math.abs(eDelta);
-      const dt = _trapezoidalTime(moveDist, v, cfg.maxAcceleration);
+      const dt = _trapezoidalTime(moveDist, v, accel);
       timeSeconds += Math.max(dt, cfg.minSegmentTime);
 
       if (eDelta > 0) {
