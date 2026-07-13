@@ -63,7 +63,7 @@ import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, upload
 import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
 import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
 import { parseTigerTagDump } from './tigertag.js';
-import { buildOrcaProcessJson } from './slicer-settings.js';
+import { buildOrcaProcessJson, buildNativeSettings } from './slicer-settings.js';
 import QRCode from 'qrcode';
 import { ensureQr, resolveCode } from './inventory-qr.js';
 import {
@@ -8168,6 +8168,75 @@ export async function handleApiRequest(req, res) {
           return res.end(gcodeBuf);
         } catch (e) {
           return sendJson(res, { error: e.message, stack: e.stack?.slice(0, 1000) }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-and-send') {
+      // Slice with the project's own pure-JS engine (no external slicer)
+      // and upload the G-code to a connected printer in one call.
+      const chunks = [];
+      let total = 0;
+      const limit = 100 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'model too large (max 100 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const printerId = url.searchParams.get('printerId');
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') {
+            return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          }
+
+          const filename = url.searchParams.get('filename') || 'model.stl';
+          // Bed volume + a sensible temp default drive placement/heat.
+          let base = { bedTemp: 60, nozzleTemp: 210, material: 'PLA' };
+          try {
+            const { getCapabilities } = await import('./printer-capabilities.js');
+            const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
+            if (caps?.buildVolume) base.bedSize = [caps.buildVolume.x, caps.buildVolume.y];
+          } catch { /* default bed */ }
+
+          let ui = {};
+          try { const raw = url.searchParams.get('settings'); if (raw) ui = JSON.parse(raw); } catch { /* ignore bad settings */ }
+          const settings = buildNativeSettings(ui, base);
+
+          const start = Date.now();
+          const { bufferToMesh } = await import('./format-converter.js');
+          const { sliceMeshToGcode } = await import('./native-slicer.js');
+          const mesh = await bufferToMesh(buf, filename);
+          const result = await sliceMeshToGcode(mesh, settings);
+          const durationMs = Date.now() - start;
+
+          const gcodeFilename = filename.replace(/\.[^.]+$/, '') + '.gcode';
+          const gcodeBuffer = Buffer.from(result.gcode, 'utf-8');
+          const startNow = url.searchParams.get('print') === '1' && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow
+            ? await entry.client.uploadAndPrint(gcodeFilename, gcodeBuffer)
+            : await entry.client.uploadFile(gcodeFilename, gcodeBuffer);
+
+          return sendJson(res, {
+            ok: true,
+            slicer: 'native',
+            gcodeFilename,
+            sizeBytes: gcodeBuffer.length,
+            sliceDurationMs: durationMs,
+            layers: result.layers,
+            uploaded: true,
+            printing: startNow,
+            upload,
+          }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
         }
       });
       return;

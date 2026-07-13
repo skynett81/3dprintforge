@@ -53,20 +53,16 @@ export function SlicerPanel() {
     toast(failed ? t('v2.slicer.partial', 'Slice & send finished with errors') : t('v2.slicer.done', 'Slice & send complete'), failed ? 'error' : 'success');
   }
 
-  const canRun = !busy && !!file && selected.size > 0 && !!status?.available;
+  const canRun = !busy && !!file && selected.size > 0;
 
   return (
     <div>
       <div className="panel-head">
         <div>
           <h2 className="panel-title">{t('v2.slicer.title', 'Slicer')}</h2>
-          <p className="muted sub">{status?.available ? `${t('v2.slicer.engine', 'Engine')}: ${status.slicer}` : t('v2.slicer.none', 'No slicer engine detected')}</p>
+          <p className="muted sub">{`${t('v2.slicer.engine', 'Engine')}: ${status?.slicer ?? t('v2.slicer.native_name', '3DPrintForge native slicer')}`}</p>
         </div>
       </div>
-
-      {status && !status.available && (
-        <section className="card"><p className="muted empty-note">{t('v2.slicer.unavailable', 'No slicer engine is available on the server. Install OrcaSlicer / BambuStudio or the Snapmaker Orca CLI.')}</p></section>
-      )}
 
       <section className="card" style={{ marginBottom: 14 }}>
         <div className="field-label">{t('v2.slicer.model', 'Model')}</div>
@@ -81,7 +77,7 @@ export function SlicerPanel() {
             </Suspense>
           </div>
         )}
-        <p className="muted micro" style={{ margin: '8px 0 0' }}>{t('v2.slicer.default_profile', 'Arrange on the plate, then slice with the printer’s default profile. Full print settings (layer height, infill, supports) arrive in a later phase.')}</p>
+        <p className="muted micro" style={{ margin: '8px 0 0' }}>{t('v2.slicer.default_profile', 'Arrange on the plate, adjust print settings below, then slice on the built-in engine and send to one or more printers.')}</p>
       </section>
 
       {file && <SlicerSettings value={settings} onChange={setSettings} status={status ?? undefined} />}

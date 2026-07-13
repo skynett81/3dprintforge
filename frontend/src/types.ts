@@ -246,7 +246,10 @@ export interface Checkout {
 
 export interface SlicerStatus {
   available: boolean;
+  nativeEngine?: boolean;
+  engine?: string;
   slicer?: string;
+  externalSlicer?: string | null;
   path?: string;
   supportedFormats?: string[];
   printFormats?: string[];

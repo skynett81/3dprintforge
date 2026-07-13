@@ -41,3 +41,49 @@ export function buildOrcaProcessJson(s = {}) {
 export function hasOverrides(s = {}) {
   return Object.keys(buildOrcaProcessJson(s)).length > 3;
 }
+
+// ── Native engine mapping ──────────────────────────────────────────
+// Map the same UI settings to our own pure-JS slicer's option names.
+// The native engine only knows 'lines' and 'grid' fills, so richer
+// OrcaSlicer patterns collapse to the closest of the two.
+const NATIVE_PATTERN = {
+  grid: 'grid', cubic: 'grid', honeycomb: 'grid', '3dhoneycomb': 'grid',
+  triangles: 'lines', line: 'lines', lines: 'lines', concentric: 'lines',
+  gyroid: 'lines', zigzag: 'lines',
+};
+
+/**
+ * Translate the web slicer's UI settings (+ optional profile-derived
+ * base defaults like temps / start-end gcode) into the option object the
+ * native engine (sliceMeshToGcode) consumes.
+ */
+export function buildNativeSettings(s = {}, base = {}) {
+  const out = { ...base };
+  const num = (v) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    const n = Number(v);
+    return Number.isNaN(n) ? undefined : n;
+  };
+  const set = (k, v) => { if (v !== undefined) out[k] = v; };
+
+  set('layerHeight', num(s.layer_height));
+  set('perimeters', num(s.wall_loops));
+  set('topLayers', num(s.top_layers));
+  set('bottomLayers', num(s.bottom_layers));
+
+  const infill = num(s.infill_density);
+  if (infill !== undefined) out.infillDensity = infill > 1 ? infill / 100 : infill;
+  if (s.infill_pattern) out.infillPattern = NATIVE_PATTERN[String(s.infill_pattern).toLowerCase()] || 'lines';
+
+  set('brimWidth', num(s.brim_width));
+  set('skirtLoops', num(s.skirt_loops));
+
+  const wallSpeed = num(s.outer_wall_speed) ?? num(s.inner_wall_speed);
+  set('printSpeed', wallSpeed);
+  set('travelSpeed', num(s.travel_speed));
+  set('nozzleTemp', num(s.nozzle_temp));
+  set('bedTemp', num(s.bed_temp));
+  if (s.material) out.material = String(s.material);
+
+  return out;
+}

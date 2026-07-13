@@ -119,8 +119,14 @@ export function getSlicerProfiles() {
 export function getSlicerStatus() {
   const slicer = detectSlicer();
   return {
+    // `available` reflects an external CLI slicer (legacy Slicer Studio).
     available: !!slicer,
-    slicer: slicer ? slicer.name : null,
+    // The pure-JS native engine ships with the server and is always usable —
+    // the /v2 web slicer runs entirely on this, no external binary required.
+    nativeEngine: true,
+    engine: 'native',
+    slicer: slicer ? slicer.name : '3DPrintForge native slicer',
+    externalSlicer: slicer ? slicer.name : null,
     path: slicer ? slicer.path : null,
     uploadDir: UPLOAD_DIR,
     supportedFormats: ['.stl', '.3mf', '.obj', '.step'],

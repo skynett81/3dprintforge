@@ -80,7 +80,7 @@ export const api = {
     const q = new URLSearchParams({ printerId, filename: file.name });
     if (opts?.print) q.set('print', '1');
     if (opts?.settings && Object.keys(opts.settings).length) q.set('settings', JSON.stringify(opts.settings));
-    const res = await fetch(`/api/slicer/bridge/slice-and-send?${q.toString()}`, { method: 'POST', body: file });
+    const res = await fetch(`/api/slicer/native/slice-and-send?${q.toString()}`, { method: 'POST', body: file });
     const text = await res.text();
     let data: unknown;
     try { data = JSON.parse(text); } catch { data = { error: text }; }
