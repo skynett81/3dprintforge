@@ -52,16 +52,18 @@ describe('buildNativeSettings', () => {
     assert.equal(n.topLayers, 5);
     assert.equal(n.bottomLayers, 4);
     assert.equal(n.infillDensity, 0.15);        // % → fraction
-    assert.equal(n.infillPattern, 'grid');      // gyroid approximated as grid
+    assert.equal(n.infillPattern, 'gyroid');    // gyroid is a real native pattern now
     assert.equal(n.brimWidth, 5);
     assert.equal(n.skirtLoops, 2);
     assert.equal(n.printSpeed, 120);
     assert.equal(n.travelSpeed, 250);
   });
 
-  test('grid-family patterns map to grid, fraction infill passes through', () => {
-    assert.equal(buildNativeSettings({ infill_pattern: 'cubic' }).infillPattern, 'grid');
-    assert.equal(buildNativeSettings({ infill_pattern: 'honeycomb' }).infillPattern, 'grid');
+  test('real infill patterns pass through, fraction infill passes through', () => {
+    assert.equal(buildNativeSettings({ infill_pattern: 'cubic' }).infillPattern, 'cubic');
+    assert.equal(buildNativeSettings({ infill_pattern: 'honeycomb' }).infillPattern, 'honeycomb');
+    assert.equal(buildNativeSettings({ infill_pattern: 'gyroid' }).infillPattern, 'gyroid');
+    assert.equal(buildNativeSettings({ infill_pattern: 'tri-hexagon' }).infillPattern, 'triangles');
     assert.equal(buildNativeSettings({ infill_density: 0.3 }).infillDensity, 0.3);
   });
 

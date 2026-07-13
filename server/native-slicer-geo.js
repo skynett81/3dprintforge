@@ -314,11 +314,127 @@ export function solidInfill(region, angleDeg, lineWidth = 0.4) {
   return regionInfill(region, 1.0, angleDeg, lineWidth);
 }
 
+/** True/false: is a point inside the region's solid (inside outer, outside holes)? */
+function _inRegion(x, y, region) {
+  if (!_pointInPoly([x, y], region.outer)) return false;
+  for (const h of region.holes || []) if (_pointInPoly([x, y], h)) return false;
+  return true;
+}
+
 /**
- * Pattern dispatcher for sparse infill. 'grid' = two passes 90° apart,
- * 'triangles' = three passes 60° apart, 'lines'/default = one direction.
+ * Chain unordered 2-point segments into open polylines by shared endpoints,
+ * using a spatial hash (O(n)) — for iso-contour / tiling output that would
+ * otherwise be thousands of tiny disconnected moves (huge retraction/travel).
  */
-export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines') {
+function _chainOpen(segments, tol = 0.05) {
+  if (segments.length < 2) return segments.map((s) => [s[0], s[1]]);
+  const key = (p) => `${Math.round(p[0] / tol)},${Math.round(p[1] / tol)}`;
+  const map = new Map();
+  segments.forEach((s, i) => { for (const e of [0, 1]) { const kk = key(s[e]); (map.get(kk) || map.set(kk, []).get(kk)).push([i, e]); } });
+  const used = new Uint8Array(segments.length);
+  const out = [];
+  for (let i = 0; i < segments.length; i++) {
+    if (used[i]) continue; used[i] = 1;
+    const poly = [segments[i][0], segments[i][1]];
+    for (let dir = 0; dir < 2; dir++) {
+      let extend = true;
+      while (extend) {
+        extend = false;
+        const end = dir === 0 ? poly[poly.length - 1] : poly[0];
+        for (const [j, e] of (map.get(key(end)) || [])) {
+          if (used[j]) continue;
+          const other = segments[j][e ^ 1]; used[j] = 1;
+          if (dir === 0) poly.push(other); else poly.unshift(other);
+          extend = true; break;
+        }
+      }
+    }
+    out.push(poly);
+  }
+  return out;
+}
+
+/**
+ * Gyroid infill — the real TPMS cross-section. At height z the gyroid surface
+ * sin(kx)cos(ky)+sin(ky)cos(kz)+sin(kz)cos(kx)=0 reduces to a 2-D implicit
+ * curve; we extract its f=0 iso-contour with marching squares and clip each
+ * segment to the region. The z term shifts the pattern every layer, giving the
+ * characteristic interlocking 3-D gyroid — not a flat approximation.
+ */
+export function gyroidInfill(region, density, lineWidth = 0.4, z = 0) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const d = Math.max(0.02, Math.min(1, density));
+  const spacing = Math.max(lineWidth, lineWidth / d);
+  const period = spacing * 2;
+  const k = 2 * PI / period;
+  const cz = Math.cos(k * z), sz = Math.sin(k * z);
+  const f = (x, y) => Math.sin(k * x) * Math.cos(k * y) + Math.sin(k * y) * cz + Math.cos(k * x) * sz;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const step = period / 6;
+  const interp = (xa, ya, fa, xb, yb, fb) => { const t = fa / (fa - fb); return [xa + t * (xb - xa), ya + t * (yb - ya)]; };
+  const segs = [];
+  for (let x = minX; x < maxX; x += step) {
+    const x1 = x + step;
+    for (let y = minY; y < maxY; y += step) {
+      const y1 = y + step;
+      const f00 = f(x, y), f10 = f(x1, y), f11 = f(x1, y1), f01 = f(x, y1);
+      const cross = [];
+      if ((f00 < 0) !== (f10 < 0)) cross.push(interp(x, y, f00, x1, y, f10));
+      if ((f10 < 0) !== (f11 < 0)) cross.push(interp(x1, y, f10, x1, y1, f11));
+      if ((f11 < 0) !== (f01 < 0)) cross.push(interp(x1, y1, f11, x, y1, f01));
+      if ((f01 < 0) !== (f00 < 0)) cross.push(interp(x, y1, f01, x, y, f00));
+      for (let e = 0; e + 1 < cross.length; e += 2) {
+        const a = cross[e], b = cross[e + 1];
+        if (_inRegion((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, region)) segs.push([a, b]);
+      }
+    }
+  }
+  return _chainOpen(segs);
+}
+
+/**
+ * Honeycomb infill — a real hexagon tiling. Hexagons are laid across the
+ * bounding box, their shared edges de-duplicated, and each edge clipped to the
+ * region. `density` sets the cell size.
+ */
+export function honeycombInfill(region, density, lineWidth = 0.4) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const d = Math.max(0.02, Math.min(1, density));
+  const spacing = Math.max(lineWidth, lineWidth / d);
+  const R = spacing * 1.8;             // hexagon circumradius
+  const dx = Math.sqrt(3) * R;         // horizontal centre spacing (pointy-top)
+  const dy = 1.5 * R;                  // vertical centre spacing
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const seen = new Set();
+  const kkey = (a, b) => { const r = (v) => Math.round(v * 50) / 50; const A = `${r(a[0])},${r(a[1])}`, B = `${r(b[0])},${r(b[1])}`; return A < B ? `${A}|${B}` : `${B}|${A}`; };
+  const segs = [];
+  let row = 0;
+  for (let cy = minY - dy; cy < maxY + dy; cy += dy, row++) {
+    const xoff = (row & 1) ? dx / 2 : 0;
+    for (let cx = minX - dx + xoff; cx < maxX + dx; cx += dx) {
+      const v = [];
+      for (let j = 0; j < 6; j++) { const a = (30 + 60 * j) * PI / 180; v.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+      for (let j = 0; j < 6; j++) {
+        const a = v[j], b = v[(j + 1) % 6]; const key = kkey(a, b);
+        if (seen.has(key)) continue; seen.add(key);
+        if (_inRegion((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, region)) segs.push([a, b]);
+      }
+    }
+  }
+  return segs;
+}
+
+/**
+ * Pattern dispatcher for sparse infill. grid = two passes 90° apart, triangles
+ * = three passes 60° apart, gyroid = TPMS iso-contour, honeycomb = hex tiling,
+ * cubic = a 3-way triad rotating with height, lines/default = one direction.
+ * `ctx.z` (layer height) drives the Z-varying patterns.
+ */
+export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}) {
   if (pattern === 'grid') {
     return regionInfill(region, density / 2, angleDeg, lineWidth)
       .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth));
@@ -328,6 +444,16 @@ export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'l
     return regionInfill(region, d, angleDeg, lineWidth)
       .concat(regionInfill(region, d, angleDeg + 60, lineWidth))
       .concat(regionInfill(region, d, angleDeg + 120, lineWidth));
+  }
+  if (pattern === 'gyroid') return gyroidInfill(region, density, lineWidth, ctx.z ?? 0);
+  if (pattern === 'honeycomb') return honeycombInfill(region, density, lineWidth);
+  if (pattern === 'cubic') {
+    // Three directions rotating with height → a 3-D cubic lattice feel.
+    const rot = ((ctx.z ?? 0) * 17) % 60;
+    const d = density / 3;
+    return regionInfill(region, d, angleDeg + rot, lineWidth)
+      .concat(regionInfill(region, d, angleDeg + 60 + rot, lineWidth))
+      .concat(regionInfill(region, d, angleDeg + 120 + rot, lineWidth));
   }
   return regionInfill(region, density, angleDeg, lineWidth);
 }

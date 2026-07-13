@@ -507,7 +507,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           else if (globalSolid) {
             pushSolid(solidInfill(infRegion, baseAngle, lw));
           } else if (doSparse) {
-            const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern);
+            const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight });
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         } else {
@@ -516,7 +516,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           pushSolid(solidSegs);
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse) {
-            const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
+            const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight }).filter((sg) => !midSolid(surfaces, i, sg));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         }

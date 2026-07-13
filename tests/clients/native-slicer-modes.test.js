@@ -88,6 +88,32 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: real infill patterns', () => {
+  it('gyroid / honeycomb / cubic all produce sparse infill', async () => {
+    for (const pattern of ['gyroid', 'honeycomb', 'cubic']) {
+      const r = await sliceMeshToGcode(box(30, 30, 6), { infillPattern: pattern, infillDensity: 0.2, topLayers: 1, bottomLayers: 1 });
+      assert.match(r.gcode, /FEATURE:sparse/, `${pattern} should emit sparse infill`);
+    }
+  });
+
+  it('gyroid infill varies with height (true TPMS, not a flat pattern)', async () => {
+    const { gyroidInfill } = await import('../../server/native-slicer-geo.js');
+    const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] };
+    const a = gyroidInfill(region, 0.2, 0.4, 0);
+    const b = gyroidInfill(region, 0.2, 0.4, 2);
+    assert.ok(a.length > 0 && b.length > 0);
+    assert.notEqual(JSON.stringify(a), JSON.stringify(b));
+  });
+
+  it('gyroid segments are chained into continuous polylines (few retractions)', async () => {
+    const { gyroidInfill } = await import('../../server/native-slicer-geo.js');
+    const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] };
+    const polys = gyroidInfill(region, 0.2, 0.4, 3);
+    const longest = Math.max(...polys.map((p) => p.length));
+    assert.ok(longest > 10, 'gyroid should chain into long polylines, not tiny segments');
+  });
+});
+
 describe('native-slicer: overhang and bridge detection', () => {
   it('flags overhang walls on a steep inverted cone but not on a vertical box', async () => {
     const cone = (await import('../../server/mesh-primitives.js')).cone;
