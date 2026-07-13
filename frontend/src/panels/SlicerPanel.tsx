@@ -3,9 +3,10 @@ import { api } from '../api';
 import { useResource } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
-import type { Printer, SlicerStatus, SliceResult } from '../types';
-import type { PlateHandle } from '../components/PlateViewer';
+import type { Printer, SlicerStatus, SliceResult, SlicerPrinter } from '../types';
+import type { PlateHandle, ObjInfo } from '../components/PlateViewer';
 import { SlicerSettings, type SliceSettings } from './slicer/SlicerSettings';
+import { ObjectPanel } from './slicer/ObjectPanel';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -29,7 +30,9 @@ export function SlicerPanel() {
   const toast = useToast();
   const { data: status } = useResource<SlicerStatus>(api.getSlicerStatus, 0);
   const { data: printersData } = useResource<Printer[]>(api.listPrinters, 30000);
+  const { data: slicerPrintersData } = useResource<SlicerPrinter[]>(api.getSlicerPrinters, 60000);
   const printers = useMemo(() => printersData ?? [], [printersData]);
+  const slicerPrinters = useMemo(() => slicerPrintersData ?? [], [slicerPrintersData]);
   const [file, setFile] = useState<File | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<Record<string, RowState>>({});
@@ -38,7 +41,15 @@ export function SlicerPanel() {
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
+  const [obj, setObj] = useState<ObjInfo | null>(null);
+  const [profilePrinter, setProfilePrinter] = useState<string>('');
   const plateRef = useRef<PlateHandle>(null);
+
+  // Bed size from the chosen slice-profile printer (falls back to 256).
+  const bed = useMemo(() => {
+    const p = slicerPrinters.find((sp) => sp.id === profilePrinter) ?? slicerPrinters[0];
+    return p?.buildVolume?.x ?? 256;
+  }, [slicerPrinters, profilePrinter]);
 
   const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
@@ -48,6 +59,7 @@ export function SlicerPanel() {
     setPreview(null);
     setTab('prepare');
     setRows({});
+    setObj(null);
   }
 
   // Slice for preview only (no printer). Uses the arranged plate.
@@ -116,12 +128,12 @@ export function SlicerPanel() {
             )}
             {file && tab === 'prepare' && (
               <Suspense fallback={<div className="slicer-loading muted">{t('common.loading', 'Loading…')}</div>}>
-                <PlateViewer ref={plateRef} file={file} />
+                <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} />
               </Suspense>
             )}
             {file && tab === 'preview' && preview && (
               <Suspense fallback={<div className="slicer-loading muted">{t('common.loading', 'Loading…')}</div>}>
-                <GcodePreview gcode={preview.gcode} />
+                <GcodePreview gcode={preview.gcode} bed={bed} />
               </Suspense>
             )}
           </div>
@@ -135,7 +147,29 @@ export function SlicerPanel() {
               <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
               {file ? <span className="ellipsis">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</span> : <span className="muted">{t('v2.slicer.choose_short', 'Choose model…')}</span>}
             </label>
+            {slicerPrinters.length > 0 && (
+              <label className="field" style={{ marginTop: 10 }}>
+                <span className="field-label">{t('v2.slicer.profile_printer', 'Printer (bed & profile)')}</span>
+                <select className="input" value={profilePrinter} onChange={(e) => setProfilePrinter(e.target.value)}>
+                  {slicerPrinters.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}{p.buildVolume ? ` · ${p.buildVolume.x}×${p.buildVolume.y}×${p.buildVolume.z}mm` : ''}</option>
+                  ))}
+                </select>
+              </label>
+            )}
           </section>
+
+          {file && tab === 'prepare' && obj && (
+            <ObjectPanel
+              info={obj}
+              onPos={(x, y) => plateRef.current?.setPos(x, y)}
+              onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)}
+              onScalePct={(p) => plateRef.current?.setScalePct(p)}
+              onDim={(axis, mm, uniform) => plateRef.current?.setDim(axis, mm, uniform)}
+              onMirror={(axis) => plateRef.current?.mirror(axis)}
+              onReset={() => plateRef.current?.resetXform()}
+            />
+          )}
 
           <SlicerSettings value={settings} onChange={setSettings} status={status ?? undefined} />
 

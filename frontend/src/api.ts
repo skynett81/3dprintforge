@@ -76,6 +76,7 @@ export const api = {
       body: JSON.stringify({ action, ...extra }),
     }),
   getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
+  getSlicerPrinters: () => req<import('./types').SlicerPrinter[]>('/api/slicer/printers'),
   sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
     const q = new URLSearchParams({ printerId, filename: file.name });
     if (opts?.print) q.set('print', '1');

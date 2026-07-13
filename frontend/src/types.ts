@@ -267,6 +267,14 @@ export interface SliceResult {
   printing?: boolean;
 }
 
+export interface SlicerPrinter {
+  id: string;
+  name: string;
+  model?: string | null;
+  type?: string | null;
+  buildVolume?: { x: number; y: number; z: number } | null;
+}
+
 export interface TigerTagParsed {
   protocol: string;
   type?: string | null;

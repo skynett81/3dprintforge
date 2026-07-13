@@ -332,6 +332,10 @@ body {
   background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft); border-radius: 999px;
 }
 
+/* Object manipulation panel */
+.obj-group-label { font-size: 0.72rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; margin: 12px 0 4px; }
+.obj-group-label:first-of-type { margin-top: 0; }
+
 /* G-code preview feature legend */
 .gpreview-wrap { position: relative; flex: 1; display: flex; }
 .gpreview-legend {

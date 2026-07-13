@@ -7,7 +7,22 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { useT } from '../i18n';
 
-export interface PlateHandle { exportSTL: (name: string) => File | null; count: () => number }
+export interface ObjInfo {
+  posX: number; posY: number;
+  rotX: number; rotY: number; rotZ: number;   // degrees
+  scalePct: number;                            // uniform, from X
+  dimX: number; dimY: number; dimZ: number;    // mm (world)
+}
+export interface PlateHandle {
+  exportSTL: (name: string) => File | null;
+  count: () => number;
+  setPos: (x: number, y: number) => void;
+  setRot: (x: number, y: number, z: number) => void;   // degrees
+  setScalePct: (pct: number) => void;
+  setDim: (axis: 'x' | 'y' | 'z', mm: number, uniform: boolean) => void;
+  mirror: (axis: 'x' | 'y' | 'z') => void;
+  resetXform: () => void;
+}
 
 interface Ctx {
   scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer;
@@ -29,19 +44,39 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number }>(function PlateViewer({ file, bed = 256 }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void }>(function PlateViewer({ file, bed = 256, onObject }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
+  const onObjRef = useRef(onObject);
+  onObjRef.current = onObject;
   const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
   const [count, setCount] = useState(0);
   const [sel, setSel] = useState(false);
+
+  // Report the selected object's live transform to the parent (Object panel).
+  function emitObject() {
+    const c = ctx.current; const cb = onObjRef.current; if (!cb) return;
+    const m = c?.selected;
+    if (!m) { cb(null); return; }
+    m.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(m);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const RAD = 180 / Math.PI;
+    cb({
+      posX: +m.position.x.toFixed(2), posY: +m.position.y.toFixed(2),
+      rotX: +(m.rotation.x * RAD).toFixed(1), rotY: +(m.rotation.y * RAD).toFixed(1), rotZ: +(m.rotation.z * RAD).toFixed(1),
+      scalePct: +(m.scale.x * 100).toFixed(1),
+      dimX: +size.x.toFixed(2), dimY: +size.y.toFixed(2), dimZ: +size.z.toFixed(2),
+    });
+  }
 
   function select(mesh: THREE.Mesh | null) {
     const c = ctx.current; if (!c) return;
     c.selected = mesh;
     if (mesh) c.tcontrols.attach(mesh); else c.tcontrols.detach();
     setSel(!!mesh);
+    emitObject();
   }
 
   function addMesh(geom: THREE.BufferGeometry) {
@@ -83,8 +118,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.15);
     const tcontrols = new TransformControls(camera, renderer.domElement);
     tcontrols.setSpace('world');
-    tcontrols.addEventListener('dragging-changed', (e) => { orbit.enabled = !e.value; });
-    tcontrols.addEventListener('objectChange', () => { /* keep in place */ });
+    tcontrols.addEventListener('dragging-changed', (e) => { orbit.enabled = !e.value; if (!e.value) { const m = ctx.current?.selected; if (m) dropToPlate(m); emitObject(); } });
+    tcontrols.addEventListener('objectChange', () => { emitObject(); });
     const helper = (tcontrols as unknown as { getHelper?: () => THREE.Object3D }).getHelper?.() ?? (tcontrols as unknown as THREE.Object3D);
     scene.add(helper);
 
@@ -149,6 +184,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       m.position.y = (row - (Math.ceil(n / cols) - 1) / 2) * gap;
       dropToPlate(m);
     });
+    emitObject();
   }
   function duplicate() {
     const c = ctx.current; if (!c || !c.selected) return;
@@ -160,11 +196,26 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const c = ctx.current; if (!c || !c.selected) return;
     c.scene.remove(c.selected); c.objects = c.objects.filter((o) => o !== c.selected); select(null); setCount(c.objects.length); arrange();
   }
-  function layFlat() { const c = ctx.current; if (!c || !c.selected) return; c.selected.rotation.set(0, 0, 0); dropToPlate(c.selected); }
-  function center() { const c = ctx.current; if (!c || !c.selected) return; c.selected.position.x = 0; c.selected.position.y = 0; dropToPlate(c.selected); }
+  function layFlat() { const c = ctx.current; if (!c || !c.selected) return; c.selected.rotation.set(0, 0, 0); dropToPlate(c.selected); emitObject(); }
+  function center() { const c = ctx.current; if (!c || !c.selected) return; c.selected.position.x = 0; c.selected.position.y = 0; dropToPlate(c.selected); emitObject(); }
 
   useImperativeHandle(ref, () => ({
     count: () => ctx.current?.objects.length ?? 0,
+    setPos: (x: number, y: number) => { const m = ctx.current?.selected; if (!m) return; m.position.x = x; m.position.y = y; emitObject(); },
+    setRot: (x: number, y: number, z: number) => { const m = ctx.current?.selected; if (!m) return; const D = Math.PI / 180; m.rotation.set(x * D, y * D, z * D); dropToPlate(m); emitObject(); },
+    setScalePct: (pct: number) => { const m = ctx.current?.selected; if (!m || !(pct > 0)) return; const s = pct / 100; m.scale.set(s, s, s); dropToPlate(m); emitObject(); },
+    setDim: (axis: 'x' | 'y' | 'z', mm: number, uniform: boolean) => {
+      const m = ctx.current?.selected; if (!m || !(mm > 0)) return;
+      m.updateMatrixWorld(true);
+      const size = new THREE.Vector3(); new THREE.Box3().setFromObject(m).getSize(size);
+      const cur = size[axis]; if (!(cur > 0)) return;
+      const factor = mm / cur;
+      if (uniform) m.scale.multiplyScalar(factor);
+      else m.scale[axis] *= factor;
+      dropToPlate(m); emitObject();
+    },
+    mirror: (axis: 'x' | 'y' | 'z') => { const m = ctx.current?.selected; if (!m) return; m.scale[axis] *= -1; dropToPlate(m); emitObject(); },
+    resetXform: () => { const m = ctx.current?.selected; if (!m) return; m.rotation.set(0, 0, 0); m.scale.set(1, 1, 1); m.position.x = 0; m.position.y = 0; dropToPlate(m); emitObject(); },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
       const group = new THREE.Group();

@@ -6078,6 +6078,25 @@ export async function handleApiRequest(req, res) {
       return sendJson(res, getSlicerStatus());
     }
 
+    if (method === 'GET' && path === '/api/slicer/printers') {
+      // Connected printers with slicer-relevant info (build volume) so the
+      // web slicer can pick a target and size its bed accordingly.
+      const { getCapabilities } = await import('./printer-capabilities.js');
+      const list = [];
+      for (const [id, entry] of (_printerManager?.printers ?? new Map())) {
+        const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
+        const bv = Array.isArray(caps?.buildVolume) ? caps.buildVolume : null;
+        list.push({
+          id,
+          name: entry.config?.name || id,
+          model: entry.config?.model || null,
+          type: entry.config?.type || null,
+          buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
+        });
+      }
+      return sendJson(res, list);
+    }
+
     if (method === 'GET' && path === '/api/slicer/profiles') {
       return sendJson(res, getSlicerProfiles());
     }
@@ -8210,7 +8229,7 @@ export async function handleApiRequest(req, res) {
           try {
             const { getCapabilities } = await import('./printer-capabilities.js');
             const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
-            if (caps?.buildVolume) base.bedSize = [caps.buildVolume.x, caps.buildVolume.y];
+            if (Array.isArray(caps?.buildVolume)) base.bedSize = [caps.buildVolume[0], caps.buildVolume[1]];
           } catch { /* default bed */ }
 
           let ui = {};
