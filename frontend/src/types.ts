@@ -275,6 +275,7 @@ export interface SlicerPrinter {
   buildVolume?: { x: number; y: number; z: number } | null;
 }
 
+
 export interface TigerTagParsed {
   protocol: string;
   type?: string | null;
@@ -525,6 +526,7 @@ export interface LibraryFile {
   file_type: string;
   file_size: number;
   category?: string | null;
+  thumbnail_path?: string | null;
   print_count: number;
   last_printed?: string | null;
   estimated_filament_g?: number | null;

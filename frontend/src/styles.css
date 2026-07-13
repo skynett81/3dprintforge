@@ -332,6 +332,18 @@ body {
   background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft); border-radius: 999px;
 }
 
+/* Library import modal */
+.lib-modal { width: min(820px, 96vw); }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: 60vh; overflow-y: auto; }
+.lib-card { display: flex; flex-direction: column; gap: 4px; padding: 8px; text-align: left; cursor: pointer;
+  background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); }
+.lib-card:hover:not(:disabled) { border-color: var(--accent); }
+.lib-card:disabled { opacity: 0.6; cursor: wait; }
+.lib-thumb { aspect-ratio: 1; display: grid; place-items: center; background: var(--bg-2); border-radius: 6px; overflow: hidden; }
+.lib-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.lib-ext { font-size: 0.9rem; font-weight: 700; color: var(--text-2); letter-spacing: 0.05em; }
+.lib-name { font-size: 0.8rem; font-weight: 600; }
+
 /* Object manipulation panel */
 .obj-group-label { font-size: 0.72rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; margin: 12px 0 4px; }
 .obj-group-label:first-of-type { margin-top: 0; }

@@ -128,18 +128,39 @@ export function generateSupports(layerRegions, opts = {}) {
     }
   }
 
-  // Convert each layer's mask to sparse horizontal hatch lines. Row step
-  // realises the requested density (line spacing = lineWidth / density).
+  // Interface cells: the top `interfaceLayers` of each column, just below
+  // the Z-gap under the overhang. Filled solid for a smoother underside.
+  const interfaceLayers = Math.max(0, Math.round(opts.interfaceLayers ?? 2));
+  const iface = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = support[i];
+    const grid = new Uint8Array(cols * rows);
+    if (interfaceLayers > 0 && s) {
+      for (let idx = 0; idx < s.length; idx++) {
+        if (!s[idx]) continue;
+        for (let k = 1; k <= interfaceLayers; k++) {
+          const j = i + zGap + k;             // first model layer sits above the gap
+          if (j < n && model[j][idx]) { grid[idx] = 1; break; }
+        }
+      }
+    }
+    iface[i] = grid;
+  }
+
+  // Convert each layer's mask to horizontal hatch lines. Normal support is
+  // sparse (row step = lineWidth / density); interface cells fill every row.
   const step = Math.max(1, Math.round((lineWidth / density) / gridRes));
   const out = new Array(n);
   for (let i = 0; i < n; i++) {
     const s = support[i];
+    const inf = iface[i];
     const segs = [];
     for (let r = 0; r < rows; r++) {
-      if (r % step !== 0) continue;
+      const dense = r % step === 0;
       let runStart = -1;
       for (let c = 0; c <= cols; c++) {
-        const on = c < cols && s[r * cols + c];
+        const idx = r * cols + c;
+        const on = c < cols && s[idx] && (dense || inf[idx]);
         if (on && runStart < 0) runStart = c;
         else if (!on && runStart >= 0) {
           segs.push([[cx(runStart), cy(r)], [cx(c - 1), cy(r)]]);

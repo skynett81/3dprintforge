@@ -44,6 +44,16 @@ describe('native-slicer: generateSupports', () => {
     // Lower layers still supported in both.
     assert.ok(gap1[5].length > 0, 'columns below the gap remain');
   });
+
+  it('interface layers under the overhang are denser than deep support', () => {
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const sup = generateSupports(layers, { gridRes: 2, density: 0.1, xyGap: 0, zGapLayers: 1, interfaceLayers: 2 });
+    const iface = sup[8].length;   // just below the overhang (after the gap)
+    const deep = sup[3].length;    // sparse column body
+    assert.ok(iface > deep, `interface ${iface} should be denser than deep ${deep}`);
+  });
 });
 
 describe('native-slicer: supports end-to-end', () => {

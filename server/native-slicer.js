@@ -178,7 +178,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     layerHeight: 0.2, lineWidth: 0.4, perimeters: 2, infillDensity: 0.2,
     infillAngle: 45, infillPattern: 'grid', topLayers: 4, bottomLayers: 4,
     skirtLoops: 1, skirtGap: 3, brimWidth: 0,
-    supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1,
+    supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1, supportInterface: 2,
     ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
     ...settings,
   };
@@ -205,7 +205,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
   if (s.supports) {
     const { generateSupports } = await import('./native-slicer-support.js');
     supportSegs = generateSupports(layerRegions, {
-      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap,
+      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface,
     });
   }
 

@@ -7,6 +7,7 @@ import type { Printer, SlicerStatus, SliceResult, SlicerPrinter, Spool } from '.
 import type { PlateHandle, ObjInfo } from '../components/PlateViewer';
 import { SlicerSettings, type SliceSettings } from './slicer/SlicerSettings';
 import { ObjectPanel } from './slicer/ObjectPanel';
+import { LibraryImportModal } from './slicer/LibraryImportModal';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -46,7 +47,17 @@ export function SlicerPanel() {
   const [obj, setObj] = useState<ObjInfo | null>(null);
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [extraModels, setExtraModels] = useState<string[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
   const plateRef = useRef<PlateHandle>(null);
+
+  // Import a model from the library: first one becomes the primary, the rest append.
+  async function importFromLibrary(f: File) {
+    if (!file) { pickFile(f); return; }
+    await plateRef.current?.addFile(f);
+    setExtraModels((prev) => [...prev, f.name]);
+    setPreview(null);
+    setTab('prepare');
+  }
 
   // Bed size from the chosen slice-profile printer (falls back to 256).
   const bed = useMemo(() => {
@@ -172,15 +183,16 @@ export function SlicerPanel() {
               <input type="file" accept={formats.join(',')} hidden onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
               {file ? <span className="ellipsis">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</span> : <span className="muted">{t('v2.slicer.choose_short', 'Choose model…')}</span>}
             </label>
-            {file && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn--sm btn--ghost" onClick={() => setShowLibrary(true)}>{t('v2.slicer.from_library', 'From library')}</button>
+              {file && (
                 <label className="btn btn--sm btn--ghost" style={{ cursor: 'pointer' }}>
                   <input type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { addModels(e.target.files); e.currentTarget.value = ''; }} />
                   + {t('v2.slicer.add_model', 'Add model')}
                 </label>
-                {extraModels.length > 0 && <span className="muted micro">{extraModels.length} {t('v2.slicer.added', 'added')}</span>}
-              </div>
-            )}
+              )}
+              {extraModels.length > 0 && <span className="muted micro">{extraModels.length} {t('v2.slicer.added', 'added')}</span>}
+            </div>
             {slicerPrinters.length > 0 && (
               <label className="field" style={{ marginTop: 10 }}>
                 <span className="field-label">{t('v2.slicer.profile_printer', 'Printer (bed & profile)')}</span>
@@ -250,6 +262,8 @@ export function SlicerPanel() {
           <button className="btn" disabled={!canRun} onClick={() => run(true)}>{t('v2.slicer.slice_print', 'Slice, send & start')}</button>
         </div>
       </div>
+
+      {showLibrary && <LibraryImportModal onClose={() => setShowLibrary(false)} onImport={importFromLibrary} />}
     </div>
   );
 }
