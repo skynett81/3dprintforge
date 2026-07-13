@@ -148,6 +148,14 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('smallPerimeterSpeed', num(s.small_perimeter_speed));
   set('smallPerimeterThreshold', num(s.small_perimeter_threshold));
   set('seamGap', num(s.seam_gap));
+  // Fuzzy-skin options (thickness is mapped elsewhere).
+  set('fuzzySkinPointDist', num(s.fuzzy_skin_point_distance ?? s.fuzzy_skin_point_dist));
+  if (s.fuzzy_skin_first_layer !== undefined && s.fuzzy_skin_first_layer !== '') out.fuzzySkinFirstLayer = !!s.fuzzy_skin_first_layer;
+  if (s.fuzzy_skin_mode) out.fuzzySkinMode = String(s.fuzzy_skin_mode);
+  set('fuzzySkinThickness', num(s.fuzzy_skin_thickness));
+  // Arc fitting (post-process straight moves into G2/G3 arcs).
+  if (s.arc_fitting !== undefined && s.arc_fitting !== '') out.arcFitting = !!s.arc_fitting;
+  set('arcTolerance', num(s.arc_fitting_tolerance ?? s.arc_tolerance));
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   // Initial-layer temperatures and part-cooling fan — critical per material.

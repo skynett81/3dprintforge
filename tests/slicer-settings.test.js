@@ -125,6 +125,16 @@ describe('buildNativeSettings', () => {
     assert.equal(n.overhangDetect, true);
   });
 
+  test('maps fuzzy-skin options and arc fitting', () => {
+    const n = buildNativeSettings({ fuzzy_skin_point_distance: 0.5, fuzzy_skin_first_layer: true, fuzzy_skin_mode: 'all', fuzzy_skin_thickness: 0.4, arc_fitting: true, arc_fitting_tolerance: 0.03 });
+    assert.equal(n.fuzzySkinPointDist, 0.5);
+    assert.equal(n.fuzzySkinFirstLayer, true);
+    assert.equal(n.fuzzySkinMode, 'all');
+    assert.equal(n.fuzzySkinThickness, 0.4);
+    assert.equal(n.arcFitting, true);
+    assert.equal(n.arcTolerance, 0.03);
+  });
+
   test('maps XY compensation, small-perimeter and seam-gap keys', () => {
     const n = buildNativeSettings({ xy_hole_compensation: 0.1, xy_contour_compensation: -0.05, small_perimeter_speed: 20, small_perimeter_threshold: 12, seam_gap: 0.15 });
     assert.equal(n.xyHoleCompensation, 0.1);

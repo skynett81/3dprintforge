@@ -88,6 +88,34 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: arc fitting (G2/G3)', () => {
+  it('fits a clean quarter-circle to one exact arc', async () => {
+    const { fitArcs } = await import('../../server/native-slicer-arc.js');
+    let g = 'G1 X10 Y0 F1200 ; travel\n'; let e = 0;
+    for (let deg = 2; deg <= 90; deg += 2) { const a = deg * Math.PI / 180; e += 0.35; g += `G1 X${(10 * Math.cos(a)).toFixed(3)} Y${(10 * Math.sin(a)).toFixed(3)} E${e.toFixed(4)} F1200\n`; }
+    const out = fitArcs(g, 0.02);
+    const arc = out.split('\n').find((l) => /^G[23] /.test(l));
+    assert.ok(arc, 'a circular run should become a G2/G3 arc');
+    const m = arc.match(/^(G[23]) X(\S+) Y(\S+) I(\S+) J(\S+)/);
+    const cx = 10 + parseFloat(m[4]), cy = 0 + parseFloat(m[5]);   // I/J relative to the start (10,0)
+    assert.ok(Math.hypot(cx, cy) < 0.05, 'arc centre matches the true circle centre');
+    assert.equal(m[1], 'G3', 'CCW sweep → G3');
+  });
+
+  it('leaves straight geometry alone (no false arcs on a box)', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 3), { arcFitting: true });
+    assert.equal((r.gcode.match(/^G[23] /gm) || []).length, 0);
+  });
+
+  it('a round wall produces arcs and shrinks the g-code', async () => {
+    const { cylinder } = await import('../../server/mesh-primitives.js');
+    const on = await sliceMeshToGcode(cylinder(15, 6, 64), { arcFitting: true, arcTolerance: 0.05 });
+    const off = await sliceMeshToGcode(cylinder(15, 6, 64), { arcFitting: false });
+    assert.ok((on.gcode.match(/^G[23] /gm) || []).length > 0);
+    assert.ok(on.gcode.split('\n').length < off.gcode.split('\n').length);
+  });
+});
+
 describe('native-slicer: XY compensation, small-perimeter, seam gap', () => {
   it('XY contour compensation changes the sliced outline', async () => {
     const a = await sliceMeshToGcode(box(20, 20, 3), {});

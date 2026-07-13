@@ -28,6 +28,7 @@ import {
   _chainSegments, _pointInPoly, routeInside, combWaypoints,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
+import { fitArcs } from './native-slicer-arc.js';
 
 const FILAMENT_DIAM = 1.75;
 
@@ -331,6 +332,8 @@ export function layersToGcode(layers, settings) {
   e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
   g += `G1 Z${(curZ + 5).toFixed(3)} F${s.travelSpeed * 60}\n`;
   g += (s.endGcode ? _interp(s.endGcode, s) + '\n' : _defaultEnd());
+  // Optional arc fitting: fold runs of straight moves on a circle into G2/G3.
+  if (s.arcFitting) g = fitArcs(g, s.arcTolerance ?? 0.05);
   return g;
 }
 
@@ -497,12 +500,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       // Outer walls: shrink inward wall-by-wall (negative = inward).
       const seam = s.seamPosition;
       let inner = outerBoundary;
-      const outerPts = s.fuzzySkin ? fuzzifyPolygon(outerBoundary, s.fuzzySkinThickness, Math.max(0.3, lw)) : outerBoundary;
+      // Fuzzy skin: perturb the wall outline. Point distance and first-layer
+      // behaviour are configurable; mode 'all' fuzzes inner walls too.
+      const fuzzOn = s.fuzzySkin && (i > 0 || s.fuzzySkinFirstLayer !== false);
+      const fuzzPD = s.fuzzySkinPointDist ?? Math.max(0.3, lw);
+      const fuzz = (poly) => fuzzifyPolygon(poly, s.fuzzySkinThickness, fuzzPD);
+      const outerPts = fuzzOn ? fuzz(outerBoundary) : outerBoundary;
       const mainWalls = [{ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam) }];
+      const fuzzInner = fuzzOn && s.fuzzySkinMode === 'all';
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
-        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(inner, seam) });
+        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam) });
       }
       // Overhang perimeters: flag walls that jut out over air so they print
       // slower with more cooling.
