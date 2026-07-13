@@ -10,6 +10,7 @@ import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
 import { ObjectPanel } from './slicer/ObjectPanel';
 import { SlicerDevice } from './slicer/SlicerDevice';
 import { SlicerFilaments } from './slicer/SlicerFilaments';
+import { SlicerCalibration } from './slicer/SlicerCalibration';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
 import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
 
@@ -78,7 +79,7 @@ export function SlicerPanel() {
     gap_fill_enabled: true, gap_infill_speed: 40,
     flush_into_infill: true, flush_volume: 80,
   });
-  const [tab, setTab] = useState<'prepare' | 'preview' | 'device' | 'filaments'>('prepare');
+  const [tab, setTab] = useState<'prepare' | 'preview' | 'device' | 'filaments' | 'calibration'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
@@ -328,6 +329,7 @@ export function SlicerPanel() {
           <button className={`oslice-toptab${tab === 'preview' ? ' oslice-toptab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
           <button className={`oslice-toptab${tab === 'device' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('device')}>{t('v2.slicer.device', 'Device')}</button>
           <button className={`oslice-toptab${tab === 'filaments' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('filaments')}>{t('v2.slicer.filaments', 'Filaments')}</button>
+          <button className={`oslice-toptab${tab === 'calibration' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('calibration')}>{t('v2.slicer.calibration', 'Calibration')}</button>
         </div>
         <div className="oslice-topright">
           {preview && (
@@ -532,6 +534,7 @@ export function SlicerPanel() {
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} />}
           {tab === 'filaments' && <SlicerFilaments spools={spools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
+          {tab === 'calibration' && <SlicerCalibration onPreview={(r) => setPreview({ gcode: r.gcode, layers: 0, timeSec: r.timeSec, filamentG: r.filamentG, wasteG: 0, durationMs: 0 })} />}
           {!file && tab === 'prepare' && (
             <div className="oslice-empty">
               <div className="oslice-emptycard">

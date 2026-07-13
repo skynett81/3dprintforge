@@ -77,6 +77,9 @@ export const api = {
     }),
   getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
   getSlicerPrinters: () => req<import('./types').SlicerPrinter[]>('/api/slicer/printers'),
+  getCalibrationTypes: () => req<{ types: string[] }>('/api/calibration/types'),
+  generateCalibration: (type: string, params: Record<string, unknown> = {}) =>
+    req<{ name: string; description: string; gcode: string; expected_minutes: number; filament_g: number; type: string }>('/api/calibration/generate', { method: 'POST', body: JSON.stringify({ type, params }) }),
   listSlicerProfiles: (kind = 'process') => req<{ profiles: import('./types').SlicerProfile[] }>(`/api/slicer/native/profiles?kind=${encodeURIComponent(kind)}&user=1`),
   createSlicerProfile: (body: { kind: string; name: string; settings: Record<string, unknown>; is_default?: number }) =>
     req<import('./types').SlicerProfile>('/api/slicer/native/profiles', { method: 'POST', body: JSON.stringify(body) }),

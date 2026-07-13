@@ -1218,3 +1218,16 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-filcard-bar { height: 4px; background: var(--o-panel-2); border-radius: 2px; overflow: hidden; margin-top: 2px; }
 .oslice-filcard-fill { display: block; height: 100%; }
 .oslice-filcard-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.72rem; flex-shrink: 0; }
+
+/* ── Slicer Calibration tab ────────────────────────────────────────── */
+.oslice-calwrap { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: auto; padding: 16px; }
+.oslice-calhead { margin-bottom: 12px; }
+.oslice-calhead h3 { margin: 0 0 2px; font-size: 1rem; }
+.oslice-calgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.oslice-calcard { border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.oslice-calcard--on { border-color: var(--o-accent); box-shadow: 0 0 0 1px var(--o-accent); }
+.oslice-calcard-h { font-weight: 700; font-size: 0.86rem; }
+.oslice-calcard-d { font-size: 0.74rem; color: var(--o-muted); flex: 1; }
+.oslice-calcard button { align-self: flex-start; }
+.oslice-calresult { margin-top: 14px; display: flex; align-items: center; gap: 16px; padding: 12px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); }
+.oslice-calresult > div { flex: 1; }
