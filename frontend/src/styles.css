@@ -1232,11 +1232,6 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-calresult { margin-top: 14px; display: flex; align-items: center; gap: 16px; padding: 12px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); }
 .oslice-calresult > div { flex: 1; }
 
-/* Device AMS / tool slots */
-.oslice-devams { display: flex; gap: 6px; flex-wrap: wrap; }
-.oslice-devamsslot { width: 56px; height: 52px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
-.oslice-devamsn { font-weight: 700; font-size: 0.9rem; }
-.oslice-devamsm { font-size: 0.6rem; opacity: 0.9; }
 
 /* ── Slicer modal (purge volumes) ──────────────────────────────────── */
 .oslice-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -1251,3 +1246,12 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-purge-tbl th { background: var(--o-panel-2); white-space: nowrap; }
 .oslice-purge-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 3px; vertical-align: middle; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
 .oslice-purge-cell { width: 52px; border: 1px solid var(--o-border); border-radius: 4px; padding: 2px 4px; font-size: 0.72rem; text-align: right; }
+
+/* Device AMS — Bambu-style cartridge slots */
+.oslice-amsunit { background: var(--o-panel-2); border-radius: 12px; padding: 10px; }
+.oslice-amsslots { display: flex; gap: 8px; flex-wrap: wrap; }
+.oslice-amscart { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.oslice-amscart-mat { font-size: 0.6rem; font-weight: 600; color: var(--o-muted); }
+.oslice-amscart-spool { width: 46px; height: 54px; border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.12); }
+.oslice-amscart-hole { width: 16px; height: 16px; border-radius: 50%; border: 3px solid; }
+.oslice-amscart-slot { font-size: 0.64rem; font-weight: 700; color: var(--o-muted); }

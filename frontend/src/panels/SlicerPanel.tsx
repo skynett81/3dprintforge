@@ -517,6 +517,7 @@ export function SlicerPanel() {
 
         {/* RIGHT — 3D scene (dark) with horizontal top toolbar */}
         <div className="oslice-stage">
+          {tab === 'prepare' && (
           <div className="oslice-rail">
             {action(<IconAdd />, t('v2.slicer.add_model', 'Add model'), () => addInputRef.current?.click())}
             {action(<IconDuplicate />, t('v2.plate.dup', 'Duplicate'), () => plateRef.current?.duplicate(), !toolState.hasSel)}
@@ -530,6 +531,7 @@ export function SlicerPanel() {
             {action(<IconCenter />, t('v2.plate.center', 'Center'), () => plateRef.current?.center(), !toolState.hasSel)}
             <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { if (!file) pickFile(e.target.files?.[0] ?? null); else addModels(e.target.files); e.currentTarget.value = ''; }} />
           </div>
+          )}
 
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
