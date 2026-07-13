@@ -322,6 +322,80 @@ function _inRegion(x, y, region) {
 }
 
 /**
+ * Combing / avoid-crossing-walls travel router. Given a travel from `a` to `b`
+ * and the current layer's solid `regions` (array of {outer, holes}), return a
+ * polyline that stays inside the solid — so the nozzle never drags across an
+ * open gap or hole (the cause of stringing and surface scars). Straight when
+ * the direct line is already safe; otherwise a shortest detour over the region
+ * boundary (Dijkstra on a visibility graph of inward-nudged boundary vertices).
+ * Returns null when no interior route exists (caller should retract + hop).
+ */
+/** Boundary vertices nudged into the solid — the waypoint set for routeInside.
+ *  Computed once per layer and reused across all of that layer's travels. */
+export function combWaypoints(regions, tol = 0.3, cap = 40) {
+  const inside = (p) => {
+    for (const r of regions) {
+      if (_pointInPoly(p, r.outer)) { let inHole = false; for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; } if (!inHole) return true; }
+    }
+    return false;
+  };
+  const wp = [];
+  for (const r of regions) {
+    for (const poly of [r.outer, ...(r.holes || [])]) {
+      for (const v of poly) {
+        for (let d = 0; d < 8; d++) { const ang = d / 8 * 2 * PI; const p = [v[0] + tol * Math.cos(ang), v[1] + tol * Math.sin(ang)]; if (inside(p)) { wp.push(p); break; } }
+      }
+    }
+  }
+  if (wp.length > cap) { const stride = Math.ceil(wp.length / cap); const w = []; for (let i = 0; i < wp.length; i += stride) w.push(wp[i]); return w; }
+  return wp;
+}
+
+export function routeInside(a, b, regions, opts = {}) {
+  if (!regions || !regions.length) return null;
+  const tol = opts.tol ?? 0.3;
+  const step = opts.step ?? 1.5;
+  const inside = (p) => {
+    for (const r of regions) {
+      if (_pointInPoly(p, r.outer)) {
+        let inHole = false;
+        for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; }
+        if (!inHole) return true;
+      }
+    }
+    return false;
+  };
+  const segOk = (p, q) => {
+    const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    const n = Math.max(2, Math.ceil(L / step));
+    for (let i = 1; i < n; i++) { const t = i / n; if (!inside([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])])) return false; }
+    return true;
+  };
+  if (!inside(a) || !inside(b)) return null;
+  if (segOk(a, b)) return [a, b];
+  // Waypoints (boundary vertices nudged a hair into the solid). Reused across
+  // every travel in a layer when the caller precomputes them via combWaypoints.
+  const wp = opts.waypoints || combWaypoints(regions, tol);
+  const nodes = [a, ...wp, b];
+  const N = nodes.length, B = N - 1;
+  const dist = new Array(N).fill(Infinity), prev = new Array(N).fill(-1), done = new Uint8Array(N);
+  dist[0] = 0;
+  for (let it = 0; it < N; it++) {
+    let u = -1, best = Infinity;
+    for (let i = 0; i < N; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+    if (u < 0) break; done[u] = 1; if (u === B) break;
+    for (let v = 0; v < N; v++) {
+      if (done[v] || v === u) continue;
+      const d = Math.hypot(nodes[v][0] - nodes[u][0], nodes[v][1] - nodes[u][1]);
+      if (dist[u] + d < dist[v] && segOk(nodes[u], nodes[v])) { dist[v] = dist[u] + d; prev[v] = u; }
+    }
+  }
+  if (dist[B] === Infinity) return null;
+  const path = []; let cur = B; while (cur >= 0) { path.push(nodes[cur]); cur = prev[cur]; } path.reverse();
+  return path;
+}
+
+/**
  * Chain unordered 2-point segments into open polylines by shared endpoints,
  * using a spatial hash (O(n)) — for iso-contour / tiling output that would
  * otherwise be thousands of tiny disconnected moves (huge retraction/travel).

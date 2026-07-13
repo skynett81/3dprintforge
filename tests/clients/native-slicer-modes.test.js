@@ -88,6 +88,31 @@ describe('native-slicer: acceleration, jerk, custom gcode hooks', () => {
   });
 });
 
+describe('native-slicer: avoid-crossing-walls travel (combing)', () => {
+  it('routes a travel around a hole instead of across it', async () => {
+    const { routeInside } = await import('../../server/native-slicer-geo.js');
+    const regions = [{ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [[[14, 14], [26, 14], [26, 26], [14, 26]]] }];
+    const route = routeInside([5, 20], [35, 20], regions, { tol: 0.5 });
+    assert.ok(route && route.length > 2, 'a detour (not a straight line) is returned');
+    const inHole = (p) => p[0] > 14 && p[0] < 26 && p[1] > 14 && p[1] < 26;
+    assert.ok(!route.some(inHole), 'no waypoint passes through the hole');
+  });
+
+  it('returns a straight route when the direct line is already inside', async () => {
+    const { routeInside } = await import('../../server/native-slicer-geo.js');
+    const regions = [{ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }];
+    const route = routeInside([5, 5], [35, 35], regions, { tol: 0.5 });
+    assert.deepEqual(route, [[5, 5], [35, 35]]);
+  });
+
+  it('combing sharply reduces retractions vs no combing', async () => {
+    const withComb = await sliceMeshToGcode(box(30, 30, 4), { avoidCrossingWalls: true, infillDensity: 0.2 });
+    const noComb = await sliceMeshToGcode(box(30, 30, 4), { avoidCrossingWalls: false, infillDensity: 0.2 });
+    const retracts = (g) => { let c = 0; const L = g.split('\n'); for (let i = 1; i < L.length; i++) if (/^G0 X/.test(L[i]) && /G1 E/.test(L[i - 1])) c++; return c; };
+    assert.ok(retracts(withComb.gcode) < retracts(noComb.gcode) * 0.3, 'combing keeps travels over solid, avoiding most retractions');
+  });
+});
+
 describe('native-slicer: shell thickness and infill/wall overlap', () => {
   it('top/bottom shell thickness (mm) raises the solid layer counts', async () => {
     const { sliceMeshToLayers } = await import('../../server/native-slicer.js');

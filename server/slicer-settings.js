@@ -138,6 +138,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Top / bottom shell thickness (mm) — the pipeline converts to layer counts.
   set('topShellThickness', num(s.top_shell_thickness));
   set('bottomShellThickness', num(s.bottom_shell_thickness));
+  // Avoid-crossing-walls travel (combing).
+  if (s.avoid_crossing_walls !== undefined && s.avoid_crossing_walls !== '') out.avoidCrossingWalls = !!s.avoid_crossing_walls;
+  else if (s.reduce_crossing_wall !== undefined && s.reduce_crossing_wall !== '') out.avoidCrossingWalls = !!s.reduce_crossing_wall;
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   // Initial-layer temperatures and part-cooling fan — critical per material.

@@ -25,7 +25,7 @@
 import {
   sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
-  _chainSegments, _pointInPoly,
+  _chainSegments, _pointInPoly, routeInside, combWaypoints,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 
@@ -151,6 +151,10 @@ export function layersToGcode(layers, settings) {
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
+  let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
+  let combWP = null;         // that layer's cached detour waypoints
+  const combing = s.avoidCrossingWalls !== false;
+  const combTol = Math.max(0.3, s.lineWidth);
 
   // Prime line (skip when a custom start gcode already primes, or when
   // reduce-waste is on). A shorter prime line also cuts wasted filament.
@@ -171,6 +175,21 @@ export function layersToGcode(layers, settings) {
   const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow) => {
     if (pts.length < 2) return;
     const first = pts[0];
+    // Avoid-crossing-walls (combing): if a route that stays over solid exists,
+    // travel along it WITHOUT retracting — no stringing across gaps, far fewer
+    // retractions. Falls back to the retract/wipe path when no interior route
+    // exists (e.g. the first travel from the prime line).
+    if (combing && combBoundary) {
+      const route = routeInside([curX, curY], first, combBoundary, { tol: combTol, waypoints: combWP });
+      if (route && route.length >= 2) {
+        for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
+        curX = first[0]; curY = first[1];
+        for (let i = 1; i < pts.length; i++) { const p = pts[i]; e += Math.hypot(p[0] - curX, p[1] - curY) * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`; curX = p[0]; curY = p[1]; }
+        if (closed) { const d = Math.hypot(first[0] - curX, first[1] - curY); if (d > EPS) { e += d * ef; g += `G1 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`; curX = first[0]; curY = first[1]; } }
+        lastPath = closed ? [...pts, first] : pts;
+        return;
+      }
+    }
     // Wipe-on-retract: draw the nozzle back over the path just printed while
     // retracting, so the pressure bleeds onto existing extrusion (no blob/ooze
     // at the seam) instead of a stationary retract.
@@ -245,6 +264,8 @@ export function layersToGcode(layers, settings) {
       ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
     ];
     const spiral = paths.some((p) => p.spiral);
+    combBoundary = spiral ? null : (layer.regions || null);
+    combWP = (combing && combBoundary) ? combWaypoints(combBoundary, combTol) : null;
     g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
     g += `;LAYER_CHANGE\n;Z:${z.toFixed(3)}\n`;
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
@@ -573,8 +594,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const support = [];
     if (supportSegs && supportSegs[i]) for (const sg of supportSegs[i]) support.push({ feature: 'support', closed: false, pts: sg });
 
-    // Print order: adhesion → walls → infill → support.
-    layers.push({ paths: [...adhesion, ...walls, ...fills, ...support] });
+    // Print order: adhesion → walls → infill → support. `regions` rides along
+    // so the G-code stage can route avoid-crossing-walls travel.
+    layers.push({ paths: [...adhesion, ...walls, ...fills, ...support], regions });
   }
 
   return { layers, s, bbox: stats.bbox, numLayers, triangles: recentered.indices.length / 3 };

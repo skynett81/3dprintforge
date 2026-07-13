@@ -89,6 +89,7 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Retraction', k: 'z_hop', label: 'Z hop', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Others', group: 'Retraction', k: 'wipe', label: 'Wipe while retracting', type: 'bool' },
   { tab: 'Others', group: 'Retraction', k: 'wipe_distance', label: 'Wipe distance', type: 'num', unit: 'mm', step: 0.5, dep: 'wipe' },
+  { tab: 'Others', group: 'Travel', k: 'avoid_crossing_walls', label: 'Avoid crossing walls (combing)', type: 'bool' },
   { tab: 'Others', group: 'Reduce waste', k: 'reduce_waste', label: 'Skip prime line', type: 'bool' },
   { tab: 'Others', group: 'Reduce waste', k: 'prime_line_length', label: 'Prime line length', type: 'num', unit: 'mm', step: 5 },
   { tab: 'Others', group: 'Multi-colour', k: 'flush_into_infill', label: 'Flush into infill (waste as infill)', type: 'bool' },
