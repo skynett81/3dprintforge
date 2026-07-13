@@ -6130,6 +6130,13 @@ export async function handleApiRequest(req, res) {
           : (feat.idex || feat.dualNozzle) ? 2
           : caps?.ams ? 4
           : 1;
+        // AMS humidity (AMS 2 Pro / HT report RH%) and external spool (vt_tray).
+        const humidity = Array.isArray(st._ams_humidity) && st._ams_humidity.length
+          ? (st._ams_humidity[0].humidityRaw ?? st._ams_humidity[0].humidity ?? null) : null;
+        let external = null;
+        if (st.vt_tray && st.vt_tray.tray_color) {
+          external = { color: normHex(st.vt_tray.tray_color), material: normMat(st.vt_tray.tray_type) };
+        }
         list.push({
           id,
           name: entry.config?.name || id,
@@ -6140,6 +6147,8 @@ export async function handleApiRequest(req, res) {
           multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),
           ams,
           amsSource: source,
+          amsHumidity: humidity != null ? Number(humidity) : null,
+          external,
         });
       }
       return sendJson(res, list);

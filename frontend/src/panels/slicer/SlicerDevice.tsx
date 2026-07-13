@@ -139,29 +139,45 @@ export function SlicerDevice({ printer, live }: Props) {
           )}
 
           {/* AMS / tool slots — cartridge look with live colours, like Bambu. */}
-          {(printer.ams?.length ?? 0) > 0 && (
-            <div className="oslice-devsec">
-              <div className="oslice-devsec-h">{printer.multiTool ? t('v2.dev.tools', 'Tools') : t('v2.dev.ams', 'AMS')}</div>
-              <div className="oslice-amsunit">
-                <div className="oslice-amsslots">
-                  {printer.ams!.map((a) => {
-                    const c = a.color?.startsWith('#') ? a.color : '#' + String(a.color || 'cccccc').replace(/^#/, '');
-                    const x = c.replace(/^#/, ''); const r = parseInt(x.slice(0, 2), 16) || 0, gg = parseInt(x.slice(2, 4), 16) || 0, b = parseInt(x.slice(4, 6), 16) || 0;
-                    const ink = 0.2126 * r + 0.7152 * gg + 0.0722 * b > 150 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.8)';
-                    return (
-                      <div key={a.slot} className="oslice-amscart" title={a.material}>
-                        <div className="oslice-amscart-mat">{a.material}</div>
-                        <div className="oslice-amscart-spool" style={{ background: c }}>
-                          <span className="oslice-amscart-hole" style={{ borderColor: ink }} />
-                        </div>
-                        <div className="oslice-amscart-slot">{printer.multiTool ? `T${a.slot - 1}` : `A${a.slot}`}</div>
-                      </div>
-                    );
-                  })}
+          {(printer.ams?.length ?? 0) > 0 && (() => {
+            const cart = (color: string, mat: string, label: string, key: string) => {
+              const c = color?.startsWith('#') ? color : '#' + String(color || 'cccccc').replace(/^#/, '');
+              const x = c.replace(/^#/, ''); const r = parseInt(x.slice(0, 2), 16) || 0, gg = parseInt(x.slice(2, 4), 16) || 0, b = parseInt(x.slice(4, 6), 16) || 0;
+              const ink = 0.2126 * r + 0.7152 * gg + 0.0722 * b > 150 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.8)';
+              return (
+                <div key={key} className="oslice-amscart" title={mat}>
+                  <div className="oslice-amscart-mat">{mat}</div>
+                  <div className="oslice-amscart-spool" style={{ background: c }}><span className="oslice-amscart-hole" style={{ borderColor: ink }} /></div>
+                  <div className="oslice-amscart-slot">{label}</div>
+                </div>
+              );
+            };
+            return (
+              <div className="oslice-devsec">
+                <div className="oslice-devsec-h" style={{ display: 'flex', alignItems: 'center' }}>
+                  {printer.multiTool ? t('v2.dev.tools', 'Tools') : t('v2.dev.ams', 'AMS')}
+                  {printer.amsHumidity != null && <span style={{ marginLeft: 'auto', fontWeight: 400, textTransform: 'none' }}>{t('v2.dev.humidity', 'Humidity')} {Math.round(printer.amsHumidity)}%</span>}
+                </div>
+                <div className="oslice-amsrow">
+                  <div className="oslice-amsunit">
+                    <div className="oslice-amsslots">
+                      {printer.ams!.map((a) => cart(a.color, a.material, printer.multiTool ? `T${a.slot - 1}` : `A${a.slot}`, String(a.slot)))}
+                    </div>
+                  </div>
+                  {printer.external && (
+                    <div className="oslice-amsunit oslice-amsext">
+                      <div className="oslice-amsext-h">{t('v2.dev.ext', 'Ext')}</div>
+                      <div className="oslice-amsslots">{cart(printer.external.color, printer.external.material, 'Ext', 'ext')}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="oslice-devstep" style={{ marginTop: 8 }}>
+                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'load', tool: 0 })}>{t('v2.dev.load', 'Load')}</button>
+                  <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('filament', { op: 'unload', tool: 0 })}>{t('v2.dev.unload', 'Unload')}</button>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Fan + light — all connectors */}
           <div className="oslice-devsec">
