@@ -25,6 +25,14 @@ const MATERIALS: Record<string, { temps: [number, number]; color: string }> = {
 };
 const DEFAULT_SLOT_COLORS = ['#000000', '#0080FF', '#E53935', '#43A047', '#FDD835', '#FB8C00', '#8E24AA', '#00ACC1'];
 
+function badgeTextColor(hex: string): string {
+  const h = String(hex).replace(/^#/, '');
+  if (h.length < 6) return '#fff';
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  // relative luminance — light backgrounds get dark text
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 150 ? '#1a1a1a' : '#fff';
+}
+
 function fmtTime(sec: number): string {
   if (!sec) return '—';
   const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
@@ -96,6 +104,13 @@ export function SlicerPanel() {
   }
   function addSlot() { setFilaments((prev) => (prev.length >= 16 ? prev : [...prev, { color: DEFAULT_SLOT_COLORS[prev.length % DEFAULT_SLOT_COLORS.length], material: prev[0]?.material ?? 'PLA' }])); }
   function removeSlot(i: number) { setFilaments((prev) => (prev.length <= 1 ? prev : prev.filter((_, k) => k !== i))); }
+  function loadFromAms(ams: { color: string; material: string }[]) {
+    if (!ams?.length) return;
+    const fil = ams.map((a) => ({ color: a.color, material: MATERIALS[a.material] ? a.material : 'PLA' }));
+    setFilaments(fil);
+    const m0 = MATERIALS[fil[0].material];
+    if (m0) setSettings((s) => ({ ...s, material: fil[0].material, nozzle_temp: m0.temps[0], bed_temp: m0.temps[1] }));
+  }
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
   function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); }
@@ -210,13 +225,16 @@ export function SlicerPanel() {
 
           {/* Filament + temps */}
           <div className="oslice-filaments">
-            <div className="oslice-sectlbl" style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
+            <div className="oslice-sectlbl" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               {t('v2.slset.filament', 'Filament / AMS')}
-              <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} style={{ marginLeft: 'auto' }}>+</button>
+              {(selPrinter?.ams?.length ?? 0) > 0 && (
+                <button className="btn btn--sm btn--ghost" style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => loadFromAms(selPrinter!.ams!)}>{t('v2.slset.from_ams', 'From AMS')}</button>
+              )}
+              <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} style={{ marginLeft: (selPrinter?.ams?.length ?? 0) > 0 ? '0' : 'auto' }}>+</button>
             </div>
             {filaments.map((f, i) => (
               <div className="oslice-filrow" key={i}>
-                <label className="oslice-filbadge" style={{ background: f.color, cursor: 'pointer' }}>
+                <label className="oslice-filbadge" style={{ background: f.color, color: badgeTextColor(f.color), boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.18)', cursor: 'pointer' }}>
                   {i + 1}
                   <input type="color" value={f.color} onChange={(e) => setSlot(i, { color: e.target.value })} style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} />
                 </label>

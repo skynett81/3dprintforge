@@ -6086,12 +6086,22 @@ export async function handleApiRequest(req, res) {
       for (const [id, entry] of (_printerManager?.printers ?? new Map())) {
         const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
         const bv = Array.isArray(caps?.buildVolume) ? caps.buildVolume : null;
+        // Live AMS slots (Bambu) → the slicer can load the real loaded colours.
+        const st = entry.client?.state || {};
+        const ams = Array.isArray(st._ams_trays)
+          ? st._ams_trays.filter((tr) => tr && tr.color).map((tr, i) => ({
+              slot: i + 1,
+              color: '#' + String(tr.color).replace(/^#/, '').slice(0, 6).toUpperCase(),
+              material: String(tr.type || 'PLA').split(/[\s-]/)[0] || 'PLA',
+            }))
+          : [];
         list.push({
           id,
           name: entry.config?.name || id,
           model: entry.config?.model || null,
           type: entry.config?.type || null,
           buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
+          ams,
         });
       }
       return sendJson(res, list);

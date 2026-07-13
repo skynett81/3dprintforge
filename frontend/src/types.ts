@@ -273,6 +273,7 @@ export interface SlicerPrinter {
   model?: string | null;
   type?: string | null;
   buildVolume?: { x: number; y: number; z: number } | null;
+  ams?: { slot: number; color: string; material: string }[];
 }
 
 
