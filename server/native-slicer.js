@@ -101,8 +101,9 @@ export function layersToGcode(layers, settings) {
     curX = 80; curY = 20; curZ = 0.3;
   }
 
-  const emitPath = (pts, speed, closed) => {
+  const emitPath = (pts, speed, closed, flow = 1) => {
     if (pts.length < 2) return;
+    const ef = efactor * flow;
     const first = pts[0];
     // Retract, travel, unretract.
     e -= s.retraction; g += `G1 E${e.toFixed(4)} F${(s.travelSpeed * 60).toFixed(0)}\n`;
@@ -112,14 +113,14 @@ export function layersToGcode(layers, settings) {
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
       const d = Math.hypot(p[0] - curX, p[1] - curY);
-      e += d * efactor;
+      e += d * ef;
       g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
       curX = p[0]; curY = p[1];
     }
     if (closed) {
       const d = Math.hypot(first[0] - curX, first[1] - curY);
       if (d > EPS) {
-        e += d * efactor;
+        e += d * ef;
         g += `G1 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
         curX = first[0]; curY = first[1];
       }
@@ -145,7 +146,9 @@ export function layersToGcode(layers, settings) {
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
-      emitPath(path.pts, speed, !!path.closed);
+      // Ironing runs at the print speed but scaled down for a fine finish.
+      const pspeed = path.feature === 'ironing' ? Math.max(20, speed * 0.4) : speed;
+      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1);
     }
   });
 
@@ -175,7 +178,8 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
     layerHeight: 0.2, lineWidth: 0.4, perimeters: 2, infillDensity: 0.2,
     infillAngle: 45, infillPattern: 'grid', topLayers: 4, bottomLayers: 4,
     skirtLoops: 1, skirtGap: 3, brimWidth: 0,
-    supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8,
+    supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1,
+    ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
     ...settings,
   };
   const wallLoops = Math.max(1, s.perimeters | 0);
@@ -201,7 +205,7 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
   if (s.supports) {
     const { generateSupports } = await import('./native-slicer-support.js');
     supportSegs = generateSupports(layerRegions, {
-      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap,
+      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap,
     });
   }
 
@@ -262,6 +266,13 @@ export async function sliceMeshToGcode(mesh, settings = {}) {
           const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern).filter((sg) => !midSolid(surfaces, i, sg));
           for (const sg of solidSegs) fills.push({ feature: 'solid', closed: false, pts: sg });
           for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg });
+        }
+        // Ironing: a fine, low-flow pass over the true top skin to smooth it.
+        if (s.ironing && surfaces) {
+          const ironAngle = s.infillAngle + 45 + (i % 2) * 90;
+          const ironSegs = regionInfill(infRegion, 1.0, ironAngle, lw * (s.ironingSpacingFactor ?? 0.5))
+            .filter((sg) => surfaces.isTopPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
+          for (const sg of ironSegs) fills.push({ feature: 'ironing', closed: false, pts: sg, flow: s.ironingFlow ?? 0.15 });
         }
       }
     }

@@ -44,4 +44,11 @@ describe('native-slicer: surfaces end-to-end', () => {
     assert.match(r.gcode, /; FEATURE:solid/);
     assert.match(r.gcode, /; FEATURE:sparse/);
   });
+
+  it('ironing adds a top-skin ironing pass when enabled', async () => {
+    const plain = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: false });
+    const ironed = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: true });
+    assert.doesNotMatch(plain.gcode, /; FEATURE:ironing/);
+    assert.match(ironed.gcode, /; FEATURE:ironing/);
+  });
 });

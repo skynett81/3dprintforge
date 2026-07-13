@@ -78,6 +78,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('brimWidth', num(s.brim_width));
   set('skirtLoops', num(s.skirt_loops));
   if (s.supports !== undefined && s.supports !== '') out.supports = !!s.supports;
+  if (s.ironing !== undefined && s.ironing !== '') out.ironing = !!s.ironing;
 
   const wallSpeed = num(s.outer_wall_speed) ?? num(s.inner_wall_speed);
   set('printSpeed', wallSpeed);

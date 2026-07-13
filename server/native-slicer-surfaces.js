@@ -67,14 +67,19 @@ export function buildSurfaceClassifier(layerRegions, opts = {}) {
     model[i] = grid;
   }
 
-  // Classify solid surface cells.
+  // Classify solid surface cells, and the true top skin (nothing directly
+  // above) which ironing smooths.
   const solid = new Array(n);
+  const top = new Array(n);
   for (let i = 0; i < n; i++) {
     const s = new Uint8Array(cols * rows);
+    const tp = new Uint8Array(cols * rows);
     const here = model[i];
+    const above = i + 1 < n ? model[i + 1] : null;
     const globalEdge = i < bottomLayers || i >= n - topLayers;
     for (let idx = 0; idx < s.length; idx++) {
       if (!here[idx]) continue;                  // only model cells matter
+      if (!above || !above[idx]) tp[idx] = 1;    // exposed directly above = top skin
       let isSolid = globalEdge;
       for (let k = 1; k <= topLayers && !isSolid; k++) {   // exposed above → top surface
         const j = i + k;
@@ -86,17 +91,20 @@ export function buildSurfaceClassifier(layerRegions, opts = {}) {
       }
       s[idx] = isSolid ? 1 : 0;
     }
-    solid[i] = s;
+    solid[i] = s; top[i] = tp;
   }
+
+  const cellAt = (grid, i, x, y) => {
+    if (i < 0 || i >= n) return false;
+    const c = Math.floor((x - minX) / gridRes);
+    const r = Math.floor((y - minY) / gridRes);
+    if (c < 0 || r < 0 || c >= cols || r >= rows) return false;
+    return !!grid[i][r * cols + c];
+  };
 
   return {
     cols, rows,
-    isSolidPoint(i, x, y) {
-      if (i < 0 || i >= n) return true;
-      const c = Math.floor((x - minX) / gridRes);
-      const r = Math.floor((y - minY) / gridRes);
-      if (c < 0 || r < 0 || c >= cols || r >= rows) return false;
-      return !!solid[i][r * cols + c];
-    },
+    isSolidPoint: (i, x, y) => (i < 0 || i >= n ? true : cellAt(solid, i, x, y)),
+    isTopPoint: (i, x, y) => cellAt(top, i, x, y),
   };
 }

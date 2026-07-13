@@ -85,6 +85,24 @@ export function generateSupports(layerRegions, opts = {}) {
     support[i] = s;
   }
 
+  // Z-gap: clear the top `zGapLayers` of support directly beneath an
+  // overhang so the support doesn't fuse to the part and lifts off cleanly.
+  const zGap = Math.max(0, Math.round(opts.zGapLayers ?? 1));
+  if (zGap > 0) {
+    for (let i = 0; i < n; i++) {
+      const s = support[i]; if (!s) continue;
+      const cleared = s.slice();
+      for (let idx = 0; idx < s.length; idx++) {
+        if (!s[idx]) continue;
+        for (let k = 1; k <= zGap; k++) {
+          const j = i + k;
+          if (j < n && model[j][idx]) { cleared[idx] = 0; break; }   // model within the gap above
+        }
+      }
+      support[i] = cleared;
+    }
+  }
+
   // Clear cells too close to the model (xy clearance) so supports don't
   // fuse to walls — a cell within one grid step of model is dropped.
   const gapCells = Math.max(0, Math.round(xyGap / gridRes));

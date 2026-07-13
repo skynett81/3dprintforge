@@ -122,6 +122,7 @@ export function SlicerSettings({ value, onChange, status }: { value: SliceSettin
 
           <div className="slset-grid" style={{ marginTop: 6 }}>
             <label className="chk" style={{ alignSelf: 'end' }}><input type="checkbox" checked={!!value.supports} onChange={(e) => setBool('supports', e.target.checked)} /> {t('v2.slset.supports', 'Supports')}</label>
+            <label className="chk" style={{ alignSelf: 'end' }} title={t('v2.slset.ironing_hint', 'Smooth the top surface with a fine low-flow pass')}><input type="checkbox" checked={!!value.ironing} onChange={(e) => setBool('ironing', e.target.checked)} /> {t('v2.slset.ironing', 'Ironing')}</label>
             <label className="field"><span className="field-label">{t('v2.slset.support_type', 'Support type')}</span>
               <select className="input" value={(value.support_type as string) ?? ''} onChange={(e) => set('support_type', e.target.value)} disabled={!value.supports}>
                 <option value="">{t('v2.slset.default', 'default')}</option>

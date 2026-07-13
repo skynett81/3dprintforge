@@ -24,12 +24,25 @@ describe('native-slicer: generateSupports', () => {
     const layers = [];
     for (let i = 0; i < 10; i++) layers.push([]);                 // empty (air)
     for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
-    const sup = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0 });
+    const sup = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0, zGapLayers: 0 });
     const below = sup.slice(0, 10).reduce((n, segs) => n + segs.length, 0);
     assert.ok(below > 0, 'support columns fill the air beneath the floating slab');
     // The slab layers themselves are solid model → no support inside them.
     const inside = sup.slice(10).reduce((n, segs) => n + segs.length, 0);
     assert.equal(inside, 0, 'no support inside the model');
+  });
+
+  it('z-gap removes the contact layer directly under the overhang', () => {
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const gap0 = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0, zGapLayers: 0 });
+    const gap1 = generateSupports(layers, { gridRes: 2, density: 0.3, xyGap: 0, zGapLayers: 1 });
+    // Layer 9 is the contact layer (model at 10 above). With a 1-layer gap it clears.
+    assert.ok(gap0[9].length > 0, 'no gap: contact layer supported');
+    assert.equal(gap1[9].length, 0, 'z-gap: contact layer cleared for clean release');
+    // Lower layers still supported in both.
+    assert.ok(gap1[5].length > 0, 'columns below the gap remain');
   });
 });
 
