@@ -51,6 +51,8 @@ export function SlicerPanel() {
     infill_density: 15, infill_pattern: 'grid', infill_direction: 45, skirt_loops: 1, skirt_distance: 3, elephant_foot: 0,
     outer_wall_speed: 120, inner_wall_speed: 150, sparse_infill_speed: 180, internal_solid_infill_speed: 140,
     support_speed: 80, initial_layer_speed: 30, ironing_speed: 20, travel_speed: 250, seam_position: 'aligned',
+    line_width: 0.42, outer_wall_line_width: 0.42, inner_wall_line_width: 0.45, sparse_infill_line_width: 0.45,
+    initial_layer_line_width: 0.5, retraction_length: 0.8, z_hop: 0,
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');

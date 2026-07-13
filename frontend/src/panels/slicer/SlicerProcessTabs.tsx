@@ -28,6 +28,11 @@ const FIELDS: Field[] = [
   { tab: 'Strength', group: 'Infill', k: 'infill_density', label: 'Sparse infill density', type: 'num', unit: '%', step: 5 },
   { tab: 'Strength', group: 'Infill', k: 'infill_pattern', label: 'Sparse infill pattern', type: 'sel', opts: INFILL_PATTERNS },
   { tab: 'Strength', group: 'Infill', k: 'infill_direction', label: 'Infill direction', type: 'num', unit: '°', step: 5 },
+  { tab: 'Quality', group: 'Line width', k: 'line_width', label: 'Default', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Line width', k: 'outer_wall_line_width', label: 'Outer wall', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Line width', k: 'inner_wall_line_width', label: 'Inner wall', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Line width', k: 'sparse_infill_line_width', label: 'Sparse infill', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Line width', k: 'initial_layer_line_width', label: 'Initial layer', type: 'num', unit: 'mm', step: 0.02 },
   { tab: 'Speed', group: 'Walls', k: 'outer_wall_speed', label: 'Outer wall', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Walls', k: 'inner_wall_speed', label: 'Inner wall', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Infill', k: 'sparse_infill_speed', label: 'Sparse infill', type: 'num', unit: 'mm/s', step: 5 },
@@ -47,6 +52,8 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Adhesion', k: 'skirt_distance', label: 'Skirt distance', type: 'num', unit: 'mm', step: 0.5 },
   { tab: 'Others', group: 'Adhesion', k: 'raft_layers', label: 'Raft layers', type: 'num', step: 1 },
   { tab: 'Others', group: 'Adhesion', k: 'draft_shield', label: 'Draft shield', type: 'bool' },
+  { tab: 'Others', group: 'Retraction', k: 'retraction_length', label: 'Retraction length', type: 'num', unit: 'mm', step: 0.1 },
+  { tab: 'Others', group: 'Retraction', k: 'z_hop', label: 'Z hop', type: 'num', unit: 'mm', step: 0.05 },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each

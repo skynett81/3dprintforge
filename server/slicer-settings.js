@@ -102,6 +102,17 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (anyWall !== undefined) set('printSpeed', anyWall);
   if (s.seam_position) out.seamPosition = String(s.seam_position);
   if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
+  // Per-feature line widths.
+  set('outerWallLineWidth', num(s.outer_wall_line_width));
+  set('innerWallLineWidth', num(s.inner_wall_line_width));
+  set('sparseInfillLineWidth', num(s.sparse_infill_line_width));
+  set('solidInfillLineWidth', num(s.internal_solid_infill_line_width));
+  set('initialLayerLineWidth', num(s.initial_layer_line_width));
+  set('lineWidth', num(s.line_width));
+  // Retraction / travel.
+  set('retraction', num(s.retraction_length));
+  set('zHop', num(s.z_hop));
+  set('ironingFlow', num(s.ironing_flow));
   set('nozzleTemp', num(s.nozzle_temp));
   set('bedTemp', num(s.bed_temp));
   if (s.material) out.material = String(s.material);
