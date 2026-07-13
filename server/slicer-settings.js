@@ -93,6 +93,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.top_surface_pattern) out.topSurfacePattern = String(s.top_surface_pattern);
   if (s.reduce_waste !== undefined && s.reduce_waste !== '') out.reduceWaste = !!s.reduce_waste;
   set('primeLineLength', num(s.prime_line_length));
+  if (s.flush_into_infill !== undefined && s.flush_into_infill !== '') out.flushIntoInfill = !!s.flush_into_infill;
+  set('flushVolume', num(s.flush_volume));
 
   // Per-feature speeds.
   set('outerWallSpeed', num(s.outer_wall_speed));

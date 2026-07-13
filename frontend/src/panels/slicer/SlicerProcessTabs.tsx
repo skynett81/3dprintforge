@@ -59,6 +59,8 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Retraction', k: 'z_hop', label: 'Z hop', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Others', group: 'Reduce waste', k: 'reduce_waste', label: 'Skip prime line', type: 'bool' },
   { tab: 'Others', group: 'Reduce waste', k: 'prime_line_length', label: 'Prime line length', type: 'num', unit: 'mm', step: 5 },
+  { tab: 'Others', group: 'Multi-colour', k: 'flush_into_infill', label: 'Flush into infill (waste as infill)', type: 'bool' },
+  { tab: 'Others', group: 'Multi-colour', k: 'flush_volume', label: 'Flush volume', type: 'num', unit: 'mm³', step: 10, dep: 'flush_into_infill' },
 ];
 
 /** OrcaSlicer-style process settings: category tabs + a search box, each

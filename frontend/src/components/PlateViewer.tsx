@@ -20,6 +20,8 @@ export type PlateMode = 'translate' | 'rotate' | 'scale';
 export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
+  exportMaterials: (name: string) => { extruder: number; file: File }[];
+  hasMaterials: () => boolean;
   count: () => number;
   addFile: (f: File) => Promise<void>;
   setMode: (m: PlateMode) => void;
@@ -106,7 +108,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     emitState();
   }
 
-  function addMesh(geom: THREE.BufferGeometry, name?: string, vertexColors = false) {
+  function addMesh(geom: THREE.BufferGeometry, name?: string, vertexColors = false, materials?: { extruder: number; geometry: THREE.BufferGeometry }[]) {
     const c = ctx.current; if (!c) return;
     geom.computeVertexNormals();
     geom.center();
@@ -114,6 +116,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, flatShading: false })
       : MAT();
     const mesh = new THREE.Mesh(geom, material);
+    if (materials && materials.length) mesh.userData.materials = materials;
     mesh.name = name || `Object ${c.objects.length + 1}`;
     // Keep the model's authored orientation (slicers load STL as-is, Z-up); the
     // user can rotate. Just sit it on the plate.
@@ -233,10 +236,31 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
             g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
           }
           geoms.push(g2);
+          (g2 as THREE.BufferGeometry & { _ext?: number })._ext = useCfg ? (cfg!.extruders[idx] || 1) : 1;
         });
         if (geoms.length) {
           const merged = mergeGeometries(geoms, false);
-          if (merged) addMesh(merged, base, true);
+          if (!merged) return;
+          // Compute the shared centre addMesh will use, so per-material
+          // geometries stay aligned with the merged display mesh.
+          merged.computeBoundingBox();
+          const bb = merged.boundingBox!;
+          const cx = (bb.min.x + bb.max.x) / 2, cy = (bb.min.y + bb.max.y) / 2, cz = (bb.min.z + bb.max.z) / 2;
+          // Group per-extruder → one geometry each, translated to the shared frame.
+          let materials: { extruder: number; geometry: THREE.BufferGeometry }[] | undefined;
+          if (useCfg && cfg!.extruders.some((x) => x !== cfg!.extruders[0])) {
+            const byExt = new Map<number, THREE.BufferGeometry[]>();
+            for (const gg of geoms) {
+              const ext = (gg as THREE.BufferGeometry & { _ext?: number })._ext || 1;
+              (byExt.get(ext) ?? (byExt.set(ext, []), byExt.get(ext)!)).push(gg);
+            }
+            materials = [];
+            for (const [ext, gs] of byExt) {
+              const mg = mergeGeometries(gs.map((x) => x.clone()), false);
+              if (mg) { mg.translate(-cx, -cy, -cz); materials.push({ extruder: ext, geometry: mg }); }
+            }
+          }
+          addMesh(merged, base, true, materials);
         }
       } else {
         addMesh(new STLLoader().parse(buf), base);
@@ -325,6 +349,33 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       }
       const stl = new STLExporter().parse(group, { binary: false }) as string;
       return new File([stl], name.replace(/\.[^.]+$/, '') + '.stl', { type: 'model/stl' });
+    },
+    hasMaterials: () => {
+      const c = ctx.current; if (!c) return false;
+      const exts = new Set<number>();
+      for (const m of c.objects) { const ms = m.userData.materials as { extruder: number }[] | undefined; if (ms) ms.forEach((x) => exts.add(x.extruder)); else exts.add(1); }
+      return exts.size > 1;
+    },
+    exportMaterials: (name: string) => {
+      const c = ctx.current; if (!c || !c.objects.length) return [];
+      // Group every object's per-material geometry (baked to world) by extruder.
+      const byExt = new Map<number, THREE.Group>();
+      const grp = (ext: number) => byExt.get(ext) ?? (byExt.set(ext, new THREE.Group()), byExt.get(ext)!);
+      for (const m of c.objects) {
+        m.updateMatrixWorld(true);
+        const ms = m.userData.materials as { extruder: number; geometry: THREE.BufferGeometry }[] | undefined;
+        if (ms && ms.length) {
+          for (const mm of ms) grp(mm.extruder).add(new THREE.Mesh(mm.geometry.clone().applyMatrix4(m.matrixWorld)));
+        } else {
+          grp(1).add(new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld)));
+        }
+      }
+      const exp = new STLExporter();
+      const bn = name.replace(/\.[^.]+$/, '');
+      return [...byExt.entries()].sort((a, b) => a[0] - b[0]).map(([extruder, group]) => ({
+        extruder,
+        file: new File([exp.parse(group, { binary: false }) as string], `${bn}_ext${extruder}.stl`, { type: 'model/stl' }),
+      }));
     },
   }));
 

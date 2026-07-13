@@ -112,6 +112,18 @@ export const api = {
       durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
     };
   },
+  sliceMultiAndSend: async (printerId: string, filename: string, parts: { extruder: number; file: File }[], opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-multi-and-send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printerId, filename, print: !!opts?.print, settings: opts?.settings ?? {}, parts: encoded }),
+    });
+    const text = await res.text();
+    let data: unknown; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as import('./types').SliceResult;
+  },
   listPrinterFiles: (id: string) => req<Array<{ name?: string } | string>>(`/api/printers/${encodeURIComponent(id)}/files`),
   printFile: (id: string, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}/files/print`, { method: 'POST', body: JSON.stringify(body) }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),

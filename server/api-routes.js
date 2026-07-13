@@ -8199,6 +8199,56 @@ export async function handleApiRequest(req, res) {
       return;
     }
 
+    if (method === 'POST' && path === '/api/slicer/native/slice-multi-and-send') {
+      // Multi-material / multi-colour slice: JSON body { printerId, filename,
+      // print, settings, parts:[{extruder, stl(base64)}] }. Slices with tool
+      // changes + flush-into-infill and uploads to the printer.
+      const chunks = [];
+      let total = 0;
+      const limit = 200 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          const printerId = body.printerId;
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          if (!Array.isArray(body.parts) || !body.parts.length) return sendJson(res, { error: 'parts required' }, 400);
+
+          const { bufferToMesh } = await import('./format-converter.js');
+          const meshes = [];
+          for (const p of body.parts) {
+            const buf = Buffer.from(String(p.stl || ''), 'base64');
+            const mesh = await bufferToMesh(buf, `part.stl`);
+            meshes.push({ positions: mesh.positions, indices: mesh.indices, extruder: parseInt(p.extruder, 10) || 1 });
+          }
+          let base = { bedTemp: 60, nozzleTemp: 210, material: 'PLA' };
+          const settings = buildNativeSettings(body.settings || {}, base);
+
+          const start = Date.now();
+          const { sliceMultiMaterialGcode } = await import('./native-slicer-multi.js');
+          const result = await sliceMultiMaterialGcode(meshes, settings);
+          const durationMs = Date.now() - start;
+
+          const gcodeFilename = String(body.filename || 'model').replace(/\.[^.]+$/, '') + '.gcode';
+          const gcodeBuffer = Buffer.from(result.gcode, 'utf-8');
+          const startNow = body.print === true && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow
+            ? await entry.client.uploadAndPrint(gcodeFilename, gcodeBuffer)
+            : await entry.client.uploadFile(gcodeFilename, gcodeBuffer);
+
+          return sendJson(res, { ok: true, slicer: 'native-multi', gcodeFilename, sizeBytes: gcodeBuffer.length, sliceDurationMs: durationMs, layers: result.layers, materials: result.materials, uploaded: true, printing: startNow, upload }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
     if (method === 'POST' && path === '/api/slicer/native/slice-and-send') {
       // Slice with the project's own pure-JS engine (no external slicer)
       // and upload the G-code to a connected printer in one call.

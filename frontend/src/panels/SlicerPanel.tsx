@@ -53,6 +53,7 @@ export function SlicerPanel() {
     support_speed: 80, initial_layer_speed: 30, ironing_speed: 20, travel_speed: 250, seam_position: 'aligned',
     line_width: 0.42, outer_wall_line_width: 0.42, inner_wall_line_width: 0.45, sparse_infill_line_width: 0.45,
     initial_layer_line_width: 0.5, retraction_length: 0.8, z_hop: 0,
+    flush_into_infill: true, flush_volume: 80,
   });
   const [tab, setTab] = useState<'prepare' | 'preview'>('prepare');
   const [side, setSide] = useState<'global' | 'objects'>('global');
@@ -124,10 +125,17 @@ export function SlicerPanel() {
     if (selected.size === 0) { toast(t('v2.slicer.pick_printer', 'Select at least one printer'), 'error'); return; }
     setBusy(true);
     const ids = [...selected];
+    const multi = plateRef.current?.hasMaterials() ?? false;
+    const materials = multi ? (plateRef.current?.exportMaterials(file.name) ?? []) : [];
     const toSend = plateRef.current?.exportSTL(file.name) ?? file;
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     const results = await Promise.all(ids.map(async (id): Promise<boolean> => {
-      try { const result = await api.sliceAndSend(id, toSend, { print: startPrint, settings }); setRows((r) => ({ ...r, [id]: { status: 'done', result } })); return true; }
+      try {
+        const result = multi && materials.length > 1
+          ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings })
+          : await api.sliceAndSend(id, toSend, { print: startPrint, settings });
+        setRows((r) => ({ ...r, [id]: { status: 'done', result } })); return true;
+      }
       catch (e) { setRows((r) => ({ ...r, [id]: { status: 'error', error: (e as Error).message } })); return false; }
     }));
     setBusy(false);
