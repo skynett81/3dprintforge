@@ -112,6 +112,11 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (anyWall !== undefined) set('printSpeed', anyWall);
   if (s.seam_position) out.seamPosition = String(s.seam_position);
   if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
+  // Wall generator: 'classic' or 'arachne' (variable-width thin-feature fill).
+  if (s.wall_generator) out.wallGenerator = String(s.wall_generator).toLowerCase();
+  // Support style: 'normal' (grid) or 'tree'/'organic' (branching).
+  if (s.support_style) out.supportStyle = String(s.support_style).toLowerCase();
+  if (s.support_type) out.supportType = String(s.support_type).toLowerCase();
   // Support tuning.
   set('supportThreshold', num(s.support_threshold_angle ?? s.support_threshold));
   set('supportInterface', num(s.support_interface_top_layers ?? s.support_interface));
@@ -195,6 +200,18 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Bridges + overhang perimeters.
   set('bridgeSpeed', num(s.bridge_speed));
   set('bridgeFlow', num(s.bridge_flow));
+  // Pressure advance / flow dynamics (BambuStudio). Emitted as M900 K / Klipper
+  // SET_PRESSURE_ADVANCE. gcode_flavor picks the dialect.
+  set('pressureAdvance', num(s.pressure_advance));
+  if (s.gcode_flavor) out.gcodeFlavor = String(s.gcode_flavor).toLowerCase();
+  // Scarf-joint seam — ramp flow at the seam to hide it (BambuStudio).
+  if (s.scarf_seam !== undefined && s.scarf_seam !== '') out.scarfSeam = !!s.scarf_seam;
+  set('scarfLength', num(s.scarf_length));
+  // Adaptive (variable) layer height — vary thickness by surface slope.
+  if (s.adaptive_layer_height !== undefined && s.adaptive_layer_height !== '') out.adaptiveLayers = !!s.adaptive_layer_height;
+  set('minLayerHeight', num(s.min_layer_height));
+  set('maxLayerHeight', num(s.max_layer_height));
+  set('adaptiveCusp', num(s.adaptive_cusp));
   set('overhangSpeed', num(s.overhang_speed));
   // Graduated overhang speeds (BambuStudio overhang_1_4 .. 4_4). Any set → table.
   const ov = [num(s.overhang_1_4_speed), num(s.overhang_2_4_speed), num(s.overhang_3_4_speed), num(s.overhang_4_4_speed)];
@@ -211,6 +228,26 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Bed size (for centring the model on the plate). Accept [x,y] or {x,y}.
   if (Array.isArray(s.bed_size) && s.bed_size.length >= 2) out.bedSize = [Number(s.bed_size[0]), Number(s.bed_size[1])];
   else if (s.bed_size && s.bed_size.x) out.bedSize = [Number(s.bed_size.x), Number(s.bed_size.y)];
+
+  // Support painting: enforce/block triangles [x0,y0,x1,y1,x2,y2,zMax] in the
+  // exported-STL (world) frame; the slicer maps them into the bed frame.
+  if (s.support_paint && (Array.isArray(s.support_paint.enforce) || Array.isArray(s.support_paint.block))) {
+    out.supportPaint = {
+      enforce: Array.isArray(s.support_paint.enforce) ? s.support_paint.enforce : [],
+      block: Array.isArray(s.support_paint.block) ? s.support_paint.block : [],
+    };
+  }
+  // Fuzzy-skin painting: bands where the outer wall gets fuzzed.
+  if (s.fuzzy_paint && Array.isArray(s.fuzzy_paint.enforce)) {
+    out.fuzzyPaint = { enforce: s.fuzzy_paint.enforce };
+  }
+  // Seam painting: enforce/block triangles [x0,y0,x1,y1,x2,y2,zMin,zMax] (world).
+  if (s.seam_paint && (Array.isArray(s.seam_paint.enforce) || Array.isArray(s.seam_paint.block))) {
+    out.seamPaint = {
+      enforce: Array.isArray(s.seam_paint.enforce) ? s.seam_paint.enforce : [],
+      block: Array.isArray(s.seam_paint.block) ? s.seam_paint.block : [],
+    };
+  }
 
   return out;
 }

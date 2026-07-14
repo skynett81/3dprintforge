@@ -88,6 +88,43 @@ describe('native-slicer: generateSupports', () => {
     const deep = sup[3].length;    // sparse column body
     assert.ok(iface > deep, `interface ${iface} should be denser than deep ${deep}`);
   });
+
+  // Support painting (BambuStudio-style enforce/block regions).
+  it('paint enforce forces support under a painted region (paint-only mode)', () => {
+    // Floating slab, layers 5-9. No auto support (paintOnly). Enforce a triangle
+    // under the slab centre (zMax = 5) → columns appear in the empty layers.
+    const layers = [];
+    for (let i = 0; i < 5; i++) layers.push([]);
+    for (let i = 5; i < 10; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const enforce = [[5, 5, 15, 5, 10, 15, 5]];
+    const none = generateSupports(layers, { gridRes: 2, layerHeight: 1, paintOnly: true, zGapLayers: 0, interfaceLayers: 0, wallCount: 0 });
+    assert.equal(none.reduce((n, s) => n + s.length, 0), 0, 'paint-only with no paint → no support');
+    const sup = generateSupports(layers, { gridRes: 2, layerHeight: 1, paintEnforce: enforce, paintOnly: true, zGapLayers: 0, interfaceLayers: 0, wallCount: 0 });
+    const below = sup.slice(0, 5).reduce((n, s) => n + s.length, 0);
+    assert.ok(below > 0, 'enforced support fills the air beneath the painted region');
+  });
+
+  it('tree supports branch: more tips under the overhang than trunks near the plate', async () => {
+    const { generateTreeSupports } = await import('../../server/native-slicer-tree.js');
+    const sq = SQUARE(40, 0, 0);
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);                 // air
+    for (let i = 10; i < 20; i++) layers.push([{ outer: sq, holes: [] }]);   // floating slab
+    const segs = generateTreeSupports(layers, { gridRes: 3, layerHeight: 1, zGapLayers: 1 });
+    assert.equal(segs.slice(11).reduce((n, l) => n + l.length, 0), 0, 'no tree support inside/above the model');
+    assert.ok(segs[9].length > 0, 'tips sprout under the overhang');
+    assert.ok(segs[9].length > segs[1].length, 'more segments at the tips than the merged trunks below');
+    assert.ok(segs[0].some((s) => s.closed), 'a foot is capped at the plate');
+  });
+  it('paint block removes support it overlaps', () => {
+    const layers = [];
+    for (let i = 0; i < 5; i++) layers.push([]);
+    for (let i = 5; i < 10; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const enforce = [[5, 5, 15, 5, 10, 15, 5]];
+    const block = [[3, 3, 17, 3, 10, 17, 5]];
+    const sup = generateSupports(layers, { gridRes: 2, layerHeight: 1, paintEnforce: enforce, paintBlock: block, paintOnly: true, zGapLayers: 0, interfaceLayers: 0, wallCount: 0 });
+    assert.equal(sup.reduce((n, s) => n + s.length, 0), 0, 'a blocker over the enforced region cancels the support');
+  });
 });
 
 describe('native-slicer: supports end-to-end', () => {

@@ -4,7 +4,7 @@ import { useResource, useLivePrinters } from '../hooks';
 import { useT } from '../i18n';
 import { useToast } from '../toast';
 import type { Printer, SlicerStatus, SliceResult, SlicerPrinter, Spool } from '../types';
-import type { PlateHandle, ObjInfo, PlateState } from '../components/PlateViewer';
+import type { PlateHandle, ObjInfo, PlateState, PlateSnapshot } from '../components/PlateViewer';
 import type { SliceSettings } from './slicer/SlicerProcessTabs';
 import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
 import { ObjectPanel } from './slicer/ObjectPanel';
@@ -12,8 +12,10 @@ import { SlicerDevice } from './slicer/SlicerDevice';
 import { SlicerFilaments } from './slicer/SlicerFilaments';
 import { SlicerCalibration } from './slicer/SlicerCalibration';
 import { SlicerPurge } from './slicer/SlicerPurge';
+import { matchSpools } from '../lib/spool-match';
+import { SlicerColorLayer } from './slicer/SlicerColorLayer';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
-import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse } from './slicer/icons';
+import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse, IconAutoOrient, IconPlaceFace, IconSplit, IconMeasure, IconSimplify, IconSupportPaint, IconSeamPaint, IconColorPaint, IconCut, IconBoolean, IconShape, IconText, IconFuzzy, IconImage } from './slicer/icons';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -89,6 +91,93 @@ export function SlicerPanel() {
   const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
   const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1 });
   const [full, setFull] = useState(false);
+  const [autoCalib, setAutoCalib] = useState(true);     // apply saved fleet calibration
+  const [calibK, setCalibK] = useState<number | null>(null);
+  // Multi-plate: each plate keeps its own live objects (snapshot) so switching
+  // preserves the exact arrangement, transforms and paint.
+  const [plates, setPlates] = useState<{ id: number; name: string; snap: PlateSnapshot | null }[]>([{ id: 1, name: 'Plate 1', snap: null }]);
+  const [activePlate, setActivePlate] = useState(0);
+  const plateSeq = useRef(2);
+  const switchPlate = (idx: number) => {
+    if (idx === activePlate || !plateRef.current || idx < 0 || idx >= plates.length) return;
+    const curSnap = plateRef.current.snapshot();
+    setPlates((ps) => ps.map((pl, i) => (i === activePlate ? { ...pl, snap: curSnap } : pl)));
+    plateRef.current.restore(plates[idx].snap ?? []);
+    setActivePlate(idx);
+  };
+  const addPlate = () => {
+    if (!plateRef.current) return;
+    const curSnap = plateRef.current.snapshot();
+    const id = plateSeq.current++;
+    const nextIdx = plates.length;
+    setPlates((ps) => [...ps.map((pl, i) => (i === activePlate ? { ...pl, snap: curSnap } : pl)), { id, name: `Plate ${id}`, snap: [] }]);
+    plateRef.current.restore([]);
+    setActivePlate(nextIdx);
+  };
+  // Move the selected object off the active plate and onto another plate.
+  const moveSelectedToPlate = (targetIdx: number) => {
+    if (targetIdx === activePlate || !plateRef.current) return;
+    const m = plateRef.current.detachSelected();
+    if (!m) return;
+    setPlates((ps) => ps.map((pl, i) => (i === targetIdx ? { ...pl, snap: [...(pl.snap ?? []), m] } : pl)));
+  };
+  const deletePlate = (idx: number) => {
+    if (plates.length <= 1 || !plateRef.current) return;
+    if (idx === activePlate) {
+      // Switch the view to a neighbour, then drop this plate.
+      const target = idx === 0 ? 1 : idx - 1;
+      plateRef.current.restore(plates[target].snap ?? []);
+      const kept = plates[target];
+      const newList = plates.filter((_, i) => i !== idx);
+      setPlates(newList);
+      setActivePlate(newList.indexOf(kept));
+    } else {
+      // Dropping a background plate — keep the active plate's live state fresh.
+      const active = plates[activePlate];
+      const curSnap = plateRef.current.snapshot();
+      const newList = plates.filter((_, i) => i !== idx).map((pl) => (pl.id === active.id ? { ...pl, snap: curSnap } : pl));
+      setPlates(newList);
+      setActivePlate(newList.findIndex((pl) => pl.id === active.id));
+    }
+  };
+  const [placeFace, setPlaceFace] = useState(false);
+  const [measuring, setMeasuring] = useState(false);
+  type PaintCh = 'support' | 'seam' | 'color' | 'fuzzy';
+  const [paint, setPaint] = useState<{ ch: PaintCh; val: number } | null>(null);
+  // The pick/paint modes are mutually exclusive.
+  const exitOthers = (keep: 'place' | 'measure' | 'paint') => {
+    if (keep !== 'place') { setPlaceFace(false); plateRef.current?.setPlaceOnFace(false); }
+    if (keep !== 'measure') { setMeasuring(false); plateRef.current?.setMeasureMode(false); }
+    if (keep !== 'paint') { setPaint(null); plateRef.current?.setPaintMode(null); }
+  };
+  const togglePlaceFace = () => { setPlaceFace((on) => { const next = !on; plateRef.current?.setPlaceOnFace(next); if (next) exitOthers('place'); return next; }); };
+  const toggleMeasure = () => { setMeasuring((on) => { const next = !on; plateRef.current?.setMeasureMode(next); if (next) exitOthers('measure'); return next; }); };
+  const applyPaint = (m: { ch: PaintCh; val: number } | null) => { setPaint(m); plateRef.current?.setPaintMode(m); if (m) exitOthers('paint'); };
+  // Toggle a paint channel on/off from its rail button (default value per channel).
+  const togglePaint = (ch: PaintCh) => applyPaint(paint?.ch === ch ? null : { ch, val: 1 });
+  // Cut tool: a translucent plane preview + a height slider.
+  const [cutOpen, setCutOpen] = useState(false);
+  const [cutFrac, setCutFrac] = useState(0.5);
+  const [cutKeep, setCutKeep] = useState<'upper' | 'lower' | 'both'>('both');
+  const [cutConn, setCutConn] = useState(0);   // alignment connectors (0-4)
+  const toggleCut = () => {
+    setCutOpen((on) => {
+      const next = !on;
+      if (next) { exitOthers('paint'); setPlaceFace(false); plateRef.current?.setPlaceOnFace(false); setMeasuring(false); plateRef.current?.setMeasureMode(false); plateRef.current?.setCutPreview(cutFrac); }
+      else plateRef.current?.setCutPreview(null);
+      return next;
+    });
+  };
+  const applyCut = () => { plateRef.current?.cut(cutFrac, cutKeep, cutConn); setCutOpen(false); };
+  // Boolean + add-primitive bars.
+  const [boolOpen, setBoolOpen] = useState(false);
+  const [shapeOpen, setShapeOpen] = useState(false);
+  const doBoolean = (op: 'union' | 'subtract' | 'intersect') => { plateRef.current?.boolean(op); setBoolOpen(false); };
+  const doAddShape = (shape: 'cube' | 'cylinder' | 'sphere') => { plateRef.current?.addPrimitive(shape); setShapeOpen(false); };
+  const [textOpen, setTextOpen] = useState(false);
+  const [textVal, setTextVal] = useState('Text');
+  const [colorLayerOpen, setColorLayerOpen] = useState(false);
+  const doAddText = () => { if (textVal.trim()) { plateRef.current?.addText(textVal.trim()); setTextOpen(false); } };
   const [profilePrinter, setProfilePrinter] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
   type ProfKind = 'process' | 'filament';
@@ -190,9 +279,22 @@ export function SlicerPanel() {
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
   function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); }
-  async function addModels(files: FileList | null) {
+  // STEP/STP files are tessellated to STL server-side (OpenCascade) first.
+  async function toLoadable(f: File): Promise<File> {
+    if (/\.(step|stp|iges|igs)$/i.test(f.name)) {
+      try { return await api.stepToStl(f); }
+      catch (e) { toast(`${t('v2.slicer.step_fail', 'STEP import failed')}: ${(e as Error).message}`, 'error'); throw e; }
+    }
+    return f;
+  }
+  async function onPickInput(files: File[]) {
+    if (!files.length) return;
+    if (!file) { try { pickFile(await toLoadable(files[0])); } catch { /* toasted */ } }
+    else await addModels(files);
+  }
+  async function addModels(files: FileList | File[] | null) {
     if (!files || !files.length) return;
-    for (const f of Array.from(files)) { await plateRef.current?.addFile(f); }
+    for (const f of Array.from(files)) { try { await plateRef.current?.addFile(await toLoadable(f)); } catch { /* toasted */ } }
     setPreview(null); setTab('prepare');
   }
   async function importFromLibrary(f: File) {
@@ -274,6 +376,29 @@ export function SlicerPanel() {
     const bv = slicerPrinters.find((p) => p.id === pid)?.buildVolume;
     const out: Record<string, unknown> = bv ? { ...base, bed_size: [bv.x, bv.y] } : { ...base };
     if (flushMatrix) out.flush_matrix = flushMatrix;
+    // Support / seam painting: send enforce/block regions if any were painted.
+    const sp = plateRef.current?.getSupportPaint();
+    if (sp && (sp.enforce.length || sp.block.length)) out.support_paint = sp;
+    const seam = plateRef.current?.getSeamPaint();
+    if (seam && (seam.enforce.length || seam.block.length)) out.seam_paint = seam;
+    const fuzzy = plateRef.current?.getFuzzyPaint();
+    if (fuzzy && fuzzy.enforce.length) out.fuzzy_paint = { enforce: fuzzy.enforce };
+    return out;
+  }
+
+  // Fleet Calibration (from the desktop fork): when a printer is chosen, look up
+  // the saved pressure-advance K for the real spool that matches filament slot 1
+  // and apply it — the whole fleet shares one calibration memory.
+  async function settingsWithCalibration(pid: string | undefined): Promise<Record<string, unknown>> {
+    const out = settingsForPrinter(pid);
+    if (autoCalib && pid && filaments[0]) {
+      const m = matchSpools(filaments[0].color, filaments[0].material, spools);
+      if (m.spoolIds.length) {
+        const k = await api.bestK(m.spoolIds[0], pid, Number(settings.nozzle_diameter) || 0.4);
+        if (k != null && k > 0) { out.pressure_advance = k; setCalibK(k); return out; }
+      }
+    }
+    setCalibK(null);
     return out;
   }
 
@@ -282,10 +407,64 @@ export function SlicerPanel() {
     setSlicing(true);
     try {
       const toSend = plateRef.current?.exportSTL(file.name) ?? file;
-      const p = await api.sliceGcode(toSend, settingsForPrinter(selPrinter?.id));
+      const p = await api.sliceGcode(toSend, await settingsWithCalibration(selPrinter?.id));
       setPreview(p); setTab('preview');
     } catch (e) { toast((e as Error).message || t('v2.slicer.slice_fail', 'Slicing failed'), 'error'); }
     finally { setSlicing(false); }
+  }
+
+  // Slice every plate and report the combined time/filament; leaves the active
+  // plate's preview showing. Each plate is restored in turn so its own
+  // arrangement + paint feed the slice.
+  async function sliceAllPlates() {
+    const pv = plateRef.current; if (!pv) return;
+    setSlicing(true);
+    try {
+      const activeSnap = pv.snapshot();
+      const all = plates.map((pl, i) => (i === activePlate ? { ...pl, snap: activeSnap } : pl));
+      let totTime = 0, totFil = 0, n = 0;
+      let activeResult: typeof preview = null;
+      for (let i = 0; i < all.length; i++) {
+        pv.restore(all[i].snap ?? []);
+        if (pv.count() === 0) continue;
+        const stl = pv.exportSTL(`${all[i].name}.stl`);
+        if (!stl) continue;
+        const r = await api.sliceGcode(stl, settingsForPrinter(selPrinter?.id));
+        totTime += r.timeSec; totFil += r.filamentG; n++;
+        if (i === activePlate) activeResult = r;
+      }
+      pv.restore(activeSnap);
+      if (n === 0) { toast(t('v2.slicer.no_plates', 'No plates with models to slice'), 'error'); return; }
+      toast(`${n} ${t('v2.slicer.plates_sliced', 'plates')} · ${fmtTime(totTime)} · ${totFil.toFixed(1)} g`, 'success');
+      if (activeResult) { setPreview(activeResult); setTab('preview'); }
+    } catch (e) { toast((e as Error).message || t('v2.slicer.slice_fail', 'Slicing failed'), 'error'); }
+    finally { setSlicing(false); }
+  }
+
+  // Slice and send EVERY non-empty plate to the selected printer(s).
+  async function printAllPlates(startPrint: boolean) {
+    const pv = plateRef.current; if (!pv) return;
+    if (selected.size === 0) { toast(t('v2.slicer.pick_printer', 'Select at least one printer'), 'error'); return; }
+    setBusy(true);
+    try {
+      const activeSnap = pv.snapshot();
+      const all = plates.map((pl, i) => (i === activePlate ? { ...pl, snap: activeSnap } : pl));
+      let sent = 0, failed = 0;
+      for (let i = 0; i < all.length; i++) {
+        pv.restore(all[i].snap ?? []);
+        if (pv.count() === 0) continue;
+        const stl = pv.exportSTL(`${all[i].name}.stl`);
+        if (!stl) continue;
+        for (const id of selected) {
+          try { await api.sliceAndSend(id, stl, { print: startPrint, settings: settingsForPrinter(id) }); sent++; }
+          catch { failed++; }
+        }
+      }
+      pv.restore(activeSnap);
+      if (!sent && !failed) { toast(t('v2.slicer.no_plates', 'No plates with models to slice'), 'error'); return; }
+      toast(`${sent} ${t('v2.slicer.jobs_sent', 'plate job(s) sent')}${failed ? ` · ${failed} ${t('v2.slicer.failed', 'failed')}` : ''}`, failed ? 'error' : 'success');
+    } catch (e) { toast((e as Error).message || t('v2.slicer.send_fail', 'Send failed'), 'error'); }
+    finally { setBusy(false); }
   }
 
   async function run(startPrint: boolean) {
@@ -293,15 +472,20 @@ export function SlicerPanel() {
     if (selected.size === 0) { toast(t('v2.slicer.pick_printer', 'Select at least one printer'), 'error'); return; }
     setBusy(true);
     const ids = [...selected];
-    const multi = plateRef.current?.hasMaterials() ?? false;
-    const materials = multi ? (plateRef.current?.exportMaterials(file.name) ?? []) : [];
+    // Colour painting produces per-extruder geometry just like a multi-part 3MF,
+    // so it feeds the same multi-material send path.
+    const colorPainted = plateRef.current?.hasColorPaint() ?? false;
+    const multi = colorPainted || (plateRef.current?.hasMaterials() ?? false);
+    const materials = colorPainted
+      ? (plateRef.current?.getColorMaterials(file.name) ?? [])
+      : (multi ? (plateRef.current?.exportMaterials(file.name) ?? []) : []);
     const usePerObject = !multi && Object.keys(objOverrides).length > 0 && toolState.count > 0;
     const perObj = usePerObject ? (plateRef.current?.exportEach(file.name) ?? []) : [];
     const toSend = plateRef.current?.exportSTL(file.name) ?? file;
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     const results = await Promise.all(ids.map(async (id): Promise<boolean> => {
       try {
-        const s = settingsForPrinter(id);
+        const s = await settingsWithCalibration(id);
         const result = multi && materials.length > 1
           ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings: s })
           : perObj.length
@@ -316,7 +500,10 @@ export function SlicerPanel() {
     toast(failed ? t('v2.slicer.partial', 'Slice & send finished with errors') : t('v2.slicer.done', 'Slice & send complete'), failed ? 'error' : 'success');
   }
 
-  const canRun = !busy && !!file && selected.size > 0;
+  // A plate is sliceable when it actually holds objects (multi-plate: an empty
+  // plate must not fall back to another plate's file).
+  const plateHasModels = toolState.count > 0;
+  const canRun = !busy && plateHasModels && selected.size > 0;
   const tool = (m: PlateState['mode'], icon: ReactNode, label: string, needSel = false) => (
     <button className={`oslice-tool${toolState.mode === m ? ' oslice-tool--on' : ''}`} title={label} disabled={needSel && !toolState.hasSel} onClick={() => plateRef.current?.setMode(m)}>{icon}</button>
   );
@@ -349,8 +536,10 @@ export function SlicerPanel() {
               )}
             </span>
           )}
-          <button className="oslice-sliceplate" disabled={!file || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
+          <button className="oslice-sliceplate" disabled={!plateHasModels || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
+          {plates.length > 1 && <button className="oslice-sliceplate oslice-sliceall" disabled={slicing} onClick={sliceAllPlates} title={t('v2.slicer.slice_all_hint', 'Slice every plate and sum the estimates')}>{t('v2.slicer.slice_all', 'Slice all')}</button>}
           <button className="oslice-printplate" disabled={!canRun} title={t('v2.slicer.printplate_hint', 'Slice and send to the selected printer(s)')} onClick={() => run(false)}>{t('v2.slicer.print_plate', 'Print plate')}</button>
+          {plates.length > 1 && <button className="oslice-printplate" disabled={busy || selected.size === 0} title={t('v2.slicer.printall_hint', 'Slice and send every plate to the selected printer(s)')} onClick={() => printAllPlates(false)}>{t('v2.slicer.print_all', 'Print all')}</button>}
           <button className="oslice-fullbtn" title={full ? t('v2.slicer.exit_full', 'Exit fullscreen') : t('v2.slicer.fullscreen', 'Fullscreen')} onClick={() => setFull((f) => !f)}>{full ? <IconCollapse /> : <IconExpand />}</button>
         </div>
       </div>
@@ -411,22 +600,41 @@ export function SlicerPanel() {
                 {t('v2.slset.purge', 'Purge volumes')}{flushMatrix ? ' ●' : ''}
               </button>
             )}
-            {filaments.map((f, i) => (
-              <div className="oslice-filrow" key={i}>
-                <label className="oslice-filbadge" style={{ background: f.color, color: badgeTextColor(f.color), boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.18)', cursor: 'pointer' }}>
-                  {i + 1}
-                  <input type="color" value={f.color} onChange={(e) => setSlot(i, { color: e.target.value })} style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} />
-                </label>
-                <select className="oslice-preset-sel oslice-filname" value={f.material} onChange={(e) => setSlot(i, { material: e.target.value })}>
-                  {Object.keys(MATERIALS).map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                {filaments.length > 1 && <button className="oslice-filadd" title={t('v2.slset.remove', 'Remove')} onClick={() => removeSlot(i)}>−</button>}
+            {filaments.map((f, i) => {
+              // Match this slot against real spool inventory. When a slice exists,
+              // the single-colour need is the whole print (multi-colour is split
+              // evenly as an estimate) so we can flag insufficient stock.
+              const needG = preview ? (filaments.length === 1 ? preview.filamentG : preview.filamentG / filaments.length) : 0;
+              const m = matchSpools(f.color, f.material, spools, needG);
+              return (
+              <div className="oslice-filslot" key={i}>
+                <div className="oslice-filrow">
+                  <label className="oslice-filbadge" style={{ background: f.color, color: badgeTextColor(f.color), boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.18)', cursor: 'pointer' }}>
+                    {i + 1}
+                    <input type="color" value={f.color} onChange={(e) => setSlot(i, { color: e.target.value })} style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} />
+                  </label>
+                  <select className="oslice-preset-sel oslice-filname" value={f.material} onChange={(e) => setSlot(i, { material: e.target.value })}>
+                    {Object.keys(MATERIALS).map((m2) => <option key={m2} value={m2}>{m2}</option>)}
+                  </select>
+                  {filaments.length > 1 && <button className="oslice-filadd" title={t('v2.slset.remove', 'Remove')} onClick={() => removeSlot(i)}>−</button>}
+                </div>
+                <div className={`oslice-spoolmatch${preview && m.matched && !m.sufficient ? ' oslice-spoolmatch--short' : ''}`}>
+                  {m.matched
+                    ? <>{t('v2.slset.in_stock', 'In stock')} {Math.round(m.availableG)} g · {m.spoolCount} {t('v2.slset.spools', 'spool(s)')}{m.costPerG >= 0 ? ` · ${m.costPerG.toFixed(2)} kr/g` : ''}{preview && !m.sufficient ? ` · ${t('v2.slset.short', 'short')} ${Math.round(m.deficitG)} g` : ''}</>
+                    : <span className="muted">{t('v2.slset.no_spool', 'No matching spool in inventory')}</span>}
+                </div>
               </div>
-            ))}
+              );
+            })}
             <div className="oslice-temps" style={{ marginTop: 8 }}>
               <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.nozzle', 'Nozzle °C')}</span><input className="oset-input" type="number" value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, nozzle_temp: e.target.value }))} /></label>
               <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.bed', 'Bed °C')}</span><input className="oset-input" type="number" value={(settings.bed_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, bed_temp: e.target.value }))} /></label>
             </div>
+            <label className="oslice-calibrow" title={t('v2.slset.calib_hint', 'Apply the saved pressure-advance calibration for the matched spool + printer')}>
+              <input type="checkbox" checked={autoCalib} onChange={(e) => setAutoCalib(e.target.checked)} />
+              {t('v2.slset.fleet_calib', 'Fleet calibration')}
+              {calibK != null && <span className="oslice-calibk">K {calibK.toFixed(3)}</span>}
+            </label>
           </div>
 
           {/* Process preset */}
@@ -544,8 +752,135 @@ export function SlicerPanel() {
             {tool('scale', <IconScale />, t('v2.plate.scale', 'Scale'))}
             {action(<IconLayFlat />, t('v2.plate.flat', 'Lay flat'), () => plateRef.current?.layFlat(), !toolState.hasSel)}
             {action(<IconCenter />, t('v2.plate.center', 'Center'), () => plateRef.current?.center(), !toolState.hasSel)}
-            <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { if (!file) pickFile(e.target.files?.[0] ?? null); else addModels(e.target.files); e.currentTarget.value = ''; }} />
+            <span className="oslice-rail-sep" />
+            {action(<IconAutoOrient />, t('v2.plate.orient', 'Auto-orient (least support)'), () => plateRef.current?.autoOrient(), !toolState.hasSel)}
+            <button className={`oslice-tool${placeFace ? ' oslice-tool--on' : ''}`} title={t('v2.plate.placeface', 'Place on face — click a facet to set it on the plate')} disabled={!toolState.hasSel} onClick={togglePlaceFace}><IconPlaceFace /></button>
+            {action(<IconSplit />, t('v2.plate.split', 'Split to parts'), () => plateRef.current?.splitToParts(), !toolState.hasSel)}
+            {action(<IconSimplify />, t('v2.plate.simplify', 'Simplify mesh (halve triangles)'), () => plateRef.current?.simplify(), !toolState.hasSel)}
+            <button className={`oslice-tool${measuring ? ' oslice-tool--on' : ''}`} title={t('v2.plate.measure', 'Measure — click two points')} onClick={toggleMeasure}><IconMeasure /></button>
+            <span className="oslice-rail-sep" />
+            <button className={`oslice-tool${paint?.ch === 'support' ? ' oslice-tool--on' : ''}`} title={t('v2.plate.support_paint', 'Support painting — brush enforce / block regions')} disabled={!toolState.hasSel} onClick={() => togglePaint('support')}><IconSupportPaint /></button>
+            <button className={`oslice-tool${paint?.ch === 'seam' ? ' oslice-tool--on' : ''}`} title={t('v2.plate.seam_paint', 'Seam painting — place / avoid the Z-seam')} disabled={!toolState.hasSel} onClick={() => togglePaint('seam')}><IconSeamPaint /></button>
+            <button className={`oslice-tool${paint?.ch === 'color' ? ' oslice-tool--on' : ''}`} title={t('v2.plate.color_paint', 'Colour painting — brush a filament onto the model')} disabled={!toolState.hasSel} onClick={() => togglePaint('color')}><IconColorPaint /></button>
+            <button className={`oslice-tool${paint?.ch === 'fuzzy' ? ' oslice-tool--on' : ''}`} title={t('v2.plate.fuzzy_paint', 'Fuzzy-skin painting — brush textured regions')} disabled={!toolState.hasSel} onClick={() => togglePaint('fuzzy')}><IconFuzzy /></button>
+            <button className={`oslice-tool${cutOpen ? ' oslice-tool--on' : ''}`} title={t('v2.plate.cut', 'Cut — split the model along a plane')} disabled={!toolState.hasSel} onClick={toggleCut}><IconCut /></button>
+            <button className={`oslice-tool${boolOpen ? ' oslice-tool--on' : ''}`} title={t('v2.plate.boolean', 'Boolean — union / subtract / intersect')} disabled={toolState.count < 2} onClick={() => { setBoolOpen((o) => !o); setShapeOpen(false); }}><IconBoolean /></button>
+            <button className={`oslice-tool${shapeOpen ? ' oslice-tool--on' : ''}`} title={t('v2.plate.add_shape', 'Add a primitive shape')} onClick={() => { setShapeOpen((o) => !o); setBoolOpen(false); }}><IconShape /></button>
+            <button className={`oslice-tool${textOpen ? ' oslice-tool--on' : ''}`} title={t('v2.plate.add_text', 'Add 3D text')} onClick={() => { setTextOpen((o) => !o); setBoolOpen(false); setShapeOpen(false); }}><IconText /></button>
+            <button className="oslice-tool" title={t('v2.plate.color_layer', 'Colour layer — image → printable relief')} onClick={() => setColorLayerOpen(true)}><IconImage /></button>
+            <input ref={addInputRef} type="file" accept={formats.join(',')} multiple hidden onChange={(e) => { const fs = e.target.files ? Array.from(e.target.files) : []; e.currentTarget.value = ''; onPickInput(fs); }} />
           </div>
+          )}
+
+          {/* Cut tool bar — height slider + which half to keep. */}
+          {tab === 'prepare' && cutOpen && (
+            <div className="oslice-paintbar oslice-cutbar">
+              <span className="oslice-paintbar-t">{t('v2.plate.cut', 'Cut')}</span>
+              <input type="range" min={1} max={99} value={Math.round(cutFrac * 100)} style={{ width: 130 }}
+                onChange={(e) => { const f = Number(e.target.value) / 100; setCutFrac(f); plateRef.current?.setCutPreview(f); }} />
+              <span className="muted micro tnum" style={{ minWidth: 34 }}>{Math.round(cutFrac * 100)}%</span>
+              {(['both', 'upper', 'lower'] as const).map((k) => (
+                <button key={k} className={`btn btn--sm${cutKeep === k ? '' : ' btn--ghost'}`} onClick={() => setCutKeep(k)}>
+                  {k === 'both' ? t('v2.plate.cut_both', 'Both') : k === 'upper' ? t('v2.plate.cut_upper', 'Upper') : t('v2.plate.cut_lower', 'Lower')}
+                </button>
+              ))}
+              <span className="muted micro" style={{ marginLeft: 6 }}>{t('v2.plate.cut_conn', 'Connectors')}</span>
+              <select className="oset-input" style={{ maxWidth: 52 }} value={cutConn} onChange={(e) => setCutConn(Number(e.target.value))}>
+                {[0, 1, 2, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <button className="btn btn--sm" onClick={applyCut}>{t('v2.plate.cut_apply', 'Cut')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={toggleCut}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          )}
+
+          {/* Boolean op bar. */}
+          {tab === 'prepare' && boolOpen && (
+            <div className="oslice-paintbar oslice-cutbar">
+              <span className="oslice-paintbar-t">{t('v2.plate.boolean', 'Boolean')}</span>
+              <button className="btn btn--sm" onClick={() => doBoolean('union')}>{t('v2.plate.bool_union', 'Union')}</button>
+              <button className="btn btn--sm" onClick={() => doBoolean('subtract')}>{t('v2.plate.bool_subtract', 'Subtract')}</button>
+              <button className="btn btn--sm" onClick={() => doBoolean('intersect')}>{t('v2.plate.bool_intersect', 'Intersect')}</button>
+              <span className="muted micro">{t('v2.plate.bool_hint', 'selected − others')}</span>
+              <button className="btn btn--sm btn--ghost" onClick={() => setBoolOpen(false)}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          )}
+          {/* Add-primitive bar. */}
+          {tab === 'prepare' && shapeOpen && (
+            <div className="oslice-paintbar oslice-cutbar">
+              <span className="oslice-paintbar-t">{t('v2.plate.add_shape', 'Add shape')}</span>
+              <button className="btn btn--sm" onClick={() => doAddShape('cube')}>{t('v2.plate.shape_cube', 'Cube')}</button>
+              <button className="btn btn--sm" onClick={() => doAddShape('cylinder')}>{t('v2.plate.shape_cyl', 'Cylinder')}</button>
+              <button className="btn btn--sm" onClick={() => doAddShape('sphere')}>{t('v2.plate.shape_sphere', 'Sphere')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={() => setShapeOpen(false)}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          )}
+
+          {/* Add-text bar. */}
+          {tab === 'prepare' && textOpen && (
+            <div className="oslice-paintbar oslice-cutbar">
+              <span className="oslice-paintbar-t">{t('v2.plate.add_text', '3D text')}</span>
+              <input className="oset-input" style={{ width: 160 }} autoFocus value={textVal} onChange={(e) => setTextVal(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') doAddText(); }} placeholder={t('v2.plate.text_ph', 'Text…')} />
+              <button className="btn btn--sm" onClick={doAddText}>{t('v2.plate.text_add', 'Add')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={() => setTextOpen(false)}>{t('common.cancel', 'Cancel')}</button>
+            </div>
+          )}
+
+          {/* Multi-plate tabs — each plate keeps its own arrangement; when an
+              object is selected you can send it to another plate. */}
+          {(tab === 'prepare' || tab === 'preview') && (
+            <div className="oslice-plates">
+              {tab === 'prepare' && toolState.hasSel && plates.length > 1 && (
+                <span className="oslice-moveto">
+                  <span className="muted micro">{t('v2.plate.move_to', 'Move to')}</span>
+                  {plates.map((pl, i) => (i === activePlate ? null : (
+                    <button key={pl.id} className="oslice-platetab oslice-platetab--move" title={`${t('v2.plate.move_to', 'Move to')} ${pl.name}`} onClick={() => moveSelectedToPlate(i)}>{i + 1}</button>
+                  )))}
+                </span>
+              )}
+              {plates.map((pl, i) => {
+                const n = i === activePlate ? toolState.count : (pl.snap?.length ?? 0);
+                return (
+                  <span key={pl.id} className={`oslice-platetab${i === activePlate ? ' oslice-platetab--on' : ''}`} onClick={() => switchPlate(i)} title={`${pl.name} · ${n} ${t('v2.plate.objects', 'object(s)')}`}>
+                    {i + 1}{n > 0 && <em className="oslice-platetab-c">{n}</em>}
+                    {plates.length > 1 && <button className="oslice-platetab-x" title={t('v2.plate.plate_del', 'Delete plate')} onClick={(e) => { e.stopPropagation(); deletePlate(i); }}>×</button>}
+                  </span>
+                );
+              })}
+              <button className="oslice-platetab oslice-platetab--add" title={t('v2.plate.plate_add', 'Add plate')} onClick={addPlate}>+</button>
+            </div>
+          )}
+
+          {/* Paint brush selector — shown while a paint tool is active. */}
+          {tab === 'prepare' && paint && (
+            <div className="oslice-paintbar">
+              <span className="oslice-paintbar-t">
+                {paint.ch === 'support' ? t('v2.plate.support_paint', 'Support painting')
+                  : paint.ch === 'seam' ? t('v2.plate.seam_paint', 'Seam painting')
+                    : paint.ch === 'fuzzy' ? t('v2.plate.fuzzy_paint', 'Fuzzy skin')
+                      : t('v2.plate.color_paint', 'Colour painting')}
+              </span>
+              {paint.ch === 'fuzzy' ? (
+                <>
+                  <button className={`btn btn--sm${paint.val === 1 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: 'fuzzy', val: 1 })}><i className="oslice-paintdot" style={{ background: '#a855f7' }} />{t('v2.plate.paint_on', 'Fuzzy')}</button>
+                  <button className={`btn btn--sm${paint.val === 0 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: 'fuzzy', val: 0 })}>{t('v2.plate.paint_erase', 'Erase')}</button>
+                </>
+              ) : paint.ch === 'color' ? (
+                <>
+                  {slotColors.map((col, i) => (
+                    <button key={i} className={`oslice-paintswatch${paint.val === i + 1 ? ' oslice-paintswatch--on' : ''}`} title={`${t('v2.slset.filament', 'Filament')} ${i + 1}`} style={{ background: col }} onClick={() => applyPaint({ ch: 'color', val: i + 1 })} />
+                  ))}
+                  <button className={`btn btn--sm${paint.val === 0 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: 'color', val: 0 })}>{t('v2.plate.paint_erase', 'Erase')}</button>
+                </>
+              ) : (
+                <>
+                  <button className={`btn btn--sm${paint.val === 1 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: paint.ch, val: 1 })}><i className="oslice-paintdot" style={{ background: paint.ch === 'seam' ? '#2fbf6f' : '#2f7be0' }} />{t('v2.plate.paint_enforce', 'Enforce')}</button>
+                  <button className={`btn btn--sm${paint.val === 2 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: paint.ch, val: 2 })}><i className="oslice-paintdot" style={{ background: paint.ch === 'seam' ? '#e08a2f' : '#e0463c' }} />{t('v2.plate.paint_block', 'Block')}</button>
+                  <button className={`btn btn--sm${paint.val === 0 ? '' : ' btn--ghost'}`} onClick={() => applyPaint({ ch: paint.ch, val: 0 })}>{t('v2.plate.paint_erase', 'Erase')}</button>
+                </>
+              )}
+              <button className="btn btn--sm btn--ghost" onClick={() => plateRef.current?.clearPaint(paint.ch)}>{t('v2.plate.paint_clear', 'Clear all')}</button>
+              <button className="btn btn--sm btn--ghost" onClick={() => applyPaint(null)}>{t('common.done', 'Done')}</button>
+            </div>
           )}
 
           {/* The build plate is always visible, like Bambu Studio. */}
@@ -556,13 +891,13 @@ export function SlicerPanel() {
           )}
           {tab === 'preview' && preview && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <GcodePreview gcode={preview.gcode} bed={bed} />
+              <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} />
             </Suspense>
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
-          {tab === 'filaments' && <SlicerFilaments spools={spools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
+          {tab === 'filaments' && <SlicerFilaments spools={spools} printers={printers} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
           {tab === 'calibration' && <SlicerCalibration onPreview={(r) => setPreview({ gcode: r.gcode, layers: 0, timeSec: r.timeSec, filamentG: r.filamentG, wasteG: 0, durationMs: 0 })} />}
-          {!file && tab === 'prepare' && (
+          {!file && toolState.count === 0 && tab === 'prepare' && (
             <div className="oslice-empty">
               <div className="oslice-emptycard">
                 <div className="oslice-drop-plus">+</div>
@@ -594,6 +929,10 @@ export function SlicerPanel() {
 
       {showLibrary && <LibraryImportModal onClose={() => setShowLibrary(false)} onImport={importFromLibrary} />}
       {purgeOpen && <SlicerPurge colors={slotColors} matrix={flushMatrix} onChange={setFlushMatrix} onClose={() => setPurgeOpen(false)} />}
+      {colorLayerOpen && <SlicerColorLayer slotColors={slotColors}
+        onGenerate={(geom, name) => plateRef.current?.addGeometry(geom, name)}
+        onColorLayers={(layers) => { if (layers.length) toast(`${layers.length} ${t('v2.colorlayer.changes', 'colour change(s)')}: ${layers.map((l) => `z${l.z}`).join(', ')}`, 'success'); }}
+        onClose={() => setColorLayerOpen(false)} />}
     </div>
   );
 }

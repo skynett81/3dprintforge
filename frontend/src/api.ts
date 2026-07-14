@@ -103,6 +103,31 @@ export const api = {
     if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
     return data as import('./types').SliceResult;
   },
+  // Generate a Model Forge parametric model (server-side) → 3MF File for the plate.
+  generateModelForge: async (id: string, params: Record<string, unknown> = {}): Promise<File> => {
+    const res = await fetch(`/api/model-forge/${id}/generate-3mf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) });
+    if (!res.ok) { let m = `${res.status}`; try { m = (JSON.parse(await res.text())).error || m; } catch { /* keep */ } throw new Error(m); }
+    const buf = await res.arrayBuffer();
+    return new File([buf], `${id}.3mf`, { type: 'model/3mf' });
+  },
+  // Fleet calibration: best saved pressure-advance K for a spool on a printer.
+  bestK: async (spoolId: number, printerId: string, nozzle = 0.4): Promise<number | null> => {
+    try {
+      const q = new URLSearchParams({ spool_id: String(spoolId), printer_id: printerId, nozzle_diameter: String(nozzle) });
+      const res = await fetch(`/api/filament-analytics/best-k?${q}`);
+      if (!res.ok) return null;
+      const j = await res.json();
+      return typeof j.k_value === 'number' ? j.k_value : null;
+    } catch { return null; }
+  },
+  // Tessellate a STEP/STP file to an STL File (server-side OpenCascade).
+  stepToStl: async (file: File): Promise<File> => {
+    const fmt = /\.(iges|igs)$/i.test(file.name) ? '?format=iges' : '';
+    const res = await fetch(`/api/slicer/native/step-to-stl${fmt}`, { method: 'POST', body: file });
+    if (!res.ok) { let m = `${res.status}`; try { m = (JSON.parse(await res.text())).error || m; } catch { /* keep */ } throw new Error(m); }
+    const stl = await res.text();
+    return new File([stl], file.name.replace(/\.[^.]+$/, '') + '.stl', { type: 'model/stl' });
+  },
   sliceGcode: async (file: File, settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number }> => {
     const q = new URLSearchParams({ filename: file.name });
     if (settings && Object.keys(settings).length) q.set('settings', JSON.stringify(settings));

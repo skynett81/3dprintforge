@@ -15,14 +15,25 @@ export interface GcodeLayer {
   allSeg: number[];
   /** Print speed (mm/s) per extrusion segment, aligned with allSeg. */
   allSpeed: number[];
+  /** Volumetric flow (mm³/s) per extrusion segment, aligned with allSeg. */
+  allFlow: number[];
+  /** Active tool/filament index per extrusion segment, aligned with allSeg. */
+  allTool: number[];
   /** Travel segments, flat: [ax, ay, bx, by, ...] */
   travel: number[];
+  /** Rough print time for this layer (seconds), from move distance / feedrate. */
+  timeSec: number;
+  /** Filament extruded on this layer (mm of filament). */
+  eLen: number;
 }
 
 export interface ParsedGcode {
   layers: GcodeLayer[];
   features: Feature[];
   speedRange: { min: number; max: number };
+  flowRange: { min: number; max: number };
+  layerTimeRange: { min: number; max: number };
+  tools: number[];
   bbox: { minX: number; minY: number; maxX: number; maxY: number; maxZ: number };
 }
 
@@ -42,11 +53,14 @@ export function parseGcode(text: string): ParsedGcode {
   const layerFor = (zz: number): GcodeLayer => {
     const key = Math.round(zz * 100) / 100;
     let l = layerByZ.get(key);
-    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], travel: [] }; layerByZ.set(key, l); layers.push(l); }
+    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
     return l;
   };
   let feed = 0;          // current feedrate (mm/min)
-  let sMin = Infinity, sMax = 0;
+  let tool = 0;          // active tool/filament index
+  let sMin = Infinity, sMax = 0, fMin = Infinity, fMax = 0;
+  const toolsSeen = new Set<number>();
+  const FIL_AREA = Math.PI * 0.875 * 0.875;   // 1.75 mm filament cross-section (mm²)
 
   const gated = text.includes('--- layer');
   let inPrint = !gated;
@@ -73,6 +87,8 @@ export function parseGcode(text: string): ParsedGcode {
       while ((m = NUM.exec(line))) { if (m[1] === 'E') e = parseFloat(m[2]); }
       continue;
     }
+    // Tool change: "T0", "T1", … selects the active filament.
+    if (line[0] === 'T' && /^T\d+$/.test(line)) { tool = parseInt(line.slice(1), 10) || 0; toolsSeen.add(tool); continue; }
     if (head !== 'G0 ' && head !== 'G1 ' && head !== 'G0' && head !== 'G1') continue;
 
     let nx = x, ny = y, nz = z, ne = e, hasE = false;
@@ -92,13 +108,25 @@ export function parseGcode(text: string): ParsedGcode {
     const moved = nx !== x || ny !== y;
     if (inPrint) {
       if (nz !== z || !cur) cur = layerFor(nz);
+      // Rough per-layer time (distance / feedrate) and filament length.
+      if (feed > 0) {
+        const dx = nx - x, dy = ny - y, dz = nz - z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist > 0) cur.timeSec += dist / (feed / 60);
+      }
+      if (extruding) cur.eLen += ne - e;
       if (moved) {
         if (extruding) {
           const arr = cur.feats[feature] ?? (cur.feats[feature] = []);
           arr.push(x, y, nx, ny);
           const spd = feed / 60;
-          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd);
+          const dist2 = Math.hypot(nx - x, ny - y);
+          // Volumetric flow (mm³/s) = extruded volume / segment time.
+          const flow = dist2 > 0 && spd > 0 ? ((ne - e) * FIL_AREA) / (dist2 / spd) : 0;
+          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd); cur.allFlow.push(flow); cur.allTool.push(tool);
           if (spd > 0) { if (spd < sMin) sMin = spd; if (spd > sMax) sMax = spd; }
+          if (flow > 0) { if (flow < fMin) fMin = flow; if (flow > fMax) fMax = flow; }
+          toolsSeen.add(tool);
           seen.add(feature);
           if (x < minX) minX = x; if (x > maxX) maxX = x;
           if (y < minY) minY = y; if (y > maxY) maxY = y;
@@ -115,7 +143,18 @@ export function parseGcode(text: string): ParsedGcode {
 
   if (!Number.isFinite(minX)) { minX = minY = 0; maxX = maxY = 0; }
   if (!Number.isFinite(sMin)) sMin = 0;
+  if (!Number.isFinite(fMin)) fMin = 0;
   const nonEmpty = layers.filter((l) => Object.keys(l.feats).length || l.travel.length);
   nonEmpty.sort((a, b) => a.z - b.z);
-  return { layers: nonEmpty, features: [...seen], speedRange: { min: sMin, max: sMax }, bbox: { minX, minY, maxX, maxY, maxZ } };
+  let ltMin = Infinity, ltMax = 0;
+  for (const l of nonEmpty) { if (l.timeSec < ltMin) ltMin = l.timeSec; if (l.timeSec > ltMax) ltMax = l.timeSec; }
+  if (!Number.isFinite(ltMin)) ltMin = 0;
+  return {
+    layers: nonEmpty, features: [...seen],
+    speedRange: { min: sMin, max: sMax },
+    flowRange: { min: fMin, max: fMax },
+    layerTimeRange: { min: ltMin, max: ltMax },
+    tools: [...toolsSeen].sort((a, b) => a - b),
+    bbox: { minX, minY, maxX, maxY, maxZ },
+  };
 }

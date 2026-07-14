@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useT } from '../../i18n';
-import type { Spool } from '../../types';
+import type { Printer, Spool } from '../../types';
+
+type GroupBy = 'location' | 'material' | 'vendor';
 
 interface Props {
   spools: Spool[];
+  printers?: Printer[];
   /** Apply a filament's colour + material to the active slot. */
   onApply?: (color: string, material: string) => void;
 }
@@ -15,45 +18,84 @@ function textColor(h: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 150 ? '#1a1a1a' : '#fff';
 }
 
-/** Filament Manager: the spool library grouped by material, like BambuStudio's
- *  Filament Manager. Click a spool to load its colour + material into the
+/** Filament Manager: the spool library grouped by storage location (or material
+ *  / vendor), like BambuStudio's Filament Manager over the real inventory.
+ *  Spools loaded on a printer group under that printer; the rest under their
+ *  shelf/box location. Click a spool to load its colour + material into the
  *  active slicer slot. Read-only over the existing inventory. */
-export function SlicerFilaments({ spools, onApply }: Props) {
+export function SlicerFilaments({ spools, printers, onApply }: Props) {
   const t = useT();
   const [q, setQ] = useState('');
+  const [groupBy, setGroupBy] = useState<GroupBy>('location');
+
+  const printerName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of printers ?? []) m.set(p.id, p.name);
+    return (id: string) => m.get(id) || id;
+  }, [printers]);
+
+  const UNASSIGNED = t('v2.filmgr.unassigned', 'Unassigned');
+  function keyOf(s: Spool): string {
+    if (groupBy === 'material') return (s.material || 'Other').toUpperCase();
+    if (groupBy === 'vendor') return s.vendor_name || t('v2.filmgr.unknown_vendor', 'Unknown vendor');
+    // location: loaded-on-a-printer wins, then the shelf/box location, else unassigned
+    if (s.printer_id) return `${printerName(s.printer_id)} · ${t('v2.filmgr.loaded_tag', 'loaded')}`;
+    return s.location?.trim() || UNASSIGNED;
+  }
 
   const groups = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const active = spools.filter((s) => !s.archived);
     const filtered = needle
-      ? active.filter((s) => `${s.profile_name} ${s.material} ${s.color_name} ${s.vendor_name}`.toLowerCase().includes(needle))
+      ? active.filter((s) => `${s.profile_name} ${s.material} ${s.color_name} ${s.vendor_name} ${s.location}`.toLowerCase().includes(needle))
       : active;
     const by: Record<string, Spool[]> = {};
-    for (const s of filtered) { const m = (s.material || 'Other').toUpperCase(); (by[m] ??= []).push(s); }
-    return Object.entries(by).sort((a, b) => b[1].length - a[1].length);
-  }, [spools, q]);
+    for (const s of filtered) { (by[keyOf(s)] ??= []).push(s); }
+    // Loaded-on-printer groups first, then by count desc, "Unassigned" always last.
+    return Object.entries(by).sort((a, b) => {
+      const au = a[0] === UNASSIGNED, bu = b[0] === UNASSIGNED;
+      if (au !== bu) return au ? 1 : -1;
+      const al = a[0].includes(` · ${t('v2.filmgr.loaded_tag', 'loaded')}`), bl = b[0].includes(` · ${t('v2.filmgr.loaded_tag', 'loaded')}`);
+      if (groupBy === 'location' && al !== bl) return al ? -1 : 1;
+      return b[1].length - a[1].length;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spools, q, groupBy, printerName]);
 
   return (
     <div className="oslice-filmgr">
       <div className="oslice-filmgr-head">
-        <input className="oset-searchinput" style={{ maxWidth: 320 }} placeholder={t('v2.filmgr.search', 'Search filament…')} value={q} onChange={(e) => setQ(e.target.value)} />
-        <span className="muted micro">{spools.filter((s) => !s.archived).length} {t('v2.filmgr.spools', 'spools')}</span>
+        <input className="oset-searchinput" style={{ maxWidth: 280 }} placeholder={t('v2.filmgr.search', 'Search filament…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="oslice-filmgr-groupby">
+          <span className="muted micro">{t('v2.filmgr.groupby', 'Group by')}</span>
+          {(['location', 'material', 'vendor'] as GroupBy[]).map((g) => (
+            <button key={g} className={`btn btn--xs${groupBy === g ? '' : ' btn--ghost'}`} onClick={() => setGroupBy(g)}>
+              {t(`v2.filmgr.by_${g}`, g === 'location' ? 'Location' : g === 'material' ? 'Material' : 'Vendor')}
+            </button>
+          ))}
+        </div>
+        <span className="muted micro" style={{ marginLeft: 'auto' }}>{spools.filter((s) => !s.archived).length} {t('v2.filmgr.spools', 'spools')}</span>
       </div>
       <div className="oslice-filmgr-body">
         {groups.length === 0 && <p className="muted" style={{ padding: 16 }}>{t('v2.filmgr.none', 'No filament in inventory.')}</p>}
-        {groups.map(([mat, list]) => (
-          <div key={mat} className="oslice-filmgr-grp">
-            <div className="oslice-filmgr-grph">{mat} <span className="muted micro">· {list.length}</span></div>
+        {groups.map(([label, list]) => (
+          <div key={label} className="oslice-filmgr-grp">
+            <div className={`oslice-filmgr-grph${groupBy === 'material' ? '' : ' oslice-filmgr-grph--plain'}`}>{label} <span className="muted micro">· {list.length}</span></div>
             <div className="oslice-filmgr-grid">
               {list.map((s) => {
                 const c = hex(s.color_hex);
                 const pct = s.initial_weight_g > 0 ? Math.max(0, Math.min(100, (s.remaining_weight_g / s.initial_weight_g) * 100)) : 0;
                 const perG = s.cost && s.initial_weight_g ? (s.cost / s.initial_weight_g) : 0;
+                // Stock status (ForgeFilamentManager): Out ≤0g, Low <10% or <50g, else OK.
+                const rem = s.remaining_weight_g || 0;
+                const stock = rem <= 0 ? 'out' : (pct < 10 || rem < 50) ? 'low' : 'ok';
                 return (
                   <button key={s.id} className="oslice-filcard" title={t('v2.filmgr.apply', 'Load into active slot')} onClick={() => onApply?.(c, (s.material || 'PLA'))}>
                     <span className="oslice-filcard-sw" style={{ background: c, color: textColor(c) }}>{s.material?.[0] ?? '?'}</span>
                     <span className="oslice-filcard-main">
-                      <span className="oslice-filcard-name">{s.color_name || s.profile_name || s.material}</span>
+                      <span className="oslice-filcard-name">{s.color_name || s.profile_name || s.material}
+                        <span className={`oslice-stock oslice-stock--${stock}`}>{stock === 'out' ? t('v2.filmgr.out', 'Out') : stock === 'low' ? t('v2.filmgr.low', 'Low') : t('v2.filmgr.ok', 'OK')}</span>
+                      </span>
                       <span className="oslice-filcard-sub">{s.vendor_name || ''}{s.vendor_name && s.material ? ' · ' : ''}{s.material}</span>
                       <span className="oslice-filcard-bar"><span className="oslice-filcard-fill" style={{ width: `${pct}%`, background: c }} /></span>
                     </span>

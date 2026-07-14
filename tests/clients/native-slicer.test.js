@@ -5,8 +5,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, _internals,
+  sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
+import { patternInfill } from '../../server/native-slicer-geo.js';
 import { box, cylinder } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
@@ -146,5 +147,80 @@ describe('native-slicer: helpers', () => {
   it('_near matches points within EPS tolerance', () => {
     assert.equal(_internals._near([0, 0], [0.0005, 0.0005]), true);
     assert.equal(_internals._near([0, 0], [0.5, 0.5]), false);
+  });
+});
+
+describe('native-slicer: pressure advance & patterns', () => {
+  it('emits M900 K for Marlin pressure advance', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 6), { pressureAdvance: 0.035, supports: false });
+    assert.match(r.gcode, /M900 K0\.0350/);
+  });
+  it('emits SET_PRESSURE_ADVANCE for Klipper flavor', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 6), { pressureAdvance: 0.04, gcodeFlavor: 'klipper', supports: false });
+    assert.match(r.gcode, /SET_PRESSURE_ADVANCE ADVANCE=0\.0400/);
+  });
+  it('adaptive layer height uses fewer layers on a vertical-walled cube', async () => {
+    const uni = await sliceMeshToGcode(box(20, 20, 20), { layerHeight: 0.2, supports: false });
+    const ada = await sliceMeshToGcode(box(20, 20, 20), { layerHeight: 0.2, adaptiveLayers: true, minLayerHeight: 0.08, maxLayerHeight: 0.3, supports: false });
+    assert.ok(ada.layers < uni.layers, `adaptive ${ada.layers} should be < uniform ${uni.layers}`);
+    const zs = [...ada.gcode.matchAll(/;Z:([\d.]+)/g)].map((m) => +m[1]);
+    for (let i = 1; i < zs.length; i++) assert.ok(zs[i] > zs[i - 1], 'adaptive Z stays monotonic');
+    assert.ok(!ada.gcode.includes('NaN'));
+  });
+  it('arachne wall generator varies thin-feature fill but is byte-identical when off', async () => {
+    const off = await sliceMeshToGcode(cylinder(8, 15), { supports: false });
+    const classic = await sliceMeshToGcode(cylinder(8, 15), { supports: false, wallGenerator: 'classic' });
+    assert.equal(classic.gcode, off.gcode, 'classic must equal the default');
+    const arachne = await sliceMeshToGcode(cylinder(8, 15), { supports: false, wallGenerator: 'arachne' });
+    assert.notEqual(arachne.gcode, classic.gcode, 'arachne must vary the thin-feature fill');
+    assert.ok(!arachne.gcode.includes('NaN'));
+  });
+  it('lightning infill uses less material than grid (hollow interior)', async () => {
+    const grid = await sliceMeshToGcode(box(30, 30, 20), { supports: false, infillPattern: 'grid', infillDensity: 0.15 });
+    const light = await sliceMeshToGcode(box(30, 30, 20), { supports: false, infillPattern: 'lightning', infillDensity: 0.15 });
+    assert.ok(light.gcode.length < grid.gcode.length, `lightning ${light.gcode.length} should be < grid ${grid.gcode.length}`);
+    assert.ok(!light.gcode.includes('NaN'));
+    assert.equal(light.layers, grid.layers);
+  });
+  it('scarf seam changes the outer wall but is byte-identical when off', async () => {
+    const off = await sliceMeshToGcode(box(20, 20, 10), { supports: false, scarfSeam: false });
+    const off2 = await sliceMeshToGcode(box(20, 20, 10), { supports: false });
+    assert.equal(off.gcode, off2.gcode, 'scarf off must not change anything');
+    const on = await sliceMeshToGcode(box(20, 20, 10), { supports: false, scarfSeam: true, scarfLength: 5 });
+    assert.notEqual(on.gcode, off.gcode, 'scarf on must taper the seam');
+    assert.ok(!on.gcode.includes('NaN'));
+  });
+  it('fuzzy-skin painting fuzzes only inside a band, leaving the rest clean', async () => {
+    const plain = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzySkin: false });
+    const away = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzyPaint: { enforce: [[500, 500, 501, 500, 500, 501, -1000, 1000]] } });
+    const full = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzyPaint: { enforce: [[-1000, -1000, 1000, -1000, 1000, 1000, -1000, 1000]] } });
+    assert.equal(away.gcode.length, plain.gcode.length, 'a band away from the model leaves walls untouched');
+    assert.ok(full.gcode.length > plain.gcode.length * 2, 'a full-coverage band fuzzes the whole outline');
+  });
+  it('crosshatch infill flips direction between layer bands', () => {
+    const sq = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] };
+    const a = patternInfill(sq, 0.2, 0, 0.4, 'crosshatch', { z: 1 });
+    const b = patternInfill(sq, 0.2, 0, 0.4, 'crosshatch', { z: 3 });
+    assert.ok(a.length && b.length);
+    assert.notDeepEqual(a[0], b[0]);
+  });
+});
+
+describe('native-slicer: seam painting', () => {
+  const SQ = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  it("'back' seam starts at a rear (max-y) vertex", () => {
+    assert.equal(seamStart(SQ, 'back')[0][1], 10);
+  });
+  it('an enforced band snaps the seam into it', () => {
+    const enforce = [[-1, -1, 3, -1, -1, 3, 0, 10]];   // covers the (0,0) corner
+    assert.deepEqual(seamStart(SQ, 'back', { enforce, block: [], z: 5 })[0], [0, 0]);
+  });
+  it('a blocked band nudges the seam away', () => {
+    const block = [[8, 8, 12, 8, 10, 12, 0, 10]];      // covers (10,10), the 'back' pick
+    assert.notDeepEqual(seamStart(SQ, 'back', { enforce: [], block, z: 5 })[0], [10, 10]);
+  });
+  it('a band outside the layer z-range is ignored', () => {
+    const enforce = [[-1, -1, 3, -1, -1, 3, 0, 10]];
+    assert.equal(seamStart(SQ, 'back', { enforce, block: [], z: 50 })[0][1], 10);
   });
 });

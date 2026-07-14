@@ -35,21 +35,78 @@ const FILAMENT_DIAM = 1.75;
 // Re-export the geometry primitives so existing importers/tests keep working.
 export { sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, buildRegions };
 
+// Shortest distance from a point to any edge of a region (outer + holes). Used
+// by the Arachne-style variable-width gap fill to gauge local feature width.
+function _distToRegionEdge(px, py, region) {
+  let min = Infinity;
+  const test = (loop) => {
+    for (let i = 0; i < loop.length; i++) {
+      const a = loop[i], b = loop[(i + 1) % loop.length];
+      const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+      let t = L2 > 0 ? ((px - a[0]) * dx + (py - a[1]) * dy) / L2 : 0;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const d = Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
+      if (d < min) min = d;
+    }
+  };
+  test(region.outer);
+  for (const h of region.holes || []) test(h);
+  return min;
+}
+
 /**
  * Rotate a closed wall loop so it starts at the chosen seam vertex, so the
  * seam lands consistently (aligned/back) or scattered (random). 'nearest'
  * (default) leaves the loop as-is.
  */
-export function seamStart(poly, mode) {
+// Point-in-triangle for a seam-paint region [x0,y0,x1,y1,x2,y2,zMin,zMax].
+function _ptInSeamTri(x, y, t) {
+  const d1 = (x - t[2]) * (t[1] - t[3]) - (t[0] - t[2]) * (y - t[3]);
+  const d2 = (x - t[4]) * (t[3] - t[5]) - (t[2] - t[4]) * (y - t[5]);
+  const d3 = (x - t[0]) * (t[5] - t[1]) - (t[4] - t[0]) * (y - t[1]);
+  const neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(neg && pos);
+}
+function _inSeamBand(x, y, z, tris) {
+  for (const t of tris) if (z >= t[6] - 0.5 && z <= t[7] + 0.5 && _ptInSeamTri(x, y, t)) return true;
+  return false;
+}
+
+/**
+ * Reorder a closed perimeter so it starts at the seam point. `mode` is the
+ * seam position (aligned/back/random/nearest). `seamCtx` = { enforce, block, z }
+ * carries painted seam regions (bed frame): the seam snaps into an enforce band
+ * and is nudged out of a block band, overriding the mode where painted.
+ */
+export function seamStart(poly, mode, seamCtx) {
   if (!poly || poly.length < 3) return poly;
   let idx = -1;
-  if (mode === 'back' || mode === 'rear' || mode === 'aligned') {
-    let best = -Infinity;
-    for (let i = 0; i < poly.length; i++) if (poly[i][1] > best) { best = poly[i][1]; idx = i; }
-  } else if (mode === 'random') {
-    // Deterministic pseudo-random by the loop's own geometry (no Math.random).
-    const seed = Math.abs(Math.round((poly[0][0] + poly[1][1]) * 131) + poly.length * 977);
-    idx = seed % poly.length;
+  const hasPaint = seamCtx && (seamCtx.enforce?.length || seamCtx.block?.length);
+  if (hasPaint && seamCtx.enforce?.length) {
+    // Prefer the first perimeter vertex that falls inside an enforced band.
+    for (let i = 0; i < poly.length; i++) {
+      if (_inSeamBand(poly[i][0], poly[i][1], seamCtx.z, seamCtx.enforce)) { idx = i; break; }
+    }
+  }
+  if (idx < 0) {
+    if (mode === 'back' || mode === 'rear' || mode === 'aligned') {
+      let best = -Infinity;
+      for (let i = 0; i < poly.length; i++) if (poly[i][1] > best) { best = poly[i][1]; idx = i; }
+    } else if (mode === 'random') {
+      const seed = Math.abs(Math.round((poly[0][0] + poly[1][1]) * 131) + poly.length * 977);
+      idx = seed % poly.length;
+    }
+    // Nudge the chosen seam out of any blocked band to the nearest free vertex.
+    if (hasPaint && seamCtx.block?.length && idx >= 0) {
+      const blocked = (i) => _inSeamBand(poly[i][0], poly[i][1], seamCtx.z, seamCtx.block);
+      if (blocked(idx)) {
+        for (let d = 1; d < poly.length; d++) {
+          const r = (idx + d) % poly.length, l = (idx - d + poly.length) % poly.length;
+          if (!blocked(r)) { idx = r; break; }
+          if (!blocked(l)) { idx = l; break; }
+        }
+      }
+    }
   }
   if (idx <= 0) return poly;
   return poly.slice(idx).concat(poly.slice(0, idx));
@@ -146,7 +203,7 @@ export function layersToGcode(layers, settings) {
   // E (mm filament) = volume / (π · (filamentDiam/2)²). Scaled by the global
   // flow ratio (print_flow_ratio) so under/over-extrusion can be dialled in.
   const flowRatio = s.flowRatio ?? 1;
-  const efOf = (w) => (w * s.layerHeight * flowRatio) / (PI * (s.filamentDiam / 2) ** 2);
+  const efOf = (w, h = s.layerHeight) => (w * h * flowRatio) / (PI * (s.filamentDiam / 2) ** 2);
   const efactor = efOf(s.lineWidth);
   // Per-feature line widths (extrusion width). Fall back to lineWidth.
   const LW = {
@@ -157,8 +214,8 @@ export function layersToGcode(layers, settings) {
     support: s.supportLineWidth ?? s.lineWidth,
     bridge: s.bridgeLineWidth ?? s.lineWidth,
   };
-  const efFeat = (feature, layerIdx) => (layerIdx === 0 && s.initialLayerLineWidth)
-    ? efOf(s.initialLayerLineWidth) : efOf(LW[feature] ?? s.lineWidth);
+  const efFeat = (feature, layerIdx, h = s.layerHeight) => (layerIdx === 0 && s.initialLayerLineWidth)
+    ? efOf(s.initialLayerLineWidth, h) : efOf(LW[feature] ?? s.lineWidth, h);
   const zHop = s.zHop ?? 0;
 
   let g = '';
@@ -167,6 +224,14 @@ export function layersToGcode(layers, settings) {
   g += `; Material: ${s.material}, nozzle ${s.nozzleTemp}C, bed ${s.bedTemp}C\n`;
   g += `; estimated_time: 0\n`;
   g += (s.startGcode ? _interp(s.startGcode, s) + '\n' : _defaultStart(s));
+
+  // Pressure advance / linear advance (BambuStudio "flow dynamics"). Emitted
+  // after the start block so it applies to the whole print. Klipper uses
+  // SET_PRESSURE_ADVANCE; Marlin/others use M900 K.
+  if (s.pressureAdvance != null && s.pressureAdvance >= 0) {
+    const k = Number(s.pressureAdvance).toFixed(4);
+    g += (s.gcodeFlavor === 'klipper' ? `SET_PRESSURE_ADVANCE ADVANCE=${k}` : `M900 K${k}`) + '\n';
+  }
 
   // Acceleration / jerk control (Marlin M204/M205). Emitted regardless of a
   // custom start block so per-feature motion tuning still applies. The first
@@ -211,7 +276,7 @@ export function layersToGcode(layers, settings) {
     g += `G1 X${target[0].toFixed(3)} Y${target[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
     curX = target[0]; curY = target[1];
   };
-  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow) => {
+  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow, scarf = 0) => {
     if (pts.length < 2) return;
     const first = pts[0];
     // Avoid-crossing-walls (combing): if a route that stays over solid exists,
@@ -252,14 +317,38 @@ export function layersToGcode(layers, settings) {
     if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${s.travelSpeed * 60}\n`;
     e += s.retraction; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
+    let sdist = 0;
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
       const d = Math.hypot(p[0] - curX, p[1] - curY);
-      e += d * ef;
+      // Scarf-joint seam: ramp extrusion up over the first `scarf` mm so the seam
+      // begins as a taper (paired with the ramp-down overlap below), not a blob.
+      let segEf = ef;
+      if (scarf > 0 && closed) { const mid = sdist + d / 2; if (mid < scarf) segEf = ef * (0.2 + 0.8 * (mid / scarf)); }
+      e += d * segEf;
       g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
-      curX = p[0]; curY = p[1];
+      curX = p[0]; curY = p[1]; sdist += d;
     }
-    if (closed) closeLoop(first, ef, speed);
+    if (closed) {
+      closeLoop(first, ef, speed);
+      // Ramp-down overlap: continue along the loop from the seam for `scarf` mm,
+      // tapering flow to zero so the joint fades out over the ramp-up region.
+      if (scarf > 0) {
+        let od = 0, i = 1, px = first[0], py = first[1];
+        while (od < scarf && i <= pts.length) {
+          const p = pts[i % pts.length];
+          const d = Math.hypot(p[0] - px, p[1] - py);
+          if (d < EPS) { i++; continue; }
+          const seg = Math.min(d, scarf - od);
+          const tx = px + (p[0] - px) * (seg / d), ty = py + (p[1] - py) * (seg / d);
+          const frac = Math.max(0, 1 - (od + seg / 2) / scarf);
+          e += seg * ef * frac;
+          g += `G1 X${tx.toFixed(3)} Y${ty.toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+          curX = tx; curY = ty; od += seg; px = tx; py = ty;
+          if (seg >= d - EPS) i++;
+        }
+      }
+    }
     lastPath = closed ? [...pts, first] : pts;
   };
 
@@ -290,7 +379,10 @@ export function layersToGcode(layers, settings) {
   };
 
   layers.forEach((layer, layerIdx) => {
-    const z = (layerIdx + 1) * s.layerHeight;
+    // Per-layer Z (top) and height — adaptive layers carry their own; uniform
+    // layers fall back to the global height (byte-identical behaviour).
+    const lh = layer.h ?? s.layerHeight;
+    const z = layer.z ?? (layerIdx + 1) * s.layerHeight;
     const paths = layer.paths || [
       ...(layer.perimeters || []).map((p) => ({ feature: 'wall', closed: true, pts: p })),
       ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
@@ -353,9 +445,11 @@ export function layersToGcode(layers, settings) {
       // cleaner slower because the head can't accelerate over the short path.
       if (path.closed && s.smallPerimeterSpeed && String(path.feature).includes('wall') && pathLen(path.pts, true) < (s.smallPerimeterThreshold ?? 15)) pspeed = Math.min(pspeed, s.smallPerimeterSpeed);
       if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
-      const ef = efFeat(path.feature, layerIdx) * (path.flow ?? 1);
+      const ef = efFeat(path.feature, layerIdx, lh) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
-      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef);
+      // Scarf seam only on outer walls (above the first layer, non-vase).
+      const scarf = (s.scarfSeam && path.feature === 'outer-wall' && path.closed && layerIdx > 0) ? (s.scarfLength ?? 5) : 0;
+      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf);
     }
   });
 
@@ -409,6 +503,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const { autoRepair } = await import('./mesh-repair.js');
   const { recenterToOrigin, meshStats } = await import('./mesh-transforms.js');
   const repaired = autoRepair(mesh).mesh;
+  // Bounding box of the mesh as received (world / exported-STL frame) — used to
+  // map painted support regions through the same recenter+centre translation.
+  const bbBefore = meshStats(repaired).bbox;
   let recentered;
   if (opts.offset) {
     const p = Array.from(repaired.positions);
@@ -419,7 +516,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   }
   const stats = meshStats(recentered);
   const layerHeight = s.layerHeight;
-  const numLayers = opts.numLayers || Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
+  let numLayers = opts.numLayers || Math.max(1, Math.floor(stats.bbox.size[2] / layerHeight));
 
   // Centre the model on the bed. recenterToOrigin drops the model into the
   // [0,0] corner; real printers expect bed coordinates, so shift it to the bed
@@ -427,12 +524,34 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   // when centreOnBed is explicitly disabled.
   const bedX = (Array.isArray(s.bedSize) && s.bedSize[0]) || (s.buildVolume && (s.buildVolume[0] ?? s.buildVolume.x)) || 0;
   const bedY = (Array.isArray(s.bedSize) && s.bedSize[1]) || (s.buildVolume && (s.buildVolume[1] ?? s.buildVolume.y)) || 0;
+  let dxApplied = 0, dyApplied = 0;
   if (!opts.offset && s.centerOnBed !== false && bedX > 0 && bedY > 0) {
-    const dx = bedX / 2 - stats.bbox.size[0] / 2;
-    const dy = bedY / 2 - stats.bbox.size[1] / 2;
+    dxApplied = bedX / 2 - stats.bbox.size[0] / 2;
+    dyApplied = bedY / 2 - stats.bbox.size[1] / 2;
     const P = Array.from(recentered.positions);
-    for (let i = 0; i < P.length; i += 3) { P[i] += dx; P[i + 1] += dy; }
+    for (let i = 0; i < P.length; i += 3) { P[i] += dxApplied; P[i + 1] += dyApplied; }
     recentered = { positions: P, indices: recentered.indices };
+  }
+
+  // Map painted support regions (world frame) into the bed frame with the same
+  // pure translation applied to the mesh: engine = world - bbMin + centreOffset.
+  const offX = -bbBefore.min[0] + dxApplied;
+  const offY = -bbBefore.min[1] + dyApplied;
+  const offZ = -bbBefore.min[2];
+  const xfPaint = (t) => [t[0] + offX, t[1] + offY, t[2] + offX, t[3] + offY, t[4] + offX, t[5] + offY, t[6] + offZ];
+  const paintEnforce = (s.supportPaint && Array.isArray(s.supportPaint.enforce) ? s.supportPaint.enforce : []).map(xfPaint);
+  const paintBlock = (s.supportPaint && Array.isArray(s.supportPaint.block) ? s.supportPaint.block : []).map(xfPaint);
+  // Seam paint carries [x0,y0,x1,y1,x2,y2,zMin,zMax]; map both z bounds.
+  const xfSeam = (t) => [t[0] + offX, t[1] + offY, t[2] + offX, t[3] + offY, t[4] + offX, t[5] + offY, t[6] + offZ, t[7] + offZ];
+  if (s.seamPaint && (s.seamPaint.enforce?.length || s.seamPaint.block?.length)) {
+    s.seamPaint = {
+      enforce: (s.seamPaint.enforce || []).map(xfSeam),
+      block: (s.seamPaint.block || []).map(xfSeam),
+    };
+  }
+  // Fuzzy-skin painting: bands (8-value) where the outer wall gets fuzzed.
+  if (s.fuzzyPaint && s.fuzzyPaint.enforce?.length) {
+    s.fuzzyPaint = { enforce: s.fuzzyPaint.enforce.map(xfSeam) };
   }
 
   // Top/bottom shell thickness (mm) overrides the layer counts when it implies
@@ -440,24 +559,81 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   if (s.topShellThickness > 0) s.topLayers = Math.max(s.topLayers, Math.ceil(s.topShellThickness / layerHeight));
   if (s.bottomShellThickness > 0) s.bottomLayers = Math.max(s.bottomLayers, Math.ceil(s.bottomShellThickness / layerHeight));
 
+  // Adaptive layer height: vary layer thickness by local surface slope — shallow
+  // slopes get thin layers (smoother curves), vertical walls get thick layers
+  // (fewer layers, faster). Builds a bottom→top schedule of {centre, top, h}.
+  let zCenters = null, zTops = null, heights = null;
+  if (s.adaptiveLayers && !opts.offset) {
+    const minH = Math.max(0.04, s.minLayerHeight ?? Math.min(layerHeight, 0.08));
+    const maxH = Math.max(minH + 0.01, s.maxLayerHeight ?? Math.max(layerHeight, layerHeight * 1.5));
+    const cusp = s.adaptiveCusp ?? layerHeight * 0.4;
+    const modelH = stats.bbox.size[2];
+    const binH = minH / 2;
+    const nb = Math.max(1, Math.ceil(modelH / binH));
+    const req = new Float32Array(nb).fill(maxH);
+    const P = recentered.positions, I = recentered.indices;
+    const triCount = I ? I.length / 3 : P.length / 9;
+    for (let t = 0; t < triCount; t++) {
+      const i0 = (I ? I[t * 3] : t * 3) * 3, i1 = (I ? I[t * 3 + 1] : t * 3 + 1) * 3, i2 = (I ? I[t * 3 + 2] : t * 3 + 2) * 3;
+      const ux = P[i1] - P[i0], uy = P[i1 + 1] - P[i0 + 1], uz = P[i1 + 2] - P[i0 + 2];
+      const vx = P[i2] - P[i0], vy = P[i2 + 1] - P[i0 + 1], vz = P[i2 + 2] - P[i0 + 2];
+      let nz = ux * vy - uy * vx;
+      const nl = Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, nz);
+      if (nl < 1e-9) continue;
+      const anz = Math.abs(nz / nl);                                  // |cos(slope-from-horizontal)|
+      const rh = anz < 1e-3 ? maxH : Math.max(minH, Math.min(maxH, cusp / anz));
+      const z0 = Math.min(P[i0 + 2], P[i1 + 2], P[i2 + 2]), z1 = Math.max(P[i0 + 2], P[i1 + 2], P[i2 + 2]);
+      for (let bb = Math.max(0, Math.floor(z0 / binH)); bb <= Math.min(nb - 1, Math.ceil(z1 / binH)); bb++) if (rh < req[bb]) req[bb] = rh;
+    }
+    zCenters = []; zTops = []; heights = [];
+    let z = 0, guard = 0;
+    while (z < modelH - 1e-6 && guard++ < 100000) {
+      let h = maxH;
+      for (let iter = 0; iter < 8; iter++) {
+        let mn = maxH;
+        for (let bb = Math.floor(z / binH); bb <= Math.min(nb - 1, Math.floor((z + h) / binH)); bb++) if (req[bb] < mn) mn = req[bb];
+        if (mn >= h - 1e-6) break;
+        h = Math.max(minH, mn);
+      }
+      if (z + h > modelH) h = Math.max(minH, modelH - z);
+      zCenters.push(z + h / 2); zTops.push(z + h); heights.push(h);
+      z += h;
+    }
+    numLayers = zCenters.length;
+  }
+
   // Pass 1 — slice every layer into regions (needed up-front for supports).
   const layerRegions = [];
   for (let i = 0; i < numLayers; i++) {
-    const z = (i + 0.5) * layerHeight;
+    const z = zCenters ? zCenters[i] : (i + 0.5) * layerHeight;
     layerRegions.push(buildRegions(sliceLayer(recentered, z)));
   }
 
-  // Supports (optional) — overhang columns down to the bed.
+  // Supports (optional) — overhang columns down to the bed. Runs when auto
+  // support is on OR the user painted enforce regions (paint-only mode then
+  // suppresses auto-overhang detection so only painted areas get support).
   let supportSegs = null;
-  if (s.supports) {
-    const { generateSupports } = await import('./native-slicer-support.js');
-    supportSegs = generateSupports(layerRegions, {
-      lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
-      layerHeight, thresholdAngle: s.supportThreshold ?? 40, wallCount: s.supportWallCount ?? 0,
-      removeSmallOverhangs: !!s.supportRemoveSmall, minOverhangArea: s.supportMinArea ?? 3,
-      // Top Z distance in mm overrides the layer-count gap when provided.
-      ...(s.supportTopZDist != null ? { zGapLayers: Math.max(0, Math.round(s.supportTopZDist / layerHeight)) } : {}),
-    });
+  const treeStyle = /tree|organic/.test(String(s.supportStyle || '')) || /tree|organic/.test(String(s.supportType || ''));
+  if (s.supports || paintEnforce.length) {
+    // Tree/organic support (branching trunks) when selected and there's no
+    // painted enforce/block — painting still uses the grid generator.
+    if (treeStyle && s.supports && !paintEnforce.length && !paintBlock.length) {
+      const { generateTreeSupports } = await import('./native-slicer-tree.js');
+      supportSegs = generateTreeSupports(layerRegions, {
+        gridRes: s.supportGridRes ?? 3, layerHeight, zGapLayers: s.supportZGap ?? 1,
+        ...(s.supportTopZDist != null ? { zGapLayers: Math.max(0, Math.round(s.supportTopZDist / layerHeight)) } : {}),
+      });
+    } else {
+      const { generateSupports } = await import('./native-slicer-support.js');
+      supportSegs = generateSupports(layerRegions, {
+        lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
+        layerHeight, thresholdAngle: s.supportThreshold ?? 40, wallCount: s.supportWallCount ?? 0,
+        removeSmallOverhangs: !!s.supportRemoveSmall, minOverhangArea: s.supportMinArea ?? 3,
+        paintEnforce, paintBlock, paintOnly: !s.supports,
+        // Top Z distance in mm overrides the layer-count gap when provided.
+        ...(s.supportTopZDist != null ? { zGapLayers: Math.max(0, Math.round(s.supportTopZDist / layerHeight)) } : {}),
+      });
+    }
   }
 
   // Surface classifier — marks infill solid on real top/bottom faces
@@ -501,8 +677,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   // Pass 2 — walls + shells + infill (+ supports) per layer, as typed
   // paths so the preview can colour each feature like a desktop slicer.
   const layers = [];
+  // Lightning infill: a top-down tree that only supports top/overhang surfaces,
+  // leaving the deep interior hollow. Precomputed over all layer regions.
+  let lightningSegs = null;
+  if (s.infillPattern === 'lightning') {
+    const { generateLightning } = await import('./native-slicer-lightning.js');
+    lightningSegs = generateLightning(layerRegions, { lineWidth: lw, density: s.infillDensity });
+  }
+
   for (let i = 0; i < numLayers; i++) {
     const regions = layerRegions[i];
+    // This layer's slice height (adaptive-aware) — used by seam/fuzzy band tests.
+    const z = zCenters ? zCenters[i] : (i + 0.5) * s.layerHeight;
     const adhesion = [];   // skirt/brim (layer 0)
     const walls = [];      // outer/inner/hole walls
     const fills = [];      // solid/sparse infill
@@ -556,19 +742,23 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       }
       // Outer walls: shrink inward wall-by-wall (negative = inward).
       const seam = s.seamPosition;
+      const seamCtx = s.seamPaint ? { enforce: s.seamPaint.enforce, block: s.seamPaint.block, z } : undefined;
       let inner = outerBoundary;
-      // Fuzzy skin: perturb the wall outline. Point distance and first-layer
-      // behaviour are configurable; mode 'all' fuzzes inner walls too.
-      const fuzzOn = s.fuzzySkin && (i > 0 || s.fuzzySkinFirstLayer !== false);
+      // Fuzzy skin: perturb the wall outline. Global (s.fuzzySkin) or painted
+      // (s.fuzzyPaint bands → only those wall stretches fuzz). Point distance and
+      // first-layer behaviour are configurable; mode 'all' fuzzes inner walls too.
+      const fuzzPaint = (s.fuzzyPaint && s.fuzzyPaint.enforce && s.fuzzyPaint.enforce.length) ? s.fuzzyPaint.enforce : null;
+      const fuzzInBand = fuzzPaint ? ((x, y) => _inSeamBand(x, y, z, fuzzPaint)) : null;
+      const fuzzOn = (s.fuzzySkin || fuzzPaint) && (i > 0 || s.fuzzySkinFirstLayer !== false);
       const fuzzPD = s.fuzzySkinPointDist ?? Math.max(0.3, lw);
-      const fuzz = (poly) => fuzzifyPolygon(poly, s.fuzzySkinThickness, fuzzPD);
+      const fuzz = (poly) => fuzzifyPolygon(poly, s.fuzzySkinThickness, fuzzPD, fuzzInBand);
       const outerPts = fuzzOn ? fuzz(outerBoundary) : outerBoundary;
-      const mainWalls = [{ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam) }];
+      const mainWalls = [{ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam, seamCtx) }];
       const fuzzInner = fuzzOn && s.fuzzySkinMode === 'all';
       for (let p = 1; p < wallLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
-        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam) });
+        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam, seamCtx) });
       }
       // Overhang perimeters: record how much each wall juts over air. The
       // fraction drives a graduated slow-down (BambuStudio's overhang speed
@@ -601,7 +791,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       const infHoles = grownHoles.map(h => offsetPolygon(h, infGap)).filter(h => h && h.length >= 3);
       if (infOuter && infOuter.length >= 3) {
         const infRegion = { outer: infOuter, holes: infHoles };
-        const baseAngle = s.infillAngle + (i % 2) * 90;
+        // Most patterns alternate 90° per layer for cross-layer bonding;
+        // "aligned rectilinear" keeps a fixed direction on every layer.
+        const aligned = s.infillPattern === 'alignedrectilinear';
+        const baseAngle = s.infillAngle + (aligned ? 0 : (i % 2) * 90);
         // Concentric infill = closed rings stepping inward. `dense` fills solid
         // (spacing = line width) for solid/top-surface rings.
         const concentric = (region2, feat, dense) => {
@@ -621,14 +814,28 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         const thinProbe = offsetPolygon(infOuter, -lw);
         const thinRegion = s.gapFill !== false && !globalSolid && (!thinProbe || thinProbe.length < 3);
         if (thinRegion) {
-          for (const sg of solidInfill(infRegion, baseAngle, lw)) fills.push({ feature: 'gap', closed: false, pts: sg, flow: s.gapFillFlow ?? 1 });
+          // Arachne-style variable-width thin-feature filling: scale each gap
+          // segment's flow to the LOCAL feature width (≈ 2× distance to the
+          // region edge at the segment centre) so narrow ribs and tapers extrude
+          // the right amount instead of a fixed line width. Off → fixed flow
+          // (byte-identical).
+          const arachne = s.wallGenerator === 'arachne';
+          const gapBaseFlow = s.gapFillFlow ?? 1;
+          for (const sg of solidInfill(infRegion, baseAngle, lw)) {
+            let flow = gapBaseFlow;
+            if (arachne) {
+              const w = 2 * _distToRegionEdge((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, infRegion);
+              flow = gapBaseFlow * Math.max(0.25, Math.min(1.6, w / lw));
+            }
+            fills.push({ feature: 'gap', closed: false, pts: sg, flow });
+          }
         } else if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.
           if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
           else if (globalSolid) {
             pushSolidRegion(infRegion, baseAngle);
-          } else if (doSparse) {
+          } else if (doSparse && s.infillPattern !== 'lightning') {
             const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight });
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
@@ -636,7 +843,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
           pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg));
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
-          else if (doSparse) {
+          else if (doSparse && s.infillPattern !== 'lightning') {
             const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight }).filter((sg) => !midSolid(surfaces, i, sg));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
@@ -688,7 +895,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
 
     // Print order: adhesion → walls → infill → support. `regions` rides along
     // so the G-code stage can route avoid-crossing-walls travel.
-    layers.push({ paths: [...adhesion, ...walls, ...fills, ...support], regions });
+    // Lightning tree edges for this layer (sparse infill only; solid shells and
+    // gap fill above are still emitted per-region). Skipped on global-solid
+    // shell layers (those are already filled solid).
+    if (lightningSegs && !globalSolid && (i % Math.max(1, s.infillCombination | 0)) === 0) {
+      for (const sg of lightningSegs[i]) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
+    }
+    layers.push({ paths: [...adhesion, ...walls, ...fills, ...support], regions, ...(zTops ? { z: zTops[i], h: heights[i] } : {}) });
   }
 
   return { layers, s, bbox: stats.bbox, numLayers, triangles: recentered.indices.length / 3 };

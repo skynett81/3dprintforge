@@ -2093,10 +2093,16 @@ export async function handleApiRequest(req, res) {
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action, op, tray });
           }
-          // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
-          // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
+          // Motion / temp / tool: gcode-based. Klipper/Moonraker (e.g. Snapmaker
+          // U1) send over the Moonraker socket; Bambu accepts the same gcode via
+          // an MQTT gcode_line, so its Device tab gets the full jog/temp cluster
+          // exactly like Bambu Studio.
           if (['home', 'move', 'extrude', 'set_temp', 'select_tool', 'filament'].includes(action)) {
-            if (!['moonraker', 'klipper'].includes(entry.config && entry.config.type))
+            const ctype = entry.config && entry.config.type;
+            // Bambu filament ops are handled above; only Moonraker/Klipper reach
+            // the M701/M702/M600 branch here.
+            const motionTypes = action === 'filament' ? ['moonraker', 'klipper'] : ['moonraker', 'klipper', 'bambu'];
+            if (!motionTypes.includes(ctype))
               return sendJson(res, { error: 'motion control not supported for this connector' }, 409);
             let g = null;
             if (action === 'home') {
@@ -2127,7 +2133,13 @@ export async function handleApiRequest(req, res) {
               else if (op === 'change') g = `${tsel}M600`;
             }
             if (!g) return sendJson(res, { error: 'invalid control parameters' }, 400);
-            entry.client.sendCommand({ action: 'gcode', gcode: g });
+            // Bambu takes the same gcode over an MQTT gcode_line; Moonraker over
+            // its socket. buildGcodeCommand splits multi-line gcode itself.
+            if (ctype === 'bambu') {
+              for (const c of buildGcodeMultiLine(g)) entry.client.sendCommand(c);
+            } else {
+              entry.client.sendCommand({ action: 'gcode', gcode: g });
+            }
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action });
           }
@@ -7571,6 +7583,27 @@ export async function handleApiRequest(req, res) {
           if (cur) opts.filamentCurrency = cur;
           const { estimate } = await import('./gcode-time-estimator.js');
           return sendJson(res, estimate(buf, opts));
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    // STEP / STP (CAD B-rep) → tessellated ASCII STL, via OpenCascade in Node
+    // (avoids the browser CSP blocking the WASM importer's eval).
+    if (method === 'POST' && path === '/api/slicer/native/step-to-stl') {
+      const chunks = [];
+      let total = 0; const limit = 100 * 1024 * 1024; let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'STEP file too large (max 100 MB)' }, 413);
+        try {
+          const { stepToStl } = await import('./step-import.js');
+          const fmt = url.searchParams.get('format') === 'iges' ? 'iges' : 'step';
+          const stl = await stepToStl(Buffer.concat(chunks), fmt);
+          res.writeHead(200, { 'Content-Type': 'model/stl', 'Cache-Control': 'no-store' });
+          res.end(stl);
         } catch (e) {
           return sendJson(res, { error: e.message }, 500);
         }

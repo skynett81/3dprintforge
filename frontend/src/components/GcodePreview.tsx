@@ -35,7 +35,9 @@ const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 
  * per feature (walls / infill / support …) with a slider — exactly like a
  * desktop slicer's preview. Z-up, millimetres.
  */
-export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number }) {
+type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
+
+export function GcodePreview({ gcode, bed = 256, slotColors }: { gcode: string; bed?: number; slotColors?: string[] }) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -43,9 +45,43 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
   const total = parsed.layers.length;
   const [layer, setLayer] = useState(total);
   const [showTravel, setShowTravel] = useState(false);
-  const [mode, setMode] = useState<'feature' | 'speed'>('feature');
+  const [mode, setMode] = useState<ColorMode>('feature');
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => { setLayer(total); }, [total]);
+
+  // Play: step up through the layers, then stop at the top.
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => setLayer((l) => (l >= total ? total : l + 1)), 60);
+    return () => clearInterval(id);
+  }, [playing, total]);
+  useEffect(() => { if (playing && layer >= total) setPlaying(false); }, [playing, layer, total]);
+
+  // Cumulative time / filament-length up to each layer (for the readout).
+  const cum = useMemo(() => {
+    let tSum = 0, eSum = 0; const tArr: number[] = [], eArr: number[] = [];
+    for (const l of parsed.layers) { tSum += l.timeSec; eSum += l.eLen; tArr.push(tSum); eArr.push(eSum); }
+    return { tArr, eArr, totTime: tSum, totE: eSum };
+  }, [parsed]);
+  // Colour-change layers: where the tool at the start of a layer differs from
+  // the previous layer's tool (a filament swap / M600). Shown as ticks on the
+  // slider and jump targets — completes the multi-colour / HueForge workflow.
+  const colorChanges = useMemo(() => {
+    const out: { layer: number; z: number; tool: number }[] = [];
+    let prev = -1;
+    parsed.layers.forEach((l, i) => {
+      const tool = l.allTool.length ? (l.allTool[0] || 0) : prev < 0 ? 0 : prev;
+      if (prev >= 0 && tool !== prev) out.push({ layer: i + 1, z: l.z, tool });
+      prev = l.allTool.length ? (l.allTool[l.allTool.length - 1] || 0) : prev;
+    });
+    return out;
+  }, [parsed]);
+
+  // Filament mm → grams (1.75 mm, ~1.24 g/cm³ — approximate; the exact figure
+  // is the slice total in the header).
+  const gramsOf = (mm: number) => (mm * Math.PI * 0.875 * 0.875 * 1.24) / 1000;
+  const fmtT = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m` : s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 
   useEffect(() => {
     const el = mount.current; if (!el) return;
@@ -92,18 +128,26 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
     const shown = Math.min(layer, total);
     const travelPos: number[] = [];
 
-    if (mode === 'speed') {
-      // Colour every extrusion segment by its print speed (blue slow → red fast).
-      const { min, max } = parsed.speedRange;
-      const span = Math.max(1, max - min);
+    if (mode !== 'feature') {
+      // Colour each extrusion segment by a per-segment value (speed / flow),
+      // per-layer value (layer time) or the active tool — like BambuStudio's
+      // "colour by" preview modes.
+      const range = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
+      const span = Math.max(1e-6, range.max - range.min);
+      const palette = (slotColors && slotColors.length ? slotColors : ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a']).map((h) => new THREE.Color(h));
       const pos: number[] = [];
       const col: number[] = [];
       const rgb = new THREE.Color();
       for (let i = 0; i < shown; i++) {
         const l = parsed.layers[i];
         for (let k = 0, s = 0; k < l.allSeg.length; k += 4, s++) {
-          const t01 = Math.min(1, Math.max(0, (l.allSpeed[s] - min) / span));
-          rgb.setHSL((1 - t01) * 0.66, 0.9, 0.5);
+          if (mode === 'tool') {
+            rgb.copy(palette[(l.allTool[s] || 0) % palette.length]);
+          } else {
+            const val = mode === 'flow' ? l.allFlow[s] : mode === 'layertime' ? l.timeSec : l.allSpeed[s];
+            const t01 = Math.min(1, Math.max(0, (val - range.min) / span));
+            rgb.setHSL((1 - t01) * 0.66, 0.9, 0.5);
+          }
           pos.push(l.allSeg[k] - cx, l.allSeg[k + 1] - cy, l.z, l.allSeg[k + 2] - cx, l.allSeg[k + 3] - cy, l.z);
           col.push(rgb.r, rgb.g, rgb.b, rgb.r, rgb.g, rgb.b);
         }
@@ -139,9 +183,11 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
       c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
     }
-  }, [parsed, layer, showTravel, total, mode]);
+  }, [parsed, layer, showTravel, total, mode, slotColors]);
 
-  const curZ = parsed.layers[Math.min(layer, total) - 1]?.z ?? 0;
+  const shown = Math.min(layer, total);
+  const curLayer = parsed.layers[shown - 1];
+  const curZ = curLayer?.z ?? 0;
   const legend = LEGEND_ORDER.filter((f) => parsed.features.includes(f));
 
   return (
@@ -158,22 +204,63 @@ export function GcodePreview({ gcode, bed = 256 }: { gcode: string; bed?: number
             ))}
           </div>
         )}
-        {mode === 'speed' && (
+        {(mode === 'speed' || mode === 'flow' || mode === 'layertime') && (() => {
+          const rng = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
+          const unit = mode === 'flow' ? 'mm³/s' : mode === 'layertime' ? 's' : 'mm/s';
+          return (
+            <div className="gpreview-legend">
+              <span className="gpreview-legend-item"><i style={{ width: 40, height: 6, background: 'linear-gradient(90deg,#2a4bd8,#2ecc71,#e0603a,#d6333a)' }} /></span>
+              <span className="gpreview-legend-item" style={{ justifyContent: 'space-between' }}>{rng.min.toFixed(mode === 'flow' ? 1 : 0)}–{rng.max.toFixed(mode === 'flow' ? 1 : 0)} {unit}</span>
+            </div>
+          );
+        })()}
+        {mode === 'tool' && parsed.tools.length > 0 && (
           <div className="gpreview-legend">
-            <span className="gpreview-legend-item"><i style={{ width: 40, height: 6, background: 'linear-gradient(90deg,#2a4bd8,#2ecc71,#e0603a,#d6333a)' }} /></span>
-            <span className="gpreview-legend-item" style={{ justifyContent: 'space-between' }}>{Math.round(parsed.speedRange.min)}–{Math.round(parsed.speedRange.max)} mm/s</span>
+            {parsed.tools.map((ti) => (
+              <span key={ti} className="gpreview-legend-item">
+                <i style={{ background: (slotColors && slotColors[ti]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][ti % 4] }} />
+                {t('v2.gpreview.tool', 'Filament')} {ti + 1}
+              </span>
+            ))}
           </div>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-        <select className="oset-input" style={{ maxWidth: 96 }} value={mode} onChange={(e) => setMode(e.target.value as 'feature' | 'speed')}>
+        <select className="oset-input" style={{ maxWidth: 110 }} value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>
           <option value="feature">{t('v2.gpreview.by_feature', 'Feature')}</option>
           <option value="speed">{t('v2.gpreview.by_speed', 'Speed')}</option>
+          <option value="flow">{t('v2.gpreview.by_flow', 'Flow')}</option>
+          <option value="layertime">{t('v2.gpreview.by_layertime', 'Layer time')}</option>
+          {parsed.tools.length > 1 && <option value="tool">{t('v2.gpreview.by_tool', 'Filament')}</option>}
         </select>
-        <span className="muted micro" style={{ minWidth: 80 }}>{t('v2.gpreview.layer', 'Layer')} {Math.min(layer, total)}/{total}</span>
-        <input type="range" min={1} max={Math.max(1, total)} value={Math.min(layer, total)} onChange={(e) => setLayer(Number(e.target.value))} style={{ flex: 1 }} />
+        <button className="btn btn--sm btn--ghost" style={{ minWidth: 34 }} title={playing ? t('v2.gpreview.pause', 'Pause') : t('v2.gpreview.play', 'Play')}
+          onClick={() => { if (layer >= total) setLayer(1); setPlaying((p) => !p); }}>{playing ? '❚❚' : '▶'}</button>
+        <span className="muted micro" style={{ minWidth: 80 }}>{t('v2.gpreview.layer', 'Layer')} {shown}/{total}</span>
+        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {colorChanges.length > 0 && (
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
+              {colorChanges.map((cc) => (
+                <span key={cc.layer}
+                  title={`${t('v2.gpreview.colorchange', 'Colour change')} · ${t('v2.gpreview.layer', 'Layer')} ${cc.layer} · z ${cc.z.toFixed(2)} · ${t('v2.gpreview.tool', 'Filament')} ${cc.tool + 1}`}
+                  style={{
+                    position: 'absolute', top: 1, bottom: 1, width: 2, borderRadius: 1, pointerEvents: 'auto', cursor: 'pointer',
+                    left: `${((cc.layer - 1) / Math.max(1, total - 1)) * 100}%`,
+                    background: (slotColors && slotColors[cc.tool]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][cc.tool % 4],
+                  }}
+                  onClick={() => { setPlaying(false); setLayer(cc.layer); }} />
+              ))}
+            </div>
+          )}
+          <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); }} style={{ width: '100%' }} />
+        </div>
         <span className="muted micro tnum" style={{ minWidth: 60 }}>z {curZ.toFixed(2)}</span>
         <label className="chk" style={{ margin: 0 }}><input type="checkbox" checked={showTravel} onChange={(e) => setShowTravel(e.target.checked)} /> {t('v2.gpreview.travel', 'Travel')}</label>
+        {colorChanges.length > 0 && <span className="muted micro" title={t('v2.gpreview.colorchanges_hint', 'Filament swaps — click a tick to jump')}>{colorChanges.length} {t('v2.gpreview.colorchanges', 'swaps')}</span>}
+      </div>
+      <div className="gpreview-stats">
+        <span><b>{t('v2.gpreview.this_layer', 'This layer')}:</b> {fmtT(curLayer?.timeSec ?? 0)} · {gramsOf(curLayer?.eLen ?? 0).toFixed(2)} g</span>
+        <span><b>{t('v2.gpreview.to_here', 'To here')}:</b> {fmtT(cum.tArr[shown - 1] ?? 0)} · {gramsOf(cum.eArr[shown - 1] ?? 0).toFixed(1)} g</span>
+        <span><b>{t('v2.gpreview.total', 'Total')}:</b> {fmtT(cum.totTime)} · {gramsOf(cum.totE).toFixed(1)} g</span>
       </div>
     </div>
   );

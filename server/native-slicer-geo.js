@@ -239,7 +239,7 @@ export function buildRegions(polygons) {
  * its outward normal, giving the outer wall a rough textured surface.
  * Deterministic (no Math.random) so slices are reproducible.
  */
-export function fuzzifyPolygon(poly, thickness = 0.3, pointDist = 0.4) {
+export function fuzzifyPolygon(poly, thickness = 0.3, pointDist = 0.4, inBand = null) {
   if (!poly || poly.length < 3 || thickness <= 0) return poly;
   const ccw = _isCCW(poly) ? 1 : -1;
   const n = poly.length;
@@ -251,12 +251,18 @@ export function fuzzifyPolygon(poly, thickness = 0.3, pointDist = 0.4) {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const len = Math.hypot(dx, dy);
     if (len < EPS) continue;
+    // With a paint mask: skip subdivision entirely for edges fully outside the
+    // band (keep the original vertex) so unpainted walls stay unchanged.
+    if (inBand && !inBand(a[0], a[1]) && !inBand((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) && !inBand(b[0], b[1])) {
+      out.push(a); continue;
+    }
     const nx = (dy / len) * ccw, ny = (-dx / len) * ccw;   // outward normal
     const steps = Math.max(1, Math.round(len / pointDist));
     for (let s = 0; s < steps; s++) {
       const t = s / steps;
-      const j = rnd() * thickness;
-      out.push([a[0] + dx * t + nx * j, a[1] + dy * t + ny * j]);
+      const px = a[0] + dx * t, py = a[1] + dy * t;
+      const j = (inBand && !inBand(px, py)) ? 0 : rnd() * thickness;
+      out.push([px + nx * j, py + ny * j]);
     }
   }
   return out.length >= 3 ? out : poly;
@@ -574,6 +580,13 @@ export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'l
   }
   if (pattern === 'gyroid') return gyroidInfill(region, density, lineWidth, ctx.z ?? 0);
   if (pattern === 'honeycomb') return honeycombInfill(region, density, lineWidth);
+  if (pattern === 'crosshatch') {
+    // 3-D cross-hatch: single-direction lines whose angle flips 90° every few
+    // layers, so successive bands cross — stronger than plain rectilinear.
+    const z = ctx.z ?? 0;
+    const rot = (Math.floor(z / (lineWidth * 4)) % 2) * 90;
+    return regionInfill(region, density, angleDeg + rot, lineWidth);
+  }
   if (pattern === 'cubic') {
     // Three directions rotating with height → a 3-D cubic lattice feel.
     const rot = ((ctx.z ?? 0) * 17) % 60;

@@ -5,7 +5,13 @@ import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { Brush, Evaluator, ADDITION, SUBTRACTION, INTERSECTION } from 'three-bvh-csg';
+import { FontLoader, type Font } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import helvetikerJson from '../assets/helvetiker.json';
 import { useT } from '../i18n';
 import { gradientBackground, buildPlate } from './plate-scene';
 import { parse3mfColors } from '../lib/tmf-colors';
@@ -42,19 +48,230 @@ export interface PlateHandle {
   scaleToFit: () => void;
   rotate90: (axis: 'x' | 'y' | 'z') => void;
   duplicateN: (n: number) => void;
+  autoOrient: () => void;
+  splitToParts: () => void;
+  setPlaceOnFace: (on: boolean) => void;
+  setMeasureMode: (on: boolean) => void;
+  simplify: () => void;
+  setPaintMode: (mode: { ch: 'support' | 'seam' | 'color' | 'fuzzy'; val: number } | null) => void;
+  clearPaint: (ch: 'support' | 'seam' | 'color' | 'fuzzy') => void;
+  getSupportPaint: () => { enforce: number[][]; block: number[][] };
+  getSeamPaint: () => { enforce: number[][]; block: number[][] };
+  getFuzzyPaint: () => { enforce: number[][]; block: number[][] };
+  hasColorPaint: () => boolean;
+  getColorMaterials: (name: string) => { extruder: number; file: File }[];
+  snapshot: () => PlateSnapshot;
+  restore: (snap: PlateSnapshot) => void;
+  detachSelected: () => THREE.Mesh | null;
+  setCutPreview: (fraction: number | null) => void;
+  cut: (fraction: number, keep: 'upper' | 'lower' | 'both', connectors?: number) => void;
+  boolean: (op: 'union' | 'subtract' | 'intersect') => void;
+  addPrimitive: (shape: 'cube' | 'cylinder' | 'sphere') => void;
+  addText: (text: string) => void;
+  addGeometry: (geom: THREE.BufferGeometry, name: string) => void;
+}
+
+// Parse the bundled typeface once, lazily.
+let _font: Font | null = null;
+function getFont(): Font {
+  if (!_font) _font = new FontLoader().parse(helvetikerJson as unknown as Parameters<FontLoader['parse']>[0]);
+  return _font;
 }
 
 interface Ctx {
   scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer;
   orbit: OrbitControls; tcontrols: TransformControls; objects: THREE.Mesh[];
   selected: THREE.Mesh | null; raf: number;
+  measurePts: THREE.Vector3[]; measureObjs: THREE.Object3D[];
+  cutPlane: THREE.Mesh | null;
 }
+
+export interface MeasureResult { dist: number; dx: number; dy: number; dz: number }
+/** A plate's live objects, kept in memory (with transforms, materials and paint
+ *  overlays intact) so switching plates preserves the exact arrangement. */
+export type PlateSnapshot = THREE.Mesh[];
 
 // Drop an object so its lowest point sits on the plate (z = 0).
 function dropToPlate(mesh: THREE.Mesh) {
   mesh.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(mesh);
   mesh.position.z -= box.min.z;
+}
+
+// Remove all measurement markers/lines and reset the picked points.
+function clearMeasure(c: Ctx) {
+  for (const o of c.measureObjs) {
+    c.scene.remove(o);
+    const obj = o as THREE.Mesh;
+    obj.geometry?.dispose?.();
+    const mat = obj.material as THREE.Material | THREE.Material[] | undefined;
+    if (Array.isArray(mat)) mat.forEach((m) => m.dispose()); else mat?.dispose?.();
+  }
+  c.measureObjs = []; c.measurePts = [];
+}
+
+/**
+ * Find the orientation that minimises support (Tweaker-style): score a set of
+ * candidate "down" directions — every distinct face normal (a face that could
+ * rest on the plate) plus the six axes — by the triangle area that would need
+ * support (steep down-facing faces), tie-broken by a larger flat base and lower
+ * height. Returns a quaternion to use as the mesh's orientation. Pure geometry,
+ * runs in the browser.
+ */
+function computeAutoOrient(geom: THREE.BufferGeometry): THREE.Quaternion {
+  const src = geom.index ? geom.toNonIndexed() : geom;
+  const pos = src.getAttribute('position');
+  const triCount = pos.count / 3;
+  const stride = triCount > 24000 ? Math.ceil(triCount / 24000) : 1; // cap work on dense meshes
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), cc = new THREE.Vector3();
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3(), n = new THREE.Vector3();
+  type Tri = { n: THREE.Vector3; area: number };
+  const tris: Tri[] = [];
+  const buckets = new Map<string, { n: THREE.Vector3; area: number }>();
+  for (let i = 0; i < triCount; i += stride) {
+    const o = i * 3;
+    a.fromBufferAttribute(pos, o); b.fromBufferAttribute(pos, o + 1); cc.fromBufferAttribute(pos, o + 2);
+    ab.subVectors(b, a); ac.subVectors(cc, a); n.crossVectors(ab, ac);
+    const area = n.length() * 0.5;
+    if (area < 1e-9) continue;
+    n.normalize();
+    tris.push({ n: n.clone(), area });
+    // Cluster normals to ~15° so a flat face yields one candidate resting plane.
+    const key = `${Math.round(n.x * 6)},${Math.round(n.y * 6)},${Math.round(n.z * 6)}`;
+    const bk = buckets.get(key);
+    if (bk) { bk.area += area; } else buckets.set(key, { n: n.clone(), area });
+  }
+  // Candidate down-directions: strongest resting planes + the six axes.
+  const cands = [...buckets.values()].sort((x, y) => y.area - x.area).slice(0, 24).map((x) => x.n);
+  for (const ax of [[0,0,-1],[0,0,1],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]] as const)
+    cands.push(new THREE.Vector3(ax[0], ax[1], ax[2]));
+
+  const DOWN = new THREE.Vector3(0, 0, -1);
+  const OVR = Math.sin(THREE.MathUtils.degToRad(45)); // 45° overhang threshold
+  let best: { q: THREE.Quaternion; support: number; base: number; height: number } | null = null;
+  const rn = new THREE.Vector3();
+  for (const d of cands) {
+    const dn = d.clone().normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(dn, DOWN);
+    let support = 0, base = 0, minZ = Infinity, maxZ = -Infinity;
+    for (const tr of tris) {
+      rn.copy(tr.n).applyQuaternion(q);
+      if (rn.z < -OVR) support += tr.area;            // steep down-facing → needs support
+      else if (rn.z > 0.94) base += tr.area;          // flat, resting on plate
+    }
+    // Height via the rotated axis extents (sample the bucket normals is not
+    // enough — use the rotated bbox from a light vertex sample).
+    for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 3000))) {
+      a.fromBufferAttribute(pos, i).applyQuaternion(q);
+      if (a.z < minZ) minZ = a.z; if (a.z > maxZ) maxZ = a.z;
+    }
+    const height = maxZ - minZ;
+    if (!best || support < best.support - 1e-6 ||
+        (Math.abs(support - best.support) <= best.support * 0.05 + 1e-6 &&
+         (base > best.base + 1e-6 || (Math.abs(base - best.base) < 1e-6 && height < best.height))))
+      best = { q, support, base, height };
+  }
+  return best?.q ?? new THREE.Quaternion();
+}
+
+/** Cut a geometry by the horizontal plane z = zc (object-local frame), splitting
+ *  crossing triangles and fan-capping each cut section. Returns the upper and
+ *  lower halves (either may be null). */
+function cutGeometryZ(geom: THREE.BufferGeometry, zc: number): { upper: THREE.BufferGeometry | null; lower: THREE.BufferGeometry | null } {
+  const src = geom.index ? geom.toNonIndexed() : geom;
+  const pos = src.getAttribute('position');
+  const up: number[] = [], lo: number[] = [];
+  const capA: THREE.Vector3[] = [], capB: THREE.Vector3[] = [];
+  const v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const lerp = (a: THREE.Vector3, b: THREE.Vector3) => {
+    const t = (zc - a.z) / (b.z - a.z);
+    return new THREE.Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, zc);
+  };
+  const tri = (arr: number[], a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => arr.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  for (let i = 0; i < pos.count; i += 3) {
+    for (let k = 0; k < 3; k++) v[k].fromBufferAttribute(pos, i + k);
+    const s = [v[0].z >= zc ? 1 : -1, v[1].z >= zc ? 1 : -1, v[2].z >= zc ? 1 : -1];
+    const na = s[0] + s[1] + s[2];
+    if (na === 3) { tri(up, v[0], v[1], v[2]); continue; }
+    if (na === -3) { tri(lo, v[0], v[1], v[2]); continue; }
+    const lone = na > 0 ? s.indexOf(-1) : s.indexOf(1);   // the vertex alone on its side
+    const A = v[lone], B = v[(lone + 1) % 3], C = v[(lone + 2) % 3];
+    const AB = lerp(A, B), AC = lerp(A, C);
+    const aSide = s[lone] > 0 ? up : lo, oSide = s[lone] > 0 ? lo : up;
+    tri(aSide, A, AB, AC);
+    tri(oSide, AB, B, C);
+    tri(oSide, AB, C, AC);
+    capA.push(AB.clone()); capB.push(AC.clone());
+  }
+  // Fan-cap each side from the section centroid (lower cap faces up, upper down).
+  if (capA.length) {
+    const cen = new THREE.Vector3();
+    for (let i = 0; i < capA.length; i++) { cen.add(capA[i]); cen.add(capB[i]); }
+    cen.multiplyScalar(1 / (capA.length * 2)); cen.z = zc;
+    for (let i = 0; i < capA.length; i++) { tri(lo, capA[i], capB[i], cen); tri(up, capB[i], capA[i], cen); }
+  }
+  const mk = (arr: number[]) => {
+    if (arr.length < 9) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+    g.computeVertexNormals();
+    return g;
+  };
+  return { upper: mk(up), lower: mk(lo) };
+}
+
+/** Apply a CSG op (ADDITION/SUBTRACTION/INTERSECTION) between two geometries in
+ *  a shared frame; returns the result geometry. Strips uv/color and ensures
+ *  normals so the evaluator (position+normal only) doesn't silently no-op. */
+function csgApply(ev: Evaluator, a: THREE.BufferGeometry, b: THREE.BufferGeometry, op: number): THREE.BufferGeometry {
+  const prep = (g: THREE.BufferGeometry) => { g.deleteAttribute('uv'); g.deleteAttribute('color'); if (!g.getAttribute('normal')) g.computeVertexNormals(); return g; };
+  const bA = new Brush(prep(a)); bA.updateMatrixWorld();
+  const bB = new Brush(prep(b)); bB.updateMatrixWorld();
+  return ev.evaluate(bA, bB, op).geometry.clone();
+}
+
+/** Split a mesh into connected components (disconnected shells) by welding
+ *  vertices at shared positions and union-finding triangles. Returns one
+ *  BufferGeometry per shell (the original if it's a single shell). */
+function splitGeometry(geom: THREE.BufferGeometry): THREE.BufferGeometry[] {
+  const src = geom.index ? geom.toNonIndexed() : geom;
+  const pos = src.getAttribute('position');
+  const triCount = pos.count / 3;
+  if (triCount < 2) return [geom];
+  // Weld vertices to a canonical id per position (quantised to 1e-4 mm).
+  const idOf = new Map<string, number>();
+  const vid = new Int32Array(pos.count);
+  const q = (v: number) => Math.round(v * 1e4);
+  let next = 0;
+  for (let i = 0; i < pos.count; i++) {
+    const key = `${q(pos.getX(i))},${q(pos.getY(i))},${q(pos.getZ(i))}`;
+    let id = idOf.get(key); if (id === undefined) { id = next++; idOf.set(key, id); }
+    vid[i] = id;
+  }
+  const parent = new Int32Array(next); for (let i = 0; i < next; i++) parent[i] = i;
+  const find = (x: number): number => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  const uni = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; };
+  for (let tOff = 0; tOff < pos.count; tOff += 3) { uni(vid[tOff], vid[tOff + 1]); uni(vid[tOff], vid[tOff + 2]); }
+  // Group triangles by component root.
+  const groups = new Map<number, number[]>();
+  for (let t = 0; t < triCount; t++) {
+    const root = find(vid[t * 3]);
+    (groups.get(root) ?? (groups.set(root, []), groups.get(root)!)).push(t);
+  }
+  if (groups.size <= 1) return [geom];
+  const out: THREE.BufferGeometry[] = [];
+  for (const trisIdx of groups.values()) {
+    const arr = new Float32Array(trisIdx.length * 9);
+    let w = 0;
+    for (const t of trisIdx) {
+      const o = t * 3;
+      for (let k = 0; k < 3; k++) { arr[w++] = pos.getX(o + k); arr[w++] = pos.getY(o + k); arr[w++] = pos.getZ(o + k); }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    out.push(g);
+  }
+  return out;
 }
 
 const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0.55, metalness: 0.1, flatShading: false });
@@ -74,9 +291,16 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   onObjRef.current = onObject;
   const onStateRef = useRef(onState);
   onStateRef.current = onState;
+  const placeFaceRef = useRef(false);   // "place on face" pick mode
+  const measureRef = useRef(false);     // "measure" pick mode
+  // Paint brush: a channel (support / seam / color) + value. support/seam use
+  // 0 erase, 1 enforce, 2 block; color uses the extruder index (0 = erase).
+  const paintRef = useRef<{ ch: 'support' | 'seam' | 'color' | 'fuzzy'; val: number } | null>(null);
   const [mode, setModeState] = useState<PlateMode>('translate');
   const [count, setCount] = useState(0);
   const [sel, setSel] = useState(false);
+  const [measure, setMeasure] = useState<MeasureResult | null>(null);
+  const [measuring, setMeasuring] = useState(false);
 
   function emitState(nextMode = mode) {
     const c = ctx.current;
@@ -157,15 +381,99 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const helper = (tcontrols as unknown as { getHelper?: () => THREE.Object3D }).getHelper?.() ?? (tcontrols as unknown as THREE.Object3D);
     scene.add(helper);
 
-    const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0 };
+    const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0, measurePts: [], measureObjs: [], cutPlane: null };
     ctx.current = c;
 
     // click-to-select — only on a clean click (not an orbit drag), decided
     // on pointerUP, so rotating the view never changes the selection.
     const ray = new THREE.Raycaster();
     let downX = 0, downY = 0;
-    const onPointerDown = (ev: PointerEvent) => { downX = ev.clientX; downY = ev.clientY; };
+
+    // ── Model painting ── brush support / seam / colour onto mesh triangles.
+    // Each channel is a Uint8Array on the mesh (userData.paint_<ch>) with its
+    // own coloured overlay (userData.ov_<ch>), so the three tools coexist.
+    const brushR = 6;                              // brush radius (mm)
+    const tva = new THREE.Vector3(), tvb = new THREE.Vector3(), tvc = new THREE.Vector3();
+    let painting = false, strokeMesh: THREE.Mesh | null = null, strokeCentroids: Float32Array | null = null;
+    const paintTriCount = (m: THREE.Mesh) => { const g = m.geometry; return g.index ? g.index.count / 3 : g.getAttribute('position').count / 3; };
+    const triVI = (g: THREE.BufferGeometry, i: number): [number, number, number] =>
+      g.index ? [g.index.getX(i * 3), g.index.getX(i * 3 + 1), g.index.getX(i * 3 + 2)] : [i * 3, i * 3 + 1, i * 3 + 2];
+    const ensurePaint = (m: THREE.Mesh, ch: string): Uint8Array => {
+      const n = paintTriCount(m); const key = 'paint_' + ch;
+      let arr = m.userData[key] as Uint8Array | undefined;
+      if (!arr || arr.length !== n) { arr = new Uint8Array(n); m.userData[key] = arr; }
+      return arr;
+    };
+    const chColor = (ch: string, v: number): number => {
+      if (ch === 'support') return v === 2 ? 0xe0463c : 0x2f7be0;
+      if (ch === 'seam') return v === 2 ? 0xe08a2f : 0x2fbf6f;
+      if (ch === 'fuzzy') return 0xa855f7;
+      const sc = slotColorsRef.current; const hexs = sc && sc[v - 1];
+      return hexs ? new THREE.Color(hexs).getHex() : 0x9aa4b2;   // colour = the extruder's filament colour
+    };
+    const worldCentroids = (m: THREE.Mesh): Float32Array => {
+      const g = m.geometry, pos = g.getAttribute('position'); const n = paintTriCount(m);
+      const out = new Float32Array(n * 3); m.updateMatrixWorld(true); const mw = m.matrixWorld;
+      for (let i = 0; i < n; i++) {
+        const [a, b, cc] = triVI(g, i);
+        tva.fromBufferAttribute(pos, a).applyMatrix4(mw); tvb.fromBufferAttribute(pos, b).applyMatrix4(mw); tvc.fromBufferAttribute(pos, cc).applyMatrix4(mw);
+        out[i * 3] = (tva.x + tvb.x + tvc.x) / 3; out[i * 3 + 1] = (tva.y + tvb.y + tvc.y) / 3; out[i * 3 + 2] = (tva.z + tvb.z + tvc.z) / 3;
+      }
+      return out;
+    };
+    const rebuildOverlay = (m: THREE.Mesh, ch: string) => {
+      const okey = 'ov_' + ch;
+      const prev = m.userData[okey] as THREE.Mesh | undefined;
+      if (prev) { m.remove(prev); prev.geometry.dispose(); m.userData[okey] = undefined; }
+      const arr = m.userData['paint_' + ch] as Uint8Array | undefined; if (!arr) return;
+      const g = m.geometry, pos = g.getAttribute('position');
+      const P: number[] = [], C: number[] = []; const col = new THREE.Color();
+      for (let i = 0; i < arr.length; i++) {
+        if (!arr[i]) continue;
+        const [a, b, cc] = triVI(g, i);
+        tva.fromBufferAttribute(pos, a); tvb.fromBufferAttribute(pos, b); tvc.fromBufferAttribute(pos, cc);
+        const nrm = tvb.clone().sub(tva).cross(tvc.clone().sub(tva)).normalize().multiplyScalar(0.15);
+        col.setHex(chColor(ch, arr[i]));
+        for (const v of [tva, tvb, tvc]) { P.push(v.x + nrm.x, v.y + nrm.y, v.z + nrm.z); C.push(col.r, col.g, col.b); }
+      }
+      if (!P.length) return;
+      const og = new THREE.BufferGeometry();
+      og.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+      og.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+      const ov = new THREE.Mesh(og, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: ch === 'color' ? 0.95 : 0.8, depthWrite: false }));
+      ov.renderOrder = 2; m.add(ov); m.userData[okey] = ov;
+    };
+    const applyBrush = (m: THREE.Mesh, worldPt: THREE.Vector3, faceIndex: number | undefined) => {
+      const mode = paintRef.current; if (!mode) return;
+      const arr = ensurePaint(m, mode.ch);
+      if (strokeMesh !== m || !strokeCentroids) { strokeMesh = m; strokeCentroids = worldCentroids(m); }
+      const cen = strokeCentroids;
+      const val = mode.val;
+      const br2 = brushR * brushR;
+      // Always mark the directly-hit triangle (so low-poly faces paint too),
+      // plus every triangle whose centroid falls inside the brush.
+      if (faceIndex != null && faceIndex < arr.length) arr[faceIndex] = val;
+      for (let i = 0; i < arr.length; i++) {
+        const dx = cen[i * 3] - worldPt.x, dy = cen[i * 3 + 1] - worldPt.y, dz = cen[i * 3 + 2] - worldPt.z;
+        if (dx * dx + dy * dy + dz * dz <= br2) arr[i] = val;
+      }
+      rebuildOverlay(m, mode.ch);
+    };
+    const paintAt = (ev: PointerEvent) => {
+      const r = renderer.domElement.getBoundingClientRect();
+      const nx = ((ev.clientX - r.left) / r.width) * 2 - 1, ny = -((ev.clientY - r.top) / r.height) * 2 + 1;
+      ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
+      const hit = ray.intersectObjects(c.objects, false)[0];
+      if (hit) applyBrush(hit.object as THREE.Mesh, hit.point, hit.faceIndex ?? undefined);
+    };
+    const onPointerMove = (ev: PointerEvent) => { if (painting) paintAt(ev); };
+
+    const onPointerDown = (ev: PointerEvent) => {
+      downX = ev.clientX; downY = ev.clientY;
+      if (paintRef.current) { painting = true; strokeMesh = null; strokeCentroids = null; orbit.enabled = false; paintAt(ev); }
+    };
     const onPointerUp = (ev: PointerEvent) => {
+      if (painting) { painting = false; orbit.enabled = true; strokeMesh = null; strokeCentroids = null; return; }
       if (tcontrols.dragging) return;
       if (Math.abs(ev.clientX - downX) > 5 || Math.abs(ev.clientY - downY) > 5) return; // was a drag
       const r = renderer.domElement.getBoundingClientRect();
@@ -173,10 +481,40 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const ny = -((ev.clientY - r.top) / r.height) * 2 + 1;
       ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
       const hit = ray.intersectObjects(c.objects, false)[0];
+      // Measure: collect two picked points; show markers, a line and the
+      // distance + per-axis deltas. A third pick starts a fresh measurement.
+      if (measureRef.current) {
+        if (!hit) return;
+        if (c.measurePts.length >= 2) { clearMeasure(c); }
+        const pt = hit.point.clone();
+        c.measurePts.push(pt);
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 12), new THREE.MeshBasicMaterial({ color: 0x009789 }));
+        dot.position.copy(pt); c.scene.add(dot); c.measureObjs.push(dot);
+        if (c.measurePts.length === 2) {
+          const [p0, p1] = c.measurePts;
+          const g = new THREE.BufferGeometry().setFromPoints([p0, p1]);
+          const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x009789 }));
+          c.scene.add(line); c.measureObjs.push(line);
+          setMeasure({ dist: p0.distanceTo(p1), dx: Math.abs(p1.x - p0.x), dy: Math.abs(p1.y - p0.y), dz: Math.abs(p1.z - p0.z) });
+        } else setMeasure(null);
+        return;
+      }
+      // Place-on-face: rotate the picked mesh so the clicked facet lies on the
+      // plate (its world normal points straight down), then drop it.
+      if (placeFaceRef.current && hit && hit.face) {
+        const m = hit.object as THREE.Mesh;
+        const wn = hit.face.normal.clone().transformDirection(m.matrixWorld).normalize();
+        const delta = new THREE.Quaternion().setFromUnitVectors(wn, new THREE.Vector3(0, 0, -1));
+        m.quaternion.premultiply(delta);
+        dropToPlate(m);
+        select(m); emitObject();
+        return;
+      }
       select(hit ? (hit.object as THREE.Mesh) : null);
     };
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointerup', onPointerUp);
+    renderer.domElement.addEventListener('pointermove', onPointerMove);
 
     const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
     loop();
@@ -191,6 +529,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
+      renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.dispose();
       el.removeChild(renderer.domElement);
       ctx.current = null;
@@ -267,6 +606,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
           }
           addMesh(merged, base, true, materials);
         }
+      } else if (lower.endsWith('.obj')) {
+        // OBJ can hold several groups — add each mesh as its own object.
+        const obj = new OBJLoader().parse(new TextDecoder().decode(buf));
+        const meshes: THREE.Mesh[] = [];
+        obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+        meshes.forEach((mm, i) => addMesh(mm.geometry.clone(), meshes.length > 1 ? `${base} (${i + 1})` : base));
       } else {
         addMesh(new STLLoader().parse(buf), base);
       }
@@ -308,6 +653,54 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   }
   function layFlat() { const c = ctx.current; if (!c || !c.selected) return; c.selected.rotation.set(0, 0, 0); dropToPlate(c.selected); emitObject(); }
   function center() { const c = ctx.current; if (!c || !c.selected) return; c.selected.position.x = 0; c.selected.position.y = 0; dropToPlate(c.selected); emitObject(); }
+  // Collect a paint channel's enforce/block triangles in world coords (rounded
+  // 0.1 mm). `withZMin` emits the full [zMin,zMax] band (seam) vs just zMax
+  // (support).
+  function collectPaintRegions(ch: 'support' | 'seam' | 'color' | 'fuzzy', withZMin: boolean) {
+    const c = ctx.current; const enforce: number[][] = [], block: number[][] = []; if (!c) return { enforce, block };
+    const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+    for (const m of c.objects) {
+      const arr = m.userData['paint_' + ch] as Uint8Array | undefined; if (!arr) continue;
+      const g = m.geometry, pos = g.getAttribute('position'), idx = g.index; m.updateMatrixWorld(true); const mw = m.matrixWorld;
+      for (let i = 0; i < arr.length; i++) {
+        if (!arr[i]) continue;
+        const a = idx ? idx.getX(i * 3) : i * 3, b = idx ? idx.getX(i * 3 + 1) : i * 3 + 1, cc = idx ? idx.getX(i * 3 + 2) : i * 3 + 2;
+        va.fromBufferAttribute(pos, a).applyMatrix4(mw); vb.fromBufferAttribute(pos, b).applyMatrix4(mw); vc.fromBufferAttribute(pos, cc).applyMatrix4(mw);
+        const zMax = Math.max(va.z, vb.z, vc.z), zMin = Math.min(va.z, vb.z, vc.z);
+        const tri = withZMin
+          ? [r1(va.x), r1(va.y), r1(vb.x), r1(vb.y), r1(vc.x), r1(vc.y), r1(zMin), r1(zMax)]
+          : [r1(va.x), r1(va.y), r1(vb.x), r1(vb.y), r1(vc.x), r1(vc.y), r1(zMax)];
+        (arr[i] === 2 ? block : enforce).push(tri);
+      }
+    }
+    return { enforce, block };
+  }
+  function autoOrient() {
+    const c = ctx.current; if (!c || !c.selected) return;
+    const q = computeAutoOrient(c.selected.geometry);
+    c.selected.quaternion.copy(q); dropToPlate(c.selected); emitObject();
+  }
+  // Split disconnected shells into separate objects (connected components by
+  // shared vertex position). Replaces the selected mesh with its parts.
+  function splitToParts() {
+    const c = ctx.current; if (!c || !c.selected) return;
+    const m = c.selected;
+    const parts = splitGeometry(m.geometry);
+    if (parts.length <= 1) return;
+    const baseName = m.name || 'Object';
+    m.updateMatrixWorld(true);
+    const mat = m.material;
+    c.scene.remove(m); c.objects = c.objects.filter((o) => o !== m);
+    parts.forEach((g, i) => {
+      g.computeVertexNormals();
+      const nm = new THREE.Mesh(g, Array.isArray(mat) ? mat[0].clone() : (mat as THREE.Material).clone());
+      nm.name = `${baseName} (${i + 1})`;
+      nm.quaternion.copy(m.quaternion); nm.scale.copy(m.scale);
+      c.scene.add(nm); c.objects.push(nm); dropToPlate(nm);
+    });
+    setCount(c.objects.length); select(c.objects[c.objects.length - parts.length]); arrange();
+  }
 
   useImperativeHandle(ref, () => ({
     count: () => ctx.current?.objects.length ?? 0,
@@ -319,6 +712,209 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     selectAt: (i: number) => { const c = ctx.current; if (c && c.objects[i]) select(c.objects[i]); },
     layFlat: () => layFlat(),
     center: () => center(),
+    autoOrient: () => autoOrient(),
+    splitToParts: () => splitToParts(),
+    setPlaceOnFace: (on: boolean) => { placeFaceRef.current = on; },
+    setMeasureMode: (on: boolean) => { measureRef.current = on; setMeasuring(on); const c = ctx.current; if (c && !on) { clearMeasure(c); setMeasure(null); } },
+    setPaintMode: (mode) => {
+      paintRef.current = mode;
+      const c = ctx.current; if (!c) return;
+      if (mode) c.tcontrols.detach(); else if (c.selected) c.tcontrols.attach(c.selected);
+    },
+    clearPaint: (ch) => {
+      const c = ctx.current; if (!c) return;
+      for (const m of c.objects) {
+        m.userData['paint_' + ch] = undefined;
+        const ov = m.userData['ov_' + ch] as THREE.Mesh | undefined;
+        if (ov) { m.remove(ov); ov.geometry.dispose(); m.userData['ov_' + ch] = undefined; }
+      }
+    },
+    // Support/seam regions in world coords. Support needs zMax; seam needs the
+    // full [zMin, zMax] band. Coords rounded to 0.1 mm to keep the payload small.
+    getSupportPaint: () => collectPaintRegions('support', false),
+    getSeamPaint: () => collectPaintRegions('seam', true),
+    getFuzzyPaint: () => collectPaintRegions('fuzzy', true),
+    hasColorPaint: () => {
+      const c = ctx.current; if (!c) return false;
+      for (const m of c.objects) { const a = m.userData.paint_color as Uint8Array | undefined; if (a && a.some((v) => v > 0)) return true; }
+      return false;
+    },
+    getColorMaterials: (name) => {
+      const c = ctx.current; if (!c) return [];
+      const byExt = new Map<number, number[]>();
+      const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+      for (const m of c.objects) {
+        const arr = m.userData.paint_color as Uint8Array | undefined;
+        const g = m.geometry, pos = g.getAttribute('position'), idx = g.index; m.updateMatrixWorld(true); const mw = m.matrixWorld;
+        const n = idx ? idx.count / 3 : pos.count / 3;
+        for (let i = 0; i < n; i++) {
+          const ext = (arr && arr[i]) ? arr[i] : 1;   // unpainted → extruder 1
+          const a = idx ? idx.getX(i * 3) : i * 3, b = idx ? idx.getX(i * 3 + 1) : i * 3 + 1, cc = idx ? idx.getX(i * 3 + 2) : i * 3 + 2;
+          va.fromBufferAttribute(pos, a).applyMatrix4(mw); vb.fromBufferAttribute(pos, b).applyMatrix4(mw); vc.fromBufferAttribute(pos, cc).applyMatrix4(mw);
+          const dst = byExt.get(ext) ?? (byExt.set(ext, []), byExt.get(ext)!);
+          dst.push(va.x, va.y, va.z, vb.x, vb.y, vb.z, vc.x, vc.y, vc.z);
+        }
+      }
+      if (byExt.size <= 1) return [];    // single extruder → not multi-material
+      const exp = new STLExporter(); const bn = name.replace(/\.[^.]+$/, '');
+      return [...byExt.entries()].sort((a, b) => a[0] - b[0]).map(([extruder, arr]) => {
+        const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+        const grp = new THREE.Group(); grp.add(new THREE.Mesh(gg));
+        return { extruder, file: new File([exp.parse(grp, { binary: false }) as string], `${bn}_ext${extruder}.stl`, { type: 'model/stl' }) };
+      });
+    },
+    // Detach the current plate's meshes (kept live in memory with transforms +
+    // paint overlays) and hand them out; restore puts a snapshot back.
+    snapshot: () => {
+      const c = ctx.current; if (!c) return [];
+      return c.objects.slice();
+    },
+    // Translucent preview plane at the cut height (object-local frame), so the
+    // user sees exactly where the cut lands. null clears it.
+    setCutPreview: (fraction) => {
+      const c = ctx.current; if (!c) return;
+      if (c.cutPlane) { c.cutPlane.parent?.remove(c.cutPlane); c.cutPlane.geometry.dispose(); (c.cutPlane.material as THREE.Material).dispose(); c.cutPlane = null; }
+      if (fraction == null || !c.selected) return;
+      const m = c.selected, g = m.geometry; g.computeBoundingBox(); const bb = g.boundingBox!;
+      const zc = bb.min.z + fraction * (bb.max.z - bb.min.z);
+      const w = (bb.max.x - bb.min.x) * 1.15 || 10, h = (bb.max.y - bb.min.y) * 1.15 || 10;
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x009789, transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false }));
+      pl.position.set((bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, zc);
+      pl.renderOrder = 3; m.add(pl); c.cutPlane = pl;
+    },
+    cut: (fraction, keep, connectors = 0) => {
+      const c = ctx.current; if (!c || !c.selected) return;
+      const m = c.selected, g = m.geometry; g.computeBoundingBox(); const bb = g.boundingBox!;
+      const zc = bb.min.z + Math.min(0.999, Math.max(0.001, fraction)) * (bb.max.z - bb.min.z);
+      let { upper, lower } = cutGeometryZ(g, zc);
+      // Alignment connectors: a peg on the lower half (union) and a matching hole
+      // on the upper half (subtract) at each connector location on the cut plane.
+      if (connectors > 0 && upper && lower) {
+        try {
+          const ev = new Evaluator(); ev.attributes = ['position', 'normal']; ev.useGroups = false;
+          const spanX = bb.max.x - bb.min.x, spanY = bb.max.y - bb.min.y;
+          const r = Math.max(1, Math.min(spanX, spanY) * 0.07);   // peg radius
+          const hh = r * 3;                                        // peg length (± around plane)
+          const n = Math.min(4, Math.round(connectors));
+          const cols = n <= 1 ? 1 : 2, rows = Math.ceil(n / cols);
+          let k = 0;
+          for (let rr = 0; rr < rows && k < n; rr++) for (let cc = 0; cc < cols && k < n; cc++, k++) {
+            const px = bb.min.x + spanX * (cols === 1 ? 0.5 : (cc + 1) / (cols + 1));
+            const py = bb.min.y + spanY * (rows === 1 ? 0.5 : (rr + 1) / (rows + 1));
+            const peg = () => { const cg = new THREE.CylinderGeometry(r, r, hh, 24); cg.rotateX(Math.PI / 2); cg.translate(px, py, zc); return cg; };
+            const hole = () => { const cg = new THREE.CylinderGeometry(r + 0.2, r + 0.2, hh + 0.4, 24); cg.rotateX(Math.PI / 2); cg.translate(px, py, zc); return cg; };
+            lower = csgApply(ev, lower!, peg(), ADDITION);
+            upper = csgApply(ev, upper!, hole(), SUBTRACTION);
+          }
+        } catch { /* connector boolean failed — keep the plain halves */ }
+      }
+      if (c.cutPlane) { c.cutPlane.parent?.remove(c.cutPlane); c.cutPlane = null; }
+      c.scene.remove(m); c.objects = c.objects.filter((o) => o !== m);
+      const mat = m.material;
+      const parts: { g: THREE.BufferGeometry; tag: string }[] = [];
+      if ((keep === 'upper' || keep === 'both') && upper) parts.push({ g: upper, tag: 'top' });
+      if ((keep === 'lower' || keep === 'both') && lower) parts.push({ g: lower, tag: 'bottom' });
+      for (const pt of parts) {
+        const nm = new THREE.Mesh(pt.g, Array.isArray(mat) ? mat[0].clone() : (mat as THREE.Material).clone());
+        nm.name = `${m.name} (${pt.tag})`;
+        nm.quaternion.copy(m.quaternion); nm.scale.copy(m.scale);
+        c.scene.add(nm); c.objects.push(nm); dropToPlate(nm);
+      }
+      setCount(c.objects.length);
+      if (c.objects.length) select(c.objects[c.objects.length - 1]);
+      arrange();
+    },
+    // Mesh boolean via three-bvh-csg. Union merges all objects; subtract/intersect
+    // apply the selected object against the rest. Result replaces the inputs.
+    boolean: (op) => {
+      const c = ctx.current; if (!c || c.objects.length < 2) return;
+      const ev = new Evaluator();
+      ev.attributes = ['position', 'normal'];   // only process attrs every brush has
+      ev.useGroups = false;
+      const brushOf = (m: THREE.Mesh) => {
+        m.updateMatrixWorld(true);
+        const g = m.geometry.clone().applyMatrix4(m.matrixWorld);
+        g.deleteAttribute('uv'); g.deleteAttribute('color');
+        if (!g.getAttribute('normal')) g.computeVertexNormals();
+        const br = new Brush(g); br.updateMatrixWorld(); return br;
+      };
+      try {
+        let acc: Brush;
+        if (op === 'union') {
+          acc = brushOf(c.objects[0]);
+          for (let i = 1; i < c.objects.length; i++) { acc = ev.evaluate(acc, brushOf(c.objects[i]), ADDITION); acc.updateMatrixWorld(); }
+        } else {
+          const A = c.selected ?? c.objects[0];
+          acc = brushOf(A);
+          const CSG = op === 'subtract' ? SUBTRACTION : INTERSECTION;
+          for (const m of c.objects) { if (m === A) continue; acc = ev.evaluate(acc, brushOf(m), CSG); acc.updateMatrixWorld(); }
+        }
+        const geom = acc.geometry.clone();
+        if (!geom.getAttribute('position') || geom.getAttribute('position').count < 3) return;
+        for (const m of c.objects) c.scene.remove(m);
+        c.objects = []; select(null); setCount(0);
+        addMesh(geom, 'Boolean');
+      } catch { /* degenerate boolean — leave the scene unchanged */ }
+    },
+    // Add a primitive solid (usable as a modifier or, with boolean subtract, a
+    // negative volume).
+    addPrimitive: (shape) => {
+      const c = ctx.current; if (!c) return;
+      const s = Math.max(20, bed * 0.15);
+      const g = shape === 'cylinder' ? new THREE.CylinderGeometry(s / 2, s / 2, s, 48)
+        : shape === 'sphere' ? new THREE.SphereGeometry(s / 2, 48, 32)
+          : new THREE.BoxGeometry(s, s, s);
+      // Three primitives are Y-up; rotate to the plate's Z-up frame.
+      if (shape === 'cylinder') g.rotateX(Math.PI / 2);
+      g.computeVertexNormals();
+      addMesh(g.toNonIndexed(), shape.charAt(0).toUpperCase() + shape.slice(1));
+    },
+    // 3-D text as a plate object (raised in Z). Union/subtract it onto a model
+    // to emboss / engrave.
+    addText: (text) => {
+      const c = ctx.current; if (!c || !text.trim()) return;
+      const size = Math.max(6, bed * 0.06);
+      const geo = new TextGeometry(text, { font: getFont(), size, depth: Math.max(2, size * 0.3), curveSegments: 4, bevelEnabled: false });
+      geo.computeVertexNormals();
+      addMesh(geo, `Text: ${text}`);
+    },
+    addGeometry: (geom, name) => { addMesh(geom, name); },
+    restore: (snap) => {
+      const c = ctx.current; if (!c) return;
+      select(null);
+      for (const m of c.objects) c.scene.remove(m);
+      c.objects = snap.slice();
+      for (const m of c.objects) c.scene.add(m);
+      setCount(c.objects.length);
+      if (c.objects[0]) select(c.objects[0]);
+      emitState();
+    },
+    // Remove the selected object from this plate (kept live) and return it, so
+    // the caller can drop it onto another plate's snapshot.
+    detachSelected: () => {
+      const c = ctx.current; if (!c || !c.selected) return null;
+      const m = c.selected;
+      c.scene.remove(m);
+      c.objects = c.objects.filter((o) => o !== m);
+      select(null); setCount(c.objects.length);
+      if (c.objects[0]) select(c.objects[0]);
+      arrange(); emitState();
+      return m;
+    },
+    simplify: () => {
+      const c = ctx.current; if (!c || !c.selected) return;
+      const m = c.selected;
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry;
+      const verts = g.getAttribute('position').count;
+      const remove = Math.floor(verts * 0.5);   // halve the vertex count
+      if (remove < 3) return;
+      try {
+        const simplified = new SimplifyModifier().modify(g, remove);
+        simplified.computeVertexNormals();
+        m.geometry.dispose(); m.geometry = simplified;
+        dropToPlate(m); emitObject();
+      } catch { /* SimplifyModifier can fail on non-manifold meshes — leave as-is */ }
+    },
     setPos: (x: number, y: number) => { const m = ctx.current?.selected; if (!m) return; m.position.x = x; m.position.y = y; emitObject(); },
     setRot: (x: number, y: number, z: number) => { const m = ctx.current?.selected; if (!m) return; const D = Math.PI / 180; m.rotation.set(x * D, y * D, z * D); dropToPlate(m); emitObject(); },
     setScalePct: (pct: number) => { const m = ctx.current?.selected; if (!m || !(pct > 0)) return; const s = pct / 100; m.scale.set(s, s, s); dropToPlate(m); emitObject(); },
@@ -417,6 +1013,13 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       <div className="plate-stage-wrap">
         <div ref={mount} className="plate-canvas" />
         <div className="plate-count">{count} {t('v2.plate.objects', 'object(s)')}{sel ? ` · ${t('v2.plate.selected', 'selected')}` : ''}</div>
+        {measuring && (
+          <div className="plate-measure">
+            {measure
+              ? <><b>{measure.dist.toFixed(2)} mm</b><span>ΔX {measure.dx.toFixed(2)} · ΔY {measure.dy.toFixed(2)} · ΔZ {measure.dz.toFixed(2)}</span></>
+              : <span>{t('v2.plate.measure_hint', 'Click two points to measure')}</span>}
+          </div>
+        )}
       </div>
     </div>
   );

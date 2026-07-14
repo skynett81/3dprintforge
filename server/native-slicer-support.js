@@ -58,6 +58,36 @@ export function generateSupports(layerRegions, opts = {}) {
   const cx = (c) => minX + (c + 0.5) * gridRes;
   const cy = (r) => minY + (r + 0.5) * gridRes;
 
+  // Support painting (BambuStudio-style). `paintEnforce` / `paintBlock` are
+  // triangles [x0,y0,x1,y1,x2,y2,zMax] already in the bed frame. Enforce forces
+  // support columns under the painted region (up to zMax); block forbids any
+  // support in its footprint. `paintOnly` disables auto-overhang detection so
+  // ONLY painted regions get support.
+  const paintEnforce = opts.paintEnforce ?? [];
+  const paintBlock = opts.paintBlock ?? [];
+  const paintOnly = !!opts.paintOnly;
+  const enforceZ = new Float32Array(cols * rows);   // per-cell height below which support is forced
+  const blockCell = new Uint8Array(cols * rows);
+  const pointInTri = (px, py, t) => {
+    const d1 = (px - t[2]) * (t[1] - t[3]) - (t[0] - t[2]) * (py - t[3]);
+    const d2 = (px - t[4]) * (t[3] - t[5]) - (t[2] - t[4]) * (py - t[5]);
+    const d3 = (px - t[0]) * (t[5] - t[1]) - (t[4] - t[0]) * (py - t[1]);
+    const neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    const pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    return !(neg && pos);
+  };
+  const rasterTris = (tris, cb) => {
+    for (const t of tris) {
+      const bxMin = Math.min(t[0], t[2], t[4]), bxMax = Math.max(t[0], t[2], t[4]);
+      const byMin = Math.min(t[1], t[3], t[5]), byMax = Math.max(t[1], t[3], t[5]);
+      const c0 = Math.max(0, Math.floor((bxMin - minX) / gridRes)), c1 = Math.min(cols - 1, Math.ceil((bxMax - minX) / gridRes));
+      const r0 = Math.max(0, Math.floor((byMin - minY) / gridRes)), r1 = Math.min(rows - 1, Math.ceil((byMax - minY) / gridRes));
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (pointInTri(cx(c), cy(r), t)) cb(r * cols + c, t[6]);
+    }
+  };
+  if (paintEnforce.length) rasterTris(paintEnforce, (idx, z) => { if (z > enforceZ[idx]) enforceZ[idx] = z; });
+  if (paintBlock.length) rasterTris(paintBlock, (idx) => { blockCell[idx] = 1; });
+
   // Rasterise model presence per layer.
   const model = new Array(n);
   for (let i = 0; i < n; i++) {
@@ -113,8 +143,9 @@ export function generateSupports(layerRegions, opts = {}) {
     for (let idx = 0; idx < s.length; idx++) {
       if (here[idx]) continue;
       // Continue an existing column, or start one under a true (non-self-
-      // supported) overhang.
-      if (supAbove[idx] || (above[idx] && !selfSupported(i, idx))) s[idx] = 1;
+      // supported) overhang. In paint-only mode the auto-overhang test is
+      // skipped — only painted enforcers (added below) seed columns.
+      if (supAbove[idx] || (!paintOnly && above[idx] && !selfSupported(i, idx))) s[idx] = 1;
     }
     support[i] = s;
   }
@@ -197,6 +228,27 @@ export function generateSupports(layerRegions, opts = {}) {
         if (modelBelow[idx] && s[idx]) s[idx] = 0;
         if (here[idx]) modelBelow[idx] = 1;
       }
+    }
+  }
+
+  // Enforce paint: force support columns under painted regions (below the
+  // painted face, leaving the same Z-gap) — applied AFTER the auto-support
+  // clearing steps so a user-enforced region always gets support.
+  if (paintEnforce.length) {
+    const gapMM = zGap * layerHeight;
+    for (let i = 0; i < n; i++) {
+      const s = support[i], here = model[i];
+      const zHere = (i + 0.5) * layerHeight;
+      for (let idx = 0; idx < s.length; idx++) {
+        if (enforceZ[idx] > 0 && !here[idx] && zHere < enforceZ[idx] - gapMM) s[idx] = 1;
+      }
+    }
+  }
+  // Block paint: forbid support anywhere painted as a blocker (wins over all).
+  if (paintBlock.length) {
+    for (let i = 0; i < n; i++) {
+      const s = support[i];
+      for (let idx = 0; idx < s.length; idx++) if (blockCell[idx]) s[idx] = 0;
     }
   }
 

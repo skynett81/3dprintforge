@@ -299,6 +299,8 @@ body {
 .oslice-topest strong { color: #fff; }
 .oslice-sliceplate { padding: 8px 22px; border: none; border-radius: 8px; background: var(--o-accent); color: #fff; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
 .oslice-sliceplate:disabled { background: #4a4d53; color: #9aa0a7; cursor: not-allowed; }
+.oslice-sliceall { background: #3a3d43; padding: 8px 16px; }
+.oslice-sliceall:hover:not(:disabled) { background: #44474d; }
 .oslice-printplate { padding: 8px 18px; border: none; border-radius: 8px; background: #3a3d43; color: #e4e6e9; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
 .oslice-printplate:hover:not(:disabled) { background: #44474d; }
 .oslice-printplate:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -330,6 +332,27 @@ body {
 /* Filament slots */
 .oslice-filaments { padding: 8px 10px; border-bottom: 1px solid var(--o-border); }
 .oslice-filrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.oslice-filslot { margin-bottom: 2px; }
+.oslice-spoolmatch { font-size: 0.66rem; color: var(--o-accent); padding: 0 0 2px 34px; line-height: 1.2; }
+.oslice-spoolmatch--short { color: #e0603a; font-weight: 600; }
+.oslice-calibrow { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.72rem; color: var(--o-muted); cursor: pointer; }
+.oslice-calibk { background: var(--o-accent); color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 0.64rem; font-weight: 700; }
+.oslice-stock { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 5px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
+.oslice-stock--ok { background: rgba(46,204,113,0.18); color: #2ecc71; }
+.oslice-stock--low { background: rgba(224,96,58,0.18); color: #e0603a; }
+.oslice-stock--out { background: rgba(224,70,60,0.2); color: #e0463c; }
+.lib-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.lib-tab { padding: 5px 12px; border: 1px solid var(--o-border); background: var(--o-panel-2); color: var(--o-text); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.lib-tab--on { background: var(--o-accent); color: #fff; border-color: var(--o-accent); }
+.lib-forge { max-height: 60vh; overflow: auto; }
+.lib-forge-grp { margin-bottom: 12px; }
+.lib-forge-cat { font-size: 0.72rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.lib-forge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.lib-gencard { padding: 10px 10px; border: 1px solid var(--o-border); background: var(--o-panel); border-radius: 8px; font-size: 0.78rem; font-weight: 600; color: var(--o-text); cursor: pointer; text-align: left; }
+.lib-gencard:hover:not(:disabled) { border-color: var(--o-accent); }
+.lib-gencard:disabled { opacity: 0.5; cursor: default; }
+.oslice-colorlayer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oslice-colorlayer-swatches { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
 .oslice-filbadge { width: 22px; height: 22px; border-radius: 5px; display: grid; place-items: center; font-size: 0.74rem; font-weight: 700; color: #fff; flex: none; }
 .oslice-filname { flex: 1; font-size: 0.84rem; }
 .oslice-filbadge { position: relative; }
@@ -476,6 +499,38 @@ select.oset-rowinput { text-align: left; }
   font-size: 0.72rem; color: #cbd5e1; padding: 3px 9px;
   background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft); border-radius: 999px;
 }
+.plate-measure {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; gap: 2px;
+  font-size: 0.74rem; color: #e2e8f0; padding: 6px 10px;
+  background: rgba(14,17,22,0.8); border: 1px solid var(--border-soft); border-radius: 8px;
+}
+.plate-measure b { color: #2ee6c0; font-size: 0.86rem; }
+.plate-measure span { color: #94a3b8; }
+.oslice-paintbar {
+  position: absolute; top: 62px; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  background: rgba(14,17,22,0.86); border: 1px solid var(--border-soft); border-radius: 10px; backdrop-filter: blur(4px);
+}
+.oslice-paintbar-t { font-size: 0.74rem; font-weight: 700; color: #cbd5e1; margin: 0 4px; }
+.oslice-paintdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+.oslice-paintswatch { width: 24px; height: 24px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3); }
+.oslice-paintswatch--on { border-color: #fff; }
+
+/* Multi-plate tab strip (bottom-left of the stage) */
+.oslice-plates { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 7; display: flex; align-items: center; gap: 5px; }
+.oslice-platetab { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 8px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(24,26,30,0.82); color: #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(4px); }
+.oslice-platetab:hover { border-color: var(--o-accent); }
+.oslice-platetab--on { background: var(--o-accent); color: #fff; border-color: var(--o-accent); }
+.oslice-platetab--add { color: #9aa4b2; font-size: 1rem; }
+.oslice-platetab-x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; border: 0; background: #e0463c; color: #fff;
+  font-size: 0.72rem; line-height: 1; cursor: pointer; display: none; }
+.oslice-platetab:hover .oslice-platetab-x { display: block; }
+.oslice-platetab-c { font-style: normal; font-size: 0.62rem; opacity: 0.7; margin-left: 3px; }
+.oslice-moveto { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; padding-right: 8px; border-right: 1px solid rgba(255,255,255,0.14); }
+.oslice-platetab--move { min-width: 26px; height: 26px; background: rgba(0,151,137,0.22); border-color: var(--o-accent); }
+.oslice-platetab--move:hover { background: var(--o-accent); color: #fff; }
 
 /* Library import modal */
 .lib-modal { width: min(820px, 96vw); }
@@ -502,6 +557,8 @@ select.oset-rowinput { text-align: left; }
 }
 .gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; }
 .gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+.gpreview-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 0.76rem; color: var(--o-muted); }
+.gpreview-stats b { color: var(--o-text); font-weight: 600; }
 
 @media (max-width: 900px) {
   .slicer-main { grid-template-columns: 1fr; }
@@ -1196,6 +1253,62 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-jogb:hover:not(:disabled) { border-color: var(--o-accent); }
 .oslice-jogb:disabled { opacity: 0.5; cursor: default; }
 .oslice-jogb--home { background: var(--o-accent); color: #fff; font-size: 0.62rem; }
+
+/* ── Bambu-style Device control cluster ─────────────────────────────── */
+.oslice-devctlh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.oslice-devctlh-name { font-weight: 700; font-size: 0.9rem; }
+.oslice-devctlh-state { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; margin-left: auto; }
+.oslice-devctrl { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto;
+  grid-template-areas: 'temp dial ext' 'bed bed bed'; gap: 10px 12px; align-items: center; }
+.oslice-devtcol { grid-area: temp; display: flex; flex-direction: column; gap: 2px; }
+.oslice-devtrow { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 0; background: none; border-radius: 6px;
+  color: var(--o-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: left; white-space: nowrap; }
+.oslice-devtrow svg { color: var(--o-muted); flex-shrink: 0; }
+.oslice-devtrow small { color: var(--o-muted); font-weight: 500; font-size: 0.7rem; margin-left: 1px; }
+.oslice-devtrow:hover:not(:disabled):not(.oslice-devtrow--ro) { background: var(--o-panel-2); }
+.oslice-devtrow--ro { cursor: default; }
+.oslice-devtsep { height: 1px; background: var(--o-border); margin: 3px 6px; }
+.oslice-devtset { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+.oslice-devtset .oset-input { width: 58px; }
+
+/* Circular XY jog dial */
+.oslice-devdialwrap { grid-area: dial; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.oslice-devdial { position: relative; width: 138px; height: 138px; border-radius: 50%; overflow: hidden;
+  background: var(--o-panel-2); box-shadow: inset 0 0 0 1px var(--o-border); }
+.oslice-dialwedge { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; }
+.oslice-dialwedge::after { content: ''; position: absolute; inset: 0; background: transparent; transition: background 0.12s; }
+.oslice-dialwedge:hover:not(:disabled)::after { background: color-mix(in srgb, var(--o-accent) 22%, transparent); }
+.oslice-dialwedge:disabled { cursor: default; }
+.oslice-dialwedge--yp { clip-path: polygon(50% 50%, 0 0, 100% 0); }
+.oslice-dialwedge--xp { clip-path: polygon(50% 50%, 100% 0, 100% 100%); }
+.oslice-dialwedge--ym { clip-path: polygon(50% 50%, 100% 100%, 0 100%); }
+.oslice-dialwedge--xm { clip-path: polygon(50% 50%, 0 100%, 0 0); }
+.oslice-dialhome { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px;
+  border-radius: 50%; border: 1px solid var(--o-border); background: var(--o-panel); color: var(--o-accent); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+.oslice-dialhome:hover:not(:disabled) { border-color: var(--o-accent); background: var(--o-panel-2); }
+.oslice-diallbl { position: absolute; font-size: 0.7rem; font-weight: 700; color: var(--o-muted); pointer-events: none; }
+.oslice-diallbl--y { top: 6px; left: 50%; transform: translateX(-50%); }
+.oslice-diallbl--ym { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.oslice-diallbl--x { right: 8px; top: 50%; transform: translateY(-50%); }
+.oslice-diallbl--xm { left: 8px; top: 50%; transform: translateY(-50%); }
+.oslice-devstep--dial { justify-content: center; margin: 0; }
+
+/* Extruder up/down column */
+.oslice-devecol { grid-area: ext; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.oslice-devecol svg { color: var(--o-muted); }
+.oslice-eb { width: 40px; height: 30px; border: 1px solid var(--o-border); background: var(--o-panel-2); border-radius: 6px;
+  cursor: pointer; color: var(--o-text); font-size: 0.7rem; line-height: 1; }
+.oslice-eb:hover:not(:disabled) { border-color: var(--o-accent); }
+.oslice-eb:disabled { opacity: 0.5; cursor: default; }
+.oslice-eblbl { font-size: 0.68rem; color: var(--o-muted); font-weight: 600; }
+
+/* Bed Z row */
+.oslice-devbedrow { grid-area: bed; display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 4px;
+  border-top: 1px solid var(--o-border); }
+.oslice-bedlbl { font-size: 0.74rem; color: var(--o-muted); font-weight: 700; margin: 0 4px; }
+.btn--xs { padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; }
+
 .oslice-devprog { padding: 10px 12px; border-top: 1px solid var(--o-border); background: var(--o-panel); }
 .oslice-devprog-bar { height: 8px; background: var(--o-panel-2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
 .oslice-devprog-fill { height: 100%; background: var(--o-accent); transition: width 0.3s; }
@@ -1204,10 +1317,13 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 /* ── Slicer Filament Manager tab ───────────────────────────────────── */
 .oslice-filmgr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: hidden; }
-.oslice-filmgr-head { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--o-border); }
+.oslice-filmgr-head { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--o-border); flex-wrap: wrap; }
+.oslice-filmgr-groupby { display: flex; align-items: center; gap: 4px; }
 .oslice-filmgr-body { flex: 1; overflow: auto; padding: 12px; }
 .oslice-filmgr-grp { margin-bottom: 16px; }
-.oslice-filmgr-grph { font-size: 0.78rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+.oslice-filmgr-grph { font-size: 0.78rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px;
+  position: sticky; top: -12px; background: var(--o-bg); padding: 4px 0; z-index: 1; }
+.oslice-filmgr-grph--plain { text-transform: none; letter-spacing: 0; color: var(--o-text); }
 .oslice-filmgr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .oslice-filcard { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); cursor: pointer; text-align: left; }
 .oslice-filcard:hover { border-color: var(--o-accent); }

@@ -3,7 +3,7 @@ import { useT } from '../../i18n';
 
 export type SliceSettings = Record<string, string | number | boolean>;
 
-const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'line', 'concentric'];
+const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'star', 'crosshatch', 'lightning', 'line', 'rectilinear', 'alignedrectilinear', 'concentric'];
 const SUPPORT_TYPES = [['normal(auto)', 'Normal'], ['tree(auto)', 'Tree']];
 const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 'Ears']];
 
@@ -18,6 +18,9 @@ const TABS = ['Quality', 'Strength', 'Speed', 'Temperature', 'Support', 'Others'
 const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'layer_height', label: 'Layer height', type: 'num', unit: 'mm', step: 0.02 },
   { tab: 'Quality', group: 'Layer height', k: 'initial_layer_height', label: 'Initial layer height', type: 'num', unit: 'mm', step: 0.02 },
+  { tab: 'Quality', group: 'Layer height', k: 'adaptive_layer_height', label: 'Adaptive layer height', type: 'bool' },
+  { tab: 'Quality', group: 'Layer height', k: 'min_layer_height', label: 'Min layer height', type: 'num', unit: 'mm', step: 0.02, dep: 'adaptive_layer_height' },
+  { tab: 'Quality', group: 'Layer height', k: 'max_layer_height', label: 'Max layer height', type: 'num', unit: 'mm', step: 0.02, dep: 'adaptive_layer_height' },
   { tab: 'Quality', group: 'Precision', k: 'elephant_foot', label: 'Elephant foot compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'xy_hole_compensation', label: 'X-Y hole compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'xy_contour_compensation', label: 'X-Y contour compensation', type: 'num', unit: 'mm', step: 0.05 },
@@ -34,6 +37,7 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'detect_overhang_wall', label: 'Detect overhang walls', type: 'bool' },
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'bridge_flow', label: 'Bridge flow ratio', type: 'num', step: 0.05 },
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'bridge_angle', label: 'Bridge direction (0 = auto)', type: 'num', unit: '°', step: 5 },
+  { tab: 'Strength', group: 'Walls', k: 'wall_generator', label: 'Wall generator', type: 'sel', opts: [['classic', 'Classic'], ['arachne', 'Arachne (variable width)']] },
   { tab: 'Strength', group: 'Walls', k: 'wall_loops', label: 'Wall loops', type: 'num', step: 1 },
   { tab: 'Strength', group: 'Top/bottom shells', k: 'top_layers', label: 'Top shell layers', type: 'num', step: 1 },
   { tab: 'Strength', group: 'Top/bottom shells', k: 'bottom_layers', label: 'Bottom shell layers', type: 'num', step: 1 },
@@ -99,6 +103,8 @@ const FIELDS: Field[] = [
   { tab: 'Support', group: 'Clearance', k: 'support_object_xy_distance', label: 'XY distance to model', type: 'num', unit: 'mm', step: 0.1, dep: 'supports' },
   { tab: 'Others', group: 'Seam', k: 'seam_position', label: 'Seam position', type: 'sel', opts: [['nearest', 'Nearest'], ['aligned', 'Aligned'], ['back', 'Rear'], ['random', 'Random']] },
   { tab: 'Others', group: 'Seam', k: 'seam_gap', label: 'Seam gap', type: 'num', unit: 'mm', step: 0.05 },
+  { tab: 'Others', group: 'Seam', k: 'scarf_seam', label: 'Scarf joint seam', type: 'bool' },
+  { tab: 'Others', group: 'Seam', k: 'scarf_length', label: 'Scarf length', type: 'num', unit: 'mm', step: 0.5, dep: 'scarf_seam' },
   { tab: 'Others', group: 'Adhesion', k: 'brim_type', label: 'Brim type', type: 'sel', opts: BRIM_TYPES },
   { tab: 'Others', group: 'Adhesion', k: 'brim_width', label: 'Brim width', type: 'num', unit: 'mm', step: 0.5 },
   { tab: 'Others', group: 'Adhesion', k: 'skirt_loops', label: 'Skirt loops', type: 'num', step: 1 },
@@ -118,6 +124,8 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Multi-colour', k: 'flush_volume', label: 'Flush volume', type: 'num', unit: 'mm³', step: 10, dep: 'flush_into_infill' },
   { tab: 'Others', group: 'Output', k: 'arc_fitting', label: 'Arc fitting (G2/G3)', type: 'bool' },
   { tab: 'Others', group: 'Output', k: 'arc_fitting_tolerance', label: 'Arc fitting tolerance', type: 'num', unit: 'mm', step: 0.01, dep: 'arc_fitting' },
+  { tab: 'Speed', group: 'Flow dynamics', k: 'pressure_advance', label: 'Pressure advance (K)', type: 'num', step: 0.001 },
+  { tab: 'Speed', group: 'Flow dynamics', k: 'gcode_flavor', label: 'G-code flavor', type: 'sel', opts: [['marlin', 'Marlin (M900)'], ['klipper', 'Klipper (SET_PRESSURE_ADVANCE)']] },
   { tab: 'G-code', group: 'Custom G-code', k: 'start_gcode', label: 'Start G-code', type: 'text', rows: 5 },
   { tab: 'G-code', group: 'Custom G-code', k: 'layer_change_gcode', label: 'Layer change G-code', type: 'text', rows: 3 },
   { tab: 'G-code', group: 'Custom G-code', k: 'end_gcode', label: 'End G-code', type: 'text', rows: 5 },

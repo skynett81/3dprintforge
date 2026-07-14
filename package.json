@@ -55,6 +55,7 @@
     "bootstrap": "^5.3.8",
     "jszip": "^3.10.1",
     "mqtt": "^5.15.1",
+    "occt-import-js": "^0.0.23",
     "qrcode": "^1.5.4",
     "ssh2": "^1.17.0",
     "tigertag": "^1.1.0",
