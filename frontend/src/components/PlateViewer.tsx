@@ -65,6 +65,8 @@ export interface PlateHandle {
   getColorMaterials: (name: string) => { extruder: number; file: File }[];
   snapshot: () => PlateSnapshot;
   restore: (snap: PlateSnapshot) => void;
+  undo: () => void;
+  redo: () => void;
   detachSelected: () => THREE.Mesh | null;
   setCutPreview: (fraction: number | null) => void;
   cut: (fraction: number, keep: 'upper' | 'lower' | 'both', connectors?: number) => void;
@@ -366,6 +368,32 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     setCount(c.objects.length);
     select(mesh);
     arrange();
+    pushHistory();
+  }
+
+  // ── undo / redo: a bounded stack of deep snapshots (geometry + transform +
+  // userData clones) captured after each edit. ──
+  const history = useRef<{ geom: THREE.BufferGeometry; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; name: string; userData: Record<string, unknown>; material: THREE.Material | THREE.Material[] }[][]>([]);
+  const histIdx = useRef(-1);
+  function deepSnap() {
+    const c = ctx.current; if (!c) return [];
+    return c.objects.map((m) => { m.updateMatrixWorld(); return { geom: m.geometry.clone(), pos: m.position.clone(), quat: m.quaternion.clone(), scale: m.scale.clone(), name: m.name, userData: { ...m.userData }, material: m.material }; });
+  }
+  function pushHistory() {
+    const snap = deepSnap();
+    history.current = history.current.slice(0, histIdx.current + 1);
+    history.current.push(snap);
+    if (history.current.length > 40) history.current.shift();
+    histIdx.current = history.current.length - 1;
+  }
+  function applySnap(snap: ReturnType<typeof deepSnap>) {
+    const c = ctx.current; if (!c) return;
+    select(null);
+    for (const m of c.objects) c.scene.remove(m);
+    c.objects = snap.map((s) => { const mesh = new THREE.Mesh(s.geom.clone(), s.material); mesh.position.copy(s.pos); mesh.quaternion.copy(s.quat); mesh.scale.copy(s.scale); mesh.name = s.name; mesh.userData = { ...s.userData }; c.scene.add(mesh); return mesh; });
+    setCount(c.objects.length);
+    if (c.objects[0]) select(c.objects[0]);
+    emitState();
   }
 
   // ── setup once ──
@@ -388,7 +416,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.15);
     const tcontrols = new TransformControls(camera, renderer.domElement);
     tcontrols.setSpace('world');
-    tcontrols.addEventListener('dragging-changed', (e) => { orbit.enabled = !e.value; if (!e.value) { const m = ctx.current?.selected; if (m) dropToPlate(m); emitObject(); } });
+    tcontrols.addEventListener('dragging-changed', (e) => { orbit.enabled = !e.value; if (!e.value) { const m = ctx.current?.selected; if (m) dropToPlate(m); emitObject(); pushHistory(); } });
     tcontrols.addEventListener('objectChange', () => { emitObject(); });
     const helper = (tcontrols as unknown as { getHelper?: () => THREE.Object3D }).getHelper?.() ?? (tcontrols as unknown as THREE.Object3D);
     scene.add(helper);
@@ -692,6 +720,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     if (!victim.userData.partType) for (const o of c.objects) if (o.userData.partParentId === victim.uuid) doomed.add(o);
     for (const o of doomed) c.scene.remove(o);
     c.objects = c.objects.filter((o) => !doomed.has(o)); select(null); setCount(c.objects.length); arrange();
+    pushHistory();
   }
   function layFlat() { const c = ctx.current; if (!c || !c.selected) return; c.selected.rotation.set(0, 0, 0); dropToPlate(c.selected); emitObject(); }
   function center() { const c = ctx.current; if (!c || !c.selected) return; c.selected.position.x = 0; c.selected.position.y = 0; dropToPlate(c.selected); emitObject(); }
@@ -965,7 +994,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const ctr = new THREE.Vector3(); pbox.getCenter(ctr);
       mesh.position.copy(ctr);
       c.scene.add(mesh); c.objects.push(mesh); setCount(c.objects.length);
-      select(mesh); emitState();
+      select(mesh); emitState(); pushHistory();
     },
     // 3-D text as a plate object (raised in Z). Union/subtract it onto a model
     // to emboss / engrave.
@@ -1005,6 +1034,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       if (value === '' || value == null) delete st[key]; else st[key] = value;
       m.userData.modifierSettings = st; emitState();
     },
+    undo: () => { if (histIdx.current > 0) { histIdx.current -= 1; applySnap(history.current[histIdx.current]); } },
+    redo: () => { if (histIdx.current < history.current.length - 1) { histIdx.current += 1; applySnap(history.current[histIdx.current]); } },
     restore: (snap) => {
       const c = ctx.current; if (!c) return;
       select(null);

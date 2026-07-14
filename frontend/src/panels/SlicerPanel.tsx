@@ -322,6 +322,20 @@ export function SlicerPanel() {
     } catch { /* offline */ }
   }
   useEffect(() => { loadProfiles(); }, []);
+  // Undo / redo (Ctrl/Cmd+Z, Ctrl+Y or Ctrl+Shift+Z) for plate edits — ignored
+  // while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); plateRef.current?.undo(); }
+      else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); plateRef.current?.redo(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   function applyProfile(kind: ProfKind, id: number | null) {
     setProfileId((p) => ({ ...p, [kind]: id }));
