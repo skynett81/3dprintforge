@@ -387,3 +387,29 @@ describe('native-slicer: variable layer height bands', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: richer settings batch', () => {
+  it('max volumetric speed caps the feedrate', async () => {
+    const fast = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.4, outerWallSpeed: 300, innerWallSpeed: 300, sparseInfillSpeed: 300, supports: false });
+    const capped = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.4, outerWallSpeed: 300, innerWallSpeed: 300, sparseInfillSpeed: 300, maxVolumetricSpeed: 5, supports: false });
+    // Only extruding moves (G1 with E and X) are volumetric-capped; travel isn't.
+    const maxF = (g) => Math.max(...g.split('\n').filter((ln) => ln.startsWith('G1') && ln.includes('X') && ln.includes('E')).map((ln) => { const m = ln.match(/F(\d+(?:\.\d+)?)/); return m ? +m[1] : 0; }));
+    // cap = 5 mm3/s / (0.4*0.2) = 62.5 mm/s = 3750 mm/min; uncapped hits 300*60=18000.
+    assert.ok(maxF(capped.gcode) < maxF(fast.gcode), 'volumetric cap lowers the top feedrate');
+    assert.ok(maxF(capped.gcode) <= 3750 + 1, `capped feedrate ~<=3750, got ${maxF(capped.gcode)}`);
+  });
+  it('fan curve ramps M106 across layers; byte-identical when unset', async () => {
+    const flat = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false });
+    const flat2 = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false, fanMinSpeed: null, fanMaxSpeed: null });
+    assert.equal(flat2.gcode, flat.gcode, 'no curve → identical');
+    const ramp = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false, fanMinSpeed: 20, fanMaxSpeed: 100, fullFanSpeedLayer: 20 });
+    const fans = [...new Set([...ramp.gcode.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(fans.length > 2, `fan should take several values, got ${fans.length}`);
+  });
+  it('min sparse infill area removes infill from a tiny model', async () => {
+    const withInfill = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, supports: false });
+    const skipped = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, minSparseInfillArea: 200, supports: false });
+    const sparseMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
+    assert.ok(sparseMoves(skipped.gcode) < sparseMoves(withInfill.gcode), 'tiny region loses its sparse infill');
+  });
+});

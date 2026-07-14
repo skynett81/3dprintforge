@@ -116,6 +116,12 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('wipeTowerDepth', num(s.wipe_tower_depth));
   if (s.print_sequence) out.printSequence = String(s.print_sequence);
   set('extruderClearanceHeight', num(s.extruder_clearance_height));
+  set('maxVolumetricSpeed', num(s.max_volumetric_speed));
+  set('fanMinSpeed', num(s.fan_min_speed));
+  set('fanMaxSpeed', num(s.fan_max_speed));
+  set('fullFanSpeedLayer', num(s.full_fan_speed_layer));
+  set('brimObjectGap', num(s.brim_object_gap));
+  set('minSparseInfillArea', num(s.min_sparse_infill_area));
   if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {
     out.layerHeightBands = s.layer_height_bands
       .filter((b) => b && b.z0 != null && b.z1 != null && b.h != null)

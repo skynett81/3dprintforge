@@ -237,6 +237,17 @@ export function layersToGcode(layers, settings) {
     wall: P,
   };
   const featSpeed = (feature, layerIdx) => (layerIdx === 0 ? s.firstLayerSpeed : (SP[feature] ?? P));
+  // Part-cooling fan % for a layer, honoring an optional min→max ramp over the
+  // first `fullFanSpeedLayer` layers (BambuStudio fan curve). No curve → flat.
+  const fanPctAt = (li) => {
+    const off = s.fanOffLayers ?? 1;
+    if (li < off) return 0;
+    if (s.fanMinSpeed == null && s.fanMaxSpeed == null) return s.fanSpeed ?? 100;
+    const mn = s.fanMinSpeed ?? s.fanSpeed ?? 100, mx = s.fanMaxSpeed ?? s.fanSpeed ?? 100;
+    const full = Math.max(off, s.fullFanSpeedLayer ?? off);
+    if (li >= full) return mx;
+    return mn + (mx - mn) * ((li - off) / Math.max(1, full - off));
+  };
   // Graduated overhang speed: bucket the overhang fraction into the configured
   // speed levels (BambuStudio's overhang_1_4..4_4). 0 in a bucket = no
   // slow-down there. Falls back to the single overhangSpeed when no table set.
@@ -477,8 +488,16 @@ export function layersToGcode(layers, settings) {
       if (s.acceleration && s.initialLayerAccel && s.initialLayerAccel !== s.acceleration) g += `M204 P${s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
     }
     // Enable the part-cooling fan once past the fan-off layers. When overhang
-    // cooling is active the per-path logic below owns the fan instead.
-    if (layerIdx === (s.fanOffLayers ?? 1) && s.overhangFanSpeed == null) { const v = Math.round((s.fanSpeed ?? 100) * 2.55); g += `M106 S${v}\n`; curFanG = v; }
+    // cooling is active the per-path logic below owns the fan instead. A fan
+    // curve (fanMinSpeed→fanMaxSpeed over fullFanSpeedLayer) ramps per layer.
+    if (s.overhangFanSpeed == null) {
+      if (s.fanMinSpeed != null || s.fanMaxSpeed != null) {
+        const v = Math.round(fanPctAt(layerIdx) * 2.55);
+        if (v !== curFanG) { g += `M106 S${v}\n`; curFanG = v; }
+      } else if (layerIdx === (s.fanOffLayers ?? 1)) {
+        const v = Math.round((s.fanSpeed ?? 100) * 2.55); g += `M106 S${v}\n`; curFanG = v;
+      }
+    }
 
     // Cooling: if a layer would print faster than the minimum layer time, slow
     // it down (clamped to the minimum print speed) so small layers get time to
@@ -496,7 +515,7 @@ export function layersToGcode(layers, settings) {
     const minSpeed = s.minPrintSpeed ?? 10;
 
     // Fan level that applies to normal features on this layer.
-    const layerFanPct = layerIdx >= (s.fanOffLayers ?? 1) ? (s.fanSpeed ?? 100) : 0;
+    const layerFanPct = fanPctAt(layerIdx);
 
     let curFeature = null;
     for (const path of paths) {
@@ -518,6 +537,12 @@ export function layersToGcode(layers, settings) {
       // Small-perimeter slowdown: tiny closed loops (holes, pillars) print
       // cleaner slower because the head can't accelerate over the short path.
       if (path.closed && s.smallPerimeterSpeed && String(path.feature).includes('wall') && pathLen(path.pts, true) < (s.smallPerimeterThreshold ?? 15)) pspeed = Math.min(pspeed, s.smallPerimeterSpeed);
+      // Max volumetric speed: cap the feedrate so flow (width×height×speed) stays
+      // within the filament/hot-end limit (BambuStudio filament_max_volumetric_speed).
+      if (s.maxVolumetricSpeed > 0) {
+        const w = LW[path.feature] ?? s.lineWidth;
+        pspeed = Math.min(pspeed, s.maxVolumetricSpeed / Math.max(0.01, w * lh * (path.flow ?? 1)));
+      }
       if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
       const ef = efFeat(path.feature, layerIdx, lh) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
@@ -906,6 +931,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         const zc = zCenters ? zCenters[i] : (i + 0.5) * s.layerHeight;
         const ctxZ = (i + 1) * s.layerHeight;
         const sparseSegsFor = (region) => {
+          // Skip sparse infill in regions smaller than the minimum area (BambuStudio
+          // minimum_sparse_infill_area) — tiny pockets aren't worth infilling.
+          if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) return [];
           const active = modifiers.filter((m) => zc >= m.minZ && zc <= m.maxZ);
           const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ });
           if (!active.length) return base;
@@ -1003,7 +1031,8 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             }
           }
         } else {
-          let ring = region.outer;
+          // brim_object_gap leaves a small gap between object and brim (easier removal).
+          let ring = s.brimObjectGap > 0 ? (offsetPolygon(region.outer, s.brimObjectGap) || region.outer) : region.outer;
           for (let b = 0; b < brimLoops; b++) {
             ring = offsetPolygon(ring, lw);
             if (!ring || ring.length < 3) break;
@@ -1011,7 +1040,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         }
         // Skirt sits outside the outer-loop brim; ears/no-brim add no ring offset.
-        const brimRing = brimType === 'outer_only' ? brimLoops * lw : 0;
+        const brimRing = brimType === 'outer_only' ? (s.brimObjectGap || 0) + brimLoops * lw : 0;
         let sk = offsetPolygon(region.outer, s.skirtGap + brimRing);
         for (let k = 0; k < s.skirtLoops; k++) {
           if (!sk || sk.length < 3) break;
