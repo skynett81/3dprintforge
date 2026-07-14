@@ -593,6 +593,13 @@ select.oset-rowinput { text-align: left; }
   padding: 8px 10px; background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm); backdrop-filter: blur(3px); pointer-events: none;
 }
+/* Vertical dual-handle layer tower (right side of the preview) */
+.gpreview-tower { position: absolute; top: 50px; bottom: 20px; right: 14px; width: 26px; z-index: 5; }
+.gpreview-tower-track { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; transform: translateX(-50%); background: rgba(148,163,184,0.35); border-radius: 2px; }
+.gpreview-tower-fill { position: absolute; left: 50%; width: 4px; transform: translateX(-50%); background: var(--o-accent); border-radius: 2px; }
+.gpreview-tower-handle { position: absolute; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); border-radius: 50%; background: #f4f6f8; border: 2px solid var(--o-accent); cursor: ns-resize; touch-action: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.gpreview-tower-handle--low { border-color: #94a3b8; background: #cbd5e1; }
+.gpreview-tower-lbl { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); padding: 1px 6px; font-size: 0.68rem; font-weight: 600; color: #0e1116; background: #f4f6f8; border-radius: 4px; white-space: nowrap; pointer-events: none; }
 .gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; }
 .gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
 .gpreview-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 7px 10px; background: rgba(24,26,30,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; }

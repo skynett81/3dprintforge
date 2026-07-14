@@ -32,6 +32,50 @@ const FEATURE_LABEL: Record<Feature, string> = {
 const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 'gap', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wipe_tower', 'wall'];
 
 /**
+ * Vertical dual-handle "layer tower" on the right of the preview — the BambuStudio
+ * layer slider. The top handle sets the highest visible layer (scrubbed), the
+ * bottom handle raises the lowest visible layer so you can inspect an interior
+ * band / cross-section. Values are 1-based layer numbers.
+ */
+function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: number; high: number; onLow: (v: number) => void; onHigh: (v: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef<'low' | 'high' | null>(null);
+  useEffect(() => {
+    const valFromY = (clientY: number) => {
+      const el = ref.current; if (!el) return high;
+      const r = el.getBoundingClientRect();
+      const f = Math.min(1, Math.max(0, (clientY - r.top) / Math.max(1, r.height)));
+      return Math.round((1 - f) * (total - 1)) + 1;   // top = top layer, bottom = layer 1
+    };
+    const move = (e: PointerEvent) => {
+      if (!drag.current) return;
+      const v = valFromY(e.clientY);
+      if (drag.current === 'high') onHigh(Math.max(low, v)); else onLow(Math.min(high, v));
+    };
+    const up = () => { drag.current = null; };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+  }, [low, high, total, onLow, onHigh]);
+  const span = Math.max(1, total - 1);
+  const yOf = (v: number) => `${(1 - (v - 1) / span) * 100}%`;
+  return (
+    <div className="gpreview-tower" ref={ref} role="group" aria-label="Layer range">
+      <div className="gpreview-tower-track" />
+      <div className="gpreview-tower-fill" style={{ top: yOf(high), bottom: `${((low - 1) / span) * 100}%` }} />
+      <div className="gpreview-tower-handle" style={{ top: yOf(high) }} title={`Top layer ${high}`}
+        onPointerDown={(e) => { e.preventDefault(); drag.current = 'high'; }}>
+        <span className="gpreview-tower-lbl">{high}</span>
+      </div>
+      <div className="gpreview-tower-handle gpreview-tower-handle--low" style={{ top: yOf(low) }} title={`Bottom layer ${low}`}
+        onPointerDown={(e) => { e.preventDefault(); drag.current = 'low'; }}>
+        {low > 1 && <span className="gpreview-tower-lbl">{low}</span>}
+      </div>
+    </div>
+  );
+}
+
+/**
  * G-code toolpath preview: renders extrusion moves layer-by-layer, coloured
  * per feature (walls / infill / support …) with a slider — exactly like a
  * desktop slicer's preview. Z-up, millimetres.
@@ -45,11 +89,12 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
   const parsed: ParsedGcode = useMemo(() => parseGcode(gcode), [gcode]);
   const total = parsed.layers.length;
   const [layer, setLayer] = useState(total);
+  const [low, setLow] = useState(1);
   const [showTravel, setShowTravel] = useState(false);
   const [mode, setMode] = useState<ColorMode>('feature');
   const [playing, setPlaying] = useState(false);
 
-  useEffect(() => { setLayer(total); }, [total]);
+  useEffect(() => { setLayer(total); setLow(1); }, [total]);
 
   // Play: step up through the layers, then stop at the top.
   useEffect(() => {
@@ -127,6 +172,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
     const cx = (parsed.bbox.minX + parsed.bbox.maxX) / 2;
     const cy = (parsed.bbox.minY + parsed.bbox.maxY) / 2;
     const shown = Math.min(layer, total);
+    const loIdx = Math.max(0, Math.min(low - 1, shown - 1));   // lowest visible layer index
     const travelPos: number[] = [];
 
     if (mode !== 'feature') {
@@ -139,7 +185,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       const pos: number[] = [];
       const col: number[] = [];
       const rgb = new THREE.Color();
-      for (let i = 0; i < shown; i++) {
+      for (let i = loIdx; i < shown; i++) {
         const l = parsed.layers[i];
         for (let k = 0, s = 0; k < l.allSeg.length; k += 4, s++) {
           if (mode === 'tool') {
@@ -163,7 +209,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
     } else {
       // One buffer per feature (batched across visible layers).
       const byFeature = new Map<Feature, number[]>();
-      for (let i = 0; i < shown; i++) {
+      for (let i = loIdx; i < shown; i++) {
         const l = parsed.layers[i];
         for (const key of Object.keys(l.feats) as Feature[]) {
           const src = l.feats[key]!;
@@ -184,7 +230,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
       c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
     }
-  }, [parsed, layer, showTravel, total, mode, slotColors]);
+  }, [parsed, layer, low, showTravel, total, mode, slotColors]);
 
   const shown = Math.min(layer, total);
   const curLayer = parsed.layers[shown - 1];
@@ -195,6 +241,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
     <div className="gpreview-root">
       <div className="gpreview-wrap">
         <div ref={mount} className="plate-canvas" />
+        {total > 1 && <LayerTower total={total} low={low} high={shown} onLow={(v) => { setPlaying(false); setLow(v); }} onHigh={(v) => { setPlaying(false); setLayer(v); }} />}
         {mode === 'feature' && legend.length > 0 && (
           <div className="gpreview-legend">
             {legend.map((f) => (
