@@ -697,19 +697,21 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         return;
       }
       if (lower.endsWith('.3mf')) {
-        // A 3MF is usually ONE model that may be split into several coloured
-        // parts. Merge the parts into a single object so it drops / lays flat
-        // as a whole, and bake each part's colour into vertex colours so the
-        // real multi-colour look is preserved.
+        // A 3MF may hold several SEPARATE objects (each individually movable) or
+        // one model split into overlapping coloured parts. Cluster meshes by
+        // spatial overlap: overlapping parts merge into one coloured object,
+        // spatially-separate objects each become their own movable object.
         const obj = new ThreeMFLoader().parse(buf);
         obj.updateMatrixWorld(true);
         // Real per-part colours from the Bambu/Orca config (extruder → filament colour).
         const cfg = parse3mfColors(buf);
         const meshes: THREE.Mesh[] = [];
         obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+        if (!meshes.length) return;
         const useCfg = !!cfg && cfg.colors.length > 0 && cfg.extruders.length === meshes.length;
-        const geoms: THREE.BufferGeometry[] = [];
-        meshes.forEach((m, idx) => {
+
+        // Build one vertex-coloured, world-space geometry per source mesh.
+        const buildGeom = (m: THREE.Mesh, idx: number): THREE.BufferGeometry => {
           const src = m.geometry.clone().applyMatrix4(m.matrixWorld).toNonIndexed();
           const pos = src.getAttribute('position');
           const g2 = new THREE.BufferGeometry();
@@ -732,32 +734,41 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
             for (let i = 0; i < n; i++) { colors[i * 3] = col.r; colors[i * 3 + 1] = col.g; colors[i * 3 + 2] = col.b; }
             g2.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
           }
-          geoms.push(g2);
           (g2 as THREE.BufferGeometry & { _ext?: number })._ext = useCfg ? (cfg!.extruders[idx] || 1) : 1;
-        });
-        if (geoms.length) {
+          return g2;
+        };
+
+        // Cluster meshes whose world bounding boxes overlap (union-find).
+        const boxes = meshes.map((m) => new THREE.Box3().setFromObject(m));
+        const parent = meshes.map((_, i) => i);
+        const find = (x: number): number => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+        const overlap = (A: THREE.Box3, B: THREE.Box3) => A.min.x <= B.max.x && A.max.x >= B.min.x && A.min.y <= B.max.y && A.max.y >= B.min.y && A.min.z <= B.max.z && A.max.z >= B.min.z;
+        for (let i = 0; i < meshes.length; i++) for (let j = i + 1; j < meshes.length; j++) if (overlap(boxes[i], boxes[j])) parent[find(i)] = find(j);
+        const clusters = new Map<number, number[]>();
+        meshes.forEach((_, i) => { const r = find(i); (clusters.get(r) ?? (clusters.set(r, []), clusters.get(r)!)).push(i); });
+
+        const nClusters = clusters.size;
+        let ci = 0;
+        for (const idxs of clusters.values()) {
+          const geoms = idxs.map((i) => buildGeom(meshes[i], i));
           const merged = mergeGeometries(geoms, false);
-          if (!merged) return;
-          // Compute the shared centre addMesh will use, so per-material
-          // geometries stay aligned with the merged display mesh.
+          if (!merged) continue;
           merged.computeBoundingBox();
           const bb = merged.boundingBox!;
           const cx = (bb.min.x + bb.max.x) / 2, cy = (bb.min.y + bb.max.y) / 2, cz = (bb.min.z + bb.max.z) / 2;
-          // Group per-extruder → one geometry each, translated to the shared frame.
+          // Per-extruder split for multi-colour objects (aligned to the shared frame).
           let materials: { extruder: number; geometry: THREE.BufferGeometry }[] | undefined;
-          if (useCfg && cfg!.extruders.some((x) => x !== cfg!.extruders[0])) {
+          const exts = geoms.map((gg) => (gg as THREE.BufferGeometry & { _ext?: number })._ext || 1);
+          if (useCfg && exts.some((x) => x !== exts[0])) {
             const byExt = new Map<number, THREE.BufferGeometry[]>();
-            for (const gg of geoms) {
-              const ext = (gg as THREE.BufferGeometry & { _ext?: number })._ext || 1;
-              (byExt.get(ext) ?? (byExt.set(ext, []), byExt.get(ext)!)).push(gg);
-            }
+            geoms.forEach((gg, k) => { const ext = exts[k]; (byExt.get(ext) ?? (byExt.set(ext, []), byExt.get(ext)!)).push(gg); });
             materials = [];
             for (const [ext, gs] of byExt) {
               const mg = mergeGeometries(gs.map((x) => x.clone()), false);
               if (mg) { mg.translate(-cx, -cy, -cz); materials.push({ extruder: ext, geometry: mg }); }
             }
           }
-          addMesh(merged, base, true, materials);
+          addMesh(merged, nClusters > 1 ? `${base} (${++ci})` : base, true, materials);
         }
       } else if (lower.endsWith('.obj')) {
         // OBJ can hold several groups — add each mesh as its own object.
