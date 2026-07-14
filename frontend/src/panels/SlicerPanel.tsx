@@ -425,6 +425,15 @@ export function SlicerPanel() {
     colorChangeRef.current = next; setColorChangeLayers(next); slicePreview();
   }
 
+  // Save the sliced g-code to a .gcode file the user can drop on an SD card.
+  function downloadGcode() {
+    if (!preview?.gcode) return;
+    const name = (file?.name || 'model').replace(/\.[^.]+$/, '') + '.gcode';
+    const url = URL.createObjectURL(new Blob([preview.gcode], { type: 'text/plain' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+
   async function slicePreview() {
     if (!file) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
     setSlicing(true);
@@ -1041,6 +1050,9 @@ export function SlicerPanel() {
           )}
           {tab === 'preview' && preview && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
+              <div className="oslice-previewbar">
+                <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
+              </div>
               <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
             </Suspense>
           )}

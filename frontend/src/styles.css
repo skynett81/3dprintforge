@@ -1439,3 +1439,4 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-nozzlerow { display: flex; gap: 8px; margin-top: 6px; }
 .oslice-nozzlerow label { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .oslice-nozzlerow select { width: 100%; }
+.oslice-previewbar { display: flex; justify-content: flex-end; padding: 0 0 8px; }
