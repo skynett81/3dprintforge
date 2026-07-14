@@ -308,7 +308,7 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[]; showOrder?: boolean }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors, showOrder }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[]; showOrder?: boolean; clearance?: number }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors, showOrder, clearance = 0 }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -316,6 +316,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   slotColorsRef.current = slotColors;
   const showOrderRef = useRef<boolean | undefined>(showOrder);
   showOrderRef.current = showOrder;
+  const clearanceRef = useRef<number>(clearance);
+  clearanceRef.current = clearance;
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
   const onCtxRef = useRef(onContextMenu);
@@ -618,8 +620,29 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         badge.style.top = `${(-_ov.y * 0.5 + 0.5) * h}px`;
       });
     };
+    // Sequential-print clearance rings: a circle around each object's footprint
+    // grown by the head-clearance radius; turns red where two rings overlap
+    // (objects too close to print one-at-a-time without a collision).
+    const ringGroup = new THREE.Group(); scene.add(ringGroup);
+    const syncRings = () => {
+      if (!showOrderRef.current) { if (ringGroup.children.length) { for (const o of ringGroup.children as THREE.LineLoop[]) o.geometry.dispose(); ringGroup.clear(); } return; }
+      const positives = c.objects.filter((o) => !o.userData.partType);
+      const info = positives.map((m) => { m.updateMatrixWorld(); const box = new THREE.Box3().setFromObject(m); const size = new THREE.Vector3(); box.getSize(size); const ctr = new THREE.Vector3(); box.getCenter(ctr); return { x: ctr.x, y: ctr.y, r: 0.5 * Math.hypot(size.x, size.y) + Math.max(0, clearanceRef.current) }; });
+      const hit = info.map(() => false);
+      for (let i = 0; i < info.length; i++) for (let j = i + 1; j < info.length; j++) { const d = Math.hypot(info[i].x - info[j].x, info[i].y - info[j].y); if (d < info[i].r + info[j].r) { hit[i] = true; hit[j] = true; } }
+      while (ringGroup.children.length < info.length) ringGroup.add(new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ transparent: true, opacity: 0.9 })));
+      while (ringGroup.children.length > info.length) { const o = ringGroup.children.pop() as THREE.LineLoop; o.geometry.dispose(); }
+      const N = 56;
+      info.forEach((o, i) => {
+        const line = ringGroup.children[i] as THREE.LineLoop;
+        const pts = new Float32Array(N * 3);
+        for (let k = 0; k < N; k++) { const a = (k / N) * Math.PI * 2; pts[k * 3] = o.x + Math.cos(a) * o.r; pts[k * 3 + 1] = o.y + Math.sin(a) * o.r; pts[k * 3 + 2] = 0.15; }
+        line.geometry.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+        (line.material as THREE.LineBasicMaterial).color.setHex(hit[i] ? 0xe0463c : 0x009789);
+      });
+    };
     let orderTick = 0;
-    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); if ((orderTick++ & 3) === 0) syncOrder(); };
+    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); if ((orderTick++ & 3) === 0) { syncOrder(); syncRings(); } };
     loop();
     const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
     window.addEventListener('resize', onResize);
@@ -631,6 +654,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       window.removeEventListener('resize', onResize);
       ro.disconnect();
       orderLayer.remove();
+      for (const o of ringGroup.children as THREE.LineLoop[]) o.geometry.dispose();
+      ringGroup.clear(); scene.remove(ringGroup);
       renderer.domElement.removeEventListener('contextmenu', onContext);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);

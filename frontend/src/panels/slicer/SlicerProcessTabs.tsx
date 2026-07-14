@@ -182,6 +182,7 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Multi-colour', k: 'wipe_tower_y', label: 'Wipe tower Y', type: 'num', unit: 'mm', step: 5, dep: 'wipe_tower' },
   { tab: 'Others', group: 'Sequential printing', k: 'print_sequence', label: 'Print sequence', type: 'sel', opts: [['by_layer', 'By layer (all objects together)'], ['by_object', 'By object (one at a time)']] },
   { tab: 'Others', group: 'Sequential printing', k: 'extruder_clearance_height', label: 'Gantry clearance height', type: 'num', unit: 'mm', step: 1, dep: 'print_sequence' },
+  { tab: 'Others', group: 'Sequential printing', k: 'extruder_clearance_radius', label: 'Head clearance radius', type: 'num', unit: 'mm', step: 1, dep: 'print_sequence' },
   { tab: 'Others', group: 'Output', k: 'gcode_label_objects', label: 'Label objects (exclude-object)', type: 'bool' },
   { tab: 'Others', group: 'Output', k: 'arc_fitting', label: 'Arc fitting (G2/G3)', type: 'bool' },
   { tab: 'Others', group: 'Output', k: 'arc_fitting_tolerance', label: 'Arc fitting tolerance', type: 'num', unit: 'mm', step: 0.01, dep: 'arc_fitting' },
