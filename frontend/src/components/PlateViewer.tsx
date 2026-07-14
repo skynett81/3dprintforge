@@ -25,7 +25,7 @@ export interface ObjInfo {
 }
 export type PlateMode = 'translate' | 'rotate' | 'scale';
 export type PartType = 'negative' | 'enforcer' | 'blocker' | 'modifier';
-export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number; partTypes: string[]; partParents: number[] }
+export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number; partTypes: string[]; partParents: number[]; hidden: boolean[] }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   exportMaterials: (name: string) => { extruder: number; file: File }[];
@@ -67,6 +67,8 @@ export interface PlateHandle {
   restore: (snap: PlateSnapshot) => void;
   undo: () => void;
   redo: () => void;
+  resetView: () => void;
+  setVisible: (index: number, visible: boolean) => void;
   detachSelected: () => THREE.Mesh | null;
   setCutPreview: (fraction: number | null) => void;
   cut: (fraction: number, keep: 'upper' | 'lower' | 'both', connectors?: number) => void;
@@ -320,7 +322,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const partTypes = objs.map((o) => (o.userData.partType as string) || '');
     const partParents = objs.map((o) => (o.userData.partParentId ? objs.findIndex((p) => p.uuid === o.userData.partParentId) : -1));
     const selIndex = c?.selected ? objs.indexOf(c.selected) : -1;
-    onStateRef.current?.({ count: objs.length, hasSel: !!c?.selected, mode: nextMode, names, selIndex, partTypes, partParents });
+    const hidden = objs.map((o) => o.visible === false);
+    onStateRef.current?.({ count: objs.length, hasSel: !!c?.selected, mode: nextMode, names, selIndex, partTypes, partParents, hidden });
   }
   function setMode(m: PlateMode) { setModeState(m); ctx.current?.tcontrols.setMode(m); emitState(m); }
 
@@ -373,11 +376,11 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   // ── undo / redo: a bounded stack of deep snapshots (geometry + transform +
   // userData clones) captured after each edit. ──
-  const history = useRef<{ geom: THREE.BufferGeometry; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; name: string; userData: Record<string, unknown>; material: THREE.Material | THREE.Material[] }[][]>([]);
+  const history = useRef<{ geom: THREE.BufferGeometry; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; name: string; userData: Record<string, unknown>; material: THREE.Material | THREE.Material[]; visible: boolean }[][]>([]);
   const histIdx = useRef(-1);
   function deepSnap() {
     const c = ctx.current; if (!c) return [];
-    return c.objects.map((m) => { m.updateMatrixWorld(); return { geom: m.geometry.clone(), pos: m.position.clone(), quat: m.quaternion.clone(), scale: m.scale.clone(), name: m.name, userData: { ...m.userData }, material: m.material }; });
+    return c.objects.map((m) => { m.updateMatrixWorld(); return { geom: m.geometry.clone(), pos: m.position.clone(), quat: m.quaternion.clone(), scale: m.scale.clone(), name: m.name, userData: { ...m.userData }, material: m.material, visible: m.visible }; });
   }
   function pushHistory() {
     const snap = deepSnap();
@@ -390,7 +393,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const c = ctx.current; if (!c) return;
     select(null);
     for (const m of c.objects) c.scene.remove(m);
-    c.objects = snap.map((s) => { const mesh = new THREE.Mesh(s.geom.clone(), s.material); mesh.position.copy(s.pos); mesh.quaternion.copy(s.quat); mesh.scale.copy(s.scale); mesh.name = s.name; mesh.userData = { ...s.userData }; c.scene.add(mesh); return mesh; });
+    c.objects = snap.map((s) => { const mesh = new THREE.Mesh(s.geom.clone(), s.material); mesh.position.copy(s.pos); mesh.quaternion.copy(s.quat); mesh.scale.copy(s.scale); mesh.name = s.name; mesh.userData = { ...s.userData }; mesh.visible = s.visible !== false; c.scene.add(mesh); return mesh; });
     setCount(c.objects.length);
     if (c.objects[0]) select(c.objects[0]);
     emitState();
@@ -1036,6 +1039,20 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
     undo: () => { if (histIdx.current > 0) { histIdx.current -= 1; applySnap(history.current[histIdx.current]); } },
     redo: () => { if (histIdx.current < history.current.length - 1) { histIdx.current += 1; applySnap(history.current[histIdx.current]); } },
+    resetView: () => {
+      const c = ctx.current; if (!c) return;
+      c.camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
+      c.orbit.target.set(0, 0, bed * 0.15); c.orbit.update();
+    },
+    setVisible: (index: number, visible: boolean) => {
+      const c = ctx.current; if (!c) return;
+      const m = c.objects[index]; if (!m) return;
+      m.visible = visible;
+      // Cascade to this object's part children (negatives/modifiers).
+      for (const o of c.objects) if (o.userData.partParentId === m.uuid) o.visible = visible;
+      if (!visible && c.selected === m) select(null);
+      emitState();
+    },
     restore: (snap) => {
       const c = ctx.current; if (!c) return;
       select(null);
@@ -1099,7 +1116,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     duplicateN: (n: number) => { for (let i = 0; i < n; i++) duplicate(); },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
-      const positives = c.objects.filter((m) => !m.userData.partType);
+      const positives = c.objects.filter((m) => !m.userData.partType && m.visible !== false);
       if (!positives.length) return null;
       const ev = new Evaluator(); ev.attributes = ['position', 'normal']; ev.useGroups = false;
       const group = new THREE.Group();
@@ -1127,7 +1144,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const exp = new STLExporter();
       const bn = name.replace(/\.[^.]+$/, '');
       const ev = new Evaluator(); ev.attributes = ['position', 'normal']; ev.useGroups = false;
-      const positives = c.objects.filter((m) => !m.userData.partType);
+      const positives = c.objects.filter((m) => !m.userData.partType && m.visible !== false);
       return positives.map((m, index) => {
         m.updateMatrixWorld(true);
         let g = m.geometry.clone().applyMatrix4(m.matrixWorld);

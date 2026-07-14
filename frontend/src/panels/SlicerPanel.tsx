@@ -15,7 +15,7 @@ import { SlicerPurge } from './slicer/SlicerPurge';
 import { matchSpools } from '../lib/spool-match';
 import { SlicerColorLayer } from './slicer/SlicerColorLayer';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
-import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse, IconAutoOrient, IconPlaceFace, IconSplit, IconMeasure, IconSimplify, IconSupportPaint, IconSeamPaint, IconColorPaint, IconCut, IconBoolean, IconShape, IconText, IconFuzzy, IconImage } from './slicer/icons';
+import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse, IconAutoOrient, IconPlaceFace, IconSplit, IconMeasure, IconSimplify, IconSupportPaint, IconSeamPaint, IconColorPaint, IconCut, IconBoolean, IconShape, IconText, IconFuzzy, IconImage, IconEye, IconEyeOff, IconResetView } from './slicer/icons';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -89,7 +89,7 @@ export function SlicerPanel() {
   const [obj, setObj] = useState<ObjInfo | null>(null);
   const [objOverrides, setObjOverrides] = useState<Record<number, SliceSettings>>({});
   const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
-  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1, partTypes: [], partParents: [] });
+  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1, partTypes: [], partParents: [], hidden: [] });
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; i: number } | null>(null);
   const [colorChangeLayers, setColorChangeLayers] = useState<number[]>([]);
   const colorChangeRef = useRef<number[]>([]);
@@ -770,8 +770,14 @@ export function SlicerPanel() {
                           onClick={() => plateRef.current?.selectAt(i)}
                           onContextMenu={(e) => { e.preventDefault(); plateRef.current?.selectAt(i); setCtxMenu({ x: e.clientX, y: e.clientY, i }); }}>
                           {isPart && <span className="oslice-treeglyph">└</span>}
-                          <span className="ellipsis">{toolState.names[i]}</span>
+                          <span className="ellipsis" style={toolState.hidden[i] ? { opacity: 0.45 } : undefined}>{toolState.names[i]}</span>
                           {badge && <span className={`oslice-partbadge oslice-partbadge--${pt}`}>{badge}</span>}
+                          {!isPart && (
+                            <button className="oslice-objeye" title={toolState.hidden[i] ? t('v2.obj.show', 'Show') : t('v2.obj.hide', 'Hide')}
+                              onClick={(e) => { e.stopPropagation(); plateRef.current?.setVisible(i, !!toolState.hidden[i]); }}>
+                              {toolState.hidden[i] ? <IconEyeOff /> : <IconEye />}
+                            </button>
+                          )}
                           <button className="oslice-objdel" title={t('v2.obj.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); plateRef.current?.selectAt(i); plateRef.current?.remove(); }}>×</button>
                         </div>
                       );
@@ -929,6 +935,7 @@ export function SlicerPanel() {
             {tool('scale', <IconScale />, t('v2.plate.scale', 'Scale'))}
             {action(<IconLayFlat />, t('v2.plate.flat', 'Lay flat'), () => plateRef.current?.layFlat(), !toolState.hasSel)}
             {action(<IconCenter />, t('v2.plate.center', 'Center'), () => plateRef.current?.center(), !toolState.hasSel)}
+            {action(<IconResetView />, t('v2.plate.reset_view', 'Reset view'), () => plateRef.current?.resetView())}
             <span className="oslice-rail-sep" />
             {action(<IconAutoOrient />, t('v2.plate.orient', 'Auto-orient (least support)'), () => plateRef.current?.autoOrient(), !toolState.hasSel)}
             <button className={`oslice-tool${placeFace ? ' oslice-tool--on' : ''}`} title={t('v2.plate.placeface', 'Place on face — click a facet to set it on the plate')} disabled={!toolState.hasSel} onClick={togglePlaceFace}><IconPlaceFace /></button>

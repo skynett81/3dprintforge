@@ -17,6 +17,8 @@ export const IconProcess = () => (<svg {...S}><path d="M4 6h16M4 12h16M4 18h10" 
 export const IconExpand = () => (<svg {...S}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>);
 export const IconCollapse = () => (<svg {...S}><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>);
 export const IconEye = () => (<svg {...S}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>);
+export const IconEyeOff = () => (<svg {...S}><path d="M4 4l16 16M9.9 5.2A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.2 7.4A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 3.3-.6M9.5 9.6a2.5 2.5 0 0 0 3.4 3.6" /></svg>);
+export const IconResetView = () => (<svg {...S}><path d="M3 9l9-6 9 6v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9Z" /></svg>);
 export const IconAutoOrient = () => (<svg {...S}><path d="M12 3l7 4v10l-7 4-7-4V7l7-4Z" /><path d="M12 3v18M5 7l7 4 7-4" /></svg>);
 export const IconPlaceFace = () => (<svg {...S}><path d="M3 17l9 4 9-4M3 17l4-9 5 2 5-2 4 9M8 10l4-6 4 6" /></svg>);
 export const IconSplit = () => (<svg {...S}><path d="M12 3v18" strokeDasharray="3 3" /><path d="M4 8l4-2v12l-4 2V8ZM20 8l-4-2v12l4 2V8Z" /></svg>);

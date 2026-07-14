@@ -405,6 +405,10 @@ select.oset-rowinput { text-align: left; }
 .oslice-objdel { margin-left: 4px; border: none; background: transparent; color: var(--o-text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; border-radius: 4px; opacity: 0; }
 .oslice-objitem:hover .oslice-objdel { opacity: 0.8; }
 .oslice-objdel:hover { color: #e0463c; background: rgba(224,70,60,0.12); opacity: 1; }
+.oslice-objeye { margin-left: auto; display: inline-flex; align-items: center; border: none; background: transparent; color: var(--o-text-muted); cursor: pointer; padding: 0 2px; border-radius: 4px; opacity: 0; }
+.oslice-objeye svg { width: 15px; height: 15px; }
+.oslice-objitem:hover .oslice-objeye { opacity: 0.75; }
+.oslice-objeye:hover { color: var(--o-accent); opacity: 1; }
 .oslice-ctx-backdrop { position: fixed; inset: 0; z-index: 40; }
 .oslice-ctxmenu { position: fixed; z-index: 41; background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: 4px; display: flex; flex-direction: column; min-width: 150px; }
 .oslice-ctxmenu button { text-align: left; background: transparent; border: none; color: var(--o-text); font-size: 0.8rem; padding: 6px 10px; border-radius: 5px; cursor: pointer; }
