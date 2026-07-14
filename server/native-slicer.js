@@ -878,8 +878,15 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // (their own flow + speed + cooling). When bridge_angle is set the bridge
     // lines are hatched in that forced direction (a second pass), so they span
     // the gap the strong way regardless of the layer's base angle.
-    // Top-surface solid gets its own speed (BambuStudio top_surface_speed).
-    const topSp = (sg) => (surfaces && s.topSurfaceSpeed && surfaces.isTopPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2)) ? { speedOverride: s.topSurfaceSpeed } : null;
+    // Top-/bottom-surface solid get their own speed (top_surface_speed /
+    // bottom_surface_speed).
+    const topSp = (sg) => {
+      if (!surfaces) return null;
+      const mx = (sg[0][0] + sg[1][0]) / 2, my = (sg[0][1] + sg[1][1]) / 2;
+      if (s.topSurfaceSpeed && surfaces.isTopPoint(i, mx, my)) return { speedOverride: s.topSurfaceSpeed };
+      if (s.bottomSurfaceSpeed && surfaces.isBottomPoint(i, mx, my)) return { speedOverride: s.bottomSurfaceSpeed };
+      return null;
+    };
     const pushSolid = (sg) => { const t = topSp(sg); fills.push(t ? { feature: 'solid', closed: false, pts: sg, ...t } : { feature: 'solid', closed: false, pts: sg }); };
     const pushSolidRegion = (region, angle, keep) => {
       const forced = bridgeDetect && below && s.bridgeAngle != null;

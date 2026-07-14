@@ -610,3 +610,15 @@ describe('native-slicer: only one wall top', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: bottom surface speed', () => {
+  it('applies a distinct feedrate to the bottom surface', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, bottomSurfaceSpeed: 25, supports: false });
+    assert.match(r.gcode, /F1500(\.0+)?\b/, 'bottom surface at 25 mm/s = F1500');
+  });
+  it('no bottom_surface_speed byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, bottomSurfaceSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

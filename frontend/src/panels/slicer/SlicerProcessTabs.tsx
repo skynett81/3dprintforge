@@ -80,6 +80,7 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Infill', k: 'sparse_infill_speed', label: 'Sparse infill', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Infill', k: 'internal_solid_infill_speed', label: 'Solid infill', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Infill', k: 'top_surface_speed', label: 'Top surface', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Infill', k: 'bottom_surface_speed', label: 'Bottom surface', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Overhang & bridge', k: 'overhang_1_4_speed', label: 'Overhang 0-25% (0 = keep speed)', type: 'num', unit: 'mm/s', step: 5, dep: 'detect_overhang_wall' },
   { tab: 'Speed', group: 'Overhang & bridge', k: 'overhang_2_4_speed', label: 'Overhang 25-50%', type: 'num', unit: 'mm/s', step: 5, dep: 'detect_overhang_wall' },
   { tab: 'Speed', group: 'Overhang & bridge', k: 'overhang_3_4_speed', label: 'Overhang 50-75%', type: 'num', unit: 'mm/s', step: 5, dep: 'detect_overhang_wall' },
