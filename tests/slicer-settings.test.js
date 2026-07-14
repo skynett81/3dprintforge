@@ -188,4 +188,18 @@ describe('buildNativeSettings', () => {
     assert.equal(buildNativeSettings({ bridge_angle: 90 }).bridgeAngle, 90);
     assert.equal('bridgeAngle' in buildNativeSettings({ bridge_angle: 0 }), false);
   });
+
+  test('maps a broad set of settings to the real Orca backend (not just a few)', () => {
+    const j = buildOrcaProcessJson({
+      layer_height: 0.2, outer_wall_speed: 200, inner_wall_speed: 250,
+      sparse_infill_speed: 300, top_shell_thickness: 1, infill_wall_overlap: 15,
+      support_top_z_distance: 0.2, fan_max_speed: 100, brim_object_gap: 0.1,
+      spiral_mode: true, draft_shield: false,
+    });
+    assert.ok(Object.keys(j).length >= 10, `expected many mapped keys, got ${Object.keys(j).length}`);
+    assert.equal(j.spiral_mode, '1');
+    assert.equal(j.draft_shield, '0');
+    assert.equal(j.support_top_z_distance, '0.2');
+  });
+
 });

@@ -5,30 +5,104 @@
 // Values in Orca profiles are strings; percentages carry a '%'. Temperatures
 // live in the filament profile (not here).
 
+// UI key → OrcaSlicer/BambuStudio process-config key. Used to drive the REAL
+// slicer backend (forge bridge / CLI) so it honors everything the UI exposes —
+// not just a handful. Process-level only; filament/printer settings (temps,
+// retraction, fan, pressure advance) live in their own configs.
 const KEY = {
+  // Quality — layer / precision / surface
   layer_height: 'layer_height',
   initial_layer_height: 'initial_layer_print_height',
+  elephant_foot: 'elefant_foot_compensation',
+  xy_hole_compensation: 'xy_hole_compensation',
+  xy_contour_compensation: 'xy_contour_compensation',
+  seam_position: 'seam_position',
+  seam_gap: 'seam_gap',
+  spiral_mode: 'spiral_mode',
+  fuzzy_skin: 'fuzzy_skin',
+  fuzzy_skin_thickness: 'fuzzy_skin_thickness',
+  fuzzy_skin_point_distance: 'fuzzy_skin_point_dist',
+  ironing_flow: 'ironing_flow',
+  ironing_spacing: 'ironing_spacing',
+  ironing_speed: 'ironing_speed',
+  bridge_flow: 'bridge_flow',
+  detect_overhang_wall: 'detect_overhang_wall',
+  wall_generator: 'wall_generator',
+  wall_infill_order: 'wall_sequence',
+  // Strength — walls / shells / infill
   wall_loops: 'wall_loops',
   top_layers: 'top_shell_layers',
   bottom_layers: 'bottom_shell_layers',
+  top_shell_thickness: 'top_shell_thickness',
+  bottom_shell_thickness: 'bottom_shell_thickness',
   infill_pattern: 'sparse_infill_pattern',
-  support_type: 'support_type',
-  support_threshold: 'support_threshold_angle',
-  brim_type: 'brim_type',
-  brim_width: 'brim_width',
-  raft_layers: 'raft_layers',
-  skirt_loops: 'skirt_loops',
+  infill_direction: 'infill_direction',
+  infill_combination: 'infill_combination',
+  infill_wall_overlap: 'infill_wall_overlap',
+  top_surface_pattern: 'top_surface_pattern',
+  min_sparse_infill_area: 'minimum_sparse_infill_area',
+  // Speed
   outer_wall_speed: 'outer_wall_speed',
   inner_wall_speed: 'inner_wall_speed',
   infill_speed: 'sparse_infill_speed',
+  sparse_infill_speed: 'sparse_infill_speed',
+  internal_solid_infill_speed: 'internal_solid_infill_speed',
+  gap_infill_speed: 'gap_infill_speed',
+  small_perimeter_speed: 'small_perimeter_speed',
+  bridge_speed: 'bridge_speed',
+  support_speed: 'support_speed',
+  initial_layer_speed: 'initial_layer_speed',
   travel_speed: 'travel_speed',
+  default_acceleration: 'default_acceleration',
+  outer_wall_acceleration: 'outer_wall_acceleration',
+  inner_wall_acceleration: 'inner_wall_acceleration',
+  top_surface_acceleration: 'top_surface_acceleration',
+  sparse_infill_acceleration: 'sparse_infill_acceleration',
+  initial_layer_acceleration: 'initial_layer_acceleration',
+  travel_acceleration: 'travel_acceleration',
+  default_jerk: 'default_jerk',
+  // Line width
+  line_width: 'line_width',
+  outer_wall_line_width: 'outer_wall_line_width',
+  inner_wall_line_width: 'inner_wall_line_width',
+  sparse_infill_line_width: 'sparse_infill_line_width',
+  initial_layer_line_width: 'initial_layer_line_width',
+  // Support
+  support_type: 'support_type',
+  support_threshold: 'support_threshold_angle',
+  support_on_plate: 'support_on_build_plate_only',
+  support_top_z_distance: 'support_top_z_distance',
+  support_object_xy_distance: 'support_object_xy_distance',
+  support_interface_top_layers: 'support_interface_top_layers',
+  support_wall_count: 'tree_support_wall_count',
+  support_remove_small_overhangs: 'support_remove_small_overhang',
+  // Cooling
+  fan_speed: 'fan_max_speed',
+  fan_min_speed: 'fan_min_speed',
+  fan_max_speed: 'fan_max_speed',
+  fan_off_layers: 'close_fan_the_first_x_layers',
+  full_fan_speed_layer: 'full_fan_speed_layer',
+  slow_down_layer_time: 'slow_down_layer_time',
+  slow_down_min_speed: 'slow_down_min_speed',
+  // Adhesion / others
+  brim_type: 'brim_type',
+  brim_width: 'brim_width',
+  brim_object_gap: 'brim_object_gap',
+  raft_layers: 'raft_layers',
+  skirt_loops: 'skirt_loops',
+  skirt_distance: 'skirt_distance',
+  draft_shield: 'draft_shield',
+  wipe_tower: 'enable_prime_tower',
+  wipe_tower_width: 'prime_tower_width',
 };
 
 export function buildOrcaProcessJson(s = {}) {
   const j = { type: 'process', name: 'ForgeWeb', from: 'User' };
   for (const [uiKey, orcaKey] of Object.entries(KEY)) {
     const v = s[uiKey];
-    if (v !== undefined && v !== null && v !== '') j[orcaKey] = String(v);
+    if (v === undefined || v === null || v === '') continue;
+    // Orca expects '1'/'0' for booleans, plain strings otherwise.
+    j[orcaKey] = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
   }
   if (s.infill_density !== undefined && s.infill_density !== null && s.infill_density !== '') {
     j.sparse_infill_density = `${Number(s.infill_density)}%`;
