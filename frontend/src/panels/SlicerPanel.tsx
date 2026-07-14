@@ -102,8 +102,19 @@ export function SlicerPanel() {
   // preserves the exact arrangement, transforms and paint.
   const [plates, setPlates] = useState<{ id: number; name: string; snap: PlateSnapshot | null }[]>([{ id: 1, name: 'Plate 1', snap: null }]);
   const [activePlate, setActivePlate] = useState(0);
+  const [allView, setAllView] = useState(false);
   const plateSeq = useRef(2);
+  // Toggle the "all plates" overview — lay every plate out in a grid at once.
+  const toggleAllView = () => {
+    const pv = plateRef.current; if (!pv) return;
+    if (allView) { pv.setAllPlatesView(null); setAllView(false); return; }
+    const activeSnap = pv.snapshot();
+    const groups = plates.map((pl, i) => ({ meshes: i === activePlate ? activeSnap : (pl.snap ?? []), name: pl.name }));
+    pv.setAllPlatesView(groups, activePlate);
+    setAllView(true);
+  };
   const switchPlate = (idx: number) => {
+    if (allView) { plateRef.current?.setAllPlatesView(null); setAllView(false); }
     if (idx === activePlate || !plateRef.current || idx < 0 || idx >= plates.length) return;
     const curSnap = plateRef.current.snapshot();
     setPlates((ps) => ps.map((pl, i) => (i === activePlate ? { ...pl, snap: curSnap } : pl)));
@@ -112,6 +123,7 @@ export function SlicerPanel() {
   };
   const addPlate = () => {
     if (!plateRef.current) return;
+    if (allView) { plateRef.current.setAllPlatesView(null); setAllView(false); }
     const curSnap = plateRef.current.snapshot();
     const id = plateSeq.current++;
     const nextIdx = plates.length;
@@ -1052,6 +1064,9 @@ export function SlicerPanel() {
                 );
               })}
               <button className="oslice-platetab oslice-platetab--add" title={t('v2.plate.plate_add', 'Add plate')} onClick={addPlate}>+</button>
+              {plates.length > 1 && tab === 'prepare' && (
+                <button className={`oslice-platetab oslice-platetab--all${allView ? ' oslice-platetab--on' : ''}`} title={t('v2.plate.all_plates', 'Show all plates at once')} onClick={toggleAllView}>{allView ? t('v2.plate.one_plate', 'Single') : t('v2.plate.all', 'All')}</button>
+              )}
             </div>
           )}
 

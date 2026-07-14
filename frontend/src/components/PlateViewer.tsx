@@ -64,6 +64,7 @@ export interface PlateHandle {
   fillBed: () => void;
   serializePlate: () => SerializedObj[];
   loadProject: (objs: SerializedObj[]) => void;
+  setAllPlatesView: (groups: { meshes: THREE.Mesh[]; name: string }[] | null, activeIdx?: number) => void;
   autoOrient: () => void;
   splitToParts: () => void;
   setPlaceOnFace: (on: boolean) => void;
@@ -111,6 +112,7 @@ interface Ctx {
   selected: THREE.Mesh | null; raf: number;
   measurePts: THREE.Vector3[]; measureObjs: THREE.Object3D[];
   cutPlane: THREE.Mesh | null;
+  overview: THREE.Group | null;
 }
 
 export interface MeasureResult { dist: number; dx: number; dy: number; dz: number }
@@ -444,7 +446,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const helper = (tcontrols as unknown as { getHelper?: () => THREE.Object3D }).getHelper?.() ?? (tcontrols as unknown as THREE.Object3D);
     scene.add(helper);
 
-    const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0, measurePts: [], measureObjs: [], cutPlane: null };
+    const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0, measurePts: [], measureObjs: [], cutPlane: null, overview: null };
     ctx.current = c;
 
     // click-to-select — only on a clean click (not an orbit drag), decided
@@ -601,6 +603,25 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const orderLayer = document.createElement('div');
     orderLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;';
     el.appendChild(orderLayer);
+    // Plate-name labels for the "all plates" overview.
+    const ovLayer = document.createElement('div');
+    ovLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden;';
+    el.appendChild(ovLayer);
+    const _ovl = new THREE.Vector3();
+    const syncOverview = () => {
+      const cells = (c.overview?.userData.cells as { x: number; y: number; label: string }[] | undefined) || [];
+      if (!cells.length) { if (ovLayer.childElementCount) ovLayer.replaceChildren(); return; }
+      while (ovLayer.childElementCount < cells.length) { const d = document.createElement('div'); d.className = 'plate-ov-label'; ovLayer.appendChild(d); }
+      while (ovLayer.childElementCount > cells.length) ovLayer.lastChild?.remove();
+      const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
+      cells.forEach((cl, i) => {
+        _ovl.set(cl.x, cl.y, 1); _ovl.project(camera);
+        const el2 = ovLayer.children[i] as HTMLDivElement;
+        el2.textContent = cl.label;
+        el2.style.left = `${(_ovl.x * 0.5 + 0.5) * w}px`;
+        el2.style.top = `${(-_ovl.y * 0.5 + 0.5) * h}px`;
+      });
+    };
     const _ov = new THREE.Vector3();
     const syncOrder = () => {
       if (!showOrderRef.current) { if (orderLayer.childElementCount) orderLayer.replaceChildren(); return; }
@@ -642,7 +663,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       });
     };
     let orderTick = 0;
-    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); if ((orderTick++ & 3) === 0) { syncOrder(); syncRings(); } };
+    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); if ((orderTick++ & 3) === 0) { syncOrder(); syncRings(); syncOverview(); } };
     loop();
     const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
     window.addEventListener('resize', onResize);
@@ -654,6 +675,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       window.removeEventListener('resize', onResize);
       ro.disconnect();
       orderLayer.remove();
+      ovLayer.remove();
       for (const o of ringGroup.children as THREE.LineLoop[]) o.geometry.dispose();
       ringGroup.clear(); scene.remove(ringGroup);
       renderer.domElement.removeEventListener('contextmenu', onContext);
@@ -1276,6 +1298,55 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       setCount(c.objects.length);
       select(c.objects[0] ?? null);
       emitState(); emitObject(); pushHistory();
+    },
+    // "All plates" overview: lay every plate's objects out in a grid so you can
+    // see them all at once. Read-only; pass null to return to editing.
+    setAllPlatesView: (groups, activeIdx = 0) => {
+      const c = ctx.current; if (!c) return;
+      if (c.overview) {
+        c.overview.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); });
+        c.scene.remove(c.overview); c.overview = null;
+      }
+      if (!groups) {
+        for (const m of c.objects) m.visible = m.userData.__ovHidden ? false : true;
+        for (const m of c.objects) delete m.userData.__ovHidden;
+        if (c.selected) c.tcontrols.attach(c.selected);
+        c.camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
+        c.orbit.target.set(0, 0, bed * 0.15); c.orbit.update();
+        return;
+      }
+      // Enter overview: hide the live editing meshes + gizmo.
+      c.tcontrols.detach();
+      for (const m of c.objects) { m.userData.__ovHidden = m.visible === false; m.visible = false; }
+      const N = groups.length;
+      const cols = Math.max(1, Math.ceil(Math.sqrt(N)));
+      const rows = Math.ceil(N / cols);
+      const gap = bed * 0.16, cell = bed + gap, half = bed / 2;
+      const grp = new THREE.Group();
+      const cells: { x: number; y: number; label: string }[] = [];
+      groups.forEach((g, idx) => {
+        const col = idx % cols, row = Math.floor(idx / cols);
+        const ox = (col - (cols - 1) / 2) * cell;
+        const oy = -(row - (rows - 1) / 2) * cell;
+        cells.push({ x: ox, y: oy + half + gap * 0.3, label: g.name || `Plate ${idx + 1}` });
+        // Bed outline for this cell (green when it's the active plate).
+        const pts = [[-half, -half], [half, -half], [half, half], [-half, half]].map(([x, y]) => new THREE.Vector3(x + ox, y + oy, 0.1));
+        grp.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: idx === activeIdx ? 0x2ecc71 : 0x5b6472 })));
+        // Clones of the plate's objects, translated into the cell.
+        for (const m of g.meshes) {
+          if (m.userData.partType) continue;   // parts ride with their parent visually
+          const cm = new THREE.Mesh(m.geometry.clone(), m.material);
+          cm.position.copy(m.position); cm.quaternion.copy(m.quaternion); cm.scale.copy(m.scale);
+          cm.position.x += ox; cm.position.y += oy;
+          grp.add(cm);
+        }
+      });
+      grp.userData.cells = cells;
+      c.scene.add(grp); c.overview = grp;
+      // Frame the whole grid.
+      const span = Math.max(cols, rows) * cell;
+      c.camera.position.set(span * 0.15, -span * 0.85, span * 0.8);
+      c.orbit.target.set(0, 0, 0); c.orbit.update();
     },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
