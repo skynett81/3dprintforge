@@ -532,7 +532,7 @@ export function layersToGcode(layers, settings) {
         const wantFan = isCooled ? Math.round(Math.max(layerFanPct, s.overhangFanSpeed) * 2.55) : Math.round(layerFanPct * 2.55);
         if (wantFan !== curFanG) { g += `M106 S${wantFan}\n`; curFanG = wantFan; }
       }
-      let pspeed = featSpeed(path.feature, layerIdx);
+      let pspeed = (layerIdx > 0 && path.speedOverride > 0) ? path.speedOverride : featSpeed(path.feature, layerIdx);
       if (path.overhangFrac != null) { const os = gradedOverhangSpeed(path.overhangFrac); if (os > 0) pspeed = Math.min(pspeed, os); }
       // Small-perimeter slowdown: tiny closed loops (holes, pillars) print
       // cleaner slower because the head can't accelerate over the short path.
@@ -845,17 +845,20 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // (their own flow + speed + cooling). When bridge_angle is set the bridge
     // lines are hatched in that forced direction (a second pass), so they span
     // the gap the strong way regardless of the layer's base angle.
+    // Top-surface solid gets its own speed (BambuStudio top_surface_speed).
+    const topSp = (sg) => (surfaces && s.topSurfaceSpeed && surfaces.isTopPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2)) ? { speedOverride: s.topSurfaceSpeed } : null;
+    const pushSolid = (sg) => { const t = topSp(sg); fills.push(t ? { feature: 'solid', closed: false, pts: sg, ...t } : { feature: 'solid', closed: false, pts: sg }); };
     const pushSolidRegion = (region, angle, keep) => {
       const forced = bridgeDetect && below && s.bridgeAngle != null;
       if (forced) {
         for (const sg of solidInfill(region, s.bridgeAngle, lw)) if ((!keep || keep(sg)) && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
-        for (const sg of solidInfill(region, angle, lw)) if ((!keep || keep(sg)) && !segMidUnsupported(sg)) fills.push({ feature: 'solid', closed: false, pts: sg });
+        for (const sg of solidInfill(region, angle, lw)) if ((!keep || keep(sg)) && !segMidUnsupported(sg)) pushSolid(sg);
         return;
       }
       for (const sg of solidInfill(region, angle, lw)) {
         if (keep && !keep(sg)) continue;
         if (bridgeDetect && below && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
-        else fills.push({ feature: 'solid', closed: false, pts: sg });
+        else pushSolid(sg);
       }
     };
 

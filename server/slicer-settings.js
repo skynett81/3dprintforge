@@ -199,6 +199,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('skirtHeight', num(s.skirt_height));
   set('skirtSpeed', num(s.skirt_speed));
   set('resolution', num(s.resolution));
+  set('topSurfaceSpeed', num(s.top_surface_speed));
   set('supportInterfaceSpacing', num(s.support_interface_spacing));
   if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
   if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {

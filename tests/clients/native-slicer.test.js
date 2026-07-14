@@ -464,3 +464,17 @@ describe('native-slicer: resolution', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: top surface speed', () => {
+  it('applies a distinct feedrate to the top surface', async () => {
+    // 20mm cube, top layers solid. Slow top surface to 20 mm/s.
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, topSurfaceSpeed: 20, supports: false });
+    // The topmost layers should contain solid moves at F1200 (20*60).
+    assert.match(r.gcode, /F1200(\.0+)?\b/);
+  });
+  it('no top_surface_speed is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, topSurfaceSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
