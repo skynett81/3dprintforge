@@ -749,3 +749,22 @@ describe('native-slicer: filter out small gaps', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: filament settings (chamber temp + filament gcode)', () => {
+  it('chamber_temperature emits M141', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, chamberTemp: 45, supports: false });
+    assert.match(r.gcode, /M141 S45/);
+  });
+  it('filament start/end gcode are injected around the print', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentStartGcode: '; FIL_START', filamentEndGcode: '; FIL_END', supports: false });
+    assert.ok(r.gcode.includes('; FIL_START'), 'filament start present');
+    assert.ok(r.gcode.includes('; FIL_END'), 'filament end present');
+    assert.ok(r.gcode.indexOf('; FIL_START') < r.gcode.indexOf('; --- layer 1/'), 'start before printing');
+    assert.ok(r.gcode.indexOf('; FIL_END') > r.gcode.indexOf('; --- finished'), 'end after printing');
+  });
+  it('no filament settings byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, chamberTemp: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

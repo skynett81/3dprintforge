@@ -119,6 +119,7 @@ const FIELDS: Field[] = [
   { tab: 'Temperature', group: 'Nozzle', k: 'nozzle_temp_initial', label: 'Nozzle temp — initial layer', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp', label: 'Bed temperature', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp_initial', label: 'Bed temp — initial layer', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Chamber', k: 'chamber_temperature', label: 'Chamber temperature (M141)', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_speed', label: 'Part cooling fan', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_off_layers', label: 'Fan off for first N layers', type: 'num', step: 1 },
   { tab: 'Temperature', group: 'Cooling', k: 'slow_down_layer_time', label: 'Slow down if layer faster than', type: 'num', unit: 's', step: 1 },
@@ -184,6 +185,8 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Flow dynamics', k: 'pressure_advance', label: 'Pressure advance (K)', type: 'num', step: 0.001 },
   { tab: 'Speed', group: 'Flow dynamics', k: 'gcode_flavor', label: 'G-code flavor', type: 'sel', opts: [['marlin', 'Marlin (M900)'], ['klipper', 'Klipper (SET_PRESSURE_ADVANCE)']] },
   { tab: 'G-code', group: 'Custom G-code', k: 'start_gcode', label: 'Start G-code', type: 'text', rows: 5 },
+  { tab: 'G-code', group: 'Filament G-code', k: 'filament_start_gcode', label: 'Filament start G-code', type: 'text', rows: 3 },
+  { tab: 'G-code', group: 'Filament G-code', k: 'filament_end_gcode', label: 'Filament end G-code', type: 'text', rows: 3 },
   { tab: 'G-code', group: 'Custom G-code', k: 'layer_change_gcode', label: 'Layer change G-code', type: 'text', rows: 3 },
   { tab: 'G-code', group: 'Custom G-code', k: 'end_gcode', label: 'End G-code', type: 'text', rows: 5 },
 ];

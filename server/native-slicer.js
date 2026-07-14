@@ -184,6 +184,7 @@ function _defaultStart(s) {
     `M140 S${bed0}`,
     `M104 S${noz0}`,
     `G28 ; home`,
+    ...(s.chamberTemp > 0 ? [`M141 S${s.chamberTemp} ; chamber temp`] : []),
     `M190 S${bed0}`,
     `M109 S${noz0}`,
     `G92 E0`,
@@ -314,6 +315,8 @@ export function layersToGcode(layers, settings) {
   g += `; Material: ${s.material}, nozzle ${s.nozzleTemp}C, bed ${s.bedTemp}C\n`;
   g += `; estimated_time: 0\n`;
   g += (s.startGcode ? _interp(s.startGcode, s) + '\n' : _defaultStart(s));
+  // Filament-specific start G-code runs right after the machine start G-code.
+  if (s.filamentStartGcode) g += _interp(s.filamentStartGcode, s) + '\n';
 
   // Pressure advance / linear advance (BambuStudio "flow dynamics"). Emitted
   // after the start block so it applies to the whole print. Klipper uses
@@ -590,6 +593,8 @@ export function layersToGcode(layers, settings) {
   g += `; --- finished ---\n`;
   e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
   g += `G1 Z${(curZ + 5).toFixed(3)} F${s.travelSpeed * 60}\n`;
+  // Filament-specific end G-code runs before the machine end G-code.
+  if (s.filamentEndGcode) g += _interp(s.filamentEndGcode, s) + '\n';
   g += (s.endGcode ? _interp(s.endGcode, s) + '\n' : _defaultEnd());
   // Optional arc fitting: fold runs of straight moves on a circle into G2/G3.
   if (s.arcFitting) g = fitArcs(g, s.arcTolerance ?? 0.05);

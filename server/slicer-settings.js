@@ -231,6 +231,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('treeBranchAngle', num(s.tree_support_branch_angle));
   set('supportBottomZDist', num(s.support_bottom_z_distance));
   set('gapFillMinLength', num(s.filter_out_small_gaps));
+  set('chamberTemp', num(s.chamber_temperature));
+  if (s.filament_start_gcode) out.filamentStartGcode = String(s.filament_start_gcode);
+  if (s.filament_end_gcode) out.filamentEndGcode = String(s.filament_end_gcode);
   set('gapAccel', num(s.gap_infill_acceleration));
   set('wipeTowerX', num(s.wipe_tower_x));
   set('wipeTowerY', num(s.wipe_tower_y));
