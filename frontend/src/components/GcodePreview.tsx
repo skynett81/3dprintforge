@@ -86,7 +86,8 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
 type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
 const FULL = 1e9;   // "show the whole top layer" sentinel for the moves counter
 
-export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, lineWidth = 0.42, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; pricePerGram?: number; lineWidth?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
+export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram = 0, lineWidth = 0.42, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; bedY?: number; slotColors?: string[]; pricePerGram?: number; lineWidth?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
+  const bedYv = bedY ?? bed;
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -169,7 +170,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, l
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
-    buildPlate(scene, bed);
+    buildPlate(scene, bed, bedYv);
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.1);
     const group = new THREE.Group(); scene.add(group);

@@ -232,10 +232,14 @@ export function SlicerPanel() {
   const lastPrinterSync = useRef<string>('');
   const lastBindingApplied = useRef<string>('');
 
-  const bed = useMemo(() => {
+  // Bed size follows the selected printer's build volume (X × Y), so each
+  // printer shows its own plate size/shape.
+  const bedVol = useMemo(() => {
     const p = slicerPrinters.find((sp) => sp.id === profilePrinter) ?? slicerPrinters[0];
-    return p?.buildVolume?.x ?? 256;
+    return { x: p?.buildVolume?.x ?? 256, y: p?.buildVolume?.y ?? p?.buildVolume?.x ?? 256 };
   }, [slicerPrinters, profilePrinter]);
+  const bed = bedVol.x;
+  const bedY = bedVol.y;
 
   // Per-printer price/gram: price each loaded filament slot from the closest
   // matching inventory spool (same material, nearest colour), then average the
@@ -1129,7 +1133,7 @@ export function SlicerPanel() {
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} showOrder={settings.print_sequence === 'by_object' && toolState.count > 1} clearance={Number(settings.extruder_clearance_radius) || 0} onMovePlate={movePlateObject} />
+              <PlateViewer ref={plateRef} file={file} bed={bed} bedY={bedY} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} showOrder={settings.print_sequence === 'by_object' && toolState.count > 1} clearance={Number(settings.extruder_clearance_radius) || 0} onMovePlate={movePlateObject} />
             </Suspense>
           )}
           {tab === 'preview' && preview && (
@@ -1138,7 +1142,7 @@ export function SlicerPanel() {
                 <div className="oslice-previewbar">
                   <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
                 </div>
-                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} pricePerGram={pricePerGram} lineWidth={Number(settings.line_width) || 0.42} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
+                <GcodePreview gcode={preview.gcode} bed={bed} bedY={bedY} slotColors={slotColors} pricePerGram={pricePerGram} lineWidth={Number(settings.line_width) || 0.42} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
               </div>
             </Suspense>
           )}
@@ -1170,7 +1174,7 @@ export function SlicerPanel() {
                 <line x1="12" y1="28" x2="12" y2="8" stroke="#3d8bd8" strokeWidth="2" /><text x="6" y="9" fill="#3d8bd8" fontSize="8">Z</text>
               </svg>
             </div>
-            <div className="oslice-platename" aria-hidden>3DPrintForge Textured PEI Plate · {bed}×{bed}</div>
+            <div className="oslice-platename" aria-hidden>{selPrinter?.name ? `${selPrinter.name} · ` : ''}{bed}×{bedY} mm</div>
             <div className="oslice-plateno" aria-hidden>01</div>
           </>)}
         </div>

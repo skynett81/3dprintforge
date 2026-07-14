@@ -108,10 +108,10 @@ function peiTextures(bed: number, brandCss: string): { map: THREE.Texture; bump:
 
 /** Add the build plate (lit, textured, with physical thickness) plus a soft
  *  accent edge frame. */
-export function buildPlate(scene: THREE.Object3D, bed: number, accent = 0x2ecc71) {
+export function buildPlate(scene: THREE.Object3D, bedX: number, bedY = bedX, accent = 0x2ecc71) {
   const accentCss = '#' + accent.toString(16).padStart(6, '0');
-  const { map, bump } = peiTextures(bed, accentCss);
-  const thickness = Math.max(2, bed * 0.012);
+  const { map, bump } = peiTextures(Math.max(bedX, bedY), accentCss);
+  const thickness = Math.max(2, Math.max(bedX, bedY) * 0.012);
 
   // Top surface uses the lit PEI material; the sides/bottom are a plain dark
   // metal so the plate reads as a solid sheet with an edge, not a decal.
@@ -119,7 +119,7 @@ export function buildPlate(scene: THREE.Object3D, bed: number, accent = 0x2ecc71
   const edge = new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.5, metalness: 0.35 });
   // BoxGeometry face order: +x, -x, +y, -y, +z(top), -z(bottom).
   const plate = new THREE.Mesh(
-    new THREE.BoxGeometry(bed, bed, thickness),
+    new THREE.BoxGeometry(bedX, bedY, thickness),
     [edge, edge, edge, edge, top, edge],
   );
   plate.position.z = -thickness / 2 - 0.02;
@@ -128,7 +128,7 @@ export function buildPlate(scene: THREE.Object3D, bed: number, accent = 0x2ecc71
 
   // Accent edge frame around the print area, on the plate's top surface.
   const border = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.PlaneGeometry(bed, bed)),
+    new THREE.EdgesGeometry(new THREE.PlaneGeometry(bedX, bedY)),
     new THREE.LineBasicMaterial({ color: accent, transparent: true, opacity: 0.5 }),
   );
   scene.add(border);

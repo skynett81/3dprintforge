@@ -311,7 +311,10 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[]; showOrder?: boolean; clearance?: number; onMovePlate?: (srcPlate: number, srcUuid: string, targetPlate: number) => void }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors, showOrder, clearance = 0, onMovePlate }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; bedY?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[]; showOrder?: boolean; clearance?: number; onMovePlate?: (srcPlate: number, srcUuid: string, targetPlate: number) => void }>(function PlateViewer({ file, bed = 256, bedY: bedYProp, onObject, onState, onContextMenu, slotColors, showOrder, clearance = 0, onMovePlate }, ref) {
+  const bedX = bed;                       // the printer's build-plate X
+  const bedY = bedYProp ?? bed;           // …and Y (square when Y is omitted)
+  const bedMax = Math.max(bedX, bedY);    // for camera framing / size heuristics
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -323,6 +326,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   clearanceRef.current = clearance;
   const onMoveRef = useRef(onMovePlate);
   onMoveRef.current = onMovePlate;
+  const keepRef = useRef<THREE.Mesh[]>([]);   // objects carried across a bed-size rebuild
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
   const onCtxRef = useRef(onContextMenu);
@@ -432,7 +436,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     scene.background = gradientBackground();
     const camera = new THREE.PerspectiveCamera(45, w / h, 1, 5000);
     camera.up.set(0, 0, 1);
-    camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
+    camera.position.set(bedMax * 0.9, -bedMax * 1.1, bedMax * 0.9);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
@@ -441,9 +445,9 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const dir = new THREE.DirectionalLight(0xffffff, 1.4); dir.position.set(1, -1, 2); scene.add(dir);
     // The bed lives in its own group so the "all plates" overview can hide it.
     const plateGroup = new THREE.Group(); scene.add(plateGroup);
-    buildPlate(plateGroup, bed);
+    buildPlate(plateGroup, bedX, bedY);
     const orbit = new OrbitControls(camera, renderer.domElement);
-    orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.15);
+    orbit.enableDamping = true; orbit.target.set(0, 0, bedMax * 0.15);
     const tcontrols = new TransformControls(camera, renderer.domElement);
     tcontrols.setSpace('world');
     tcontrols.addEventListener('dragging-changed', (e) => { orbit.enabled = !e.value; if (!e.value) { const m = ctx.current?.selected; if (m) dropToPlate(m); emitObject(); pushHistory(); } });
@@ -453,6 +457,15 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
     const c: Ctx = { scene, camera, renderer, orbit, tcontrols, objects: [], selected: null, raf: 0, measurePts: [], measureObjs: [], cutPlane: null, overview: null, plateGroup };
     ctx.current = c;
+    // Preserve loaded objects across a bed-size rebuild (printer change) so
+    // switching printers doesn't wipe the plate.
+    if (keepRef.current.length) {
+      for (const m of keepRef.current) { m.visible = true; scene.add(m); c.objects.push(m); }
+      keepRef.current = [];
+      setCount(c.objects.length);
+      if (c.objects[0]) select(c.objects[0]);
+      emitState();
+    }
 
     // click-to-select — only on a clean click (not an orbit drag), decided
     // on pointerUP, so rotating the view never changes the selection.
@@ -658,7 +671,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       while (ovLayer.childElementCount > cells.length) ovLayer.lastChild?.remove();
       const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
       cells.forEach((cl, i) => {
-        _ovl.set(cl.cx, cl.cy + bed * 0.5 + bed * 0.05, 1); _ovl.project(camera);
+        _ovl.set(cl.cx, cl.cy + bedMax * 0.5 + bedMax * 0.05, 1); _ovl.project(camera);
         const el2 = ovLayer.children[i] as HTMLDivElement;
         el2.textContent = cl.label;
         el2.style.left = `${(_ovl.x * 0.5 + 0.5) * w}px`;
@@ -715,6 +728,10 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const ro = new ResizeObserver(onResize); ro.observe(el);
     return () => {
       cancelAnimationFrame(c.raf);
+      // Carry the loaded objects to the next scene (bed-size rebuild) instead
+      // of losing them; the eventual React unmount passes an empty list.
+      keepRef.current = c.objects.slice();
+      for (const m of c.objects) scene.remove(m);
       window.removeEventListener('resize', onResize);
       ro.disconnect();
       orderLayer.remove();
@@ -729,7 +746,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       el.removeChild(renderer.domElement);
       ctx.current = null;
     };
-  }, [bed]);
+  }, [bedX, bedY]);
 
   // Load a model buffer into the plate (append). Returns a promise.
   // Parse an SVG string into an extruded 3-D part on the plate. Shared by the
@@ -1199,8 +1216,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     redo: () => { if (histIdx.current < history.current.length - 1) { histIdx.current += 1; applySnap(history.current[histIdx.current]); } },
     resetView: () => {
       const c = ctx.current; if (!c) return;
-      c.camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
-      c.orbit.target.set(0, 0, bed * 0.15); c.orbit.update();
+      c.camera.position.set(bedMax * 0.9, -bedMax * 1.1, bedMax * 0.9);
+      c.orbit.target.set(0, 0, bedMax * 0.15); c.orbit.update();
     },
     setVisible: (index: number, visible: boolean) => {
       const c = ctx.current; if (!c) return;
@@ -1267,7 +1284,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       m.updateMatrixWorld(true);
       const size = new THREE.Vector3(); new THREE.Box3().setFromObject(m).getSize(size);
       const maxXY = Math.max(size.x, size.y); if (!(maxXY > 0)) return;
-      const factor = (bed * 0.9) / maxXY;
+      const factor = (bedMax * 0.9) / maxXY;
       m.scale.multiplyScalar(factor); dropToPlate(m); emitObject();
     },
     rotate90: (axis: 'x' | 'y' | 'z') => { const m = ctx.current?.selected; if (!m) return; m.rotation[axis] += Math.PI / 2; dropToPlate(m); emitObject(); },
@@ -1279,8 +1296,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const size = new THREE.Vector3(); box.getSize(size);
       const gap = 4;
       const cellX = Math.max(size.x, 1) + gap, cellY = Math.max(size.y, 1) + gap;
-      const cols = Math.max(1, Math.floor(bed / cellX));
-      const rows = Math.max(1, Math.floor(bed / cellY));
+      const cols = Math.max(1, Math.floor(bedX / cellX));
+      const rows = Math.max(1, Math.floor(bedY / cellY));
       const target = Math.min(cols * rows, 100);   // safety cap
       const positives = () => c.objects.filter((o) => !o.userData.partType);
       for (let i = positives().length; i < target; i++) duplicate();
@@ -1355,8 +1372,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         for (const m of c.objects) m.visible = m.userData.__ovHidden ? false : true;
         for (const m of c.objects) delete m.userData.__ovHidden;
         if (c.selected) c.tcontrols.attach(c.selected);
-        c.camera.position.set(bed * 0.9, -bed * 1.1, bed * 0.9);
-        c.orbit.target.set(0, 0, bed * 0.15); c.orbit.update();
+        c.camera.position.set(bedMax * 0.9, -bedMax * 1.1, bedMax * 0.9);
+        c.orbit.target.set(0, 0, bedMax * 0.15); c.orbit.update();
         return;
       }
       // Enter overview: hide the live editing meshes + gizmo + the single bed.
@@ -1366,7 +1383,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const N = groups.length;
       const cols = Math.max(1, Math.ceil(Math.sqrt(N)));
       const rows = Math.ceil(N / cols);
-      const gap = bed * 0.16, cell = bed + gap, half = bed / 2;
+      const gap = bedMax * 0.16, cell = bedMax + gap, half = bedMax / 2;
       const grp = new THREE.Group();
       const cells: { cx: number; cy: number; label: string }[] = [];
       groups.forEach((g, idx) => {
