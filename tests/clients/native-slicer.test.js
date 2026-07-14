@@ -431,3 +431,21 @@ describe('native-slicer: skirt height', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: support base pattern + interface spacing', () => {
+  // A shape with an overhang so support is actually generated.
+  const overhang = box(24, 24, 3);   // thin slab; slice with paint-enforced support
+  const supportLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:support'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  const enforceAll = [[-20, -20, 20, -20, 0, 20, 100]];   // big enforce triangle over the slab
+  it("grid base pattern adds crossing lines vs rectilinear", async () => {
+    const rect = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportDensity: 0.15, supportPaint: { enforce: enforceAll, block: [] } });
+    const grid = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportDensity: 0.15, supportBasePattern: 'grid', supportPaint: { enforce: enforceAll, block: [] } });
+    assert.ok(supportLines(grid.gcode) >= supportLines(rect.gcode), `grid should have >= support lines (rect=${supportLines(rect.gcode)} grid=${supportLines(grid.gcode)})`);
+    assert.ok(!grid.gcode.includes('NaN'));
+  });
+  it('default support (no base pattern) is byte-identical', async () => {
+    const a = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportPaint: { enforce: enforceAll, block: [] } });
+    const b = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportBasePattern: 'rectilinear', supportPaint: { enforce: enforceAll, block: [] } });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

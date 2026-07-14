@@ -302,25 +302,46 @@ export function generateSupports(layerRegions, opts = {}) {
     return walls;
   };
 
-  // Convert each layer's mask to horizontal hatch lines. Normal support is
-  // sparse (row step = lineWidth / density); interface cells fill every row.
+  // Convert each layer's mask to hatch lines. Normal support is sparse (row step
+  // = lineWidth / density); interface cells fill every row (or at their own
+  // spacing). A 'grid' base pattern adds a second, perpendicular set of lines.
   const step = Math.max(1, Math.round((lineWidth / density) / gridRes));
+  const ifaceStep = opts.interfaceSpacing > 0 ? Math.max(1, Math.round(opts.interfaceSpacing / gridRes)) : 1;
+  const gridBase = opts.basePattern === 'grid';
   const out = new Array(n);
   for (let i = 0; i < n; i++) {
     const s = support[i];
     const inf = iface[i];
     const parts = [];
     for (const loop of maskWalls(s)) parts.push({ pts: loop, closed: true });
+    // Horizontal hatch (base + interface).
     for (let r = 0; r < rows; r++) {
       const dense = r % step === 0;
+      const ifaceOn = ifaceStep <= 1 ? true : (r % ifaceStep === 0);
       let runStart = -1;
       for (let c = 0; c <= cols; c++) {
         const idx = r * cols + c;
-        const on = c < cols && s[idx] && (dense || inf[idx]);
+        const on = c < cols && s[idx] && (dense || (inf[idx] && ifaceOn));
         if (on && runStart < 0) runStart = c;
         else if (!on && runStart >= 0) {
           parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false });
           runStart = -1;
+        }
+      }
+    }
+    // Vertical hatch for a grid base pattern (base cells only; interface already solid).
+    if (gridBase) {
+      for (let c = 0; c < cols; c++) {
+        const dense = c % step === 0; if (!dense) continue;
+        let runStart = -1;
+        for (let r = 0; r <= rows; r++) {
+          const idx = r * cols + c;
+          const on = r < rows && s[idx] && !inf[idx];
+          if (on && runStart < 0) runStart = r;
+          else if (!on && runStart >= 0) {
+            parts.push({ pts: [[cx(c), cy(runStart)], [cx(c), cy(r - 1)]], closed: false });
+            runStart = -1;
+          }
         }
       }
     }
