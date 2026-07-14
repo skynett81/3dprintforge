@@ -17,6 +17,7 @@ const CALS: { id: string; label: string; desc: string }[] = [
   { id: 'pressure-advance', label: 'Pressure advance (tower)', desc: 'Sweep pressure advance / linear advance up a tower.' },
   { id: 'pressure-advance-pattern', label: 'Pressure advance (pattern)', desc: 'PA line pattern for picking the sharpest corners.' },
   { id: 'retract-tower', label: 'Retraction tower', desc: 'Find the retraction length that removes stringing.' },
+  { id: 'max-flowrate', label: 'Max flowrate', desc: 'Lines at rising volumetric flow — find your hot end’s max mm³/s.' },
   { id: 'first-layer', label: 'First layer', desc: 'A first-layer patch to tune Z-offset / squish.' },
   { id: 'single-line', label: 'Speed test', desc: 'Single-line speed sweep to find the max clean speed.' },
 ];

@@ -508,6 +508,49 @@ export function generateSingleLineTest(params = {}) {
   };
 }
 
+/** Max volumetric flowrate: single lines at a rising volumetric flow (mm³/s),
+ *  achieved by ramping speed for a fixed line cross-section. The last line that
+ *  stays fully extruded (no gaps/thinning) is the hot end's max flow. */
+export function generateMaxFlowrate(params = {}) {
+  const p = {
+    bedTemp: 60, hotendTemp: 220,
+    flowStart: 5, flowEnd: 25, lines: 9,
+    lineWidth: 0.45, layerHeight: 0.2, length: 80,
+    ...params,
+  };
+  _validateRange(p.flowStart, p.flowEnd, 'flow', 1, 60);
+  if (p.lines < 2 || p.lines > 20) throw new Error('lines 2..20');
+
+  const xsec = (p.lineWidth * p.layerHeight) / (Math.PI * 0.875 * 0.875);   // mm filament per mm move
+  const area = p.lineWidth * p.layerHeight;                                 // mm² extruded cross-section
+  const stepFlow = (p.flowEnd - p.flowStart) / (p.lines - 1);
+
+  let g = HEADER('max-flowrate', p);
+  g += PRELUDE(p.bedTemp, p.hotendTemp);
+  g += `G1 Z${p.layerHeight.toFixed(3)} F1200\n`;
+
+  for (let i = 0; i < p.lines; i++) {
+    const flow = p.flowStart + i * stepFlow;      // target mm³/s
+    const speed = flow / area;                    // mm/s to hit that flow
+    const y = 50 + i * 10;
+    g += `; LINE ${i + 1} flow=${flow.toFixed(1)}mm3/s speed=${speed.toFixed(0)}mm/s\n`;
+    g += `G92 E0\n`;
+    g += `G1 X20 Y${y} F4500\n`;
+    g += `G1 X${20 + p.length} Y${y} E${(p.length * xsec).toFixed(4)} F${Math.round(speed * 60)}\n`;
+    g += `G1 E-1 F1800\n`;
+  }
+
+  g += POSTLUDE;
+  return {
+    name: `Max Flowrate ${p.flowStart}-${p.flowEnd}mm³/s`,
+    description: `${p.lines} lines at rising volumetric flow (${stepFlow.toFixed(1)}mm³/s steps). The last fully-extruded line is your max volumetric speed.`,
+    gcode: g,
+    expected_minutes: 1,
+    filament_g: +(p.lines * p.length * xsec * 1.24).toFixed(1),
+    type: 'max-flowrate',
+  };
+}
+
 // ── Dispatch ────────────────────────────────────────────────────────────
 
 const GENERATORS = {
@@ -518,6 +561,7 @@ const GENERATORS = {
   'pressure-advance-pattern': generatePressureAdvancePattern,
   'first-layer': generateFirstLayerTest,
   'single-line': generateSingleLineTest,
+  'max-flowrate': generateMaxFlowrate,
 };
 
 export function listGenerators() {
