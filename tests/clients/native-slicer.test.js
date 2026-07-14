@@ -560,3 +560,23 @@ describe('native-slicer: infill anchor', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: initial layer flow ratio', () => {
+  const firstLayerE = (g) => {
+    // Sum of positive E deltas on layer 1 (initial layer).
+    const l1 = g.split('; --- layer 2/')[0];
+    let last = 0, sum = 0;
+    for (const m of l1.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > last) sum += e - last; last = e; }
+    return sum;
+  };
+  it('initial_layer_flow_ratio raises first-layer extrusion', async () => {
+    const base = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, supports: false });
+    const fat = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, initialLayerFlowRatio: 1.3, supports: false });
+    assert.ok(firstLayerE(fat.gcode) > firstLayerE(base.gcode) * 1.2, `1.3x flow should raise first-layer E (base=${firstLayerE(base.gcode).toFixed(1)} fat=${firstLayerE(fat.gcode).toFixed(1)})`);
+  });
+  it('initial_layer_flow_ratio unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, initialLayerFlowRatio: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

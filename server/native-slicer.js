@@ -299,8 +299,12 @@ export function layersToGcode(layers, settings) {
     support: s.supportLineWidth ?? s.lineWidth,
     bridge: s.bridgeLineWidth ?? s.lineWidth,
   };
-  const efFeat = (feature, layerIdx, h = s.layerHeight) => (layerIdx === 0 && s.initialLayerLineWidth)
-    ? efOf(s.initialLayerLineWidth, h) : efOf(LW[feature] ?? s.lineWidth, h);
+  const efFeat = (feature, layerIdx, h = s.layerHeight) => {
+    const base = (layerIdx === 0 && s.initialLayerLineWidth) ? efOf(s.initialLayerLineWidth, h) : efOf(LW[feature] ?? s.lineWidth, h);
+    // initial_layer_flow_ratio: extra extrusion multiplier on the first layer
+    // (thicker squish for adhesion). 1 / unset → unchanged.
+    return (layerIdx === 0 && s.initialLayerFlowRatio > 0) ? base * s.initialLayerFlowRatio : base;
+  };
   const zHop = s.zHop ?? 0;
 
   let g = '';

@@ -24,6 +24,7 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Precision', k: 'elephant_foot', label: 'Elephant foot compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'resolution', label: 'Resolution (path simplify)', type: 'num', unit: 'mm', step: 0.01 },
   { tab: 'Quality', group: 'Precision', k: 'flow_ratio', label: 'Flow ratio (extrusion multiplier)', type: 'num', step: 0.01 },
+  { tab: 'Quality', group: 'Precision', k: 'initial_layer_flow_ratio', label: 'Initial layer flow ratio', type: 'num', step: 0.01 },
   { tab: 'Quality', group: 'Layer height', k: 'adaptive_cusp', label: 'Adaptive cusp (quality)', type: 'num', unit: 'mm', step: 0.01, dep: 'adaptive_layer_height' },
   { tab: 'Quality', group: 'Precision', k: 'xy_hole_compensation', label: 'X-Y hole compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'xy_contour_compensation', label: 'X-Y contour compensation', type: 'num', unit: 'mm', step: 0.05 },
