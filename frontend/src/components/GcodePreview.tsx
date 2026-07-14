@@ -81,6 +81,7 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
  * desktop slicer's preview. Z-up, millimetres.
  */
 type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
+const FULL = 1e9;   // "show the whole top layer" sentinel for the moves counter
 
 export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
   const t = useT();
@@ -90,21 +91,39 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
   const total = parsed.layers.length;
   const [layer, setLayer] = useState(total);
   const [low, setLow] = useState(1);
+  // Moves shown of the TOP layer (for BambuStudio's move-by-move Play build-up).
+  // A large value means "show the whole layer"; render clamps it to the layer's
+  // segment count. Only Play drives it below full; the layer sliders keep it full.
+  const [moves, setMoves] = useState(FULL);
   const [showTravel, setShowTravel] = useState(false);
   const [mode, setMode] = useState<ColorMode>('feature');
   const [playing, setPlaying] = useState(false);
   const [hiddenFeats, setHiddenFeats] = useState<Set<Feature>>(new Set());
   const toggleFeat = (f: Feature) => setHiddenFeats((prev) => { const n = new Set(prev); if (n.has(f)) n.delete(f); else n.add(f); return n; });
 
-  useEffect(() => { setLayer(total); setLow(1); }, [total]);
+  useEffect(() => { setLayer(total); setLow(1); setMoves(FULL); }, [total]);
 
-  // Play: step up through the layers, then stop at the top.
+  // Play: build up the print move by move, advancing a layer once its moves are
+  // exhausted (BambuStudio's nozzle animation), then stop at the top.
+  const layerRef = useRef(layer); layerRef.current = layer;
   useEffect(() => {
     if (!playing) return;
-    const id = setInterval(() => setLayer((l) => (l >= total ? total : l + 1)), 60);
+    const STEP = 40;   // extrusion segments revealed per tick
+    const id = setInterval(() => {
+      const li = layerRef.current;
+      const topSeg = (parsed.layers[li - 1]?.allSeg.length ?? 0) / 4;
+      setMoves((m) => {
+        const next = Math.min(m, topSeg) + STEP;
+        if (next >= topSeg) {
+          if (li >= total) { setPlaying(false); return FULL; }
+          setLayer(li + 1);
+          return 0;   // start building the next layer from its first move
+        }
+        return next;
+      });
+    }, 45);
     return () => clearInterval(id);
-  }, [playing, total]);
-  useEffect(() => { if (playing && layer >= total) setPlaying(false); }, [playing, layer, total]);
+  }, [playing, total, parsed]);
 
   // Cumulative time / filament-length up to each layer (for the readout).
   const cum = useMemo(() => {
@@ -189,7 +208,8 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       const rgb = new THREE.Color();
       for (let i = loIdx; i < shown; i++) {
         const l = parsed.layers[i];
-        for (let k = 0, s = 0; k < l.allSeg.length; k += 4, s++) {
+        const nSeg = i === shown - 1 ? Math.min(moves, l.allSeg.length / 4) : l.allSeg.length / 4;
+        for (let k = 0, s = 0; s < nSeg; k += 4, s++) {
           if (mode === 'tool') {
             rgb.copy(palette[(l.allTool[s] || 0) % palette.length]);
           } else {
@@ -211,13 +231,28 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
     } else {
       // One buffer per feature (batched across visible layers).
       const byFeature = new Map<Feature, number[]>();
+      const topI = shown - 1;
       for (let i = loIdx; i < shown; i++) {
         const l = parsed.layers[i];
-        for (const key of Object.keys(l.feats) as Feature[]) {
-          if (hiddenFeats.has(key)) continue;   // feature toggled off in the legend
-          const src = l.feats[key]!;
-          const dst = byFeature.get(key) ?? (byFeature.set(key, []), byFeature.get(key)!);
-          for (let k = 0; k < src.length; k += 4) dst.push(src[k] - cx, src[k + 1] - cy, l.z, src[k + 2] - cx, src[k + 3] - cy, l.z);
+        const partialTop = i === topI && moves < l.allSeg.length / 4;
+        if (!partialTop) {
+          // Fast grouped path for fully-shown layers.
+          for (const key of Object.keys(l.feats) as Feature[]) {
+            if (hiddenFeats.has(key)) continue;   // feature toggled off in the legend
+            const src = l.feats[key]!;
+            const dst = byFeature.get(key) ?? (byFeature.set(key, []), byFeature.get(key)!);
+            for (let k = 0; k < src.length; k += 4) dst.push(src[k] - cx, src[k + 1] - cy, l.z, src[k + 2] - cx, src[k + 3] - cy, l.z);
+          }
+        } else {
+          // Top layer during move-scrub: only the first `moves` segments, in
+          // emission order (allSeg/allFeat), so the layer builds up move by move.
+          const nSeg = Math.min(moves, l.allSeg.length / 4);
+          for (let s = 0; s < nSeg; s++) {
+            const key = l.allFeat[s]; if (hiddenFeats.has(key)) continue;
+            const dst = byFeature.get(key) ?? (byFeature.set(key, []), byFeature.get(key)!);
+            const k = s * 4;
+            dst.push(l.allSeg[k] - cx, l.allSeg[k + 1] - cy, l.z, l.allSeg[k + 2] - cx, l.allSeg[k + 3] - cy, l.z);
+          }
         }
         if (showTravel && i === shown - 1) for (let k = 0; k < l.travel.length; k += 4) travelPos.push(l.travel[k] - cx, l.travel[k + 1] - cy, l.z, l.travel[k + 2] - cx, l.travel[k + 3] - cy, l.z);
       }
@@ -233,7 +268,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
       c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
     }
-  }, [parsed, layer, low, showTravel, total, mode, slotColors, hiddenFeats]);
+  }, [parsed, layer, low, moves, showTravel, total, mode, slotColors, hiddenFeats]);
 
   const shown = Math.min(layer, total);
   const curLayer = parsed.layers[shown - 1];
@@ -244,7 +279,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
     <div className="gpreview-root">
       <div className="gpreview-wrap">
         <div ref={mount} className="plate-canvas" />
-        {total > 1 && <LayerTower total={total} low={low} high={shown} onLow={(v) => { setPlaying(false); setLow(v); }} onHigh={(v) => { setPlaying(false); setLayer(v); }} />}
+        {total > 1 && <LayerTower total={total} low={low} high={shown} onLow={(v) => { setPlaying(false); setLow(v); setMoves(FULL); }} onHigh={(v) => { setPlaying(false); setLayer(v); setMoves(FULL); }} />}
         {/* BambuStudio-style "Colour scheme" panel: mode selector + legend + options */}
         <div className="gpreview-side">
           <select className="gpreview-side-select" value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>
@@ -290,7 +325,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       </div>
       <div className="gpreview-controls">
         <button className="btn btn--sm btn--ghost" style={{ minWidth: 34 }} title={playing ? t('v2.gpreview.pause', 'Pause') : t('v2.gpreview.play', 'Play')}
-          onClick={() => { if (layer >= total) setLayer(1); setPlaying((p) => !p); }}>{playing ? '❚❚' : '▶'}</button>
+          onClick={() => { setPlaying((p) => { const next = !p; if (next) { setLayer(Math.max(1, low)); setMoves(0); } return next; }); }}>{playing ? '❚❚' : '▶'}</button>
         <span className="muted micro" style={{ minWidth: 80 }}>{t('v2.gpreview.layer', 'Layer')} {shown}/{total}</span>
         <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
           {colorChanges.length > 0 && (
@@ -317,7 +352,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
               ))}
             </div>
           )}
-          <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); }} style={{ width: '100%' }} />
+          <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); setMoves(FULL); }} style={{ width: '100%' }} />
         </div>
         <span className="muted micro tnum" style={{ minWidth: 60 }}>z {curZ.toFixed(2)}</span>
         {colorChanges.length > 0 && <span className="muted micro" title={t('v2.gpreview.colorchanges_hint', 'Filament swaps — click a tick to jump')}>{colorChanges.length} {t('v2.gpreview.colorchanges', 'swaps')}</span>}

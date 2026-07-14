@@ -19,6 +19,8 @@ export interface GcodeLayer {
   allFlow: number[];
   /** Active tool/filament index per extrusion segment, aligned with allSeg. */
   allTool: number[];
+  /** Feature type per extrusion segment, aligned with allSeg (for move scrubbing). */
+  allFeat: Feature[];
   /** Travel segments, flat: [ax, ay, bx, by, ...] */
   travel: number[];
   /** Rough print time for this layer (seconds), from move distance / feedrate. */
@@ -53,7 +55,7 @@ export function parseGcode(text: string): ParsedGcode {
   const layerFor = (zz: number): GcodeLayer => {
     const key = Math.round(zz * 100) / 100;
     let l = layerByZ.get(key);
-    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
+    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], allFeat: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
     return l;
   };
   let feed = 0;          // current feedrate (mm/min)
@@ -123,7 +125,7 @@ export function parseGcode(text: string): ParsedGcode {
           const dist2 = Math.hypot(nx - x, ny - y);
           // Volumetric flow (mm³/s) = extruded volume / segment time.
           const flow = dist2 > 0 && spd > 0 ? ((ne - e) * FIL_AREA) / (dist2 / spd) : 0;
-          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd); cur.allFlow.push(flow); cur.allTool.push(tool);
+          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd); cur.allFlow.push(flow); cur.allTool.push(tool); cur.allFeat.push(feature);
           if (spd > 0) { if (spd < sMin) sMin = spd; if (spd > sMax) sMax = spd; }
           if (flow > 0) { if (flow < fMin) fMin = flow; if (flow > fMax) fMax = flow; }
           toolsSeen.add(tool);
