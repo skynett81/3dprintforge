@@ -116,6 +116,11 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('wipeTowerDepth', num(s.wipe_tower_depth));
   if (s.print_sequence) out.printSequence = String(s.print_sequence);
   set('extruderClearanceHeight', num(s.extruder_clearance_height));
+  if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {
+    out.layerHeightBands = s.layer_height_bands
+      .filter((b) => b && b.z0 != null && b.z1 != null && b.h != null)
+      .map((b) => ({ z0: Number(b.z0), z1: Number(b.z1), h: Number(b.h) }));
+  }
   // Per-pair purge matrix (BambuStudio purging volumes): flush_matrix[from][to] mm3.
   if (Array.isArray(s.flush_matrix) && s.flush_matrix.length) out.flushMatrix = s.flush_matrix.map((row) => Array.isArray(row) ? row.map(Number) : []);
 

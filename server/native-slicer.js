@@ -687,6 +687,24 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       z += h;
     }
     numLayers = zCenters.length;
+  } else if (Array.isArray(s.layerHeightBands) && s.layerHeightBands.length && !opts.offset) {
+    // Interactive variable layer height: user-defined Z bands (model-local mm)
+    // set an explicit layer thickness; outside the bands the default height is
+    // used. Builds the same bottom→top {centre, top, h} schedule.
+    const bands = s.layerHeightBands
+      .map((b) => ({ z0: Number(b.z0), z1: Number(b.z1), h: Math.max(0.04, Number(b.h)) }))
+      .filter((b) => b.z1 > b.z0 && b.h > 0);
+    const modelH = stats.bbox.size[2];
+    const hAt = (zz) => { for (const b of bands) if (zz >= b.z0 && zz < b.z1) return b.h; return layerHeight; };
+    zCenters = []; zTops = []; heights = [];
+    let z = 0, guard = 0;
+    while (z < modelH - 1e-6 && guard++ < 100000) {
+      let h = hAt(z + 1e-4);
+      if (z + h > modelH) h = Math.max(0.04, modelH - z);
+      zCenters.push(z + h / 2); zTops.push(z + h); heights.push(h);
+      z += h;
+    }
+    numLayers = zCenters.length;
   }
 
   // Pass 1 — slice every layer into regions (needed up-front for supports).

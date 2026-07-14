@@ -93,6 +93,7 @@ export function SlicerPanel() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; i: number } | null>(null);
   const [colorChangeLayers, setColorChangeLayers] = useState<number[]>([]);
   const colorChangeRef = useRef<number[]>([]);
+  const [layerBands, setLayerBands] = useState<{ z0: number; z1: number; h: number }[]>([]);
   const [full, setFull] = useState(false);
   const [autoCalib, setAutoCalib] = useState(true);     // apply saved fleet calibration
   const [calibK, setCalibK] = useState<number | null>(null);
@@ -281,7 +282,7 @@ export function SlicerPanel() {
   }
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
-  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); colorChangeRef.current = []; setColorChangeLayers([]); }
+  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); colorChangeRef.current = []; setColorChangeLayers([]); setLayerBands([]); }
   // STEP/STP files are tessellated to STL server-side (OpenCascade) first.
   async function toLoadable(f: File): Promise<File> {
     if (/\.(step|stp|iges|igs)$/i.test(f.name)) {
@@ -393,6 +394,7 @@ export function SlicerPanel() {
     const mods = plateRef.current?.getModifiers();
     if (mods && mods.length) out.modifiers = mods;
     if (colorChangeRef.current.length) out.color_change_layers = colorChangeRef.current;
+    if (layerBands.length) out.layer_height_bands = layerBands;
     return out;
   }
 
@@ -836,6 +838,24 @@ export function SlicerPanel() {
                     </section>
                   );
                 })()}
+                {/* Variable layer height: user-defined Z bands (model-local mm). */}
+                <section className="card slicer-card">
+                  <div className="obj-group-label" style={{ marginTop: 0 }}>{t('v2.varlh.title', 'Variable layer height')}</div>
+                  <p className="muted micro" style={{ margin: '0 0 8px' }}>{t('v2.varlh.hint', 'Set a layer thickness for a height range (mm, from the model base). Finer = smoother curves, coarser = faster.')}</p>
+                  {layerBands.map((band, i) => {
+                    const upd = (k: 'z0' | 'z1' | 'h', v: number) => setLayerBands((bs) => bs.map((b, j) => (j === i ? { ...b, [k]: v } : b)));
+                    return (
+                      <div className="oslice-varlh-row" key={i}>
+                        <input className="input" type="number" step={1} value={band.z0} title={t('v2.varlh.from', 'From Z')} onChange={(e) => upd('z0', +e.target.value)} />
+                        <span className="muted">→</span>
+                        <input className="input" type="number" step={1} value={band.z1} title={t('v2.varlh.to', 'To Z')} onChange={(e) => upd('z1', +e.target.value)} />
+                        <input className="input" type="number" step={0.02} value={band.h} title={t('v2.varlh.height', 'Layer height')} onChange={(e) => upd('h', +e.target.value)} />
+                        <button className="oslice-objdel" title={t('v2.obj.delete', 'Delete')} onClick={() => setLayerBands((bs) => bs.filter((_, j) => j !== i))}>×</button>
+                      </div>
+                    );
+                  })}
+                  <button className="btn btn--xs btn--ghost" style={{ marginTop: 6 }} onClick={() => setLayerBands((bs) => [...bs, { z0: bs.length ? bs[bs.length - 1].z1 : 0, z1: (bs.length ? bs[bs.length - 1].z1 : 0) + 5, h: 0.12 }])}>＋ {t('v2.varlh.add', 'Add zone')}</button>
+                </section>
               </>
             )}
           </div>

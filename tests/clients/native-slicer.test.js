@@ -370,3 +370,20 @@ describe('native-slicer: sequential (by-object) printing', () => {
     assert.ok(r.warnings.length >= 1, 'a clearance warning is returned');
   });
 });
+
+describe('native-slicer: variable layer height bands', () => {
+  it('a thin band over part of the model adds layers vs uniform', async () => {
+    const uni = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.3, supports: false });
+    // Bottom 5mm at 0.1mm (fine), rest at default 0.3mm.
+    const varh = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.3, supports: false, layerHeightBands: [{ z0: 0, z1: 5, h: 0.1 }] });
+    assert.ok(varh.layers > uni.layers, `variable ${varh.layers} should exceed uniform ${uni.layers}`);
+    const zs = [...varh.gcode.matchAll(/;Z:([\d.]+)/g)].map((m) => +m[1]);
+    for (let i = 1; i < zs.length; i++) assert.ok(zs[i] > zs[i - 1], 'Z stays monotonic');
+    assert.ok(!varh.gcode.includes('NaN'));
+  });
+  it('is byte-identical to uniform when no bands', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.25, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.25, supports: false, layerHeightBands: [] });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
