@@ -391,6 +391,7 @@ select.oset-rowinput { text-align: left; }
 .oslice-partbadge--negative { background: #e0463c; }
 .oslice-partbadge--enforcer { background: #2a7de0; }
 .oslice-partbadge--blocker { background: #8a8f98; }
+.oslice-partbadge--modifier { background: #9b59d0; }
 .oslice-partadd { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 5px; }
 .oslice-partadd-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .oslice-treeglyph { color: var(--o-text-muted); font-size: 0.7rem; margin-right: -2px; opacity: 0.6; }

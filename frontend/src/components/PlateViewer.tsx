@@ -23,7 +23,7 @@ export interface ObjInfo {
   dimX: number; dimY: number; dimZ: number;    // mm (world)
 }
 export type PlateMode = 'translate' | 'rotate' | 'scale';
-export type PartType = 'negative' | 'enforcer' | 'blocker';
+export type PartType = 'negative' | 'enforcer' | 'blocker' | 'modifier';
 export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number; partTypes: string[]; partParents: number[] }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
@@ -70,6 +70,9 @@ export interface PlateHandle {
   boolean: (op: 'union' | 'subtract' | 'intersect') => void;
   addPrimitive: (shape: 'cube' | 'cylinder' | 'sphere') => void;
   addPart: (type: PartType, shape: 'cube' | 'cylinder' | 'sphere') => void;
+  getModifiers: () => { box: number[]; infill_density?: number; infill_pattern?: string }[];
+  getModifierSettings: () => Record<string, string> | null;
+  setModifierSetting: (key: string, value: string) => void;
   rename: (name: string) => void;
   addText: (text: string) => void;
   addGeometry: (geom: THREE.BufferGeometry, name: string) => void;
@@ -927,12 +930,13 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
           : new THREE.BoxGeometry(s, s, s);
       if (shape === 'cylinder') g.rotateX(Math.PI / 2);
       g.computeVertexNormals();
-      const color = type === 'negative' ? 0xe0463c : type === 'enforcer' ? 0x2a7de0 : 0x8a8f98;
+      const color = type === 'negative' ? 0xe0463c : type === 'enforcer' ? 0x2a7de0 : type === 'blocker' ? 0x8a8f98 : 0x9b59d0;
       const mat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.42, roughness: 0.6, metalness: 0, depthWrite: false });
       const mesh = new THREE.Mesh(g.toNonIndexed(), mat);
       mesh.userData.partType = type;
       mesh.userData.partParentId = parent.uuid;
-      mesh.name = type === 'negative' ? 'Negative' : type === 'enforcer' ? 'Support enforcer' : 'Support blocker';
+      if (type === 'modifier') mesh.userData.modifierSettings = {};   // { infill_density?, infill_pattern? }
+      mesh.name = type === 'negative' ? 'Negative' : type === 'enforcer' ? 'Support enforcer' : type === 'blocker' ? 'Support blocker' : 'Modifier';
       const ctr = new THREE.Vector3(); pbox.getCenter(ctr);
       mesh.position.copy(ctr);
       c.scene.add(mesh); c.objects.push(mesh); setCount(c.objects.length);
@@ -949,6 +953,30 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
     addGeometry: (geom, name) => { addMesh(geom, name); },
     rename: (name) => { const m = ctx.current?.selected; if (m && name.trim()) { m.name = name.trim(); emitState(); } },
+    // Modifier volumes → world-frame AABBs + their setting overrides. The native
+    // engine applies each modifier's infill density/pattern inside its box.
+    getModifiers: () => {
+      const c = ctx.current; const out: { box: number[]; infill_density?: number; infill_pattern?: string }[] = []; if (!c) return out;
+      const r = (v: number) => Math.round(v * 100) / 100;
+      for (const m of c.objects) {
+        if (m.userData.partType !== 'modifier') continue;
+        m.updateMatrixWorld(true);
+        const bb = new THREE.Box3().setFromObject(m);
+        const st = (m.userData.modifierSettings as Record<string, string>) || {};
+        const e: { box: number[]; infill_density?: number; infill_pattern?: string } = { box: [r(bb.min.x), r(bb.min.y), r(bb.min.z), r(bb.max.x), r(bb.max.y), r(bb.max.z)] };
+        if (st.infill_density !== undefined && st.infill_density !== '') e.infill_density = Number(st.infill_density);
+        if (st.infill_pattern) e.infill_pattern = st.infill_pattern;
+        out.push(e);
+      }
+      return out;
+    },
+    getModifierSettings: () => { const m = ctx.current?.selected; return m && m.userData.partType === 'modifier' ? ((m.userData.modifierSettings as Record<string, string>) || {}) : null; },
+    setModifierSetting: (key, value) => {
+      const m = ctx.current?.selected; if (!m || m.userData.partType !== 'modifier') return;
+      const st = { ...((m.userData.modifierSettings as Record<string, string>) || {}) };
+      if (value === '' || value == null) delete st[key]; else st[key] = value;
+      m.userData.modifierSettings = st; emitState();
+    },
     restore: (snap) => {
       const c = ctx.current; if (!c) return;
       select(null);

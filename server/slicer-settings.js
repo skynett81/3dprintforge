@@ -79,6 +79,17 @@ export function buildNativeSettings(s = {}, base = {}) {
 
   set('brimWidth', num(s.brim_width));
   if (s.brim_type) out.brimType = String(s.brim_type);
+  // Modifier volumes: [{ box:[minX,minY,minZ,maxX,maxY,maxZ], infill_density, infill_pattern }]
+  if (Array.isArray(s.modifiers) && s.modifiers.length) {
+    out.modifiers = s.modifiers
+      .filter((m) => m && Array.isArray(m.box) && m.box.length === 6)
+      .map((m) => {
+        const o = { box: m.box.map(Number) };
+        if (m.infill_density != null && m.infill_density !== '') { const d = Number(m.infill_density); o.infillDensity = d > 1 ? d / 100 : d; }
+        if (m.infill_pattern) o.infillPattern = NATIVE_PATTERN[String(m.infill_pattern).toLowerCase()] || 'lines';
+        return o;
+      });
+  }
   set('skirtLoops', num(s.skirt_loops));
   set('skirtGap', num(s.skirt_distance));
   set('infillAngle', num(s.infill_direction));

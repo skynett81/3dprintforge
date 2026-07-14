@@ -614,6 +614,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     s.fuzzyPaint = { enforce: s.fuzzyPaint.enforce.map(xfSeam) };
   }
 
+  // Modifier volumes: world-frame AABBs [minX,minY,minZ,maxX,maxY,maxZ] with
+  // per-region setting overrides (infill density/pattern). Mapped to the bed
+  // frame; the sparse-infill pass uses the modifier density/pattern for lines
+  // whose midpoint falls inside an active modifier box.
+  const modifiers = (Array.isArray(s.modifiers) ? s.modifiers : [])
+    .filter((m) => Array.isArray(m.box) && m.box.length === 6)
+    .map((m) => ({
+      minX: m.box[0] + offX, minY: m.box[1] + offY, minZ: m.box[2] + offZ,
+      maxX: m.box[3] + offX, maxY: m.box[4] + offY, maxZ: m.box[5] + offZ,
+      density: m.infillDensity != null ? m.infillDensity : null,
+      pattern: m.infillPattern || null,
+    }));
+
   // Top/bottom shell thickness (mm) overrides the layer counts when it implies
   // more shells than the configured counts (matches OrcaSlicer's *_shell_thickness).
   if (s.topShellThickness > 0) s.topLayers = Math.max(s.topLayers, Math.ceil(s.topShellThickness / layerHeight));
@@ -855,6 +868,27 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // "aligned rectilinear" keeps a fixed direction on every layer.
         const aligned = s.infillPattern === 'alignedrectilinear';
         const baseAngle = s.infillAngle + (aligned ? 0 : (i % 2) * 90);
+        // Sparse infill honoring modifier volumes. With no active modifier this
+        // is byte-identical to a plain patternInfill; inside a modifier box the
+        // lines use that modifier's density/pattern (boundary by line midpoint).
+        const zc = zCenters ? zCenters[i] : (i + 0.5) * s.layerHeight;
+        const ctxZ = (i + 1) * s.layerHeight;
+        const sparseSegsFor = (region) => {
+          const active = modifiers.filter((m) => zc >= m.minZ && zc <= m.maxZ);
+          const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ });
+          if (!active.length) return base;
+          const inAny = (x, y) => active.some((m) => x >= m.minX && x <= m.maxX && y >= m.minY && y <= m.maxY);
+          const out = base.filter((sg) => !inAny((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
+          for (const m of active) {
+            const dens = m.density != null ? m.density : s.infillDensity;
+            const pat = m.pattern || s.infillPattern;
+            for (const sg of patternInfill(region, dens, baseAngle, lw, pat, { z: ctxZ })) {
+              const mx = (sg[0][0] + sg[1][0]) / 2, my = (sg[0][1] + sg[1][1]) / 2;
+              if (mx >= m.minX && mx <= m.maxX && my >= m.minY && my <= m.maxY) out.push(sg);
+            }
+          }
+          return out;
+        };
         // Concentric infill = closed rings stepping inward. `dense` fills solid
         // (spacing = line width) for solid/top-surface rings.
         const concentric = (region2, feat, dense) => {
@@ -896,7 +930,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           else if (globalSolid) {
             pushSolidRegion(infRegion, baseAngle);
           } else if (doSparse && s.infillPattern !== 'lightning') {
-            const segs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight });
+            const segs = sparseSegsFor(infRegion);
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         } else {
@@ -904,7 +938,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg));
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse && s.infillPattern !== 'lightning') {
-            const sparseSegs = patternInfill(infRegion, s.infillDensity, baseAngle, lw, s.infillPattern, { z: (i + 1) * s.layerHeight }).filter((sg) => !midSolid(surfaces, i, sg));
+            const sparseSegs = sparseSegsFor(infRegion).filter((sg) => !midSolid(surfaces, i, sg));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         }

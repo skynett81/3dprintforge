@@ -290,3 +290,29 @@ describe('native-slicer: raft', () => {
     assert.ok(!/; FEATURE:brim/.test(gcode), 'no brim when a raft is present');
   });
 });
+
+describe('native-slicer: modifier volumes', () => {
+  const slab = box(40, 40, 6);
+  const sparseMoves = (g) => {
+    let inF = false, n = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; }
+      if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
+    }
+    return n;
+  };
+
+  it('a high-density modifier over half the model adds infill there', async () => {
+    const base = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.08, supports: false });
+    const mod = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.08, supports: false,
+      modifiers: [{ box: [0, 0, 0, 20, 40, 6], infillDensity: 0.9 }] });
+    assert.ok(sparseMoves(mod.gcode) > sparseMoves(base.gcode) * 1.3, `modifier should densify infill: base=${sparseMoves(base.gcode)} mod=${sparseMoves(mod.gcode)}`);
+    assert.ok(!mod.gcode.includes('NaN'));
+  });
+
+  it('is byte-identical to no-modifier when the modifiers list is empty', async () => {
+    const a = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.15, supports: false });
+    const b = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.15, supports: false, modifiers: [] });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

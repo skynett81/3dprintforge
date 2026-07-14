@@ -388,6 +388,8 @@ export function SlicerPanel() {
     if (seam && (seam.enforce.length || seam.block.length)) out.seam_paint = seam;
     const fuzzy = plateRef.current?.getFuzzyPaint();
     if (fuzzy && fuzzy.enforce.length) out.fuzzy_paint = { enforce: fuzzy.enforce };
+    const mods = plateRef.current?.getModifiers();
+    if (mods && mods.length) out.modifiers = mods;
     return out;
   }
 
@@ -708,7 +710,7 @@ export function SlicerPanel() {
                     return order.map((i) => {
                       const pt = toolState.partTypes[i] || '';
                       const isPart = !!pt;
-                      const badge = pt === 'negative' ? t('v2.part.negative', 'Negative') : pt === 'enforcer' ? t('v2.part.enforcer', 'Support+') : pt === 'blocker' ? t('v2.part.blocker', 'Support−') : '';
+                      const badge = pt === 'negative' ? t('v2.part.negative', 'Negative') : pt === 'enforcer' ? t('v2.part.enforcer', 'Support+') : pt === 'blocker' ? t('v2.part.blocker', 'Support−') : pt === 'modifier' ? t('v2.part.modifier', 'Modifier') : '';
                       return (
                         <div key={i} role="button" tabIndex={0}
                           className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}${isPart ? ' oslice-objitem--part' : ''}`}
@@ -733,6 +735,7 @@ export function SlicerPanel() {
                           <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('negative', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.negative', 'Negative')}</button>
                           <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('enforcer', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
                           <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
+                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('modifier', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.modifier', 'Modifier')}</button>
                           <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
                           <div className="oslice-ctxmenu-sep" />
                         </>
@@ -753,9 +756,28 @@ export function SlicerPanel() {
                       <button className="btn btn--xs btn--ghost" title={t('v2.part.enforcer_hint', 'Force support inside this volume')} onClick={() => plateRef.current?.addPart('enforcer', 'cube')}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
                       <button className="btn btn--xs btn--ghost" title={t('v2.part.blocker_hint', 'Forbid support inside this volume')} onClick={() => plateRef.current?.addPart('blocker', 'cube')}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
                     </div>
+                    <div className="oslice-partadd-row">
+                      <button className="btn btn--xs btn--ghost" title={t('v2.part.modifier_hint', 'Override infill settings inside this volume')} onClick={() => plateRef.current?.addPart('modifier', 'cube')}>＋ {t('v2.part.modifier', 'Modifier')}</button>
+                    </div>
                     <p className="muted micro" style={{ margin: '2px 0 0' }}>{t('v2.part.parts_note', 'A negative volume carves a cavity; a support enforcer/blocker forces or forbids support inside it. Move/scale the volume to shape the region.')}</p>
                   </div>
                 )}
+                {obj && toolState.selIndex >= 0 && toolState.partTypes[toolState.selIndex] === 'modifier' && (() => {
+                  const st = plateRef.current?.getModifierSettings() ?? {};
+                  return (
+                    <div className="oslice-partadd">
+                      <span className="oslice-sectlbl">{t('v2.part.modifier_settings', 'Modifier — infill override')}</span>
+                      <label className="field"><span className="field-label">{t('v2.slset.infill', 'Infill')} (%)</span>
+                        <input className="input" type="number" step={5} value={st.infill_density ?? ''} placeholder={String(settings.infill_density ?? '')} onChange={(e) => plateRef.current?.setModifierSetting('infill_density', e.target.value)} /></label>
+                      <label className="field"><span className="field-label">{t('v2.slset.pattern', 'Pattern')}</span>
+                        <select className="input" value={st.infill_pattern ?? ''} onChange={(e) => plateRef.current?.setModifierSetting('infill_pattern', e.target.value)}>
+                          <option value="">{t('v2.slset.inherit', '(inherit)')}</option>
+                          {['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'line', 'concentric'].map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select></label>
+                      <p className="muted micro" style={{ margin: '2px 0 0' }}>{t('v2.part.modifier_note', 'Overrides the global infill only inside this volume. Move/scale it to shape the region.')}</p>
+                    </div>
+                  );
+                })()}
                 {obj
                   ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} onScaleToFit={() => plateRef.current?.scaleToFit()} onRotate90={(a) => plateRef.current?.rotate90(a)} onDuplicate={() => plateRef.current?.duplicateN(1)} />
                   : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object to edit it.')}</p>}
