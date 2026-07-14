@@ -289,6 +289,10 @@ body {
 .oslice-top { display: flex; align-items: center; height: 46px; padding: 0 10px; background: var(--o-topbar); }
 .oslice-logo { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #fff; margin-right: 10px; white-space: nowrap; }
 .oslice-logo span { color: var(--o-accent); }
+.oslice-filemenu { display: flex; align-items: center; gap: 4px; margin-right: 10px; }
+.oslice-filebtn { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #d5d9de; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
+.oslice-filebtn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+.oslice-filebtn:disabled { opacity: 0.4; cursor: not-allowed; }
 .oslice-toptabs { display: flex; gap: 2px; }
 .oslice-toptab { display: flex; align-items: center; gap: 7px; padding: 6px 18px; border: none; background: none; color: #b8bdc4; font-weight: 600; font-size: 0.88rem; border-radius: 7px; cursor: pointer; }
 .oslice-toptab:hover:not(:disabled) { color: #fff; }

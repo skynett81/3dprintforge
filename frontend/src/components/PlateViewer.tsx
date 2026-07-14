@@ -26,6 +26,17 @@ export interface ObjInfo {
 export type PlateMode = 'translate' | 'rotate' | 'scale';
 export type PartType = 'negative' | 'enforcer' | 'blocker' | 'modifier';
 export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number; partTypes: string[]; partParents: number[]; hidden: boolean[] }
+/** One object serialised for a saved project (geometry + transform + role). */
+export interface SerializedObj {
+  name: string;
+  partType: string;
+  parentIdx: number;   // index of the parent object in the array, or -1
+  modifierSettings?: Record<string, unknown> | null;
+  pos: [number, number, number];
+  quat: [number, number, number, number];
+  scale: [number, number, number];
+  verts: number[];     // flat position attribute (x,y,z,…)
+}
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   exportMaterials: (name: string) => { extruder: number; file: File }[];
@@ -51,6 +62,8 @@ export interface PlateHandle {
   rotate90: (axis: 'x' | 'y' | 'z') => void;
   duplicateN: (n: number) => void;
   fillBed: () => void;
+  serializePlate: () => SerializedObj[];
+  loadProject: (objs: SerializedObj[]) => void;
   autoOrient: () => void;
   splitToParts: () => void;
   setPlaceOnFace: (on: boolean) => void;
@@ -1157,6 +1170,52 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         dropToPlate(m);
       });
       select(items[0] ?? null); setCount(c.objects.length); emitObject(); emitState(); pushHistory();
+    },
+    serializePlate: () => {
+      const c = ctx.current; if (!c) return [];
+      return c.objects.map((m): SerializedObj => {
+        const pos = m.geometry.getAttribute('position');
+        const parentIdx = m.userData.partParentId ? c.objects.findIndex((o) => o.uuid === m.userData.partParentId) : -1;
+        return {
+          name: m.name,
+          partType: (m.userData.partType as string) || '',
+          parentIdx,
+          modifierSettings: (m.userData.modifierSettings as Record<string, unknown>) ?? null,
+          pos: [m.position.x, m.position.y, m.position.z],
+          quat: [m.quaternion.x, m.quaternion.y, m.quaternion.z, m.quaternion.w],
+          scale: [m.scale.x, m.scale.y, m.scale.z],
+          verts: Array.from(pos.array as Float32Array),
+        };
+      });
+    },
+    loadProject: (objs) => {
+      const c = ctx.current; if (!c || !Array.isArray(objs)) return;
+      select(null);
+      for (const m of c.objects) c.scene.remove(m);
+      c.objects = [];
+      const created: THREE.Mesh[] = objs.map((o) => {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(o.verts, 3));
+        g.computeVertexNormals();
+        let mat: THREE.Material;
+        if (o.partType) {
+          const color = o.partType === 'negative' ? 0xe0463c : o.partType === 'enforcer' ? 0x2a7de0 : o.partType === 'blocker' ? 0x8a8f98 : 0x9b59d0;
+          mat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.42, roughness: 0.6, metalness: 0, depthWrite: false });
+        } else mat = MAT();
+        const mesh = new THREE.Mesh(g, mat);
+        mesh.name = o.name;
+        mesh.position.set(o.pos[0], o.pos[1], o.pos[2]);
+        mesh.quaternion.set(o.quat[0], o.quat[1], o.quat[2], o.quat[3]);
+        mesh.scale.set(o.scale[0], o.scale[1], o.scale[2]);
+        if (o.partType) mesh.userData.partType = o.partType;
+        if (o.modifierSettings) mesh.userData.modifierSettings = o.modifierSettings;
+        c.scene.add(mesh); c.objects.push(mesh);
+        return mesh;
+      });
+      objs.forEach((o, i) => { if (o.parentIdx >= 0 && created[o.parentIdx]) created[i].userData.partParentId = created[o.parentIdx].uuid; });
+      setCount(c.objects.length);
+      select(c.objects[0] ?? null);
+      emitState(); emitObject(); pushHistory();
     },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;

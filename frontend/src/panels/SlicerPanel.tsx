@@ -192,6 +192,7 @@ export function SlicerPanel() {
   const [bindings, setBindings] = useState<Record<string, { process?: number | null; filament?: number | null }>>(() => { try { return JSON.parse(localStorage.getItem('v2.slicer.bindings') || '{}'); } catch { return {}; } });
   const plateRef = useRef<PlateHandle>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
+  const projInputRef = useRef<HTMLInputElement>(null);
   const lastPrinterSync = useRef<string>('');
   const lastBindingApplied = useRef<string>('');
 
@@ -452,19 +453,49 @@ export function SlicerPanel() {
     a.remove(); URL.revokeObjectURL(url);
   }
 
+  // Save the whole plate (geometry + arrangement + settings + filaments +
+  // overrides) as a self-contained .forgeproj file the user can reopen later.
+  function saveProject() {
+    const objects = plateRef.current?.serializePlate() ?? [];
+    if (!objects.length) { toast(t('v2.slicer.no_objects', 'No objects on the plate.'), 'error'); return; }
+    const project = { app: '3dprintforge-slicer', version: 1, settings, filaments, objOverrides, colorChangeLayers, layerBands, objects };
+    const name = (file?.name || 'project').replace(/\.[^.]+$/, '') + '.forgeproj';
+    const url = URL.createObjectURL(new Blob([JSON.stringify(project)], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+    toast(t('v2.slicer.project_saved', 'Project saved'), 'success');
+  }
+  async function openProject(f: File) {
+    try {
+      const p = JSON.parse(await f.text());
+      if (!p || p.app !== '3dprintforge-slicer' || !Array.isArray(p.objects)) { toast(t('v2.slicer.project_invalid', 'Not a valid project file'), 'error'); return; }
+      setFile(null); setPreview(null); setTab('prepare'); setRows({}); setObj(null);
+      plateRef.current?.loadProject(p.objects);
+      if (p.settings) setSettings(p.settings);
+      if (Array.isArray(p.filaments) && p.filaments.length) setFilaments(p.filaments);
+      setObjOverrides(p.objOverrides && typeof p.objOverrides === 'object' ? p.objOverrides : {});
+      const cc = Array.isArray(p.colorChangeLayers) ? p.colorChangeLayers : [];
+      setColorChangeLayers(cc); colorChangeRef.current = cc;
+      setLayerBands(Array.isArray(p.layerBands) ? p.layerBands : []);
+      toast(t('v2.slicer.project_loaded', 'Project loaded'), 'success');
+    } catch { toast(t('v2.slicer.project_fail', 'Failed to open project'), 'error'); }
+  }
+
   async function slicePreview() {
-    if (!file) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
+    if (!file && toolState.count === 0) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
+    const baseName = file?.name || 'project.stl';
     setSlicing(true);
     try {
       const s = await settingsWithCalibration(selPrinter?.id);
       // Sequential (by-object) printing needs the objects sliced separately.
-      const each = s.print_sequence === 'by_object' && toolState.count > 1 ? (plateRef.current?.exportEach(file.name) ?? []) : [];
+      const each = s.print_sequence === 'by_object' && toolState.count > 1 ? (plateRef.current?.exportEach(baseName) ?? []) : [];
       if (each.length > 1) {
         const p = await api.sliceObjects(each.map((e) => e.file), s);
         setPreview(p); setTab('preview');
         if (p.warnings?.length) toast(p.warnings[0], 'error');
       } else {
-        const toSend = plateRef.current?.exportSTL(file.name) ?? file;
+        const toSend = plateRef.current?.exportSTL(baseName) ?? file;
+        if (!toSend) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
         const p = await api.sliceGcode(toSend, s);
         setPreview(p); setTab('preview');
       }
@@ -527,8 +558,9 @@ export function SlicerPanel() {
   }
 
   async function run(startPrint: boolean) {
-    if (!file) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
+    if (!file && toolState.count === 0) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
     if (selected.size === 0) { toast(t('v2.slicer.pick_printer', 'Select at least one printer'), 'error'); return; }
+    const baseName = file?.name || 'project.stl';
     setBusy(true);
     const ids = [...selected];
     // Colour painting produces per-extruder geometry just like a multi-part 3MF,
@@ -536,19 +568,20 @@ export function SlicerPanel() {
     const colorPainted = plateRef.current?.hasColorPaint() ?? false;
     const multi = colorPainted || (plateRef.current?.hasMaterials() ?? false);
     const materials = colorPainted
-      ? (plateRef.current?.getColorMaterials(file.name) ?? [])
-      : (multi ? (plateRef.current?.exportMaterials(file.name) ?? []) : []);
+      ? (plateRef.current?.getColorMaterials(baseName) ?? [])
+      : (multi ? (plateRef.current?.exportMaterials(baseName) ?? []) : []);
     const usePerObject = !multi && Object.keys(objOverrides).length > 0 && toolState.count > 0;
-    const perObj = usePerObject ? (plateRef.current?.exportEach(file.name) ?? []) : [];
-    const toSend = plateRef.current?.exportSTL(file.name) ?? file;
+    const perObj = usePerObject ? (plateRef.current?.exportEach(baseName) ?? []) : [];
+    const toSend = plateRef.current?.exportSTL(baseName) ?? file;
+    if (!toSend) { setBusy(false); toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
     setRows(Object.fromEntries(ids.map((id) => [id, { status: 'slicing' as const }])));
     const results = await Promise.all(ids.map(async (id): Promise<boolean> => {
       try {
         const s = await settingsWithCalibration(id);
         const result = multi && materials.length > 1
-          ? await api.sliceMultiAndSend(id, file.name, materials, { print: startPrint, settings: s })
+          ? await api.sliceMultiAndSend(id, baseName, materials, { print: startPrint, settings: s })
           : perObj.length
-            ? await api.sliceObjectsAndSend(id, file.name, perObj.map((o) => ({ file: o.file, settings: { ...s, ...(objOverrides[o.index] ?? {}) } })), { print: startPrint, settings: s })
+            ? await api.sliceObjectsAndSend(id, baseName, perObj.map((o) => ({ file: o.file, settings: { ...s, ...(objOverrides[o.index] ?? {}) } })), { print: startPrint, settings: s })
             : await api.sliceAndSend(id, toSend, { print: startPrint, settings: s });
         setRows((r) => ({ ...r, [id]: { status: 'done', result } })); return true;
       }
@@ -575,6 +608,11 @@ export function SlicerPanel() {
       {/* Top bar (dark) — tabs left, Slice/Print plate right */}
       <div className="oslice-top">
         <span className="oslice-logo">3DPrintForge <span>Slicer</span></span>
+        <div className="oslice-filemenu">
+          <button className="oslice-filebtn" title={t('v2.slicer.open_project_hint', 'Open a saved .forgeproj project')} onClick={() => projInputRef.current?.click()}>{t('v2.slicer.open_project', 'Open')}</button>
+          <button className="oslice-filebtn" title={t('v2.slicer.save_project_hint', 'Save the plate + settings as a .forgeproj project')} disabled={!plateHasModels} onClick={saveProject}>{t('v2.slicer.save_project', 'Save')}</button>
+          <input ref={projInputRef} type="file" accept=".forgeproj,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ''; if (f) openProject(f); }} />
+        </div>
         <div className="oslice-toptabs">
           <button className={`oslice-toptab${tab === 'prepare' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('prepare')}>{t('v2.slicer.prepare', 'Prepare')}</button>
           <button className={`oslice-toptab${tab === 'preview' ? ' oslice-toptab--on' : ''}`} disabled={!preview} onClick={() => preview && setTab('preview')}>{t('v2.slicer.preview', 'Preview')}</button>
