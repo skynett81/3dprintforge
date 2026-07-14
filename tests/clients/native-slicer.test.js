@@ -501,3 +501,16 @@ describe('native-slicer: initial layer infill speed + object labels', () => {
     assert.ok(!r.gcode.includes('EXCLUDE_OBJECT'));
   });
 });
+
+describe('native-slicer: per-feature jerk', () => {
+  it('emits distinct M205 values per feature', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, outerWallJerk: 5, infillJerk: 12, supports: false });
+    const jerks = [...new Set([...r.gcode.matchAll(/M205 X(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(jerks.includes(5) && jerks.includes(12), `expected 5 and 12 among ${jerks}`);
+  });
+  it('no per-feature jerk is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, outerWallJerk: 0, infillJerk: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

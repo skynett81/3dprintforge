@@ -273,6 +273,17 @@ export function layersToGcode(layers, settings) {
     const a = ACC[feature];                 // 0 / undefined → fall back to steady accel
     return a && a > 0 ? a : s.acceleration;
   };
+  // Per-feature jerk (M205), mirroring per-feature acceleration.
+  const JERK = {
+    'outer-wall': s.outerWallJerk, 'inner-wall': s.innerWallJerk, wall: s.outerWallJerk,
+    solid: s.topSurfaceJerk, sparse: s.infillJerk,
+  };
+  const anyFeatJerk = !!(s.outerWallJerk || s.innerWallJerk || s.topSurfaceJerk || s.infillJerk || s.initialLayerJerk);
+  const featJerk = (feature, layerIdx) => {
+    if (layerIdx === 0 && s.initialLayerJerk) return s.initialLayerJerk;
+    const j = JERK[feature];
+    return j && j > 0 ? j : s.jerk;
+  };
   // Extrusion factor: volume of a 1 mm path = lineWidth * layerHeight,
   // E (mm filament) = volume / (π · (filamentDiam/2)²). Scaled by the global
   // flow ratio (print_flow_ratio) so under/over-extrusion can be dialled in.
@@ -318,6 +329,7 @@ export function layersToGcode(layers, settings) {
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
   let curAccelG = -1; // last-emitted M204 P value, for per-feature acceleration
   let curObj = null;  // current object label (gcode_label_objects / exclude-object)
+  let curJerkG = -1;  // last-emitted M205 X/Y value, for per-feature jerk
   let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
   let combCache = null;      // that layer's lazily-built waypoints + visibility graph
   const combing = s.avoidCrossingWalls !== false;
@@ -535,6 +547,11 @@ export function layersToGcode(layers, settings) {
       if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel)) {
         const fa = Math.round(featAccel(path.feature, layerIdx));
         if (fa > 0 && fa !== curAccelG) { g += `M204 P${fa}\n`; curAccelG = fa; }
+      }
+      // Per-feature jerk switch (only when any per-feature jerk is set).
+      if (anyFeatJerk) {
+        const fj = Math.round(featJerk(path.feature, layerIdx));
+        if (fj > 0 && fj !== curJerkG) { g += `M205 X${fj} Y${fj}\n`; curJerkG = fj; }
       }
       const isCooled = path.feature === 'bridge' || path.overhang;
       // Overhang / bridge cooling: boost the part fan over these moves, restore after.

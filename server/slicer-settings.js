@@ -208,6 +208,11 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('supportLineWidth', num(s.support_line_width));
   set('supportGridRes', num(s.support_grid_resolution));
   set('initialLayerInfillSpeed', num(s.initial_layer_infill_speed));
+  set('outerWallJerk', num(s.outer_wall_jerk));
+  set('innerWallJerk', num(s.inner_wall_jerk));
+  set('topSurfaceJerk', num(s.top_surface_jerk));
+  set('infillJerk', num(s.infill_jerk));
+  set('initialLayerJerk', num(s.initial_layer_jerk));
   if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));
   if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
