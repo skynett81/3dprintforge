@@ -28,6 +28,7 @@ import {
   _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
+import { medialBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 
 const FILAMENT_DIAM = 1.75;
@@ -1075,16 +1076,24 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           // (byte-identical).
           const arachne = s.wallGenerator === 'arachne';
           const gapBaseFlow = s.gapFillFlow ?? 1;
-          for (const sg of solidInfill(infRegion, baseAngle, lw)) {
-            // filter_out_small_gaps: skip gap-fill lines shorter than the limit
-            // (avoids tiny stringy dabs). 0 = keep all (byte-identical).
-            if (s.gapFillMinLength > 0 && Math.hypot(sg[1][0] - sg[0][0], sg[1][1] - sg[0][1]) < s.gapFillMinLength) continue;
-            let flow = gapBaseFlow;
-            if (arachne) {
-              const w = 2 * _distToRegionEdge((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, infRegion);
-              flow = gapBaseFlow * Math.max(0.25, Math.min(1.6, w / lw));
+          // Full Arachne: run a single variable-width bead down the region's
+          // medial axis (continuous, no seams) instead of perpendicular hatch.
+          const beads = arachne ? medialBeads(infRegion, lw) : null;
+          if (beads && beads.length) {
+            for (const bead of beads) fills.push({ feature: 'gap', closed: false, pts: bead.pts, widths: bead.widths, baseW: lw, flow: gapBaseFlow });
+          } else {
+            for (const sg of solidInfill(infRegion, baseAngle, lw)) {
+              // filter_out_small_gaps: skip gap-fill lines shorter than the limit
+              // (avoids tiny stringy dabs). 0 = keep all (byte-identical).
+              if (s.gapFillMinLength > 0 && Math.hypot(sg[1][0] - sg[0][0], sg[1][1] - sg[0][1]) < s.gapFillMinLength) continue;
+              let flow = gapBaseFlow;
+              if (arachne) {
+                // fallback (no bead found): scale flow by local width.
+                const w = 2 * _distToRegionEdge((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, infRegion);
+                flow = gapBaseFlow * Math.max(0.25, Math.min(1.6, w / lw));
+              }
+              fills.push({ feature: 'gap', closed: false, pts: sg, flow });
             }
-            fills.push({ feature: 'gap', closed: false, pts: sg, flow });
           }
         } else if (!surfaces || globalSolid) {
           // No surface detection (or a global shell layer): fill uniformly.

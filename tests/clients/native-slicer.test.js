@@ -814,3 +814,25 @@ describe('native-slicer: variable-width emission (Arachne foundation)', () => {
     assert.ok(Math.abs(seg2 / seg1 - 1.5) < 0.05, `wider segment should extrude ~1.5x (seg1=${seg1.toFixed(4)} seg2=${seg2.toFixed(4)} ratio=${(seg2 / seg1).toFixed(2)})`);
   });
 });
+
+import { medialBeads } from '../../server/native-slicer-arachne.js';
+describe('native-slicer: full Arachne medial beads', () => {
+  it('medialBeads traces a thin rib as one variable-width centreline', () => {
+    const rib = { outer: [[0, 0], [40, 0], [40, 1.2], [0, 1.2]], holes: [] };
+    const beads = medialBeads(rib, 0.4);
+    assert.equal(beads.length, 1, 'one bead for one rib');
+    const b = beads[0];
+    assert.ok(b.pts.length > 20, 'continuous polyline, not fragments');
+    const xs = b.pts.map((p) => p[0]);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'spans the rib length');
+    const wAvg = b.widths.reduce((a, c) => a + c, 0) / b.widths.length;
+    assert.ok(Math.abs(wAvg - 1.2) < 0.15, `width tracks the ~1.2mm rib (got ${wAvg.toFixed(2)})`);
+  });
+  it('arachne replaces perpendicular gap hatch with a continuous bead', async () => {
+    const gapTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:gap'); continue; } if (f && l.startsWith('G0 X')) n++; } return n; };
+    const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
+    const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
+    assert.ok(gapTravels(ar.gcode) < gapTravels(cl.gcode) / 5, `arachne far fewer gap travels (classic=${gapTravels(cl.gcode)} arachne=${gapTravels(ar.gcode)})`);
+    assert.ok(!ar.gcode.includes('NaN'));
+  });
+});
