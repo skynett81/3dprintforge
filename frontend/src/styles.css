@@ -1493,3 +1493,5 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 .oslice-accessories { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: -2px 0 8px; font-size: 0.68rem; color: var(--o-muted); }
 .oslice-accessories span { display: inline-flex; align-items: center; gap: 3px; }
+
+.oslice-abrasive-warn { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #ffce8a; background: rgba(224,120,40,0.14); border: 1px solid rgba(224,120,40,0.4); border-radius: 6px; }

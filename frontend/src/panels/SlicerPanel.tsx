@@ -28,6 +28,11 @@ const MATERIALS: Record<string, { temps: [number, number]; color: string }> = {
   ABS: { temps: [250, 100], color: '#e0603a' }, ASA: { temps: [250, 100], color: '#e0a13a' },
   TPU: { temps: [230, 40], color: '#9b6ad8' }, PC: { temps: [270, 110], color: '#4bb3c4' },
   Nylon: { temps: [260, 80], color: '#c4b04b' },
+  // Carbon/glass-fibre filled — abrasive, need a hardened/steel nozzle.
+  'PLA-CF': { temps: [220, 60], color: '#4a4a4a' }, 'PETG-CF': { temps: [250, 80], color: '#3a3a3a' },
+  'PA-CF': { temps: [280, 90], color: '#2a2a2a' }, 'PAHT-CF': { temps: [290, 100], color: '#2a2a2a' },
+  'PET-CF': { temps: [270, 90], color: '#333333' }, 'ABS-GF': { temps: [260, 100], color: '#555555' },
+  'ASA-CF': { temps: [260, 100], color: '#484848' },
 };
 const DEFAULT_SLOT_COLORS = ['#000000', '#0080FF', '#E53935', '#43A047', '#FDD835', '#FB8C00', '#8E24AA', '#00ACC1'];
 
@@ -268,6 +273,18 @@ export function SlicerPanel() {
   useEffect(() => { plateRef.current?.recolor(slotColors); }, [slotColors]);
 
   const selPrinter = slicerPrinters.find((p) => p.id === profilePrinter) ?? slicerPrinters[0];
+  // Abrasive-filament safety: a brass (or unknown) nozzle wears out fast on
+  // carbon/glass-fibre filled filaments — warn when such a slot is loaded.
+  const nozzleMaterial = useMemo(() => {
+    const s = String(selPrinter?.nozzleType ?? '').toLowerCase();
+    if (!s) return 'unknown';
+    if (s.includes('harden') || s.startsWith('hs')) return 'hardened';
+    if (s.includes('stainless') || s.startsWith('ss')) return 'stainless';
+    if (s.includes('brass') || s.includes('copper')) return 'brass';
+    return 'other';
+  }, [selPrinter]);
+  const abrasiveSlots = useMemo(() => filaments.map((f, i) => ({ ...f, idx: i })).filter((f) => /\b(CF|GF)\b|CARBON|GLASS/i.test(f.material || '')), [filaments]);
+  const abrasiveRisk = abrasiveSlots.length > 0 && nozzleMaterial !== 'hardened' && nozzleMaterial !== 'stainless';
 
   // Keep the filament slots consistent with the selected printer so cost/waste
   // is computed against the right machine: a printer with a live AMS (or spools
@@ -767,6 +784,13 @@ export function SlicerPanel() {
                 </div>
               );
             })()}
+            {abrasiveRisk && (
+              <div className="oslice-abrasive-warn" role="alert">
+                ⚠ {abrasiveSlots.map((f) => f.material).join(', ')} {t('v2.slset.abrasive_is', 'is abrasive')} — {nozzleMaterial === 'brass'
+                  ? t('v2.slset.abrasive_brass', 'your brass nozzle will wear out fast. Fit a hardened or stainless-steel nozzle.')
+                  : t('v2.slset.abrasive_unknown', 'make sure this printer has a hardened / steel nozzle (not brass) before printing.')}
+              </div>
+            )}
             {filaments.length > 1 && (
               <button className="btn btn--sm btn--ghost" style={{ fontSize: '0.66rem', padding: '2px 8px', marginBottom: 6, alignSelf: 'flex-start' }} onClick={() => setPurgeOpen(true)} title={t('v2.slset.purge_hint', 'Flush volumes per colour change (waste as infill)')}>
                 {t('v2.slset.purge', 'Purge volumes')}{flushMatrix ? ' ●' : ''}
