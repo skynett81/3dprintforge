@@ -23,7 +23,8 @@ export interface ObjInfo {
   dimX: number; dimY: number; dimZ: number;    // mm (world)
 }
 export type PlateMode = 'translate' | 'rotate' | 'scale';
-export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number }
+export type PartType = 'negative' | 'enforcer' | 'blocker';
+export interface PlateState { count: number; hasSel: boolean; mode: PlateMode; names: string[]; selIndex: number; partTypes: string[]; partParents: number[] }
 export interface PlateHandle {
   exportSTL: (name: string) => File | null;
   exportMaterials: (name: string) => { extruder: number; file: File }[];
@@ -67,6 +68,7 @@ export interface PlateHandle {
   cut: (fraction: number, keep: 'upper' | 'lower' | 'both', connectors?: number) => void;
   boolean: (op: 'union' | 'subtract' | 'intersect') => void;
   addPrimitive: (shape: 'cube' | 'cylinder' | 'sphere') => void;
+  addPart: (type: PartType, shape: 'cube' | 'cylinder' | 'sphere') => void;
   addText: (text: string) => void;
   addGeometry: (geom: THREE.BufferGeometry, name: string) => void;
 }
@@ -304,9 +306,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   function emitState(nextMode = mode) {
     const c = ctx.current;
-    const names = (c?.objects ?? []).map((o, i) => o.name || `Object ${i + 1}`);
-    const selIndex = c?.selected ? c.objects.indexOf(c.selected) : -1;
-    onStateRef.current?.({ count: c?.objects.length ?? 0, hasSel: !!c?.selected, mode: nextMode, names, selIndex });
+    const objs = c?.objects ?? [];
+    const names = objs.map((o, i) => o.name || `Object ${i + 1}`);
+    const partTypes = objs.map((o) => (o.userData.partType as string) || '');
+    const partParents = objs.map((o) => (o.userData.partParentId ? objs.findIndex((p) => p.uuid === o.userData.partParentId) : -1));
+    const selIndex = c?.selected ? objs.indexOf(c.selected) : -1;
+    onStateRef.current?.({ count: objs.length, hasSel: !!c?.selected, mode: nextMode, names, selIndex, partTypes, partParents });
   }
   function setMode(m: PlateMode) { setModeState(m); ctx.current?.tcontrols.setMode(m); emitState(m); }
 
@@ -630,10 +635,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   function arrange() {
     const c = ctx.current; if (!c || !c.objects.length) return;
-    const n = c.objects.length;
+    // Parts (negative / support volumes) ride with their parent — never arrange them.
+    const items = c.objects.filter((m) => !m.userData.partType);
+    const n = items.length; if (!n) return;
     const cols = Math.ceil(Math.sqrt(n));
     const gap = bed / (cols + 1);
-    c.objects.forEach((m, i) => {
+    items.forEach((m, i) => {
       const col = i % cols, row = Math.floor(i / cols);
       m.position.x = (col - (cols - 1) / 2) * gap;
       m.position.y = (row - (Math.ceil(n / cols) - 1) / 2) * gap;
@@ -649,7 +656,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   }
   function removeSel() {
     const c = ctx.current; if (!c || !c.selected) return;
-    c.scene.remove(c.selected); c.objects = c.objects.filter((o) => o !== c.selected); select(null); setCount(c.objects.length); arrange();
+    const victim = c.selected;
+    // Removing an object also removes its attached part volumes.
+    const doomed = new Set<THREE.Mesh>([victim]);
+    if (!victim.userData.partType) for (const o of c.objects) if (o.userData.partParentId === victim.uuid) doomed.add(o);
+    for (const o of doomed) c.scene.remove(o);
+    c.objects = c.objects.filter((o) => !doomed.has(o)); select(null); setCount(c.objects.length); arrange();
   }
   function layFlat() { const c = ctx.current; if (!c || !c.selected) return; c.selected.rotation.set(0, 0, 0); dropToPlate(c.selected); emitObject(); }
   function center() { const c = ctx.current; if (!c || !c.selected) return; c.selected.position.x = 0; c.selected.position.y = 0; dropToPlate(c.selected); emitObject(); }
@@ -869,6 +881,36 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       g.computeVertexNormals();
       addMesh(g.toNonIndexed(), shape.charAt(0).toUpperCase() + shape.slice(1));
     },
+    // Attach a part volume to the selected object (BambuStudio-style): a
+    // negative volume is CSG-subtracted at slice time; support enforcer/blocker
+    // volumes force or forbid support inside the region. The part rides with its
+    // parent (never auto-arranged) and is transformable like any object.
+    addPart: (type, shape) => {
+      const c = ctx.current; if (!c) return;
+      const parent = c.selected;
+      if (!parent || parent.userData.partType) return;   // need a real object selected
+      // Size the part to ~45% of the parent's smallest dimension so a negative
+      // starts as a partial cavity (not an engulfing box that erases the model).
+      parent.updateMatrixWorld(true);
+      const pbox = new THREE.Box3().setFromObject(parent);
+      const psize = new THREE.Vector3(); pbox.getSize(psize);
+      const s = Math.max(4, 0.45 * Math.min(psize.x, psize.y, psize.z));
+      const g = shape === 'cylinder' ? new THREE.CylinderGeometry(s / 2, s / 2, s, 48)
+        : shape === 'sphere' ? new THREE.SphereGeometry(s / 2, 48, 32)
+          : new THREE.BoxGeometry(s, s, s);
+      if (shape === 'cylinder') g.rotateX(Math.PI / 2);
+      g.computeVertexNormals();
+      const color = type === 'negative' ? 0xe0463c : type === 'enforcer' ? 0x2a7de0 : 0x8a8f98;
+      const mat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.42, roughness: 0.6, metalness: 0, depthWrite: false });
+      const mesh = new THREE.Mesh(g.toNonIndexed(), mat);
+      mesh.userData.partType = type;
+      mesh.userData.partParentId = parent.uuid;
+      mesh.name = type === 'negative' ? 'Negative' : type === 'enforcer' ? 'Support enforcer' : 'Support blocker';
+      const ctr = new THREE.Vector3(); pbox.getCenter(ctr);
+      mesh.position.copy(ctr);
+      c.scene.add(mesh); c.objects.push(mesh); setCount(c.objects.length);
+      select(mesh); emitState();
+    },
     // 3-D text as a plate object (raised in Z). Union/subtract it onto a model
     // to emboss / engrave.
     addText: (text) => {
@@ -942,10 +984,24 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     duplicateN: (n: number) => { for (let i = 0; i < n; i++) duplicate(); },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
+      const positives = c.objects.filter((m) => !m.userData.partType);
+      if (!positives.length) return null;
+      const ev = new Evaluator(); ev.attributes = ['position', 'normal']; ev.useGroups = false;
       const group = new THREE.Group();
-      for (const m of c.objects) {
+      for (const m of positives) {
         m.updateMatrixWorld(true);
-        const g = m.geometry.clone().applyMatrix4(m.matrixWorld);
+        let g = m.geometry.clone().applyMatrix4(m.matrixWorld);
+        // Carve out this object's negative-part volumes at export time.
+        const negs = c.objects.filter((p) => p.userData.partType === 'negative' && p.userData.partParentId === m.uuid);
+        for (const p of negs) {
+          p.updateMatrixWorld(true);
+          const pg = p.geometry.clone().applyMatrix4(p.matrixWorld);
+          try {
+            const carved = csgApply(ev, g, pg, SUBTRACTION);
+            const pos = carved.getAttribute('position');
+            if (pos && pos.count >= 3) g = carved;   // ignore a subtract that erases the solid
+          } catch { /* degenerate subtract — keep the solid */ }
+        }
         group.add(new THREE.Mesh(g));
       }
       const stl = new STLExporter().parse(group, { binary: false }) as string;
@@ -955,10 +1011,20 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const c = ctx.current; if (!c || !c.objects.length) return [];
       const exp = new STLExporter();
       const bn = name.replace(/\.[^.]+$/, '');
-      return c.objects.map((m, index) => {
+      const ev = new Evaluator(); ev.attributes = ['position', 'normal']; ev.useGroups = false;
+      const positives = c.objects.filter((m) => !m.userData.partType);
+      return positives.map((m, index) => {
         m.updateMatrixWorld(true);
-        const group = new THREE.Group();
-        group.add(new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld)));
+        let g = m.geometry.clone().applyMatrix4(m.matrixWorld);
+        for (const p of c.objects.filter((q) => q.userData.partType === 'negative' && q.userData.partParentId === m.uuid)) {
+          p.updateMatrixWorld(true);
+          try {
+            const carved = csgApply(ev, g, p.geometry.clone().applyMatrix4(p.matrixWorld), SUBTRACTION);
+            const pos = carved.getAttribute('position');
+            if (pos && pos.count >= 3) g = carved;
+          } catch { /* keep solid */ }
+        }
+        const group = new THREE.Group(); group.add(new THREE.Mesh(g));
         return { index, file: new File([exp.parse(group, { binary: false }) as string], `${bn}_obj${index}.stl`, { type: 'model/stl' }) };
       });
     },

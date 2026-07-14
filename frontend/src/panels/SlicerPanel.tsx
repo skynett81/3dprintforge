@@ -89,7 +89,7 @@ export function SlicerPanel() {
   const [obj, setObj] = useState<ObjInfo | null>(null);
   const [objOverrides, setObjOverrides] = useState<Record<number, SliceSettings>>({});
   const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
-  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1 });
+  const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1, partTypes: [], partParents: [] });
   const [full, setFull] = useState(false);
   const [autoCalib, setAutoCalib] = useState(true);     // apply saved fleet calibration
   const [calibK, setCalibK] = useState<number | null>(null);
@@ -690,12 +690,28 @@ export function SlicerPanel() {
               <>
                 <div className="oslice-objlist">
                   {toolState.names.length === 0 && <p className="muted micro" style={{ padding: 10 }}>{t('v2.slicer.no_objects', 'No objects on the plate.')}</p>}
-                  {toolState.names.map((n, i) => (
-                    <button key={i} className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}`} onClick={() => plateRef.current?.selectAt(i)}>
-                      <span className="ellipsis">{n}</span>
-                    </button>
-                  ))}
+                  {toolState.names.map((n, i) => {
+                    const pt = toolState.partTypes[i] || '';
+                    const isPart = !!pt;
+                    const badge = pt === 'negative' ? t('v2.part.negative', 'Negative') : pt === 'enforcer' ? t('v2.part.enforcer', 'Support+') : pt === 'blocker' ? t('v2.part.blocker', 'Support−') : '';
+                    return (
+                      <button key={i} className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}${isPart ? ' oslice-objitem--part' : ''}`} style={isPart ? { paddingLeft: 22 } : undefined} onClick={() => plateRef.current?.selectAt(i)}>
+                        <span className="ellipsis">{n}</span>
+                        {badge && <span className={`oslice-partbadge oslice-partbadge--${pt}`}>{badge}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
+                {obj && toolState.selIndex >= 0 && !toolState.partTypes[toolState.selIndex] && (
+                  <div className="oslice-partadd">
+                    <span className="oslice-sectlbl">{t('v2.part.add', 'Add part volume')}</span>
+                    <div className="oslice-partadd-row">
+                      <button className="btn btn--xs btn--ghost" title={t('v2.part.negative_hint', 'Cut a cavity from this object')} onClick={() => plateRef.current?.addPart('negative', 'cube')}>＋ {t('v2.part.negative', 'Negative')}</button>
+                      <button className="btn btn--xs btn--ghost" title={t('v2.part.negcyl_hint', 'Cylindrical cavity')} onClick={() => plateRef.current?.addPart('negative', 'cylinder')}>＋ {t('v2.part.negcyl', 'Neg. cylinder')}</button>
+                    </div>
+                    <p className="muted micro" style={{ margin: '2px 0 0' }}>{t('v2.part.negative_note', 'A negative volume is subtracted from the object when slicing. Move/scale it to shape the cavity.')}</p>
+                  </div>
+                )}
                 {obj
                   ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} onScaleToFit={() => plateRef.current?.scaleToFit()} onRotate90={(a) => plateRef.current?.rotate90(a)} onDuplicate={() => plateRef.current?.duplicateN(1)} />
                   : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object to edit it.')}</p>}

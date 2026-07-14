@@ -385,6 +385,14 @@ select.oset-rowinput { text-align: left; }
 .oslice-objlist { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 3px; }
 .oslice-objitem { text-align: left; padding: 6px 9px; background: var(--o-panel-2); border: 1px solid transparent; border-radius: 6px; color: var(--o-text); font-size: 0.82rem; cursor: pointer; }
 .oslice-objitem--on { border-color: var(--o-accent); background: rgba(0,174,66,0.1); }
+.oslice-objitem { display: flex; align-items: center; gap: 6px; }
+.oslice-objitem--part { font-size: 0.76rem; opacity: 0.92; }
+.oslice-partbadge { margin-left: auto; font-size: 0.6rem; font-weight: 600; padding: 1px 5px; border-radius: 4px; color: #fff; white-space: nowrap; }
+.oslice-partbadge--negative { background: #e0463c; }
+.oslice-partbadge--enforcer { background: #2a7de0; }
+.oslice-partbadge--blocker { background: #8a8f98; }
+.oslice-partadd { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 5px; }
+.oslice-partadd-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .oslice-panelbody .card { background: none; border: none; padding: 12px 10px; margin: 0; }
 .oslice-panelbody .field-label, .oslice-panelbody .obj-group-label { color: var(--o-muted); }
 .oslice-panelbody .slset-grid .input, .oslice-panelbody .input { background: #fff; border: 1px solid var(--o-border); color: var(--o-text); }
