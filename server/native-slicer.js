@@ -232,7 +232,7 @@ export function layersToGcode(layers, settings) {
     ironing: s.ironingSpeed ?? Math.max(15, P * 0.4),
     bridge: s.bridgeSpeed ?? Math.max(15, P * 0.5),
     gap: s.gapFillSpeed ?? Math.max(15, P * 0.5),
-    skirt: s.outerWallSpeed ?? P,
+    skirt: s.skirtSpeed ?? s.outerWallSpeed ?? P,
     brim: s.outerWallSpeed ?? P,
     wall: P,
   };
@@ -1039,8 +1039,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             adhesion.push({ feature: 'brim', closed: true, pts: ring });
           }
         }
-        // Skirt sits outside the outer-loop brim; ears/no-brim add no ring offset.
-        const brimRing = brimType === 'outer_only' ? (s.brimObjectGap || 0) + brimLoops * lw : 0;
+      }
+    }
+
+    // Skirt: priming loops around the object, for `skirtHeight` layers (default
+    // 1 = first layer only). On layer 0 it sits outside any outer-loop brim.
+    if (i < Math.max(1, s.skirtHeight ?? 1) && !(s.raftLayers > 0) && s.skirtLoops > 0) {
+      for (const region of regions) {
+        let brimRing = 0;
+        if (i === 0) {
+          const brimType = s.brimType || 'outer_only';
+          const brimLoops = Math.max(0, Math.round((brimType === 'no_brim' ? 0 : (s.brimWidth || 0)) / lw));
+          brimRing = brimType === 'outer_only' ? (s.brimObjectGap || 0) + brimLoops * lw : 0;
+        }
         let sk = offsetPolygon(region.outer, s.skirtGap + brimRing);
         for (let k = 0; k < s.skirtLoops; k++) {
           if (!sk || sk.length < 3) break;

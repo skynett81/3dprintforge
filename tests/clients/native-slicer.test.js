@@ -413,3 +413,21 @@ describe('native-slicer: richer settings batch', () => {
     assert.ok(sparseMoves(skipped.gcode) < sparseMoves(withInfill.gcode), 'tiny region loses its sparse infill');
   });
 });
+
+describe('native-slicer: skirt height', () => {
+  const skirtLines = (g) => {
+    let inF = false, n = 0;
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:skirt'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    return n;
+  };
+  it('skirt_height prints the skirt on multiple layers', async () => {
+    const one = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.3, skirtLoops: 2, supports: false });
+    const three = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.3, skirtLoops: 2, skirtHeight: 3, supports: false });
+    assert.ok(skirtLines(three.gcode) > skirtLines(one.gcode) * 2, `taller skirt: 1-layer=${skirtLines(one.gcode)} 3-layer=${skirtLines(three.gcode)}`);
+  });
+  it('default skirt height (1) is byte-identical to before', async () => {
+    const a = await sliceMeshToGcode(box(18, 18, 5), { layerHeight: 0.2, skirtLoops: 1, supports: false });
+    const b = await sliceMeshToGcode(box(18, 18, 5), { layerHeight: 0.2, skirtLoops: 1, skirtHeight: 1, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
