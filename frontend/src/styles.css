@@ -367,6 +367,9 @@ body {
 
 /* Process setting tabs + rows */
 .oset-search { padding: 8px 10px 4px; }
+.oset-cats { display: flex; gap: 4px; padding: 8px 8px 0; }
+.oset-cat { flex: 1; padding: 7px 10px; border: 1px solid var(--o-border); background: var(--o-panel-2); color: var(--o-muted); font-size: 0.8rem; font-weight: 700; cursor: pointer; border-radius: 7px; }
+.oset-cat--on { color: #fff; background: var(--o-accent); border-color: var(--o-accent); }
 .oset-tabs { display: flex; flex-wrap: wrap; gap: 2px 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--o-border); }
 .oset-tab { padding: 6px 10px; border: none; background: none; color: var(--o-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; white-space: nowrap; }
 .oset-tab:hover { background: var(--o-hover, rgba(127,127,127,0.1)); }

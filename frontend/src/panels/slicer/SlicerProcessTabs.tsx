@@ -194,19 +194,35 @@ const FIELDS: Field[] = [
   { tab: 'G-code', group: 'Custom G-code', k: 'end_gcode', label: 'End G-code', type: 'text', rows: 5 },
 ];
 
-/** OrcaSlicer-style process settings: category tabs + a search box, each
- *  setting a label-left / value-right row. */
+// Top-level category (BambuStudio's Process / Filament / Printer tabs). A field's
+// category is derived from its tab/group so the whole panel splits three ways.
+const CATS = ['Process', 'Filament', 'Printer'] as const;
+type Cat = typeof CATS[number];
+function catOf(f: Field): Cat {
+  if (f.tab === 'Temperature') return 'Filament';
+  if (f.group === 'Retraction' || f.group === 'Filament G-code') return 'Filament';
+  if (f.group === 'Flow dynamics') return f.k === 'gcode_flavor' ? 'Printer' : 'Filament';
+  if (f.group === 'Machine limits' || f.group === 'Custom G-code') return 'Printer';
+  return 'Process';
+}
+const PROCESS_TABS = TABS.filter((tb) => FIELDS.some((f) => f.tab === tb && catOf(f) === 'Process'));
+
+/** BambuStudio-style settings: Process / Filament / Printer categories, each with
+ *  sub-tabs (Process) or grouped rows, plus a global search. */
 export function SlicerProcessTabs({ value, onChange }: { value: SliceSettings; onChange: (next: SliceSettings) => void }) {
   const t = useT();
+  const [cat, setCat] = useState<Cat>('Process');
   const [tab, setTab] = useState<string>('Quality');
   const [q, setQ] = useState('');
   const set = (k: string, val: string | boolean) => onChange({ ...value, [k]: val });
+  const switchCat = (c: Cat) => { setCat(c); if (c === 'Process' && !PROCESS_TABS.includes(tab as typeof PROCESS_TABS[number])) setTab(PROCESS_TABS[0]); };
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle) return FIELDS.filter((f) => f.label.toLowerCase().includes(needle));
-    return FIELDS.filter((f) => f.tab === tab);
-  }, [q, tab]);
+    if (cat === 'Process') return FIELDS.filter((f) => catOf(f) === 'Process' && f.tab === tab);
+    return FIELDS.filter((f) => catOf(f) === cat);   // Filament / Printer: all, grouped
+  }, [q, cat, tab]);
 
   const row = (f: Field) => {
     const disabled = 'dep' in f && f.dep ? !value[f.dep] : false;
@@ -242,8 +258,15 @@ export function SlicerProcessTabs({ value, onChange }: { value: SliceSettings; o
         <input className="oset-searchinput" placeholder={t('v2.oset.search', 'Search settings…')} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {!q && (
+        <div className="oset-cats">
+          {CATS.map((c) => (
+            <button key={c} className={`oset-cat${cat === c ? ' oset-cat--on' : ''}`} onClick={() => switchCat(c)}>{t(`v2.ocat.${c.toLowerCase()}`, c)}</button>
+          ))}
+        </div>
+      )}
+      {!q && cat === 'Process' && (
         <div className="oset-tabs">
-          {TABS.map((tb) => (
+          {PROCESS_TABS.map((tb) => (
             <button key={tb} className={`oset-tab${tab === tb ? ' oset-tab--on' : ''}`} onClick={() => setTab(tb)}>{t(`v2.oset.${tb.toLowerCase()}`, tb)}</button>
           ))}
         </div>
