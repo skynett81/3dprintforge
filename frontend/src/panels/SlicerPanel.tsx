@@ -1173,6 +1173,14 @@ export function SlicerPanel() {
                     <div className="oslice-ctxmenu-sep" />
                     <button onClick={() => act((h) => h.splitToParts())}>{t('v2.obj.split_objects', 'Split to objects')}</button>
                     <button onClick={() => act((h) => h.simplify())}>{t('v2.obj.simplify', 'Simplify mesh')}</button>
+                    {plates.length > 1 && (
+                      <>
+                        <div className="oslice-ctxmenu-sep" />
+                        {plates.map((pl, pi) => (pi === activePlate ? null : (
+                          <button key={pl.id} onClick={() => { plateRef.current?.selectAt(ctxMenu.i); moveSelectedToPlate(pi); setCtxMenu(null); }}>{t('v2.plate.move_to', 'Move to')} {pl.name}</button>
+                        )))}
+                      </>
+                    )}
                     <div className="oslice-ctxmenu-sep" />
                   </>
                 )}
