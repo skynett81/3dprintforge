@@ -224,3 +224,69 @@ describe('native-slicer: seam painting', () => {
     assert.equal(seamStart(SQ, 'back', { enforce, block: [], z: 50 })[0][1], 10);
   });
 });
+
+describe('native-slicer: brim_type', () => {
+  const cube = box(20, 20, 20);
+  // Count extruding moves emitted under the brim feature (robust vs the
+  // FEATURE comment, which only prints on a feature change).
+  const brimLines = (g) => {
+    let inBrim = false, n = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inBrim = ln.includes('FEATURE:brim'); continue; }
+      if (inBrim && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
+    }
+    return n;
+  };
+
+  it('outer_only generates concentric brim loops around the part', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'outer_only', supports: false });
+    assert.ok(brimLines(gcode) >= 3, `expected several brim moves, got ${brimLines(gcode)}`);
+  });
+
+  it('no_brim emits no brim even when a width is set', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'no_brim', supports: false });
+    assert.equal(brimLines(gcode), 0, 'no_brim must fully disable the brim');
+  });
+
+  it('brim_ears attaches discs at sharp corners but skips smooth outlines', async () => {
+    // A cube has 4 sharp (90°) convex corners → ears appear.
+    const cubeEars = (await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'brim_ears', supports: false })).gcode;
+    assert.ok(brimLines(cubeEars) > 0, 'a cube must get corner ears');
+    // A cylinder has no sharp corners → no ears (correct, unlike a full brim).
+    const cyl = cylinder(10, 20, 48);
+    const cylEars = (await sliceMeshToGcode(cyl, { layerHeight: 0.2, brimWidth: 2, brimType: 'brim_ears', supports: false })).gcode;
+    assert.equal(brimLines(cylEars), 0, 'a smooth cylinder must get no ears');
+    // …but a full outer brim would still wrap the cylinder.
+    const cylOuter = (await sliceMeshToGcode(cyl, { layerHeight: 0.2, brimWidth: 2, brimType: 'outer_only', supports: false })).gcode;
+    assert.ok(brimLines(cylOuter) > 0, 'outer_only still brims a cylinder');
+  });
+});
+
+describe('native-slicer: raft', () => {
+  const cube = box(20, 20, 20);
+  const firstObjectZ = (g) => {
+    // The lowest wall Z = where the object starts (above any raft).
+    let feat = '', z = null;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { feat = ln.slice(10).trim(); continue; }
+      const m = ln.match(/^; --- layer \d+\/\d+ z=([\d.]+)/);
+      if (m) z = parseFloat(m[1]);
+      if (feat.includes('wall') && z != null) return z;
+    }
+    return null;
+  };
+
+  it('raft_layers adds base layers and lifts the object', async () => {
+    const none = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 0, supports: false });
+    const rafted = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 3, supports: false });
+    assert.equal(rafted.layers, none.layers + 3, 'raft adds exactly raftLayers layers');
+    const zNone = firstObjectZ(none.gcode), zRaft = firstObjectZ(rafted.gcode);
+    assert.ok(zRaft > zNone, `object should start higher with a raft (${zRaft} vs ${zNone})`);
+    assert.ok(Math.abs(zRaft - zNone - 3 * 0.2) < 1e-6, 'object lifts by exactly raft thickness');
+  });
+
+  it('a raft suppresses the object brim (raft is the adhesion)', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 2, brimWidth: 4, brimType: 'outer_only', supports: false });
+    assert.ok(!/; FEATURE:brim/.test(gcode), 'no brim when a raft is present');
+  });
+});

@@ -54,6 +54,66 @@ function _distToRegionEdge(px, py, region) {
   return min;
 }
 
+/** A CCW/CW-agnostic circle polygon (closed ring of [x,y]). */
+function _circlePoly(cx, cy, r, seg = 24) {
+  const pts = [];
+  for (let i = 0; i < seg; i++) { const a = (i / seg) * 2 * Math.PI; pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+  return pts;
+}
+
+/**
+ * Brim "mouse ears": the sharp convex corners of an outline, where a small
+ * disc of brim best resists warping (BambuStudio's brim_ears). Returns the
+ * corner points whose interior angle is at or below maxAngleDeg.
+ */
+function _brimEars(poly, maxAngleDeg = 125) {
+  if (!poly || poly.length < 3) return [];
+  let area = 0;
+  for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; area += a[0] * b[1] - b[0] * a[1]; }
+  const ccw = area > 0;
+  const n = poly.length, ears = [];
+  for (let i = 0; i < n; i++) {
+    const p = poly[(i - 1 + n) % n], v = poly[i], q = poly[(i + 1) % n];
+    const cross = (v[0] - p[0]) * (q[1] - v[1]) - (v[1] - p[1]) * (q[0] - v[0]);
+    const convex = ccw ? cross > 0 : cross < 0;
+    if (!convex) continue;
+    const ax = p[0] - v[0], ay = p[1] - v[1], bx = q[0] - v[0], by = q[1] - v[1];
+    const la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+    if (la < 1e-6 || lb < 1e-6) continue;
+    const cosA = (ax * bx + ay * by) / (la * lb);
+    const angle = Math.acos(Math.max(-1, Math.min(1, cosA))) * 180 / Math.PI;
+    if (angle <= maxAngleDeg) ears.push([v[0], v[1]]);
+  }
+  return ears;
+}
+
+/**
+ * Build raft layers under the object: the first-layer footprint expanded by a
+ * margin, printed as a coarse base + denser top layers. Returned layers are
+ * prepended to the object (which re-indexes upward, lifting its Z). Uses the
+ * 'skirt' feature so it prints at adhesion speed and is visually distinct.
+ */
+function _buildRaft(regions0, s, lw, offsetPolygon, solidInfill) {
+  const n = Math.max(0, s.raftLayers | 0);
+  if (!n || !regions0 || !regions0.length) return [];
+  const margin = s.raftMargin ?? 3;
+  const foot = [];
+  for (const r of regions0) { const exp = offsetPolygon(r.outer, margin); if (exp && exp.length >= 3) foot.push(exp); }
+  if (!foot.length) return [];
+  const out = [];
+  for (let r = 0; r < n; r++) {
+    const paths = [];
+    const spacing = r === 0 ? lw * 3 : lw * 1.4;   // coarse base, denser interface/top
+    const angle = r % 2 === 0 ? 0 : 90;
+    for (const poly of foot) {
+      paths.push({ feature: 'skirt', closed: true, pts: poly });
+      for (const sg of solidInfill({ outer: poly, holes: [] }, angle, spacing)) paths.push({ feature: 'skirt', closed: false, pts: sg });
+    }
+    out.push({ paths, regions: foot.map((p) => ({ outer: p, holes: [] })), z: (r + 1) * s.layerHeight, h: s.layerHeight, raft: true });
+  }
+  return out;
+}
+
 /**
  * Rotate a closed wall loop so it starts at the chosen seam vertex, so the
  * seam lands consistently (aligned/back) or scattered (random). 'nearest'
@@ -489,7 +549,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const s = {
     layerHeight: 0.2, lineWidth: 0.4, perimeters: 2, infillDensity: 0.2,
     infillAngle: 45, infillPattern: 'grid', topLayers: 4, bottomLayers: 4,
-    skirtLoops: 1, skirtGap: 3, brimWidth: 0,
+    skirtLoops: 1, skirtGap: 3, brimWidth: 0, brimType: 'outer_only', raftLayers: 0, raftMargin: 3,
     supports: false, supportDensity: 0.2, supportGridRes: 2, supportXYGap: 0.8, supportZGap: 1, supportInterface: 2,
     ironing: false, ironingFlow: 0.15, ironingSpacingFactor: 0.5,
     spiralMode: false, elephantFoot: 0,
@@ -862,17 +922,31 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       }
     }
 
-    // Skirt + brim on the first layer only.
-    if (i === 0) {
+    // Skirt + brim on the first layer only. A raft provides its own adhesion,
+    // so brim/skirt are suppressed when a raft is active.
+    if (i === 0 && !(s.raftLayers > 0)) {
       for (const region of regions) {
-        const brimLoops = Math.max(0, Math.round((s.brimWidth || 0) / lw));
-        let ring = region.outer;
-        for (let b = 0; b < brimLoops; b++) {
-          ring = offsetPolygon(ring, lw);
-          if (!ring || ring.length < 3) break;
-          adhesion.push({ feature: 'brim', closed: true, pts: ring });
+        const brimType = s.brimType || 'outer_only';
+        const brimW = brimType === 'no_brim' ? 0 : (s.brimWidth || 0);
+        const brimLoops = Math.max(0, Math.round(brimW / lw));
+        if (brimType === 'brim_ears' && brimLoops > 0) {
+          // Mouse ears: concentric discs at sharp convex corners only.
+          for (const [ex, ey] of _brimEars(region.outer)) {
+            for (let b = 1; b <= brimLoops; b++) {
+              adhesion.push({ feature: 'brim', closed: true, pts: _circlePoly(ex, ey, b * lw) });
+            }
+          }
+        } else {
+          let ring = region.outer;
+          for (let b = 0; b < brimLoops; b++) {
+            ring = offsetPolygon(ring, lw);
+            if (!ring || ring.length < 3) break;
+            adhesion.push({ feature: 'brim', closed: true, pts: ring });
+          }
         }
-        let sk = offsetPolygon(region.outer, s.skirtGap + (brimLoops * lw));
+        // Skirt sits outside the outer-loop brim; ears/no-brim add no ring offset.
+        const brimRing = brimType === 'outer_only' ? brimLoops * lw : 0;
+        let sk = offsetPolygon(region.outer, s.skirtGap + brimRing);
         for (let k = 0; k < s.skirtLoops; k++) {
           if (!sk || sk.length < 3) break;
           adhesion.push({ feature: 'skirt', closed: true, pts: sk });
@@ -902,6 +976,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       for (const sg of lightningSegs[i]) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
     }
     layers.push({ paths: [...adhesion, ...walls, ...fills, ...support], regions, ...(zTops ? { z: zTops[i], h: heights[i] } : {}) });
+  }
+
+  // Raft: prepend base layers and lift the object. Uniform-height object layers
+  // re-index (default z = (idx+1)*layerHeight shifts up automatically); adaptive
+  // layers carry explicit z, so shift those by the raft thickness.
+  if (s.raftLayers > 0 && layers.length) {
+    const raft = _buildRaft(layers[0].regions, s, s.lineWidth, offsetPolygon, solidInfill);
+    if (raft.length) {
+      if (zTops) { const shift = raft.length * s.layerHeight; for (const L of layers) if (L.z != null) L.z += shift; }
+      layers.unshift(...raft);
+      numLayers += raft.length;
+    }
   }
 
   return { layers, s, bbox: stats.bbox, numLayers, triangles: recentered.indices.length / 3 };

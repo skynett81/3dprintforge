@@ -78,6 +78,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.infill_pattern) out.infillPattern = NATIVE_PATTERN[String(s.infill_pattern).toLowerCase()] || 'lines';
 
   set('brimWidth', num(s.brim_width));
+  if (s.brim_type) out.brimType = String(s.brim_type);
   set('skirtLoops', num(s.skirt_loops));
   set('skirtGap', num(s.skirt_distance));
   set('infillAngle', num(s.infill_direction));
