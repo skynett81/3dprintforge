@@ -1141,30 +1141,46 @@ export function SlicerPanel() {
       {ctxMenu && (
         <>
           <div className="oslice-ctx-backdrop" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
-          <div className="oslice-ctxmenu" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
-            {!toolState.partTypes[ctxMenu.i] && (
-              <>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('negative', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.negative', 'Negative')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('enforcer', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('modifier', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.modifier', 'Modifier')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
-                <button onClick={() => { const raw = window.prompt(t('v2.obj.copies_prompt', 'Number of copies to add'), '1'); const n = Math.max(0, Math.min(100, Math.floor(Number(raw)))); if (n > 0) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(n); } setCtxMenu(null); }}>{t('v2.obj.set_copies', 'Set number of copies…')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.fillBed(); setCtxMenu(null); }}>{t('v2.obj.fill_bed', 'Fill bed with copies')}</button>
-                <div className="oslice-ctxmenu-sep" />
-              </>
-            )}
-            {!toolState.partTypes[ctxMenu.i] && (
-              <>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.layFlat(); setCtxMenu(null); }}>{t('v2.plate.flat', 'Lay flat')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.center(); setCtxMenu(null); }}>{t('v2.obj.center', 'Center on plate')}</button>
-                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.resetXform(); setCtxMenu(null); }}>{t('v2.obj.reset_xform', 'Reset transform')}</button>
-                <div className="oslice-ctxmenu-sep" />
-              </>
-            )}
-            <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.rename(n); } setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
-            <button className="oslice-ctxmenu-del" onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.remove(); setCtxMenu(null); }}>{t('v2.obj.delete', 'Delete')}</button>
-          </div>
+          {(() => {
+            const isPart = !!toolState.partTypes[ctxMenu.i];
+            // Select the object, run an action on the plate handle, close the menu.
+            const act = (fn: (h: NonNullable<typeof plateRef.current>) => void) => { plateRef.current?.selectAt(ctxMenu.i); if (plateRef.current) fn(plateRef.current); setCtxMenu(null); };
+            return (
+              <div className="oslice-ctxmenu" style={{ top: ctxMenu.y, left: ctxMenu.x, transform: ctxMenu.y > window.innerHeight * 0.55 ? 'translateY(-100%)' : undefined }}>
+                {!isPart && (
+                  <>
+                    <button onClick={() => act((h) => h.addPart('negative', 'cube'))}>＋ {t('v2.part.negative', 'Negative part')}</button>
+                    <button onClick={() => act((h) => h.addPart('enforcer', 'cube'))}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
+                    <button onClick={() => act((h) => h.addPart('blocker', 'cube'))}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
+                    <button onClick={() => act((h) => h.addPart('modifier', 'cube'))}>＋ {t('v2.part.modifier', 'Modifier')}</button>
+                    <div className="oslice-ctxmenu-sep" />
+                    <button onClick={() => act((h) => h.duplicateN(1))}>{t('v2.obj.duplicate', 'Duplicate')}</button>
+                    <button onClick={() => { const raw = window.prompt(t('v2.obj.copies_prompt', 'Number of copies to add'), '1'); const n = Math.max(0, Math.min(100, Math.floor(Number(raw)))); if (n > 0) act((h) => h.duplicateN(n)); else setCtxMenu(null); }}>{t('v2.obj.set_copies', 'Set number of copies…')}</button>
+                    <button onClick={() => act((h) => h.fillBed())}>{t('v2.obj.fill_bed', 'Fill bed with copies')}</button>
+                    <div className="oslice-ctxmenu-sep" />
+                    <button onClick={() => act((h) => h.layFlat())}>{t('v2.plate.flat', 'Lay flat')}</button>
+                    <button onClick={() => act((h) => h.autoOrient())}>{t('v2.plate.orient', 'Auto-orient')}</button>
+                    <button onClick={() => act((h) => h.center())}>{t('v2.obj.center', 'Center on plate')}</button>
+                    <button onClick={() => act((h) => h.scaleToFit())}>{t('v2.obj.scale_fit', 'Scale to fit plate')}</button>
+                    <div className="oslice-ctxmenu-sep" />
+                    <button onClick={() => act((h) => h.rotate90('x'))}>{t('v2.obj.rot90x', 'Rotate 90° X')}</button>
+                    <button onClick={() => act((h) => h.rotate90('y'))}>{t('v2.obj.rot90y', 'Rotate 90° Y')}</button>
+                    <button onClick={() => act((h) => h.rotate90('z'))}>{t('v2.obj.rot90z', 'Rotate 90° Z')}</button>
+                    <button onClick={() => act((h) => h.mirror('x'))}>{t('v2.obj.mirror_x', 'Mirror X')}</button>
+                    <button onClick={() => act((h) => h.mirror('y'))}>{t('v2.obj.mirror_y', 'Mirror Y')}</button>
+                    <button onClick={() => act((h) => h.mirror('z'))}>{t('v2.obj.mirror_z', 'Mirror Z')}</button>
+                    <button onClick={() => act((h) => h.resetXform())}>{t('v2.obj.reset_xform', 'Reset transform')}</button>
+                    <div className="oslice-ctxmenu-sep" />
+                    <button onClick={() => act((h) => h.splitToParts())}>{t('v2.obj.split_objects', 'Split to objects')}</button>
+                    <button onClick={() => act((h) => h.simplify())}>{t('v2.obj.simplify', 'Simplify mesh')}</button>
+                    <div className="oslice-ctxmenu-sep" />
+                  </>
+                )}
+                <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) act((h) => h.rename(n)); else setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
+                <button className="oslice-ctxmenu-del" onClick={() => act((h) => h.remove())}>{t('v2.obj.delete', 'Delete')}</button>
+              </div>
+            );
+          })()}
         </>
       )}
       {showLibrary && <LibraryImportModal onClose={() => setShowLibrary(false)} onImport={importFromLibrary} />}
