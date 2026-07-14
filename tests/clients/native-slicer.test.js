@@ -822,7 +822,7 @@ describe('native-slicer: full Arachne medial beads', () => {
     const beads = medialBeads(rib, 0.4);
     assert.equal(beads.length, 1, 'one bead for one rib');
     const b = beads[0];
-    assert.ok(b.pts.length > 20, 'continuous polyline, not fragments');
+    assert.ok(b.pts.length >= 2, 'a continuous polyline (simplified)');
     const xs = b.pts.map((p) => p[0]);
     assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'spans the rib length');
     const wAvg = b.widths.reduce((a, c) => a + c, 0) / b.widths.length;
@@ -834,5 +834,15 @@ describe('native-slicer: full Arachne medial beads', () => {
     const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
     assert.ok(gapTravels(ar.gcode) < gapTravels(cl.gcode) / 5, `arachne far fewer gap travels (classic=${gapTravels(cl.gcode)} arachne=${gapTravels(ar.gcode)})`);
     assert.ok(!ar.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: Arachne bead simplification', () => {
+  it('a straight bead collapses to a few points (small g-code) but keeps its span', () => {
+    const b = medialBeads({ outer: [[0, 0], [40, 0], [40, 1.2], [0, 1.2]], holes: [] }, 0.4);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].pts.length < 12, `straight bead should simplify (got ${b[0].pts.length})`);
+    const xs = b[0].pts.map((p) => p[0]);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'still spans the rib');
   });
 });
