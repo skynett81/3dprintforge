@@ -138,6 +138,26 @@ export function SlicerPanel() {
     if (!m) return;
     setPlates((ps) => ps.map((pl, i) => (i === targetIdx ? { ...pl, snap: [...(pl.snap ?? []), m] } : pl)));
   };
+  // Drag-and-drop in the "all plates" overview: move an object (by uuid) from
+  // one plate to another, then rebuild the overview.
+  const movePlateObject = (srcPlate: number, srcUuid: string, targetPlate: number) => {
+    const pv = plateRef.current; if (!pv || srcPlate < 0) return;
+    const activeSnap = pv.snapshot();
+    const cur = plates.map((pl, i) => (i === activePlate ? activeSnap.slice() : (pl.snap ?? []).slice()));
+    if (srcPlate !== targetPlate && cur[srcPlate] && cur[targetPlate]) {
+      const srcArr = cur[srcPlate];
+      const moved = srcArr.find((m) => m.uuid === srcUuid);
+      if (moved) {
+        const kids = srcArr.filter((m) => m.userData.partParentId === moved.uuid);
+        cur[srcPlate] = srcArr.filter((m) => m !== moved && !kids.includes(m));
+        cur[targetPlate] = [...cur[targetPlate], moved, ...kids];
+      }
+    }
+    const newPlates = plates.map((pl, i) => ({ ...pl, snap: cur[i] }));
+    setPlates(newPlates);
+    pv.restore(cur[activePlate]);
+    pv.setAllPlatesView(newPlates.map((pl, i) => ({ meshes: i === activePlate ? cur[activePlate] : (pl.snap ?? []), name: pl.name })), activePlate);
+  };
   const deletePlate = (idx: number) => {
     if (plates.length <= 1 || !plateRef.current) return;
     if (idx === activePlate) {
@@ -1106,7 +1126,7 @@ export function SlicerPanel() {
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} showOrder={settings.print_sequence === 'by_object' && toolState.count > 1} clearance={Number(settings.extruder_clearance_radius) || 0} />
+              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} showOrder={settings.print_sequence === 'by_object' && toolState.count > 1} clearance={Number(settings.extruder_clearance_radius) || 0} onMovePlate={movePlateObject} />
             </Suspense>
           )}
           {tab === 'preview' && preview && (

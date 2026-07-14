@@ -108,7 +108,7 @@ function peiTextures(bed: number, brandCss: string): { map: THREE.Texture; bump:
 
 /** Add the build plate (lit, textured, with physical thickness) plus a soft
  *  accent edge frame. */
-export function buildPlate(scene: THREE.Scene, bed: number, accent = 0x2ecc71) {
+export function buildPlate(scene: THREE.Object3D, bed: number, accent = 0x2ecc71) {
   const accentCss = '#' + accent.toString(16).padStart(6, '0');
   const { map, bump } = peiTextures(bed, accentCss);
   const thickness = Math.max(2, bed * 0.012);
