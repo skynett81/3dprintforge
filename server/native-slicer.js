@@ -379,14 +379,18 @@ export function layersToGcode(layers, settings) {
     g += `G1 X${target[0].toFixed(3)} Y${target[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
     curX = target[0]; curY = target[1];
   };
-  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow, scarf = 0) => {
+  // `widths` (optional, one per point) makes each segment's extrusion track a
+  // variable line width — the foundation for Arachne variable-width beads. When
+  // absent everything is byte-identical to the fixed-width path.
+  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow, scarf = 0, widths = null, baseW = s.lineWidth) => {
     if (pts.length < 2) return;
+    const varW = widths && widths.length === pts.length && baseW > 0;
     const first = pts[0];
     // Avoid-crossing-walls (combing): if a route that stays over solid exists,
     // travel along it WITHOUT retracting — no stringing across gaps, far fewer
     // retractions. Falls back to the retract/wipe path when no interior route
     // exists (e.g. the first travel from the prime line).
-    if (combing && combBoundary) {
+    if (combing && combBoundary && !varW) {
       const route = routeInside([curX, curY], first, combBoundary, { tol: combTol, cache: combCache });
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
@@ -428,6 +432,8 @@ export function layersToGcode(layers, settings) {
       // begins as a taper (paired with the ramp-down overlap below), not a blob.
       let segEf = ef;
       if (scarf > 0 && closed) { const mid = sdist + d / 2; if (mid < scarf) segEf = ef * (0.2 + 0.8 * (mid / scarf)); }
+      // Variable width: scale the extrusion by the segment's mean width / base.
+      if (varW) segEf = segEf * (((widths[i - 1] + widths[i]) / 2) / baseW);
       e += d * segEf;
       g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
       curX = p[0]; curY = p[1]; sdist += d;
@@ -591,7 +597,7 @@ export function layersToGcode(layers, settings) {
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
       // Scarf seam only on outer walls (above the first layer, non-vase).
       const scarf = (s.scarfSeam && path.feature === 'outer-wall' && path.closed && layerIdx > 0) ? (s.scarfLength ?? 5) : 0;
-      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf);
+      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf, path.widths, path.baseW ?? (LW[path.feature] ?? s.lineWidth));
     }
   });
   if (s.gcodeLabelObjects && curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;

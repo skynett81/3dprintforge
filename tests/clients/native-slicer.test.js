@@ -796,3 +796,21 @@ describe('native-slicer: filament diameter', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: variable-width emission (Arachne foundation)', () => {
+  it('a path with a widths array scales extrusion by local width', () => {
+    // Two 10mm segments; first at base width 0.4, second ramps to 0.8 (avg 0.6 = 1.5x).
+    const pts = [[0, 0], [10, 0], [20, 0]];
+    const widths = [0.4, 0.4, 0.8];
+    const layers = [{ paths: [{ feature: 'inner-wall', closed: false, pts, widths, baseW: 0.4 }] }];
+    const g = layersToGcode(layers, { layerHeight: 0.2, lineWidth: 0.4 });
+    // Pull the two extruding moves of the inner wall.
+    const es = [];
+    let inF = false;
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('inner-wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+ E([-\d.]+)/); if (m) es.push({ x: +m[1], e: +m[2] }); } }
+    // deltas: seg1 = e@x10 - e@x0start(0), seg2 = e@x20 - e@x10
+    const seg1 = es.find((p) => Math.abs(p.x - 10) < 0.01).e;
+    const seg2 = es.find((p) => Math.abs(p.x - 20) < 0.01).e - seg1;
+    assert.ok(Math.abs(seg2 / seg1 - 1.5) < 0.05, `wider segment should extrude ~1.5x (seg1=${seg1.toFixed(4)} seg2=${seg2.toFixed(4)} ratio=${(seg2 / seg1).toFixed(2)})`);
+  });
+});
