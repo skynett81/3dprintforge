@@ -57,6 +57,7 @@ export interface PlateHandle {
   setPaintMode: (mode: { ch: 'support' | 'seam' | 'color' | 'fuzzy'; val: number } | null) => void;
   clearPaint: (ch: 'support' | 'seam' | 'color' | 'fuzzy') => void;
   getSupportPaint: () => { enforce: number[][]; block: number[][] };
+  getSupportVolumes: () => { enforce: number[][]; block: number[][] };
   getSeamPaint: () => { enforce: number[][]; block: number[][] };
   getFuzzyPaint: () => { enforce: number[][]; block: number[][] };
   hasColorPaint: () => boolean;
@@ -744,6 +745,31 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     // Support/seam regions in world coords. Support needs zMax; seam needs the
     // full [zMin, zMax] band. Coords rounded to 0.1 mm to keep the payload small.
     getSupportPaint: () => collectPaintRegions('support', false),
+    // Support enforcer/blocker VOLUMES → the same enforce/block triangle channel
+    // the painter feeds (each tri [x0,y0,x1,y1,x2,y2,zMax] in world coords). An
+    // enforcer forces support columns up to the volume top; a blocker forbids
+    // support in its footprint.
+    getSupportVolumes: () => {
+      const c = ctx.current; const enforce: number[][] = [], block: number[][] = []; if (!c) return { enforce, block };
+      const r1 = (v: number) => Math.round(v * 10) / 10;
+      const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+      for (const m of c.objects) {
+        const pt = m.userData.partType;
+        if (pt !== 'enforcer' && pt !== 'blocker') continue;
+        m.updateMatrixWorld(true);
+        const g = m.geometry, pos = g.getAttribute('position'), idx = g.index;
+        const triCount = idx ? idx.count / 3 : pos.count / 3;
+        const dst = pt === 'enforcer' ? enforce : block;
+        for (let t = 0; t < triCount; t++) {
+          const ia = idx ? idx.getX(t * 3) : t * 3, ib = idx ? idx.getX(t * 3 + 1) : t * 3 + 1, ic = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+          va.fromBufferAttribute(pos, ia).applyMatrix4(m.matrixWorld);
+          vb.fromBufferAttribute(pos, ib).applyMatrix4(m.matrixWorld);
+          vc.fromBufferAttribute(pos, ic).applyMatrix4(m.matrixWorld);
+          dst.push([r1(va.x), r1(va.y), r1(vb.x), r1(vb.y), r1(vc.x), r1(vc.y), r1(Math.max(va.z, vb.z, vc.z))]);
+        }
+      }
+      return { enforce, block };
+    },
     getSeamPaint: () => collectPaintRegions('seam', true),
     getFuzzyPaint: () => collectPaintRegions('fuzzy', true),
     hasColorPaint: () => {

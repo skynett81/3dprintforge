@@ -377,8 +377,12 @@ export function SlicerPanel() {
     const out: Record<string, unknown> = bv ? { ...base, bed_size: [bv.x, bv.y] } : { ...base };
     if (flushMatrix) out.flush_matrix = flushMatrix;
     // Support / seam painting: send enforce/block regions if any were painted.
+    // Support enforcer/blocker VOLUMES feed the same channel.
     const sp = plateRef.current?.getSupportPaint();
-    if (sp && (sp.enforce.length || sp.block.length)) out.support_paint = sp;
+    const sv = plateRef.current?.getSupportVolumes();
+    const spEnforce = [...(sp?.enforce ?? []), ...(sv?.enforce ?? [])];
+    const spBlock = [...(sp?.block ?? []), ...(sv?.block ?? [])];
+    if (spEnforce.length || spBlock.length) out.support_paint = { enforce: spEnforce, block: spBlock };
     const seam = plateRef.current?.getSeamPaint();
     if (seam && (seam.enforce.length || seam.block.length)) out.seam_paint = seam;
     const fuzzy = plateRef.current?.getFuzzyPaint();
@@ -709,7 +713,11 @@ export function SlicerPanel() {
                       <button className="btn btn--xs btn--ghost" title={t('v2.part.negative_hint', 'Cut a cavity from this object')} onClick={() => plateRef.current?.addPart('negative', 'cube')}>＋ {t('v2.part.negative', 'Negative')}</button>
                       <button className="btn btn--xs btn--ghost" title={t('v2.part.negcyl_hint', 'Cylindrical cavity')} onClick={() => plateRef.current?.addPart('negative', 'cylinder')}>＋ {t('v2.part.negcyl', 'Neg. cylinder')}</button>
                     </div>
-                    <p className="muted micro" style={{ margin: '2px 0 0' }}>{t('v2.part.negative_note', 'A negative volume is subtracted from the object when slicing. Move/scale it to shape the cavity.')}</p>
+                    <div className="oslice-partadd-row">
+                      <button className="btn btn--xs btn--ghost" title={t('v2.part.enforcer_hint', 'Force support inside this volume')} onClick={() => plateRef.current?.addPart('enforcer', 'cube')}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
+                      <button className="btn btn--xs btn--ghost" title={t('v2.part.blocker_hint', 'Forbid support inside this volume')} onClick={() => plateRef.current?.addPart('blocker', 'cube')}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
+                    </div>
+                    <p className="muted micro" style={{ margin: '2px 0 0' }}>{t('v2.part.parts_note', 'A negative volume carves a cavity; a support enforcer/blocker forces or forbids support inside it. Move/scale the volume to shape the region.')}</p>
                   </div>
                 )}
                 {obj
