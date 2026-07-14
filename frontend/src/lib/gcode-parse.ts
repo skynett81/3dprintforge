@@ -5,7 +5,7 @@
 // viewer can colour them like a desktop slicer.
 
 export type Feature =
-  | 'outer-wall' | 'inner-wall' | 'wall' | 'solid' | 'sparse' | 'support' | 'skirt' | 'brim' | 'ironing' | 'bridge' | 'gap';
+  | 'outer-wall' | 'inner-wall' | 'wall' | 'solid' | 'sparse' | 'support' | 'skirt' | 'brim' | 'ironing' | 'bridge' | 'gap' | 'wipe_tower';
 
 export interface GcodeLayer {
   z: number;

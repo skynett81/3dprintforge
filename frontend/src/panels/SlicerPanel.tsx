@@ -842,6 +842,16 @@ export function SlicerPanel() {
                 <section className="card slicer-card">
                   <div className="obj-group-label" style={{ marginTop: 0 }}>{t('v2.varlh.title', 'Variable layer height')}</div>
                   <p className="muted micro" style={{ margin: '0 0 8px' }}>{t('v2.varlh.hint', 'Set a layer thickness for a height range (mm, from the model base). Finer = smoother curves, coarser = faster.')}</p>
+                  {layerBands.length > 0 && (() => {
+                    const refH = Math.max(obj?.dimZ ?? 0, ...layerBands.map((b) => b.z1), 1);
+                    return (
+                      <div className="oslice-varlh-bar" title={t('v2.varlh.bar', 'Zone coverage over model height')}>
+                        {layerBands.map((b, i) => (
+                          <div key={i} className="oslice-varlh-seg" style={{ left: `${(Math.min(b.z0, b.z1) / refH) * 100}%`, width: `${(Math.abs(b.z1 - b.z0) / refH) * 100}%`, opacity: Math.max(0.35, Math.min(1, 0.3 / Math.max(0.04, b.h))) }} />
+                        ))}
+                      </div>
+                    );
+                  })()}
                   {layerBands.map((band, i) => {
                     const upd = (k: 'z0' | 'z1' | 'h', v: number) => setLayerBands((bs) => bs.map((b, j) => (j === i ? { ...b, [k]: v } : b)));
                     return (

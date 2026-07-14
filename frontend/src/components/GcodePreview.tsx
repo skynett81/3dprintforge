@@ -23,12 +23,13 @@ const FEATURE_COLOR: Record<Feature, number> = {
   ironing: 0xc084fc,
   bridge: 0x22b8cf,
   gap: 0xef8c5a,
+  wipe_tower: 0x9b59d0,
 };
 const FEATURE_LABEL: Record<Feature, string> = {
   'outer-wall': 'Outer wall', 'inner-wall': 'Inner wall', wall: 'Wall',
-  solid: 'Top/bottom', sparse: 'Infill', support: 'Support', skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing', bridge: 'Bridge', gap: 'Gap fill',
+  solid: 'Top/bottom', sparse: 'Infill', support: 'Support', skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing', bridge: 'Bridge', gap: 'Gap fill', wipe_tower: 'Wipe tower',
 };
-const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 'gap', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wall'];
+const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 'gap', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wipe_tower', 'wall'];
 
 /**
  * G-code toolpath preview: renders extrusion moves layer-by-layer, coloured
