@@ -245,46 +245,50 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       <div className="gpreview-wrap">
         <div ref={mount} className="plate-canvas" />
         {total > 1 && <LayerTower total={total} low={low} high={shown} onLow={(v) => { setPlaying(false); setLow(v); }} onHigh={(v) => { setPlaying(false); setLayer(v); }} />}
-        {mode === 'feature' && legend.length > 0 && (
-          <div className="gpreview-legend">
-            {legend.map((f) => (
-              <button key={f} type="button" className={`gpreview-legend-item gpreview-legend-btn${hiddenFeats.has(f) ? ' gpreview-legend-btn--off' : ''}`}
-                title={t('v2.gpreview.toggle_feat', 'Click to show / hide this feature')} onClick={() => toggleFeat(f)}>
-                <i style={{ background: `#${(FEATURE_COLOR[f] ?? 0).toString(16).padStart(6, '0')}` }} />
-                {t(`v2.gpreview.${f}`, FEATURE_LABEL[f] ?? f)}
-              </button>
-            ))}
-          </div>
-        )}
-        {(mode === 'speed' || mode === 'flow' || mode === 'layertime') && (() => {
-          const rng = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
-          const unit = mode === 'flow' ? 'mm³/s' : mode === 'layertime' ? 's' : 'mm/s';
-          return (
-            <div className="gpreview-legend">
-              <span className="gpreview-legend-item"><i style={{ width: 40, height: 6, background: 'linear-gradient(90deg,#2a4bd8,#2ecc71,#e0603a,#d6333a)' }} /></span>
-              <span className="gpreview-legend-item" style={{ justifyContent: 'space-between' }}>{rng.min.toFixed(mode === 'flow' ? 1 : 0)}–{rng.max.toFixed(mode === 'flow' ? 1 : 0)} {unit}</span>
+        {/* BambuStudio-style "Colour scheme" panel: mode selector + legend + options */}
+        <div className="gpreview-side">
+          <select className="gpreview-side-select" value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>
+            <option value="feature">{t('v2.gpreview.by_feature', 'Line type')}</option>
+            <option value="speed">{t('v2.gpreview.by_speed', 'Speed')}</option>
+            <option value="flow">{t('v2.gpreview.by_flow', 'Flow')}</option>
+            <option value="layertime">{t('v2.gpreview.by_layertime', 'Layer time')}</option>
+            {parsed.tools.length > 1 && <option value="tool">{t('v2.gpreview.by_tool', 'Filament')}</option>}
+          </select>
+          {mode === 'feature' && legend.length > 0 && (
+            <div className="gpreview-side-legend">
+              {legend.map((f) => (
+                <button key={f} type="button" className={`gpreview-legend-item gpreview-legend-btn${hiddenFeats.has(f) ? ' gpreview-legend-btn--off' : ''}`}
+                  title={t('v2.gpreview.toggle_feat', 'Click to show / hide this feature')} onClick={() => toggleFeat(f)}>
+                  <i style={{ background: `#${(FEATURE_COLOR[f] ?? 0).toString(16).padStart(6, '0')}` }} />
+                  {t(`v2.gpreview.${f}`, FEATURE_LABEL[f] ?? f)}
+                </button>
+              ))}
             </div>
-          );
-        })()}
-        {mode === 'tool' && parsed.tools.length > 0 && (
-          <div className="gpreview-legend">
-            {parsed.tools.map((ti) => (
-              <span key={ti} className="gpreview-legend-item">
-                <i style={{ background: (slotColors && slotColors[ti]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][ti % 4] }} />
-                {t('v2.gpreview.tool', 'Filament')} {ti + 1}
-              </span>
-            ))}
-          </div>
-        )}
+          )}
+          {(mode === 'speed' || mode === 'flow' || mode === 'layertime') && (() => {
+            const rng = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
+            const unit = mode === 'flow' ? 'mm³/s' : mode === 'layertime' ? 's' : 'mm/s';
+            return (
+              <div className="gpreview-side-legend">
+                <span className="gpreview-legend-item"><i style={{ width: 40, height: 6, background: 'linear-gradient(90deg,#2a4bd8,#2ecc71,#e0603a,#d6333a)' }} /></span>
+                <span className="gpreview-legend-item" style={{ justifyContent: 'space-between' }}>{rng.min.toFixed(mode === 'flow' ? 1 : 0)}–{rng.max.toFixed(mode === 'flow' ? 1 : 0)} {unit}</span>
+              </div>
+            );
+          })()}
+          {mode === 'tool' && parsed.tools.length > 0 && (
+            <div className="gpreview-side-legend">
+              {parsed.tools.map((ti) => (
+                <span key={ti} className="gpreview-legend-item">
+                  <i style={{ background: (slotColors && slotColors[ti]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][ti % 4] }} />
+                  {t('v2.gpreview.tool', 'Filament')} {ti + 1}
+                </span>
+              ))}
+            </div>
+          )}
+          <label className="chk gpreview-side-opt"><input type="checkbox" checked={showTravel} onChange={(e) => setShowTravel(e.target.checked)} /> {t('v2.gpreview.travel', 'Travel')}</label>
+        </div>
       </div>
       <div className="gpreview-controls">
-        <select className="oset-input" style={{ maxWidth: 110 }} value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>
-          <option value="feature">{t('v2.gpreview.by_feature', 'Feature')}</option>
-          <option value="speed">{t('v2.gpreview.by_speed', 'Speed')}</option>
-          <option value="flow">{t('v2.gpreview.by_flow', 'Flow')}</option>
-          <option value="layertime">{t('v2.gpreview.by_layertime', 'Layer time')}</option>
-          {parsed.tools.length > 1 && <option value="tool">{t('v2.gpreview.by_tool', 'Filament')}</option>}
-        </select>
         <button className="btn btn--sm btn--ghost" style={{ minWidth: 34 }} title={playing ? t('v2.gpreview.pause', 'Pause') : t('v2.gpreview.play', 'Play')}
           onClick={() => { if (layer >= total) setLayer(1); setPlaying((p) => !p); }}>{playing ? '❚❚' : '▶'}</button>
         <span className="muted micro" style={{ minWidth: 80 }}>{t('v2.gpreview.layer', 'Layer')} {shown}/{total}</span>
@@ -316,7 +320,6 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
           <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); }} style={{ width: '100%' }} />
         </div>
         <span className="muted micro tnum" style={{ minWidth: 60 }}>z {curZ.toFixed(2)}</span>
-        <label className="chk" style={{ margin: 0 }}><input type="checkbox" checked={showTravel} onChange={(e) => setShowTravel(e.target.checked)} /> {t('v2.gpreview.travel', 'Travel')}</label>
         {colorChanges.length > 0 && <span className="muted micro" title={t('v2.gpreview.colorchanges_hint', 'Filament swaps — click a tick to jump')}>{colorChanges.length} {t('v2.gpreview.colorchanges', 'swaps')}</span>}
         {onAddColorChange && shown > 1 && !(colorChangeLayers ?? []).includes(shown) && (
           <button className="btn btn--sm btn--ghost" title={t('v2.gpreview.add_change_hint', 'Pause for a filament swap at this layer (M600)')} onClick={() => onAddColorChange(shown)}>＋ {t('v2.gpreview.add_change', 'Colour change')}</button>

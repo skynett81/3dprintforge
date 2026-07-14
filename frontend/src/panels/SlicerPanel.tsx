@@ -784,25 +784,6 @@ export function SlicerPanel() {
                     });
                   })()}
                 </div>
-                {ctxMenu && (
-                  <>
-                    <div className="oslice-ctx-backdrop" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
-                    <div className="oslice-ctxmenu" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
-                      {!toolState.partTypes[ctxMenu.i] && (
-                        <>
-                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('negative', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.negative', 'Negative')}</button>
-                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('enforcer', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
-                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
-                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('modifier', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.modifier', 'Modifier')}</button>
-                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
-                          <div className="oslice-ctxmenu-sep" />
-                        </>
-                      )}
-                      <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.rename(n); } setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
-                      <button className="oslice-ctxmenu-del" onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.remove(); setCtxMenu(null); }}>{t('v2.obj.delete', 'Delete')}</button>
-                    </div>
-                  </>
-                )}
                 {obj && toolState.selIndex >= 0 && !toolState.partTypes[toolState.selIndex] && (
                   <div className="oslice-partadd">
                     <span className="oslice-sectlbl">{t('v2.part.add', 'Add part volume')}</span>
@@ -1070,7 +1051,7 @@ export function SlicerPanel() {
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} slotColors={slotColors} />
+              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} />
             </Suspense>
           )}
           {tab === 'preview' && preview && (
@@ -1117,6 +1098,25 @@ export function SlicerPanel() {
         </div>
       </div>
 
+      {ctxMenu && (
+        <>
+          <div className="oslice-ctx-backdrop" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+          <div className="oslice-ctxmenu" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
+            {!toolState.partTypes[ctxMenu.i] && (
+              <>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('negative', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.negative', 'Negative')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('enforcer', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('modifier', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.modifier', 'Modifier')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
+                <div className="oslice-ctxmenu-sep" />
+              </>
+            )}
+            <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.rename(n); } setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
+            <button className="oslice-ctxmenu-del" onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.remove(); setCtxMenu(null); }}>{t('v2.obj.delete', 'Delete')}</button>
+          </div>
+        </>
+      )}
       {showLibrary && <LibraryImportModal onClose={() => setShowLibrary(false)} onImport={importFromLibrary} />}
       {purgeOpen && <SlicerPurge colors={slotColors} matrix={flushMatrix} onChange={setFlushMatrix} onClose={() => setPurgeOpen(false)} />}
       {colorLayerOpen && <SlicerColorLayer slotColors={slotColors}

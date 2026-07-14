@@ -586,6 +586,12 @@ select.oset-rowinput { text-align: left; }
 .oslice-previewroot { position: relative; flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .gpreview-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 14px 10px; }
 .gpreview-root > div:nth-child(2) { padding: 0 2px; }
+/* BambuStudio-style preview "Colour scheme" panel (top-left): mode select +
+   legend + options in one card. */
+.gpreview-side { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; min-width: 148px; background: rgba(14,17,22,0.82); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); }
+.gpreview-side-select { width: 100%; padding: 4px 6px; font-size: 0.74rem; color: #e6e8eb; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; cursor: pointer; }
+.gpreview-side-legend { display: flex; flex-direction: column; gap: 3px; }
+.gpreview-side-opt { margin: 0; font-size: 0.72rem; color: #cbd5e1; display: flex; align-items: center; gap: 6px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.08); }
 /* G-code preview feature legend */
 .gpreview-wrap { position: relative; flex: 1; display: flex; min-height: 0; }
 .gpreview-legend {

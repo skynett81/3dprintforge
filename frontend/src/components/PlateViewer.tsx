@@ -294,7 +294,7 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; slotColors?: string[] }>(function PlateViewer({ file, bed = 256, onObject, onState, slotColors }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[] }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -302,6 +302,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   slotColorsRef.current = slotColors;
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
+  const onCtxRef = useRef(onContextMenu);
+  onCtxRef.current = onContextMenu;
   const onStateRef = useRef(onState);
   onStateRef.current = onState;
   const placeFaceRef = useRef(false);   // "place on face" pick mode
@@ -555,6 +557,22 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       }
       select(hit ? (hit.object as THREE.Mesh) : null);
     };
+    // Right-click an object in the scene → select it and open the same context
+    // menu the object list uses (BambuStudio's viewport right-click).
+    const onContext = (ev: MouseEvent) => {
+      ev.preventDefault();
+      if (paintRef.current || measureRef.current) return;
+      const r = renderer.domElement.getBoundingClientRect();
+      const nx = ((ev.clientX - r.left) / r.width) * 2 - 1;
+      const ny = -((ev.clientY - r.top) / r.height) * 2 + 1;
+      ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
+      const hit = ray.intersectObjects(c.objects, false)[0];
+      if (!hit) return;
+      const m = hit.object as THREE.Mesh;
+      select(m);
+      onCtxRef.current?.(ev.clientX, ev.clientY, c.objects.indexOf(m));
+    };
+    renderer.domElement.addEventListener('contextmenu', onContext);
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointerup', onPointerUp);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -570,6 +588,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       cancelAnimationFrame(c.raf);
       window.removeEventListener('resize', onResize);
       ro.disconnect();
+      renderer.domElement.removeEventListener('contextmenu', onContext);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
