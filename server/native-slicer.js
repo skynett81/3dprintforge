@@ -1153,7 +1153,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
 
     // Support hatch.
     const support = [];
-    if (supportSegs && supportSegs[i]) for (const el of supportSegs[i]) support.push({ feature: 'support', closed: !!el.closed, pts: el.pts });
+    if (supportSegs && supportSegs[i]) for (const el of supportSegs[i]) support.push(el.iface && s.supportInterfaceSpeed ? { feature: 'support', closed: !!el.closed, pts: el.pts, speedOverride: s.supportInterfaceSpeed } : { feature: 'support', closed: !!el.closed, pts: el.pts });
 
     // Print order: adhesion → walls → infill → support. `regions` rides along
     // so the G-code stage can route avoid-crossing-walls travel.

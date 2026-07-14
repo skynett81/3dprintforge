@@ -87,6 +87,7 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Overhang & bridge', k: 'overhang_4_4_speed', label: 'Overhang 75-100%', type: 'num', unit: 'mm/s', step: 5, dep: 'detect_overhang_wall' },
   { tab: 'Speed', group: 'Overhang & bridge', k: 'bridge_speed', label: 'Bridge', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Support', k: 'support_speed', label: 'Support', type: 'num', unit: 'mm/s', step: 5 },
+  { tab: 'Speed', group: 'Support', k: 'support_interface_speed', label: 'Support interface', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'initial_layer_speed', label: 'Initial layer', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'initial_layer_infill_speed', label: 'Initial layer infill', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Speed', group: 'Other', k: 'ironing_speed', label: 'Ironing', type: 'num', unit: 'mm/s', step: 5 },

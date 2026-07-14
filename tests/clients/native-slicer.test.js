@@ -622,3 +622,19 @@ describe('native-slicer: bottom surface speed', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+import { generateSupports } from '../../server/native-slicer-support.js';
+describe('native-slicer: support interface tagging', () => {
+  it('interface hatch lines are tagged so support_interface_speed can apply', () => {
+    // A square that appears only at higher layers (air below) → support with a
+    // dense interface just under it.
+    const sq = [[0, 0], [20, 0], [20, 20], [0, 20]];
+    const layerRegions = [];
+    for (let i = 0; i < 12; i++) layerRegions.push(i >= 8 ? [{ outer: sq, holes: [] }] : []);
+    const segs = generateSupports(layerRegions, { lineWidth: 0.4, gridRes: 1, density: 0.1, layerHeight: 0.2, interfaceLayers: 2, zGapLayers: 1 });
+    const hasIface = segs.some((layer) => layer.some((p) => p.iface === true));
+    const hasBase = segs.some((layer) => layer.some((p) => p.iface === false));
+    assert.ok(hasIface, 'some interface-tagged support lines exist');
+    assert.ok(hasBase, 'some base-tagged support lines exist');
+  });
+});

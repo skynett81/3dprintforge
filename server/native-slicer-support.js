@@ -324,7 +324,7 @@ export function generateSupports(layerRegions, opts = {}) {
         const on = c < cols && s[idx] && (dense || (inf[idx] && ifaceOn));
         if (on && runStart < 0) runStart = c;
         else if (!on && runStart >= 0) {
-          parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false });
+          parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false, iface: !dense });
           runStart = -1;
         }
       }
