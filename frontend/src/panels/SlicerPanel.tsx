@@ -804,16 +804,31 @@ export function SlicerPanel() {
                 {obj
                   ? <ObjectPanel info={obj} onPos={(x, y) => plateRef.current?.setPos(x, y)} onRot={(x, y, z) => plateRef.current?.setRot(x, y, z)} onScalePct={(p) => plateRef.current?.setScalePct(p)} onDim={(a, mm, u) => plateRef.current?.setDim(a, mm, u)} onMirror={(a) => plateRef.current?.mirror(a)} onReset={() => plateRef.current?.resetXform()} onScaleToFit={() => plateRef.current?.scaleToFit()} onRotate90={(a) => plateRef.current?.rotate90(a)} onDuplicate={() => plateRef.current?.duplicateN(1)} />
                   : <p className="muted empty-note" style={{ padding: 16 }}>{t('v2.slicer.select_obj', 'Select an object to edit it.')}</p>}
-                {obj && toolState.selIndex >= 0 && (() => {
+                {obj && toolState.selIndex >= 0 && !toolState.partTypes[toolState.selIndex] && (() => {
                   const ov = objOverrides[toolState.selIndex] ?? {};
                   const setOv = (k: string, v: string | boolean) => setObjOverrides((prev) => ({ ...prev, [toolState.selIndex]: { ...(prev[toolState.selIndex] ?? {}), [k]: v } }));
+                  const numOv: [string, string, number][] = [
+                    ['layer_height', t('v2.slset.layer_h', 'Layer height'), 0.02],
+                    ['infill_density', t('v2.slset.infill', 'Infill %'), 5],
+                    ['wall_loops', t('v2.slset.walls', 'Wall loops'), 1],
+                    ['top_layers', t('v2.slset.top', 'Top layers'), 1],
+                    ['bottom_layers', t('v2.slset.bottom', 'Bottom layers'), 1],
+                    ['outer_wall_speed', t('v2.slset.owspeed', 'Outer wall speed'), 5],
+                    ['nozzle_temp', t('v2.slset.nozzle', 'Nozzle temp'), 5],
+                  ];
                   return (
                     <section className="card slicer-card">
                       <div className="obj-group-label" style={{ marginTop: 0 }}>{t('v2.obj.overrides', 'Per-object print settings')}</div>
                       <p className="muted micro" style={{ margin: '0 0 8px' }}>{t('v2.obj.overrides_hint', 'Override the global settings for this object only.')}</p>
                       <div className="slset-grid">
-                        <label className="field"><span className="field-label">{t('v2.slset.infill', 'Infill')} (%)</span><input className="input" type="number" step={5} value={(ov.infill_density as string) ?? ''} placeholder={String(settings.infill_density ?? '')} onChange={(e) => setOv('infill_density', e.target.value)} /></label>
-                        <label className="field"><span className="field-label">{t('v2.slset.walls', 'Wall loops')}</span><input className="input" type="number" step={1} value={(ov.wall_loops as string) ?? ''} placeholder={String(settings.wall_loops ?? '')} onChange={(e) => setOv('wall_loops', e.target.value)} /></label>
+                        {numOv.map(([k, label, step]) => (
+                          <label className="field" key={k}><span className="field-label">{label}</span><input className="input" type="number" step={step} value={(ov[k] as string) ?? ''} placeholder={String(settings[k] ?? '')} onChange={(e) => setOv(k, e.target.value)} /></label>
+                        ))}
+                        <label className="field"><span className="field-label">{t('v2.slset.pattern', 'Infill pattern')}</span>
+                          <select className="input" value={(ov.infill_pattern as string) ?? ''} onChange={(e) => setOv('infill_pattern', e.target.value)}>
+                            <option value="">{t('v2.slset.inherit', '(inherit)')}</option>
+                            {['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'line', 'concentric'].map((p) => <option key={p} value={p}>{p}</option>)}
+                          </select></label>
                         <label className="chk" style={{ alignSelf: 'end' }}><input type="checkbox" checked={!!ov.supports} onChange={(e) => setOv('supports', e.target.checked)} /> {t('v2.slset.supports', 'Supports')}</label>
                         <label className="chk" style={{ alignSelf: 'end' }}><input type="checkbox" checked={!!ov.spiral_mode} onChange={(e) => setOv('spiral_mode', e.target.checked)} /> {t('v2.slset.vase', 'Vase')}</label>
                       </div>
