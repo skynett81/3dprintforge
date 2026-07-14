@@ -10,6 +10,9 @@
 const CAPABILITIES = {
   bambu: {
     label: 'Bambu Lab',
+    // Fallback build volume for a Bambu model with no specific override (most
+    // are 256³; the A1 mini and others carry their own override).
+    buildVolume: [256, 256, 256],
     connection: 'mqtt',
     fileAccess: 'ftps',
     ftps: { port: 990, user: 'bblp', secure: 'implicit' },
@@ -39,6 +42,10 @@ const CAPABILITIES = {
 
   moonraker: {
     label: 'Moonraker/Klipper',
+    // Fallback only — a connected Klipper printer reports its REAL build volume
+    // live (bed_mesh / axis_maximum), which overrides this. 220×220×250 is the
+    // most common bed (Ender-class) for the rare offline/unknown case.
+    buildVolume: [220, 220, 250],
     connection: 'websocket',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/server/files/gcodes/', metadataEndpoint: '/server/files/metadata' },
@@ -67,6 +74,7 @@ const CAPABILITIES = {
 
   prusalink: {
     label: 'PrusaLink',
+    buildVolume: [250, 210, 220],   // Prusa MK3/MK4-class default (models override)
     connection: 'http-poll',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/api/v1/files/local', metadataEndpoint: '/api/v1/files' },
@@ -83,6 +91,7 @@ const CAPABILITIES = {
 
   sacp: {
     label: 'Snapmaker SACP',
+    buildVolume: [320, 350, 330],   // Snapmaker 2.0 A350 default (A250/J1/Artisan override)
     connection: 'sacp-tcp',
     fileAccess: 'sacp-upload',
     camera: { modes: [] },
@@ -115,6 +124,7 @@ const CAPABILITIES = {
 
   ankermake: {
     label: 'AnkerMake (via ankerctl)',
+    buildVolume: [235, 235, 250],   // AnkerMake M5-class default
     connection: 'http-ws-proxy',
     fileAccess: 'http-api',
     camera: { modes: ['ws-video'], videoEndpoint: '/ws/video', snapshotEndpoint: '/video' },
@@ -130,6 +140,7 @@ const CAPABILITIES = {
 
   octoprint: {
     label: 'OctoPrint',
+    buildVolume: [220, 220, 250],   // generic default; live profile overrides
     connection: 'websocket-sockjs',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/api/files/local', metadataEndpoint: '/api/files' },
