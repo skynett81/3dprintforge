@@ -1152,6 +1152,14 @@ export function SlicerPanel() {
                 <div className="oslice-ctxmenu-sep" />
               </>
             )}
+            {!toolState.partTypes[ctxMenu.i] && (
+              <>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.layFlat(); setCtxMenu(null); }}>{t('v2.plate.flat', 'Lay flat')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.center(); setCtxMenu(null); }}>{t('v2.obj.center', 'Center on plate')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.resetXform(); setCtxMenu(null); }}>{t('v2.obj.reset_xform', 'Reset transform')}</button>
+                <div className="oslice-ctxmenu-sep" />
+              </>
+            )}
             <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.rename(n); } setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
             <button className="oslice-ctxmenu-del" onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.remove(); setCtxMenu(null); }}>{t('v2.obj.delete', 'Delete')}</button>
           </div>
