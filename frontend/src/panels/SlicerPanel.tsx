@@ -610,7 +610,6 @@ export function SlicerPanel() {
   // A plate is sliceable when it actually holds objects (multi-plate: an empty
   // plate must not fall back to another plate's file).
   const plateHasModels = toolState.count > 0;
-  const canRun = !busy && plateHasModels && selected.size > 0;
   const tool = (m: PlateState['mode'], icon: ReactNode, label: string, needSel = false) => (
     <button className={`oslice-tool${toolState.mode === m ? ' oslice-tool--on' : ''}`} title={label} disabled={needSel && !toolState.hasSel} onClick={() => plateRef.current?.setMode(m)}>{icon}</button>
   );
@@ -638,7 +637,7 @@ export function SlicerPanel() {
         <div className="oslice-topright">
           <button className="oslice-sliceplate" disabled={!plateHasModels || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
           {plates.length > 1 && <button className="oslice-sliceplate oslice-sliceall" disabled={slicing} onClick={sliceAllPlates} title={t('v2.slicer.slice_all_hint', 'Slice every plate and sum the estimates')}>{t('v2.slicer.slice_all', 'Slice all')}</button>}
-          <button className="oslice-printplate" disabled={!canRun} title={t('v2.slicer.printplate_hint', 'Slice and send to the selected printer(s)')} onClick={() => run(false)}>{t('v2.slicer.print_plate', 'Print plate')}</button>
+          <button className="oslice-printplate" disabled={!plateHasModels || busy} title={t('v2.slicer.printplate_hint', 'Slice and send to the selected printer(s) — tick a printer under SEND TO')} onClick={() => { if (selected.size === 0) { setSide('global'); toast(t('v2.slicer.pick_printer_send', 'Tick a printer under SEND TO (bottom of the left panel) first'), 'error'); return; } run(false); }}>{t('v2.slicer.print_plate', 'Print plate')}</button>
           {plates.length > 1 && <button className="oslice-printplate" disabled={busy || selected.size === 0} title={t('v2.slicer.printall_hint', 'Slice and send every plate to the selected printer(s)')} onClick={() => printAllPlates(false)}>{t('v2.slicer.print_all', 'Print all')}</button>}
           <button className="oslice-fullbtn" title={full ? t('v2.slicer.exit_full', 'Exit fullscreen') : t('v2.slicer.fullscreen', 'Fullscreen')} onClick={() => setFull((f) => !f)}>{full ? <IconCollapse /> : <IconExpand />}</button>
         </div>
