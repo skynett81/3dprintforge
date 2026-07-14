@@ -308,12 +308,14 @@ const MAT = () => new THREE.MeshStandardMaterial({ color: 0x00b3a4, roughness: 0
  * duplicate / auto-arrange objects, then export the arranged scene as one STL
  * to slice. Bed is Z-up, millimetres, centred at the origin.
  */
-export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[] }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors }, ref) {
+export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: number; onObject?: (info: ObjInfo | null) => void; onState?: (s: PlateState) => void; onContextMenu?: (x: number, y: number, index: number) => void; slotColors?: string[]; showOrder?: boolean }>(function PlateViewer({ file, bed = 256, onObject, onState, onContextMenu, slotColors, showOrder }, ref) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
   const slotColorsRef = useRef<string[] | undefined>(slotColors);
   slotColorsRef.current = slotColors;
+  const showOrderRef = useRef<boolean | undefined>(showOrder);
+  showOrderRef.current = showOrder;
   const onObjRef = useRef(onObject);
   onObjRef.current = onObject;
   const onCtxRef = useRef(onContextMenu);
@@ -591,7 +593,33 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     renderer.domElement.addEventListener('pointerup', onPointerUp);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
 
-    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
+    // Sequential-print order badges: numbered chips over each object at its
+    // projected top-centre, shown only when by-object printing is active.
+    el.style.position = el.style.position || 'relative';
+    const orderLayer = document.createElement('div');
+    orderLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;';
+    el.appendChild(orderLayer);
+    const _ov = new THREE.Vector3();
+    const syncOrder = () => {
+      if (!showOrderRef.current) { if (orderLayer.childElementCount) orderLayer.replaceChildren(); return; }
+      const positives = c.objects.filter((o) => !o.userData.partType);
+      while (orderLayer.childElementCount < positives.length) { const d = document.createElement('div'); d.className = 'plate-order-badge'; orderLayer.appendChild(d); }
+      while (orderLayer.childElementCount > positives.length) orderLayer.lastChild?.remove();
+      const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
+      positives.forEach((m, i) => {
+        m.updateMatrixWorld();
+        const box = new THREE.Box3().setFromObject(m); box.getCenter(_ov); _ov.z = box.max.z;
+        _ov.project(camera);
+        const badge = orderLayer.children[i] as HTMLDivElement;
+        badge.textContent = String(i + 1);
+        if (_ov.z > 1 || _ov.z < -1) { badge.style.display = 'none'; return; }
+        badge.style.display = 'flex';
+        badge.style.left = `${(_ov.x * 0.5 + 0.5) * w}px`;
+        badge.style.top = `${(-_ov.y * 0.5 + 0.5) * h}px`;
+      });
+    };
+    let orderTick = 0;
+    const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); if ((orderTick++ & 3) === 0) syncOrder(); };
     loop();
     const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
     window.addEventListener('resize', onResize);
@@ -602,6 +630,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       cancelAnimationFrame(c.raf);
       window.removeEventListener('resize', onResize);
       ro.disconnect();
+      orderLayer.remove();
       renderer.domElement.removeEventListener('contextmenu', onContext);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);

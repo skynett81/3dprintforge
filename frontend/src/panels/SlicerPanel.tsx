@@ -1106,7 +1106,7 @@ export function SlicerPanel() {
           {/* The build plate is always visible, like Bambu Studio. */}
           {tab === 'prepare' && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} />
+              <PlateViewer ref={plateRef} file={file} bed={bed} onObject={setObj} onState={setToolState} onContextMenu={(x, y, i) => setCtxMenu({ x, y, i })} slotColors={slotColors} showOrder={settings.print_sequence === 'by_object' && toolState.count > 1} />
             </Suspense>
           )}
           {tab === 'preview' && preview && (
