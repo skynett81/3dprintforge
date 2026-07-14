@@ -326,12 +326,16 @@ export function SlicerPanel() {
   // while typing in a field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       const k = e.key.toLowerCase();
-      if (k === 'z' && !e.shiftKey) { e.preventDefault(); plateRef.current?.undo(); }
-      else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); plateRef.current?.redo(); }
+      if (e.ctrlKey || e.metaKey) {
+        if (k === 'z' && !e.shiftKey) { e.preventDefault(); plateRef.current?.undo(); }
+        else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); plateRef.current?.redo(); }
+        else if (k === 'd') { e.preventDefault(); plateRef.current?.duplicate(); }
+        return;
+      }
+      if (e.key === 'Delete') { e.preventDefault(); plateRef.current?.remove(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
