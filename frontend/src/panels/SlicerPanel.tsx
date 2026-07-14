@@ -1109,6 +1109,7 @@ export function SlicerPanel() {
                 <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
                 <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('modifier', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.modifier', 'Modifier')}</button>
                 <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
+                <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.fillBed(); setCtxMenu(null); }}>{t('v2.obj.fill_bed', 'Fill bed with copies')}</button>
                 <div className="oslice-ctxmenu-sep" />
               </>
             )}

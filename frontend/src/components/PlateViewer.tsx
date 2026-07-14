@@ -50,6 +50,7 @@ export interface PlateHandle {
   scaleToFit: () => void;
   rotate90: (axis: 'x' | 'y' | 'z') => void;
   duplicateN: (n: number) => void;
+  fillBed: () => void;
   autoOrient: () => void;
   splitToParts: () => void;
   setPlaceOnFace: (on: boolean) => void;
@@ -1133,6 +1134,30 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     },
     rotate90: (axis: 'x' | 'y' | 'z') => { const m = ctx.current?.selected; if (!m) return; m.rotation[axis] += Math.PI / 2; dropToPlate(m); emitObject(); },
     duplicateN: (n: number) => { for (let i = 0; i < n; i++) duplicate(); },
+    fillBed: () => {
+      const c = ctx.current; const src = c?.selected; if (!c || !src) return;
+      src.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(src);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const gap = 4;
+      const cellX = Math.max(size.x, 1) + gap, cellY = Math.max(size.y, 1) + gap;
+      const cols = Math.max(1, Math.floor(bed / cellX));
+      const rows = Math.max(1, Math.floor(bed / cellY));
+      const target = Math.min(cols * rows, 100);   // safety cap
+      const positives = () => c.objects.filter((o) => !o.userData.partType);
+      for (let i = positives().length; i < target; i++) duplicate();
+      // Pack every top-level object into the size-aware grid, centred on the bed.
+      const items = positives();
+      const usedCols = Math.min(cols, items.length);
+      const usedRows = Math.ceil(items.length / cols);
+      items.forEach((m, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        m.position.x = (col - (usedCols - 1) / 2) * cellX;
+        m.position.y = (row - (usedRows - 1) / 2) * cellY;
+        dropToPlate(m);
+      });
+      select(items[0] ?? null); setCount(c.objects.length); emitObject(); emitState(); pushHistory();
+    },
     exportSTL: (name: string) => {
       const c = ctx.current; if (!c || !c.objects.length) return null;
       const positives = c.objects.filter((m) => !m.userData.partType && m.visible !== false);
