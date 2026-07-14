@@ -930,7 +930,14 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       const outerPts = fuzzOn ? fuzz(outerBoundary) : outerBoundary;
       const mainWalls = [{ feature: 'outer-wall', closed: true, pts: seamStart(outerPts, seam, seamCtx) }];
       const fuzzInner = fuzzOn && s.fuzzySkinMode === 'all';
-      for (let p = 1; p < wallLoops; p++) {
+      // only_one_wall_top: a top-surface region (nothing directly above) prints a
+      // single perimeter for a cleaner top; the freed space becomes solid infill.
+      let effLoops = wallLoops;
+      if (s.onlyOneWallTop && surfaces) {
+        let cxp = 0, cyp = 0; for (const p of outerBoundary) { cxp += p[0]; cyp += p[1]; }
+        if (surfaces.isTopPoint(i, cxp / outerBoundary.length, cyp / outerBoundary.length)) effLoops = 1;
+      }
+      for (let p = 1; p < effLoops; p++) {
         inner = offsetPolygon(inner, -lw);
         if (!inner || inner.length < 3) break;
         mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam, seamCtx) });

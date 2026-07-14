@@ -594,3 +594,19 @@ describe('native-slicer: bridge/support acceleration', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: only one wall top', () => {
+  const wallMoves = (g, feat) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes(`FEATURE:${feat}`); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  it('reduces inner-wall moves on the top surface', async () => {
+    const opts = { layerHeight: 0.2, wall_loops: 3, supports: false };
+    const normal = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3 });
+    const oneTop = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3, onlyOneWallTop: true });
+    assert.ok(wallMoves(oneTop.gcode, 'inner-wall') < wallMoves(normal.gcode, 'inner-wall'), `top-only should cut inner walls (normal=${wallMoves(normal.gcode, 'inner-wall')} oneTop=${wallMoves(oneTop.gcode, 'inner-wall')})`);
+    assert.ok(!oneTop.gcode.includes('NaN'));
+  });
+  it('only_one_wall_top off is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 3, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 3, onlyOneWallTop: false, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

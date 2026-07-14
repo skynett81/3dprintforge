@@ -60,6 +60,7 @@ const FIELDS: Field[] = [
   { tab: 'Strength', group: 'Infill', k: 'min_sparse_infill_area', label: 'Min sparse infill area', type: 'num', unit: 'mm²', step: 10 },
   { tab: 'Strength', group: 'Walls', k: 'wall_infill_order', label: 'Wall order', type: 'sel', opts: [['outer-inner', 'Outer / inner'], ['inner-outer', 'Inner / outer']] },
   { tab: 'Strength', group: 'Top/bottom shells', k: 'top_surface_pattern', label: 'Top surface pattern', type: 'sel', opts: [['rectilinear', 'Rectilinear'], ['concentric', 'Concentric']] },
+  { tab: 'Strength', group: 'Top/bottom shells', k: 'only_one_wall_top', label: 'Only one wall on top surfaces', type: 'bool' },
   { tab: 'Quality', group: 'Line width', k: 'line_width', label: 'Default', type: 'num', unit: 'mm', step: 0.02 },
   { tab: 'Quality', group: 'Line width', k: 'outer_wall_line_width', label: 'Outer wall', type: 'num', unit: 'mm', step: 0.02 },
   { tab: 'Quality', group: 'Line width', k: 'inner_wall_line_width', label: 'Inner wall', type: 'num', unit: 'mm', step: 0.02 },
