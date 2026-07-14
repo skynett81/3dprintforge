@@ -6115,7 +6115,10 @@ export async function handleApiRequest(req, res) {
       const list = [];
       for (const [id, entry] of (_printerManager?.printers ?? new Map())) {
         const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
-        const bv = Array.isArray(caps?.buildVolume) ? caps.buildVolume : null;
+        // Prefer the build volume the printer reports from its own config
+        // (Moonraker) over the hardcoded capability table — actual size per printer.
+        const liveBv = Array.isArray(entry.client?.state?._buildVolume) ? entry.client.state._buildVolume : null;
+        const bv = liveBv || (Array.isArray(caps?.buildVolume) ? caps.buildVolume : null);
         const feat = caps?.features || {};
         // Live AMS slots (Bambu) → the slicer can load the real loaded colours.
         const st = entry.client?.state || {};

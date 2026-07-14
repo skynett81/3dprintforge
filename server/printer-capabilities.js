@@ -188,7 +188,9 @@ const MODEL_OVERRIDES = {
   },
   'Snapmaker U1': {
     features: { multiExtruder: true, toolheads: 4, purifier: true },
-    buildVolume: [220, 220, 220],
+    // Real printable bed ~270×270 (bed_mesh 267), Z 275 — the Y axis travels to
+    // ~335 for the tool docks but that isn't printable. Live config overrides.
+    buildVolume: [270, 270, 275],
     camera: { modes: ['http-snapshot', 'ssh-sftp'], sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'] },
   },
   'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
