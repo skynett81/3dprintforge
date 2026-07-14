@@ -225,6 +225,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.overhang_threshold != null && s.overhang_threshold !== '') { const v = Number(s.overhang_threshold); out.overhangThreshold = v > 1 ? v / 100 : v; }
   if (s.detect_bridges !== undefined && s.detect_bridges !== '') out.bridgeDetect = !!s.detect_bridges;
   if (s.precise_wall !== undefined && s.precise_wall !== '') out.preciseWall = !!s.precise_wall;
+  set('travelSpeedZ', num(s.travel_speed_z));
+  set('retractRestartExtra', num(s.retract_restart_extra));
   set('gapAccel', num(s.gap_infill_acceleration));
   set('wipeTowerX', num(s.wipe_tower_x));
   set('wipeTowerY', num(s.wipe_tower_y));

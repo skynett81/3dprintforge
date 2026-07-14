@@ -678,3 +678,22 @@ describe('native-slicer: precise wall', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: travel_speed_z + retract_restart_extra', () => {
+  it('travel_speed_z sets the Z-hop feedrate', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, zHop: 0.4, travelSpeedZ: 12, supports: false });
+    assert.match(r.gcode, /G1 Z[\d.]+ F720\b/, 'z-hop at 12 mm/s = F720');
+  });
+  it('retract_restart_extra primes extra filament on unretract', async () => {
+    const none = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, supports: false });
+    const extra = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, retractRestartExtra: 0.1, supports: false });
+    // Final E accumulates the extra primes → higher total.
+    const lastE = (g) => { const m = [...g.matchAll(/E(-?\d+\.\d+)/g)]; return m.length ? +m[m.length - 1][1] : 0; };
+    assert.ok(lastE(extra.gcode) > lastE(none.gcode), 'restart extra raises cumulative E');
+  });
+  it('both unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, zHop: 0.4, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, zHop: 0.4, travelSpeedZ: 0, retractRestartExtra: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

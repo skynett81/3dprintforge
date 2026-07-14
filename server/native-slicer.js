@@ -355,6 +355,8 @@ export function layersToGcode(layers, settings) {
   const retractFeed = (s.retractionSpeed ?? s.travelSpeed) * 60;
   const deretractFeed = (s.deretractionSpeed ?? s.retractionSpeed ?? s.travelSpeed) * 60;
   const wipeFeed = (s.wipeSpeed ?? s.travelSpeed) * 60;
+  const zTravelFeed = (s.travelSpeedZ > 0 ? s.travelSpeedZ : s.travelSpeed) * 60;   // Z-axis move speed
+  const restartExtra = s.retractRestartExtra || 0;              // prime on unretract
   let lastPath = null;   // points of the path just printed, for wipe-on-retract
   // Close a loop back to its start, optionally leaving a small seam gap so the
   // seam is a clean butt-joint instead of an over-extruded overlap.
@@ -404,10 +406,10 @@ export function layersToGcode(layers, settings) {
     } else {
       e -= s.retraction; g += `G1 E${e.toFixed(4)} F${retractFeed.toFixed(0)}\n`;
     }
-    if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${s.travelSpeed * 60}\n`;
+    if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${zTravelFeed}\n`;
     g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
-    if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${s.travelSpeed * 60}\n`;
-    e += s.retraction; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
+    if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${zTravelFeed}\n`;
+    e += s.retraction + restartExtra; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
     let sdist = 0;
     for (let i = 1; i < pts.length; i++) {
