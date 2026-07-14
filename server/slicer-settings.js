@@ -111,6 +111,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('primeLineLength', num(s.prime_line_length));
   if (s.flush_into_infill !== undefined && s.flush_into_infill !== '') out.flushIntoInfill = !!s.flush_into_infill;
   set('flushVolume', num(s.flush_volume));
+  if (s.wipe_tower !== undefined && s.wipe_tower !== '') out.wipeTower = !!s.wipe_tower;
+  set('wipeTowerWidth', num(s.wipe_tower_width));
+  set('wipeTowerDepth', num(s.wipe_tower_depth));
   // Per-pair purge matrix (BambuStudio purging volumes): flush_matrix[from][to] mm3.
   if (Array.isArray(s.flush_matrix) && s.flush_matrix.length) out.flushMatrix = s.flush_matrix.map((row) => Array.isArray(row) ? row.map(Number) : []);
 

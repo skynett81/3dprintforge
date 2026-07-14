@@ -329,3 +329,18 @@ describe('native-slicer: manual colour changes', () => {
     assert.ok(!r.gcode.includes('M600'));
   });
 });
+
+import { sliceMultiMaterialGcode } from '../../server/native-slicer-multi.js';
+describe('native-slicer: wipe/prime tower', () => {
+  const twoColour = () => [{ ...box(20, 20, 6), extruder: 1 }, { ...box(20, 20, 6), extruder: 2 }];
+  it('prints a per-extruder wipe tower when enabled', async () => {
+    const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: true, wipeTowerWidth: 24, wipeTowerDepth: 24 });
+    assert.ok(r.gcode.includes('; FEATURE:wipe_tower'), 'tower feature present');
+    assert.ok((r.gcode.match(/; WIPE_TOWER/g) || []).length >= 2, 'at least one tower band per extruder');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('prints no tower when disabled', async () => {
+    const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: false });
+    assert.ok(!r.gcode.includes('WIPE_TOWER'));
+  });
+});
