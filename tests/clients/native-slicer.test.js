@@ -478,3 +478,26 @@ describe('native-slicer: top surface speed', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: initial layer infill speed + object labels', () => {
+  it('initial_layer_infill_speed sets a distinct first-layer infill feedrate', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, initialLayerInfillSpeed: 10, supports: false });
+    assert.match(r.gcode, /F600(\.0+)?\b/, 'first-layer infill at 10 mm/s = F600');
+  });
+  it('no initial_layer_infill_speed is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, initialLayerInfillSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+  it('gcode_label_objects wraps each object with EXCLUDE_OBJECT markers', async () => {
+    const objs = [{ mesh: box(10, 10, 4), settings: {} }, { mesh: box(10, 10, 4), settings: {} }];
+    const r = await sliceObjectsGcode(objs, { layerHeight: 0.3, gcodeLabelObjects: true, supports: false });
+    assert.ok(r.gcode.includes('EXCLUDE_OBJECT_START NAME=object_1'), 'labels object 1');
+    assert.ok(r.gcode.includes('EXCLUDE_OBJECT_START NAME=object_2'), 'labels object 2');
+    assert.equal((r.gcode.match(/EXCLUDE_OBJECT_END/g) || []).length, (r.gcode.match(/EXCLUDE_OBJECT_START/g) || []).length, 'balanced start/end');
+  });
+  it('gcode_label_objects off emits no markers', async () => {
+    const r = await sliceObjectsGcode([{ mesh: box(10, 10, 4), settings: {} }, { mesh: box(10, 10, 4), settings: {} }], { layerHeight: 0.3, supports: false });
+    assert.ok(!r.gcode.includes('EXCLUDE_OBJECT'));
+  });
+});

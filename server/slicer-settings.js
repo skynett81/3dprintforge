@@ -207,6 +207,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('raftMargin', num(s.raft_expansion));
   set('supportLineWidth', num(s.support_line_width));
   set('supportGridRes', num(s.support_grid_resolution));
+  set('initialLayerInfillSpeed', num(s.initial_layer_infill_speed));
+  if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));
   if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
   if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {

@@ -236,7 +236,10 @@ export function layersToGcode(layers, settings) {
     brim: s.outerWallSpeed ?? P,
     wall: P,
   };
-  const featSpeed = (feature, layerIdx) => (layerIdx === 0 ? s.firstLayerSpeed : (SP[feature] ?? P));
+  const featSpeed = (feature, layerIdx) => {
+    if (layerIdx === 0) return (s.initialLayerInfillSpeed && (feature === 'solid' || feature === 'sparse' || feature === 'gap')) ? s.initialLayerInfillSpeed : s.firstLayerSpeed;
+    return SP[feature] ?? P;
+  };
   // Part-cooling fan % for a layer, honoring an optional min→max ramp over the
   // first `fullFanSpeedLayer` layers (BambuStudio fan curve). No curve → flat.
   const fanPctAt = (li) => {
@@ -314,6 +317,7 @@ export function layersToGcode(layers, settings) {
   let curX = 0, curY = 0, curZ = 0;
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
   let curAccelG = -1; // last-emitted M204 P value, for per-feature acceleration
+  let curObj = null;  // current object label (gcode_label_objects / exclude-object)
   let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
   let combCache = null;      // that layer's lazily-built waypoints + visibility graph
   const combing = s.avoidCrossingWalls !== false;
@@ -520,6 +524,12 @@ export function layersToGcode(layers, settings) {
     let curFeature = null;
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
+      // Object labels (exclude-object): wrap each object's moves.
+      if (s.gcodeLabelObjects && path.obj !== curObj) {
+        if (curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;
+        curObj = path.obj;
+        if (curObj != null) g += `; printing object ${curObj}\nEXCLUDE_OBJECT_START NAME=${curObj}\n`;
+      }
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
       // Per-feature acceleration switch (only when any per-feature accel is set).
       if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel)) {
@@ -551,6 +561,7 @@ export function layersToGcode(layers, settings) {
       emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf);
     }
   });
+  if (s.gcodeLabelObjects && curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;
 
   g += `; --- finished ---\n`;
   e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
@@ -1177,10 +1188,18 @@ export async function sliceObjectsGcode(objects, globalSettings = {}) {
     perObj.push(layers);
   }
 
+  // Object labels (BambuStudio gcode_label_objects) for printer exclude-object:
+  // tag each object's paths so the emitter can wrap them per object.
+  const label = !!globalSettings.gcodeLabelObjects;
   const combined = [];
   for (let i = 0; i < numLayers; i++) {
     const paths = [];
-    for (const layers of perObj) if (layers[i] && layers[i].paths) paths.push(...layers[i].paths);
+    perObj.forEach((layers, oi) => {
+      if (layers[i] && layers[i].paths) {
+        const nm = objects[oi].name || `object_${oi + 1}`;
+        for (const p of layers[i].paths) paths.push(label ? { ...p, obj: nm } : p);
+      }
+    });
     combined.push({ paths });
   }
   return { gcode: layersToGcode(combined, { ...globalSettings, layerHeight: lh }), layers: numLayers, objects: objects.length };
