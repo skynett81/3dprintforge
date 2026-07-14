@@ -129,6 +129,8 @@ const FIELDS: Field[] = [
   { tab: 'Support', group: 'Support', k: 'supports', label: 'Enable supports', type: 'bool' },
   { tab: 'Support', group: 'Support', k: 'support_type', label: 'Type', type: 'sel', opts: SUPPORT_TYPES, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_style', label: 'Style', type: 'sel', opts: [['grid', 'Grid'], ['snug', 'Snug'], ['tree_organic', 'Organic (tree)']], dep: 'supports' },
+  { tab: 'Support', group: 'Tree', k: 'tree_support_branch_distance', label: 'Branch distance', type: 'num', unit: 'mm', step: 1, dep: 'supports' },
+  { tab: 'Support', group: 'Tree', k: 'tree_support_branch_angle', label: 'Branch angle', type: 'num', unit: '°', step: 5, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle (from vertical)', type: 'num', unit: '°', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_on_plate', label: 'On build plate only', type: 'bool', dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_remove_small_overhangs', label: 'Remove small overhangs', type: 'bool', dep: 'supports' },

@@ -697,3 +697,17 @@ describe('native-slicer: travel_speed_z + retract_restart_extra', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+import { generateTreeSupports } from '../../server/native-slicer-tree.js';
+describe('native-slicer: tree support branch params', () => {
+  // A square that appears only at higher layers (floating) → tree support forms
+  // branches below it.
+  const floating = () => { const sq = [[0, 0], [24, 0], [24, 24], [0, 24]]; const lr = []; for (let i = 0; i < 16; i++) lr.push(i >= 10 ? [{ outer: sq, holes: [] }] : []); return lr; };
+  it('branch merge distance changes the tree support geometry', () => {
+    const a = generateTreeSupports(floating(), { gridRes: 3, layerHeight: 0.3, zGapLayers: 1 });
+    const b = generateTreeSupports(floating(), { gridRes: 3, layerHeight: 0.3, zGapLayers: 1, branchMerge: 10 });
+    const count = (segs) => segs.reduce((n, l) => n + l.length, 0);
+    assert.ok(count(a) > 0, 'baseline tree support has segments');
+    assert.notEqual(count(a), count(b), `branchMerge should change segment count (a=${count(a)} b=${count(b)})`);
+  });
+});

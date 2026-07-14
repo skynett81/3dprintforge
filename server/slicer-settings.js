@@ -227,6 +227,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.precise_wall !== undefined && s.precise_wall !== '') out.preciseWall = !!s.precise_wall;
   set('travelSpeedZ', num(s.travel_speed_z));
   set('retractRestartExtra', num(s.retract_restart_extra));
+  set('treeBranchDistance', num(s.tree_support_branch_distance));
+  set('treeBranchAngle', num(s.tree_support_branch_angle));
   set('gapAccel', num(s.gap_infill_acceleration));
   set('wipeTowerX', num(s.wipe_tower_x));
   set('wipeTowerY', num(s.wipe_tower_y));

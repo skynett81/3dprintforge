@@ -795,6 +795,8 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       supportSegs = generateTreeSupports(layerRegions, {
         gridRes: s.supportGridRes ?? 3, layerHeight, zGapLayers: s.supportZGap ?? 1,
         ...(s.supportTopZDist != null ? { zGapLayers: Math.max(0, Math.round(s.supportTopZDist / layerHeight)) } : {}),
+        ...(s.treeBranchDistance > 0 ? { branchMerge: s.treeBranchDistance } : {}),
+        ...(s.treeBranchAngle > 0 ? { branchDrift: Math.tan(Math.min(80, s.treeBranchAngle) * Math.PI / 180) * layerHeight } : {}),
       });
     } else {
       const { generateSupports } = await import('./native-slicer-support.js');
