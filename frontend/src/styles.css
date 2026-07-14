@@ -548,6 +548,9 @@ select.oset-rowinput { text-align: left; }
 
 /* Multi-plate tab strip (bottom-left of the stage) */
 .oslice-plates { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 7; display: flex; align-items: center; gap: 5px; }
+/* On Preview the bottom is the layer scrubber — float the plate tabs at the
+   top-centre instead (legend is top-left, download top-right). */
+.oslice-plates--preview { bottom: auto; top: 12px; }
 .oslice-platetab { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 8px;
   border: 1px solid rgba(255,255,255,0.14); background: rgba(24,26,30,0.82); color: #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
   cursor: pointer; backdrop-filter: blur(4px); }
@@ -578,8 +581,13 @@ select.oset-rowinput { text-align: left; }
 .obj-group-label { font-size: 0.72rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; margin: 12px 0 4px; }
 .obj-group-label:first-of-type { margin-top: 0; }
 
+/* G-code preview — fills the scene as a column (canvas grows, controls pin
+   to the bottom); the download button floats top-right over the scene. */
+.oslice-previewroot { position: relative; flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.gpreview-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 14px 10px; }
+.gpreview-root > div:nth-child(2) { padding: 0 2px; }
 /* G-code preview feature legend */
-.gpreview-wrap { position: relative; flex: 1; display: flex; }
+.gpreview-wrap { position: relative; flex: 1; display: flex; min-height: 0; }
 .gpreview-legend {
   position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px;
   padding: 8px 10px; background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft);
@@ -587,7 +595,8 @@ select.oset-rowinput { text-align: left; }
 }
 .gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; }
 .gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
-.gpreview-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 0.76rem; color: var(--o-muted); }
+.gpreview-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 7px 10px; background: rgba(24,26,30,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; }
+.gpreview-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; padding: 0 4px; font-size: 0.76rem; color: var(--o-muted); }
 .gpreview-stats b { color: var(--o-text); font-weight: 600; }
 
 @media (max-width: 900px) {
@@ -1443,4 +1452,4 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-nozzlerow { display: flex; gap: 8px; margin-top: 6px; }
 .oslice-nozzlerow label { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .oslice-nozzlerow select { width: 100%; }
-.oslice-previewbar { display: flex; justify-content: flex-end; padding: 0 0 8px; }
+.oslice-previewbar { position: absolute; top: 10px; right: 12px; z-index: 6; display: flex; justify-content: flex-end; }

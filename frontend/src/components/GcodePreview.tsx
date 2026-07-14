@@ -192,7 +192,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
   const legend = LEGEND_ORDER.filter((f) => parsed.features.includes(f));
 
   return (
-    <div>
+    <div className="gpreview-root">
       <div className="gpreview-wrap">
         <div ref={mount} className="plate-canvas" />
         {mode === 'feature' && legend.length > 0 && (
@@ -226,7 +226,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+      <div className="gpreview-controls">
         <select className="oset-input" style={{ maxWidth: 110 }} value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>
           <option value="feature">{t('v2.gpreview.by_feature', 'Feature')}</option>
           <option value="speed">{t('v2.gpreview.by_speed', 'Speed')}</option>

@@ -1012,7 +1012,7 @@ export function SlicerPanel() {
           {/* Multi-plate tabs — each plate keeps its own arrangement; when an
               object is selected you can send it to another plate. */}
           {(tab === 'prepare' || tab === 'preview') && (
-            <div className="oslice-plates">
+            <div className={`oslice-plates${tab === 'preview' ? ' oslice-plates--preview' : ''}`}>
               {tab === 'prepare' && toolState.hasSel && plates.length > 1 && (
                 <span className="oslice-moveto">
                   <span className="muted micro">{t('v2.plate.move_to', 'Move to')}</span>
@@ -1075,10 +1075,12 @@ export function SlicerPanel() {
           )}
           {tab === 'preview' && preview && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <div className="oslice-previewbar">
-                <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
+              <div className="oslice-previewroot">
+                <div className="oslice-previewbar">
+                  <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
+                </div>
+                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
               </div>
-              <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
             </Suspense>
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
@@ -1099,8 +1101,9 @@ export function SlicerPanel() {
           )}
 
           {/* Plate overlays (axis gizmo, plate label + number) belong to the
-              3D plate views only — hide them on Device / Filaments / Calibration. */}
-          {(tab === 'prepare' || tab === 'preview') && (<>
+              editing plate only — on Preview they collide with the layer
+              scrubber, and BambuStudio hides that chrome there too. */}
+          {tab === 'prepare' && (<>
             <div className="oslice-axis" aria-hidden>
               <svg viewBox="0 0 40 40" width="48" height="48">
                 <line x1="12" y1="28" x2="30" y2="28" stroke="#e0603a" strokeWidth="2" /><text x="31" y="31" fill="#e0603a" fontSize="8">X</text>
