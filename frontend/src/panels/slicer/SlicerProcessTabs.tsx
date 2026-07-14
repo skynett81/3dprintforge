@@ -136,6 +136,7 @@ const FIELDS: Field[] = [
   { tab: 'Support', group: 'Support', k: 'support_remove_small_overhangs', label: 'Remove small overhangs', type: 'bool', dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_min_overhang_area', label: 'Min overhang area', type: 'num', unit: 'mm²', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Interface', k: 'support_top_z_distance', label: 'Top Z distance', type: 'num', unit: 'mm', step: 0.05, dep: 'supports' },
+  { tab: 'Support', group: 'Interface', k: 'support_bottom_z_distance', label: 'Bottom Z distance', type: 'num', unit: 'mm', step: 0.05, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_base_density', label: 'Base density', type: 'num', unit: '%', step: 5, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_base_pattern', label: 'Base pattern', type: 'sel', opts: [['rectilinear', 'Rectilinear'], ['grid', 'Grid']], dep: 'supports' },
   { tab: 'Support', group: 'Interface', k: 'support_interface_spacing', label: 'Interface line spacing (0 = solid)', type: 'num', unit: 'mm', step: 0.1, dep: 'supports' },

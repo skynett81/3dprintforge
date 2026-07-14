@@ -168,6 +168,25 @@ export function generateSupports(layerRegions, opts = {}) {
     }
   }
 
+  // Bottom Z-gap: clear the lowest `bottomZGapLayers` of a support column that
+  // rests on a model surface below (support-on-model), so it peels off cleanly
+  // (BambuStudio support_bottom_z_distance).
+  const bottomGap = Math.max(0, Math.round(opts.bottomZGapLayers ?? 0));
+  if (bottomGap > 0) {
+    for (let i = 0; i < n; i++) {
+      const s = support[i]; if (!s) continue;
+      const cleared = s.slice();
+      for (let idx = 0; idx < s.length; idx++) {
+        if (!s[idx]) continue;
+        for (let k = 1; k <= bottomGap; k++) {
+          const j = i - k;
+          if (j >= 0 && model[j][idx]) { cleared[idx] = 0; break; }   // model within the gap below
+        }
+      }
+      support[i] = cleared;
+    }
+  }
+
   // Clear cells too close to the model (xy clearance) so supports don't
   // fuse to walls — a cell within one grid step of model is dropped.
   const gapCells = Math.max(0, Math.round(xyGap / gridRes));

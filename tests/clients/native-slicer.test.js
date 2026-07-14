@@ -711,3 +711,26 @@ describe('native-slicer: tree support branch params', () => {
     assert.notEqual(count(a), count(b), `branchMerge should change segment count (a=${count(a)} b=${count(b)})`);
   });
 });
+
+describe('native-slicer: support bottom z distance', () => {
+  // A stepped shape: wide base (layers 0-5), then a narrow tower shifted so its
+  // overhang lands on the base top → support rests on the base (support-on-model).
+  const stepped = () => {
+    const wide = [[0, 0], [30, 0], [30, 30], [0, 30]];
+    const shelf = [[0, 20], [30, 20], [30, 30], [0, 30]];   // roof appearing at a higher layer over air
+    const lr = [];
+    for (let i = 0; i < 16; i++) {
+      if (i < 6) lr.push([{ outer: wide, holes: [] }]);           // solid base
+      else if (i >= 10) lr.push([{ outer: shelf, holes: [] }]);   // floating roof (air below y 0-20)
+      else lr.push([]);                                            // gap
+    }
+    return lr;
+  };
+  it('bottom z distance clears support resting on the model below', () => {
+    const none = generateSupports(stepped(), { lineWidth: 0.4, gridRes: 2, density: 0.3, layerHeight: 0.2, zGapLayers: 1 });
+    const gap = generateSupports(stepped(), { lineWidth: 0.4, gridRes: 2, density: 0.3, layerHeight: 0.2, zGapLayers: 1, bottomZGapLayers: 2 });
+    const count = (segs) => segs.reduce((n, l) => n + l.length, 0);
+    assert.ok(count(none) > 0, 'baseline has support');
+    assert.ok(count(gap) < count(none), `bottom gap should remove some support (none=${count(none)} gap=${count(gap)})`);
+  });
+});

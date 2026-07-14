@@ -229,6 +229,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('retractRestartExtra', num(s.retract_restart_extra));
   set('treeBranchDistance', num(s.tree_support_branch_distance));
   set('treeBranchAngle', num(s.tree_support_branch_angle));
+  set('supportBottomZDist', num(s.support_bottom_z_distance));
   set('gapAccel', num(s.gap_infill_acceleration));
   set('wipeTowerX', num(s.wipe_tower_x));
   set('wipeTowerY', num(s.wipe_tower_y));
