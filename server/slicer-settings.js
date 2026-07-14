@@ -221,6 +221,10 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.only_one_wall_top !== undefined && s.only_one_wall_top !== '') out.onlyOneWallTop = !!s.only_one_wall_top;
   set('bottomSurfaceSpeed', num(s.bottom_surface_speed));
   set('supportInterfaceSpeed', num(s.support_interface_speed));
+  set('firstLayerWallLoops', num(s.first_layer_wall_loops));
+  set('gapAccel', num(s.gap_infill_acceleration));
+  set('wipeTowerX', num(s.wipe_tower_x));
+  set('wipeTowerY', num(s.wipe_tower_y));
   if (s.ironing_pattern) out.ironingPattern = String(s.ironing_pattern);
   if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));

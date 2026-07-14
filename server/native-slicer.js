@@ -549,7 +549,7 @@ export function layersToGcode(layers, settings) {
       }
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
       // Per-feature acceleration switch (only when any per-feature accel is set).
-      if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel || s.bridgeAccel || s.supportAccel)) {
+      if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel || s.bridgeAccel || s.supportAccel || s.gapAccel)) {
         const fa = Math.round(featAccel(path.feature, layerIdx));
         if (fa > 0 && fa !== curAccelG) { g += `M204 P${fa}\n`; curAccelG = fa; }
       }
@@ -940,6 +940,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       // only_one_wall_top: a top-surface region (nothing directly above) prints a
       // single perimeter for a cleaner top; the freed space becomes solid infill.
       let effLoops = wallLoops;
+      if (i === 0 && s.firstLayerWallLoops > 0) effLoops = s.firstLayerWallLoops;
       if (s.onlyOneWallTop && surfaces) {
         let cxp = 0, cyp = 0; for (const p of outerBoundary) { cxp += p[0]; cyp += p[1]; }
         if (surfaces.isTopPoint(i, cxp / outerBoundary.length, cyp / outerBoundary.length)) effLoops = 1;

@@ -638,3 +638,23 @@ describe('native-slicer: support interface tagging', () => {
     assert.ok(hasBase, 'some base-tagged support lines exist');
   });
 });
+
+describe('native-slicer: first-layer wall loops', () => {
+  // Count inner-wall extrude moves within the first layer only.
+  const firstLayerInnerMoves = (g) => {
+    const l1 = g.split('; --- layer 2/')[0];
+    let inF = false, n = 0;
+    for (const ln of l1.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:inner-wall'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    return n;
+  };
+  it('first_layer_wall_loops changes the first-layer perimeter count', async () => {
+    const base = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, supports: false });
+    const more = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, firstLayerWallLoops: 4, supports: false });
+    assert.ok(firstLayerInnerMoves(more.gcode) > firstLayerInnerMoves(base.gcode), `more first-layer walls (base=${firstLayerInnerMoves(base.gcode)} more=${firstLayerInnerMoves(more.gcode)})`);
+  });
+  it('first_layer_wall_loops unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, firstLayerWallLoops: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
