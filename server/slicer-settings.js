@@ -232,6 +232,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('supportBottomZDist', num(s.support_bottom_z_distance));
   set('gapFillMinLength', num(s.filter_out_small_gaps));
   set('chamberTemp', num(s.chamber_temperature));
+  set('machineMaxAccel', num(s.machine_max_acceleration));
+  set('machineMaxSpeed', num(s.machine_max_speed));
+  set('machineMaxJerk', num(s.machine_max_jerk));
   if (s.filament_start_gcode) out.filamentStartGcode = String(s.filament_start_gcode);
   if (s.filament_end_gcode) out.filamentEndGcode = String(s.filament_end_gcode);
   set('gapAccel', num(s.gap_infill_acceleration));

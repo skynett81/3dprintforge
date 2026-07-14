@@ -768,3 +768,17 @@ describe('native-slicer: filament settings (chamber temp + filament gcode)', () 
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: machine limits', () => {
+  it('emits M201/M203/M205 caps when set', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, machineMaxAccel: 6000, machineMaxSpeed: 300, machineMaxJerk: 12, supports: false });
+    assert.match(r.gcode, /M201 X6000 Y6000/);
+    assert.match(r.gcode, /M203 X300 Y300/);
+    assert.match(r.gcode, /M205 X12 Y12/);
+  });
+  it('no machine limits byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, machineMaxAccel: 0, machineMaxSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

@@ -315,6 +315,12 @@ export function layersToGcode(layers, settings) {
   g += `; Material: ${s.material}, nozzle ${s.nozzleTemp}C, bed ${s.bedTemp}C\n`;
   g += `; estimated_time: 0\n`;
   g += (s.startGcode ? _interp(s.startGcode, s) + '\n' : _defaultStart(s));
+  // Machine limits (BambuStudio printer settings): cap the firmware's max
+  // acceleration / feedrate / jerk so aggressive profiles stay within the
+  // hardware's safe envelope. Emitted once after the start G-code.
+  if (s.machineMaxAccel > 0) g += `M201 X${s.machineMaxAccel} Y${s.machineMaxAccel}\n`;
+  if (s.machineMaxSpeed > 0) g += `M203 X${s.machineMaxSpeed} Y${s.machineMaxSpeed}\n`;
+  if (s.machineMaxJerk > 0) g += `M205 X${s.machineMaxJerk} Y${s.machineMaxJerk}\n`;
   // Filament-specific start G-code runs right after the machine start G-code.
   if (s.filamentStartGcode) g += _interp(s.filamentStartGcode, s) + '\n';
 
