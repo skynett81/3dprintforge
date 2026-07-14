@@ -93,6 +93,8 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
   const [showTravel, setShowTravel] = useState(false);
   const [mode, setMode] = useState<ColorMode>('feature');
   const [playing, setPlaying] = useState(false);
+  const [hiddenFeats, setHiddenFeats] = useState<Set<Feature>>(new Set());
+  const toggleFeat = (f: Feature) => setHiddenFeats((prev) => { const n = new Set(prev); if (n.has(f)) n.delete(f); else n.add(f); return n; });
 
   useEffect(() => { setLayer(total); setLow(1); }, [total]);
 
@@ -212,6 +214,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       for (let i = loIdx; i < shown; i++) {
         const l = parsed.layers[i];
         for (const key of Object.keys(l.feats) as Feature[]) {
+          if (hiddenFeats.has(key)) continue;   // feature toggled off in the legend
           const src = l.feats[key]!;
           const dst = byFeature.get(key) ?? (byFeature.set(key, []), byFeature.get(key)!);
           for (let k = 0; k < src.length; k += 4) dst.push(src[k] - cx, src[k + 1] - cy, l.z, src[k + 2] - cx, src[k + 3] - cy, l.z);
@@ -230,7 +233,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
       c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
     }
-  }, [parsed, layer, low, showTravel, total, mode, slotColors]);
+  }, [parsed, layer, low, showTravel, total, mode, slotColors, hiddenFeats]);
 
   const shown = Math.min(layer, total);
   const curLayer = parsed.layers[shown - 1];
@@ -245,10 +248,11 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
         {mode === 'feature' && legend.length > 0 && (
           <div className="gpreview-legend">
             {legend.map((f) => (
-              <span key={f} className="gpreview-legend-item">
+              <button key={f} type="button" className={`gpreview-legend-item gpreview-legend-btn${hiddenFeats.has(f) ? ' gpreview-legend-btn--off' : ''}`}
+                title={t('v2.gpreview.toggle_feat', 'Click to show / hide this feature')} onClick={() => toggleFeat(f)}>
                 <i style={{ background: `#${(FEATURE_COLOR[f] ?? 0).toString(16).padStart(6, '0')}` }} />
                 {t(`v2.gpreview.${f}`, FEATURE_LABEL[f] ?? f)}
-              </span>
+              </button>
             ))}
           </div>
         )}
