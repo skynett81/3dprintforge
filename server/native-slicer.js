@@ -1049,9 +1049,21 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           const ironBase = s.ironingDirection != null ? s.ironingDirection : s.infillAngle + 45;
           const ironAngle = ironBase + (i % 2) * 90;
           const ironSpacing = s.ironingSpacing != null ? s.ironingSpacing : lw * (s.ironingSpacingFactor ?? 0.5);
-          const ironSegs = regionInfill(infRegion, 1.0, ironAngle, ironSpacing)
-            .filter((sg) => surfaces.isTopPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
-          for (const sg of ironSegs) fills.push({ feature: 'ironing', closed: false, pts: sg, flow: s.ironingFlow ?? 0.15 });
+          // ironing_inset pulls the ironing pass in from the edge; ironing_pattern
+          // 'concentric' rings instead of straight lines.
+          let ironRegion = infRegion;
+          if (s.ironingInset > 0) { const io = offsetPolygon(infRegion.outer, -s.ironingInset); if (io && io.length >= 3) ironRegion = { outer: io, holes: infRegion.holes }; }
+          const isTop = (a, b) => surfaces.isTopPoint(i, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+          if (s.ironingPattern === 'concentric') {
+            let ring = offsetPolygon(ironRegion.outer, -ironSpacing);
+            while (ring && ring.length >= 3) {
+              if (isTop(ring[0], ring[Math.floor(ring.length / 2)])) fills.push({ feature: 'ironing', closed: true, pts: ring, flow: s.ironingFlow ?? 0.15 });
+              ring = offsetPolygon(ring, -ironSpacing);
+            }
+          } else {
+            const ironSegs = regionInfill(ironRegion, 1.0, ironAngle, ironSpacing).filter((sg) => isTop(sg[0], sg[1]));
+            for (const sg of ironSegs) fills.push({ feature: 'ironing', closed: false, pts: sg, flow: s.ironingFlow ?? 0.15 });
+          }
         }
       }
     }

@@ -514,3 +514,22 @@ describe('native-slicer: per-feature jerk', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: ironing inset + pattern', () => {
+  const ironLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:ironing'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  it('concentric ironing produces ironing moves', async () => {
+    const r = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, ironingPattern: 'concentric', supports: false });
+    assert.ok(ironLines(r.gcode) > 0, 'concentric ironing emits moves');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('ironing inset reduces ironing coverage', async () => {
+    const none = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, supports: false });
+    const inset = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, ironingInset: 4, supports: false });
+    assert.ok(ironLines(inset.gcode) <= ironLines(none.gcode), `inset should not increase ironing (none=${ironLines(none.gcode)} inset=${ironLines(inset.gcode)})`);
+  });
+  it('default ironing (rectilinear, no inset) byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, ironing: true, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, ironing: true, ironingInset: 0, ironingPattern: 'rectilinear', supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

@@ -31,6 +31,8 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Surface', k: 'ironing_flow', label: 'Ironing flow', type: 'num', unit: '%', step: 1, dep: 'ironing' },
   { tab: 'Quality', group: 'Surface', k: 'ironing_spacing', label: 'Ironing line spacing', type: 'num', unit: 'mm', step: 0.05, dep: 'ironing' },
   { tab: 'Quality', group: 'Surface', k: 'ironing_direction', label: 'Ironing direction', type: 'num', unit: '°', step: 5, dep: 'ironing' },
+  { tab: 'Quality', group: 'Surface', k: 'ironing_inset', label: 'Ironing inset', type: 'num', unit: 'mm', step: 0.1, dep: 'ironing' },
+  { tab: 'Quality', group: 'Surface', k: 'ironing_pattern', label: 'Ironing pattern', type: 'sel', opts: [['rectilinear', 'Rectilinear'], ['concentric', 'Concentric']], dep: 'ironing' },
   { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin', label: 'Fuzzy skin', type: 'bool' },
   { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin_mode', label: 'Fuzzy skin mode', type: 'sel', opts: [['external', 'Outer wall'], ['all', 'All walls']], dep: 'fuzzy_skin' },
   { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin_thickness', label: 'Fuzzy skin thickness', type: 'num', unit: 'mm', step: 0.05, dep: 'fuzzy_skin' },
