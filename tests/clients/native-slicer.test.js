@@ -734,3 +734,18 @@ describe('native-slicer: support bottom z distance', () => {
     assert.ok(count(gap) < count(none), `bottom gap should remove some support (none=${count(none)} gap=${count(gap)})`);
   });
 });
+
+describe('native-slicer: filter out small gaps', () => {
+  const gapMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:gap'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  it('a large filter removes short gap-fill lines', async () => {
+    const none = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
+    const filt = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, gapFillMinLength: 50, supports: false });
+    assert.ok(gapMoves(none.gcode) > 0, 'baseline has gap fill');
+    assert.ok(gapMoves(filt.gcode) < gapMoves(none.gcode), `filter should drop short gaps (none=${gapMoves(none.gcode)} filt=${gapMoves(filt.gcode)})`);
+  });
+  it('filter 0 byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
+    const b = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, gapFillMinLength: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

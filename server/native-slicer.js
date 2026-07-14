@@ -1059,6 +1059,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           const arachne = s.wallGenerator === 'arachne';
           const gapBaseFlow = s.gapFillFlow ?? 1;
           for (const sg of solidInfill(infRegion, baseAngle, lw)) {
+            // filter_out_small_gaps: skip gap-fill lines shorter than the limit
+            // (avoids tiny stringy dabs). 0 = keep all (byte-identical).
+            if (s.gapFillMinLength > 0 && Math.hypot(sg[1][0] - sg[0][0], sg[1][1] - sg[0][1]) < s.gapFillMinLength) continue;
             let flow = gapBaseFlow;
             if (arachne) {
               const w = 2 * _distToRegionEdge((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, infRegion);
