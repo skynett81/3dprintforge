@@ -200,6 +200,13 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('skirtSpeed', num(s.skirt_speed));
   set('resolution', num(s.resolution));
   set('topSurfaceSpeed', num(s.top_surface_speed));
+  // Settings the native engine already honors — now exposed.
+  set('bridgeLineWidth', num(s.bridge_line_width));
+  set('draftShieldGap', num(s.draft_shield_distance));
+  set('gapFillFlow', num(s.gap_fill_flow));
+  set('raftMargin', num(s.raft_expansion));
+  set('supportLineWidth', num(s.support_line_width));
+  set('supportGridRes', num(s.support_grid_resolution));
   set('supportInterfaceSpacing', num(s.support_interface_spacing));
   if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
   if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {
