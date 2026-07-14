@@ -28,6 +28,7 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'adaptive_cusp', label: 'Adaptive cusp (quality)', type: 'num', unit: 'mm', step: 0.01, dep: 'adaptive_layer_height' },
   { tab: 'Quality', group: 'Precision', k: 'xy_hole_compensation', label: 'X-Y hole compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'xy_contour_compensation', label: 'X-Y contour compensation', type: 'num', unit: 'mm', step: 0.05 },
+  { tab: 'Quality', group: 'Precision', k: 'precise_wall', label: 'Precise wall (accurate dimensions)', type: 'bool' },
   { tab: 'Quality', group: 'Surface', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
   { tab: 'Quality', group: 'Surface', k: 'ironing_flow', label: 'Ironing flow', type: 'num', unit: '%', step: 1, dep: 'ironing' },
   { tab: 'Quality', group: 'Surface', k: 'ironing_spacing', label: 'Ironing line spacing', type: 'num', unit: 'mm', step: 0.05, dep: 'ironing' },

@@ -916,6 +916,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         const c = offsetPolygon(outerBoundary, s.xyContourCompensation);
         if (c && c.length >= 3) outerBoundary = c;
       }
+      // precise_wall: pull the outer wall in by half its line width so the wall's
+      // OUTER edge (not its centreline) lands on the model boundary — accurate
+      // external dimensions. Off → centreline on the boundary (byte-identical).
+      if (s.preciseWall) {
+        const pc = offsetPolygon(outerBoundary, -(s.outerWallLineWidth ?? s.lineWidth) / 2);
+        if (pc && pc.length >= 3) outerBoundary = pc;
+      }
       // Vase / spiral mode: a single continuous outer wall that ramps up in
       // Z, above the solid base layers. No inner walls, infill, or top.
       if (s.spiralMode && i >= s.bottomLayers) {

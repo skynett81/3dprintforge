@@ -658,3 +658,23 @@ describe('native-slicer: first-layer wall loops', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: precise wall', () => {
+  it('precise_wall pulls the outer wall inward (smaller outer extent)', async () => {
+    const outerX = (g) => {
+      const body = g.slice(g.indexOf('; --- layer 1/'));
+      let inF = false, mx = -Infinity;
+      for (const ln of body.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('outer-wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+.*E/); if (m) mx = Math.max(mx, +m[1]); } }
+      return mx;
+    };
+    const normal = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.5, supports: false });
+    const precise = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.5, preciseWall: true, supports: false });
+    assert.ok(outerX(precise.gcode) < outerX(normal.gcode), `precise wall should be inset (normal=${outerX(normal.gcode)} precise=${outerX(precise.gcode)})`);
+    assert.ok(!precise.gcode.includes('NaN'));
+  });
+  it('precise_wall off byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, preciseWall: false, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
