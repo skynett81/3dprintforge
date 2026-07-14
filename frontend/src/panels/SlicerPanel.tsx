@@ -1101,7 +1101,7 @@ export function SlicerPanel() {
                 <div className="oslice-previewbar">
                   <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
                 </div>
-                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} pricePerGram={pricePerGram} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
+                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} pricePerGram={pricePerGram} lineWidth={Number(settings.line_width) || 0.42} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
               </div>
             </Suspense>
           )}

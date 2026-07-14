@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { useT } from '../i18n';
 import { parseGcode, type ParsedGcode, type Feature } from '../lib/gcode-parse';
 import { gradientBackground, buildPlate } from './plate-scene';
@@ -83,7 +86,7 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
 type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
 const FULL = 1e9;   // "show the whole top layer" sentinel for the moves counter
 
-export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; pricePerGram?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
+export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, lineWidth = 0.42, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; pricePerGram?: number; lineWidth?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -148,6 +151,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, c
     return out;
   }, [parsed]);
 
+  const lwRef = useRef(lineWidth); lwRef.current = lineWidth;
   // Filament mm → grams (1.75 mm, ~1.24 g/cm³ — approximate; the exact figure
   // is the slice total in the header).
   const gramsOf = (mm: number) => (mm * Math.PI * 0.875 * 0.875 * 1.24) / 1000;
@@ -173,7 +177,12 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, c
     ctx.current = c;
     const loop = () => { c.raf = requestAnimationFrame(loop); orbit.update(); renderer.render(scene, camera); };
     loop();
-    const onResize = () => { const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return; camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); };
+    const onResize = () => {
+      const nw = el.clientWidth, nh = el.clientHeight; if (!nw || !nh) return;
+      camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh);
+      // Fat-line materials need the viewport resolution for correct width AA.
+      for (const o of group.children) { const m = (o as { material?: { resolution?: THREE.Vector2 } }).material; if (m?.resolution) m.resolution.set(nw, nh); }
+    };
     window.addEventListener('resize', onResize);
     const ro = new ResizeObserver(onResize); ro.observe(el);
     return () => {
@@ -189,15 +198,27 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, c
   useEffect(() => {
     const c = ctx.current; if (!c) return;
     for (let i = c.group.children.length - 1; i >= 0; i--) {
-      const o = c.group.children[i] as THREE.LineSegments;
-      o.geometry.dispose(); (o.material as THREE.Material).dispose();
-      c.group.remove(o);
+      const o = c.group.children[i] as unknown as { geometry: { dispose(): void }; material: { dispose(): void } };
+      o.geometry.dispose(); o.material.dispose();
+      c.group.remove(c.group.children[i]);
     }
     const cx = (parsed.bbox.minX + parsed.bbox.maxX) / 2;
     const cy = (parsed.bbox.minY + parsed.bbox.maxY) / 2;
     const shown = Math.min(layer, total);
     const loIdx = Math.max(0, Math.min(low - 1, shown - 1));   // lowest visible layer index
     const travelPos: number[] = [];
+    // Solid extrusion tubes via world-unit fat lines (LineSegments2) — each
+    // segment renders at the real extrusion width, so the preview looks like a
+    // printed object (BambuStudio) rather than thin wireframe lines.
+    const rw = c.renderer.domElement.clientWidth || 640, rh = c.renderer.domElement.clientHeight || 440;
+    const fatLine = (positions: number[], opts: { color?: number; colors?: number[] }) => {
+      const geo = new LineSegmentsGeometry();
+      geo.setPositions(positions);
+      if (opts.colors) geo.setColors(opts.colors);
+      const mat = new LineMaterial({ worldUnits: true, linewidth: Math.max(0.15, lwRef.current), vertexColors: !!opts.colors, color: opts.color ?? 0xffffff });
+      mat.resolution.set(rw, rh);
+      return new LineSegments2(geo, mat);
+    };
 
     if (mode !== 'feature') {
       // Colour each extrusion segment by a per-segment value (speed / flow),
@@ -225,12 +246,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, c
         }
         if (showTravel && i === shown - 1) for (let k = 0; k < l.travel.length; k += 4) travelPos.push(l.travel[k] - cx, l.travel[k + 1] - cy, l.z, l.travel[k + 2] - cx, l.travel[k + 3] - cy, l.z);
       }
-      if (pos.length) {
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-        c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true })));
-      }
+      if (pos.length) c.group.add(fatLine(pos, { colors: col }));
     } else {
       // One buffer per feature (batched across visible layers).
       const byFeature = new Map<Feature, number[]>();
@@ -261,9 +277,7 @@ export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, c
       }
       for (const [feat, pos] of byFeature) {
         if (!pos.length) continue;
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: FEATURE_COLOR[feat] ?? 0x00b3a4 })));
+        c.group.add(fatLine(pos, { color: FEATURE_COLOR[feat] ?? 0x00b3a4 }));
       }
     }
     if (travelPos.length) {
