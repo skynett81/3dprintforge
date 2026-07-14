@@ -83,7 +83,7 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
 type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
 const FULL = 1e9;   // "show the whole top layer" sentinel for the moves counter
 
-export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
+export function GcodePreview({ gcode, bed = 256, slotColors, pricePerGram = 0, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; pricePerGram?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -283,6 +283,14 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
       <div className="gpreview-wrap">
         <div ref={mount} className="plate-canvas" />
         {total > 1 && <LayerTower total={total} low={low} high={shown} onLow={(v) => { setPlaying(false); setLow(v); setMoves(FULL); }} onHigh={(v) => { setPlaying(false); setLayer(v); setMoves(FULL); }} />}
+        {/* Prominent print summary — total time, layer count and filament, so
+            "how long / how many layers" is obvious at a glance (BambuStudio). */}
+        <div className="gpreview-summary">
+          <div className="gpreview-summary-row"><span className="gpreview-summary-v">{fmtT(cum.totTime)}</span><span className="gpreview-summary-l">{t('v2.gpreview.print_time', 'print time')}</span></div>
+          <div className="gpreview-summary-row"><span className="gpreview-summary-v">{total}</span><span className="gpreview-summary-l">{t('v2.gpreview.layers', 'layers')}</span></div>
+          <div className="gpreview-summary-row"><span className="gpreview-summary-v">{gramsOf(cum.totE).toFixed(1)} g</span><span className="gpreview-summary-l">{t('v2.gpreview.filament', 'filament')}</span></div>
+          {pricePerGram > 0 && <div className="gpreview-summary-row"><span className="gpreview-summary-v">{(gramsOf(cum.totE) * pricePerGram).toFixed(1)} kr</span><span className="gpreview-summary-l">{t('v2.gpreview.cost', 'cost')}</span></div>}
+        </div>
         {/* BambuStudio-style "Colour scheme" panel: mode selector + legend + options */}
         <div className="gpreview-side">
           <select className="gpreview-side-select" value={mode} onChange={(e) => setMode(e.target.value as ColorMode)}>

@@ -8,8 +8,13 @@ import react from '@vitejs/plugin-react';
 // serves the React app at /v2 alongside the current UI — no backend change.
 const target = process.env.VITE_API_TARGET || 'http://localhost:3000';
 
+// Build stamp so a cached/stale bundle is obvious in the UI (helps diagnose
+// service-worker / browser-cache issues — compare it to the latest build).
+const BUILD_ID = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+
 export default defineConfig(({ command }) => ({
   plugins: [react()],
+  define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   base: command === 'build' ? '/v2/' : '/',
   build: {
     outDir: '../public/v2',

@@ -426,6 +426,7 @@ export function App() {
           )}
           <a className="classic-link" href="/" title={t('v2.nav.classic', 'Classic UI')}>← <span className="nav-label">{t('v2.nav.classic', 'Classic UI')}</span></a>
           <div className="muted foot-meta" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
+          <div className="muted foot-meta" style={{ fontSize: '0.68rem', opacity: 0.6 }} title="Build timestamp — if this looks old after a reload, your browser is serving a cached bundle (hard-refresh with Ctrl+Shift+R).">build {__BUILD_ID__}</div>
         </div>
       </aside>
 

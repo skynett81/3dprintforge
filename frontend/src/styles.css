@@ -299,7 +299,9 @@ body {
 .oslice-toptab:hover:not(:disabled) { color: #fff; }
 .oslice-toptab--on { background: var(--o-accent); color: #fff; }
 .oslice-toptab:disabled { opacity: 0.4; cursor: not-allowed; }
-.oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap; }
+.oslice-toptabs { flex-shrink: 1; min-width: 0; }
+.oslice-topright .oslice-sliceplate, .oslice-topright .oslice-printplate { flex-shrink: 0; white-space: nowrap; }
 .oslice-topest { display: flex; gap: 12px; color: #cfd3d8; font-size: 0.8rem; align-items: center; margin-right: 4px; }
 .oslice-topest strong { color: #fff; }
 .oslice-sliceplate { padding: 8px 22px; border: none; border-radius: 8px; background: var(--o-accent); color: #fff; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
@@ -594,6 +596,10 @@ select.oset-rowinput { text-align: left; }
 /* BambuStudio-style preview "Colour scheme" panel (top-left): mode select +
    legend + options in one card. */
 .gpreview-side { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; min-width: 148px; background: rgba(14,17,22,0.82); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); }
+.gpreview-summary { position: absolute; top: 46px; right: 12px; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; background: rgba(14,17,22,0.86); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); min-width: 118px; }
+.gpreview-summary-row { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.gpreview-summary-v { font-size: 1.05rem; font-weight: 700; color: #fff; }
+.gpreview-summary-l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--o-muted); }
 .gpreview-side-select { width: 100%; padding: 4px 6px; font-size: 0.74rem; color: #e6e8eb; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; cursor: pointer; }
 .gpreview-side-legend { display: flex; flex-direction: column; gap: 3px; }
 .gpreview-side-opt { margin: 0; font-size: 0.72rem; color: #cbd5e1; display: flex; align-items: center; gap: 6px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.08); }

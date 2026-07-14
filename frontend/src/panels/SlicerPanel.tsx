@@ -223,8 +223,6 @@ export function SlicerPanel() {
     });
     return perSlot.reduce((a, b) => a + b, 0) / perSlot.length;
   }, [spools, filaments]);
-  const cost = preview && pricePerGram > 0 ? preview.filamentG * pricePerGram : 0;
-  const wasteCost = preview && pricePerGram > 0 ? (preview.wasteG || 0) * pricePerGram : 0;
 
   const formats = [...(status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step']), '.svg'];
   const slotColors = useMemo(() => filaments.map((f) => f.color), [filaments]);
@@ -638,18 +636,6 @@ export function SlicerPanel() {
           <button className={`oslice-toptab${tab === 'calibration' ? ' oslice-toptab--on' : ''}`} onClick={() => setTab('calibration')}>{t('v2.slicer.calibration', 'Calibration')}</button>
         </div>
         <div className="oslice-topright">
-          {preview && (
-            <span className="oslice-topest">
-              <span><strong>{fmtTime(preview.timeSec)}</strong></span>
-              <span><strong>{preview.filamentG ? `${preview.filamentG.toFixed(1)}g` : '—'}</strong></span>
-              {cost > 0 && <span><strong>{cost.toFixed(1)} kr</strong></span>}
-              {(preview.wasteG ?? 0) >= 0.05 && (
-                <span title={t('v2.slicer.waste_hint', 'Waste (prime/purge). Flush-into-infill keeps colour-change purge out of waste.')} style={{ opacity: 0.75 }}>
-                  {t('v2.slicer.waste', 'waste')} <strong>{preview.wasteG.toFixed(1)}g</strong>{wasteCost > 0 ? ` (${wasteCost.toFixed(1)} kr)` : ''}
-                </span>
-              )}
-            </span>
-          )}
           <button className="oslice-sliceplate" disabled={!plateHasModels || slicing} onClick={slicePreview}>{slicing ? t('v2.slicer.slicing', 'Slicing…') : t('v2.slicer.slice_plate', 'Slice plate')}</button>
           {plates.length > 1 && <button className="oslice-sliceplate oslice-sliceall" disabled={slicing} onClick={sliceAllPlates} title={t('v2.slicer.slice_all_hint', 'Slice every plate and sum the estimates')}>{t('v2.slicer.slice_all', 'Slice all')}</button>}
           <button className="oslice-printplate" disabled={!canRun} title={t('v2.slicer.printplate_hint', 'Slice and send to the selected printer(s)')} onClick={() => run(false)}>{t('v2.slicer.print_plate', 'Print plate')}</button>
@@ -1115,7 +1101,7 @@ export function SlicerPanel() {
                 <div className="oslice-previewbar">
                   <button className="btn btn--sm" onClick={() => downloadGcode()}>{t('v2.slicer.download_gcode', 'Download G-code')}</button>
                 </div>
-                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
+                <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} pricePerGram={pricePerGram} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
               </div>
             </Suspense>
           )}
