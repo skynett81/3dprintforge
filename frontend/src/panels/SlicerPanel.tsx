@@ -83,6 +83,7 @@ export function SlicerPanel() {
     flush_into_infill: true, flush_volume: 80,
   });
   const [tab, setTab] = useState<'prepare' | 'preview' | 'device' | 'filaments' | 'calibration'>('prepare');
+  const tabRef = useRef(tab); tabRef.current = tab;
   const [side, setSide] = useState<'global' | 'objects'>('global');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [slicing, setSlicing] = useState(false);
@@ -336,7 +337,13 @@ export function SlicerPanel() {
         else if (k === 'd') { e.preventDefault(); plateRef.current?.duplicate(); }
         return;
       }
-      if (e.key === 'Delete') { e.preventDefault(); plateRef.current?.remove(); }
+      if (e.key === 'Delete') { e.preventDefault(); plateRef.current?.remove(); return; }
+      // BambuStudio gizmo / arrange shortcuts (Prepare tab only).
+      if (tabRef.current !== 'prepare') return;
+      if (k === 'a') { e.preventDefault(); plateRef.current?.arrange(); }
+      else if (k === 'm') { e.preventDefault(); plateRef.current?.setMode('translate'); }
+      else if (k === 'r') { e.preventDefault(); plateRef.current?.setMode('rotate'); }
+      else if (k === 's') { e.preventDefault(); plateRef.current?.setMode('scale'); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
