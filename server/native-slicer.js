@@ -23,7 +23,7 @@
  */
 
 import {
-  sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill,
+  sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, simplifyPolygon,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
   _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
 } from './native-slicer-geo.js';
@@ -736,7 +736,15 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const layerRegions = [];
   for (let i = 0; i < numLayers; i++) {
     const z = zCenters ? zCenters[i] : (i + 0.5) * layerHeight;
-    layerRegions.push(buildRegions(sliceLayer(recentered, z)));
+    let regionsAtZ = buildRegions(sliceLayer(recentered, z));
+    // Resolution: extra path simplification (drop vertices within `resolution` mm
+    // of a straight line) → smaller G-code. Off (0) keeps the fine 0.01mm slice.
+    if (s.resolution > 0) {
+      regionsAtZ = regionsAtZ
+        .map((r) => ({ outer: simplifyPolygon(r.outer, s.resolution), holes: (r.holes || []).map((h) => simplifyPolygon(h, s.resolution)).filter((h) => h.length >= 3) }))
+        .filter((r) => r.outer.length >= 3);
+    }
+    layerRegions.push(regionsAtZ);
   }
 
   // Supports (optional) — overhang columns down to the bed. Runs when auto

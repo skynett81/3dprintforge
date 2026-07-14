@@ -449,3 +449,18 @@ describe('native-slicer: support base pattern + interface spacing', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: resolution', () => {
+  it('a coarse resolution reduces vertices on a cylinder (smaller g-code)', async () => {
+    const fine = await sliceMeshToGcode(cylinder(10, 8, 96), { layerHeight: 0.3, supports: false });
+    const coarse = await sliceMeshToGcode(cylinder(10, 8, 96), { layerHeight: 0.3, resolution: 0.5, supports: false });
+    const wallMoves = (g) => g.split('\n').filter((ln) => ln.startsWith('G1') && ln.includes('X') && ln.includes('E')).length;
+    assert.ok(wallMoves(coarse.gcode) < wallMoves(fine.gcode), `coarse should have fewer moves (fine=${wallMoves(fine.gcode)} coarse=${wallMoves(coarse.gcode)})`);
+    assert.ok(!coarse.gcode.includes('NaN'));
+  });
+  it('resolution 0 is byte-identical to default', async () => {
+    const a = await sliceMeshToGcode(cylinder(8, 6, 48), { layerHeight: 0.3, supports: false });
+    const b = await sliceMeshToGcode(cylinder(8, 6, 48), { layerHeight: 0.3, resolution: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

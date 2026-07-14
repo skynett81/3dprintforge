@@ -22,6 +22,7 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Layer height', k: 'min_layer_height', label: 'Min layer height', type: 'num', unit: 'mm', step: 0.02, dep: 'adaptive_layer_height' },
   { tab: 'Quality', group: 'Layer height', k: 'max_layer_height', label: 'Max layer height', type: 'num', unit: 'mm', step: 0.02, dep: 'adaptive_layer_height' },
   { tab: 'Quality', group: 'Precision', k: 'elephant_foot', label: 'Elephant foot compensation', type: 'num', unit: 'mm', step: 0.05 },
+  { tab: 'Quality', group: 'Precision', k: 'resolution', label: 'Resolution (path simplify)', type: 'num', unit: 'mm', step: 0.01 },
   { tab: 'Quality', group: 'Precision', k: 'xy_hole_compensation', label: 'X-Y hole compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Precision', k: 'xy_contour_compensation', label: 'X-Y contour compensation', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Quality', group: 'Surface', k: 'ironing', label: 'Ironing (smooth top)', type: 'bool' },
