@@ -746,12 +746,24 @@ export function SlicerPanel() {
               const byType = new Map<string, number>();
               for (const u of units) byType.set(u.type, (byType.get(u.type) ?? 0) + 1);
               const amsStr = [...byType.entries()].map(([tpe, n]) => (n > 1 ? `${n}× ${tpe}` : tpe)).join(' · ');
-              const nozzleStr = selPrinter?.nozzle ? `${selPrinter.nozzle} mm${selPrinter.nozzleType ? ` ${String(selPrinter.nozzleType).replace(/_/g, ' ')}` : ''}` : '';
-              if (!amsStr && !nozzleStr) return null;
+              // Classify the nozzle material from the printer's code (Bambu HS = hardened
+              // steel, SS = stainless) so we can hint abrasive-filament capability.
+              const nozMat = (() => {
+                const s = String(selPrinter?.nozzleType ?? '').toLowerCase();
+                if (!s) return '';
+                if (s.includes('harden') || s.startsWith('hs')) return t('v2.slset.noz_hardened', 'hardened steel');
+                if (s.includes('stainless') || s.startsWith('ss')) return t('v2.slset.noz_stainless', 'stainless steel');
+                if (s.includes('brass') || s.includes('copper')) return t('v2.slset.noz_brass', 'brass');
+                return String(selPrinter?.nozzleType).replace(/_/g, ' ');
+              })();
+              const nozzleStr = selPrinter?.nozzle ? `${selPrinter.nozzle} mm${nozMat ? ` · ${nozMat}` : ''}` : '';
+              const ext = selPrinter?.external;
+              if (!amsStr && !nozzleStr && !ext) return null;
               return (
                 <div className="oslice-accessories">
                   {amsStr && <span title={t('v2.slset.ams_units_hint', 'AMS units detected on this printer')}>◈ {amsStr}</span>}
-                  {nozzleStr && <span title={t('v2.slset.nozzle_hint', 'Nozzle reported by the printer')}>⬡ {nozzleStr}</span>}
+                  {nozzleStr && <span title={t('v2.slset.nozzle_hint', 'Nozzle reported by the printer — hardened/stainless steel can run abrasive (CF/GF) filament')}>⬡ {nozzleStr}</span>}
+                  {ext && <span title={t('v2.slset.external_hint', 'External spool loaded on the printer')}><i style={{ width: 9, height: 9, borderRadius: '50%', background: ext.color?.startsWith('#') ? ext.color : `#${ext.color}`, display: 'inline-block' }} /> {t('v2.slset.external', 'External')}: {ext.material}</span>}
                 </div>
               );
             })()}
