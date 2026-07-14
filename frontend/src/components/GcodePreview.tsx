@@ -37,7 +37,7 @@ const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 
  */
 type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
 
-export function GcodePreview({ gcode, bed = 256, slotColors }: { gcode: string; bed?: number; slotColors?: string[] }) {
+export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; slotColors?: string[]; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
   const t = useT();
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<Ctx | null>(null);
@@ -251,11 +251,24 @@ export function GcodePreview({ gcode, bed = 256, slotColors }: { gcode: string; 
               ))}
             </div>
           )}
+          {(colorChangeLayers ?? []).length > 0 && (
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
+              {(colorChangeLayers ?? []).map((cl) => (
+                <span key={`m${cl}`} className="gpreview-cc-marker"
+                  title={`${t('v2.gpreview.colorchange', 'Colour change')} · ${t('v2.gpreview.layer', 'Layer')} ${cl} — ${t('v2.gpreview.remove_change', 'click to remove')}`}
+                  style={{ position: 'absolute', top: -3, height: 8, width: 8, marginLeft: -4, transform: 'rotate(45deg)', background: '#e0603a', border: '1px solid #fff', borderRadius: 1, pointerEvents: 'auto', cursor: 'pointer', left: `${((cl - 1) / Math.max(1, total - 1)) * 100}%` }}
+                  onClick={() => onRemoveColorChange?.(cl)} />
+              ))}
+            </div>
+          )}
           <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); }} style={{ width: '100%' }} />
         </div>
         <span className="muted micro tnum" style={{ minWidth: 60 }}>z {curZ.toFixed(2)}</span>
         <label className="chk" style={{ margin: 0 }}><input type="checkbox" checked={showTravel} onChange={(e) => setShowTravel(e.target.checked)} /> {t('v2.gpreview.travel', 'Travel')}</label>
         {colorChanges.length > 0 && <span className="muted micro" title={t('v2.gpreview.colorchanges_hint', 'Filament swaps — click a tick to jump')}>{colorChanges.length} {t('v2.gpreview.colorchanges', 'swaps')}</span>}
+        {onAddColorChange && shown > 1 && !(colorChangeLayers ?? []).includes(shown) && (
+          <button className="btn btn--sm btn--ghost" title={t('v2.gpreview.add_change_hint', 'Pause for a filament swap at this layer (M600)')} onClick={() => onAddColorChange(shown)}>＋ {t('v2.gpreview.add_change', 'Colour change')}</button>
+        )}
       </div>
       <div className="gpreview-stats">
         <span><b>{t('v2.gpreview.this_layer', 'This layer')}:</b> {fmtT(curLayer?.timeSec ?? 0)} · {gramsOf(curLayer?.eLen ?? 0).toFixed(2)} g</span>

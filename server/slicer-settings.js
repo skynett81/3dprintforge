@@ -79,6 +79,9 @@ export function buildNativeSettings(s = {}, base = {}) {
 
   set('brimWidth', num(s.brim_width));
   if (s.brim_type) out.brimType = String(s.brim_type);
+  if (Array.isArray(s.color_change_layers) && s.color_change_layers.length) {
+    out.colorChangeLayers = s.color_change_layers.map(Number).filter((n) => Number.isFinite(n) && n > 1);
+  }
   // Modifier volumes: [{ box:[minX,minY,minZ,maxX,maxY,maxZ], infill_density, infill_pattern }]
   if (Array.isArray(s.modifiers) && s.modifiers.length) {
     out.modifiers = s.modifiers

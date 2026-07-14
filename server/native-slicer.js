@@ -438,6 +438,11 @@ export function layersToGcode(layers, settings) {
     return L;
   };
 
+  // Manual colour changes (BambuStudio "add colour change"): 1-based layer
+  // numbers where the print pauses for a filament swap.
+  const colorChangeSet = Array.isArray(s.colorChangeLayers) && s.colorChangeLayers.length
+    ? new Set(s.colorChangeLayers.map((n) => Number(n))) : null;
+
   layers.forEach((layer, layerIdx) => {
     // Per-layer Z (top) and height — adaptive layers carry their own; uniform
     // layers fall back to the global height (byte-identical behaviour).
@@ -455,6 +460,8 @@ export function layersToGcode(layers, settings) {
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
     // Custom per-layer G-code hook (e.g. timelapse snapshot, Z-offset tweak).
     if (s.layerChangeGcode) g += _interp(s.layerChangeGcode, s, { layer_num: layerIdx + 1, layer_z: z.toFixed(3), total_layer_count: layers.length }) + '\n';
+    // Manual colour change: pause for a filament swap at the start of this layer.
+    if (colorChangeSet && layerIdx > 0 && colorChangeSet.has(layerIdx + 1)) g += `; COLOR_CHANGE L${layerIdx + 1}\nM600\n`;
     // After the first layer, drop from initial-layer temps to steady temps and
     // switch from the first-layer acceleration to the steady one.
     if (layerIdx === 1) {

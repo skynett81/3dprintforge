@@ -316,3 +316,16 @@ describe('native-slicer: modifier volumes', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: manual colour changes', () => {
+  it('emits M600 at the chosen 1-based layers', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.2, supports: false, colorChangeLayers: [10, 25] });
+    assert.equal((r.gcode.match(/^M600$/gm) || []).length, 2, 'one M600 per colour change');
+    assert.match(r.gcode, /; COLOR_CHANGE L10/);
+    assert.match(r.gcode, /; COLOR_CHANGE L25/);
+  });
+  it('emits no M600 without colour changes', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.2, supports: false });
+    assert.ok(!r.gcode.includes('M600'));
+  });
+});

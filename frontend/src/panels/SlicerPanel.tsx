@@ -91,6 +91,8 @@ export function SlicerPanel() {
   const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
   const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1, partTypes: [], partParents: [] });
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; i: number } | null>(null);
+  const [colorChangeLayers, setColorChangeLayers] = useState<number[]>([]);
+  const colorChangeRef = useRef<number[]>([]);
   const [full, setFull] = useState(false);
   const [autoCalib, setAutoCalib] = useState(true);     // apply saved fleet calibration
   const [calibK, setCalibK] = useState<number | null>(null);
@@ -279,7 +281,7 @@ export function SlicerPanel() {
   }
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
-  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); }
+  function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); colorChangeRef.current = []; setColorChangeLayers([]); }
   // STEP/STP files are tessellated to STL server-side (OpenCascade) first.
   async function toLoadable(f: File): Promise<File> {
     if (/\.(step|stp|iges|igs)$/i.test(f.name)) {
@@ -390,6 +392,7 @@ export function SlicerPanel() {
     if (fuzzy && fuzzy.enforce.length) out.fuzzy_paint = { enforce: fuzzy.enforce };
     const mods = plateRef.current?.getModifiers();
     if (mods && mods.length) out.modifiers = mods;
+    if (colorChangeRef.current.length) out.color_change_layers = colorChangeRef.current;
     return out;
   }
 
@@ -407,6 +410,17 @@ export function SlicerPanel() {
     }
     setCalibK(null);
     return out;
+  }
+
+  // Manual colour changes (M600): update the list and re-slice so the preview +
+  // send reflect the pause. The ref is read synchronously by settingsForPrinter.
+  function addColorChange(layer: number) {
+    const next = Array.from(new Set([...colorChangeRef.current, layer])).sort((a, b) => a - b);
+    colorChangeRef.current = next; setColorChangeLayers(next); slicePreview();
+  }
+  function removeColorChange(layer: number) {
+    const next = colorChangeRef.current.filter((l) => l !== layer);
+    colorChangeRef.current = next; setColorChangeLayers(next); slicePreview();
   }
 
   async function slicePreview() {
@@ -973,7 +987,7 @@ export function SlicerPanel() {
           )}
           {tab === 'preview' && preview && (
             <Suspense fallback={<div className="oslice-loading">{t('common.loading', 'Loading…')}</div>}>
-              <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} />
+              <GcodePreview gcode={preview.gcode} bed={bed} slotColors={slotColors} colorChangeLayers={colorChangeLayers} onAddColorChange={addColorChange} onRemoveColorChange={removeColorChange} />
             </Suspense>
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
