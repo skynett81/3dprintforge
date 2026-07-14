@@ -151,6 +151,9 @@ export function SlicerPanel() {
         const kids = srcArr.filter((m) => m.userData.partParentId === moved.uuid);
         cur[srcPlate] = srcArr.filter((m) => m !== moved && !kids.includes(m));
         cur[targetPlate] = [...cur[targetPlate], moved, ...kids];
+        // The object may have been hidden by the overview (active-plate objects
+        // are hidden while in overview); it must be visible on its new plate.
+        for (const m of [moved, ...kids]) { m.visible = true; delete m.userData.__ovHidden; }
       }
     }
     const newPlates = plates.map((pl, i) => ({ ...pl, snap: cur[i] }));
