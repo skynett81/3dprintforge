@@ -223,7 +223,7 @@ export function SlicerPanel() {
   const cost = preview && pricePerGram > 0 ? preview.filamentG * pricePerGram : 0;
   const wasteCost = preview && pricePerGram > 0 ? (preview.wasteG || 0) * pricePerGram : 0;
 
-  const formats = status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step'];
+  const formats = [...(status?.supportedFormats ?? ['.stl', '.3mf', '.obj', '.step']), '.svg'];
   const slotColors = useMemo(() => filaments.map((f) => f.color), [filaments]);
   useEffect(() => { plateRef.current?.recolor(slotColors); }, [slotColors]);
 

@@ -11,6 +11,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { Brush, Evaluator, ADDITION, SUBTRACTION, INTERSECTION } from 'three-bvh-csg';
 import { FontLoader, type Font } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import helvetikerJson from '../assets/helvetiker.json';
 import { useT } from '../i18n';
 import { gradientBackground, buildPlate } from './plate-scene';
@@ -70,6 +71,7 @@ export interface PlateHandle {
   boolean: (op: 'union' | 'subtract' | 'intersect') => void;
   addPrimitive: (shape: 'cube' | 'cylinder' | 'sphere') => void;
   addPart: (type: PartType, shape: 'cube' | 'cylinder' | 'sphere') => void;
+  addSVG: (svgText: string, depthMm?: number, sizeMm?: number) => boolean;
   getModifiers: () => { box: number[]; infill_density?: number; infill_pattern?: string }[];
   getModifierSettings: () => Record<string, string> | null;
   setModifierSetting: (key: string, value: string) => void;
@@ -547,12 +549,35 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
   }, [bed]);
 
   // Load a model buffer into the plate (append). Returns a promise.
+  // Parse an SVG string into an extruded 3-D part on the plate. Shared by the
+  // file loader and the addSVG handle. Returns false when there are no shapes.
+  function svgToPlate(svgText: string, depthMm = 3, sizeMm = 50): boolean {
+    try {
+      const data = new SVGLoader().parse(svgText);
+      const shapes: THREE.Shape[] = [];
+      for (const path of data.paths) for (const sh of SVGLoader.createShapes(path)) shapes.push(sh);
+      if (!shapes.length) return false;
+      const geo = new THREE.ExtrudeGeometry(shapes, { depth: depthMm, bevelEnabled: false, curveSegments: 8 });
+      geo.scale(1, -1, 1);                 // SVG Y is down → flip upright
+      geo.computeBoundingBox();
+      const bb = geo.boundingBox!; const maxXY = Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y) || 1;
+      geo.scale(sizeMm / maxXY, sizeMm / maxXY, 1);
+      geo.computeVertexNormals();
+      addMesh(geo.toNonIndexed(), 'SVG');
+      return true;
+    } catch { return false; }
+  }
+
   async function loadFileBuffer(f: File) {
     const c = ctx.current; if (!c) return;
     const buf = await f.arrayBuffer();
     const lower = f.name.toLowerCase();
     const base = f.name.replace(/\.[^.]+$/, '');
     try {
+      if (lower.endsWith('.svg')) {
+        if (!svgToPlate(new TextDecoder().decode(buf), 3, 50)) throw new Error('SVG has no shapes');
+        return;
+      }
       if (lower.endsWith('.3mf')) {
         // A 3MF is usually ONE model that may be split into several coloured
         // parts. Merge the parts into a single object so it drops / lays flat
@@ -952,6 +977,9 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       addMesh(geo, `Text: ${text}`);
     },
     addGeometry: (geom, name) => { addMesh(geom, name); },
+    // Import an SVG as an extruded 3-D part (BambuStudio SVG tool). Union/subtract
+    // it onto a model to emboss / engrave. Returns false if the SVG has no shapes.
+    addSVG: (svgText, depthMm = 3, sizeMm = 50) => svgToPlate(svgText, depthMm, sizeMm),
     rename: (name) => { const m = ctx.current?.selected; if (m && name.trim()) { m.name = name.trim(); emitState(); } },
     // Modifier volumes → world-frame AABBs + their setting overrides. The native
     // engine applies each modifier's infill density/pattern inside its box.
