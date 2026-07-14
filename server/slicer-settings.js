@@ -216,6 +216,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('ironingInset', num(s.ironing_inset));
   set('infillAnchor', num(s.infill_anchor));
   set('initialLayerFlowRatio', num(s.initial_layer_flow_ratio));
+  set('bridgeAccel', num(s.bridge_acceleration));
+  set('supportAccel', num(s.support_acceleration));
   if (s.ironing_pattern) out.ironingPattern = String(s.ironing_pattern);
   if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));

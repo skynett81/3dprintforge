@@ -267,6 +267,7 @@ export function layersToGcode(layers, settings) {
   const ACC = {
     'outer-wall': s.outerWallAccel, 'inner-wall': s.innerWallAccel, wall: s.outerWallAccel,
     solid: s.topSurfaceAccel, sparse: s.sparseInfillAccel,
+    bridge: s.bridgeAccel, support: s.supportAccel, gap: s.gapAccel,
   };
   const featAccel = (feature, layerIdx) => {
     if (layerIdx === 0) return s.initialLayerAccel || s.acceleration;
@@ -548,7 +549,7 @@ export function layersToGcode(layers, settings) {
       }
       if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
       // Per-feature acceleration switch (only when any per-feature accel is set).
-      if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel)) {
+      if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel || s.bridgeAccel || s.supportAccel)) {
         const fa = Math.round(featAccel(path.feature, layerIdx));
         if (fa > 0 && fa !== curAccelG) { g += `M204 P${fa}\n`; curAccelG = fa; }
       }

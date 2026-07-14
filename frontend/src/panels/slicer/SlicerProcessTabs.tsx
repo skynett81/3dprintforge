@@ -97,6 +97,8 @@ const FIELDS: Field[] = [
   { tab: 'Speed', group: 'Acceleration', k: 'sparse_infill_acceleration', label: 'Sparse infill', type: 'num', unit: 'mm/s²', step: 100 },
   { tab: 'Speed', group: 'Acceleration', k: 'initial_layer_acceleration', label: 'Initial layer', type: 'num', unit: 'mm/s²', step: 100 },
   { tab: 'Speed', group: 'Acceleration', k: 'travel_acceleration', label: 'Travel', type: 'num', unit: 'mm/s²', step: 100 },
+  { tab: 'Speed', group: 'Acceleration', k: 'bridge_acceleration', label: 'Bridge', type: 'num', unit: 'mm/s²', step: 100 },
+  { tab: 'Speed', group: 'Acceleration', k: 'support_acceleration', label: 'Support', type: 'num', unit: 'mm/s²', step: 100 },
   { tab: 'Speed', group: 'Jerk', k: 'default_jerk', label: 'Jerk (max)', type: 'num', unit: 'mm/s', step: 1 },
   { tab: 'Speed', group: 'Jerk', k: 'outer_wall_jerk', label: 'Outer wall', type: 'num', unit: 'mm/s', step: 1 },
   { tab: 'Speed', group: 'Jerk', k: 'inner_wall_jerk', label: 'Inner wall', type: 'num', unit: 'mm/s', step: 1 },

@@ -580,3 +580,17 @@ describe('native-slicer: initial layer flow ratio', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: bridge/support acceleration', () => {
+  it('support_acceleration emits its own M204 on support moves', async () => {
+    const enforce = [[-20, -20, 20, -20, 0, 20, 100]];
+    const r = await sliceMeshToGcode(box(24, 24, 3), { layerHeight: 0.3, acceleration: 5000, outerWallAccel: 3000, supportAccel: 700, supports: true, supportPaint: { enforce, block: [] } });
+    const accels = [...new Set([...r.gcode.matchAll(/M204 P(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(accels.includes(700), `expected 700 among ${accels}`);
+  });
+  it('no bridge/support accel is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, acceleration: 5000, outerWallAccel: 3000, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, acceleration: 5000, outerWallAccel: 3000, bridgeAccel: 0, supportAccel: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
