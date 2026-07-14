@@ -41,6 +41,8 @@ const FIELDS: Field[] = [
   { tab: 'Quality', group: 'Surface', k: 'fuzzy_skin_first_layer', label: 'Fuzzy skin on first layer', type: 'bool', dep: 'fuzzy_skin' },
   { tab: 'Quality', group: 'Special mode', k: 'spiral_mode', label: 'Spiral vase mode', type: 'bool' },
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'detect_overhang_wall', label: 'Detect overhang walls', type: 'bool' },
+  { tab: 'Quality', group: 'Overhangs & bridges', k: 'overhang_threshold', label: 'Overhang threshold', type: 'num', unit: '%', step: 5, dep: 'detect_overhang_wall' },
+  { tab: 'Quality', group: 'Overhangs & bridges', k: 'detect_bridges', label: 'Detect bridges', type: 'bool' },
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'bridge_flow', label: 'Bridge flow ratio', type: 'num', step: 0.05 },
   { tab: 'Quality', group: 'Overhangs & bridges', k: 'bridge_angle', label: 'Bridge direction (0 = auto)', type: 'num', unit: '°', step: 5 },
   { tab: 'Strength', group: 'Walls', k: 'wall_generator', label: 'Wall generator', type: 'sel', opts: [['classic', 'Classic'], ['arachne', 'Arachne (variable width)']] },
