@@ -344,3 +344,29 @@ describe('native-slicer: wipe/prime tower', () => {
     assert.ok(!r.gcode.includes('WIPE_TOWER'));
   });
 });
+
+import { sliceObjectsGcode } from '../../server/native-slicer.js';
+describe('native-slicer: sequential (by-object) printing', () => {
+  const objs = () => [
+    { mesh: box(12, 12, 4), settings: {} },
+    { mesh: box(12, 12, 8), settings: {} },
+  ];
+  it('by_object prints objects sequentially with an OBJECT_CHANGE hop', async () => {
+    const r = await sliceObjectsGcode(objs(), { layerHeight: 0.2, printSequence: 'by_object', supports: false });
+    assert.ok(r.sequential, 'flagged sequential');
+    assert.equal((r.gcode.match(/; OBJECT_CHANGE/g) || []).length, 1, 'one object change for two objects');
+    // Object 1 is 4mm (20 layers), object 2 is 8mm (40 layers) -> 60 combined layers.
+    assert.equal(r.layers, 60);
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('by_layer (default) interleaves and has no object change', async () => {
+    const r = await sliceObjectsGcode(objs(), { layerHeight: 0.2, supports: false });
+    assert.ok(!r.sequential);
+    assert.ok(!r.gcode.includes('OBJECT_CHANGE'));
+  });
+  it('warns when a not-last object exceeds gantry clearance', async () => {
+    const tall = [{ mesh: box(12, 12, 40), settings: {} }, { mesh: box(12, 12, 6), settings: {} }];
+    const r = await sliceObjectsGcode(tall, { layerHeight: 0.3, printSequence: 'by_object', extruderClearanceHeight: 25, supports: false });
+    assert.ok(r.warnings.length >= 1, 'a clearance warning is returned');
+  });
+});

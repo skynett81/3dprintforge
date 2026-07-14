@@ -427,9 +427,18 @@ export function SlicerPanel() {
     if (!file) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }
     setSlicing(true);
     try {
-      const toSend = plateRef.current?.exportSTL(file.name) ?? file;
-      const p = await api.sliceGcode(toSend, await settingsWithCalibration(selPrinter?.id));
-      setPreview(p); setTab('preview');
+      const s = await settingsWithCalibration(selPrinter?.id);
+      // Sequential (by-object) printing needs the objects sliced separately.
+      const each = s.print_sequence === 'by_object' && toolState.count > 1 ? (plateRef.current?.exportEach(file.name) ?? []) : [];
+      if (each.length > 1) {
+        const p = await api.sliceObjects(each.map((e) => e.file), s);
+        setPreview(p); setTab('preview');
+        if (p.warnings?.length) toast(p.warnings[0], 'error');
+      } else {
+        const toSend = plateRef.current?.exportSTL(file.name) ?? file;
+        const p = await api.sliceGcode(toSend, s);
+        setPreview(p); setTab('preview');
+      }
     } catch (e) { toast((e as Error).message || t('v2.slicer.slice_fail', 'Slicing failed'), 'error'); }
     finally { setSlicing(false); }
   }

@@ -455,6 +455,13 @@ export function layersToGcode(layers, settings) {
     const spiral = paths.some((p) => p.spiral);
     combBoundary = spiral ? null : (layer.regions || null);
     combCache = (combing && combBoundary) ? {} : null;   // lazy per-layer detour cache
+    // Sequential printing: hop to clearance height and mark the object change
+    // before starting the next object's first layer.
+    if (layer.seqStart) {
+      const cz = s.seqClearanceZ ?? (curZ + 5);
+      g += `; OBJECT_CHANGE -> object ${layer.seqStart}\n`;
+      g += `G1 Z${cz.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = cz;
+    }
     g += `; --- layer ${layerIdx + 1}/${layers.length} z=${z.toFixed(3)} ---\n`;
     g += `;LAYER_CHANGE\n;Z:${z.toFixed(3)}\n`;
     if (!spiral) { g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`; curZ = z; }
@@ -1062,6 +1069,36 @@ export async function sliceObjectsGcode(objects, globalSettings = {}) {
   }
   const offset = [(minX + maxX) / 2, (minY + maxY) / 2, minZ];
   const numLayers = Math.max(1, Math.floor((maxZ - minZ) / lh));
+
+  const bySequence = globalSettings.printSequence === 'by_object' && objects.length > 1;
+
+  // ── Sequential (by-object) printing: each object is printed to full height
+  // before the next. Objects keep their XY layout (shared offset) but each is
+  // sliced to its OWN height; the combined stack carries explicit per-object z,
+  // with an OBJECT_CHANGE Z-hop between them. A clearance warning is returned
+  // when a not-last object is taller than the gantry clearance.
+  if (bySequence) {
+    const clearanceH = globalSettings.extruderClearanceHeight ?? 25;
+    const combined = [];
+    const heights = [];
+    for (let oi = 0; oi < objects.length; oi++) {
+      const o = objects[oi];
+      const settings = { ...globalSettings, ...(o.settings || {}), layerHeight: lh };
+      const { layers } = await sliceMeshToLayers(o.mesh, settings, { offset });
+      heights.push(layers.length * lh);
+      layers.forEach((L, k) => {
+        combined.push({ ...L, z: (k + 1) * lh, ...(k === 0 && oi > 0 ? { seqStart: oi + 1 } : {}) });
+      });
+    }
+    const warnings = [];
+    for (let oi = 0; oi < heights.length - 1; oi++) {
+      if (heights[oi] > clearanceH) { warnings.push(`Object ${oi + 1} is ${heights[oi].toFixed(0)}mm tall (> ${clearanceH}mm gantry clearance) — the toolhead may hit it while printing a later object.`); }
+    }
+    return {
+      gcode: layersToGcode(combined, { ...globalSettings, layerHeight: lh, seqClearanceZ: Math.max(...heights) + 5 }),
+      layers: combined.length, objects: objects.length, sequential: true, warnings,
+    };
+  }
 
   const perObj = [];
   for (const o of objects) {

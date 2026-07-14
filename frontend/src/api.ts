@@ -147,6 +147,25 @@ export const api = {
       durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
     };
   },
+  sliceObjects: async (files: File[], settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; sequential: boolean; warnings: string[] }> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const objects = await Promise.all(files.map(async (f) => ({ stl: toB64(await f.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-objects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: files[0]?.name || 'model', settings: settings || {}, objects }) });
+    if (!res.ok) { let msg = `${res.status} ${res.statusText}`; try { const j = JSON.parse(await res.text()); msg = j.error || msg; } catch { /* keep */ } throw new Error(msg); }
+    const gcode = await res.text();
+    let warnings: string[] = [];
+    try { warnings = JSON.parse(decodeURIComponent(res.headers.get('X-Warnings') || '[]')); } catch { /* keep */ }
+    return {
+      gcode,
+      layers: Number(res.headers.get('X-Layer-Count') || 0),
+      timeSec: Number(res.headers.get('X-Estimated-Time-Sec') || 0),
+      filamentG: Number(res.headers.get('X-Filament-G') || 0),
+      wasteG: Number(res.headers.get('X-Waste-G') || 0),
+      durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
+      sequential: res.headers.get('X-Sequential') === '1',
+      warnings,
+    };
+  },
   sliceMultiAndSend: async (printerId: string, filename: string, parts: { extruder: number; file: File }[], opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
     const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
     const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));

@@ -8312,6 +8312,47 @@ export async function handleApiRequest(req, res) {
       return;
     }
 
+    if (method === 'POST' && path === '/api/slicer/native/slice-objects') {
+      // Preview slice of multiple objects (no upload). JSON { filename, settings,
+      // objects:[{stl(base64), settings}] }. Honors print_sequence=by_object.
+      const chunks = []; let total = 0; const limit = 200 * 1024 * 1024; let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          if (!Array.isArray(body.objects) || !body.objects.length) return sendJson(res, { error: 'objects required' }, 400);
+          const { bufferToMesh } = await import('./format-converter.js');
+          const globalSettings = buildNativeSettings(body.settings || {}, { bedTemp: 60, nozzleTemp: 210, material: 'PLA' });
+          const objects = [];
+          for (const o of body.objects) {
+            const mesh = await bufferToMesh(Buffer.from(String(o.stl || ''), 'base64'), 'obj.stl');
+            objects.push({ mesh, settings: buildNativeSettings(o.settings || {}, {}) });
+          }
+          const start = Date.now();
+          const { sliceObjectsGcode } = await import('./native-slicer.js');
+          const result = await sliceObjectsGcode(objects, globalSettings);
+          const { estimate } = await import('./gcode-time-estimator.js');
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14 };
+          const matKey = String(globalSettings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'X-Slicer': 'native-objects',
+            'X-Slice-Duration-Ms': String(Date.now() - start),
+            'X-Layer-Count': String(result.layers),
+            'X-Estimated-Time-Sec': String(est.timeSeconds),
+            'X-Filament-G': String(est.weightG),
+            'X-Waste-G': String(est.wasteWeightG ?? 0),
+            'X-Sequential': result.sequential ? '1' : '0',
+            'X-Warnings': encodeURIComponent(JSON.stringify(result.warnings || [])),
+          });
+          return res.end(Buffer.from(result.gcode, 'utf-8'));
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+      return;
+    }
+
     if (method === 'POST' && path === '/api/slicer/native/slice-objects-and-send') {
       // Per-object settings: JSON { printerId, filename, print, settings(global),
       // objects:[{stl(base64), settings(override)}] }. Each object is sliced with
