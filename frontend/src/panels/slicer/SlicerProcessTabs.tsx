@@ -123,6 +123,7 @@ const FIELDS: Field[] = [
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp', label: 'Bed temperature', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Bed', k: 'bed_temp_initial', label: 'Bed temp — initial layer', type: 'num', unit: '°C', step: 5 },
   { tab: 'Temperature', group: 'Chamber', k: 'chamber_temperature', label: 'Chamber temperature (M141)', type: 'num', unit: '°C', step: 5 },
+  { tab: 'Temperature', group: 'Filament', k: 'filament_diameter', label: 'Filament diameter', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_speed', label: 'Part cooling fan', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_off_layers', label: 'Fan off for first N layers', type: 'num', step: 1 },
   { tab: 'Temperature', group: 'Cooling', k: 'slow_down_layer_time', label: 'Slow down if layer faster than', type: 'num', unit: 's', step: 1 },

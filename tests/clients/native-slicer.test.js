@@ -782,3 +782,17 @@ describe('native-slicer: machine limits', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: filament diameter', () => {
+  it('thicker filament needs less E for the same volume', async () => {
+    const lastE = (g) => { const m = [...g.matchAll(/E(\d+\.\d+)/g)]; return m.length ? +m[m.length - 1][1] : 0; };
+    const std = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 1.75, supports: false });
+    const fat = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 2.85, supports: false });
+    assert.ok(lastE(fat.gcode) < lastE(std.gcode), `2.85mm should use less E (1.75=${lastE(std.gcode)} 2.85=${lastE(fat.gcode)})`);
+  });
+  it('default 1.75 unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 1.75, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
