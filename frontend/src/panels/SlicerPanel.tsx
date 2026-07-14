@@ -739,6 +739,22 @@ export function SlicerPanel() {
               )}
               <button className="oslice-filadd" title={t('v2.slset.add_filament', 'Add filament')} onClick={addSlot} disabled={filaments.length >= (selPrinter?.colorSlots ?? 8)} style={{ marginLeft: (selPrinter?.ams?.length ?? 0) > 0 ? '0' : 'auto' }}>+</button>
             </div>
+            {/* Detected accessories for the selected printer (AMS units + nozzle),
+                straight from the hardware — no manual entry. */}
+            {(() => {
+              const units = selPrinter?.amsUnits ?? [];
+              const byType = new Map<string, number>();
+              for (const u of units) byType.set(u.type, (byType.get(u.type) ?? 0) + 1);
+              const amsStr = [...byType.entries()].map(([tpe, n]) => (n > 1 ? `${n}× ${tpe}` : tpe)).join(' · ');
+              const nozzleStr = selPrinter?.nozzle ? `${selPrinter.nozzle} mm${selPrinter.nozzleType ? ` ${String(selPrinter.nozzleType).replace(/_/g, ' ')}` : ''}` : '';
+              if (!amsStr && !nozzleStr) return null;
+              return (
+                <div className="oslice-accessories">
+                  {amsStr && <span title={t('v2.slset.ams_units_hint', 'AMS units detected on this printer')}>◈ {amsStr}</span>}
+                  {nozzleStr && <span title={t('v2.slset.nozzle_hint', 'Nozzle reported by the printer')}>⬡ {nozzleStr}</span>}
+                </div>
+              );
+            })()}
             {filaments.length > 1 && (
               <button className="btn btn--sm btn--ghost" style={{ fontSize: '0.66rem', padding: '2px 8px', marginBottom: 6, alignSelf: 'flex-start' }} onClick={() => setPurgeOpen(true)} title={t('v2.slset.purge_hint', 'Flush volumes per colour change (waste as infill)')}>
                 {t('v2.slset.purge', 'Purge volumes')}{flushMatrix ? ' ●' : ''}

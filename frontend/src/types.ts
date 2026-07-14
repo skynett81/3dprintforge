@@ -288,8 +288,10 @@ export interface SlicerPrinter {
   multiTool?: boolean;
   extruders?: number;
   nozzle?: number;
+  nozzleType?: string | null;
   chamber?: boolean;
   maxTemps?: { nozzle: number; bed: number; chamber: number };
+  amsUnits?: { id: number; trays: number; type: string; humidity: number | null; temp: number | null; drying: boolean }[];
   ams?: { slot: number; color: string; material: string }[];
   amsSource?: 'ams' | 'slots' | 'spools' | null;
   amsHumidity?: number | null;

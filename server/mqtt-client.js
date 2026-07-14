@@ -605,6 +605,25 @@ export class BambuMqttClient {
           dryTime: a.dry_time !== undefined ? Number(a.dry_time) : null,
           drySfReason: a.dry_sf_reason !== undefined ? Number(a.dry_sf_reason) : null,
         }));
+        // Per-unit accessory summary with the AMS TYPE inferred from what the
+        // unit reports: 1 tray + heating = AMS HT; 4 trays + RH% sensor = AMS 2
+        // Pro; 4 trays + humidity level = AMS; 4 trays + no sensor = AMS Lite.
+        const amsType = (u) => {
+          const trays = Array.isArray(u.tray) ? u.tray.length : 0;
+          if (trays <= 1) return 'AMS HT';
+          if (u.humidity_raw !== undefined && u.humidity_raw !== null) return 'AMS 2 Pro';
+          if (u.humidity !== undefined && u.humidity !== null && Number(u.humidity) > 0) return 'AMS';
+          return 'AMS Lite';
+        };
+        this.state._ams_units = this.state.ams.ams.map((a) => ({
+          id: a.id,
+          trays: Array.isArray(a.tray) ? a.tray.length : 0,
+          type: amsType(a),
+          humidity: a.humidity_raw != null ? Number(a.humidity_raw) : (a.humidity != null ? Number(a.humidity) : null),
+          temp: a.temp != null ? Number(a.temp) : null,
+          drying: a.dry_time != null && Number(a.dry_time) > 0,
+        }));
+        this.state._ams_slots = this.state._ams_units.reduce((n, u) => n + u.trays, 0);
       }
 
       // HMS error code tracking with full details + firmware 01.02.00.00 detailed causes

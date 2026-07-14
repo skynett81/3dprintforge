@@ -6170,7 +6170,10 @@ export async function handleApiRequest(req, res) {
         // Machine specs — live-reported (Klipper) first, then the capability DB,
         // so the slicer knows nozzle/extruders/chamber/temps without manual entry.
         const chamber = !!(st._chamber || feat.chamber || feat.chamberHeated);
-        const nozzle = st._nozzleDiameter || caps?.nozzle || 0.4;
+        const nozzle = st._nozzleDiameter || Number(st._nozzle_diameter) || caps?.nozzle || 0.4;
+        const nozzleType = st._nozzle_type || null;   // Bambu reports hardened/steel
+        // Per-AMS-unit accessories (type/slots/humidity) — 2×AMS 2 Pro, HT, etc.
+        const amsUnits = Array.isArray(st._ams_units) ? st._ams_units : [];
         const extruders = st._extruders || feat.toolheads || ((feat.idex || feat.dualNozzle) ? 2 : 1);
         const maxTemps = {
           nozzle: st._maxNozzleTemp || caps?.maxNozzleTemp || ((feat.highTempBed || feat.chamberHeated) ? 300 : 300),
@@ -6187,9 +6190,11 @@ export async function handleApiRequest(req, res) {
           multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),
           extruders,
           nozzle,
+          nozzleType,
           chamber,
           maxTemps,
           ams,
+          amsUnits,
           amsSource: source,
           amsHumidity: humidity != null ? Number(humidity) : null,
           external,
