@@ -102,6 +102,9 @@ export function GcodePreview({ gcode, bed = 256, slotColors, colorChangeLayers, 
   const toggleFeat = (f: Feature) => setHiddenFeats((prev) => { const n = new Set(prev); if (n.has(f)) n.delete(f); else n.add(f); return n; });
 
   useEffect(() => { setLayer(total); setLow(1); setMoves(FULL); }, [total]);
+  // A multi-colour slice defaults to the Filament (tool) view so the painted
+  // colours show straight away, like BambuStudio.
+  useEffect(() => { if (parsed.tools.length > 1) setMode('tool'); }, [parsed]);
 
   // Play: build up the print move by move, advancing a layer once its moves are
   // exhausted (BambuStudio's nozzle animation), then stop at the top.

@@ -166,6 +166,18 @@ export const api = {
       warnings,
     };
   },
+  sliceMulti: async (filename: string, parts: { extruder: number; file: File }[], settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; materials: number }> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-multi', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, settings: settings ?? {}, parts: encoded }),
+    });
+    const text = await res.text();
+    let data: unknown; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as { gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; materials: number };
+  },
   sliceMultiAndSend: async (printerId: string, filename: string, parts: { extruder: number; file: File }[], opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
     const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
     const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));

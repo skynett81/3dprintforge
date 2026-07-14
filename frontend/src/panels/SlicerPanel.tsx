@@ -496,10 +496,20 @@ export function SlicerPanel() {
       const s = await settingsWithCalibration(selPrinter?.id);
       // Sequential (by-object) printing needs the objects sliced separately.
       const each = s.print_sequence === 'by_object' && toolState.count > 1 ? (plateRef.current?.exportEach(baseName) ?? []) : [];
+      // Colour-painted / multi-material models preview through the multi path so
+      // the toolpath shows the painted colours (BambuStudio-style), not grey.
+      const colorPainted = plateRef.current?.hasColorPaint() ?? false;
+      const multi = colorPainted || (plateRef.current?.hasMaterials() ?? false);
+      const materials = each.length > 1 ? [] : multi
+        ? (colorPainted ? (plateRef.current?.getColorMaterials(baseName) ?? []) : (plateRef.current?.exportMaterials(baseName) ?? []))
+        : [];
       if (each.length > 1) {
         const p = await api.sliceObjects(each.map((e) => e.file), s);
         setPreview(p); setTab('preview');
         if (p.warnings?.length) toast(p.warnings[0], 'error');
+      } else if (materials.length > 1) {
+        const p = await api.sliceMulti(baseName, materials, s);
+        setPreview({ ...p, wasteG: p.wasteG ?? 0 }); setTab('preview');
       } else {
         const toSend = plateRef.current?.exportSTL(baseName) ?? file;
         if (!toSend) { toast(t('v2.slicer.pick_file', 'Choose a model file first'), 'error'); return; }

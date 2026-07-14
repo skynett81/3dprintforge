@@ -8392,6 +8392,44 @@ export async function handleApiRequest(req, res) {
       return;
     }
 
+    if (method === 'POST' && path === '/api/slicer/native/slice-multi') {
+      // Preview-only multi-material slice: JSON body { filename, settings,
+      // parts:[{extruder, stl(base64)}] }. Returns the G-code (with tool
+      // changes) so the browser preview can render the painted colours.
+      const chunks = [];
+      let total = 0;
+      const limit = 200 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          if (!Array.isArray(body.parts) || !body.parts.length) return sendJson(res, { error: 'parts required' }, 400);
+          const { bufferToMesh } = await import('./format-converter.js');
+          const meshes = [];
+          for (const p of body.parts) {
+            const buf = Buffer.from(String(p.stl || ''), 'base64');
+            const mesh = await bufferToMesh(buf, `part.stl`);
+            meshes.push({ positions: mesh.positions, indices: mesh.indices, extruder: parseInt(p.extruder, 10) || 1 });
+          }
+          const settings = buildNativeSettings(body.settings || {}, { bedTemp: 60, nozzleTemp: 210, material: 'PLA' });
+          const start = Date.now();
+          const { sliceMultiMaterialGcode } = await import('./native-slicer-multi.js');
+          const result = await sliceMultiMaterialGcode(meshes, settings);
+          const durationMs = Date.now() - start;
+          const { estimate } = await import('./gcode-time-estimator.js');
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14, PVA: 1.23, HIPS: 1.04 };
+          const matKey = String(settings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
+          return sendJson(res, { gcode: result.gcode, layers: result.layers, timeSec: est.timeSeconds, filamentG: est.weightG, wasteG: est.wasteWeightG ?? 0, durationMs, materials: result.materials }, 200);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
     if (method === 'POST' && path === '/api/slicer/native/slice-multi-and-send') {
       // Multi-material / multi-colour slice: JSON body { printerId, filename,
       // print, settings, parts:[{extruder, stl(base64)}] }. Slices with tool
