@@ -90,6 +90,7 @@ export function SlicerPanel() {
   const [objOverrides, setObjOverrides] = useState<Record<number, SliceSettings>>({});
   const [filaments, setFilaments] = useState<{ color: string; material: string }[]>([{ color: '#000000', material: 'PLA' }]);
   const [toolState, setToolState] = useState<PlateState>({ count: 0, hasSel: false, mode: 'translate', names: [], selIndex: -1, partTypes: [], partParents: [] });
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; i: number } | null>(null);
   const [full, setFull] = useState(false);
   const [autoCalib, setAutoCalib] = useState(true);     // apply saved fleet calibration
   const [calibK, setCalibK] = useState<number | null>(null);
@@ -694,18 +695,53 @@ export function SlicerPanel() {
               <>
                 <div className="oslice-objlist">
                   {toolState.names.length === 0 && <p className="muted micro" style={{ padding: 10 }}>{t('v2.slicer.no_objects', 'No objects on the plate.')}</p>}
-                  {toolState.names.map((n, i) => {
-                    const pt = toolState.partTypes[i] || '';
-                    const isPart = !!pt;
-                    const badge = pt === 'negative' ? t('v2.part.negative', 'Negative') : pt === 'enforcer' ? t('v2.part.enforcer', 'Support+') : pt === 'blocker' ? t('v2.part.blocker', 'Support−') : '';
-                    return (
-                      <button key={i} className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}${isPart ? ' oslice-objitem--part' : ''}`} style={isPart ? { paddingLeft: 22 } : undefined} onClick={() => plateRef.current?.selectAt(i)}>
-                        <span className="ellipsis">{n}</span>
-                        {badge && <span className={`oslice-partbadge oslice-partbadge--${pt}`}>{badge}</span>}
-                      </button>
-                    );
-                  })}
+                  {(() => {
+                    // Order the flat list as a tree: each top-level object followed by
+                    // its attached part volumes (children), so parts nest visually.
+                    const order: number[] = [];
+                    toolState.names.forEach((_, i) => {
+                      if ((toolState.partParents[i] ?? -1) < 0) {
+                        order.push(i);
+                        toolState.names.forEach((__, j) => { if (toolState.partParents[j] === i) order.push(j); });
+                      }
+                    });
+                    return order.map((i) => {
+                      const pt = toolState.partTypes[i] || '';
+                      const isPart = !!pt;
+                      const badge = pt === 'negative' ? t('v2.part.negative', 'Negative') : pt === 'enforcer' ? t('v2.part.enforcer', 'Support+') : pt === 'blocker' ? t('v2.part.blocker', 'Support−') : '';
+                      return (
+                        <div key={i} role="button" tabIndex={0}
+                          className={`oslice-objitem${toolState.selIndex === i ? ' oslice-objitem--on' : ''}${isPart ? ' oslice-objitem--part' : ''}`}
+                          style={isPart ? { paddingLeft: 24 } : undefined}
+                          onClick={() => plateRef.current?.selectAt(i)}
+                          onContextMenu={(e) => { e.preventDefault(); plateRef.current?.selectAt(i); setCtxMenu({ x: e.clientX, y: e.clientY, i }); }}>
+                          {isPart && <span className="oslice-treeglyph">└</span>}
+                          <span className="ellipsis">{toolState.names[i]}</span>
+                          {badge && <span className={`oslice-partbadge oslice-partbadge--${pt}`}>{badge}</span>}
+                          <button className="oslice-objdel" title={t('v2.obj.delete', 'Delete')} onClick={(e) => { e.stopPropagation(); plateRef.current?.selectAt(i); plateRef.current?.remove(); }}>×</button>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
+                {ctxMenu && (
+                  <>
+                    <div className="oslice-ctx-backdrop" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+                    <div className="oslice-ctxmenu" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
+                      {!toolState.partTypes[ctxMenu.i] && (
+                        <>
+                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('negative', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.negative', 'Negative')}</button>
+                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('enforcer', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.enforcer', 'Support enforcer')}</button>
+                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.addPart('blocker', 'cube'); setCtxMenu(null); }}>＋ {t('v2.part.blocker', 'Support blocker')}</button>
+                          <button onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.duplicateN(1); setCtxMenu(null); }}>{t('v2.obj.duplicate', 'Duplicate')}</button>
+                          <div className="oslice-ctxmenu-sep" />
+                        </>
+                      )}
+                      <button onClick={() => { const cur = toolState.names[ctxMenu.i] || ''; const n = window.prompt(t('v2.obj.rename_prompt', 'Rename object'), cur); if (n && n.trim()) { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.rename(n); } setCtxMenu(null); }}>{t('v2.obj.rename', 'Rename…')}</button>
+                      <button className="oslice-ctxmenu-del" onClick={() => { plateRef.current?.selectAt(ctxMenu.i); plateRef.current?.remove(); setCtxMenu(null); }}>{t('v2.obj.delete', 'Delete')}</button>
+                    </div>
+                  </>
+                )}
                 {obj && toolState.selIndex >= 0 && !toolState.partTypes[toolState.selIndex] && (
                   <div className="oslice-partadd">
                     <span className="oslice-sectlbl">{t('v2.part.add', 'Add part volume')}</span>

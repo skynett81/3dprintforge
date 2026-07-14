@@ -70,6 +70,7 @@ export interface PlateHandle {
   boolean: (op: 'union' | 'subtract' | 'intersect') => void;
   addPrimitive: (shape: 'cube' | 'cylinder' | 'sphere') => void;
   addPart: (type: PartType, shape: 'cube' | 'cylinder' | 'sphere') => void;
+  rename: (name: string) => void;
   addText: (text: string) => void;
   addGeometry: (geom: THREE.BufferGeometry, name: string) => void;
 }
@@ -947,6 +948,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       addMesh(geo, `Text: ${text}`);
     },
     addGeometry: (geom, name) => { addMesh(geom, name); },
+    rename: (name) => { const m = ctx.current?.selected; if (m && name.trim()) { m.name = name.trim(); emitState(); } },
     restore: (snap) => {
       const c = ctx.current; if (!c) return;
       select(null);
