@@ -50,6 +50,7 @@ const FIELDS: Field[] = [
   { tab: 'Strength', group: 'Top/bottom shells', k: 'bottom_shell_thickness', label: 'Bottom shell thickness', type: 'num', unit: 'mm', step: 0.2 },
   { tab: 'Strength', group: 'Infill', k: 'infill_density', label: 'Sparse infill density', type: 'num', unit: '%', step: 5 },
   { tab: 'Strength', group: 'Infill', k: 'infill_wall_overlap', label: 'Infill/wall overlap', type: 'num', unit: '%', step: 5 },
+  { tab: 'Strength', group: 'Infill', k: 'infill_anchor', label: 'Infill anchor (bond to wall)', type: 'num', unit: 'mm', step: 0.1 },
   { tab: 'Strength', group: 'Infill', k: 'gap_fill_enabled', label: 'Gap fill (solid-fill thin features)', type: 'bool' },
   { tab: 'Speed', group: 'Infill', k: 'gap_infill_speed', label: 'Gap fill', type: 'num', unit: 'mm/s', step: 5 },
   { tab: 'Strength', group: 'Infill', k: 'infill_pattern', label: 'Sparse infill pattern', type: 'sel', opts: INFILL_PATTERNS },

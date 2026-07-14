@@ -533,3 +533,30 @@ describe('native-slicer: ironing inset + pattern', () => {
     assert.equal(b.gcode, a.gcode);
   });
 });
+
+describe('native-slicer: infill anchor', () => {
+  const sparseExtent = (g) => {
+    // Total length of sparse EXTRUDE moves — anchoring lengthens each line.
+    let inF = false, pos = null, L = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; }
+      const m = ln.match(/^G[01] X([-\d.]+) Y([-\d.]+)/);
+      if (!m) continue;
+      const p = [+m[1], +m[2]];
+      if (inF && ln.startsWith('G1') && /\sE[-\d.]/.test(ln) && pos) L += Math.hypot(p[0] - pos[0], p[1] - pos[1]);
+      pos = p;
+    }
+    return L;
+  };
+  it('infill_anchor lengthens the sparse infill lines', async () => {
+    const none = await sliceMeshToGcode(box(30, 30, 4), { layerHeight: 0.3, infillDensity: 0.2, supports: false });
+    const anch = await sliceMeshToGcode(box(30, 30, 4), { layerHeight: 0.3, infillDensity: 0.2, infillAnchor: 0.6, supports: false });
+    assert.ok(sparseExtent(anch.gcode) > sparseExtent(none.gcode), `anchored should be longer (none=${sparseExtent(none.gcode).toFixed(0)} anch=${sparseExtent(anch.gcode).toFixed(0)})`);
+    assert.ok(!anch.gcode.includes('NaN'));
+  });
+  it('infill_anchor 0 is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.3, infillDensity: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.3, infillDensity: 0.2, infillAnchor: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});

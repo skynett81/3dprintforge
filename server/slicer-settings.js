@@ -214,6 +214,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('infillJerk', num(s.infill_jerk));
   set('initialLayerJerk', num(s.initial_layer_jerk));
   set('ironingInset', num(s.ironing_inset));
+  set('infillAnchor', num(s.infill_anchor));
   if (s.ironing_pattern) out.ironingPattern = String(s.ironing_pattern);
   if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));

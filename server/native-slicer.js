@@ -970,13 +970,24 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // lines use that modifier's density/pattern (boundary by line midpoint).
         const zc = zCenters ? zCenters[i] : (i + 0.5) * s.layerHeight;
         const ctxZ = (i + 1) * s.layerHeight;
+        // infill_anchor: lengthen each straight infill line at both ends so it
+        // reaches into the perimeter and bonds (BambuStudio infill_anchor).
+        const anchorSegs = (segs) => {
+          if (!(s.infillAnchor > 0)) return segs;
+          const d = Math.min(s.infillAnchor, lw * 2);
+          return segs.map((sg) => {
+            if (sg.length !== 2) return sg;
+            const [a, b] = sg, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+            return [[a[0] - ux * d, a[1] - uy * d], [b[0] + ux * d, b[1] + uy * d]];
+          });
+        };
         const sparseSegsFor = (region) => {
           // Skip sparse infill in regions smaller than the minimum area (BambuStudio
           // minimum_sparse_infill_area) — tiny pockets aren't worth infilling.
           if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) return [];
           const active = modifiers.filter((m) => zc >= m.minZ && zc <= m.maxZ);
           const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ });
-          if (!active.length) return base;
+          if (!active.length) return anchorSegs(base);
           const inAny = (x, y) => active.some((m) => x >= m.minX && x <= m.maxX && y >= m.minY && y <= m.maxY);
           const out = base.filter((sg) => !inAny((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
           for (const m of active) {
@@ -987,7 +998,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
               if (mx >= m.minX && mx <= m.maxX && my >= m.minY && my <= m.maxY) out.push(sg);
             }
           }
-          return out;
+          return anchorSegs(out);
         };
         // Concentric infill = closed rings stepping inward. `dense` fills solid
         // (spacing = line width) for solid/top-surface rings.
