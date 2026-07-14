@@ -286,6 +286,10 @@ export interface SlicerPrinter {
   buildVolume?: { x: number; y: number; z: number } | null;
   colorSlots?: number;
   multiTool?: boolean;
+  extruders?: number;
+  nozzle?: number;
+  chamber?: boolean;
+  maxTemps?: { nozzle: number; bed: number; chamber: number };
   ams?: { slot: number; color: string; material: string }[];
   amsSource?: 'ams' | 'slots' | 'spools' | null;
   amsHumidity?: number | null;

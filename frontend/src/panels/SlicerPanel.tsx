@@ -286,6 +286,12 @@ export function SlicerPanel() {
       const n = Math.max(1, p.colorSlots ?? 1);
       setFilaments((prev) => Array.from({ length: n }, (_, i) => prev[i] ?? { color: DEFAULT_SLOT_COLORS[i % DEFAULT_SLOT_COLORS.length], material: prev[0]?.material ?? 'PLA' }));
     }
+    // Machine specs from the printer database: nozzle diameter (drives line
+    // widths) so the slicer matches the hardware without manual entry.
+    const nz = p.nozzle;
+    if (nz && nz > 0) {
+      setSettings((s) => (Number(s.nozzle_diameter) === nz ? s : { ...s, nozzle_diameter: nz, line_width: +(nz * 1.05).toFixed(2), outer_wall_line_width: +(nz * 1.05).toFixed(2), inner_wall_line_width: +(nz * 1.125).toFixed(2) }));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selPrinter]);
 
@@ -765,8 +771,11 @@ export function SlicerPanel() {
               );
             })}
             <div className="oslice-temps" style={{ marginTop: 8 }}>
-              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.nozzle', 'Nozzle °C')}</span><input className="oset-input" type="number" value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, nozzle_temp: e.target.value }))} /></label>
-              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.bed', 'Bed °C')}</span><input className="oset-input" type="number" value={(settings.bed_temp as number) ?? ''} onChange={(e) => setSettings((s) => ({ ...s, bed_temp: e.target.value }))} /></label>
+              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.nozzle', 'Nozzle °C')}{selPrinter?.maxTemps?.nozzle ? <em className="oslice-maxhint"> ≤{selPrinter.maxTemps.nozzle}</em> : null}</span><input className="oset-input" type="number" max={selPrinter?.maxTemps?.nozzle} value={(settings.nozzle_temp as number) ?? ''} onChange={(e) => { const mx = selPrinter?.maxTemps?.nozzle; const v = mx ? Math.min(Number(e.target.value) || 0, mx) : e.target.value; setSettings((s) => ({ ...s, nozzle_temp: v })); }} /></label>
+              <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.bed', 'Bed °C')}{selPrinter?.maxTemps?.bed ? <em className="oslice-maxhint"> ≤{selPrinter.maxTemps.bed}</em> : null}</span><input className="oset-input" type="number" max={selPrinter?.maxTemps?.bed} value={(settings.bed_temp as number) ?? ''} onChange={(e) => { const mx = selPrinter?.maxTemps?.bed; const v = mx ? Math.min(Number(e.target.value) || 0, mx) : e.target.value; setSettings((s) => ({ ...s, bed_temp: v })); }} /></label>
+              {selPrinter?.chamber && (
+                <label className="oset-field"><span className="oslice-sectlbl">{t('v2.slset.chamber', 'Chamber °C')}{selPrinter?.maxTemps?.chamber ? <em className="oslice-maxhint"> ≤{selPrinter.maxTemps.chamber}</em> : null}</span><input className="oset-input" type="number" max={selPrinter?.maxTemps?.chamber} value={(settings.chamber_temperature as number) ?? ''} onChange={(e) => { const mx = selPrinter?.maxTemps?.chamber; const v = mx ? Math.min(Number(e.target.value) || 0, mx) : e.target.value; setSettings((s) => ({ ...s, chamber_temperature: v })); }} /></label>
+              )}
             </div>
             <label className="oslice-calibrow" title={t('v2.slset.calib_hint', 'Apply the saved pressure-advance calibration for the matched spool + printer')}>
               <input type="checkbox" checked={autoCalib} onChange={(e) => setAutoCalib(e.target.checked)} />

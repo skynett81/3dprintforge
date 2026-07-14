@@ -6167,6 +6167,16 @@ export async function handleApiRequest(req, res) {
         if (st.vt_tray && st.vt_tray.tray_color) {
           external = { color: normHex(st.vt_tray.tray_color), material: normMat(st.vt_tray.tray_type) };
         }
+        // Machine specs — live-reported (Klipper) first, then the capability DB,
+        // so the slicer knows nozzle/extruders/chamber/temps without manual entry.
+        const chamber = !!(st._chamber || feat.chamber || feat.chamberHeated);
+        const nozzle = st._nozzleDiameter || caps?.nozzle || 0.4;
+        const extruders = st._extruders || feat.toolheads || ((feat.idex || feat.dualNozzle) ? 2 : 1);
+        const maxTemps = {
+          nozzle: st._maxNozzleTemp || caps?.maxNozzleTemp || ((feat.highTempBed || feat.chamberHeated) ? 300 : 300),
+          bed: st._maxBedTemp || caps?.maxBedTemp || (feat.highTempBed ? 120 : 110),
+          chamber: st._maxChamberTemp || caps?.maxChamberTemp || (chamber ? 60 : 0),
+        };
         list.push({
           id,
           name: entry.config?.name || id,
@@ -6175,6 +6185,10 @@ export async function handleApiRequest(req, res) {
           buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
           colorSlots,
           multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),
+          extruders,
+          nozzle,
+          chamber,
+          maxTemps,
           ams,
           amsSource: source,
           amsHumidity: humidity != null ? Number(humidity) : null,
