@@ -380,7 +380,10 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (ov.some((v) => v !== undefined)) out.overhangSpeeds = ov.map((v) => v ?? 0);
   set('overhangFanSpeed', num(s.overhang_fan_speed));
   const ba = num(s.bridge_angle);
-  if (ba) out.bridgeAngle = ba;                 // 0 = auto (keep the layer base angle)
+  if (ba) out.bridgeAngle = ba;                 // 0/unset = auto-detect the best-anchored angle
+  // Bridge angle auto-detection (BridgeDetector). On by default; a fixed
+  // bridge_angle overrides it. Explicit false keeps bridges at the layer angle.
+  if (s.bridge_angle_auto !== undefined && s.bridge_angle_auto !== '') out.bridgeAngleAuto = !!s.bridge_angle_auto;
   if (s.detect_overhang_wall !== undefined && s.detect_overhang_wall !== '') out.overhangDetect = !!s.detect_overhang_wall;
   // Custom G-code hooks.
   if (s.start_gcode || s.machine_start_gcode) out.startGcode = String(s.start_gcode ?? s.machine_start_gcode);
