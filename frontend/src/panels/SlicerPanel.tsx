@@ -64,7 +64,7 @@ export function SlicerPanel() {
   const { data: printersData } = useResource<Printer[]>(api.listPrinters, 30000);
   const { data: slicerPrintersData } = useResource<SlicerPrinter[]>(api.getSlicerPrinters, 60000);
   const { live: livePrinters } = useLivePrinters();
-  const { data: spoolsData } = useResource<Spool[]>(api.listSpools, 60000);
+  const { data: spoolsData, reload: reloadSpools } = useResource<Spool[]>(api.listSpools, 60000);
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const slicerPrinters = useMemo(() => slicerPrintersData ?? [], [slicerPrintersData]);
   const spools = useMemo(() => spoolsData ?? [], [spoolsData]);
@@ -1269,7 +1269,7 @@ export function SlicerPanel() {
             </Suspense>
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
-          {tab === 'filaments' && <SlicerFilaments spools={spools} printers={printers} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
+          {tab === 'filaments' && <SlicerFilaments spools={spools} printers={printers} onChanged={reloadSpools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
           {tab === 'calibration' && <SlicerCalibration onPreview={(r) => setPreview({ gcode: r.gcode, layers: 0, timeSec: r.timeSec, filamentG: r.filamentG, wasteG: 0, durationMs: 0 })} />}
           {!file && toolState.count === 0 && tab === 'prepare' && (
             <div className="oslice-empty">

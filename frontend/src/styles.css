@@ -1499,3 +1499,9 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-drying-note { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #a6d8ea; background: rgba(60,140,210,0.14); border: 1px solid rgba(60,140,210,0.4); border-radius: 6px; }
 
 .oslice-spoolpick { max-width: 92px; font-size: 0.72rem; }
+
+.oslice-filmgr-actions { display: flex; gap: 6px; margin-left: 10px; }
+.oslice-filcard { position: relative; }
+.oslice-filcard-edit { position: absolute; top: 4px; right: 4px; z-index: 2; width: 20px; height: 20px; border: none; background: rgba(0,0,0,0.28); color: #fff; border-radius: 5px; font-size: 0.72rem; cursor: pointer; opacity: 0; }
+.oslice-filcard:hover .oslice-filcard-edit { opacity: 0.85; }
+.oslice-filcard-edit:hover { background: var(--o-accent); opacity: 1; }

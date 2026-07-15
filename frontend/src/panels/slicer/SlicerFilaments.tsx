@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useT } from '../../i18n';
 import type { Printer, Spool } from '../../types';
+import { SpoolDrawer } from '../../components/SpoolDrawer';
 
 type GroupBy = 'location' | 'material' | 'vendor';
 
@@ -9,6 +10,8 @@ interface Props {
   printers?: Printer[];
   /** Apply a filament's colour + material to the active slot. */
   onApply?: (color: string, material: string) => void;
+  /** Reload the spool list after an edit/add. */
+  onChanged?: () => void;
 }
 
 const hex = (h?: string | null) => (h ? (h.startsWith('#') ? h : '#' + String(h).replace(/^#/, '')) : '#cccccc');
@@ -23,10 +26,14 @@ function textColor(h: string): string {
  *  Spools loaded on a printer group under that printer; the rest under their
  *  shelf/box location. Click a spool to load its colour + material into the
  *  active slicer slot. Read-only over the existing inventory. */
-export function SlicerFilaments({ spools, printers, onApply }: Props) {
+export function SlicerFilaments({ spools, printers, onApply, onChanged }: Props) {
   const t = useT();
   const [q, setQ] = useState('');
   const [groupBy, setGroupBy] = useState<GroupBy>('location');
+  const [editId, setEditId] = useState<number | null>(null);
+  const editing = spools.find((s) => s.id === editId) || null;
+  // Jump to the full inventory (add spool, locations, everything).
+  const goInv = (sub: string) => { window.location.hash = `#/inventory/${sub}`; };
 
   const printerName = useMemo(() => {
     const m = new Map<string, string>();
@@ -75,6 +82,11 @@ export function SlicerFilaments({ spools, printers, onApply }: Props) {
           ))}
         </div>
         <span className="muted micro" style={{ marginLeft: 'auto' }}>{spools.filter((s) => !s.archived).length} {t('v2.filmgr.spools', 'spools')}</span>
+        <div className="oslice-filmgr-actions">
+          <button className="btn btn--xs btn--primary" title={t('v2.filmgr.add_spool_hint', 'Add a spool in the inventory')} onClick={() => goInv('spools')}>＋ {t('v2.filmgr.add_spool', 'Add spool')}</button>
+          <button className="btn btn--xs btn--ghost" title={t('v2.filmgr.locations_hint', 'Manage storage locations')} onClick={() => goInv('locations')}>{t('v2.filmgr.locations', 'Locations')}</button>
+          <button className="btn btn--xs btn--ghost" title={t('v2.filmgr.inventory_hint', 'Open the full inventory')} onClick={() => goInv('overview')}>{t('v2.filmgr.inventory', 'Inventory →')}</button>
+        </div>
       </div>
       <div className="oslice-filmgr-body">
         {groups.length === 0 && <p className="muted" style={{ padding: 16 }}>{t('v2.filmgr.none', 'No filament in inventory.')}</p>}
@@ -90,7 +102,8 @@ export function SlicerFilaments({ spools, printers, onApply }: Props) {
                 const rem = s.remaining_weight_g || 0;
                 const stock = rem <= 0 ? 'out' : (pct < 10 || rem < 50) ? 'low' : 'ok';
                 return (
-                  <button key={s.id} className="oslice-filcard" title={t('v2.filmgr.apply', 'Load into active slot')} onClick={() => onApply?.(c, (s.material || 'PLA'))}>
+                  <div key={s.id} className="oslice-filcard" role="button" tabIndex={0} title={t('v2.filmgr.apply', 'Load into active slot')} onClick={() => onApply?.(c, (s.material || 'PLA'))}>
+                    <button className="oslice-filcard-edit" title={t('v2.filmgr.edit', 'Edit spool (weight, cost, location…)')} onClick={(e) => { e.stopPropagation(); setEditId(s.id); }}>✎</button>
                     <span className="oslice-filcard-sw" style={{ background: c, color: textColor(c) }}>{s.material?.[0] ?? '?'}</span>
                     <span className="oslice-filcard-main">
                       <span className="oslice-filcard-name">{s.color_name || s.profile_name || s.material}
@@ -103,13 +116,14 @@ export function SlicerFilaments({ spools, printers, onApply }: Props) {
                       <span>{Math.round(s.remaining_weight_g)}g</span>
                       {perG > 0 && <span className="muted">{perG.toFixed(2)} kr/g</span>}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </div>
         ))}
       </div>
+      {editing && <SpoolDrawer spool={editing} onClose={() => setEditId(null)} onChanged={() => { onChanged?.(); }} />}
     </div>
   );
 }
