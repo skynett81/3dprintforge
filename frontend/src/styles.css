@@ -662,6 +662,8 @@ select.oset-rowinput { text-align: left; }
 .gpreview-legend-btn--off i { opacity: 0.3; }
 .gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
 .gpreview-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 7px 10px; background: rgba(24,26,30,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; }
+.gpreview-moves { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.gpreview-moves input[type=range] { width: 92px; }
 .gpreview-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; padding: 0 4px; font-size: 0.76rem; color: var(--o-muted); }
 .gpreview-stats b { color: var(--o-text); font-weight: 600; }
 

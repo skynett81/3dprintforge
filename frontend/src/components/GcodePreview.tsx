@@ -80,7 +80,7 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
  * per feature (walls / infill / support …) with a slider — exactly like a
  * desktop slicer's preview. Z-up, millimetres.
  */
-type ColorMode = 'feature' | 'speed' | 'flow' | 'layertime' | 'tool';
+type ColorMode = 'feature' | 'speed' | 'flow' | 'fan' | 'layertime' | 'tool';
 const FULL = 1e9;   // "show the whole top layer" sentinel for the moves counter
 
 export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram = 0, lineWidth = 0.42, colorChangeLayers, onAddColorChange, onRemoveColorChange }: { gcode: string; bed?: number; bedY?: number; slotColors?: string[]; pricePerGram?: number; lineWidth?: number; colorChangeLayers?: number[]; onAddColorChange?: (layer: number) => void; onRemoveColorChange?: (layer: number) => void }) {
@@ -268,7 +268,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
       // Colour each extrusion segment by a per-segment value (speed / flow),
       // per-layer value (layer time) or the active tool — like BambuStudio's
       // "colour by" preview modes.
-      const range = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
+      const range = mode === 'flow' ? parsed.flowRange : mode === 'fan' ? parsed.fanRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
       const span = Math.max(1e-6, range.max - range.min);
       const palette = (slotColors && slotColors.length ? slotColors : ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a']).map((h) => new THREE.Color(h));
       const pos: number[] = [];
@@ -281,7 +281,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
           if (mode === 'tool') {
             rgb.copy(palette[(l.allTool[s] || 0) % palette.length]);
           } else {
-            const val = mode === 'flow' ? l.allFlow[s] : mode === 'layertime' ? l.timeSec : l.allSpeed[s];
+            const val = mode === 'flow' ? l.allFlow[s] : mode === 'fan' ? l.allFan[s] : mode === 'layertime' ? l.timeSec : l.allSpeed[s];
             const t01 = Math.min(1, Math.max(0, (val - range.min) / span));
             rgb.setHSL((1 - t01) * 0.66, 0.9, 0.5);
           }
@@ -355,6 +355,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
             <option value="feature">{t('v2.gpreview.by_feature', 'Line type')}</option>
             <option value="speed">{t('v2.gpreview.by_speed', 'Speed')}</option>
             <option value="flow">{t('v2.gpreview.by_flow', 'Flow')}</option>
+            <option value="fan">{t('v2.gpreview.by_fan', 'Fan speed')}</option>
             <option value="layertime">{t('v2.gpreview.by_layertime', 'Layer time')}</option>
             {parsed.tools.length > 1 && <option value="tool">{t('v2.gpreview.by_tool', 'Filament')}</option>}
           </select>
@@ -370,9 +371,9 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
               ))}
             </div>
           )}
-          {(mode === 'speed' || mode === 'flow' || mode === 'layertime') && (() => {
-            const rng = mode === 'flow' ? parsed.flowRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
-            const unit = mode === 'flow' ? 'mm³/s' : mode === 'layertime' ? 's' : 'mm/s';
+          {(mode === 'speed' || mode === 'flow' || mode === 'fan' || mode === 'layertime') && (() => {
+            const rng = mode === 'flow' ? parsed.flowRange : mode === 'fan' ? parsed.fanRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
+            const unit = mode === 'flow' ? 'mm³/s' : mode === 'fan' ? '%' : mode === 'layertime' ? 's' : 'mm/s';
             return (
               <div className="gpreview-side-legend">
                 <span className="gpreview-legend-item"><i style={{ width: 40, height: 6, background: 'linear-gradient(90deg,#2a4bd8,#2ecc71,#e0603a,#d6333a)' }} /></span>
@@ -426,6 +427,15 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
           <input type="range" min={1} max={Math.max(1, total)} value={shown} onChange={(e) => { setPlaying(false); setLayer(Number(e.target.value)); setMoves(FULL); }} style={{ width: '100%' }} />
         </div>
         <span className="muted micro tnum" style={{ minWidth: 60 }}>z {curZ.toFixed(2)}</span>
+        {curLayer && Math.floor(curLayer.allSeg.length / 4) > 4 && (() => {
+          const seg = Math.floor(curLayer.allSeg.length / 4);
+          return (
+            <label className="gpreview-moves" title={t('v2.gpreview.moves_hint', 'Scrub the moves within this layer')}>
+              <span className="muted micro">{t('v2.gpreview.moves', 'Moves')}</span>
+              <input type="range" min={0} max={seg} value={Math.min(moves, seg)} onChange={(e) => { setPlaying(false); const v = Number(e.target.value); setMoves(v >= seg ? FULL : v); }} />
+            </label>
+          );
+        })()}
         {colorChanges.length > 0 && <span className="muted micro" title={t('v2.gpreview.colorchanges_hint', 'Filament swaps — click a tick to jump')}>{colorChanges.length} {t('v2.gpreview.colorchanges', 'swaps')}</span>}
         {onAddColorChange && shown > 1 && !(colorChangeLayers ?? []).includes(shown) && (
           <button className="btn btn--sm btn--ghost" title={t('v2.gpreview.add_change_hint', 'Pause for a filament swap at this layer (M600)')} onClick={() => onAddColorChange(shown)}>＋ {t('v2.gpreview.add_change', 'Colour change')}</button>

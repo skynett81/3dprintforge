@@ -23,6 +23,8 @@ export interface GcodeLayer {
   allFeat: Feature[];
   /** Filament length (mm) extruded per segment, aligned with allSeg. */
   allE: number[];
+  /** Part-cooling fan (0-100 %) per segment, aligned with allSeg. */
+  allFan: number[];
   /** Travel segments, flat: [ax, ay, bx, by, ...] */
   travel: number[];
   /** Rough print time for this layer (seconds), from move distance / feedrate. */
@@ -36,6 +38,7 @@ export interface ParsedGcode {
   features: Feature[];
   speedRange: { min: number; max: number };
   flowRange: { min: number; max: number };
+  fanRange: { min: number; max: number };
   layerTimeRange: { min: number; max: number };
   tools: number[];
   bbox: { minX: number; minY: number; maxX: number; maxY: number; maxZ: number };
@@ -57,12 +60,13 @@ export function parseGcode(text: string): ParsedGcode {
   const layerFor = (zz: number): GcodeLayer => {
     const key = Math.round(zz * 100) / 100;
     let l = layerByZ.get(key);
-    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], allFeat: [], allE: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
+    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], allFeat: [], allE: [], allFan: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
     return l;
   };
   let feed = 0;          // current feedrate (mm/min)
   let tool = 0;          // active tool/filament index
-  let sMin = Infinity, sMax = 0, fMin = Infinity, fMax = 0;
+  let fan = 0;           // current part-cooling fan (0-100 %), from M106/M107
+  let sMin = Infinity, sMax = 0, fMin = Infinity, fMax = 0, fanMax = 0;
   const toolsSeen = new Set<number>();
   const FIL_AREA = Math.PI * 0.875 * 0.875;   // 1.75 mm filament cross-section (mm²)
 
@@ -93,6 +97,12 @@ export function parseGcode(text: string): ParsedGcode {
     }
     // Tool change: "T0", "T1", … selects the active filament.
     if (line[0] === 'T' && /^T\d+$/.test(line)) { tool = parseInt(line.slice(1), 10) || 0; toolsSeen.add(tool); continue; }
+    // Part-cooling fan: M106 S<0-255> sets it, M107 turns it off.
+    if (head === 'M10') {
+      const u = line.toUpperCase();
+      if (u.startsWith('M107')) { fan = 0; continue; }
+      if (u.startsWith('M106')) { const sm = line.match(/S(-?\d*\.?\d+)/i); const s = sm ? parseFloat(sm[1]) : 255; fan = Math.round(s <= 1 ? s * 100 : (s / 255) * 100); continue; }
+    }
     if (head !== 'G0 ' && head !== 'G1 ' && head !== 'G0' && head !== 'G1') continue;
 
     let nx = x, ny = y, nz = z, ne = e, hasE = false;
@@ -127,7 +137,8 @@ export function parseGcode(text: string): ParsedGcode {
           const dist2 = Math.hypot(nx - x, ny - y);
           // Volumetric flow (mm³/s) = extruded volume / segment time.
           const flow = dist2 > 0 && spd > 0 ? ((ne - e) * FIL_AREA) / (dist2 / spd) : 0;
-          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd); cur.allFlow.push(flow); cur.allTool.push(tool); cur.allFeat.push(feature); cur.allE.push(ne - e);
+          cur.allSeg.push(x, y, nx, ny); cur.allSpeed.push(spd); cur.allFlow.push(flow); cur.allTool.push(tool); cur.allFeat.push(feature); cur.allE.push(ne - e); cur.allFan.push(fan);
+          if (fan > fanMax) fanMax = fan;
           if (spd > 0) { if (spd < sMin) sMin = spd; if (spd > sMax) sMax = spd; }
           if (flow > 0) { if (flow < fMin) fMin = flow; if (flow > fMax) fMax = flow; }
           toolsSeen.add(tool);
@@ -157,6 +168,7 @@ export function parseGcode(text: string): ParsedGcode {
     layers: nonEmpty, features: [...seen],
     speedRange: { min: sMin, max: sMax },
     flowRange: { min: fMin, max: fMax },
+    fanRange: { min: 0, max: fanMax },
     layerTimeRange: { min: ltMin, max: ltMax },
     tools: [...toolsSeen].sort((a, b) => a - b),
     bbox: { minX, minY, maxX, maxY, maxZ },
