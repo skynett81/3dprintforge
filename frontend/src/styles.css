@@ -1497,3 +1497,5 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-abrasive-warn { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #ffce8a; background: rgba(224,120,40,0.14); border: 1px solid rgba(224,120,40,0.4); border-radius: 6px; }
 
 .oslice-drying-note { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #a6d8ea; background: rgba(60,140,210,0.14); border: 1px solid rgba(60,140,210,0.4); border-radius: 6px; }
+
+.oslice-spoolpick { max-width: 92px; font-size: 0.72rem; }

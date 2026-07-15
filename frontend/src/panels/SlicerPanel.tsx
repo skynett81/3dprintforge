@@ -313,6 +313,16 @@ export function SlicerPanel() {
     }
     return out;
   }, [filaments, selPrinter, t]);
+  // Material list = the built-in set PLUS every material actually in inventory,
+  // so the slicer's filament choices correspond to the system's filament.
+  const materialOptions = useMemo(() => {
+    const set = new Set<string>(Object.keys(MATERIALS));
+    for (const s of spools) if (s.material) set.add(String(s.material));
+    return [...set];
+  }, [spools]);
+  // Spools available to load into a slot (in stock, not archived).
+  const stockSpools = useMemo(() => spools.filter((s) => !s.archived && (s.remaining_weight_g ?? 0) > 0), [spools]);
+  const hx = (c?: string | null, fb = '#888888') => (c ? (c.startsWith('#') ? c : '#' + String(c).replace(/^#/, '')) : fb);
 
   // Keep the filament slots consistent with the selected printer so cost/waste
   // is computed against the right machine: a printer with a live AMS (or spools
@@ -852,9 +862,17 @@ export function SlicerPanel() {
                     {i + 1}
                     <input type="color" value={f.color} onChange={(e) => setSlot(i, { color: e.target.value })} style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} />
                   </label>
-                  <select className="oslice-preset-sel oslice-filname" value={f.material} onChange={(e) => setSlot(i, { material: e.target.value })}>
-                    {Object.keys(MATERIALS).map((m2) => <option key={m2} value={m2}>{m2}</option>)}
+                  <select className="oslice-preset-sel oslice-filname" value={materialOptions.includes(f.material) ? f.material : ''} onChange={(e) => setSlot(i, { material: e.target.value })}>
+                    {!materialOptions.includes(f.material) && <option value="">{f.material}</option>}
+                    {materialOptions.map((m2) => <option key={m2} value={m2}>{m2}</option>)}
                   </select>
+                  {stockSpools.length > 0 && (
+                    <select className="oslice-preset-sel oslice-spoolpick" value="" title={t('v2.slset.pick_spool', 'Load one of your spools from inventory')}
+                      onChange={(e) => { const sp = stockSpools.find((s) => String(s.id) === e.target.value); if (!sp) return; const mat = materialOptions.includes(String(sp.material)) ? String(sp.material) : ((String(sp.material || '').split(/[\s/_-]/)[0]) || f.material); setSlot(i, { material: mat, color: hx(sp.color_hex, f.color) }); }}>
+                      <option value="">{t('v2.slset.from_inventory', '＋ Spool')}</option>
+                      {stockSpools.map((s) => <option key={s.id} value={s.id}>{[s.vendor_name, s.material, s.color_name].filter(Boolean).join(' ')} ({Math.round(s.remaining_weight_g)} g)</option>)}
+                    </select>
+                  )}
                   {filaments.length > 1 && <button className="oslice-filadd" title={t('v2.slset.remove', 'Remove')} onClick={() => removeSlot(i)}>−</button>}
                 </div>
                 <div className={`oslice-spoolmatch${preview && m.matched && !m.sufficient ? ' oslice-spoolmatch--short' : ''}`}>
