@@ -415,6 +415,21 @@ export function SlicerPanel() {
     if (m0) setSettings((s) => ({ ...s, material: fil[0].material, nozzle_temp: m0.temps[0], bed_temp: m0.temps[1] }));
   }
   function toggle(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
+  // Live availability of a fleet printer (for the Send-to list) — something a
+  // single-printer slicer like BambuStudio can't show. Reads both the Bambu-root
+  // and the Moonraker { print: … } state shapes.
+  function liveStatusOf(id: string): { label: string; kind: 'idle' | 'printing' | 'paused' | 'off' } {
+    const raw = livePrinters[id] as Record<string, unknown> | undefined;
+    if (!raw) return { label: t('v2.slicer.offline', 'offline'), kind: 'off' };
+    const st = (raw.print && typeof raw.print === 'object' ? raw.print : raw) as Record<string, unknown>;
+    const n = (v: unknown) => { const x = typeof v === 'string' ? parseFloat(v) : (v as number); return Number.isFinite(x) ? x : null; };
+    const pct = n(st.mc_percent) ?? n(st.print_progress) ?? n(st.progress);
+    const state = String(st.gcode_state ?? st.state ?? st.print_status ?? '').toUpperCase();
+    const printing = /RUN|PRINT|BUSY/.test(state) || (pct != null && pct > 0 && pct < 100);
+    if (/PAUSE/.test(state)) return { label: t('v2.slicer.paused', 'paused'), kind: 'paused' };
+    if (printing) return { label: pct != null ? `${t('v2.slicer.printing', 'printing')} ${Math.round(pct)}%` : t('v2.slicer.printing', 'printing'), kind: 'printing' };
+    return { label: t('v2.slicer.idle', 'idle'), kind: 'idle' };
+  }
 
   function pickFile(f: File | null) { setFile(f); setPreview(null); setTab('prepare'); setRows({}); setObj(null); setObjOverrides({}); colorChangeRef.current = []; setColorChangeLayers([]); setLayerBands([]); }
   // STEP/STP files are tessellated to STL server-side (OpenCascade) first.
@@ -1134,6 +1149,7 @@ export function SlicerPanel() {
                   <span className="ellipsis">{p.name || p.id}</span>
                   {rs?.status === 'done' && <span className="hs-badge hs-badge-good" style={{ marginLeft: 'auto' }}>{rs.result?.printing ? t('v2.slicer.printing', 'printing') : t('v2.slicer.sent', 'sent')}</span>}
                   {rs?.status === 'error' && <span className="hs-badge hs-badge-bad" style={{ marginLeft: 'auto' }} title={rs.error}>{t('v2.slicer.failed', 'failed')}</span>}
+                  {!rs && (() => { const ls = liveStatusOf(p.id); return <span className={`oslice-live oslice-live--${ls.kind}`} style={{ marginLeft: 'auto' }}>{ls.label}</span>; })()}
                 </label>
               );
             })}

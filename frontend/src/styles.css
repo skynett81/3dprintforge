@@ -446,6 +446,12 @@ select.oset-rowinput { text-align: left; }
 .oslice-printer { display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: var(--o-panel-2); border: 1px solid var(--o-border); border-radius: 7px; cursor: pointer; font-size: 0.84rem; }
 .oslice-printer--on { border-color: var(--o-accent); background: rgba(0,174,66,0.1); }
 .oslice-printer input { accent-color: var(--o-accent); }
+/* Live fleet availability badge in the Send-to list. */
+.oslice-live { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.oslice-live--idle { color: #2ecc71; background: rgba(46,204,113,0.14); }
+.oslice-live--printing { color: #e0a13a; background: rgba(224,161,58,0.16); }
+.oslice-live--paused { color: #3d8bd8; background: rgba(61,139,216,0.16); }
+.oslice-live--off { color: #94a3b8; background: rgba(148,163,184,0.14); }
 
 /* Scene (right, dark) */
 .oslice-stage { flex: 1; display: flex; position: relative; min-width: 0; background: var(--o-scene); }
