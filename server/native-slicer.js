@@ -1310,7 +1310,14 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.
-          pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg));
+          // If this region's solid IS an exposed skin (a real top/bottom face,
+          // including curved/stepped surfaces like a dome), lay it monotonically
+          // for a uniform finish — decided per region (single hatch, no coverage
+          // loss) from whether the region centre is a top/bottom surface point.
+          let cxp = 0, cyp = 0; for (const p of infRegion.outer) { cxp += p[0]; cyp += p[1]; }
+          cxp /= infRegion.outer.length; cyp /= infRegion.outer.length;
+          const monoSurf = s.monotonicTopSurface !== false && (surfaces.isTopPoint(i, cxp, cyp) || surfaces.isBottomPoint(i, cxp, cyp));
+          pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg), monoSurf);
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse && s.infillPattern !== 'lightning') {
             // Keep only the parts of each sparse chain NOT over a solid surface
