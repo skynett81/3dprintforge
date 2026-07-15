@@ -847,6 +847,24 @@ describe('native-slicer: Arachne bead simplification', () => {
   });
 });
 
+describe('native-slicer: tree supports honor "on build plate only"', () => {
+  // Two stacked slabs with an air gap: the upper slab's underside sits directly
+  // above the lower slab, so any support there rests ON the model — "on build
+  // plate only" must drop it (it can never reach the bed).
+  const slab = { outer: [[0, 0], [30, 0], [30, 10], [0, 10]], holes: [] };
+  const stacked = [];
+  for (let i = 0; i < 20; i++) stacked.push(i < 10 || i >= 15 ? [slab] : []);
+  const total = (segs) => segs.reduce((a, l) => a + l.length, 0);
+  it('normal tree support fills the gap (rests on the lower slab)', () => {
+    const segs = generateTreeSupports(stacked, { gridRes: 3, zGapLayers: 1 });
+    assert.ok(total(segs) > 0, 'tree supports the upper slab');
+  });
+  it('on-plate-only drops support that would rest on the model', () => {
+    const segs = generateTreeSupports(stacked, { gridRes: 3, zGapLayers: 1, onPlateOnly: true });
+    assert.equal(total(segs), 0, 'no support — none of it could reach the bed');
+  });
+});
+
 describe('native-slicer: forced cooling on short layers', () => {
   const maxFan = (g) => Math.max(0, ...[...g.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]));
   it('ramps the fan to full on layers slowed for the minimum layer time', async () => {

@@ -45,6 +45,16 @@ export function generateTreeSupports(layerRegions, opts = {}) {
     model[i] = g;
   }
 
+  // "On build plate only": a support tip over a cell that has model somewhere
+  // below it could only rest on that model, never reaching the bed — so skip it.
+  // modelBelow[i] marks cells with model at any layer strictly below i.
+  const onPlateOnly = !!opts.onPlateOnly;
+  const modelBelow = new Array(n);
+  {
+    const cum = new Uint8Array(cols * rows);
+    for (let i = 0; i < n; i++) { modelBelow[i] = cum.slice(); const g = model[i]; for (let idx = 0; idx < g.length; idx++) if (g[idx]) cum[idx] = 1; }
+  }
+
   // Cluster nodes greedily; each cluster is centred on its members' centroid.
   const cluster = (nodes) => {
     const cl = [];
@@ -65,7 +75,7 @@ export function generateTreeSupports(layerRegions, opts = {}) {
     // the Z-gap so the branch tip doesn't fuse to the part.
     if (i + zGap < n) {
       const gapAbove = model[i + zGap];
-      for (let idx = 0; idx < g.length; idx++) if (!g[idx] && above && above[idx] && gapAbove && gapAbove[idx]) active.push({ x: cx(idx % cols), y: cy((idx / cols) | 0) });
+      for (let idx = 0; idx < g.length; idx++) if (!g[idx] && above && above[idx] && gapAbove && gapAbove[idx] && !(onPlateOnly && modelBelow[i][idx])) active.push({ x: cx(idx % cols), y: cy((idx / cols) | 0) });
     }
     const clusters = cluster(active);
     const next = [];
