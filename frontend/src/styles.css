@@ -296,12 +296,17 @@ body {
 .oslice-filebtn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
 .oslice-filebtn:disabled { opacity: 0.4; cursor: not-allowed; }
 .oslice-toptabs { display: flex; gap: 2px; }
-.oslice-toptab { display: flex; align-items: center; gap: 7px; padding: 6px 18px; border: none; background: none; color: #b8bdc4; font-weight: 600; font-size: 0.88rem; border-radius: 7px; cursor: pointer; }
+.oslice-toptab { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border: none; background: none; color: #b8bdc4; font-weight: 600; font-size: 0.85rem; border-radius: 7px; cursor: pointer; white-space: nowrap; }
 .oslice-toptab:hover:not(:disabled) { color: #fff; }
 .oslice-toptab--on { background: var(--o-accent); color: #fff; }
 .oslice-toptab:disabled { opacity: 0.4; cursor: not-allowed; }
-.oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap; }
-.oslice-toptabs { flex-shrink: 1; min-width: 0; }
+.oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.oslice-toptabs { flex-shrink: 0; }
+.oslice-filemenu { flex-shrink: 0; }
+.oslice-logo { flex-shrink: 0; }
+/* Never let the tabs/buttons overlap: the whole bar scrolls if it must. */
+.oslice-top { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.oslice-top::-webkit-scrollbar { display: none; }
 .oslice-topright .oslice-sliceplate, .oslice-topright .oslice-printplate { flex-shrink: 0; white-space: nowrap; }
 .oslice-topest { display: flex; gap: 12px; color: #cfd3d8; font-size: 0.8rem; align-items: center; margin-right: 4px; }
 .oslice-topest strong { color: #fff; }

@@ -15,6 +15,8 @@ interface Props {
   onApply?: (color: string, material: string) => void;
   /** Reload the spool list after an edit/add. */
   onChanged?: () => void;
+  /** printerId → AMS unit summary (e.g. "AMS 2 Pro"), so the loaded group shows it. */
+  amsByPrinter?: Record<string, string>;
 }
 
 const hex = (h?: string | null) => (h ? (h.startsWith('#') ? h : '#' + String(h).replace(/^#/, '')) : '#cccccc');
@@ -29,7 +31,7 @@ function textColor(h: string): string {
  *  Spools loaded on a printer group under that printer; the rest under their
  *  shelf/box location. Click a spool to load its colour + material into the
  *  active slicer slot. Read-only over the existing inventory. */
-export function SlicerFilaments({ spools, printers, onApply, onChanged }: Props) {
+export function SlicerFilaments({ spools, printers, onApply, onChanged, amsByPrinter }: Props) {
   const t = useT();
   const [q, setQ] = useState('');
   const [groupBy, setGroupBy] = useState<GroupBy>('location');
@@ -63,8 +65,9 @@ export function SlicerFilaments({ spools, printers, onApply, onChanged }: Props)
   function keyOf(s: Spool): string {
     if (groupBy === 'material') return (s.material || 'Other').toUpperCase();
     if (groupBy === 'vendor') return s.vendor_name || t('v2.filmgr.unknown_vendor', 'Unknown vendor');
-    // location: loaded-on-a-printer wins, then the shelf/box location, else unassigned
-    if (s.printer_id) return `${printerName(s.printer_id)} · ${t('v2.filmgr.loaded_tag', 'loaded')}`;
+    // location: loaded-on-a-printer wins (labelled with the AMS unit so it's
+    // clear these are the AMS's filaments), then the shelf/box location.
+    if (s.printer_id) return `${printerName(s.printer_id)} · ${amsByPrinter?.[s.printer_id] || t('v2.filmgr.loaded_tag', 'loaded')}`;
     return s.location?.trim() || UNASSIGNED;
   }
 

@@ -67,6 +67,19 @@ export function SlicerPanel() {
   const { data: spoolsData, reload: reloadSpools } = useResource<Spool[]>(api.listSpools, 60000);
   const printers = useMemo(() => printersData ?? [], [printersData]);
   const slicerPrinters = useMemo(() => slicerPrintersData ?? [], [slicerPrintersData]);
+  // printerId → its AMS unit summary (e.g. "AMS 2 Pro", "2× AMS 2 Pro · AMS HT")
+  // so the Filament Manager labels a printer's loaded spools as the AMS's contents.
+  const amsByPrinter = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const p of slicerPrinters) {
+      const units = p.amsUnits ?? [];
+      if (!units.length) continue;
+      const byType = new Map<string, number>();
+      for (const u of units) byType.set(u.type, (byType.get(u.type) ?? 0) + 1);
+      m[p.id] = [...byType.entries()].map(([tp, n]) => (n > 1 ? `${n}× ${tp}` : tp)).join(' · ');
+    }
+    return m;
+  }, [slicerPrinters]);
   const spools = useMemo(() => spoolsData ?? [], [spoolsData]);
 
   const [file, setFile] = useState<File | null>(null);
@@ -1274,7 +1287,7 @@ export function SlicerPanel() {
             </Suspense>
           )}
           {tab === 'device' && <SlicerDevice printer={selPrinter} live={livePrinters[selPrinter?.id ?? '']} printers={slicerPrinters} onSelect={setProfilePrinter} />}
-          {tab === 'filaments' && <SlicerFilaments spools={spools} printers={printers} onChanged={reloadSpools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
+          {tab === 'filaments' && <SlicerFilaments spools={spools} printers={printers} amsByPrinter={amsByPrinter} onChanged={reloadSpools} onApply={(color, material) => { setSlot(0, { color, material }); toast(t('v2.filmgr.loaded', 'Loaded into slot 1'), 'success'); setTab('prepare'); }} />}
           {tab === 'calibration' && <SlicerCalibration onPreview={(r) => setPreview({ gcode: r.gcode, layers: 0, timeSec: r.timeSec, filamentG: r.filamentG, wasteG: 0, durationMs: 0 })} />}
           {!file && toolState.count === 0 && tab === 'prepare' && (
             <div className="oslice-empty">
