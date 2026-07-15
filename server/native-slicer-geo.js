@@ -3,14 +3,17 @@
  *
  * Pure functions that turn a mesh cross-section into printable 2D paths:
  * layer slicing, polygon offset (walls), hole/region grouping, and
- * even-odd infill (sparse + solid). No dependencies — this is the
- * project's own geometry, shared by the slicing pipeline in
- * native-slicer.js.
+ * even-odd infill (sparse + solid). Polygon offset is delegated to the
+ * Clipper library (robust integer-coordinate offsetting with miter joins,
+ * the same class of algorithm BambuStudio/PrusaSlicer use via ClipperUtils).
  */
+
+import ClipperLib from 'clipper-lib';
 
 export const EPS = 0.001;          // mm tolerance for polygon-loop closure
 export const PI = Math.PI;
 const MITER_LIMIT = 2;             // cap offset miters so smooth curves don't spike
+const CLIP_SCALE = 1e5;            // Clipper works in integers — scale mm up (0.01µm resolution)
 
 // ── Layer slicing ──────────────────────────────────────────────────
 
@@ -104,11 +107,49 @@ export function _near(a, b) {
 // ── Polygon offset (walls) ─────────────────────────────────────────
 
 /**
- * Offset a closed polygon by `distance` (negative = shrink inward,
- * positive = grow outward). Vertex-bisector algorithm — works on
- * convex/mildly-concave polygons typical of FDM perimeters.
+ * Offset a closed polygon by `distance` (negative = shrink inward the enclosed
+ * area, positive = grow it), independent of the input winding. Uses Clipper's
+ * robust integer offsetting (miter joins, miter limit) so it never
+ * self-intersects or collapses smooth high-vertex outlines — the failure that
+ * the old hand-rolled bisector had on curved walls. Returns a single polygon
+ * (the largest-area result loop; offsets that split a region keep the biggest
+ * piece, matching the single-loop callers) in the SAME winding as the input, or
+ * [] if the region vanishes. Falls back to the bisector on any Clipper error.
  */
 export function offsetPolygon(poly, distance) {
+  if (!poly || poly.length < 3) return [];
+  if (distance === 0) return poly.map((p) => [p[0], p[1]]);
+  try {
+    const path = poly.map(([x, y]) => ({ X: Math.round(x * CLIP_SCALE), Y: Math.round(y * CLIP_SCALE) }));
+    const co = new ClipperLib.ClipperOffset(MITER_LIMIT, 0.25 * CLIP_SCALE);
+    co.AddPath(path, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    const sol = new ClipperLib.Paths();
+    co.Execute(sol, distance * CLIP_SCALE);
+    if (!sol.length) return [];
+    // Pick the largest loop (by |area|) — an inward offset can carve a region
+    // into several; the biggest is the wall/infill outline the caller wants.
+    let best = null, bestA = -1;
+    for (const p of sol) {
+      const pts = p.map((pt) => [pt.X / CLIP_SCALE, pt.Y / CLIP_SCALE]);
+      const a = Math.abs(_signedArea(pts));
+      if (a > bestA) { bestA = a; best = pts; }
+    }
+    if (!best || best.length < 3) return [];
+    // Clipper canonicalises winding (always CCW); restore the input's winding so
+    // this is a drop-in for callers that re-offset holes (CW) in place.
+    if (_signedArea(best) * _signedArea(poly) < 0) best.reverse();
+    return best;
+  } catch {
+    return _offsetPolygonBisector(poly, distance);
+  }
+}
+
+/**
+ * Legacy vertex-bisector offset — kept as a fallback if Clipper throws.
+ * Works on convex/mildly-concave polygons; can self-intersect on tight
+ * concavities (which is why Clipper is now primary).
+ */
+export function _offsetPolygonBisector(poly, distance) {
   const n = poly.length;
   if (n < 3) return [];
   const ccw = _isCCW(poly) ? 1 : -1;
