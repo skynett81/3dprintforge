@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { useT } from '../i18n';
 import { parseGcode, type ParsedGcode, type Feature } from '../lib/gcode-parse';
 import { gradientBackground, buildPlate } from './plate-scene';
@@ -171,6 +168,10 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
     buildPlate(scene, bed, bedYv);
+    // Lights so the extrusion beads read as 3-D printed lines (with layers),
+    // not flat ribbons.
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x2a3340, 1.15));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.25); keyLight.position.set(0.6, -1, 1.4); scene.add(keyLight);
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true; orbit.target.set(0, 0, bed * 0.1);
     const group = new THREE.Group(); scene.add(group);
@@ -208,17 +209,40 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
     const shown = Math.min(layer, total);
     const loIdx = Math.max(0, Math.min(low - 1, shown - 1));   // lowest visible layer index
     const travelPos: number[] = [];
-    // Solid extrusion tubes via world-unit fat lines (LineSegments2) — each
-    // segment renders at the real extrusion width, so the preview looks like a
-    // printed object (BambuStudio) rather than thin wireframe lines.
-    const rw = c.renderer.domElement.clientWidth || 640, rh = c.renderer.domElement.clientHeight || 440;
+    // Render each extrusion move as a 3-D "bead": an oriented box the width of
+    // the line and the height of one layer. This shows real printed layers (like
+    // OrcaSlicer) instead of merged camera-facing ribbons. Huge models fall back
+    // to thin lines so the preview stays responsive.
+    const layerH = total > 1 ? Math.max(0.06, Math.min(1.2, parsed.layers[1].z - parsed.layers[0].z)) : 0.2;
+    const beadHW = Math.max(0.15, lwRef.current) / 2;
+    const IDX = [4, 5, 6, 4, 6, 7, 0, 2, 1, 0, 3, 2, 4, 7, 3, 4, 3, 0, 5, 4, 0, 5, 0, 1, 6, 5, 1, 6, 1, 2, 7, 6, 2, 7, 2, 3];
     const fatLine = (positions: number[], opts: { color?: number; colors?: number[] }) => {
-      const geo = new LineSegmentsGeometry();
-      geo.setPositions(positions);
-      if (opts.colors) geo.setColors(opts.colors);
-      const mat = new LineMaterial({ worldUnits: true, linewidth: Math.max(0.15, lwRef.current), vertexColors: !!opts.colors, color: opts.color ?? 0xffffff });
-      mat.resolution.set(rw, rh);
-      return new LineSegments2(geo, mat);
+      const nSeg = positions.length / 6;
+      if (nSeg > 250000) {   // too many beads → cheap line render
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        if (opts.colors) g.setAttribute('color', new THREE.Float32BufferAttribute(opts.colors, 3));
+        return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: opts.color ?? 0xffffff, vertexColors: !!opts.colors }));
+      }
+      const P = new Float32Array(nSeg * 108);          // 36 verts × 3
+      const C = opts.colors ? new Float32Array(nSeg * 108) : null;
+      const V = new Float32Array(24);
+      let wp = 0, wc = 0;
+      for (let s = 0; s < nSeg; s++) {
+        const o = s * 6;
+        const ax = positions[o], ay = positions[o + 1], z = positions[o + 2], bx = positions[o + 3], by = positions[o + 4];
+        let dx = bx - ax, dy = by - ay; const L = Math.hypot(dx, dy); if (L < 1e-6) continue; dx /= L; dy /= L;
+        const nx = -dy * beadHW, ny = dx * beadHW, zt = z, zb = z - layerH;
+        V[0] = ax + nx; V[1] = ay + ny; V[2] = zb; V[3] = ax - nx; V[4] = ay - ny; V[5] = zb; V[6] = bx - nx; V[7] = by - ny; V[8] = zb; V[9] = bx + nx; V[10] = by + ny; V[11] = zb;
+        V[12] = ax + nx; V[13] = ay + ny; V[14] = zt; V[15] = ax - nx; V[16] = ay - ny; V[17] = zt; V[18] = bx - nx; V[19] = by - ny; V[20] = zt; V[21] = bx + nx; V[22] = by + ny; V[23] = zt;
+        for (let t = 0; t < 36; t++) { const ci = IDX[t] * 3; P[wp++] = V[ci]; P[wp++] = V[ci + 1]; P[wp++] = V[ci + 2]; }
+        if (C) { const co = s * 6, r = opts.colors![co], g = opts.colors![co + 1], b = opts.colors![co + 2]; for (let t = 0; t < 36; t++) { C[wc++] = r; C[wc++] = g; C[wc++] = b; } }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(P.subarray(0, wp), 3));
+      if (C) geo.setAttribute('color', new THREE.BufferAttribute(C.subarray(0, wc), 3));
+      geo.computeVertexNormals();
+      return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: opts.color ?? 0xffffff, vertexColors: !!C, roughness: 0.9, metalness: 0, flatShading: true, side: THREE.DoubleSide }));
     };
 
     if (mode !== 'feature') {
