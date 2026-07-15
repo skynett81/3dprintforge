@@ -23,7 +23,7 @@
  */
 
 import {
-  sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, simplifyPolygon,
+  sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, simplifyPolygon, bestBridgeAngle,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
   _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
 } from './native-slicer-geo.js';
@@ -1046,9 +1046,20 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // solid surface) and bridge/solid classification are per-segment, so split
     // each chain at those boundaries instead of judging the whole path by one
     // endpoint. Kept runs stay continuous within their class.
+    // Auto-detect the bridge fill angle for a region (thin adapter over the pure,
+    // unit-tested bestBridgeAngle scorer: the direction best anchored across the
+    // gap). null when the region has no anchored bridge area → hatch at the layer
+    // angle (old behaviour) — so this is strictly improve-or-no-op.
+    const detectBridgeAngle = (region) => bestBridgeAngle(region, (x, y) => supportedBy(x, y, below, lw * 0.75), lw);
     const pushSolidRegion = (region, angle, keep, monotonic = false) => {
       const bridgeSplit = bridgeDetect && below;
-      const forcedBridge = bridgeSplit && s.bridgeAngle != null;
+      // Effective bridge angle: explicit bridge_angle wins; else auto-detect the
+      // best-anchored direction (unless disabled). null → hatch bridges at the
+      // layer angle (old behaviour).
+      const bridgeAngle = !bridgeSplit ? null
+        : (s.bridgeAngle != null ? s.bridgeAngle
+          : (s.bridgeAngleAuto !== false ? detectBridgeAngle(region) : null));
+      const forcedBridge = bridgeAngle != null;
       for (const chain of solidInfill(region, angle, lw, monotonic)) {
         const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
         for (const part of kept) {
@@ -1061,7 +1072,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         }
       }
       if (forcedBridge) {
-        for (const chain of solidInfill(region, s.bridgeAngle, lw)) {
+        for (const chain of solidInfill(region, bridgeAngle, lw)) {
           const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
           for (const part of kept) for (const seg of splitPolyBySeg(part, segMidUnsupported)) pushBridge(seg);
         }

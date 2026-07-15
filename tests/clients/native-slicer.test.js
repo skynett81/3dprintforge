@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {
   sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
-import { patternInfill, solidInfill } from '../../server/native-slicer-geo.js';
+import { patternInfill, solidInfill, bestBridgeAngle } from '../../server/native-slicer-geo.js';
 import { box, cylinder, extrudePolygon } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
@@ -890,6 +890,25 @@ describe('native-slicer: monotonic top/bottom surface', () => {
     // below 8× a layer's line count (internal shells keep the connected zigzag).
     assert.ok(solidTravels(mono.gcode) < 400, `internal shells stay connected (${solidTravels(mono.gcode)})`);
     assert.ok(!mono.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: bridge angle detection', () => {
+  // A 40×6 plate over two supports (pillars) at x∈[-17,-11] and [11,17]; the
+  // 22 mm gap runs in X, so bridge lines must run in X (deg 0) to anchor on
+  // both pillars. Lines in Y (deg 90) over the gap have no support at either
+  // end (cantilever) and must NOT win.
+  const region = { outer: [[-20, -3], [20, -3], [20, 3], [-20, 3]], holes: [] };
+  const onPillars = (x) => (x >= -17 && x <= -11) || (x >= 11 && x <= 17);
+  it('picks the direction that spans the gap between supports', () => {
+    const deg = bestBridgeAngle(region, (x) => onPillars(x), 0.42);
+    assert.equal(deg, 0, `should bridge across X (got ${deg})`);
+  });
+  it('returns null when the region is fully supported (no bridge)', () => {
+    assert.equal(bestBridgeAngle(region, () => true, 0.42), null);
+  });
+  it('returns null when there is no anchoring on either side (all air)', () => {
+    assert.equal(bestBridgeAngle(region, () => false, 0.42), null);
   });
 });
 

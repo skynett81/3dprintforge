@@ -410,6 +410,44 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
  * Solid fill for top/bottom shells: a grid of two perpendicular passes
  * at full density, alternating base angle per layer for adhesion.
  */
+/**
+ * Best bridge fill angle for a region (BambuStudio's BridgeDetector::detect_angle).
+ * Scores each candidate direction by the total length of unsupported runs that
+ * are flanked by support on BOTH sides (support → air → support) — a proper
+ * anchored bridge span. A run open at a line end is a cantilever and doesn't
+ * count. `isSupported(x, y)` returns true where the layer below carries the
+ * point. Returns the best-anchored angle in degrees, or null when the region
+ * has no anchored bridge area (fully supported).
+ */
+export function bestBridgeAngle(region, isSupported, lineWidth = 0.4) {
+  const anchoredAt = (deg) => {
+    let total = 0, any = false;
+    for (const L of solidInfill(region, deg, lineWidth * 3, true)) {   // coarse, separate lines
+      const a = L[0], b = L[L.length - 1];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 1e-6) continue;
+      const steps = Math.max(2, Math.ceil(len / (lineWidth * 1.5)));
+      const seg = len / steps;
+      const sup = [];
+      for (let k = 0; k <= steps; k++) { const t = k / steps; sup.push(isSupported(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)); }
+      let k = 0;
+      while (k <= steps) {
+        if (sup[k]) { k++; continue; }
+        const start = k; while (k <= steps && !sup[k]) k++;
+        const end = k - 1;
+        if (start > 0 && end < steps && sup[start - 1] && sup[end + 1]) { total += (end - start + 1) * seg; any = true; }
+      }
+    }
+    return { total, any };
+  };
+  let best = null, bestScore = 0;
+  for (let deg = 0; deg < 180; deg += 15) {
+    const { total, any } = anchoredAt(deg);
+    if (any && total > bestScore) { bestScore = total; best = deg; }
+  }
+  return best;
+}
+
 export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false) {
   return regionInfill(region, 1.0, angleDeg, lineWidth, monotonic);
 }
