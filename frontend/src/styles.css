@@ -463,7 +463,10 @@ select.oset-rowinput { text-align: left; }
 .oslice-stage input[type=range] { accent-color: var(--o-accent); }
 
 /* Horizontal top toolbar floating on the scene */
-.oslice-rail { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 3px; padding: 4px; background: rgba(24,26,30,0.78); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; backdrop-filter: blur(4px); }
+/* max-width + flex-wrap so the ~29 tools never clip off the sides of a narrow
+   stage (they wrapped off-screen and were unreachable below ~1600px); on wide
+   stages it stays a single centered row. */
+.oslice-rail { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; padding: 4px; max-width: calc(100% - 20px); background: rgba(24,26,30,0.78); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; backdrop-filter: blur(4px); }
 .oslice-tool { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 8px; background: none; color: #cfd3d8; cursor: pointer; transition: background 0.12s, color 0.12s; }
 .oslice-tool:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
 .oslice-tool--on { background: var(--o-accent); color: #fff; }
