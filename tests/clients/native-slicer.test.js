@@ -171,10 +171,13 @@ describe('native-slicer: pressure advance & patterns', () => {
     assert.ok(!ada.gcode.includes('NaN'));
   });
   it('arachne wall generator varies thin-feature fill but is byte-identical when off', async () => {
-    const off = await sliceMeshToGcode(cylinder(8, 15), { supports: false });
-    const classic = await sliceMeshToGcode(cylinder(8, 15), { supports: false, wallGenerator: 'classic' });
+    // A 1.6 mm rib with 2 walls leaves a genuine thin gap for the wall
+    // generator to fill differently (classic hatch vs arachne bead).
+    const opts = { supports: false, gapFill: true, wallLoops: 2 };
+    const off = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts });
+    const classic = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'classic' });
     assert.equal(classic.gcode, off.gcode, 'classic must equal the default');
-    const arachne = await sliceMeshToGcode(cylinder(8, 15), { supports: false, wallGenerator: 'arachne' });
+    const arachne = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'arachne' });
     assert.notEqual(arachne.gcode, classic.gcode, 'arachne must vary the thin-feature fill');
     assert.ok(!arachne.gcode.includes('NaN'));
   });

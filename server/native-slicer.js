@@ -903,6 +903,27 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   });
   const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
 
+  // Split a connected infill polyline into maximal runs of segments that pass
+  // `keepSeg` (a per-segment predicate taking a 2-point [[ax,ay],[bx,by]]).
+  // Needed because infill is now emitted as continuous zigzag chains, so a
+  // single chain can cross a classification boundary (solid↔sparse skin,
+  // bridge-over-air↔supported); classifying by one endpoint would mis-assign
+  // the whole path. Runs of < 2 points are dropped. A single-segment or
+  // fully-passing chain returns intact.
+  const splitPolyBySeg = (chain, keepSeg) => {
+    if (chain.length < 2) return [];
+    const runs = [];
+    let run = null;
+    for (let k = 0; k + 1 < chain.length; k++) {
+      if (keepSeg([chain[k], chain[k + 1]])) {
+        if (!run) run = [chain[k]];
+        run.push(chain[k + 1]);
+      } else if (run) { if (run.length >= 2) runs.push(run); run = null; }
+    }
+    if (run && run.length >= 2) runs.push(run);
+    return runs;
+  };
+
   // Distance from a point to the nearest edge of a polygon (unsigned).
   const _distPtSeg = (p, a, b) => {
     const dx = b[0] - a[0], dy = b[1] - a[1]; const l2 = dx * dx + dy * dy;
@@ -976,17 +997,30 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       return null;
     };
     const pushSolid = (sg) => { const t = topSp(sg); fills.push(t ? { feature: 'solid', closed: false, pts: sg, ...t } : { feature: 'solid', closed: false, pts: sg }); };
+    const pushBridge = (sg) => fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
+    // Solid infill arrives as connected zigzag chains; keep-filter (genuine
+    // solid surface) and bridge/solid classification are per-segment, so split
+    // each chain at those boundaries instead of judging the whole path by one
+    // endpoint. Kept runs stay continuous within their class.
     const pushSolidRegion = (region, angle, keep) => {
-      const forced = bridgeDetect && below && s.bridgeAngle != null;
-      if (forced) {
-        for (const sg of solidInfill(region, s.bridgeAngle, lw)) if ((!keep || keep(sg)) && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
-        for (const sg of solidInfill(region, angle, lw)) if ((!keep || keep(sg)) && !segMidUnsupported(sg)) pushSolid(sg);
-        return;
+      const bridgeSplit = bridgeDetect && below;
+      const forcedBridge = bridgeSplit && s.bridgeAngle != null;
+      for (const chain of solidInfill(region, angle, lw)) {
+        const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
+        for (const part of kept) {
+          if (!bridgeSplit) { pushSolid(part); continue; }
+          // Supported portion → solid at the layer angle.
+          for (const seg of splitPolyBySeg(part, (sg) => !segMidUnsupported(sg))) pushSolid(seg);
+          // Unsupported portion → bridge at the layer angle, unless a forced
+          // bridge angle re-hatches it below (avoids double extrusion).
+          if (!forcedBridge) for (const seg of splitPolyBySeg(part, segMidUnsupported)) pushBridge(seg);
+        }
       }
-      for (const sg of solidInfill(region, angle, lw)) {
-        if (keep && !keep(sg)) continue;
-        if (bridgeDetect && below && segMidUnsupported(sg)) fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
-        else pushSolid(sg);
+      if (forcedBridge) {
+        for (const chain of solidInfill(region, s.bridgeAngle, lw)) {
+          const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
+          for (const part of kept) for (const seg of splitPolyBySeg(part, segMidUnsupported)) pushBridge(seg);
+        }
       }
     };
 
@@ -1208,7 +1242,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg));
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse && s.infillPattern !== 'lightning') {
-            const sparseSegs = sparseSegsFor(infRegion).filter((sg) => !midSolid(surfaces, i, sg));
+            // Keep only the parts of each sparse chain NOT over a solid surface
+            // (the solid pass covers those), splitting chains that cross the
+            // boundary so each part stays continuous within its class.
+            const sparseSegs = sparseSegsFor(infRegion).flatMap((sg) => splitPolyBySeg(sg, (seg) => !midSolid(surfaces, i, seg)));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }
         }

@@ -128,8 +128,15 @@ export function offsetPolygon(poly, distance) {
     if (bl < EPS) continue;
     bx /= bl; by /= bl;
     const cosA = n1x * n2x + n1y * n2y;
-    const halfSin = Math.sqrt(Math.max(0.001, (1 - cosA) / 2));
-    let scale = -distance / Math.max(0.001, halfSin);
+    // Miter displacement along the (normalised) bisector to offset BOTH edges by
+    // `distance`: d / cos(half-angle), where cos(half-angle) = sqrt((1+cosA)/2)
+    // and cosA is the dot of the two edge normals. Straight vertex (cosA→1) →
+    // factor 1 (move perpendicular by exactly `distance`); sharp corner
+    // (cosA→-1) → large miter, capped below. Using sin(half-angle) here instead
+    // was the long-standing bug that collapsed smooth high-vertex curves
+    // (a 128-gon circle shrank to a fraction of its radius on a tiny inset).
+    const halfCos = Math.sqrt(Math.max(0.0004, (1 + cosA) / 2));
+    let scale = -distance / halfCos;
     // Miter limit (outward offsets only): on smooth curves the turn angle is
     // tiny, so an un-clamped miter shoots the vertex far out (spikes) — cap the
     // displacement so a skirt/brim/grow stays hugging the outline instead of
