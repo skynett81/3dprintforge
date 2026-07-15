@@ -135,6 +135,25 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
     for (const l of parsed.layers) { tSum += l.timeSec; eSum += l.eLen; tArr.push(tSum); eArr.push(eSum); }
     return { tArr, eArr, totTime: tSum, totE: eSum };
   }, [parsed]);
+  // Per-feature print time + filament and per-tool filament (OrcaSlicer's
+  // legend breakdown) — so you see where the time and material actually go.
+  const breakdown = useMemo(() => {
+    const feat = new Map<Feature, { t: number; e: number }>();
+    const tool = new Map<number, number>();
+    for (const l of parsed.layers) {
+      const n = l.allE.length;
+      for (let s = 0; s < n; s++) {
+        const k = s * 4;
+        const segLen = Math.hypot(l.allSeg[k + 2] - l.allSeg[k], l.allSeg[k + 3] - l.allSeg[k + 1]);
+        const spd = l.allSpeed[s] || 1;
+        const f = l.allFeat[s];
+        const fe = feat.get(f) ?? (feat.set(f, { t: 0, e: 0 }), feat.get(f)!);
+        fe.t += segLen / spd; fe.e += l.allE[s];
+        tool.set(l.allTool[s] || 0, (tool.get(l.allTool[s] || 0) ?? 0) + l.allE[s]);
+      }
+    }
+    return { feat, tool };
+  }, [parsed]);
   // Colour-change layers: where the tool at the start of a layer differs from
   // the previous layer's tool (a filament swap / M600). Shown as ticks on the
   // slider and jump targets — completes the multi-colour / HueForge workflow.
@@ -346,6 +365,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
                   title={t('v2.gpreview.toggle_feat', 'Click to show / hide this feature')} onClick={() => toggleFeat(f)}>
                   <i style={{ background: `#${(FEATURE_COLOR[f] ?? 0).toString(16).padStart(6, '0')}` }} />
                   {t(`v2.gpreview.${f}`, FEATURE_LABEL[f] ?? f)}
+                  <em className="gpreview-legend-stat">{gramsOf(breakdown.feat.get(f)?.e ?? 0).toFixed(1)} g · {fmtT(breakdown.feat.get(f)?.t ?? 0)}</em>
                 </button>
               ))}
             </div>
@@ -366,6 +386,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
                 <span key={ti} className="gpreview-legend-item">
                   <i style={{ background: (slotColors && slotColors[ti]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][ti % 4] }} />
                   {t('v2.gpreview.tool', 'Filament')} {ti + 1}
+                  <em className="gpreview-legend-stat">{gramsOf(breakdown.tool.get(ti) ?? 0).toFixed(1)} g</em>
                 </span>
               ))}
             </div>

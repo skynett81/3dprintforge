@@ -630,7 +630,7 @@ select.oset-rowinput { text-align: left; }
 .gpreview-root > div:nth-child(2) { padding: 0 2px; }
 /* BambuStudio-style preview "Colour scheme" panel (top-left): mode select +
    legend + options in one card. */
-.gpreview-side { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; min-width: 148px; background: rgba(14,17,22,0.82); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); }
+.gpreview-side { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; min-width: 216px; background: rgba(14,17,22,0.82); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); }
 /* Inset left of the layer tower (right:14, 26px wide) so the two never overlap. */
 .gpreview-summary { position: absolute; top: 46px; right: 48px; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; background: rgba(14,17,22,0.86); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); min-width: 118px; }
 .gpreview-summary-row { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
@@ -653,8 +653,10 @@ select.oset-rowinput { text-align: left; }
 .gpreview-tower-handle { position: absolute; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); border-radius: 50%; background: #f4f6f8; border: 2px solid var(--o-accent); cursor: ns-resize; touch-action: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
 .gpreview-tower-handle--low { border-color: #94a3b8; background: #cbd5e1; }
 .gpreview-tower-lbl { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); padding: 1px 6px; font-size: 0.68rem; font-weight: 600; color: #0e1116; background: #f4f6f8; border-radius: 4px; white-space: nowrap; pointer-events: none; }
-.gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; }
-.gpreview-legend-btn { pointer-events: auto; background: none; border: 0; padding: 1px 2px; margin: 0; cursor: pointer; text-align: left; font: inherit; color: #cbd5e1; border-radius: 4px; }
+.gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; width: 100%; }
+.gpreview-legend-stat { margin-left: auto; font-style: normal; font-size: 0.63rem; color: #8b97a5; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
+.gpreview-legend-btn--off .gpreview-legend-stat { opacity: 0.5; }
+.gpreview-legend-btn { pointer-events: auto; background: none; border: 0; padding: 1px 2px; margin: 0; cursor: pointer; text-align: left; font: inherit; color: #cbd5e1; border-radius: 4px; width: 100%; }
 .gpreview-legend-btn:hover { background: rgba(255,255,255,0.08); }
 .gpreview-legend-btn--off { color: #64748b; text-decoration: line-through; }
 .gpreview-legend-btn--off i { opacity: 0.3; }
