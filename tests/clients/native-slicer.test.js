@@ -8,7 +8,7 @@ import {
   sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
 import { patternInfill } from '../../server/native-slicer-geo.js';
-import { box, cylinder } from '../../server/mesh-primitives.js';
+import { box, cylinder, extrudePolygon } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
   it('a 10mm cube cut at z=5 yields one square polygon', () => {
@@ -844,6 +844,33 @@ describe('native-slicer: Arachne bead simplification', () => {
     assert.ok(b[0].pts.length < 12, `straight bead should simplify (got ${b[0].pts.length})`);
     const xs = b[0].pts.map((p) => p[0]);
     assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'still spans the rib');
+  });
+});
+
+describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', () => {
+  // A 10x10 thick block with a thin 1.2mm tab sticking out (a "keyhole"). The
+  // block core takes normal infill; the thin tab is a locally-thin finger that
+  // classic slicing leaves as a void (region-level gap-fill never triggers,
+  // because the whole contour is not thin). Full Arachne must bead the tab.
+  const keyhole = () => extrudePolygon([
+    [0, 0], [10, 0], [10, 4.4], [24, 4.4], [24, 5.6], [10, 5.6], [10, 10], [0, 10],
+  ], 3);
+  // Does any gap-feature extruding move reach deep into the tab (x > 18)?
+  const gapReachesTab = (g) => {
+    let inGap = false;
+    for (const l of g.split('\n')) {
+      if (l.startsWith('; FEATURE:')) { inGap = l.includes('FEATURE:gap'); continue; }
+      if (inGap) { const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E/); if (m && +m[1] > 18) return true; }
+    }
+    return false;
+  };
+  it('classic leaves the thin tab unfilled; arachne beads it', async () => {
+    const opts = { layerHeight: 0.2, perimeters: 1, gapFill: true, supports: false };
+    const classic = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'classic' });
+    const arachne = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'arachne' });
+    assert.ok(gapReachesTab(arachne.gcode), 'arachne lays a bead down the thin tab');
+    assert.ok(!gapReachesTab(classic.gcode), 'classic leaves the thin tab as a void (no gap fill there)');
+    assert.ok(!arachne.gcode.includes('NaN'));
   });
 });
 

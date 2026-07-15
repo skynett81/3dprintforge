@@ -1068,6 +1068,21 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // shells are already dense.
         const thinProbe = offsetPolygon(infOuter, -lw);
         const thinRegion = s.gapFill !== false && !globalSolid && (!thinProbe || thinProbe.length < 3);
+        // Full Arachne — thin FINGERS inside a thick part: a whole-region gap
+        // fill only triggers when the ENTIRE contour is thin, so a thick body
+        // with a thin neck/tab left that neck as a void (walls don't fill it,
+        // sparse infill is too coarse for a <2·lw strip). medialBeads run on the
+        // whole region self-limits to thin ridges (thick cores yield no bead —
+        // verified), so it lays a continuous variable-width bead down every thin
+        // finger while the thick core still gets normal infill. Opt-in (arachne),
+        // sparse layers only; a purely thick part gets no beads → byte-identical.
+        if (s.wallGenerator === 'arachne' && s.gapFill !== false && !globalSolid && !thinRegion) {
+          const fingerBeads = medialBeads(infRegion, lw);
+          if (fingerBeads && fingerBeads.length) {
+            const gapBaseFlow = s.gapFillFlow ?? 1;
+            for (const bead of fingerBeads) fills.push({ feature: 'gap', closed: false, pts: bead.pts, widths: bead.widths, baseW: lw, flow: gapBaseFlow });
+          }
+        }
         if (thinRegion) {
           // Arachne-style variable-width thin-feature filling: scale each gap
           // segment's flow to the LOCAL feature width (≈ 2× distance to the
