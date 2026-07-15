@@ -1228,8 +1228,12 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     captureThumbnail: (size = 96) => {
       const c = ctx.current; if (!c) return null;
       const sel = c.selected;
+      const prevBg = c.scene.background;
       try {
         if (sel) c.tcontrols.detach();
+        // Light background for the capture so the objects read clearly at the
+        // tiny plate-tab size (on the dark scene they vanish); restored after.
+        c.scene.background = new THREE.Color(0xeef1f4);
         c.renderer.render(c.scene, c.camera);
         const src = c.renderer.domElement;
         if (!src.width || !src.height) return null;
@@ -1240,7 +1244,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         g2.drawImage(src, (size - dw) / 2, (size - dh) / 2, dw, dh);
         return cv.toDataURL('image/png');
       } catch { return null; }
-      finally { if (sel) c.tcontrols.attach(sel); }   // always restore the gizmo, even on render failure
+      finally { c.scene.background = prevBg; if (sel) c.tcontrols.attach(sel); }   // restore bg + gizmo, even on render failure
     },
     // Import an SVG as an extruded 3-D part (BambuStudio SVG tool). Union/subtract
     // it onto a model to emboss / engrave. Returns false if the SVG has no shapes.
