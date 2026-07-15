@@ -32,6 +32,20 @@ describe('native-slicer: generateSupports', () => {
     assert.equal(inside, 0, 'no support inside the model');
   });
 
+  it('concentric interface emits closed rings instead of hatch lines', () => {
+    const layers = [];
+    for (let i = 0; i < 10; i++) layers.push([]);
+    for (let i = 10; i < 20; i++) layers.push([{ outer: SQUARE(20, 0, 0), holes: [] }]);
+    const opts = { gridRes: 2, density: 0.1, xyGap: 0, zGapLayers: 0, interfaceLayers: 3 };
+    const rect = generateSupports(layers, opts);
+    const conc = generateSupports(layers, { ...opts, interfacePattern: 'concentric' });
+    const ifaceClosed = (sup) => sup.reduce((n, segs) => n + segs.filter((p) => p.iface && p.closed).length, 0);
+    const ifaceOpen = (sup) => sup.reduce((n, segs) => n + segs.filter((p) => p.iface && !p.closed).length, 0);
+    assert.ok(ifaceClosed(conc) > 0, 'concentric interface lays closed rings');
+    assert.equal(ifaceClosed(rect), 0, 'rectilinear interface has no closed iface rings');
+    assert.ok(ifaceOpen(rect) > 0, 'rectilinear interface uses open hatch');
+  });
+
   it('z-gap removes the contact layer directly under the overhang', () => {
     const layers = [];
     for (let i = 0; i < 10; i++) layers.push([]);

@@ -887,7 +887,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         lineWidth: lw, gridRes: s.supportGridRes, density: s.supportDensity, xyGap: s.supportXYGap, zGapLayers: s.supportZGap, interfaceLayers: s.supportInterface, onPlateOnly: s.supportOnPlate,
         layerHeight, thresholdAngle: s.supportThreshold ?? 40, wallCount: s.supportWallCount ?? 0,
         removeSmallOverhangs: !!s.supportRemoveSmall, minOverhangArea: s.supportMinArea ?? 3,
-        interfaceSpacing: s.supportInterfaceSpacing, basePattern: s.supportBasePattern,
+        interfaceSpacing: s.supportInterfaceSpacing, basePattern: s.supportBasePattern, interfacePattern: s.supportInterfacePattern,
         ...(s.supportBottomZDist > 0 ? { bottomZGapLayers: Math.max(1, Math.round(s.supportBottomZDist / layerHeight)) } : {}),
         paintEnforce, paintBlock, paintOnly: !s.supports,
         // Top Z distance in mm overrides the layer-count gap when provided.

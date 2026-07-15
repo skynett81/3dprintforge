@@ -140,6 +140,7 @@ const FIELDS: Field[] = [
   { tab: 'Support', group: 'Tree', k: 'tree_support_branch_angle', label: 'Branch angle', type: 'num', unit: '°', step: 5, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_threshold', label: 'Threshold angle (from vertical)', type: 'num', unit: '°', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_on_plate', label: 'On build plate only', type: 'bool', dep: 'supports' },
+  { tab: 'Support', group: 'Support', k: 'support_interface_pattern', label: 'Interface pattern', type: 'sel', opts: [['rectilinear', 'Rectilinear'], ['concentric', 'Concentric (clean peel)']], dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_remove_small_overhangs', label: 'Remove small overhangs', type: 'bool', dep: 'supports' },
   { tab: 'Support', group: 'Support', k: 'support_min_overhang_area', label: 'Min overhang area', type: 'num', unit: 'mm²', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Interface', k: 'support_top_z_distance', label: 'Top Z distance', type: 'num', unit: 'mm', step: 0.05, dep: 'supports' },

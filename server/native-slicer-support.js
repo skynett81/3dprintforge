@@ -295,8 +295,9 @@ export function generateSupports(layerRegions, opts = {}) {
   // stepping inward. Gives the support columns a perimeter for strength and
   // clean removal. Returns closed loops in world coordinates.
   const wallCount = Math.max(0, Math.round(opts.wallCount ?? 0));
-  const maskWalls = (mask) => {
-    if (!wallCount) return [];
+  // Trace a raster mask's boundary into closed world-space loops (cell-edge
+  // segments chained into rings).
+  const traceMask = (mask) => {
     const on = (r, c) => (r >= 0 && c >= 0 && r < rows && c < cols) ? mask[r * cols + c] : 0;
     const g = gridRes;
     const segs = [];
@@ -310,15 +311,28 @@ export function generateSupports(layerRegions, opts = {}) {
         if (!on(r + 1, c)) segs.push([[x0, y1], [x1, y1]]);
       }
     }
-    const loops = _chainSegments(segs);
+    return _chainSegments(segs).filter((l) => l.length >= 3);
+  };
+  const maskWalls = (mask) => {
+    if (!wallCount) return [];
     const walls = [];
-    for (const loop of loops) {
-      if (loop.length < 3) continue;
+    for (const loop of traceMask(mask)) {
       walls.push(loop);
       let ring = loop;
       for (let w = 1; w < wallCount; w++) { ring = offsetPolygon(ring, -lineWidth); if (!ring || ring.length < 3) break; walls.push(ring); }
     }
     return walls;
+  };
+  // Concentric fill of a mask: nested rings stepping inward by a line width until
+  // they collapse — a solid concentric interface that peels off cleanly
+  // (BambuStudio's concentric support-interface pattern).
+  const concentricFill = (mask) => {
+    const out = [];
+    for (const loop of traceMask(mask)) {
+      let ring = loop;
+      while (ring && ring.length >= 3) { out.push(ring); ring = offsetPolygon(ring, -lineWidth); }
+    }
+    return out;
   };
 
   // Convert each layer's mask to hatch lines. Normal support is sparse (row step
@@ -333,17 +347,23 @@ export function generateSupports(layerRegions, opts = {}) {
     const inf = iface[i];
     const parts = [];
     for (const loop of maskWalls(s)) parts.push({ pts: loop, closed: true });
-    // Horizontal hatch (base + interface).
+    // Concentric interface: nested rings over the interface mask; base cells
+    // still get sparse hatch below. Rectilinear (default): dense base + solid
+    // interface rows in one horizontal hatch, byte-identical to before.
+    const concentricIface = opts.interfacePattern === 'concentric';
+    if (concentricIface) for (const ring of concentricFill(inf)) parts.push({ pts: ring, closed: true, iface: true });
     for (let r = 0; r < rows; r++) {
       const dense = r % step === 0;
       const ifaceOn = ifaceStep <= 1 ? true : (r % ifaceStep === 0);
       let runStart = -1;
       for (let c = 0; c <= cols; c++) {
         const idx = r * cols + c;
-        const on = c < cols && s[idx] && (dense || (inf[idx] && ifaceOn));
+        const on = c < cols && s[idx] && (concentricIface
+          ? (!inf[idx] && dense)                       // concentric: hatch only sparse base
+          : (dense || (inf[idx] && ifaceOn)));         // rectilinear: dense base + solid interface
         if (on && runStart < 0) runStart = c;
         else if (!on && runStart >= 0) {
-          parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false, iface: !dense });
+          parts.push({ pts: [[cx(runStart), cy(r)], [cx(c - 1), cy(r)]], closed: false, iface: !dense && !concentricIface });
           runStart = -1;
         }
       }

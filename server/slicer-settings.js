@@ -245,6 +245,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
   set('supportInterfaceSpacing', num(s.support_interface_spacing));
   if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
+  if (s.support_interface_pattern) out.supportInterfacePattern = String(s.support_interface_pattern);
   if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {
     out.layerHeightBands = s.layer_height_bands
       .filter((b) => b && b.z0 != null && b.z1 != null && b.h != null)
