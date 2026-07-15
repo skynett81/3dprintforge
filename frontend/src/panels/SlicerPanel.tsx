@@ -723,6 +723,7 @@ export function SlicerPanel() {
       <div className="oslice-top">
         <span className="oslice-logo">3DPrintForge <span>Slicer</span></span>
         <div className="oslice-filemenu">
+          <button className="oslice-filebtn" title={t('v2.slicer.library_hint', 'Model library, Model Forge & print history')} onClick={() => setShowLibrary(true)}>{t('v2.slicer.library', 'Library')}</button>
           <button className="oslice-filebtn" title={t('v2.slicer.open_project_hint', 'Open a saved .forgeproj project')} onClick={() => projInputRef.current?.click()}>{t('v2.slicer.open_project', 'Open')}</button>
           <button className="oslice-filebtn" title={t('v2.slicer.save_project_hint', 'Save the plate + settings as a .forgeproj project')} disabled={!plateHasModels} onClick={saveProject}>{t('v2.slicer.save_project', 'Save')}</button>
           <input ref={projInputRef} type="file" accept=".forgeproj,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ''; if (f) openProject(f); }} />
