@@ -3,7 +3,7 @@ import { useT } from '../../i18n';
 
 export type SliceSettings = Record<string, string | number | boolean>;
 
-const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'star', 'crosshatch', 'lightning', 'line', 'rectilinear', 'alignedrectilinear', 'concentric'];
+const INFILL_PATTERNS = ['grid', 'gyroid', 'honeycomb', 'cubic', 'triangles', 'star', 'crosshatch', 'hilbert', 'lightning', 'line', 'rectilinear', 'alignedrectilinear', 'concentric'];
 const SUPPORT_TYPES = [['normal(auto)', 'Normal'], ['tree(auto)', 'Tree']];
 const BRIM_TYPES = [['no_brim', 'None'], ['outer_only', 'Outer'], ['brim_ears', 'Ears']];
 

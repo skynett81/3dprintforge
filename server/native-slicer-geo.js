@@ -567,7 +567,53 @@ export function honeycombInfill(region, density, lineWidth = 0.4) {
  * cubic = a 3-way triad rotating with height, lines/default = one direction.
  * `ctx.z` (layer height) drives the Z-varying patterns.
  */
+/**
+ * Hilbert-curve infill: a single continuous space-filling curve (a BambuStudio
+ * pattern). Deposits one connected serpentine at ~`spacing` pitch, giving even
+ * multi-directional strength with very few travels. Segments whose midpoint
+ * falls outside the region (or inside a hole) are dropped; the walls cover the
+ * boundary. Deterministic.
+ * @returns {number[][][]} segments [[ax,ay],[bx,by]]
+ */
+export function hilbertInfill(region, density, lineWidth = 0.4) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const holes = region.holes || [];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const span = Math.max(maxX - minX, maxY - minY);
+  if (!(span > 0)) return [];
+  const spacing = Math.max(lineWidth, lineWidth / Math.max(0.01, Math.min(1, density)));
+  let p = 1; while ((1 << (p + 1)) * spacing <= span && p < 8) p++;   // order (cell ≈ spacing, capped)
+  const N = 1 << p;
+  const cell = span / N;
+  const ox = minX + ((maxX - minX) - span) / 2;   // centre the NxN square over the bbox
+  const oy = minY + ((maxY - minY) - span) / 2;
+  // Hilbert distance d → grid (x,y) — the reference iterative algorithm.
+  const d2xy = (d) => {
+    let rx, ry, t = d, x = 0, y = 0;
+    for (let s = 1; s < N; s <<= 1) {
+      rx = 1 & (t >> 1);
+      ry = 1 & (t ^ rx);
+      if (ry === 0) { if (rx === 1) { x = s - 1 - x; y = s - 1 - y; } const tmp = x; x = y; y = tmp; }
+      x += s * rx; y += s * ry; t >>= 2;
+    }
+    return [x, y];
+  };
+  const inside = (x, y) => { if (!_pointInPoly([x, y], outer)) return false; for (const h of holes) if (_pointInPoly([x, y], h)) return false; return true; };
+  const pt = (d) => { const [gx, gy] = d2xy(d); return [ox + (gx + 0.5) * cell, oy + (gy + 0.5) * cell]; };
+  const segs = [];
+  let prev = pt(0);
+  for (let d = 1; d < N * N; d++) {
+    const cur = pt(d);
+    if (inside((prev[0] + cur[0]) / 2, (prev[1] + cur[1]) / 2)) segs.push([prev, cur]);
+    prev = cur;
+  }
+  return segs;
+}
+
 export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}) {
+  if (pattern === 'hilbert' || pattern === 'hilbertcurve') return hilbertInfill(region, density, lineWidth);
   if (pattern === 'grid') {
     return regionInfill(region, density / 2, angleDeg, lineWidth)
       .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth));

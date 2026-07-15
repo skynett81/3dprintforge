@@ -866,6 +866,26 @@ describe('native-slicer: Arachne bead simplification', () => {
   });
 });
 
+import { hilbertInfill } from '../../server/native-slicer-geo.js';
+describe('native-slicer: Hilbert-curve infill', () => {
+  const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  it('fills a square with many connected in-region segments', () => {
+    const segs = hilbertInfill({ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }, 0.3, 0.4);
+    assert.ok(segs.length > 20, `many segments (got ${segs.length})`);
+    for (const s of segs) { const [mx, my] = mid(s); assert.ok(mx >= -1 && mx <= 41 && my >= -1 && my <= 41, 'segment inside the region'); }
+  });
+  it('leaves holes empty', () => {
+    const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [[[14, 14], [26, 14], [26, 26], [14, 26]]] };
+    for (const s of hilbertInfill(region, 0.3, 0.4)) {
+      const [mx, my] = mid(s);
+      assert.ok(!(mx > 15 && mx < 25 && my > 15 && my < 25), 'no segment midpoint inside the hole');
+    }
+  });
+  it('empty for a degenerate region', () => {
+    assert.deepEqual(hilbertInfill({ outer: [[0, 0], [1, 0]], holes: [] }, 0.3, 0.4), []);
+  });
+});
+
 describe('native-slicer: tree supports honor "on build plate only"', () => {
   // Two stacked slabs with an air gap: the upper slab's underside sits directly
   // above the lower slab, so any support there rests ON the model — "on build
