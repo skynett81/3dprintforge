@@ -27,6 +27,8 @@ export interface GcodeLayer {
   allFan: number[];
   /** Travel segments, flat: [ax, ay, bx, by, ...] */
   travel: number[];
+  /** Retraction points (nozzle position when filament was retracted), flat [x, y, …]. */
+  retractions: number[];
   /** Rough print time for this layer (seconds), from move distance / feedrate. */
   timeSec: number;
   /** Filament extruded on this layer (mm of filament). */
@@ -60,7 +62,7 @@ export function parseGcode(text: string): ParsedGcode {
   const layerFor = (zz: number): GcodeLayer => {
     const key = Math.round(zz * 100) / 100;
     let l = layerByZ.get(key);
-    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], allFeat: [], allE: [], allFan: [], travel: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
+    if (!l) { l = { z: key, feats: {}, allSeg: [], allSpeed: [], allFlow: [], allTool: [], allFeat: [], allE: [], allFan: [], travel: [], retractions: [], timeSec: 0, eLen: 0 }; layerByZ.set(key, l); layers.push(l); }
     return l;
   };
   let feed = 0;          // current feedrate (mm/min)
@@ -122,6 +124,8 @@ export function parseGcode(text: string): ParsedGcode {
     const moved = nx !== x || ny !== y;
     if (inPrint) {
       if (nz !== z || !cur) cur = layerFor(nz);
+      // Retraction: filament pulled back (E decreases). Record the nozzle spot.
+      if (hasE && ne < e - 1e-4 && cur) cur.retractions.push(x, y);
       // Rough per-layer time (distance / feedrate) and filament length.
       if (feed > 0) {
         const dx = nx - x, dy = ny - y, dz = nz - z;

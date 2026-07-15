@@ -97,6 +97,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
   // segment count. Only Play drives it below full; the layer sliders keep it full.
   const [moves, setMoves] = useState(FULL);
   const [showTravel, setShowTravel] = useState(false);
+  const [showRetract, setShowRetract] = useState(false);
   const [mode, setMode] = useState<ColorMode>('feature');
   const [playing, setPlaying] = useState(false);
   const [hiddenFeats, setHiddenFeats] = useState<Set<Feature>>(new Set());
@@ -329,7 +330,18 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
       c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
     }
-  }, [parsed, layer, low, moves, showTravel, total, mode, slotColors, hiddenFeats]);
+    // Retraction points — small red dots where the filament was pulled back
+    // (OrcaSlicer's retraction markers), for hunting stringing.
+    if (showRetract) {
+      const rp: number[] = [];
+      for (let i = loIdx; i < shown; i++) { const l = parsed.layers[i]; for (let k = 0; k < l.retractions.length; k += 2) rp.push(l.retractions[k] - cx, l.retractions[k + 1] - cy, l.z); }
+      if (rp.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(rp, 3));
+        c.group.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xff4d4d, size: 6, sizeAttenuation: false })));
+      }
+    }
+  }, [parsed, layer, low, moves, showTravel, showRetract, total, mode, slotColors, hiddenFeats]);
 
   const shown = Math.min(layer, total);
   const curLayer = parsed.layers[shown - 1];
@@ -393,6 +405,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
             </div>
           )}
           <label className="chk gpreview-side-opt"><input type="checkbox" checked={showTravel} onChange={(e) => setShowTravel(e.target.checked)} /> {t('v2.gpreview.travel', 'Travel')}</label>
+          <label className="chk gpreview-side-opt" style={{ borderTop: 0, paddingTop: 0 }}><input type="checkbox" checked={showRetract} onChange={(e) => setShowRetract(e.target.checked)} /> {t('v2.gpreview.retractions', 'Retractions')}</label>
         </div>
       </div>
       <div className="gpreview-controls">
