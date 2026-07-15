@@ -555,6 +555,49 @@ export function gyroidInfill(region, density, lineWidth = 0.4, z = 0) {
  * bounding box, their shared edges de-duplicated, and each edge clipped to the
  * region. `density` sets the cell size.
  */
+/**
+ * Stitch a soup of 2-point segments into connected polylines by joining
+ * shared endpoints. Used by lattice fills (honeycomb) whose edges are generated
+ * cell-by-cell in no particular order: greedily walks unused edges from each
+ * endpoint so the printer traces long continuous paths instead of retracting
+ * between every edge. Vertices with odd degree still force some breaks, but the
+ * travel count drops by ~an order of magnitude.
+ * @param {number[][][]} segs  segments [[ax,ay],[bx,by]]
+ * @returns {number[][][]} polylines [[x,y], …]
+ */
+export function stitchSegments(segs, eps = 1e-3) {
+  if (!segs.length) return [];
+  const key = (p) => `${Math.round(p[0] / eps)},${Math.round(p[1] / eps)}`;
+  const nodes = new Map();               // point key -> incident edges
+  const edges = segs.map(([a, b]) => ({ a, b, ka: key(a), kb: key(b), used: false }));
+  for (const e of edges) {
+    if (!nodes.has(e.ka)) nodes.set(e.ka, []);
+    if (!nodes.has(e.kb)) nodes.set(e.kb, []);
+    nodes.get(e.ka).push(e); nodes.get(e.kb).push(e);
+  }
+  const nextFrom = (k) => { for (const e of nodes.get(k)) if (!e.used) return e; return null; };
+  const paths = [];
+  for (const start of edges) {
+    if (start.used) continue;
+    start.used = true;
+    const path = [start.a, start.b];
+    let endKey = start.kb;
+    for (let nxt; (nxt = nextFrom(endKey)); ) {
+      nxt.used = true;
+      const fwd = nxt.ka === endKey;
+      path.push(fwd ? nxt.b : nxt.a); endKey = fwd ? nxt.kb : nxt.ka;
+    }
+    let headKey = start.ka;
+    for (let nxt; (nxt = nextFrom(headKey)); ) {
+      nxt.used = true;
+      const fwd = nxt.ka === headKey;
+      path.unshift(fwd ? nxt.b : nxt.a); headKey = fwd ? nxt.kb : nxt.ka;
+    }
+    paths.push(path);
+  }
+  return paths;
+}
+
 export function honeycombInfill(region, density, lineWidth = 0.4) {
   const outer = region.outer;
   if (!outer || outer.length < 3 || density <= 0) return [];
@@ -581,7 +624,7 @@ export function honeycombInfill(region, density, lineWidth = 0.4) {
       }
     }
   }
-  return segs;
+  return stitchSegments(segs);
 }
 
 /**
@@ -629,14 +672,26 @@ export function hilbertInfill(region, density, lineWidth = 0.4) {
   // of holes) — a midpoint-only test would let a segment poke past the wall on
   // concave outlines / low density. Cells are ~one line-width so the small gap
   // this leaves at the boundary is covered by the walls.
-  const segs = [];
+  // Walk the curve in Hilbert order, accumulating runs of in-region cells into
+  // continuous polylines. The serpentine is one path; it only breaks where it
+  // crosses outside the region / into a hole, so a convex part fills as a single
+  // connected curve with one travel per layer.
+  const paths = [];
+  let chain = [];
   let prev = pt(0), prevIn = inside(prev[0], prev[1]);
   for (let d = 1; d < N * N; d++) {
     const cur = pt(d), curIn = inside(cur[0], cur[1]);
-    if (prevIn && curIn) segs.push([prev, cur]);
+    if (prevIn && curIn) {
+      if (chain.length === 0) chain.push(prev);
+      chain.push(cur);
+    } else {
+      if (chain.length >= 2) paths.push(chain);
+      chain = [];
+    }
     prev = cur; prevIn = curIn;
   }
-  return segs;
+  if (chain.length >= 2) paths.push(chain);
+  return paths;
 }
 
 export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}) {

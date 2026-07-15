@@ -905,17 +905,19 @@ describe('native-slicer: adaptive cubic infill', () => {
 });
 
 describe('native-slicer: Hilbert-curve infill', () => {
-  const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  it('fills a square with many segments whose ENDPOINTS stay inside', () => {
-    const segs = hilbertInfill({ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }, 0.3, 0.4);
-    assert.ok(segs.length > 20, `many segments (got ${segs.length})`);
-    for (const [a, b] of segs) for (const [px, py] of [a, b]) assert.ok(px >= -0.1 && px <= 40.1 && py >= -0.1 && py <= 40.1, `endpoint (${px},${py}) inside`);
+  it('fills a square with connected polylines whose points stay inside', () => {
+    const paths = hilbertInfill({ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }, 0.3, 0.4);
+    // The curve is continuous, so a convex square yields very few (ideally one)
+    // long polylines rather than thousands of segments.
+    assert.ok(paths.length < 8, `few connected chains (got ${paths.length})`);
+    const totalPts = paths.reduce((a, p) => a + p.length, 0);
+    assert.ok(totalPts > 20, `many points (got ${totalPts})`);
+    for (const path of paths) for (const [px, py] of path) assert.ok(px >= -0.1 && px <= 40.1 && py >= -0.1 && py <= 40.1, `point (${px},${py}) inside`);
   });
   it('leaves holes empty', () => {
     const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [[[14, 14], [26, 14], [26, 26], [14, 26]]] };
-    for (const s of hilbertInfill(region, 0.3, 0.4)) {
-      const [mx, my] = mid(s);
-      assert.ok(!(mx > 15 && mx < 25 && my > 15 && my < 25), 'no segment midpoint inside the hole');
+    for (const path of hilbertInfill(region, 0.3, 0.4)) for (const [mx, my] of path) {
+      assert.ok(!(mx > 15 && mx < 25 && my > 15 && my < 25), 'no point inside the hole');
     }
   });
   it('empty for a degenerate region', () => {
