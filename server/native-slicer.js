@@ -473,7 +473,7 @@ export function layersToGcode(layers, settings) {
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
-        for (let i = 1; i < pts.length; i++) { const p = pts[i]; e += Math.hypot(p[0] - curX, p[1] - curY) * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
+        for (let i = 1; i < pts.length; i++) { const p = pts[i]; const d = Math.hypot(p[0] - curX, p[1] - curY); if (d < 5e-4) { curX = p[0]; curY = p[1]; continue; } e += d * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
         if (closed) closeLoop(first, ef, speed);
         lastPath = closed ? [...pts, first] : pts;
         return;
@@ -506,6 +506,10 @@ export function layersToGcode(layers, settings) {
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
       const d = Math.hypot(p[0] - curX, p[1] - curY);
+      // Drop degenerate sub-resolution segments (duplicate points, e.g. from
+      // gyroid tessellation) — they'd emit a same-coordinate G1 with a tiny E,
+      // i.e. a stationary blob. Skipping loses only picolitres of filament.
+      if (d < 5e-4) { curX = p[0]; curY = p[1]; continue; }
       // Scarf-joint seam: ramp extrusion up over the first `scarf` mm so the seam
       // begins as a taper (paired with the ramp-down overlap below), not a blob.
       let segEf = ef;
