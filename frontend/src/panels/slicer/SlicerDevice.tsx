@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useT } from '../../i18n';
 import { useToast } from '../../toast';
-import type { SlicerPrinter } from '../../types';
+import type { SlicerPrinter, HistoryRow } from '../../types';
 import { SlicerDeviceControls } from './SlicerDeviceControls';
 
 type Live = Record<string, unknown>;
@@ -40,6 +40,14 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
     const retry = setInterval(() => setCamFailed(false), 8000);
     return () => { clearInterval(poll); clearInterval(retry); };
   }, [camId]);
+  // Recent prints for this printer (BambuStudio's device history).
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  useEffect(() => {
+    if (!camId) return;
+    let alive = true;
+    api.listHistory().then((rows) => { if (alive) setHistory(rows.filter((r) => r.printer_id === camId).slice(0, 6)); }).catch(() => { /* offline */ });
+    return () => { alive = false; };
+  }, [camId]);
 
   if (!printer) return <div className="oslice-panelbody"><p className="muted" style={{ padding: 16 }}>{t('v2.dev.no_printer', 'No printer connected.')}</p></div>;
   const st = live ?? {};
@@ -74,6 +82,7 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
   const rawName = (st.subtask_name ?? st.gcode_file ?? ps?.filename) as string | undefined;
   const jobName = rawName ? String(rawName).replace(/^.*[\\/]/, '').replace(/\.(gcode|3mf|gz)\b.*$/i, '') : '';
   const fmtRemain = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${Math.round(m % 60)}m` : `${Math.round(m)}m`);
+  const fmtDur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m` : `${Math.max(1, Math.round(s / 60))}m`);
   const spdLabel = ['', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
   // HMS alerts (Bambu) — the printer's active health-monitoring codes. Formatted
   // as BambuStudio's HMS_XXXX_XXXX_XXXX_XXXX with a link to the wiki; severity is
@@ -232,6 +241,25 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
                   ))}
             </div>
           </div>
+
+          {/* Recent prints for this printer (BambuStudio's device history). */}
+          {history.length > 0 && (
+            <div className="oslice-devsec">
+              <div className="oslice-devsec-h">{t('v2.dev.history', 'Recent prints')}</div>
+              {history.map((h) => {
+                const kind = /finish|done|complete|success/i.test(h.status) ? 'ok' : /fail|error|cancel|stop/i.test(h.status) ? 'bad' : 'mid';
+                const col = h.filament_color ? (h.filament_color.startsWith('#') ? h.filament_color : '#' + h.filament_color) : '#8b97a5';
+                return (
+                  <div className="oslice-devhist" key={h.id}>
+                    <i className="oslice-devhist-dot" style={{ background: col }} />
+                    <span className="oslice-devhist-name ellipsis" title={h.filename}>{h.filename.replace(/\.(gcode|3mf|gz)\b.*$/i, '')}</span>
+                    <span className={`oslice-devhist-badge oslice-devhist--${kind}`}>{h.status}</span>
+                    <span className="oslice-devhist-meta">{h.duration_seconds ? fmtDur(h.duration_seconds) : ''}{h.filament_used_g ? ` · ${Math.round(h.filament_used_g)} g` : ''}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
