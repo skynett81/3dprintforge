@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useT } from '../../i18n';
-import type { Printer, Spool } from '../../types';
+import { api } from '../../api';
+import { useToast } from '../../toast';
+import { useResource } from '../../hooks';
+import type { Printer, Spool, FilamentProfile, StorageLocation } from '../../types';
 import { SpoolDrawer } from '../../components/SpoolDrawer';
 
 type GroupBy = 'location' | 'material' | 'vendor';
@@ -30,10 +33,25 @@ export function SlicerFilaments({ spools, printers, onApply, onChanged }: Props)
   const t = useT();
   const [q, setQ] = useState('');
   const [groupBy, setGroupBy] = useState<GroupBy>('location');
+  const toast = useToast();
   const [editId, setEditId] = useState<number | null>(null);
   const editing = spools.find((s) => s.id === editId) || null;
-  // Jump to the full inventory (add spool, locations, everything).
+  // Jump to the full inventory (locations, everything else).
   const goInv = (sub: string) => { window.location.hash = `#/inventory/${sub}`; };
+  // Quick add-spool form, inline — no need to leave the slicer.
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({ profile_id: '', weight: '1000', location: '' });
+  const { data: profiles } = useResource<FilamentProfile[]>(api.listFilaments, 0);
+  const { data: locations } = useResource<StorageLocation[]>(api.listLocations, 0);
+  async function addSpool() {
+    if (!addForm.profile_id) { toast(t('v2.filmgr.pick_profile', 'Pick a filament first'), 'error'); return; }
+    const w = Number(addForm.weight) || 1000;
+    try {
+      await api.addSpool({ filament_profile_id: Number(addForm.profile_id), initial_weight_g: w, remaining_weight_g: w, location: addForm.location || null });
+      toast(t('v2.filmgr.spool_added', 'Spool added'), 'success');
+      setAdding(false); setAddForm({ profile_id: '', weight: '1000', location: '' }); onChanged?.();
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   const printerName = useMemo(() => {
     const m = new Map<string, string>();
@@ -83,11 +101,25 @@ export function SlicerFilaments({ spools, printers, onApply, onChanged }: Props)
         </div>
         <span className="muted micro" style={{ marginLeft: 'auto' }}>{spools.filter((s) => !s.archived).length} {t('v2.filmgr.spools', 'spools')}</span>
         <div className="oslice-filmgr-actions">
-          <button className="btn btn--xs btn--primary" title={t('v2.filmgr.add_spool_hint', 'Add a spool in the inventory')} onClick={() => goInv('spools')}>＋ {t('v2.filmgr.add_spool', 'Add spool')}</button>
+          <button className={`btn btn--xs${adding ? '' : ' btn--primary'}`} title={t('v2.filmgr.add_spool_hint', 'Add a spool')} onClick={() => setAdding((v) => !v)}>{adding ? t('common.close', 'Close') : `＋ ${t('v2.filmgr.add_spool', 'Add spool')}`}</button>
           <button className="btn btn--xs btn--ghost" title={t('v2.filmgr.locations_hint', 'Manage storage locations')} onClick={() => goInv('locations')}>{t('v2.filmgr.locations', 'Locations')}</button>
           <button className="btn btn--xs btn--ghost" title={t('v2.filmgr.inventory_hint', 'Open the full inventory')} onClick={() => goInv('overview')}>{t('v2.filmgr.inventory', 'Inventory →')}</button>
         </div>
       </div>
+      {adding && (
+        <div className="oslice-filmgr-addform">
+          <select className="oset-input" value={addForm.profile_id} onChange={(e) => setAddForm({ ...addForm, profile_id: e.target.value })}>
+            <option value="">{t('v2.filmgr.pick_profile', 'Pick a filament…')}</option>
+            {(profiles ?? []).slice(0, 400).map((pp) => <option key={pp.id} value={pp.id}>{pp.name}{pp.color_name ? ` — ${pp.color_name}` : ''}</option>)}
+          </select>
+          <input className="oset-input" style={{ maxWidth: 90 }} type="number" min={1} placeholder={t('v2.inv.weight', 'g')} value={addForm.weight} onChange={(e) => setAddForm({ ...addForm, weight: e.target.value })} />
+          <select className="oset-input" style={{ maxWidth: 130 }} value={addForm.location} onChange={(e) => setAddForm({ ...addForm, location: e.target.value })}>
+            <option value="">{t('v2.inv.location', 'Location')}</option>
+            {(locations ?? []).map((l) => <option key={l.id} value={l.name}>{l.name}</option>)}
+          </select>
+          <button className="btn btn--sm btn--primary" onClick={addSpool}>{t('v2.inv.add_btn', 'Add')}</button>
+        </div>
+      )}
       <div className="oslice-filmgr-body">
         {groups.length === 0 && <p className="muted" style={{ padding: 16 }}>{t('v2.filmgr.none', 'No filament in inventory.')}</p>}
         {groups.map(([label, list]) => (

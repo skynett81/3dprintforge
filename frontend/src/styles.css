@@ -1505,3 +1505,6 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-filcard-edit { position: absolute; top: 4px; right: 4px; z-index: 2; width: 20px; height: 20px; border: none; background: rgba(0,0,0,0.28); color: #fff; border-radius: 5px; font-size: 0.72rem; cursor: pointer; opacity: 0; }
 .oslice-filcard:hover .oslice-filcard-edit { opacity: 0.85; }
 .oslice-filcard-edit:hover { background: var(--o-accent); opacity: 1; }
+
+.oslice-filmgr-addform { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--o-border); align-items: center; }
+.oslice-filmgr-addform .oset-input { min-width: 0; }
