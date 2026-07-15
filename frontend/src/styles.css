@@ -555,8 +555,9 @@ select.oset-rowinput { text-align: left; }
   font-size: 0.72rem; color: #cbd5e1; padding: 3px 9px;
   background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft); border-radius: 999px;
 }
+/* Clears the bottom-left axis gizmo (48px) so the readout never covers it. */
 .plate-measure {
-  position: absolute; left: 10px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; gap: 2px;
+  position: absolute; left: 66px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; gap: 2px;
   font-size: 0.74rem; color: #e2e8f0; padding: 6px 10px;
   background: rgba(14,17,22,0.8); border: 1px solid var(--border-soft); border-radius: 8px;
 }
