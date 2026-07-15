@@ -175,7 +175,11 @@ describe('native-slicer: avoid-crossing-walls travel (combing)', () => {
     const withComb = await sliceMeshToGcode(box(30, 30, 4), { avoidCrossingWalls: true, infillDensity: 0.2 });
     const noComb = await sliceMeshToGcode(box(30, 30, 4), { avoidCrossingWalls: false, infillDensity: 0.2 });
     const retracts = (g) => { let c = 0; const L = g.split('\n'); for (let i = 1; i < L.length; i++) if (/^G0 X/.test(L[i]) && /G1 E/.test(L[i - 1])) c++; return c; };
-    assert.ok(retracts(withComb.gcode) < retracts(noComb.gcode) * 0.3, 'combing keeps travels over solid, avoiding most retractions');
+    // Connected zigzag infill already removes most in-region travels, so combing
+    // has fewer moves to work on than with the old disconnected fill — but it
+    // still routes a clear majority of the remaining travels inside the part,
+    // avoiding their retractions.
+    assert.ok(retracts(withComb.gcode) < retracts(noComb.gcode) * 0.7, 'combing keeps travels inside the part, avoiding many retractions');
   });
 });
 

@@ -10,7 +10,18 @@
  * Off by default (enable_arc_fitting) — opt-in, since some firmware dislikes
  * arcs. Only planar X/Y extruding moves at a constant feedrate are considered;
  * travels, Z moves, retractions and feature/temperature lines break a run.
+ *
+ * Arc fitting skips infill-type features. Perimeters (and skirt/brim loops) are
+ * where curved geometry lives and where arcs cut real g-code. Infill (now
+ * emitted as connected zigzag polylines) traces a square wave whose
+ * evenly-spaced turnaround points can spuriously pass a circle-tolerance test,
+ * so fitting it would bend straight fill into arcs. Disarming these features
+ * keeps output geometry honest. Arcs are armed by default so a raw g-code
+ * fragment with no FEATURE comments still fits.
  */
+
+// Zigzag/parallel-line features that must NOT be reinterpreted as arcs.
+const NO_ARC_FEATURES = new Set(['solid', 'sparse', 'gap', 'support', 'bridge', 'ironing', 'wipe_tower']);
 
 function circleFrom3(a, b, c) {
   const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
@@ -42,6 +53,7 @@ export function fitArcs(gcode, tolerance = 0.05, opts = {}) {
   let run = [];                            // pending extruding moves (parsed)
   let runFeed = null;
   let runEntry = null;                     // position just before the run's first move
+  let arcArmed = true;                      // current feature is arc-eligible (armed until an infill feature)
 
   const flushRun = () => {
     if (run.length < minPts || !runEntry) { for (const m of run) out.push(m.raw); run = []; return; }
@@ -91,8 +103,12 @@ export function fitArcs(gcode, tolerance = 0.05, opts = {}) {
   };
 
   for (const line of lines) {
+    // Track the active feature so only wall extrusions are considered for arcs.
+    const fi = line.indexOf('FEATURE:');
+    if (fi >= 0) { flushRun(); runFeed = null; arcArmed = !NO_ARC_FEATURES.has(line.slice(fi + 8).trim()); out.push(line); continue; }
     const m = parseMove(line);
     const extruding = m && m.e != null;    // planar G1 with extrusion
+    if (extruding && !arcArmed) { if (run.length) flushRun(); out.push(line); cur = { x: m.x, y: m.y }; continue; }
     if (extruding) {
       if (runFeed != null && m.f != null && m.f !== runFeed) { flushRun(); runFeed = null; }
       if (run.length === 0) { runEntry = cur ? { x: cur.x, y: cur.y } : null; runFeed = m.f ?? runFeed; }

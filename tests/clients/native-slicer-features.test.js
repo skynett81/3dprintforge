@@ -71,11 +71,14 @@ describe('native-slicer: infill respects holes (even-odd)', () => {
 });
 
 describe('native-slicer: solid fill is denser than sparse', () => {
-  it('solidInfill yields more segments than 20% sparse for the same area', () => {
+  it('solidInfill lays much more path than 20% sparse for the same area', () => {
+    // Both fills now return connected zigzag polylines (chains), so density is
+    // reflected in total extruded path length, not in the number of chains.
+    const pathLen = (chains) => chains.reduce((sum, c) => { let l = 0; for (let i = 1; i < c.length; i++) l += Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]); return sum + l; }, 0);
     const region = { outer: SQUARE(20), holes: [] };
-    const sparse = regionInfill(region, 0.2, 0, 0.4).length;
-    const solid = solidInfill(region, 0, 0.4).length;
-    assert.ok(solid > sparse * 2, `solid ${solid} should be >> sparse ${sparse}`);
+    const sparse = pathLen(regionInfill(region, 0.2, 0, 0.4));
+    const solid = pathLen(solidInfill(region, 0, 0.4));
+    assert.ok(solid > sparse * 2, `solid path ${solid.toFixed(0)} should be >> sparse ${sparse.toFixed(0)}`);
   });
 });
 

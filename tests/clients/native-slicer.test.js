@@ -77,15 +77,18 @@ describe('native-slicer: offsetPolygon', () => {
 });
 
 describe('native-slicer: lineInfill', () => {
-  it('generates parallel hatching segments inside a square', () => {
+  it('generates connected hatching polylines inside a square', () => {
     const square = [[0, 0], [20, 0], [20, 20], [0, 20]];
     const segs = lineInfill(square, 0.3, 45, 0.4);
     assert.ok(segs.length > 0);
-    // Each segment is two points.
+    // Connected zigzag infill: each entry is a polyline of >= 2 points, each [x, y].
     for (const s of segs) {
-      assert.equal(s.length, 2);
+      assert.ok(s.length >= 2);
       assert.equal(s[0].length, 2);
     }
+    // Connecting scanlines into zigzags means far fewer separate paths than
+    // raw scanlines — a 20 mm square at 0.3 density hatches into a handful of chains.
+    assert.ok(segs.length < 12, `expected connected chains, got ${segs.length} paths`);
   });
 
   it('zero density returns empty', () => {
@@ -848,10 +851,14 @@ describe('native-slicer: full Arachne medial beads', () => {
     assert.ok(Math.abs(wAvg - 1.2) < 0.15, `width tracks the ~1.2mm rib (got ${wAvg.toFixed(2)})`);
   });
   it('arachne replaces perpendicular gap hatch with a continuous bead', async () => {
-    const gapTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:gap'); continue; } if (f && l.startsWith('G0 X')) n++; } return n; };
+    // Both fills are now connected, so travel counts match (~1 per layer). The
+    // real difference is the EXTRUSION path: classic hatches the thin rib with
+    // many short perpendicular segments; arachne lays one continuous bead per
+    // layer along the rib, so it emits far fewer extrusion moves.
+    const gapExtrudes = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:gap'); continue; } if (f && /^G1 X[-\d.]+ Y[-\d.]+ E/.test(l)) n++; } return n; };
     const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
     const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
-    assert.ok(gapTravels(ar.gcode) < gapTravels(cl.gcode) / 5, `arachne far fewer gap travels (classic=${gapTravels(cl.gcode)} arachne=${gapTravels(ar.gcode)})`);
+    assert.ok(gapExtrudes(ar.gcode) < gapExtrudes(cl.gcode) / 5, `arachne far fewer gap extrusion moves (classic=${gapExtrudes(cl.gcode)} arachne=${gapExtrudes(ar.gcode)})`);
     assert.ok(!ar.gcode.includes('NaN'));
   });
 });

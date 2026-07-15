@@ -1090,10 +1090,16 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         const anchorSegs = (segs) => {
           if (!(s.infillAnchor > 0)) return segs;
           const d = Math.min(s.infillAnchor, lw * 2);
+          // Push each infill path's two ENDS outward along their terminal edge so
+          // they reach into the perimeter and bond (BambuStudio infill_anchor).
+          // Works for both 2-point lines and connected zigzag polylines.
+          const push = (p, toward) => { const dx = p[0] - toward[0], dy = p[1] - toward[1], L = Math.hypot(dx, dy) || 1; return [p[0] + (dx / L) * d, p[1] + (dy / L) * d]; };
           return segs.map((sg) => {
-            if (sg.length !== 2) return sg;
-            const [a, b] = sg, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
-            return [[a[0] - ux * d, a[1] - uy * d], [b[0] + ux * d, b[1] + uy * d]];
+            if (sg.length < 2) return sg;
+            const o = sg.map((pt) => pt.slice());
+            o[0] = push(sg[0], sg[1]);
+            o[o.length - 1] = push(sg[o.length - 1], sg[o.length - 2]);
+            return o;
           });
         };
         const sparseSegsFor = (region) => {

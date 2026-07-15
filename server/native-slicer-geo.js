@@ -298,28 +298,51 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4) {
   let minY = Infinity, maxY = -Infinity;
   for (const p of rotOuter) { if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
 
-  const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
-  const segments = [];
+  // Scanline spans per row (each an x-interval inside the region at height y).
+  const rows = [];
   for (let y = minY + spacing / 2; y < maxY; y += spacing) {
     const xs = [];
     for (const loop of allLoops) {
       for (let i = 0, n = loop.length; i < n; i++) {
         const p = loop[i], q = loop[(i + 1) % n];
-        if ((p[1] - y) * (q[1] - y) < 0) {
-          const t = (y - p[1]) / (q[1] - p[1]);
-          xs.push(p[0] + t * (q[0] - p[0]));
-        }
+        if ((p[1] - y) * (q[1] - y) < 0) { const t = (y - p[1]) / (q[1] - p[1]); xs.push(p[0] + t * (q[0] - p[0])); }
       }
     }
     xs.sort((a, b) => a - b);
-    for (let k = 0; k + 1 < xs.length; k += 2) {
-      if (xs[k + 1] - xs[k] < EPS) continue;
-      const a = [xs[k] * cosBack - y * sinBack, xs[k] * sinBack + y * cosBack];
-      const b = [xs[k + 1] * cosBack - y * sinBack, xs[k + 1] * sinBack + y * cosBack];
-      segments.push([a, b]);
-    }
+    const spans = [];
+    for (let k = 0; k + 1 < xs.length; k += 2) if (xs[k + 1] - xs[k] >= EPS) spans.push([xs[k], xs[k + 1]]);
+    if (spans.length) rows.push({ y, spans });
   }
-  return segments;
+  if (!rows.length) return [];
+
+  // Connect spans into boustrophedon chains: a span continues a chain from the
+  // previous row when their x-intervals overlap (the short connector then runs
+  // just inside the perimeter). Direction alternates per row → a continuous
+  // zigzag that extrudes the turns instead of a travel per line (OrcaSlicer's
+  // connected rectilinear infill). Cuts infill travels from one-per-line to
+  // roughly one-per-chain.
+  const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
+  const toWorld = (x, y) => [x * cosBack - y * sinBack, x * sinBack + y * cosBack];
+  const overlap = (s, e) => Math.min(s[1], e[1]) - Math.max(s[0], e[0]) > EPS;
+  const out = [];       // finished chains (point lists in rotated space)
+  let open = [];        // chains still growing: { pts, span }
+  rows.forEach((row, ri) => {
+    const ltr = ri % 2 === 0;   // even rows left→right, odd right→left
+    const next = [];
+    const used = new Set();
+    for (const sp of row.spans) {
+      const a = ltr ? sp[0] : sp[1], b = ltr ? sp[1] : sp[0];
+      let chain = null;
+      for (const oc of open) { if (!used.has(oc) && overlap(oc.span, sp)) { chain = oc; used.add(oc); break; } }
+      if (chain) { chain.pts.push([a, row.y], [b, row.y]); chain.span = sp; next.push(chain); }
+      else next.push({ pts: [[a, row.y], [b, row.y]], span: sp });
+    }
+    for (const oc of open) if (!used.has(oc)) out.push(oc.pts);   // not extended → finished
+    open = next;
+  });
+  for (const oc of open) out.push(oc.pts);
+
+  return out.filter((p) => p.length >= 2).map((p) => p.map(([x, y]) => toWorld(x, y)));
 }
 
 /**
