@@ -322,6 +322,15 @@ export function layersToGcode(layers, settings) {
     }
     return (frac > (s.overhangThreshold ?? 0.5) && s.overhangSpeed) ? s.overhangSpeed : 0;
   };
+  // Overhang speed for a discrete degree 1..4 (0 = supported → no slow-down),
+  // for per-segment grading. Uses the overhang_1_4..4_4 table when set, else the
+  // single overhangSpeed for the steeper (>=3) buckets.
+  const overhangSpeedForDeg = (deg) => {
+    if (deg <= 0) return 0;
+    const arr = s.overhangSpeeds;
+    if (Array.isArray(arr) && arr.length) { const v = arr[Math.min(arr.length - 1, deg - 1)]; return v > 0 ? v : 0; }
+    return (deg >= 3 && s.overhangSpeed) ? s.overhangSpeed : 0;
+  };
   // Per-feature acceleration (M204). Undefined features fall back to the
   // steady acceleration; the loop only emits M204 when it actually changes.
   const ACC = {
@@ -442,9 +451,13 @@ export function layersToGcode(layers, settings) {
   // `widths` (optional, one per point) makes each segment's extrusion track a
   // variable line width — the foundation for Arachne variable-width beads. When
   // absent everything is byte-identical to the fixed-width path.
-  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow, scarf = 0, widths = null, baseW = s.lineWidth) => {
+  const emitPath = (pts, speed, closed, flow = 1, ef = efactor * flow, scarf = 0, widths = null, baseW = s.lineWidth, segSpeeds = null) => {
     if (pts.length < 2) return;
     const varW = widths && widths.length === pts.length && baseW > 0;
+    // Per-segment feedrate (overhang grading): segSpeeds[i] is the speed for the
+    // move INTO pts[i]; falls back to the path speed where unset. Keeps the loop
+    // (and its seam) intact while slowing only the overhanging stretches.
+    const spd = (i) => (segSpeeds && segSpeeds[i] > 0 ? segSpeeds[i] : speed);
     const first = pts[0];
     // Avoid-crossing-walls (combing): if a route that stays over solid exists,
     // travel along it WITHOUT retracting — no stringing across gaps, far fewer
@@ -455,7 +468,7 @@ export function layersToGcode(layers, settings) {
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
-        for (let i = 1; i < pts.length; i++) { const p = pts[i]; e += Math.hypot(p[0] - curX, p[1] - curY) * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`; curX = p[0]; curY = p[1]; }
+        for (let i = 1; i < pts.length; i++) { const p = pts[i]; e += Math.hypot(p[0] - curX, p[1] - curY) * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
         if (closed) closeLoop(first, ef, speed);
         lastPath = closed ? [...pts, first] : pts;
         return;
@@ -495,7 +508,7 @@ export function layersToGcode(layers, settings) {
       // Variable width: scale the extrusion by the segment's mean width / base.
       if (varW) segEf = segEf * (((widths[i - 1] + widths[i]) / 2) / baseW);
       e += d * segEf;
-      g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+      g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`;
       curX = p[0]; curY = p[1]; sdist += d;
     }
     if (closed) {
@@ -648,7 +661,6 @@ export function layersToGcode(layers, settings) {
         if (wantFan !== curFanG) { g += `M106 S${wantFan}\n`; curFanG = wantFan; }
       }
       let pspeed = (layerIdx > 0 && path.speedOverride > 0) ? path.speedOverride : featSpeed(path.feature, layerIdx);
-      if (path.overhangFrac != null) { const os = gradedOverhangSpeed(path.overhangFrac); if (os > 0) pspeed = Math.min(pspeed, os); }
       // Small-perimeter slowdown: tiny closed loops (holes, pillars) print
       // cleaner slower because the head can't accelerate over the short path.
       if (path.closed && s.smallPerimeterSpeed && String(path.feature).includes('wall') && pathLen(path.pts, true) < (s.smallPerimeterThreshold ?? 15)) pspeed = Math.min(pspeed, s.smallPerimeterSpeed);
@@ -659,11 +671,28 @@ export function layersToGcode(layers, settings) {
         pspeed = Math.min(pspeed, s.maxVolumetricSpeed / Math.max(0.01, w * lh * (path.flow ?? 1)));
       }
       if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
+      // Overhang grading: slow ONLY the overhanging stretches. Per-vertex degrees
+      // give a per-segment feedrate; without them fall back to slowing the whole
+      // wall by its overhang fraction.
+      let segSpeeds = null;
+      if (path.overhangDeg && path.overhangDeg.length === path.pts.length) {
+        const deg = path.overhangDeg, n = path.pts.length;
+        segSpeeds = new Array(n); let anyOh = false;
+        for (let i = 1; i < n; i++) {
+          let os = overhangSpeedForDeg(Math.max(deg[i - 1], deg[i]));
+          if (os > 0) { if (speedScale < 1) os = Math.max(minSpeed, os * speedScale); segSpeeds[i] = Math.min(pspeed, os); anyOh = true; }
+          else segSpeeds[i] = pspeed;
+        }
+        if (!anyOh) segSpeeds = null;
+      } else if (path.overhangFrac != null) {
+        let os = gradedOverhangSpeed(path.overhangFrac);
+        if (os > 0) { if (speedScale < 1) os = Math.max(minSpeed, os * speedScale); pspeed = Math.min(pspeed, os); }
+      }
       const ef = efFeat(path.feature, layerIdx, lh) * (path.flow ?? 1);
       if (path.spiral) { emitSpiral(path.pts, layerIdx * s.layerHeight, z, pspeed); continue; }
       // Scarf seam only on outer walls (above the first layer, non-vase).
       const scarf = (s.scarfSeam && path.feature === 'outer-wall' && path.closed && layerIdx > 0) ? (s.scarfLength ?? 5) : 0;
-      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf, path.widths, path.baseW ?? (LW[path.feature] ?? s.lineWidth));
+      emitPath(path.pts, pspeed, !!path.closed, path.flow ?? 1, ef, scarf, path.widths, path.baseW ?? (LW[path.feature] ?? s.lineWidth), segSpeeds);
     }
   });
   if (s.gcodeLabelObjects && curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;
@@ -983,6 +1012,21 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const below = i > 0 ? layerRegions[i - 1] : null;
     const segMidUnsupported = (sg) => !supportedBy((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, below, lw * 0.75);
     const wallOverhangFrac = (pts) => { if (!(overhangDetect && below)) return 0; let un = 0; for (const p of pts) if (!supportedBy(p[0], p[1], below, lw)) un++; return pts.length ? un / pts.length : 0; };
+    // Per-point overhang degree 0..4 (0 = on support, 4 = a nozzle width or more
+    // past the layer below) — how far each wall vertex hangs over air. Drives
+    // per-segment speed grading (BambuStudio detect_overhang_degree).
+    const overhangDegAt = (x, y) => {
+      if (supportedBy(x, y, below, 0)) return 0;               // strictly over the lower slice
+      for (let d = 1; d <= 4; d++) if (supportedBy(x, y, below, lw * 0.25 * d)) return d;
+      return 4;                                                // fully unsupported
+    };
+    // Rolling-max smooth (window ±1) so a lone supported vertex between overhangs
+    // doesn't briefly speed the head up — avoids feedrate oscillation.
+    const smoothDegrees = (deg) => {
+      const n = deg.length, out = new Array(n);
+      for (let k = 0; k < n; k++) out[k] = Math.max(deg[(k - 1 + n) % n], deg[k], deg[(k + 1) % n]);
+      return out;
+    };
     // Hatch a solid region, splitting bottom-over-air lines out as bridges
     // (their own flow + speed + cooling). When bridge_angle is set the bridge
     // lines are hatched in that forced direction (a second pass), so they span
@@ -1080,9 +1124,17 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam, seamCtx) });
       }
       // Overhang perimeters: record how much each wall juts over air. The
-      // fraction drives a graduated slow-down (BambuStudio's overhang speed
-      // table) and, past the threshold, the cooling-fan boost.
-      if (overhangDetect && below) for (const w of mainWalls) { const f = wallOverhangFrac(w.pts); if (f > 0.1) { w.overhangFrac = f; if (f > (s.overhangThreshold ?? 0.5)) w.overhang = true; } }
+      // fraction drives the cooling-fan boost; the per-vertex degree array drives
+      // a per-segment graduated slow-down (BambuStudio's overhang speed table) so
+      // only the actually-overhanging stretches slow, not the whole loop.
+      if (overhangDetect && below) for (const w of mainWalls) {
+        const f = wallOverhangFrac(w.pts);
+        if (f > 0.1) {
+          w.overhangFrac = f;
+          if (f > (s.overhangThreshold ?? 0.5)) w.overhang = true;
+          w.overhangDeg = smoothDegrees(w.pts.map((p) => overhangDegAt(p[0], p[1])));
+        }
+      }
       // Wall print order: inner-first (better dimensional accuracy) or
       // outer-first (better surface). OrcaSlicer's wall_infill_order.
       if (s.wallOrder === 'inner-outer' && mainWalls.length > 1) walls.push(...mainWalls.slice(1), mainWalls[0]);

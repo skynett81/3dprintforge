@@ -245,6 +245,20 @@ describe('native-slicer: overhang and bridge detection', () => {
     assert.match(r.gcode, /M106 S255/);    // 100% fan boost over overhangs
   });
 
+  it('grades overhang speed PER SEGMENT (slow overhang + full speed on the same wall)', async () => {
+    const { box: b, unionMeshes, offset } = await import('../../server/mesh-primitives.js');
+    // Upper box shifted +8 in X over the lower box: its +X wall hangs over air,
+    // its -X wall is supported — one wall loop, mixed overhang.
+    const m = unionMeshes([b(20, 20, 6), offset(b(20, 20, 6), 8, 0, 6)]);
+    const r = await sliceMeshToGcode(m, { layerHeight: 0.3, outerWallSpeed: 120, overhangSpeeds: [80, 50, 30, 10], supports: false });
+    const speeds = new Set();
+    let f = false;
+    for (const l of r.gcode.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:outer-wall'); continue; } const e = l.match(/^G1 X[-\d.]+ Y[-\d.]+ E[-\d.]+ F(\d+)/); if (e && f) speeds.add(+e[1]); }
+    assert.ok(speeds.has(600), `steep overhang segments slow to 10 mm/s / F600 (got ${[...speeds]})`);
+    assert.ok(speeds.has(7200), 'supported segments keep full 120 mm/s / F7200');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+
   it('detects bottom-over-air skin as bridges', async () => {
     const { box: b, unionMeshes, offset } = await import('../../server/mesh-primitives.js');
     const bridge = unionMeshes([offset(b(6, 6, 12), -14, 0, 0), offset(b(6, 6, 12), 14, 0, 0), offset(b(40, 6, 3), 0, 0, 7.5)]);
