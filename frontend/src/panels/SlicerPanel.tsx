@@ -301,6 +301,18 @@ export function SlicerPanel() {
   const amsCanDry = amsUnits.some((u) => u.type === 'AMS 2 Pro' || u.type === 'AMS HT');
   const amsDryingNow = amsUnits.some((u) => u.drying);
   const amsHumidity = amsUnits.reduce((mx, u) => Math.max(mx, u.humidity ?? 0), 0);
+  // Validate each loaded material's required temps against the printer's max —
+  // e.g. a 110°C-bed material on a printer that only reaches 100°C.
+  const tempIssues = useMemo(() => {
+    const mn = selPrinter?.maxTemps?.nozzle, mb = selPrinter?.maxTemps?.bed;
+    const out: string[] = []; const seen = new Set<string>();
+    for (const f of filaments) {
+      const m = MATERIALS[f.material]; if (!m || seen.has(f.material)) continue; seen.add(f.material);
+      if (mn && m.temps[0] > mn) out.push(`${f.material} ~${m.temps[0]}°C ${t('v2.slset.nozzle_word', 'nozzle')} > ${mn}°C ${t('v2.slset.max_word', 'max')}`);
+      if (mb && m.temps[1] > mb) out.push(`${f.material} ~${m.temps[1]}°C ${t('v2.slset.bed_word', 'bed')} > ${mb}°C ${t('v2.slset.max_word', 'max')}`);
+    }
+    return out;
+  }, [filaments, selPrinter, t]);
 
   // Keep the filament slots consistent with the selected printer so cost/waste
   // is computed against the right machine: a printer with a live AMS (or spools
@@ -805,6 +817,11 @@ export function SlicerPanel() {
                 ⚠ {abrasiveSlots.map((f) => f.material).join(', ')} {t('v2.slset.abrasive_is', 'is abrasive')} — {nozzleMaterial === 'brass'
                   ? t('v2.slset.abrasive_brass', 'your brass nozzle will wear out fast. Fit a hardened or stainless-steel nozzle.')
                   : t('v2.slset.abrasive_unknown', 'make sure this printer has a hardened / steel nozzle (not brass) before printing.')}
+              </div>
+            )}
+            {tempIssues.length > 0 && (
+              <div className="oslice-abrasive-warn" role="alert">
+                ⚠ {t('v2.slset.temp_exceeds', 'Material needs more heat than this printer can reach')}: {tempIssues.join('; ')}. {t('v2.slset.temp_exceeds_2', 'The print may not adhere — pick a compatible material or printer.')}
               </div>
             )}
             {dryingSlots.length > 0 && (
