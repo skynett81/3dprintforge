@@ -60,7 +60,10 @@ body {
 .page { max-width: 860px; margin: 0 auto; padding: 28px 20px 80px; }
 
 /* App shell: sidebar + main */
-.app-shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+/* minmax(0, 1fr) — not plain 1fr — so the content column can shrink below its
+   min-content width instead of forcing horizontal page overflow (which was
+   pushing the slicer's right-hand buttons, incl. Fullscreen, off-screen). */
+.app-shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
 .sidebar {
   border-right: 1px solid var(--border);
   background: var(--sidebar-bg);
@@ -160,7 +163,7 @@ body {
    main content never reflows. The "collapsed look" rules are gated on
    :not(:hover) so hovering restores the full menu with labels. */
 @media (min-width: 721px) {
-.app-shell--rail { grid-template-columns: 68px 1fr; }
+.app-shell--rail { grid-template-columns: 68px minmax(0, 1fr); }
 .app-shell--rail .sidebar {
   width: 68px; padding: 20px 10px; overflow: hidden;
   transition: width 0.16s ease, padding 0.16s ease;
@@ -300,13 +303,15 @@ body {
 .oslice-toptab:hover:not(:disabled) { color: #fff; }
 .oslice-toptab--on { background: var(--o-accent); color: #fff; }
 .oslice-toptab:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Keep the action buttons (Slice/Print plate + fullscreen) ALWAYS visible on the
+   right; the tabs shrink/scroll in the middle if the bar is narrow, so nothing
+   on the right is ever pushed off. */
 .oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
-.oslice-toptabs { flex-shrink: 0; }
-.oslice-filemenu { flex-shrink: 0; }
-.oslice-logo { flex-shrink: 0; }
-/* Never let the tabs/buttons overlap: the whole bar scrolls if it must. */
-.oslice-top { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-.oslice-top::-webkit-scrollbar { display: none; }
+.oslice-logo, .oslice-filemenu { flex-shrink: 0; }
+.oslice-toptabs { flex-shrink: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.oslice-toptabs::-webkit-scrollbar { display: none; }
+.oslice-filebtn { padding: 4px 8px; font-size: 0.78rem; }
+.oslice-toptab { padding: 6px 9px; }
 .oslice-topright .oslice-sliceplate, .oslice-topright .oslice-printplate { flex-shrink: 0; white-space: nowrap; }
 .oslice-topest { display: flex; gap: 12px; color: #cfd3d8; font-size: 0.8rem; align-items: center; margin-right: 4px; }
 .oslice-topest strong { color: #fff; }
@@ -366,7 +371,9 @@ body {
 .lib-gencard:disabled { opacity: 0.5; cursor: default; }
 .oslice-colorlayer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .oslice-colorlayer-swatches { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
-.oslice-filbadge { width: 22px; height: 22px; border-radius: 5px; display: grid; place-items: center; font-size: 0.74rem; font-weight: 700; color: #fff; flex: none; }
+/* Slot badge as a spool end: a colour disc with a reel edge + the slot number,
+   so the Prepare slots match the spool look used everywhere else. */
+.oslice-filbadge { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; color: #fff; flex: none; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.25), inset 0 0 0 2.5px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.3); }
 .oslice-filname { flex: 1; font-size: 0.84rem; }
 .oslice-filbadge { position: relative; }
 .oslice-filadd { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--o-border); border-radius: 6px; background: var(--o-panel-2); color: var(--o-text); cursor: pointer; font-size: 1rem; line-height: 1; flex: none; }
