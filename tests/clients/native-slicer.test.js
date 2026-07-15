@@ -893,6 +893,23 @@ describe('native-slicer: monotonic top/bottom surface', () => {
   });
 });
 
+describe('native-slicer: wall print order', () => {
+  const wallSeq = (g) => { const seq = []; for (const l of g.split('\n')) { const m = l.match(/^; FEATURE:(outer|inner)-wall/); if (m) seq.push(m[1] === 'outer' ? 'O' : 'I'); } return seq.join(''); };
+  it('inner-outer-inner backs the outer wall (I,O,I per region)', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'inner-outer-inner', supports: false });
+    const seq = wallSeq(r.gcode);
+    assert.ok(seq.startsWith('IOI'), `outer wall printed between inners (got ${seq.slice(0, 9)})`);
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('outer-inner and inner-outer differ and put the outer first / last', async () => {
+    const oi = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'outer-inner', supports: false });
+    const io = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'inner-outer', supports: false });
+    assert.ok(wallSeq(oi.gcode).startsWith('O'), 'outer-inner prints the outer wall first');
+    assert.ok(wallSeq(io.gcode).startsWith('I'), 'inner-outer prints an inner wall first');
+    assert.notEqual(oi.gcode, io.gcode);
+  });
+});
+
 describe('native-slicer: Arachne bead simplification', () => {
   it('a straight bead collapses to a few points (small g-code) but keeps its span', () => {
     const b = medialBeads({ outer: [[0, 0], [40, 0], [40, 1.2], [0, 1.2]], holes: [] }, 0.4);

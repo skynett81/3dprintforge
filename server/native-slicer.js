@@ -1135,9 +1135,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           w.overhangDeg = smoothDegrees(w.pts.map((p) => overhangDegAt(p[0], p[1])));
         }
       }
-      // Wall print order: inner-first (better dimensional accuracy) or
-      // outer-first (better surface). OrcaSlicer's wall_infill_order.
+      // Wall print order (BambuStudio wall_sequence): outer-first (best surface),
+      // inner-outer (best dimensional accuracy), or inner-outer-inner — print one
+      // inner wall, then the outer against that backing, then the rest of the
+      // inners. The backing lets the outer wall (and overhang walls) lay against
+      // solid, Bambu's default for clean externals without sag.
       if (s.wallOrder === 'inner-outer' && mainWalls.length > 1) walls.push(...mainWalls.slice(1), mainWalls[0]);
+      else if (s.wallOrder === 'inner-outer-inner' && mainWalls.length > 1) walls.push(mainWalls[1], mainWalls[0], ...mainWalls.slice(2));
       else walls.push(...mainWalls);
       // Hole walls: grow each hole outward into the solid.
       const grownHoles = [];
