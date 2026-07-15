@@ -1447,9 +1447,12 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-amsslots { display: flex; gap: 8px; }
 .oslice-amsslot { display: flex; flex-direction: column; align-items: center; }
 .oslice-amsslot-tab { font-size: 0.6rem; font-weight: 700; color: var(--o-text); background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px 8px 0 0; padding: 1px 10px; }
-.oslice-amsslot-cart { width: 50px; background: var(--o-panel); border: 1px solid var(--o-border); border-top: none; border-radius: 0 0 8px 8px; padding: 5px 4px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.oslice-amsslot-cart { width: 56px; background: var(--o-panel); border: 1px solid var(--o-border); border-top: none; border-radius: 0 0 8px 8px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .oslice-amsslot-mat { font-size: 0.62rem; font-weight: 600; color: var(--o-text); }
-.oslice-amsslot-color { width: 100%; height: 24px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.16); position: relative; }
+/* Filament shown as a real spool/reel: a colour-filled ring with a hub, so a
+   loaded slot obviously has filament and looks like the physical spool. */
+.oslice-amsslot-color { width: 42px; height: 42px; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 0 0 3px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.35); }
+.oslice-amsslot-color::before { content: ''; position: absolute; inset: 32%; border-radius: 50%; background: var(--o-panel); box-shadow: 0 0 0 1.5px rgba(0,0,0,0.28); }
 .oslice-amsext { }
 .oslice-amsext-h { font-size: 0.62rem; font-weight: 700; color: var(--o-muted); text-align: center; margin-bottom: 6px; min-height: 12px; }
 .oslice-amsbtns { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
@@ -1458,7 +1461,7 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-amssel { display: inline-flex; gap: 3px; align-items: center; background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px; padding: 3px 6px; margin-bottom: 6px; }
 .oslice-amsseldot { width: 9px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
 .oslice-amssun { margin-left: 2px; }
-.oslice-amspen { position: absolute; right: 2px; bottom: 2px; color: rgba(0,0,0,0.35); }
+.oslice-amspen { position: absolute; right: -1px; bottom: -1px; color: #fff; background: rgba(0,0,0,0.45); border-radius: 50%; padding: 1px; }
 .oslice-amsfeed { display: block; margin: 2px auto 0; overflow: visible; }
 
 /* AMS slot selection */
