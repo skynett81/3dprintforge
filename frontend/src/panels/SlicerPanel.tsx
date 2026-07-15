@@ -261,6 +261,7 @@ export function SlicerPanel() {
   const addInputRef = useRef<HTMLInputElement>(null);
   const projInputRef = useRef<HTMLInputElement>(null);
   const lastPrinterSync = useRef<string>('');
+  const lastSpecPrinter = useRef<string>('');   // last printer whose machine specs were auto-applied
   const lastBindingApplied = useRef<string>('');
 
   // Bed size follows the selected printer's build volume (X × Y), so each
@@ -360,25 +361,26 @@ export function SlicerPanel() {
       const n = Math.max(1, p.colorSlots ?? 1);
       setFilaments((prev) => Array.from({ length: n }, (_, i) => prev[i] ?? { color: DEFAULT_SLOT_COLORS[i % DEFAULT_SLOT_COLORS.length], material: prev[0]?.material ?? 'PLA' }));
     }
-    // Machine specs from the printer database: nozzle diameter (drives line
-    // widths) so the slicer matches the hardware without manual entry.
-    const nz = p.nozzle;
-    if (nz && nz > 0) {
-      setSettings((s) => (Number(s.nozzle_diameter) === nz ? s : { ...s, nozzle_diameter: nz, line_width: +(nz * 1.05).toFixed(2), outer_wall_line_width: +(nz * 1.05).toFixed(2), inner_wall_line_width: +(nz * 1.125).toFixed(2) }));
+    // Machine specs (nozzle / firmware dialect / motion limits) apply ONLY when
+    // the selected printer actually changes — never on a background AMS/spool
+    // refresh — so they can't clobber the user's manual edits in the Settings
+    // tabs. All are hardware-derived (DB + live), so no manual entry is needed.
+    if (p.id !== lastSpecPrinter.current) {
+      lastSpecPrinter.current = p.id;
+      const nz = p.nozzle;
+      if (nz && nz > 0) {
+        setSettings((s) => (Number(s.nozzle_diameter) === nz ? s : { ...s, nozzle_diameter: nz, line_width: +(nz * 1.05).toFixed(2), outer_wall_line_width: +(nz * 1.05).toFixed(2), inner_wall_line_width: +(nz * 1.125).toFixed(2) }));
+      }
+      if (p.gcodeFlavor) setSettings((s) => (s.gcode_flavor === p.gcodeFlavor ? s : { ...s, gcode_flavor: p.gcodeFlavor as string }));
+      const ml = p.machineLimits;
+      if (ml) setSettings((s) => {
+        const next = { ...s }; let changed = false;
+        if (ml.maxAccel && Number(s.machine_max_acceleration) !== ml.maxAccel) { next.machine_max_acceleration = ml.maxAccel; changed = true; }
+        if (ml.maxSpeed && Number(s.machine_max_speed) !== ml.maxSpeed) { next.machine_max_speed = ml.maxSpeed; changed = true; }
+        if (ml.jerk && Number(s.machine_max_jerk) !== ml.jerk) { next.machine_max_jerk = ml.jerk; changed = true; }
+        return changed ? next : s;
+      });
     }
-    // Firmware dialect from the printer's connector (Bambu/Klipper/RRF/Marlin),
-    // so slicing for this printer emits G-code its firmware actually speaks.
-    if (p.gcodeFlavor) setSettings((s) => (s.gcode_flavor === p.gcodeFlavor ? s : { ...s, gcode_flavor: p.gcodeFlavor as string }));
-    // Machine motion caps read live from the printer's firmware (Klipper) — fill
-    // the machine limits so aggressive profiles stay within the real hardware.
-    const ml = p.machineLimits;
-    if (ml) setSettings((s) => {
-      const next = { ...s }; let changed = false;
-      if (ml.maxAccel && Number(s.machine_max_acceleration) !== ml.maxAccel) { next.machine_max_acceleration = ml.maxAccel; changed = true; }
-      if (ml.maxSpeed && Number(s.machine_max_speed) !== ml.maxSpeed) { next.machine_max_speed = ml.maxSpeed; changed = true; }
-      if (ml.jerk && Number(s.machine_max_jerk) !== ml.jerk) { next.machine_max_jerk = ml.jerk; changed = true; }
-      return changed ? next : s;
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selPrinter]);
 

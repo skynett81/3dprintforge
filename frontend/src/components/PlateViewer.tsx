@@ -907,9 +907,15 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       const rowCY = y - r.h / 2;
       for (const it of r.items) {
         const targetCX = x + it.w / 2;
-        it.m.position.x += targetCX - it.cx;             // shift so the bbox centre lands on target
-        it.m.position.y += rowCY - it.cy;
+        const dx = targetCX - it.cx, dy = rowCY - it.cy;   // shift so the bbox centre lands on target
+        it.m.position.x += dx; it.m.position.y += dy;
+        const z0 = it.m.position.z;
         dropToPlate(it.m);
+        // Carry this object's attached part volumes (negative/support/modifier)
+        // by the same delta — they are flat siblings, not scene children, so
+        // they'd otherwise be orphaned at their old position.
+        const dz = it.m.position.z - z0;
+        for (const o of c.objects) if (o.userData.partParentId === it.m.uuid) { o.position.x += dx; o.position.y += dy; o.position.z += dz; }
         x += it.w + gap;
       }
       y -= r.h + gap;
@@ -1221,10 +1227,10 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     // falls back to a plain numbered tab.
     captureThumbnail: (size = 96) => {
       const c = ctx.current; if (!c) return null;
+      const sel = c.selected;
       try {
-        const sel = c.selected; if (sel) c.tcontrols.detach();
+        if (sel) c.tcontrols.detach();
         c.renderer.render(c.scene, c.camera);
-        if (sel) c.tcontrols.attach(sel);
         const src = c.renderer.domElement;
         if (!src.width || !src.height) return null;
         const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
@@ -1234,6 +1240,7 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
         g2.drawImage(src, (size - dw) / 2, (size - dh) / 2, dw, dh);
         return cv.toDataURL('image/png');
       } catch { return null; }
+      finally { if (sel) c.tcontrols.attach(sel); }   // always restore the gizmo, even on render failure
     },
     // Import an SVG as an extruded 3-D part (BambuStudio SVG tool). Union/subtract
     // it onto a model to emboss / engrave. Returns false if the SVG has no shapes.

@@ -869,10 +869,10 @@ describe('native-slicer: Arachne bead simplification', () => {
 import { hilbertInfill } from '../../server/native-slicer-geo.js';
 describe('native-slicer: Hilbert-curve infill', () => {
   const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  it('fills a square with many connected in-region segments', () => {
+  it('fills a square with many segments whose ENDPOINTS stay inside', () => {
     const segs = hilbertInfill({ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }, 0.3, 0.4);
     assert.ok(segs.length > 20, `many segments (got ${segs.length})`);
-    for (const s of segs) { const [mx, my] = mid(s); assert.ok(mx >= -1 && mx <= 41 && my >= -1 && my <= 41, 'segment inside the region'); }
+    for (const [a, b] of segs) for (const [px, py] of [a, b]) assert.ok(px >= -0.1 && px <= 40.1 && py >= -0.1 && py <= 40.1, `endpoint (${px},${py}) inside`);
   });
   it('leaves holes empty', () => {
     const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [[[14, 14], [26, 14], [26, 26], [14, 26]]] };

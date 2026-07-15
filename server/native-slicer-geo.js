@@ -602,12 +602,16 @@ export function hilbertInfill(region, density, lineWidth = 0.4) {
   };
   const inside = (x, y) => { if (!_pointInPoly([x, y], outer)) return false; for (const h of holes) if (_pointInPoly([x, y], h)) return false; return true; };
   const pt = (d) => { const [gx, gy] = d2xy(d); return [ox + (gx + 0.5) * cell, oy + (gy + 0.5) * cell]; };
+  // Keep a cell segment only when BOTH endpoints are inside the region (and out
+  // of holes) — a midpoint-only test would let a segment poke past the wall on
+  // concave outlines / low density. Cells are ~one line-width so the small gap
+  // this leaves at the boundary is covered by the walls.
   const segs = [];
-  let prev = pt(0);
+  let prev = pt(0), prevIn = inside(prev[0], prev[1]);
   for (let d = 1; d < N * N; d++) {
-    const cur = pt(d);
-    if (inside((prev[0] + cur[0]) / 2, (prev[1] + cur[1]) / 2)) segs.push([prev, cur]);
-    prev = cur;
+    const cur = pt(d), curIn = inside(cur[0], cur[1]);
+    if (prevIn && curIn) segs.push([prev, cur]);
+    prev = cur; prevIn = curIn;
   }
   return segs;
 }

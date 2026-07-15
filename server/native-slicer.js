@@ -116,9 +116,10 @@ function _buildRaft(regions0, s, lw, offsetPolygon, solidInfill) {
 }
 
 /**
- * Rotate a closed wall loop so it starts at the chosen seam vertex, so the
- * seam lands consistently (aligned/back) or scattered (random). 'nearest'
- * (default) leaves the loop as-is.
+ * Rotate a closed wall loop so it starts at the chosen seam vertex. 'aligned'
+ * and 'nearest' hide the seam at the sharpest convex corner (falling back to the
+ * rear on cornerless outlines); 'back'/'rear' put it at the rear; 'random'
+ * scatters it. Paint enforce/block bands override the position.
  */
 // Point-in-triangle for a seam-paint region [x0,y0,x1,y1,x2,y2,zMin,zMax].
 function _ptInSeamTri(x, y, t) {
