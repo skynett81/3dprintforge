@@ -336,7 +336,7 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
   const outer = region.outer;
   if (!outer || outer.length < 3 || density <= 0) return [];
   const holes = region.holes || [];
-  const angle = (angleDeg || 45) * PI / 180;
+  const angle = (angleDeg ?? 45) * PI / 180;   // 0 is a valid angle (was coerced to 45 by ||)
   const spacing = Math.max(lineWidth, lineWidth / Math.max(0.01, Math.min(1, density)));
   const cos = Math.cos(-angle), sin = Math.sin(-angle);
   const rotLoop = (loop) => loop.map(([x, y]) => [x * cos - y * sin, x * sin + y * cos]);
