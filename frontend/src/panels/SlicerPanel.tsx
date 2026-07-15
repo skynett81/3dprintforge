@@ -100,7 +100,7 @@ export function SlicerPanel() {
     detect_overhang_wall: true, overhang_1_4_speed: 0, overhang_2_4_speed: 50, overhang_3_4_speed: 30, overhang_4_4_speed: 10, overhang_fan_speed: 100, bridge_flow: 0.7, bridge_speed: 25,
     support_threshold: 40, support_base_density: 20, support_interface_top_layers: 2, support_z_gap_layers: 1, support_object_xy_distance: 0.8, support_wall_count: 0, support_remove_small_overhangs: false, support_min_overhang_area: 3, support_top_z_distance: 0.2,
     bridge_angle: 0,
-    ironing_flow: 10, ironing_spacing: 0.1, ironing_direction: 45, infill_wall_overlap: 15, top_shell_thickness: 0, bottom_shell_thickness: 0,
+    ironing_flow: 10, ironing_spacing: 0.1, ironing_direction: 45, infill_wall_overlap: 15, top_shell_thickness: 0, bottom_shell_thickness: 0, monotonic_top_surface: true,
     avoid_crossing_walls: true,
     xy_hole_compensation: 0, xy_contour_compensation: 0, small_perimeter_speed: 25, small_perimeter_threshold: 15, seam_gap: 0.1,
     fuzzy_skin_mode: 'external', fuzzy_skin_point_distance: 0.4, fuzzy_skin_first_layer: false, arc_fitting: false, arc_fitting_tolerance: 0.05,

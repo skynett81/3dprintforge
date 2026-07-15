@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {
   sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
-import { patternInfill } from '../../server/native-slicer-geo.js';
+import { patternInfill, solidInfill } from '../../server/native-slicer-geo.js';
 import { box, cylinder, extrudePolygon } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
@@ -863,6 +863,33 @@ describe('native-slicer: full Arachne medial beads', () => {
     const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
     assert.ok(gapExtrudes(ar.gcode) < gapExtrudes(cl.gcode) / 5, `arachne far fewer gap extrusion moves (classic=${gapExtrudes(cl.gcode)} arachne=${gapExtrudes(ar.gcode)})`);
     assert.ok(!ar.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: monotonic top/bottom surface', () => {
+  const solidTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:solid'); continue; } if (f && /^G0 X/.test(l)) n++; } return n; };
+  it('solidInfill monotonic lays every line the same direction, swept one way', () => {
+    const sq = { outer: [[0, 0], [20, 0], [20, 20], [0, 20]], holes: [] };
+    const lines = solidInfill(sq, 0, 0.4, true);   // angle 0 → horizontal lines
+    assert.ok(lines.length > 10, `many lines (${lines.length})`);
+    const dir = Math.sign(lines[0][1][0] - lines[0][0][0]);
+    for (const L of lines) { assert.equal(L.length, 2); assert.equal(Math.sign(L[1][0] - L[0][0]), dir, 'same print direction'); }
+    for (let i = 1; i < lines.length; i++) assert.ok(lines[i][0][1] >= lines[i - 1][0][1] - 1e-6, 'swept monotonically in y');
+  });
+  it('connected (non-monotonic) solid stays a zigzag with few travels', () => {
+    const sq = { outer: [[0, 0], [20, 0], [20, 20], [0, 20]], holes: [] };
+    const conn = solidInfill(sq, 0, 0.4, false);
+    assert.ok(conn.length < 4, `connected into few chains (${conn.length})`);
+  });
+  it('monotonic top surface is on by default and only affects the exposed faces', async () => {
+    const mono = await sliceMeshToGcode(box(30, 30, 4), { supports: false, topLayers: 4, bottomLayers: 4 });
+    const off = await sliceMeshToGcode(box(30, 30, 4), { supports: false, topLayers: 4, bottomLayers: 4, monotonicTopSurface: false });
+    assert.notEqual(mono.gcode, off.gcode, 'monotonic default differs from off');
+    assert.ok(solidTravels(mono.gcode) > solidTravels(off.gcode) * 5, `exposed skin laid as separate lines (mono=${solidTravels(mono.gcode)} off=${solidTravels(off.gcode)})`);
+    // But NOT all 8 shell layers — only the 2 exposed faces, so travels stay well
+    // below 8× a layer's line count (internal shells keep the connected zigzag).
+    assert.ok(solidTravels(mono.gcode) < 400, `internal shells stay connected (${solidTravels(mono.gcode)})`);
+    assert.ok(!mono.gcode.includes('NaN'));
   });
 });
 

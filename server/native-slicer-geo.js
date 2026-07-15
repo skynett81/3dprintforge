@@ -332,7 +332,7 @@ export function lineInfill(poly, density, angleDeg, lineWidth = 0.4) {
  * scanline over all boundary loops so holes are left empty. `density`
  * 1.0 → spacing == lineWidth (solid fill).
  */
-export function regionInfill(region, density, angleDeg, lineWidth = 0.4) {
+export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monotonic = false) {
   const outer = region.outer;
   if (!outer || outer.length < 3 || density <= 0) return [];
   const holes = region.holes || [];
@@ -371,6 +371,19 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4) {
   // roughly one-per-chain.
   const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
   const toWorld = (x, y) => [x * cosBack - y * sinBack, x * sinBack + y * cosBack];
+
+  // Monotonic ordering (top/bottom surfaces): lay every line in the SAME
+  // direction, swept bottom→top, so each line is deposited against an
+  // already-cooled neighbour on one consistent side. This removes the banding a
+  // boustrophedon zigzag leaves on visible surfaces (BambuStudio's monotonic
+  // top-surface fill). Costs a travel per line — worth it on the shown skin.
+  if (monotonic) {
+    const lines = [];
+    rows.forEach((row) => { for (const sp of row.spans) lines.push({ y: row.y, x0: sp[0], x1: sp[1] }); });
+    lines.sort((a, b) => (a.y - b.y) || (a.x0 - b.x0));
+    return lines.map((L) => [toWorld(L.x0, L.y), toWorld(L.x1, L.y)]);
+  }
+
   const overlap = (s, e) => Math.min(s[1], e[1]) - Math.max(s[0], e[0]) > EPS;
   const out = [];       // finished chains (point lists in rotated space)
   let open = [];        // chains still growing: { pts, span }
@@ -397,8 +410,8 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4) {
  * Solid fill for top/bottom shells: a grid of two perpendicular passes
  * at full density, alternating base angle per layer for adhesion.
  */
-export function solidInfill(region, angleDeg, lineWidth = 0.4) {
-  return regionInfill(region, 1.0, angleDeg, lineWidth);
+export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false) {
+  return regionInfill(region, 1.0, angleDeg, lineWidth, monotonic);
 }
 
 /** True/false: is a point inside the region's solid (inside outer, outside holes)? */

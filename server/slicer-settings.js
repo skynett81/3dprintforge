@@ -360,6 +360,9 @@ export function buildNativeSettings(s = {}, base = {}) {
   // SET_PRESSURE_ADVANCE. gcode_flavor picks the dialect.
   set('pressureAdvance', num(s.pressure_advance));
   if (s.gcode_flavor) out.gcodeFlavor = String(s.gcode_flavor).toLowerCase();
+  // Monotonic top/bottom surface fill — lay skin lines one sweep direction for
+  // a uniform surface (BambuStudio's top_surface_pattern=monotonic). Default on.
+  if (s.monotonic_top_surface !== undefined && s.monotonic_top_surface !== '') out.monotonicTopSurface = !!s.monotonic_top_surface;
   // Scarf-joint seam — ramp flow at the seam to hide it (BambuStudio).
   if (s.scarf_seam !== undefined && s.scarf_seam !== '') out.scarfSeam = !!s.scarf_seam;
   set('scarfLength', num(s.scarf_length));

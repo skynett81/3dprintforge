@@ -1002,10 +1002,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // solid surface) and bridge/solid classification are per-segment, so split
     // each chain at those boundaries instead of judging the whole path by one
     // endpoint. Kept runs stay continuous within their class.
-    const pushSolidRegion = (region, angle, keep) => {
+    const pushSolidRegion = (region, angle, keep, monotonic = false) => {
       const bridgeSplit = bridgeDetect && below;
       const forcedBridge = bridgeSplit && s.bridgeAngle != null;
-      for (const chain of solidInfill(region, angle, lw)) {
+      for (const chain of solidInfill(region, angle, lw, monotonic)) {
         const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
         for (const part of kept) {
           if (!bridgeSplit) { pushSolid(part); continue; }
@@ -1232,7 +1232,11 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           if (!globalSolid && s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (globalSolid && solidConcentric) { concentric(infRegion, 'solid', true); }
           else if (globalSolid) {
-            pushSolidRegion(infRegion, baseAngle);
+            // Only the EXPOSED faces (very top + very bottom layer) are visible
+            // skin → monotonic ordering there for a uniform surface. The hidden
+            // internal solid shells keep the efficient connected zigzag.
+            const exposed = i === 0 || i === numLayers - 1;
+            pushSolidRegion(infRegion, baseAngle, undefined, exposed && s.monotonicTopSurface !== false);
           } else if (doSparse && s.infillPattern !== 'lightning') {
             const segs = sparseSegsFor(infRegion);
             for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
