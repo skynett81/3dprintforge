@@ -127,6 +127,10 @@ export function SlicerPanel() {
   // preserves the exact arrangement, transforms and paint.
   const [plates, setPlates] = useState<{ id: number; name: string; snap: PlateSnapshot | null }[]>([{ id: 1, name: 'Plate 1', snap: null }]);
   const [activePlate, setActivePlate] = useState(0);
+  // Per-plate preview thumbnails (BambuStudio-style), keyed by plate id. Captured
+  // from the live scene when leaving a plate; empty until a plate is left once.
+  const [thumbs, setThumbs] = useState<Record<number, string>>({});
+  const captureActiveThumb = () => { const th = plateRef.current?.captureThumbnail?.(); if (th) setThumbs((t) => ({ ...t, [plates[activePlate].id]: th })); };
   const [allView, setAllView] = useState(false);
   const plateSeq = useRef(2);
   // Toggle the "all plates" overview — lay every plate out in a grid at once.
@@ -142,6 +146,7 @@ export function SlicerPanel() {
     if (allView) { plateRef.current?.setAllPlatesView(null); setAllView(false); }
     if (idx === activePlate || !plateRef.current || idx < 0 || idx >= plates.length) return;
     const curSnap = plateRef.current.snapshot();
+    captureActiveThumb();
     setPlates((ps) => ps.map((pl, i) => (i === activePlate ? { ...pl, snap: curSnap } : pl)));
     plateRef.current.restore(plates[idx].snap ?? []);
     setActivePlate(idx);
@@ -150,6 +155,7 @@ export function SlicerPanel() {
     if (!plateRef.current) return;
     if (allView) { plateRef.current.setAllPlatesView(null); setAllView(false); }
     const curSnap = plateRef.current.snapshot();
+    captureActiveThumb();
     const id = plateSeq.current++;
     const nextIdx = plates.length;
     setPlates((ps) => [...ps.map((pl, i) => (i === activePlate ? { ...pl, snap: curSnap } : pl)), { id, name: `Plate ${id}`, snap: [] }]);
@@ -1236,8 +1242,12 @@ export function SlicerPanel() {
               )}
               {plates.map((pl, i) => {
                 const n = i === activePlate ? toolState.count : (pl.snap?.length ?? 0);
+                // Background preview thumbnail for inactive plates that hold models.
+                const thumb = i !== activePlate ? thumbs[pl.id] : undefined;
                 return (
-                  <span key={pl.id} className={`oslice-platetab${i === activePlate ? ' oslice-platetab--on' : ''}`} onClick={() => switchPlate(i)} title={`${pl.name} · ${n} ${t('v2.plate.objects', 'object(s)')}`}>
+                  <span key={pl.id} className={`oslice-platetab${i === activePlate ? ' oslice-platetab--on' : ''}${thumb ? ' oslice-platetab--thumb' : ''}`}
+                    style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}
+                    onClick={() => switchPlate(i)} title={`${pl.name} · ${n} ${t('v2.plate.objects', 'object(s)')}`}>
                     {i + 1}{n > 0 && <em className="oslice-platetab-c">{n}</em>}
                     {plates.length > 1 && <button className="oslice-platetab-x" title={t('v2.plate.plate_del', 'Delete plate')} onClick={(e) => { e.stopPropagation(); deletePlate(i); }}>×</button>}
                   </span>

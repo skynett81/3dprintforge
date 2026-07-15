@@ -97,6 +97,7 @@ export interface PlateHandle {
   rename: (name: string) => void;
   addText: (text: string) => void;
   addGeometry: (geom: THREE.BufferGeometry, name: string) => void;
+  captureThumbnail: (size?: number) => string | null;
 }
 
 // Parse the bundled typeface once, lazily.
@@ -437,7 +438,9 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     const camera = new THREE.PerspectiveCamera(45, w / h, 1, 5000);
     camera.up.set(0, 0, 1);
     camera.position.set(bedMax * 0.9, -bedMax * 1.1, bedMax * 0.9);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // preserveDrawingBuffer lets captureThumbnail() read the canvas back for the
+    // plate-tab previews (BambuStudio-style). Small cost, worth the parity.
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
@@ -1213,6 +1216,25 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
       addMesh(geo, `Text: ${text}`);
     },
     addGeometry: (geom, name) => { addMesh(geom, name); },
+    // Render one clean frame (gizmo hidden) and downscale the canvas to a small
+    // PNG for the plate-tab preview. Returns null on any failure so the caller
+    // falls back to a plain numbered tab.
+    captureThumbnail: (size = 96) => {
+      const c = ctx.current; if (!c) return null;
+      try {
+        const sel = c.selected; if (sel) c.tcontrols.detach();
+        c.renderer.render(c.scene, c.camera);
+        if (sel) c.tcontrols.attach(sel);
+        const src = c.renderer.domElement;
+        if (!src.width || !src.height) return null;
+        const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+        const g2 = cv.getContext('2d'); if (!g2) return null;
+        const sc = Math.min(size / src.width, size / src.height);
+        const dw = src.width * sc, dh = src.height * sc;
+        g2.drawImage(src, (size - dw) / 2, (size - dh) / 2, dw, dh);
+        return cv.toDataURL('image/png');
+      } catch { return null; }
+    },
     // Import an SVG as an extruded 3-D part (BambuStudio SVG tool). Union/subtract
     // it onto a model to emboss / engrave. Returns false if the SVG has no shapes.
     addSVG: (svgText, depthMm = 3, sizeMm = 50) => svgToPlate(svgText, depthMm, sizeMm),
