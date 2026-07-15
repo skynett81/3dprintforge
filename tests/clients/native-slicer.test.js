@@ -606,6 +606,22 @@ describe('native-slicer: initial layer flow ratio', () => {
   });
 });
 
+describe('native-slicer: initial layer height', () => {
+  it('prints a thicker first layer and stacks the rest at the normal height', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, initialLayerHeight: 0.28, supports: false });
+    const zs = [...r.gcode.matchAll(/--- layer \d+\/\d+ z=([\d.]+)/g)].map((m) => +m[1]);
+    assert.ok(Math.abs(zs[0] - 0.28) < 1e-6, `first layer top at 0.28 (got ${zs[0]})`);
+    assert.ok(Math.abs(zs[1] - 0.48) < 1e-6, `second layer top at 0.48 (got ${zs[1]})`);
+    assert.ok(Math.abs((zs[2] - zs[1]) - 0.2) < 1e-6, 'subsequent layers are the normal 0.2 mm');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('is byte-identical when the initial layer height equals the layer height', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, initialLayerHeight: 0.2, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
 describe('native-slicer: bridge/support acceleration', () => {
   it('support_acceleration emits its own M204 on support moves', async () => {
     const enforce = [[-20, -20, 20, -20, 0, 20, 100]];

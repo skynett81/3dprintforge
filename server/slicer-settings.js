@@ -143,6 +143,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   const set = (k, v) => { if (v !== undefined) out[k] = v; };
 
   set('layerHeight', num(s.layer_height));
+  set('initialLayerHeight', num(s.initial_layer_height));   // thicker first layer for bed adhesion
   set('perimeters', num(s.wall_loops));
   set('topLayers', num(s.top_layers));
   set('bottomLayers', num(s.bottom_layers));

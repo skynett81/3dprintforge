@@ -886,6 +886,20 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
       z += h;
     }
     numLayers = zCenters.length;
+  } else if (s.initialLayerHeight > 0 && Math.abs(s.initialLayerHeight - layerHeight) > 1e-6 && !opts.offset) {
+    // Thicker (or thinner) first layer for bed adhesion (BambuStudio
+    // initial_layer_print_height): layer 0 = initialLayerHeight, the rest stack
+    // at the normal height. Builds the same bottom→top {centre, top, h} schedule.
+    const modelH = stats.bbox.size[2];
+    zCenters = []; zTops = []; heights = [];
+    let z = 0, guard = 0;
+    while (z < modelH - 1e-6 && guard++ < 100000) {
+      let h = zCenters.length === 0 ? s.initialLayerHeight : layerHeight;
+      if (z + h > modelH) h = Math.max(0.04, modelH - z);
+      zCenters.push(z + h / 2); zTops.push(z + h); heights.push(h);
+      z += h;
+    }
+    numLayers = zCenters.length;
   }
 
   // Pass 1 — slice every layer into regions (needed up-front for supports).
