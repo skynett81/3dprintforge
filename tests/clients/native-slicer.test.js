@@ -846,3 +846,24 @@ describe('native-slicer: Arachne bead simplification', () => {
     assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'still spans the rib');
   });
 });
+
+describe('native-slicer: Arachne adaptive grid (large thin regions)', () => {
+  const ring = (rOuter, rInner, cx = 90, n = 160) => {
+    const circle = (r) => Array.from({ length: n }, (_, k) => { const a = (k / n) * 2 * Math.PI; return [r * Math.cos(a) + cx, r * Math.sin(a) + cx]; });
+    return { outer: circle(rOuter), holes: [circle(rInner)] };
+  };
+  it('a small thin ring is traced by beads (baseline)', () => {
+    // ~30mm across, 1mm wall — well under the cell budget at the default grid.
+    const beads = medialBeads(ring(15, 14, 20), 0.4);
+    assert.ok(beads.length > 0, 'small thin ring yields beads');
+  });
+  it('a LARGE thin ring still yields beads instead of being skipped', () => {
+    // ~170mm across, 1mm wall. At the default gridRes (0.2mm) this is
+    // ~858x858 = 736k cells, over the old 400k hard cap that returned [] and
+    // fell back to perpendicular hatch. The adaptive grid must coarsen (without
+    // blurring the 1mm feature) and still trace the ring as a continuous bead.
+    const beads = medialBeads(ring(85, 84), 0.4);
+    assert.ok(beads.length > 0, 'large thin ring yields beads via the adaptive grid');
+    assert.ok(beads.every((b) => b.pts.every((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))), 'no NaN in bead points');
+  });
+});

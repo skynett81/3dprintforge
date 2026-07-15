@@ -30,9 +30,20 @@ export function medialBeads(region, lineWidth, gridRes = lineWidth / 2) {
   if (!Number.isFinite(minX)) return [];
   const pad = lineWidth * 2;
   minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-  const cols = Math.max(2, Math.ceil((maxX - minX) / gridRes));
-  const rows = Math.max(2, Math.ceil((maxY - minY) / gridRes));
-  if (cols * rows > 400000) return [];   // safety cap on huge regions
+  const MAX_CELLS = 400000;              // grid budget (memory + time)
+  let cols = Math.max(2, Math.ceil((maxX - minX) / gridRes));
+  let rows = Math.max(2, Math.ceil((maxY - minY) / gridRes));
+  // Adaptive grid: a large region would blow the cell budget. Rather than skip
+  // it (falling back to perpendicular hatch), coarsen the grid to fit — but
+  // never past the line width, or a thin feature would blur out below one cell.
+  // If even a line-width grid can't fit the budget, bail and let hatch handle it.
+  if (cols * rows > MAX_CELLS) {
+    const coarser = gridRes * Math.sqrt((cols * rows) / MAX_CELLS);
+    if (coarser > lineWidth) return [];
+    gridRes = coarser;
+    cols = Math.max(2, Math.ceil((maxX - minX) / gridRes));
+    rows = Math.max(2, Math.ceil((maxY - minY) / gridRes));
+  }
   const cx = (c) => minX + (c + 0.5) * gridRes;
   const cy = (r) => minY + (r + 0.5) * gridRes;
   const idxOf = (r, c) => r * cols + c;
