@@ -35,6 +35,13 @@ const MATERIALS: Record<string, { temps: [number, number]; color: string }> = {
   'ASA-CF': { temps: [260, 100], color: '#484848' },
 };
 const DEFAULT_SLOT_COLORS = ['#000000', '#0080FF', '#E53935', '#43A047', '#FDD835', '#FB8C00', '#8E24AA', '#00ACC1'];
+// Recommended pre-print drying for hygroscopic filaments (temp °C, hours).
+const DRYING: Record<string, { temp: number; hours: number }> = {
+  Nylon: { temp: 70, hours: 12 }, 'PA-CF': { temp: 80, hours: 12 }, 'PAHT-CF': { temp: 80, hours: 12 },
+  PC: { temp: 80, hours: 6 }, 'PET-CF': { temp: 70, hours: 8 }, TPU: { temp: 50, hours: 8 },
+  'PETG-CF': { temp: 65, hours: 8 }, 'ASA-CF': { temp: 70, hours: 6 }, 'ABS-GF': { temp: 70, hours: 6 },
+  PVA: { temp: 45, hours: 10 },
+};
 
 function badgeTextColor(hex: string): string {
   const h = String(hex).replace(/^#/, '');
@@ -285,6 +292,15 @@ export function SlicerPanel() {
   }, [selPrinter]);
   const abrasiveSlots = useMemo(() => filaments.map((f, i) => ({ ...f, idx: i })).filter((f) => /\b(CF|GF)\b|CARBON|GLASS/i.test(f.material || '')), [filaments]);
   const abrasiveRisk = abrasiveSlots.length > 0 && nozzleMaterial !== 'hardened' && nozzleMaterial !== 'stainless';
+  // Drying advice for loaded hygroscopic filaments (Nylon/PA/PC/TPU/CF-GF/PVA).
+  const dryingSlots = useMemo(() => {
+    const seen = new Set<string>();
+    return filaments.map((f) => ({ mat: f.material, dry: DRYING[f.material] })).filter((f) => f.dry && !seen.has(f.mat) && seen.add(f.mat));
+  }, [filaments]);
+  const amsUnits = selPrinter?.amsUnits ?? [];
+  const amsCanDry = amsUnits.some((u) => u.type === 'AMS 2 Pro' || u.type === 'AMS HT');
+  const amsDryingNow = amsUnits.some((u) => u.drying);
+  const amsHumidity = amsUnits.reduce((mx, u) => Math.max(mx, u.humidity ?? 0), 0);
 
   // Keep the filament slots consistent with the selected printer so cost/waste
   // is computed against the right machine: a printer with a live AMS (or spools
@@ -789,6 +805,16 @@ export function SlicerPanel() {
                 ⚠ {abrasiveSlots.map((f) => f.material).join(', ')} {t('v2.slset.abrasive_is', 'is abrasive')} — {nozzleMaterial === 'brass'
                   ? t('v2.slset.abrasive_brass', 'your brass nozzle will wear out fast. Fit a hardened or stainless-steel nozzle.')
                   : t('v2.slset.abrasive_unknown', 'make sure this printer has a hardened / steel nozzle (not brass) before printing.')}
+              </div>
+            )}
+            {dryingSlots.length > 0 && (
+              <div className="oslice-drying-note">
+                💧 {dryingSlots.map((s) => `${s.mat} (${s.dry!.temp}°C · ${s.dry!.hours}h)`).join(', ')} {t('v2.slset.drying_is', 'is hygroscopic — dry it before printing to avoid stringing & weak parts.')}
+                {amsCanDry
+                  ? (amsDryingNow
+                    ? ` ${t('v2.slset.ams_drying_now', 'Your AMS is drying now.')}`
+                    : ` ${t('v2.slset.ams_can_dry', 'Your AMS can dry it')}${amsHumidity > 0 ? ` (${Math.round(amsHumidity)}% RH now)` : ''}.`)
+                  : amsHumidity > 0 ? ` (${Math.round(amsHumidity)}% RH now)` : ''}
               </div>
             )}
             {filaments.length > 1 && (
