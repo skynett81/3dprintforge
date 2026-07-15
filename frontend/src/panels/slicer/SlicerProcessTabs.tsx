@@ -128,6 +128,7 @@ const FIELDS: Field[] = [
   { tab: 'Temperature', group: 'Cooling', k: 'fan_off_layers', label: 'Fan off for first N layers', type: 'num', step: 1 },
   { tab: 'Temperature', group: 'Cooling', k: 'slow_down_layer_time', label: 'Slow down if layer faster than', type: 'num', unit: 's', step: 1 },
   { tab: 'Temperature', group: 'Cooling', k: 'slow_down_min_speed', label: 'Min print speed (slow-down floor)', type: 'num', unit: 'mm/s', step: 1 },
+  { tab: 'Temperature', group: 'Cooling', k: 'cooling_fan_speed', label: 'Forced-cooling fan on slowed layers', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'overhang_fan_speed', label: 'Overhang/bridge fan', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_min_speed', label: 'Fan min speed (ramp start)', type: 'num', unit: '%', step: 5 },
   { tab: 'Temperature', group: 'Cooling', k: 'fan_max_speed', label: 'Fan max speed (ramp end)', type: 'num', unit: '%', step: 5 },

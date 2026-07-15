@@ -847,6 +847,24 @@ describe('native-slicer: Arachne bead simplification', () => {
   });
 });
 
+describe('native-slicer: forced cooling on short layers', () => {
+  const maxFan = (g) => Math.max(0, ...[...g.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]));
+  it('ramps the fan to full on layers slowed for the minimum layer time', async () => {
+    // 5x5x20 tower: tiny, fast layers, vertical walls (no overhang fan to
+    // confound the test). Flat 40% fan curve as the baseline.
+    const opts = { fanSpeed: 40, fanMinSpeed: 40, fanMaxSpeed: 40, supports: false };
+    const cold = await sliceMeshToGcode(box(5, 5, 20), { ...opts });                    // no min layer time
+    const cool = await sliceMeshToGcode(box(5, 5, 20), { ...opts, minLayerTime: 30 });  // force cooling
+    assert.ok(maxFan(cool.gcode) > maxFan(cold.gcode), `forced cooling raises the fan (cold=${maxFan(cold.gcode)} cool=${maxFan(cool.gcode)})`);
+    assert.ok(maxFan(cool.gcode) >= 254, `ramps to ~full fan S255 (got ${maxFan(cool.gcode)})`);
+  });
+  it('respects a lower cooling_fan_speed cap (heat-sensitive materials)', async () => {
+    const opts = { fanSpeed: 20, fanMinSpeed: 20, fanMaxSpeed: 20, minLayerTime: 30, coolingFanSpeed: 50, supports: false };
+    const g = (await sliceMeshToGcode(box(5, 5, 20), opts)).gcode;
+    assert.equal(maxFan(g), Math.round(50 * 2.55), `capped at cooling_fan_speed=50 (got ${maxFan(g)})`);
+  });
+});
+
 describe('native-slicer: per-firmware G-code dialects (real machine profiles)', () => {
   const base = { pressureAdvance: 0.04, machineMaxSpeed: 200, machineMaxAccel: 5000, machineMaxJerk: 9, jerk: 9, acceleration: 3000, supports: false };
   const head = (g) => g.split('; --- prime line ---')[0];   // just the start block

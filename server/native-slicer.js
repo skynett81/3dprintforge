@@ -566,21 +566,10 @@ export function layersToGcode(layers, settings) {
       if (s.bedTempInitial != null && s.bedTempInitial !== s.bedTemp) g += `M140 S${s.bedTemp}\n`;
       if (s.acceleration && s.initialLayerAccel && s.initialLayerAccel !== s.acceleration) g += `M204 P${s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
     }
-    // Enable the part-cooling fan once past the fan-off layers. When overhang
-    // cooling is active the per-path logic below owns the fan instead. A fan
-    // curve (fanMinSpeed→fanMaxSpeed over fullFanSpeedLayer) ramps per layer.
-    if (s.overhangFanSpeed == null) {
-      if (s.fanMinSpeed != null || s.fanMaxSpeed != null) {
-        const v = Math.round(fanPctAt(layerIdx) * 2.55);
-        if (v !== curFanG) { g += `M106 S${v}\n`; curFanG = v; }
-      } else if (layerIdx === (s.fanOffLayers ?? 1)) {
-        const v = Math.round((s.fanSpeed ?? 100) * 2.55); g += `M106 S${v}\n`; curFanG = v;
-      }
-    }
-
     // Cooling: if a layer would print faster than the minimum layer time, slow
     // it down (clamped to the minimum print speed) so small layers get time to
     // cool — the same logic a desktop slicer uses for tiny top caps / spires.
+    // Computed before the fan so a slowed layer can also force extra cooling.
     let speedScale = 1;
     if (s.minLayerTime > 0 && layerIdx > 0 && !spiral) {
       let tSec = 0;
@@ -592,9 +581,26 @@ export function layersToGcode(layers, settings) {
       if (tSec > 0 && tSec < s.minLayerTime) speedScale = tSec / s.minLayerTime;
     }
     const minSpeed = s.minPrintSpeed ?? 10;
+    // When a layer is slowed to meet the minimum layer time, force extra cooling
+    // (BambuStudio ramps the fan on short layers) up to cooling_fan_speed —
+    // default full, a lower cap protects heat-sensitive materials (ABS/ASA).
+    const coolFanFloor = speedScale < 1 ? (s.coolingFanSpeed ?? 100) : 0;
+    const fanFor = (li) => Math.max(fanPctAt(li), coolFanFloor);
 
-    // Fan level that applies to normal features on this layer.
-    const layerFanPct = fanPctAt(layerIdx);
+    // Enable the part-cooling fan once past the fan-off layers. When overhang
+    // cooling is active the per-path logic below owns the fan instead. A fan
+    // curve (fanMinSpeed→fanMaxSpeed over fullFanSpeedLayer) ramps per layer.
+    if (s.overhangFanSpeed == null) {
+      if (s.fanMinSpeed != null || s.fanMaxSpeed != null || coolFanFloor > 0) {
+        const v = Math.round(fanFor(layerIdx) * 2.55);
+        if (v !== curFanG) { g += `M106 S${v}\n`; curFanG = v; }
+      } else if (layerIdx === (s.fanOffLayers ?? 1)) {
+        const v = Math.round((s.fanSpeed ?? 100) * 2.55); g += `M106 S${v}\n`; curFanG = v;
+      }
+    }
+
+    // Fan level for normal features on this layer (includes the cooling boost).
+    const layerFanPct = fanFor(layerIdx);
 
     let curFeature = null;
     for (const path of paths) {

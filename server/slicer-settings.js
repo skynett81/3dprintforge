@@ -335,6 +335,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Cooling: minimum layer time slow-down.
   set('minLayerTime', num(s.min_layer_time ?? s.slow_down_layer_time));
   set('minPrintSpeed', num(s.min_print_speed ?? s.slow_down_min_speed));
+  set('coolingFanSpeed', num(s.cooling_fan_speed));   // forced-cooling fan on short layers
   // Acceleration / jerk (M204 / M205).
   set('acceleration', num(s.acceleration ?? s.default_acceleration));
   set('initialLayerAccel', num(s.initial_layer_acceleration ?? s.initial_layer_accel));
