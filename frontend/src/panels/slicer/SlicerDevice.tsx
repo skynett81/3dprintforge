@@ -196,6 +196,20 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
               <button className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_light', { on: false })}>{t('v2.dev.light_off', 'Light off')}</button>
             </div>
           </div>
+
+          {/* Live print-speed override (Bambu speed preset, Klipper feedrate %). */}
+          <div className="oslice-devsec">
+            <div className="oslice-devsec-h">{t('v2.dev.speed', 'Speed')}</div>
+            <div className="oslice-devstep">
+              {isBambu
+                ? ([[1, 'Silent'], [2, 'Standard'], [3, 'Sport'], [4, 'Ludicrous']] as const).map(([lvl, lbl]) => (
+                    <button key={lvl} className={`btn btn--sm${spd === lvl ? '' : ' btn--ghost'}`} disabled={busy} onClick={() => ctl('set_speed', { level: lvl })}>{t(`v2.dev.spd${lvl}`, lbl)}</button>
+                  ))
+                : [50, 100, 150, 200].map((pct) => (
+                    <button key={pct} className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ctl('set_speed', { percent: pct })}>{pct}%</button>
+                  ))}
+            </div>
+          </div>
         </div>
       </div>
 
