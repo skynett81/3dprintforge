@@ -869,19 +869,48 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
 
   useEffect(() => { ctx.current?.tcontrols.setMode(mode); }, [mode]);
 
+  // Size-aware auto-arrange (BambuStudio-style): measure each object's XY
+  // footprint, sort largest-first, then shelf-pack into rows no wider than the
+  // bed and centre the whole block — so differently-sized parts never overlap
+  // (the old fixed-gap grid did). Parts (negative/support volumes) ride with
+  // their parent and are never arranged.
   function arrange() {
     const c = ctx.current; if (!c || !c.objects.length) return;
-    // Parts (negative / support volumes) ride with their parent — never arrange them.
     const items = c.objects.filter((m) => !m.userData.partType);
-    const n = items.length; if (!n) return;
-    const cols = Math.ceil(Math.sqrt(n));
-    const gap = bed / (cols + 1);
-    items.forEach((m, i) => {
-      const col = i % cols, row = Math.floor(i / cols);
-      m.position.x = (col - (cols - 1) / 2) * gap;
-      m.position.y = (row - (Math.ceil(n / cols) - 1) / 2) * gap;
-      dropToPlate(m);
+    if (!items.length) return;
+    const gap = Math.max(5, clearanceRef.current || 0);   // spacing between parts (mm)
+    const info = items.map((m) => {
+      m.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(m);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const ctr = new THREE.Vector3(); box.getCenter(ctr);
+      return { m, w: Math.max(size.x, 1), h: Math.max(size.y, 1), cx: ctr.x, cy: ctr.y };
     });
+    info.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));   // biggest first packs tidier
+    // Shelf / next-fit pack into rows bounded by the bed width.
+    const maxW = bedX * 0.98;
+    const rows: { items: typeof info; w: number; h: number }[] = [];
+    let row: { items: typeof info; w: number; h: number } = { items: [], w: 0, h: 0 };
+    for (const it of info) {
+      const add = (row.items.length ? gap : 0) + it.w;
+      if (row.items.length && row.w + add > maxW) { rows.push(row); row = { items: [], w: 0, h: 0 }; }
+      row.w += (row.items.length ? gap : 0) + it.w; row.h = Math.max(row.h, it.h); row.items.push(it);
+    }
+    if (row.items.length) rows.push(row);
+    const totalH = rows.reduce((a, r) => a + r.h, 0) + gap * Math.max(0, rows.length - 1);
+    let y = totalH / 2;                                   // top of the block, walk down in +Y
+    for (const r of rows) {
+      let x = -r.w / 2;                                   // left edge of this row
+      const rowCY = y - r.h / 2;
+      for (const it of r.items) {
+        const targetCX = x + it.w / 2;
+        it.m.position.x += targetCX - it.cx;             // shift so the bbox centre lands on target
+        it.m.position.y += rowCY - it.cy;
+        dropToPlate(it.m);
+        x += it.w + gap;
+      }
+      y -= r.h + gap;
+    }
     emitObject();
   }
   function duplicate() {
