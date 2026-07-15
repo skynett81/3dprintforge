@@ -422,12 +422,17 @@ export function layersToGcode(layers, settings) {
   // reduce-waste is on). A shorter prime line also cuts wasted filament.
   if (!s.startGcode && !s.reduceWaste) {
     const primeLen = s.primeLineLength ?? 60;
+    // Prime at the FIRST LAYER height (not a hardcoded 0.3) so the purge line
+    // adheres at the right gap and the nozzle doesn't drop into the first layer.
+    const primeZ = (layers[0] && layers[0].z) || s.layerHeight;
+    const primeH = (layers[0] && layers[0].h) || s.layerHeight;
+    const primeEf = efOf(s.initialLayerLineWidth ?? s.lineWidth, primeH) * (s.initialLayerFlowRatio > 0 ? s.initialLayerFlowRatio : 1);
     g += `; --- prime line ---\n`;
-    g += `G1 Z0.3 F${s.travelSpeed * 60}\n`;
+    g += `G1 Z${primeZ.toFixed(3)} F${s.travelSpeed * 60}\n`;
     g += `G1 X20 Y20 F${s.travelSpeed * 60}\n`;
-    g += `G1 X${20 + primeLen} Y20 E${(primeLen * efactor).toFixed(4)} F${s.firstLayerSpeed * 60}\n`;
+    g += `G1 X${20 + primeLen} Y20 E${(primeLen * primeEf).toFixed(4)} F${s.firstLayerSpeed * 60}\n`;
     g += `G92 E0\n`;
-    curX = 20 + primeLen; curY = 20; curZ = 0.3;
+    curX = 20 + primeLen; curY = 20; curZ = primeZ;
   }
 
   const retractFeed = (s.retractionSpeed ?? s.travelSpeed) * 60;
