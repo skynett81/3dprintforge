@@ -75,6 +75,13 @@ function LayerTower({ total, low, high, onLow, onHigh }: { total: number; low: n
   );
 }
 
+// Distinct default filament colours (BambuStudio-style), used per tool when a
+// slot has no colour assigned — so a multi-filament model never renders as a
+// flat grey mass in "Filament" mode.
+const DEF_TOOL_COLORS = ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a', '#e6b12e', '#8e44ad', '#16a085', '#2c82c9'];
+const isSetColor = (h?: string): h is string => typeof h === 'string' && /^#?[0-9a-fA-F]{6}$/.test(h.trim()) && !['#cccccc', '#ffffff', '#eeeeee', '#dddddd'].includes(h.trim().toLowerCase());
+const toolColorHex = (i: number, slotColors?: string[]) => (isSetColor(slotColors && slotColors[i]) ? (slotColors as string[])[i] : DEF_TOOL_COLORS[i % DEF_TOOL_COLORS.length]);
+
 /**
  * G-code toolpath preview: renders extrusion moves layer-by-layer, coloured
  * per feature (walls / infill / support …) with a slider — exactly like a
@@ -271,7 +278,8 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
       // "colour by" preview modes.
       const range = mode === 'flow' ? parsed.flowRange : mode === 'fan' ? parsed.fanRange : mode === 'layertime' ? parsed.layerTimeRange : parsed.speedRange;
       const span = Math.max(1e-6, range.max - range.min);
-      const palette = (slotColors && slotColors.length ? slotColors : ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a']).map((h) => new THREE.Color(h));
+      const nTools = Math.max(4, parsed.tools.length, slotColors ? slotColors.length : 0);
+      const palette = Array.from({ length: nTools }, (_, i) => new THREE.Color(toolColorHex(i, slotColors)));
       const pos: number[] = [];
       const col: number[] = [];
       const rgb = new THREE.Color();
@@ -397,7 +405,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
             <div className="gpreview-side-legend">
               {parsed.tools.map((ti) => (
                 <span key={ti} className="gpreview-legend-item">
-                  <i style={{ background: (slotColors && slotColors[ti]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][ti % 4] }} />
+                  <i style={{ background: toolColorHex(ti, slotColors) }} />
                   {t('v2.gpreview.tool', 'Filament')} {ti + 1}
                   <em className="gpreview-legend-stat">{gramsOf(breakdown.tool.get(ti) ?? 0).toFixed(1)} g</em>
                 </span>
@@ -421,7 +429,7 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
                   style={{
                     position: 'absolute', top: 1, bottom: 1, width: 2, borderRadius: 1, pointerEvents: 'auto', cursor: 'pointer',
                     left: `${((cc.layer - 1) / Math.max(1, total - 1)) * 100}%`,
-                    background: (slotColors && slotColors[cc.tool]) || ['#ff8a3d', '#37a66b', '#2a4bd8', '#d6333a'][cc.tool % 4],
+                    background: toolColorHex(cc.tool, slotColors),
                   }}
                   onClick={() => { setPlaying(false); setLayer(cc.layer); }} />
               ))}
