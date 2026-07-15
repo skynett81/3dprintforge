@@ -14,6 +14,8 @@ export interface SpoolMatchResult {
   deficitG: number;       // max(0, needed - available) when needed known, else 0
   /** IDs of the matched spools, best-stocked first (for fleet calibration lookup). */
   spoolIds: number[];
+  /** The best-stocked matching spool, so the UI can show which real spool this is. */
+  best: Spool | null;
 }
 
 const hexToRgb = (h?: string | null): [number, number, number] | null => {
@@ -54,5 +56,6 @@ export function matchSpools(color: string, material: string, spools: Spool[], ne
     sufficient: neededG > 0 ? availableG >= neededG : true,
     deficitG: neededG > 0 ? Math.max(0, neededG - availableG) : 0,
     spoolIds: matched.map((s) => s.id),
+    best: matched[0] ?? null,
   };
 }

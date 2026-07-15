@@ -878,8 +878,11 @@ export function SlicerPanel() {
                 </div>
                 <div className={`oslice-spoolmatch${preview && m.matched && !m.sufficient ? ' oslice-spoolmatch--short' : ''}`}>
                   {m.matched
-                    ? <>{t('v2.slset.in_stock', 'In stock')} {Math.round(m.availableG)} g · {m.spoolCount} {t('v2.slset.spools', 'spool(s)')}{m.costPerG >= 0 ? ` · ${m.costPerG.toFixed(2)} kr/g` : ''}{preview && !m.sufficient ? ` · ${t('v2.slset.short', 'short')} ${Math.round(m.deficitG)} g` : ''}</>
-                    : <span className="muted">{t('v2.slset.no_spool', 'No matching spool in inventory')}</span>}
+                    ? <>
+                        {m.best && <span className="oslice-spoolmatch-name" title={t('v2.slset.matched_spool', 'Matched inventory spool')}>{[m.best.vendor_name, m.best.profile_name || m.best.color_name].filter(Boolean).join(' ') || m.best.material}</span>}
+                        <span>{t('v2.slset.in_stock', 'In stock')} {Math.round(m.availableG)} g · {m.spoolCount} {t('v2.slset.spools', 'spool(s)')}{m.costPerG >= 0 ? ` · ${m.costPerG.toFixed(2)} kr/g` : ''}{preview && !m.sufficient ? ` · ${t('v2.slset.short', 'short')} ${Math.round(m.deficitG)} g` : ''}</span>
+                      </>
+                    : <span className="muted">{t('v2.slset.no_spool', 'No matching spool in inventory — pick one with ＋ Spool')}</span>}
                 </div>
               </div>
               );

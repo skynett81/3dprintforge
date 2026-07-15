@@ -1508,3 +1508,6 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 .oslice-filmgr-addform { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--o-border); align-items: center; }
 .oslice-filmgr-addform .oset-input { min-width: 0; }
+
+.oslice-spoolmatch { display: flex; flex-direction: column; gap: 1px; }
+.oslice-spoolmatch-name { font-weight: 600; color: var(--o-text); font-size: 0.74rem; }
