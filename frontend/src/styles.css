@@ -1415,9 +1415,15 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .btn--xs { padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; }
 
 .oslice-devprog { padding: 10px 12px; border-top: 1px solid var(--o-border); background: var(--o-panel); }
+.oslice-devprog--live { background: color-mix(in srgb, var(--o-accent) 8%, var(--o-panel)); }
+.oslice-devprog-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.oslice-devprog-title { font-size: 0.86rem; font-weight: 600; color: var(--o-text, #e2e8f0); min-width: 0; }
+.oslice-devprog-pct { margin-left: auto; font-size: 1rem; font-weight: 700; color: var(--o-accent); font-variant-numeric: tabular-nums; }
 .oslice-devprog-bar { height: 8px; background: var(--o-panel-2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
 .oslice-devprog-fill { height: 100%; background: var(--o-accent); transition: width 0.3s; }
 .oslice-devprog-row { display: flex; align-items: center; font-size: 0.8rem; }
+.oslice-devprog-meta { display: flex; align-items: center; gap: 12px; color: var(--o-muted); font-variant-numeric: tabular-nums; }
+.oslice-devprog-meta span { white-space: nowrap; }
 @media (max-width: 900px) { .oslice-devgrid { grid-template-columns: 1fr; } }
 
 /* ── Slicer Filament Manager tab ───────────────────────────────────── */

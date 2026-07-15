@@ -65,6 +65,16 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
   const state = String(st.gcode_state ?? st.state ?? st.print_status ?? st.stg_cur ?? '').toUpperCase();
   const printing = /RUN|PRINT|PAUSE|BUSY/.test(state) || (progress != null && progress > 0 && progress < 100);
   const paused = /PAUSE/.test(state);
+  // Active-print monitoring fields (BambuStudio device page): current/total
+  // layer, speed level and the job name — populated live while a print runs.
+  const layer = pick(st, 'layer_num', 'mc_layer');
+  const totalLayer = pick(st, 'total_layer_num');
+  const spd = pick(st, 'spd_lvl');
+  const ps = (typeof st.print_stats === 'object' && st.print_stats) ? st.print_stats as Record<string, unknown> : null;
+  const rawName = (st.subtask_name ?? st.gcode_file ?? ps?.filename) as string | undefined;
+  const jobName = rawName ? String(rawName).replace(/^.*[\\/]/, '').replace(/\.(gcode|3mf|gz)\b.*$/i, '') : '';
+  const fmtRemain = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${Math.round(m % 60)}m` : `${Math.round(m)}m`);
+  const spdLabel = ['', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
 
   return (
     <div className="oslice-devwrap">
@@ -189,11 +199,22 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
         </div>
       </div>
 
-      {/* Print progress + control */}
-      <div className="oslice-devprog">
+      {/* Active-print monitoring + control (BambuStudio's device status). */}
+      <div className={`oslice-devprog${printing ? ' oslice-devprog--live' : ''}`}>
+        <div className="oslice-devprog-head">
+          <span className="oslice-devprog-title ellipsis" title={jobName || undefined}>
+            {jobName || (printing ? t('v2.dev.printing', 'Printing') : t('v2.dev.idle', 'Idle · ready'))}
+          </span>
+          {progress != null && printing && <span className="oslice-devprog-pct">{Math.round(progress)}%</span>}
+        </div>
         <div className="oslice-devprog-bar"><div className="oslice-devprog-fill" style={{ width: `${Math.max(0, Math.min(100, progress ?? 0))}%` }} /></div>
         <div className="oslice-devprog-row">
-          <span>{progress != null ? `${Math.round(progress)}%` : '—'}{remain != null && remain > 0 ? ` · ${Math.round(remain)} min ${t('v2.dev.left', 'left')}` : ''}</span>
+          <span className="oslice-devprog-meta">
+            {remain != null && remain > 0 && <span title={t('v2.dev.time_left', 'Estimated time left')}>◷ {fmtRemain(remain)} {t('v2.dev.left', 'left')}</span>}
+            {layer != null && layer > 0 && <span title={t('v2.dev.layer', 'Layer')}>▤ {Math.round(layer)}{totalLayer != null && totalLayer > 0 ? ` / ${Math.round(totalLayer)}` : ''}</span>}
+            {spd != null && spd > 0 && <span title={t('v2.dev.speed', 'Speed')}>» {spdLabel[spd] || spd}</span>}
+            {!printing && progress == null && <span className="muted">{t('v2.dev.no_job', 'No active job')}</span>}
+          </span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
             {printing && !paused && <button className="btn btn--sm" disabled={busy} onClick={() => ctl('pause')}>{t('v2.dev.pause', 'Pause')}</button>}
             {paused && <button className="btn btn--sm" disabled={busy} onClick={() => ctl('resume')}>{t('v2.dev.resume', 'Resume')}</button>}
