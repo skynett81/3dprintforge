@@ -188,7 +188,7 @@ const FIELDS: Field[] = [
   { tab: 'Others', group: 'Output', k: 'arc_fitting_tolerance', label: 'Arc fitting tolerance', type: 'num', unit: 'mm', step: 0.01, dep: 'arc_fitting' },
   { tab: 'Speed', group: 'Flow dynamics', k: 'max_volumetric_speed', label: 'Max volumetric speed', type: 'num', unit: 'mm³/s', step: 1 },
   { tab: 'Speed', group: 'Flow dynamics', k: 'pressure_advance', label: 'Pressure advance (K)', type: 'num', step: 0.001 },
-  { tab: 'Speed', group: 'Flow dynamics', k: 'gcode_flavor', label: 'G-code flavor', type: 'sel', opts: [['marlin', 'Marlin (M900)'], ['klipper', 'Klipper (SET_PRESSURE_ADVANCE)']] },
+  { tab: 'Speed', group: 'Flow dynamics', k: 'gcode_flavor', label: 'G-code flavor', type: 'sel', opts: [['marlin', 'Marlin'], ['bambu', 'Bambu Lab'], ['klipper', 'Klipper'], ['reprap', 'RepRapFirmware (Duet)']] },
   { tab: 'G-code', group: 'Custom G-code', k: 'start_gcode', label: 'Start G-code', type: 'text', rows: 5 },
   { tab: 'G-code', group: 'Filament G-code', k: 'filament_start_gcode', label: 'Filament start G-code', type: 'text', rows: 3 },
   { tab: 'G-code', group: 'Filament G-code', k: 'filament_end_gcode', label: 'Filament end G-code', type: 'text', rows: 3 },

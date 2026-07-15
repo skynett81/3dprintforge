@@ -847,6 +847,42 @@ describe('native-slicer: Arachne bead simplification', () => {
   });
 });
 
+describe('native-slicer: per-firmware G-code dialects (real machine profiles)', () => {
+  const base = { pressureAdvance: 0.04, machineMaxSpeed: 200, machineMaxAccel: 5000, machineMaxJerk: 9, jerk: 9, acceleration: 3000, supports: false };
+  const head = (g) => g.split('; --- prime line ---')[0];   // just the start block
+  it('Marlin: M900 K + M201/M203/M205', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'marlin' })).gcode);
+    assert.match(g, /M900 K0\.0400/);
+    assert.match(g, /M201 X5000/);
+    assert.match(g, /M203 X200 /);
+    assert.match(g, /M205 X9 /);
+    assert.doesNotMatch(g, /SET_VELOCITY_LIMIT|SET_PRESSURE_ADVANCE|M572/);
+  });
+  it('Klipper: SET_PRESSURE_ADVANCE + SET_VELOCITY_LIMIT, no M900/M201/M203/M205 jerk', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'klipper' })).gcode);
+    assert.match(g, /SET_PRESSURE_ADVANCE ADVANCE=0\.0400/);
+    assert.match(g, /SET_VELOCITY_LIMIT[^\n]*VELOCITY=200/);
+    assert.match(g, /SET_VELOCITY_LIMIT[^\n]*ACCEL=5000/);
+    assert.doesNotMatch(g, /M900/);
+    assert.doesNotMatch(g, /M201 |M203 /);   // caps expressed via SET_VELOCITY_LIMIT
+    assert.doesNotMatch(g, /M205 X9/);        // jerk N/A on Klipper
+  });
+  it('RepRapFirmware: M572 PA + M203 in mm/min + M566 jerk', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'reprap' })).gcode);
+    assert.match(g, /M572 D0 S0\.0400/);
+    assert.match(g, /M203 X12000/);           // 200 mm/s -> 12000 mm/min
+    assert.match(g, /M566 X540/);             // 9 mm/s jerk -> 540 mm/min
+    assert.doesNotMatch(g, /M900|SET_PRESSURE_ADVANCE/);
+  });
+  it('Bambu: Marlin-style M900 K + M201/M203', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'bambu' })).gcode);
+    assert.match(g, /M900 K0\.0400/);
+    assert.match(g, /M201 X5000/);
+    assert.match(g, /M203 X200 /);
+    assert.doesNotMatch(g, /SET_VELOCITY_LIMIT|M572/);
+  });
+});
+
 describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', () => {
   // A 10x10 thick block with a thin 1.2mm tab sticking out (a "keyhole"). The
   // block core takes normal infill; the thin tab is a locally-thin finger that

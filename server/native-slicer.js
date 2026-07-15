@@ -206,6 +206,45 @@ function _defaultEnd() {
   ].join('\n') + '\n';
 }
 
+// ── Firmware dialects ── the same slice, emitted in the target firmware's
+// G-code so the slicer works like a real slicer for Marlin/Bambu, Klipper and
+// RepRapFirmware (Duet), not just "Marlin with a different pressure-advance
+// line". Flavor comes from the printer profile (s.gcodeFlavor).
+
+/** Pressure/linear advance in the firmware's dialect. */
+function _paCommand(flavor, k) {
+  const v = Number(k).toFixed(4);
+  if (flavor === 'klipper') return `SET_PRESSURE_ADVANCE ADVANCE=${v}`;
+  if (flavor === 'reprap') return `M572 D0 S${v}`;   // Duet: per-extruder PA
+  return `M900 K${v}`;                               // Marlin / Bambu (Marlin-derived)
+}
+
+/** Machine motion caps (max accel / feedrate / jerk) in the firmware's dialect.
+ *  Marlin/Bambu: M201/M203/M205 (mm/s²,mm/s,mm/s). Klipper: one
+ *  SET_VELOCITY_LIMIT (jerk ≈ square-corner-velocity). RepRapFirmware: M201 plus
+ *  M203 & M566 in mm/MIN. */
+function _machineLimitsGcode(s) {
+  const f = s.gcodeFlavor || 'marlin';
+  const A = s.machineMaxAccel, V = s.machineMaxSpeed, J = s.machineMaxJerk;
+  let g = '';
+  if (f === 'klipper') {
+    const p = [];
+    if (V > 0) p.push(`VELOCITY=${V}`);
+    if (A > 0) p.push(`ACCEL=${A}`);
+    if (J > 0) p.push(`SQUARE_CORNER_VELOCITY=${J}`);
+    if (p.length) g += `SET_VELOCITY_LIMIT ${p.join(' ')}\n`;
+  } else if (f === 'reprap') {
+    if (A > 0) g += `M201 X${A} Y${A}\n`;
+    if (V > 0) g += `M203 X${V * 60} Y${V * 60}\n`;   // RRF feedrate limit is mm/min
+    if (J > 0) g += `M566 X${J * 60} Y${J * 60}\n`;    // RRF instantaneous-speed (jerk), mm/min
+  } else {                                            // marlin, bambu
+    if (A > 0) g += `M201 X${A} Y${A}\n`;
+    if (V > 0) g += `M203 X${V} Y${V}\n`;
+    if (J > 0) g += `M205 X${J} Y${J}\n`;
+  }
+  return g;
+}
+
 /**
  * Convert a stack of layers (each = { perimeters: [[poly]], infill:
  * [[seg]] }) into a G-code string.
@@ -319,9 +358,7 @@ export function layersToGcode(layers, settings) {
   // Machine limits (BambuStudio printer settings): cap the firmware's max
   // acceleration / feedrate / jerk so aggressive profiles stay within the
   // hardware's safe envelope. Emitted once after the start G-code.
-  if (s.machineMaxAccel > 0) g += `M201 X${s.machineMaxAccel} Y${s.machineMaxAccel}\n`;
-  if (s.machineMaxSpeed > 0) g += `M203 X${s.machineMaxSpeed} Y${s.machineMaxSpeed}\n`;
-  if (s.machineMaxJerk > 0) g += `M205 X${s.machineMaxJerk} Y${s.machineMaxJerk}\n`;
+  g += _machineLimitsGcode(s);
   // Filament-specific start G-code runs right after the machine start G-code.
   if (s.filamentStartGcode) g += _interp(s.filamentStartGcode, s) + '\n';
 
@@ -329,15 +366,18 @@ export function layersToGcode(layers, settings) {
   // after the start block so it applies to the whole print. Klipper uses
   // SET_PRESSURE_ADVANCE; Marlin/others use M900 K.
   if (s.pressureAdvance != null && s.pressureAdvance >= 0) {
-    const k = Number(s.pressureAdvance).toFixed(4);
-    g += (s.gcodeFlavor === 'klipper' ? `SET_PRESSURE_ADVANCE ADVANCE=${k}` : `M900 K${k}`) + '\n';
+    g += _paCommand(s.gcodeFlavor, s.pressureAdvance) + '\n';
   }
 
   // Acceleration / jerk control (Marlin M204/M205). Emitted regardless of a
   // custom start block so per-feature motion tuning still applies. The first
   // layer can use its own (usually lower) acceleration for adhesion.
   if (s.acceleration) g += `M204 P${s.initialLayerAccel ?? s.acceleration} T${s.travelAccel ?? s.acceleration}\n`;
-  if (s.jerk) g += `M205 X${s.jerk} Y${s.jerk}\n`;
+  if (s.jerk) {
+    const f = s.gcodeFlavor || 'marlin';
+    if (f === 'reprap') g += `M566 X${s.jerk * 60} Y${s.jerk * 60}\n`;   // Duet jerk in mm/min
+    else if (f !== 'klipper') g += `M205 X${s.jerk} Y${s.jerk}\n`;       // Klipper: jerk not per-move settable
+  }
 
   let e = 0;
   let curX = 0, curY = 0, curZ = 0;
