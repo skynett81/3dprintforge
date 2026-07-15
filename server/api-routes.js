@@ -6108,7 +6108,7 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/slicer/printers') {
       // Connected printers with slicer-relevant info (build volume) so the
       // web slicer can pick a target and size its bed accordingly.
-      const { getCapabilities, gcodeFlavorForType } = await import('./printer-capabilities.js');
+      const { getCapabilities, gcodeFlavorForType, machineLimitsFromState } = await import('./printer-capabilities.js');
       const { getExtruderSlots } = await import('./db/printers.js');
       const normHex = (c) => '#' + String(c).replace(/^#/, '').slice(0, 6).toUpperCase();
       const normMat = (m) => String(m || 'PLA').split(/[\s/_-]/)[0] || 'PLA';
@@ -6186,6 +6186,7 @@ export async function handleApiRequest(req, res) {
           model: entry.config?.model || null,
           type: entry.config?.type || null,
           gcodeFlavor: gcodeFlavorForType(entry.config?.type),
+          machineLimits: machineLimitsFromState(st),
           buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
           colorSlots,
           multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),

@@ -396,6 +396,20 @@ export function gcodeFlavorForType(type) {
   return FLAVOR_BY_TYPE[String(type || '').toLowerCase()] || 'marlin';
 }
 
+// A printer's real motion caps, read LIVE from its firmware (Klipper/Moonraker
+// exposes them) so the slicer machine limits are filled in without manual
+// entry. Prefers the live toolhead values, falls back to the printer config;
+// returns null when the printer doesn't report any (e.g. Bambu over MQTT).
+export function machineLimitsFromState(state) {
+  const s = state || {};
+  const thl = s._toolhead_limits || {};
+  const maxAccel = thl.maxAccel || s._max_accel || null;
+  const maxSpeed = thl.maxVelocity || s._max_velocity || null;
+  const jerk = thl.squareCornerVelocity || null;   // Klipper's jerk-equivalent
+  if (!maxAccel && !maxSpeed && !jerk) return null;
+  return { maxAccel: maxAccel || null, maxSpeed: maxSpeed || null, jerk: jerk || null };
+}
+
 function deepMerge(target, source) {
   const result = { ...target };
   for (const key of Object.keys(source)) {

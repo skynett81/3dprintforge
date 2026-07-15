@@ -284,6 +284,7 @@ export interface SlicerPrinter {
   model?: string | null;
   type?: string | null;
   gcodeFlavor?: string | null;   // firmware dialect derived from the connector type
+  machineLimits?: { maxAccel: number | null; maxSpeed: number | null; jerk: number | null } | null;
   buildVolume?: { x: number; y: number; z: number } | null;
   colorSlots?: number;
   multiTool?: boolean;

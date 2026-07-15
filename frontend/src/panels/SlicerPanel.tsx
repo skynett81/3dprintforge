@@ -363,6 +363,16 @@ export function SlicerPanel() {
     // Firmware dialect from the printer's connector (Bambu/Klipper/RRF/Marlin),
     // so slicing for this printer emits G-code its firmware actually speaks.
     if (p.gcodeFlavor) setSettings((s) => (s.gcode_flavor === p.gcodeFlavor ? s : { ...s, gcode_flavor: p.gcodeFlavor as string }));
+    // Machine motion caps read live from the printer's firmware (Klipper) — fill
+    // the machine limits so aggressive profiles stay within the real hardware.
+    const ml = p.machineLimits;
+    if (ml) setSettings((s) => {
+      const next = { ...s }; let changed = false;
+      if (ml.maxAccel && Number(s.machine_max_acceleration) !== ml.maxAccel) { next.machine_max_acceleration = ml.maxAccel; changed = true; }
+      if (ml.maxSpeed && Number(s.machine_max_speed) !== ml.maxSpeed) { next.machine_max_speed = ml.maxSpeed; changed = true; }
+      if (ml.jerk && Number(s.machine_max_jerk) !== ml.jerk) { next.machine_max_jerk = ml.jerk; changed = true; }
+      return changed ? next : s;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selPrinter]);
 
