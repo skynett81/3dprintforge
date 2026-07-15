@@ -1069,11 +1069,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // solid surface) and bridge/solid classification are per-segment, so split
     // each chain at those boundaries instead of judging the whole path by one
     // endpoint. Kept runs stay continuous within their class.
-    // Auto-detect the bridge fill angle for a region (thin adapter over the pure,
-    // unit-tested bestBridgeAngle scorer: the direction best anchored across the
-    // gap). null when the region has no anchored bridge area → hatch at the layer
-    // angle (old behaviour) — so this is strictly improve-or-no-op.
-    const detectBridgeAngle = (region) => bestBridgeAngle(region, (x, y) => supportedBy(x, y, below, lw * 0.75), lw);
+    const supPt = (x, y) => supportedBy(x, y, below, lw * 0.75);
+    // Cheap pre-check: does the region have ANY unsupported (bridge) area within
+    // the kept surface? One COARSE hatch + midpoint tests, early-exit. Lets a
+    // fully-supported region skip the expensive 12-angle bridge detection and
+    // the support masking entirely — the common case, and what made complex
+    // models take ~30 s to slice.
+    const regionHasUnsupported = (region, keepPt) => {
+      for (const L of solidInfill(region, 0, lw * 4, true)) {
+        const a = L[0], b = L[L.length - 1], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        if ((!keepPt || keepPt(mx, my)) && !supPt(mx, my)) return true;
+      }
+      return false;
+    };
     // `keepPt(x,y)` (optional) restricts the fill to a sub-area (the genuine
     // solid surface). The fill is generated MASKED — the scanline spans are
     // clipped to the kept/supported area before the zigzag connects — so each
@@ -1081,18 +1089,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // pieces (what made complex/slotted models fragment into ~80k travels).
     const pushSolidRegion = (region, angle, keepPt, monotonic = false) => {
       const bridgeSplit = bridgeDetect && below;
-      const bridgeAngle = !bridgeSplit ? null
-        : (s.bridgeAngle != null ? s.bridgeAngle
-          : (s.bridgeAngleAuto !== false ? detectBridgeAngle(region) : null));
-      const supPt = (x, y) => supportedBy(x, y, below, lw * 0.75);
-      // Solid = the kept area that is supported (or all kept when no bridge split).
-      const solidMask = !bridgeSplit ? (keepPt || null) : (x, y) => (!keepPt || keepPt(x, y)) && supPt(x, y);
-      for (const chain of solidInfill(region, angle, lw, monotonic, solidMask)) pushSolid(chain);
-      // Bridge = the kept area over air, hatched at the detected/forced angle.
-      if (bridgeSplit) {
-        const bridgeMask = (x, y) => (!keepPt || keepPt(x, y)) && !supPt(x, y);
-        for (const chain of solidInfill(region, bridgeAngle != null ? bridgeAngle : angle, lw, false, bridgeMask)) pushBridge(chain);
+      const hasBridge = bridgeSplit && (s.bridgeAngle != null || regionHasUnsupported(region, keepPt));
+      if (!hasBridge) {
+        // Fully-supported (or bridge detection off): one solid pass, no masking.
+        for (const chain of solidInfill(region, angle, lw, monotonic, keepPt || null)) pushSolid(chain);
+        return;
       }
+      const bridgeAngle = s.bridgeAngle != null ? s.bridgeAngle
+        : (s.bridgeAngleAuto !== false ? bestBridgeAngle(region, supPt, lw) : null);
+      // Solid = kept + supported; bridge = kept + over air, at the bridge angle.
+      const solidMask = (x, y) => (!keepPt || keepPt(x, y)) && supPt(x, y);
+      for (const chain of solidInfill(region, angle, lw, monotonic, solidMask)) pushSolid(chain);
+      const bridgeMask = (x, y) => (!keepPt || keepPt(x, y)) && !supPt(x, y);
+      for (const chain of solidInfill(region, bridgeAngle != null ? bridgeAngle : angle, lw, false, bridgeMask)) pushBridge(chain);
     };
 
     for (const region of regions) {
