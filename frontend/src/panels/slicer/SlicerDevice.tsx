@@ -75,6 +75,12 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
   const jobName = rawName ? String(rawName).replace(/^.*[\\/]/, '').replace(/\.(gcode|3mf|gz)\b.*$/i, '') : '';
   const fmtRemain = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${Math.round(m % 60)}m` : `${Math.round(m)}m`);
   const spdLabel = ['', 'Silent', 'Standard', 'Sport', 'Ludicrous'];
+  // HMS alerts (Bambu) — the printer's active health-monitoring codes. Formatted
+  // as BambuStudio's HMS_XXXX_XXXX_XXXX_XXXX with a link to the wiki; severity is
+  // the high 16 bits of the code (1 fatal … 4 info).
+  const hms = Array.isArray(st.hms) ? (st.hms as Array<{ attr: number; code: number }>) : [];
+  const hex4 = (n: number) => (n & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+  const hmsCode = (a: number, c: number) => `HMS_${hex4(a >>> 16)}_${hex4(a)}_${hex4(c >>> 16)}_${hex4(c)}`;
 
   return (
     <div className="oslice-devwrap">
@@ -91,6 +97,22 @@ export function SlicerDevice({ printer, live, printers, onSelect }: Props) {
 
         {/* Control column */}
         <div className="oslice-devctl">
+          {/* HMS health alerts (Bambu) — surfaced with a wiki link so a printer
+              problem is visible right in the device panel. */}
+          {hms.length > 0 && (
+            <div className="oslice-devsec oslice-devhms">
+              <div className="oslice-devsec-h">⚠ {t('v2.dev.alerts', 'Printer alerts')} · {hms.length}</div>
+              {hms.map((h, i) => {
+                const code = hmsCode(h.attr, h.code);
+                const sev = (h.code >>> 16) & 0xffff;
+                return (
+                  <a key={i} className={`oslice-devhms-item oslice-devhms--${sev >= 1 && sev <= 4 ? sev : 3}`}
+                    href={`https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${code}`} target="_blank" rel="noreferrer"
+                    title={t('v2.dev.hms_hint', 'Open the Bambu wiki entry for this alert')}>{code}</a>
+                );
+              })}
+            </div>
+          )}
           {/* Control header — printer selector, live state and the quick-action
               pills, mirroring Bambu Studio's Device control panel. */}
           <div className="oslice-devsec">

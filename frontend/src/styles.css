@@ -1416,6 +1416,13 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .oslice-bedlbl { font-size: 0.74rem; color: var(--o-muted); font-weight: 700; margin: 0 4px; }
 .btn--xs { padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; }
 
+.oslice-devhms { display: flex; flex-direction: column; gap: 4px; }
+.oslice-devhms-item { display: block; font-family: ui-monospace, "SF Mono", monospace; font-size: 0.72rem; padding: 4px 8px; border-radius: 5px; text-decoration: none; border: 1px solid transparent; }
+.oslice-devhms--1 { color: #ff8a80; background: rgba(224,70,60,0.14); border-color: rgba(224,70,60,0.34); }
+.oslice-devhms--2 { color: #f0a83a; background: rgba(240,168,58,0.14); border-color: rgba(240,168,58,0.32); }
+.oslice-devhms--3 { color: #d9c65a; background: rgba(217,198,90,0.12); border-color: rgba(217,198,90,0.28); }
+.oslice-devhms--4 { color: #8fb3d8; background: rgba(143,179,216,0.12); border-color: rgba(143,179,216,0.26); }
+.oslice-devhms-item:hover { filter: brightness(1.15); }
 .oslice-devprog { padding: 10px 12px; border-top: 1px solid var(--o-border); background: var(--o-panel); }
 .oslice-devprog--live { background: color-mix(in srgb, var(--o-accent) 8%, var(--o-panel)); }
 .oslice-devprog-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
