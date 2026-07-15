@@ -151,7 +151,7 @@ const FIELDS: Field[] = [
   { tab: 'Support', group: 'Interface', k: 'support_interface_top_layers', label: 'Top interface layers', type: 'num', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Interface', k: 'support_z_gap_layers', label: 'Top Z gap (layers)', type: 'num', step: 1, dep: 'supports' },
   { tab: 'Support', group: 'Clearance', k: 'support_object_xy_distance', label: 'XY distance to model', type: 'num', unit: 'mm', step: 0.1, dep: 'supports' },
-  { tab: 'Others', group: 'Seam', k: 'seam_position', label: 'Seam position', type: 'sel', opts: [['nearest', 'Nearest'], ['aligned', 'Aligned'], ['back', 'Rear'], ['random', 'Random']] },
+  { tab: 'Others', group: 'Seam', k: 'seam_position', label: 'Seam position', type: 'sel', opts: [['aligned', 'Aligned (hide at corner)'], ['nearest', 'Nearest (hide at corner)'], ['back', 'Rear'], ['random', 'Random']] },
   { tab: 'Others', group: 'Seam', k: 'seam_gap', label: 'Seam gap', type: 'num', unit: 'mm', step: 0.05 },
   { tab: 'Others', group: 'Seam', k: 'scarf_seam', label: 'Scarf joint seam', type: 'bool' },
   { tab: 'Others', group: 'Seam', k: 'scarf_length', label: 'Scarf length', type: 'num', unit: 'mm', step: 0.5, dep: 'scarf_seam' },

@@ -225,6 +225,25 @@ describe('native-slicer: seam painting', () => {
   });
 });
 
+describe('native-slicer: seam corner-hiding (aligned/nearest)', () => {
+  // Right triangle — the (20,0) vertex is the sharpest convex corner.
+  const TRI = [[0, 0], [20, 0], [0, 15]];
+  it("'aligned' hides the seam at the sharpest convex corner", () => {
+    assert.deepEqual(seamStart(TRI, 'aligned')[0], [20, 0]);
+  });
+  it("'nearest' also snaps to the sharpest corner (was a no-op before)", () => {
+    assert.deepEqual(seamStart(TRI, 'nearest')[0], [20, 0]);
+  });
+  it("'back' still picks the rear (max-y) vertex, unchanged", () => {
+    assert.deepEqual(seamStart(TRI, 'back')[0], [0, 15]);
+  });
+  it('a cornerless outline (circle) falls back to the rear', () => {
+    const circle = Array.from({ length: 48 }, (_, k) => { const a = (k / 48) * 2 * Math.PI; return [10 + 10 * Math.cos(a), 10 + 10 * Math.sin(a)]; });
+    const seam = seamStart(circle, 'aligned')[0];
+    assert.ok(seam[1] > 18, `rear-ish fallback (y=${seam[1].toFixed(1)})`);
+  });
+});
+
 describe('native-slicer: brim_type', () => {
   const cube = box(20, 20, 20);
   // Count extruding moves emitted under the brim feature (robust vs the

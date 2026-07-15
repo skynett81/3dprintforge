@@ -150,12 +150,30 @@ export function seamStart(poly, mode, seamCtx) {
     }
   }
   if (idx < 0) {
-    if (mode === 'back' || mode === 'rear' || mode === 'aligned') {
-      let best = -Infinity;
-      for (let i = 0; i < poly.length; i++) if (poly[i][1] > best) { best = poly[i][1]; idx = i; }
-    } else if (mode === 'random') {
+    if (mode === 'random') {
       const seed = Math.abs(Math.round((poly[0][0] + poly[1][1]) * 131) + poly.length * 977);
       idx = seed % poly.length;
+    } else if (mode === 'aligned' || mode === 'nearest') {
+      // Hide the seam at the sharpest convex corner (BambuStudio's smart aligned
+      // seam), where it's least visible. Needs a real corner (>~20°); a
+      // cornerless outline (a circle) falls back to the rear below so the seam
+      // stays on a consistent vertical line across layers.
+      const ccw = _signedArea(poly) > 0 ? 1 : -1;
+      let best = 0.35;   // ~20° minimum turn to count as a hiding corner
+      for (let i = 0; i < poly.length; i++) {
+        const p = poly[(i - 1 + poly.length) % poly.length], c = poly[i], q = poly[(i + 1) % poly.length];
+        const ax = c[0] - p[0], ay = c[1] - p[1], bx = q[0] - c[0], by = q[1] - c[1];
+        const la = Math.hypot(ax, ay) || 1, lb = Math.hypot(bx, by) || 1;
+        const cross = (ax * by - ay * bx) / (la * lb);
+        if (cross * ccw <= 0.05) continue;                 // concave / straight → not a hiding corner
+        const turn = Math.atan2(Math.abs(cross), (ax * bx + ay * by) / (la * lb));
+        if (turn > best) { best = turn; idx = i; }
+      }
+    }
+    // back / rear, or the corner-hiding fallback: the rear-most (max-y) vertex.
+    if (idx < 0 && mode !== 'random') {
+      let best = -Infinity;
+      for (let i = 0; i < poly.length; i++) if (poly[i][1] > best) { best = poly[i][1]; idx = i; }
     }
     // Nudge the chosen seam out of any blocked band to the nearest free vertex.
     if (hasPaint && seamCtx.block?.length && idx >= 0) {
