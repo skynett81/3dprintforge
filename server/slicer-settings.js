@@ -121,11 +121,11 @@ export function hasOverrides(s = {}) {
 // The native engine only knows 'lines' and 'grid' fills, so richer
 // OrcaSlicer patterns collapse to the closest of the two.
 const NATIVE_PATTERN = {
-  grid: 'grid', cubic: 'cubic', 'adaptivecubic': 'cubic',
+  grid: 'grid', cubic: 'cubic', 'adaptivecubic': 'adaptivecubic',
   honeycomb: 'honeycomb', '3dhoneycomb': 'honeycomb',
   triangles: 'triangles', 'tri-hexagon': 'triangles', star: 'triangles',
   line: 'lines', lines: 'lines', concentric: 'concentric',
-  gyroid: 'gyroid', zigzag: 'lines',
+  gyroid: 'gyroid', zigzag: 'lines', hilbert: 'hilbert',
 };
 
 /**

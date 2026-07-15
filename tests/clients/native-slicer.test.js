@@ -867,6 +867,36 @@ describe('native-slicer: Arachne bead simplification', () => {
 });
 
 import { hilbertInfill } from '../../server/native-slicer-geo.js';
+describe('native-slicer: adaptive cubic infill', () => {
+  // Sparse-feature extrusion length per layer.
+  const sparsePerLayer = (g) => {
+    const layers = []; let inSparse = false, px = 0, py = 0;
+    for (const l of g.split('\n')) {
+      if (l.startsWith('; --- layer')) { layers.push(0); continue; }
+      if (l.startsWith('; FEATURE:')) { inSparse = l.includes('FEATURE:sparse'); continue; }
+      const m = l.match(/^G1 X([-\d.]+) Y([-\d.]+) E/);
+      if (m) { const x = +m[1], y = +m[2]; if (inSparse && layers.length) layers[layers.length - 1] += Math.hypot(x - px, y - py); px = x; py = y; }
+      else { const t = l.match(/^G[01] X([-\d.]+) Y([-\d.]+)/); if (t) { px = +t[1]; py = +t[2]; } }
+    }
+    return layers.map((v, i) => ({ i, v })).filter((o) => o.v > 0.5);   // layers that actually have sparse infill
+  };
+  it('lays denser infill in the layers just below the top than deep inside', async () => {
+    const g = (await sliceMeshToGcode(box(30, 30, 24), { infillPattern: 'adaptivecubic', infillDensity: 0.08, topLayers: 4, bottomLayers: 4, supports: false })).gcode;
+    const sp = sparsePerLayer(g);
+    assert.ok(sp.length >= 8, `enough sparse layers (${sp.length})`);
+    const meanTop = sp.slice(-4).reduce((a, o) => a + o.v, 0) / 4;   // nearest the top skin
+    const meanDeep = sp.slice(0, 4).reduce((a, o) => a + o.v, 0) / 4; // deep inside
+    assert.ok(meanTop > meanDeep * 1.3, `near-top denser than deep (top=${meanTop.toFixed(0)} deep=${meanDeep.toFixed(0)})`);
+  });
+  it('plain cubic stays uniform (control)', async () => {
+    const g = (await sliceMeshToGcode(box(30, 30, 24), { infillPattern: 'cubic', infillDensity: 0.08, topLayers: 4, bottomLayers: 4, supports: false })).gcode;
+    const sp = sparsePerLayer(g);
+    const meanTop = sp.slice(-4).reduce((a, o) => a + o.v, 0) / 4;
+    const meanDeep = sp.slice(0, 4).reduce((a, o) => a + o.v, 0) / 4;
+    assert.ok(meanTop < meanDeep * 1.3, `uniform, no near-top boost (top=${meanTop.toFixed(0)} deep=${meanDeep.toFixed(0)})`);
+  });
+});
+
 describe('native-slicer: Hilbert-curve infill', () => {
   const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   it('fills a square with many segments whose ENDPOINTS stay inside', () => {

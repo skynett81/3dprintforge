@@ -99,6 +99,23 @@ export function buildSurfaceClassifier(layerRegions, opts = {}) {
     solid[i] = s; top[i] = tp; bottom[i] = bt;
   }
 
+  // Distance (in layers) from each model cell up to the top skin of its column
+  // (0 = exposed top). Drives adaptive-cubic infill: denser near the top, sparse
+  // deep inside. FAR marks non-model / deep-below cells.
+  const FAR = 30000;
+  const depthTop = new Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Int16Array(cols * rows);
+    const here = model[i];
+    const above = i + 1 < n ? model[i + 1] : null;
+    const dAbove = i + 1 < n ? depthTop[i + 1] : null;
+    for (let idx = 0; idx < d.length; idx++) {
+      if (!here[idx]) { d[idx] = FAR; continue; }
+      d[idx] = (above && above[idx]) ? (dAbove[idx] + 1) : 0;
+    }
+    depthTop[i] = d;
+  }
+
   const cellAt = (grid, i, x, y) => {
     if (i < 0 || i >= n) return false;
     const c = Math.floor((x - minX) / gridRes);
@@ -106,11 +123,19 @@ export function buildSurfaceClassifier(layerRegions, opts = {}) {
     if (c < 0 || r < 0 || c >= cols || r >= rows) return false;
     return !!grid[i][r * cols + c];
   };
+  const numAt = (grid, i, x, y) => {
+    if (i < 0 || i >= n) return FAR;
+    const c = Math.floor((x - minX) / gridRes);
+    const r = Math.floor((y - minY) / gridRes);
+    if (c < 0 || r < 0 || c >= cols || r >= rows) return FAR;
+    return grid[i][r * cols + c];
+  };
 
   return {
     cols, rows,
     isSolidPoint: (i, x, y) => (i < 0 || i >= n ? true : cellAt(solid, i, x, y)),
     isTopPoint: (i, x, y) => cellAt(top, i, x, y),
     isBottomPoint: (i, x, y) => cellAt(bottom, i, x, y),
+    depthBelowTop: (i, x, y) => numAt(depthTop, i, x, y),   // layers down to the top skin
   };
 }

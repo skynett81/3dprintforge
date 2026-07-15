@@ -1101,6 +1101,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           // minimum_sparse_infill_area) — tiny pockets aren't worth infilling.
           if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) return [];
           const active = modifiers.filter((m) => zc >= m.minZ && zc <= m.maxZ);
+          // Adaptive cubic: cubic infill that's denser in the layers just below a
+          // top skin (where it supports the top surface) and sparse deep inside —
+          // per-cell via the surface classifier's depth-to-top field, so it saves
+          // material without weakening tops. Falls back to plain cubic with no
+          // surfaces. Modifiers not composed (rare combo).
+          if (s.infillPattern === 'adaptivecubic' && surfaces && !active.length) {
+            const nearZone = Math.max(s.topLayers + 2, Math.round(s.topLayers * 2.5));   // boost-band depth (layers)
+            const depth = (sg) => surfaces.depthBelowTop(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
+            const deep = patternInfill(region, s.infillDensity, baseAngle, lw, 'cubic', { z: ctxZ }).filter((sg) => depth(sg) > nearZone);
+            const dense = patternInfill(region, Math.min(1, s.infillDensity * 2), baseAngle, lw, 'cubic', { z: ctxZ }).filter((sg) => { const d = depth(sg); return d > s.topLayers && d <= nearZone; });
+            return anchorSegs([...deep, ...dense]);
+          }
           const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ });
           if (!active.length) return anchorSegs(base);
           const inAny = (x, y) => active.some((m) => x >= m.minX && x <= m.maxX && y >= m.minY && y <= m.maxY);
