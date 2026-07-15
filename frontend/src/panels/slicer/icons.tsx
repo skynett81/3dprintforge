@@ -33,3 +33,4 @@ export const IconShape = () => (<svg {...S}><path d="M12 3l8 4.5v9L12 21l-8-4.5v
 export const IconText = () => (<svg {...S}><path d="M5 5h14M12 5v14M9 19h6" /></svg>);
 export const IconFuzzy = () => (<svg {...S}><path d="M3 12h2l1-2 2 4 2-6 2 8 2-6 2 4 1-2h2" /></svg>);
 export const IconImage = () => (<svg {...S}><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M21 16l-5-5-9 9" /></svg>);
+export const IconLibrary = () => (<svg {...S}><path d="M4 5h5a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-5a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h5z" /></svg>);

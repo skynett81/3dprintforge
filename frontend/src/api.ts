@@ -92,6 +92,13 @@ export const api = {
     const buf = await res.arrayBuffer();
     return new File([buf], name, { type: 'application/octet-stream' });
   },
+  // The 3MF model captured for a past print, so it can be re-sliced/re-printed.
+  downloadHistoryModel: async (id: number, name: string): Promise<File> => {
+    const res = await fetch(`/api/history/${id}/model-3mf`);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    return new File([buf], name.replace(/\.[^.]+$/, '') + '.3mf', { type: 'model/3mf' });
+  },
   sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
     const q = new URLSearchParams({ printerId, filename: file.name });
     if (opts?.print) q.set('print', '1');

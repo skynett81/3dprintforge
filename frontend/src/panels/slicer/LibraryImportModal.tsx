@@ -16,9 +16,16 @@ export function LibraryImportModal({ onClose, onImport }: { onClose: () => void;
   const t = useT();
   const toast = useToast();
   const { data } = useResource<LibraryFile[]>(api.listLibrary, 0);
+  const { data: history } = useResource<import('../../types').HistoryRow[]>(api.listHistory, 0);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState<number | null>(null);
-  const [tab, setTab] = useState<'library' | 'forge'>('library');
+  const [tab, setTab] = useState<'library' | 'forge' | 'history'>('library');
+  async function pickHistory(h: import('../../types').HistoryRow) {
+    setBusy(h.id);
+    try { onImport(await api.downloadHistoryModel(h.id, h.filename || `print-${h.id}`)); onClose(); }
+    catch { toast(t('v2.lib.hist_fail', 'This print has no re-usable 3D model saved.'), 'error'); }
+    finally { setBusy(null); }
+  }
   const [genBusy, setGenBusy] = useState<string | null>(null);
   const [configGen, setConfigGen] = useState<ForgeGenerator | null>(null);
   const [paramVals, setParamVals] = useState<Record<string, string | number>>({});
@@ -82,9 +89,23 @@ export function LibraryImportModal({ onClose, onImport }: { onClose: () => void;
         <div className="lib-tabs">
           <button className={`lib-tab${tab === 'library' ? ' lib-tab--on' : ''}`} onClick={() => setTab('library')}>{t('v2.lib.tab_library', 'Library')}</button>
           <button className={`lib-tab${tab === 'forge' ? ' lib-tab--on' : ''}`} onClick={() => setTab('forge')}>{t('v2.lib.tab_forge', 'Model Forge')} <span className="muted micro">{MODEL_FORGE_CATALOG.length}</span></button>
+          <button className={`lib-tab${tab === 'history' ? ' lib-tab--on' : ''}`} onClick={() => setTab('history')}>{t('v2.lib.tab_history', 'Print history')}</button>
         </div>
         <input className="input" placeholder={tab === 'library' ? t('v2.lib.search', 'Search models…') : t('v2.lib.search_gen', 'Search generators…')} value={q} onChange={(e) => setQ(e.target.value)} style={{ marginBottom: 12 }} />
-        {tab === 'library' ? (
+        {tab === 'history' ? (
+          <div className="lib-grid">
+            {(history ?? []).filter((h) => !q.trim() || (h.filename || '').toLowerCase().includes(q.trim().toLowerCase())).map((h) => (
+              <button key={h.id} className="lib-card" disabled={busy !== null} title={t('v2.lib.reslice', 'Load this print’s model to re-slice')} onClick={() => pickHistory(h)}>
+                <div className="lib-thumb">
+                  <img src={`/api/history/${h.id}/thumbnail`} alt="" loading="lazy" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                </div>
+                <span className="lib-name ellipsis" title={h.filename}>{h.filename || `Print #${h.id}`}</span>
+                <span className="muted micro">{h.printer_id}{busy === h.id ? ` · ${t('v2.lib.loading', 'loading…')}` : ''}</span>
+              </button>
+            ))}
+            {(history ?? []).length === 0 && <p className="muted empty-note">{t('v2.lib.no_history', 'No print history yet.')}</p>}
+          </div>
+        ) : tab === 'library' ? (
           <div className="lib-grid">
             {items.map((i) => (
               <button key={i.id} className="lib-card" disabled={busy !== null} onClick={() => pick(i)}>

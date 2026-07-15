@@ -15,7 +15,7 @@ import { SlicerPurge } from './slicer/SlicerPurge';
 import { matchSpools } from '../lib/spool-match';
 import { SlicerColorLayer } from './slicer/SlicerColorLayer';
 import { LibraryImportModal } from './slicer/LibraryImportModal';
-import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse, IconAutoOrient, IconPlaceFace, IconSplit, IconMeasure, IconSimplify, IconSupportPaint, IconSeamPaint, IconColorPaint, IconCut, IconBoolean, IconShape, IconText, IconFuzzy, IconImage, IconEye, IconEyeOff, IconResetView } from './slicer/icons';
+import { IconAdd, IconDelete, IconArrange, IconMove, IconRotate, IconScale, IconLayFlat, IconDuplicate, IconCenter, IconProcess, IconExpand, IconCollapse, IconAutoOrient, IconPlaceFace, IconSplit, IconMeasure, IconSimplify, IconSupportPaint, IconSeamPaint, IconColorPaint, IconCut, IconBoolean, IconShape, IconText, IconFuzzy, IconImage, IconEye, IconEyeOff, IconResetView, IconLibrary } from './slicer/icons';
 
 const PlateViewer = lazy(() => import('../components/PlateViewer').then((m) => ({ default: m.PlateViewer })));
 const GcodePreview = lazy(() => import('../components/GcodePreview').then((m) => ({ default: m.GcodePreview })));
@@ -1108,6 +1108,7 @@ export function SlicerPanel() {
           {tab === 'prepare' && (
           <div className="oslice-rail">
             {action(<IconAdd />, t('v2.slicer.add_model', 'Add model'), () => addInputRef.current?.click())}
+            {action(<IconLibrary />, t('v2.slicer.library_hint', 'Library, Model Forge & print history'), () => setShowLibrary(true))}
             {action(<IconDuplicate />, t('v2.plate.dup', 'Duplicate'), () => plateRef.current?.duplicate(), !toolState.hasSel)}
             {action(<IconArrange />, t('v2.plate.arrange', 'Auto-arrange'), () => plateRef.current?.arrange(), toolState.count < 2)}
             {action(<IconDelete />, t('v2.plate.del', 'Delete'), () => plateRef.current?.remove(), !toolState.hasSel)}
