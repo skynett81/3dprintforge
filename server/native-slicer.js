@@ -1219,7 +1219,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             return o;
           });
         };
-        const sparseSegsFor = (region) => {
+        const sparseSegsFor = (region, maskFn = null) => {
           // Skip sparse infill in regions smaller than the minimum area (BambuStudio
           // minimum_sparse_infill_area) — tiny pockets aren't worth infilling.
           if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) return [];
@@ -1236,7 +1236,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             const dense = patternInfill(region, Math.min(1, s.infillDensity * 2), baseAngle, lw, 'cubic', { z: ctxZ }).filter((sg) => { const d = depth(sg); return d > s.topLayers && d <= nearZone; });
             return anchorSegs([...deep, ...dense]);
           }
-          const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ });
+          const base = patternInfill(region, s.infillDensity, baseAngle, lw, s.infillPattern, { z: ctxZ }, maskFn);
           if (!active.length) return anchorSegs(base);
           const inAny = (x, y) => active.some((m) => x >= m.minX && x <= m.maxX && y >= m.minY && y <= m.maxY);
           const out = base.filter((sg) => !inAny((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2));
@@ -1337,8 +1337,9 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse && s.infillPattern !== 'lightning') {
             // Keep only the parts of each sparse chain NOT over a solid surface
-            // (the solid pass covers those), splitting chains that cross the
-            // boundary so each part stays continuous within its class.
+            // (the solid pass covers those). Sparse lines are widely spaced, so
+            // masking-before-connect fragments their long connectors — the
+            // post-split keeps them longer, so split rather than mask here.
             const sparseSegs = sparseSegsFor(infRegion).flatMap((sg) => splitPolyBySeg(sg, (seg) => !midSolid(surfaces, i, seg)));
             for (const sg of sparseSegs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
           }

@@ -815,17 +815,21 @@ export function hilbertInfill(region, density, lineWidth = 0.4) {
   return paths;
 }
 
-export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}) {
+export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}, maskFn = null) {
+  // maskFn (optional) clips the fill to a sub-area BEFORE the scanline connects,
+  // so sparse infill next to a solid patch stays connected within its own area
+  // instead of being fragmented by a post-filter. Only the scanline-based
+  // patterns thread it; gyroid/honeycomb/hilbert are still filtered downstream.
   if (pattern === 'hilbert' || pattern === 'hilbertcurve') return hilbertInfill(region, density, lineWidth);
   if (pattern === 'grid') {
-    return regionInfill(region, density / 2, angleDeg, lineWidth)
-      .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth));
+    return regionInfill(region, density / 2, angleDeg, lineWidth, false, maskFn)
+      .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth, false, maskFn));
   }
   if (pattern === 'triangles' || pattern === 'star') {
     const d = density / 3;
-    return regionInfill(region, d, angleDeg, lineWidth)
-      .concat(regionInfill(region, d, angleDeg + 60, lineWidth))
-      .concat(regionInfill(region, d, angleDeg + 120, lineWidth));
+    return regionInfill(region, d, angleDeg, lineWidth, false, maskFn)
+      .concat(regionInfill(region, d, angleDeg + 60, lineWidth, false, maskFn))
+      .concat(regionInfill(region, d, angleDeg + 120, lineWidth, false, maskFn));
   }
   if (pattern === 'gyroid') return gyroidInfill(region, density, lineWidth, ctx.z ?? 0);
   if (pattern === 'honeycomb') return honeycombInfill(region, density, lineWidth);
@@ -834,15 +838,15 @@ export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'l
     // layers, so successive bands cross — stronger than plain rectilinear.
     const z = ctx.z ?? 0;
     const rot = (Math.floor(z / (lineWidth * 4)) % 2) * 90;
-    return regionInfill(region, density, angleDeg + rot, lineWidth);
+    return regionInfill(region, density, angleDeg + rot, lineWidth, false, maskFn);
   }
   if (pattern === 'cubic') {
     // Three directions rotating with height → a 3-D cubic lattice feel.
     const rot = ((ctx.z ?? 0) * 17) % 60;
     const d = density / 3;
-    return regionInfill(region, d, angleDeg + rot, lineWidth)
-      .concat(regionInfill(region, d, angleDeg + 60 + rot, lineWidth))
-      .concat(regionInfill(region, d, angleDeg + 120 + rot, lineWidth));
+    return regionInfill(region, d, angleDeg + rot, lineWidth, false, maskFn)
+      .concat(regionInfill(region, d, angleDeg + 60 + rot, lineWidth, false, maskFn))
+      .concat(regionInfill(region, d, angleDeg + 120 + rot, lineWidth, false, maskFn));
   }
-  return regionInfill(region, density, angleDeg, lineWidth);
+  return regionInfill(region, density, angleDeg, lineWidth, false, maskFn);
 }
