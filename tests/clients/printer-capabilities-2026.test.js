@@ -234,3 +234,27 @@ describe('hasFeature helper integration', () => {
     assert.equal(hasFeature({ model: 'Creality Hi', type: 'moonraker' }, 'multiColor'), false);
   });
 });
+
+import { gcodeFlavorForType } from '../../server/printer-capabilities.js';
+describe('gcodeFlavorForType — firmware dialect per connector', () => {
+  it('Bambu connectors map to the bambu flavor', () => {
+    assert.equal(gcodeFlavorForType('bambu'), 'bambu');
+    assert.equal(gcodeFlavorForType('mqtt'), 'bambu');
+  });
+  it('Klipper/Moonraker map to klipper', () => {
+    assert.equal(gcodeFlavorForType('klipper'), 'klipper');
+    assert.equal(gcodeFlavorForType('moonraker'), 'klipper');
+  });
+  it('Duet/RRF map to reprap', () => {
+    assert.equal(gcodeFlavorForType('duet'), 'reprap');
+    assert.equal(gcodeFlavorForType('reprapfirmware'), 'reprap');
+    assert.equal(gcodeFlavorForType('rrf'), 'reprap');
+  });
+  it('Prusa/OctoPrint/others default to marlin', () => {
+    assert.equal(gcodeFlavorForType('prusalink'), 'marlin');
+    assert.equal(gcodeFlavorForType('octoprint'), 'marlin');
+    assert.equal(gcodeFlavorForType('flashforge'), 'marlin');
+    assert.equal(gcodeFlavorForType(null), 'marlin');
+    assert.equal(gcodeFlavorForType(undefined), 'marlin');
+  });
+});

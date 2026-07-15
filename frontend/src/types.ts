@@ -283,6 +283,7 @@ export interface SlicerPrinter {
   name: string;
   model?: string | null;
   type?: string | null;
+  gcodeFlavor?: string | null;   // firmware dialect derived from the connector type
   buildVolume?: { x: number; y: number; z: number } | null;
   colorSlots?: number;
   multiTool?: boolean;

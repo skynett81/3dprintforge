@@ -360,6 +360,9 @@ export function SlicerPanel() {
     if (nz && nz > 0) {
       setSettings((s) => (Number(s.nozzle_diameter) === nz ? s : { ...s, nozzle_diameter: nz, line_width: +(nz * 1.05).toFixed(2), outer_wall_line_width: +(nz * 1.05).toFixed(2), inner_wall_line_width: +(nz * 1.125).toFixed(2) }));
     }
+    // Firmware dialect from the printer's connector (Bambu/Klipper/RRF/Marlin),
+    // so slicing for this printer emits G-code its firmware actually speaks.
+    if (p.gcodeFlavor) setSettings((s) => (s.gcode_flavor === p.gcodeFlavor ? s : { ...s, gcode_flavor: p.gcodeFlavor as string }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selPrinter]);
 

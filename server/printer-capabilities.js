@@ -380,6 +380,22 @@ export function hasFeature(printer, feature) {
   return !!caps.features?.[feature];
 }
 
+// Connector type → slicer G-code flavor, so picking a printer in the slicer
+// yields firmware-correct output automatically (Bambu / Klipper / RRF / Marlin)
+// — the last piece of "works like a real slicer for Prusa/Klipper/Bambu".
+const FLAVOR_BY_TYPE = {
+  bambu: 'bambu', mqtt: 'bambu',
+  klipper: 'klipper', moonraker: 'klipper',
+  duet: 'reprap', reprapfirmware: 'reprap', rrf: 'reprap',
+  // Marlin-derived firmwares (Prusa, OctoPrint hosts, FlashForge, AnkerMake,
+  // Repetier, Snapmaker SACP) — the safe default.
+  prusalink: 'marlin', octoprint: 'marlin', flashforge: 'marlin', fnet: 'marlin',
+  ankermake: 'marlin', repetier: 'marlin', sacp: 'marlin',
+};
+export function gcodeFlavorForType(type) {
+  return FLAVOR_BY_TYPE[String(type || '').toLowerCase()] || 'marlin';
+}
+
 function deepMerge(target, source) {
   const result = { ...target };
   for (const key of Object.keys(source)) {
