@@ -332,13 +332,15 @@ export function lineInfill(poly, density, angleDeg, lineWidth = 0.4) {
  * scanline over all boundary loops so holes are left empty. `density`
  * 1.0 → spacing == lineWidth (solid fill).
  */
-export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monotonic = false) {
+export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monotonic = false, maskFn = null) {
   const outer = region.outer;
   if (!outer || outer.length < 3 || density <= 0) return [];
   const holes = region.holes || [];
   const angle = (angleDeg ?? 45) * PI / 180;   // 0 is a valid angle (was coerced to 45 by ||)
   const spacing = Math.max(lineWidth, lineWidth / Math.max(0.01, Math.min(1, density)));
   const cos = Math.cos(-angle), sin = Math.sin(-angle);
+  const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
+  const toWorld = (x, y) => [x * cosBack - y * sinBack, x * sinBack + y * cosBack];
   const rotLoop = (loop) => loop.map(([x, y]) => [x * cos - y * sin, x * sin + y * cos]);
   const rotOuter = rotLoop(outer);
   const rotHoles = holes.map(rotLoop);
@@ -347,6 +349,12 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
   for (const p of rotOuter) { if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
 
   // Scanline spans per row (each an x-interval inside the region at height y).
+  // When a mask is given (solid/bridge sub-area of the region), each span is
+  // clipped to the sub-intervals the mask keeps — BEFORE connection — so the
+  // zigzag connects within each masked patch instead of being chopped into
+  // 2-point pieces after the fact (what made complex models fragment into tens
+  // of thousands of travels).
+  const maskStep = Math.max(0.2, lineWidth * 0.6);
   const rows = [];
   for (let y = minY + spacing / 2; y < maxY; y += spacing) {
     const xs = [];
@@ -357,8 +365,24 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
       }
     }
     xs.sort((a, b) => a - b);
-    const spans = [];
+    let spans = [];
     for (let k = 0; k + 1 < xs.length; k += 2) if (xs[k + 1] - xs[k] >= EPS) spans.push([xs[k], xs[k + 1]]);
+    if (maskFn && spans.length) {
+      const kept = [];
+      for (const [x0, x1] of spans) {
+        const steps = Math.max(1, Math.ceil((x1 - x0) / maskStep));
+        let runStart = null;
+        for (let k = 0; k <= steps; k++) {
+          const xx = k === steps ? x1 : x0 + (x1 - x0) * (k / steps);
+          const w = toWorld(xx, y);
+          const inside = maskFn(w[0], w[1]);
+          if (inside && runStart === null) runStart = xx;
+          else if (!inside && runStart !== null) { if (xx - runStart > EPS) kept.push([runStart, xx]); runStart = null; }
+        }
+        if (runStart !== null && x1 - runStart > EPS) kept.push([runStart, x1]);
+      }
+      spans = kept;
+    }
     if (spans.length) rows.push({ y, spans });
   }
   if (!rows.length) return [];
@@ -369,8 +393,6 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
   // zigzag that extrudes the turns instead of a travel per line (OrcaSlicer's
   // connected rectilinear infill). Cuts infill travels from one-per-line to
   // roughly one-per-chain.
-  const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
-  const toWorld = (x, y) => [x * cosBack - y * sinBack, x * sinBack + y * cosBack];
 
   // Monotonic ordering (top/bottom surfaces): lay every line in the SAME
   // direction, swept bottom→top, so each line is deposited against an
@@ -448,8 +470,8 @@ export function bestBridgeAngle(region, isSupported, lineWidth = 0.4) {
   return best;
 }
 
-export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false) {
-  return regionInfill(region, 1.0, angleDeg, lineWidth, monotonic);
+export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false, maskFn = null) {
+  return regionInfill(region, 1.0, angleDeg, lineWidth, monotonic, maskFn);
 }
 
 /** True/false: is a point inside the region's solid (inside outer, outside holes)? */

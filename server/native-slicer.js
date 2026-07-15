@@ -1074,31 +1074,24 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // gap). null when the region has no anchored bridge area → hatch at the layer
     // angle (old behaviour) — so this is strictly improve-or-no-op.
     const detectBridgeAngle = (region) => bestBridgeAngle(region, (x, y) => supportedBy(x, y, below, lw * 0.75), lw);
-    const pushSolidRegion = (region, angle, keep, monotonic = false) => {
+    // `keepPt(x,y)` (optional) restricts the fill to a sub-area (the genuine
+    // solid surface). The fill is generated MASKED — the scanline spans are
+    // clipped to the kept/supported area before the zigzag connects — so each
+    // solid or bridge patch is a continuous chain, not thousands of 2-point
+    // pieces (what made complex/slotted models fragment into ~80k travels).
+    const pushSolidRegion = (region, angle, keepPt, monotonic = false) => {
       const bridgeSplit = bridgeDetect && below;
-      // Effective bridge angle: explicit bridge_angle wins; else auto-detect the
-      // best-anchored direction (unless disabled). null → hatch bridges at the
-      // layer angle (old behaviour).
       const bridgeAngle = !bridgeSplit ? null
         : (s.bridgeAngle != null ? s.bridgeAngle
           : (s.bridgeAngleAuto !== false ? detectBridgeAngle(region) : null));
-      const forcedBridge = bridgeAngle != null;
-      for (const chain of solidInfill(region, angle, lw, monotonic)) {
-        const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
-        for (const part of kept) {
-          if (!bridgeSplit) { pushSolid(part); continue; }
-          // Supported portion → solid at the layer angle.
-          for (const seg of splitPolyBySeg(part, (sg) => !segMidUnsupported(sg))) pushSolid(seg);
-          // Unsupported portion → bridge at the layer angle, unless a forced
-          // bridge angle re-hatches it below (avoids double extrusion).
-          if (!forcedBridge) for (const seg of splitPolyBySeg(part, segMidUnsupported)) pushBridge(seg);
-        }
-      }
-      if (forcedBridge) {
-        for (const chain of solidInfill(region, bridgeAngle, lw)) {
-          const kept = keep ? splitPolyBySeg(chain, keep) : [chain];
-          for (const part of kept) for (const seg of splitPolyBySeg(part, segMidUnsupported)) pushBridge(seg);
-        }
+      const supPt = (x, y) => supportedBy(x, y, below, lw * 0.75);
+      // Solid = the kept area that is supported (or all kept when no bridge split).
+      const solidMask = !bridgeSplit ? (keepPt || null) : (x, y) => (!keepPt || keepPt(x, y)) && supPt(x, y);
+      for (const chain of solidInfill(region, angle, lw, monotonic, solidMask)) pushSolid(chain);
+      // Bridge = the kept area over air, hatched at the detected/forced angle.
+      if (bridgeSplit) {
+        const bridgeMask = (x, y) => (!keepPt || keepPt(x, y)) && !supPt(x, y);
+        for (const chain of solidInfill(region, bridgeAngle != null ? bridgeAngle : angle, lw, false, bridgeMask)) pushBridge(chain);
       }
     };
 
@@ -1340,7 +1333,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           let cxp = 0, cyp = 0; for (const p of infRegion.outer) { cxp += p[0]; cyp += p[1]; }
           cxp /= infRegion.outer.length; cyp /= infRegion.outer.length;
           const monoSurf = s.monotonicTopSurface !== false && (surfaces.isTopPoint(i, cxp, cyp) || surfaces.isBottomPoint(i, cxp, cyp));
-          pushSolidRegion(infRegion, baseAngle, (sg) => midSolid(surfaces, i, sg), monoSurf);
+          pushSolidRegion(infRegion, baseAngle, (x, y) => surfaces.isSolidPoint(i, x, y), monoSurf);
           if (s.infillPattern === 'concentric') { if (doSparse) concentric(infRegion, 'sparse', false); }
           else if (doSparse && s.infillPattern !== 'lightning') {
             // Keep only the parts of each sparse chain NOT over a solid surface
