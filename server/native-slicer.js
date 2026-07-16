@@ -23,7 +23,7 @@
  */
 
 import {
-  sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, simplifyPolygon, bestBridgeAngle,
+  sliceLayer, offsetPolygon, offsetPolygonAll, lineInfill, regionInfill, solidInfill, simplifyPolygon, bestBridgeAngle,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
   _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph, topBottomFaceRegions,
 } from './native-slicer-geo.js';
@@ -533,28 +533,39 @@ export function layersToGcode(layers, settings) {
         return;
       }
     }
-    // Wipe-on-retract: draw the nozzle back over the path just printed while
-    // retracting, so the pressure bleeds onto existing extrusion (no blob/ooze
-    // at the seam) instead of a stationary retract.
-    if (s.wipe && lastPath && lastPath.length >= 2 && s.retraction > 0) {
-      const rev = [...lastPath].reverse();
-      const wipeDist = s.wipeDistance ?? 2;
-      const wipePts = [rev[0]]; let acc = 0;
-      for (let i = 1; i < rev.length && acc < wipeDist; i++) { acc += Math.hypot(rev[i][0] - rev[i - 1][0], rev[i][1] - rev[i - 1][1]); wipePts.push(rev[i]); }
-      const total = acc || 1; const startE = e; let done = 0;
-      for (let i = 1; i < wipePts.length; i++) {
-        done += Math.hypot(wipePts[i][0] - wipePts[i - 1][0], wipePts[i][1] - wipePts[i - 1][1]);
-        const eNow = startE - s.retraction * Math.min(1, done / total);
-        g += `G1 X${wipePts[i][0].toFixed(3)} Y${wipePts[i][1].toFixed(3)} E${eNow.toFixed(4)} F${wipeFeed}\n`;
+    // retract_before_travel: for a hop shorter than this, skip the retract
+    // entirely (BambuStudio does the same) — no needless retract/unretract wear
+    // or seam blob on tiny moves. Combing already handles most intra-object
+    // travel; this catches the short leftover hops.
+    const travelD = Math.hypot(first[0] - curX, first[1] - curY);
+    const shortHop = (s.retractBeforeTravel > 0) && travelD < s.retractBeforeTravel;
+    if (s.retraction > 0 && !shortHop) {
+      // Wipe-on-retract: draw the nozzle back over the path just printed while
+      // retracting, so the pressure bleeds onto existing extrusion (no blob/ooze
+      // at the seam) instead of a stationary retract.
+      if (s.wipe && lastPath && lastPath.length >= 2) {
+        const rev = [...lastPath].reverse();
+        const wipeDist = s.wipeDistance ?? 2;
+        const wipePts = [rev[0]]; let acc = 0;
+        for (let i = 1; i < rev.length && acc < wipeDist; i++) { acc += Math.hypot(rev[i][0] - rev[i - 1][0], rev[i][1] - rev[i - 1][1]); wipePts.push(rev[i]); }
+        const total = acc || 1; const startE = e; let done = 0;
+        for (let i = 1; i < wipePts.length; i++) {
+          done += Math.hypot(wipePts[i][0] - wipePts[i - 1][0], wipePts[i][1] - wipePts[i - 1][1]);
+          e = startE - s.retraction * Math.min(1, done / total);   // absolute target
+          g += `G1 X${wipePts[i][0].toFixed(3)} Y${wipePts[i][1].toFixed(3)} E${dE()} F${wipeFeed}\n`;  // dE()=relative delta (M83)
+        }
+        e = startE - s.retraction; curX = wipePts[wipePts.length - 1][0]; curY = wipePts[wipePts.length - 1][1];
+      } else {
+        e -= s.retraction; g += `G1 E${dE()} F${retractFeed.toFixed(0)}\n`;
       }
-      e = startE - s.retraction; curX = wipePts[wipePts.length - 1][0]; curY = wipePts[wipePts.length - 1][1];
+      if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${zTravelFeed}\n`;
+      g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
+      if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${zTravelFeed}\n`;
+      e += s.retraction + restartExtra; g += `G1 E${dE()} F${deretractFeed.toFixed(0)}\n`;
     } else {
-      e -= s.retraction; g += `G1 E${dE()} F${retractFeed.toFixed(0)}\n`;
+      // Short hop (or retraction disabled): travel straight there, no retract.
+      g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
     }
-    if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${zTravelFeed}\n`;
-    g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
-    if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${zTravelFeed}\n`;
-    e += s.retraction + restartExtra; g += `G1 E${dE()} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
     if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${dE()} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
     let sdist = 0;
@@ -1340,10 +1351,25 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         let cxp = 0, cyp = 0; for (const p of outerBoundary) { cxp += p[0]; cyp += p[1]; }
         if (surfaces.isTopPoint(i, cxp / outerBoundary.length, cyp / outerBoundary.length)) effLoops = 1;
       }
-      for (let p = 1; p < effLoops; p++) {
-        inner = offsetPolygon(inner, -lw);
-        if (!inner || inner.length < 3) break;
-        mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(inner) : inner, seam, seamCtx) });
+      // Inner walls, MULTI-ISLAND aware: an inward offset can split a pinching
+      // cross-section (U/L/C shape, a narrow neck) into several islands. Emit
+      // inner walls for EVERY island so none silently loses its walls (the old
+      // largest-only offset dropped the other arms' walls entirely). The infill
+      // region follows the largest innermost island.
+      let frontier = [outerBoundary];
+      for (let p = 1; p < effLoops && frontier.length; p++) {
+        const next = [];
+        for (const isl of frontier) {
+          for (const off of offsetPolygonAll(isl, -lw)) {
+            if (!off || off.length < 3) continue;
+            mainWalls.push({ feature: 'inner-wall', closed: true, pts: seamStart(fuzzInner ? fuzz(off) : off, seam, seamCtx) });
+            next.push(off);
+          }
+        }
+        frontier = next;
+        // Infill region follows the largest innermost island of the last
+        // non-empty frontier (updated only while walls keep being produced).
+        if (next.length) inner = next.reduce((a, b) => Math.abs(_signedArea(b)) > Math.abs(_signedArea(a)) ? b : a);
       }
       // Overhang perimeters: record how much each wall juts over air. The
       // fraction drives the cooling-fan boost; the per-vertex degree array drives

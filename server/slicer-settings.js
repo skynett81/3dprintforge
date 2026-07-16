@@ -357,6 +357,8 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.wipe !== undefined && s.wipe !== '') out.wipe = !!s.wipe;
   set('wipeDistance', num(s.wipe_distance));
   set('wipeSpeed', num(s.wipe_speed));
+  // retract_before_travel: skip retraction for hops shorter than this (mm).
+  set('retractBeforeTravel', num(s.retract_before_travel ?? s.retraction_minimum_travel));
   // Bridges + overhang perimeters.
   set('bridgeSpeed', num(s.bridge_speed));
   set('bridgeFlow', num(s.bridge_flow));

@@ -225,6 +225,38 @@ export function offsetPolygon(poly, distance) {
 }
 
 /**
+ * Like offsetPolygon but returns EVERY resulting loop, not just the largest.
+ * An inward offset of a pinching cross-section (a U/L/C shape, a narrow neck)
+ * splits it into several islands; offsetPolygon keeps only the biggest, so the
+ * other islands' walls and infill silently VANISH. Callers that must not lose
+ * geometry (the inner-wall loop) use this and process each island. Each loop is
+ * returned in the same winding as the input.
+ */
+export function offsetPolygonAll(poly, distance) {
+  if (!poly || poly.length < 3) return [];
+  if (distance === 0) return [poly.map((p) => [p[0], p[1]])];
+  try {
+    const path = poly.map(([x, y]) => ({ X: Math.round(x * CLIP_SCALE), Y: Math.round(y * CLIP_SCALE) }));
+    const co = new ClipperLib.ClipperOffset(MITER_LIMIT, 0.25 * CLIP_SCALE);
+    co.AddPath(path, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    const sol = new ClipperLib.Paths();
+    co.Execute(sol, distance * CLIP_SCALE);
+    const w0 = _signedArea(poly);
+    const out = [];
+    for (const p of sol) {
+      const pts = p.map((pt) => [pt.X / CLIP_SCALE, pt.Y / CLIP_SCALE]);
+      if (pts.length < 3) continue;
+      if (_signedArea(pts) * w0 < 0) pts.reverse();
+      out.push(pts);
+    }
+    return out;
+  } catch {
+    const one = _offsetPolygonBisector(poly, distance);
+    return one && one.length >= 3 ? [one] : [];
+  }
+}
+
+/**
  * Legacy vertex-bisector offset — kept as a fallback if Clipper throws.
  * Works on convex/mildly-concave polygons; can self-intersect on tight
  * concavities (which is why Clipper is now primary).
@@ -331,15 +363,18 @@ function _centroid(poly) {
 export function buildRegions(polygons) {
   const loops = polygons.filter(p => p.length >= 3);
   const areas = loops.map(p => Math.abs(_signedArea(p)));
-  // Depth = how many strictly-larger loops contain this loop's centroid.
-  // The area guard prevents a big outer whose centroid lands inside a
-  // centred hole from being mis-read as nested.
+  // A point GUARANTEED to lie inside each loop. The centroid of a non-convex
+  // outline (C/L/U shapes) lands in the concavity OUTSIDE the loop, so
+  // centroid-based containment mis-nests those shapes — attaching holes to the
+  // wrong outer or reading an outer as a hole (⇒ missing/duplicated geometry).
+  // An interior point makes every containment test correct.
+  const reps = loops.map((p) => _interiorPoint(p));
+  // Depth = how many strictly-larger loops contain this loop's interior point.
   const depth = loops.map((p, i) => {
-    const c = _centroid(p);
     let d = 0;
     for (let k = 0; k < loops.length; k++) {
       if (k === i) continue;
-      if (areas[k] > areas[i] && _pointInPoly(c, loops[k])) d++;
+      if (areas[k] > areas[i] && _pointInPoly(reps[i], loops[k])) d++;
     }
     return d;
   });
@@ -351,15 +386,39 @@ export function buildRegions(polygons) {
   }
   for (let i = 0; i < loops.length; i++) {
     if (depth[i] % 2 === 1) {
-      const c = _centroid(loops[i]);
       let best = null, bestArea = Infinity;
       for (const r of regions) {
-        if (_pointInPoly(c, r.outer) && areas[r._i] < bestArea) { best = r; bestArea = areas[r._i]; }
+        if (_pointInPoly(reps[i], r.outer) && areas[r._i] < bestArea) { best = r; bestArea = areas[r._i]; }
       }
       if (best) best.holes.push(loops[i]);
     }
   }
   return regions.map(({ outer, holes }) => ({ outer, holes }));
+}
+
+/**
+ * A point guaranteed to lie strictly inside a simple polygon (unlike the
+ * centroid, which escapes non-convex outlines). Walks edges, nudges each
+ * midpoint inward along the interior normal, and returns the first that the
+ * point-in-polygon test confirms is inside. Falls back to the centroid.
+ */
+export function _interiorPoint(poly) {
+  const n = poly.length;
+  if (n < 3) return _centroid(poly);
+  const ccw = _isCCW(poly);
+  let bbMin = Infinity;
+  for (const p of poly) { for (const q of poly) { const d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d > 1e-9 && d < bbMin) bbMin = d; } if (bbMin < 1e-9) break; }
+  const step = Math.max(1e-4, Math.min(0.05, (Number.isFinite(bbMin) ? bbMin : 0.1) * 0.25));
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n];
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const L = Math.hypot(dx, dy); if (L < 1e-9) continue; dx /= L; dy /= L;
+    // Interior normal: left of the edge for CCW, right for CW.
+    const nx = ccw ? -dy : dy, ny = ccw ? dx : -dx;
+    const cand = [mx + nx * step, my + ny * step];
+    if (_pointInPoly(cand, poly)) return cand;
+  }
+  return _centroid(poly);
 }
 
 /**
