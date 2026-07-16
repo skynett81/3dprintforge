@@ -594,8 +594,9 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
  * has no anchored bridge area (fully supported).
  */
 export function bestBridgeAngle(region, isSupported, lineWidth = 0.4) {
+  // Coverage (total anchored length) + longest anchored span at a given angle.
   const anchoredAt = (deg) => {
-    let total = 0, any = false;
+    let total = 0, maxLen = 0, any = false;
     for (const L of solidInfill(region, deg, lineWidth * 3, true)) {   // coarse, separate lines
       const a = L[0], b = L[L.length - 1];
       const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -609,17 +610,38 @@ export function bestBridgeAngle(region, isSupported, lineWidth = 0.4) {
         if (sup[k]) { k++; continue; }
         const start = k; while (k <= steps && !sup[k]) k++;
         const end = k - 1;
-        if (start > 0 && end < steps && sup[start - 1] && sup[end + 1]) { total += (end - start + 1) * seg; any = true; }
+        // A span counts only if anchored on BOTH ends (spans real air, lands on solid).
+        if (start > 0 && end < steps && sup[start - 1] && sup[end + 1]) { const spanLen = (end - start + 1) * seg; total += spanLen; if (spanLen > maxLen) maxLen = spanLen; any = true; }
       }
     }
-    return { total, any };
+    return { total, maxLen, any };
   };
-  let best = null, bestScore = 0;
-  for (let deg = 0; deg < 180; deg += 15) {
-    const { total, any } = anchoredAt(deg);
-    if (any && total > bestScore) { bestScore = total; best = deg; }
+  // Candidate angles (BambuStudio BridgeDetector::detect_angle): a 5° resolution
+  // sweep PLUS every contour edge direction (bridges often want to run along an
+  // edge), deduplicated to 1°.
+  const cands = [];
+  for (let deg = 0; deg < 180; deg += 5) cands.push(deg);
+  const O = region.outer;
+  for (let i = 0; i < O.length; i++) {
+    const a = O[i], b = O[(i + 1) % O.length];
+    let d = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / PI; d = ((d % 180) + 180) % 180;
+    cands.push(d);
   }
-  return best;
+  cands.sort((x, y) => x - y);
+  const near1 = (u, v) => { const d = Math.abs(u - v); return Math.min(d, 180 - d) < 1; };
+  const uniq = [];
+  for (const d of cands) if (!uniq.length || !near1(d, uniq[uniq.length - 1])) uniq.push(d);
+  // Score, then pick: maximize coverage; among candidates within one line width
+  // of the best coverage, prefer the SHORTER longest span (less sag).
+  const scored = [];
+  for (const deg of uniq) { const { total, maxLen, any } = anchoredAt(deg); if (any) scored.push({ deg, coverage: total, maxLen }); }
+  if (!scored.length) return null;
+  scored.sort((x, y) => y.coverage - x.coverage);
+  let iBest = 0;
+  for (let i = 1; i < scored.length && (scored[iBest].coverage - scored[i].coverage) < lineWidth; i++) {
+    if (scored[i].maxLen < scored[iBest].maxLen) iBest = i;
+  }
+  return scored[iBest].deg;
 }
 
 export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false, maskFn = null) {
