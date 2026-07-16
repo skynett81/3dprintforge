@@ -30,10 +30,11 @@ export function showWebglFallback(el: HTMLElement, extra = '') {
   d.className = 'webgl-fallback';
   d.innerHTML =
     `<div class="webgl-fallback-inner">` +
-    `<strong>3D preview unavailable</strong>` +
-    `<p>Your browser could not create a WebGL/GPU context, so the 3D view can't render.` +
-    ` Slicing still works. Try: enable hardware acceleration, update your GPU driver,` +
-    ` or use a normal (non-incognito) window in Chrome/Vivaldi/Firefox.</p>` +
+    `<strong>3D preview unavailable on this browser</strong>` +
+    `<p>Slicing and printing still work &mdash; they run on the server, not the GPU.` +
+    ` Only this 3D view needs WebGL, which your browser could not start here.</p>` +
+    `<p class="webgl-fallback-hint">To restore the preview: turn on hardware acceleration,` +
+    ` update your graphics driver, or open the app in a normal (non-incognito) window.</p>` +
     (extra ? `<p class="webgl-fallback-extra">${extra}</p>` : '') +
     `</div>`;
   el.appendChild(d);

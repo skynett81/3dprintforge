@@ -1581,4 +1581,5 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 .webgl-fallback-inner { max-width: 420px; color: #cbd5e1; }
 .webgl-fallback-inner strong { display: block; font-size: 16px; margin-bottom: 8px; color: #e2e8f0; }
 .webgl-fallback-inner p { font-size: 13px; line-height: 1.5; margin: 6px 0; }
+.webgl-fallback-hint { color: #94a3b8; font-size: 12px; }
 .webgl-fallback-extra { color: #94a3b8; font-size: 12px; }
