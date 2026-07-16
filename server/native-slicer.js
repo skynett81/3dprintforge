@@ -615,10 +615,55 @@ export function layersToGcode(layers, settings) {
     // layers fall back to the global height (byte-identical behaviour).
     const lh = layer.h ?? s.layerHeight;
     const z = layer.z ?? (layerIdx + 1) * s.layerHeight;
-    const paths = layer.paths || [
+    let paths = layer.paths || [
       ...(layer.perimeters || []).map((p) => ({ feature: 'wall', closed: true, pts: p })),
       ...(layer.infill || []).map((sgm) => ({ feature: 'sparse', closed: false, pts: sgm })),
     ];
+    // Travel optimisation: emit paths in a proximity order (BambuStudio orders
+    // paths to minimise travel; generation order made the head jump across the
+    // model ~2x too much). Adhesion stays first, support last; each region's
+    // wall loops stay grouped and in sequence (seam + inner-outer-inner intact);
+    // the wall-groups and infill runs are then greedily reordered by nearest
+    // entry point from the current nozzle position. Open infill runs may enter
+    // from either end (their print direction is free) EXCEPT monotonic surface
+    // runs, which must keep a common direction. Deterministic → two slices that
+    // differ only in a disabled feature still match byte-for-byte.
+    if (s.optimizeTravel !== false && paths.length > 2) {
+      const isWall = (f) => f === 'wall' || f === 'outer-wall' || f === 'inner-wall' || f === 'overhang-wall';
+      const front = [], back = [], units = [];
+      for (const p of paths) {
+        if (p.feature === 'skirt' || p.feature === 'brim') { front.push(p); continue; }
+        if (p.feature === 'support' || p.feature === 'support-interface') { back.push(p); continue; }
+        const wu = units.length && units[units.length - 1]._wall;
+        if (isWall(p.feature) && wu) units[units.length - 1].paths.push(p);
+        else units.push({ _wall: isWall(p.feature), paths: [p] });
+      }
+      const entry = (u) => u.paths[0].pts[0];
+      const exit = (u) => { const l = u.paths[u.paths.length - 1]; return l.closed ? l.pts[0] : l.pts[l.pts.length - 1]; };
+      const ordered = [];
+      let cx = curX, cy = curY;
+      const rem = units;
+      while (rem.length) {
+        let bi = 0, bd = Infinity, brev = false;
+        for (let j = 0; j < rem.length; j++) {
+          const u = rem[j], e = entry(u);
+          const d = (e[0] - cx) * (e[0] - cx) + (e[1] - cy) * (e[1] - cy);
+          if (d < bd) { bd = d; bi = j; brev = false; }
+          // A lone open infill run (not monotonic) may enter from its far end.
+          const p0 = u.paths[0];
+          if (!u._wall && u.paths.length === 1 && !p0.closed && !p0.monotonic) {
+            const x = p0.pts[p0.pts.length - 1];
+            const dr = (x[0] - cx) * (x[0] - cx) + (x[1] - cy) * (x[1] - cy);
+            if (dr < bd) { bd = dr; bi = j; brev = true; }
+          }
+        }
+        const u = rem.splice(bi, 1)[0];
+        if (brev) u.paths[0] = { ...u.paths[0], pts: u.paths[0].pts.slice().reverse() };
+        for (const p of u.paths) ordered.push(p);
+        const ex = exit(u); cx = ex[0]; cy = ex[1];
+      }
+      paths = [...front, ...ordered, ...back];
+    }
     const spiral = paths.some((p) => p.spiral);
     combBoundary = spiral ? null : (layer.regions || null);
     combCache = (combing && combBoundary) ? {} : null;   // lazy per-layer detour cache
