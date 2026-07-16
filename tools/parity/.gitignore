@@ -1,0 +1,4 @@
+# Generated slice output and test meshes — reproducible via gen-models.mjs and
+# the BambuStudio CLI; never commit (large, derived).
+out/
+models/

@@ -1132,12 +1132,23 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // fully-supported region skip the expensive 12-angle bridge detection and
     // the support masking entirely — the common case, and what made complex
     // models take ~30 s to slice.
+    // A region only counts as bridging when a MEANINGFUL FRACTION of it hangs
+    // over air — not merely one unsupported edge sample. A mostly-supported
+    // solid surface with a thin overhanging rim is filled as plain solid (its
+    // rim just prints slower via overhang grading), matching BambuStudio which
+    // reserves bridge flow/speed for genuinely unsupported spans. Without this
+    // threshold a tapered/stepped part (Gridfinity pockets) bridge-splits nearly
+    // every layer, inflating solid+bridge ~1.7x.
+    const bridgeMinFrac = s.bridgeMinFraction ?? 0.2;
     const regionHasUnsupported = (region, keepPt) => {
+      let total = 0, unsup = 0;
       for (const L of solidInfill(region, 0, lw * 4, true)) {
         const a = L[0], b = L[L.length - 1], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-        if ((!keepPt || keepPt(mx, my)) && !supPt(mx, my)) return true;
+        if (keepPt && !keepPt(mx, my)) continue;
+        total++;
+        if (!supPt(mx, my)) unsup++;
       }
-      return false;
+      return total > 0 && unsup / total >= bridgeMinFrac;
     };
     // `keepPt(x,y)` (optional) restricts the fill to a sub-area (the genuine
     // solid surface). The fill is generated MASKED — the scanline spans are
@@ -1243,7 +1254,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // tendency of holes to print undersized).
         let hw = hole;
         if (s.xyHoleCompensation) { const c = offsetPolygon(hole, s.xyHoleCompensation); if (c && c.length >= 3) hw = c; }
-        walls.push({ feature: 'inner-wall', closed: true, pts: seamStart(hw, seam) });
+        // The loop bounding a hole/cavity faces air, so it is an EXTERNAL
+        // perimeter (BambuStudio "Outer wall") — gets outer-wall speed/finish.
+        // Loops grown outward from it into the solid are inner walls.
+        walls.push({ feature: 'outer-wall', closed: true, pts: seamStart(hw, seam) });
         for (let p = 1; p < wallLoops; p++) {
           hw = offsetPolygon(hw, lw);
           if (!hw || hw.length < 3) break;
