@@ -107,11 +107,18 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // top surfaces above it an anchored layer to lay on (bridge_over_infill).
   // Excludes solid-over-air (that is a real bottom-surface bridge handled by the
   // fill's own bridge split) by intersecting with the layer-below slice.
+  // Only a genuine top-shell BOTTOM qualifies: the solid must continue on the
+  // layer ABOVE too. That keeps flat tops (a multi-layer shell whose lowest
+  // layer bridges the infill) but rejects a lone sloped stair-step, whose thin
+  // exposed strip is not solid on the next layer up — BambuStudio does not
+  // bridge those either.
   const internalBridge = new Array(n);
   for (let i = 0; i < n; i++) {
     if (i === 0 || !solid[i].length || !slices[i - 1].length) { internalBridge[i] = EMPTY; continue; }
     const notSolidBelow = solid[i - 1].length ? clipDifference(solid[i], solid[i - 1]) : solid[i].map(clone);
-    internalBridge[i] = notSolidBelow.length ? clipIntersection(notSolidBelow, slices[i - 1]) : EMPTY;
+    const overSparse = notSolidBelow.length ? clipIntersection(notSolidBelow, slices[i - 1]) : EMPTY;
+    internalBridge[i] = (overSparse.length && i + 1 < n && solid[i + 1] && solid[i + 1].length)
+      ? prune(clipIntersection(overSparse, solid[i + 1])) : EMPTY;
   }
 
   return {
