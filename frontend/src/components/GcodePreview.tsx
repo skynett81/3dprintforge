@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { makeRenderer, showWebglFallback } from '../lib/webgl';
 import { useT } from '../i18n';
 import { parseGcode, type ParsedGcode, type Feature } from '../lib/gcode-parse';
 import { gradientBackground, buildPlate } from './plate-scene';
@@ -190,7 +191,8 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
     const camera = new THREE.PerspectiveCamera(45, w / h, 1, 5000);
     camera.up.set(0, 0, 1);
     camera.position.set(bed * 0.8, -bed * 1.0, bed * 0.8);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = makeRenderer();
+    if (!renderer) { showWebglFallback(el); return; }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);

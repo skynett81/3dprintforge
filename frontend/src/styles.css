@@ -1575,3 +1575,10 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
 
 .oslice-spoolmatch { display: flex; flex-direction: column; gap: 1px; }
 .oslice-spoolmatch-name { font-weight: 600; color: var(--o-text); font-size: 0.74rem; }
+
+/* WebGL/GPU unavailable — friendly fallback instead of a crashed 3D view. */
+.webgl-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.webgl-fallback-inner { max-width: 420px; color: #cbd5e1; }
+.webgl-fallback-inner strong { display: block; font-size: 16px; margin-bottom: 8px; color: #e2e8f0; }
+.webgl-fallback-inner p { font-size: 13px; line-height: 1.5; margin: 6px 0; }
+.webgl-fallback-extra { color: #94a3b8; font-size: 12px; }

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { makeRenderer, showWebglFallback } from '../lib/webgl';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -440,7 +441,8 @@ export const PlateViewer = forwardRef<PlateHandle, { file: File | null; bed?: nu
     camera.position.set(bedMax * 0.9, -bedMax * 1.1, bedMax * 0.9);
     // preserveDrawingBuffer lets captureThumbnail() read the canvas back for the
     // plate-tab previews (BambuStudio-style). Small cost, worth the parity.
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = makeRenderer({ preserveDrawingBuffer: true });
+    if (!renderer) { showWebglFallback(el); return; }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
     el.appendChild(renderer.domElement);
