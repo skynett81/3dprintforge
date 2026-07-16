@@ -14,6 +14,7 @@
 
 import { _pointInPoly } from './native-slicer-geo.js';
 import { makeBeadingStrategy } from './native-slicer-beading.js';
+import { medialAxis } from './native-slicer-voronoi.js';
 
 /**
  * @param {{outer:number[][], holes?:number[][][]}} region
@@ -173,11 +174,17 @@ export function arachneBeads(region, lineWidth, opts = {}) {
     minOutputWidth: minOutput,
   });
   const maxBeads = opts.maxBeads ?? 6;
-  // Capture medial ridges out to a radius that holds up to maxBeads lines, and
-  // DOWN to half the min feature size so thin walls reach the widening strategy.
-  const maxRF = maxBeads * 0.5 + 0.35;
-  const minRF = Math.max(0.05, (minInput / 2) / lineWidth);
-  const centerlines = medialBeads(region, lineWidth, lineWidth / 2, maxRF, minRF);
+  // Centrelines: the exact Voronoi/Delaunay medial axis (converges to
+  // BambuStudio's segment-Voronoi skeleton — ~1% width error vs the raster
+  // grid's ~15%) is OPT-IN (opts.voronoi) until the junction-connection stage
+  // that stitches its branches into continuous wall loops is ported; until then
+  // the grid distance-transform ridge is the robust default.
+  let centerlines = opts.voronoi === true ? medialAxis(region, lineWidth) : null;
+  if (!centerlines || !centerlines.length) {
+    const maxRF = maxBeads * 0.5 + 0.35;
+    const minRF = Math.max(0.05, (minInput / 2) / lineWidth);
+    centerlines = medialBeads(region, lineWidth, lineWidth / 2, maxRF, minRF);
+  }
   const out = [];
   for (const cl of centerlines) {
     const pts = cl.pts, thick = cl.widths;      // thick[k] = 2*distance = local width
@@ -201,6 +208,10 @@ export function arachneBeads(region, lineWidth, opts = {}) {
       const { widths, locations } = strat.compute(t, n);
       const nx = normals[k][0], ny = normals[k][1], px = pts[k][0], py = pts[k][1];
       for (let i = 0; i < n; i++) {
+        // A thin point yields fewer beads than the component count (the widening
+        // strategy collapses to one bead below optimal width) — skip the missing
+        // outer beads there instead of reading undefined → NaN.
+        if (locations[i] == null || widths[i] == null) continue;
         const off = locations[i] - t / 2;       // signed offset from the centreline
         beadPts[i].push([px + nx * off, py + ny * off]);
         beadWid[i].push(widths[i]);
