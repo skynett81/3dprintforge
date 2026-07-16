@@ -11,6 +11,7 @@
 import ClipperLib from 'clipper-lib';
 
 export const EPS = 0.001;          // mm tolerance for polygon-loop closure
+const CHAIN_MAX_GAP = 2.0;         // bridge open-contour gaps up to this (mm), else drop (BambuStudio close_gaps); never chord across the part
 export const PI = Math.PI;
 const MITER_LIMIT = 2;             // cap offset miters so smooth curves don't spike
 const CLIP_SCALE = 1e5;            // Clipper works in integers — scale mm up (0.01µm resolution)
@@ -163,19 +164,36 @@ export function _chainSegments(segments) {
     if (used[i]) continue;
     const poly = [segments[i][0].slice(), segments[i][1].slice()];
     used[i] = 1;
+    // Grow at BOTH ends. Slice segments have no consistent winding, so a
+    // tail-only walk can dead-end at a vertex whose only remaining neighbour
+    // chains onto the HEAD — leaving a closed contour looking open. Extending
+    // head and tail closes such loops (needed before we drop truly-open chains).
     let extending = true;
     while (extending) {
       extending = false;
-      const tail = poly[poly.length - 1];
+      const tail = poly[poly.length - 1], head = poly[0];
       for (let j = 0; j < segments.length; j++) {
         if (used[j]) continue;
         const [p, q] = segments[j];
         if (_near(tail, p)) { poly.push(q.slice()); used[j] = 1; extending = true; break; }
         if (_near(tail, q)) { poly.push(p.slice()); used[j] = 1; extending = true; break; }
+        if (_near(head, q)) { poly.unshift(p.slice()); used[j] = 1; extending = true; break; }
+        if (_near(head, p)) { poly.unshift(q.slice()); used[j] = 1; extending = true; break; }
       }
     }
-    if (poly.length >= 3 && _near(poly[0], poly[poly.length - 1])) poly.pop();
-    if (poly.length >= 3) polygons.push(poly);
+    if (poly.length < 3) continue;
+    if (_near(poly[0], poly[poly.length - 1])) {
+      poly.pop();                               // closed loop — drop the duplicate endpoint
+      if (poly.length >= 3) polygons.push(poly);
+    } else {
+      // Open chain (a non-manifold slice left a gap). BambuStudio's
+      // chain_open_polylines_close_gaps bridges gaps up to ~2 mm and DROPS
+      // whatever still won't close — it never emits a chord across the part.
+      // So bridge a small gap (the polygon implicitly closes it) and drop a
+      // large one rather than drawing a phantom line across the model.
+      const gap = Math.hypot(poly[0][0] - poly[poly.length - 1][0], poly[0][1] - poly[poly.length - 1][1]);
+      if (gap < CHAIN_MAX_GAP) polygons.push(poly);
+    }
   }
   return polygons;
 }
