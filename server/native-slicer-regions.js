@@ -29,9 +29,12 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // How far solid surfaces grow into neighbouring infill so their fills overlap
   // and the solid/sparse seam is covered (libslic3r EXTERNAL_INFILL_MARGIN).
   const margin = Math.max(0, opts.lineWidth ?? 0.42);
-  // Minimum solid strip half-width — narrower strips get widened so a rectilinear
-  // line fits and the surface stays opaque (libslic3r 3·solid_infill_width).
-  const widen = Math.max(0, (opts.lineWidth ?? 0.42) * 1.5);
+  // Minimum solid strip half-width — strips narrower than this are grown so a
+  // rectilinear line fits and the surface stays opaque. One line width: strips
+  // below ~one line can't print opaque and get widened, but a genuine sloped
+  // top-shell band (already 2-3 lines wide on a 45-degree face) is left alone.
+  // 1.5x over-grew those bands ~37% vs BambuStudio on angled surfaces.
+  const widen = Math.max(0, opts.lineWidth ?? 0.42);
 
   const slices = layerRegions.map((r) => (r && r.length ? r : EMPTY));
   // Boolean ops on near-identical faceted outlines (e.g. a cylinder wall) leave
