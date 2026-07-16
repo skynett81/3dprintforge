@@ -1,22 +1,20 @@
 /**
- * Native Slicer — multi-material / multi-colour slicing.
+ * Native Slicer — multi-material / multi-colour slicing (BambuStudio-style MMU).
  *
- * Slices several meshes (one per extruder/colour) into a single interleaved
- * G-code. Each material is run through the SAME full-quality single-material
- * pipeline (sliceMeshToLayers) — walls, top/bottom surfaces, connected infill,
- * Arachne thin-wall beads, bridges, per-segment overhang, travel ordering — so a
- * multi-colour print is identical in quality to a single-colour one. The layers
- * are then merged: per layer, every material's paths are emitted in tool order,
- * with the shared emitter (layersToGcode) inserting one tool change per colour.
+ * A painted multi-colour model is ONE solid whose surface carries colour, not a
+ * set of separate solid objects. So this combines every colour mesh into a
+ * single solid, slices it ONCE through the full-quality single-material pipeline
+ * (walls, top/bottom surfaces, connected infill, Arachne thin-wall beads,
+ * bridges, per-segment overhang, travel ordering), and then assigns each path a
+ * tool by which colour region its position falls in. The result FOLLOWS the real
+ * model shape and prints at single-colour quality — regardless of the model.
  *
- * Earlier this file was a crude self-contained slicer (single perimeter set +
- * grid infill, retract-every-move, no combing) — which is why multi-colour
- * models looked far worse than single-colour ones. It now reuses the real
- * engine so "the slicer works the same regardless of the model".
+ * (Earlier this sliced each colour as its own separate solid, which broke any
+ * surface-painted colour into free-floating shells that didn't follow the model.)
  */
 
 import { sliceMeshToLayers, layersToGcode } from './native-slicer.js';
-import { solidInfill } from './native-slicer-geo.js';
+import { sliceLayer, buildRegions, solidInfill, _pointInPoly } from './native-slicer-geo.js';
 
 const FILAMENT_DIAM = 1.75;
 
@@ -33,6 +31,7 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
     ...settings,
   };
   const lh = s.layerHeight;
+  const lw = s.lineWidth;
 
   const { autoRepair } = await import('./mesh-repair.js');
   const prepared = rawMeshes.map((m) => {
@@ -40,8 +39,7 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
     return { positions: rep.positions, indices: rep.indices, extruder: m.extruder || 1 };
   });
 
-  // Shared recenter across all material meshes so they stay aligned on the plate
-  // and share one layer grid (like sliceObjectsGcode).
+  // Shared bbox → one recenter transform + one layer grid for every colour.
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
   for (const m of prepared) {
     const p = m.positions;
@@ -55,21 +53,31 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
   const offset = [(minX + maxX) / 2, (minY + maxY) / 2, minZ];
   const numLayers = Math.max(1, Math.floor((maxZ - minZ) / lh));
   const extruders = [...new Set(prepared.map((m) => m.extruder))].sort((a, b) => a - b);
+  const primary = extruders[0];
 
-  // Slice each material through the FULL quality pipeline (shared offset + layer
-  // count so every colour lines up).
-  const perMat = [];
+  // Recenter a mesh into the shared slice frame (matches sliceMeshToLayers).
+  const recenter = (m) => {
+    const p = m.positions, out = new Float32Array(p.length);
+    for (let i = 0; i < p.length; i += 3) { out[i] = p[i] - offset[0]; out[i + 1] = p[i + 1] - offset[1]; out[i + 2] = p[i + 2] - offset[2]; }
+    return { positions: out, indices: m.indices };
+  };
+
+  // ONE combined solid → the slice follows the real shape.
+  let totalPos = 0, totalIdx = 0;
+  for (const m of prepared) { totalPos += m.positions.length; totalIdx += m.indices.length; }
+  const cPos = new Float32Array(totalPos), cIdx = new Uint32Array(totalIdx);
+  let po = 0, io = 0, vo = 0;
   for (const m of prepared) {
-    const { layers } = await sliceMeshToLayers(m, { ...s, layerHeight: lh }, { offset, numLayers });
-    perMat.push({ tool: m.extruder, layers });
+    cPos.set(m.positions, po);
+    for (let i = 0; i < m.indices.length; i++) cIdx[io + i] = m.indices[i] + vo;
+    po += m.positions.length; io += m.indices.length; vo += m.positions.length / 3;
   }
-  perMat.sort((a, b) => a.tool - b.tool);
+  const { layers } = await sliceMeshToLayers({ positions: cPos, indices: cIdx }, { ...s, layerHeight: lh }, { offset, numLayers });
 
-  // Optional wipe/prime tower: per-extruder bands beside the model (recentered
-  // frame) so the colour-change purge goes into the tower instead of the model.
-  // Each material prints its band every layer; the bands carry the tool so they
-  // group with that colour's model paths (no extra tool change).
-  const lw = s.lineWidth;
+  // Non-primary colour meshes (recentered) for per-path tool assignment.
+  const colorMeshes = prepared.filter((m) => m.extruder !== primary).map((m) => ({ tool: m.extruder, mesh: recenter(m) }));
+
+  // Optional wipe/prime tower bands (recentered frame), one per extruder.
   const towerBands = (s.wipeTower && extruders.length > 1) ? (() => {
     const rMaxX = (maxX - minX) / 2, rMinY = -(maxY - minY) / 2;
     const x0base = s.wipeTowerX != null ? s.wipeTowerX : rMaxX + 8;
@@ -81,26 +89,41 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
     });
   })() : null;
 
-  // Merge per layer: every material's paths tagged with its tool (ascending), so
-  // the shared emitter inserts one tool change + prime per colour per layer.
   const combined = [];
-  for (let i = 0; i < numLayers; i++) {
-    const paths = [];
-    for (const pm of perMat) {
-      const L = pm.layers[i];
-      if (L && L.paths) for (const p of L.paths) paths.push({ ...p, tool: pm.tool });
-      if (towerBands) {
-        const b = towerBands.find((tb) => tb.ext === pm.tool);
-        if (b) {
-          paths.push({ feature: 'wipe_tower', closed: true, pts: b.rect, tool: pm.tool });
-          const angle = s.infillAngle + (i % 2) * 90;
-          for (const sg of solidInfill({ outer: b.rect, holes: [] }, angle, lw)) paths.push({ feature: 'wipe_tower', closed: false, pts: sg, tool: pm.tool });
+  for (let i = 0; i < layers.length; i++) {
+    const L = layers[i];
+    const zc = (i + 0.5) * lh;
+    // Colour regions crossing this layer (only where a non-primary colour has
+    // material) — a path whose midpoint lands inside one is that colour.
+    const colRegions = colorMeshes
+      .map((cm) => ({ tool: cm.tool, regions: buildRegions(sliceLayer(cm.mesh, zc)) }))
+      .filter((c) => c.regions.length);
+    const toolOf = (path) => {
+      if (!colRegions.length || !path.pts || path.pts.length < 1) return primary;
+      const pts = path.pts, a = pts[0], b = pts[pts.length - 1];
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      for (const c of colRegions) for (const r of c.regions) {
+        if (_pointInPoly([mx, my], r.outer)) {
+          let inHole = false; for (const h of (r.holes || [])) if (_pointInPoly([mx, my], h)) { inHole = true; break; }
+          if (!inHole) return c.tool;
         }
+      }
+      return primary;
+    };
+    const paths = (L && L.paths) ? L.paths.map((p) => ({ ...p, tool: toolOf(p) })) : [];
+    if (towerBands) {
+      const present = new Set(paths.map((p) => p.tool));
+      for (const ext of extruders) {
+        if (!present.has(ext)) continue;
+        const b = towerBands.find((tb) => tb.ext === ext);
+        paths.push({ feature: 'wipe_tower', closed: true, pts: b.rect, tool: ext });
+        const angle = s.infillAngle + (i % 2) * 90;
+        for (const sg of solidInfill({ outer: b.rect, holes: [] }, angle, lw)) paths.push({ feature: 'wipe_tower', closed: false, pts: sg, tool: ext });
       }
     }
     combined.push({ paths });
   }
 
   const gcode = layersToGcode(combined, { ...s, layerHeight: lh });
-  return { gcode, layers: numLayers, materials: extruders.length };
+  return { gcode, layers: layers.length, materials: extruders.length };
 }
