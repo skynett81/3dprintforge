@@ -107,18 +107,28 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // top surfaces above it an anchored layer to lay on (bridge_over_infill).
   // Excludes solid-over-air (that is a real bottom-surface bridge handled by the
   // fill's own bridge split) by intersecting with the layer-below slice.
-  // Only a genuine top-shell BOTTOM qualifies: the solid must continue on the
-  // layer ABOVE too. That keeps flat tops (a multi-layer shell whose lowest
-  // layer bridges the infill) but rejects a lone sloped stair-step, whose thin
-  // exposed strip is not solid on the next layer up — BambuStudio does not
-  // bridge those either.
+  // Only a genuine FLAT top-shell BOTTOM qualifies: the solid-over-sparse area
+  // must sit DIRECTLY below the exposed top surface (the flat top skin a few
+  // layers up projects straight down onto it). A sloped skin's exposed top is
+  // shifted up-and-in each layer, so it does not sit above this floor and is
+  // correctly rejected. BambuStudio likewise bridges only flat solid-over-
+  // infill, never a diagonal skin. Match against the exposed top within the
+  // top-shell window above (union), so the exact shell depth need not line up.
+  const topExposedAbove = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let acc = EMPTY;
+    for (let k = 1; k < Math.max(1, topLayers); k++) {
+      const j = i + k; if (j >= n) break;
+      if (topExposed[j] && topExposed[j].length) acc = acc.length ? clipUnion([...acc, ...topExposed[j]]) : topExposed[j];
+    }
+    topExposedAbove[i] = acc;
+  }
   const internalBridge = new Array(n);
   for (let i = 0; i < n; i++) {
-    if (i === 0 || !solid[i].length || !slices[i - 1].length) { internalBridge[i] = EMPTY; continue; }
+    if (i === 0 || !solid[i].length || !slices[i - 1].length || !topExposedAbove[i].length) { internalBridge[i] = EMPTY; continue; }
     const notSolidBelow = solid[i - 1].length ? clipDifference(solid[i], solid[i - 1]) : solid[i].map(clone);
     const overSparse = notSolidBelow.length ? clipIntersection(notSolidBelow, slices[i - 1]) : EMPTY;
-    internalBridge[i] = (overSparse.length && i + 1 < n && solid[i + 1] && solid[i + 1].length)
-      ? prune(clipIntersection(overSparse, solid[i + 1])) : EMPTY;
+    internalBridge[i] = overSparse.length ? prune(clipIntersection(overSparse, topExposedAbove[i])) : EMPTY;
   }
 
   return {
