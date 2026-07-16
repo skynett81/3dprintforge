@@ -236,6 +236,8 @@ function _defaultStart(s) {
     `M109 S${noz0}`,
     `G92 E0`,
     `G90`,
+    `G17`,   // select the XY arc plane so G2/G3 arc fitting is unambiguous on
+             // every firmware (BambuStudio emits this too).
     `M83`,   // relative extrusion (Klipper/BambuStudio standard): each E is a
              // delta, so retracts are unambiguous and the E counter never grows
              // into float-precision loss over a long print.
