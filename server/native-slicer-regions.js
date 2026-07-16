@@ -14,7 +14,7 @@
  * instead of a blocky grid mask.
  */
 
-import { clipDifference, clipIntersection, clipUnion, regionsArea } from './native-slicer-bool.js';
+import { clipDifference, clipIntersection, clipUnion, clipExpand, regionsArea } from './native-slicer-bool.js';
 
 const EMPTY = [];
 
@@ -26,6 +26,9 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   const n = layerRegions.length;
   const topLayers = Math.max(0, opts.topLayers ?? 4);
   const bottomLayers = Math.max(0, opts.bottomLayers ?? 4);
+  // How far solid surfaces grow into neighbouring infill so their fills overlap
+  // and the solid/sparse seam is covered (libslic3r EXTERNAL_INFILL_MARGIN).
+  const margin = Math.max(0, opts.lineWidth ?? 0.42);
 
   const slices = layerRegions.map((r) => (r && r.length ? r : EMPTY));
   // Directly-exposed skin per layer: material here not covered by the neighbour.
@@ -59,13 +62,26 @@ export function buildSolidRegions(layerRegions, opts = {}) {
     sparse[i] = solid[i].length ? clipDifference(slices[i], solid[i]) : slices[i].map(clone);
   }
 
+  // Solid grown into the neighbouring infill (clipped to the slice) so the solid
+  // pattern overlaps the sparse and covers their seam. Sparse still fills up to
+  // the ORIGINAL solid boundary → a thin overlap band, no gap. Only where there
+  // IS adjacent sparse (a real seam), so pure top/bottom shells are unchanged.
+  const solidGrown = new Array(n);
+  for (let i = 0; i < n; i++) {
+    if (!solid[i].length || !margin || !sparse[i].length) { solidGrown[i] = solid[i]; continue; }
+    solidGrown[i] = clipIntersection(clipExpand(solid[i], margin), slices[i]);
+    if (!solidGrown[i].length) solidGrown[i] = solid[i];
+  }
+
   return {
     n,
     slices,
     topExposed, bottomExposed,
-    topSolid, bottomSolid, solid, sparse,
+    topSolid, bottomSolid, solid, sparse, solidGrown,
     // Convenience: solid/sparse clipped to a given fill region (inside the walls).
-    solidIn: (i, region) => (i < 0 || i >= n || !solid[i].length ? EMPTY : clipIntersection([region], solid[i])),
+    // solidIn uses the GROWN solid so it overlaps the sparse seam; sparseIn uses
+    // the ORIGINAL solid so sparse still fills its full area (thin overlap band).
+    solidIn: (i, region) => (i < 0 || i >= n || !solidGrown[i].length ? EMPTY : clipIntersection([region], solidGrown[i])),
     sparseIn: (i, region) => (i < 0 || i >= n ? [clone(region)] : (solid[i].length ? clipDifference([region], solid[i]) : [clone(region)])),
     topExposedIn: (i, region) => (i < 0 || i >= n || !topExposed[i].length ? EMPTY : clipIntersection([region], topExposed[i])),
     bottomExposedIn: (i, region) => (i < 0 || i >= n || !bottomExposed[i].length ? EMPTY : clipIntersection([region], bottomExposed[i])),

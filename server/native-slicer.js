@@ -959,7 +959,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   // `surfaces` above stays for cheap point queries (ironing, surface speeds,
   // adaptive-cubic depth, only_one_wall_top). Opt-out via polygonSurfaces:false.
   const solidRegions = (surfaces && s.polygonSurfaces !== false)
-    ? buildSolidRegions(layerRegions, { topLayers: s.topLayers, bottomLayers: s.bottomLayers })
+    ? buildSolidRegions(layerRegions, { topLayers: s.topLayers, bottomLayers: s.bottomLayers, lineWidth: s.lineWidth })
     : null;
   const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
 

@@ -78,6 +78,24 @@ export function clipIntersection(a, b) { return op(a, b, ClipperLib.ClipType.ctI
 /** Union of all regions in the list (merges overlaps, resolves holes). */
 export function clipUnion(regions) { return bUnionSelf((Array.isArray(regions) ? regions : [regions]).filter(Boolean)); }
 
+/**
+ * Grow (or shrink) a list of regions by `delta` mm (miter joins), returning
+ * merged {outer,holes} regions. Used to overlap solid surfaces into neighbouring
+ * infill (libslic3r EXTERNAL_INFILL_MARGIN) so their fills don't leave a seam gap.
+ */
+export function clipExpand(regions, delta) {
+  const rs = (Array.isArray(regions) ? regions : [regions]).filter(Boolean);
+  if (!rs.length || !delta) return rs.map((r) => ({ outer: r.outer.slice(), holes: (r.holes || []).map((h) => h.slice()) }));
+  const co = new ClipperLib.ClipperOffset(2, 0.25 * S);
+  for (const r of rs) {
+    co.AddPath(r.outer.map(([x, y]) => ({ X: Math.round(x * S), Y: Math.round(y * S) })), ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    for (const h of r.holes || []) co.AddPath(h.map(([x, y]) => ({ X: Math.round(x * S), Y: Math.round(y * S) })), ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+  }
+  const sol = new ClipperLib.PolyTree();
+  co.Execute(sol, delta * S);
+  return fromPolyTree(sol);
+}
+
 /** Total signed-area magnitude of a region list (mm²) — for emptiness/coverage tests. */
 export function regionsArea(regions) {
   let a = 0;
