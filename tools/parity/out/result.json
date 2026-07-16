@@ -8,17 +8,17 @@
     "sliced_plates": [
         {
             "feature_type_times": {
-                "Bottom surface": 87.3095703125,
-                "Bridge": 116.78473663330078,
-                "Custom": 4.862107276916504,
-                "Inner wall": 627.394287109375,
-                "Internal solid infill": 346.9864807128906,
-                "Outer wall": 654.885986328125,
-                "Skirt": 4.92186975479126,
-                "Sparse infill": 2581.496337890625,
-                "Top surface": 89.81526947021484,
-                "Travel": 248.42904663085938,
-                "Undefined": 245.5576171875
+                "Bottom surface": 156.52389526367188,
+                "Bridge": 209.5946502685547,
+                "Custom": 4.660737037658691,
+                "Inner wall": 163.57691955566406,
+                "Internal solid infill": 622.9041748046875,
+                "Outer wall": 174.29327392578125,
+                "Skirt": 6.350164413452148,
+                "Sparse infill": 734.9293212890625,
+                "Top surface": 159.7625732421875,
+                "Travel": 57.991207122802734,
+                "Undefined": 55.26220703125
             },
             "filament_change_times": 0,
             "filaments": [
@@ -29,31 +29,31 @@
                     "total_used_g": 0.0
                 }
             ],
-            "generate_support_material_time": 2,
+            "generate_support_material_time": 1,
             "id": 1,
-            "infill_time": 2,
+            "infill_time": 1,
             "layer_filament_change": 0,
-            "main_predication": 4758.109375,
-            "make_perimeters_time": 3,
+            "main_predication": 2285.938720703125,
+            "make_perimeters_time": 2,
             "obj_cached_cnt": 0,
             "objects": [
                 {
                     "bbox": {
-                        "depth": 30.000001907348633,
-                        "height": 30.0,
-                        "width": 30.0,
-                        "x": 85.0,
-                        "y": 85.00000762939453,
+                        "depth": 40.000003814697266,
+                        "height": 6.0,
+                        "width": 40.0,
+                        "x": 80.0,
+                        "y": 80.00000762939453,
                         "z": 0.0
                     },
                     "id": 5,
-                    "name": "cube.stl",
+                    "name": "holes.stl",
                     "triangle_count": 12
                 }
             ],
-            "sliced_time": 72,
-            "sliced_time_with_cache": 63,
-            "total_predication": 4760.10009765625,
+            "sliced_time": 36,
+            "sliced_time_with_cache": 30,
+            "total_predication": 2287.870361328125,
             "triangle_count": 12,
             "warning_message": ""
         }

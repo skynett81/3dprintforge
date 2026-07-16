@@ -34,12 +34,19 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   const widen = Math.max(0, (opts.lineWidth ?? 0.42) * 1.5);
 
   const slices = layerRegions.map((r) => (r && r.length ? r : EMPTY));
+  // Boolean ops on near-identical faceted outlines (e.g. a cylinder wall) leave
+  // hairline sliver polygons: non-zero region COUNT but ~zero area. If they are
+  // treated as real exposed skin the widen step below inflates them into a solid
+  // ring on every layer. Drop any region narrower than a fraction of a line so
+  // only genuine exposed surfaces survive (libslic3r discards sub-EPSILON areas).
+  const minArea = Math.max(0.04, (opts.lineWidth ?? 0.42) ** 2 * 0.5);
+  const prune = (regs) => (regs && regs.length ? regs.filter((r) => Math.abs(polyArea(r.outer) - (r.holes || []).reduce((a, h) => a + Math.abs(polyArea(h)), 0)) >= minArea) : EMPTY);
   // Directly-exposed skin per layer: material here not covered by the neighbour.
   const topExposed = new Array(n);
   const bottomExposed = new Array(n);
   for (let i = 0; i < n; i++) {
-    topExposed[i] = i + 1 < n ? clipDifference(slices[i], slices[i + 1]) : slices[i].map(clone);
-    bottomExposed[i] = i - 1 >= 0 ? clipDifference(slices[i], slices[i - 1]) : slices[i].map(clone);
+    topExposed[i] = i + 1 < n ? prune(clipDifference(slices[i], slices[i + 1])) : slices[i].map(clone);
+    bottomExposed[i] = i - 1 >= 0 ? prune(clipDifference(slices[i], slices[i - 1])) : slices[i].map(clone);
   }
 
   const topSolid = new Array(n), bottomSolid = new Array(n), solid = new Array(n), sparse = new Array(n);
@@ -60,6 +67,9 @@ export function buildSolidRegions(layerRegions, opts = {}) {
       const contrib = clipIntersection(slices[i], bottomExposed[j]);
       bs = bs.length ? clipUnion([...bs, ...contrib]) : contrib;
     }
+    // Prune slivers left by the intersect/union accumulation so a hairline
+    // artifact can't be treated as (or widened into) a solid shell.
+    ts = prune(ts); bs = prune(bs);
     topSolid[i] = ts; bottomSolid[i] = bs;
     let sol = ts.length && bs.length ? clipUnion([...ts, ...bs]) : (ts.length ? ts : bs);
     // Widen too-narrow solid strips so they hold full infill lines and stay
@@ -122,5 +132,13 @@ export function buildSolidRegions(layerRegions, opts = {}) {
 }
 
 function clone(r) { return { outer: r.outer.map((p) => [p[0], p[1]]), holes: (r.holes || []).map((h) => h.map((p) => [p[0], p[1]])) }; }
+
+// Signed shoelace area of a ring (absolute value = enclosed area).
+function polyArea(pts) {
+  if (!pts || pts.length < 3) return 0;
+  let a = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] + pts[i][0]) * (pts[j][1] - pts[i][1]);
+  return a / 2;
+}
 
 export { regionsArea };
