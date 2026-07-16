@@ -7,6 +7,7 @@ import type { Printer, SlicerStatus, SliceResult, SlicerPrinter, Spool } from '.
 import type { PlateHandle, ObjInfo, PlateState, PlateSnapshot } from '../components/PlateViewer';
 import type { SliceSettings } from './slicer/SlicerProcessTabs';
 import { SlicerProcessTabs } from './slicer/SlicerProcessTabs';
+import { parse3mfSettings } from '../lib/tmf-settings';
 import { ObjectPanel } from './slicer/ObjectPanel';
 import { SlicerDevice } from './slicer/SlicerDevice';
 import { SlicerFilaments } from './slicer/SlicerFilaments';
@@ -440,9 +441,22 @@ export function SlicerPanel() {
     }
     return f;
   }
+  // Import a Bambu/Orca 3MF project's embedded process settings (walls, infill,
+  // shells, patterns…) so the model slices as its author intended — otherwise a
+  // project made for 5 walls + 40% infill comes out far sparser on our defaults.
+  async function importProjectSettings(f: File) {
+    if (!/\.3mf$/i.test(f.name)) return;
+    try {
+      const s = parse3mfSettings(await f.arrayBuffer());
+      if (s && Object.keys(s).length) {
+        setSettings((prev) => ({ ...prev, ...s }));
+        toast(t('v2.slicer.imported_settings', `Imported ${Object.keys(s).length} settings from the project`), 'info');
+      }
+    } catch { /* not a Bambu project — ignore */ }
+  }
   async function onPickInput(files: File[]) {
     if (!files.length) return;
-    if (!file) { try { pickFile(await toLoadable(files[0])); } catch { /* toasted */ } }
+    if (!file) { try { const lf = await toLoadable(files[0]); await importProjectSettings(files[0]); pickFile(lf); } catch { /* toasted */ } }
     else await addModels(files);
   }
   async function addModels(files: FileList | File[] | null) {
