@@ -29,6 +29,9 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // How far solid surfaces grow into neighbouring infill so their fills overlap
   // and the solid/sparse seam is covered (libslic3r EXTERNAL_INFILL_MARGIN).
   const margin = Math.max(0, opts.lineWidth ?? 0.42);
+  // Minimum solid strip half-width — narrower strips get widened so a rectilinear
+  // line fits and the surface stays opaque (libslic3r 3·solid_infill_width).
+  const widen = Math.max(0, (opts.lineWidth ?? 0.42) * 1.5);
 
   const slices = layerRegions.map((r) => (r && r.length ? r : EMPTY));
   // Directly-exposed skin per layer: material here not covered by the neighbour.
@@ -58,7 +61,21 @@ export function buildSolidRegions(layerRegions, opts = {}) {
       bs = bs.length ? clipUnion([...bs, ...contrib]) : contrib;
     }
     topSolid[i] = ts; bottomSolid[i] = bs;
-    solid[i] = ts.length && bs.length ? clipUnion([...ts, ...bs]) : (ts.length ? ts : bs);
+    let sol = ts.length && bs.length ? clipUnion([...ts, ...bs]) : (ts.length ? ts : bs);
+    // Widen too-narrow solid strips so they hold full infill lines and stay
+    // opaque (libslic3r discover_horizontal_shells step 3). Sloped top surfaces
+    // are thin stair-step bands; without this the sparse infill shows through
+    // them. Only the strips that vanish under an opening are grown, so wide
+    // solids are untouched — grabbed area is clipped to the model slice.
+    if (widen > 0 && sol.length) {
+      const opened = clipExpand(clipExpand(sol, -widen), widen);
+      const tooNarrow = clipDifference(sol, opened);
+      if (tooNarrow.length) {
+        const grown = clipIntersection(clipExpand(tooNarrow, widen), slices[i]);
+        if (grown.length) sol = clipUnion([...sol, ...grown]);
+      }
+    }
+    solid[i] = sol;
     sparse[i] = solid[i].length ? clipDifference(slices[i], solid[i]) : slices[i].map(clone);
   }
 
