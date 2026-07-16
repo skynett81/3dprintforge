@@ -798,7 +798,14 @@ export function layersToGcode(layers, settings) {
         // the print) or as a stationary in-place waste blob when disabled.
         if (thisFlushE > 0) {
           if (s.flushIntoInfill !== false) pendingFlushE = thisFlushE;
-          else { e += thisFlushE; g += `G1 E${dE()} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
+          else {
+            // Clamp the in-place purge feed to the hotend's volumetric limit —
+            // purging tens of mm of filament at travel speed would exceed the
+            // melt rate and clog/skip. E-feed(mm/min) = maxVol(mm³/s)/area×60.
+            let purgeFeed = s.travelSpeed * 30;
+            if (s.maxVolumetricSpeed > 0) purgeFeed = Math.min(purgeFeed, (s.maxVolumetricSpeed / (PI * (s.filamentDiam / 2) ** 2)) * 60);
+            e += thisFlushE; g += `G1 E${dE()} F${Math.round(purgeFeed)} ; purge\n`;
+          }
         }
       }
       // Object labels (exclude-object): wrap each object's moves.
