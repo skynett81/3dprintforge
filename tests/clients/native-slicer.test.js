@@ -591,8 +591,9 @@ describe('native-slicer: initial layer flow ratio', () => {
   const firstLayerE = (g) => {
     // Sum of positive E deltas on layer 1 (initial layer).
     const l1 = g.split('; --- layer 2/')[0];
-    let last = 0, sum = 0;
-    for (const m of l1.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > last) sum += e - last; last = e; }
+    let sum = 0;
+    // Relative extrusion (M83): each E is already a delta — positive = extrude.
+    for (const m of l1.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > 0) sum += e; }
     return sum;
   };
   it('initial_layer_flow_ratio raises first-layer extrusion', async () => {
@@ -736,8 +737,9 @@ describe('native-slicer: travel_speed_z + retract_restart_extra', () => {
   it('retract_restart_extra primes extra filament on unretract', async () => {
     const none = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, supports: false });
     const extra = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, retractRestartExtra: 0.1, supports: false });
-    // Final E accumulates the extra primes → higher total.
-    const lastE = (g) => { const m = [...g.matchAll(/E(-?\d+\.\d+)/g)]; return m.length ? +m[m.length - 1][1] : 0; };
+    // Relative extrusion (M83): cumulative E = sum of all deltas. The extra
+    // primes on each unretract raise the total.
+    const lastE = (g) => { let s = 0; for (const m of g.matchAll(/E(-?\d+\.\d+)/g)) s += +m[1]; return s; };
     assert.ok(lastE(extra.gcode) > lastE(none.gcode), 'restart extra raises cumulative E');
   });
   it('both unset byte-identical', async () => {
@@ -837,7 +839,8 @@ describe('native-slicer: machine limits', () => {
 
 describe('native-slicer: filament diameter', () => {
   it('thicker filament needs less E for the same volume', async () => {
-    const lastE = (g) => { const m = [...g.matchAll(/E(\d+\.\d+)/g)]; return m.length ? +m[m.length - 1][1] : 0; };
+    // Relative extrusion (M83): total filament used = sum of positive E deltas.
+    const lastE = (g) => { let s = 0; for (const m of g.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > 0) s += e; } return s; };
     const std = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 1.75, supports: false });
     const fat = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 2.85, supports: false });
     assert.ok(lastE(fat.gcode) < lastE(std.gcode), `2.85mm should use less E (1.75=${lastE(std.gcode)} 2.85=${lastE(fat.gcode)})`);
@@ -860,9 +863,9 @@ describe('native-slicer: variable-width emission (Arachne foundation)', () => {
     const es = [];
     let inF = false;
     for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('Inner wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+ E([-\d.]+)/); if (m) es.push({ x: +m[1], e: +m[2] }); } }
-    // deltas: seg1 = e@x10 - e@x0start(0), seg2 = e@x20 - e@x10
+    // Relative extrusion (M83): each move's E is already the per-segment delta.
     const seg1 = es.find((p) => Math.abs(p.x - 10) < 0.01).e;
-    const seg2 = es.find((p) => Math.abs(p.x - 20) < 0.01).e - seg1;
+    const seg2 = es.find((p) => Math.abs(p.x - 20) < 0.01).e;
     assert.ok(Math.abs(seg2 / seg1 - 1.5) < 0.05, `wider segment should extrude ~1.5x (seg1=${seg1.toFixed(4)} seg2=${seg2.toFixed(4)} ratio=${(seg2 / seg1).toFixed(2)})`);
   });
 });

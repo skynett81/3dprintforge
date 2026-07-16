@@ -235,7 +235,9 @@ function _defaultStart(s) {
     `M109 S${noz0}`,
     `G92 E0`,
     `G90`,
-    `M82`,
+    `M83`,   // relative extrusion (Klipper/BambuStudio standard): each E is a
+             // delta, so retracts are unambiguous and the E counter never grows
+             // into float-precision loss over a long print.
     // Part-cooling fan: off while printing the first fanOff layer(s).
     fanOff > 0 ? `M107` : `M106 S${Math.round((s.fanSpeed ?? 100) * 2.55)}`,
   ].join('\n') + '\n';
@@ -444,6 +446,12 @@ export function layersToGcode(layers, settings) {
   }
 
   let e = 0;
+  // Relative-extrusion output: `e` stays the internal cumulative amount (all the
+  // extrusion/retraction bookkeeping below is unchanged), but every E written to
+  // g-code is the DELTA since the previous emission — the M83 encoding. dE() must
+  // be called exactly once per emitted E, in emission order.
+  let eLast = 0;
+  const dE = () => { const d = e - eLast; eLast = e; return d.toFixed(4); };
   let curX = 0, curY = 0, curZ = 0;
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
   let curAccelG = -1; // last-emitted M204 P value, for per-feature acceleration
@@ -492,7 +500,7 @@ export function layersToGcode(layers, settings) {
     if (gap > 0 && d <= gap) return;                 // whole closing move is within the gap
     const target = gap > 0 ? [curX + (first[0] - curX) * (d - gap) / d, curY + (first[1] - curY) * (d - gap) / d] : first;
     e += (gap > 0 ? d - gap : d) * ef;
-    g += `G1 X${target[0].toFixed(3)} Y${target[1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+    g += `G1 X${target[0].toFixed(3)} Y${target[1].toFixed(3)} E${dE()} F${speed * 60}\n`;
     curX = target[0]; curY = target[1];
   };
   // `widths` (optional, one per point) makes each segment's extrusion track a
@@ -515,8 +523,8 @@ export function layersToGcode(layers, settings) {
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
-        if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
-        for (let i = 1; i < pts.length; i++) { const p = pts[i]; const d = Math.hypot(p[0] - curX, p[1] - curY); if (d < 5e-4) { curX = p[0]; curY = p[1]; continue; } e += d * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
+        if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${dE()} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
+        for (let i = 1; i < pts.length; i++) { const p = pts[i]; const d = Math.hypot(p[0] - curX, p[1] - curY); if (d < 5e-4) { curX = p[0]; curY = p[1]; continue; } e += d * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${dE()} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
         if (closed) closeLoop(first, ef, speed);
         lastPath = closed ? [...pts, first] : pts;
         return;
@@ -538,14 +546,14 @@ export function layersToGcode(layers, settings) {
       }
       e = startE - s.retraction; curX = wipePts[wipePts.length - 1][0]; curY = wipePts[wipePts.length - 1][1];
     } else {
-      e -= s.retraction; g += `G1 E${e.toFixed(4)} F${retractFeed.toFixed(0)}\n`;
+      e -= s.retraction; g += `G1 E${dE()} F${retractFeed.toFixed(0)}\n`;
     }
     if (zHop > 0) g += `G1 Z${(curZ + zHop).toFixed(3)} F${zTravelFeed}\n`;
     g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
     if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${zTravelFeed}\n`;
-    e += s.retraction + restartExtra; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
+    e += s.retraction + restartExtra; g += `G1 E${dE()} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
-    if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
+    if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${dE()} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
     let sdist = 0;
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
@@ -561,7 +569,7 @@ export function layersToGcode(layers, settings) {
       // Variable width: scale the extrusion by the segment's mean width / base.
       if (varW) segEf = segEf * (((widths[i - 1] + widths[i]) / 2) / baseW);
       e += d * segEf;
-      g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`;
+      g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${dE()} F${spd(i) * 60}\n`;
       curX = p[0]; curY = p[1]; sdist += d;
     }
     if (closed) {
@@ -578,7 +586,7 @@ export function layersToGcode(layers, settings) {
           const tx = px + (p[0] - px) * (seg / d), ty = py + (p[1] - py) * (seg / d);
           const frac = Math.max(0, 1 - (od + seg / 2) / scarf);
           e += seg * ef * frac;
-          g += `G1 X${tx.toFixed(3)} Y${ty.toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+          g += `G1 X${tx.toFixed(3)} Y${ty.toFixed(3)} E${dE()} F${speed * 60}\n`;
           curX = tx; curY = ty; od += seg; px = tx; py = ty;
           if (seg >= d - EPS) i++;
         }
@@ -601,7 +609,7 @@ export function layersToGcode(layers, settings) {
       const d = Math.hypot(loop[i][0] - curX, loop[i][1] - curY);
       acc += d; e += d * efactor;
       const zz = zStart + (acc / L) * (zEnd - zStart);
-      g += `G1 X${loop[i][0].toFixed(3)} Y${loop[i][1].toFixed(3)} Z${zz.toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
+      g += `G1 X${loop[i][0].toFixed(3)} Y${loop[i][1].toFixed(3)} Z${zz.toFixed(3)} E${dE()} F${speed * 60}\n`;
       curX = loop[i][0]; curY = loop[i][1]; curZ = zz;
     }
   };
@@ -754,16 +762,16 @@ export function layersToGcode(layers, settings) {
       // Tool/extruder change (multi-material): retract, switch tool, purge the
       // old colour, then re-prime. Only when a path carries a distinct tool.
       if (path.tool != null && path.tool !== curTool) {
-        if (curTool != null) { e -= s.retraction; g += `G1 E${e.toFixed(4)} F${retractFeed.toFixed(0)}\n`; }
+        if (curTool != null) { e -= s.retraction; g += `G1 E${dE()} F${retractFeed.toFixed(0)}\n`; }
         g += `; TOOL_CHANGE ${curTool ?? '-'} -> ${path.tool}\n`;
         g += `T${path.tool - 1}\n`;
         curTool = path.tool;
-        if (s.retraction > 0) { e += s.retraction; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`; }
+        if (s.retraction > 0) { e += s.retraction; g += `G1 E${dE()} F${deretractFeed.toFixed(0)}\n`; }
         // Purge the old colour: into the next extrusion move (default, hidden in
         // the print) or as a stationary in-place waste blob when disabled.
         if (flushE > 0) {
           if (s.flushIntoInfill !== false) pendingFlushE = flushE;
-          else { e += flushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
+          else { e += flushE; g += `G1 E${dE()} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
         }
       }
       // Object labels (exclude-object): wrap each object's moves.
@@ -827,7 +835,7 @@ export function layersToGcode(layers, settings) {
   if (s.gcodeLabelObjects && curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;
 
   g += `; --- finished ---\n`;
-  e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
+  e -= s.retraction; g += `G1 E${dE()} F${s.travelSpeed * 60}\n`;
   g += `G1 Z${(curZ + 5).toFixed(3)} F${s.travelSpeed * 60}\n`;
   // Filament-specific end G-code runs before the machine end G-code.
   if (s.filamentEndGcode) g += _interp(s.filamentEndGcode, s) + '\n';
