@@ -30,7 +30,7 @@ import {
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
 import { clipDifference as _clipDifference, clipExpand as _clipExpand } from './native-slicer-bool.js';
-import { medialBeads } from './native-slicer-arachne.js';
+import { medialBeads, arachneBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 import { insertProgressM73 } from './native-slicer-progress.js';
 
@@ -1482,7 +1482,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           const bf = s.gapFillFlow ?? 1;
           for (const tp of thin) {
             if (!tp.outer || tp.outer.length < 3) continue;
-            const beads = medialBeads(tp, lw);
+            // Full Arachne: the beading strategy splits a wider core into the
+            // right number of variable-width beads; a thin core stays one bead
+            // (identical to the single medial bead). Opt out via arachneFull:false.
+            const beads = (s.arachneFull !== false) ? arachneBeads(tp, lw) : medialBeads(tp, lw);
             if (beads && beads.length) { for (const b of beads) fills.push({ feature: 'gap', closed: false, pts: b.pts, widths: b.widths, baseW: lw, flow: bf }); continue; }
             let ring = offsetPolygon(tp.outer, -lw * 0.5), guard = 0;
             while (ring && ring.length >= 3 && guard++ < 30) { fills.push({ feature: 'inner-wall', closed: true, pts: ring }); ring = offsetPolygon(ring, -lw); }

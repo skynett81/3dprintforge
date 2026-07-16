@@ -13,6 +13,7 @@
  */
 
 import { _pointInPoly } from './native-slicer-geo.js';
+import { makeBeadingStrategy } from './native-slicer-beading.js';
 
 /**
  * @param {{outer:number[][], holes?:number[][][]}} region
@@ -20,7 +21,7 @@ import { _pointInPoly } from './native-slicer-geo.js';
  * @param {number} [gridRes] grid cell size (mm); defaults to lineWidth/2
  * @returns {{pts:number[][], widths:number[]}[]} variable-width bead polylines
  */
-export function medialBeads(region, lineWidth, gridRes = lineWidth / 2) {
+export function medialBeads(region, lineWidth, gridRes = lineWidth / 2, maxRadiusFactor = 1.7) {
   const outer = region.outer;
   const holes = region.holes || [];
   if (!outer || outer.length < 3 || !(lineWidth > 0)) return [];
@@ -68,7 +69,7 @@ export function medialBeads(region, lineWidth, gridRes = lineWidth / 2) {
 
   // Ridge = local maxima of the distance field, restricted to thin regions
   // (radius up to ~1.7 line widths). Wider areas get proper walls elsewhere.
-  const minR = lineWidth * 0.35, maxR = lineWidth * 1.7;
+  const minR = lineWidth * 0.35, maxR = lineWidth * maxRadiusFactor;
   const ridge = new Uint8Array(cols * rows);
   for (let r = 1; r < rows - 1; r++) for (let c = 1; c < cols - 1; c++) {
     const i = idxOf(r, c); if (!inside[i]) continue;
@@ -131,4 +132,67 @@ export function medialBeads(region, lineWidth, gridRes = lineWidth / 2) {
     if (pts.length >= 2) beads.push({ pts, widths });
   }
   return beads;
+}
+
+/** Unit perpendicular (left normal) at each point of a polyline, from the
+ *  average of the incoming and outgoing segment directions. */
+function perpNormals(pts) {
+  const n = pts.length, out = new Array(n);
+  for (let k = 0; k < n; k++) {
+    const a = pts[Math.max(0, k - 1)], b = pts[Math.min(n - 1, k + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+    out[k] = [-dy, dx];                       // left normal
+  }
+  return out;
+}
+
+/**
+ * Full-region Arachne beads: extend the single medial centreline into the
+ * correct NUMBER of parallel, variable-width beads for the local cross-section
+ * (BambuStudio's variable-width wall generator). Where a core is one line wide
+ * it stays a single bead; where it is 2-3+ lines wide, the beading strategy
+ * splits it into that many beads at their exact widths and offsets — no starved
+ * extra wall, no leftover gap. Beads adapt point-by-point as the width changes.
+ *
+ * @param {{outer:number[][], holes?:number[][][]}} region  the leftover core
+ * @param {number} lineWidth
+ * @param {object} [opts]  { maxBeads, split, add, distributionRadius }
+ * @returns {{pts:number[][], widths:number[]}[]}
+ */
+export function arachneBeads(region, lineWidth, opts = {}) {
+  const strat = makeBeadingStrategy({
+    optimalWidth: lineWidth,
+    splitMidThreshold: opts.split ?? 0.5,
+    addMidThreshold: opts.add ?? 0.5,
+    distributionRadius: opts.distributionRadius ?? 2,
+  });
+  const maxBeads = opts.maxBeads ?? 6;
+  // Capture medial ridges out to a radius that holds up to maxBeads lines.
+  const maxRF = maxBeads * 0.5 + 0.35;
+  const centerlines = medialBeads(region, lineWidth, lineWidth / 2, maxRF);
+  const out = [];
+  for (const cl of centerlines) {
+    const pts = cl.pts, thick = cl.widths;      // thick[k] = 2*distance = local width
+    // Representative bead count from the median local width (avoids per-point
+    // count flips that would fragment the beads; widths still adapt per point).
+    const sorted = thick.slice().sort((a, b) => a - b);
+    const medW = sorted[sorted.length >> 1];
+    const n = Math.max(1, Math.min(maxBeads, strat.getOptimalBeadCount(medW)));
+    if (n === 1) { out.push(cl); continue; }
+    const normals = perpNormals(pts);
+    const beadPts = Array.from({ length: n }, () => []);
+    const beadWid = Array.from({ length: n }, () => []);
+    for (let k = 0; k < pts.length; k++) {
+      const t = thick[k];
+      const { widths, locations } = strat.compute(t, n);
+      const nx = normals[k][0], ny = normals[k][1], px = pts[k][0], py = pts[k][1];
+      for (let i = 0; i < n; i++) {
+        const off = locations[i] - t / 2;       // signed offset from the centreline
+        beadPts[i].push([px + nx * off, py + ny * off]);
+        beadWid[i].push(widths[i]);
+      }
+    }
+    for (let i = 0; i < n; i++) if (beadPts[i].length >= 2) out.push({ pts: beadPts[i], widths: beadWid[i] });
+  }
+  return out;
 }
