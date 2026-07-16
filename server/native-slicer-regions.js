@@ -27,8 +27,11 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   const topLayers = Math.max(0, opts.topLayers ?? 4);
   const bottomLayers = Math.max(0, opts.bottomLayers ?? 4);
   // How far solid surfaces grow into neighbouring infill so their fills overlap
-  // and the solid/sparse seam is covered (libslic3r EXTERNAL_INFILL_MARGIN).
-  const margin = Math.max(0, opts.lineWidth ?? 0.42);
+  // and the solid/sparse seam is covered (libslic3r EXTERNAL_INFILL_MARGIN). A
+  // HALF line width is enough to bond the two without a visible seam; a full
+  // line double-extrudes the whole overlap and, where solid patches are closer
+  // than the grow distance (dense dividers), merges them across the sparse gap.
+  const margin = Math.max(0, (opts.lineWidth ?? 0.42) * 0.5);
   // Minimum solid strip half-width — strips narrower than this are grown so a
   // rectilinear line fits and the surface stays opaque. One line width: strips
   // below ~one line can't print opaque and get widened, but a genuine sloped
