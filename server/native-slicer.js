@@ -28,6 +28,7 @@ import {
   _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
+import { buildSolidRegions } from './native-slicer-regions.js';
 import { medialBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 
@@ -953,6 +954,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   const surfaces = s.solidSurfaces === false ? null : buildSurfaceClassifier(layerRegions, {
     gridRes: s.surfaceGridRes ?? 2, topLayers: s.topLayers, bottomLayers: s.bottomLayers,
   });
+  // Polygon fill-surfaces (libslic3r-style) — exact solid/sparse regions for the
+  // MAIN fill, so boundaries are clean polygons, not a blocky grid mask. The grid
+  // `surfaces` above stays for cheap point queries (ironing, surface speeds,
+  // adaptive-cubic depth, only_one_wall_top). Opt-out via polygonSurfaces:false.
+  const solidRegions = (surfaces && s.polygonSurfaces !== false)
+    ? buildSolidRegions(layerRegions, { topLayers: s.topLayers, bottomLayers: s.bottomLayers })
+    : null;
   const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
 
   // Split a connected infill polyline into maximal runs of segments that pass
@@ -1087,8 +1095,8 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // clipped to the kept/supported area before the zigzag connects — so each
     // solid or bridge patch is a continuous chain, not thousands of 2-point
     // pieces (what made complex/slotted models fragment into ~80k travels).
-    const pushSolidRegion = (region, angle, keepPt, monotonic = false) => {
-      const bridgeSplit = bridgeDetect && below;
+    const pushSolidRegion = (region, angle, keepPt, monotonic = false, noBridge = false) => {
+      const bridgeSplit = bridgeDetect && below && !noBridge;
       const hasBridge = bridgeSplit && (s.bridgeAngle != null || regionHasUnsupported(region, keepPt));
       if (!hasBridge) {
         // Fully-supported (or bridge detection off): one solid pass, no masking.
@@ -1317,6 +1325,41 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
                 flow = gapBaseFlow * Math.max(0.25, Math.min(1.6, w / lw));
               }
               fills.push({ feature: 'gap', closed: false, pts: sg, flow });
+            }
+          }
+        } else if (solidRegions) {
+          // POLYGON fill surfaces (libslic3r-style): fill the exact solid and
+          // sparse sub-regions of this layer's infill area. Clean polygon
+          // boundaries — no grid blockiness, no hatch-then-mask fragmentation.
+          const solidSubs = solidRegions.solidIn(i, infRegion);
+          for (const sub of solidSubs) {
+            if (!sub.outer || sub.outer.length < 3) continue;
+            let cxp = 0, cyp = 0; for (const p of sub.outer) { cxp += p[0]; cyp += p[1]; }
+            cxp /= sub.outer.length; cyp /= sub.outer.length;
+            // Exposed top/bottom skin → monotonic uniform finish, but ONLY on
+            // large surfaces: monotonic prints each line separately (a travel
+            // each), so on a part with many tiny exposed faces (slot floors) it
+            // explodes travels for no visible gain. Small faces → connected zigzag.
+            const isTB = surfaces.isTopPoint(i, cxp, cyp) || surfaces.isBottomPoint(i, cxp, cyp);
+            if (solidConcentric && isTB) { concentric(sub, 'solid', true); continue; }
+            // Monotonic (same-direction) only on the globally-exposed top/bottom
+            // faces of the whole part — the visible skin. Interior top surfaces
+            // (slot floors, steps) use connected zigzag: monotonic prints each
+            // line as a separate travel, so applying it to every small interior
+            // face explodes travel count for no visible gain.
+            const globalFace = (i === 0 || i === numLayers - 1);
+            const mono = isTB && globalFace && s.monotonicTopSurface !== false && Math.abs(_signedArea(sub.outer)) > (s.monotonicMinArea ?? 4);
+            // A pure TOP surface sits on material below → never a bridge; skip the
+            // bridge pre-check there (a big slice-time saving on featured models).
+            const noBridge = surfaces.isTopPoint(i, cxp, cyp) && !surfaces.isBottomPoint(i, cxp, cyp);
+            pushSolidRegion(sub, baseAngle, null, mono, noBridge);
+          }
+          if (doSparse && s.infillPattern !== 'lightning') {
+            const sparseSubs = solidRegions.sparseIn(i, infRegion);
+            for (const sub of sparseSubs) {
+              if (!sub.outer || sub.outer.length < 3) continue;
+              if (s.infillPattern === 'concentric') { concentric(sub, 'sparse', false); continue; }
+              for (const sg of sparseSegsFor(sub)) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
             }
           }
         } else if (!surfaces || globalSolid) {
