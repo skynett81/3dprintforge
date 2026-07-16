@@ -29,7 +29,7 @@ import {
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
-import { clipDifference as _clipDifference } from './native-slicer-bool.js';
+import { clipDifference as _clipDifference, clipExpand as _clipExpand } from './native-slicer-bool.js';
 import { medialBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 
@@ -1386,6 +1386,35 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         };
         const solidConcentric = s.topSurfacePattern === 'concentric';
+        // Arachne split: a sparse channel narrower than ~a few line widths can't
+        // hold an effective sparse cross-hatch — it prints as a messy speckle of
+        // tiny dashes (what we saw filling a 3-4 mm wall). BambuStudio fills such
+        // thin sections with WALLS/beads, not sparse. So split each sparse region
+        // into its THICK CORE (keeps the sparse pattern) and its THIN BITS
+        // (Arachne beads, or concentric perimeters), via a morphological opening.
+        // Thin fingers that hang off a thick core are caught too, since the open
+        // erases them from the core. wall_generator=classic keeps the old sparse.
+        const narrowFillWidth = lw * 5;                       // ~2.1mm at 0.42
+        const arachneFill = s.wallGenerator !== 'classic' && s.gapFill !== false;
+        const thickCoreOf = (region) => {
+          if (!arachneFill || !region.outer || region.outer.length < 3) return [region];
+          const er = _clipExpand([region], -narrowFillWidth / 2);
+          return er.length ? _clipExpand(er, narrowFillWidth / 2) : [];
+        };
+        // Fill a region's THIN BITS (region minus its thick core) with beads or,
+        // where a bead can't run, concentric perimeters — so nothing is left void.
+        const beadThinBits = (region, thick) => {
+          if (!arachneFill) return;
+          const thin = thick.length ? _clipDifference([region], thick) : [region];
+          const bf = s.gapFillFlow ?? 1;
+          for (const tp of thin) {
+            if (!tp.outer || tp.outer.length < 3) continue;
+            const beads = medialBeads(tp, lw);
+            if (beads && beads.length) { for (const b of beads) fills.push({ feature: 'gap', closed: false, pts: b.pts, widths: b.widths, baseW: lw, flow: bf }); continue; }
+            let ring = offsetPolygon(tp.outer, -lw * 0.5), guard = 0;
+            while (ring && ring.length >= 3 && guard++ < 30) { fills.push({ feature: 'inner-wall', closed: true, pts: ring }); ring = offsetPolygon(ring, -lw); }
+          }
+        };
         // Gap fill: a thin infill region (its own inward offset collapses, i.e.
         // narrower than ~2 line widths) can't hold meaningful sparse infill —
         // it would print as air. Fill it solid instead, the way a real slicer's
@@ -1401,17 +1430,10 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // verified), so it lays a continuous variable-width bead down every thin
         // finger while the thick core still gets normal infill. Opt-in (arachne),
         // sparse layers only; a purely thick part gets no beads → byte-identical.
-        // Thin necks inside a thick body: lay a continuous variable-width medial
-        // bead down every thin finger (walls can't fill it, sparse is too coarse
-        // for a <2·lw strip). Default ON (Arachne is BambuStudio's thin-wall
-        // handling); the thick core self-limits to no bead → normal infill there.
-        if (s.wallGenerator !== 'classic' && s.gapFill !== false && !globalSolid && !thinRegion) {
-          const fingerBeads = medialBeads(infRegion, lw);
-          if (fingerBeads && fingerBeads.length) {
-            const gapBaseFlow = s.gapFillFlow ?? 1;
-            for (const bead of fingerBeads) fills.push({ feature: 'gap', closed: false, pts: bead.pts, widths: bead.widths, baseW: lw, flow: gapBaseFlow });
-          }
-        }
+        // (Thin necks inside a thick body are handled per sparse sub-region by
+        // fillNarrowAsWalls below — concentric perimeters instead of a coarse
+        // sparse cross-hatch — so no separate whole-region finger-bead pass is
+        // needed; running both would double-fill the channel.)
         if (thinRegion) {
           // Thin-wall gap fill. A perpendicular zigzag hatch (the old default)
           // leaves a messy cross-hatch in narrow ribs; instead run a continuous
@@ -1478,8 +1500,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             const sparseSubs = solidRegions.sparseIn(i, infRegion);
             for (const sub of sparseSubs) {
               if (!sub.outer || sub.outer.length < 3) continue;
-              if (s.infillPattern === 'concentric') { concentric(sub, 'sparse', false); continue; }
-              for (const sg of sparseSegsFor(sub)) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
+              const thick = thickCoreOf(sub);
+              beadThinBits(sub, thick);                       // thin bits → Arachne beads/walls
+              for (const tc of thick) {                       // thick core → sparse
+                if (!tc.outer || tc.outer.length < 3) continue;
+                if (s.infillPattern === 'concentric') { concentric(tc, 'sparse', false); continue; }
+                for (const sg of sparseSegsFor(tc)) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
+              }
             }
           }
         } else if (!surfaces || globalSolid) {
@@ -1493,8 +1520,12 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             const exposed = i === 0 || i === numLayers - 1;
             pushSolidRegion(infRegion, baseAngle, undefined, exposed && s.monotonicTopSurface !== false);
           } else if (doSparse && s.infillPattern !== 'lightning') {
-            const segs = sparseSegsFor(infRegion);
-            for (const sg of segs) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
+            const thick = thickCoreOf(infRegion);
+            beadThinBits(infRegion, thick);
+            for (const tc of thick) {
+              if (!tc.outer || tc.outer.length < 3) continue;
+              for (const sg of sparseSegsFor(tc)) fills.push({ feature: 'sparse', closed: false, pts: sg, flow: sparseFlow });
+            }
           }
         } else {
           // Per-surface: solid where this is a top/bottom face, sparse elsewhere.

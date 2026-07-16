@@ -1098,21 +1098,23 @@ describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', 
   const keyhole = () => extrudePolygon([
     [0, 0], [10, 0], [10, 4.4], [24, 4.4], [24, 5.6], [10, 5.6], [10, 10], [0, 10],
   ], 3);
-  // Does any gap-feature extruding move reach deep into the tab (x > 18)?
-  const gapReachesTab = (g) => {
-    let inGap = false;
+  // Total extruded filament deep in the tab (x > 18) — the thin finger past the
+  // single perimeter. Arachne fills it (a medial bead or concentric walls);
+  // classic leaves the interior a void, so it deposits far less there.
+  const fillInTab = (g) => {
+    let e = 0, absE = true, x = 0, prevE = 0;
     for (const l of g.split('\n')) {
-      if (l.startsWith('; FEATURE:')) { inGap = l.includes('FEATURE: Gap infill'); continue; }
-      if (inGap) { const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E/); if (m && +m[1] > 18) return true; }
+      if (/^M83/.test(l)) absE = false; else if (/^M82/.test(l)) absE = true;
+      const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E(-?[\d.]+)/);
+      if (m) { const nx = +m[1], ev = +m[2]; const de = absE ? ev - prevE : ev; prevE = absE ? ev : prevE; if (nx > 18 && de > 0) e += de; }
     }
-    return false;
+    return e;
   };
-  it('classic leaves the thin tab unfilled; arachne beads it', async () => {
+  it('arachne fills the thin tab; classic leaves it a void', async () => {
     const opts = { layerHeight: 0.2, perimeters: 1, gapFill: true, supports: false };
     const classic = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'classic' });
     const arachne = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'arachne' });
-    assert.ok(gapReachesTab(arachne.gcode), 'arachne lays a bead down the thin tab');
-    assert.ok(!gapReachesTab(classic.gcode), 'classic leaves the thin tab as a void (no gap fill there)');
+    assert.ok(fillInTab(arachne.gcode) > fillInTab(classic.gcode) + 1, `arachne fills the thin tab more than classic (arachne=${fillInTab(arachne.gcode).toFixed(1)} classic=${fillInTab(classic.gcode).toFixed(1)})`);
     assert.ok(!arachne.gcode.includes('NaN'));
   });
 });
