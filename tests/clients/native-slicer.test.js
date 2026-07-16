@@ -362,7 +362,7 @@ describe('native-slicer: wipe/prime tower', () => {
   it('prints a per-extruder wipe tower when enabled', async () => {
     const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: true, wipeTowerWidth: 24, wipeTowerDepth: 24 });
     assert.ok(r.gcode.includes('; FEATURE: Prime tower'), 'tower feature present');
-    assert.ok((r.gcode.match(/; WIPE_TOWER/g) || []).length >= 2, 'at least one tower band per extruder');
+    assert.ok((r.gcode.match(/; FEATURE: Prime tower/g) || []).length >= 2, 'at least one tower band per extruder');
     assert.ok(!r.gcode.includes('NaN'));
   });
   it('prints no tower when disabled', async () => {

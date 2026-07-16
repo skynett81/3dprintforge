@@ -2,28 +2,48 @@
  * Native Slicer — multi-material / multi-colour slicing.
  *
  * Slices several meshes (one per extruder/colour) into a single interleaved
- * G-code: per layer, each material's paths are printed in turn with a tool
- * change (T<n>) between them. The purge needed to clean the nozzle after a
- * colour change is deposited INTO the new material's infill ("flush into
- * infill") instead of a separate waste/wipe tower — cutting waste. Walls are
- * printed after infill per material so the flush doesn't bleed onto the
- * visible surface ("no bleed").
+ * G-code. Each material is run through the SAME full-quality single-material
+ * pipeline (sliceMeshToLayers) — walls, top/bottom surfaces, connected infill,
+ * Arachne thin-wall beads, bridges, per-segment overhang, travel ordering — so a
+ * multi-colour print is identical in quality to a single-colour one. The layers
+ * are then merged: per layer, every material's paths are emitted in tool order,
+ * with the shared emitter (layersToGcode) inserting one tool change per colour.
  *
- * This is a self-contained v1 (single perimeter set + grid infill + solid
- * top/bottom) that reuses the geometry core; it does not touch the
- * single-material engine.
+ * Earlier this file was a crude self-contained slicer (single perimeter set +
+ * grid infill, retract-every-move, no combing) — which is why multi-colour
+ * models looked far worse than single-colour ones. It now reuses the real
+ * engine so "the slicer works the same regardless of the model".
  */
 
-import { sliceLayer, buildRegions, offsetPolygon, regionInfill, solidInfill } from './native-slicer-geo.js';
+import { sliceMeshToLayers, layersToGcode } from './native-slicer.js';
+import { solidInfill } from './native-slicer-geo.js';
 
 const FILAMENT_DIAM = 1.75;
-const PI = Math.PI;
 
-/** Recenter every mesh by the SAME transform (shared coordinate frame) so the
- *  colours stay aligned: combined XY centre → origin, combined min Z → 0. */
-function recenterShared(meshes) {
+/**
+ * @param {Array<{positions:Float32Array|number[], indices:number[], extruder:number}>} rawMeshes
+ * @param {object} settings
+ */
+export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
+  const s = {
+    layerHeight: 0.2, lineWidth: 0.42, perimeters: 2, infillDensity: 0.15, infillAngle: 45,
+    topLayers: 4, bottomLayers: 4, printSpeed: 60, firstLayerSpeed: 20, travelSpeed: 150,
+    retraction: 1.0, bedTemp: 60, nozzleTemp: 210, filamentDiam: FILAMENT_DIAM, fanSpeed: 100,
+    material: 'PLA',
+    ...settings,
+  };
+  const lh = s.layerHeight;
+
+  const { autoRepair } = await import('./mesh-repair.js');
+  const prepared = rawMeshes.map((m) => {
+    const rep = autoRepair({ positions: Array.from(m.positions), indices: Array.from(m.indices) }).mesh;
+    return { positions: rep.positions, indices: rep.indices, extruder: m.extruder || 1 };
+  });
+
+  // Shared recenter across all material meshes so they stay aligned on the plate
+  // and share one layer grid (like sliceObjectsGcode).
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-  for (const m of meshes) {
+  for (const m of prepared) {
     const p = m.positions;
     for (let i = 0; i < p.length; i += 3) {
       if (p[i] < minX) minX = p[i]; if (p[i] > maxX) maxX = p[i];
@@ -31,168 +51,56 @@ function recenterShared(meshes) {
       if (p[i + 2] < minZ) minZ = p[i + 2]; if (p[i + 2] > maxZ) maxZ = p[i + 2];
     }
   }
-  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  const out = meshes.map((m) => {
-    const p = m.positions.slice();
-    for (let i = 0; i < p.length; i += 3) { p[i] -= cx; p[i + 1] -= cy; p[i + 2] -= minZ; }
-    return { positions: p, indices: m.indices, extruder: m.extruder };
-  });
-  return { meshes: out, height: maxZ - minZ };
-}
+  if (!Number.isFinite(minX)) return { gcode: '', layers: 0, materials: 0 };
+  const offset = [(minX + maxX) / 2, (minY + maxY) / 2, minZ];
+  const numLayers = Math.max(1, Math.floor((maxZ - minZ) / lh));
+  const extruders = [...new Set(prepared.map((m) => m.extruder))].sort((a, b) => a - b);
 
-/** Build the typed paths for one material's regions on one layer. */
-function materialLayerPaths(regions, s, i, isSolid, lw) {
-  const walls = [];
-  const fills = [];
-  const wallLoops = Math.max(1, s.perimeters | 0);
-  for (const region of regions) {
-    let inner = region.outer;
-    walls.push({ feature: 'outer-wall', closed: true, pts: inner });
-    for (let p = 1; p < wallLoops; p++) {
-      inner = offsetPolygon(inner, -lw);
-      if (!inner || inner.length < 3) break;
-      walls.push({ feature: 'inner-wall', closed: true, pts: inner });
-    }
-    const grownHoles = [];
-    for (const hole of region.holes) {
-      let hw = hole;
-      walls.push({ feature: 'inner-wall', closed: true, pts: hw });
-      for (let p = 1; p < wallLoops; p++) { hw = offsetPolygon(hw, lw); if (!hw || hw.length < 3) break; walls.push({ feature: 'inner-wall', closed: true, pts: hw }); }
-      grownHoles.push(hw);
-    }
-    const infOuter = offsetPolygon(inner, -lw * 0.5);
-    const infHoles = grownHoles.map((h) => offsetPolygon(h, lw * 0.5)).filter((h) => h && h.length >= 3);
-    if (infOuter && infOuter.length >= 3) {
-      const infRegion = { outer: infOuter, holes: infHoles };
-      const angle = s.infillAngle + (i % 2) * 90;
-      const segs = isSolid ? solidInfill(infRegion, angle, lw) : regionInfill(infRegion, s.infillDensity, angle, lw);
-      for (const sg of segs) fills.push({ feature: isSolid ? 'solid' : 'sparse', closed: false, pts: sg });
-    }
+  // Slice each material through the FULL quality pipeline (shared offset + layer
+  // count so every colour lines up).
+  const perMat = [];
+  for (const m of prepared) {
+    const { layers } = await sliceMeshToLayers(m, { ...s, layerHeight: lh }, { offset, numLayers });
+    perMat.push({ tool: m.extruder, layers });
   }
-  // Infill first, then walls → the colour-change flush (deposited at the start
-  // of infill) never bleeds onto the outer surface.
-  return { fills, walls };
-}
+  perMat.sort((a, b) => a.tool - b.tool);
 
-/**
- * @param {Array<{positions:Float32Array|number[], indices:number[], extruder:number}>} rawMeshes
- * @param {object} settings incl. flushIntoInfill (bool), flushVolume (mm³ per change)
- */
-export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
-  const s = {
-    layerHeight: 0.2, lineWidth: 0.42, perimeters: 2, infillDensity: 0.15, infillAngle: 45,
-    topLayers: 4, bottomLayers: 4, printSpeed: 60, firstLayerSpeed: 20, travelSpeed: 150,
-    retraction: 1.0, bedTemp: 60, nozzleTemp: 210, filamentDiam: FILAMENT_DIAM, fanSpeed: 100,
-    material: 'PLA', flushIntoInfill: true, flushVolume: 80,
-    wipeTower: false, wipeTowerWidth: 30, wipeTowerDepth: 30,
-    ...settings,
-  };
+  // Optional wipe/prime tower: per-extruder bands beside the model (recentered
+  // frame) so the colour-change purge goes into the tower instead of the model.
+  // Each material prints its band every layer; the bands carry the tool so they
+  // group with that colour's model paths (no extra tool change).
   const lw = s.lineWidth;
-  const efactor = (lw * s.layerHeight) / (PI * (s.filamentDiam / 2) ** 2);
-  const flushE = s.flushVolume / (PI * (s.filamentDiam / 2) ** 2); // mm filament for the purge
+  const towerBands = (s.wipeTower && extruders.length > 1) ? (() => {
+    const rMaxX = (maxX - minX) / 2, rMinY = -(maxY - minY) / 2;
+    const x0base = s.wipeTowerX != null ? s.wipeTowerX : rMaxX + 8;
+    const y0 = s.wipeTowerY != null ? s.wipeTowerY : rMinY;
+    const bandW = (s.wipeTowerWidth ?? 30) / extruders.length;
+    return extruders.map((ext, idx) => {
+      const x0 = x0base + idx * bandW, x1 = x0 + bandW * 0.9, y1 = y0 + (s.wipeTowerDepth ?? 30);
+      return { ext, rect: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] };
+    });
+  })() : null;
 
-  const { autoRepair } = await import('./mesh-repair.js');
-  const prepared = rawMeshes.map((m) => ({ ...autoRepair({ positions: Array.from(m.positions), indices: Array.from(m.indices) }).mesh, extruder: m.extruder || 1 }));
-  const { meshes, height } = recenterShared(prepared);
-  const numLayers = Math.max(1, Math.floor(height / s.layerHeight));
-  // Distinct extruders in ascending order.
-  const extruders = [...new Set(meshes.map((m) => m.extruder))].sort((a, b) => a - b);
-
-  // Wipe/prime tower: a dedicated purge structure beside the model, split into
-  // one vertical band per extruder so the bands never collide. Each active tool
-  // prints its band every layer, purging into the tower instead of into the
-  // model's infill. Placed just past the model's +X edge by default.
-  let towerX0 = 0, towerY0 = 0, bandW = 0;
-  if (s.wipeTower && extruders.length > 1) {
-    let mMaxX = -Infinity, mMinY = Infinity;
-    for (const m of meshes) { const p = m.positions; for (let k = 0; k < p.length; k += 3) { if (p[k] > mMaxX) mMaxX = p[k]; if (p[k + 1] < mMinY) mMinY = p[k + 1]; } }
-    towerX0 = s.wipeTowerX != null ? s.wipeTowerX : mMaxX + 8;
-    towerY0 = s.wipeTowerY != null ? s.wipeTowerY : mMinY;
-    bandW = s.wipeTowerWidth / extruders.length;
-  }
-
-  let g = '';
-  g += `; Generated by 3DPrintForge native slicer (multi-material)\n`;
-  g += `; Materials: ${extruders.length}, layers: ${numLayers}\n`;
-  g += `M140 S${s.bedTemp}\nM104 S${s.nozzleTemp}\nG28\nM190 S${s.bedTemp}\nM109 S${s.nozzleTemp}\nG92 E0\nG90\nM82\nM106 S${Math.round(s.fanSpeed * 2.55)}\n`;
-
-  let e = 0, curX = 0, curY = 0, curTool = extruders[0];
-  g += `T${curTool - 1}\n`;
-
-  const emit = (pts, speed, closed, extraE = 0) => {
-    if (pts.length < 2) return;
-    const first = pts[0];
-    e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
-    g += `G0 X${first[0].toFixed(3)} Y${first[1].toFixed(3)} F${s.travelSpeed * 60}\n`;
-    e += s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
-    curX = first[0]; curY = first[1];
-    if (extraE > 0) { e += extraE; g += `G1 E${e.toFixed(4)} F${s.firstLayerSpeed * 60} ; flush into infill\n`; }
-    const loop = closed ? [...pts, first] : pts;
-    for (let k = 1; k < loop.length; k++) {
-      const d = Math.hypot(loop[k][0] - curX, loop[k][1] - curY);
-      e += d * efactor;
-      g += `G1 X${loop[k][0].toFixed(3)} Y${loop[k][1].toFixed(3)} E${e.toFixed(4)} F${speed * 60}\n`;
-      curX = loop[k][0]; curY = loop[k][1];
-    }
-  };
-
+  // Merge per layer: every material's paths tagged with its tool (ascending), so
+  // the shared emitter inserts one tool change + prime per colour per layer.
+  const combined = [];
   for (let i = 0; i < numLayers; i++) {
-    const z = (i + 1) * s.layerHeight;
-    const speed = i === 0 ? s.firstLayerSpeed : s.printSpeed;
-    const isSolid = i < s.bottomLayers || i >= numLayers - s.topLayers;
-    g += `; --- layer ${i + 1}/${numLayers} z=${z.toFixed(3)} ---\n`;
-    g += `G1 Z${z.toFixed(3)} F${s.travelSpeed * 60}\n`;
-    if (i === 1) g += `M106 S${Math.round(s.fanSpeed * 2.55)}\n`;
-
-    for (const ext of extruders) {
-      const mats = meshes.filter((m) => m.extruder === ext);
-      const regions = [];
-      for (const m of mats) for (const r of buildRegions(sliceLayer(m, z - s.layerHeight * 0.5))) regions.push(r);
-      if (!regions.length) continue;
-      const { fills, walls } = materialLayerPaths(regions, s, i, isSolid, lw);
-      if (!fills.length && !walls.length) continue;
-
-      // Tool change + flush. The purge volume can come from a per-pair matrix
-      // (BambuStudio "purging volumes") so similar colours waste less; falls
-      // back to the single flushVolume when no matrix is supplied.
-      let flush = 0;
-      if (ext !== curTool) {
-        const mtx = s.flushMatrix;
-        const vol = (Array.isArray(mtx) && Array.isArray(mtx[curTool - 1]) && mtx[curTool - 1][ext - 1] != null)
-          ? Number(mtx[curTool - 1][ext - 1]) : s.flushVolume;
-        const thisFlushE = (vol || 0) / (PI * (s.filamentDiam / 2) ** 2);
-        g += `; TOOL_CHANGE ${curTool} -> ${ext} (purge ${Math.round(vol || 0)}mm3)\n`;
-        g += `T${ext - 1}\n`;
-        curTool = ext;
-        // The wipe tower (below) absorbs the purge; otherwise flush into infill
-        // or, as a last resort, purge in place.
-        flush = (s.wipeTower && extruders.length > 1) ? 0 : (s.flushIntoInfill ? thisFlushE : 0);
-        if (!s.wipeTower && !s.flushIntoInfill && thisFlushE > 0) { // waste tower fallback: purge in place
-          e += thisFlushE; g += `G1 E${e.toFixed(4)} F${s.firstLayerSpeed * 60} ; purge\n`;
+    const paths = [];
+    for (const pm of perMat) {
+      const L = pm.layers[i];
+      if (L && L.paths) for (const p of L.paths) paths.push({ ...p, tool: pm.tool });
+      if (towerBands) {
+        const b = towerBands.find((tb) => tb.ext === pm.tool);
+        if (b) {
+          paths.push({ feature: 'wipe_tower', closed: true, pts: b.rect, tool: pm.tool });
+          const angle = s.infillAngle + (i % 2) * 90;
+          for (const sg of solidInfill({ outer: b.rect, holes: [] }, angle, lw)) paths.push({ feature: 'wipe_tower', closed: false, pts: sg, tool: pm.tool });
         }
       }
-      // Wipe-tower band for this extruder: outline + solid fill, purging into it.
-      if (s.wipeTower && extruders.length > 1) {
-        const extIdx = extruders.indexOf(ext);
-        const x0 = towerX0 + extIdx * bandW, x1 = x0 + bandW * 0.9;
-        const y0 = towerY0, y1 = towerY0 + s.wipeTowerDepth;
-        const rect = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
-        const angle = s.infillAngle + (i % 2) * 90;
-        g += `; FEATURE: Prime tower\n; WIPE_TOWER ext ${ext} L${i + 1}\n`;
-        emit(rect, speed, true);
-        for (const sg of solidInfill({ outer: rect, holes: [] }, angle, lw)) emit(sg, speed, false);
-      }
-      g += `; FEATURE: ${isSolid ? 'Internal solid infill' : 'Sparse infill'}\n`;
-      let first = true;
-      for (const f of fills) { emit(f.pts, speed, false, first ? flush : 0); first = false; }
-      g += `; FEATURE: Outer wall\n`;
-      for (const w of walls) emit(w.pts, speed, true);
     }
+    combined.push({ paths });
   }
 
-  g += `; --- finished ---\n`;
-  e -= s.retraction; g += `G1 E${e.toFixed(4)} F${s.travelSpeed * 60}\n`;
-  g += `G1 Z${(numLayers * s.layerHeight + 5).toFixed(3)} F${s.travelSpeed * 60}\n`;
-  g += `M104 S0\nM140 S0\nM107\nG28 X Y\nM84\n`;
-  return { gcode: g, layers: numLayers, materials: extruders.length };
+  const gcode = layersToGcode(combined, { ...s, layerHeight: lh });
+  return { gcode, layers: numLayers, materials: extruders.length };
 }

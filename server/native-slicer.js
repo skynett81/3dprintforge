@@ -448,7 +448,13 @@ export function layersToGcode(layers, settings) {
   let curFanG = -1;   // last-emitted M106 S value (PWM 0-255), for overhang cooling
   let curAccelG = -1; // last-emitted M204 P value, for per-feature acceleration
   let curObj = null;  // current object label (gcode_label_objects / exclude-object)
+  let curTool = null; // active tool/extruder (multi-material); null until a path sets one
   let curJerkG = -1;  // last-emitted M205 X/Y value, for per-feature jerk
+  // Filament purge on a tool change. flushIntoInfill (default) deposits it into
+  // the next extrusion move (waste hidden inside the print); otherwise a
+  // stationary in-place purge. flushVolume mm³ → mm of filament.
+  const flushE = ((s.flushVolume ?? 0) > 0) ? (s.flushVolume / (PI * (s.filamentDiam / 2) ** 2)) : 0;
+  let pendingFlushE = 0;   // purge to deposit into the next extruding move
   let combBoundary = null;   // current layer's solid regions, for avoid-crossing travel
   let combCache = null;      // that layer's lazily-built waypoints + visibility graph
   const combing = s.avoidCrossingWalls !== false;
@@ -509,6 +515,7 @@ export function layersToGcode(layers, settings) {
       if (route && route.length >= 2) {
         for (let i = 1; i < route.length; i++) g += `G0 X${route[i][0].toFixed(3)} Y${route[i][1].toFixed(3)} F${s.travelSpeed * 60}\n`;
         curX = first[0]; curY = first[1];
+        if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
         for (let i = 1; i < pts.length; i++) { const p = pts[i]; const d = Math.hypot(p[0] - curX, p[1] - curY); if (d < 5e-4) { curX = p[0]; curY = p[1]; continue; } e += d * ef; g += `G1 X${p[0].toFixed(3)} Y${p[1].toFixed(3)} E${e.toFixed(4)} F${spd(i) * 60}\n`; curX = p[0]; curY = p[1]; }
         if (closed) closeLoop(first, ef, speed);
         lastPath = closed ? [...pts, first] : pts;
@@ -538,6 +545,7 @@ export function layersToGcode(layers, settings) {
     if (zHop > 0) g += `G1 Z${curZ.toFixed(3)} F${zTravelFeed}\n`;
     e += s.retraction + restartExtra; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`;
     curX = first[0]; curY = first[1];
+    if (pendingFlushE > 0) { e += pendingFlushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.printSpeed * 60)} ; flush into infill\n`; pendingFlushE = 0; }
     let sdist = 0;
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i];
@@ -630,39 +638,55 @@ export function layersToGcode(layers, settings) {
     // differ only in a disabled feature still match byte-for-byte.
     if (s.optimizeTravel !== false && paths.length > 2) {
       const isWall = (f) => f === 'wall' || f === 'outer-wall' || f === 'inner-wall' || f === 'overhang-wall';
-      const front = [], back = [], units = [];
-      for (const p of paths) {
-        if (p.feature === 'skirt' || p.feature === 'brim') { front.push(p); continue; }
-        if (p.feature === 'support' || p.feature === 'support-interface') { back.push(p); continue; }
-        const wu = units.length && units[units.length - 1]._wall;
-        if (isWall(p.feature) && wu) units[units.length - 1].paths.push(p);
-        else units.push({ _wall: isWall(p.feature), paths: [p] });
-      }
-      const entry = (u) => u.paths[0].pts[0];
-      const exit = (u) => { const l = u.paths[u.paths.length - 1]; return l.closed ? l.pts[0] : l.pts[l.pts.length - 1]; };
-      const ordered = [];
-      let cx = curX, cy = curY;
-      const rem = units;
-      while (rem.length) {
-        let bi = 0, bd = Infinity, brev = false;
-        for (let j = 0; j < rem.length; j++) {
-          const u = rem[j], e = entry(u);
-          const d = (e[0] - cx) * (e[0] - cx) + (e[1] - cy) * (e[1] - cy);
-          if (d < bd) { bd = d; bi = j; brev = false; }
-          // A lone open infill run (not monotonic) may enter from its far end.
-          const p0 = u.paths[0];
-          if (!u._wall && u.paths.length === 1 && !p0.closed && !p0.monotonic) {
-            const x = p0.pts[p0.pts.length - 1];
-            const dr = (x[0] - cx) * (x[0] - cx) + (x[1] - cy) * (x[1] - cy);
-            if (dr < bd) { bd = dr; bi = j; brev = true; }
-          }
+      // Greedy nearest-neighbour order for one path list, from (sx,sy).
+      const orderOne = (list, sx, sy) => {
+        const front = [], back = [], units = [];
+        for (const p of list) {
+          if (p.feature === 'skirt' || p.feature === 'brim') { front.push(p); continue; }
+          if (p.feature === 'support' || p.feature === 'support-interface') { back.push(p); continue; }
+          const wu = units.length && units[units.length - 1]._wall;
+          if (isWall(p.feature) && wu) units[units.length - 1].paths.push(p);
+          else units.push({ _wall: isWall(p.feature), paths: [p] });
         }
-        const u = rem.splice(bi, 1)[0];
-        if (brev) u.paths[0] = { ...u.paths[0], pts: u.paths[0].pts.slice().reverse() };
-        for (const p of u.paths) ordered.push(p);
-        const ex = exit(u); cx = ex[0]; cy = ex[1];
+        const entry = (u) => u.paths[0].pts[0];
+        const exit = (u) => { const l = u.paths[u.paths.length - 1]; return l.closed ? l.pts[0] : l.pts[l.pts.length - 1]; };
+        const ordered = []; let cx = sx, cy = sy; const rem = units;
+        while (rem.length) {
+          let bi = 0, bd = Infinity, brev = false;
+          for (let j = 0; j < rem.length; j++) {
+            const u = rem[j], e = entry(u);
+            const d = (e[0] - cx) * (e[0] - cx) + (e[1] - cy) * (e[1] - cy);
+            if (d < bd) { bd = d; bi = j; brev = false; }
+            const p0 = u.paths[0];
+            if (!u._wall && u.paths.length === 1 && !p0.closed && !p0.monotonic) {
+              const x = p0.pts[p0.pts.length - 1];
+              const dr = (x[0] - cx) * (x[0] - cx) + (x[1] - cy) * (x[1] - cy);
+              if (dr < bd) { bd = dr; bi = j; brev = true; }
+            }
+          }
+          const u = rem.splice(bi, 1)[0];
+          if (brev) u.paths[0] = { ...u.paths[0], pts: u.paths[0].pts.slice().reverse() };
+          for (const p of u.paths) ordered.push(p);
+          const ex = exit(u); cx = ex[0]; cy = ex[1];
+        }
+        return { seq: [...front, ...ordered, ...back], ex: [cx, cy] };
+      };
+      // Multi-material: never mix tools within a layer (that would multiply the
+      // colour changes). Partition by tool in first-seen order and optimise each
+      // tool's paths independently, concatenating in tool order.
+      const hasTools = paths.some((p) => p.tool != null);
+      if (!hasTools) {
+        paths = orderOne(paths, curX, curY).seq;
+      } else {
+        const order = [], seen = new Set();
+        for (const p of paths) { const t = p.tool ?? 0; if (!seen.has(t)) { seen.add(t); order.push(t); } }
+        const out = []; let sx = curX, sy = curY;
+        for (const t of order) {
+          const r = orderOne(paths.filter((p) => (p.tool ?? 0) === t), sx, sy);
+          out.push(...r.seq); sx = r.ex[0]; sy = r.ex[1];
+        }
+        paths = out;
       }
-      paths = [...front, ...ordered, ...back];
     }
     const spiral = paths.some((p) => p.spiral);
     combBoundary = spiral ? null : (layer.regions || null);
@@ -727,6 +751,21 @@ export function layersToGcode(layers, settings) {
     let curFeature = null;
     for (const path of paths) {
       if (!path.pts || path.pts.length < 2) continue;
+      // Tool/extruder change (multi-material): retract, switch tool, purge the
+      // old colour, then re-prime. Only when a path carries a distinct tool.
+      if (path.tool != null && path.tool !== curTool) {
+        if (curTool != null) { e -= s.retraction; g += `G1 E${e.toFixed(4)} F${retractFeed.toFixed(0)}\n`; }
+        g += `; TOOL_CHANGE ${curTool ?? '-'} -> ${path.tool}\n`;
+        g += `T${path.tool - 1}\n`;
+        curTool = path.tool;
+        if (s.retraction > 0) { e += s.retraction; g += `G1 E${e.toFixed(4)} F${deretractFeed.toFixed(0)}\n`; }
+        // Purge the old colour: into the next extrusion move (default, hidden in
+        // the print) or as a stationary in-place waste blob when disabled.
+        if (flushE > 0) {
+          if (s.flushIntoInfill !== false) pendingFlushE = flushE;
+          else { e += flushE; g += `G1 E${e.toFixed(4)} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
+        }
+      }
       // Object labels (exclude-object): wrap each object's moves.
       if (s.gcodeLabelObjects && path.obj !== curObj) {
         if (curObj != null) g += `EXCLUDE_OBJECT_END NAME=${curObj}\n`;
