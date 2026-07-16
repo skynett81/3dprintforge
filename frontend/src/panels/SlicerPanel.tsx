@@ -465,7 +465,7 @@ export function SlicerPanel() {
     setPreview(null); setTab('prepare');
   }
   async function importFromLibrary(f: File) {
-    if (!file) { pickFile(f); return; }
+    if (!file) { await importProjectSettings(f); pickFile(f); return; }
     await plateRef.current?.addFile(f); setPreview(null); setTab('prepare');
   }
 
