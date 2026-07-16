@@ -432,11 +432,13 @@ describe('native-slicer: richer settings batch', () => {
     const fans = [...new Set([...ramp.gcode.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]))];
     assert.ok(fans.length > 2, `fan should take several values, got ${fans.length}`);
   });
-  it('min sparse infill area removes infill from a tiny model', async () => {
+  it('min sparse infill area promotes a tiny pocket to solid (BambuStudio), not a void', async () => {
     const withInfill = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, supports: false });
-    const skipped = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, minSparseInfillArea: 200, supports: false });
-    const sparseMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
-    assert.ok(sparseMoves(skipped.gcode) < sparseMoves(withInfill.gcode), 'tiny region loses its sparse infill');
+    const promoted = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, minSparseInfillArea: 200, supports: false });
+    // Interior fill = sparse + solid moves. Too small for sparse → filled DENSELY
+    // (solid) instead of skipped, so the promoted slice is not left empty inside.
+    const fillMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = /Sparse infill|Internal solid infill/.test(ln); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
+    assert.ok(fillMoves(promoted.gcode) >= fillMoves(withInfill.gcode), 'tiny pocket is filled (promoted to solid), not emptied');
   });
 });
 

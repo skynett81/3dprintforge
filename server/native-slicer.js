@@ -834,7 +834,11 @@ export function layersToGcode(layers, settings) {
         const w = LW[path.feature] ?? s.lineWidth;
         pspeed = Math.min(pspeed, s.maxVolumetricSpeed / Math.max(0.01, w * lh * (path.flow ?? 1)));
       }
-      if (speedScale < 1) pspeed = Math.max(minSpeed, pspeed * speedScale);
+      // dont_slow_down_outer_wall: keep external perimeters at full speed even
+      // when the layer is slowed for cooling, so the visible surface keeps a
+      // consistent finish (BambuStudio slow_down_for_layer_cooling exemption).
+      const scaleThis = speedScale < 1 && !(s.dontSlowDownOuterWall && path.feature === 'outer-wall');
+      if (scaleThis) pspeed = Math.max(minSpeed, pspeed * speedScale);
       // Overhang grading: slow ONLY the overhanging stretches. Per-vertex degrees
       // give a per-segment feedrate; without them fall back to slowing the whole
       // wall by its overhang fraction.
@@ -1457,9 +1461,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           });
         };
         const sparseSegsFor = (region, maskFn = null) => {
-          // Skip sparse infill in regions smaller than the minimum area (BambuStudio
-          // minimum_sparse_infill_area) — tiny pockets aren't worth infilling.
-          if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) return [];
+          // A sparse pocket smaller than minimum_sparse_infill_area can't hold a
+          // useful sparse pattern — a lone sparse line prints as an unsupported
+          // dribble. BambuStudio PROMOTES it to solid instead of leaving a void,
+          // so the pocket is filled densely edge-to-edge.
+          if (s.minSparseInfillArea > 0 && Math.abs(_signedArea(region.outer)) < s.minSparseInfillArea) {
+            return anchorSegs(solidInfill(region, baseAngle, lw, false, maskFn));
+          }
           const active = modifiers.filter((m) => zc >= m.minZ && zc <= m.maxZ);
           // Adaptive cubic: cubic infill that's denser in the layers just below a
           // top skin (where it supports the top surface) and sparse deep inside —

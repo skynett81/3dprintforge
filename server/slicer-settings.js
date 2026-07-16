@@ -200,6 +200,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('fullFanSpeedLayer', num(s.full_fan_speed_layer));
   set('brimObjectGap', num(s.brim_object_gap));
   set('minSparseInfillArea', num(s.min_sparse_infill_area));
+  if (s.dont_slow_down_outer_wall !== undefined && s.dont_slow_down_outer_wall !== '') out.dontSlowDownOuterWall = !!s.dont_slow_down_outer_wall;
   set('skirtHeight', num(s.skirt_height));
   set('skirtSpeed', num(s.skirt_speed));
   set('resolution', num(s.resolution));
