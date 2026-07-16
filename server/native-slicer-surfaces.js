@@ -78,13 +78,15 @@ export function buildSurfaceClassifier(layerRegions, opts = {}) {
     const bt = new Uint8Array(cols * rows);
     const here = model[i];
     const above = i + 1 < n ? model[i + 1] : null;
+    const below = i - 1 >= 0 ? model[i - 1] : null;
     const globalEdge = i < bottomLayers || i >= n - topLayers;
     for (let idx = 0; idx < s.length; idx++) {
       if (!here[idx]) continue;                  // only model cells matter
       if (!above || !above[idx]) tp[idx] = 1;    // exposed directly above = top skin
-      // Bottom skin = within bottomLayers of an exposed-below surface (the whole
-      // bottom shell, not just layer 0), so bottom_surface_speed applies above it.
-      for (let k = 1; k <= bottomLayers; k++) { const j = i - k; if (j < 0 || !model[j][idx]) { bt[idx] = 1; break; } }
+      // Bottom skin = only the layer directly exposed below (touching air/plate),
+      // symmetric with the top skin. The inner bottom shell layers are internal
+      // solid infill (matching BambuStudio's Bottom-surface vs solid split).
+      if (!below || !below[idx]) bt[idx] = 1;    // exposed directly below = bottom skin
       let isSolid = globalEdge;
       for (let k = 1; k <= topLayers && !isSolid; k++) {   // exposed above → top surface
         const j = i + k;

@@ -8,7 +8,7 @@ import {
   sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
 import { patternInfill, solidInfill, bestBridgeAngle } from '../../server/native-slicer-geo.js';
-import { box, cylinder, extrudePolygon } from '../../server/mesh-primitives.js';
+import { box, cylinder, extrudePolygon, offset, unionMeshes } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
   it('a 10mm cube cut at z=5 yields one square polygon', () => {
@@ -653,9 +653,16 @@ describe('native-slicer: only one wall top', () => {
 });
 
 describe('native-slicer: bottom surface speed', () => {
-  it('applies a distinct feedrate to the bottom surface', async () => {
-    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, bottomSurfaceSpeed: 25, supports: false });
-    assert.match(r.gcode, /F1500(\.0+)?\b/, 'bottom surface at 25 mm/s = F1500');
+  // The exposed bottom skin is labelled as its own BambuStudio feature ("Bottom
+  // surface"), symmetric with the top surface. On a plate-sitting part that skin
+  // is the first layer, where first-layer speed governs (BambuStudio does the
+  // same) — so bottom_surface_speed does not override it there. The meaningful
+  // invariant is that the bottom surface is classified distinctly and that an
+  // unset (or 0) bottom_surface_speed leaves output unchanged.
+  it('labels the exposed bottom skin as a distinct Bottom surface feature', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    assert.ok(r.gcode.includes('; FEATURE: Bottom surface'), 'bottom skin labelled');
+    assert.ok(r.gcode.includes('; FEATURE: Top surface'), 'top skin labelled (symmetric)');
   });
   it('no bottom_surface_speed byte-identical', async () => {
     const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
