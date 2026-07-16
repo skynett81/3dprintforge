@@ -1133,3 +1133,52 @@ describe('native-slicer: Arachne adaptive grid (large thin regions)', () => {
     assert.ok(beads.every((b) => b.pts.every((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))), 'no NaN in bead points');
   });
 });
+
+// A watertight hollow square box: outer W×D×H with a centered w×d hole through
+// it. Slices to an annulus (outer contour + a hole) so we can check that the
+// perimeter bounding the hole is classified as an EXTERNAL wall (it faces air).
+function hollowBox(W, D, H, w, d) {
+  const ox = W / 2, oy = D / 2, ix = w / 2, iy = d / 2;
+  const P = []; const push = (x, y, z) => { P.push(x, y, z); return P.length / 3 - 1; };
+  const ob = [push(-ox, -oy, 0), push(ox, -oy, 0), push(ox, oy, 0), push(-ox, oy, 0)];
+  const ot = [push(-ox, -oy, H), push(ox, -oy, H), push(ox, oy, H), push(-ox, oy, H)];
+  const ib = [push(-ix, -iy, 0), push(ix, -iy, 0), push(ix, iy, 0), push(-ix, iy, 0)];
+  const it = [push(-ix, -iy, H), push(ix, -iy, H), push(ix, iy, H), push(-ix, iy, H)];
+  const I = []; const q = (a, b, c, dd) => { I.push(a, b, c, a, c, dd); };
+  q(ob[0], ob[1], ot[1], ot[0]); q(ob[1], ob[2], ot[2], ot[1]); q(ob[2], ob[3], ot[3], ot[2]); q(ob[3], ob[0], ot[0], ot[3]);
+  q(ib[1], ib[0], it[0], it[1]); q(ib[2], ib[1], it[1], it[2]); q(ib[3], ib[2], it[2], it[3]); q(ib[0], ib[3], it[3], it[0]);
+  q(ot[0], ot[1], it[1], it[0]); q(ot[1], ot[2], it[2], it[1]); q(ot[2], ot[3], it[3], it[2]); q(ot[3], ot[0], it[0], it[3]);
+  q(ob[1], ob[0], ib[0], ib[1]); q(ob[2], ob[1], ib[1], ib[2]); q(ob[3], ob[2], ib[2], ib[3]); q(ob[0], ob[3], ib[3], ib[0]);
+  return { positions: new Float32Array(P), indices: new Uint32Array(I) };
+}
+
+describe('native-slicer: hole/cavity perimeters are external walls', () => {
+  const perLayer = (g, feat) => {
+    const layers = new Set(); let cur = -1, f = '';
+    for (const l of g.split('\n')) {
+      const m = l.match(/^; --- layer (\d+)/); if (m) cur = +m[1];
+      if (l.startsWith('; FEATURE:')) f = l.slice(10).trim();
+      if (f === feat && /^G1 .*E/.test(l)) layers.add(cur);
+    }
+    return layers.size;
+  };
+  const count = (g, feat) => (g.match(new RegExp(`; FEATURE: ${feat}`, 'g')) || []).length;
+
+  it('labels the loop bounding a hole as Outer wall, not Inner wall', async () => {
+    // Each annular layer has TWO external boundaries (outer contour + hole), so
+    // with 2 walls there are ~2 Outer wall and ~2 Inner wall loops per layer —
+    // NOT 1 outer / 3 inner (the bug where hole loops were all inner-wall).
+    const r = await sliceMeshToGcode(hollowBox(20, 20, 8, 10, 10), { layerHeight: 0.2, wall_loops: 2, infill_density: 20, top_layers: 3, bottom_layers: 3, supports: false });
+    const outer = count(r.gcode, 'Outer wall'), inner = count(r.gcode, 'Inner wall');
+    // The hole doubles the external-perimeter count: outer ≈ inner (both loops).
+    assert.ok(outer > r.layers, `hole boundary should add outer walls (outer=${outer}, layers=${r.layers})`);
+    assert.ok(Math.abs(outer - inner) < inner * 0.5, `outer and inner wall counts should be comparable (outer=${outer} inner=${inner})`);
+  });
+
+  it('a solid box (no hole) has one Outer wall loop per layer', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.2, wall_loops: 2, infill_density: 20, supports: false });
+    // One external contour → Outer wall on essentially every layer, once each.
+    assert.ok(perLayer(r.gcode, 'Outer wall') >= r.layers - 2, 'outer wall on each layer');
+    assert.ok(count(r.gcode, 'Outer wall') <= r.layers + 2, 'exactly one outer loop per layer (no spurious hole walls)');
+  });
+});
