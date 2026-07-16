@@ -31,13 +31,13 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // HALF line width is enough to bond the two without a visible seam; a full
   // line double-extrudes the whole overlap and, where solid patches are closer
   // than the grow distance (dense dividers), merges them across the sparse gap.
-  const margin = Math.max(0, (opts.lineWidth ?? 0.42) * 0.5);
+  const margin = Math.max(0, (opts.lineWidth ?? 0.42) * (opts.solidMarginFactor ?? 0.5));
   // Minimum solid strip half-width — strips narrower than this are grown so a
   // rectilinear line fits and the surface stays opaque. One line width: strips
   // below ~one line can't print opaque and get widened, but a genuine sloped
   // top-shell band (already 2-3 lines wide on a 45-degree face) is left alone.
   // 1.5x over-grew those bands ~37% vs BambuStudio on angled surfaces.
-  const widen = Math.max(0, opts.lineWidth ?? 0.42);
+  const widen = Math.max(0, (opts.lineWidth ?? 0.42) * (opts.solidWidenFactor ?? 1));
 
   const slices = layerRegions.map((r) => (r && r.length ? r : EMPTY));
   // Boolean ops on near-identical faceted outlines (e.g. a cylinder wall) leave
@@ -47,12 +47,45 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // only genuine exposed surfaces survive (libslic3r discards sub-EPSILON areas).
   const minArea = Math.max(0.04, (opts.lineWidth ?? 0.42) ** 2 * 0.5);
   const prune = (regs) => (regs && regs.length ? regs.filter((r) => Math.abs(polyArea(r.outer) - (r.holes || []).reduce((a, h) => a + Math.abs(polyArea(h)), 0)) >= minArea) : EMPTY);
-  // Directly-exposed skin per layer: material here not covered by the neighbour.
+  // Morphological OPEN (erode then dilate) on the exposed skin — libslic3r's
+  // offset2(-w,+w) surface filter. A faceted VERTICAL wall never slices to the
+  // exact same outline twice: consecutive layers wobble ~0.1 mm, so the
+  // layer-to-layer difference is a hairline ring on BOTH the top and bottom
+  // side of every layer. Area-pruning can't kill it (a ring around a large
+  // perimeter has real area), but it is far narrower than an extrusion line, so
+  // an open by a fraction of a line width dissolves it while a genuine exposed
+  // surface — always at least one full line wide — survives intact. Without this
+  // every faceted wall grows a solid+bridge shell on every layer (18x too much).
+  // Kept below half a line so a real one-line-wide top rim is still retained.
+  const openW = Math.max(0, (opts.lineWidth ?? 0.42) * (opts.solidOpenFactor ?? 0.34));
+  const openSkin = (regs) => {
+    if (!regs || !regs.length || openW <= 0) return regs || EMPTY;
+    const opened = clipExpand(clipExpand(regs, -openW), openW);
+    return opened.length ? opened : EMPTY;
+  };
+  // Directly-exposed skin per layer. Preferred source: NORMAL-based facet
+  // projection (opts.faceTop/faceBottom) — near-horizontal roof/floor facets
+  // only, so a sloped or angled wall is NOT mistaken for a top/bottom surface.
+  // The union of a layer's qualifying facets is clipped to that layer's slice
+  // (facets can overhang the outline slightly) then pruned/opened as before.
+  // Fallback (no facet data): the classic 2D layer-difference, which over-counts
+  // slopes but keeps behaviour for callers that don't supply the mesh facets.
+  const faceTop = opts.faceTop, faceBottom = opts.faceBottom;
+  const faceUnion = (tris) => (tris && tris.length ? clipUnion(tris.map(clone)) : EMPTY);
+  // Real skin = ACTUALLY EXPOSED (2D difference vs the neighbour layer) AND
+  // near-horizontal-facing (facet normal). The 2D term drops internal interfaces
+  // that have material above/below (e.g. a multi-material colour boundary); the
+  // facet term drops sloped/vertical walls that shrink the outline but are just
+  // perimeters. Their intersection is exactly BambuStudio's top/bottom skin.
   const topExposed = new Array(n);
   const bottomExposed = new Array(n);
   for (let i = 0; i < n; i++) {
-    topExposed[i] = i + 1 < n ? prune(clipDifference(slices[i], slices[i + 1])) : slices[i].map(clone);
-    bottomExposed[i] = i - 1 >= 0 ? prune(clipDifference(slices[i], slices[i - 1])) : slices[i].map(clone);
+    let te = i + 1 < n ? clipDifference(slices[i], slices[i + 1]) : slices[i].map(clone);
+    let be = i - 1 >= 0 ? clipDifference(slices[i], slices[i - 1]) : slices[i].map(clone);
+    if (faceTop) { const fu = faceUnion(faceTop[i]); te = (te.length && fu.length) ? clipIntersection(te, fu) : EMPTY; }
+    if (faceBottom) { const fu = faceUnion(faceBottom[i]); be = (be.length && fu.length) ? clipIntersection(be, fu) : EMPTY; }
+    topExposed[i] = openSkin(prune(te));
+    bottomExposed[i] = openSkin(prune(be));
   }
 
   const topSolid = new Array(n), bottomSolid = new Array(n), solid = new Array(n), sparse = new Array(n);

@@ -26,28 +26,108 @@ export function sliceLayer(mesh, z) {
   const positions = mesh.positions;
   const indices = mesh.indices;
 
+  // Crossing point on the edge between vertices ia and ib, computed with a
+  // CANONICAL endpoint order (lowest global vertex index first). Two triangles
+  // that share this edge would otherwise interpolate it in opposite directions
+  // (t vs 1-t) and, after float rounding, land on points a few nanometres apart
+  // — too far for the chain tolerance to weld, so the contour opened up and the
+  // chainer bridged the gap with a straight CHORD across the part. Ordering the
+  // endpoints identically makes both triangles produce the bit-identical point,
+  // so shared edges always weld and no phantom chord (or its false surface) is
+  // created. This is the coordinate-free edge identity libslic3r relies on.
+  const edgeCross = (ia, ib) => {
+    let a = ia, b = ib;
+    if (a > b) { const t = a; a = b; b = t; }
+    const az = positions[3 * a + 2], bz = positions[3 * b + 2];
+    const t = (z - az) / (bz - az);
+    return [positions[3 * a] + t * (positions[3 * b] - positions[3 * a]),
+            positions[3 * a + 1] + t * (positions[3 * b + 1] - positions[3 * a + 1])];
+  };
+
   for (let f = 0; f < indices.length; f += 3) {
     const i0 = indices[f], i1 = indices[f + 1], i2 = indices[f + 2];
-    const a = [positions[3 * i0], positions[3 * i0 + 1], positions[3 * i0 + 2]];
-    const b = [positions[3 * i1], positions[3 * i1 + 1], positions[3 * i1 + 2]];
-    const c = [positions[3 * i2], positions[3 * i2 + 1], positions[3 * i2 + 2]];
-
-    const edges = [[a, b], [b, c], [c, a]];
+    // Robust plane crossing (libslic3r/CGAL rule): classify each vertex as
+    // above or below the plane, counting a vertex EXACTLY on the plane as
+    // above. A crossing exists only on an edge whose endpoints fall in
+    // different classes; interpolation then lands on the on-plane vertex
+    // (t=0 or 1) automatically. This avoids the bug where a vertex on the plane,
+    // with the opposite edge crossing, produced THREE crossing points (a, X, a)
+    // so the `length === 2` guard dropped the segment — leaving a gap in the
+    // contour that fragmented the region and spawned phantom top/bottom surfaces
+    // (solid + bridge) on every layer whose Z grazed a vertex.
+    const a0 = positions[3 * i0 + 2] >= z, a1 = positions[3 * i1 + 2] >= z, a2 = positions[3 * i2 + 2] >= z;
     const crossings = [];
-    for (const [p, q] of edges) {
-      if ((p[2] - z) * (q[2] - z) < 0) {                   // strict crossing
-        const t = (z - p[2]) / (q[2] - p[2]);
-        crossings.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
-      } else if (Math.abs(p[2] - z) < EPS && Math.abs(q[2] - z) < EPS) {
-        // Edge lies on the plane — ignored to avoid duplicate segments.
-      } else if (Math.abs(p[2] - z) < EPS) {
-        crossings.push([p[0], p[1]]);
-      }
+    if (a0 !== a1) crossings.push(edgeCross(i0, i1));
+    if (a1 !== a2) crossings.push(edgeCross(i1, i2));
+    if (a2 !== a0) crossings.push(edgeCross(i2, i0));
+    // Two distinct crossings → a real slice segment. A triangle merely tangent
+    // at one vertex yields two coincident points (zero-length) — dropped here.
+    if (crossings.length === 2) {
+      const [c0, c1] = crossings;
+      if (Math.abs(c0[0] - c1[0]) > EPS || Math.abs(c0[1] - c1[1]) > EPS) segments.push([c0, c1]);
     }
-    if (crossings.length === 2) segments.push([crossings[0], crossings[1]]);
   }
 
   return _chainSegments(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+}
+
+/**
+ * Per-layer TOP- and BOTTOM-facing surface projections, classified by face
+ * NORMAL (not by the 2D layer-to-layer difference).
+ *
+ * A slice-difference approach counts every place where the outline shrinks
+ * going up as a "top surface" — which on a sloped or angled wall is the whole
+ * perimeter, on every layer. BambuStudio/PrusaSlicer instead classify a facet
+ * as top/bottom skin only when its NORMAL is near-vertical (a roof/floor); a
+ * steep wall facet is covered by the perimeters and needs no solid skin. This
+ * projects each near-horizontal facet onto the layers its Z-span covers and
+ * returns those triangles, to be unioned by the caller. `cosThreshold` is the
+ * minimum |n_z|/|n| (= cos of the facet's tilt from horizontal): 0.707 keeps
+ * facets within 45° of flat as skin and treats anything steeper as wall.
+ *
+ * @returns {{ top: Array<Array<{outer:number[][],holes:number[][][]}>>, bottom: ... }}
+ */
+export function topBottomFaceRegions(mesh, opts = {}) {
+  const positions = mesh.positions, indices = mesh.indices;
+  const n = Math.max(0, opts.numLayers | 0);
+  const lh = opts.layerHeight || 0.2;
+  const zc = opts.zCenters || Array.from({ length: n }, (_, i) => (i + 0.5) * lh);
+  const cosT = opts.cosThreshold ?? 0.707;   // 45° from horizontal
+  const top = Array.from({ length: n }, () => []);
+  const bottom = Array.from({ length: n }, () => []);
+  if (!n) return { top, bottom };
+
+  for (let f = 0; f < indices.length; f += 3) {
+    const i0 = indices[f], i1 = indices[f + 1], i2 = indices[f + 2];
+    const ax = positions[3 * i0], ay = positions[3 * i0 + 1], az = positions[3 * i0 + 2];
+    const bx = positions[3 * i1], by = positions[3 * i1 + 1], bz = positions[3 * i1 + 2];
+    const cx = positions[3 * i2], cy = positions[3 * i2 + 1], cz = positions[3 * i2 + 2];
+    // Face normal (right-hand rule on the given winding; autoRepair makes it
+    // point outward, so n_z>0 ⇒ up-facing roof, n_z<0 ⇒ down-facing floor).
+    const ux = bx - ax, uy = by - ay, uz = bz - az;
+    const vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const nlen = Math.hypot(nx, ny, nz);
+    if (nlen < 1e-9) continue;                 // degenerate facet
+    const cosv = nz / nlen;                     // cos of tilt from horizontal
+    const isTop = cosv >= cosT, isBottom = cosv <= -cosT;
+    if (!isTop && !isBottom) continue;          // steep wall — not skin
+    const tri = { outer: [[ax, ay], [bx, by], [cx, cy]], holes: [] };
+    let zmin = az < bz ? (az < cz ? az : cz) : (bz < cz ? bz : cz);
+    let zmax = az > bz ? (az > cz ? az : cz) : (bz > cz ? bz : cz);
+    // Assign to every layer the facet caps. A ROOF (top) has material below it,
+    // so it caps the layer whose centre sits just under the facet: z ∈
+    // (zmin−lh, zmax]. A FLOOR (bottom) has material above it, so it caps the
+    // layer just over the facet: z ∈ [zmin, zmax+lh). A purely flat facet then
+    // maps to the single adjacent layer on its material side (a z=0 base floor
+    // caps layer 0 at z=+lh/2, not a non-existent layer below it).
+    if (isTop) {
+      for (let i = 0; i < n; i++) { const z = zc[i]; if (z > zmin - lh && z <= zmax + 1e-6) top[i].push(tri); }
+    } else {
+      for (let i = 0; i < n; i++) { const z = zc[i]; if (z >= zmin - 1e-6 && z < zmax + lh) bottom[i].push(tri); }
+    }
+  }
+  return { top, bottom };
 }
 
 /**

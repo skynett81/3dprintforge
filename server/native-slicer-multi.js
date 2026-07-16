@@ -15,6 +15,7 @@
 
 import { sliceMeshToLayers, layersToGcode } from './native-slicer.js';
 import { sliceLayer, buildRegions, solidInfill, _pointInPoly } from './native-slicer-geo.js';
+import { clipUnion } from './native-slicer-bool.js';
 
 const FILAMENT_DIAM = 1.75;
 
@@ -62,7 +63,10 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
     return { positions: out, indices: m.indices };
   };
 
-  // ONE combined solid → the slice follows the real shape.
+  // ONE combined solid → the slice follows the real shape. The combined mesh is
+  // only used for the bbox / paint frame; the actual per-layer outline comes from
+  // a true 2D UNION of each colour mesh's own slice (below), so no internal
+  // colour-interface face survives to spawn phantom mid-model solid/bridge skins.
   let totalPos = 0, totalIdx = 0;
   for (const m of prepared) { totalPos += m.positions.length; totalIdx += m.indices.length; }
   const cPos = new Float32Array(totalPos), cIdx = new Uint32Array(totalIdx);
@@ -72,7 +76,25 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
     for (let i = 0; i < m.indices.length; i++) cIdx[io + i] = m.indices[i] + vo;
     po += m.positions.length; io += m.indices.length; vo += m.positions.length / 3;
   }
-  const { layers } = await sliceMeshToLayers({ positions: cPos, indices: cIdx }, { ...s, layerHeight: lh }, { offset, numLayers });
+
+  // All colour meshes recentered into the shared slice frame.
+  const allMeshes = prepared.map((m) => recenter(m));
+  // Per-layer clean outline = union of every colour mesh's cross-section at the
+  // layer centre. Dissolves the internal interface faces that a raw triangle
+  // merge would leave behind, so top/bottom/solid detection sees only the true
+  // exterior surfaces (matches BambuStudio: paint is surface colour on ONE solid).
+  const unionLayerRegions = [];
+  for (let i = 0; i < numLayers; i++) {
+    const zc = (i + 0.5) * lh;
+    let acc = [];
+    for (const mesh of allMeshes) {
+      const regs = buildRegions(sliceLayer(mesh, zc));
+      if (regs.length) acc = acc.length ? clipUnion([...acc, ...regs]) : regs;
+    }
+    unionLayerRegions.push(acc);
+  }
+
+  const { layers } = await sliceMeshToLayers({ positions: cPos, indices: cIdx }, { ...s, layerHeight: lh }, { offset, numLayers, layerRegions: unionLayerRegions });
 
   // Non-primary colour meshes (recentered) for per-path tool assignment.
   const colorMeshes = prepared.filter((m) => m.extruder !== primary).map((m) => ({ tool: m.extruder, mesh: recenter(m) }));
@@ -99,6 +121,9 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
       .map((cm) => ({ tool: cm.tool, regions: buildRegions(sliceLayer(cm.mesh, zc)) }))
       .filter((c) => c.regions.length);
     const toolOf = (path) => {
+      // Brim, skirt, raft and support are structural, not part of the model
+      // surface — always the primary tool, never a colour change.
+      if (/brim|skirt|raft|support/i.test(path.feature || '')) return primary;
       if (!colRegions.length || !path.pts || path.pts.length < 1) return primary;
       const pts = path.pts, a = pts[0], b = pts[pts.length - 1];
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;

@@ -25,7 +25,7 @@
 import {
   sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, simplifyPolygon, bestBridgeAngle,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
-  _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph,
+  _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph, topBottomFaceRegions,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
@@ -1023,10 +1023,20 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   }
 
   // Pass 1 — slice every layer into regions (needed up-front for supports).
+  // The multi-material path passes `opts.layerRegions`: pre-unioned per-layer
+  // outlines of the combined colour solid. Naively merging colour meshes leaves
+  // their internal interface faces in the triangle soup, which slice into phantom
+  // horizontal surfaces (mid-model solid shells + bridges). A true 2D union per
+  // layer dissolves those interfaces, so we take the supplied regions verbatim.
   const layerRegions = [];
   for (let i = 0; i < numLayers; i++) {
-    const z = zCenters ? zCenters[i] : (i + 0.5) * layerHeight;
-    let regionsAtZ = buildRegions(sliceLayer(recentered, z));
+    let regionsAtZ;
+    if (opts.layerRegions) {
+      regionsAtZ = opts.layerRegions[i] || [];
+    } else {
+      const z = zCenters ? zCenters[i] : (i + 0.5) * layerHeight;
+      regionsAtZ = buildRegions(sliceLayer(recentered, z));
+    }
     // Resolution: extra path simplification (drop vertices within `resolution` mm
     // of a straight line) → smaller G-code. Off (0) keeps the fine 0.01mm slice.
     if (s.resolution > 0) {
@@ -1077,8 +1087,18 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
   // MAIN fill, so boundaries are clean polygons, not a blocky grid mask. The grid
   // `surfaces` above stays for cheap point queries (ironing, surface speeds,
   // adaptive-cubic depth, only_one_wall_top). Opt-out via polygonSurfaces:false.
+  // Normal-based top/bottom facet projection (roof/floor facets only) so sloped
+  // walls aren't mistaken for solid skin — intersected inside buildSolidRegions
+  // with the 2D exposure. Uses the same Z centres as the layer slices.
+  const faceZc = zCenters ? zCenters : Array.from({ length: numLayers }, (_, i) => (i + 0.5) * layerHeight);
+  const faceRegions = (surfaces && s.polygonSurfaces !== false && s.normalSurfaces !== false)
+    ? topBottomFaceRegions(recentered, { numLayers, layerHeight, zCenters: faceZc, cosThreshold: s.surfaceCosThreshold ?? 0.707 })
+    : null;
   const solidRegions = (surfaces && s.polygonSurfaces !== false)
-    ? buildSolidRegions(layerRegions, { topLayers: s.topLayers, bottomLayers: s.bottomLayers, lineWidth: s.lineWidth })
+    ? buildSolidRegions(layerRegions, {
+        topLayers: s.topLayers, bottomLayers: s.bottomLayers, lineWidth: s.lineWidth,
+        faceTop: faceRegions ? faceRegions.top : null, faceBottom: faceRegions ? faceRegions.bottom : null,
+      })
     : null;
   const midSolid = (surfaces, i, sg) => surfaces.isSolidPoint(i, (sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2);
 
