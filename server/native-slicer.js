@@ -29,6 +29,7 @@ import {
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
+import { clipDifference as _clipDifference } from './native-slicer-bool.js';
 import { medialBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 
@@ -1112,6 +1113,15 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     };
     const pushSolid = (sg) => fills.push({ closed: false, pts: sg, ...classifySolid(sg) });
     const pushBridge = (sg) => fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
+    // Internal bridge: hatch a whole solid-over-sparse region as one bridge pass,
+    // spanning its shortest direction (BambuStudio bridge_over_infill). Bridge
+    // flow + speed + cooling; the top surfaces above then have an anchored layer.
+    const pushInternalBridge = (region, fallbackAngle) => {
+      const ang = s.bridgeAngle != null ? s.bridgeAngle
+        : (s.bridgeAngleAuto !== false ? bestBridgeAngle(region, () => false, lw) : fallbackAngle);
+      const bf = s.bridgeFlow ?? 0.7;
+      for (const chain of solidInfill(region, ang, lw, false, null)) fills.push({ feature: 'bridge', closed: false, pts: chain, flow: bf });
+    };
     // Solid infill arrives as connected zigzag chains; keep-filter (genuine
     // solid surface) and bridge/solid classification are per-segment, so split
     // each chain at those boundaries instead of judging the whole path by one
@@ -1391,7 +1401,16 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
             // A pure TOP surface sits on material below → never a bridge; skip the
             // bridge pre-check there (a big slice-time saving on featured models).
             const noBridge = surfaces.isTopPoint(i, cxp, cyp) && !surfaces.isBottomPoint(i, cxp, cyp);
-            pushSolidRegion(sub, baseAngle, null, mono, noBridge);
+            // Internal bridge: the portion of this solid sub that lies over sparse
+            // infill (lowest top-shell layer) is laid as a bridge; the rest stays
+            // solid. Anchors the top surfaces above (BambuStudio bridge_over_infill).
+            const ibParts = s.internalBridge === false ? [] : solidRegions.internalBridgeIn(i, sub);
+            if (ibParts.length) {
+              for (const ibp of ibParts) if (ibp.outer && ibp.outer.length >= 3) pushInternalBridge(ibp, baseAngle);
+              for (const rest of _clipDifference([sub], ibParts)) if (rest.outer && rest.outer.length >= 3) pushSolidRegion(rest, baseAngle, null, mono, noBridge);
+            } else {
+              pushSolidRegion(sub, baseAngle, null, mono, noBridge);
+            }
           }
           if (doSparse && s.infillPattern !== 'lightning') {
             const sparseSubs = solidRegions.sparseIn(i, infRegion);

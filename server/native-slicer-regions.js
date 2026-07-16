@@ -90,6 +90,20 @@ export function buildSolidRegions(layerRegions, opts = {}) {
     if (!solidGrown[i].length) solidGrown[i] = solid[i];
   }
 
+  // Internal bridge: the part of each layer's solid skin that sits DIRECTLY over
+  // sparse infill (solid here, but the layer below is model that is NOT solid).
+  // This is the lowest layer of a top shell — it spans the sparse-infill gaps,
+  // so BambuStudio prints it as a bridge (bridge flow/speed/angle) to give the
+  // top surfaces above it an anchored layer to lay on (bridge_over_infill).
+  // Excludes solid-over-air (that is a real bottom-surface bridge handled by the
+  // fill's own bridge split) by intersecting with the layer-below slice.
+  const internalBridge = new Array(n);
+  for (let i = 0; i < n; i++) {
+    if (i === 0 || !solid[i].length || !slices[i - 1].length) { internalBridge[i] = EMPTY; continue; }
+    const notSolidBelow = solid[i - 1].length ? clipDifference(solid[i], solid[i - 1]) : solid[i].map(clone);
+    internalBridge[i] = notSolidBelow.length ? clipIntersection(notSolidBelow, slices[i - 1]) : EMPTY;
+  }
+
   return {
     n,
     slices,
@@ -102,6 +116,8 @@ export function buildSolidRegions(layerRegions, opts = {}) {
     sparseIn: (i, region) => (i < 0 || i >= n ? [clone(region)] : (solid[i].length ? clipDifference([region], solid[i]) : [clone(region)])),
     topExposedIn: (i, region) => (i < 0 || i >= n || !topExposed[i].length ? EMPTY : clipIntersection([region], topExposed[i])),
     bottomExposedIn: (i, region) => (i < 0 || i >= n || !bottomExposed[i].length ? EMPTY : clipIntersection([region], bottomExposed[i])),
+    // The internal-bridge part of a solid sub-region (solid over sparse infill).
+    internalBridgeIn: (i, region) => (i < 0 || i >= n || !internalBridge[i].length ? EMPTY : clipIntersection([region], internalBridge[i])),
   };
 }
 

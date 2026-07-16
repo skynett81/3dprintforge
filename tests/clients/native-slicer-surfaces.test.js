@@ -45,6 +45,16 @@ describe('native-slicer: surfaces end-to-end', () => {
     assert.match(r.gcode, /; FEATURE: Sparse infill/);
   });
 
+  it('bridges the first top-shell layer over sparse infill (internal bridge)', async () => {
+    // The lowest solid layer of the top shell sits over sparse infill, so it is
+    // laid as a bridge (BambuStudio bridge_over_infill). Off → no bridge on a
+    // plain box (no overhangs).
+    const on = await sliceMeshToGcode(box(30, 30, 10), { infillDensity: 0.15, topLayers: 4, bottomLayers: 3 });
+    const off = await sliceMeshToGcode(box(30, 30, 10), { infillDensity: 0.15, topLayers: 4, bottomLayers: 3, internalBridge: false });
+    assert.ok(on.gcode.includes('; FEATURE: Bridge'), 'internal bridge present over sparse infill');
+    assert.ok(!off.gcode.includes('; FEATURE: Bridge'), 'no bridge on a plain box when disabled');
+  });
+
   it('ironing adds a top-skin ironing pass when enabled', async () => {
     const plain = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: false });
     const ironed = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: true });
