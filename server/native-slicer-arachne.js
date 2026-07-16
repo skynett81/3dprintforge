@@ -21,7 +21,7 @@ import { makeBeadingStrategy } from './native-slicer-beading.js';
  * @param {number} [gridRes] grid cell size (mm); defaults to lineWidth/2
  * @returns {{pts:number[][], widths:number[]}[]} variable-width bead polylines
  */
-export function medialBeads(region, lineWidth, gridRes = lineWidth / 2, maxRadiusFactor = 1.7) {
+export function medialBeads(region, lineWidth, gridRes = lineWidth / 2, maxRadiusFactor = 1.7, minRadiusFactor = 0.35) {
   const outer = region.outer;
   const holes = region.holes || [];
   if (!outer || outer.length < 3 || !(lineWidth > 0)) return [];
@@ -69,7 +69,7 @@ export function medialBeads(region, lineWidth, gridRes = lineWidth / 2, maxRadiu
 
   // Ridge = local maxima of the distance field, restricted to thin regions
   // (radius up to ~1.7 line widths). Wider areas get proper walls elsewhere.
-  const minR = lineWidth * 0.35, maxR = lineWidth * maxRadiusFactor;
+  const minR = lineWidth * minRadiusFactor, maxR = lineWidth * maxRadiusFactor;
   const ridge = new Uint8Array(cols * rows);
   for (let r = 1; r < rows - 1; r++) for (let c = 1; c < cols - 1; c++) {
     const i = idxOf(r, c); if (!inside[i]) continue;
@@ -160,16 +160,24 @@ function perpNormals(pts) {
  * @returns {{pts:number[][], widths:number[]}[]}
  */
 export function arachneBeads(region, lineWidth, opts = {}) {
+  // WideningBeadingStrategy is on by default so genuinely thin walls survive as
+  // a widened bead instead of vanishing (min_feature_size / min_bead_width).
+  const minInput = opts.minInputWidth ?? lineWidth * 0.15;
+  const minOutput = opts.minOutputWidth ?? lineWidth * 0.85;
   const strat = makeBeadingStrategy({
     optimalWidth: lineWidth,
     splitMidThreshold: opts.split ?? 0.5,
     addMidThreshold: opts.add ?? 0.5,
     distributionRadius: opts.distributionRadius ?? 2,
+    minInputWidth: minInput,
+    minOutputWidth: minOutput,
   });
   const maxBeads = opts.maxBeads ?? 6;
-  // Capture medial ridges out to a radius that holds up to maxBeads lines.
+  // Capture medial ridges out to a radius that holds up to maxBeads lines, and
+  // DOWN to half the min feature size so thin walls reach the widening strategy.
   const maxRF = maxBeads * 0.5 + 0.35;
-  const centerlines = medialBeads(region, lineWidth, lineWidth / 2, maxRF);
+  const minRF = Math.max(0.05, (minInput / 2) / lineWidth);
+  const centerlines = medialBeads(region, lineWidth, lineWidth / 2, maxRF, minRF);
   const out = [];
   for (const cl of centerlines) {
     const pts = cl.pts, thick = cl.widths;      // thick[k] = 2*distance = local width
@@ -178,7 +186,13 @@ export function arachneBeads(region, lineWidth, opts = {}) {
     const sorted = thick.slice().sort((a, b) => a - b);
     const medW = sorted[sorted.length >> 1];
     const n = Math.max(1, Math.min(maxBeads, strat.getOptimalBeadCount(medW)));
-    if (n === 1) { out.push(cl); continue; }
+    if (n === 1) {
+      // Single bead: apply the widening strategy so a sub-min_bead_width wall is
+      // printed at min_output_width (not left as a hairline that won't extrude).
+      const w = thick.map((t) => { const c = strat.compute(t, 1); return c.widths.length ? c.widths[0] : Math.max(t, minOutput); });
+      out.push({ pts, widths: w });
+      continue;
+    }
     const normals = perpNormals(pts);
     const beadPts = Array.from({ length: n }, () => []);
     const beadWid = Array.from({ length: n }, () => []);

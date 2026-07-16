@@ -82,5 +82,30 @@ export function makeBeadingStrategy(opts = {}) {
     return { widths, locations, leftOver: 0 };
   };
 
-  return { optimalWidth, getOptimalThickness, getTransitionThickness, getOptimalBeadCount, compute };
+  if (opts.widening === false) return { optimalWidth, getOptimalThickness, getTransitionThickness, getOptimalBeadCount, compute };
+
+  // WideningBeadingStrategy wrapper — exact BambuStudio port
+  // (Arachne/BeadingStrategy/WideningBeadingStrategy.cpp). A feature thinner
+  // than the parent's optimal width is printed as ONE bead widened up to
+  // min_output_width (so a genuinely thin wall survives instead of vanishing);
+  // below min_input_width it is left over (too small to print at all).
+  const minInput = opts.minInputWidth ?? optimalWidth * 0.15;   // min_feature_size
+  const minOutput = opts.minOutputWidth ?? optimalWidth * 0.85;  // min_bead_width
+  return {
+    optimalWidth,
+    getOptimalThickness,
+    getTransitionThickness: (lower) => (lower === 0 ? minInput : getTransitionThickness(lower)),
+    getOptimalBeadCount: (t) => {
+      if (t < minInput) return 0;
+      const ret = getOptimalBeadCount(t);
+      return (t >= minInput && ret < 1) ? 1 : ret;
+    },
+    compute: (t, n) => {
+      if (t < optimalWidth) {
+        if (t >= minInput) return { widths: [Math.max(t, minOutput)], locations: [t / 2], leftOver: 0 };
+        return { widths: [], locations: [], leftOver: t };
+      }
+      return compute(t, n);
+    },
+  };
 }

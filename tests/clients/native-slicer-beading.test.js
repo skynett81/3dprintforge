@@ -4,7 +4,9 @@ import { makeBeadingStrategy } from '../../server/native-slicer-beading.js';
 import { arachneBeads } from '../../server/native-slicer-arachne.js';
 
 describe('native-slicer: Arachne beading strategy (BambuStudio port)', () => {
-  const bs = makeBeadingStrategy({ optimalWidth: 0.42 });
+  // Base DistributedBeadingStrategy (widening disabled) — these tests cover the
+  // raw thickness→bead mapping; widening is covered in its own block below.
+  const bs = makeBeadingStrategy({ optimalWidth: 0.42, widening: false });
 
   it('maps thickness to the right bead count', () => {
     assert.equal(bs.getOptimalBeadCount(0.20), 0, 'too thin → no bead');
@@ -40,6 +42,36 @@ describe('native-slicer: Arachne beading strategy (BambuStudio port)', () => {
     const { widths, leftOver } = bs.compute(0.1, bs.getOptimalBeadCount(0.1));
     assert.equal(widths.length, 0);
     assert.ok(leftOver > 0);
+  });
+});
+
+describe('native-slicer: WideningBeadingStrategy (BambuStudio port)', () => {
+  // optimalWidth 0.42 → minInput 0.063, minOutput 0.357 (defaults).
+  const bs = makeBeadingStrategy({ optimalWidth: 0.42 });
+
+  it('widens a thin feature (min_input..optimal) to min_output_width as one bead', () => {
+    const c = bs.compute(0.15, bs.getOptimalBeadCount(0.15));
+    assert.equal(c.widths.length, 1, 'one widened bead');
+    assert.ok(Math.abs(c.widths[0] - 0.357) < 1e-6, `widened to min_output (got ${c.widths[0]})`);
+    assert.ok(Math.abs(c.locations[0] - 0.075) < 1e-6, 'centred in the feature');
+  });
+
+  it('a feature at least min_output stays its own width (not shrunk)', () => {
+    const c = bs.compute(0.4, bs.getOptimalBeadCount(0.4));   // 0.4 < optimal 0.42
+    assert.equal(c.widths.length, 1);
+    assert.ok(Math.abs(c.widths[0] - 0.4) < 1e-6, 'kept its own width (> min_output)');
+  });
+
+  it('below min_input_width leaves it over (too small to print)', () => {
+    const c = bs.compute(0.04, bs.getOptimalBeadCount(0.04));
+    assert.equal(c.widths.length, 0);
+    assert.ok(c.leftOver > 0);
+    assert.equal(bs.getOptimalBeadCount(0.04), 0);
+  });
+
+  it('a wide section delegates to the distributed parent (>1 bead)', () => {
+    assert.ok(bs.getOptimalBeadCount(2.0) > 1);
+    assert.equal(bs.compute(2.0, bs.getOptimalBeadCount(2.0)).widths.length, bs.getOptimalBeadCount(2.0));
   });
 });
 
