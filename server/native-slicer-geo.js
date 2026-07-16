@@ -487,6 +487,19 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
   let minY = Infinity, maxY = -Infinity;
   for (const p of rotOuter) { if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
 
+  // _adjust_solid_spacing (libslic3r): for SOLID fill, rescale the line spacing
+  // so a whole number of lines spans the patch edge-to-edge — otherwise the last
+  // line lands short and leaves a thin unfilled streak along one edge on every
+  // top/bottom surface. Stretch is capped at +20% so it never over-sparsens; a
+  // needed decrease (slightly denser) is always allowed. Sparse fill keeps its
+  // exact density-driven spacing.
+  let spacingAdj = spacing;
+  if (density >= 1 && maxY > minY) {
+    const count = Math.max(1, Math.round((maxY - minY) / spacing));
+    const adj = (maxY - minY) / count;
+    if (adj <= spacing * 1.2) spacingAdj = adj;
+  }
+
   // Scanline spans per row (each an x-interval inside the region at height y).
   // When a mask is given (solid/bridge sub-area of the region), each span is
   // clipped to the sub-intervals the mask keeps — BEFORE connection — so the
@@ -495,7 +508,7 @@ export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monoton
   // of thousands of travels).
   const maskStep = Math.max(0.2, lineWidth * 0.6);
   const rows = [];
-  for (let y = minY + spacing / 2; y < maxY; y += spacing) {
+  for (let y = minY + spacingAdj / 2; y < maxY; y += spacingAdj) {
     const xs = [];
     for (const loop of allLoops) {
       for (let i = 0, n = loop.length; i < n; i++) {

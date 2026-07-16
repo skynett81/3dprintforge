@@ -257,6 +257,7 @@ export function buildNativeSettings(s = {}, base = {}) {
   }
   // Per-pair purge matrix (BambuStudio purging volumes): flush_matrix[from][to] mm3.
   if (Array.isArray(s.flush_matrix) && s.flush_matrix.length) out.flushMatrix = s.flush_matrix.map((row) => Array.isArray(row) ? row.map(Number) : []);
+  set('flushMultiplier', num(s.flush_multiplier));
 
   // Per-feature speeds.
   set('outerWallSpeed', num(s.outer_wall_speed));

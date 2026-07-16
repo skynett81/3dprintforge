@@ -776,16 +776,29 @@ export function layersToGcode(layers, settings) {
       // Tool/extruder change (multi-material): retract, switch tool, purge the
       // old colour, then re-prime. Only when a path carries a distinct tool.
       if (path.tool != null && path.tool !== curTool) {
+        const fromTool = curTool;                    // capture before reassigning
         if (curTool != null) { e -= s.retraction; g += `G1 E${dE()} F${retractFeed.toFixed(0)}\n`; }
         g += `; TOOL_CHANGE ${curTool ?? '-'} -> ${path.tool}\n`;
         g += `T${path.tool - 1}\n`;
         curTool = path.tool;
         if (s.retraction > 0) { e += s.retraction; g += `G1 E${dE()} F${deretractFeed.toFixed(0)}\n`; }
+        // Purge volume for THIS colour transition. BambuStudio uses a per-pair
+        // flush_volumes_matrix (dark→light needs far more than light→light);
+        // when present use flushMatrix[from][to]×multiplier, else the scalar
+        // flushVolume. No purge on the very first tool (nothing to displace).
+        let thisFlushE = flushE;
+        const fm = s.flushMatrix;
+        if (fromTool != null && fm && fm[fromTool - 1] && fm[fromTool - 1][path.tool - 1] != null) {
+          const vol = fm[fromTool - 1][path.tool - 1] * (s.flushMultiplier ?? 1);
+          thisFlushE = vol > 0 ? vol / (PI * (s.filamentDiam / 2) ** 2) : 0;
+        } else if (fromTool == null) {
+          thisFlushE = 0;
+        }
         // Purge the old colour: into the next extrusion move (default, hidden in
         // the print) or as a stationary in-place waste blob when disabled.
-        if (flushE > 0) {
-          if (s.flushIntoInfill !== false) pendingFlushE = flushE;
-          else { e += flushE; g += `G1 E${dE()} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
+        if (thisFlushE > 0) {
+          if (s.flushIntoInfill !== false) pendingFlushE = thisFlushE;
+          else { e += thisFlushE; g += `G1 E${dE()} F${Math.round(s.travelSpeed * 30)} ; purge\n`; }
         }
       }
       // Object labels (exclude-object): wrap each object's moves.
