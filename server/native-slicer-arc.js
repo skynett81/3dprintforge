@@ -95,7 +95,15 @@ export function fitArcs(gcode, tolerance = 0.05, opts = {}) {
         const g = circle.dir > 0 ? 'G3' : 'G2';
         const I = (circle.x - P[a].x).toFixed(4), J = (circle.y - P[a].y).toFixed(4);
         let s = `${g} X${P[best].x.toFixed(3)} Y${P[best].y.toFixed(3)} I${I} J${J}`;
-        if (end.e != null) s += ` E${end.e.toFixed(4)}`;
+        // Extrusion for the WHOLE arc. Absolute E: the endpoint's cumulative
+        // value (end.e). RELATIVE E (M83): the sum of every folded segment's
+        // delta (run[a]..run[best-1]) — emitting just end.e would extrude only
+        // the last segment's worth of filament across the entire arc.
+        if (end.e != null) {
+          let ae = end.e;
+          if (opts.relativeE) { ae = 0; for (let k = a; k <= best - 1; k++) ae += run[k].e || 0; }
+          s += ` E${ae.toFixed(4)}`;
+        }
         if (runFeed != null) s += ` F${runFeed}`;
         out.push(s);
         a = best;

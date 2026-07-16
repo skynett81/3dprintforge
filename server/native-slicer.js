@@ -32,6 +32,7 @@ import { buildSolidRegions } from './native-slicer-regions.js';
 import { clipDifference as _clipDifference, clipExpand as _clipExpand } from './native-slicer-bool.js';
 import { medialBeads } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
+import { insertProgressM73 } from './native-slicer-progress.js';
 
 const FILAMENT_DIAM = 1.75;
 
@@ -841,7 +842,10 @@ export function layersToGcode(layers, settings) {
   if (s.filamentEndGcode) g += _interp(s.filamentEndGcode, s) + '\n';
   g += (s.endGcode ? _interp(s.endGcode, s) + '\n' : _defaultEnd());
   // Optional arc fitting: fold runs of straight moves on a circle into G2/G3.
-  if (s.arcFitting) g = fitArcs(g, s.arcTolerance ?? 0.05);
+  if (s.arcFitting) g = fitArcs(g, s.arcTolerance ?? 0.05, { relativeE: true });
+  // Print-progress (M73 P<pct> R<min>) per layer for the printer display — on by
+  // default like BambuStudio; runs last so it sees the final (arc-fitted) moves.
+  if (s.progressReport !== false) g = insertProgressM73(g);
   return g;
 }
 

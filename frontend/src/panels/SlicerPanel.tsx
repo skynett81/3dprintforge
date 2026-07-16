@@ -104,7 +104,7 @@ export function SlicerPanel() {
     ironing_flow: 10, ironing_spacing: 0.1, ironing_direction: 45, infill_wall_overlap: 15, top_shell_thickness: 0, bottom_shell_thickness: 0, monotonic_top_surface: true,
     avoid_crossing_walls: true,
     xy_hole_compensation: 0, xy_contour_compensation: 0, small_perimeter_speed: 25, small_perimeter_threshold: 15, seam_gap: 0.1,
-    fuzzy_skin_mode: 'external', fuzzy_skin_point_distance: 0.4, fuzzy_skin_first_layer: false, arc_fitting: false, arc_fitting_tolerance: 0.05,
+    fuzzy_skin_mode: 'external', fuzzy_skin_point_distance: 0.4, fuzzy_skin_first_layer: false, arc_fitting: true, arc_fitting_tolerance: 0.05,
     gap_fill_enabled: true, gap_infill_speed: 40,
     flush_into_infill: true, flush_volume: 80,
   });
