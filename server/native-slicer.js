@@ -34,6 +34,30 @@ import { fitArcs } from './native-slicer-arc.js';
 
 const FILAMENT_DIAM = 1.75;
 
+// Our internal feature keys -> BambuStudio's exact G-code "; FEATURE: <name>"
+// vocabulary (BambuStudio GCode.cpp / ExtrusionRole). Emitting these verbatim
+// makes our G-code colour-classify identically in BambuStudio's own previewer,
+// generic viewers, and our GcodePreview — so the sliced model looks the same.
+const BAMBU_FEATURE = {
+  'outer-wall': 'Outer wall',
+  'inner-wall': 'Inner wall',
+  'overhang-wall': 'Overhang wall',
+  wall: 'Inner wall',
+  sparse: 'Sparse infill',
+  solid: 'Internal solid infill',
+  'top-surface': 'Top surface',
+  'bottom-surface': 'Bottom surface',
+  bridge: 'Bridge',
+  ironing: 'Ironing',
+  gap: 'Gap infill',
+  skirt: 'Skirt',
+  brim: 'Brim',
+  support: 'Support',
+  'support-interface': 'Support interface',
+  wipe_tower: 'Prime tower',
+};
+const featureLabel = (f) => BAMBU_FEATURE[f] ?? 'Custom';
+
 // Re-export the geometry primitives so existing importers/tests keep working.
 export { sliceLayer, offsetPolygon, lineInfill, regionInfill, solidInfill, buildRegions };
 
@@ -288,8 +312,14 @@ export function layersToGcode(layers, settings) {
     'outer-wall': s.outerWallSpeed ?? P,
     'inner-wall': s.innerWallSpeed ?? (s.outerWallSpeed ? s.outerWallSpeed * 1.4 : P),
     solid: s.solidInfillSpeed ?? P,
+    // 0 / unset means "no distinct surface speed" -> fall back to solid infill.
+    // (|| not ?? so an explicit 0 is treated as unset, matching solid output.)
+    'top-surface': s.topSurfaceSpeed || s.solidInfillSpeed || P,
+    'bottom-surface': s.bottomSurfaceSpeed || s.solidInfillSpeed || P,
     sparse: s.sparseInfillSpeed ?? P,
     support: s.supportSpeed ?? P,
+    'support-interface': s.supportInterfaceSpeed || s.supportSpeed || P,
+    'overhang-wall': s.overhangSpeed || s.outerWallSpeed || P,
     ironing: s.ironingSpeed ?? Math.max(15, P * 0.4),
     bridge: s.bridgeSpeed ?? Math.max(15, P * 0.5),
     gap: s.gapFillSpeed ?? Math.max(15, P * 0.5),
@@ -298,7 +328,7 @@ export function layersToGcode(layers, settings) {
     wall: P,
   };
   const featSpeed = (feature, layerIdx) => {
-    if (layerIdx === 0) return (s.initialLayerInfillSpeed && (feature === 'solid' || feature === 'sparse' || feature === 'gap')) ? s.initialLayerInfillSpeed : s.firstLayerSpeed;
+    if (layerIdx === 0) return (s.initialLayerInfillSpeed && (feature === 'solid' || feature === 'top-surface' || feature === 'bottom-surface' || feature === 'sparse' || feature === 'gap')) ? s.initialLayerInfillSpeed : s.firstLayerSpeed;
     return SP[feature] ?? P;
   };
   // Part-cooling fan % for a layer, honoring an optional min→max ramp over the
@@ -366,8 +396,12 @@ export function layersToGcode(layers, settings) {
     'outer-wall': s.outerWallLineWidth ?? s.lineWidth,
     'inner-wall': s.innerWallLineWidth ?? s.lineWidth,
     solid: s.solidInfillLineWidth ?? s.lineWidth,
+    'top-surface': s.topSurfaceLineWidth ?? s.solidInfillLineWidth ?? s.lineWidth,
+    'bottom-surface': s.solidInfillLineWidth ?? s.lineWidth,
     sparse: s.sparseInfillLineWidth ?? s.lineWidth,
     support: s.supportLineWidth ?? s.lineWidth,
+    'support-interface': s.supportLineWidth ?? s.lineWidth,
+    'overhang-wall': s.outerWallLineWidth ?? s.lineWidth,
     bridge: s.bridgeLineWidth ?? s.lineWidth,
   };
   const efFeat = (feature, layerIdx, h = s.layerHeight) => {
@@ -653,7 +687,7 @@ export function layersToGcode(layers, settings) {
         curObj = path.obj;
         if (curObj != null) g += `; printing object ${curObj}\nEXCLUDE_OBJECT_START NAME=${curObj}\n`;
       }
-      if (path.feature !== curFeature) { g += `; FEATURE:${path.feature}\n`; curFeature = path.feature; }
+      if (path.feature !== curFeature) { g += `; FEATURE: ${featureLabel(path.feature)}\n`; curFeature = path.feature; }
       // Per-feature acceleration switch (only when any per-feature accel is set).
       if (s.acceleration && (s.outerWallAccel || s.innerWallAccel || s.topSurfaceAccel || s.sparseInfillAccel || s.bridgeAccel || s.supportAccel || s.gapAccel)) {
         const fa = Math.round(featAccel(path.feature, layerIdx));
@@ -1064,14 +1098,19 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     // the gap the strong way regardless of the layer's base angle.
     // Top-/bottom-surface solid get their own speed (top_surface_speed /
     // bottom_surface_speed).
-    const topSp = (sg) => {
-      if (!surfaces) return null;
+    // Classify a solid infill chain by which exposed surface it lies on, so it
+    // gets BambuStudio's distinct feature label (Top surface / Bottom surface /
+    // Internal solid infill) AND the matching surface speed. A chain that
+    // touches the exposed top/bottom skin is labelled as that surface; anything
+    // else is internal solid infill (solid shell sandwiched between skins).
+    const classifySolid = (sg) => {
+      if (!surfaces) return { feature: 'solid' };
       const mx = (sg[0][0] + sg[1][0]) / 2, my = (sg[0][1] + sg[1][1]) / 2;
-      if (s.topSurfaceSpeed && surfaces.isTopPoint(i, mx, my)) return { speedOverride: s.topSurfaceSpeed };
-      if (s.bottomSurfaceSpeed && surfaces.isBottomPoint(i, mx, my)) return { speedOverride: s.bottomSurfaceSpeed };
-      return null;
+      if (surfaces.isTopPoint(i, mx, my)) return s.topSurfaceSpeed ? { feature: 'top-surface', speedOverride: s.topSurfaceSpeed } : { feature: 'top-surface' };
+      if (surfaces.isBottomPoint(i, mx, my)) return s.bottomSurfaceSpeed ? { feature: 'bottom-surface', speedOverride: s.bottomSurfaceSpeed } : { feature: 'bottom-surface' };
+      return { feature: 'solid' };
     };
-    const pushSolid = (sg) => { const t = topSp(sg); fills.push(t ? { feature: 'solid', closed: false, pts: sg, ...t } : { feature: 'solid', closed: false, pts: sg }); };
+    const pushSolid = (sg) => fills.push({ closed: false, pts: sg, ...classifySolid(sg) });
     const pushBridge = (sg) => fills.push({ feature: 'bridge', closed: false, pts: sg, flow: s.bridgeFlow ?? 0.7 });
     // Solid infill arrives as connected zigzag chains; keep-filter (genuine
     // solid surface) and bridge/solid classification are per-segment, so split
@@ -1477,7 +1516,7 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
 
     // Support hatch.
     const support = [];
-    if (supportSegs && supportSegs[i]) for (const el of supportSegs[i]) support.push(el.iface && s.supportInterfaceSpeed ? { feature: 'support', closed: !!el.closed, pts: el.pts, speedOverride: s.supportInterfaceSpeed } : { feature: 'support', closed: !!el.closed, pts: el.pts });
+    if (supportSegs && supportSegs[i]) for (const el of supportSegs[i]) support.push(el.iface ? { feature: 'support-interface', closed: !!el.closed, pts: el.pts, ...(s.supportInterfaceSpeed ? { speedOverride: s.supportInterfaceSpeed } : {}) } : { feature: 'support', closed: !!el.closed, pts: el.pts });
 
     // Print order: adhesion → walls → infill → support. `regions` rides along
     // so the G-code stage can route avoid-crossing-walls travel.

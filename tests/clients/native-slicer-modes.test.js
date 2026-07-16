@@ -23,7 +23,7 @@ describe('native-slicer: vase / spiral mode', () => {
 describe('native-slicer: concentric infill', () => {
   it('produces closed sparse rings', async () => {
     const r = await sliceMeshToGcode(box(30, 30, 4), { infillPattern: 'concentric', infillDensity: 0.2, topLayers: 1, bottomLayers: 1 });
-    assert.match(r.gcode, /; FEATURE:sparse/);
+    assert.match(r.gcode, /; FEATURE: Sparse infill/);
   });
 });
 
@@ -102,7 +102,7 @@ describe('native-slicer: gap fill', () => {
 
   it('gap fill can be disabled', async () => {
     const r = await sliceMeshToGcode(box(1.6, 24, 8), { gapFill: false, layerHeight: 0.3 });
-    assert.doesNotMatch(r.gcode, /FEATURE:gap/);
+    assert.doesNotMatch(r.gcode, /FEATURE: Gap infill/);
   });
 });
 
@@ -202,7 +202,7 @@ describe('native-slicer: real infill patterns', () => {
   it('gyroid / honeycomb / cubic all produce sparse infill', async () => {
     for (const pattern of ['gyroid', 'honeycomb', 'cubic']) {
       const r = await sliceMeshToGcode(box(30, 30, 6), { infillPattern: pattern, infillDensity: 0.2, topLayers: 1, bottomLayers: 1 });
-      assert.match(r.gcode, /FEATURE:sparse/, `${pattern} should emit sparse infill`);
+      assert.match(r.gcode, /FEATURE: Sparse infill/, `${pattern} should emit sparse infill`);
     }
   });
 
@@ -253,7 +253,7 @@ describe('native-slicer: overhang and bridge detection', () => {
     const r = await sliceMeshToGcode(m, { layerHeight: 0.3, outerWallSpeed: 120, overhangSpeeds: [80, 50, 30, 10], supports: false });
     const speeds = new Set();
     let f = false;
-    for (const l of r.gcode.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:outer-wall'); continue; } const e = l.match(/^G1 X[-\d.]+ Y[-\d.]+ E[-\d.]+ F(\d+)/); if (e && f) speeds.add(+e[1]); }
+    for (const l of r.gcode.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE: Outer wall'); continue; } const e = l.match(/^G1 X[-\d.]+ Y[-\d.]+ E[-\d.]+ F(\d+)/); if (e && f) speeds.add(+e[1]); }
     assert.ok(speeds.has(600), `steep overhang segments slow to 10 mm/s / F600 (got ${[...speeds]})`);
     assert.ok(speeds.has(7200), 'supported segments keep full 120 mm/s / F7200');
     assert.ok(!r.gcode.includes('NaN'));
@@ -263,6 +263,6 @@ describe('native-slicer: overhang and bridge detection', () => {
     const { box: b, unionMeshes, offset } = await import('../../server/mesh-primitives.js');
     const bridge = unionMeshes([offset(b(6, 6, 12), -14, 0, 0), offset(b(6, 6, 12), 14, 0, 0), offset(b(40, 6, 3), 0, 0, 7.5)]);
     const r = await sliceMeshToGcode(bridge, { bridgeFlow: 0.7, bridgeSpeed: 20, layerHeight: 0.3 });
-    assert.match(r.gcode, /FEATURE:bridge/);
+    assert.match(r.gcode, /FEATURE: Bridge/);
   });
 });

@@ -16,11 +16,11 @@ describe('native-slicer: per-object settings', () => {
     assert.ok(r.layers >= 35);
     // A mid layer has an outer wall for BOTH objects.
     const mid = r.gcode.split('--- layer 20/')[1]?.split('--- layer 21/')[0] || '';
-    assert.equal((mid.match(/FEATURE:outer-wall/g) || []).length, 2);
+    assert.equal((mid.match(/FEATURE: Outer wall/g) || []).length, 2);
   });
 
   it('honours a per-object support override', async () => {
     const noSup = await sliceObjectsGcode([{ mesh: box(15, 15, 8), settings: {} }], { layerHeight: 0.2, supports: false });
-    assert.doesNotMatch(noSup.gcode, /FEATURE:support/);
+    assert.doesNotMatch(noSup.gcode, /FEATURE: Support/);
   });
 });

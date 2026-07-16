@@ -5,7 +5,31 @@
 // viewer can colour them like a desktop slicer.
 
 export type Feature =
-  | 'outer-wall' | 'inner-wall' | 'wall' | 'solid' | 'sparse' | 'support' | 'skirt' | 'brim' | 'ironing' | 'bridge' | 'gap' | 'wipe_tower';
+  | 'outer-wall' | 'inner-wall' | 'overhang-wall' | 'wall' | 'solid' | 'top-surface' | 'bottom-surface'
+  | 'sparse' | 'support' | 'support-interface' | 'skirt' | 'brim' | 'ironing' | 'bridge' | 'gap' | 'wipe_tower';
+
+// Normalise a "; FEATURE: <label>" string to our Feature key. Accepts both our
+// own keys and BambuStudio's exact vocabulary (Outer wall, Inner wall, Top
+// surface, …) so the viewer colours our G-code and real BambuStudio G-code
+// identically.
+const FEATURE_ALIAS: Record<string, Feature> = {
+  'outer wall': 'outer-wall', 'outer-wall': 'outer-wall', 'external perimeter': 'outer-wall',
+  'inner wall': 'inner-wall', 'inner-wall': 'inner-wall', 'perimeter': 'inner-wall',
+  'overhang wall': 'overhang-wall', 'overhang-wall': 'overhang-wall', 'overhang perimeter': 'overhang-wall',
+  'internal solid infill': 'solid', 'solid infill': 'solid', 'solid': 'solid', 'floating vertical shell': 'solid',
+  'top surface': 'top-surface', 'top-surface': 'top-surface', 'top solid infill': 'top-surface',
+  'bottom surface': 'bottom-surface', 'bottom-surface': 'bottom-surface',
+  'sparse infill': 'sparse', 'internal infill': 'sparse', 'sparse': 'sparse',
+  'bridge': 'bridge', 'bridge infill': 'bridge', 'internal bridge infill': 'bridge',
+  'ironing': 'ironing', 'gap infill': 'gap', 'gap fill': 'gap', 'gap': 'gap',
+  'skirt': 'skirt', 'brim': 'brim', 'skirt/brim': 'skirt',
+  'support': 'support', 'support material': 'support',
+  'support interface': 'support-interface', 'support material interface': 'support-interface',
+  'wall': 'wall', 'custom': 'wall', 'wipe tower': 'wipe_tower', 'prime tower': 'wipe_tower',
+};
+function normFeature(label: string): Feature {
+  return FEATURE_ALIAS[label.trim().toLowerCase()] ?? 'wall';
+}
 
 export interface GcodeLayer {
   z: number;
@@ -81,7 +105,7 @@ export function parseGcode(text: string): ParsedGcode {
     if (gated && !inPrint && raw.includes('--- layer')) inPrint = true;
     // Feature tag (read from the comment before stripping).
     const fIdx = raw.indexOf('FEATURE:');
-    if (fIdx >= 0) { feature = raw.slice(fIdx + 8).trim() as Feature; continue; }
+    if (fIdx >= 0) { feature = normFeature(raw.slice(fIdx + 8)); continue; }
 
     const semi = raw.indexOf(';');
     const line = (semi >= 0 ? raw.slice(0, semi) : raw).trim();

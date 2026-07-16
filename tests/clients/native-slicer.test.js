@@ -257,7 +257,7 @@ describe('native-slicer: brim_type', () => {
   const brimLines = (g) => {
     let inBrim = false, n = 0;
     for (const ln of g.split('\n')) {
-      if (ln.startsWith('; FEATURE:')) { inBrim = ln.includes('FEATURE:brim'); continue; }
+      if (ln.startsWith('; FEATURE:')) { inBrim = ln.includes('FEATURE: Brim'); continue; }
       if (inBrim && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
     }
     return n;
@@ -312,7 +312,7 @@ describe('native-slicer: raft', () => {
 
   it('a raft suppresses the object brim (raft is the adhesion)', async () => {
     const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 2, brimWidth: 4, brimType: 'outer_only', supports: false });
-    assert.ok(!/; FEATURE:brim/.test(gcode), 'no brim when a raft is present');
+    assert.ok(!/; FEATURE: Brim/.test(gcode), 'no brim when a raft is present');
   });
 });
 
@@ -321,7 +321,7 @@ describe('native-slicer: modifier volumes', () => {
   const sparseMoves = (g) => {
     let inF = false, n = 0;
     for (const ln of g.split('\n')) {
-      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; }
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; }
       if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
     }
     return n;
@@ -360,7 +360,7 @@ describe('native-slicer: wipe/prime tower', () => {
   const twoColour = () => [{ ...box(20, 20, 6), extruder: 1 }, { ...box(20, 20, 6), extruder: 2 }];
   it('prints a per-extruder wipe tower when enabled', async () => {
     const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: true, wipeTowerWidth: 24, wipeTowerDepth: 24 });
-    assert.ok(r.gcode.includes('; FEATURE:wipe_tower'), 'tower feature present');
+    assert.ok(r.gcode.includes('; FEATURE: Prime tower'), 'tower feature present');
     assert.ok((r.gcode.match(/; WIPE_TOWER/g) || []).length >= 2, 'at least one tower band per extruder');
     assert.ok(!r.gcode.includes('NaN'));
   });
@@ -434,7 +434,7 @@ describe('native-slicer: richer settings batch', () => {
   it('min sparse infill area removes infill from a tiny model', async () => {
     const withInfill = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, supports: false });
     const skipped = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, minSparseInfillArea: 200, supports: false });
-    const sparseMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
+    const sparseMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
     assert.ok(sparseMoves(skipped.gcode) < sparseMoves(withInfill.gcode), 'tiny region loses its sparse infill');
   });
 });
@@ -442,7 +442,7 @@ describe('native-slicer: richer settings batch', () => {
 describe('native-slicer: skirt height', () => {
   const skirtLines = (g) => {
     let inF = false, n = 0;
-    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:skirt'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Skirt'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
     return n;
   };
   it('skirt_height prints the skirt on multiple layers', async () => {
@@ -460,7 +460,7 @@ describe('native-slicer: skirt height', () => {
 describe('native-slicer: support base pattern + interface spacing', () => {
   // A shape with an overhang so support is actually generated.
   const overhang = box(24, 24, 3);   // thin slab; slice with paint-enforced support
-  const supportLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:support'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  const supportLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Support'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
   const enforceAll = [[-20, -20, 20, -20, 0, 20, 100]];   // big enforce triangle over the slab
   it("grid base pattern adds crossing lines vs rectilinear", async () => {
     const rect = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportDensity: 0.15, supportPaint: { enforce: enforceAll, block: [] } });
@@ -541,7 +541,7 @@ describe('native-slicer: per-feature jerk', () => {
 });
 
 describe('native-slicer: ironing inset + pattern', () => {
-  const ironLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:ironing'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  const ironLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Ironing'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
   it('concentric ironing produces ironing moves', async () => {
     const r = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, ironingPattern: 'concentric', supports: false });
     assert.ok(ironLines(r.gcode) > 0, 'concentric ironing emits moves');
@@ -564,7 +564,7 @@ describe('native-slicer: infill anchor', () => {
     // Total length of sparse EXTRUDE moves — anchoring lengthens each line.
     let inF = false, pos = null, L = 0;
     for (const ln of g.split('\n')) {
-      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:sparse'); continue; }
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; }
       const m = ln.match(/^G[01] X([-\d.]+) Y([-\d.]+)/);
       if (!m) continue;
       const p = [+m[1], +m[2]];
@@ -637,12 +637,12 @@ describe('native-slicer: bridge/support acceleration', () => {
 });
 
 describe('native-slicer: only one wall top', () => {
-  const wallMoves = (g, feat) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes(`FEATURE:${feat}`); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  const wallMoves = (g, feat) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes(`FEATURE: ${feat}`); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
   it('reduces inner-wall moves on the top surface', async () => {
     const opts = { layerHeight: 0.2, wall_loops: 3, supports: false };
     const normal = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3 });
     const oneTop = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3, onlyOneWallTop: true });
-    assert.ok(wallMoves(oneTop.gcode, 'inner-wall') < wallMoves(normal.gcode, 'inner-wall'), `top-only should cut inner walls (normal=${wallMoves(normal.gcode, 'inner-wall')} oneTop=${wallMoves(oneTop.gcode, 'inner-wall')})`);
+    assert.ok(wallMoves(oneTop.gcode, 'Inner wall') < wallMoves(normal.gcode, 'Inner wall'), `top-only should cut inner walls (normal=${wallMoves(normal.gcode, 'Inner wall')} oneTop=${wallMoves(oneTop.gcode, 'Inner wall')})`);
     assert.ok(!oneTop.gcode.includes('NaN'));
   });
   it('only_one_wall_top off is byte-identical', async () => {
@@ -685,7 +685,7 @@ describe('native-slicer: first-layer wall loops', () => {
   const firstLayerInnerMoves = (g) => {
     const l1 = g.split('; --- layer 2/')[0];
     let inF = false, n = 0;
-    for (const ln of l1.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:inner-wall'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    for (const ln of l1.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Inner wall'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
     return n;
   };
   it('first_layer_wall_loops changes the first-layer perimeter count', async () => {
@@ -705,7 +705,7 @@ describe('native-slicer: precise wall', () => {
     const outerX = (g) => {
       const body = g.slice(g.indexOf('; --- layer 1/'));
       let inF = false, mx = -Infinity;
-      for (const ln of body.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('outer-wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+.*E/); if (m) mx = Math.max(mx, +m[1]); } }
+      for (const ln of body.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('Outer wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+.*E/); if (m) mx = Math.max(mx, +m[1]); } }
       return mx;
     };
     const normal = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.5, supports: false });
@@ -777,7 +777,7 @@ describe('native-slicer: support bottom z distance', () => {
 });
 
 describe('native-slicer: filter out small gaps', () => {
-  const gapMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE:gap'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  const gapMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Gap infill'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
   it('a large filter removes short gap-fill lines', async () => {
     const none = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
     const filt = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, gapFillMinLength: 50, supports: false });
@@ -848,7 +848,7 @@ describe('native-slicer: variable-width emission (Arachne foundation)', () => {
     // Pull the two extruding moves of the inner wall.
     const es = [];
     let inF = false;
-    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('inner-wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+ E([-\d.]+)/); if (m) es.push({ x: +m[1], e: +m[2] }); } }
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('Inner wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+ E([-\d.]+)/); if (m) es.push({ x: +m[1], e: +m[2] }); } }
     // deltas: seg1 = e@x10 - e@x0start(0), seg2 = e@x20 - e@x10
     const seg1 = es.find((p) => Math.abs(p.x - 10) < 0.01).e;
     const seg2 = es.find((p) => Math.abs(p.x - 20) < 0.01).e - seg1;
@@ -874,7 +874,7 @@ describe('native-slicer: full Arachne medial beads', () => {
     // real difference is the EXTRUSION path: classic hatches the thin rib with
     // many short perpendicular segments; arachne lays one continuous bead per
     // layer along the rib, so it emits far fewer extrusion moves.
-    const gapExtrudes = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:gap'); continue; } if (f && /^G1 X[-\d.]+ Y[-\d.]+ E/.test(l)) n++; } return n; };
+    const gapExtrudes = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE: Gap infill'); continue; } if (f && /^G1 X[-\d.]+ Y[-\d.]+ E/.test(l)) n++; } return n; };
     const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
     const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
     assert.ok(gapExtrudes(ar.gcode) < gapExtrudes(cl.gcode) / 5, `arachne far fewer gap extrusion moves (classic=${gapExtrudes(cl.gcode)} arachne=${gapExtrudes(ar.gcode)})`);
@@ -883,7 +883,7 @@ describe('native-slicer: full Arachne medial beads', () => {
 });
 
 describe('native-slicer: monotonic top/bottom surface', () => {
-  const solidTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE:solid'); continue; } if (f && /^G0 X/.test(l)) n++; } return n; };
+  const solidTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = /FEATURE: (Internal solid infill|Top surface|Bottom surface)/.test(l); continue; } if (f && /^G0 X/.test(l)) n++; } return n; };
   it('solidInfill monotonic lays every line the same direction, swept one way', () => {
     const sq = { outer: [[0, 0], [20, 0], [20, 20], [0, 20]], holes: [] };
     const lines = solidInfill(sq, 0, 0.4, true);   // angle 0 → horizontal lines
@@ -929,7 +929,7 @@ describe('native-slicer: bridge angle detection', () => {
 });
 
 describe('native-slicer: wall print order', () => {
-  const wallSeq = (g) => { const seq = []; for (const l of g.split('\n')) { const m = l.match(/^; FEATURE:(outer|inner)-wall/); if (m) seq.push(m[1] === 'outer' ? 'O' : 'I'); } return seq.join(''); };
+  const wallSeq = (g) => { const seq = []; for (const l of g.split('\n')) { const m = l.match(/^; FEATURE: (Outer|Inner) wall/); if (m) seq.push(m[1] === 'Outer' ? 'O' : 'I'); } return seq.join(''); };
   it('inner-outer-inner backs the outer wall (I,O,I per region)', async () => {
     const r = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'inner-outer-inner', supports: false });
     const seq = wallSeq(r.gcode);
@@ -962,7 +962,7 @@ describe('native-slicer: adaptive cubic infill', () => {
     const layers = []; let inSparse = false, px = 0, py = 0;
     for (const l of g.split('\n')) {
       if (l.startsWith('; --- layer')) { layers.push(0); continue; }
-      if (l.startsWith('; FEATURE:')) { inSparse = l.includes('FEATURE:sparse'); continue; }
+      if (l.startsWith('; FEATURE:')) { inSparse = l.includes('FEATURE: Sparse infill'); continue; }
       const m = l.match(/^G1 X([-\d.]+) Y([-\d.]+) E/);
       if (m) { const x = +m[1], y = +m[2]; if (inSparse && layers.length) layers[layers.length - 1] += Math.hypot(x - px, y - py); px = x; py = y; }
       else { const t = l.match(/^G[01] X([-\d.]+) Y([-\d.]+)/); if (t) { px = +t[1]; py = +t[2]; } }
@@ -1091,7 +1091,7 @@ describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', 
   const gapReachesTab = (g) => {
     let inGap = false;
     for (const l of g.split('\n')) {
-      if (l.startsWith('; FEATURE:')) { inGap = l.includes('FEATURE:gap'); continue; }
+      if (l.startsWith('; FEATURE:')) { inGap = l.includes('FEATURE: Gap infill'); continue; }
       if (inGap) { const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E/); if (m && +m[1] > 18) return true; }
     }
     return false;

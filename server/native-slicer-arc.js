@@ -20,8 +20,13 @@
  * fragment with no FEATURE comments still fits.
  */
 
-// Zigzag/parallel-line features that must NOT be reinterpreted as arcs.
-const NO_ARC_FEATURES = new Set(['solid', 'sparse', 'gap', 'support', 'bridge', 'ironing', 'wipe_tower']);
+// Only wall/loop features are arc-eligible — that is where real curved geometry
+// lives. Infill (solid, sparse, bridge, gap, ironing, support, prime tower)
+// traces a zigzag whose evenly-spaced turnaround points can spuriously pass a
+// circle-tolerance test, so fitting it would bend straight fill into arcs.
+// Names match BambuStudio's "; FEATURE:" vocabulary (our emitted output). An
+// allow-list means any unknown/curved feature stays straight by default.
+const ARC_FEATURES = new Set(['Outer wall', 'Inner wall', 'Overhang wall', 'Skirt', 'Brim']);
 
 function circleFrom3(a, b, c) {
   const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
@@ -105,7 +110,7 @@ export function fitArcs(gcode, tolerance = 0.05, opts = {}) {
   for (const line of lines) {
     // Track the active feature so only wall extrusions are considered for arcs.
     const fi = line.indexOf('FEATURE:');
-    if (fi >= 0) { flushRun(); runFeed = null; arcArmed = !NO_ARC_FEATURES.has(line.slice(fi + 8).trim()); out.push(line); continue; }
+    if (fi >= 0) { flushRun(); runFeed = null; arcArmed = ARC_FEATURES.has(line.slice(fi + 8).trim()); out.push(line); continue; }
     const m = parseMove(line);
     const extruding = m && m.e != null;    // planar G1 with extrusion
     if (extruding && !arcArmed) { if (run.length) flushRun(); out.push(line); cur = { x: m.x, y: m.y }; continue; }

@@ -178,14 +178,14 @@ export async function sliceMultiMaterialGcode(rawMeshes, settings = {}) {
         const y0 = towerY0, y1 = towerY0 + s.wipeTowerDepth;
         const rect = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
         const angle = s.infillAngle + (i % 2) * 90;
-        g += `; FEATURE:wipe_tower\n; WIPE_TOWER ext ${ext} L${i + 1}\n`;
+        g += `; FEATURE: Prime tower\n; WIPE_TOWER ext ${ext} L${i + 1}\n`;
         emit(rect, speed, true);
         for (const sg of solidInfill({ outer: rect, holes: [] }, angle, lw)) emit(sg, speed, false);
       }
-      g += `; FEATURE:${isSolid ? 'solid' : 'sparse'}\n`;
+      g += `; FEATURE: ${isSolid ? 'Internal solid infill' : 'Sparse infill'}\n`;
       let first = true;
       for (const f of fills) { emit(f.pts, speed, false, first ? flush : 0); first = false; }
-      g += `; FEATURE:outer-wall\n`;
+      g += `; FEATURE: Outer wall\n`;
       for (const w of walls) emit(w.pts, speed, true);
     }
   }

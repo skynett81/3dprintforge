@@ -11,26 +11,33 @@ interface Ctx {
   orbit: OrbitControls; group: THREE.Group; raf: number;
 }
 
-// Feature colours mirror a desktop slicer's preview legend.
+// Feature colours mirror BambuStudio's line-type legend so a sliced model looks
+// the same here as in BambuStudio (its GCodeViewer Extrusion_Role_Colors).
 const FEATURE_COLOR: Record<Feature, number> = {
-  'outer-wall': 0xff8a3d,
-  'inner-wall': 0xf6c945,
+  'outer-wall': 0xff8a3d,       // External perimeter — orange
+  'inner-wall': 0xf6c945,       // Perimeter — yellow
+  'overhang-wall': 0x2a54ff,    // Overhang wall — blue
   wall: 0xff8a3d,
-  solid: 0xe6564b,
-  sparse: 0x37a66b,
-  support: 0x4f8bd8,
-  skirt: 0x9aa4b2,
-  brim: 0x9aa4b2,
-  ironing: 0xc084fc,
-  bridge: 0x22b8cf,
-  gap: 0xef8c5a,
+  solid: 0x9553cc,              // Internal solid infill — purple
+  'top-surface': 0xf03e3e,      // Top surface — red
+  'bottom-surface': 0xff8c5a,   // Bottom surface — salmon
+  sparse: 0xb1372e,             // Sparse infill — dark red
+  support: 0x2fb62f,            // Support — green
+  'support-interface': 0x1f8a3f,// Support interface — dark green
+  skirt: 0x1f9e8f,              // Skirt — teal
+  brim: 0x1f9e8f,               // Brim — teal
+  ironing: 0xc084fc,            // Ironing — light purple
+  bridge: 0x4d80cf,             // Bridge — blue
+  gap: 0xdadada,                // Gap fill — near white
   wipe_tower: 0x9b59d0,
 };
 const FEATURE_LABEL: Record<Feature, string> = {
-  'outer-wall': 'Outer wall', 'inner-wall': 'Inner wall', wall: 'Wall',
-  solid: 'Top/bottom', sparse: 'Infill', support: 'Support', skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing', bridge: 'Bridge', gap: 'Gap fill', wipe_tower: 'Wipe tower',
+  'outer-wall': 'Outer wall', 'inner-wall': 'Inner wall', 'overhang-wall': 'Overhang wall', wall: 'Wall',
+  solid: 'Internal solid infill', 'top-surface': 'Top surface', 'bottom-surface': 'Bottom surface',
+  sparse: 'Sparse infill', support: 'Support', 'support-interface': 'Support interface',
+  skirt: 'Skirt', brim: 'Brim', ironing: 'Ironing', bridge: 'Bridge', gap: 'Gap infill', wipe_tower: 'Wipe tower',
 };
-const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'solid', 'bridge', 'gap', 'ironing', 'sparse', 'support', 'skirt', 'brim', 'wipe_tower', 'wall'];
+const LEGEND_ORDER: Feature[] = ['outer-wall', 'inner-wall', 'overhang-wall', 'top-surface', 'bottom-surface', 'solid', 'bridge', 'gap', 'ironing', 'sparse', 'support', 'support-interface', 'skirt', 'brim', 'wipe_tower', 'wall'];
 
 /**
  * Vertical dual-handle "layer tower" on the right of the preview — the BambuStudio

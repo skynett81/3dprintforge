@@ -41,14 +41,14 @@ describe('native-slicer: surfaces end-to-end', () => {
     const r = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, topLayers: 4, bottomLayers: 4 });
     assert.equal(r.layers, 50);
     // Feature tags present: solid (shells) and sparse (middle).
-    assert.match(r.gcode, /; FEATURE:solid/);
-    assert.match(r.gcode, /; FEATURE:sparse/);
+    assert.match(r.gcode, /; FEATURE: (Top surface|Bottom surface|Internal solid infill)/);
+    assert.match(r.gcode, /; FEATURE: Sparse infill/);
   });
 
   it('ironing adds a top-skin ironing pass when enabled', async () => {
     const plain = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: false });
     const ironed = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: true });
-    assert.doesNotMatch(plain.gcode, /; FEATURE:ironing/);
-    assert.match(ironed.gcode, /; FEATURE:ironing/);
+    assert.doesNotMatch(plain.gcode, /; FEATURE: Ironing/);
+    assert.match(ironed.gcode, /; FEATURE: Ironing/);
   });
 });
