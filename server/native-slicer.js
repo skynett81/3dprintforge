@@ -1401,7 +1401,11 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
         // verified), so it lays a continuous variable-width bead down every thin
         // finger while the thick core still gets normal infill. Opt-in (arachne),
         // sparse layers only; a purely thick part gets no beads → byte-identical.
-        if (s.wallGenerator === 'arachne' && s.gapFill !== false && !globalSolid && !thinRegion) {
+        // Thin necks inside a thick body: lay a continuous variable-width medial
+        // bead down every thin finger (walls can't fill it, sparse is too coarse
+        // for a <2·lw strip). Default ON (Arachne is BambuStudio's thin-wall
+        // handling); the thick core self-limits to no bead → normal infill there.
+        if (s.wallGenerator !== 'classic' && s.gapFill !== false && !globalSolid && !thinRegion) {
           const fingerBeads = medialBeads(infRegion, lw);
           if (fingerBeads && fingerBeads.length) {
             const gapBaseFlow = s.gapFillFlow ?? 1;
@@ -1409,15 +1413,14 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           }
         }
         if (thinRegion) {
-          // Arachne-style variable-width thin-feature filling: scale each gap
-          // segment's flow to the LOCAL feature width (≈ 2× distance to the
-          // region edge at the segment centre) so narrow ribs and tapers extrude
-          // the right amount instead of a fixed line width. Off → fixed flow
-          // (byte-identical).
-          const arachne = s.wallGenerator === 'arachne';
+          // Thin-wall gap fill. A perpendicular zigzag hatch (the old default)
+          // leaves a messy cross-hatch in narrow ribs; instead run a continuous
+          // variable-width bead down the region's medial axis — clean, seamless,
+          // and matching the local width, the way BambuStudio's Arachne fills a
+          // thin wall. Only fall back to the hatch when no bead is found (opt out
+          // of beads with wall_generator=classic for byte-identical old output).
+          const arachne = s.wallGenerator !== 'classic';
           const gapBaseFlow = s.gapFillFlow ?? 1;
-          // Full Arachne: run a single variable-width bead down the region's
-          // medial axis (continuous, no seams) instead of perpendicular hatch.
           const beads = arachne ? medialBeads(infRegion, lw) : null;
           if (beads && beads.length) {
             for (const bead of beads) fills.push({ feature: 'gap', closed: false, pts: bead.pts, widths: bead.widths, baseW: lw, flow: gapBaseFlow });

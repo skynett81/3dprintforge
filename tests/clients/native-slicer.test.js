@@ -170,16 +170,17 @@ describe('native-slicer: pressure advance & patterns', () => {
     for (let i = 1; i < zs.length; i++) assert.ok(zs[i] > zs[i - 1], 'adaptive Z stays monotonic');
     assert.ok(!ada.gcode.includes('NaN'));
   });
-  it('arachne wall generator varies thin-feature fill but is byte-identical when off', async () => {
-    // A 1.6 mm rib with 2 walls leaves a genuine thin gap for the wall
-    // generator to fill differently (classic hatch vs arachne bead).
+  it('thin-wall fill: arachne beads are the DEFAULT; classic opts back to the hatch', async () => {
+    // A 1.6 mm rib with 2 walls leaves a genuine thin gap. Arachne (a clean
+    // medial bead) is now the default like BambuStudio; wall_generator=classic
+    // is the byte-identical opt-out to the old perpendicular gap hatch.
     const opts = { supports: false, gapFill: true, wallLoops: 2 };
-    const off = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts });
-    const classic = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'classic' });
-    assert.equal(classic.gcode, off.gcode, 'classic must equal the default');
+    const def = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts });
     const arachne = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'arachne' });
-    assert.notEqual(arachne.gcode, classic.gcode, 'arachne must vary the thin-feature fill');
-    assert.ok(!arachne.gcode.includes('NaN'));
+    assert.equal(arachne.gcode, def.gcode, 'default must equal arachne (beads are the default)');
+    const classic = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'classic' });
+    assert.notEqual(classic.gcode, def.gcode, 'classic (hatch) must differ from the default bead');
+    assert.ok(!def.gcode.includes('NaN'));
   });
   it('lightning infill uses less material than grid (hollow interior)', async () => {
     const grid = await sliceMeshToGcode(box(30, 30, 20), { supports: false, infillPattern: 'grid', infillDensity: 0.15 });
@@ -786,8 +787,11 @@ describe('native-slicer: support bottom z distance', () => {
 describe('native-slicer: filter out small gaps', () => {
   const gapMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Gap infill'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
   it('a large filter removes short gap-fill lines', async () => {
-    const none = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
-    const filt = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, gapFillMinLength: 50, supports: false });
+    // gap_fill_min_length filters the perpendicular HATCH runs, so exercise the
+    // classic hatch path (the default now lays continuous Arachne beads, which
+    // have nothing short to filter).
+    const none = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', supports: false });
+    const filt = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', gapFillMinLength: 50, supports: false });
     assert.ok(gapMoves(none.gcode) > 0, 'baseline has gap fill');
     assert.ok(gapMoves(filt.gcode) < gapMoves(none.gcode), `filter should drop short gaps (none=${gapMoves(none.gcode)} filt=${gapMoves(filt.gcode)})`);
   });
@@ -882,7 +886,7 @@ describe('native-slicer: full Arachne medial beads', () => {
     // many short perpendicular segments; arachne lays one continuous bead per
     // layer along the rib, so it emits far fewer extrusion moves.
     const gapExtrudes = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE: Gap infill'); continue; } if (f && /^G1 X[-\d.]+ Y[-\d.]+ E/.test(l)) n++; } return n; };
-    const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
+    const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', supports: false });
     const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
     assert.ok(gapExtrudes(ar.gcode) < gapExtrudes(cl.gcode) / 5, `arachne far fewer gap extrusion moves (classic=${gapExtrudes(cl.gcode)} arachne=${gapExtrudes(ar.gcode)})`);
     assert.ok(!ar.gcode.includes('NaN'));
