@@ -375,9 +375,13 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Monotonic top/bottom surface fill — lay skin lines one sweep direction for
   // a uniform surface (BambuStudio's top_surface_pattern=monotonic). Default on.
   if (s.monotonic_top_surface !== undefined && s.monotonic_top_surface !== '') out.monotonicTopSurface = !!s.monotonic_top_surface;
-  // Scarf-joint seam — ramp flow at the seam to hide it (BambuStudio).
-  if (s.scarf_seam !== undefined && s.scarf_seam !== '') out.scarfSeam = !!s.scarf_seam;
+  // Scarf-joint seam — ramp flow at the seam to hide it. BambuStudio enables its
+  // conditional seam slope by default (seam_slope_conditional=1), which is why
+  // its seams are near-invisible while a sharp start/stop leaves a visible seam
+  // column stacked over every layer. Default ON to match; explicit false opts out.
+  out.scarfSeam = (s.scarf_seam !== undefined && s.scarf_seam !== '') ? !!s.scarf_seam : true;
   set('scarfLength', num(s.scarf_length));
+  if (out.scarfLength == null) out.scarfLength = 8;   // ramp length (mm)
   // Adaptive (variable) layer height — vary thickness by surface slope.
   if (s.adaptive_layer_height !== undefined && s.adaptive_layer_height !== '') out.adaptiveLayers = !!s.adaptive_layer_height;
   set('minLayerHeight', num(s.min_layer_height));
