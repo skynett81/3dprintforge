@@ -318,9 +318,14 @@ export function buildNativeSettings(s = {}, base = {}) {
   // Gap fill (solid-fill thin features that can't hold sparse infill).
   if (s.gap_fill_enabled !== undefined && s.gap_fill_enabled !== '') out.gapFill = !!s.gap_fill_enabled;
   set('gapFillSpeed', num(s.gap_infill_speed ?? s.gap_fill_speed));
-  // Avoid-crossing-walls travel (combing).
+  // Avoid-crossing-walls travel (combing). DEFAULT OFF: our comb router is
+  // confused by fragmented/thin cross-sections (it can return a route that
+  // skips retraction yet crosses an open gap → stringing), so until it is made
+  // fragment-safe, prefer a plain retracted travel. A retracted travel never
+  // strings; the cost is more retractions, mitigated by retract_before_travel.
   if (s.avoid_crossing_walls !== undefined && s.avoid_crossing_walls !== '') out.avoidCrossingWalls = !!s.avoid_crossing_walls;
   else if (s.reduce_crossing_wall !== undefined && s.reduce_crossing_wall !== '') out.avoidCrossingWalls = !!s.reduce_crossing_wall;
+  else out.avoidCrossingWalls = false;
   // XY dimensional compensation (positive contour = grow outline; positive hole = enlarge holes).
   set('xyContourCompensation', num(s.xy_contour_compensation));
   set('xyHoleCompensation', num(s.xy_hole_compensation));
@@ -364,7 +369,10 @@ export function buildNativeSettings(s = {}, base = {}) {
   set('wipeDistance', num(s.wipe_distance));
   set('wipeSpeed', num(s.wipe_speed));
   // retract_before_travel: skip retraction for hops shorter than this (mm).
+  // Default 1mm (BambuStudio's retraction_minimum_travel) so tiny over-solid
+  // hops don't retract needlessly now that combing is off by default.
   set('retractBeforeTravel', num(s.retract_before_travel ?? s.retraction_minimum_travel));
+  if (out.retractBeforeTravel == null) out.retractBeforeTravel = 1;
   // Bridges + overhang perimeters.
   set('bridgeSpeed', num(s.bridge_speed));
   set('bridgeFlow', num(s.bridge_flow));
