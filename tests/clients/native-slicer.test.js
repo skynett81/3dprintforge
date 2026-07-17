@@ -46,6 +46,25 @@ describe('native-slicer: sliceLayer', () => {
     assert.ok(polys.length >= 1);
     assert.ok(polys[0].length > 16, `cylinder polygon should have many vertices, got ${polys[0].length}`);
   });
+
+  it('a concave L-prism keeps its true cross-section area (no chord across the notch)', () => {
+    // An L: 20x20 square minus its 10x10 top-right corner = 300 mm². Extruded to
+    // z=10. A mis-chained contour would cut a chord across the concave notch and
+    // change the area; the even-odd area guard rebuilds it robustly if so.
+    const L = [[0, 0], [20, 0], [20, 10], [10, 10], [10, 20], [0, 20]];
+    const h = 10, n = L.length, pos = [], idx = [];
+    const push = (x, y, z) => { pos.push(x, y, z); return pos.length / 3 - 1; };
+    const bot = L.map(([x, y]) => push(x, y, 0));
+    const top = L.map(([x, y]) => push(x, y, h));
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; idx.push(bot[i], bot[j], top[i], bot[j], top[j], top[i]); }
+    // caps (fan from vertex 0) — L is simple so a fan triangulation is valid
+    for (let i = 1; i < n - 1; i++) { idx.push(bot[0], bot[i + 1], bot[i], top[0], top[i], top[i + 1]); }
+    const mesh = { positions: new Float32Array(pos), indices: new Uint32Array(idx) };
+    const polys = sliceLayer(mesh, 5);
+    let area = 0;
+    for (const lp of polys) for (let i = 0; i < lp.length; i++) { const a = lp[i], b = lp[(i + 1) % lp.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    assert.ok(Math.abs(Math.abs(area / 2) - 300) < 5, `L cross-section area ≈ 300 (got ${Math.abs(area / 2).toFixed(1)})`);
+  });
 });
 
 describe('native-slicer: offsetPolygon', () => {

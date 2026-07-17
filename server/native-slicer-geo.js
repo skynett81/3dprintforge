@@ -69,7 +69,115 @@ export function sliceLayer(mesh, z) {
     }
   }
 
-  return _chainSegments(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+  const chained = _chainSegments(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+  // Mis-chain guard. Proximity chaining is order-based: on a mesh with internal
+  // walls or coarse/spurious facets it can weld the contour onto a stray segment
+  // and cut a CHORD across the part — a SIMPLE but wrong polygon (omits a whole
+  // notch), which no self-intersection or Clipper clean detects. Compare the
+  // chained fill area to the order-INDEPENDENT even-odd fill of the raw segment
+  // soup (ground truth). On a mismatch the chain is wrong → rebuild the contours
+  // robustly with an even-odd rasterisation. A correctly-chained layer matches
+  // to within the sampling tolerance, so good models keep their exact output.
+  const eoArea = _evenOddArea(segments);
+  if (eoArea > 1) {
+    const chSegs = [];
+    for (const lp of chained) for (let i = 0; i < lp.length; i++) chSegs.push([lp[i], lp[(i + 1) % lp.length]]);
+    const chArea = _evenOddArea(chSegs);
+    if (Math.abs(chArea - eoArea) > eoArea * 0.05) {
+      const eo = _evenOddContours(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+      if (eo.length) return eo;
+    }
+  }
+  return chained;
+}
+
+/**
+ * Even-odd filled AREA of a slice-segment soup (cheap horizontal scanline). The
+ * order-independent ground truth for how much a cross-section encloses — used to
+ * detect a mis-chained contour (see sliceLayer).
+ */
+function _evenOddArea(segments, row = 0.3) {
+  if (!segments.length) return 0;
+  let ymin = Infinity, ymax = -Infinity;
+  for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
+  let area = 0;
+  const xs = [];
+  for (let y = ymin + row * 0.5; y < ymax; y += row) {
+    xs.length = 0;
+    for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
+    if (xs.length < 2) continue;
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) area += (xs[k + 1] - xs[k]) * row;
+  }
+  return area;
+}
+
+/**
+ * Robust even-odd reconstruction of contours from a segment soup. Rasterises the
+ * inside runs (X exact from the crossings, Y sampled at `row`) and unions them
+ * with Clipper into clean, non-self-intersecting polygons with holes — correct
+ * regardless of segment order, winding or internal geometry. Order-based chaining
+ * cannot do this; used only as a fallback when the chain is detected wrong.
+ */
+function _evenOddContours(segments, row = 0.06) {
+  if (!segments.length) return [];
+  let ymin = Infinity, ymax = -Infinity;
+  for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
+  const S = 1 / EPS, rects = [], xs = [];
+  for (let y = ymin + row * 0.5; y < ymax; y += row) {
+    xs.length = 0;
+    for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
+    if (xs.length < 2) continue;
+    xs.sort((p, q) => p - q);
+    const y0 = Math.round((y - row * 0.5) * S), y1 = Math.round((y + row * 0.5) * S);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const x0 = Math.round(xs[k] * S), x1 = Math.round(xs[k + 1] * S);
+      if (x1 - x0 < 1) continue;
+      rects.push([{ X: x0, Y: y0 }, { X: x1, Y: y0 }, { X: x1, Y: y1 }, { X: x0, Y: y1 }]);
+    }
+  }
+  if (!rects.length) return [];
+  const c = new ClipperLib.Clipper();
+  c.AddPaths(rects, ClipperLib.PolyType.ptSubject, true);
+  const sol = new ClipperLib.Paths();
+  c.Execute(ClipperLib.ClipType.ctUnion, sol, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  // Collapse the Y-sampling stair-steps back to smooth edges: Douglas-Peucker at
+  // ~a tenth of a line width keeps the true corners but drops the thousands of
+  // row-tall jaggies the rasterisation leaves (they would bloat the g-code and
+  // slow every downstream offset). Only the fallback path pays this.
+  return sol.map((pa) => _simplifyLoopDP(pa.map((pt) => [pt.X / S, pt.Y / S]), 0.04)).filter((l) => l.length >= 3);
+}
+
+/** Douglas-Peucker on an OPEN polyline (iterative — safe for 10k+ points). */
+function _dpOpen(pts, tol) {
+  const n = pts.length;
+  if (n < 3) return pts.slice();
+  const keep = new Uint8Array(n); keep[0] = keep[n - 1] = 1;
+  const stack = [[0, n - 1]];
+  while (stack.length) {
+    const [i, j] = stack.pop();
+    const ax = pts[i][0], ay = pts[i][1];
+    const dx = pts[j][0] - ax, dy = pts[j][1] - ay, len = Math.hypot(dx, dy) || 1;
+    let dmax = 0, idx = -1;
+    for (let k = i + 1; k < j; k++) {
+      const d = Math.abs((pts[k][0] - ax) * dy - (pts[k][1] - ay) * dx) / len;
+      if (d > dmax) { dmax = d; idx = k; }
+    }
+    if (dmax > tol && idx > 0) { keep[idx] = 1; stack.push([i, idx], [idx, j]); }
+  }
+  const out = [];
+  for (let k = 0; k < n; k++) if (keep[k]) out.push(pts[k]);
+  return out;
+}
+
+/** Douglas-Peucker on a CLOSED loop (split at the point farthest from pts[0]). */
+function _simplifyLoopDP(pts, tol) {
+  if (pts.length < 5) return pts;
+  let far = 0, fd = -1;
+  for (let i = 1; i < pts.length; i++) { const d = (pts[i][0] - pts[0][0]) ** 2 + (pts[i][1] - pts[0][1]) ** 2; if (d > fd) { fd = d; far = i; } }
+  const a = _dpOpen(pts.slice(0, far + 1), tol);
+  const b = _dpOpen(pts.slice(far).concat([pts[0]]), tol);
+  return a.slice(0, -1).concat(b.slice(0, -1));
 }
 
 /**
