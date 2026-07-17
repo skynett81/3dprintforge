@@ -102,7 +102,12 @@ function _evenOddArea(segments, row = 0.3) {
   for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
   let area = 0;
   const xs = [];
-  for (let y = ymin + row * 0.5; y < ymax; y += row) {
+  // Align the scanline phase to a FIXED global grid (multiples of row), NOT to
+  // this layer's ymin, so every layer samples the SAME Y positions. Otherwise the
+  // grid drifts as the outline changes and the reconstructed walls wobble +/- a
+  // row between layers (visible surface roughness).
+  const yStart = (Math.floor(ymin / row) + 0.5) * row;
+  for (let y = yStart; y < ymax; y += row) {
     xs.length = 0;
     for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
     if (xs.length < 2) continue;
@@ -124,7 +129,12 @@ function _evenOddContours(segments, row = 0.06) {
   let ymin = Infinity, ymax = -Infinity;
   for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
   const S = 1 / EPS, rects = [], xs = [];
-  for (let y = ymin + row * 0.5; y < ymax; y += row) {
+  // Align the scanline phase to a FIXED global grid (multiples of row), NOT to
+  // this layer's ymin, so every layer samples the SAME Y positions. Otherwise the
+  // grid drifts as the outline changes and the reconstructed walls wobble +/- a
+  // row between layers (visible surface roughness).
+  const yStart = (Math.floor(ymin / row) + 0.5) * row;
+  for (let y = yStart; y < ymax; y += row) {
     xs.length = 0;
     for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
     if (xs.length < 2) continue;
