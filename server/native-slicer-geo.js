@@ -83,12 +83,36 @@ export function sliceLayer(mesh, z) {
     const chSegs = [];
     for (const lp of chained) for (let i = 0; i < lp.length; i++) chSegs.push([lp[i], lp[(i + 1) % lp.length]]);
     const chArea = _evenOddArea(chSegs);
-    if (Math.abs(chArea - eoArea) > eoArea * 0.05) {
+    // Two independent failure signatures of a mis-chain: (1) the fill AREA no
+    // longer matches the even-odd ground truth (a chord that omits a region);
+    // (2) a SPIKE — a hairpin where the chain shot out along a stray segment and
+    // came straight back, which barely changes the area but leaves a long
+    // out-and-back gash (the distorted low layers). Either one → rebuild robustly.
+    if (Math.abs(chArea - eoArea) > eoArea * 0.05 || chained.some(_hasSpike)) {
       const eo = _evenOddContours(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
       if (eo.length) return eo;
     }
   }
   return chained;
+}
+
+/**
+ * A contour has a SPIKE if any vertex is a near-reversal (hairpin) between two
+ * long edges — the signature of a chain that jumped out along a stray segment
+ * and back. Real contours turn smoothly; a >135° reversal between multi-mm edges
+ * does not occur on a clean slice.
+ */
+function _hasSpike(lp) {
+  const n = lp.length;
+  if (n < 4) return false;
+  for (let i = 0; i < n; i++) {
+    const a = lp[(i - 1 + n) % n], b = lp[i], c = lp[(i + 1) % n];
+    const e1x = b[0] - a[0], e1y = b[1] - a[1], l1 = Math.hypot(e1x, e1y);
+    const e2x = c[0] - b[0], e2y = c[1] - b[1], l2 = Math.hypot(e2x, e2y);
+    if (l1 < 2 || l2 < 2) continue;                       // only long edges spike
+    if ((e1x * e2x + e1y * e2y) / (l1 * l2) < -0.7) return true;   // ~>135° reversal
+  }
+  return false;
 }
 
 /**
