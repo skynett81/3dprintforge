@@ -1536,6 +1536,17 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           const bf = s.gapFillFlow ?? 1;
           for (const tp of thin) {
             if (!tp.outer || tp.outer.length < 3) continue;
+            // Thin sections wide enough for at least one full solid line are
+            // filled with internal SOLID infill — BambuStudio fills thin walls
+            // solid (its "internal solid infill"), not a coarse cross-hatch or a
+            // lone medial bead that under-fills a 1-2 mm rib and leaves the
+            // sparse grid showing through the surface. Only sub-line-width
+            // slivers fall through to a variable-width medial bead below. These
+            // sit over the sparse infill of the layer below → never a bridge.
+            if (s.solidThinFill !== false && _clipExpand([tp], -lw * 0.55).length) {
+              pushSolidRegion(tp, baseAngle, null, false, true);
+              continue;
+            }
             // Full Arachne: the beading strategy splits a wider core into the
             // right number of variable-width beads; a thin core stays one bead.
             // voronoiWalls uses the Voronoi/Delaunay medial axis + connectJunctions
@@ -1576,8 +1587,16 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           // of beads with wall_generator=classic for byte-identical old output).
           const arachne = s.wallGenerator !== 'classic';
           const gapBaseFlow = s.gapFillFlow ?? 1;
-          const beads = arachne ? medialBeads(infRegion, lw) : null;
-          if (beads && beads.length) {
+          // Thin-but-fillable: a region still wide enough for one full solid line
+          // fills with internal SOLID infill (BambuStudio internal solid), not a
+          // lone medial bead that under-fills the rib and shows sparse through the
+          // surface. Sits over sparse below → never a bridge. Only sub-line-width
+          // slivers drop to the medial-bead / hatch fallbacks below.
+          const beads = (s.solidThinFill !== false && _clipExpand([infRegion], -lw * 0.55).length) ? 'solid'
+            : arachne ? medialBeads(infRegion, lw) : null;
+          if (beads === 'solid') {
+            pushSolidRegion(infRegion, baseAngle, null, false, true);
+          } else if (beads && beads.length) {
             for (const bead of beads) fills.push({ feature: 'gap', closed: false, pts: bead.pts, widths: bead.widths, baseW: lw, flow: gapBaseFlow });
           } else {
             for (const sg of solidInfill(infRegion, baseAngle, lw)) {

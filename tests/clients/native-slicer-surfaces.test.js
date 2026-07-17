@@ -79,6 +79,36 @@ describe('native-slicer: surfaces end-to-end', () => {
     assert.ok(bridgeLen < 500, `sloped top should not bridge (got ${Math.round(bridgeLen)}mm)`);
   });
 
+  it('fills thin sections with internal solid, not gap beads (BambuStudio parity)', async () => {
+    // A thin upright wall: 40 x 2 x 16 mm. After 2 perimeters the ~1 mm core is
+    // too thin for sparse but wide enough for solid lines — it must fill SOLID
+    // (BambuStudio "internal solid infill"), not a lone medial gap bead that
+    // under-fills and leaves the surface open.
+    const v = [
+      [0, 0, 0], [40, 0, 0], [40, 2, 0], [0, 2, 0],
+      [0, 0, 16], [40, 0, 16], [40, 2, 16], [0, 2, 16],
+    ];
+    const f = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [1, 2, 6], [1, 6, 5], [2, 3, 7], [2, 7, 6], [3, 0, 4], [3, 4, 7]];
+    const pos = [], idx = [];
+    let vi = 0;
+    for (const t of f) for (const i of t) { pos.push(...v[i]); idx.push(vi++); }
+    const measure = async (opts) => {
+      const r = await sliceMeshToGcode({ positions: new Float32Array(pos), indices: new Uint32Array(idx) }, { infillDensity: 0.15, topLayers: 4, bottomLayers: 3, ...opts });
+      let feat = '', px = 0, py = 0, have = false; const len = {};
+      for (const l of r.gcode.split('\n')) {
+        const fi = l.indexOf('FEATURE:'); if (fi >= 0) { feat = l.slice(fi + 8).trim(); continue; }
+        const m = /^G[01]\b/.test(l) && { x: l.match(/X(-?[\d.]+)/), y: l.match(/Y(-?[\d.]+)/), e: l.match(/E(-?[\d.]+)/) };
+        if (m) { const nx = m.x ? +m.x[1] : px, ny = m.y ? +m.y[1] : py; if ((m.x || m.y) && m.e && have) len[feat] = (len[feat] || 0) + Math.hypot(nx - px, ny - py); if (m.x || m.y) { px = nx; py = ny; have = true; } }
+      }
+      return len;
+    };
+    const on = await measure({});
+    const off = await measure({ solidThinFill: false });
+    // With the fix on, the thin core is solid and gap fill nearly vanishes.
+    assert.ok((on['Internal solid infill'] || 0) > (off['Internal solid infill'] || 0), 'thin core now fills solid');
+    assert.ok((on['Gap infill'] || 0) < (off['Gap infill'] || 1), 'gap-bead fill drops when thin sections go solid');
+  });
+
   it('ironing adds a top-skin ironing pass when enabled', async () => {
     const plain = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: false });
     const ironed = await sliceMeshToGcode(box(20, 20, 10), { infillDensity: 0.15, ironing: true });
