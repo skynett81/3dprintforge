@@ -15,6 +15,7 @@
 import { _pointInPoly } from './native-slicer-geo.js';
 import { makeBeadingStrategy } from './native-slicer-beading.js';
 import { medialAxis } from './native-slicer-voronoi.js';
+import { clipExpand } from './native-slicer-bool.js';
 
 /**
  * @param {{outer:number[][], holes?:number[][][]}} region
@@ -237,6 +238,39 @@ export function arachneBeads(region, lineWidth, opts = {}) {
  *
  * @returns {{pts:number[][], widths:number[], closed:boolean}[]}
  */
+// One medial CHAIN → its closed variable-width wall loops (perimeter p pairs
+// bead p with bead N-1-p; central bead stays an open axis bead).
+function chainWallLoops(cl, strat, maxBeads, minOutput) {
+  const out = [];
+  const pts = cl.pts, thick = cl.widths;
+  if (pts.length < 2) return out;
+  const sorted = thick.slice().sort((a, b) => a - b);
+  const N = Math.max(1, Math.min(maxBeads, strat.getOptimalBeadCount(sorted[sorted.length >> 1])));
+  const normals = perpNormals(pts);
+  const half = Math.ceil(N / 2);
+  for (let p = 0; p < half; p++) {
+    const q = N - 1 - p;
+    if (p === q) {
+      const cp = [], cw = [];
+      for (let k = 0; k < pts.length; k++) { const c = strat.compute(thick[k], N); const wv = c.widths[p]; if (wv != null && wv > 0) { cp.push(pts[k].slice()); cw.push(wv); } }
+      if (cp.length >= 2) out.push({ pts: cp, widths: cw, closed: false });
+      continue;
+    }
+    const sideA = [], sideB = [], wA = [], wB = [];
+    for (let k = 0; k < pts.length; k++) {
+      const t = thick[k];
+      const { widths, locations } = strat.compute(t, N);
+      if (locations[p] == null || locations[q] == null || !(widths[p] > 0) || !(widths[q] > 0)) continue;
+      const nx = normals[k][0], ny = normals[k][1], px = pts[k][0], py = pts[k][1];
+      sideA.push([px + nx * (locations[p] - t / 2), py + ny * (locations[p] - t / 2)]); wA.push(widths[p]);
+      sideB.push([px + nx * (locations[q] - t / 2), py + ny * (locations[q] - t / 2)]); wB.push(widths[q]);
+    }
+    if (sideA.length < 2) continue;
+    out.push({ pts: [...sideA, ...sideB.reverse()], widths: [...wA, ...wB.reverse()], closed: true });
+  }
+  return out;
+}
+
 export function arachneWalls(region, lineWidth, opts = {}) {
   const minInput = opts.minInputWidth ?? lineWidth * 0.15;
   const minOutput = opts.minOutputWidth ?? lineWidth * 0.85;
@@ -248,44 +282,31 @@ export function arachneWalls(region, lineWidth, opts = {}) {
     minInputWidth: minInput, minOutputWidth: minOutput,
   });
   const maxBeads = opts.maxBeads ?? 6;
-  const chains = medialAxis(region, lineWidth);
   const out = [];
-  for (const cl of chains) {
-    const pts = cl.pts, thick = cl.widths;
-    if (pts.length < 2) continue;
-    const sorted = thick.slice().sort((a, b) => a - b);
-    const N = Math.max(1, Math.min(maxBeads, strat.getOptimalBeadCount(sorted[sorted.length >> 1])));
-    const normals = perpNormals(pts);
-    const half = Math.ceil(N / 2);
-    for (let p = 0; p < half; p++) {
-      const q = N - 1 - p;
-      if (p === q) {
-        // Central single bead (odd N) — an open bead down the axis. A thin point
-        // can't support N beads (the distributed width would go ≤0 there), so
-        // keep only points where the central bead has a real positive width.
-        const cp = [], cw = [];
-        for (let k = 0; k < pts.length; k++) {
-          const c = strat.compute(thick[k], N);
-          const wv = c.widths[p];
-          if (wv != null && wv > 0) { cp.push(pts[k].slice()); cw.push(wv); }
+  // CROSS-CHAIN connectJunctions: offset the whole region inward level by level
+  // — each level is a UNIFIED iso-contour loop across every medial branch, so a
+  // convex outline's corner branches never emit their own overlapping loops
+  // (the per-chain double-cover). When an island is too thin for a full bead,
+  // its thin core is filled with the per-chain medial wall loops (clean there).
+  let cur = [{ outer: region.outer, holes: (region.holes || []).map((h) => h.slice()) }];
+  let guard = 0;
+  while (cur.length && guard++ < maxBeads + 2) {
+    const next = [];
+    for (const isl of cur) {
+      if (!isl.outer || isl.outer.length < 3) continue;
+      const inner = clipExpand([isl], -lineWidth);           // material left after one full bead
+      if (inner.length) {
+        const centres = clipExpand([isl], -lineWidth / 2);   // this bead's centreline loop(s)
+        for (const c of centres) {
+          if (c.outer && c.outer.length >= 3) out.push({ pts: c.outer, widths: c.outer.map(() => lineWidth), closed: true });
+          for (const h of c.holes || []) if (h.length >= 3) out.push({ pts: h, widths: h.map(() => lineWidth), closed: true });
         }
-        if (cp.length >= 2) out.push({ pts: cp, widths: cw, closed: false });
-        continue;
+        for (const inr of inner) next.push(inr);
+      } else {
+        for (const cl of medialAxis(isl, lineWidth)) for (const w of chainWallLoops(cl, strat, maxBeads, minOutput)) out.push(w);
       }
-      const sideA = [], sideB = [], wA = [], wB = [];
-      for (let k = 0; k < pts.length; k++) {
-        const t = thick[k];
-        const { widths, locations } = strat.compute(t, N);
-        // Only where BOTH paired beads exist with a positive width (a thin point
-        // collapses to fewer beads; those outer perimeters simply end there).
-        if (locations[p] == null || locations[q] == null || !(widths[p] > 0) || !(widths[q] > 0)) continue;
-        const nx = normals[k][0], ny = normals[k][1], px = pts[k][0], py = pts[k][1];
-        sideA.push([px + nx * (locations[p] - t / 2), py + ny * (locations[p] - t / 2)]); wA.push(widths[p]);
-        sideB.push([px + nx * (locations[q] - t / 2), py + ny * (locations[q] - t / 2)]); wB.push(widths[q]);
-      }
-      if (sideA.length < 2) continue;
-      out.push({ pts: [...sideA, ...sideB.reverse()], widths: [...wA, ...wB.reverse()], closed: true });
     }
+    cur = next;
   }
   return out;
 }
