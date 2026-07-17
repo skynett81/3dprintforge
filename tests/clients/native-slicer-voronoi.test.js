@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { delaunay, medialAxis } from '../../server/native-slicer-voronoi.js';
+import { delaunay, medialAxis, buildSkeleton } from '../../server/native-slicer-voronoi.js';
 
 describe('native-slicer: Delaunay medial axis (Voronoi Arachne foundation)', () => {
   it('delaunay triangulates a point set', () => {
@@ -28,6 +28,23 @@ describe('native-slicer: Delaunay medial axis (Voronoi Arachne foundation)', () 
   it('captures a tapering wedge (width varies along the axis)', () => {
     const w = widths({ outer: [[0, 0.5], [20, 0], [20, 2.5], [0, 1.0]], holes: [] });
     assert.ok(w.length && (Math.max(...w) - Math.min(...w)) > 0.5, 'width range spans the taper');
+  });
+
+  it('builds a topologically-consistent half-edge skeleton graph', () => {
+    // Step 1 of the SkeletalTrapezoidation port: twin + distance_to_boundary.
+    const g = buildSkeleton({ outer: [[0, 0], [20, 0], [20, 1.5], [0, 1.5]], holes: [] }, 0.42);
+    assert.ok(g && g.nodes.length > 0 && g.edges.length > 0);
+    for (let i = 0; i < g.edges.length; i++) {
+      const e = g.edges[i], tw = g.edges[e.twin];
+      assert.equal(tw.twin, i, 'twin.twin === self');
+      assert.equal(tw.from, e.to, 'twin endpoints swapped (from)');
+      assert.equal(tw.to, e.from, 'twin endpoints swapped (to)');
+      if (e.next >= 0) assert.equal(g.edges[e.next].prev, i, 'next.prev === self');
+      if (e.prev >= 0) assert.equal(g.edges[e.prev].next, i, 'prev.next === self');
+    }
+    for (const nd of g.nodes) assert.ok(Number.isFinite(nd.x) && Number.isFinite(nd.y) && nd.r > 0);
+    const maxR = Math.max(...g.nodes.map((n) => n.r));
+    assert.ok(Math.abs(maxR - 0.75) < 0.1, `spine node r ≈ rib half-width 0.75 (got ${maxR.toFixed(2)})`);
   });
 
   it('produces no NaN in the skeleton', () => {

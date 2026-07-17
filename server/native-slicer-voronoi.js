@@ -194,3 +194,82 @@ export function medialAxis(region, lineWidth, step = lineWidth * 0.6) {
   }
   return out;
 }
+
+// ── Half-edge skeletal graph (SkeletalTrapezoidation foundation) ────
+//
+// Step 1 of the faithful Arachne port. Builds the medial half-edge graph over
+// the Voronoi (dual of the boundary-sampled Delaunay): Voronoi vertices =
+// interior-triangle circumcentres (distance_to_boundary = circumradius), and
+// each internal Delaunay edge shared by two interior triangles gives a twin
+// pair of half-edges linking their circumcentres. next/prev walk each Voronoi
+// CELL (the region around one boundary point), which connectJunctions later
+// traverses as quads. Twin(T→T') is simply (T'→T).
+
+/**
+ * @returns {{ nodes:{x,y,r}[], edges:{from,to,twin,next,prev,cell}[] } | null}
+ */
+export function buildSkeleton(region, lineWidth, step = lineWidth * 0.6) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3) return null;
+  const holes = region.holes || [];
+  const pts = [], meta = [];
+  sampleLoop(outer, step, pts, 0, meta);
+  holes.forEach((h, hi) => sampleLoop(h, step, pts, hi + 1, meta));
+  if (pts.length < 3 || pts.length > 20000) return null;
+  const tris = delaunay(pts);
+  let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+  for (const p of pts) { if (p[0] < mnx) mnx = p[0]; if (p[0] > mxx) mxx = p[0]; if (p[1] < mny) mny = p[1]; if (p[1] > mxy) mxy = p[1]; }
+  const bbDiag = Math.hypot(mxx - mnx, mxy - mny);
+  const isBoundaryEdge = (a, b) => { const ma = meta[a], mb = meta[b]; if (!ma || !mb || ma.loop !== mb.loop) return false; const d = Math.abs(ma.idx - mb.idx); return d === 1 || d === ma.count - 1; };
+  // Interior triangle → medial node.
+  const nodes = [], triNode = new Map();
+  for (let ti = 0; ti < tris.length; ti++) {
+    const t = tris[ti];
+    const [ax, ay] = pts[t[0]], [bx, by] = pts[t[1]], [cx2, cy2] = pts[t[2]];
+    if (Math.abs((bx - ax) * (cy2 - ay) - (by - ay) * (cx2 - ax)) < lineWidth * lineWidth * 0.02) continue;
+    const gx = (ax + bx + cx2) / 3, gy = (ay + by + cy2) / 3;
+    if (!inRegion(gx, gy, region)) continue;
+    const c = circumcircle(ax, ay, bx, by, cx2, cy2);
+    if (!c || !(c.r > 0) || c.r > bbDiag) continue;
+    const inC = inRegion(c.x, c.y, region);
+    triNode.set(ti, nodes.length);
+    nodes.push({ x: inC ? c.x : gx, y: inC ? c.y : gy, r: c.r });
+  }
+  // For each internal Delaunay edge between two interior triangles, make the
+  // twin half-edge pair. The Delaunay edge (a,b) is the "cell" boundary; the
+  // half-edge from T→T' belongs to the cell of the vertex on its left.
+  const edges = [];
+  const heKey = new Map();          // (fromNode,toNode) → edge idx
+  const edgeTris = new Map();
+  const key = (a, b) => (a < b ? a + ',' + b : b + ',' + a);
+  for (let ti = 0; ti < tris.length; ti++) {
+    if (!triNode.has(ti)) continue;
+    const t = tris[ti];
+    for (const [a, b] of [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]]) { if (isBoundaryEdge(a, b)) continue; const k = key(a, b); (edgeTris.get(k) || edgeTris.set(k, []).get(k)).push({ ti, a, b }); }
+  }
+  const cross = (ox, oy, ax, ay, bx, by) => (ax - ox) * (by - oy) - (ay - oy) * (bx - ox);
+  for (const [, ts] of edgeTris) {
+    if (ts.length !== 2) continue;
+    const [e1, e2] = ts;
+    if (!triNode.has(e1.ti) || !triNode.has(e2.ti)) continue;
+    const u = triNode.get(e1.ti), v = triNode.get(e2.ti);
+    const A = e1.a, B = e1.b;                       // the shared Delaunay edge (A,B)
+    // Half-edge u→v: its cell is the boundary vertex on its LEFT.
+    const leftOfUV = cross(nodes[u].x, nodes[u].y, nodes[v].x, nodes[v].y, pts[A][0], pts[A][1]) > 0 ? A : B;
+    const rightOfUV = leftOfUV === A ? B : A;
+    const iUV = edges.length; edges.push({ from: u, to: v, twin: iUV + 1, next: -1, prev: -1, cell: leftOfUV });
+    const iVU = edges.length; edges.push({ from: v, to: u, twin: iUV, next: -1, prev: -1, cell: rightOfUV });
+    heKey.set(u + '>' + v, iUV); heKey.set(v + '>' + u, iVU);
+  }
+  // next/prev: within each cell (boundary vertex), the half-edges form a fan;
+  // link them by matching a half-edge's 'to' node to the next's 'from' node
+  // that shares the same cell. (Open fans at hull/boundary just leave a gap.)
+  const byCellFrom = new Map();     // cell → Map(fromNode → edge idx)
+  for (let i = 0; i < edges.length; i++) { const e = edges[i]; if (!byCellFrom.has(e.cell)) byCellFrom.set(e.cell, new Map()); byCellFrom.get(e.cell).set(e.from, i); }
+  for (let i = 0; i < edges.length; i++) {
+    const e = edges[i]; const m = byCellFrom.get(e.cell);
+    const nx = m.get(e.to);         // next half-edge in this cell starts where e ends
+    if (nx != null && nx !== i) { edges[i].next = nx; edges[nx].prev = i; }
+  }
+  return { nodes, edges };
+}
