@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBeadingStrategy } from '../../server/native-slicer-beading.js';
-import { arachneBeads } from '../../server/native-slicer-arachne.js';
+import { arachneBeads, arachneWalls } from '../../server/native-slicer-arachne.js';
 
 describe('native-slicer: Arachne beading strategy (BambuStudio port)', () => {
   // Base DistributedBeadingStrategy (widening disabled) — these tests cover the
@@ -108,6 +108,26 @@ describe('native-slicer: Arachne variable-width beads over a region', () => {
     for (const b of arachneBeads(rib(2.0), 0.42)) {
       for (const [x, y] of b.pts) assert.ok(Number.isFinite(x) && Number.isFinite(y));
       for (const w of b.widths) assert.ok(Number.isFinite(w) && w > 0);
+    }
+  });
+});
+
+describe('native-slicer: connectJunctions → closed variable-width wall loops', () => {
+  const rib = (w) => ({ outer: [[0, 0], [20, 0], [20, w], [0, w]], holes: [] });
+  const noNaN = (walls) => walls.every((b) => b.pts.every((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])) && b.widths.every((x) => Number.isFinite(x) && x > 0));
+
+  it('a thin core becomes ONE closed loop (not fragmented open beads)', () => {
+    const walls = arachneWalls(rib(0.7), 0.42);
+    assert.ok(walls.length >= 1, 'produces a wall');
+    assert.ok(walls.some((w) => w.closed), 'at least one closed loop');
+    assert.ok(noNaN(walls), 'no NaN');
+  });
+
+  it('closed loops carry variable widths and no NaN', () => {
+    for (const w of [0.7, 1.0, 1.5]) {
+      const walls = arachneWalls(rib(w), 0.42);
+      assert.ok(noNaN(walls), `no NaN at ${w} mm`);
+      for (const wall of walls) assert.equal(wall.pts.length, wall.widths.length, 'one width per point');
     }
   });
 });

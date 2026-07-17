@@ -221,3 +221,71 @@ export function arachneBeads(region, lineWidth, opts = {}) {
   }
   return out;
 }
+
+/**
+ * connectJunctions (Arachne) adapted to the medial graph: turn the medial
+ * centrelines into CONTINUOUS, CLOSED variable-width wall loops instead of the
+ * fragmented per-bead segments arachneBeads emits.
+ *
+ * The beading places N beads across the local width; by symmetry bead p and
+ * bead N-1-p are the SAME perimeter on the two sides of the medial axis. So
+ * perimeter p is one closed loop: walk side A (bead p) forward, wrap at the far
+ * tip, walk side B (bead N-1-p) back, wrap at the near tip. The central bead
+ * (odd N) stays a single open axis bead. Widths stay variable per point. This
+ * is the connectJunctions goal — same-perimeter junctions stitched into
+ * ExtrusionLine loops — realised on the Voronoi/Delaunay medial axis.
+ *
+ * @returns {{pts:number[][], widths:number[], closed:boolean}[]}
+ */
+export function arachneWalls(region, lineWidth, opts = {}) {
+  const minInput = opts.minInputWidth ?? lineWidth * 0.15;
+  const minOutput = opts.minOutputWidth ?? lineWidth * 0.85;
+  const strat = makeBeadingStrategy({
+    optimalWidth: lineWidth,
+    splitMidThreshold: opts.split ?? 0.5,
+    addMidThreshold: opts.add ?? 0.5,
+    distributionRadius: opts.distributionRadius ?? 2,
+    minInputWidth: minInput, minOutputWidth: minOutput,
+  });
+  const maxBeads = opts.maxBeads ?? 6;
+  const chains = medialAxis(region, lineWidth);
+  const out = [];
+  for (const cl of chains) {
+    const pts = cl.pts, thick = cl.widths;
+    if (pts.length < 2) continue;
+    const sorted = thick.slice().sort((a, b) => a - b);
+    const N = Math.max(1, Math.min(maxBeads, strat.getOptimalBeadCount(sorted[sorted.length >> 1])));
+    const normals = perpNormals(pts);
+    const half = Math.ceil(N / 2);
+    for (let p = 0; p < half; p++) {
+      const q = N - 1 - p;
+      if (p === q) {
+        // Central single bead (odd N) — an open bead down the axis. A thin point
+        // can't support N beads (the distributed width would go ≤0 there), so
+        // keep only points where the central bead has a real positive width.
+        const cp = [], cw = [];
+        for (let k = 0; k < pts.length; k++) {
+          const c = strat.compute(thick[k], N);
+          const wv = c.widths[p];
+          if (wv != null && wv > 0) { cp.push(pts[k].slice()); cw.push(wv); }
+        }
+        if (cp.length >= 2) out.push({ pts: cp, widths: cw, closed: false });
+        continue;
+      }
+      const sideA = [], sideB = [], wA = [], wB = [];
+      for (let k = 0; k < pts.length; k++) {
+        const t = thick[k];
+        const { widths, locations } = strat.compute(t, N);
+        // Only where BOTH paired beads exist with a positive width (a thin point
+        // collapses to fewer beads; those outer perimeters simply end there).
+        if (locations[p] == null || locations[q] == null || !(widths[p] > 0) || !(widths[q] > 0)) continue;
+        const nx = normals[k][0], ny = normals[k][1], px = pts[k][0], py = pts[k][1];
+        sideA.push([px + nx * (locations[p] - t / 2), py + ny * (locations[p] - t / 2)]); wA.push(widths[p]);
+        sideB.push([px + nx * (locations[q] - t / 2), py + ny * (locations[q] - t / 2)]); wB.push(widths[q]);
+      }
+      if (sideA.length < 2) continue;
+      out.push({ pts: [...sideA, ...sideB.reverse()], widths: [...wA, ...wB.reverse()], closed: true });
+    }
+  }
+  return out;
+}
