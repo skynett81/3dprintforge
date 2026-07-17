@@ -275,6 +275,10 @@ export function buildNativeSettings(s = {}, base = {}) {
   if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
   // Wall generator: 'classic' or 'arachne' (variable-width thin-feature fill).
   if (s.wall_generator) out.wallGenerator = String(s.wall_generator).toLowerCase();
+  // Voronoi/Delaunay medial-axis walls (full Arachne, closed variable-width
+  // loops) for the thin-core fill — or wall_generator: 'arachne-voronoi'.
+  if (s.voronoi_walls !== undefined && s.voronoi_walls !== '') out.voronoiWalls = !!s.voronoi_walls;
+  else if (String(s.wall_generator || '').toLowerCase() === 'arachne-voronoi') out.voronoiWalls = true;
   // Support style: 'normal' (grid) or 'tree'/'organic' (branching).
   if (s.support_style) out.supportStyle = String(s.support_style).toLowerCase();
   if (s.support_type) out.supportType = String(s.support_type).toLowerCase();

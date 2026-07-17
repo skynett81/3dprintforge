@@ -30,7 +30,7 @@ import {
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
 import { clipDifference as _clipDifference, clipExpand as _clipExpand } from './native-slicer-bool.js';
-import { medialBeads, arachneBeads } from './native-slicer-arachne.js';
+import { medialBeads, arachneBeads, arachneWalls } from './native-slicer-arachne.js';
 import { fitArcs } from './native-slicer-arc.js';
 import { insertProgressM73 } from './native-slicer-progress.js';
 
@@ -1537,10 +1537,13 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
           for (const tp of thin) {
             if (!tp.outer || tp.outer.length < 3) continue;
             // Full Arachne: the beading strategy splits a wider core into the
-            // right number of variable-width beads; a thin core stays one bead
-            // (identical to the single medial bead). Opt out via arachneFull:false.
-            const beads = (s.arachneFull !== false) ? arachneBeads(tp, lw) : medialBeads(tp, lw);
-            if (beads && beads.length) { for (const b of beads) fills.push({ feature: 'gap', closed: false, pts: b.pts, widths: b.widths, baseW: lw, flow: bf }); continue; }
+            // right number of variable-width beads; a thin core stays one bead.
+            // voronoiWalls uses the Voronoi/Delaunay medial axis + connectJunctions
+            // to emit CLOSED variable-width wall loops (cleanest for thin cores);
+            // else the grid arachneBeads (default). Opt out entirely: arachneFull:false.
+            const beads = s.voronoiWalls === true ? arachneWalls(tp, lw)
+              : (s.arachneFull !== false) ? arachneBeads(tp, lw) : medialBeads(tp, lw);
+            if (beads && beads.length) { for (const b of beads) fills.push({ feature: 'gap', closed: !!b.closed, pts: b.pts, widths: b.widths, baseW: lw, flow: bf }); continue; }
             let ring = offsetPolygon(tp.outer, -lw * 0.5), guard = 0;
             while (ring && ring.length >= 3 && guard++ < 30) { fills.push({ feature: 'inner-wall', closed: true, pts: ring }); ring = offsetPolygon(ring, -lw); }
           }
