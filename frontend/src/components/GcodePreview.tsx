@@ -345,7 +345,10 @@ export function GcodePreview({ gcode, bed = 256, bedY, slotColors, pricePerGram 
     if (travelPos.length) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(travelPos, 3));
-      c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.35 })));
+      // Travels render as faint ghost lines (BambuStudio shows them barely
+      // visible) — a light blue at low opacity that never occludes the beads, so
+      // toggling Travel on doesn't read as black gashes across the part.
+      c.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x9ec5fe, transparent: true, opacity: 0.18, depthWrite: false })));
     }
     // Retraction points — small red dots where the filament was pulled back
     // (OrcaSlicer's retraction markers), for hunting stringing.
