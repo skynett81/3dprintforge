@@ -711,7 +711,22 @@ export function layersToGcode(layers, settings) {
       }
     }
     const spiral = paths.some((p) => p.spiral);
-    combBoundary = spiral ? null : (layer.regions || null);
+    // Comb boundary = the layer's solid regions ERODED by a line width, so the
+    // travel router only trusts the genuinely-solid INTERIOR. The raw region
+    // (especially the even-odd fallback's slightly over-filled rim) let combing
+    // route right up to — or across — an edge and skip retraction on a path that
+    // actually grazed open air (the stringing the clamp showed). A region too
+    // thin to survive the erosion just yields a plain retracted travel.
+    if (spiral || !combing || !layer.regions) combBoundary = null;
+    else {
+      const cb = [];
+      for (const r of layer.regions) {
+        for (const o of offsetPolygonAll(r.outer, -s.lineWidth)) {
+          if (o && o.length >= 3) cb.push({ outer: o, holes: (r.holes || []).map((h) => offsetPolygon(h, s.lineWidth)).filter((h) => h && h.length >= 3) });
+        }
+      }
+      combBoundary = cb.length ? cb : null;
+    }
     combCache = (combing && combBoundary) ? {} : null;   // lazy per-layer detour cache
     // Sequential printing: hop to clearance height and mark the object change
     // before starting the next object's first layer.
