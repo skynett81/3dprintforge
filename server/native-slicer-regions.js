@@ -46,6 +46,11 @@ export function buildSolidRegions(layerRegions, opts = {}) {
   // ring on every layer. Drop any region narrower than a fraction of a line so
   // only genuine exposed surfaces survive (libslic3r discards sub-EPSILON areas).
   const minArea = Math.max(0.04, (opts.lineWidth ?? 0.42) ** 2 * 0.5);
+  // A real internal bridge spans a gap and is BROAD. Thin staircase strips on a
+  // sloped top surface are supported at the wall and don't span — eroding by
+  // ~1.5 line widths makes them vanish, so they fall back to solid infill
+  // (matching BambuStudio, which lays sloped tops as solid, not bridge).
+  const ibErode = (opts.lineWidth ?? 0.42) * 1.5;
   const prune = (regs) => (regs && regs.length ? regs.filter((r) => Math.abs(polyArea(r.outer) - (r.holes || []).reduce((a, h) => a + Math.abs(polyArea(h)), 0)) >= minArea) : EMPTY);
   // Morphological OPEN (erode then dilate) on the exposed skin — libslic3r's
   // offset2(-w,+w) surface filter. A faceted VERTICAL wall never slices to the
@@ -167,7 +172,9 @@ export function buildSolidRegions(layerRegions, opts = {}) {
     if (i === 0 || !solid[i].length || !slices[i - 1].length || !topExposedAbove[i].length) { internalBridge[i] = EMPTY; continue; }
     const notSolidBelow = solid[i - 1].length ? clipDifference(solid[i], solid[i - 1]) : solid[i].map(clone);
     const overSparse = notSolidBelow.length ? clipIntersection(notSolidBelow, slices[i - 1]) : EMPTY;
-    internalBridge[i] = overSparse.length ? prune(clipIntersection(overSparse, topExposedAbove[i])) : EMPTY;
+    const ibRaw = overSparse.length ? prune(clipIntersection(overSparse, topExposedAbove[i])) : EMPTY;
+    // Keep only regions broad enough to be a genuine bridge; drop thin ledges.
+    internalBridge[i] = ibRaw.length ? ibRaw.filter((r) => clipExpand([r], -ibErode).length) : EMPTY;
   }
 
   return {
