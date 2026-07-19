@@ -623,7 +623,7 @@
         }
       }
     } catch (e) {
-      if (result) result.innerHTML = '<div style="padding:20px;color:var(--accent-red)">' + e.message + '</div>';
+      if (result) result.innerHTML = '<div style="padding:20px;color:var(--accent-red)">' + window.esc(e.message || String(e)) + '</div>';
       restorePreview();
     }
   };

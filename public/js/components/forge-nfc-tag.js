@@ -120,10 +120,10 @@
       </div>
 
       <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
-        <div style="width:50px;height:50px;border-radius:50%;background:${d.color_hex};border:3px solid rgba(255,255,255,0.2);flex-shrink:0"></div>
+        <div style="width:50px;height:50px;border-radius:50%;background:${window.esc(d.color_hex)};border:3px solid rgba(255,255,255,0.2);flex-shrink:0"></div>
         <div>
-          <div style="font-size:1rem;font-weight:700">${d.vendor} ${d.material}</div>
-          <div style="font-size:0.8rem;color:var(--text-muted)">${d.color_name} — ${d.temp_min}-${d.temp_max}°C / Bed ${d.bed_temp}°C</div>
+          <div style="font-size:1rem;font-weight:700">${window.esc(d.vendor)} ${window.esc(d.material)}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">${window.esc(d.color_name)} — ${d.temp_min}-${d.temp_max}°C / Bed ${d.bed_temp}°C</div>
           <div style="font-size:0.75rem;color:var(--text-muted)">${d.weight}g / ⌀${d.diameter}mm / ${d.density} g/cm³</div>
         </div>
       </div>

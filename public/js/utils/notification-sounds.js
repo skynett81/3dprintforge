@@ -219,6 +219,7 @@
 
     // Countdown — check remaining time and play once at 1 min
     checkCountdown: (printerId, remainingSeconds) => {
+      if (printerId === '__proto__' || printerId === 'constructor' || printerId === 'prototype') return;
       if (!_isEventEnabled('countdown_1min')) return;
       if (remainingSeconds > 0 && remainingSeconds <= 60 && !_countdownPlayed[printerId]) {
         _countdownPlayed[printerId] = true;

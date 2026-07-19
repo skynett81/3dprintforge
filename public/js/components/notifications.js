@@ -25,6 +25,7 @@
   window.checkNotifications = function(printerId, data) {
     const curr = data.gcode_state;
     if (!curr) return;
+    if (printerId === '__proto__' || printerId === 'constructor' || printerId === 'prototype') return;
 
     const prev = previousStates[printerId];
     previousStates[printerId] = curr;

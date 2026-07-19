@@ -14,11 +14,12 @@ const TELEMETRY_URL = 'https://telemetry.geektech.no/ping';
 const ID_FILE = join(DATA_DIR, '.install-id');
 
 function getInstallId() {
+  // Read directly and fall through on any error — avoids the exists→read
+  // TOCTOU race with the write below.
   try {
-    if (existsSync(ID_FILE)) {
-      return readFileSync(ID_FILE, 'utf-8').trim();
-    }
-  } catch { /* ignore */ }
+    const existing = readFileSync(ID_FILE, 'utf-8').trim();
+    if (existing) return existing;
+  } catch { /* no file yet */ }
 
   const id = randomUUID();
   try {

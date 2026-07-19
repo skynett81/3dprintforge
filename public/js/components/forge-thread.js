@@ -150,15 +150,15 @@
     const p = _p();
     const dia = parseInt(p.standard.replace('M', ''), 10);
     const labels = { bolt: 'Bolt', nut: 'Nut', standoff: 'Standoff', 'snap-male': 'Snap Joint (Male)', 'snap-female': 'Snap Joint (Female)' };
-    const headLabel = p.type === 'bolt' ? `, ${p.headType} head` : '';
+    const headLabel = p.type === 'bolt' ? `, ${window.esc(p.headType)} head` : '';
 
     r.innerHTML = `
       <div style="display:flex;gap:6px;justify-content:center">
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._thPreview3D()">\ud83d\udd0d 3D Preview</button>
         <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._thDownload()">\u2b07 Download 3MF</button>
       </div>
-      <div style="font-size:0.85rem;font-weight:600;margin-top:4px">${labels[p.type] || p.type}</div>
-      <div style="font-size:0.78rem;color:var(--text-muted)">${p.standard} \u00d7 ${p.length}mm, tolerance \u00b1${p.tolerance}mm${headLabel}</div>
+      <div style="font-size:0.85rem;font-weight:600;margin-top:4px">${window.esc(labels[p.type] || p.type)}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted)">${window.esc(p.standard)} \u00d7 ${p.length}mm, tolerance \u00b1${p.tolerance}mm${headLabel}</div>
       <div style="font-size:0.7rem;color:var(--text-muted)">\u00d8${dia}mm nominal diameter</div>
       <div style="border-radius:8px;overflow:hidden;padding:8px">${_drawSketch(p)}</div>`;
   }

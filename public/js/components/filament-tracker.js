@@ -620,11 +620,11 @@
         h += `<div class="inv-active-filters">`;
         if (_quickFilter) { const QL = { low: t('filament.low_stock', 'Low stock'), restock: t('filament.restock_needed', 'Restock'), expiring: t('filament.expiring_soon', 'Expiring'), drying: t('filament.needs_drying', 'Needs drying') }; h += `<span class="inv-active-chip inv-active-chip-quick" onclick="window._invQuickFilter('')">${esc(QL[_quickFilter] || _quickFilter)} &times;</span>`; }
         if (_searchQuery) h += `<span class="inv-active-chip" onclick="window._invSearch('')">${t('filament.search_placeholder')}: "${esc(_searchQuery)}" &times;</span>`;
-        if (_filterMaterial) h += `<span class="inv-active-chip" onclick="window._invFilterMaterial('')">${_filterMaterial} &times;</span>`;
-        if (_filterCategory) h += `<span class="inv-active-chip" onclick="window._invFilterCategory('')">${_filterCategory} &times;</span>`;
-        if (_filterVendor) h += `<span class="inv-active-chip" onclick="window._invFilterVendor('')">${_filterVendor} &times;</span>`;
-        if (_filterLocation) h += `<span class="inv-active-chip" onclick="window._invFilterLocation('')">${_filterLocation} &times;</span>`;
-        if (_filterColorFamily) h += `<span class="inv-active-chip" onclick="window._invFilterColor('')">${_filterColorFamily} &times;</span>`;
+        if (_filterMaterial) h += `<span class="inv-active-chip" onclick="window._invFilterMaterial('')">${esc(_filterMaterial)} &times;</span>`;
+        if (_filterCategory) h += `<span class="inv-active-chip" onclick="window._invFilterCategory('')">${esc(_filterCategory)} &times;</span>`;
+        if (_filterVendor) h += `<span class="inv-active-chip" onclick="window._invFilterVendor('')">${esc(_filterVendor)} &times;</span>`;
+        if (_filterLocation) h += `<span class="inv-active-chip" onclick="window._invFilterLocation('')">${esc(_filterLocation)} &times;</span>`;
+        if (_filterColorFamily) h += `<span class="inv-active-chip" onclick="window._invFilterColor('')">${esc(_filterColorFamily)} &times;</span>`;
         if (_filterTag) { const tg = _tags.find(t2 => String(t2.id) === _filterTag); h += `<span class="inv-active-chip" onclick="window._invFilterTag('')">${tg ? esc(tg.name) : _filterTag} &times;</span>`; }
         if (_filterFavorites) h += `<span class="inv-active-chip" onclick="window._invToggleFavorites()">${t('filament.favorites_only')} &times;</span>`;
         h += `</div>`;
@@ -4223,7 +4223,7 @@
   window.printQrLabel = function() {
     const content = document.getElementById('qr-label-print');
     if (!content) return;
-    const widthMm = document.getElementById('qr-label-width')?.value || '50';
+    const widthMm = Number(document.getElementById('qr-label-width')?.value) || 50;
     const format = document.getElementById('qr-label-format')?.value || 'horizontal';
     const isVertical = format === 'vertical';
     const isCompact = format === 'compact';

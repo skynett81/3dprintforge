@@ -75,6 +75,9 @@
 <script>
 'use strict';
 
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _oneLine(v){return String(v==null?'':v).replace(/[\r\n]+/g,' ');}
+
 const startTime = Date.now();
 let _renderTallies = {};
 let _renderTicksPerSec = 0;
@@ -94,7 +97,7 @@ function fmtTime(d = new Date()) {
 function row(cls, tag, msg, parent) {
   const r = document.createElement('div');
   r.className = 'row ' + cls;
-  r.innerHTML = `<span class="t">${fmtTime()}</span><span class="tag">${tag}</span><span class="msg"></span>`;
+  r.innerHTML = `<span class="t">${fmtTime()}</span><span class="tag">${_esc(tag)}</span><span class="msg"></span>`;
   r.querySelector('.msg').textContent = msg;
   parent.insertBefore(r, parent.firstChild);
   while (parent.children.length > 500) parent.lastChild.remove();
@@ -111,8 +114,8 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 const origWarn = console.warn;
 const origError = console.error;
-console.warn = (...args) => { row('warn', 'WARN', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '), consoleBody); origWarn.apply(console, args); };
-console.error = (...args) => { _consoleErrors++; row('err', 'ERR', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '), consoleBody); origError.apply(console, args); };
+console.warn = (...args) => { row('warn', 'WARN', _oneLine(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ')), consoleBody); origWarn.apply(console, args); };
+console.error = (...args) => { _consoleErrors++; row('err', 'ERR', _oneLine(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ')), consoleBody); origError.apply(console, args); };
 
 // Listen for render-tally bursts + heartbeat from the dashboard tab.
 // The dashboard broadcasts unconditionally, so all we do here is aggregate.

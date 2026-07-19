@@ -256,9 +256,9 @@ export function getSafeConfig() {
 // that must outlive the current session (e.g. Bambu Cloud refresh).
 export function saveSecretsToEnv(updates) {
   let current = {};
-  if (existsSync(ENV_PATH)) {
-    try { current = parseEnvFile(readFileSync(ENV_PATH, 'utf-8')); } catch { /* start fresh */ }
-  }
+  // Read directly and tolerate a missing file — avoids the exists→read
+  // TOCTOU race with the write below.
+  try { current = parseEnvFile(readFileSync(ENV_PATH, 'utf-8')); } catch { /* no file / start fresh */ }
   const merged = { ...current };
   for (const [key, val] of Object.entries(updates)) {
     if (val === '' || val == null) {
@@ -281,11 +281,9 @@ export function saveSecretsToEnv(updates) {
 
 export function saveConfig(updates) {
   let current = {};
-  if (existsSync(CONFIG_PATH)) {
-    try {
-      current = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
-    } catch (e) { /* start fresh */ }
-  }
+  // Read directly and tolerate a missing/invalid file — avoids the
+  // exists→read TOCTOU race with the write below.
+  try { current = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8')); } catch (e) { /* start fresh */ }
   const merged = deepMerge(current, updates);
   // Same reasoning as saveSecretsToEnv: born-0600 closes the umask race
   // window for first-creation.

@@ -1,5 +1,6 @@
 import { join, dirname } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { getDb } from './connection.js';
 import { createLogger } from '../logger.js';
@@ -3817,11 +3818,9 @@ function _mig053_ecom_license(db) {
     CREATE INDEX IF NOT EXISTS idx_ecom_fees_reported ON ecom_fees(reported);
   `);
 
-  // Initialize singleton with a generated instance_id
-  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
+  // Initialize singleton with a generated instance_id. Use a
+  // cryptographically-secure UUID — this identifies the licensed instance.
+  const uuid = randomUUID();
   db.prepare('INSERT OR IGNORE INTO ecom_license (id, instance_id) VALUES (1, ?)').run(uuid);
 }
 

@@ -1197,9 +1197,9 @@ function buildSummary() {
 
 function summaryItem(label, value, detail) {
   return '<div class="summary-item">' +
-    '<div class="label">' + label + '</div>' +
-    '<div class="value">' + value + '</div>' +
-    (detail ? '<div class="detail">' + detail + '</div>' : '') +
+    '<div class="label">' + esc(label) + '</div>' +
+    '<div class="value">' + esc(value) + '</div>' +
+    (detail ? '<div class="detail">' + esc(detail) + '</div>' : '') +
   '</div>';
 }
 
@@ -1320,7 +1320,12 @@ function esc(str) {
 }
 
 function escAttr(str) {
-  return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ── Init ──

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { networkInterfaces, hostname } from 'node:os';
 import { streamWithCompression } from './http-compression.js';
+import { resolveWithin } from './path-safety.js';
 import { config, PUBLIC_DIR, DATA_DIR } from './config.js';
 import { handleSpoolmanApi } from './spoolman-api.js';
 import { WebSocketHub } from './websocket-hub.js';
@@ -492,8 +493,8 @@ function handleRequest(req, res) {
   if (pathname.startsWith('/adminlte/')) {
     const ADMINLTE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', 'admin-lte', 'dist');
     const relative = pathname.replace(/^\/adminlte\//, '');
-    const filePath = join(ADMINLTE_DIR, relative);
-    if (!filePath.startsWith(ADMINLTE_DIR)) {
+    const filePath = resolveWithin(ADMINLTE_DIR, relative);
+    if (!filePath) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
@@ -513,8 +514,8 @@ function handleRequest(req, res) {
   if (pathname.startsWith('/vendor/bootstrap/')) {
     const BS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', 'bootstrap', 'dist');
     const relative = pathname.replace(/^\/vendor\/bootstrap\//, '');
-    const filePath = join(BS_DIR, relative);
-    if (!filePath.startsWith(BS_DIR)) {
+    const filePath = resolveWithin(BS_DIR, relative);
+    if (!filePath) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
@@ -537,9 +538,8 @@ function handleRequest(req, res) {
   if (pathname.startsWith('/docs') && existsSync(DOCS_BUILD)) {
     const relative = pathname.replace(/^\/docs\/?/, '') || '';
 
-    const _docsGuard = DOCS_BUILD.endsWith('/') ? DOCS_BUILD : DOCS_BUILD + '/';
     const _tryServe = (filePath) => {
-      if (filePath !== DOCS_BUILD && !filePath.startsWith(_docsGuard)) return false;
+      if (!filePath) return false;
       try {
         const stat = statSync(filePath, { throwIfNoEntry: false });
         // If it's a directory, try index.html inside
@@ -563,7 +563,7 @@ function handleRequest(req, res) {
     };
 
     // Try build/{relative} — all docs and assets are directly in build root
-    if (_tryServe(join(DOCS_BUILD, relative))) return;
+    if (_tryServe(resolveWithin(DOCS_BUILD, relative))) return;
 
     // /docs/ root → redirect to /docs/intro
     if (!relative) {
@@ -582,12 +582,10 @@ function handleRequest(req, res) {
 
   // Friendly URL for the public storefront: /shop -> shop.html
   const _staticName = req.url === '/' ? 'index.html' : (pathname === '/shop' ? 'shop.html' : pathname);
-  let filePath = join(PUBLIC_DIR, _staticName);
-
-  // Trailing-separator boundary: prevents `/app/public-extra/secret`
-  // from passing `startsWith('/app/public')`.
-  const _publicGuard = PUBLIC_DIR.endsWith('/') ? PUBLIC_DIR : PUBLIC_DIR + '/';
-  if (filePath !== PUBLIC_DIR && !filePath.startsWith(_publicGuard)) {
+  // Normalise + contain within PUBLIC_DIR — rejects `..` traversal,
+  // absolute paths and NUL bytes before touching the filesystem.
+  let filePath = resolveWithin(PUBLIC_DIR, _staticName);
+  if (!filePath) {
     res.writeHead(403);
     res.end('Forbidden');
     return;

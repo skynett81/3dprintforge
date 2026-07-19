@@ -176,10 +176,10 @@
           </div>
           ${f.category !== 'uncategorized' ? `<span class="lib-card-badge">${_esc(f.category)}</span>` : ''}
           ${tags ? `<div class="lib-card-tags">${tags}</div>` : ''}
-          ${f.file_type === '3mf' ? `<button class="lib-3d-btn" style="margin-top:6px" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">&#x25B6; 3D ${t('library.preview', 'Preview')}</button>` : ''}
+          ${f.file_type === '3mf' ? `<button class="lib-3d-btn" style="margin-top:6px" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">&#x25B6; 3D ${t('library.preview', 'Preview')}</button>` : ''}
           <div style="display:flex;gap:3px;margin-top:4px">
-            <button class="lib-3d-btn" style="background:var(--accent-cyan);font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🖨️ Print</button>
-            <button class="lib-3d-btn" style="font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">📋 Queue</button>
+            <button class="lib-3d-btn" style="background:var(--accent-cyan);font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">🖨️ Print</button>
+            <button class="lib-3d-btn" style="font-size:0.6rem;padding:2px 6px" onclick="event.stopPropagation();_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">📋 Queue</button>
           </div>
         </div>
       </div>`;
@@ -323,10 +323,10 @@
         <textarea id="lib-edit-notes">${_esc(f.notes || '')}</textarea>
       </div>
       <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
-        <button class="lib-btn-save" style="background:var(--accent-cyan)" onclick="_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🖨️ Send to Printer</button>
-        <button class="lib-btn-save" style="background:var(--accent-blue)" onclick="_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">📋 Queue</button>
+        <button class="lib-btn-save" style="background:var(--accent-cyan)" onclick="_libSendToPrinter(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">🖨️ Send to Printer</button>
+        <button class="lib-btn-save" style="background:var(--accent-blue)" onclick="_libAddToQueue(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">📋 Queue</button>
         <a href="/api/library/${f.id}/download" class="lib-btn-cancel" style="text-decoration:none;text-align:center"><i class="bi bi-download"></i> Download</a>
-        ${f.file_type === '3mf' ? `<button class="lib-3d-btn" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/'/g, "\\'")}')">🧊 3D</button>` : ''}
+        ${f.file_type === '3mf' ? `<button class="lib-3d-btn" onclick="event.stopPropagation();_lib3DPreview(${f.id},'${_esc(f.original_name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">🧊 3D</button>` : ''}
       </div>
       <div class="lib-dialog-actions" style="margin-top:8px">
         <button class="lib-btn-delete" onclick="_libDelete(${f.id})">${t('library.delete')}</button>
@@ -378,7 +378,7 @@
       <label style="font-size:0.8rem;display:flex;align-items:center;gap:6px;margin-bottom:12px"><input type="checkbox" id="lib-send-start"> Start printing immediately</label>
       <div style="display:flex;gap:6px;justify-content:flex-end">
         <button class="form-btn form-btn-sm" onclick="this.closest('.lib-dialog-overlay').remove()">Cancel</button>
-        <button class="form-btn form-btn-sm form-btn-info" onclick="window._libDoSend(${id},'${filename.replace(/'/g,"\\'")}')">Send</button>
+        <button class="form-btn form-btn-sm form-btn-info" onclick="window._libDoSend(${id},'${filename.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">Send</button>
       </div>
     </div>`;
     document.body.appendChild(overlay);

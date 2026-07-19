@@ -1,3 +1,9 @@
+// Reject prototype-pollution keys before using a network-provided value
+// (printer id, merge key) as an object property name.
+function _safeKey(k) {
+  return k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
+}
+
 class StateStore {
   constructor() {
     this._printers = {};         // { printerId: state }
@@ -36,6 +42,7 @@ class StateStore {
   }
 
   updatePrinter(printerId, data) {
+    if (!_safeKey(printerId)) return;
     if (!this._printers[printerId]) this._printers[printerId] = {};
     this._printers[printerId] = this._deepMerge(this._printers[printerId], data);
 
@@ -71,6 +78,7 @@ class StateStore {
   }
 
   setPrinterMeta(printerId, meta) {
+    if (!_safeKey(printerId)) return;
     this._printerMeta[printerId] = meta;
   }
 
@@ -147,6 +155,7 @@ class StateStore {
     if (!source) return target;
     const result = { ...target };
     for (const key of Object.keys(source)) {
+      if (!_safeKey(key)) continue;
       if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
         result[key] = this._deepMerge(result[key] || {}, source[key]);
       } else {

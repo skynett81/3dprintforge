@@ -924,15 +924,16 @@
   }
 
   function _showMwFullscreen(container, imageSrc, pd) {
-    const pct = pd?.mc_percent || 0;
-    const layer = pd?.layer_num || 0;
-    const total = pd?.total_layer_num || 0;
+    const pct = Number(pd?.mc_percent) || 0;
+    const layer = Number(pd?.layer_num) || 0;
+    const total = Number(pd?.total_layer_num) || 0;
     const clipTop = 100 - pct;
+    const safeSrc = window.esc(imageSrc);
 
     container.innerHTML = `
       <div class="fs-mw-wrap">
-        <img class="fs-mw-bg" src="${imageSrc}" alt="">
-        <img class="fs-mw-reveal" id="fs-mw-reveal" src="${imageSrc}" alt="" style="clip-path:inset(${clipTop}% 0 0 0)">
+        <img class="fs-mw-bg" src="${safeSrc}" alt="">
+        <img class="fs-mw-reveal" id="fs-mw-reveal" src="${safeSrc}" alt="" style="clip-path:inset(${clipTop}% 0 0 0)">
         <div class="fs-mw-edge" id="fs-mw-edge" style="bottom:${pct}%"></div>
         <div class="fs-mw-hud">
           <span class="fs-mw-pct" id="fs-mw-pct">${t('progress.layer', { current: layer, total: total })}</span>

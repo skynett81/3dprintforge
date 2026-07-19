@@ -128,7 +128,11 @@ export function estimate(src, opts = {}) {
     for (let k = 1; k < tokens.length; k++) {
       const tok = tokens[k];
       if (tok.length < 2) continue;
-      args[tok[0].toUpperCase()] = parseFloat(tok.slice(1));
+      const axis = tok[0].toUpperCase();
+      // G-code parameters are single letters — reject anything else so a
+      // crafted token can't be used as an arbitrary property name.
+      if (axis < 'A' || axis > 'Z') continue;
+      args[axis] = parseFloat(tok.slice(1));
     }
 
     if (cmd === 'G90') { absXYZ = true; continue; }

@@ -18,6 +18,7 @@ import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from '
 import { Writable } from 'node:stream';
 import { join } from 'node:path';
 import { getDb } from './db/connection.js';
+import { isDangerousUrl } from './ssrf-guard.js';
 import { DATA_DIR } from './config.js';
 import { createLogger } from './logger.js';
 
@@ -46,6 +47,10 @@ function _extFor(contentType) {
 export async function getCachedImage(sourceUrl) {
   if (!sourceUrl || typeof sourceUrl !== 'string') return null;
   if (!/^https?:\/\//i.test(sourceUrl)) return null;
+  // SSRF guard — image URLs come from community DBs / user-entered
+  // profiles and are always public CDN assets; refuse loopback/private/
+  // link-local/metadata targets.
+  if (isDangerousUrl(sourceUrl)) return null;
 
   const db = getDb();
   const existing = db.prepare('SELECT * FROM filament_image_cache WHERE source_url = ?').get(sourceUrl);

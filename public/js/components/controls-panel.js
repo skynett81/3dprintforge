@@ -978,7 +978,7 @@
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const line = document.createElement('div');
     line.className = 'ctrl-gcode-line' + (isUser ? ' ctrl-gcode-user' : '');
-    line.innerHTML = `<span class="ctrl-gcode-time">${time}</span><span class="ctrl-gcode-cmd">${cmd.replace(/\\n/g, ' → ')}</span>`;
+    line.innerHTML = `<span class="ctrl-gcode-time">${time}</span><span class="ctrl-gcode-cmd">${window.esc(cmd.replace(/\\n/g, ' → '))}</span>`;
     hist.appendChild(line);
     hist.scrollTop = hist.scrollHeight;
     // Keep max 50 lines

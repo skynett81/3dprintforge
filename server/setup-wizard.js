@@ -295,10 +295,11 @@ WantedBy=multi-user.target
 
 function spawnDashboard() {
   const logFile = join(DATA_DIR, 'dashboard-start.log');
-  const out = openSync(logFile, 'a');
-  const err = openSync(logFile, 'a');
+  // Open the log once and share the fd for stdout+stderr — avoids opening
+  // the same path twice (a file-system race).
+  const fd = openSync(logFile, 'a');
   const child = spawn(process.execPath, ['server/index.js'], {
-    cwd: ROOT, detached: true, stdio: ['ignore', out, err],
+    cwd: ROOT, detached: true, stdio: ['ignore', fd, fd],
     env: { ...process.env, NODE_ENV: 'production' }
   });
   child.unref();

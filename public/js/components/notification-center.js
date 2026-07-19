@@ -78,7 +78,8 @@
       for (var i = 0; i < _notifications.length; i++) {
         var n = _notifications[i];
         var cls = 'notif-item list-group-item list-group-item-action' + (n.read ? '' : ' unread');
-        html += '<div class="' + cls + '" data-notif-id="' + n.id + '" onclick="markNotificationRead(' + n.id + ')">';
+        var nid = Number(n.id);
+        html += '<div class="' + cls + '" data-notif-id="' + nid + '" onclick="markNotificationRead(' + nid + ')">';
         html += '<span class="notif-dot"></span>';
         html += '<span class="notif-type-icon">' + (TYPE_ICONS[n.type] || TYPE_ICONS.info) + '</span>';
         html += '<div class="notif-item-body">';

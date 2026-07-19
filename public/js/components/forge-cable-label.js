@@ -65,7 +65,7 @@
         <div style="width:${outerR*2}px;height:${outerR*2}px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;border:2px solid #aaa">
           <div style="width:${cableR*2}px;height:${cableR*2}px;border-radius:50%;background:var(--bg-primary);border:1px solid #888"></div>
         </div>
-        <div style="width:${flagW}px;height:${labelH}px;background:#ddd;border:2px solid #aaa;border-left:none;display:flex;align-items:center;justify-content:center;font-size:${Math.round(labelH*0.5)}px;font-weight:700;color:#333;letter-spacing:1px;border-radius:0 3px 3px 0">${(p.text || 'ETH').toUpperCase()}</div>
+        <div style="width:${flagW}px;height:${labelH}px;background:#ddd;border:2px solid #aaa;border-left:none;display:flex;align-items:center;justify-content:center;font-size:${Math.round(labelH*0.5)}px;font-weight:700;color:#333;letter-spacing:1px;border-radius:0 3px 3px 0">${window.esc((p.text || 'ETH').toUpperCase())}</div>
       </div>`;
     } else {
       preview = `<div style="width:${outerR*2}px;height:${outerR*2}px;border:${Math.round(p.thickness*scale)}px solid #ddd;border-top-color:transparent;border-radius:50%;display:flex;align-items:center;justify-content:center">
@@ -78,7 +78,7 @@
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._clPreview3D()">🧊 3D Preview</button>
         <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._clDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
-      <div style="font-size:0.7rem;color:var(--text-muted)">${p.style} — ${p.cableDiameter}mm cable</div>
+      <div style="font-size:0.7rem;color:var(--text-muted)">${window.esc(p.style)} — ${p.cableDiameter}mm cable</div>
       <div style="box-shadow:0 4px 20px rgba(0,0,0,0.3)">${preview}</div>`;
   }
 
