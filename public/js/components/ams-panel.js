@@ -366,7 +366,6 @@
     const slotCount = Math.max(4, trays.length);  // Always show at least 4 slots
 
     const printerId = meta?.id || window.printerState?.getActivePrinterId?.() || null;
-    const gcodeState = data.gcode_state || 'IDLE';
     const _warnings = [];  // collect low filament warnings for banner
 
     for (let i = 0; i < slotCount; i++) {

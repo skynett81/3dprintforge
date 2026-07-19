@@ -195,7 +195,7 @@ function _orientationSuggestions(tris, count) {
   ];
   const results = [];
   for (const o of orientations) {
-    const { sx, sy, sz, cx, cy, cz } = _trig(o.rot);
+    const { sx, sy, cx, cy } = _trig(o.rot);
     let overhangArea = 0, totalArea = 0;
     for (let i = 0; i < count * 12; i += 12) {
       const a = _triArea(tris, i);
@@ -203,9 +203,7 @@ function _orientationSuggestions(tris, count) {
       const nx = tris[i], ny = tris[i + 1], nz = tris[i + 2];
       // Apply rotation to the normal only (cheap).
       const nx1 = nx;
-      const ny1 = ny * cx - nz * sx;
       const nz1 = ny * sx + nz * cx;
-      const nx2 = nx1 * cy + nz1 * sy;
       const nz2 = -nx1 * sy + nz1 * cy;
       const nzFinal = nz2;
       if (-nzFinal > Math.cos(((90 - DEFAULT_OVERHANG_THRESHOLD_DEG) * Math.PI) / 180)) {
