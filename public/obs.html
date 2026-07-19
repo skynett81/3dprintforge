@@ -307,7 +307,7 @@
           for(const tray of (unit.tray||[])) {
             if(!tray||!tray.tray_type) { slot++; continue; }
             const color = tray.tray_color?'#'+tray.tray_color.substring(0,6):'#888';
-            const remain = tray.remain>=0?tray.remain:0;
+            const remain = Number(tray.remain) >= 0 ? Number(tray.remain) : 0;
             const isActive = String(tray.id)===String(active);
             const fc = tc(remain);
             const name = tray.tray_sub_brands||tray.tray_type||'';

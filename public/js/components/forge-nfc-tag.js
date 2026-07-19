@@ -116,7 +116,7 @@
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
         ${hasNfc ? '<button class="form-btn form-btn-sm" data-ripple onclick="window._nfcWrite()" style="background:var(--accent-green);color:#fff;font-size:0.82rem;padding:6px 16px">📱 Write to NFC Tag</button>' : ''}
         ${hasNfc ? '<button class="form-btn form-btn-sm" data-ripple onclick="window._nfcRead()" style="font-size:0.82rem">📖 Read NFC Tag</button>' : ''}
-        <button class="form-btn form-btn-sm" data-ripple onclick="navigator.clipboard.writeText(JSON.stringify(${JSON.stringify(tag)}));if(typeof showToast==='function')showToast('Copied!','success')" style="font-size:0.82rem">📋 Copy JSON</button>
+        <button class="form-btn form-btn-sm" data-ripple onclick="navigator.clipboard.writeText(JSON.stringify(${window.esc(JSON.stringify(tag))}));if(typeof showToast==='function')showToast('Copied!','success')" style="font-size:0.82rem">📋 Copy JSON</button>
       </div>
 
       <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
@@ -129,7 +129,7 @@
       </div>
 
       <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">OpenSpool JSON (NDEF text record)</div>
-      <pre style="background:var(--bg-tertiary);padding:10px;border-radius:6px;font-size:0.7rem;max-width:100%;overflow-x:auto;white-space:pre-wrap;margin:0">${json.replace(/</g,'&lt;')}</pre>
+      <pre style="background:var(--bg-tertiary);padding:10px;border-radius:6px;font-size:0.7rem;max-width:100%;overflow-x:auto;white-space:pre-wrap;margin:0">${window.esc(json)}</pre>
 
       <div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px;text-align:center">
         Compatible with: Snapmaker U1 NFC, OpenSpool, OpenPrintTag<br>
