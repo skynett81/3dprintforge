@@ -95,6 +95,8 @@
       if (img.dataset._proxied) return;
       const src = img.getAttribute('data-external-src');
       if (!src) return;
+      // Only allow http(s) image URLs — blocks javascript:/data: injection via the attribute.
+      if (!/^https?:\/\//i.test(src)) return;
       img.dataset._proxied = '1';
       img.src = '/api/filament-image?url=' + encodeURIComponent(src);
       img.addEventListener('error', () => {

@@ -56,7 +56,7 @@
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted)">${p.width}×${p.height}×${p.thickness}mm</div>
       <div style="display:flex;align-items:center">
-        <div style="width:${pw}px;height:${ph}px;background:#3c78c8;border-radius:${Math.round(3*scale)}px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-size:${Math.round(ph*0.5)}px;font-weight:800;color:#eee;letter-spacing:2px">${(p.text || 'KEY').toUpperCase()}</div>
+        <div style="width:${pw}px;height:${ph}px;background:#3c78c8;border-radius:${Math.round(3*scale)}px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-size:${Math.round(ph*0.5)}px;font-weight:800;color:#eee;letter-spacing:2px">${window.esc((p.text || 'KEY').toUpperCase())}</div>
         ${p.ringHole ? '<div style="width:' + tabW + 'px;height:' + tabW + 'px;background:#3c78c8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:-' + Math.round(2*scale) + 'px;box-shadow:0 4px 20px rgba(0,0,0,0.3)"><div style="width:' + (ringR*2) + 'px;height:' + (ringR*2) + 'px;border-radius:50%;background:var(--bg-primary);border:2px solid #2a5a9a"></div></div>' : ''}
       </div>`;
   }

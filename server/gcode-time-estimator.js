@@ -143,7 +143,11 @@ export function estimate(src, opts = {}) {
     for (let k = 1; k < tokens.length; k++) {
       const tok = tokens[k];
       if (tok.length < 2) continue;
-      args[tok[0].toUpperCase()] = parseFloat(tok.slice(1));
+      const axis = tok[0].toUpperCase();
+      // G-code parameters are single letters — reject anything else so a
+      // crafted token can't be used as an arbitrary property name.
+      if (axis < 'A' || axis > 'Z') continue;
+      args[axis] = parseFloat(tok.slice(1));
     }
 
     if (cmd === 'M204') { const a = 'P' in args ? args.P : ('S' in args ? args.S : 0); if (a > 0) accel = a; continue; }

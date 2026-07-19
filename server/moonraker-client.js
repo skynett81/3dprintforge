@@ -2666,7 +2666,7 @@ export class MoonrakerClient {
         if (!Array.isArray(commits)) continue;
 
         // Find the release commit (marked with "Release firmware version X.X.X" or containing the version)
-        const releasePattern = new RegExp(`Release firmware version ${releaseVersion.replace(/\./g, '\\.')}`, 'i');
+        const releasePattern = new RegExp(`Release firmware version ${releaseVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
         const releaseIdx = commits.findIndex(c => releasePattern.test(c.commit?.message || ''));
 
         // If release not found, check if any commit contains the version string

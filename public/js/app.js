@@ -27,6 +27,7 @@ function connect() {
         const printers = msg.data.printers || [];
         const newMeta = {};
         for (const p of printers) {
+          if (p.id === '__proto__' || p.id === 'constructor' || p.id === 'prototype') continue;
           newMeta[p.id] = { name: p.name, model: p.model || '' };
         }
         // Remove printers that no longer exist

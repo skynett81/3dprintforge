@@ -670,7 +670,7 @@
       // Append loading model text if in prepare phase
       const existing = detail.textContent;
       if (existing) {
-        detail.innerHTML = `${existing}<div class="model-loading-text">${t('prepare.loading_model')}</div>`;
+        detail.innerHTML = `${window.esc(existing)}<div class="model-loading-text">${t('prepare.loading_model')}</div>`;
       } else {
         detail.innerHTML = `<div class="model-loading-text">${t('prepare.loading_model')}</div>`;
       }

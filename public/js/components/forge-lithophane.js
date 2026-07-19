@@ -148,7 +148,7 @@
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._lithoGenerate3D()">🧊 3D Preview</button>
         <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._lithoDownload()"><i class="bi bi-download"></i> Download 3MF</button>
       </div>
-      <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${shape} — ${width}mm wide, ${maxT}mm max thickness</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0">${window.esc(shape)} — ${width}mm wide, ${maxT}mm max thickness</div>
       <div style="position:relative;width:${previewW}px;height:${previewH}px;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
         <img src="${_imageData.dataUrl}" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1)${document.getElementById('litho-invert')?.checked ? ' invert(1)' : ''}">
         <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(0,0,0,0.6);font-size:0.7rem;color:#fff;text-align:center">

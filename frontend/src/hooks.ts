@@ -2,6 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import type { Project, Part, AuthStatus } from './types';
 
+// Reject prototype-pollution keys before using a WebSocket-provided
+// printer id as an object property name.
+function isSafeKey(k: string): boolean {
+  return k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
+}
+
 // Generic read-only resource loader with light polling. `loader` must be a
 // stable reference (e.g. an api.* method) so the effect doesn't re-fire.
 export function useResource<T>(loader: () => Promise<T>, pollMs = 5000) {
@@ -65,11 +71,13 @@ export function useLivePrinters() {
         if (m.type === 'init' && m.data?.states) {
           const next: LiveState = {};
           for (const [id, st] of Object.entries(m.data.states as Record<string, { print?: Record<string, unknown> }>)) {
+            if (!isSafeKey(id)) continue;
             next[id] = st?.print ?? {};
           }
           setLive(next);
         } else if (m.type === 'status' && m.data?.printer_id) {
           const id = String(m.data.printer_id);
+          if (!isSafeKey(id)) return;
           const delta = (m.data.print as Record<string, unknown>) ?? {};
           setLive((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...delta } }));
         }

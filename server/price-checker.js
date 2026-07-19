@@ -1,5 +1,6 @@
 import https from 'node:https';
 import http from 'node:http';
+import { isDangerousUrl } from './ssrf-guard.js';
 
 export async function extractPriceFromUrl(url) {
   try {
@@ -9,7 +10,11 @@ export async function extractPriceFromUrl(url) {
     const jsonLdMatches = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
     if (jsonLdMatches) {
       for (const match of jsonLdMatches) {
-        const content = match.replace(/<\/?script[^>]*>/gi, '');
+        let content = match;
+        // Strip the <script> wrapper; loop until stable so overlapping
+        // tags can't reconstruct one after a single pass.
+        let _prev;
+        do { _prev = content; content = content.replace(/<\/?script[^>]*>/gi, ''); } while (content !== _prev);
         try {
           const data = JSON.parse(content);
           const price = _extractPriceFromJsonLd(data);
@@ -42,6 +47,10 @@ export async function extractPriceFromUrl(url) {
 
 function _fetchPage(url, timeout = 10000) {
   return new Promise((resolve, reject) => {
+    // SSRF guard — product-price URLs are public shop pages; refuse
+    // loopback/private/link-local/metadata targets so a crafted URL
+    // (or redirect) can't reach internal services.
+    if (isDangerousUrl(url)) return reject(new Error('Refused to fetch a non-public URL'));
     const mod = url.startsWith('https') ? https : http;
     const req = mod.get(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BambuDashboard/1.0)' },
@@ -51,6 +60,7 @@ function _fetchPage(url, timeout = 10000) {
         const redirect = res.headers.location.startsWith('http')
           ? res.headers.location
           : new URL(res.headers.location, url).href;
+        if (isDangerousUrl(redirect)) return reject(new Error('Refused to follow a non-public redirect'));
         return resolve(_fetchPage(redirect, timeout));
       }
       let data = '';

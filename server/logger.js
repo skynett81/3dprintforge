@@ -27,7 +27,10 @@ function _fmt(level, prefix, msg, meta) {
 
 function _log(level, prefix, msg, meta) {
   if (LOG_LEVELS[level] < _level) return;
-  const formatted = _fmt(level, prefix, msg, meta);
+  let formatted = _fmt(level, prefix, msg, meta);
+  // Prevent log forging: neutralise CR/LF so an interpolated user value
+  // can't inject fake log lines. The JSON format already escapes them.
+  if (!_json) formatted = formatted.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
   if (level === 'error') console.error(formatted);
   else if (level === 'warn') console.warn(formatted);
   else console.log(formatted);

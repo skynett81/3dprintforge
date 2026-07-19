@@ -79,7 +79,7 @@
 
     r.innerHTML = `<div style="text-align:center;padding:20px">
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px">
-        <strong>${p.shape.charAt(0).toUpperCase() + p.shape.slice(1)}</strong> vase
+        <strong>${window.esc(p.shape.charAt(0).toUpperCase() + p.shape.slice(1))}</strong> vase
       </div>
       <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" style="margin:8px 0">
         <path d="${pathL}" fill="none" stroke="var(--accent-blue)" stroke-width="1.5"/>

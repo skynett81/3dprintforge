@@ -51,6 +51,7 @@ import { getThumbnail, getModel } from './thumbnail-service.js';
 import { lookupHmsCode, getHmsWikiUrl } from './print-tracker.js';
 import { parse3mf, parseGcode } from './file-parser.js';
 import https from 'node:https';
+import { isDangerousUrl } from './ssrf-guard.js';
 import { inflateRawSync } from 'node:zlib';
 import { loadServerJson as _loadServerJson, getHmsCodes as _getHmsCodes, IMMUTABLE_JSON_HEADERS as _IMMUTABLE_JSON_HEADERS } from './json-cache.js';
 import { sendJson, checkApiRate, checkLoginRate, checkOrderRate, getApiRateHeaders, preserveUnchangedCredentials } from './api-helpers.js';
@@ -5437,7 +5438,7 @@ export async function handleApiRequest(req, res) {
       // SSRF guard: block link-local (cloud metadata at 169.254.169.254)
       // and non-HTTP schemes. Self-hosted Spoolman commonly runs on
       // localhost or RFC1918, so those are still allowed.
-      if (_isDangerousUrl(testUrl)) {
+      if (isDangerousUrl(testUrl, { allowPrivate: true })) {
         return sendJson(res, { error: 'URL scheme or target not allowed' }, 400);
       }
       try {
@@ -14802,7 +14803,7 @@ async function handleMakerWorldFetch(designId, res) {
     const data = {
       title: json.titleTranslated || json.title || null,
       image: json.coverUrl || instance.cover || null,
-      description: (json.summaryTranslated || json.summary || '').replace(/<[^>]*>/g, ''),
+      description: _stripHtmlTags(json.summaryTranslated || json.summary || ''),
       url: mwUrl,
       designer: creator.name || null,
       designerAvatar: creator.avatar || null,
@@ -14851,8 +14852,21 @@ async function handleMakerWorldFetch(designId, res) {
   }
 }
 
+// Strip HTML tags from remote descriptions. Loops until stable so
+// nested/overlapping tags (e.g. "<scr<script>ipt>") can't reconstruct a
+// live tag after a single pass.
+function _stripHtmlTags(s) {
+  let out = String(s == null ? '' : s);
+  let prev;
+  do { prev = out; out = out.replace(/<[^>]*>/g, ''); } while (out !== prev);
+  return out;
+}
+
 function fetchJson(url, timeout) {
   return new Promise((resolve, reject) => {
+    // SSRF guard — these helpers reach public model sites; refuse any
+    // loopback/private/link-local/metadata target.
+    if (isDangerousUrl(url)) { reject(new Error('Refused to fetch a non-public URL')); return; }
     const req = https.get(url, {
       headers: { 'Accept': 'application/json' },
       timeout
@@ -14880,6 +14894,7 @@ function _cacheCloudImage(designId, url) {
   const filePath = join(thumbDir, `${designId}.png`);
   if (existsSync(filePath)) return Promise.resolve(`/api/cloud-image/${designId}`);
   return new Promise((resolve) => {
+    if (isDangerousUrl(url)) return resolve(null);
     try { mkdirSync(thumbDir, { recursive: true }); } catch {}
     const req = https.get(url, { timeout: 10000 }, (res) => {
       if (res.statusCode !== 200) { res.resume(); return resolve(null); }
@@ -14898,6 +14913,7 @@ function _cacheCloudImage(designId, url) {
 
 function fetchHtml(url, timeout) {
   return new Promise((resolve, reject) => {
+    if (isDangerousUrl(url)) { reject(new Error('Refused to fetch a non-public URL')); return; }
     const req = https.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -14907,6 +14923,9 @@ function fetchHtml(url, timeout) {
       maxHeaderSize: 32768
     }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        // Re-check the redirect target so a public host can't bounce us
+        // to an internal one.
+        if (isDangerousUrl(res.headers.location)) { reject(new Error('Refused to follow a non-public redirect')); return; }
         return fetchHtml(res.headers.location, timeout).then(resolve, reject);
       }
       if (res.statusCode !== 200) { res.resume(); reject(new Error(`HTTP ${res.statusCode}`)); return; }
@@ -15036,7 +15055,7 @@ async function handleThingiverseFetch(id, res) {
     const data = {
       title: json.name || `Thingiverse #${id}`,
       image: json.thumbnail || null,
-      description: (json.description || '').replace(/<[^>]*>/g, '').substring(0, 500),
+      description: _stripHtmlTags(json.description || '').substring(0, 500),
       url,
       designer: json.creator?.name || null,
       likes: json.like_count || 0,
@@ -15235,26 +15254,9 @@ function _maskNotificationSecrets(nc) {
   return nc;
 }
 
-// ---- SSRF Guard for trusted-LAN integrations ----
-// Less strict than _isPrivateUrl: still blocks link-local (cloud metadata
-// at 169.254.169.254) and non-HTTP schemes, but allows localhost and
-// RFC1918 since those are legitimate self-hosted setups (Spoolman,
-// Moonraker, etc. run there by default).
-function _isDangerousUrl(urlStr) {
-  try {
-    const u = new URL(urlStr);
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return true;
-    const h = u.hostname;
-    const p = h.split('.').map(Number);
-    if (p.length === 4 && p.every(n => !isNaN(n))) {
-      // 169.254.0.0/16 — link-local incl. AWS/GCP/Azure metadata service
-      if (p[0] === 169 && p[1] === 254) return true;
-    }
-    return false;
-  } catch { return true; }
-}
-
 // ---- SSRF Guard ----
+// Trusted-LAN integrations (Spoolman test above) use the shared
+// isDangerousUrl(url, { allowPrivate: true }) from ./ssrf-guard.js.
 function _isPrivateUrl(urlStr) {
   try {
     const u = new URL(urlStr);

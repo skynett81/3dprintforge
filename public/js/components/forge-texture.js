@@ -95,7 +95,7 @@
 
     r.innerHTML = `<div style="text-align:center;padding:20px">
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px">
-        <strong>${patLabel}</strong> on ${p.surface}
+        <strong>${window.esc(patLabel)}</strong> on ${window.esc(p.surface)}
       </div>
       <div style="font-size:2rem;margin:12px 0">\ud83e\uddf1</div>
       <div style="font-size:0.8rem;margin-bottom:4px">${dims}</div>

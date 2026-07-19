@@ -195,6 +195,7 @@
   <script src="/js/lib/jsmpeg.min.js"></script>
   <script>
   (function() {
+    function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     const params = new URLSearchParams(location.search);
     const targetPrinter = params.get('printer');
     const bgMode = params.get('bg');
@@ -313,9 +314,9 @@
             h+=`<div class="obs-tray${isActive?' active':''}">
               <span class="obs-tray-slot">${slot}</span>
               ${isActive?'<span class="obs-tray-active-dot"></span>':''}
-              <span class="obs-tray-spool">${obsSpool(color, remain)}</span>
-              <span class="obs-tray-label">${name}</span>
-              <span class="obs-tray-pct" style="color:${fc}">${remain}%</span>
+              <span class="obs-tray-spool">${obsSpool(_esc(color), remain)}</span>
+              <span class="obs-tray-label">${_esc(name)}</span>
+              <span class="obs-tray-pct" style="color:${_esc(fc)}">${remain}%</span>
             </div>`;
             slot++;
           }
@@ -392,7 +393,7 @@
             }
           } else if(msg.type==='printer_meta_update'&&msg.data) {
             printerMeta={};
-            for(const p of (msg.data.printers||[])) printerMeta[p.id]=p;
+            for(const p of (msg.data.printers||[])) { if(['__proto__','constructor','prototype'].includes(p.id)) continue; printerMeta[p.id]=p; }
             if(activePrinterId&&printerMeta[activePrinterId]?.cameraPort) initCamera(printerMeta[activePrinterId].cameraPort);
           } else if(msg.type==='status'&&msg.data?.printer_id===activePrinterId) {
             update(msg.data);

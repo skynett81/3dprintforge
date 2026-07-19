@@ -67,7 +67,7 @@
         </div>
         <div>
           <label style="font-size:0.7rem;color:var(--text-muted)">Color</label>
-          <input type="color" class="mc-color" data-idx="${i}" value="${p.color}" style="width:100%;height:28px;border-radius:4px;border:1px solid var(--border-color);cursor:pointer">
+          <input type="color" class="mc-color" data-idx="${i}" value="${window.esc(p.color)}" style="width:100%;height:28px;border-radius:4px;border:1px solid var(--border-color);cursor:pointer">
         </div>
       </div>
       ${_rf('Width (mm)', 'mc-w-' + i, 5, 150, p.w, 5)}
@@ -146,7 +146,7 @@
         const pw = p.w * scale;
         const pd = p.d * scale;
         const px = (maxW - pw) / 2;
-        svgContent += `<rect x="${px}" y="${offsetY}" width="${pw}" height="${pd}" rx="3" fill="${p.color}" stroke="var(--border-color)" stroke-width="1"/>`;
+        svgContent += `<rect x="${px}" y="${offsetY}" width="${pw}" height="${pd}" rx="3" fill="${window.esc(p.color)}" stroke="var(--border-color)" stroke-width="1"/>`;
         offsetY += pd;
       });
       svgContent = `<svg width="${maxW}" height="${offsetY + 4}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
@@ -160,7 +160,7 @@
       _parts.forEach(p => {
         const pw = p.w * scale;
         const pd = p.d * scale;
-        svgContent += `<rect x="${offsetX}" y="${(maxD * scale - pd) / 2}" width="${pw}" height="${pd}" rx="3" fill="${p.color}" stroke="var(--border-color)" stroke-width="1"/>`;
+        svgContent += `<rect x="${offsetX}" y="${(maxD * scale - pd) / 2}" width="${pw}" height="${pd}" rx="3" fill="${window.esc(p.color)}" stroke="var(--border-color)" stroke-width="1"/>`;
         offsetX += pw + 2 * scale;
       });
       svgContent = `<svg width="${offsetX}" height="${maxD * scale + 4}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
@@ -172,13 +172,13 @@
       const bw = base.w * scale;
       const bh = base.h * scale;
       svgContent = `<svg width="${bw + 4}" height="${bh + 4}" xmlns="http://www.w3.org/2000/svg">`;
-      svgContent += `<rect x="2" y="2" width="${bw}" height="${bh}" rx="3" fill="${_parts[0]?.color || '#ccc'}" stroke="var(--border-color)" stroke-width="1"/>`;
+      svgContent += `<rect x="2" y="2" width="${bw}" height="${bh}" rx="3" fill="${window.esc(_parts[0]?.color || '#ccc')}" stroke="var(--border-color)" stroke-width="1"/>`;
       _parts.slice(1).forEach((p, i) => {
         const iw = Math.min(p.w, base.w - 4) * scale;
         const ih = Math.min(p.h, base.h - 4) * scale;
         const ix = (bw - iw) / 2 + 2;
         const iy = (bh - ih) / 2 + 2;
-        svgContent += `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" rx="2" fill="${p.color}" stroke="var(--border-color)" stroke-width="0.5"/>`;
+        svgContent += `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" rx="2" fill="${window.esc(p.color)}" stroke="var(--border-color)" stroke-width="0.5"/>`;
       });
       svgContent += '</svg>';
     }
@@ -188,7 +188,7 @@
         <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._mcPreview3D()">\ud83e\uddf1 3D Preview</button>
         <button class="form-btn form-btn-sm form-btn-success" data-ripple onclick="window._mcDownload()">\u2b07 Download 3MF</button>
       </div>
-      <div style="font-size:0.7rem;color:var(--text-muted)">${_parts.length} parts, ${layout} layout</div>
+      <div style="font-size:0.7rem;color:var(--text-muted)">${_parts.length} parts, ${window.esc(layout)} layout</div>
       <div style="border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.2);padding:12px;background:var(--bg-primary)">${svgContent}</div>`;
   }
 

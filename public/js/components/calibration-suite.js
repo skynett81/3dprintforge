@@ -365,7 +365,7 @@
           <div class="cal-shaper-reco-name">${_esc(data.recommendation.shaper.toUpperCase())} @ ${data.recommendation.freq} Hz</div>
           <div class="cal-shaper-reco-cmd">
             <code>${_esc(data.recommendation.command)}</code>
-            <button class="form-btn form-btn-sm" onclick="navigator.clipboard.writeText('${_esc(data.recommendation.command).replace(/'/g, "\\'")}'); showToast?.('Command copied', 'success', 2000)">📋 Copy</button>
+            <button class="form-btn form-btn-sm" onclick="navigator.clipboard.writeText('${_esc(data.recommendation.command).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'); showToast?.('Command copied', 'success', 2000)">📋 Copy</button>
           </div>
         </div>`;
     }
