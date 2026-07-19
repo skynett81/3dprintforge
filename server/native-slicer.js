@@ -25,7 +25,7 @@
 import {
   sliceLayer, offsetPolygon, offsetPolygonAll, lineInfill, regionInfill, solidInfill, simplifyPolygon, bestBridgeAngle,
   patternInfill, buildRegions, fuzzifyPolygon, EPS, PI, _bbox, _isCCW, _signedArea, _near,
-  _chainSegments, _pointInPoly, routeInside, combWaypoints, buildCombGraph, topBottomFaceRegions,
+  _chainSegments, _pointInPoly, routeInside, topBottomFaceRegions,
 } from './native-slicer-geo.js';
 import { buildSurfaceClassifier } from './native-slicer-surfaces.js';
 import { buildSolidRegions } from './native-slicer-regions.js';
@@ -1244,7 +1244,6 @@ export async function sliceMeshToLayers(mesh, settings = {}, opts = {}) {
     const sparseFlow = combN;
     // Layer below — bottom skin over air (bridge) and overhang walls reference it.
     const below = i > 0 ? layerRegions[i - 1] : null;
-    const segMidUnsupported = (sg) => !supportedBy((sg[0][0] + sg[1][0]) / 2, (sg[0][1] + sg[1][1]) / 2, below, lw * 0.75);
     const wallOverhangFrac = (pts) => { if (!(overhangDetect && below)) return 0; let un = 0; for (const p of pts) if (!supportedBy(p[0], p[1], below, lw)) un++; return pts.length ? un / pts.length : 0; };
     // Per-point overhang degree 0..4 (0 = on support, 4 = a nozzle width or more
     // past the layer below) — how far each wall vertex hangs over air. Drives

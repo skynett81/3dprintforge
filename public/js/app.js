@@ -1008,7 +1008,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Apply permission gating to sidebar
   if (window._isAuthEnabled && window._isAuthEnabled()) {
     if (window._can && !window._can('admin')) {
-      const settingsBtn = document.querySelector('[data-panel="settings"]');
       // Don't hide settings entirely — operators/viewers still need appearance/push settings
       // But we could hide it if we wanted. For now, keep visible — admin sections are gated inside.
     }

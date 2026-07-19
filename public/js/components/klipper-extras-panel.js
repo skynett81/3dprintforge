@@ -188,7 +188,6 @@
 
   // ── Diagnostics ── (for ALL printer types)
   function _renderDiagnostics(data) {
-    const pt = typeof getPrinterType === 'function' ? getPrinterType(null, data) : {};
     if (!data._system_temps && !data._tmc && !data._mcu && !data._modules && !data._printerProfile && !data._upgrade) return '';
 
     let html = `<div class="ctrl-card">

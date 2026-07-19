@@ -1,4 +1,4 @@
-import { MOCK_AMS_P2S, MOCK_AMS_X1C, MOCK_AMS_H2D } from './mock-data.js';
+import { MOCK_AMS_P2S } from './mock-data.js';
 
 const PRINT_FILES = [
   { name: 'werewolf_bust.3mf', projectId: '1005938' },

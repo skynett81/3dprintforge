@@ -13,7 +13,7 @@ interface Props { selected?: string | null; onSelect?: (id: string) => void; onB
 
 function when(iso?: string | null) {
   if (!iso) return '—';
-  const d = new Date((iso || '').replace(' ', 'T'));
+  const d = new Date(iso.replace(' ', 'T'));
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 

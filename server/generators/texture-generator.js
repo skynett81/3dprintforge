@@ -159,7 +159,6 @@ const PATTERNS = {
 export async function generateTexture3MF(opts = {}) {
   const pattern = opts.pattern || 'diamond-plate';
   const width = Math.max(20, Math.min(150, opts.width || 60));
-  const depth = Math.max(20, Math.min(150, opts.depth || 60));
   const baseThick = Math.max(1, Math.min(5, opts.baseThickness || 2));
   const reliefDepth = Math.max(0.2, Math.min(3, opts.reliefDepth || 0.8));
   const resolution = Math.max(20, Math.min(100, opts.resolution || 50));

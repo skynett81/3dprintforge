@@ -89,7 +89,7 @@ export async function importBambuResources() {
     (brand, code, printer_model, category, severity, title, description, actions, wiki_url)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
-  for (const [code, severity, cat, category, title, desc, action] of hmsErrors) {
+  for (const [code, severity, , category, title, desc, action] of hmsErrors) {
     // Apply to Bambu models that exist
     const models = ['P1P', 'P1S', 'P2S', 'X1', 'X1C', 'X1E', 'A1', 'A1 mini', 'H2D', 'H2S'];
     for (const model of models) {

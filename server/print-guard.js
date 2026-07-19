@@ -206,7 +206,6 @@ export class PrintGuardService {
         if (remain == null || remain < 0) continue;
 
         // Check if this tray is active
-        const trayKey = `${unit.id}_${tray.id}`;
         const isActive = activeTray != null && String(activeTray) === String(tray.id);
 
         if (remain <= lowPct && isActive) {

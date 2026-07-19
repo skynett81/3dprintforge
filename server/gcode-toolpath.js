@@ -2,14 +2,13 @@
  * G-code toolpath parser — extracts 3D line segments from G0/G1 moves
  * Per-layer detection, downsampling, caching, and Moonraker download
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 
 const DATA_DIR = process.env.DATA_DIR || join(import.meta.dirname, '..', 'data');
 const CACHE_DIR = join(DATA_DIR, 'toolpath-cache');
 const MAX_SEGMENTS = 100000;
-const MAX_CACHE_MB = 300;
 
 /**
  * Parse gcode text into per-layer line segments
@@ -229,7 +228,7 @@ export function analyzeGcode(text) {
 
     // Movement commands
     if (line.startsWith('G0') || line.startsWith('G1')) {
-      const xm = line.match(/X([-\d.]+)/), ym = line.match(/Y([-\d.]+)/), zm = line.match(/Z([-\d.]+)/), em = line.match(/E([-\d.]+)/), fm = line.match(/F([\d.]+)/);
+      const xm = line.match(/X([-\d.]+)/), ym = line.match(/Y([-\d.]+)/), zm = line.match(/Z([-\d.]+)/), em = line.match(/E([-\d.]+)/);
       const nx = xm ? parseFloat(xm[1]) : x;
       const ny = ym ? parseFloat(ym[1]) : y;
       const nz = zm ? parseFloat(zm[1]) : z;

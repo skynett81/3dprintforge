@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { upsertCommunityFilament, clearCommunityFilaments, initDatabase } from './database.js';
+import { upsertCommunityFilament, initDatabase } from './database.js';
 
 const __dirname_seed = dirname(fileURLToPath(import.meta.url));
 

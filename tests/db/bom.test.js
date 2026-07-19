@@ -4,7 +4,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
-import { addPart, updatePart, getPartStock } from '../../server/db/parts.js';
+import { addPart, getPartStock } from '../../server/db/parts.js';
 import { addStockItem } from '../../server/db/stock-items.js';
 import { getBom, addBomLine, deleteBomLine, getBomCost } from '../../server/db/bom.js';
 import { addBuild, getBuild, getBuilds, completeBuild, cancelBuild } from '../../server/db/builds.js';

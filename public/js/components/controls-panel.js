@@ -12,10 +12,6 @@
     return Math.min(100, Math.round((val / max) * 100));
   }
 
-  function speedLevelKey(lvl) {
-    return { 1: 'speed.silent', 2: 'speed.standard', 3: 'speed.sport', 4: 'speed.ludicrous' }[lvl] || 'speed.standard';
-  }
-
   // Full render — only called once when panel opens
   function renderControls(container, data) {
     const meta = window.printerState.getActivePrinterMeta();

@@ -200,7 +200,6 @@ export async function generateRetractionTest(opts = {}) {
  * Vase Mode Generator — single-wall vessel in various shapes
  */
 export async function generateVase(opts = {}) {
-  const shape = opts.shape || 'cylinder'; // cylinder, square, hexagon
   const height = opts.height || 80;
   const diameter = opts.diameter || 60;
   const wall = opts.wallThickness || 1.2;
@@ -239,7 +238,6 @@ export async function generateVase(opts = {}) {
 export async function generateQRBlock(opts = {}) {
   const data = opts.data || 'https://3dprintforge.local';
   const size = opts.size || 50;
-  const height = opts.height || 3;
   const baseH = opts.baseHeight || 1.5;
   const qrH = opts.qrHeight || 1;
 
@@ -310,7 +308,6 @@ export async function generateCustomShape(opts = {}) {
   const w = opts.width || 30;
   const d = opts.depth || 30;
   const h = opts.height || 20;
-  const cornerR = opts.cornerRadius || 0;
   const wallThick = opts.wallThickness || 0; // 0 = solid
 
   const lib = await getLib();

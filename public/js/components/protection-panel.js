@@ -31,7 +31,6 @@
   const XCAM_EVENTS = ['spaghetti_detected', 'first_layer_issue', 'foreign_object', 'nozzle_clump'];
   // Sensor events
   const SENSOR_EVENTS = ['temp_deviation', 'filament_runout', 'print_error', 'fan_failure', 'print_stall', 'surface_defect', 'filament_tangle', 'ams_humidity', 'heater_health'];
-  const ALL_EVENTS = [...XCAM_EVENTS, ...SENSOR_EVENTS];
 
   const EVENT_LABELS = {
     spaghetti_detected: 'protection.spaghetti',
@@ -487,7 +486,7 @@
     </div>`;
 
     // Tab panels
-    for (const [id, cfg] of Object.entries(TAB_CONFIG)) {
+    for (const [id] of Object.entries(TAB_CONFIG)) {
       const active = id === _activeTab;
       const order = getOrder(id);
       html += `<div class="protection-tab-panel tab-panel stats-tab-panel${active ? ' active' : ''}" id="protection-tab-${id}" style="display:${active?'grid':'none'}">`;

@@ -426,7 +426,6 @@ export function generateFirstLayerTest(params = {}) {
     }
   } else if (p.pattern === 'square') {
     const cx = 125, cy = 125, half = Math.min(p.width, p.height) / 2;
-    const perim = 4 * 2 * half;
     g += `G1 X${cx - half} Y${cy - half} F4500\n`;
     let e = 0;
     e += 2 * half * xsec; g += `G1 X${cx + half} E${e.toFixed(4)} F${p.feed}\n`;

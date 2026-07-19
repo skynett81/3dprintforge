@@ -312,7 +312,7 @@
     try { localStorage.setItem('wifi-qr-ssid', ssid); localStorage.setItem('wifi-qr-pass', pass); } catch {}
 
     // WiFi QR format: WIFI:T:WPA;S:MyNetwork;P:MyPassword;H:false;;
-    const escWifi = (s) => s.replace(/[\\;,:""]/g, c => '\\' + c);
+    const escWifi = (s) => s.replace(/[\\;,:"]/g, c => '\\' + c);
     const wifiStr = `WIFI:T:${enc};S:${escWifi(ssid)};P:${escWifi(pass)};H:${hidden ? 'true' : 'false'};;`;
 
     const svg = _makeQR(wifiStr, 5);

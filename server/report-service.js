@@ -1,7 +1,7 @@
 // Report Service — generates HTML reports (weekly/monthly) and sends via email
 // Uses existing notification email infrastructure, zero external dependencies
 
-import { getStatistics, getHistory, getInventorySetting, setInventorySetting, getDailyActivity, getWasteStats } from './database.js';
+import { getStatistics, getHistory, getInventorySetting, getDailyActivity, getWasteStats } from './database.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('report');
@@ -42,7 +42,6 @@ export function generateReport(period = 'week') {
   try { waste = getWasteStats(); } catch (e) { log.warn('Could not fetch waste statistics: ' + e.message); }
 
   const periodLabel = period === 'month' ? 'Monthly' : 'Weekly';
-  const periodLabelNb = period === 'month' ? 'Monthly' : 'Weekly';
 
   const summary = {
     period: periodLabel,

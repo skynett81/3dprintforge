@@ -14,7 +14,6 @@
     const firmware = info.module?.find(m => m.name === 'ota')?.sw_ver || state.upgrade_state?.ota_new_version_number || state._mcu?.mcuVersion || '';
     const nozzleType = state.nozzle_type || state._nozzle_type || '';
     const nozzleDiameter = state.nozzle_diameter || state._nozzle_diameter ? `${state.nozzle_diameter || state._nozzle_diameter}mm` : '';
-    const hasAms = !!(state.ams?.ams?.length > 0);
 
     let html = '<div class="info-grid">';
 

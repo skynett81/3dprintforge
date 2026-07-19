@@ -1,4 +1,4 @@
-import { getPlugins, getPlugin, registerPlugin, updatePluginEnabled, removePlugin, getPluginState, setPluginState, getPluginById } from './database.js';
+import { getPlugins, getPlugin, registerPlugin, updatePluginEnabled, getPluginState, setPluginState } from './database.js';
 import { getDb } from './db/connection.js';
 import { readFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -58,7 +58,7 @@ export class PluginManager {
 
   // Scan plugins directory and load all enabled plugins
   async init() {
-    const dbPlugins = getPlugins();
+    getPlugins();
     // Also scan filesystem for new plugins not yet in DB
     if (existsSync(this._pluginsDir)) {
       const dirs = readdirSync(this._pluginsDir, { withFileTypes: true })

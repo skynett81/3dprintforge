@@ -14,8 +14,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from 'node:fs';
-import { Writable } from 'node:stream';
+import { createWriteStream, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDb } from './db/connection.js';
 import { isDangerousUrl } from './ssrf-guard.js';

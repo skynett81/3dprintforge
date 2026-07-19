@@ -9,7 +9,7 @@ import {
   addPart, getParts, getPart, updatePart, deletePart, getPartStock,
 } from '../../server/db/parts.js';
 import {
-  addStockItem, getStockItems, getStockItem, updateStockItem, deleteStockItem,
+  addStockItem, getStockItems, getStockItem, deleteStockItem,
   adjustStock, moveStock, getStockMoves,
 } from '../../server/db/stock-items.js';
 import { addLocation } from '../../server/db/spools.js';

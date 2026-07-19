@@ -14,7 +14,7 @@
  * table so subsequent startups know whether a refresh is due.
  */
 
-import { writeFileSync, existsSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb } from './db/connection.js';

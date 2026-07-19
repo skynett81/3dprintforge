@@ -36,11 +36,6 @@
     const locale = (window.i18n?.getLocale() || 'nb').replace('_', '-');
     return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
-  function colorSwatch(hex) {
-    if (!hex || hex.length < 6) return '';
-    const c = '#' + hex.substring(0, 6);
-    return typeof miniSpool === 'function' ? miniSpool(c, 16) : `<span class="history-color-swatch" style="background:${c}"></span>`;
-  }
   function speedLabel(level) {
     const map = { 1: 'speed.silent', 2: 'speed.standard', 3: 'speed.sport', 4: 'speed.ludicrous' };
     return level && map[level] ? t(map[level]) : null;
@@ -179,15 +174,6 @@
   const TAB_CONFIG = {
     history: { label: 'history.tab_history', modules: ['history-summary', 'history-filters', 'history-list'] }
   };
-  const MODULE_SIZE = {
-    'history-summary': 'full', 'history-filters': 'full', 'history-list': 'full',
-    'stats-hero': 'full',
-    'stats-status-activity': 'half', 'stats-duration-temp': 'half',
-    'filament-breakdown': 'full',
-    'stats-nozzle-models': 'full',
-    'print-timeline': 'full'
-  };
-
   let _data = [];
   let _cloudTasks = null;
   let _activeFilter = 'all';
@@ -222,11 +208,6 @@
       const dt = (t.designTitle || '').toLowerCase().trim();
       return tt === fn || dt === fn || fn.includes(tt) || fn.includes(dt) || tt.includes(fn) || dt.includes(fn);
     }) || null;
-  }
-
-  // ═══ Module order ═══
-  function getOrder(tabId) {
-    return TAB_CONFIG[tabId]?.modules || [];
   }
 
   // ═══ Computed stats ═══
@@ -498,8 +479,6 @@
       const s = getStats(data);
       const rateColor = s.successRate >= 90 ? 'var(--accent-green)' : s.successRate >= 70 ? 'var(--accent-orange)' : 'var(--accent-red)';
       const ratePct = Math.min(s.successRate, 100);
-      const avgFilament = data.length > 0 ? Math.round(s.totalFilament / data.length) : 0;
-      const wasteTotal = data.reduce((sum, r) => sum + (r.waste_g || 0), 0);
 
       return `<div class="waste-hero-grid" style="grid-template-columns:repeat(auto-fit, minmax(110px, 1fr))">
         <div class="waste-hero-card waste-hero-card--blue">
@@ -884,7 +863,6 @@
     const filType = filTypes.length > 1 ? filTypes.join(' + ') : (filTypes[0] || '--');
     const filColorHex = filColors[0] ? '#' + filColors[0] : null;
     const traySlot = row.tray_id != null && row.tray_id !== '255' ? `A${parseInt(row.tray_id) + 1}` : row.tray_id === '255' ? 'Ext' : '--';
-    const amsUsed = row.ams_units_used ? `${row.ams_units_used} enhet${row.ams_units_used > 1 ? 'er' : ''}` : '--';
     const thumbUrl = `/api/history/${row.id}/thumbnail`;
     const fallbackThumb = 'data:image/svg+xml,' + encodeURIComponent(thumbPlaceholder(filColors[0] || row.filament_color));
     const nozzleText = [row.nozzle_type, row.nozzle_diameter ? row.nozzle_diameter + 'mm' : ''].filter(Boolean).join(' ') || '--';

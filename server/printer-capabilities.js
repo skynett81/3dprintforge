@@ -207,7 +207,6 @@ const MODEL_OVERRIDES = {
   'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
   'Snapmaker J1s': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
   'Snapmaker Artisan': { features: { multiExtruder: true, enclosure: true, purifier: true, dualNozzle: true }, buildVolume: [400, 400, 400] },
-  'X1C': { camera: { modes: ['rtsp'] } },
   // (P2S/A1/A1 mini/X1*/H2D and Snapmaker U1/J1/J1s/Artisan are defined
   //  above in the same MODEL_OVERRIDES map. They include both buildVolume
   //  and camera-specific config as needed.)

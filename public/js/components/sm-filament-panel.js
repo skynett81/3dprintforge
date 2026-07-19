@@ -25,7 +25,6 @@
         const feed = data._sm_feed_channels?.find(c => c.extruder === `extruder${i}`);
         const feedLabel = feed?.stateLabel || '';
         const feedCat = feed?.stateCategory || 'idle';
-        const detected = feed?.filament_detected;
         const isLoading = feedCat === 'loading' || feedCat === 'unloading';
 
         html += `<div style="background:var(--bg-tertiary);border-radius:8px;padding:8px;position:relative;border-left:4px solid ${f.color || '#888'}">

@@ -4,13 +4,6 @@
 
   function _isMobile() { return window.innerWidth <= 768; }
 
-  // Mobile optimization settings
-  const QUALITY_SETTINGS = {
-    high:   { maxWidth: '100%',  interval: null },
-    medium: { maxWidth: '480px', interval: 2000 },
-    low:    { maxWidth: '320px', interval: 5000 }
-  };
-
   let _jpegFrameCount = 0;
 
   let player = null;
@@ -20,17 +13,11 @@
   let _reconnectTimer = null;
   let _reconnectAttempt = 0;
   const _maxReconnectAttempt = 15;
-  let _staleTimer = null;
-  let _lastFrameTs = 0;
   let _snapshotInterval = null; // For Moonraker SSH snapshot polling
 
   function _clearReconnect() {
     if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
     _reconnectAttempt = 0;
-  }
-
-  function _clearStaleTimer() {
-    if (_staleTimer) { clearInterval(_staleTimer); _staleTimer = null; }
   }
 
   function _scheduleReconnect() {
@@ -163,7 +150,6 @@
 
   function _cleanup() {
     _clearReconnect();
-    _clearStaleTimer();
     if (player) { try { player.destroy(); } catch(e) {} player = null; }
     if (_jpegWs) { try { _jpegWs.close(); } catch(e) {} _jpegWs = null; }
     if (_snapshotInterval) { clearInterval(_snapshotInterval); _snapshotInterval = null; }
@@ -597,10 +583,7 @@
     // Determine the specific reason for no camera
     const printerId = window.printerState?.getActivePrinterId();
     const meta = printerId ? window.printerState.getActivePrinterMeta() : {};
-    const ps = printerId ? window.printerState?.printers?.[printerId] : null;
-    const pd = ps?.print || ps;
     const hasPort = !!meta.cameraPort;
-    const probeFailure = reason === 'probe_failed';
 
     const isAuthDenied = reason === 'auth_denied';
     let icon, title, hint, steps;
@@ -646,20 +629,6 @@
         <span class="camera-placeholder-title">${title}</span>
         ${hint ? `<span class="camera-hint">${hint}</span>` : ''}
         ${steps || ''}
-      </div>`;
-    container.style.cursor = 'default';
-  }
-
-  function showRtspDisabled(container) {
-    container.innerHTML = `
-      <div class="camera-placeholder">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="2" y="6" width="15" height="12" rx="2"/>
-          <path d="M17 10l4-2v8l-4-2z"/>
-          <line x1="1" y1="1" x2="23" y2="23" stroke-width="2"/>
-        </svg>
-        <span>${t('camera.rtsp_disabled')}</span>
-        <span class="camera-hint">${t('camera.rtsp_disabled_hint')}</span>
       </div>`;
     container.style.cursor = 'default';
   }

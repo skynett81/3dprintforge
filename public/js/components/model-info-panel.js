@@ -576,39 +576,6 @@
     el.innerHTML = html;
   }
 
-  function doSearch() {
-    const input = document.getElementById('mi-search-input');
-    const source = document.getElementById('mi-search-source');
-    const results = document.getElementById('mi-search-results');
-    if (!input || !results) return;
-
-    const q = input.value.trim();
-    if (q.length < 2) return;
-
-    results.innerHTML = `<div class="mi-loading">${t('model_info.searching')}</div>`;
-
-    const searchBtn = document.getElementById('mi-search-btn');
-    if (searchBtn) { searchBtn.disabled = true; searchBtn.dataset.loading = 'true'; }
-
-    fetch(`/api/model-search?q=${encodeURIComponent(q)}&source=${source.value}`)
-      .then(r => r.ok ? r.json() : [])
-      .then(items => {
-        if (searchBtn) { searchBtn.disabled = false; delete searchBtn.dataset.loading; }
-        if (!items.length) {
-          results.innerHTML = `<div class="mi-empty">${t('model_info.no_results')}</div>`;
-          return;
-        }
-        results.innerHTML = items.map(item => renderSearchResult(item)).join('');
-        results.querySelectorAll('.mi-result-link-btn').forEach(btn => {
-          btn.addEventListener('click', () => linkModel(btn.dataset));
-        });
-      })
-      .catch(() => {
-        if (searchBtn) { searchBtn.disabled = false; delete searchBtn.dataset.loading; }
-        results.innerHTML = `<div class="mi-empty">${t('model_info.search_error')}</div>`;
-      });
-  }
-
   function renderSearchResult(item) {
     const src = SOURCE_COLORS[item.source] || SOURCE_COLORS.makerworld;
     let html = `<div class="mi-result-card">`;
@@ -648,81 +615,6 @@
     }
     html += `</div></div>`;
     return html;
-  }
-
-  function linkByUrl() {
-    const input = document.getElementById('mi-url-input');
-    const status = document.getElementById('mi-url-status');
-    if (!input || !status) return;
-
-    const url = input.value.trim();
-    if (!url) return;
-
-    const printerId = window.printerState?.getActivePrinterId();
-    if (!printerId || !_currentFilename) {
-      status.innerHTML = `<div class="mi-empty">${t('model_info.no_active_model')}</div>`;
-      return;
-    }
-
-    let source = null, sourceId = null;
-    const mwMatch = url.match(/makerworld\.com\/.*?models?\/(\d+)/);
-    const prMatch = url.match(/printables\.com\/model\/(\d+)/);
-    const tvMatch = url.match(/thingiverse\.com\/thing:(\d+)/);
-
-    if (mwMatch) { source = 'makerworld'; sourceId = mwMatch[1]; }
-    else if (prMatch) { source = 'printables'; sourceId = prMatch[1]; }
-    else if (tvMatch) { source = 'thingiverse'; sourceId = tvMatch[1]; }
-    else {
-      status.innerHTML = `<div class="mi-empty">${t('model_info.url_invalid')}</div>`;
-      return;
-    }
-
-    status.innerHTML = `<div class="mi-loading">${t('model_info.loading')}</div>`;
-
-    const apiMap = {
-      makerworld: (id) => `/api/makerworld/${id}`,
-      printables: (id) => `/api/printables/${id}`,
-      thingiverse: (id) => `/api/thingiverse/${id}`
-    };
-
-    fetch(apiMap[source](sourceId))
-      .then(r => r.ok ? r.json() : { url, source, fallback: true })
-      .then(fullData => {
-        const body = {
-          filename: _currentFilename,
-          source,
-          source_id: sourceId,
-          title: fullData.title || `${SOURCE_COLORS[source].label} #${sourceId}`,
-          url: fullData.url || url,
-          image: fullData.image || null,
-          designer: fullData.designer || null,
-          description: fullData.description || null,
-          category: fullData.category || null,
-          print_settings: fullData.print_settings || null
-        };
-
-        return fetch(`/api/model-link/${encodeURIComponent(printerId)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }).then(r => r.ok ? r.json() : null).then(result => {
-          if (result?.ok) {
-            _currentModelData = { ...body };
-            renderStrip(document.getElementById('model-info'));
-            renderActiveModel();
-            loadRecentLinks();
-            input.value = '';
-            const src = SOURCE_COLORS[source];
-            status.innerHTML = `<div class="mi-url-success">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <span>${t('model_info.linked_success')}</span>
-            </div>`;
-          }
-        });
-      })
-      .catch(() => {
-        status.innerHTML = `<div class="mi-empty">${t('model_info.search_error')}</div>`;
-      });
   }
 
   function linkModel(dataset) {

@@ -4,7 +4,7 @@
  */
 
 import { spawn, execSync } from 'node:child_process';
-import { existsSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DATA_DIR = process.env.DATA_DIR || join(import.meta.dirname, '..', 'data');

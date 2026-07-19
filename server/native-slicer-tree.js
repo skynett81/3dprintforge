@@ -22,7 +22,6 @@ export function generateTreeSupports(layerRegions, opts = {}) {
   const empty = Array.from({ length: n }, () => []);
   if (n < 2) return empty;
   const gridRes = opts.gridRes ?? 3;
-  const layerHeight = opts.layerHeight ?? 0.2;
   const zGap = Math.max(0, Math.round(opts.zGapLayers ?? 1));
   const mergeR = Math.max(gridRes * 1.5, (opts.branchMerge ?? 4));   // node merge radius (mm)
   const drift = Math.min(mergeR, (opts.branchDrift ?? gridRes));     // max horizontal drift per layer (mm)

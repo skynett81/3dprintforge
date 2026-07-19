@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { readFileSync, existsSync, mkdirSync, writeFileSync, chmodSync, createReadStream, statSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, chmodSync, statSync } from 'node:fs';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -23,7 +23,7 @@ import { isAuthEnabled, getSessionToken, validateSession, isPublicPath, initAuth
 import { PrinterManager } from './printer-manager.js';
 import { NotificationManager } from './notifications.js';
 import { Updater } from './updater.js';
-import { recordRequest, startFlushTimer, createAnalyticsTables, recordWsConnect, recordWsDisconnect } from './analytics.js';
+import { recordRequest, startFlushTimer, createAnalyticsTables } from './analytics.js';
 import { sendTelemetryPing } from './telemetry.js';
 import { QueueManager } from './queue-manager.js';
 import { TimelapseService } from './timelapse-service.js';
@@ -377,7 +377,6 @@ function handleRequest(req, res) {
   // CSRF protection — validate Origin header on state-changing requests
   if (req.url.startsWith('/api/') && req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
     const origin = req.headers.origin;
-    const referer = req.headers.referer;
     // API key requests bypass CSRF (they authenticate via header, not cookies)
     const hasApiKey = req.headers.authorization?.startsWith('Bearer ') || req.headers['x-api-key'];
     if (!hasApiKey && origin) {
@@ -940,7 +939,7 @@ if (!getInventorySetting('vapid_public_key')) {
 }
 
 // Web Push dispatcher
-import { createSign, createHash } from 'node:crypto';
+import { createSign } from 'node:crypto';
 
 notifier.setPushDispatcher(async (eventType, title, message, data) => {
   const vapidPublicKey = getInventorySetting('vapid_public_key');

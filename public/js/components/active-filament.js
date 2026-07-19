@@ -61,7 +61,6 @@
     const name = tray.tray_id_name || tray.tray_type;
     const tempMin = tray.nozzle_temp_min || '?';
     const tempMax = tray.nozzle_temp_max || '?';
-    const isLight = isLightHex(tray.tray_color);
     const slotLabel = isExternal ? t('ams.external') : t('filament.slot', { num: parseInt(activeTrayIdx) + 1 });
 
     // Use inventory data if available (same source as AMS panel)

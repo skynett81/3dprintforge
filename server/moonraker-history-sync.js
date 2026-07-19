@@ -88,7 +88,6 @@ export async function syncMoonrakerHistory(printerId, printerIp, apiKey, port = 
       const filamentColors = (meta.filament_colour || '').split(';').filter(Boolean);
       const filamentWeights = meta.filament_weight || [];
       const totalWeightG = meta.filament_weight_total || (filamentWeights.length > 0 ? filamentWeights.reduce((a, b) => a + b, 0) : null);
-      const filamentUsedMm = job.filament_used || meta.filament_total || 0;
 
       // Download thumbnail if available
       const thumbPath = meta.thumbnails?.find(t => t.width >= 200)?.relative_path

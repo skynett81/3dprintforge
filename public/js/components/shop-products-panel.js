@@ -41,7 +41,6 @@
 
   function renderList(body) {
     const rows = _products.map(p => {
-      const stCls = p.active ? 'good' : '';
       return `<tr>
         <td><strong>${_esc(p.name)}</strong>${p.sku ? ` <small style="opacity:0.6">${_esc(p.sku)}</small>` : ''}</td>
         <td>${_esc(p.category || '--')}</td>

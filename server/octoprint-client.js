@@ -18,7 +18,6 @@
  * API Reference: https://docs.octoprint.org/en/master/api/
  */
 
-import http from 'node:http';
 
 const log = {
   info: (...a) => console.log('[octoprint]', ...a),

@@ -43,7 +43,7 @@ export function discoverSacpPrinters(timeoutMs = 3000) {
       resolve([...found.values()]);
     };
 
-    const timer = setTimeout(finish, timeoutMs);
+    setTimeout(finish, timeoutMs);
 
     socket.on('message', (msg, rinfo) => {
       const text = msg.toString('utf8');

@@ -35,7 +35,7 @@ describe('MoonrakerClient Spoolman v2 proxy', () => {
   before(async () => {
     server = createServer((req, res) => {
       lastRequest = { method: req.method, url: req.url, headers: { ...req.headers } };
-      const payload = responseFactory ? responseFactory(req) : { result: {} };
+      const payload = responseFactory ? responseFactory() : { result: {} };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(payload));
     });

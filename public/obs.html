@@ -351,7 +351,6 @@
       if(cameraPlayer) { try{cameraPlayer.destroy();}catch(_){} cameraPlayer=null; }
 
       const container = document.getElementById('obs-cam-container');
-      const ph = document.getElementById('obs-cam-ph');
       const wsUrl=`ws://${location.hostname}:${port}`;
       const probe=new WebSocket(wsUrl);
       const timeout=setTimeout(()=>probe.close(),3000);

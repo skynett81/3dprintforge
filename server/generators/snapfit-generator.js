@@ -44,7 +44,6 @@ export async function generateSnapfit3MF(opts = {}) {
   // Layout: male part on the left (x < 0), female part on the right (x > 0).
   const maleBaseW = 6;
   const femaleBaseW = beamWidth + 6;
-  const femaleSlotW = beamWidth + clearance * 2;
   const femaleThickness = beamThickness + hookHeight + 2;
   const partGap = 4; // printable gap between male and female parts
 

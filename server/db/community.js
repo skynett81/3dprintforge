@@ -1,7 +1,4 @@
 import { getDb } from './connection.js';
-import { createLogger } from '../logger.js';
-
-const log = createLogger('db:community');
 
 const CF_COLUMNS = ['manufacturer', 'name', 'material', 'density', 'diameter', 'weight', 'spool_weight', 'extruder_temp', 'bed_temp', 'color_name', 'color_hex', 'td_value', 'shore_hardness', 'source', 'pressure_advance_k', 'max_volumetric_speed', 'flow_ratio', 'retraction_distance', 'retraction_speed', 'fan_speed_min', 'fan_speed_max', 'chamber_temp', 'material_type', 'category', 'difficulty', 'image_url', 'purchase_url', 'price', 'price_currency', 'brand_key', 'external_source_id', 'total_td_votes', 'tips', 'updated_at', 'finish', 'pattern', 'translucent', 'glow', 'multi_color_direction', 'spool_type', 'extruder_temp_min', 'extruder_temp_max', 'bed_temp_min', 'bed_temp_max', 'color_hexes'];
 
@@ -34,7 +31,6 @@ export function getCommunityFilaments(filters = {}) {
 
   if (filters.limit) {
     const total = db.prepare(`SELECT COUNT(*) as c FROM community_filaments ${where}`).get(...params).c;
-    const countParams = [...params];
     params.push(filters.limit);
     if (filters.offset) params.push(filters.offset);
     const rows = db.prepare(`SELECT * FROM community_filaments ${where} ${order} LIMIT ?${filters.offset ? ' OFFSET ?' : ''}`).all(...params);

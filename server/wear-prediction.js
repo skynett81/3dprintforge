@@ -1,4 +1,4 @@
-import { getComponentWear, getMaintenanceLog, getPrinters, upsertWearPrediction, getWearPredictions, getAllWearPredictions, addWearAlert, getWearAlerts, acknowledgeWearAlert, getMaintenanceCosts, getTotalMaintenanceCost, addMaintenanceCost } from './database.js';
+import { getComponentWear, getMaintenanceLog, getPrinters, upsertWearPrediction, getWearPredictions, getAllWearPredictions, addWearAlert, getWearAlerts } from './database.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('wear');

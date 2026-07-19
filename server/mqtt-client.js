@@ -1,5 +1,4 @@
 import mqtt from 'mqtt';
-import { createHash } from 'node:crypto';
 import { createLogger } from './logger.js';
 const log = createLogger('mqtt');
 

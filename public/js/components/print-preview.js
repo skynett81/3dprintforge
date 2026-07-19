@@ -145,8 +145,6 @@
     trackLayerColor(data);
 
     // Update progress on every tick
-    const layer = data.layer_num || 0;
-    const total = data.total_layer_num || 0;
     const pct = data.mc_percent || 0;
 
     if (_usingMwImage) {
@@ -242,7 +240,7 @@
             } else {
               const _now = Date.now();
               if (_cachedModelLink && (_now - _lastModelLinkFetch) < MODEL_LINK_FETCH_INTERVAL) {
-                if (_cachedModelLink) renderModelMeta(_cachedModelLink.meta, _cachedModelLink.sliceInfo);
+                renderModelMeta(_cachedModelLink.meta, _cachedModelLink.sliceInfo);
               } else {
                 fetch(`/api/model/${printerId}`).then(r => r.ok ? r.json() : null)
                   .then(m => { _lastModelLinkFetch = Date.now(); _cachedModelLink = m; if (m) renderModelMeta(m.meta, m.sliceInfo); })
@@ -344,17 +342,8 @@
     if (!container) return;
 
     let thumbEl = container.querySelector('.moonraker-thumb-fallback');
-    const isPrinting = data.gcode_state === 'RUNNING' || data.gcode_state === 'PAUSE';
-    const pct = data.mc_percent || 0;
     const layer = data.layer_num || 0;
     const totalLayers = data.total_layer_num || 0;
-    const estTime = data._slicer_estimated_time || 0;
-    const elapsed = data.print_duration_seconds || 0;
-    const remaining = data.mc_remaining_time || 0;
-    const filUsed = data.filament_used_mm ? (data.filament_used_mm / 1000).toFixed(1) : '0';
-    const filTotal = data._slicer_filament_total_g ? data._slicer_filament_total_g.toFixed(0) : '';
-    const activeExt = data._active_extruder ? data._active_extruder.replace('extruder', 'T') : '';
-    const pos = data._position;
 
     // Create once, update every tick
     if (!thumbEl) {

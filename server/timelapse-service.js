@@ -1,8 +1,8 @@
 // Timelapse Recording Service — captures frames from RTSP stream, assembles to MP4
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { addTimelapseRecording, updateTimelapseRecording, deleteTimelapseRecording } from './database.js';
+import { addTimelapseRecording, updateTimelapseRecording } from './database.js';
 import { DATA_DIR } from './config.js';
 import { createLogger } from './logger.js';
 
@@ -185,7 +185,7 @@ export class TimelapseService {
   }
 
   shutdown() {
-    for (const [printerId, entry] of this._active) {
+    for (const [_, entry] of this._active) {
       if (entry.ffmpeg) entry.ffmpeg.kill('SIGTERM');
     }
     this._active.clear();

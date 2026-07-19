@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync, statSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, unlinkSync, statSync, readdirSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { execFile } from 'node:child_process';
 import { DATA_DIR } from './config.js';

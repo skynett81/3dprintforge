@@ -235,7 +235,6 @@
   // ── Reorder needs: per-material min stock vs on-hand + queue demand ──
   function _reorderCard() {
     const short = _reorder.filter(r => r.below_target);
-    const hasTargets = _reorder.some(r => r.target_g > 0);
     let body = '';
     if (!_reorder.length) {
       body = `<p class="text-muted" style="font-size:0.8rem;margin:8px 0 0">${t('po.reorder_none', 'No materials in stock yet.')}</p>`;

@@ -118,7 +118,6 @@
     circle.setAttribute('stroke', color);
 
     // Animate percent number smoothly
-    const ring = document.getElementById('progress-ring');
     if (percent !== _lastPercent && typeof animateNumber === 'function') {
       animateNumber(percentText, _lastPercent, percent, 800, v => `${Math.round(v)}%`);
     } else {

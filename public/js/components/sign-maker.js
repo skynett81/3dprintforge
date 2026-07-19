@@ -307,7 +307,7 @@
       const showPass = document.getElementById('sm-show-pass')?.checked;
       if (!ssid) return;
       try { localStorage.setItem('wifi-qr-ssid', ssid); localStorage.setItem('wifi-qr-pass', pass); } catch {}
-      const esc = (s) => s.replace(/[\\;,:""]/g, c => '\\' + c);
+      const esc = (s) => s.replace(/[\\;,:"]/g, c => '\\' + c);
       qrData = `WIFI:T:${enc};S:${esc(ssid)};P:${esc(pass)};H:${hidden ? 'true' : 'false'};;`;
       // All sizes proportional to plate preview dimensions
       const baseFontPx = Math.round(previewW * 0.065);
@@ -335,7 +335,6 @@
     } else if (id === 'url') {
       const url = _val('sm-url') || location.origin;
       const title = _val('sm-title');
-      qrData = url;
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
@@ -345,7 +344,6 @@
         <div style="font-size:${Math.round(bfp*0.5)}px;color:var(--text-muted);margin-top:4px">Scan to open</div>`;
 
     } else if (id === 'dashboard') {
-      qrData = location.origin;
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
@@ -360,7 +358,6 @@
       const state = window.printerState?.printers?.[pid];
       const data = state?.print || state || {};
       const url = location.origin;
-      qrData = url;
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
@@ -405,7 +402,6 @@
       const title = _val('sm-c-title');
       const msg = _val('sm-c-msg');
       const qr = _val('sm-c-qr');
-      if (qr) qrData = qr;
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 29));
       signHtml = `
@@ -419,7 +415,6 @@
       const email = _val('sm-v-email');
       const company = _val('sm-v-company');
       const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\n${phone ? 'TEL:' + phone + '\n' : ''}${email ? 'EMAIL:' + email + '\n' : ''}${company ? 'ORG:' + company + '\n' : ''}END:VCARD`;
-      qrData = vcard;
       const bfp = Math.round(previewW * 0.065);
       const qcP = Math.max(1, Math.round(qrPx / 33));
       signHtml = `
@@ -457,7 +452,6 @@
       // Frame preview
       const frameTotalW = Math.round((plateW + (frameW * 2) + 2) * scale);
       const frameTotalH = Math.round((plateH + (frameW * 2) + 2) * scale);
-      const fwPx = Math.round(frameW * scale);
       result.innerHTML = `
         <div class="sm-actions" style="justify-content:center">
           <button class="form-btn form-btn-sm form-btn-info" data-ripple onclick="window._smPreview3D('${id}','frame')">🧊 3D Frame</button>
@@ -655,7 +649,7 @@
       body.subtitle = _val('sm-pass') ? 'Pass: ' + _val('sm-pass') : '';
       const enc = _val('sm-enc');
       const hidden = document.getElementById('sm-hidden')?.checked;
-      const esc = (s) => s.replace(/[\\;,:""]/g, c => '\\' + c);
+      const esc = (s) => s.replace(/[\\;,:"]/g, c => '\\' + c);
       body.qr_data = `WIFI:T:${enc};S:${esc(body.title)};P:${esc(_val('sm-pass'))};H:${hidden?'true':'false'};;`;
     } else if (templateId === 'url') {
       body.title = _val('sm-title') || 'Scan Me';
@@ -759,7 +753,6 @@
   };
 
   function _section(title, content, open) {
-    const id = 'sm-sec-' + title.replace(/\s/g, '').toLowerCase();
     return `<div style="margin-bottom:8px;border:1px solid var(--border-color);border-radius:8px;overflow:hidden">
       <div onclick="const c=this.nextElementSibling;c.style.display=c.style.display==='none'?'':'none';this.querySelector('.sm-arrow').textContent=c.style.display==='none'?'▸':'▾'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-tertiary);cursor:pointer;font-size:0.85rem;font-weight:600">
         <span>${title}</span><span class="sm-arrow">${open ? '▾' : '▸'}</span>

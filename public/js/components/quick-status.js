@@ -186,7 +186,6 @@
       const speedPct = data.spd_mag ? `${data.spd_mag}%` : '100%';
       const fanPct = data.cooling_fan_speed != null ? `${data.cooling_fan_speed}%` : '--';
       const fanColor = data.cooling_fan_speed > 0 ? 'var(--accent-blue)' : 'var(--text-muted)';
-      const posStr = data._position ? `X:${data._position.x} Y:${data._position.y} Z:${data._position.z}` : '--';
 
       // Extra Moonraker indicators
       const meshVar = data._bed_mesh?.meshMatrix?.length ? (() => { let mn = Infinity, mx = -Infinity; for (const r of data._bed_mesh.meshMatrix) for (const v of r) { if (typeof v !== 'number' || !isFinite(v)) continue; if (v < mn) mn = v; if (v > mx) mx = v; } return (isFinite(mn) && isFinite(mx)) ? Math.round((mx - mn) * 1000) / 1000 : null; })() : null;

@@ -43,7 +43,6 @@ export async function generateNozzleStorage3MF(opts = {}) {
   const slotR = slotDiameter / 2;
   const totalW = slots * (slotDiameter + slotSpacing) + margin * 2 - slotSpacing;
   const totalD = slotDiameter + margin * 2 + (labelGrooves ? 6 : 0);
-  const totalH = floorThickness + slotDepth;
 
   const cols = Math.round(totalW / CELL_RES);
   const rows = Math.round(totalD / CELL_RES);

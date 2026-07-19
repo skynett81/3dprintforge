@@ -481,8 +481,6 @@ export class MeshBuilder {
     if (cols === 0) return;
 
     const base = this.vOff;
-    const W = cols * cellSize;
-    const H = rows * cellSize;
 
     // Create vertices: top surface grid + bottom surface grid
     // Top surface: (cols+1) x (rows+1) vertices

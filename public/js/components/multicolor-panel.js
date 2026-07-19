@@ -290,13 +290,11 @@
       } else {
         // Simple compatibility matrix
         const incompatible = [['PLA', 'ABS'], ['PLA', 'PA'], ['PETG', 'ABS'], ['TPU', 'ABS']];
-        let hasIssue = false;
         for (let i = 0; i < unique.length; i++) {
           for (let j = i + 1; j < unique.length; j++) {
             const pair = [unique[i].toUpperCase(), unique[j].toUpperCase()];
             const bad = incompatible.some(([a, b]) => (pair[0] === a && pair[1] === b) || (pair[0] === b && pair[1] === a));
             ch += `<div class="mc-compat-row"><span>${unique[i]} + ${unique[j]}</span><span class="${bad ? 'mc-compat-warn' : 'mc-compat-ok'}">${bad ? '\u26A0 ' + t('multicolor.not_recommended') : '\u2714 OK'}</span></div>`;
-            if (bad) hasIssue = true;
           }
         }
       }

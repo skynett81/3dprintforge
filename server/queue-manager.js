@@ -1,4 +1,4 @@
-import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities, addBedHold, getBedHold, getBedHolds, clearBedHold, creditProjectPart, getProjectPart } from './database.js';
+import { getQueues, getQueue, getNextPendingItem, updateQueueItem, updateQueue, addQueueLog, getActiveQueueItems, getSpoolBySlot, getEntityTags, getInventorySetting, getPrinterCapabilities, addBedHold, getBedHold, getBedHolds, clearBedHold, creditProjectPart } from './database.js';
 import { buildPrintCommand, buildGcodeCommand } from './mqtt-commands.js';
 import { createLogger } from './logger.js';
 

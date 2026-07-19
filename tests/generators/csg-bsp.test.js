@@ -3,7 +3,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { box, sphere, cylinder } from '../../server/mesh-primitives.js';
+import { box } from '../../server/mesh-primitives.js';
 import { meshToCsg, csgToMesh, unionMesh, subtractMesh, intersectMesh, _internals } from '../../server/csg-bsp.js';
 import { meshStats } from '../../server/mesh-transforms.js';
 import { offset } from '../../server/mesh-primitives.js';

@@ -8,7 +8,7 @@ import {
   sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
 import { patternInfill, solidInfill, bestBridgeAngle } from '../../server/native-slicer-geo.js';
-import { box, cylinder, extrudePolygon, offset, unionMeshes } from '../../server/mesh-primitives.js';
+import { box, cylinder, extrudePolygon } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
   it('a 10mm cube cut at z=5 yields one square polygon', () => {
@@ -1126,7 +1126,7 @@ describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', 
   // single perimeter. Arachne fills it (a medial bead or concentric walls);
   // classic leaves the interior a void, so it deposits far less there.
   const fillInTab = (g) => {
-    let e = 0, absE = true, x = 0, prevE = 0;
+    let e = 0, absE = true, prevE = 0;
     for (const l of g.split('\n')) {
       if (/^M83/.test(l)) absE = false; else if (/^M82/.test(l)) absE = true;
       const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E(-?[\d.]+)/);

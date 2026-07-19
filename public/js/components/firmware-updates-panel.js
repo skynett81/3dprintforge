@@ -519,8 +519,6 @@
   }
 
   function _renderDevCard(u, isSecondary) {
-    const name = _esc(u.printer_name || u.printer_id);
-    const model = u.model ? ` <span class="text-muted small">(${_esc(u.model)})</span>` : '';
     const ahead = u.dev_commits_ahead || 0;
     let commits = [];
     try { commits = u.dev_commits_json ? JSON.parse(u.dev_commits_json) : []; } catch {}
@@ -581,7 +579,6 @@
   // Listen for WebSocket firmware check events
   if (!window._fwWsListener) {
     window._fwWsListener = true;
-    const origOnMsg = window._wsOnMessage;
     document.addEventListener('ws:firmware_check_complete', () => fetchStatus());
   }
 

@@ -554,7 +554,6 @@
     btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>';
     document.body.appendChild(btn);
 
-    const main = document.querySelector('.main-wrapper') || window;
     const scrollTarget = document.querySelector('.main-content') || document.querySelector('.main-wrapper') || window;
 
     function checkScroll() {

@@ -11,8 +11,8 @@
 
 import { getSpools, getSpool, useSpoolWeight, addSpool, updateSpool, deleteSpool } from './db/spools.js';
 import {
-  getFilamentProfiles, getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile,
-  getVendors, addVendor, updateVendor, deleteVendor,
+  getFilamentProfile, addFilamentProfile, updateFilamentProfile, deleteFilamentProfile,
+  addVendor, updateVendor, deleteVendor,
 } from './db/filament-profiles.js';
 
 // Spoolman API version we present ourselves as (clients gate behaviour on it).

@@ -56,7 +56,7 @@
     const fbAttr = encodeURIComponent(fallback);
     return `<div class="fleet-vendor-image" style="display:flex;align-items:center;justify-content:center;width:100%;min-height:96px">
       <img src="/api/printer-image/${encodeURIComponent(slug)}"
-           alt="${(model || '').replace(/"/g, '&quot;')}"
+           alt="${model.replace(/"/g, '&quot;')}"
            loading="lazy"
            style="max-width:100%;max-height:140px;object-fit:contain"
            data-fallback="${fbAttr}"
@@ -396,7 +396,7 @@
   }
 
   function _cleanupCameras() {
-    for (const [id, ws] of Object.entries(_cameraIntervals)) {
+    for (const ws of Object.values(_cameraIntervals)) {
       try { ws.close(); } catch {}
     }
     _cameraIntervals = {};

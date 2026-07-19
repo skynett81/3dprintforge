@@ -104,7 +104,7 @@
   // ────────── Render shell + sub-tabs ──────────
 
   function _renderShell(data) {
-    const { history, printers, queue, printErrors, spools, overview } = data;
+    const { history, printErrors, spools, overview } = data;
     const liveP = window.printerState?.printers || {};
     let onlinePrinters = 0;
     for (const id of Object.keys(liveP)) {
@@ -398,7 +398,7 @@
   // ────────── Tab: Server ──────────
 
   function _tabServer(data) {
-    const { overview, hourly, topEndpoints, sessions, errors } = data;
+    const { overview, topEndpoints, sessions, errors } = data;
     let h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));grid-auto-flow:dense;gap:12px">';
 
     // Hourly chart — full width

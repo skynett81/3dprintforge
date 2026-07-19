@@ -56,7 +56,7 @@
     ctx.clearRect(0, 0, W, H);
 
     // Find Y range
-    let yMin = 0, yMax = 50;
+    let yMax = 50;
     for (const key of Object.keys(_tempData)) {
       for (const val of _tempData[key]) {
         if (val !== null && val > yMax) yMax = val;

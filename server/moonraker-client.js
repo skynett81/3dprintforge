@@ -2187,7 +2187,7 @@ export class MoonrakerClient {
   /** Capture timelapse frame to disk */
   async _captureTimelapseFrame() {
     try {
-      const { existsSync, mkdirSync, writeFileSync } = await import('node:fs');
+      const { mkdirSync, writeFileSync } = await import('node:fs');
       const { join } = await import('node:path');
 
       // Create timelapse directory

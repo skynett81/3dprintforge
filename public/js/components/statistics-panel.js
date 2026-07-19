@@ -948,7 +948,7 @@
       html += '</div>';
 
       // Tab panels
-      for (const [tabId, cfg] of sortedTabs) {
+      for (const [tabId] of sortedTabs) {
         const order = getOrder(tabId);
         const isActive = tabId === _activeTab;
         html += `<div class="tab-panel stats-tab-panel stagger-in ${isActive ? 'active' : ''}" id="stats-tab-${tabId}" style="display:${isActive ? 'grid' : 'none'}">`;

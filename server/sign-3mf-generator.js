@@ -58,9 +58,7 @@ export async function generateSign3MF(opts = {}) {
     const pw = opts.plateWidth || 80;
     const ph = opts.plateHeight || 55;
     const pd = opts.plateDepth || 2;
-    const cr = opts.cornerRadius || 0;
     const th = opts.textHeight || 0.8;
-    const px = opts.pixelSize || 1.2;
     const qrH = opts.qrHeight || th;
     const qrSize = opts.qrSize || 35;
 

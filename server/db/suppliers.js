@@ -7,9 +7,6 @@
 // (price-per-kg) and 1-click reorder links.
 
 import { getDb } from './connection.js';
-import { createLogger } from '../logger.js';
-
-const log = createLogger('db:suppliers');
 
 // ---- Suppliers ----
 

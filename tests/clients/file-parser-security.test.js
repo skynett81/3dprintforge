@@ -12,7 +12,6 @@ import { parse3mf } from '../../server/file-parser.js';
 function buildZip(entries) {
   const localHeaders = [];
   const centralDir = [];
-  const fileData = [];
   let offset = 0;
 
   for (const { name, content } of entries) {

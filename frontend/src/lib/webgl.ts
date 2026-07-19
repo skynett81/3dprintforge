@@ -17,7 +17,7 @@ export function makeRenderer(opts: THREE.WebGLRendererParameters = {}): THREE.We
   for (const a of attempts) {
     try {
       const r = new THREE.WebGLRenderer(a);
-      if (r && r.getContext()) return r;
+      if (r.getContext()) return r;
       try { r.dispose(); } catch { /* ignore */ }
     } catch { /* try the next, more permissive, config */ }
   }

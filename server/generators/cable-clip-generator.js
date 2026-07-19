@@ -30,7 +30,6 @@ export async function generateCableClip3MF(opts = {}) {
   const baseExtra = num(opts.baseExtra, 2, 20, 6);
 
   const outerW = cd + wall * 2 + baseExtra * 2;
-  const outerH = cd + wall * 2;
 
   const lib = await getLib();
   const wrapper = new lib.CWrapper();

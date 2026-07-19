@@ -133,6 +133,5 @@ function buildXExtrudedTriangle(mb, xA, xB, y0, y1, z0, z1, thickness) {
   // Hypotenuse face (from B/B' up to C/C') — quad (B, B', C', C)
   mb._addTri(base + 1, base + 2, base + 5);
   mb._addTri(base + 1, base + 5, base + 4);
-  // thickness parameter unused in this simplified prism
-  thickness;
+  // thickness parameter is unused in this simplified prism
 }

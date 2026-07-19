@@ -14,35 +14,6 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('provision');
 
-// Nginx snippet that serves the live monitor image at the webcam endpoint
-const NGINX_CAMERA_SNIPPET = `
-# 3DPrintForge camera proxy — serves unisrv live monitor image
-# This replaces the mjpgstreamer upstream that isn't running
-location = /webcam/snapshot {
-    alias /tmp/.monitor.jpg;
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
-    add_header Pragma "no-cache";
-    add_header Expires "0";
-    add_header Content-Type "image/jpeg" always;
-    add_header Access-Control-Allow-Origin "*";
-    etag off;
-    if_modified_since off;
-}
-location = /webcam/action/snapshot {
-    alias /tmp/.monitor.jpg;
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
-    add_header Pragma "no-cache";
-    add_header Expires "0";
-    add_header Content-Type "image/jpeg" always;
-    add_header Access-Control-Allow-Origin "*";
-    etag off;
-    if_modified_since off;
-}
-`;
-
-// Marker to identify our config
-const MARKER = '# 3DPrintForge camera proxy';
-
 const SSH_CREDENTIALS = [
   { username: 'root', password: 'snapmaker' },
   { username: 'lava', password: 'snapmaker' },

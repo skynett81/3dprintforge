@@ -240,7 +240,6 @@
 
     // Speed distribution
     const speedEntries = Object.entries(p.speeds).map(([s, c]) => [parseInt(s), c]).sort((a, b) => a[0] - b[0]);
-    const maxCount = Math.max(...speedEntries.map(e => e[1]), 1);
     html += `<div class="gc-section"><h4>${t('gcode.speed_dist')}</h4>`;
     const bucketSize = Math.max(1, Math.floor(speedEntries.length / 8));
     const buckets = [];

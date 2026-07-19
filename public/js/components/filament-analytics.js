@@ -35,12 +35,6 @@
     return val.toLocaleString(_locale(), { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' kr/g';
   }
 
-  function fmtDays(d) {
-    if (d == null || isNaN(d)) return '–';
-    if (d > 365) return Math.round(d / 30) + ' mo';
-    return Math.round(d) + ' days';
-  }
-
   function fmtDate(dateStr) {
     if (!dateStr) return '–';
     try {
@@ -51,12 +45,6 @@
   function fmtNum(val, dec) {
     if (val == null || isNaN(val)) return '–';
     return parseFloat(val).toLocaleString(_locale(), { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
-  }
-
-  function colorDot(hex) {
-    if (!hex) return '';
-    const c = hex.startsWith('#') ? hex : '#' + hex.substring(0, 6);
-    return `<span class="fc-mat-dot" style="background:${c}"></span>`;
   }
 
   function statusBadge(pct) {

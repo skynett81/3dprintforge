@@ -33,7 +33,7 @@ import { join } from 'node:path';
 import {
   box, sphere, cylinder, cone, torus, prism, pyramid, unionMeshes,
 } from './mesh-primitives.js';
-import { unionMesh as csgUnion, subtractMesh as csgSubtract } from './csg-bsp.js';
+import { subtractMesh as csgSubtract } from './csg-bsp.js';
 
 const DATA_DIR = process.env.DATA_DIR || join(import.meta.dirname, '..', 'data');
 const SCENE_MESH_DIR = join(DATA_DIR, 'scene-meshes');
@@ -109,7 +109,7 @@ function _loadMeshShape(p) {
   const safe = String(p.meshFile).replace(/[^a-zA-Z0-9_.-]/g, '_');
   const fullPath = join(SCENE_MESH_DIR, safe);
   if (!existsSync(fullPath)) throw new Error(`mesh file missing: ${safe}`);
-  const buf = readFileSync(fullPath);
+  readFileSync(fullPath);
   // Lazily import format converter to avoid circular load.
   // bufferToMesh is async; this _loadMeshShape stays sync to keep the
   // caller signature uniform — callers that include mesh-shapes should

@@ -110,15 +110,6 @@
     }
   }
 
-  function activityTypeLabel(type) {
-    switch (type) {
-      case 'print': return t('errors.filter_prints');
-      case 'error': return t('errors.filter_errors');
-      case 'maintenance': return t('errors.filter_maintenance');
-      default: return t('errors.filter_other');
-    }
-  }
-
   // ═══ Tab config ═══
   const TAB_CONFIG = {
     log:      { label: 'errors.tab_log',      modules: ['error-summary', 'error-filters', 'error-list'] },
@@ -436,7 +427,7 @@
       html += '</div>';
 
       // Tab panels
-      for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
+      for (const [tabId] of Object.entries(TAB_CONFIG)) {
         const order = getOrder(tabId);
         html += `<div class="tab-panel error-tab-panel stats-tab-panel stagger-in ${tabId === _activeTab ? 'active' : ''}" id="error-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
 

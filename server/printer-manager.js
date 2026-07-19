@@ -444,7 +444,7 @@ export class PrinterManager {
 
   async _checkDisconnected() {
     const disconnected = [];
-    for (const [id, entry] of this.printers) {
+    for (const [_, entry] of this.printers) {
       if (!entry.live) { disconnected.push(entry.config); continue; }
       // Check if client is actually connected
       const client = entry.client;
@@ -593,7 +593,7 @@ export class PrinterManager {
   shutdown() {
     if (this._rediscoveryInterval) clearInterval(this._rediscoveryInterval);
     if (this._rediscoveryInitial) clearTimeout(this._rediscoveryInitial);
-    for (const [id, p] of this.printers) {
+    for (const [, p] of this.printers) {
       if (p.client?.disconnect) p.client.disconnect();
       if (p.client?.stop) p.client.stop();
       if (p.sampler) p.sampler.stop();

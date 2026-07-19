@@ -85,7 +85,6 @@ function decodePNG(buf) {
       bitDepth = buf[offset + 16];
       colorType = buf[offset + 17];
       const compression = buf[offset + 18];
-      const filter = buf[offset + 19];
       const interlace = buf[offset + 20];
       if (interlace !== 0) throw new Error('Interlaced PNG not supported — please use a non-interlaced image');
       if (compression !== 0) throw new Error('Unknown PNG compression method');

@@ -41,7 +41,6 @@
     document.head.appendChild(style);
   }
 
-  function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   let _activeTab = 'printers';
   let _printerSubTab = 'list';
@@ -1147,7 +1146,6 @@
 
     } else if (_systemSubTab === 'integrations') {
       const iCheck = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="3" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>';
-      const iSoon = '<span style="font-size:0.65rem;padding:2px 6px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-muted);font-weight:600">PLANNED</span>';
       const brand = (name, icon, status, desc) => `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)"><div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-tertiary);flex-shrink:0">${icon}</div><div style="flex:1;min-width:0"><div style="font-size:0.85rem;font-weight:600">${name}</div><div style="font-size:0.72rem;color:var(--text-muted)">${desc}</div></div>${status}</div>`;
 
       let h = '<div style="display:flex;flex-direction:column;gap:14px">';
@@ -3017,81 +3015,6 @@
     { color: '#00bcd4', label: 'Cyan' },
   ];
 
-  function buildAppearanceTab() {
-    const cfg = window.theme ? window.theme.get() : { preset: 'light', accentColor: null, radius: 12 };
-    const currentAccent = cfg.accentColor || (window.theme ? window.theme.getDefaultAccent() : '#00AE42');
-    const currentRadius = cfg.radius ?? 12;
-
-    let html = '';
-
-    // Theme preset
-    html += `
-      <div class="settings-card">
-        <div class="card-title">${t('settings.theme_title')}</div>
-        <div class="theme-preset-grid">
-          <button class="theme-preset-card ${cfg.preset === 'light' ? 'active' : ''}" onclick="setThemePreset('light')">
-            <div class="theme-preset-preview theme-preview-light">
-              <div class="tpp-sidebar"></div>
-              <div class="tpp-main"><div class="tpp-card"></div><div class="tpp-card"></div></div>
-            </div>
-            <span>${t('settings.theme_light')}</span>
-          </button>
-          <button class="theme-preset-card ${cfg.preset === 'dark' ? 'active' : ''}" onclick="setThemePreset('dark')">
-            <div class="theme-preset-preview theme-preview-dark">
-              <div class="tpp-sidebar"></div>
-              <div class="tpp-main"><div class="tpp-card"></div><div class="tpp-card"></div></div>
-            </div>
-            <span>${t('settings.theme_dark')}</span>
-          </button>
-          <button class="theme-preset-card ${cfg.preset === 'auto' ? 'active' : ''}" onclick="setThemePreset('auto')">
-            <div class="theme-preset-preview theme-preview-auto">
-              <div class="tpp-half-light"></div>
-              <div class="tpp-half-dark"></div>
-            </div>
-            <span>${t('settings.theme_auto')}</span>
-          </button>
-        </div>
-      </div>`;
-
-    // Accent color
-    html += `
-      <div class="settings-card mt-md">
-        <div class="card-title">${t('settings.theme_accent')}</div>
-        <div class="theme-color-row">`;
-    for (const s of ACCENT_SWATCHES) {
-      const isActive = currentAccent.toLowerCase() === s.color.toLowerCase();
-      html += `<button class="theme-color-swatch ${isActive ? 'active' : ''}" style="background:${s.color}" onclick="setThemeAccent('${s.color}')" title="${s.label}"></button>`;
-    }
-    html += `
-          <label class="theme-color-custom" title="${t('settings.theme_accent')}">
-            <input type="color" id="theme-accent-picker" value="${currentAccent}" onchange="setThemeAccent(this.value)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          </label>
-        </div>
-        ${cfg.accentColor ? `<button class="form-btn form-btn-sm form-btn-secondary mt-sm" data-ripple onclick="setThemeAccent(null)">${t('settings.theme_accent_reset')}</button>` : ''}
-      </div>`;
-
-    // Border radius
-    html += `
-      <div class="settings-card mt-md">
-        <div class="card-title">${t('settings.theme_radius')}</div>
-        <div class="theme-radius-row">
-          <span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_sharp')}</span>
-          <input type="range" class="theme-radius-slider" id="theme-radius-slider" min="0" max="20" step="1" value="${currentRadius}" oninput="setThemeRadius(this.value)">
-          <span class="text-muted" style="font-size:0.8rem">${t('settings.theme_radius_round')}</span>
-          <span class="theme-radius-value" id="theme-radius-value">${currentRadius}px</span>
-        </div>
-      </div>`;
-
-    // Reset
-    html += `
-      <div class="mt-md">
-        <button class="form-btn form-btn-secondary" data-ripple onclick="resetTheme()">${t('settings.theme_reset')}</button>
-      </div>`;
-
-    return html;
-  }
-
   window.setThemePreset = function(preset) {
     if (window.theme) window.theme.set({ preset });
     if (window._activePanel === 'settings' && _activeTab === 'appearance') _renderAppearanceSubContent();
@@ -4663,7 +4586,7 @@
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data._meta || (data._meta.type !== '3dprintforge-settings' && data._meta.type !== '3dprintforge-settings')) {
+        if (!data._meta || data._meta.type !== '3dprintforge-settings') {
           throw new Error('Invalid settings file');
         }
         const res = await fetch('/api/settings/import', {

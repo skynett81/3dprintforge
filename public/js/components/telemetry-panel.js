@@ -476,7 +476,7 @@
       html += '</div>';
 
       // ── Tab panels ──
-      for (const [tabId, cfg] of Object.entries(TAB_CONFIG)) {
+      for (const [tabId] of Object.entries(TAB_CONFIG)) {
         const order = getOrder(tabId);
         html += `<div class="tab-panel tele-tab-panel stats-tab-panel ${tabId === _activeTab ? 'active' : ''}" id="tele-tab-${tabId}" style="display:${tabId === _activeTab ? 'grid' : 'none'}">`;
         for (const modId of order) {

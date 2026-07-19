@@ -99,7 +99,6 @@
       tooltip.style.transform = '';
       const th = tooltip.offsetHeight || 200;
 
-      let useTransform = false;
       switch (step.position) {
         case 'right':
           top = rect.top + rect.height / 2 - th / 2;

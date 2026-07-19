@@ -7,9 +7,6 @@
 import { getDb } from './connection.js';
 import { addPurchaseOrder, getPurchaseOrders } from './purchase-orders.js';
 import { getSupplierPart } from './suppliers.js';
-import { createLogger } from '../logger.js';
-
-const log = createLogger('db:reorder');
 
 const DEFAULT_SPOOL_G = 1000;
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;

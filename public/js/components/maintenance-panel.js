@@ -8,7 +8,6 @@
     return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   function fmtW(g) { return g >= 1000 ? `${(g/1000).toFixed(1)} kg` : `${Math.round(g)}g`; }
-  function sRow(lbl, val, clr) { return `<div class="stats-detail-item"><span class="stats-detail-item-label">${lbl}</span><span class="stats-detail-item-value"${clr?` style="color:${clr}"`:''}>${val}</span></div>`; }
 
   const COMPONENTS = ['nozzle', 'ptfe_tube', 'linear_rods', 'carbon_rods', 'z_axis', 'linear_bearings', 'build_plate', 'ams', 'ams_sensors', 'filament_drying', 'general'];
   const ACTIONS = ['cleaned', 'replaced', 'lubricated', 'inspected', 'dried', 'calibrated'];
@@ -18,20 +17,6 @@
     hotend_heater: 2000, bed_heater: 5000,
     belts_x: 5000, belts_y: 5000,
     linear_rails: 10000, extruder_motor: 5000
-  };
-  // Default maintenance intervals (hours) aligned with KB vedlikehold docs
-  const KB_INTERVALS = {
-    nozzle: 50,           // Cold pull every 50h, or when changing material
-    ptfe_tube: 200,       // Visual inspection monthly, replace on visible wear
-    linear_rods: 250,     // Oil XY rods every 200-300h
-    carbon_rods: 250,     // Oil carbon rods every 200-300h
-    z_axis: 200,          // Grease Z leadscrew every 200h
-    linear_bearings: 400, // Grease linear bearings every 300-500h (X1C/P1S)
-    build_plate: 100,     // Deep clean monthly (~100h), IPA between prints
-    ams: 100,             // Clean filament path every 100h
-    ams_sensors: 200,     // Inspect sensors monthly
-    filament_drying: 50,  // Check/dry hygroscopic filament regularly
-    general: 500          // Full maintenance cycle every 500h
   };
   // Nozzle lifespan by type (from KB dyse.md)
   const NOZZLE_LIFESPAN = {

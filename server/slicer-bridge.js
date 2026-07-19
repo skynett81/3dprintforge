@@ -22,7 +22,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, statSync, readFileSync, mkdirSync, rmSync, mkdtempSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, readFileSync, mkdirSync, rmSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { join, basename, resolve as pathResolve } from 'node:path';
 import { homedir, tmpdir } from 'node:os';
 

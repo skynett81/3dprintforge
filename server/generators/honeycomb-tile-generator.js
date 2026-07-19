@@ -38,10 +38,8 @@ export async function generateHoneycombTile3MF(opts = {}) {
 
   // Hex grid: flat-top hexagons. Width = cellSize (flat-to-flat), height =
   // cellSize * 2/√3 (corner-to-corner). Column spacing = cellSize * 3/4.
-  const hexW = cellSize;
   const hexH = cellSize * 2 / Math.sqrt(3);
   const colStep = cellSize * 0.75;
-  const rowStep = hexH / 2;
 
   /** Return distance from point (x,y) to the nearest hex border. */
   function distToHexBorder(x, y) {

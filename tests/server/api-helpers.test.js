@@ -1,6 +1,6 @@
 // helpers.test.js — Tester for API-hjelpefunksjoner og rate limiter
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { sendJson, checkApiRate, checkLoginRate, getApiRateHeaders, preserveUnchangedCredentials } from '../../server/api-helpers.js';
 

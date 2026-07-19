@@ -7,7 +7,7 @@ import { setupTestDb } from '../test-helper.js';
 import {
   adjustSpoolStock, recordStockTransaction, getStockLedger, getStockActivity,
 } from '../../server/db/stock-ledger.js';
-import { addSpool, getSpool, useSpoolWeight, addSpoolEvent } from '../../server/db/spools.js';
+import { addSpool, getSpool, useSpoolWeight } from '../../server/db/spools.js';
 import { checkoutSpool } from '../../server/db/misc.js';
 
 describe('Manual stock adjustment', () => {
@@ -61,7 +61,6 @@ describe('Unified ledger read-model', () => {
     checkoutSpool(id, 'tester', 'A');
 
     const ledger = getStockLedger(id);
-    const types = ledger.map(e => e.type);
     assert.ok(ledger.some(e => e.source === 'usage' && e.type === 'consume' && e.delta_g === -30), 'consume present with -30 delta');
     assert.ok(ledger.some(e => e.source === 'transaction' && e.type === 'adjust'), 'adjust txn present');
     assert.ok(ledger.some(e => e.source === 'checkout'), 'move present');

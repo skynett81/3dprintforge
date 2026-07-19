@@ -6,9 +6,7 @@ import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
 import { listTestPrints, getTestPrint, listTags, listPurposes } from '../../server/test-print-library.js';
 import { runPreflight, _internals as pfInt } from '../../server/preflight-checks.js';
-import {
-  getSuccessRates, getMtbf, getCostMetrics, getFilamentEfficiency, getDashboardMetrics,
-} from '../../server/quality-metrics.js';
+import { getDashboardMetrics } from '../../server/quality-metrics.js';
 import {
   listCurrencies, getActiveCurrency, setActiveCurrency, convert, format, getRate, getCurrencyState,
 } from '../../server/currency.js';

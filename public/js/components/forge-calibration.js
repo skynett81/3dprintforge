@@ -126,7 +126,6 @@
   }
 
   window._calGenerate = async function(id) {
-    const r = document.getElementById('cal-result');
     try {
       const res = await fetch(`/api/model-forge/${id}/generate-3mf`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_getParams(id))

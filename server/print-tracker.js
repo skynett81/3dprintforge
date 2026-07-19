@@ -1,4 +1,4 @@
-import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, lookupNfcTag, linkNfcTag, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, correctRemainWeight, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, saveFilamentEstimate, enrichTrayWithVariant } from './database.js';
+import { addHistory, getHistory, addError, getErrors, addAmsSnapshot, getActiveNozzleSession, createNozzleSession, retireNozzleSession, updateNozzleSessionCounters, upsertComponentWear, upsertAmsTrayLifetime, updateAmsTrayFilamentUsed, getSpoolBySlot, useSpoolWeight, savePrintCost, estimatePrintCostAdvanced, assignSpoolToSlot, syncAmsToSpool, getActiveLayerPauses, markLayerTriggered, deactivateLayerPauses, addTimeTracking, getInventorySetting, addFilamentUsageSnapshot, getSpoolByTrayIdName, autoMatchTrayToSpool, autoCreateSpoolFromTray, checkSpoolDepletionThresholds, aggregateDailyFilamentUsage, trackConsumedSinceWeight, updateFilamentAccuracy, saveFilamentEstimate, enrichTrayWithVariant } from './database.js';
 import { getDb } from './db/connection.js';
 import { registerNfcTag } from './nfc-registry.js';
 import { recordCompletion as recordEtaCompletion } from './eta-predictor.js';
@@ -319,14 +319,14 @@ export class PrintTracker {
         // Skip benign codes and already-logged codes (survives restarts via seed)
         if (!PRINT_ERROR_IGNORE.has(hexCode) && this._lastPrintError !== hexCode) {
           this._lastPrintError = hexCode;
-          const hmsDesc = lookupHmsCode ? lookupHmsCode(raw) : null;
+          const hmsDesc = lookupHmsCode(raw);
           const errMsg = printData.print_error_msg || hmsDesc || (HMS_CODES[hexCode]) || `Error: ${hexCode}`;
           addError({
             printer_id: this.printerId,
             code: hexCode,
             message: errMsg,
             severity: 'error',
-            context: { ...errorContext, wiki_url: getHmsWikiUrl ? getHmsWikiUrl(raw) : null }
+            context: { ...errorContext, wiki_url: getHmsWikiUrl(raw) }
           });
           if (this.onError) {
             this.onError({ printerId: this.printerId, code: hexCode, errorMessage: errMsg, severity: 'error' });
@@ -466,7 +466,7 @@ export class PrintTracker {
       const activeTray = data.ams?.tray_now;
       if (pct > 0 && activeTray != null) {
         // Find the active tray key and estimate its original remain%
-        for (const [key, remain] of Object.entries(currentAms)) {
+        for (const [key] of Object.entries(currentAms)) {
           const [, trayId] = key.split('_').map(Number);
           if (trayId === activeTray) {
             // Estimate: the tray dropped from X% to current remain% over pct% of print
@@ -500,7 +500,6 @@ export class PrintTracker {
       const isExtFromMapping = Array.isArray(data.mapping) && data.mapping.length > 0 && ((data.mapping[0] >> 8) & 0xFF) === 0xFF;
       const trayNow = data.ams?.tray_now;
       const isExt = isExtFromMapping || (trayNow != null && parseInt(trayNow) >= 254);
-      const effectiveTrayId = isExt ? '254' : (trayNow != null ? String(trayNow) : null);
       log.info('Print started: ' + (data.subtask_name || 'unknown') + ' (tray: ' + (isExt ? 'EXT' : trayNow) + (isExtFromMapping ? ' [mapping]' : '') + ')');
       this.amsSnapshot = this._getAmsRemaining(data);
     }
@@ -656,7 +655,6 @@ export class PrintTracker {
     // Fallback: use cloud estimate if AMS diff is too low
     // This covers: server restart (no snapshot), EXT on P2S/A1 (no vt_tray sensor data)
     let cloudWeight = this.currentPrint.cloud_weight_g;
-    const isExt = this.currentPrint.is_ext;
 
     // If cloud estimate was not available at print start (e.g. server restart, cache empty),
     // try fetching it now at print end

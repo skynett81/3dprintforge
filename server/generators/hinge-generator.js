@@ -71,15 +71,11 @@ export async function generateHinge3MF(opts = {}) {
 
     // Pivot axis runs along +Y. Knuckle Z = 0 .. knuckleRadius*2 (pivot centered at knuckleRadius).
     const pivotZ = knuckleRadius;
-    const plateZTop = pivotZ + plateThickness / 2;
     const plateZBot = pivotZ - plateThickness / 2;
 
     // Leaf A extends in -X from the pivot; leaf B extends in +X.
     const leafA_x = -plateWidth;
     const leafB_x = 0;
-    // The plate edge nearest to the pivot sits tangent to the knuckle cylinder.
-    const plateEdgeOffsetA = 0;              // leaf A's right edge at x = 0
-    const plateEdgeOffsetB = 0;              // leaf B's left edge at x = 0 (plate starts here)
 
     // Build leaf A plate (below pivot, tangent to knuckle circle)
     mb.addBox(leafA_x, 0, plateZBot, plateWidth, plateLength, plateThickness);

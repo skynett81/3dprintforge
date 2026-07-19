@@ -511,7 +511,6 @@
     const activeBrand = activeTray.tray_sub_brands || '';
     const activeLinkedSpool = window.getLinkedSpool?.(window.printerState?.getActivePrinterId?.(), activeEntry.unitIdx, activeEntry.trayIdx);
     const activeColorName = activeLinkedSpool?.bambu_color_name || getColorName(activeColor);
-    const isActive = activeEntry.globalIdx === activeIdx || (activeIdx >= 254 && activeEntry.isExternal);
     const slotNum = activeEntry.isExternal ? 0 : activeEntry.trayIdx + 1;
     const amsNum = activeEntry.isExternal ? 0 : activeEntry.unitIdx + 1;
 

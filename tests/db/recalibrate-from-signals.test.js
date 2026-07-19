@@ -6,7 +6,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
-import { addSpool, getSpool, recalibrateFromSignals } from '../../server/db/spools.js';
+import { addSpool, recalibrateFromSignals } from '../../server/db/spools.js';
 import { addAmsSnapshot } from '../../server/db/maintenance.js';
 import { addHistory } from '../../server/db/history.js';
 

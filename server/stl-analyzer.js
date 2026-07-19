@@ -207,7 +207,6 @@ function _orientationSuggestions(tris, count) {
       const nz1 = ny * sx + nz * cx;
       const nx2 = nx1 * cy + nz1 * sy;
       const nz2 = -nx1 * sy + nz1 * cy;
-      const nx3 = nx2 * cz - ny1 * sz;
       const nzFinal = nz2;
       if (-nzFinal > Math.cos(((90 - DEFAULT_OVERHANG_THRESHOLD_DEG) * Math.PI) / 180)) {
         overhangArea += a;

@@ -66,15 +66,6 @@ function extractFromZip(zipBuf, targetPaths) {
   return null;
 }
 
-// Thumbnail paths to look for inside 3MF files (priority order)
-const THUMBNAIL_PATHS = [
-  'Metadata/plate_1.png',
-  'Metadata/top_1.png',
-  'Metadata/plate_2.png',
-  'Metadata/thumbnail.png',
-  'Metadata/plate_1.jpg',
-  'Thumbnails/thumbnail.png'
-];
 
 // Build plate-specific thumbnail paths based on gcode filename
 function getThumbnailPaths(gcodeFile) {

@@ -281,7 +281,7 @@ export class SacpConnector {
         helper.stringToBuffer(''),
       ]);
 
-      const resp = await this._dispatcher.send(
+      await this._dispatcher.send(
         CMD.WIFI_CONNECTION.set, CMD.WIFI_CONNECTION.id,
         PEER.SCREEN, connPayload
       );

@@ -379,7 +379,6 @@
   window._crmOrdAddItem = function() {
     _syncFormItems();
     _formItems = [..._formItems, { description: '', quantity: 1, filament_type: '', filament_color: '', filament_weight_g: null, estimated_time_min: null, unit_price: null }];
-    const container = document.getElementById('crm-ord-items');
     const body = document.getElementById('overlay-panel-body');
     if (body && _activeView === 'form') renderForm(body);
   };

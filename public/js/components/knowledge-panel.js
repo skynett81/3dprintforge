@@ -395,7 +395,7 @@
   };
 
   function _specRow(label, value) {
-    if (value == null || value === '' || value === undefined) return '';
+    if (value == null || value === '') return '';
     return `<tr class="kb-specs-row"><td class="kb-specs-label">${_esc(label)}</td><td class="kb-specs-value">${typeof value === 'string' ? _esc(value) : value}</td></tr>`;
   }
 

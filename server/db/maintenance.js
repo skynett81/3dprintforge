@@ -1,7 +1,4 @@
 import { getDb } from './connection.js';
-import { createLogger } from '../logger.js';
-
-const log = createLogger('db:maintenance');
 
 // ---- Private helpers ----
 

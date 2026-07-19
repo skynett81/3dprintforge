@@ -355,7 +355,7 @@ export class PrusaLinkClient {
   // ── Job history (PrusaLink v1 API) ──
 
   async getJobHistory() {
-    return this._apiGet('/api/v1/job/history') || [];
+    return (await this._apiGet('/api/v1/job/history')) || [];
   }
 
   // ── Printer profile ──
@@ -423,7 +423,7 @@ export class PrusaLinkClient {
   // ── Camera management ──
 
   async listCameras() {
-    return this._apiGet('/api/v1/cameras') || [];
+    return (await this._apiGet('/api/v1/cameras')) || [];
   }
 
   async getCameraConfig(cameraId) {
@@ -437,7 +437,7 @@ export class PrusaLinkClient {
   // ── Transfer (upload progress) ──
 
   async getActiveTransfers() {
-    return this._apiGet('/api/v1/transfer') || [];
+    return (await this._apiGet('/api/v1/transfer')) || [];
   }
 
   async cancelTransfer(transferId) {
@@ -447,7 +447,7 @@ export class PrusaLinkClient {
   // ── Storage info ──
 
   async getStorageInfo() {
-    return this._apiGet('/api/v1/storage') || {};
+    return (await this._apiGet('/api/v1/storage')) || {};
   }
 
   // ── Full printer state query ──

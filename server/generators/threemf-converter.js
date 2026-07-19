@@ -4,13 +4,6 @@
  * Based on community research from ryvin/bambu-to-snapmaker-converter
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-// Bambu bed center vs U1 bed center
-const BAMBU_BED = { x: 128, y: 128 };  // 256x256 centered
-const U1_BED = { x: 135.5, y: 167.5 }; // 271x335 centered
-
 // Filament mapping: Bambu type → Snapmaker settings ID
 const FILAMENT_MAP = {
   'Bambu PLA Basic': 'Snapmaker PLA Basic @U1',
@@ -27,13 +20,6 @@ const FILAMENT_MAP = {
   'Generic PETG': 'Snapmaker PETG @U1',
   'Generic ABS': 'Snapmaker ABS @U1',
   'Generic TPU': 'Snapmaker TPU @U1',
-};
-
-// Default U1 print settings
-const U1_DEFAULTS = {
-  printer_model: 'Snapmaker U1',
-  printer_settings_id: 'fdm_U1',
-  nozzle_diameter: '0.4',
 };
 
 /**
@@ -102,9 +88,6 @@ function _analyzeManual(buffer) {
  */
 export async function convertBambuToU1(inputBuffer, opts = {}) {
   const autoCenter = opts.autoCenter !== false;
-  const dropToBed = opts.dropToBed !== false;
-  const customMap = opts.filamentMap || {};
-  const mergedMap = { ...FILAMENT_MAP, ...customMap };
 
   // Use lib3mf to read and write proper 3MF
   const { getLib } = await import('../mesh-builder.js');

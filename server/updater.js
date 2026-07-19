@@ -1,6 +1,6 @@
 // Auto-update system — checks GitHub releases, downloads, backs up, restarts
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync, cpSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { execSync, spawn } from 'node:child_process';
 import { addUpdateEntry, updateUpdateEntry } from './database.js';
 import { ROOT_DIR, DATA_DIR } from './config.js';
@@ -213,7 +213,7 @@ export class Updater {
 
       // Backup
       this._broadcast('update_status', { stage: 'backing_up' });
-      const backupPath = this._createBackup();
+      this._createBackup();
       if (entryId) updateUpdateEntry(entryId, 'backing_up', null, null);
 
       // Download & apply

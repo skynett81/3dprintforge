@@ -172,7 +172,6 @@
   }
 
   async function _generate() {
-    const def = GEN_DEFS[_state.genType];
     const params = {};
     document.querySelectorAll('.cal-param [data-key]').forEach(el => {
       const v = el.value;

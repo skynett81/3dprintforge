@@ -2,7 +2,7 @@
 // print from the spool-usage log, so history can show it in the real colours
 // even when print_history.filament_color is blank.
 
-import { describe, it, before } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
 import { getDb } from '../../server/db/connection.js';

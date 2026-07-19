@@ -17,7 +17,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { parseIntent } from './text-intent-parser.js';
 import {
   box, sphere, cylinder, cone, torus, prism, pyramid,
   extrudePolygon, heightmapToMesh, unionMeshes, offset,

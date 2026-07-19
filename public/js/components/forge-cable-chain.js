@@ -45,7 +45,6 @@
     const p = _params();
     const scale = Math.min(5, 240 / p.length);
     const l = p.length * scale;
-    const w = (p.width + p.wallThickness * 2) * scale;
     const h = (p.height + p.wallThickness * 2) * scale;
     result.innerHTML = `
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">

@@ -1332,9 +1332,6 @@
     const s = _spools.find(sp => sp.id === id);
     if (!s) return;
     const pct = spoolPct(s);
-    const colorStyle = _buildColorStyle(s.color_hex, s.multi_color_hexes, s.multi_color_direction);
-    const isLight = isLightColor(s.color_hex);
-    const textColor = isLight ? '#333' : '#fff';
     const cleanName = _cleanProfileName(s);
     const isEmpty = pct === 0 && s.used_weight_g > 0;
     const isLow = (pct > 0 && pct < _lowStockPct);
@@ -1805,7 +1802,6 @@
           const isActive = String(globalSlot) === String(activeTray);
           if (tray && tray.tray_type) {
             const color = hexToRgbColor(tray.tray_color);
-            const light = isLightColor(tray.tray_color);
             // Find linked spool
             const linkedSpool = _spools.find(sp => sp.printer_id === id && sp.ams_unit === u && sp.ams_tray === i && !sp.archived);
             // Bruk laveste av AMS-sensor og spoldatabasen
@@ -4508,7 +4504,6 @@
     }
 
     if (action === 'refill') {
-      const choices = ['Replace with new spool (same type)', 'Reset to full (refill/rewind)'];
       const choice = prompt('Refill options:\n1. Replace with new spool (archives this one)\n2. Reset to full weight (refill/rewind)\n\nEnter 1 or 2:', '1');
       if (choice === '1') {
         // Archive old spool, create new one with same profile
@@ -5154,7 +5149,6 @@
   let _wsDebounce = null;
   function attachInventoryWsListener() {
     if (_wsListenerAttached || !window.printerState?._ws) return;
-    const origHandler = window.printerState._ws.onmessage;
     window.printerState._ws.addEventListener('message', (evt) => {
       try {
         const msg = JSON.parse(evt.data);
@@ -5656,8 +5650,6 @@
         .filter(m => m.avg_daily_g > 0 && m.in_stock_g > 0)
         .map(m => ({ material: m.material, days: Math.round(m.in_stock_g / m.avg_daily_g) }))
         .sort((a, b) => a.days - b.days);
-      const tightestMaterial = materialRunways[0] || null;
-
       let h = '<div class="fil-hero-grid" style="margin-bottom:12px">';
       h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>', Math.round(totalDailyUsage) + 'g/d', t('filament.daily_usage', 'Daglig forbruk'), '#1279ff');
       h += heroCard('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>', totalRunwayDays != null ? totalRunwayDays + 'd' : '--', t('filament.total_runway', 'Total runway'), totalRunwayDays != null && totalRunwayDays <= 7 ? '#f85149' : totalRunwayDays != null && totalRunwayDays <= 30 ? '#f0883e' : '#00e676');
@@ -7707,7 +7699,6 @@
     let h = '<div class="db-card-grid">';
     for (const f of _dbFilaments) {
       const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
-      const textColor = f.color_hex && isLightColor(f.color_hex) ? '#000' : '#fff';
       const badges = [];
       if (f.category) badges.push(`<span class="fil-badge" style="background:var(--bg-tertiary);font-size:0.65rem">${f.category}</span>`);
       if (f.pressure_advance_k != null) badges.push(`<span class="fil-badge" style="background:#2d1f4e;color:#c4b5fd;font-size:0.65rem">K=${f.pressure_advance_k}</span>`);
@@ -7790,7 +7781,6 @@
     const f = _dbFilaments.find(x => x.id === id);
     if (!f) return;
     const color = f.color_hex ? hexToRgb(f.color_hex) : '#888';
-    const textColor = f.color_hex && isLightColor(f.color_hex) ? '#000' : '#fff';
 
     const fields = [
       ['Material', f.material + (f.material_type ? ' ' + f.material_type : '')],
@@ -8008,7 +7998,6 @@
 
     let html = '<div class="fil-matref-grid">';
     for (const m of filtered) {
-      const tips = m.tips ? (() => { try { return JSON.parse(m.tips); } catch { return {}; } })() : {};
       const badges = [];
       if (m.abrasive) badges.push('<span class="fil-matref-badge fil-matref-abrasive">Abrasive</span>');
       if (m.food_safe) badges.push('<span class="fil-matref-badge fil-matref-foodsafe">Food Safe</span>');

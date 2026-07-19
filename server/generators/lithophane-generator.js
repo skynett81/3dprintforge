@@ -88,7 +88,6 @@ export async function generateLithophane3MF(imageBuffer, opts = {}) {
       const fb = new MeshBuilder(lib, frameMesh);
       const fw = frameW;
       const tw = targetWidth + fw * 2;
-      const th = totalHeight + fw * 2;
       fb.addBox(-fw, -fw, 0, tw, fw, maxThick);           // bottom
       fb.addBox(-fw, totalHeight, 0, tw, fw, maxThick);    // top
       fb.addBox(-fw, 0, 0, fw, totalHeight, maxThick);     // left

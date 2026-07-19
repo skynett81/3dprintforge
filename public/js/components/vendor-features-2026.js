@@ -156,7 +156,6 @@
   }
 
   function renderH2dAiToggles(xcam) {
-    const pid = window.state?.getActivePrinterId?.();
     const rows = [
       { key: 'clumpDetector', label: 'Nozzle clumping' },
       { key: 'airprintDetector', label: 'Air print' },

@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { platform, arch, totalmem, cpus, uptime as osUptime, hostname } from 'node:os';
+import { platform, arch, totalmem, cpus, uptime as osUptime } from 'node:os';
 import { config, ROOT_DIR, DATA_DIR } from './config.js';
 import { getPrinters, getSpools, getFilamentProfiles, getInventorySetting } from './database.js';
 import { getDb } from './db/connection.js';

@@ -47,7 +47,6 @@ function parseIni(text) {
   const sections = {};
   let currentSection = null;
   let currentKey = null;
-  let multiLine = '';
 
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -138,7 +137,6 @@ export async function importPrusaSlicerProfiles() {
         if (!name || name.startsWith('*')) continue; // Skip abstract templates
 
         if (type === 'filament') {
-          const infillPct = parseInt(values.infill_density) || null;
           fIns.run(
             vendorName,
             name,

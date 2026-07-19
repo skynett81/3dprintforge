@@ -3,7 +3,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { initConnection, getDb, setDb } from '../../server/db/connection.js';
+import { getDb, setDb } from '../../server/db/connection.js';
 
 describe('Database connection', () => {
   // Lagre original db-tilstand slik at vi kan gjenopprette etter tester

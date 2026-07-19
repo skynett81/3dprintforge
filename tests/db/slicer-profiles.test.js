@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { setupTestDb } from '../test-helper.js';
 
 import {
-  listProfiles, getProfile, getDefaultProfile,
+  listProfiles, getDefaultProfile,
   createProfile, updateProfile, deleteProfile, mergeProfiles,
 } from '../../server/db/slicer-profiles.js';
 

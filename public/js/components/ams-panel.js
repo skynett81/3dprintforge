@@ -292,7 +292,6 @@
     if (humidityEl) {
       const unit = amsUnits[_selectedUnit];
       const humidityRaw = parseInt(unit?.humidity_raw) || 0;
-      const humidityLevel = parseInt(unit?.humidity) || 0;
       const amsTemp = unit?.temp ? parseFloat(unit.temp) : null;
 
       // Humidity rating based on raw % (relative humidity inside AMS)
@@ -368,8 +367,6 @@
 
     const printerId = meta?.id || window.printerState?.getActivePrinterId?.() || null;
     const gcodeState = data.gcode_state || 'IDLE';
-    const isPrinting = gcodeState === 'RUNNING' || gcodeState === 'PAUSE';
-    const est = window._printEstimates;
     const _warnings = [];  // collect low filament warnings for banner
 
     for (let i = 0; i < slotCount; i++) {
@@ -394,8 +391,6 @@
       } else {
         const color = tray.tray_color || '808080';
         const rgb = hexToRgb(color);
-        const light = isLightColor(color);
-        const textColor = light ? '#333' : '#fff';
         let linkedSpool = _getLinkedSpool(printerId, _selectedUnit, i);
         // The AMS RFID is ground truth. If a tray's filament was swapped, the
         // slot's old inventory link no longer matches what's physically loaded

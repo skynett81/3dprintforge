@@ -1,5 +1,5 @@
 import mqtt from 'mqtt';
-import { getPrinters, getInventorySetting, setInventorySetting } from './database.js';
+import { getPrinters, getInventorySetting } from './database.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('ha');
@@ -111,7 +111,6 @@ function _publishPrinterDiscovery(printer) {
   const slug = _slugify(printer.name);
   const deviceId = `bambu_${printer.id}`;
   const stateTopic = `${STATE_PREFIX}/${printer.id}/state`;
-  const attrTopic = `${STATE_PREFIX}/${printer.id}/attributes`;
   const availTopic = `${STATE_PREFIX}/${printer.id}/availability`;
 
   const device = {

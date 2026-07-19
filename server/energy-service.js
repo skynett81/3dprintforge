@@ -1,7 +1,7 @@
 // Energy Service — Tibber & Nordpool spot price integration
 // Fetches hourly electricity prices and integrates with cost calculator
 
-import { getInventorySetting, setInventorySetting } from './database.js';
+import { getInventorySetting } from './database.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('energy');
@@ -44,7 +44,6 @@ export async function fetchPrices() {
 
 export function getCurrentPrice() {
   const now = new Date();
-  const hourStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours()).toISOString();
   const current = _prices.find(p => {
     const pStart = new Date(p.startsAt);
     return pStart.getHours() === now.getHours() &&

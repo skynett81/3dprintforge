@@ -73,7 +73,7 @@ describe('recalibrateFromHistory', () => {
 
   it('only counts prints matching this spool tray (ignores other slots)', () => {
     const a1 = spoolAt(0, { initial: 1000, remaining: 0, used: 1000 });
-    const a2 = spoolAt(1, { initial: 1000, remaining: 1000, used: 0 });
+    spoolAt(1, { initial: 1000, remaining: 1000, used: 0 });
     logPrint(0, 200);  // A1
     logPrint(1, 500);  // A2
     logPrint(0, 100);  // A1

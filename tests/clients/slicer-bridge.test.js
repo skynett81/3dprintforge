@@ -2,7 +2,7 @@
 // Doesn't actually invoke the slicer (that's slow + non-deterministic);
 // asserts on the discovery + picker logic with mocked exec.
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { detectSlicers, pickSlicer, _internals } from '../../server/slicer-bridge.js';
