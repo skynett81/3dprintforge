@@ -12321,7 +12321,9 @@ export async function handleApiRequest(req, res) {
       if (ids.length === 0) { res.writeHead(400, { 'Content-Type': 'text/plain' }); return res.end('No spool IDs'); }
       const spools = ids.map(id => getSpool(id)).filter(Boolean);
       if (spools.length === 0) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('No spools found'); }
-      const host = req.headers.host || 'localhost:3000';
+      // Strip everything but valid host characters — the Host header is
+      // attacker-controllable and this value is reflected into the page.
+      const host = (req.headers.host || 'localhost:3000').replace(/[^A-Za-z0-9.:\-]/g, '');
       const proto = req.socket?.encrypted ? 'https' : 'http';
       const FORMATS = {
         thermal_40x30: { width: '40mm', height: '30mm', pageSize: 'auto' },
@@ -12350,7 +12352,7 @@ export async function handleApiRequest(req, res) {
 .label-info{flex:1;display:flex;flex-direction:column;justify-content:center;font-size:7pt;line-height:1.3;overflow:hidden}
 .label-name{font-weight:700;font-size:8pt}.cdot{width:8px;height:8px;border-radius:50%;display:inline-block;border:0.5px solid #999}
 @media print{.label{border:none}.no-print{display:none}}</style></head><body>
-<div class="no-print" style="padding:10px;background:#f5f5f5;margin-bottom:10px"><button onclick="window.print()">Print</button> <span>${spools.length} labels (${format})</span></div>
+<div class="no-print" style="padding:10px;background:#f5f5f5;margin-bottom:10px"><button onclick="window.print()">Print</button> <span>${spools.length} labels (${esc(format)})</span></div>
 <div class="grid">${labels}</div>
 <script>document.querySelectorAll('[id^="qr-"]').forEach(el=>{const id=el.id.replace('qr-','');try{const q=qrcode(0,'M');q.addData('${proto}://${host}/#filament/spool/'+id);q.make();el.innerHTML=q.createSvgTag(3,2)}catch(e){el.textContent='QR'}})<\/script></body></html>`;
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
