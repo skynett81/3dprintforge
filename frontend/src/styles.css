@@ -60,11 +60,14 @@ body {
 .page { max-width: 860px; margin: 0 auto; padding: 28px 20px 80px; }
 
 /* App shell: sidebar + main */
-.app-shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+/* minmax(0, 1fr) — not plain 1fr — so the content column can shrink below its
+   min-content width instead of forcing horizontal page overflow (which was
+   pushing the slicer's right-hand buttons, incl. Fullscreen, off-screen). */
+.app-shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
 .sidebar {
   border-right: 1px solid var(--border);
   background: var(--sidebar-bg);
-  padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
+  padding: 18px 14px; display: flex; flex-direction: column; gap: 16px;
   position: sticky; top: 0; height: 100vh;
 }
 .sidebar .brand { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
@@ -91,7 +94,8 @@ body {
 .notif-msg { font-size: 0.82rem; margin-top: 3px; }
 .notif-foot { font-size: 0.7rem; margin-top: 6px; text-transform: capitalize; }
 
-.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }
 .nav-group + .nav-group { margin-top: 12px; }
 .nav-section {
@@ -107,7 +111,7 @@ body {
 .nav-item {
   display: flex; align-items: center; gap: 11px;
   background: none; border: none; color: var(--muted); font: inherit;
-  padding: 10px 12px; border-radius: 9px; cursor: pointer; text-align: left; transition: all 0.14s;
+  padding: 8px 12px; border-radius: 9px; cursor: pointer; text-align: left; transition: all 0.14s;
 }
 .nav-item:hover { background: var(--bg-2); color: var(--text); }
 .nav-item--active { background: rgba(0,179,164,0.12); color: var(--accent); font-weight: 600; }
@@ -127,7 +131,23 @@ body {
 .nav-pin:hover { color: var(--amber); opacity: 1; }
 .nav-pin--on { opacity: 1; color: var(--amber); }
 .nav-badge + .nav-pin { margin-left: 4px; }
-.app-shell--rail .nav-pin { display: none; }
+.nav-caret {
+  flex: none; display: grid; place-items: center; color: var(--faint); cursor: pointer;
+  padding: 3px; margin-left: 2px; border-radius: 5px; transition: transform 0.14s, color 0.14s, background 0.12s;
+}
+.nav-caret:hover { color: var(--text); background: var(--bg-3); }
+.nav-caret--open { transform: rotate(90deg); }
+.nav-label + .nav-caret, .nav-badge + .nav-caret { margin-left: auto; }
+.nav-sub {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 1px 0 4px 26px; padding-left: 9px; border-left: 1px solid var(--border-soft);
+}
+.nav-subitem {
+  text-align: left; background: none; border: none; color: var(--muted); font: inherit; font-size: 0.82rem;
+  padding: 5px 10px; border-radius: 7px; cursor: pointer;
+}
+.nav-subitem:hover { background: var(--bg-2); color: var(--text); }
+.nav-subitem--active { color: var(--accent); font-weight: 600; }
 .nav-badge--accent { background: rgba(0,179,164,0.18); color: var(--accent); }
 .nav-badge--blue { background: rgba(59,130,246,0.2); color: #7fb0ff; }
 .nav-badge--red { background: var(--red); color: #fff; }
@@ -138,22 +158,42 @@ body {
 .rail-toggle:hover { background: var(--bg-2); color: var(--text); }
 .sidebar-foot { margin-top: auto; font-size: 0.68rem; padding: 0 6px; line-height: 1.5; }
 
-/* Collapsed icon-rail mode */
-.app-shell--rail { grid-template-columns: 68px 1fr; }
-.app-shell--rail .sidebar { padding: 20px 10px; }
-.app-shell--rail .brand { flex-direction: column; gap: 10px; padding: 0; }
-.app-shell--rail .brand-text,
-.app-shell--rail .nav-section,
-.app-shell--rail .nav-label,
-.app-shell--rail .foot-meta,
-.app-shell--rail .auth-chip { display: none; }
-.app-shell--rail .nav-group + .nav-group { margin-top: 6px; border-top: 1px solid var(--border-soft); padding-top: 6px; }
-.app-shell--rail .nav-item { justify-content: center; padding: 11px 0; position: relative; }
-.app-shell--rail .nav-badge {
+/* Collapsed icon-rail mode with hover-to-expand flyout.
+   The grid track stays 68px; on hover the sidebar widens as an overlay so the
+   main content never reflows. The "collapsed look" rules are gated on
+   :not(:hover) so hovering restores the full menu with labels. */
+@media (min-width: 721px) {
+.app-shell--rail { grid-template-columns: 68px minmax(0, 1fr); }
+.app-shell--rail .sidebar {
+  width: 68px; padding: 20px 10px; overflow: hidden;
+  transition: width 0.16s ease, padding 0.16s ease;
+}
+.app-shell--rail .sidebar:hover {
+  width: 240px; padding: 20px 14px; overflow: visible;
+  z-index: 200; box-shadow: 12px 0 36px -10px rgba(0,0,0,0.45);
+}
+.app-shell--rail .sidebar:not(:hover) .brand { flex-direction: column; gap: 10px; padding: 0; }
+.app-shell--rail .sidebar:not(:hover) .brand-text,
+.app-shell--rail .sidebar:not(:hover) .nav-section,
+.app-shell--rail .sidebar:not(:hover) .nav-label,
+.app-shell--rail .sidebar:not(:hover) .nav-search-label,
+.app-shell--rail .sidebar:not(:hover) .nav-search-kbd,
+.app-shell--rail .sidebar:not(:hover) .foot-meta,
+.app-shell--rail .sidebar:not(:hover) .auth-chip,
+.app-shell--rail .sidebar:not(:hover) .nav-caret,
+.app-shell--rail .sidebar:not(:hover) .nav-sub,
+.app-shell--rail .sidebar:not(:hover) .nav-pin { display: none; }
+.app-shell--rail .sidebar:not(:hover) .nav-group + .nav-group { margin-top: 6px; border-top: 1px solid var(--border-soft); padding-top: 6px; }
+.app-shell--rail .sidebar:not(:hover) .nav-item { justify-content: center; padding: 11px 0; position: relative; }
+.app-shell--rail .sidebar:not(:hover) .nav-badge {
   position: absolute; top: 5px; right: 12px; min-width: 8px; height: 8px; padding: 0;
   font-size: 0; border: 2px solid var(--bg-2);
 }
-.app-shell--rail .classic-link { justify-content: center; }
+.app-shell--rail .sidebar:not(:hover) .nav-search,
+.app-shell--rail .sidebar:not(:hover) .theme-toggle,
+.app-shell--rail .sidebar:not(:hover) .fleet-health,
+.app-shell--rail .sidebar:not(:hover) .classic-link { justify-content: center; padding-left: 0; padding-right: 0; }
+}
 
 /* Sidebar search / command trigger */
 .nav-search {
@@ -168,8 +208,6 @@ body {
   font-size: 0.62rem; font-weight: 700; color: var(--faint); background: var(--bg-3);
   border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 5px;
 }
-.app-shell--rail .nav-search { justify-content: center; padding: 8px 0; }
-.app-shell--rail .nav-search-label, .app-shell--rail .nav-search-kbd { display: none; }
 
 /* Command palette */
 .cmd-backdrop {
@@ -198,6 +236,457 @@ body {
 .cmd-section { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--faint); padding: 10px 12px 4px; }
 .cmd-hint { font-size: 0.66rem; font-weight: 700; color: var(--faint); background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 6px; margin-left: auto; }
 
+/* Parts drawer — stock entries */
+.stock-entry { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 7px; }
+.part-qr { display: flex; gap: 14px; align-items: center; }
+.part-qr img { background: #fff; border-radius: 8px; padding: 6px; flex: none; }
+
+/* QR scan modal */
+.qr-scan { width: min(420px, 92vw); background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 60px -12px rgba(0,0,0,0.6); }
+.qr-scan-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border-soft); }
+.qr-scan-video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #000; display: block; }
+
+/* Stocktake modal */
+.st-modal { width: min(560px, 94vw); max-height: 84vh; display: flex; flex-direction: column; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 60px -12px rgba(0,0,0,0.6); }
+.st-body { overflow-y: auto; padding: 6px 14px; }
+.st-head { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Slicer Studio */
+.slicer-drop {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 72px; padding: 14px; margin-top: 6px; cursor: pointer;
+  border: 2px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg-3);
+  transition: border-color 0.14s, color 0.14s;
+}
+.slicer-drop:hover { border-color: var(--accent); }
+.slicer-printer {
+  display: flex; align-items: center; gap: 8px; padding: 9px 11px; cursor: pointer;
+  background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); font-size: 0.88rem;
+}
+.slicer-printer--on { border-color: var(--accent); background: rgba(0,179,164,0.08); }
+.plate-canvas { width: 100%; height: 420px; border-radius: var(--radius-sm); overflow: hidden; background: #0e1116; }
+.plate-order-badge { position: absolute; transform: translate(-50%, -50%); min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--o-accent); color: #fff; font-size: 0.74rem; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.55); border: 1.5px solid rgba(255,255,255,0.85); }
+.plate-ov-label { position: absolute; transform: translate(-50%, -100%); padding: 2px 9px; border-radius: 6px; background: rgba(24,26,30,0.82); color: #e6e8eb; font-size: 0.76rem; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.plate-canvas canvas { display: block; }
+.slset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 12px; }
+.slset-grid .field-label { font-size: 0.72rem; }
+.slset-grid .input { padding: 5px 8px; }
+
+/* ============================================================
+   Slicer — OrcaSlicer-style dark professional UI
+   ============================================================ */
+.oslice {
+  --o-bg: #f2f3f5; --o-panel: #ffffff; --o-panel-2: #eceef1; --o-border: #e0e3e7;
+  --o-text: #1d2126; --o-muted: #6b7178; --o-accent: #00ae42; --o-accent-ink: #ffffff;
+  --o-topbar: #23262b; --o-scene: #2b2e33;
+  display: flex; flex-direction: column;
+  height: calc(100vh - 96px); min-height: 560px;
+  background: var(--o-bg); color: var(--o-text);
+  border: 1px solid var(--o-border); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 18px 50px -20px rgba(0,0,0,0.25);
+}
+.oslice--full { position: fixed; inset: 0; z-index: 300; height: 100vh; width: 100vw; border-radius: 0; border: none; box-shadow: none; }
+.oslice * { scrollbar-width: thin; scrollbar-color: #c2c7cd transparent; }
+.oslice ::-webkit-scrollbar { width: 9px; height: 9px; }
+.oslice ::-webkit-scrollbar-thumb { background: #c2c7cd; border-radius: 5px; }
+
+/* Top bar (dark) */
+.oslice-top { display: flex; align-items: center; height: 46px; padding: 0 10px; background: var(--o-topbar); }
+.oslice-logo { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; font-weight: 700; color: #fff; margin-right: 10px; white-space: nowrap; }
+.oslice-logo span { color: var(--o-accent); }
+.oslice-filemenu { display: flex; align-items: center; gap: 4px; margin-right: 10px; }
+.oslice-filebtn { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #d5d9de; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
+.oslice-filebtn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+.oslice-filebtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.oslice-toptabs { display: flex; gap: 2px; }
+.oslice-toptab { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border: none; background: none; color: #b8bdc4; font-weight: 600; font-size: 0.85rem; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.oslice-toptab:hover:not(:disabled) { color: #fff; }
+.oslice-toptab--on { background: var(--o-accent); color: #fff; }
+.oslice-toptab:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Keep the action buttons (Slice/Print plate + fullscreen) ALWAYS visible on the
+   right; the tabs shrink/scroll in the middle if the bar is narrow, so nothing
+   on the right is ever pushed off. */
+.oslice-topright { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.oslice-logo, .oslice-filemenu { flex-shrink: 0; }
+.oslice-toptabs { flex-shrink: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.oslice-toptabs::-webkit-scrollbar { display: none; }
+.oslice-filebtn { padding: 4px 8px; font-size: 0.78rem; }
+.oslice-toptab { padding: 6px 9px; }
+.oslice-topright .oslice-sliceplate, .oslice-topright .oslice-printplate { flex-shrink: 0; white-space: nowrap; }
+.oslice-topest { display: flex; gap: 12px; color: #cfd3d8; font-size: 0.8rem; align-items: center; margin-right: 4px; }
+.oslice-topest strong { color: #fff; }
+.oslice-sliceplate { padding: 8px 22px; border: none; border-radius: 8px; background: var(--o-accent); color: #fff; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
+.oslice-sliceplate:disabled { background: #4a4d53; color: #9aa0a7; cursor: not-allowed; }
+.oslice-sliceall { background: #3a3d43; padding: 8px 16px; }
+.oslice-sliceall:hover:not(:disabled) { background: #44474d; }
+.oslice-printplate { padding: 8px 18px; border: none; border-radius: 8px; background: #3a3d43; color: #e4e6e9; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
+.oslice-printplate:hover:not(:disabled) { background: #44474d; }
+.oslice-printplate:disabled { opacity: 0.5; cursor: not-allowed; }
+.oslice-fullbtn { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #3a3d43; border-radius: 8px; background: #2d3035; color: #b8bdc4; cursor: pointer; }
+.oslice-fullbtn:hover { color: #fff; }
+
+.oslice-body { display: flex; flex: 1; min-height: 0; }
+
+/* Left settings panel (white) */
+.oslice-panel { width: 344px; flex: none; display: flex; flex-direction: column; background: var(--o-panel); border-right: 1px solid var(--o-border); min-height: 0; }
+.oslice-panelbody { flex: 1; overflow-y: auto; min-height: 0; }
+
+/* Printer card */
+.oslice-printercard { display: flex; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid var(--o-border); }
+.oslice-printerimg { width: 62px; height: 62px; border-radius: 8px; background: var(--o-panel-2); object-fit: contain; border: 1px solid var(--o-border); flex: none; }
+.oslice-printersel { flex: 1; min-width: 0; }
+.oslice-sectlbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--o-muted); font-weight: 700; }
+
+/* Preset selectors */
+.oslice-presets { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 8px; }
+.oslice-preset { display: flex; align-items: center; gap: 9px; }
+.oslice-preset-ic { width: 28px; height: 28px; display: grid; place-items: center; background: var(--o-panel-2); border-radius: 7px; color: var(--o-muted); flex: none; }
+.oslice-preset-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.oslice-preset-lbl { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--o-muted); font-weight: 700; }
+.oslice-preset-sel, .oset-input, .oset-rowinput, .oset-searchinput, .oslice-preset-sel { background: #fff; border: 1px solid var(--o-border); color: var(--o-text); border-radius: 6px; padding: 5px 8px; font-size: 0.84rem; width: 100%; }
+.oslice-chip { width: 14px; height: 14px; border-radius: 4px; flex: none; border: 1px solid rgba(0,0,0,0.15); }
+.oslice-temps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Filament slots */
+.oslice-filaments { padding: 8px 10px; border-bottom: 1px solid var(--o-border); }
+.oslice-filrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.oslice-filslot { margin-bottom: 2px; }
+.oslice-spoolmatch { font-size: 0.66rem; color: var(--o-accent); padding: 0 0 2px 34px; line-height: 1.2; }
+.oslice-spoolmatch--short { color: #e0603a; font-weight: 600; }
+.oslice-calibrow { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.72rem; color: var(--o-muted); cursor: pointer; }
+.oslice-calibk { background: var(--o-accent); color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 0.64rem; font-weight: 700; }
+.oslice-stock { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 5px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
+.oslice-stock--ok { background: rgba(46,204,113,0.18); color: #2ecc71; }
+.oslice-stock--low { background: rgba(224,96,58,0.18); color: #e0603a; }
+.oslice-stock--out { background: rgba(224,70,60,0.2); color: #e0463c; }
+.lib-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.lib-tab { padding: 5px 12px; border: 1px solid var(--o-border); background: var(--o-panel-2); color: var(--o-text); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.lib-tab--on { background: var(--o-accent); color: #fff; border-color: var(--o-accent); }
+.lib-forge { max-height: 60vh; overflow: auto; }
+.lib-forge-grp { margin-bottom: 12px; }
+.lib-forge-cat { font-size: 0.72rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.lib-forge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.lib-gencard { padding: 10px 10px; border: 1px solid var(--o-border); background: var(--o-panel); border-radius: 8px; font-size: 0.78rem; font-weight: 600; color: var(--o-text); cursor: pointer; text-align: left; }
+.lib-gencard:hover:not(:disabled) { border-color: var(--o-accent); }
+.lib-gencard:disabled { opacity: 0.5; cursor: default; }
+.oslice-colorlayer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oslice-colorlayer-swatches { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+/* Slot badge as a spool end: a colour disc with a reel edge + the slot number,
+   so the Prepare slots match the spool look used everywhere else. */
+.oslice-filbadge { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; color: #fff; flex: none; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.25), inset 0 0 0 2.5px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.3); }
+.oslice-filname { flex: 1; font-size: 0.84rem; }
+.oslice-filbadge { position: relative; }
+.oslice-filadd { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--o-border); border-radius: 6px; background: var(--o-panel-2); color: var(--o-text); cursor: pointer; font-size: 1rem; line-height: 1; flex: none; }
+.oslice-filadd:hover { border-color: var(--o-accent); }
+
+/* Global / Objects + preset controls */
+.oslice-goTabs { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--o-border); }
+.oslice-goTab { padding: 5px 14px; border: 1px solid var(--o-border); background: var(--o-panel-2); color: var(--o-muted); font-weight: 600; font-size: 0.82rem; border-radius: 999px; cursor: pointer; }
+.oslice-goTab--on { background: var(--o-accent); color: #fff; border-color: var(--o-accent); }
+.oslice-presetctl { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+
+/* Process setting tabs + rows */
+.oset-search { padding: 8px 10px 4px; }
+.oset-cats { display: flex; gap: 4px; padding: 8px 8px 0; }
+.oset-cat { flex: 1; padding: 7px 10px; border: 1px solid var(--o-border); background: var(--o-panel-2); color: var(--o-muted); font-size: 0.8rem; font-weight: 700; cursor: pointer; border-radius: 7px; }
+.oset-cat--on { color: #fff; background: var(--o-accent); border-color: var(--o-accent); }
+.oset-tabs { display: flex; flex-wrap: wrap; gap: 2px 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--o-border); }
+.oset-tab { padding: 6px 10px; border: none; background: none; color: var(--o-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+.oset-tab:hover { background: var(--o-hover, rgba(127,127,127,0.1)); }
+.oset-tab--on { color: var(--o-text); border-bottom-color: var(--o-accent); }
+.oset-rows { padding: 4px 10px 12px; }
+.oset-group { font-size: 0.82rem; font-weight: 700; color: var(--o-text); padding: 12px 0 4px; display: flex; align-items: center; gap: 6px; }
+.oset-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+.oset-row--off { opacity: 0.45; }
+.oset-rowlabel { flex: 1; font-size: 0.82rem; color: var(--o-text); }
+.oset-rowinput { width: 112px; flex: none; text-align: right; }
+select.oset-rowinput { text-align: left; }
+.oset-rowinput:disabled { opacity: 0.5; }
+.oset-toggle { width: 18px; height: 18px; accent-color: var(--o-accent); }
+
+/* Object list + panel */
+.oslice-objlist { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 3px; }
+.oslice-objitem { text-align: left; padding: 6px 9px; background: var(--o-panel-2); border: 1px solid transparent; border-radius: 6px; color: var(--o-text); font-size: 0.82rem; cursor: pointer; }
+.oslice-objitem--on { border-color: var(--o-accent); background: rgba(0,174,66,0.1); }
+.oslice-objitem { display: flex; align-items: center; gap: 6px; }
+.oslice-objitem--part { font-size: 0.76rem; opacity: 0.92; }
+.oslice-partbadge { margin-left: auto; font-size: 0.6rem; font-weight: 600; padding: 1px 5px; border-radius: 4px; color: #fff; white-space: nowrap; }
+.oslice-partbadge--negative { background: #e0463c; }
+.oslice-partbadge--enforcer { background: #2a7de0; }
+.oslice-partbadge--blocker { background: #8a8f98; }
+.oslice-partbadge--modifier { background: #9b59d0; }
+.oslice-partadd { padding: 8px 10px; border-bottom: 1px solid var(--o-border); display: flex; flex-direction: column; gap: 5px; }
+.oslice-partadd-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.oslice-varlh-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+.oslice-varlh-row .input { width: 62px; padding: 3px 5px; }
+.oslice-varlh-bar { position: relative; height: 12px; border-radius: 4px; background: var(--o-panel-2); border: 1px solid var(--o-border); margin-bottom: 8px; overflow: hidden; }
+.oslice-varlh-seg { position: absolute; top: 0; bottom: 0; background: var(--o-accent); }
+.oslice-treeglyph { color: var(--o-text-muted); font-size: 0.7rem; margin-right: -2px; opacity: 0.6; }
+.oslice-objdel { margin-left: 4px; border: none; background: transparent; color: var(--o-text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; border-radius: 4px; opacity: 0; }
+.oslice-objitem:hover .oslice-objdel { opacity: 0.8; }
+.oslice-objdel:hover { color: #e0463c; background: rgba(224,70,60,0.12); opacity: 1; }
+.oslice-objeye { margin-left: auto; display: inline-flex; align-items: center; border: none; background: transparent; color: var(--o-text-muted); cursor: pointer; padding: 0 2px; border-radius: 4px; opacity: 0; }
+.oslice-objeye svg { width: 15px; height: 15px; }
+.oslice-objitem:hover .oslice-objeye { opacity: 0.75; }
+.oslice-objeye:hover { color: var(--o-accent); opacity: 1; }
+.oslice-ctx-backdrop { position: fixed; inset: 0; z-index: 40; }
+.oslice-ctxmenu { position: fixed; z-index: 41; background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: 4px; display: flex; flex-direction: column; min-width: 168px; max-height: 84vh; overflow-y: auto; }
+.oslice-ctxmenu button { white-space: nowrap; }
+.oslice-ctxmenu button { text-align: left; background: transparent; border: none; color: var(--o-text); font-size: 0.8rem; padding: 6px 10px; border-radius: 5px; cursor: pointer; }
+.oslice-ctxmenu button:hover { background: var(--o-panel-2); }
+.oslice-ctxmenu-del { color: #e0463c !important; }
+.oslice-ctxmenu-sep { height: 1px; background: var(--o-border); margin: 3px 4px; }
+.oslice-panelbody .card { background: none; border: none; padding: 12px 10px; margin: 0; }
+.oslice-panelbody .field-label, .oslice-panelbody .obj-group-label { color: var(--o-muted); }
+.oslice-panelbody .slset-grid .input, .oslice-panelbody .input { background: #fff; border: 1px solid var(--o-border); color: var(--o-text); }
+
+/* Send targets */
+.oslice-printers { border-top: 1px solid var(--o-border); padding: 10px; display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; }
+.oslice-printers-lbl { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--o-muted); font-weight: 700; }
+.oslice-printer { display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: var(--o-panel-2); border: 1px solid var(--o-border); border-radius: 7px; cursor: pointer; font-size: 0.84rem; }
+.oslice-printer--on { border-color: var(--o-accent); background: rgba(0,174,66,0.1); }
+.oslice-printer input { accent-color: var(--o-accent); }
+/* Live fleet availability badge in the Send-to list. */
+.oslice-live { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.oslice-live--idle { color: #2ecc71; background: rgba(46,204,113,0.14); }
+.oslice-live--printing { color: #e0a13a; background: rgba(224,161,58,0.16); }
+.oslice-live--paused { color: #3d8bd8; background: rgba(61,139,216,0.16); }
+.oslice-live--off { color: #94a3b8; background: rgba(148,163,184,0.14); }
+
+/* Scene (right, dark) */
+.oslice-stage { flex: 1; display: flex; position: relative; min-width: 0; background: var(--o-scene); }
+.oslice-stage .plate-root, .oslice-stage > .plate-root { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.oslice-stage .plate-canvas { flex: 1; height: auto; border-radius: 0; }
+.oslice-stage .plate-count { color: #cbd5e1; }
+.oslice-loading { flex: 1; display: grid; place-items: center; color: #cbd5e1; width: 100%; }
+.oslice-drop-plus { font-size: 2.2rem; opacity: 0.6; line-height: 1; }
+/* Empty-state card floating over the always-visible plate */
+.oslice-empty { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 4; }
+.oslice-emptycard { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 30px; color: #e6e8eb; background: rgba(24,26,30,0.82); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; backdrop-filter: blur(4px); }
+.oslice-emptytitle { font-size: 0.95rem; font-weight: 600; }
+.oslice-emptybtns { display: flex; gap: 8px; margin-top: 4px; }
+.oslice-stage .gpreview-wrap { flex: 1; }
+.oslice-stage input[type=range] { accent-color: var(--o-accent); }
+
+/* Horizontal top toolbar floating on the scene */
+/* max-width + flex-wrap so the ~29 tools never clip off the sides of a narrow
+   stage (they wrapped off-screen and were unreachable below ~1600px); on wide
+   stages it stays a single centered row. */
+.oslice-rail { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; padding: 4px; max-width: calc(100% - 20px); background: rgba(24,26,30,0.78); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; backdrop-filter: blur(4px); }
+.oslice-tool { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 8px; background: none; color: #cfd3d8; cursor: pointer; transition: background 0.12s, color 0.12s; }
+.oslice-tool:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
+.oslice-tool--on { background: var(--o-accent); color: #fff; }
+.oslice-tool:disabled { opacity: 0.3; cursor: not-allowed; }
+.oslice-rail-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.14); margin: 0 3px; }
+
+/* Axis triad, bottom-left of scene */
+.oslice-axis { position: absolute; left: 12px; bottom: 12px; z-index: 5; opacity: 0.9; }
+/* Static, always-readable plate labels */
+/* Sits ABOVE the centred plate-tab strip so the two never overlap. */
+.oslice-platename { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); z-index: 5; font-size: 0.72rem; color: rgba(255,255,255,0.4); pointer-events: none; white-space: nowrap; }
+/* Stacked ABOVE the object-count pill in the bottom-right corner. */
+.oslice-plateno { position: absolute; right: 16px; bottom: 44px; z-index: 5; font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--o-accent); pointer-events: none; }
+
+/* Fullscreen button parks bottom-right when embedded */
+.oslice-scenebar, .oslice-bottom { display: none; }
+
+@media (max-width: 980px) {
+  .oslice { height: auto; }
+  .oslice-body { flex-direction: column; }
+  .oslice-panel { width: auto; border-right: none; border-bottom: 1px solid var(--o-border); }
+  .oslice-stage { min-height: 380px; }
+}
+
+/* Slicer — professional app layout (legacy, superseded by .oslice) */
+.slicer-app { display: flex; flex-direction: column; gap: 12px; min-height: calc(100vh - 150px); }
+.slicer-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; flex: 1; min-height: 0;
+}
+.slicer-viewport {
+  display: flex; flex-direction: column; min-height: 460px;
+  background: var(--bg-2); border: 1px solid var(--border-soft); border-radius: var(--radius); overflow: hidden;
+}
+.slicer-tabs { display: flex; align-items: center; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border-soft); background: var(--bg-3); }
+.slicer-tab {
+  padding: 6px 14px; border: none; background: none; cursor: pointer; color: var(--text-2);
+  font-size: 0.86rem; font-weight: 600; border-radius: var(--radius-sm);
+}
+.slicer-tab:hover:not(:disabled) { color: var(--text); background: var(--bg-2); }
+.slicer-tab--on { color: var(--accent); background: rgba(0,179,164,0.12); }
+.slicer-tab:disabled { opacity: 0.4; cursor: not-allowed; }
+.slicer-engine-pill {
+  margin-left: auto; font-size: 0.72rem; color: var(--text-2);
+  padding: 3px 10px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--bg-2);
+}
+.slicer-stage { flex: 1; display: flex; padding: 12px; min-height: 0; }
+.slicer-stage > div { flex: 1; display: flex; flex-direction: column; }
+.slicer-stage .plate-canvas { flex: 1; height: auto; min-height: 380px; }
+.slicer-loading { flex: 1; display: grid; place-items: center; min-height: 380px; }
+.slicer-drop--stage { flex: 1; min-height: 380px; border-width: 2px; }
+.slicer-sidebar { display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow-y: auto; max-height: calc(100vh - 210px); }
+.slicer-sidebar::-webkit-scrollbar { width: 0; }
+.slicer-sidebar { scrollbar-width: none; }
+.slicer-card { margin: 0; }
+.slicer-printer-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.slicer-actionbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 16px; background: var(--bg-2); border: 1px solid var(--border-soft); border-radius: var(--radius);
+}
+.slicer-estimate { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 0.86rem; color: var(--text-2); }
+.slicer-estimate strong { color: var(--text); font-size: 0.98rem; }
+.slicer-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+/* Plate viewer — left tool rail (desktop-slicer style) */
+.plate-root { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.plate-stage-wrap { position: relative; flex: 1; display: flex; min-height: 380px; }
+.plate-stage-wrap .plate-canvas { flex: 1; height: auto; }
+.plate-rail {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 6px; background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); backdrop-filter: blur(3px);
+}
+.plate-tool {
+  min-width: 58px; padding: 7px 8px; border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: #cbd5e1; cursor: pointer; font-size: 0.76rem; font-weight: 600;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.plate-tool:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: #fff; }
+.plate-tool--on { background: var(--accent); color: #06231f; border-color: var(--accent); }
+.plate-tool--danger:hover:not(:disabled) { background: rgba(230,86,75,0.2); color: #ff8a80; }
+.plate-tool:disabled { opacity: 0.35; cursor: not-allowed; }
+.plate-rail-sep { height: 1px; background: var(--border-soft); margin: 3px 2px; }
+.plate-count {
+  position: absolute; right: 10px; bottom: 10px; z-index: 2;
+  font-size: 0.72rem; color: #cbd5e1; padding: 3px 9px;
+  background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft); border-radius: 999px;
+}
+/* Clears the bottom-left axis gizmo (48px) so the readout never covers it. */
+.plate-measure {
+  position: absolute; left: 66px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; gap: 2px;
+  font-size: 0.74rem; color: #e2e8f0; padding: 6px 10px;
+  background: rgba(14,17,22,0.8); border: 1px solid var(--border-soft); border-radius: 8px;
+}
+.plate-measure b { color: #2ee6c0; font-size: 0.86rem; }
+.plate-measure span { color: #94a3b8; }
+.oslice-paintbar {
+  position: absolute; top: 62px; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  background: rgba(14,17,22,0.86); border: 1px solid var(--border-soft); border-radius: 10px; backdrop-filter: blur(4px);
+}
+.oslice-paintbar-t { font-size: 0.74rem; font-weight: 700; color: #cbd5e1; margin: 0 4px; }
+.oslice-paintdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+.oslice-paintswatch { width: 24px; height: 24px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3); }
+.oslice-paintswatch--on { border-color: #fff; }
+
+/* Multi-plate tab strip (bottom-centre of the stage) — scrolls horizontally so
+   every plate is reachable no matter how many there are. */
+.oslice-plates { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 7; display: flex; align-items: center; gap: 5px; max-width: min(90%, 900px); overflow-x: auto; overflow-y: hidden; padding: 4px 6px; background: rgba(24,26,30,0.55); border-radius: 10px; scrollbar-width: thin; }
+.oslice-plates::-webkit-scrollbar { height: 6px; }
+.oslice-plates::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 3px; }
+.oslice-platetab { flex-shrink: 0; }
+/* On Preview the bottom is the layer scrubber — float the plate tabs at the
+   top-centre instead (legend is top-left, download top-right). */
+.oslice-plates--preview { bottom: auto; top: 12px; }
+.oslice-platetab { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 8px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(24,26,30,0.82); color: #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(4px); }
+.oslice-platetab:hover { border-color: var(--o-accent); }
+.oslice-platetab--on { background: var(--o-accent); color: #fff; border-color: var(--o-accent); }
+.oslice-platetab--add { color: #9aa4b2; font-size: 1rem; }
+/* Inactive plate tabs show a live preview thumbnail behind the number. The
+   inset shadow darkens the image (painted below content) so the digit stays
+   readable; a strong text-shadow guarantees contrast over any model colour. */
+.oslice-platetab--thumb { background-size: cover; background-position: center; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 3px rgba(0,0,0,0.8); box-shadow: inset 0 0 0 40px rgba(0,0,0,0.18); }
+.oslice-platetab--all { font-size: 0.74rem; font-weight: 600; color: #cbd5e1; }
+.oslice-platetab-x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; border: 0; background: #e0463c; color: #fff;
+  font-size: 0.72rem; line-height: 1; cursor: pointer; display: none; }
+.oslice-platetab:hover .oslice-platetab-x { display: block; }
+.oslice-platetab-c { font-style: normal; font-size: 0.62rem; opacity: 0.7; margin-left: 3px; }
+.oslice-moveto { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; padding-right: 8px; border-right: 1px solid rgba(255,255,255,0.14); }
+.oslice-platetab--move { min-width: 26px; height: 26px; background: rgba(0,151,137,0.22); border-color: var(--o-accent); }
+.oslice-platetab--move:hover { background: var(--o-accent); color: #fff; }
+
+/* Library import modal */
+.lib-modal { width: min(820px, 96vw); }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: 60vh; overflow-y: auto; }
+.lib-card { display: flex; flex-direction: column; gap: 4px; padding: 8px; text-align: left; cursor: pointer;
+  background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); }
+.lib-card:hover:not(:disabled) { border-color: var(--accent); }
+.lib-card:disabled { opacity: 0.6; cursor: wait; }
+.lib-thumb { aspect-ratio: 1; display: grid; place-items: center; background: var(--bg-2); border-radius: 6px; overflow: hidden; }
+.lib-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.lib-ext { font-size: 0.9rem; font-weight: 700; color: var(--text-2); letter-spacing: 0.05em; }
+.lib-name { font-size: 0.8rem; font-weight: 600; }
+
+/* Object manipulation panel */
+.obj-group-label { font-size: 0.72rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; margin: 12px 0 4px; }
+.obj-group-label:first-of-type { margin-top: 0; }
+
+/* G-code preview — fills the scene as a column (canvas grows, controls pin
+   to the bottom); the download button floats top-right over the scene. */
+.oslice-previewroot { position: relative; flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.gpreview-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 14px 10px; }
+.gpreview-root > div:nth-child(2) { padding: 0 2px; }
+/* BambuStudio-style preview "Colour scheme" panel (top-left): mode select +
+   legend + options in one card. */
+.gpreview-side { position: absolute; top: 10px; left: 10px; z-index: 5; display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; min-width: 216px; background: rgba(14,17,22,0.82); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); }
+/* Inset left of the layer tower (right:14, 26px wide) so the two never overlap. */
+.gpreview-summary { position: absolute; top: 46px; right: 48px; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; background: rgba(14,17,22,0.86); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); backdrop-filter: blur(3px); min-width: 118px; }
+.gpreview-summary-row { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.gpreview-summary-v { font-size: 1.05rem; font-weight: 700; color: #fff; }
+.gpreview-summary-l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--o-muted); }
+.gpreview-side-select { width: 100%; padding: 4px 6px; font-size: 0.74rem; color: #e6e8eb; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; cursor: pointer; }
+/* The native dropdown popup is light — force readable dark option text (the
+   select's own light colour otherwise bleeds into the options: light-on-white). */
+.gpreview-side-select option { color: #1a1a1a; background: #ffffff; }
+.gpreview-side-legend { display: flex; flex-direction: column; gap: 3px; }
+.gpreview-side-opt { margin: 0; font-size: 0.72rem; color: #cbd5e1; display: flex; align-items: center; gap: 6px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.08); }
+/* G-code preview feature legend */
+.gpreview-wrap { position: relative; flex: 1; display: flex; min-height: 0; }
+.gpreview-legend {
+  position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px; background: rgba(14,17,22,0.72); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); backdrop-filter: blur(3px); pointer-events: none;
+}
+/* Vertical dual-handle layer tower (right side of the preview) */
+.gpreview-tower { position: absolute; top: 50px; bottom: 20px; right: 14px; width: 26px; z-index: 5; }
+.gpreview-tower-track { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; transform: translateX(-50%); background: rgba(148,163,184,0.35); border-radius: 2px; }
+.gpreview-tower-fill { position: absolute; left: 50%; width: 4px; transform: translateX(-50%); background: var(--o-accent); border-radius: 2px; }
+.gpreview-tower-handle { position: absolute; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); border-radius: 50%; background: #f4f6f8; border: 2px solid var(--o-accent); cursor: ns-resize; touch-action: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.gpreview-tower-handle--low { border-color: #94a3b8; background: #cbd5e1; }
+.gpreview-tower-lbl { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); padding: 1px 6px; font-size: 0.68rem; font-weight: 600; color: #0e1116; background: #f4f6f8; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+.gpreview-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: #cbd5e1; width: 100%; }
+.gpreview-legend-stat { margin-left: auto; font-style: normal; font-size: 0.63rem; color: #8b97a5; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
+.gpreview-legend-btn--off .gpreview-legend-stat { opacity: 0.5; }
+.gpreview-legend-btn { pointer-events: auto; background: none; border: 0; padding: 1px 2px; margin: 0; cursor: pointer; text-align: left; font: inherit; color: #cbd5e1; border-radius: 4px; width: 100%; }
+.gpreview-legend-btn:hover { background: rgba(255,255,255,0.08); }
+.gpreview-legend-btn--off { color: #64748b; text-decoration: line-through; }
+.gpreview-legend-btn--off i { opacity: 0.3; }
+.gpreview-legend-item i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+.gpreview-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 7px 10px; background: rgba(24,26,30,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; }
+.gpreview-moves { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.gpreview-moves input[type=range] { width: 92px; }
+.gpreview-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; padding: 0 4px; font-size: 0.76rem; color: var(--o-muted); }
+.gpreview-stats b { color: var(--o-text); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .slicer-main { grid-template-columns: 1fr; }
+  .slicer-sidebar { max-height: none; overflow: visible; }
+  .slicer-actions { margin-left: 0; width: 100%; }
+}
+
+/* OpenSpool tag section in the spool drawer */
+.drawer-openspool { border-top: 1px solid var(--border-soft); padding-top: 12px; }
+.openspool-toggle { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; font: inherit; display: inline-flex; align-items: center; gap: 4px; }
+.openspool-toggle:hover { color: var(--text); }
+.openspool-body { margin-top: 8px; }
+.openspool-json { background: var(--bg-3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem; line-height: 1.5; overflow-x: auto; margin: 0 0 8px; color: var(--text); }
+.openspool-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.openspool-ams { margin-top: 12px; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+.openspool-ams-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+.openspool-ams-row .input { flex: 1 1 auto; min-width: 0; }
+
 /* Theme toggle */
 .theme-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 10px;
@@ -206,8 +695,6 @@ body {
   transition: border-color 0.14s, color 0.14s;
 }
 .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
-.app-shell--rail .theme-toggle { justify-content: center; padding: 7px 0; }
-.app-shell--rail .theme-toggle .nav-label { display: none; }
 
 /* Fleet health / connection chip */
 .fleet-health {
@@ -221,7 +708,6 @@ body {
 .fh-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--faint); }
 .fh-dot--live { background: var(--green); box-shadow: 0 0 0 3px rgba(47,208,122,0.18); }
 .fleet-health--bad .fh-dot { background: var(--red); box-shadow: 0 0 0 3px rgba(239,90,90,0.18); }
-.app-shell--rail .fleet-health { justify-content: center; padding: 7px 0; }
 
 /* Mobile drawer (hidden on desktop) */
 .drawer-toggle, .nav-drawer-backdrop { display: none; }
@@ -859,3 +1345,241 @@ button.tile { font: inherit; color: inherit; text-align: left; width: 100%; curs
   .part-row { grid-template-columns: 1fr; gap: 8px; }
   .part-actions { justify-content: flex-start; }
 }
+
+/* ── Slicer Device tab ─────────────────────────────────────────────── */
+.oslice-devwrap { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: auto; }
+.oslice-devgrid { display: grid; grid-template-columns: 1fr 340px; gap: 12px; padding: 12px; flex: 1; min-height: 0; }
+.oslice-devcam { background: #000; border-radius: 8px; min-height: 280px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.oslice-devctl { display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.oslice-devsec { background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 10px; padding: 10px; }
+.oslice-devsec-h { font-size: 0.72rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+.oslice-devtemps { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.9rem; }
+.oslice-devtemps b { color: var(--o-muted); font-weight: 600; font-size: 0.72rem; }
+.oslice-devrow { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
+.oslice-devstep { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.oslice-devjog { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 36px); gap: 4px; justify-content: center;
+  grid-template-areas: '.  yp zp' 'xm ho xp' '.  ym zm'; margin: 4px auto; }
+.oslice-jogb { border: 1px solid var(--o-border); background: var(--o-panel-2); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; color: var(--o-text); }
+.oslice-jogb:hover:not(:disabled) { border-color: var(--o-accent); }
+.oslice-jogb:disabled { opacity: 0.5; cursor: default; }
+.oslice-jogb--home { background: var(--o-accent); color: #fff; font-size: 0.62rem; }
+
+/* ── Bambu-style Device control cluster ─────────────────────────────── */
+.oslice-devctlh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.oslice-devctlh-name { font-weight: 700; font-size: 0.9rem; }
+.oslice-devctlh-state { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; margin-left: auto; }
+.oslice-devctrl { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto;
+  grid-template-areas: 'temp dial ext' 'bed bed bed'; gap: 10px 12px; align-items: center; }
+.oslice-devtcol { grid-area: temp; display: flex; flex-direction: column; gap: 2px; }
+.oslice-devtrow { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 0; background: none; border-radius: 6px;
+  color: var(--o-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: left; white-space: nowrap; }
+.oslice-devtrow svg { color: var(--o-muted); flex-shrink: 0; }
+.oslice-devtrow small { color: var(--o-muted); font-weight: 500; font-size: 0.7rem; margin-left: 1px; }
+.oslice-devtrow:hover:not(:disabled):not(.oslice-devtrow--ro) { background: var(--o-panel-2); }
+.oslice-devtrow--ro { cursor: default; }
+.oslice-devtsep { height: 1px; background: var(--o-border); margin: 3px 6px; }
+.oslice-devtset { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+.oslice-devtset .oset-input { width: 58px; }
+
+/* Circular XY jog dial */
+.oslice-devdialwrap { grid-area: dial; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.oslice-devdial { position: relative; width: 138px; height: 138px; border-radius: 50%; overflow: hidden;
+  background: var(--o-panel-2); box-shadow: inset 0 0 0 1px var(--o-border); }
+.oslice-dialwedge { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; }
+.oslice-dialwedge::after { content: ''; position: absolute; inset: 0; background: transparent; transition: background 0.12s; }
+.oslice-dialwedge:hover:not(:disabled)::after { background: color-mix(in srgb, var(--o-accent) 22%, transparent); }
+.oslice-dialwedge:disabled { cursor: default; }
+.oslice-dialwedge--yp { clip-path: polygon(50% 50%, 0 0, 100% 0); }
+.oslice-dialwedge--xp { clip-path: polygon(50% 50%, 100% 0, 100% 100%); }
+.oslice-dialwedge--ym { clip-path: polygon(50% 50%, 100% 100%, 0 100%); }
+.oslice-dialwedge--xm { clip-path: polygon(50% 50%, 0 100%, 0 0); }
+.oslice-dialhome { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px;
+  border-radius: 50%; border: 1px solid var(--o-border); background: var(--o-panel); color: var(--o-accent); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+.oslice-dialhome:hover:not(:disabled) { border-color: var(--o-accent); background: var(--o-panel-2); }
+.oslice-diallbl { position: absolute; font-size: 0.7rem; font-weight: 700; color: var(--o-muted); pointer-events: none; }
+.oslice-diallbl--y { top: 6px; left: 50%; transform: translateX(-50%); }
+.oslice-diallbl--ym { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.oslice-diallbl--x { right: 8px; top: 50%; transform: translateY(-50%); }
+.oslice-diallbl--xm { left: 8px; top: 50%; transform: translateY(-50%); }
+.oslice-devstep--dial { justify-content: center; margin: 0; }
+
+/* Extruder up/down column */
+.oslice-devecol { grid-area: ext; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.oslice-devecol svg { color: var(--o-muted); }
+.oslice-eb { width: 40px; height: 30px; border: 1px solid var(--o-border); background: var(--o-panel-2); border-radius: 6px;
+  cursor: pointer; color: var(--o-text); font-size: 0.7rem; line-height: 1; }
+.oslice-eb:hover:not(:disabled) { border-color: var(--o-accent); }
+.oslice-eb:disabled { opacity: 0.5; cursor: default; }
+.oslice-eblbl { font-size: 0.68rem; color: var(--o-muted); font-weight: 600; }
+
+/* Bed Z row */
+.oslice-devbedrow { grid-area: bed; display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 4px;
+  border-top: 1px solid var(--o-border); }
+.oslice-bedlbl { font-size: 0.74rem; color: var(--o-muted); font-weight: 700; margin: 0 4px; }
+.btn--xs { padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; }
+
+.oslice-devhms { display: flex; flex-direction: column; gap: 4px; }
+.oslice-devhms-item { display: block; font-family: ui-monospace, "SF Mono", monospace; font-size: 0.72rem; padding: 4px 8px; border-radius: 5px; text-decoration: none; border: 1px solid transparent; }
+.oslice-devhms--1 { color: #ff8a80; background: rgba(224,70,60,0.14); border-color: rgba(224,70,60,0.34); }
+.oslice-devhms--2 { color: #f0a83a; background: rgba(240,168,58,0.14); border-color: rgba(240,168,58,0.32); }
+.oslice-devhms--3 { color: #d9c65a; background: rgba(217,198,90,0.12); border-color: rgba(217,198,90,0.28); }
+.oslice-devhms--4 { color: #8fb3d8; background: rgba(143,179,216,0.12); border-color: rgba(143,179,216,0.26); }
+.oslice-devhms-item:hover { filter: brightness(1.15); }
+.oslice-devhist { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.76rem; border-top: 1px solid var(--o-border); }
+.oslice-devhist:first-of-type { border-top: 0; }
+.oslice-devhist-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); }
+.oslice-devhist-name { flex: 1; min-width: 0; }
+.oslice-devhist-badge { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.oslice-devhist--ok { color: #2ecc71; background: rgba(46,204,113,0.14); }
+.oslice-devhist--bad { color: #ff8a80; background: rgba(224,70,60,0.14); }
+.oslice-devhist--mid { color: #8fb3d8; background: rgba(143,179,216,0.14); }
+.oslice-devhist-meta { color: var(--o-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.oslice-devprog { padding: 10px 12px; border-top: 1px solid var(--o-border); background: var(--o-panel); }
+.oslice-devprog--live { background: color-mix(in srgb, var(--o-accent) 8%, var(--o-panel)); }
+.oslice-devprog-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.oslice-devprog-title { font-size: 0.86rem; font-weight: 600; color: var(--o-text, #e2e8f0); min-width: 0; }
+.oslice-devprog-pct { margin-left: auto; font-size: 1rem; font-weight: 700; color: var(--o-accent); font-variant-numeric: tabular-nums; }
+.oslice-devprog-bar { height: 8px; background: var(--o-panel-2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.oslice-devprog-fill { height: 100%; background: var(--o-accent); transition: width 0.3s; }
+.oslice-devprog-row { display: flex; align-items: center; font-size: 0.8rem; }
+.oslice-devprog-meta { display: flex; align-items: center; gap: 12px; color: var(--o-muted); font-variant-numeric: tabular-nums; }
+.oslice-devprog-meta span { white-space: nowrap; }
+@media (max-width: 900px) { .oslice-devgrid { grid-template-columns: 1fr; } }
+
+/* ── Slicer Filament Manager tab ───────────────────────────────────── */
+.oslice-filmgr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: hidden; }
+.oslice-filmgr-head { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--o-border); flex-wrap: wrap; }
+.oslice-filmgr-groupby { display: flex; align-items: center; gap: 4px; }
+.oslice-filmgr-body { flex: 1; overflow: auto; padding: 12px; }
+.oslice-filmgr-grp { margin-bottom: 16px; }
+.oslice-filmgr-grph { font-size: 0.78rem; font-weight: 700; color: var(--o-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px;
+  position: sticky; top: -12px; background: var(--o-bg); padding: 4px 0; z-index: 1; }
+.oslice-filmgr-grph--plain { text-transform: none; letter-spacing: 0; color: var(--o-text); }
+.oslice-filmgr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.oslice-filcard { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); cursor: pointer; text-align: left; }
+.oslice-filcard:hover { border-color: var(--o-accent); }
+/* Filament shown as a spool/reel (colour ring + hub) so cards look like the
+   real spools, consistent with the AMS view. */
+.oslice-filcard-sw { width: 36px; height: 36px; border-radius: 50%; position: relative; font-size: 0; flex-shrink: 0; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 0 0 3px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.3); }
+.oslice-filcard-sw::before { content: ''; position: absolute; inset: 32%; border-radius: 50%; background: var(--o-panel); box-shadow: 0 0 0 1.5px rgba(0,0,0,0.28); }
+.oslice-filcard-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.oslice-filcard-name { font-size: 0.82rem; font-weight: 600; color: var(--o-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oslice-filcard-sub { font-size: 0.68rem; color: var(--o-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oslice-filcard-bar { height: 4px; background: var(--o-panel-2); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+.oslice-filcard-fill { display: block; height: 100%; }
+.oslice-filcard-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.72rem; flex-shrink: 0; }
+
+/* ── Slicer Calibration tab ────────────────────────────────────────── */
+.oslice-calwrap { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--o-bg); overflow: auto; padding: 16px; }
+.oslice-calhead { margin-bottom: 12px; }
+.oslice-calhead h3 { margin: 0 0 2px; font-size: 1rem; }
+.oslice-calgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.oslice-calcard { border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.oslice-calcard--on { border-color: var(--o-accent); box-shadow: 0 0 0 1px var(--o-accent); }
+.oslice-calcard-h { font-weight: 700; font-size: 0.86rem; }
+.oslice-calcard-d { font-size: 0.74rem; color: var(--o-muted); flex: 1; }
+.oslice-calcard button { align-self: flex-start; }
+.oslice-calresult { margin-top: 14px; display: flex; align-items: center; gap: 16px; padding: 12px; border: 1px solid var(--o-border); border-radius: 10px; background: var(--o-panel); }
+.oslice-calresult > div { flex: 1; }
+
+
+/* ── Slicer modal (purge volumes) ──────────────────────────────────── */
+.oslice-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.oslice-modal { background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 12px; padding: 16px; width: 92%; max-height: 86vh; overflow: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.oslice-modal-h { display: flex; align-items: center; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+.oslice-modal-x { margin-left: auto; border: none; background: none; font-size: 1.3rem; cursor: pointer; color: var(--o-muted); line-height: 1; }
+.oslice-modal-foot { display: flex; align-items: center; margin-top: 12px; }
+
+/* Purge volumes table */
+.oslice-purge-tbl { border-collapse: collapse; font-size: 0.75rem; }
+.oslice-purge-tbl th, .oslice-purge-tbl td { border: 1px solid var(--o-border); padding: 3px 5px; text-align: center; }
+.oslice-purge-tbl th { background: var(--o-panel-2); white-space: nowrap; }
+.oslice-purge-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 3px; vertical-align: middle; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+.oslice-purge-cell { width: 52px; border: 1px solid var(--o-border); border-radius: 4px; padding: 2px 4px; font-size: 0.72rem; text-align: right; }
+
+
+
+/* Device AMS — faithful BambuStudio layout */
+.oslice-amsrow { display: flex; gap: 10px; align-items: flex-start; }
+.oslice-amsunit { background: var(--o-panel-2); border-radius: 12px; padding: 8px 10px 6px; }
+.oslice-amsunit-top { display: flex; align-items: center; gap: 4px; font-size: 0.66rem; color: var(--o-muted); font-weight: 600; margin-bottom: 6px; min-height: 12px; }
+.oslice-amsdrop { width: 9px; height: 9px; background: #38b6e6; border-radius: 50% 50% 50% 0; transform: rotate(45deg); display: inline-block; }
+.oslice-amsslots { display: flex; gap: 8px; }
+.oslice-amsslot { display: flex; flex-direction: column; align-items: center; }
+.oslice-amsslot-tab { font-size: 0.6rem; font-weight: 700; color: var(--o-text); background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px 8px 0 0; padding: 1px 10px; }
+.oslice-amsslot-cart { width: 56px; background: var(--o-panel); border: 1px solid var(--o-border); border-top: none; border-radius: 0 0 8px 8px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.oslice-amsslot-mat { font-size: 0.62rem; font-weight: 600; color: var(--o-text); }
+/* Filament shown as a real spool/reel: a colour-filled ring with a hub, so a
+   loaded slot obviously has filament and looks like the physical spool. */
+.oslice-amsslot-color { width: 42px; height: 42px; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 0 0 3px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.35); }
+.oslice-amsslot-color::before { content: ''; position: absolute; inset: 32%; border-radius: 50%; background: var(--o-panel); box-shadow: 0 0 0 1.5px rgba(0,0,0,0.28); }
+.oslice-amsext { }
+.oslice-amsext-h { font-size: 0.62rem; font-weight: 700; color: var(--o-muted); text-align: center; margin-bottom: 6px; min-height: 12px; }
+.oslice-amsbtns { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+
+/* AMS extras — selector pill, dry sun, edit pencil, converging feed */
+.oslice-amssel { display: inline-flex; gap: 3px; align-items: center; background: var(--o-panel); border: 1px solid var(--o-border); border-radius: 8px; padding: 3px 6px; margin-bottom: 6px; }
+.oslice-amsseldot { width: 9px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+.oslice-amssun { margin-left: 2px; }
+.oslice-amspen { position: absolute; right: -1px; bottom: -1px; color: #fff; background: rgba(0,0,0,0.45); border-radius: 50%; padding: 1px; }
+.oslice-amsfeed { display: block; margin: 2px auto 0; overflow: visible; }
+
+/* AMS slot selection */
+.oslice-amsslot-cart { cursor: pointer; font: inherit; text-align: center; }
+.oslice-amsslot-cart--on { border-color: var(--o-accent); box-shadow: 0 0 0 1px var(--o-accent); }
+.oslice-amsslot-tab--on { border-color: var(--o-accent); color: var(--o-accent); }
+
+/* Device camera placeholder */
+.oslice-devcam { position: relative; }
+.oslice-devcam-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+
+/* Full-width tabs — hide the settings panel (Device/Filaments/Calibration) */
+.oslice-panel--hidden { display: none; }
+
+/* ── Slicer buttons: light theme (the global .btn uses dark vars → black) ── */
+.oslice .btn { background: var(--o-accent); border: 1px solid var(--o-accent); color: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; transition: filter .12s, background .12s, border-color .12s; }
+.oslice .btn:hover:not(:disabled) { filter: brightness(1.06); border-color: var(--o-accent); color: #fff; }
+.oslice .btn--sm { padding: 5px 10px; font-size: 0.8rem; }
+.oslice .btn--ghost { background: var(--o-panel-2); border-color: var(--o-border); color: var(--o-text); filter: none; }
+.oslice .btn--ghost:hover:not(:disabled) { background: var(--o-panel); border-color: var(--o-accent); color: var(--o-text); filter: none; }
+.oslice .btn--danger { background: #e05a5a; border-color: #e05a5a; color: #fff; }
+.oslice .btn--danger:hover:not(:disabled) { filter: brightness(1.06); color: #fff; }
+.oslice .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
+
+/* Nozzle diameter + flow row in the printer card */
+.oslice-nozzlerow { display: flex; gap: 8px; margin-top: 6px; }
+.oslice-nozzlerow label { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.oslice-nozzlerow select { width: 100%; }
+.oslice-previewbar { position: absolute; top: 10px; right: 12px; z-index: 6; display: flex; justify-content: flex-end; }
+
+.oslice-maxhint { font-weight: 400; opacity: 0.5; font-size: 0.9em; margin-left: 2px; }
+
+.oslice-accessories { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: -2px 0 8px; font-size: 0.68rem; color: var(--o-muted); }
+.oslice-accessories span { display: inline-flex; align-items: center; gap: 3px; }
+
+.oslice-abrasive-warn { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #ffce8a; background: rgba(224,120,40,0.14); border: 1px solid rgba(224,120,40,0.4); border-radius: 6px; }
+
+.oslice-drying-note { margin: 2px 0 8px; padding: 6px 9px; font-size: 0.72rem; line-height: 1.35; color: #a6d8ea; background: rgba(60,140,210,0.14); border: 1px solid rgba(60,140,210,0.4); border-radius: 6px; }
+
+.oslice-spoolpick { max-width: 92px; font-size: 0.72rem; }
+
+.oslice-filmgr-actions { display: flex; gap: 6px; margin-left: 10px; }
+.oslice-filcard { position: relative; }
+.oslice-filcard-edit { position: absolute; top: 4px; right: 4px; z-index: 2; width: 20px; height: 20px; border: none; background: rgba(0,0,0,0.28); color: #fff; border-radius: 5px; font-size: 0.72rem; cursor: pointer; opacity: 0; }
+.oslice-filcard:hover .oslice-filcard-edit { opacity: 0.85; }
+.oslice-filcard-edit:hover { background: var(--o-accent); opacity: 1; }
+
+.oslice-filmgr-addform { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--o-border); align-items: center; }
+.oslice-filmgr-addform .oset-input { min-width: 0; }
+
+.oslice-spoolmatch { display: flex; flex-direction: column; gap: 1px; }
+.oslice-spoolmatch-name { font-weight: 600; color: var(--o-text); font-size: 0.74rem; }
+
+/* WebGL/GPU unavailable — friendly fallback instead of a crashed 3D view. */
+.webgl-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.webgl-fallback-inner { max-width: 420px; color: #cbd5e1; }
+.webgl-fallback-inner strong { display: block; font-size: 16px; margin-bottom: 8px; color: #e2e8f0; }
+.webgl-fallback-inner p { font-size: 13px; line-height: 1.5; margin: 6px 0; }
+.webgl-fallback-hint { color: #94a3b8; font-size: 12px; }
+.webgl-fallback-extra { color: #94a3b8; font-size: 12px; }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bambu-dash-v440';
+const CACHE_NAME = 'bambu-dash-v564';
 const PRECACHE = [
   '/',
   '/css/main.css',
@@ -46,18 +46,29 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
+  e.waitUntil((async () => {
+    // Drop every old cache (a stale SW may have cached /v2 before we started
+    // bypassing it) and take control of open tabs.
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+    await self.clients.claim();
+    // Force-reload any tab this SW just took over, so users stuck on a stale
+    // bundle see the fresh app immediately after a single reload instead of
+    // needing a second one. Runs only when the SW version actually changes.
+    const clients = await self.clients.matchAll({ type: 'window' });
+    for (const client of clients) {
+      try { if ('navigate' in client) await client.navigate(client.url); } catch { /* ignore */ }
+    }
+  })());
 });
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Skip non-GET, API, WebSocket, docs, and lang files (always fresh)
-  if (e.request.method !== 'GET' || url.pathname.startsWith('/api/') || url.pathname.startsWith('/docs/') || url.pathname.startsWith('/lang/') || url.protocol === 'ws:' || url.protocol === 'wss:') {
+  // Skip non-GET, API, WebSocket, docs, lang, and the /v2 app (always fresh).
+  // /v2 is a self-contained Vite build with content-hashed assets — letting the
+  // SW cache it is what left users staring at a stale dashboard, so bypass it.
+  if (e.request.method !== 'GET' || url.pathname.startsWith('/api/') || url.pathname.startsWith('/docs/') || url.pathname.startsWith('/lang/') || url.pathname.startsWith('/v2') || url.protocol === 'ws:' || url.protocol === 'wss:') {
     return;
   }
 

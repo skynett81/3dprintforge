@@ -10,6 +10,9 @@
 const CAPABILITIES = {
   bambu: {
     label: 'Bambu Lab',
+    // Fallback build volume for a Bambu model with no specific override (most
+    // are 256³; the A1 mini and others carry their own override).
+    buildVolume: [256, 256, 256],
     connection: 'mqtt',
     fileAccess: 'ftps',
     ftps: { port: 990, user: 'bblp', secure: 'implicit' },
@@ -39,6 +42,10 @@ const CAPABILITIES = {
 
   moonraker: {
     label: 'Moonraker/Klipper',
+    // Fallback only — a connected Klipper printer reports its REAL build volume
+    // live (bed_mesh / axis_maximum), which overrides this. 220×220×250 is the
+    // most common bed (Ender-class) for the rare offline/unknown case.
+    buildVolume: [220, 220, 250],
     connection: 'websocket',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/server/files/gcodes/', metadataEndpoint: '/server/files/metadata' },
@@ -67,6 +74,7 @@ const CAPABILITIES = {
 
   prusalink: {
     label: 'PrusaLink',
+    buildVolume: [250, 210, 220],   // Prusa MK3/MK4-class default (models override)
     connection: 'http-poll',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/api/v1/files/local', metadataEndpoint: '/api/v1/files' },
@@ -83,6 +91,7 @@ const CAPABILITIES = {
 
   sacp: {
     label: 'Snapmaker SACP',
+    buildVolume: [320, 350, 330],   // Snapmaker 2.0 A350 default (A250/J1/Artisan override)
     connection: 'sacp-tcp',
     fileAccess: 'sacp-upload',
     camera: { modes: [] },
@@ -115,6 +124,7 @@ const CAPABILITIES = {
 
   ankermake: {
     label: 'AnkerMake (via ankerctl)',
+    buildVolume: [235, 235, 250],   // AnkerMake M5-class default
     connection: 'http-ws-proxy',
     fileAccess: 'http-api',
     camera: { modes: ['ws-video'], videoEndpoint: '/ws/video', snapshotEndpoint: '/video' },
@@ -130,6 +140,7 @@ const CAPABILITIES = {
 
   octoprint: {
     label: 'OctoPrint',
+    buildVolume: [220, 220, 250],   // generic default; live profile overrides
     connection: 'websocket-sockjs',
     fileAccess: 'http-api',
     httpApi: { filesEndpoint: '/api/files/local', metadataEndpoint: '/api/files' },
@@ -188,7 +199,9 @@ const MODEL_OVERRIDES = {
   },
   'Snapmaker U1': {
     features: { multiExtruder: true, toolheads: 4, purifier: true },
-    buildVolume: [220, 220, 220],
+    // Real printable bed ~270×270 (bed_mesh 267), Z 275 — the Y axis travels to
+    // ~335 for the tool docks but that isn't printable. Live config overrides.
+    buildVolume: [270, 270, 275],
     camera: { modes: ['http-snapshot', 'ssh-sftp'], sshPaths: ['/tmp/.monitor.jpg', '/tmp/printer_detection.jpg'] },
   },
   'Snapmaker J1': { features: { multiExtruder: true, idex: true, dualNozzle: true }, buildVolume: [300, 200, 200] },
@@ -365,6 +378,36 @@ export function getModelStrategy(printer, histRow) {
 export function hasFeature(printer, feature) {
   const caps = getCapabilities(printer);
   return !!caps.features?.[feature];
+}
+
+// Connector type → slicer G-code flavor, so picking a printer in the slicer
+// yields firmware-correct output automatically (Bambu / Klipper / RRF / Marlin)
+// — the last piece of "works like a real slicer for Prusa/Klipper/Bambu".
+const FLAVOR_BY_TYPE = {
+  bambu: 'bambu', mqtt: 'bambu',
+  klipper: 'klipper', moonraker: 'klipper',
+  duet: 'reprap', reprapfirmware: 'reprap', rrf: 'reprap',
+  // Marlin-derived firmwares (Prusa, OctoPrint hosts, FlashForge, AnkerMake,
+  // Repetier, Snapmaker SACP) — the safe default.
+  prusalink: 'marlin', octoprint: 'marlin', flashforge: 'marlin', fnet: 'marlin',
+  ankermake: 'marlin', repetier: 'marlin', sacp: 'marlin',
+};
+export function gcodeFlavorForType(type) {
+  return FLAVOR_BY_TYPE[String(type || '').toLowerCase()] || 'marlin';
+}
+
+// A printer's real motion caps, read LIVE from its firmware (Klipper/Moonraker
+// exposes them) so the slicer machine limits are filled in without manual
+// entry. Prefers the live toolhead values, falls back to the printer config;
+// returns null when the printer doesn't report any (e.g. Bambu over MQTT).
+export function machineLimitsFromState(state) {
+  const s = state || {};
+  const thl = s._toolhead_limits || {};
+  const maxAccel = thl.maxAccel || s._max_accel || null;
+  const maxSpeed = thl.maxVelocity || s._max_velocity || null;
+  const jerk = thl.squareCornerVelocity || null;   // Klipper's jerk-equivalent
+  if (!maxAccel && !maxSpeed && !jerk) return null;
+  return { maxAccel: maxAccel || null, maxSpeed: maxSpeed || null, jerk: jerk || null };
 }
 
 function deepMerge(target, source) {

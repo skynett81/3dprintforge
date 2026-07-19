@@ -1,0 +1,439 @@
+// slicer-settings.js — map the web slicer's UI settings to an OrcaSlicer
+// process-profile JSON. OrcaSlicer's CLI layers this on top of the machine's
+// defaults via --load-settings, so we only emit the overridden keys.
+//
+// Values in Orca profiles are strings; percentages carry a '%'. Temperatures
+// live in the filament profile (not here).
+
+// UI key → OrcaSlicer/BambuStudio process-config key. Used to drive the REAL
+// slicer backend (forge bridge / CLI) so it honors everything the UI exposes —
+// not just a handful. Process-level only; filament/printer settings (temps,
+// retraction, fan, pressure advance) live in their own configs.
+const KEY = {
+  // Quality — layer / precision / surface
+  layer_height: 'layer_height',
+  initial_layer_height: 'initial_layer_print_height',
+  elephant_foot: 'elefant_foot_compensation',
+  xy_hole_compensation: 'xy_hole_compensation',
+  xy_contour_compensation: 'xy_contour_compensation',
+  seam_position: 'seam_position',
+  seam_gap: 'seam_gap',
+  spiral_mode: 'spiral_mode',
+  fuzzy_skin: 'fuzzy_skin',
+  fuzzy_skin_thickness: 'fuzzy_skin_thickness',
+  fuzzy_skin_point_distance: 'fuzzy_skin_point_dist',
+  ironing_flow: 'ironing_flow',
+  ironing_spacing: 'ironing_spacing',
+  ironing_speed: 'ironing_speed',
+  bridge_flow: 'bridge_flow',
+  detect_overhang_wall: 'detect_overhang_wall',
+  wall_generator: 'wall_generator',
+  wall_infill_order: 'wall_sequence',
+  // Strength — walls / shells / infill
+  wall_loops: 'wall_loops',
+  top_layers: 'top_shell_layers',
+  bottom_layers: 'bottom_shell_layers',
+  top_shell_thickness: 'top_shell_thickness',
+  bottom_shell_thickness: 'bottom_shell_thickness',
+  infill_pattern: 'sparse_infill_pattern',
+  infill_direction: 'infill_direction',
+  infill_combination: 'infill_combination',
+  infill_wall_overlap: 'infill_wall_overlap',
+  top_surface_pattern: 'top_surface_pattern',
+  min_sparse_infill_area: 'minimum_sparse_infill_area',
+  // Speed
+  outer_wall_speed: 'outer_wall_speed',
+  inner_wall_speed: 'inner_wall_speed',
+  infill_speed: 'sparse_infill_speed',
+  sparse_infill_speed: 'sparse_infill_speed',
+  internal_solid_infill_speed: 'internal_solid_infill_speed',
+  gap_infill_speed: 'gap_infill_speed',
+  small_perimeter_speed: 'small_perimeter_speed',
+  bridge_speed: 'bridge_speed',
+  support_speed: 'support_speed',
+  initial_layer_speed: 'initial_layer_speed',
+  travel_speed: 'travel_speed',
+  default_acceleration: 'default_acceleration',
+  outer_wall_acceleration: 'outer_wall_acceleration',
+  inner_wall_acceleration: 'inner_wall_acceleration',
+  top_surface_acceleration: 'top_surface_acceleration',
+  sparse_infill_acceleration: 'sparse_infill_acceleration',
+  initial_layer_acceleration: 'initial_layer_acceleration',
+  travel_acceleration: 'travel_acceleration',
+  default_jerk: 'default_jerk',
+  // Line width
+  line_width: 'line_width',
+  outer_wall_line_width: 'outer_wall_line_width',
+  inner_wall_line_width: 'inner_wall_line_width',
+  sparse_infill_line_width: 'sparse_infill_line_width',
+  initial_layer_line_width: 'initial_layer_line_width',
+  // Support
+  support_type: 'support_type',
+  support_threshold: 'support_threshold_angle',
+  support_on_plate: 'support_on_build_plate_only',
+  support_top_z_distance: 'support_top_z_distance',
+  support_object_xy_distance: 'support_object_xy_distance',
+  support_interface_top_layers: 'support_interface_top_layers',
+  support_wall_count: 'tree_support_wall_count',
+  support_remove_small_overhangs: 'support_remove_small_overhang',
+  // Cooling
+  fan_speed: 'fan_max_speed',
+  fan_min_speed: 'fan_min_speed',
+  fan_max_speed: 'fan_max_speed',
+  fan_off_layers: 'close_fan_the_first_x_layers',
+  full_fan_speed_layer: 'full_fan_speed_layer',
+  slow_down_layer_time: 'slow_down_layer_time',
+  slow_down_min_speed: 'slow_down_min_speed',
+  // Adhesion / others
+  brim_type: 'brim_type',
+  brim_width: 'brim_width',
+  brim_object_gap: 'brim_object_gap',
+  raft_layers: 'raft_layers',
+  skirt_loops: 'skirt_loops',
+  skirt_distance: 'skirt_distance',
+  draft_shield: 'draft_shield',
+  wipe_tower: 'enable_prime_tower',
+  wipe_tower_width: 'prime_tower_width',
+};
+
+export function buildOrcaProcessJson(s = {}) {
+  const j = { type: 'process', name: 'ForgeWeb', from: 'User' };
+  for (const [uiKey, orcaKey] of Object.entries(KEY)) {
+    const v = s[uiKey];
+    if (v === undefined || v === null || v === '') continue;
+    // Orca expects '1'/'0' for booleans, plain strings otherwise.
+    j[orcaKey] = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
+  }
+  if (s.infill_density !== undefined && s.infill_density !== null && s.infill_density !== '') {
+    j.sparse_infill_density = `${Number(s.infill_density)}%`;
+  }
+  if (s.supports !== undefined) j.enable_support = s.supports ? '1' : '0';
+  return j;
+}
+
+// Whether any meaningful override is present (beyond the identity keys).
+export function hasOverrides(s = {}) {
+  return Object.keys(buildOrcaProcessJson(s)).length > 3;
+}
+
+// ── Native engine mapping ──────────────────────────────────────────
+// Map the same UI settings to our own pure-JS slicer's option names.
+// The native engine only knows 'lines' and 'grid' fills, so richer
+// OrcaSlicer patterns collapse to the closest of the two.
+const NATIVE_PATTERN = {
+  grid: 'grid', cubic: 'cubic', 'adaptivecubic': 'adaptivecubic',
+  honeycomb: 'honeycomb', '3dhoneycomb': 'honeycomb',
+  triangles: 'triangles', 'tri-hexagon': 'triangles', star: 'triangles',
+  line: 'lines', lines: 'lines', concentric: 'concentric',
+  gyroid: 'gyroid', zigzag: 'lines', hilbert: 'hilbert',
+};
+
+/**
+ * Translate the web slicer's UI settings (+ optional profile-derived
+ * base defaults like temps / start-end gcode) into the option object the
+ * native engine (sliceMeshToGcode) consumes.
+ */
+export function buildNativeSettings(s = {}, base = {}) {
+  const out = { ...base };
+  const num = (v) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    const n = Number(v);
+    return Number.isNaN(n) ? undefined : n;
+  };
+  const set = (k, v) => { if (v !== undefined) out[k] = v; };
+
+  set('layerHeight', num(s.layer_height));
+  set('initialLayerHeight', num(s.initial_layer_height));   // thicker first layer for bed adhesion
+  set('perimeters', num(s.wall_loops));
+  set('topLayers', num(s.top_layers));
+  set('bottomLayers', num(s.bottom_layers));
+
+  const infill = num(s.infill_density);
+  if (infill !== undefined) out.infillDensity = infill > 1 ? infill / 100 : infill;
+  if (s.infill_pattern) out.infillPattern = NATIVE_PATTERN[String(s.infill_pattern).toLowerCase()] || 'lines';
+
+  set('brimWidth', num(s.brim_width));
+  if (s.brim_type) out.brimType = String(s.brim_type);
+  if (Array.isArray(s.color_change_layers) && s.color_change_layers.length) {
+    out.colorChangeLayers = s.color_change_layers.map(Number).filter((n) => Number.isFinite(n) && n > 1);
+  }
+  // Modifier volumes: [{ box:[minX,minY,minZ,maxX,maxY,maxZ], infill_density, infill_pattern }]
+  if (Array.isArray(s.modifiers) && s.modifiers.length) {
+    out.modifiers = s.modifiers
+      .filter((m) => m && Array.isArray(m.box) && m.box.length === 6)
+      .map((m) => {
+        const o = { box: m.box.map(Number) };
+        if (m.infill_density != null && m.infill_density !== '') { const d = Number(m.infill_density); o.infillDensity = d > 1 ? d / 100 : d; }
+        if (m.infill_pattern) o.infillPattern = NATIVE_PATTERN[String(m.infill_pattern).toLowerCase()] || 'lines';
+        return o;
+      });
+  }
+  set('skirtLoops', num(s.skirt_loops));
+  set('skirtGap', num(s.skirt_distance));
+  set('infillAngle', num(s.infill_direction));
+  set('raftLayers', num(s.raft_layers));
+  set('infillCombination', num(s.infill_combination));
+  if (s.supports !== undefined && s.supports !== '') out.supports = !!s.supports;
+  if (s.ironing !== undefined && s.ironing !== '') out.ironing = !!s.ironing;
+  if (s.spiral_mode !== undefined && s.spiral_mode !== '') out.spiralMode = !!s.spiral_mode;
+  set('elephantFoot', num(s.elephant_foot));
+  if (s.fuzzy_skin !== undefined && s.fuzzy_skin !== '') out.fuzzySkin = !!s.fuzzy_skin;
+  set('fuzzySkinThickness', num(s.fuzzy_skin_thickness));
+  if (s.draft_shield !== undefined && s.draft_shield !== '') out.draftShield = !!s.draft_shield;
+  if (s.wall_infill_order) {
+    const v = String(s.wall_infill_order).toLowerCase();
+    out.wallOrder = v === 'inner-outer-inner' ? 'inner-outer-inner' : (v === 'inner-outer' ? 'inner-outer' : 'outer-inner');
+  }
+  if (s.top_surface_pattern) out.topSurfacePattern = String(s.top_surface_pattern);
+  if (s.reduce_waste !== undefined && s.reduce_waste !== '') out.reduceWaste = !!s.reduce_waste;
+  set('primeLineLength', num(s.prime_line_length));
+  if (s.flush_into_infill !== undefined && s.flush_into_infill !== '') out.flushIntoInfill = !!s.flush_into_infill;
+  set('flushVolume', num(s.flush_volume));
+  if (s.wipe_tower !== undefined && s.wipe_tower !== '') out.wipeTower = !!s.wipe_tower;
+  set('wipeTowerWidth', num(s.wipe_tower_width));
+  set('wipeTowerDepth', num(s.wipe_tower_depth));
+  if (s.print_sequence) out.printSequence = String(s.print_sequence);
+  set('extruderClearanceHeight', num(s.extruder_clearance_height));
+  set('maxVolumetricSpeed', num(s.max_volumetric_speed));
+  set('fanMinSpeed', num(s.fan_min_speed));
+  set('fanMaxSpeed', num(s.fan_max_speed));
+  set('fullFanSpeedLayer', num(s.full_fan_speed_layer));
+  set('brimObjectGap', num(s.brim_object_gap));
+  set('minSparseInfillArea', num(s.min_sparse_infill_area));
+  if (s.dont_slow_down_outer_wall !== undefined && s.dont_slow_down_outer_wall !== '') out.dontSlowDownOuterWall = !!s.dont_slow_down_outer_wall;
+  set('skirtHeight', num(s.skirt_height));
+  set('skirtSpeed', num(s.skirt_speed));
+  set('resolution', num(s.resolution));
+  set('topSurfaceSpeed', num(s.top_surface_speed));
+  // Settings the native engine already honors — now exposed.
+  set('bridgeLineWidth', num(s.bridge_line_width));
+  set('draftShieldGap', num(s.draft_shield_distance));
+  set('gapFillFlow', num(s.gap_fill_flow));
+  set('raftMargin', num(s.raft_expansion));
+  set('supportLineWidth', num(s.support_line_width));
+  set('supportGridRes', num(s.support_grid_resolution));
+  set('initialLayerInfillSpeed', num(s.initial_layer_infill_speed));
+  set('outerWallJerk', num(s.outer_wall_jerk));
+  set('innerWallJerk', num(s.inner_wall_jerk));
+  set('topSurfaceJerk', num(s.top_surface_jerk));
+  set('infillJerk', num(s.infill_jerk));
+  set('initialLayerJerk', num(s.initial_layer_jerk));
+  set('ironingInset', num(s.ironing_inset));
+  set('infillAnchor', num(s.infill_anchor));
+  set('initialLayerFlowRatio', num(s.initial_layer_flow_ratio));
+  set('bridgeAccel', num(s.bridge_acceleration));
+  set('supportAccel', num(s.support_acceleration));
+  if (s.only_one_wall_top !== undefined && s.only_one_wall_top !== '') out.onlyOneWallTop = !!s.only_one_wall_top;
+  set('bottomSurfaceSpeed', num(s.bottom_surface_speed));
+  set('supportInterfaceSpeed', num(s.support_interface_speed));
+  set('firstLayerWallLoops', num(s.first_layer_wall_loops));
+  if (s.overhang_threshold != null && s.overhang_threshold !== '') { const v = Number(s.overhang_threshold); out.overhangThreshold = v > 1 ? v / 100 : v; }
+  if (s.detect_bridges !== undefined && s.detect_bridges !== '') out.bridgeDetect = !!s.detect_bridges;
+  if (s.precise_wall !== undefined && s.precise_wall !== '') out.preciseWall = !!s.precise_wall;
+  set('travelSpeedZ', num(s.travel_speed_z));
+  set('retractRestartExtra', num(s.retract_restart_extra));
+  set('treeBranchDistance', num(s.tree_support_branch_distance));
+  set('treeBranchAngle', num(s.tree_support_branch_angle));
+  set('supportBottomZDist', num(s.support_bottom_z_distance));
+  set('gapFillMinLength', num(s.filter_out_small_gaps));
+  set('chamberTemp', num(s.chamber_temperature));
+  set('machineMaxAccel', num(s.machine_max_acceleration));
+  set('machineMaxSpeed', num(s.machine_max_speed));
+  set('machineMaxJerk', num(s.machine_max_jerk));
+  set('filamentDiam', num(s.filament_diameter));
+  if (s.filament_start_gcode) out.filamentStartGcode = String(s.filament_start_gcode);
+  if (s.filament_end_gcode) out.filamentEndGcode = String(s.filament_end_gcode);
+  set('gapAccel', num(s.gap_infill_acceleration));
+  set('wipeTowerX', num(s.wipe_tower_x));
+  set('wipeTowerY', num(s.wipe_tower_y));
+  if (s.ironing_pattern) out.ironingPattern = String(s.ironing_pattern);
+  if (s.gcode_label_objects !== undefined && s.gcode_label_objects !== '') out.gcodeLabelObjects = !!s.gcode_label_objects;
+  set('supportInterfaceSpacing', num(s.support_interface_spacing));
+  if (s.support_base_pattern) out.supportBasePattern = String(s.support_base_pattern);
+  if (s.support_interface_pattern) out.supportInterfacePattern = String(s.support_interface_pattern);
+  if (Array.isArray(s.layer_height_bands) && s.layer_height_bands.length) {
+    out.layerHeightBands = s.layer_height_bands
+      .filter((b) => b && b.z0 != null && b.z1 != null && b.h != null)
+      .map((b) => ({ z0: Number(b.z0), z1: Number(b.z1), h: Number(b.h) }));
+  }
+  // Per-pair purge matrix (BambuStudio purging volumes): flush_matrix[from][to] mm3.
+  if (Array.isArray(s.flush_matrix) && s.flush_matrix.length) out.flushMatrix = s.flush_matrix.map((row) => Array.isArray(row) ? row.map(Number) : []);
+  set('flushMultiplier', num(s.flush_multiplier));
+
+  // Per-feature speeds.
+  set('outerWallSpeed', num(s.outer_wall_speed));
+  set('innerWallSpeed', num(s.inner_wall_speed));
+  set('sparseInfillSpeed', num(s.sparse_infill_speed) ?? num(s.infill_speed));
+  set('solidInfillSpeed', num(s.internal_solid_infill_speed) ?? num(s.solid_infill_speed));
+  set('supportSpeed', num(s.support_speed));
+  set('ironingSpeed', num(s.ironing_speed));
+  set('travelSpeed', num(s.travel_speed));
+  set('firstLayerSpeed', num(s.initial_layer_speed) ?? num(s.first_layer_speed));
+  const anyWall = num(s.outer_wall_speed) ?? num(s.inner_wall_speed);
+  if (anyWall !== undefined) set('printSpeed', anyWall);
+  if (s.seam_position) out.seamPosition = String(s.seam_position);
+  if (s.support_on_plate !== undefined && s.support_on_plate !== '') out.supportOnPlate = !!s.support_on_plate;
+  // Wall generator: 'classic' or 'arachne' (variable-width thin-feature fill).
+  if (s.wall_generator) out.wallGenerator = String(s.wall_generator).toLowerCase();
+  // Voronoi/Delaunay medial-axis walls (full Arachne, closed variable-width
+  // loops) for the thin-core fill — or wall_generator: 'arachne-voronoi'.
+  if (s.voronoi_walls !== undefined && s.voronoi_walls !== '') out.voronoiWalls = !!s.voronoi_walls;
+  else if (String(s.wall_generator || '').toLowerCase() === 'arachne-voronoi') out.voronoiWalls = true;
+  // Support style: 'normal' (grid) or 'tree'/'organic' (branching).
+  if (s.support_style) out.supportStyle = String(s.support_style).toLowerCase();
+  if (s.support_type) out.supportType = String(s.support_type).toLowerCase();
+  // Support tuning.
+  set('supportThreshold', num(s.support_threshold_angle ?? s.support_threshold));
+  set('supportInterface', num(s.support_interface_top_layers ?? s.support_interface));
+  set('supportZGap', num(s.support_z_gap_layers ?? s.support_z_gap));
+  set('supportXYGap', num(s.support_object_xy_distance ?? s.support_xy_gap));
+  const supDens = num(s.support_base_density ?? s.support_density);
+  if (supDens !== undefined) out.supportDensity = supDens > 1 ? supDens / 100 : supDens;
+  set('supportWallCount', num(s.support_wall_count));
+  if (s.support_remove_small_overhangs !== undefined && s.support_remove_small_overhangs !== '') out.supportRemoveSmall = !!s.support_remove_small_overhangs;
+  set('supportMinArea', num(s.support_min_overhang_area));
+  set('supportTopZDist', num(s.support_top_z_distance));
+  // Per-feature line widths.
+  set('outerWallLineWidth', num(s.outer_wall_line_width));
+  set('innerWallLineWidth', num(s.inner_wall_line_width));
+  set('sparseInfillLineWidth', num(s.sparse_infill_line_width));
+  set('solidInfillLineWidth', num(s.internal_solid_infill_line_width));
+  set('initialLayerLineWidth', num(s.initial_layer_line_width));
+  set('lineWidth', num(s.line_width));
+  set('flowRatio', num(s.flow_ratio ?? s.print_flow_ratio));
+  // Retraction / travel.
+  set('retraction', num(s.retraction_length));
+  set('zHop', num(s.z_hop));
+  // Ironing (top-surface smoothing pass).
+  const ifl = num(s.ironing_flow);
+  if (ifl !== undefined) out.ironingFlow = ifl > 1 ? ifl / 100 : ifl;
+  set('ironingSpacing', num(s.ironing_spacing));
+  set('ironingDirection', num(s.ironing_direction));
+  // Infill / wall overlap (fraction of a line width the infill grows toward walls).
+  const iov = num(s.infill_wall_overlap);
+  if (iov !== undefined) out.infillWallOverlap = iov > 1 ? iov / 100 : iov;
+  // Top / bottom shell thickness (mm) — the pipeline converts to layer counts.
+  set('topShellThickness', num(s.top_shell_thickness));
+  set('bottomShellThickness', num(s.bottom_shell_thickness));
+  // Gap fill (solid-fill thin features that can't hold sparse infill).
+  if (s.gap_fill_enabled !== undefined && s.gap_fill_enabled !== '') out.gapFill = !!s.gap_fill_enabled;
+  set('gapFillSpeed', num(s.gap_infill_speed ?? s.gap_fill_speed));
+  // Avoid-crossing-walls travel (combing). DEFAULT OFF: our comb router is
+  // confused by fragmented/thin cross-sections (it can return a route that
+  // skips retraction yet crosses an open gap → stringing), so until it is made
+  // fragment-safe, prefer a plain retracted travel. A retracted travel never
+  // strings; the cost is more retractions, mitigated by retract_before_travel.
+  if (s.avoid_crossing_walls !== undefined && s.avoid_crossing_walls !== '') out.avoidCrossingWalls = !!s.avoid_crossing_walls;
+  else if (s.reduce_crossing_wall !== undefined && s.reduce_crossing_wall !== '') out.avoidCrossingWalls = !!s.reduce_crossing_wall;
+  else out.avoidCrossingWalls = false;
+  // XY dimensional compensation (positive contour = grow outline; positive hole = enlarge holes).
+  set('xyContourCompensation', num(s.xy_contour_compensation));
+  set('xyHoleCompensation', num(s.xy_hole_compensation));
+  // Small-perimeter slowdown + seam gap.
+  set('smallPerimeterSpeed', num(s.small_perimeter_speed));
+  set('smallPerimeterThreshold', num(s.small_perimeter_threshold));
+  set('seamGap', num(s.seam_gap));
+  // Fuzzy-skin options (thickness is mapped elsewhere).
+  set('fuzzySkinPointDist', num(s.fuzzy_skin_point_distance ?? s.fuzzy_skin_point_dist));
+  if (s.fuzzy_skin_first_layer !== undefined && s.fuzzy_skin_first_layer !== '') out.fuzzySkinFirstLayer = !!s.fuzzy_skin_first_layer;
+  if (s.fuzzy_skin_mode) out.fuzzySkinMode = String(s.fuzzy_skin_mode);
+  set('fuzzySkinThickness', num(s.fuzzy_skin_thickness));
+  // Arc fitting (post-process straight moves into G2/G3 arcs).
+  if (s.arc_fitting !== undefined && s.arc_fitting !== '') out.arcFitting = !!s.arc_fitting;
+  set('arcTolerance', num(s.arc_fitting_tolerance ?? s.arc_tolerance));
+  set('nozzleTemp', num(s.nozzle_temp));
+  set('bedTemp', num(s.bed_temp));
+  // Initial-layer temperatures and part-cooling fan — critical per material.
+  set('nozzleTempInitial', num(s.nozzle_temp_initial));
+  set('bedTempInitial', num(s.bed_temp_initial));
+  set('fanSpeed', num(s.fan_speed ?? s.fan_max_speed));
+  set('fanOffLayers', num(s.fan_off_layers ?? s.close_fan_the_first_x_layers));
+  // Cooling: minimum layer time slow-down.
+  set('minLayerTime', num(s.min_layer_time ?? s.slow_down_layer_time));
+  set('minPrintSpeed', num(s.min_print_speed ?? s.slow_down_min_speed));
+  set('coolingFanSpeed', num(s.cooling_fan_speed));   // forced-cooling fan on short layers
+  // Acceleration / jerk (M204 / M205).
+  set('acceleration', num(s.acceleration ?? s.default_acceleration));
+  set('initialLayerAccel', num(s.initial_layer_acceleration ?? s.initial_layer_accel));
+  set('travelAccel', num(s.travel_acceleration ?? s.travel_accel));
+  // Per-feature acceleration (M204 switched per feature).
+  set('outerWallAccel', num(s.outer_wall_acceleration));
+  set('innerWallAccel', num(s.inner_wall_acceleration));
+  set('topSurfaceAccel', num(s.top_surface_acceleration));
+  set('sparseInfillAccel', num(s.sparse_infill_acceleration));
+  set('jerk', num(s.jerk ?? s.default_jerk));
+  // Retraction / wipe.
+  set('retractionSpeed', num(s.retraction_speed));
+  set('deretractionSpeed', num(s.deretraction_speed));
+  if (s.wipe !== undefined && s.wipe !== '') out.wipe = !!s.wipe;
+  set('wipeDistance', num(s.wipe_distance));
+  set('wipeSpeed', num(s.wipe_speed));
+  // retract_before_travel: skip retraction for hops shorter than this (mm).
+  // Default 1mm (BambuStudio's retraction_minimum_travel) so tiny over-solid
+  // hops don't retract needlessly now that combing is off by default.
+  set('retractBeforeTravel', num(s.retract_before_travel ?? s.retraction_minimum_travel));
+  if (out.retractBeforeTravel == null) out.retractBeforeTravel = 1;
+  // Bridges + overhang perimeters.
+  set('bridgeSpeed', num(s.bridge_speed));
+  set('bridgeFlow', num(s.bridge_flow));
+  // Pressure advance / flow dynamics (BambuStudio). Emitted as M900 K / Klipper
+  // SET_PRESSURE_ADVANCE. gcode_flavor picks the dialect.
+  set('pressureAdvance', num(s.pressure_advance));
+  if (s.gcode_flavor) out.gcodeFlavor = String(s.gcode_flavor).toLowerCase();
+  // Monotonic top/bottom surface fill — lay skin lines one sweep direction for
+  // a uniform surface (BambuStudio's top_surface_pattern=monotonic). Default on.
+  if (s.monotonic_top_surface !== undefined && s.monotonic_top_surface !== '') out.monotonicTopSurface = !!s.monotonic_top_surface;
+  // Scarf-joint seam — ramp flow at the seam to hide it. BambuStudio enables its
+  // conditional seam slope by default (seam_slope_conditional=1), which is why
+  // its seams are near-invisible while a sharp start/stop leaves a visible seam
+  // column stacked over every layer. Default ON to match; explicit false opts out.
+  out.scarfSeam = (s.scarf_seam !== undefined && s.scarf_seam !== '') ? !!s.scarf_seam : true;
+  set('scarfLength', num(s.scarf_length));
+  if (out.scarfLength == null) out.scarfLength = 8;   // ramp length (mm)
+  // Adaptive (variable) layer height — vary thickness by surface slope.
+  if (s.adaptive_layer_height !== undefined && s.adaptive_layer_height !== '') out.adaptiveLayers = !!s.adaptive_layer_height;
+  set('minLayerHeight', num(s.min_layer_height));
+  set('maxLayerHeight', num(s.max_layer_height));
+  set('adaptiveCusp', num(s.adaptive_cusp));
+  set('overhangSpeed', num(s.overhang_speed));
+  // Graduated overhang speeds (BambuStudio overhang_1_4 .. 4_4). Any set → table.
+  const ov = [num(s.overhang_1_4_speed), num(s.overhang_2_4_speed), num(s.overhang_3_4_speed), num(s.overhang_4_4_speed)];
+  if (ov.some((v) => v !== undefined)) out.overhangSpeeds = ov.map((v) => v ?? 0);
+  set('overhangFanSpeed', num(s.overhang_fan_speed));
+  const ba = num(s.bridge_angle);
+  if (ba) out.bridgeAngle = ba;                 // 0/unset = auto-detect the best-anchored angle
+  // Bridge angle auto-detection (BridgeDetector). On by default; a fixed
+  // bridge_angle overrides it. Explicit false keeps bridges at the layer angle.
+  if (s.bridge_angle_auto !== undefined && s.bridge_angle_auto !== '') out.bridgeAngleAuto = !!s.bridge_angle_auto;
+  if (s.detect_overhang_wall !== undefined && s.detect_overhang_wall !== '') out.overhangDetect = !!s.detect_overhang_wall;
+  // Custom G-code hooks.
+  if (s.start_gcode || s.machine_start_gcode) out.startGcode = String(s.start_gcode ?? s.machine_start_gcode);
+  if (s.end_gcode || s.machine_end_gcode) out.endGcode = String(s.end_gcode ?? s.machine_end_gcode);
+  if (s.layer_change_gcode) out.layerChangeGcode = String(s.layer_change_gcode);
+  if (s.material) out.material = String(s.material);
+  // Bed size (for centring the model on the plate). Accept [x,y] or {x,y}.
+  if (Array.isArray(s.bed_size) && s.bed_size.length >= 2) out.bedSize = [Number(s.bed_size[0]), Number(s.bed_size[1])];
+  else if (s.bed_size && s.bed_size.x) out.bedSize = [Number(s.bed_size.x), Number(s.bed_size.y)];
+
+  // Support painting: enforce/block triangles [x0,y0,x1,y1,x2,y2,zMax] in the
+  // exported-STL (world) frame; the slicer maps them into the bed frame.
+  if (s.support_paint && (Array.isArray(s.support_paint.enforce) || Array.isArray(s.support_paint.block))) {
+    out.supportPaint = {
+      enforce: Array.isArray(s.support_paint.enforce) ? s.support_paint.enforce : [],
+      block: Array.isArray(s.support_paint.block) ? s.support_paint.block : [],
+    };
+  }
+  // Fuzzy-skin painting: bands where the outer wall gets fuzzed.
+  if (s.fuzzy_paint && Array.isArray(s.fuzzy_paint.enforce)) {
+    out.fuzzyPaint = { enforce: s.fuzzy_paint.enforce };
+  }
+  // Seam painting: enforce/block triangles [x0,y0,x1,y1,x2,y2,zMin,zMax] (world).
+  if (s.seam_paint && (Array.isArray(s.seam_paint.enforce) || Array.isArray(s.seam_paint.block))) {
+    out.seamPaint = {
+      enforce: Array.isArray(s.seam_paint.enforce) ? s.seam_paint.enforce : [],
+      block: Array.isArray(s.seam_paint.block) ? s.seam_paint.block : [],
+    };
+  }
+
+  return out;
+}

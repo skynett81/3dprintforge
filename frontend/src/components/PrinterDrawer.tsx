@@ -4,6 +4,7 @@ import { useT } from '../i18n';
 import { useToast } from '../toast';
 import { readLive, isPrinting } from '../live';
 import type { Printer } from '../types';
+import { PrintOptionsDialog } from './PrintOptionsDialog';
 
 interface Props {
   printer: Printer;
@@ -19,6 +20,8 @@ export function PrinterDrawer({ printer, live, onClose }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [camFailed, setCamFailed] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const isBambu = (printer.type || '').toLowerCase() === 'bambu';
   const l = readLive(live);
   const busyPrinting = isPrinting(l);
 
@@ -88,8 +91,10 @@ export function PrinterDrawer({ printer, live, onClose }: Props) {
           <button className="btn btn--danger" disabled={busy != null || !busyPrinting} onClick={() => control('stop')}>{t('v2.fleet.stop', 'Stop')}</button>
           <button className="btn" disabled={busy != null} onClick={() => control('set_light', { on: true })}>{t('v2.fleet.light_on', 'Light on')}</button>
           <button className="btn" disabled={busy != null} onClick={() => control('set_light', { on: false })}>{t('v2.fleet.light_off', 'Light off')}</button>
+          {isBambu && !busyPrinting && <button className="btn btn--primary" disabled={busy != null} onClick={() => setPrintOpen(true)}>{t('v2.fleet.print_file', 'Print a file')}</button>}
         </div>
       </aside>
+      {printOpen && <PrintOptionsDialog printerId={printer.id} live={live ?? {}} onClose={() => setPrintOpen(false)} />}
     </div>
   );
 }

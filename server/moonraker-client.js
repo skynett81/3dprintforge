@@ -556,6 +556,39 @@ export class MoonrakerClient {
     const vsd = status.virtual_sdcard || {};
     const gm = status.gcode_move || {};
 
+    // Real build volume straight from the printer's own Klipper config, so the
+    // slicer bed matches the actual machine (not a hardcoded guess). The bed
+    // is bounded by bed_mesh (the probed print area) on X/Y — this matters for
+    // multi-tool machines like the Snapmaker U1 whose Y axis travels past the
+    // bed to the tool docks — and by stepper_z / axis_maximum on Z.
+    if (status.configfile?.config) this._configfile = status.configfile.config;
+    const cfg = this._configfile;
+    const am = th.axis_maximum;
+    if ((Array.isArray(am) && am.length >= 3) || cfg?.bed_mesh) {
+      let x = Array.isArray(am) ? am[0] : null;
+      let y = Array.isArray(am) ? am[1] : null;
+      let z = Array.isArray(am) ? am[2] : null;
+      const bm = cfg?.bed_mesh;
+      if (bm?.mesh_max) { const pp = String(bm.mesh_max).split(',').map((v) => parseFloat(v)); if (pp[0]) x = x != null ? Math.min(x, pp[0]) : pp[0]; if (pp[1]) y = y != null ? Math.min(y, pp[1]) : pp[1]; }
+      const pz = cfg?.stepper_z?.position_max != null ? parseFloat(cfg.stepper_z.position_max) : null;
+      if (pz) z = z != null ? Math.min(z, pz) : pz;
+      if (x > 0 && y > 0 && z > 0) this.state._buildVolume = [Math.round(x), Math.round(y), Math.round(z)];
+    }
+    // Machine specs from the same config: nozzle diameter, extruder/tool count,
+    // max nozzle/bed temps — so the slicer never needs these entered by hand.
+    if (cfg) {
+      const exCfg = cfg.extruder || {};
+      const nd = parseFloat(exCfg.nozzle_diameter); if (nd > 0) this.state._nozzleDiameter = nd;
+      const nMax = parseFloat(exCfg.max_temp); if (nMax > 0) this.state._maxNozzleTemp = Math.round(nMax);
+      const bMax = parseFloat(cfg.heater_bed?.max_temp); if (bMax > 0) this.state._maxBedTemp = Math.round(bMax);
+      let nEx = cfg.extruder ? 1 : 0;
+      for (let i = 1; i < 12; i++) if (cfg['extruder' + i]) nEx++;
+      if (nEx > 0) this.state._extruders = nEx;
+      // A heated chamber shows up as a heater_generic section named for it.
+      const chKey = Object.keys(cfg).find((k) => /^heater_generic[\s_].*chamber/i.test(k) || /chamber/i.test(k) && /heater_generic/i.test(k));
+      if (chKey) { this.state._chamber = true; const cMax = parseFloat(cfg[chKey]?.max_temp); if (cMax > 0) this.state._maxChamberTemp = Math.round(cMax); }
+    }
+
     // Print state
     if (ps.state !== undefined) {
       const newState = STATE_MAP[ps.state] || 'IDLE';

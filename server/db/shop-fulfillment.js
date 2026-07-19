@@ -10,6 +10,7 @@
 
 import { getDb } from './connection.js';
 import { getShopProduct } from './shop-products.js';
+import { consumePartStock } from './stock-items.js';
 import { addCrmOrderItem, updateCrmOrderStatus, createCrmCustomer, createCrmOrder } from './crm.js';
 import { addQueueItem } from './queue.js';
 
@@ -57,7 +58,9 @@ export function createShopOrder({ customer = {}, items = [], notes = null } = {}
     const qty = it.quantity === undefined ? 1 : parseInt(it.quantity, 10);
     if (!Number.isInteger(qty) || qty < 1 || qty > MAX_ITEM_QTY) throw new Error('Invalid quantity');
     // Enforce stock server-side — in_stock in the public catalog is only a hint.
-    if (product.stock_qty !== null && product.stock_qty !== undefined && product.stock_qty < qty) {
+    // A part-linked product draws from its inventory finished-good stock.
+    const avail = product.part_id != null ? (product.part_stock ?? 0) : product.stock_qty;
+    if (avail !== null && avail !== undefined && avail < qty) {
       throw new Error('Insufficient stock');
     }
     return { product, qty };
@@ -131,7 +134,11 @@ export function addProductToOrder(orderId, productId, quantity = 1) {
   const db = getDb();
   db.prepare('UPDATE crm_order_items SET product_id = ? WHERE id = ?').run(productId, itemId);
 
-  if (product.stock_qty !== null && product.stock_qty !== undefined) {
+  // Deduct stock: a part-linked product consumes its inventory finished-good
+  // stock (FIFO); otherwise fall back to the product's own stock counter.
+  if (product.part_id != null) {
+    consumePartStock(product.part_id, qty, `shop order #${orderId}`);
+  } else if (product.stock_qty !== null && product.stock_qty !== undefined) {
     adjustProductStock(productId, -qty);
   }
 

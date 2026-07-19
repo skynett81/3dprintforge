@@ -64,25 +64,41 @@ export function buildSkipObjectsCommand(objList) {
 // directly from our server — no USB stick or cloud upload required.
 const URL_SCHEME_RE = /^(ftp|ftps|http|https|file):\/\//i;
 
-export function buildPrintCommand(filename, plateId = 1) {
+/**
+ * Build a Bambu `project_file` print command. The second argument may be a
+ * plate number (legacy) or an options object:
+ *   { plateId, useAms, timelapse, bedLeveling, flowCali, vibrationCali,
+ *     layerInspect, bedType, amsMapping }
+ * amsMapping is the slicer-filament → AMS-tray array (global tray ids, -1 for
+ * an unused/external slot) — required for correct multi-colour prints.
+ */
+export function buildPrintCommand(filename, optsOrPlate = 1) {
+  const o = (optsOrPlate && typeof optsOrPlate === 'object') ? optsOrPlate : { plateId: optsOrPlate };
+  const plateId = o.plateId ?? o.plate_id ?? 1;
+  const bool = (v, def) => (v === undefined ? def : !!v);
   const subtaskName = filename.split('/').pop().replace(/\.[^.]+$/, '');
   const url = URL_SCHEME_RE.test(filename) ? filename : `ftp://${filename}`;
-  return {
+  const cmd = {
     print: {
       sequence_id: nextSeq(),
       command: 'project_file',
       param: `Metadata/plate_${plateId}.gcode`,
       subtask_name: subtaskName,
       url,
-      bed_type: 'auto',
-      timelapse: false,
-      bed_leveling: true,
-      flow_cali: false,
-      vibration_cali: false,
-      layer_inspect: false,
-      use_ams: true
-    }
+      bed_type: o.bedType || 'auto',
+      timelapse: bool(o.timelapse, false),
+      bed_leveling: bool(o.bedLeveling ?? o.bed_leveling, true),
+      flow_cali: bool(o.flowCali ?? o.flow_cali, false),
+      vibration_cali: bool(o.vibrationCali ?? o.vibration_cali, false),
+      layer_inspect: bool(o.layerInspect ?? o.layer_inspect, false),
+      use_ams: bool(o.useAms ?? o.use_ams, true),
+    },
   };
+  const mapping = o.amsMapping ?? o.ams_mapping;
+  if (Array.isArray(mapping) && mapping.length) {
+    cmd.print.ams_mapping = mapping.map((n) => (Number.isInteger(Number(n)) ? Number(n) : -1));
+  }
+  return cmd;
 }
 
 export function buildGcodeMultiLine(lines) {
@@ -423,7 +439,11 @@ export function buildCommandFromClientMessage(msg) {
     case 'light': return buildLightCommand(msg.node || 'chamber_light', msg.mode || 'on');
     case 'gcode': return buildGcodeCommand(msg.gcode);
     case 'skip_objects': return msg.obj_list ? buildSkipObjectsCommand(msg.obj_list) : null;
-    case 'print_file': return msg.filename ? buildPrintCommand(msg.filename, msg.plate_id) : null;
+    case 'print_file': return msg.filename ? buildPrintCommand(msg.filename, {
+      plateId: msg.plate_id, amsMapping: msg.ams_mapping, useAms: msg.use_ams,
+      timelapse: msg.timelapse, bedLeveling: msg.bed_leveling, flowCali: msg.flow_cali,
+      vibrationCali: msg.vibration_cali, layerInspect: msg.layer_inspect, bedType: msg.bed_type,
+    }) : null;
     case 'format_storage': return buildFormatStorageCommand();
     case 'ams_dry': return buildAmsDryCommand(msg.ams_id, msg.temp, msg.duration);
     case 'ams_stop_dry': return buildAmsStopDryCommand(msg.ams_id);

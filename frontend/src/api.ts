@@ -75,7 +75,188 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, ...extra }),
     }),
+  getSlicerStatus: () => req<import('./types').SlicerStatus>('/api/slicer/status'),
+  getSlicerPrinters: () => req<import('./types').SlicerPrinter[]>('/api/slicer/printers'),
+  getCalibrationTypes: () => req<{ types: string[] }>('/api/calibration/types'),
+  generateCalibration: (type: string, params: Record<string, unknown> = {}) =>
+    req<{ name: string; description: string; gcode: string; expected_minutes: number; filament_g: number; type: string }>('/api/calibration/generate', { method: 'POST', body: JSON.stringify({ type, params }) }),
+  listSlicerProfiles: (kind = 'process') => req<{ profiles: import('./types').SlicerProfile[] }>(`/api/slicer/native/profiles?kind=${encodeURIComponent(kind)}&user=1`),
+  createSlicerProfile: (body: { kind: string; name: string; settings: Record<string, unknown>; is_default?: number }) =>
+    req<import('./types').SlicerProfile>('/api/slicer/native/profiles', { method: 'POST', body: JSON.stringify(body) }),
+  updateSlicerProfile: (id: number, body: { name?: string; settings?: Record<string, unknown>; is_default?: number }) =>
+    req<import('./types').SlicerProfile>(`/api/slicer/native/profiles/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteSlicerProfile: (id: number) => req<{ ok: boolean }>(`/api/slicer/native/profiles/${id}`, { method: 'DELETE' }),
+  downloadLibraryModel: async (id: number, name: string): Promise<File> => {
+    const res = await fetch(`/api/library/${id}/download`);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    return new File([buf], name, { type: 'application/octet-stream' });
+  },
+  // The 3MF model captured for a past print, so it can be re-sliced/re-printed.
+  downloadHistoryModel: async (id: number, name: string): Promise<File> => {
+    const res = await fetch(`/api/history/${id}/model-3mf`);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    return new File([buf], name.replace(/\.[^.]+$/, '') + '.3mf', { type: 'model/3mf' });
+  },
+  sliceAndSend: async (printerId: string, file: File, opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
+    const q = new URLSearchParams({ printerId, filename: file.name });
+    if (opts?.print) q.set('print', '1');
+    if (opts?.settings && Object.keys(opts.settings).length) q.set('settings', JSON.stringify(opts.settings));
+    const res = await fetch(`/api/slicer/native/slice-and-send?${q.toString()}`, { method: 'POST', body: file });
+    const text = await res.text();
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as import('./types').SliceResult;
+  },
+  // Generate a Model Forge parametric model (server-side) → 3MF File for the plate.
+  generateModelForge: async (id: string, params: Record<string, unknown> = {}): Promise<File> => {
+    const res = await fetch(`/api/model-forge/${id}/generate-3mf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) });
+    if (!res.ok) { let m = `${res.status}`; try { m = (JSON.parse(await res.text())).error || m; } catch { /* keep */ } throw new Error(m); }
+    const buf = await res.arrayBuffer();
+    return new File([buf], `${id}.3mf`, { type: 'model/3mf' });
+  },
+  // Fleet calibration: best saved pressure-advance K for a spool on a printer.
+  bestK: async (spoolId: number, printerId: string, nozzle = 0.4): Promise<number | null> => {
+    try {
+      const q = new URLSearchParams({ spool_id: String(spoolId), printer_id: printerId, nozzle_diameter: String(nozzle) });
+      const res = await fetch(`/api/filament-analytics/best-k?${q}`);
+      if (!res.ok) return null;
+      const j = await res.json();
+      return typeof j.k_value === 'number' ? j.k_value : null;
+    } catch { return null; }
+  },
+  // Tessellate a STEP/STP file to an STL File (server-side OpenCascade).
+  stepToStl: async (file: File): Promise<File> => {
+    const fmt = /\.(iges|igs)$/i.test(file.name) ? '?format=iges' : '';
+    const res = await fetch(`/api/slicer/native/step-to-stl${fmt}`, { method: 'POST', body: file });
+    if (!res.ok) { let m = `${res.status}`; try { m = (JSON.parse(await res.text())).error || m; } catch { /* keep */ } throw new Error(m); }
+    const stl = await res.text();
+    return new File([stl], file.name.replace(/\.[^.]+$/, '') + '.stl', { type: 'model/stl' });
+  },
+  sliceGcode: async (file: File, settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number }> => {
+    const q = new URLSearchParams({ filename: file.name });
+    if (settings && Object.keys(settings).length) q.set('settings', JSON.stringify(settings));
+    const res = await fetch(`/api/slicer/native/slice?${q.toString()}`, { method: 'POST', body: file });
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`;
+      try { const j = JSON.parse(await res.text()); msg = j.error || msg; } catch { /* keep */ }
+      throw new Error(msg);
+    }
+    const gcode = await res.text();
+    return {
+      gcode,
+      layers: Number(res.headers.get('X-Layer-Count') || 0),
+      timeSec: Number(res.headers.get('X-Estimated-Time-Sec') || 0),
+      filamentG: Number(res.headers.get('X-Filament-G') || 0),
+      wasteG: Number(res.headers.get('X-Waste-G') || 0),
+      durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
+    };
+  },
+  sliceObjects: async (files: File[], settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; sequential: boolean; warnings: string[] }> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const objects = await Promise.all(files.map(async (f) => ({ stl: toB64(await f.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-objects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: files[0]?.name || 'model', settings: settings || {}, objects }) });
+    if (!res.ok) { let msg = `${res.status} ${res.statusText}`; try { const j = JSON.parse(await res.text()); msg = j.error || msg; } catch { /* keep */ } throw new Error(msg); }
+    const gcode = await res.text();
+    let warnings: string[] = [];
+    try { warnings = JSON.parse(decodeURIComponent(res.headers.get('X-Warnings') || '[]')); } catch { /* keep */ }
+    return {
+      gcode,
+      layers: Number(res.headers.get('X-Layer-Count') || 0),
+      timeSec: Number(res.headers.get('X-Estimated-Time-Sec') || 0),
+      filamentG: Number(res.headers.get('X-Filament-G') || 0),
+      wasteG: Number(res.headers.get('X-Waste-G') || 0),
+      durationMs: Number(res.headers.get('X-Slice-Duration-Ms') || 0),
+      sequential: res.headers.get('X-Sequential') === '1',
+      warnings,
+    };
+  },
+  sliceMulti: async (filename: string, parts: { extruder: number; file: File }[], settings?: Record<string, unknown>): Promise<{ gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; materials: number }> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-multi', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, settings: settings ?? {}, parts: encoded }),
+    });
+    const text = await res.text();
+    let data: unknown; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as { gcode: string; layers: number; timeSec: number; filamentG: number; wasteG: number; durationMs: number; materials: number };
+  },
+  sliceMultiAndSend: async (printerId: string, filename: string, parts: { extruder: number; file: File }[], opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const encoded = await Promise.all(parts.map(async (p) => ({ extruder: p.extruder, stl: toB64(await p.file.arrayBuffer()) })));
+    const res = await fetch('/api/slicer/native/slice-multi-and-send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printerId, filename, print: !!opts?.print, settings: opts?.settings ?? {}, parts: encoded }),
+    });
+    const text = await res.text();
+    let data: unknown; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as import('./types').SliceResult;
+  },
+  sliceObjectsAndSend: async (printerId: string, filename: string, objects: { file: File; settings: Record<string, unknown> }[], opts?: { print?: boolean; settings?: Record<string, unknown> }): Promise<import('./types').SliceResult> => {
+    const toB64 = (buf: ArrayBuffer) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+    const encoded = await Promise.all(objects.map(async (o) => ({ stl: toB64(await o.file.arrayBuffer()), settings: o.settings })));
+    const res = await fetch('/api/slicer/native/slice-objects-and-send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printerId, filename, print: !!opts?.print, settings: opts?.settings ?? {}, objects: encoded }),
+    });
+    const text = await res.text();
+    let data: unknown; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (!res.ok) throw new Error((data as { error?: string }).error || `${res.status} ${res.statusText}`);
+    return data as import('./types').SliceResult;
+  },
+  listPrinterFiles: (id: string) => req<Array<{ name?: string } | string>>(`/api/printers/${encodeURIComponent(id)}/files`),
+  printFile: (id: string, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(id)}/files/print`, { method: 'POST', body: JSON.stringify(body) }),
   listSpools: (): Promise<Spool[]> => req<Spool[]>('/api/inventory/spools'),
+  // Inventory Fase 1: generic parts, categories & physical stock.
+  listPartCategories: () => req<import('./types').PartCategory[]>('/api/inventory/part-categories'),
+  addPartCategory: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/part-categories', { method: 'POST', body: JSON.stringify(b) }),
+  deletePartCategory: (id: number) => req<{ ok: boolean }>(`/api/inventory/part-categories/${id}`, { method: 'DELETE' }),
+  listInvParts: (q?: Record<string, string>) => req<import('./types').InvPart[]>('/api/inventory/parts' + (q && Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')),
+  getInvPart: (id: number) => req<import('./types').InvPart>(`/api/inventory/parts/${id}`),
+  addInvPart: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/parts', { method: 'POST', body: JSON.stringify(b) }),
+  updateInvPart: (id: number, b: Record<string, unknown>) => req<{ ok: boolean }>(`/api/inventory/parts/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteInvPart: (id: number) => req<{ ok: boolean }>(`/api/inventory/parts/${id}`, { method: 'DELETE' }),
+  listPartStock: (id: number) => req<import('./types').StockItem[]>(`/api/inventory/parts/${id}/stock`),
+  listPartMoves: (id: number) => req<import('./types').StockMove[]>(`/api/inventory/parts/${id}/moves`),
+  listStockItems: (q?: Record<string, string>) => req<import('./types').StockItem[]>('/api/inventory/stock-items' + (q && Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')),
+  addStockItem: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/stock-items', { method: 'POST', body: JSON.stringify(b) }),
+  updateStockItem: (id: number, b: Record<string, unknown>) => req<{ ok: boolean }>(`/api/inventory/stock-items/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  deleteStockItem: (id: number) => req<{ ok: boolean }>(`/api/inventory/stock-items/${id}`, { method: 'DELETE' }),
+  adjustStock: (id: number, delta: number, reason?: string) => req<{ id: number; quantity: number }>(`/api/inventory/stock-items/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta, reason }) }),
+  moveStock: (id: number, location_id: number | null) => req<{ ok: boolean }>(`/api/inventory/stock-items/${id}/move`, { method: 'POST', body: JSON.stringify({ location_id }) }),
+  assignPartQr: (id: number) => req<{ qr_uid: string }>(`/api/inventory/parts/${id}/qr`, { method: 'POST', body: '{}' }),
+  resolveQr: (code: string) => req<{ type: string; id: number; name: string; hash: string }>(`/api/inventory/resolve/${encodeURIComponent(code)}`),
+  qrImageUrl: (code: string) => `/api/inventory/qr/${encodeURIComponent(code)}.svg`,
+  getPartBom: (id: number) => req<{ lines: import('./types').BomLine[]; cost: number }>(`/api/inventory/parts/${id}/bom`),
+  addBomLine: (partId: number, b: Record<string, unknown>) => req<{ id: number }>(`/api/inventory/parts/${partId}/bom`, { method: 'POST', body: JSON.stringify(b) }),
+  deleteBomLine: (id: number) => req<{ ok: boolean }>(`/api/inventory/bom-lines/${id}`, { method: 'DELETE' }),
+  listBuilds: (q?: Record<string, string>) => req<import('./types').Build[]>('/api/inventory/builds' + (q && Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')),
+  addBuild: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/builds', { method: 'POST', body: JSON.stringify(b) }),
+  completeBuild: (id: number) => req<{ produced: number; shortages: { part_name: string; needed: number; available: number }[] }>(`/api/inventory/builds/${id}/complete`, { method: 'POST', body: '{}' }),
+  cancelBuild: (id: number) => req<{ ok: boolean }>(`/api/inventory/builds/${id}/cancel`, { method: 'POST', body: '{}' }),
+  // Fase 4: stocktake, warranties, attachments, CSV.
+  listStocktakes: () => req<import('./types').Stocktake[]>('/api/inventory/stocktakes'),
+  createStocktake: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/stocktakes', { method: 'POST', body: JSON.stringify(b) }),
+  getStocktake: (id: number) => req<import('./types').Stocktake>(`/api/inventory/stocktakes/${id}`),
+  setStocktakeCount: (lineId: number, counted: number | null) => req<{ ok: boolean }>(`/api/inventory/stocktake-lines/${lineId}`, { method: 'PUT', body: JSON.stringify({ counted }) }),
+  applyStocktake: (id: number) => req<{ adjusted: number }>(`/api/inventory/stocktakes/${id}/apply`, { method: 'POST', body: '{}' }),
+  cancelStocktake: (id: number) => req<{ ok: boolean }>(`/api/inventory/stocktakes/${id}/cancel`, { method: 'POST', body: '{}' }),
+  listWarranties: (entityType: string, entityId: string) => req<import('./types').Warranty[]>(`/api/inventory/warranties?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`),
+  addWarranty: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/warranties', { method: 'POST', body: JSON.stringify(b) }),
+  deleteWarranty: (id: number) => req<{ ok: boolean }>(`/api/inventory/warranties/${id}`, { method: 'DELETE' }),
+  listAttachments: (entityType: string, entityId: string) => req<import('./types').Attachment[]>(`/api/inventory/attachments?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`),
+  addAttachment: (b: Record<string, unknown>) => req<{ id: number }>('/api/inventory/attachments', { method: 'POST', body: JSON.stringify(b) }),
+  deleteAttachment: (id: number) => req<{ ok: boolean }>(`/api/inventory/attachments/${id}`, { method: 'DELETE' }),
+  importPartsCsv: (csv: string) => req<{ created: number }>('/api/inventory/parts/import', { method: 'POST', body: JSON.stringify({ csv }) }),
+  exportPartsCsvUrl: () => '/api/inventory/parts/export.csv',
+  listShopProducts: () => req<import('./types').ShopProduct[]>('/api/shop/products'),
+  createShopProduct: (b: Record<string, unknown>) => req<import('./types').ShopProduct>('/api/shop/products', { method: 'POST', body: JSON.stringify(b) }),
+  updateShopProduct: (id: number, b: Record<string, unknown>) => req<import('./types').ShopProduct>(`/api/shop/products/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
   listFilaments: (): Promise<import('./types').FilamentProfile[]> => req('/api/inventory/filaments'),
   addFilament: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/filaments', { method: 'POST', body: JSON.stringify(body) }),
   updateFilament: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/inventory/filaments/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
@@ -147,6 +328,10 @@ export const api = {
   setGuardEnabled: (printerId: string, enabled: boolean) => req<{ ok: boolean }>('/api/protection/settings', { method: 'PUT', body: JSON.stringify({ printer_id: printerId, enabled: enabled ? 1 : 0 }) }),
   updateGuardSettings: (printerId: string, patch: Record<string, unknown>) => req<{ ok: boolean }>('/api/protection/settings', { method: 'PUT', body: JSON.stringify({ printer_id: printerId, ...patch }) }),
   setXcam: (printerId: string, field: string, enable: boolean) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(printerId)}/control`, { method: 'POST', body: JSON.stringify({ action: 'xcam_control', field, enable }) }),
+  getOpenspoolTag: (spoolId: number) => req<{ tag: Record<string, string>; preview_url: string }>(`/api/inventory/spools/${spoolId}/openspool-tag`),
+  matchTigerTag: (dump: string) => req<{ parsed: import('./types').TigerTagParsed; matched_id: number | null }>(`/api/tigertag/match`, { method: 'POST', body: JSON.stringify({ dump }) }),
+  matchOpenspool: (tag: unknown) => req<{ parsed: Record<string, unknown>; matched_id: number | null; matched: import('./types').Spool | null; candidates: { id: number; score: number }[] }>(`/api/openspool/match`, { method: 'POST', body: JSON.stringify({ tag }) }),
+  applyOpenspool: (printerId: string, tag: unknown, amsId: number, slotId: number) => req<{ ok: boolean }>(`/api/printers/${encodeURIComponent(printerId)}/control`, { method: 'POST', body: JSON.stringify({ action: 'openspool_apply', tag, ams_id: amsId, slot_id: slotId }) }),
   getTelemetry: (printerId: string, fromIso: string, toIso: string): Promise<import('./types').TelemetryPoint[]> => req(`/api/telemetry?printer_id=${encodeURIComponent(printerId)}&from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`),
   listBackups: (): Promise<import('./types').BackupFile[]> => req('/api/backup/list'),
   createBackup: () => req<{ ok?: boolean }>('/api/backup', { method: 'POST', body: '{}' }),
@@ -171,6 +356,11 @@ export const api = {
   deleteHardware: (id: number) => req<{ ok: boolean }>(`/api/hardware/${id}`, { method: 'DELETE' }),
   listLibrary: (): Promise<import('./types').LibraryFile[]> => req('/api/library'),
   deleteLibrary: (id: number) => req<{ ok: boolean }>(`/api/library/${id}`, { method: 'DELETE' }),
+  updateLibrary: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/library/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  listCheckouts: (q?: Record<string, string>) => req<import('./types').Checkout[]>('/api/inventory/checkouts' + (q && Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')),
+  checkOut: (body: Record<string, unknown>) => req<{ id: number }>('/api/inventory/checkouts', { method: 'POST', body: JSON.stringify(body) }),
+  checkIn: (id: number, notes?: string) => req<{ ok: boolean }>(`/api/inventory/checkouts/${id}/checkin`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  getBuildShoppingList: () => req<import('./types').BuildShoppingItem[]>('/api/inventory/build-shopping-list'),
   listKbPrinters: (): Promise<import('./types').KbPrinter[]> => req('/api/kb/printers'),
   addKbPrinter: (body: Record<string, unknown>) => req<{ id: number }>('/api/kb/printers', { method: 'POST', body: JSON.stringify(body) }),
   updateKbPrinter: (id: number, body: Record<string, unknown>) => req<{ ok: boolean }>(`/api/kb/printers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),

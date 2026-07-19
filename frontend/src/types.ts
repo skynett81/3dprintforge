@@ -82,6 +82,254 @@ export interface InventoryStats {
   by_vendor: { vendor: string | null; count: number; remaining_g: number; total_cost: number }[];
 }
 
+export interface PartCategory {
+  id: number;
+  name: string;
+  parent_id?: number | null;
+  icon?: string | null;
+  default_location_id?: number | null;
+  default_unit?: string;
+  part_count?: number;
+}
+
+export interface InvPart {
+  id: number;
+  ipn?: string | null;
+  name: string;
+  description?: string | null;
+  category_id?: number | null;
+  type: string;
+  unit: string;
+  min_stock: number;
+  image?: string | null;
+  notes?: string | null;
+  is_active: number;
+  filament_profile_id?: number | null;
+  shop_product_id?: number | null;
+  qr_uid?: string | null;
+  model_file_id?: number | null;
+  model_name?: string | null;
+  model_file_type?: string | null;
+  category_name?: string | null;
+  total_stock: number;
+  stock_item_count?: number;
+  reserved?: number;
+  available?: number;
+  over_reserved?: number;
+  low?: number;
+}
+
+export interface BuildShoppingItem {
+  part_id: number;
+  part_name: string;
+  unit?: string | null;
+  needed: number;
+  on_hand: number;
+  shortfall: number;
+}
+
+export interface StockItem {
+  id: number;
+  part_id: number;
+  location_id?: number | null;
+  quantity: number;
+  batch?: string | null;
+  serial?: string | null;
+  status: string;
+  purchase_price?: number | null;
+  supplier_id?: number | null;
+  expiry?: string | null;
+  qr_uid?: string | null;
+  part_name?: string;
+  part_unit?: string;
+  part_ipn?: string | null;
+  location_name?: string | null;
+}
+
+export interface StockMove {
+  id: number;
+  stock_item_id?: number | null;
+  part_id?: number | null;
+  delta: number;
+  balance?: number | null;
+  reason?: string | null;
+  ref_type?: string | null;
+  created_at: string;
+}
+
+export interface BomLine {
+  id: number;
+  parent_part_id: number;
+  component_part_id?: number | null;
+  filament_profile_id?: number | null;
+  quantity: number;
+  unit?: string | null;
+  waste_pct: number;
+  notes?: string | null;
+  component_name?: string | null;
+  component_unit?: string | null;
+  filament_name?: string | null;
+  line_cost: number;
+}
+
+export interface Build {
+  id: number;
+  part_id: number;
+  quantity: number;
+  status: string;
+  printer_id?: string | null;
+  location_id?: number | null;
+  notes?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  part_name?: string;
+  part_unit?: string;
+}
+
+export interface StocktakeLine {
+  id: number;
+  stock_item_id?: number | null;
+  part_id?: number | null;
+  expected?: number | null;
+  counted?: number | null;
+  part_name?: string;
+  part_unit?: string;
+  location_name?: string | null;
+}
+
+export interface Stocktake {
+  id: number;
+  name?: string | null;
+  location_id?: number | null;
+  location_name?: string | null;
+  status: string;
+  created_at: string;
+  applied_at?: string | null;
+  line_count?: number;
+  lines?: StocktakeLine[];
+}
+
+export interface Warranty {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  provider?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
+}
+
+export interface Attachment {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  kind: string;
+  title?: string | null;
+  url: string;
+}
+
+export interface Checkout {
+  id: number;
+  entity_type: string;
+  entity_id: string;
+  holder: string;
+  quantity?: number;
+  location_id?: number | null;
+  status: string;
+  notes?: string | null;
+  checked_out_at: string;
+  due_at?: string | null;
+  checked_in_at?: string | null;
+  entity_name?: string | null;
+  location_name?: string | null;
+}
+
+export interface SlicerStatus {
+  available: boolean;
+  nativeEngine?: boolean;
+  engine?: string;
+  slicer?: string;
+  externalSlicer?: string | null;
+  path?: string;
+  supportedFormats?: string[];
+  printFormats?: string[];
+  qualityPresets?: { id: string; label: string; layerHeight: number; infill: number; speed: string }[];
+  profiles?: number;
+}
+
+export interface SliceResult {
+  ok: boolean;
+  slicer?: string;
+  gcodeFilename?: string;
+  sizeBytes?: number;
+  sliceDurationMs?: number;
+  uploaded?: boolean;
+  printing?: boolean;
+}
+
+export interface SlicerProfile {
+  id: number;
+  kind: string;
+  name: string;
+  vendor?: string | null;
+  settings_json: string;
+  is_default: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SlicerPrinter {
+  id: string;
+  name: string;
+  model?: string | null;
+  type?: string | null;
+  gcodeFlavor?: string | null;   // firmware dialect derived from the connector type
+  machineLimits?: { maxAccel: number | null; maxSpeed: number | null; jerk: number | null } | null;
+  buildVolume?: { x: number; y: number; z: number } | null;
+  colorSlots?: number;
+  multiTool?: boolean;
+  extruders?: number;
+  nozzle?: number;
+  nozzleType?: string | null;
+  chamber?: boolean;
+  maxTemps?: { nozzle: number; bed: number; chamber: number };
+  amsUnits?: { id: number; trays: number; type: string; humidity: number | null; temp: number | null; drying: boolean }[];
+  ams?: { slot: number; color: string; material: string }[];
+  amsSource?: 'ams' | 'slots' | 'spools' | null;
+  amsHumidity?: number | null;
+  external?: { color: string; material: string } | null;
+}
+
+
+export interface TigerTagParsed {
+  protocol: string;
+  type?: string | null;
+  variant?: string | null;
+  brand?: string | null;
+  colorHex?: string | null;
+  minTemp?: number | null;
+  maxTemp?: number | null;
+  bedMin?: number | null;
+  bedMax?: number | null;
+  diameter?: string | null;
+  weightG?: number | null;
+  uid?: string | null;
+}
+
+export interface ShopProduct {
+  id: number;
+  name: string;
+  price: number;
+  currency?: string;
+  part_id?: number | null;
+  part_stock?: number | null;
+  bom_cost?: number | null;
+  unit_cogs?: number;
+  margin?: number;
+  margin_pct?: number;
+  active?: number;
+}
+
 export interface Spool {
   id: number;
   profile_name?: string | null;
@@ -303,10 +551,17 @@ export interface LibraryFile {
   file_type: string;
   file_size: number;
   category?: string | null;
+  thumbnail_path?: string | null;
   print_count: number;
   last_printed?: string | null;
   estimated_filament_g?: number | null;
   added_at: string;
+  tags?: string | null;
+  notes?: string | null;
+  source_url?: string | null;
+  license?: string | null;
+  designer?: string | null;
+  used_by?: number;
 }
 
 export interface KbPrinter {

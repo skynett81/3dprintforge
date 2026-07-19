@@ -187,3 +187,20 @@ describe('Common output shape', () => {
     }
   });
 });
+
+import { generateMaxFlowrate } from '../../server/calibration-generator.js';
+describe('calibration: max flowrate', () => {
+  it('produces rising-flow lines with correct structure', () => {
+    const r = generateMaxFlowrate({ flowStart: 5, flowEnd: 25, lines: 9 });
+    assert.equal(r.type, 'max-flowrate');
+    assert.equal((r.gcode.match(/; LINE \d+ flow=/g) || []).length, 9, 'one line per step');
+    assert.match(r.gcode, /flow=5\.0mm3/);
+    assert.match(r.gcode, /flow=25\.0mm3/);
+    assert.match(r.gcode, /M104 S0/);
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('validates the flow range', () => {
+    assert.throws(() => generateMaxFlowrate({ flowStart: 25, flowEnd: 5 }));
+    assert.throws(() => generateMaxFlowrate({ lines: 1 }));
+  });
+});

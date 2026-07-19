@@ -1,0 +1,1186 @@
+/**
+ * Native Slicer — 2D geometry core.
+ *
+ * Pure functions that turn a mesh cross-section into printable 2D paths:
+ * layer slicing, polygon offset (walls), hole/region grouping, and
+ * even-odd infill (sparse + solid). Polygon offset is delegated to the
+ * Clipper library (robust integer-coordinate offsetting with miter joins,
+ * the same class of algorithm BambuStudio/PrusaSlicer use via ClipperUtils).
+ */
+
+import ClipperLib from 'clipper-lib';
+
+export const EPS = 0.001;          // mm tolerance for polygon-loop closure
+const CHAIN_MAX_GAP = 2.0;         // bridge open-contour gaps up to this (mm), else drop (BambuStudio close_gaps); never chord across the part
+export const PI = Math.PI;
+const MITER_LIMIT = 2;             // cap offset miters so smooth curves don't spike
+const CLIP_SCALE = 1e5;            // Clipper works in integers — scale mm up (0.01µm resolution)
+
+// ── Layer slicing ──────────────────────────────────────────────────
+
+/**
+ * Slice a mesh at z and return an array of closed polygons (each
+ * polygon is an array of [x,y] points).
+ */
+export function sliceLayer(mesh, z) {
+  const segments = [];
+  const positions = mesh.positions;
+  const indices = mesh.indices;
+
+  // Crossing point on the edge between vertices ia and ib, computed with a
+  // CANONICAL endpoint order (lowest global vertex index first). Two triangles
+  // that share this edge would otherwise interpolate it in opposite directions
+  // (t vs 1-t) and, after float rounding, land on points a few nanometres apart
+  // — too far for the chain tolerance to weld, so the contour opened up and the
+  // chainer bridged the gap with a straight CHORD across the part. Ordering the
+  // endpoints identically makes both triangles produce the bit-identical point,
+  // so shared edges always weld and no phantom chord (or its false surface) is
+  // created. This is the coordinate-free edge identity libslic3r relies on.
+  const edgeCross = (ia, ib) => {
+    let a = ia, b = ib;
+    if (a > b) { const t = a; a = b; b = t; }
+    const az = positions[3 * a + 2], bz = positions[3 * b + 2];
+    const t = (z - az) / (bz - az);
+    return [positions[3 * a] + t * (positions[3 * b] - positions[3 * a]),
+            positions[3 * a + 1] + t * (positions[3 * b + 1] - positions[3 * a + 1])];
+  };
+
+  for (let f = 0; f < indices.length; f += 3) {
+    const i0 = indices[f], i1 = indices[f + 1], i2 = indices[f + 2];
+    // Robust plane crossing (libslic3r/CGAL rule): classify each vertex as
+    // above or below the plane, counting a vertex EXACTLY on the plane as
+    // above. A crossing exists only on an edge whose endpoints fall in
+    // different classes; interpolation then lands on the on-plane vertex
+    // (t=0 or 1) automatically. This avoids the bug where a vertex on the plane,
+    // with the opposite edge crossing, produced THREE crossing points (a, X, a)
+    // so the `length === 2` guard dropped the segment — leaving a gap in the
+    // contour that fragmented the region and spawned phantom top/bottom surfaces
+    // (solid + bridge) on every layer whose Z grazed a vertex.
+    const a0 = positions[3 * i0 + 2] >= z, a1 = positions[3 * i1 + 2] >= z, a2 = positions[3 * i2 + 2] >= z;
+    const crossings = [];
+    if (a0 !== a1) crossings.push(edgeCross(i0, i1));
+    if (a1 !== a2) crossings.push(edgeCross(i1, i2));
+    if (a2 !== a0) crossings.push(edgeCross(i2, i0));
+    // Two distinct crossings → a real slice segment. A triangle merely tangent
+    // at one vertex yields two coincident points (zero-length) — dropped here.
+    if (crossings.length === 2) {
+      const [c0, c1] = crossings;
+      if (Math.abs(c0[0] - c1[0]) > EPS || Math.abs(c0[1] - c1[1]) > EPS) segments.push([c0, c1]);
+    }
+  }
+
+  const chained = _chainSegments(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+  // Mis-chain guard. Proximity chaining is order-based: on a mesh with internal
+  // walls or coarse/spurious facets it can weld the contour onto a stray segment
+  // and cut a CHORD across the part — a SIMPLE but wrong polygon (omits a whole
+  // notch), which no self-intersection or Clipper clean detects. Compare the
+  // chained fill area to the order-INDEPENDENT even-odd fill of the raw segment
+  // soup (ground truth). On a mismatch the chain is wrong → rebuild the contours
+  // robustly with an even-odd rasterisation. A correctly-chained layer matches
+  // to within the sampling tolerance, so good models keep their exact output.
+  const eoArea = _evenOddArea(segments);
+  if (eoArea > 1) {
+    const chSegs = [];
+    for (const lp of chained) for (let i = 0; i < lp.length; i++) chSegs.push([lp[i], lp[(i + 1) % lp.length]]);
+    const chArea = _evenOddArea(chSegs);
+    // Two independent failure signatures of a mis-chain: (1) the fill AREA no
+    // longer matches the even-odd ground truth (a chord that omits a region);
+    // (2) a SPIKE — a hairpin where the chain shot out along a stray segment and
+    // came straight back, which barely changes the area but leaves a long
+    // out-and-back gash (the distorted low layers). Either one → rebuild robustly.
+    if (Math.abs(chArea - eoArea) > eoArea * 0.05 || chained.some(_hasSpike)) {
+      const eo = _evenOddContours(segments).map(p => simplifyPolygon(p)).filter(p => p.length >= 3);
+      if (eo.length) return eo;
+    }
+  }
+  return chained;
+}
+
+/**
+ * A contour has a SPIKE if any vertex is a near-reversal (hairpin) between two
+ * long edges — the signature of a chain that jumped out along a stray segment
+ * and back. Real contours turn smoothly; a >135° reversal between multi-mm edges
+ * does not occur on a clean slice.
+ */
+function _hasSpike(lp) {
+  const n = lp.length;
+  if (n < 4) return false;
+  for (let i = 0; i < n; i++) {
+    const a = lp[(i - 1 + n) % n], b = lp[i], c = lp[(i + 1) % n];
+    const e1x = b[0] - a[0], e1y = b[1] - a[1], l1 = Math.hypot(e1x, e1y);
+    const e2x = c[0] - b[0], e2y = c[1] - b[1], l2 = Math.hypot(e2x, e2y);
+    if (l1 < 2 || l2 < 2) continue;                       // only long edges spike
+    if ((e1x * e2x + e1y * e2y) / (l1 * l2) < -0.7) return true;   // ~>135° reversal
+  }
+  return false;
+}
+
+/**
+ * Even-odd filled AREA of a slice-segment soup (cheap horizontal scanline). The
+ * order-independent ground truth for how much a cross-section encloses — used to
+ * detect a mis-chained contour (see sliceLayer).
+ */
+function _evenOddArea(segments, row = 0.3) {
+  if (!segments.length) return 0;
+  let ymin = Infinity, ymax = -Infinity;
+  for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
+  let area = 0;
+  const xs = [];
+  // Align the scanline phase to a FIXED global grid (multiples of row), NOT to
+  // this layer's ymin, so every layer samples the SAME Y positions. Otherwise the
+  // grid drifts as the outline changes and the reconstructed walls wobble +/- a
+  // row between layers (visible surface roughness).
+  const yStart = (Math.floor(ymin / row) + 0.5) * row;
+  for (let y = yStart; y < ymax; y += row) {
+    xs.length = 0;
+    for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
+    if (xs.length < 2) continue;
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) area += (xs[k + 1] - xs[k]) * row;
+  }
+  return area;
+}
+
+/**
+ * Robust even-odd reconstruction of contours from a segment soup. Rasterises the
+ * inside runs (X exact from the crossings, Y sampled at `row`) and unions them
+ * with Clipper into clean, non-self-intersecting polygons with holes — correct
+ * regardless of segment order, winding or internal geometry. Order-based chaining
+ * cannot do this; used only as a fallback when the chain is detected wrong.
+ */
+function _evenOddContours(segments, row = 0.06) {
+  if (!segments.length) return [];
+  let ymin = Infinity, ymax = -Infinity;
+  for (const [a, b] of segments) { ymin = Math.min(ymin, a[1], b[1]); ymax = Math.max(ymax, a[1], b[1]); }
+  const S = 1 / EPS, rects = [], xs = [];
+  // Align the scanline phase to a FIXED global grid (multiples of row), NOT to
+  // this layer's ymin, so every layer samples the SAME Y positions. Otherwise the
+  // grid drifts as the outline changes and the reconstructed walls wobble +/- a
+  // row between layers (visible surface roughness).
+  const yStart = (Math.floor(ymin / row) + 0.5) * row;
+  for (let y = yStart; y < ymax; y += row) {
+    xs.length = 0;
+    for (const [a, b] of segments) { const ay = a[1], by = b[1]; if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(a[0] + (y - ay) / (by - ay) * (b[0] - a[0])); }
+    if (xs.length < 2) continue;
+    xs.sort((p, q) => p - q);
+    const y0 = Math.round((y - row * 0.5) * S), y1 = Math.round((y + row * 0.5) * S);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const x0 = Math.round(xs[k] * S), x1 = Math.round(xs[k + 1] * S);
+      if (x1 - x0 < 1) continue;
+      rects.push([{ X: x0, Y: y0 }, { X: x1, Y: y0 }, { X: x1, Y: y1 }, { X: x0, Y: y1 }]);
+    }
+  }
+  if (!rects.length) return [];
+  const c = new ClipperLib.Clipper();
+  c.AddPaths(rects, ClipperLib.PolyType.ptSubject, true);
+  const sol = new ClipperLib.Paths();
+  c.Execute(ClipperLib.ClipType.ctUnion, sol, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  // Collapse the Y-sampling stair-steps back to smooth edges: Douglas-Peucker at
+  // ~a tenth of a line width keeps the true corners but drops the thousands of
+  // row-tall jaggies the rasterisation leaves (they would bloat the g-code and
+  // slow every downstream offset). Only the fallback path pays this.
+  return sol.map((pa) => _simplifyLoopDP(pa.map((pt) => [pt.X / S, pt.Y / S]), 0.04)).filter((l) => l.length >= 3);
+}
+
+/** Douglas-Peucker on an OPEN polyline (iterative — safe for 10k+ points). */
+function _dpOpen(pts, tol) {
+  const n = pts.length;
+  if (n < 3) return pts.slice();
+  const keep = new Uint8Array(n); keep[0] = keep[n - 1] = 1;
+  const stack = [[0, n - 1]];
+  while (stack.length) {
+    const [i, j] = stack.pop();
+    const ax = pts[i][0], ay = pts[i][1];
+    const dx = pts[j][0] - ax, dy = pts[j][1] - ay, len = Math.hypot(dx, dy) || 1;
+    let dmax = 0, idx = -1;
+    for (let k = i + 1; k < j; k++) {
+      const d = Math.abs((pts[k][0] - ax) * dy - (pts[k][1] - ay) * dx) / len;
+      if (d > dmax) { dmax = d; idx = k; }
+    }
+    if (dmax > tol && idx > 0) { keep[idx] = 1; stack.push([i, idx], [idx, j]); }
+  }
+  const out = [];
+  for (let k = 0; k < n; k++) if (keep[k]) out.push(pts[k]);
+  return out;
+}
+
+/** Douglas-Peucker on a CLOSED loop (split at the point farthest from pts[0]). */
+function _simplifyLoopDP(pts, tol) {
+  if (pts.length < 5) return pts;
+  let far = 0, fd = -1;
+  for (let i = 1; i < pts.length; i++) { const d = (pts[i][0] - pts[0][0]) ** 2 + (pts[i][1] - pts[0][1]) ** 2; if (d > fd) { fd = d; far = i; } }
+  const a = _dpOpen(pts.slice(0, far + 1), tol);
+  const b = _dpOpen(pts.slice(far).concat([pts[0]]), tol);
+  return a.slice(0, -1).concat(b.slice(0, -1));
+}
+
+/**
+ * Per-layer TOP- and BOTTOM-facing surface projections, classified by face
+ * NORMAL (not by the 2D layer-to-layer difference).
+ *
+ * A slice-difference approach counts every place where the outline shrinks
+ * going up as a "top surface" — which on a sloped or angled wall is the whole
+ * perimeter, on every layer. BambuStudio/PrusaSlicer instead classify a facet
+ * as top/bottom skin only when its NORMAL is near-vertical (a roof/floor); a
+ * steep wall facet is covered by the perimeters and needs no solid skin. This
+ * projects each near-horizontal facet onto the layers its Z-span covers and
+ * returns those triangles, to be unioned by the caller. `cosThreshold` is the
+ * minimum |n_z|/|n| (= cos of the facet's tilt from horizontal): 0.707 keeps
+ * facets within 45° of flat as skin and treats anything steeper as wall.
+ *
+ * @returns {{ top: Array<Array<{outer:number[][],holes:number[][][]}>>, bottom: ... }}
+ */
+export function topBottomFaceRegions(mesh, opts = {}) {
+  const positions = mesh.positions, indices = mesh.indices;
+  const n = Math.max(0, opts.numLayers | 0);
+  const lh = opts.layerHeight || 0.2;
+  const zc = opts.zCenters || Array.from({ length: n }, (_, i) => (i + 0.5) * lh);
+  const cosT = opts.cosThreshold ?? 0.707;   // 45° from horizontal
+  const top = Array.from({ length: n }, () => []);
+  const bottom = Array.from({ length: n }, () => []);
+  if (!n) return { top, bottom };
+
+  for (let f = 0; f < indices.length; f += 3) {
+    const i0 = indices[f], i1 = indices[f + 1], i2 = indices[f + 2];
+    const ax = positions[3 * i0], ay = positions[3 * i0 + 1], az = positions[3 * i0 + 2];
+    const bx = positions[3 * i1], by = positions[3 * i1 + 1], bz = positions[3 * i1 + 2];
+    const cx = positions[3 * i2], cy = positions[3 * i2 + 1], cz = positions[3 * i2 + 2];
+    // Face normal (right-hand rule on the given winding; autoRepair makes it
+    // point outward, so n_z>0 ⇒ up-facing roof, n_z<0 ⇒ down-facing floor).
+    const ux = bx - ax, uy = by - ay, uz = bz - az;
+    const vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const nlen = Math.hypot(nx, ny, nz);
+    if (nlen < 1e-9) continue;                 // degenerate facet
+    const cosv = nz / nlen;                     // cos of tilt from horizontal
+    const isTop = cosv >= cosT, isBottom = cosv <= -cosT;
+    if (!isTop && !isBottom) continue;          // steep wall — not skin
+    const tri = { outer: [[ax, ay], [bx, by], [cx, cy]], holes: [] };
+    let zmin = az < bz ? (az < cz ? az : cz) : (bz < cz ? bz : cz);
+    let zmax = az > bz ? (az > cz ? az : cz) : (bz > cz ? bz : cz);
+    // Assign to every layer the facet caps. A ROOF (top) has material below it,
+    // so it caps the layer whose centre sits just under the facet: z ∈
+    // (zmin−lh, zmax]. A FLOOR (bottom) has material above it, so it caps the
+    // layer just over the facet: z ∈ [zmin, zmax+lh). A purely flat facet then
+    // maps to the single adjacent layer on its material side (a z=0 base floor
+    // caps layer 0 at z=+lh/2, not a non-existent layer below it).
+    if (isTop) {
+      for (let i = 0; i < n; i++) { const z = zc[i]; if (z > zmin - lh && z <= zmax + 1e-6) top[i].push(tri); }
+    } else {
+      for (let i = 0; i < n; i++) { const z = zc[i]; if (z >= zmin - 1e-6 && z < zmax + lh) bottom[i].push(tri); }
+    }
+  }
+  return { top, bottom };
+}
+
+/**
+ * Remove near-duplicate and collinear vertices. Meshes with split-quad
+ * faces emit midpoint vertices along straight edges; those wreck the
+ * bisector offset (halfSin→0 ⇒ huge inward jump). Collapsing them back
+ * to true corners keeps walls stable.
+ */
+export function simplifyPolygon(poly, tol = 0.01) {
+  if (poly.length < 4) return poly;
+  const pts = [];
+  for (const p of poly) {
+    const prev = pts[pts.length - 1];
+    if (!prev || Math.hypot(p[0] - prev[0], p[1] - prev[1]) > tol) pts.push(p);
+  }
+  if (pts.length > 1 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) <= tol) pts.pop();
+  const n = pts.length;
+  if (n < 4) return pts;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n];
+    const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const len = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1;
+    if (Math.abs(cross) / len > tol) out.push(b);   // keep genuine corners
+  }
+  return out.length >= 3 ? out : pts;
+}
+
+export function _chainSegments(segments) {
+  const polygons = [];
+  const used = new Uint8Array(segments.length);
+  for (let i = 0; i < segments.length; i++) {
+    if (used[i]) continue;
+    const poly = [segments[i][0].slice(), segments[i][1].slice()];
+    used[i] = 1;
+    // Grow at BOTH ends. Slice segments have no consistent winding, so a
+    // tail-only walk can dead-end at a vertex whose only remaining neighbour
+    // chains onto the HEAD — leaving a closed contour looking open. Extending
+    // head and tail closes such loops (needed before we drop truly-open chains).
+    let extending = true;
+    while (extending) {
+      extending = false;
+      const tail = poly[poly.length - 1], head = poly[0];
+      for (let j = 0; j < segments.length; j++) {
+        if (used[j]) continue;
+        const [p, q] = segments[j];
+        if (_near(tail, p)) { poly.push(q.slice()); used[j] = 1; extending = true; break; }
+        if (_near(tail, q)) { poly.push(p.slice()); used[j] = 1; extending = true; break; }
+        if (_near(head, q)) { poly.unshift(p.slice()); used[j] = 1; extending = true; break; }
+        if (_near(head, p)) { poly.unshift(q.slice()); used[j] = 1; extending = true; break; }
+      }
+    }
+    if (poly.length < 3) continue;
+    if (_near(poly[0], poly[poly.length - 1])) {
+      poly.pop();                               // closed loop — drop the duplicate endpoint
+      if (poly.length >= 3) polygons.push(poly);
+    } else {
+      // Open chain (a non-manifold slice left a gap). BambuStudio's
+      // chain_open_polylines_close_gaps bridges gaps up to ~2 mm and DROPS
+      // whatever still won't close — it never emits a chord across the part.
+      // So bridge a small gap (the polygon implicitly closes it) and drop a
+      // large one rather than drawing a phantom line across the model.
+      const gap = Math.hypot(poly[0][0] - poly[poly.length - 1][0], poly[0][1] - poly[poly.length - 1][1]);
+      if (gap < CHAIN_MAX_GAP) polygons.push(poly);
+    }
+  }
+  return polygons;
+}
+
+export function _near(a, b) {
+  return Math.abs(a[0] - b[0]) < EPS && Math.abs(a[1] - b[1]) < EPS;
+}
+
+// ── Polygon offset (walls) ─────────────────────────────────────────
+
+/**
+ * Offset a closed polygon by `distance` (negative = shrink inward the enclosed
+ * area, positive = grow it), independent of the input winding. Uses Clipper's
+ * robust integer offsetting (miter joins, miter limit) so it never
+ * self-intersects or collapses smooth high-vertex outlines — the failure that
+ * the old hand-rolled bisector had on curved walls. Returns a single polygon
+ * (the largest-area result loop; offsets that split a region keep the biggest
+ * piece, matching the single-loop callers) in the SAME winding as the input, or
+ * [] if the region vanishes. Falls back to the bisector on any Clipper error.
+ */
+export function offsetPolygon(poly, distance) {
+  if (!poly || poly.length < 3) return [];
+  if (distance === 0) return poly.map((p) => [p[0], p[1]]);
+  try {
+    const path = poly.map(([x, y]) => ({ X: Math.round(x * CLIP_SCALE), Y: Math.round(y * CLIP_SCALE) }));
+    const co = new ClipperLib.ClipperOffset(MITER_LIMIT, 0.25 * CLIP_SCALE);
+    co.AddPath(path, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    const sol = new ClipperLib.Paths();
+    co.Execute(sol, distance * CLIP_SCALE);
+    if (!sol.length) return [];
+    // Pick the largest loop (by |area|) — an inward offset can carve a region
+    // into several; the biggest is the wall/infill outline the caller wants.
+    let best = null, bestA = -1;
+    for (const p of sol) {
+      const pts = p.map((pt) => [pt.X / CLIP_SCALE, pt.Y / CLIP_SCALE]);
+      const a = Math.abs(_signedArea(pts));
+      if (a > bestA) { bestA = a; best = pts; }
+    }
+    if (!best || best.length < 3) return [];
+    // Clipper canonicalises winding (always CCW); restore the input's winding so
+    // this is a drop-in for callers that re-offset holes (CW) in place.
+    if (_signedArea(best) * _signedArea(poly) < 0) best.reverse();
+    return best;
+  } catch {
+    return _offsetPolygonBisector(poly, distance);
+  }
+}
+
+/**
+ * Like offsetPolygon but returns EVERY resulting loop, not just the largest.
+ * An inward offset of a pinching cross-section (a U/L/C shape, a narrow neck)
+ * splits it into several islands; offsetPolygon keeps only the biggest, so the
+ * other islands' walls and infill silently VANISH. Callers that must not lose
+ * geometry (the inner-wall loop) use this and process each island. Each loop is
+ * returned in the same winding as the input.
+ */
+export function offsetPolygonAll(poly, distance) {
+  if (!poly || poly.length < 3) return [];
+  if (distance === 0) return [poly.map((p) => [p[0], p[1]])];
+  try {
+    const path = poly.map(([x, y]) => ({ X: Math.round(x * CLIP_SCALE), Y: Math.round(y * CLIP_SCALE) }));
+    const co = new ClipperLib.ClipperOffset(MITER_LIMIT, 0.25 * CLIP_SCALE);
+    co.AddPath(path, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    const sol = new ClipperLib.Paths();
+    co.Execute(sol, distance * CLIP_SCALE);
+    const w0 = _signedArea(poly);
+    const out = [];
+    for (const p of sol) {
+      const pts = p.map((pt) => [pt.X / CLIP_SCALE, pt.Y / CLIP_SCALE]);
+      if (pts.length < 3) continue;
+      if (_signedArea(pts) * w0 < 0) pts.reverse();
+      out.push(pts);
+    }
+    return out;
+  } catch {
+    const one = _offsetPolygonBisector(poly, distance);
+    return one && one.length >= 3 ? [one] : [];
+  }
+}
+
+/**
+ * Legacy vertex-bisector offset — kept as a fallback if Clipper throws.
+ * Works on convex/mildly-concave polygons; can self-intersect on tight
+ * concavities (which is why Clipper is now primary).
+ */
+export function _offsetPolygonBisector(poly, distance) {
+  const n = poly.length;
+  if (n < 3) return [];
+  const ccw = _isCCW(poly) ? 1 : -1;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const prev = poly[(i - 1 + n) % n];
+    const curr = poly[i];
+    const next = poly[(i + 1) % n];
+    const v1x = curr[0] - prev[0], v1y = curr[1] - prev[1];
+    const v2x = next[0] - curr[0], v2y = next[1] - curr[1];
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    if (l1 < EPS || l2 < EPS) continue;
+    const n1x = -v1y / l1 * ccw, n1y = v1x / l1 * ccw;
+    const n2x = -v2y / l2 * ccw, n2y = v2x / l2 * ccw;
+    let bx = n1x + n2x, by = n1y + n2y;
+    const bl = Math.hypot(bx, by);
+    if (bl < EPS) continue;
+    bx /= bl; by /= bl;
+    const cosA = n1x * n2x + n1y * n2y;
+    // Miter displacement along the (normalised) bisector to offset BOTH edges by
+    // `distance`: d / cos(half-angle), where cos(half-angle) = sqrt((1+cosA)/2)
+    // and cosA is the dot of the two edge normals. Straight vertex (cosA→1) →
+    // factor 1 (move perpendicular by exactly `distance`); sharp corner
+    // (cosA→-1) → large miter, capped below. Using sin(half-angle) here instead
+    // was the long-standing bug that collapsed smooth high-vertex curves
+    // (a 128-gon circle shrank to a fraction of its radius on a tiny inset).
+    const halfCos = Math.sqrt(Math.max(0.0004, (1 + cosA) / 2));
+    let scale = -distance / halfCos;
+    // Miter limit (outward offsets only): on smooth curves the turn angle is
+    // tiny, so an un-clamped miter shoots the vertex far out (spikes) — cap the
+    // displacement so a skirt/brim/grow stays hugging the outline instead of
+    // ballooning into huge spurs off the bed. Inward offsets are left alone so
+    // walls/concentric rings still shrink to nothing (the loops depend on it).
+    if (distance > 0) {
+      const maxMiter = distance * MITER_LIMIT;
+      if (Math.abs(scale) > maxMiter) scale = (scale < 0 ? -maxMiter : maxMiter);
+    }
+    out.push([curr[0] + bx * scale, curr[1] + by * scale]);
+  }
+  if (_signedArea(out) * _signedArea(poly) < 0) return [];
+  if (distance < 0) {
+    const origBbox = _bbox(poly);
+    const newBbox  = _bbox(out);
+    if ((newBbox.maxX - newBbox.minX) > (origBbox.maxX - origBbox.minX) ||
+        (newBbox.maxY - newBbox.minY) > (origBbox.maxY - origBbox.minY)) {
+      return [];
+    }
+  }
+  return out;
+}
+
+export function _bbox(poly) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of poly) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+export function _isCCW(poly) { return _signedArea(poly) > 0; }
+export function _signedArea(poly) {
+  let a = 0;
+  for (let i = 0, n = poly.length; i < n; i++) {
+    const p = poly[i], q = poly[(i + 1) % n];
+    a += (q[0] - p[0]) * (q[1] + p[1]);
+  }
+  return -a / 2;
+}
+
+// ── Hole / region grouping ─────────────────────────────────────────
+
+/** Ray-cast point-in-polygon test. */
+export function _pointInPoly(pt, poly) {
+  let inside = false;
+  const x = pt[0], y = pt[1];
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1];
+    const xj = poly[j][0], yj = poly[j][1];
+    const intersect = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function _centroid(poly) {
+  let x = 0, y = 0;
+  for (const p of poly) { x += p[0]; y += p[1]; }
+  return [x / poly.length, y / poly.length];
+}
+
+/**
+ * Group a flat list of loops (from sliceLayer) into regions of
+ * { outer, holes[] }. A loop nested inside an odd number of others is a
+ * hole of its immediate parent; even nesting starts a new solid region.
+ * Robust enough for typical FDM cross-sections (outer wall + pockets).
+ */
+export function buildRegions(polygons) {
+  const loops = polygons.filter(p => p.length >= 3);
+  const areas = loops.map(p => Math.abs(_signedArea(p)));
+  // A point GUARANTEED to lie inside each loop. The centroid of a non-convex
+  // outline (C/L/U shapes) lands in the concavity OUTSIDE the loop, so
+  // centroid-based containment mis-nests those shapes — attaching holes to the
+  // wrong outer or reading an outer as a hole (⇒ missing/duplicated geometry).
+  // An interior point makes every containment test correct.
+  const reps = loops.map((p) => _interiorPoint(p));
+  // Depth = how many strictly-larger loops contain this loop's interior point.
+  const depth = loops.map((p, i) => {
+    let d = 0;
+    for (let k = 0; k < loops.length; k++) {
+      if (k === i) continue;
+      if (areas[k] > areas[i] && _pointInPoly(reps[i], loops[k])) d++;
+    }
+    return d;
+  });
+  const regions = [];
+  // Outers = even depth. For each hole (odd depth) attach to the
+  // smallest-area outer that contains it.
+  for (let i = 0; i < loops.length; i++) {
+    if (depth[i] % 2 === 0) regions.push({ outer: loops[i], holes: [], _i: i });
+  }
+  for (let i = 0; i < loops.length; i++) {
+    if (depth[i] % 2 === 1) {
+      let best = null, bestArea = Infinity;
+      for (const r of regions) {
+        if (_pointInPoly(reps[i], r.outer) && areas[r._i] < bestArea) { best = r; bestArea = areas[r._i]; }
+      }
+      if (best) best.holes.push(loops[i]);
+    }
+  }
+  return regions.map(({ outer, holes }) => ({ outer, holes }));
+}
+
+/**
+ * A point guaranteed to lie strictly inside a simple polygon (unlike the
+ * centroid, which escapes non-convex outlines). Walks edges, nudges each
+ * midpoint inward along the interior normal, and returns the first that the
+ * point-in-polygon test confirms is inside. Falls back to the centroid.
+ */
+export function _interiorPoint(poly) {
+  const n = poly.length;
+  if (n < 3) return _centroid(poly);
+  const ccw = _isCCW(poly);
+  let bbMin = Infinity;
+  for (const p of poly) { for (const q of poly) { const d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d > 1e-9 && d < bbMin) bbMin = d; } if (bbMin < 1e-9) break; }
+  const step = Math.max(1e-4, Math.min(0.05, (Number.isFinite(bbMin) ? bbMin : 0.1) * 0.25));
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n];
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const L = Math.hypot(dx, dy); if (L < 1e-9) continue; dx /= L; dy /= L;
+    // Interior normal: left of the edge for CCW, right for CW.
+    const nx = ccw ? -dy : dy, ny = ccw ? dx : -dx;
+    const cand = [mx + nx * step, my + ny * step];
+    if (_pointInPoly(cand, poly)) return cand;
+  }
+  return _centroid(poly);
+}
+
+/**
+ * Fuzzy skin: resample a closed outline and jitter each point in/out along
+ * its outward normal, giving the outer wall a rough textured surface.
+ * Deterministic (no Math.random) so slices are reproducible.
+ */
+export function fuzzifyPolygon(poly, thickness = 0.3, pointDist = 0.4, inBand = null) {
+  if (!poly || poly.length < 3 || thickness <= 0) return poly;
+  const ccw = _isCCW(poly) ? 1 : -1;
+  const n = poly.length;
+  const out = [];
+  let seed = 0x9e3779b9 ^ Math.round((poly[0][0] + poly[1][1]) * 1000);
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed / 0x3fffffff) - 1; };
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    if (len < EPS) continue;
+    // With a paint mask: skip subdivision entirely for edges fully outside the
+    // band (keep the original vertex) so unpainted walls stay unchanged.
+    if (inBand && !inBand(a[0], a[1]) && !inBand((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) && !inBand(b[0], b[1])) {
+      out.push(a); continue;
+    }
+    const nx = (dy / len) * ccw, ny = (-dx / len) * ccw;   // outward normal
+    const steps = Math.max(1, Math.round(len / pointDist));
+    for (let s = 0; s < steps; s++) {
+      const t = s / steps;
+      const px = a[0] + dx * t, py = a[1] + dy * t;
+      const j = (inBand && !inBand(px, py)) ? 0 : rnd() * thickness;
+      out.push([px + nx * j, py + ny * j]);
+    }
+  }
+  return out.length >= 3 ? out : poly;
+}
+
+// ── Infill ─────────────────────────────────────────────────────────
+
+/**
+ * Hatch a single polygon (no holes). Kept for the simple public API +
+ * tests. `density` 0..1, `angleDeg` hatch direction.
+ */
+export function lineInfill(poly, density, angleDeg, lineWidth = 0.4) {
+  if (poly.length < 3 || density <= 0) return [];
+  return regionInfill({ outer: poly, holes: [] }, density, angleDeg, lineWidth);
+}
+
+/**
+ * Hatch a region (outer minus holes) with parallel lines. Uses even-odd
+ * scanline over all boundary loops so holes are left empty. `density`
+ * 1.0 → spacing == lineWidth (solid fill).
+ */
+export function regionInfill(region, density, angleDeg, lineWidth = 0.4, monotonic = false, maskFn = null) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const holes = region.holes || [];
+  const angle = (angleDeg ?? 45) * PI / 180;   // 0 is a valid angle (was coerced to 45 by ||)
+  const spacing = Math.max(lineWidth, lineWidth / Math.max(0.01, Math.min(1, density)));
+  const cos = Math.cos(-angle), sin = Math.sin(-angle);
+  const cosBack = Math.cos(angle), sinBack = Math.sin(angle);
+  const toWorld = (x, y) => [x * cosBack - y * sinBack, x * sinBack + y * cosBack];
+  const rotLoop = (loop) => loop.map(([x, y]) => [x * cos - y * sin, x * sin + y * cos]);
+  const rotOuter = rotLoop(outer);
+  const rotHoles = holes.map(rotLoop);
+  const allLoops = [rotOuter, ...rotHoles];
+  let minY = Infinity, maxY = -Infinity;
+  for (const p of rotOuter) { if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
+
+  // _adjust_solid_spacing (libslic3r): for SOLID fill, rescale the line spacing
+  // so a whole number of lines spans the patch edge-to-edge — otherwise the last
+  // line lands short and leaves a thin unfilled streak along one edge on every
+  // top/bottom surface. Stretch is capped at +20% so it never over-sparsens; a
+  // needed decrease (slightly denser) is always allowed. Sparse fill keeps its
+  // exact density-driven spacing.
+  let spacingAdj = spacing;
+  if (density >= 1 && maxY > minY) {
+    const count = Math.max(1, Math.round((maxY - minY) / spacing));
+    const adj = (maxY - minY) / count;
+    if (adj <= spacing * 1.2) spacingAdj = adj;
+  }
+
+  // Scanline spans per row (each an x-interval inside the region at height y).
+  // When a mask is given (solid/bridge sub-area of the region), each span is
+  // clipped to the sub-intervals the mask keeps — BEFORE connection — so the
+  // zigzag connects within each masked patch instead of being chopped into
+  // 2-point pieces after the fact (what made complex models fragment into tens
+  // of thousands of travels).
+  const maskStep = Math.max(0.2, lineWidth * 0.6);
+  const rows = [];
+  for (let y = minY + spacingAdj / 2; y < maxY; y += spacingAdj) {
+    const xs = [];
+    for (const loop of allLoops) {
+      for (let i = 0, n = loop.length; i < n; i++) {
+        const p = loop[i], q = loop[(i + 1) % n];
+        if ((p[1] - y) * (q[1] - y) < 0) { const t = (y - p[1]) / (q[1] - p[1]); xs.push(p[0] + t * (q[0] - p[0])); }
+      }
+    }
+    xs.sort((a, b) => a - b);
+    let spans = [];
+    for (let k = 0; k + 1 < xs.length; k += 2) if (xs[k + 1] - xs[k] >= EPS) spans.push([xs[k], xs[k + 1]]);
+    if (maskFn && spans.length) {
+      const kept = [];
+      for (const [x0, x1] of spans) {
+        const steps = Math.max(1, Math.ceil((x1 - x0) / maskStep));
+        let runStart = null;
+        for (let k = 0; k <= steps; k++) {
+          const xx = k === steps ? x1 : x0 + (x1 - x0) * (k / steps);
+          const w = toWorld(xx, y);
+          const inside = maskFn(w[0], w[1]);
+          if (inside && runStart === null) runStart = xx;
+          else if (!inside && runStart !== null) { if (xx - runStart > EPS) kept.push([runStart, xx]); runStart = null; }
+        }
+        if (runStart !== null && x1 - runStart > EPS) kept.push([runStart, x1]);
+      }
+      spans = kept;
+    }
+    if (spans.length) rows.push({ y, spans });
+  }
+  if (!rows.length) return [];
+
+  // Connect spans into boustrophedon chains: a span continues a chain from the
+  // previous row when their x-intervals overlap (the short connector then runs
+  // just inside the perimeter). Direction alternates per row → a continuous
+  // zigzag that extrudes the turns instead of a travel per line (OrcaSlicer's
+  // connected rectilinear infill). Cuts infill travels from one-per-line to
+  // roughly one-per-chain.
+
+  // Monotonic ordering (top/bottom surfaces): lay every line in the SAME
+  // direction, swept bottom→top, so each line is deposited against an
+  // already-cooled neighbour on one consistent side. This removes the banding a
+  // boustrophedon zigzag leaves on visible surfaces (BambuStudio's monotonic
+  // top-surface fill). Costs a travel per line — worth it on the shown skin.
+  if (monotonic) {
+    const lines = [];
+    rows.forEach((row) => { for (const sp of row.spans) lines.push({ y: row.y, x0: sp[0], x1: sp[1] }); });
+    lines.sort((a, b) => (a.y - b.y) || (a.x0 - b.x0));
+    return lines.map((L) => [toWorld(L.x0, L.y), toWorld(L.x1, L.y)]);
+  }
+
+  const overlap = (s, e) => Math.min(s[1], e[1]) - Math.max(s[0], e[0]) > EPS;
+  const out = [];       // finished chains (point lists in rotated space)
+  let open = [];        // chains still growing: { pts, span }
+  rows.forEach((row, ri) => {
+    const ltr = ri % 2 === 0;   // even rows left→right, odd right→left
+    const next = [];
+    const used = new Set();
+    for (const sp of row.spans) {
+      const a = ltr ? sp[0] : sp[1], b = ltr ? sp[1] : sp[0];
+      let chain = null;
+      for (const oc of open) { if (!used.has(oc) && overlap(oc.span, sp)) { chain = oc; used.add(oc); break; } }
+      if (chain) { chain.pts.push([a, row.y], [b, row.y]); chain.span = sp; next.push(chain); }
+      else next.push({ pts: [[a, row.y], [b, row.y]], span: sp });
+    }
+    for (const oc of open) if (!used.has(oc)) out.push(oc.pts);   // not extended → finished
+    open = next;
+  });
+  for (const oc of open) out.push(oc.pts);
+
+  return out.filter((p) => p.length >= 2).map((p) => p.map(([x, y]) => toWorld(x, y)));
+}
+
+/**
+ * Solid fill for top/bottom shells: a grid of two perpendicular passes
+ * at full density, alternating base angle per layer for adhesion.
+ */
+/**
+ * Best bridge fill angle for a region (BambuStudio's BridgeDetector::detect_angle).
+ * Scores each candidate direction by the total length of unsupported runs that
+ * are flanked by support on BOTH sides (support → air → support) — a proper
+ * anchored bridge span. A run open at a line end is a cantilever and doesn't
+ * count. `isSupported(x, y)` returns true where the layer below carries the
+ * point. Returns the best-anchored angle in degrees, or null when the region
+ * has no anchored bridge area (fully supported).
+ */
+export function bestBridgeAngle(region, isSupported, lineWidth = 0.4) {
+  // Coverage (total anchored length) + longest anchored span at a given angle.
+  const anchoredAt = (deg) => {
+    let total = 0, maxLen = 0, any = false;
+    for (const L of solidInfill(region, deg, lineWidth * 3, true)) {   // coarse, separate lines
+      const a = L[0], b = L[L.length - 1];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 1e-6) continue;
+      const steps = Math.max(2, Math.ceil(len / (lineWidth * 1.5)));
+      const seg = len / steps;
+      const sup = [];
+      for (let k = 0; k <= steps; k++) { const t = k / steps; sup.push(isSupported(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)); }
+      let k = 0;
+      while (k <= steps) {
+        if (sup[k]) { k++; continue; }
+        const start = k; while (k <= steps && !sup[k]) k++;
+        const end = k - 1;
+        // A span counts only if anchored on BOTH ends (spans real air, lands on solid).
+        if (start > 0 && end < steps && sup[start - 1] && sup[end + 1]) { const spanLen = (end - start + 1) * seg; total += spanLen; if (spanLen > maxLen) maxLen = spanLen; any = true; }
+      }
+    }
+    return { total, maxLen, any };
+  };
+  // Candidate angles (BambuStudio BridgeDetector::detect_angle): a 5° resolution
+  // sweep PLUS every contour edge direction (bridges often want to run along an
+  // edge), deduplicated to 1°.
+  const cands = [];
+  for (let deg = 0; deg < 180; deg += 5) cands.push(deg);
+  const O = region.outer;
+  for (let i = 0; i < O.length; i++) {
+    const a = O[i], b = O[(i + 1) % O.length];
+    let d = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / PI; d = ((d % 180) + 180) % 180;
+    cands.push(d);
+  }
+  cands.sort((x, y) => x - y);
+  const near1 = (u, v) => { const d = Math.abs(u - v); return Math.min(d, 180 - d) < 1; };
+  const uniq = [];
+  for (const d of cands) if (!uniq.length || !near1(d, uniq[uniq.length - 1])) uniq.push(d);
+  // Score, then pick: maximize coverage; among candidates within one line width
+  // of the best coverage, prefer the SHORTER longest span (less sag).
+  const scored = [];
+  for (const deg of uniq) { const { total, maxLen, any } = anchoredAt(deg); if (any) scored.push({ deg, coverage: total, maxLen }); }
+  if (!scored.length) return null;
+  scored.sort((x, y) => y.coverage - x.coverage);
+  let iBest = 0;
+  for (let i = 1; i < scored.length && (scored[iBest].coverage - scored[i].coverage) < lineWidth; i++) {
+    if (scored[i].maxLen < scored[iBest].maxLen) iBest = i;
+  }
+  return scored[iBest].deg;
+}
+
+export function solidInfill(region, angleDeg, lineWidth = 0.4, monotonic = false, maskFn = null) {
+  return regionInfill(region, 1.0, angleDeg, lineWidth, monotonic, maskFn);
+}
+
+/** True/false: is a point inside the region's solid (inside outer, outside holes)? */
+function _inRegion(x, y, region) {
+  if (!_pointInPoly([x, y], region.outer)) return false;
+  for (const h of region.holes || []) if (_pointInPoly([x, y], h)) return false;
+  return true;
+}
+
+/**
+ * Combing / avoid-crossing-walls travel router. Given a travel from `a` to `b`
+ * and the current layer's solid `regions` (array of {outer, holes}), return a
+ * polyline that stays inside the solid — so the nozzle never drags across an
+ * open gap or hole (the cause of stringing and surface scars). Straight when
+ * the direct line is already safe; otherwise a shortest detour over the region
+ * boundary (Dijkstra on a visibility graph of inward-nudged boundary vertices).
+ * Returns null when no interior route exists (caller should retract + hop).
+ */
+/** Boundary vertices nudged into the solid — the waypoint set for routeInside.
+ *  Computed once per layer and reused across all of that layer's travels. */
+export function combWaypoints(regions, tol = 0.3, cap = 40) {
+  const inside = (p) => {
+    for (const r of regions) {
+      if (_pointInPoly(p, r.outer)) { let inHole = false; for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; } if (!inHole) return true; }
+    }
+    return false;
+  };
+  const wp = [];
+  for (const r of regions) {
+    for (const poly of [r.outer, ...(r.holes || [])]) {
+      for (const v of poly) {
+        for (let d = 0; d < 8; d++) { const ang = d / 8 * 2 * PI; const p = [v[0] + tol * Math.cos(ang), v[1] + tol * Math.sin(ang)]; if (inside(p)) { wp.push(p); break; } }
+      }
+    }
+  }
+  if (wp.length > cap) { const stride = Math.ceil(wp.length / cap); const w = []; for (let i = 0; i < wp.length; i += stride) w.push(wp[i]); return w; }
+  return wp;
+}
+
+/**
+ * Precompute the waypoint-to-waypoint visibility graph for a layer once, so
+ * every travel that needs a detour reuses it (Dijkstra then only adds edges
+ * for its own start/end). Returns adjacency: adj[i] = [[j, dist], …].
+ */
+export function buildCombGraph(regions, waypoints, opts = {}) {
+  const step = opts.step ?? 1.5;
+  const inside = (p) => {
+    for (const r of regions) { if (_pointInPoly(p, r.outer)) { let inHole = false; for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; } if (!inHole) return true; } }
+    return false;
+  };
+  const segOk = (p, q) => {
+    const n = Math.max(2, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / step));
+    for (let i = 1; i < n; i++) { const t = i / n; if (!inside([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])])) return false; }
+    return true;
+  };
+  const N = waypoints.length;
+  const adj = Array.from({ length: N }, () => []);
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      if (segOk(waypoints[i], waypoints[j])) { const d = Math.hypot(waypoints[i][0] - waypoints[j][0], waypoints[i][1] - waypoints[j][1]); adj[i].push([j, d]); adj[j].push([i, d]); }
+    }
+  }
+  return adj;
+}
+
+export function routeInside(a, b, regions, opts = {}) {
+  if (!regions || !regions.length) return null;
+  const tol = opts.tol ?? 0.3;
+  const step = opts.step ?? 1.5;
+  const inside = (p) => {
+    for (const r of regions) {
+      if (_pointInPoly(p, r.outer)) {
+        let inHole = false;
+        for (const h of (r.holes || [])) if (_pointInPoly(p, h)) { inHole = true; break; }
+        if (!inHole) return true;
+      }
+    }
+    return false;
+  };
+  const segOk = (p, q) => {
+    const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    const n = Math.max(2, Math.ceil(L / step));
+    for (let i = 1; i < n; i++) { const t = i / n; if (!inside([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])])) return false; }
+    return true;
+  };
+  if (!inside(a) || !inside(b)) return null;
+  if (segOk(a, b)) return [a, b];
+  // Waypoints (boundary vertices nudged a hair into the solid). Reused across
+  // every travel in a layer when the caller precomputes them via combWaypoints.
+  // Waypoints + visibility graph. When a per-layer `cache` object is passed
+  // they are built lazily on the first travel that actually needs a detour and
+  // reused for the rest of the layer (most travels are straight and never get
+  // here), which keeps combing cheap on complex models.
+  let wp, adj;
+  if (opts.cache) {
+    if (!opts.cache.wp) opts.cache.wp = combWaypoints(regions, tol);
+    if (!opts.cache.adj) opts.cache.adj = buildCombGraph(regions, opts.cache.wp, { step });
+    wp = opts.cache.wp; adj = opts.cache.adj;
+  } else {
+    wp = opts.waypoints || combWaypoints(regions, tol);
+    adj = opts.adj || null;
+  }
+  const M = wp.length, S = M, T = M + 1, total = M + 2;   // start=M, target=M+1
+  const posOf = (u) => u < M ? wp[u] : (u === S ? a : b);
+  const dist = new Array(total).fill(Infinity), prev = new Array(total).fill(-1), done = new Uint8Array(total);
+  dist[S] = 0;
+  const dist2 = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+  for (let it = 0; it < total; it++) {
+    let u = -1, best = Infinity;
+    for (let i = 0; i < total; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+    if (u < 0 || u === T) break; done[u] = 1;
+    const relax = (v, d) => { if (!done[v] && dist[u] + d < dist[v]) { dist[v] = dist[u] + d; prev[v] = u; } };
+    if (u < M) {
+      // Waypoint: cached edges to other waypoints, plus an edge to the target.
+      if (adj) { for (const [j, d] of adj[u]) relax(j, d); }
+      else { for (let v = 0; v < M; v++) if (v !== u && segOk(wp[u], wp[v])) relax(v, dist2(wp[u], wp[v])); }
+      if (segOk(wp[u], b)) relax(T, dist2(wp[u], b));
+    } else if (u === S) {
+      for (let v = 0; v < M; v++) if (segOk(a, wp[v])) relax(v, dist2(a, wp[v]));
+    }
+  }
+  if (dist[T] === Infinity) return null;
+  const path = []; let cur = T; while (cur >= 0) { path.push(posOf(cur)); cur = prev[cur]; } path.reverse();
+  return path;
+}
+
+/**
+ * Chain unordered 2-point segments into open polylines by shared endpoints,
+ * using a spatial hash (O(n)) — for iso-contour / tiling output that would
+ * otherwise be thousands of tiny disconnected moves (huge retraction/travel).
+ */
+function _chainOpen(segments, tol = 0.05) {
+  if (segments.length < 2) return segments.map((s) => [s[0], s[1]]);
+  const key = (p) => `${Math.round(p[0] / tol)},${Math.round(p[1] / tol)}`;
+  const map = new Map();
+  segments.forEach((s, i) => { for (const e of [0, 1]) { const kk = key(s[e]); (map.get(kk) || map.set(kk, []).get(kk)).push([i, e]); } });
+  const used = new Uint8Array(segments.length);
+  const out = [];
+  for (let i = 0; i < segments.length; i++) {
+    if (used[i]) continue; used[i] = 1;
+    const poly = [segments[i][0], segments[i][1]];
+    for (let dir = 0; dir < 2; dir++) {
+      let extend = true;
+      while (extend) {
+        extend = false;
+        const end = dir === 0 ? poly[poly.length - 1] : poly[0];
+        for (const [j, e] of (map.get(key(end)) || [])) {
+          if (used[j]) continue;
+          const other = segments[j][e ^ 1]; used[j] = 1;
+          if (dir === 0) poly.push(other); else poly.unshift(other);
+          extend = true; break;
+        }
+      }
+    }
+    out.push(poly);
+  }
+  return out;
+}
+
+/**
+ * Gyroid infill — the real TPMS cross-section. At height z the gyroid surface
+ * sin(kx)cos(ky)+sin(ky)cos(kz)+sin(kz)cos(kx)=0 reduces to a 2-D implicit
+ * curve; we extract its f=0 iso-contour with marching squares and clip each
+ * segment to the region. The z term shifts the pattern every layer, giving the
+ * characteristic interlocking 3-D gyroid — not a flat approximation.
+ */
+export function gyroidInfill(region, density, lineWidth = 0.4, z = 0) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const d = Math.max(0.02, Math.min(1, density));
+  const spacing = Math.max(lineWidth, lineWidth / d);
+  const period = spacing * 2;
+  const k = 2 * PI / period;
+  const cz = Math.cos(k * z), sz = Math.sin(k * z);
+  const f = (x, y) => Math.sin(k * x) * Math.cos(k * y) + Math.sin(k * y) * cz + Math.cos(k * x) * sz;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const step = period / 6;
+  const interp = (xa, ya, fa, xb, yb, fb) => { const t = fa / (fa - fb); return [xa + t * (xb - xa), ya + t * (yb - ya)]; };
+  const segs = [];
+  for (let x = minX; x < maxX; x += step) {
+    const x1 = x + step;
+    for (let y = minY; y < maxY; y += step) {
+      const y1 = y + step;
+      const f00 = f(x, y), f10 = f(x1, y), f11 = f(x1, y1), f01 = f(x, y1);
+      const cross = [];
+      if ((f00 < 0) !== (f10 < 0)) cross.push(interp(x, y, f00, x1, y, f10));
+      if ((f10 < 0) !== (f11 < 0)) cross.push(interp(x1, y, f10, x1, y1, f11));
+      if ((f11 < 0) !== (f01 < 0)) cross.push(interp(x1, y1, f11, x, y1, f01));
+      if ((f01 < 0) !== (f00 < 0)) cross.push(interp(x, y1, f01, x, y, f00));
+      for (let e = 0; e + 1 < cross.length; e += 2) {
+        const a = cross[e], b = cross[e + 1];
+        if (_inRegion((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, region)) segs.push([a, b]);
+      }
+    }
+  }
+  return _chainOpen(segs);
+}
+
+/**
+ * Honeycomb infill — a real hexagon tiling. Hexagons are laid across the
+ * bounding box, their shared edges de-duplicated, and each edge clipped to the
+ * region. `density` sets the cell size.
+ */
+/**
+ * Stitch a soup of 2-point segments into connected polylines by joining
+ * shared endpoints. Used by lattice fills (honeycomb) whose edges are generated
+ * cell-by-cell in no particular order: greedily walks unused edges from each
+ * endpoint so the printer traces long continuous paths instead of retracting
+ * between every edge. Vertices with odd degree still force some breaks, but the
+ * travel count drops by ~an order of magnitude.
+ * @param {number[][][]} segs  segments [[ax,ay],[bx,by]]
+ * @returns {number[][][]} polylines [[x,y], …]
+ */
+export function stitchSegments(segs, eps = 1e-3) {
+  if (!segs.length) return [];
+  const key = (p) => `${Math.round(p[0] / eps)},${Math.round(p[1] / eps)}`;
+  const nodes = new Map();               // point key -> incident edges
+  const edges = segs.map(([a, b]) => ({ a, b, ka: key(a), kb: key(b), used: false }));
+  for (const e of edges) {
+    if (!nodes.has(e.ka)) nodes.set(e.ka, []);
+    if (!nodes.has(e.kb)) nodes.set(e.kb, []);
+    nodes.get(e.ka).push(e); nodes.get(e.kb).push(e);
+  }
+  const nextFrom = (k) => { for (const e of nodes.get(k)) if (!e.used) return e; return null; };
+  const paths = [];
+  for (const start of edges) {
+    if (start.used) continue;
+    start.used = true;
+    const path = [start.a, start.b];
+    let endKey = start.kb;
+    for (let nxt; (nxt = nextFrom(endKey)); ) {
+      nxt.used = true;
+      const fwd = nxt.ka === endKey;
+      path.push(fwd ? nxt.b : nxt.a); endKey = fwd ? nxt.kb : nxt.ka;
+    }
+    let headKey = start.ka;
+    for (let nxt; (nxt = nextFrom(headKey)); ) {
+      nxt.used = true;
+      const fwd = nxt.ka === headKey;
+      path.unshift(fwd ? nxt.b : nxt.a); headKey = fwd ? nxt.kb : nxt.ka;
+    }
+    paths.push(path);
+  }
+  return paths;
+}
+
+export function honeycombInfill(region, density, lineWidth = 0.4) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const d = Math.max(0.02, Math.min(1, density));
+  const spacing = Math.max(lineWidth, lineWidth / d);
+  const R = spacing * 1.8;             // hexagon circumradius
+  const dx = Math.sqrt(3) * R;         // horizontal centre spacing (pointy-top)
+  const dy = 1.5 * R;                  // vertical centre spacing
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const seen = new Set();
+  const kkey = (a, b) => { const r = (v) => Math.round(v * 50) / 50; const A = `${r(a[0])},${r(a[1])}`, B = `${r(b[0])},${r(b[1])}`; return A < B ? `${A}|${B}` : `${B}|${A}`; };
+  const segs = [];
+  let row = 0;
+  for (let cy = minY - dy; cy < maxY + dy; cy += dy, row++) {
+    const xoff = (row & 1) ? dx / 2 : 0;
+    for (let cx = minX - dx + xoff; cx < maxX + dx; cx += dx) {
+      const v = [];
+      for (let j = 0; j < 6; j++) { const a = (30 + 60 * j) * PI / 180; v.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+      for (let j = 0; j < 6; j++) {
+        const a = v[j], b = v[(j + 1) % 6]; const key = kkey(a, b);
+        if (seen.has(key)) continue; seen.add(key);
+        if (_inRegion((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, region)) segs.push([a, b]);
+      }
+    }
+  }
+  return stitchSegments(segs);
+}
+
+/**
+ * Pattern dispatcher for sparse infill. grid = two passes 90° apart, triangles
+ * = three passes 60° apart, gyroid = TPMS iso-contour, honeycomb = hex tiling,
+ * cubic = a 3-way triad rotating with height, lines/default = one direction.
+ * `ctx.z` (layer height) drives the Z-varying patterns.
+ */
+/**
+ * Hilbert-curve infill: a single continuous space-filling curve (a BambuStudio
+ * pattern). Deposits one connected serpentine at ~`spacing` pitch, giving even
+ * multi-directional strength with very few travels. Segments whose midpoint
+ * falls outside the region (or inside a hole) are dropped; the walls cover the
+ * boundary. Deterministic.
+ * @returns {number[][][]} segments [[ax,ay],[bx,by]]
+ */
+export function hilbertInfill(region, density, lineWidth = 0.4) {
+  const outer = region.outer;
+  if (!outer || outer.length < 3 || density <= 0) return [];
+  const holes = region.holes || [];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of outer) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  const span = Math.max(maxX - minX, maxY - minY);
+  if (!(span > 0)) return [];
+  const spacing = Math.max(lineWidth, lineWidth / Math.max(0.01, Math.min(1, density)));
+  let p = 1; while ((1 << (p + 1)) * spacing <= span && p < 8) p++;   // order (cell ≈ spacing, capped)
+  const N = 1 << p;
+  const cell = span / N;
+  const ox = minX + ((maxX - minX) - span) / 2;   // centre the NxN square over the bbox
+  const oy = minY + ((maxY - minY) - span) / 2;
+  // Hilbert distance d → grid (x,y) — the reference iterative algorithm.
+  const d2xy = (d) => {
+    let rx, ry, t = d, x = 0, y = 0;
+    for (let s = 1; s < N; s <<= 1) {
+      rx = 1 & (t >> 1);
+      ry = 1 & (t ^ rx);
+      if (ry === 0) { if (rx === 1) { x = s - 1 - x; y = s - 1 - y; } const tmp = x; x = y; y = tmp; }
+      x += s * rx; y += s * ry; t >>= 2;
+    }
+    return [x, y];
+  };
+  const inside = (x, y) => { if (!_pointInPoly([x, y], outer)) return false; for (const h of holes) if (_pointInPoly([x, y], h)) return false; return true; };
+  const pt = (d) => { const [gx, gy] = d2xy(d); return [ox + (gx + 0.5) * cell, oy + (gy + 0.5) * cell]; };
+  // Keep a cell segment only when BOTH endpoints are inside the region (and out
+  // of holes) — a midpoint-only test would let a segment poke past the wall on
+  // concave outlines / low density. Cells are ~one line-width so the small gap
+  // this leaves at the boundary is covered by the walls.
+  // Walk the curve in Hilbert order, accumulating runs of in-region cells into
+  // continuous polylines. The serpentine is one path; it only breaks where it
+  // crosses outside the region / into a hole, so a convex part fills as a single
+  // connected curve with one travel per layer.
+  const paths = [];
+  let chain = [];
+  let prev = pt(0), prevIn = inside(prev[0], prev[1]);
+  for (let d = 1; d < N * N; d++) {
+    const cur = pt(d), curIn = inside(cur[0], cur[1]);
+    if (prevIn && curIn) {
+      if (chain.length === 0) chain.push(prev);
+      chain.push(cur);
+    } else {
+      if (chain.length >= 2) paths.push(chain);
+      chain = [];
+    }
+    prev = cur; prevIn = curIn;
+  }
+  if (chain.length >= 2) paths.push(chain);
+  return paths;
+}
+
+export function patternInfill(region, density, angleDeg, lineWidth, pattern = 'lines', ctx = {}, maskFn = null) {
+  // maskFn (optional) clips the fill to a sub-area BEFORE the scanline connects,
+  // so sparse infill next to a solid patch stays connected within its own area
+  // instead of being fragmented by a post-filter. Only the scanline-based
+  // patterns thread it; gyroid/honeycomb/hilbert are still filtered downstream.
+  if (pattern === 'hilbert' || pattern === 'hilbertcurve') return hilbertInfill(region, density, lineWidth);
+  if (pattern === 'grid') {
+    return regionInfill(region, density / 2, angleDeg, lineWidth, false, maskFn)
+      .concat(regionInfill(region, density / 2, angleDeg + 90, lineWidth, false, maskFn));
+  }
+  if (pattern === 'triangles' || pattern === 'star') {
+    const d = density / 3;
+    return regionInfill(region, d, angleDeg, lineWidth, false, maskFn)
+      .concat(regionInfill(region, d, angleDeg + 60, lineWidth, false, maskFn))
+      .concat(regionInfill(region, d, angleDeg + 120, lineWidth, false, maskFn));
+  }
+  if (pattern === 'gyroid') return gyroidInfill(region, density, lineWidth, ctx.z ?? 0);
+  if (pattern === 'honeycomb') return honeycombInfill(region, density, lineWidth);
+  if (pattern === 'crosshatch') {
+    // 3-D cross-hatch: single-direction lines whose angle flips 90° every few
+    // layers, so successive bands cross — stronger than plain rectilinear.
+    const z = ctx.z ?? 0;
+    const rot = (Math.floor(z / (lineWidth * 4)) % 2) * 90;
+    return regionInfill(region, density, angleDeg + rot, lineWidth, false, maskFn);
+  }
+  if (pattern === 'cubic') {
+    // Three directions rotating with height → a 3-D cubic lattice feel.
+    const rot = ((ctx.z ?? 0) * 17) % 60;
+    const d = density / 3;
+    return regionInfill(region, d, angleDeg + rot, lineWidth, false, maskFn)
+      .concat(regionInfill(region, d, angleDeg + 60 + rot, lineWidth, false, maskFn))
+      .concat(regionInfill(region, d, angleDeg + 120 + rot, lineWidth, false, maskFn));
+  }
+  return regionInfill(region, density, angleDeg, lineWidth, false, maskFn);
+}

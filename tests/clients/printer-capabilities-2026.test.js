@@ -234,3 +234,45 @@ describe('hasFeature helper integration', () => {
     assert.equal(hasFeature({ model: 'Creality Hi', type: 'moonraker' }, 'multiColor'), false);
   });
 });
+
+import { gcodeFlavorForType } from '../../server/printer-capabilities.js';
+describe('gcodeFlavorForType — firmware dialect per connector', () => {
+  it('Bambu connectors map to the bambu flavor', () => {
+    assert.equal(gcodeFlavorForType('bambu'), 'bambu');
+    assert.equal(gcodeFlavorForType('mqtt'), 'bambu');
+  });
+  it('Klipper/Moonraker map to klipper', () => {
+    assert.equal(gcodeFlavorForType('klipper'), 'klipper');
+    assert.equal(gcodeFlavorForType('moonraker'), 'klipper');
+  });
+  it('Duet/RRF map to reprap', () => {
+    assert.equal(gcodeFlavorForType('duet'), 'reprap');
+    assert.equal(gcodeFlavorForType('reprapfirmware'), 'reprap');
+    assert.equal(gcodeFlavorForType('rrf'), 'reprap');
+  });
+  it('Prusa/OctoPrint/others default to marlin', () => {
+    assert.equal(gcodeFlavorForType('prusalink'), 'marlin');
+    assert.equal(gcodeFlavorForType('octoprint'), 'marlin');
+    assert.equal(gcodeFlavorForType('flashforge'), 'marlin');
+    assert.equal(gcodeFlavorForType(null), 'marlin');
+    assert.equal(gcodeFlavorForType(undefined), 'marlin');
+  });
+});
+
+import { machineLimitsFromState } from '../../server/printer-capabilities.js';
+describe('machineLimitsFromState — live Klipper motion caps', () => {
+  it('prefers live toolhead limits (velocity/accel/square-corner=jerk)', () => {
+    const ml = machineLimitsFromState({ _toolhead_limits: { maxVelocity: 300, maxAccel: 8000, squareCornerVelocity: 8 } });
+    assert.deepEqual(ml, { maxAccel: 8000, maxSpeed: 300, jerk: 8 });
+  });
+  it('falls back to config-level max_velocity/max_accel', () => {
+    const ml = machineLimitsFromState({ _max_velocity: 200, _max_accel: 5000 });
+    assert.equal(ml.maxSpeed, 200);
+    assert.equal(ml.maxAccel, 5000);
+    assert.equal(ml.jerk, null);
+  });
+  it('returns null when the printer reports no limits (e.g. Bambu)', () => {
+    assert.equal(machineLimitsFromState({}), null);
+    assert.equal(machineLimitsFromState(null), null);
+  });
+});

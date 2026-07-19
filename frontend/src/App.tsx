@@ -1,19 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useAuth, useResource } from './hooks';
 import { parseHash, buildHash } from './router';
 import { api } from './api';
 import { useT } from './i18n';
+import { useToast } from './toast';
 import { countUnread, getLastSeen, setLastSeen, maxId } from './notify';
 import { useNavBadges } from './nav-badges';
 import { NotificationCenter } from './components/NotificationCenter';
 import { CommandPalette, type CommandItem } from './components/CommandPalette';
 import { initialTheme, applyTheme, type Theme } from './theme';
+import { QrScanModal, QR_SCAN_SUPPORTED } from './components/QrScanModal';
+import { TigerTagModal } from './components/TigerTagModal';
 import type { AppNotification } from './types';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { ProductionPanel } from './panels/ProductionPanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { MaintenancePanel } from './panels/MaintenancePanel';
 import { PrintGuardPanel } from './panels/PrintGuardPanel';
+import { SlicerPanel } from './panels/SlicerPanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { QueuePanel } from './panels/QueuePanel';
 import { SchedulerPanel } from './panels/SchedulerPanel';
@@ -32,7 +36,7 @@ import { SupplyPanel } from './panels/SupplyPanel';
 import { PurchasingPanel } from './panels/PurchasingPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
-type PanelId = 'dashboard' | 'production' | 'fleet' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'crm' | 'settings';
+type PanelId = 'dashboard' | 'production' | 'fleet' | 'slicer' | 'maintenance' | 'guard' | 'inventory' | 'queue' | 'scheduler' | 'supply' | 'purchasing' | 'analytics' | 'costs' | 'waste' | 'activity' | 'errors' | 'achievements' | 'hardware' | 'library' | 'knowledge' | 'history' | 'crm' | 'settings';
 
 type NavItem = { id: PanelId; label: string; icon: JSX.Element };
 const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
@@ -41,6 +45,7 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
     label: 'Operate',
     items: [
       { id: 'fleet', label: 'Fleet', icon: <IconPrinter /> },
+      { id: 'slicer', label: 'Slicer', icon: <IconLayers /> },
       { id: 'guard', label: 'Print Guard', icon: <IconShield /> },
       { id: 'queue', label: 'Queue', icon: <IconQueue /> },
       { id: 'scheduler', label: 'Scheduler', icon: <IconCalendar /> },
@@ -88,10 +93,29 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
 const NAV_LOOKUP: Record<string, NavItem> = Object.fromEntries(NAV_GROUPS.flatMap((g) => g.items).map((n) => [n.id, n]));
 // Alt+1..9 quick-jump targets, in order.
 const SHORTCUT_PANELS: PanelId[] = ['dashboard', 'fleet', 'guard', 'queue', 'inventory', 'purchasing', 'analytics', 'history', 'settings'];
+// Web NFC (Chrome-on-Android) — used for the OpenSpool spool-scan action.
+const NFC_SUPPORTED = typeof window !== 'undefined' && 'NDEFReader' in window;
 
-function loadCollapsed(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem('v2.nav.collapsed') || '[]')); } catch { return new Set(); }
-}
+// Panels with in-page sub-sections that expand as a tree in the sidebar.
+type SubItem = { sub: string; label: string };
+const SUBNAV: Partial<Record<PanelId, SubItem[]>> = {
+  inventory: [
+    { sub: 'overview', label: 'Overview' }, { sub: 'parts', label: 'Parts' }, { sub: 'stock', label: 'Stock' }, { sub: 'builds', label: 'Builds' },
+    { sub: 'spools', label: 'Spools' }, { sub: 'profiles', label: 'Profiles' },
+    { sub: 'locations', label: 'Locations' }, { sub: 'control', label: 'Control' }, { sub: 'activity', label: 'Activity' },
+  ],
+  purchasing: [{ sub: 'orders', label: 'Orders' }, { sub: 'suppliers', label: 'Suppliers' }, { sub: 'reorder', label: 'Reorder' }],
+  crm: [{ sub: 'overview', label: 'Overview' }, { sub: 'customers', label: 'Customers' }, { sub: 'orders', label: 'Orders' }, { sub: 'invoices', label: 'Invoices' }],
+  analytics: [{ sub: 'stats', label: 'Statistics' }, { sub: 'consumption', label: 'Consumption' }, { sub: 'costs', label: 'Costs' }, { sub: 'efficiency', label: 'Efficiency' }],
+  costs: [{ sub: 'overview', label: 'Overview' }, { sub: 'prints', label: 'Prints' }],
+  maintenance: [{ sub: 'components', label: 'Components' }, { sub: 'nozzles', label: 'Nozzles' }, { sub: 'costs', label: 'Costs' }, { sub: 'history', label: 'History' }],
+  waste: [{ sub: 'overview', label: 'Overview' }, { sub: 'events', label: 'Events' }],
+};
+
+// panel id → its group label, for auto-opening the active group (accordion).
+const PANEL_GROUP: Record<string, string> = {};
+NAV_GROUPS.forEach((g) => { if (g.label) g.items.forEach((n) => { PANEL_GROUP[n.id] = g.label!; }); });
+const FIRST_GROUP = NAV_GROUPS.find((g) => g.label)?.label ?? null;
 function loadRecent(): string[] {
   try { const r = JSON.parse(localStorage.getItem('v2.nav.recent') || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : []; } catch { return []; }
 }
@@ -104,6 +128,7 @@ function loadRail(): boolean {
 
 export function App() {
   const t = useT();
+  const toast = useToast();
   const [route, setRoute] = useState(() => parseHash(window.location.hash));
   useEffect(() => {
     const onHash = () => setRoute(parseHash(window.location.hash));
@@ -115,18 +140,15 @@ export function App() {
   const setPanel = (id: PanelId) => { window.location.hash = buildHash(id); };
   const navigateInv = (sub: string, detail?: string | null) => { window.location.hash = buildHash('inventory', sub, detail); };
   const navigatePur = (sub: string, detail?: string | null) => { window.location.hash = buildHash('purchasing', sub, detail); };
-  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
+  // Accordion: only one top-level group is open at a time to keep the menu
+  // short (no scrolling). The active panel's group opens automatically.
+  const [openGroup, setOpenGroup] = useState<string | null>(() => PANEL_GROUP[parseHash(window.location.hash).panel] ?? FIRST_GROUP);
   const [rail, setRail] = useState<boolean>(loadRail);
   const auth = useAuth();
   const { badges, health } = useNavBadges();
 
   function toggleGroup(label: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label); else next.add(label);
-      try { localStorage.setItem('v2.nav.collapsed', JSON.stringify([...next])); } catch { /* ignore */ }
-      return next;
-    });
+    setOpenGroup((prev) => (prev === label ? null : label));
   }
   function toggleRail() {
     setRail((prev) => { const next = !prev; try { localStorage.setItem('v2.nav.rail', next ? '1' : '0'); } catch { /* ignore */ } return next; });
@@ -134,6 +156,8 @@ export function App() {
 
   const [cmdOpen, setCmdOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [qrScan, setQrScan] = useState(false);
+  const [tigerTag, setTigerTag] = useState(false);
   // Ctrl/Cmd+K toggles the command palette anywhere in the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,6 +168,8 @@ export function App() {
   }, []);
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setDrawer(false); }, [route.panel]);
+  // Accordion: opening the active panel's group when you navigate to it.
+  useEffect(() => { const g = PANEL_GROUP[route.panel]; if (g) setOpenGroup(g); }, [route.panel]);
   // Track recently visited panels (most-recent first) for the palette.
   const [recent, setRecent] = useState<string[]>(loadRecent);
   useEffect(() => {
@@ -153,6 +179,11 @@ export function App() {
       return next;
     });
   }, [route.panel]);
+
+  // Expandable sub-navigation (accordion): one panel's sub-tree open at a time.
+  const [openSub, setOpenSub] = useState<string | null>(() => (SUBNAV[parseHash(window.location.hash).panel as PanelId] ? parseHash(window.location.hash).panel : null));
+  useEffect(() => { if (SUBNAV[route.panel as PanelId]) setOpenSub(route.panel); }, [route.panel]);
+  function toggleSub(id: string) { setOpenSub((prev) => (prev === id ? null : id)); }
 
   // Pinned panels (user favourites) shown in a group at the top of the sidebar.
   const [pinned, setPinned] = useState<string[]>(loadPinned);
@@ -186,6 +217,29 @@ export function App() {
 
   const [theme, setTheme] = useState<Theme>(initialTheme);
   function toggleTheme() { setTheme((prev) => { const next: Theme = prev === 'dark' ? 'light' : 'dark'; applyTheme(next); return next; }); }
+
+  // Scan an OpenSpool NFC tag (Web NFC) → match it to a spool → open it.
+  async function scanNfc() {
+    if (!NFC_SUPPORTED) return;
+    try {
+      const Reader = (window as unknown as { NDEFReader: new () => { scan: () => Promise<void>; onreading: ((e: { message: { records: { data?: BufferSource }[] } }) => void) | null } }).NDEFReader;
+      const ndef = new Reader();
+      await ndef.scan();
+      toast(t('v2.openspool.scan_wait', 'Hold a spool tag to the phone…'), 'success');
+      ndef.onreading = async (e) => {
+        for (const rec of e.message.records) {
+          if (!rec.data) continue;
+          try {
+            const json = new TextDecoder().decode(rec.data);
+            const res = await api.matchOpenspool(JSON.parse(json));
+            if (res.matched_id) { window.location.hash = `#/inventory/spools/${res.matched_id}`; toast(t('v2.openspool.scan_matched', 'Matched a spool'), 'success'); }
+            else { window.location.hash = '#/inventory/spools'; toast(t('v2.openspool.scan_nomatch', 'Tag read — no matching spool'), 'error'); }
+          } catch { toast(t('v2.openspool.scan_bad', 'Not an OpenSpool tag'), 'error'); }
+          break;
+        }
+      };
+    } catch (e) { toast((e as Error).message, 'error'); }
+  }
 
   // Global data search: spools, print history and customers → deep-link results.
   const searchData = useCallback(async (query: string): Promise<CommandItem[]> => {
@@ -242,6 +296,9 @@ export function App() {
     { id: 'act:rail', label: rail ? t('v2.cmd.a_expand', 'Expand sidebar') : t('v2.cmd.a_collapse', 'Collapse sidebar'), group: 'Actions', run: toggleRail },
     { id: 'act:notify', label: t('v2.cmd.a_notify', 'Open notifications'), group: 'Actions', run: openNotifications, hint: unread > 0 ? String(unread) : undefined },
     { id: 'act:classic', label: t('v2.cmd.a_classic', 'Open Classic UI'), group: 'Actions', run: () => { window.location.href = '/'; } },
+    ...(NFC_SUPPORTED ? [{ id: 'act:scan', label: t('v2.cmd.a_scan', 'Scan spool tag (NFC)'), group: 'Actions', run: scanNfc }] : []),
+    ...(QR_SCAN_SUPPORTED ? [{ id: 'act:qrscan', label: t('v2.cmd.a_qrscan', 'Scan QR label (camera)'), group: 'Actions', run: () => setQrScan(true) }] : []),
+    { id: 'act:tigertag', label: t('v2.cmd.a_tigertag', 'Read a TigerTag (RFID)'), group: 'Actions', run: () => setTigerTag(true) },
   ];
 
   return (
@@ -272,7 +329,8 @@ export function App() {
         </button>
         <nav className="nav">
           {navGroups.map((g, gi) => {
-            const isCollapsed = g.label ? collapsed.has(g.label) : false;
+            // Accordion: Pinned stays open; other groups open one at a time.
+            const isCollapsed = g.label && g.label !== 'Pinned' ? openGroup !== g.label : false;
             const hasActive = g.items.some((n) => n.id === panel);
             // In rail mode groups always show their icons (labels/headers hide via CSS).
             const showItems = rail || !isCollapsed;
@@ -288,24 +346,52 @@ export function App() {
                 {showItems && g.items.map((n) => {
                   const b = badges[n.id];
                   const isPinned = pinned.includes(n.id);
+                  const subs = SUBNAV[n.id as PanelId];
+                  const subOpen = !!subs && openSub === n.id;
+                  const activeSub = panel === n.id ? (route.sub || subs?.[0]?.sub) : null;
                   return (
-                    <button
-                      key={n.id}
-                      className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
-                      onClick={() => setPanel(n.id)}
-                      title={rail ? n.label : undefined}
-                    >
-                      <span className="nav-icon">{n.icon}</span>
-                      <span className="nav-label">{n.label}</span>
-                      {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
-                      <span
-                        className={`nav-pin${isPinned ? ' nav-pin--on' : ''}`}
-                        onClick={(e) => { e.stopPropagation(); togglePin(n.id); }}
-                        title={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
-                        role="button"
-                        aria-label={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
-                      >★</span>
-                    </button>
+                    <Fragment key={n.id}>
+                      <button
+                        className={`nav-item${panel === n.id ? ' nav-item--active' : ''}`}
+                        onClick={() => setPanel(n.id)}
+                        title={rail ? n.label : undefined}
+                      >
+                        <span className="nav-icon">{n.icon}</span>
+                        <span className="nav-label">{n.label}</span>
+                        {b && <span className={`nav-badge nav-badge--${b.tone}`}>{b.count > 99 ? '99+' : b.count}</span>}
+                        {subs && (
+                          <span
+                            className={`nav-caret${subOpen ? ' nav-caret--open' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); toggleSub(n.id); }}
+                            role="button"
+                            aria-label={t('v2.nav.toggle_sub', 'Toggle sub-menu')}
+                            aria-expanded={subOpen}
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                          </span>
+                        )}
+                        <span
+                          className={`nav-pin${isPinned ? ' nav-pin--on' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); togglePin(n.id); }}
+                          title={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                          role="button"
+                          aria-label={isPinned ? t('v2.nav.unpin', 'Unpin') : t('v2.nav.pin', 'Pin')}
+                        >★</span>
+                      </button>
+                      {subs && subOpen && (
+                        <div className="nav-sub">
+                          {subs.map((s) => (
+                            <button
+                              key={s.sub}
+                              className={`nav-subitem${activeSub === s.sub ? ' nav-subitem--active' : ''}`}
+                              onClick={() => { window.location.hash = buildHash(n.id, s.sub); }}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </Fragment>
                   );
                 })}
               </div>
@@ -340,12 +426,14 @@ export function App() {
           )}
           <a className="classic-link" href="/" title={t('v2.nav.classic', 'Classic UI')}>← <span className="nav-label">{t('v2.nav.classic', 'Classic UI')}</span></a>
           <div className="muted foot-meta" style={{ marginTop: 8 }}>Live JSON API · Vite + React + TS</div>
+          <div className="muted foot-meta" style={{ fontSize: '0.68rem', opacity: 0.6 }} title="Build timestamp — if this looks old after a reload, your browser is serving a cached bundle (hard-refresh with Ctrl+Shift+R).">build {__BUILD_ID__}</div>
         </div>
       </aside>
 
       <main className="main">
         {panel === 'dashboard' && <DashboardPanel onNavigate={(id) => setPanel(id as PanelId)} />}
         {panel === 'production' && <ProductionPanel />}
+        {panel === 'slicer' && <SlicerPanel />}
         {panel === 'fleet' && <FleetPanel />}
         {panel === 'maintenance' && <MaintenancePanel sub={route.sub} onNav={(s) => { window.location.hash = buildHash('maintenance', s); }} />}
         {panel === 'guard' && <PrintGuardPanel />}
@@ -370,6 +458,8 @@ export function App() {
 
       {notifOpen && <NotificationCenter notifications={notifications} onClose={() => setNotifOpen(false)} />}
       <CommandPalette open={cmdOpen} items={cmdItems} onSelect={go} onClose={() => setCmdOpen(false)} search={searchData} recent={recentItems} actions={actionItems} />
+      {qrScan && <QrScanModal onClose={() => setQrScan(false)} />}
+      {tigerTag && <TigerTagModal onClose={() => setTigerTag(false)} />}
     </div>
   );
 }

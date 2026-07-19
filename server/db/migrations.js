@@ -2450,6 +2450,221 @@ export function runMigrations() {
       try { db.exec('ALTER TABLE purchase_orders ADD COLUMN tracking_number TEXT'); } catch { /* exists */ }
       try { db.exec('ALTER TABLE purchase_orders ADD COLUMN shipped_at TEXT'); } catch { /* exists */ }
     }},
+    { version: 164, up: (db) => {
+      // Inventory Fase 1: nested part categories. Generic (any item, not just
+      // filament) so the shop + personal inventory share one taxonomy.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS part_categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          parent_id INTEGER REFERENCES part_categories(id) ON DELETE SET NULL,
+          icon TEXT,
+          default_location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          default_unit TEXT DEFAULT 'pcs',
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_part_categories_parent ON part_categories(parent_id);
+      `);
+    }},
+    { version: 165, up: (db) => {
+      // Inventory Fase 1: the Part catalog (InvenTree-style). A part is a
+      // catalog entry (what a thing IS); physical quantity lives in stock_items.
+      // type: component|tool|consumable|material|product. Optional links let a
+      // part represent a filament profile or a shop product without duplication.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS parts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ipn TEXT,
+          name TEXT NOT NULL,
+          description TEXT,
+          category_id INTEGER REFERENCES part_categories(id) ON DELETE SET NULL,
+          type TEXT DEFAULT 'component',
+          unit TEXT DEFAULT 'pcs',
+          min_stock REAL DEFAULT 0,
+          image TEXT,
+          notes TEXT,
+          is_active INTEGER DEFAULT 1,
+          filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+          shop_product_id INTEGER REFERENCES shop_products(id) ON DELETE SET NULL,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_parts_ipn ON parts(ipn) WHERE ipn IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_parts_category ON parts(category_id);
+        CREATE INDEX IF NOT EXISTS idx_parts_active ON parts(is_active);
+      `);
+    }},
+    { version: 166, up: (db) => {
+      // Inventory Fase 1: physical stock at a location + a qty-based move ledger.
+      // Kept separate from the filament-specific stock_transactions (grams).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS stock_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          quantity REAL DEFAULT 0,
+          batch TEXT,
+          serial TEXT,
+          status TEXT DEFAULT 'ok',
+          purchase_price REAL,
+          supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+          po_line_id INTEGER,
+          expiry TEXT,
+          qr_uid TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_stock_items_part ON stock_items(part_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_items_location ON stock_items(location_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_items_qr ON stock_items(qr_uid) WHERE qr_uid IS NOT NULL;
+
+        CREATE TABLE IF NOT EXISTS stock_moves (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          stock_item_id INTEGER REFERENCES stock_items(id) ON DELETE SET NULL,
+          part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL,
+          delta REAL NOT NULL,
+          balance REAL,
+          reason TEXT,
+          ref_type TEXT,
+          ref_id INTEGER,
+          actor TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_stock_moves_item ON stock_moves(stock_item_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_moves_part ON stock_moves(part_id);
+      `);
+    }},
+    { version: 167, up: (db) => {
+      // Inventory Fase 2: QR codes on parts and locations (stock_items already
+      // has qr_uid from v166) so any item or bin can be labelled and scanned.
+      try { db.exec('ALTER TABLE parts ADD COLUMN qr_uid TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE locations ADD COLUMN qr_uid TEXT'); } catch { /* exists */ }
+      try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_parts_qr ON parts(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
+      try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_qr ON locations(qr_uid) WHERE qr_uid IS NOT NULL'); } catch { /* exists */ }
+    }},
+    { version: 168, up: (db) => {
+      // Inventory Fase 3: a part's bill of materials + a unit cost for rollups.
+      // A BOM line is a component part OR a filament profile, with qty + waste.
+      try { db.exec('ALTER TABLE parts ADD COLUMN cost REAL'); } catch { /* exists */ }
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS bom_lines (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          parent_part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          component_part_id INTEGER REFERENCES parts(id) ON DELETE CASCADE,
+          filament_profile_id INTEGER REFERENCES filament_profiles(id) ON DELETE SET NULL,
+          quantity REAL DEFAULT 1,
+          unit TEXT,
+          waste_pct REAL DEFAULT 0,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_bom_parent ON bom_lines(parent_part_id);
+      `);
+    }},
+    { version: 169, up: (db) => {
+      // Inventory Fase 3: build orders. Completing one consumes component stock
+      // (FIFO) and produces finished-good stock for the product part.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS build_orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          part_id INTEGER NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+          quantity REAL DEFAULT 1,
+          status TEXT DEFAULT 'planned',
+          printer_id TEXT,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          started_at TEXT,
+          completed_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_build_part ON build_orders(part_id);
+        CREATE INDEX IF NOT EXISTS idx_build_status ON build_orders(status);
+      `);
+    }},
+    { version: 170, up: (db) => {
+      // Inventory Fase 4: stocktake / physical audit. A stocktake snapshots the
+      // expected quantities; applying it reconciles counted vs expected.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS stocktakes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          status TEXT DEFAULT 'open',
+          created_at TEXT DEFAULT (datetime('now')),
+          applied_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS stocktake_lines (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          stocktake_id INTEGER NOT NULL REFERENCES stocktakes(id) ON DELETE CASCADE,
+          stock_item_id INTEGER REFERENCES stock_items(id) ON DELETE SET NULL,
+          part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL,
+          expected REAL,
+          counted REAL
+        );
+        CREATE INDEX IF NOT EXISTS idx_stocktake_lines_st ON stocktake_lines(stocktake_id);
+      `);
+    }},
+    { version: 171, up: (db) => {
+      // Inventory Fase 4: warranties + (link-based) attachments for parts and
+      // printers — manuals, receipts, photos (personal-use inventory).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS warranties (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          provider TEXT,
+          start_date TEXT,
+          end_date TEXT,
+          notes TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_warranties_entity ON warranties(entity_type, entity_id);
+        CREATE TABLE IF NOT EXISTS attachments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          kind TEXT DEFAULT 'link',
+          title TEXT,
+          url TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
+      `);
+    }},
+    { version: 172, up: (db) => {
+      // Inventory ↔ Shop loop: link a shop product to a finished-good part so a
+      // sale deducts real inventory stock and margin can use the BOM cost.
+      try { db.exec('ALTER TABLE shop_products ADD COLUMN part_id INTEGER REFERENCES parts(id) ON DELETE SET NULL'); } catch { /* exists */ }
+    }},
+    { version: 173, up: (db) => {
+      // Model library ↔ inventory (Manyfold-inspired): link a product part to
+      // its printable file, and enrich library files with provenance metadata.
+      try { db.exec('ALTER TABLE parts ADD COLUMN model_file_id INTEGER REFERENCES file_library(id) ON DELETE SET NULL'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN source_url TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN license TEXT'); } catch { /* exists */ }
+      try { db.exec('ALTER TABLE file_library ADD COLUMN designer TEXT'); } catch { /* exists */ }
+    }},
+    { version: 174, up: (db) => {
+      // Inventory: asset check-out / custody (Snipe-IT style). Track who holds a
+      // tool / piece of equipment, with an optional due date and return.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS asset_checkouts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          holder TEXT NOT NULL,
+          quantity REAL DEFAULT 1,
+          location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+          status TEXT DEFAULT 'out',
+          notes TEXT,
+          checked_out_at TEXT DEFAULT (datetime('now')),
+          due_at TEXT,
+          checked_in_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_checkouts_entity ON asset_checkouts(entity_type, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_checkouts_status ON asset_checkouts(status);
+      `);
+    }},
   ];
 
   for (const m of migrations) {

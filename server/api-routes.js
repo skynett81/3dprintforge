@@ -61,7 +61,24 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isAuthEnabled, isMultiUser, validateCredentials, createSession, destroySession, getSessionToken, validateSession, hashPassword, validateApiKey, generateApiKey, hasPermission, validateCredentialsDB, getSessionUser, requirePermission, invalidateUserSessions } from './auth.js';
 import { getSlicerStatus, getSlicerProfiles, saveUploadedFile, sliceFile, uploadToPrinter, cleanupJob, getJobFilePath } from './slicer-service.js';
-import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand } from './mqtt-commands.js';
+import { buildPauseCommand, buildResumeCommand, buildGcodeMultiLine, buildFilamentUnloadSequence, buildFilamentLoadSequence, buildAmsTrayChangeCommand, buildXcamControlCommand, buildAmsFilamentSettingCommand } from './mqtt-commands.js';
+import { buildOpenSpoolTag, parseOpenSpoolTag, openSpoolPreviewUrl, matchSpoolToTag } from './openspool.js';
+import { parseTigerTagDump } from './tigertag.js';
+import { buildOrcaProcessJson, buildNativeSettings } from './slicer-settings.js';
+import QRCode from 'qrcode';
+import { ensureQr, resolveCode } from './inventory-qr.js';
+import {
+  addPartCategory, getPartCategories, updatePartCategory, deletePartCategory,
+  addPart, getParts, getPart, updatePart, deletePart,
+  addStockItem, getStockItems, updateStockItem, deleteStockItem, adjustStock, moveStock, getStockMoves,
+  getBom, getBomCost, addBomLine, updateBomLine, deleteBomLine,
+  getBuilds, getBuild, addBuild, updateBuild, cancelBuild, completeBuild,
+  createStocktake, getStocktakes, getStocktake, setStocktakeCount, applyStocktake, cancelStocktake,
+  getWarranties, addWarranty, deleteWarranty, getExpiringWarranties,
+  getAttachments, addAttachment, deleteAttachment,
+  checkOut, checkIn, getCheckouts, getOverdueCheckouts,
+  getBuildShoppingList,
+} from './database.js';
 import { verifyOctoEverywhereWebhook } from './octoeverywhere-webhook.js';
 import { verifyObicoWebhook } from './obico-webhook.js';
 import { verifySimplyPrintWebhook } from './simplyprint-webhook.js';
@@ -295,6 +312,7 @@ function getRoutePermission(method, path) {
   if (path.startsWith('/api/price-history') || path.startsWith('/api/price-alerts') || path.startsWith('/api/build-plates')) return 'filament';
   if (path.startsWith('/api/dryer-models') || path.startsWith('/api/storage-conditions')) return 'filament';
   if (path.startsWith('/api/tags') || path.startsWith('/api/nfc')) return 'filament';
+  if (path.startsWith('/api/openspool') || path.startsWith('/api/tigertag')) return 'filament';
   if (path.startsWith('/api/palette')) return 'filament';
   if (path.startsWith('/api/spoolman')) return 'filament';
 
@@ -2003,6 +2021,20 @@ export async function handleApiRequest(req, res) {
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, field: body.field, enable: !!body.enable });
           }
+          // Apply an OpenSpool tag to an AMS slot (same MQTT setting OpenSpool
+          // pushes: tray colour / type / nozzle temps). Bambu only.
+          if (action === 'openspool_apply') {
+            if ((entry.config && entry.config.type) !== 'bambu') return sendJson(res, { error: 'AMS setting is only available on Bambu printers' }, 400);
+            let parsed;
+            try { parsed = parseOpenSpoolTag(body.tag); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+            const amsId = Number.isFinite(Number(body.ams_id)) ? Number(body.ams_id) : 0;
+            const slotId = Number(body.slot_id);
+            if (!Number.isInteger(slotId) || slotId < 0 || slotId > 3) return sendJson(res, { error: 'slot_id (0-3) required' }, 400);
+            const color6 = (parsed.colorHex || 'FFFFFF').slice(0, 6);
+            entry.client.sendCommand(buildAmsFilamentSettingCommand(amsId, slotId, `${color6}FF`, parsed.type || 'PLA', parsed.minTemp ?? 190, parsed.maxTemp ?? 230));
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, applied: { ams_id: amsId, slot_id: slotId, type: parsed.type, color_hex: color6 } });
+          }
           // Fan / light / speed: supported on Bambu (MQTT) and Klipper/Moonraker
           // (gcode). Lets the slicer Devices panel mirror the Bambu Device tab.
           if (['set_fan', 'set_light', 'set_speed'].includes(action)) {
@@ -2047,10 +2079,31 @@ export async function handleApiRequest(req, res) {
             }
             return sendJson(res, { error: 'not supported for this connector' }, 409);
           }
-          // Motion / temp / tool: gcode-based, Klipper/Moonraker only (e.g.
-          // Snapmaker U1). Bambu & MQTT-only printers use their own tab.
+          // Bambu AMS load / unload / change — the slicer Device tab's AMS
+          // buttons. Load/change switches to a tray (ams_change_filament);
+          // unload runs the retract-and-cool sequence.
+          if (action === 'filament' && (entry.config && entry.config.type) === 'bambu') {
+            const op = String(body.op || '');
+            const tray = Number.isInteger(body.tool) ? body.tool : 0;
+            let cmd = null;
+            if (op === 'load' || op === 'change') cmd = buildAmsTrayChangeCommand(tray);
+            else if (op === 'unload') cmd = buildGcodeMultiLine(buildFilamentUnloadSequence(body.temp || 220));
+            if (!cmd) return sendJson(res, { error: 'invalid filament op' }, 400);
+            if (Array.isArray(cmd)) for (const c of cmd) entry.client.sendCommand(c);
+            else entry.client.sendCommand(cmd);
+            if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
+            return sendJson(res, { ok: true, action, op, tray });
+          }
+          // Motion / temp / tool: gcode-based. Klipper/Moonraker (e.g. Snapmaker
+          // U1) send over the Moonraker socket; Bambu accepts the same gcode via
+          // an MQTT gcode_line, so its Device tab gets the full jog/temp cluster
+          // exactly like Bambu Studio.
           if (['home', 'move', 'extrude', 'set_temp', 'select_tool', 'filament'].includes(action)) {
-            if (!['moonraker', 'klipper'].includes(entry.config && entry.config.type))
+            const ctype = entry.config && entry.config.type;
+            // Bambu filament ops are handled above; only Moonraker/Klipper reach
+            // the M701/M702/M600 branch here.
+            const motionTypes = action === 'filament' ? ['moonraker', 'klipper'] : ['moonraker', 'klipper', 'bambu'];
+            if (!motionTypes.includes(ctype))
               return sendJson(res, { error: 'motion control not supported for this connector' }, 409);
             let g = null;
             if (action === 'home') {
@@ -2081,7 +2134,13 @@ export async function handleApiRequest(req, res) {
               else if (op === 'change') g = `${tsel}M600`;
             }
             if (!g) return sendJson(res, { error: 'invalid control parameters' }, 400);
-            entry.client.sendCommand({ action: 'gcode', gcode: g });
+            // Bambu takes the same gcode over an MQTT gcode_line; Moonraker over
+            // its socket. buildGcodeCommand splits multi-line gcode itself.
+            if (ctype === 'bambu') {
+              for (const c of buildGcodeMultiLine(g)) entry.client.sendCommand(c);
+            } else {
+              entry.client.sendCommand({ action: 'gcode', gcode: g });
+            }
             if (_broadcastFn) _broadcastFn('printer_command', { printer_id: id, action });
             return sendJson(res, { ok: true, action });
           }
@@ -4067,11 +4126,280 @@ export async function handleApiRequest(req, res) {
       const result = getSpools(filters);
       return sendJson(res, result.rows, 200, { 'X-Total-Count': String(result.total) });
     }
+    // ── Inventory Fase 1: generic parts, categories & physical stock ──
+    if (path === '/api/inventory/part-categories') {
+      if (method === 'GET') return sendJson(res, getPartCategories());
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.name) return sendJson(res, { error: 'name required' }, 400);
+        const r = addPartCategory(b); _broadcastInventory('created', 'part_category', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const partCatMatch = path.match(/^\/api\/inventory\/part-categories\/(\d+)$/);
+    if (partCatMatch) {
+      const id = parseInt(partCatMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updatePartCategory(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'part_category', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deletePartCategory(id); _broadcastInventory('deleted', 'part_category', { id }); return sendJson(res, { ok: true }); }
+    }
+    if (path === '/api/inventory/parts') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('category_id')) f.category_id = parseInt(url.searchParams.get('category_id'));
+        if (url.searchParams.get('type')) f.type = url.searchParams.get('type');
+        if (url.searchParams.get('q')) f.q = url.searchParams.get('q');
+        if (url.searchParams.get('includeInactive') === '1') f.includeInactive = true;
+        return sendJson(res, getParts(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.name) return sendJson(res, { error: 'name required' }, 400);
+        const r = addPart(b); _broadcastInventory('created', 'part', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const partMatch = path.match(/^\/api\/inventory\/parts\/(\d+)$/);
+    if (partMatch) {
+      const id = parseInt(partMatch[1]);
+      if (method === 'GET') { const p = getPart(id); return p ? sendJson(res, p) : sendJson(res, { error: 'Not found' }, 404); }
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updatePart(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'part', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deletePart(id); _broadcastInventory('deleted', 'part', { id }); return sendJson(res, { ok: true }); }
+    }
+    const partStockMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/stock$/);
+    if (partStockMatch && method === 'GET') return sendJson(res, getStockItems({ part_id: parseInt(partStockMatch[1]) }));
+    const partMovesMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/moves$/);
+    if (partMovesMatch && method === 'GET') return sendJson(res, getStockMoves({ part_id: parseInt(partMovesMatch[1]), limit: 100 }));
+    if (path === '/api/inventory/stock-items') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('part_id')) f.part_id = parseInt(url.searchParams.get('part_id'));
+        if (url.searchParams.get('location_id')) f.location_id = parseInt(url.searchParams.get('location_id'));
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        return sendJson(res, getStockItems(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.part_id) return sendJson(res, { error: 'part_id required' }, 400);
+        const r = addStockItem(b); _broadcastInventory('created', 'stock_item', { id: r.id, part_id: b.part_id }); sendJson(res, r, 201);
+      });
+    }
+    const stockMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)$/);
+    if (stockMatch) {
+      const id = parseInt(stockMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateStockItem(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'stock_item', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deleteStockItem(id); _broadcastInventory('deleted', 'stock_item', { id }); return sendJson(res, { ok: true }); }
+    }
+    const stockAdjMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)\/adjust$/);
+    if (stockAdjMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = adjustStock(parseInt(stockAdjMatch[1]), Number(b.delta), b.reason, b.actor);
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'stock_item', { id: r.id }); sendJson(res, r);
+    });
+    const stockMoveMatch = path.match(/^\/api\/inventory\/stock-items\/(\d+)\/move$/);
+    if (stockMoveMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = moveStock(parseInt(stockMoveMatch[1]), b.location_id != null ? parseInt(b.location_id) : null, b.actor);
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'stock_item', { id: parseInt(stockMoveMatch[1]) }); sendJson(res, r);
+    });
+    // QR labels (Fase 2): assign a code, render the image, resolve a scan.
+    const qrAssignMatch = path.match(/^\/api\/inventory\/(parts|stock-items|locations)\/(\d+)\/qr$/);
+    if (qrAssignMatch && method === 'POST') {
+      const type = { parts: 'part', 'stock-items': 'stock', locations: 'location' }[qrAssignMatch[1]];
+      const r = ensureQr(type, parseInt(qrAssignMatch[2]));
+      return r ? sendJson(res, r) : sendJson(res, { error: 'Not found' }, 404);
+    }
+    const qrImgMatch = path.match(/^\/api\/inventory\/qr\/([A-Za-z0-9]+)(\.svg|\.png)?$/);
+    if (qrImgMatch && method === 'GET') {
+      const code = qrImgMatch[1].toUpperCase();
+      const host = req.headers.host || 'localhost:3443';
+      const target = `https://${host}/qr/${code}`;
+      const png = qrImgMatch[2] === '.png' || url.searchParams.get('format') === 'png';
+      if (png) {
+        QRCode.toBuffer(target, { type: 'png', margin: 1, width: 256 })
+          .then((buf) => { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' }); res.end(buf); })
+          .catch(() => sendJson(res, { error: 'qr failed' }, 500));
+      } else {
+        QRCode.toString(target, { type: 'svg', margin: 1, width: 256 })
+          .then((svg) => { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-cache' }); res.end(svg); })
+          .catch(() => sendJson(res, { error: 'qr failed' }, 500));
+      }
+      return;
+    }
+    const qrResolveMatch = path.match(/^\/api\/inventory\/resolve\/(.+)$/);
+    if (qrResolveMatch && method === 'GET') {
+      const r = resolveCode(decodeURIComponent(qrResolveMatch[1]));
+      return r ? sendJson(res, r) : sendJson(res, { error: 'Not found' }, 404);
+    }
+    // ── BOM & Build orders (Fase 3) ──
+    const bomMatch = path.match(/^\/api\/inventory\/parts\/(\d+)\/bom$/);
+    if (bomMatch) {
+      const pid = parseInt(bomMatch[1]);
+      if (method === 'GET') return sendJson(res, { lines: getBom(pid), cost: getBomCost(pid) });
+      if (method === 'POST') return readBody(req, res, (b) => {
+        const r = addBomLine({ ...b, parent_part_id: pid });
+        _broadcastInventory('updated', 'bom', { part_id: pid });
+        sendJson(res, r, 201);
+      });
+    }
+    const bomLineMatch = path.match(/^\/api\/inventory\/bom-lines\/(\d+)$/);
+    if (bomLineMatch) {
+      const id = parseInt(bomLineMatch[1]);
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateBomLine(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'bom', { id }); sendJson(res, r); });
+      if (method === 'DELETE') { deleteBomLine(id); _broadcastInventory('updated', 'bom', { id }); return sendJson(res, { ok: true }); }
+    }
+    if (path === '/api/inventory/builds') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        if (url.searchParams.get('part_id')) f.part_id = parseInt(url.searchParams.get('part_id'));
+        return sendJson(res, getBuilds(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.part_id) return sendJson(res, { error: 'part_id required' }, 400);
+        const r = addBuild(b); _broadcastInventory('created', 'build', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const buildMatch = path.match(/^\/api\/inventory\/builds\/(\d+)$/);
+    if (buildMatch) {
+      const id = parseInt(buildMatch[1]);
+      if (method === 'GET') { const bo = getBuild(id); return bo ? sendJson(res, bo) : sendJson(res, { error: 'Not found' }, 404); }
+      if (method === 'PUT') return readBody(req, res, (b) => { const r = updateBuild(id, b); if (!r) return sendJson(res, { error: 'Not found' }, 404); _broadcastInventory('updated', 'build', { id }); sendJson(res, r); });
+    }
+    const buildCompleteMatch = path.match(/^\/api\/inventory\/builds\/(\d+)\/complete$/);
+    if (buildCompleteMatch && method === 'POST') {
+      const r = completeBuild(parseInt(buildCompleteMatch[1]));
+      if (!r) return sendJson(res, { error: 'Not found' }, 404);
+      _broadcastInventory('updated', 'build', { id: parseInt(buildCompleteMatch[1]) });
+      return sendJson(res, r);
+    }
+    const buildCancelMatch = path.match(/^\/api\/inventory\/builds\/(\d+)\/cancel$/);
+    if (buildCancelMatch && method === 'POST') {
+      const r = cancelBuild(parseInt(buildCancelMatch[1]));
+      if (!r) return sendJson(res, { error: 'Cannot cancel' }, 400);
+      _broadcastInventory('updated', 'build', { id: parseInt(buildCancelMatch[1]) });
+      return sendJson(res, r);
+    }
+    // ── Stocktake (Fase 4) ──
+    if (path === '/api/inventory/stocktakes') {
+      if (method === 'GET') { const f = {}; if (url.searchParams.get('status')) f.status = url.searchParams.get('status'); return sendJson(res, getStocktakes(f)); }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        const r = createStocktake({ name: b.name, location_id: b.location_id != null ? parseInt(b.location_id) : null });
+        _broadcastInventory('created', 'stocktake', { id: r.id }); sendJson(res, r, 201);
+      });
+    }
+    const stMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)$/);
+    if (stMatch && method === 'GET') { const s = getStocktake(parseInt(stMatch[1])); return s ? sendJson(res, s) : sendJson(res, { error: 'Not found' }, 404); }
+    const stLineMatch = path.match(/^\/api\/inventory\/stocktake-lines\/(\d+)$/);
+    if (stLineMatch && method === 'PUT') return readBody(req, res, (b) => { setStocktakeCount(parseInt(stLineMatch[1]), b.counted); sendJson(res, { ok: true }); });
+    const stApplyMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)\/apply$/);
+    if (stApplyMatch && method === 'POST') { const r = applyStocktake(parseInt(stApplyMatch[1])); if (!r) return sendJson(res, { error: 'Cannot apply' }, 400); _broadcastInventory('updated', 'stocktake', { id: parseInt(stApplyMatch[1]) }); return sendJson(res, r); }
+    const stCancelMatch = path.match(/^\/api\/inventory\/stocktakes\/(\d+)\/cancel$/);
+    if (stCancelMatch && method === 'POST') { const r = cancelStocktake(parseInt(stCancelMatch[1])); if (!r) return sendJson(res, { error: 'Cannot cancel' }, 400); return sendJson(res, r); }
+    // ── Warranties & attachments (Fase 4) ──
+    if (path === '/api/inventory/warranties') {
+      if (method === 'GET') {
+        if (url.searchParams.get('expiring')) return sendJson(res, getExpiringWarranties(parseInt(url.searchParams.get('expiring')) || 60));
+        return sendJson(res, getWarranties(url.searchParams.get('entity_type'), url.searchParams.get('entity_id')));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.entity_type || b.entity_id == null) return sendJson(res, { error: 'entity_type & entity_id required' }, 400);
+        const r = addWarranty(b); sendJson(res, r, 201);
+      });
+    }
+    const warrMatch = path.match(/^\/api\/inventory\/warranties\/(\d+)$/);
+    if (warrMatch && method === 'DELETE') { deleteWarranty(parseInt(warrMatch[1])); return sendJson(res, { ok: true }); }
+    if (path === '/api/inventory/attachments') {
+      if (method === 'GET') return sendJson(res, getAttachments(url.searchParams.get('entity_type'), url.searchParams.get('entity_id')));
+      if (method === 'POST') return readBody(req, res, (b) => {
+        if (!b.entity_type || b.entity_id == null || !b.url) return sendJson(res, { error: 'entity_type, entity_id & url required' }, 400);
+        try { const r = addAttachment(b); sendJson(res, r, 201); } catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+    const attMatch = path.match(/^\/api\/inventory\/attachments\/(\d+)$/);
+    if (attMatch && method === 'DELETE') { deleteAttachment(parseInt(attMatch[1])); return sendJson(res, { ok: true }); }
+    // ── CSV export / import for parts (Fase 4) ──
+    if (path === '/api/inventory/parts/export.csv' && method === 'GET') {
+      const cols = ['name', 'ipn', 'type', 'unit', 'min_stock', 'cost', 'category_name', 'total_stock'];
+      const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const csv = cols.join(',') + '\n' + getParts({ includeInactive: true }).map((p) => cols.map((c) => esc(p[c])).join(',')).join('\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="parts.csv"' });
+      return res.end(csv);
+    }
+    if (path === '/api/inventory/parts/import' && method === 'POST') return readBody(req, res, (b) => {
+      const text = typeof b === 'string' ? b : b.csv;
+      if (!text) return sendJson(res, { error: 'csv required' }, 400);
+      const splitLine = (line) => { const out = []; let cur = ''; let q = false; for (let i = 0; i < line.length; i++) { const c = line[i]; if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === ',') { out.push(cur); cur = ''; } else if (c === '"') q = true; else cur += c; } out.push(cur); return out; };
+      const lines = String(text).split(/\r?\n/).filter((l) => l.trim());
+      if (!lines.length) return sendJson(res, { error: 'empty csv' }, 400);
+      const headers = splitLine(lines[0]).map((h) => h.trim().toLowerCase());
+      let created = 0;
+      for (const line of lines.slice(1)) {
+        const cells = splitLine(line);
+        const row = {};
+        headers.forEach((h, i) => { row[h] = cells[i]; });
+        if (!row.name || !row.name.trim()) continue;
+        addPart({
+          name: row.name.trim(), ipn: row.ipn || undefined, type: row.type || 'component',
+          unit: row.unit || 'pcs', min_stock: row.min_stock ? Number(row.min_stock) : 0,
+          cost: row.cost ? Number(row.cost) : undefined,
+        });
+        created++;
+      }
+      _broadcastInventory('created', 'part', { imported: created });
+      sendJson(res, { created });
+    });
+    // ── Asset check-out / custody ──
+    if (path === '/api/inventory/checkouts') {
+      if (method === 'GET') {
+        const f = {};
+        if (url.searchParams.get('status')) f.status = url.searchParams.get('status');
+        if (url.searchParams.get('entity_type')) f.entity_type = url.searchParams.get('entity_type');
+        if (url.searchParams.get('entity_id')) f.entity_id = url.searchParams.get('entity_id');
+        return sendJson(res, getCheckouts(f));
+      }
+      if (method === 'POST') return readBody(req, res, (b) => {
+        try { const r = checkOut(b); _broadcastInventory('created', 'checkout', { id: r.id }); sendJson(res, r, 201); }
+        catch (e) { sendJson(res, { error: e.message }, 400); }
+      });
+    }
+    if (path === '/api/inventory/build-shopping-list' && method === 'GET') return sendJson(res, getBuildShoppingList());
+    if (path === '/api/inventory/checkouts/overdue' && method === 'GET') return sendJson(res, getOverdueCheckouts());
+    const checkinMatch = path.match(/^\/api\/inventory\/checkouts\/(\d+)\/checkin$/);
+    if (checkinMatch && method === 'POST') return readBody(req, res, (b) => {
+      const r = checkIn(parseInt(checkinMatch[1]), b.notes);
+      if (!r) return sendJson(res, { error: 'Not found or already returned' }, 400);
+      _broadcastInventory('updated', 'checkout', { id: parseInt(checkinMatch[1]) });
+      sendJson(res, r);
+    });
+
     const spoolMatch = path.match(/^\/api\/inventory\/spools\/(\d+)$/);
     if (spoolMatch && method === 'GET') {
       const spool = getSpool(parseInt(spoolMatch[1]));
       if (!spool) return sendJson(res, { error: 'Not found' }, 404);
       return sendJson(res, spool);
+    }
+    // OpenSpool NFC tag payload for a spool (write to an NTAG 215/216, or scan
+    // with the OpenSpool reader / Web NFC). https://github.com/spuder/OpenSpool
+    const openspoolTagMatch = path.match(/^\/api\/inventory\/spools\/(\d+)\/openspool-tag$/);
+    if (openspoolTagMatch && method === 'GET') {
+      const spool = getSpool(parseInt(openspoolTagMatch[1]));
+      if (!spool) return sendJson(res, { error: 'Not found' }, 404);
+      const tag = buildOpenSpoolTag(spool);
+      return sendJson(res, { tag, preview_url: openSpoolPreviewUrl(tag) });
+    }
+    // Decode a scanned TigerTag RFID dump, optionally matching it to a spool.
+    if (method === 'POST' && (path === '/api/tigertag/parse' || path === '/api/tigertag/match')) {
+      return readBody(req, res, (body) => {
+        let parsed;
+        try { parsed = parseTigerTagDump(body.dump ?? body); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+        if (path === '/api/tigertag/parse') return sendJson(res, parsed);
+        const result = matchSpoolToTag(parsed, getSpools({}).rows);
+        sendJson(res, { parsed, matched_id: result.matched?.id ?? null, matched: result.matched, candidates: result.candidates });
+      });
+    }
+    // Match a scanned OpenSpool tag to a spool in inventory.
+    if (method === 'POST' && path === '/api/openspool/match') {
+      return readBody(req, res, (body) => {
+        let parsed;
+        try { parsed = parseOpenSpoolTag(body.tag ?? body); } catch (e) { return sendJson(res, { error: e.message }, 400); }
+        const result = matchSpoolToTag(parsed, getSpools({}).rows);
+        sendJson(res, { parsed, matched_id: result.matched?.id ?? null, matched: result.matched, candidates: result.candidates });
+      });
     }
     if (method === 'POST' && path === '/api/inventory/spools') {
       return readBody(req, res, (body) => {
@@ -5762,7 +6090,12 @@ export async function handleApiRequest(req, res) {
         if (!body.filename) return sendJson(res, { error: 'filename required' }, 400);
         // Send print command via WebSocket to client which forwards to MQTT
         if (_broadcastFn) {
-          _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: { action: 'print_file', filename: body.filename, plate_id: body.plate_id } });
+          _broadcastFn({ type: 'command', printerId: filePrintMatch[1], command: {
+            action: 'print_file', filename: body.filename, plate_id: body.plate_id,
+            ams_mapping: Array.isArray(body.ams_mapping) ? body.ams_mapping : undefined,
+            use_ams: body.use_ams, timelapse: body.timelapse, bed_leveling: body.bed_leveling,
+            flow_cali: body.flow_cali, vibration_cali: body.vibration_cali, layer_inspect: body.layer_inspect,
+          } });
         }
         return sendJson(res, { ok: true });
       });
@@ -5771,6 +6104,106 @@ export async function handleApiRequest(req, res) {
     // ---- Cloud Slicer ----
     if (method === 'GET' && path === '/api/slicer/status') {
       return sendJson(res, getSlicerStatus());
+    }
+
+    if (method === 'GET' && path === '/api/slicer/printers') {
+      // Connected printers with slicer-relevant info (build volume) so the
+      // web slicer can pick a target and size its bed accordingly.
+      const { getCapabilities, gcodeFlavorForType, machineLimitsFromState } = await import('./printer-capabilities.js');
+      const { getExtruderSlots } = await import('./db/printers.js');
+      const normHex = (c) => '#' + String(c).replace(/^#/, '').slice(0, 6).toUpperCase();
+      const normMat = (m) => String(m || 'PLA').split(/[\s/_-]/)[0] || 'PLA';
+      const list = [];
+      for (const [id, entry] of (_printerManager?.printers ?? new Map())) {
+        const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
+        // Prefer the build volume the printer reports from its own config
+        // (Moonraker) over the hardcoded capability table — actual size per printer.
+        const liveBv = Array.isArray(entry.client?.state?._buildVolume) ? entry.client.state._buildVolume : null;
+        const bv = liveBv || (Array.isArray(caps?.buildVolume) ? caps.buildVolume : null);
+        const feat = caps?.features || {};
+        // Live AMS slots (Bambu) → the slicer can load the real loaded colours.
+        const st = entry.client?.state || {};
+        let ams = Array.isArray(st._ams_trays)
+          ? st._ams_trays.filter((tr) => tr && tr.color).map((tr, i) => ({
+              slot: i + 1,
+              color: normHex(tr.color),
+              material: normMat(tr.type),
+            }))
+          : [];
+        // Toolchangers / multi-extruder printers (e.g. Snapmaker U1) have no live
+        // AMS feed — fall back to the per-tool colours stored for the printer,
+        // then to colours from spools assigned to their tools.
+        let source = ams.length ? 'ams' : null;
+        if (!ams.length) {
+          try {
+            const slots = getExtruderSlots(id) || [];
+            const bySlot = slots
+              .filter((s) => s.color_hex)
+              .sort((a, b) => Number(a.slot_index) - Number(b.slot_index))
+              .map((s) => ({ slot: Number(s.slot_index) + 1, color: normHex(s.color_hex), material: normMat(s.filament_type) }));
+            if (bySlot.length) { ams = bySlot; source = 'slots'; }
+          } catch { /* extruder slots optional */ }
+        }
+        if (!ams.length) {
+          try {
+            const spools = getSpools({ printer_id: id, archived: 0 }).rows || [];
+            const byTray = spools
+              .filter((s) => s.ams_tray != null && s.color_hex)
+              .sort((a, b) => Number(a.ams_tray) - Number(b.ams_tray))
+              .map((s) => ({ slot: Number(s.ams_tray) + 1, color: normHex(s.color_hex), material: normMat(s.material) }));
+            if (byTray.length) { ams = byTray; source = 'spools'; }
+          } catch { /* inventory optional */ }
+        }
+        // Max colours the printer can print with (AMS trays or physical toolheads).
+        const colorSlots =
+          ams.length ? Math.max(ams.length, feat.toolheads || 0)
+          : feat.toolheads ? feat.toolheads
+          : (feat.idex || feat.dualNozzle) ? 2
+          : caps?.ams ? 4
+          : 1;
+        // AMS humidity (AMS 2 Pro / HT report RH%) and external spool (vt_tray).
+        const humidity = Array.isArray(st._ams_humidity) && st._ams_humidity.length
+          ? (st._ams_humidity[0].humidityRaw ?? st._ams_humidity[0].humidity ?? null) : null;
+        let external = null;
+        if (st.vt_tray && st.vt_tray.tray_color) {
+          external = { color: normHex(st.vt_tray.tray_color), material: normMat(st.vt_tray.tray_type) };
+        }
+        // Machine specs — live-reported (Klipper) first, then the capability DB,
+        // so the slicer knows nozzle/extruders/chamber/temps without manual entry.
+        const chamber = !!(st._chamber || feat.chamber || feat.chamberHeated);
+        const nozzle = st._nozzleDiameter || Number(st._nozzle_diameter) || caps?.nozzle || 0.4;
+        const nozzleType = st._nozzle_type || null;   // Bambu reports hardened/steel
+        // Per-AMS-unit accessories (type/slots/humidity) — 2×AMS 2 Pro, HT, etc.
+        const amsUnits = Array.isArray(st._ams_units) ? st._ams_units : [];
+        const extruders = st._extruders || feat.toolheads || ((feat.idex || feat.dualNozzle) ? 2 : 1);
+        const maxTemps = {
+          nozzle: st._maxNozzleTemp || caps?.maxNozzleTemp || ((feat.highTempBed || feat.chamberHeated) ? 300 : 300),
+          bed: st._maxBedTemp || caps?.maxBedTemp || (feat.highTempBed ? 120 : 110),
+          chamber: st._maxChamberTemp || caps?.maxChamberTemp || (chamber ? 60 : 0),
+        };
+        list.push({
+          id,
+          name: entry.config?.name || id,
+          model: entry.config?.model || null,
+          type: entry.config?.type || null,
+          gcodeFlavor: gcodeFlavorForType(entry.config?.type),
+          machineLimits: machineLimitsFromState(st),
+          buildVolume: bv ? { x: bv[0], y: bv[1], z: bv[2] } : null,
+          colorSlots,
+          multiTool: !!(feat.toolheads || feat.idex || feat.dualNozzle),
+          extruders,
+          nozzle,
+          nozzleType,
+          chamber,
+          maxTemps,
+          ams,
+          amsUnits,
+          amsSource: source,
+          amsHumidity: humidity != null ? Number(humidity) : null,
+          external,
+        });
+      }
+      return sendJson(res, list);
     }
 
     if (method === 'GET' && path === '/api/slicer/profiles') {
@@ -7182,6 +7615,27 @@ export async function handleApiRequest(req, res) {
       return;
     }
 
+    // STEP / STP (CAD B-rep) → tessellated ASCII STL, via OpenCascade in Node
+    // (avoids the browser CSP blocking the WASM importer's eval).
+    if (method === 'POST' && path === '/api/slicer/native/step-to-stl') {
+      const chunks = [];
+      let total = 0; const limit = 100 * 1024 * 1024; let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'STEP file too large (max 100 MB)' }, 413);
+        try {
+          const { stepToStl } = await import('./step-import.js');
+          const fmt = url.searchParams.get('format') === 'iges' ? 'iges' : 'step';
+          const stl = await stepToStl(Buffer.concat(chunks), fmt);
+          res.writeHead(200, { 'Content-Type': 'model/stl', 'Cache-Control': 'no-store' });
+          res.end(stl);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
     // ──────────────────────────────────────────────────────────────────
     // AI MODEL FORGE — text/image/sketch → mesh
     // ──────────────────────────────────────────────────────────────────
@@ -7724,12 +8178,14 @@ export async function handleApiRequest(req, res) {
           }
           if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
 
+          let processSettings = null;
+          try { const raw = url.searchParams.get('settings'); if (raw) processSettings = buildOrcaProcessJson(JSON.parse(raw)); } catch { /* ignore bad settings */ }
           const result = await sliceModel({
             modelBuffer: buf,
             modelFilename: filename,
             slicer,
             printerInfo: { model: printerModel, type: printerType },
-            printerProfile, filamentProfile, processProfile,
+            printerProfile, filamentProfile, processProfile, processSettings,
           });
           if (!result.ok) return sendJson(res, result, 500);
 
@@ -7753,7 +8209,11 @@ export async function handleApiRequest(req, res) {
     if (method === 'GET' && path === '/api/slicer/native/profiles') {
       const { listProfiles } = await import('./db/slicer-profiles.js');
       const kind = url.searchParams.get('kind');
-      return sendJson(res, { profiles: listProfiles(kind) });
+      let profiles = listProfiles(kind);
+      // user=1 → only the user's own editable profiles (seeded vendor presets
+      // all carry a vendor; user-created ones have none).
+      if (url.searchParams.get('user') === '1') profiles = profiles.filter((p) => !p.vendor);
+      return sendJson(res, { profiles });
     }
 
     const profIdMatch = path.match(/^\/api\/slicer\/native\/profiles\/(\d+)$/);
@@ -7834,6 +8294,13 @@ export async function handleApiRequest(req, res) {
             material:       url.searchParams.get('material') || merged.material || 'PLA',
             ...(merged.buildVolume ? { buildVolume: merged.buildVolume } : {}),
           };
+          // The /v2 web slicer sends a single `settings` JSON blob (UI keys);
+          // overlay it via the shared UI→native mapper so preview and
+          // slice-and-send stay in lock-step.
+          try {
+            const raw = url.searchParams.get('settings');
+            if (raw) Object.assign(settings, buildNativeSettings(JSON.parse(raw)));
+          } catch { /* ignore bad settings blob */ }
 
           const start = Date.now();
           const { bufferToMesh } = await import('./format-converter.js');
@@ -7843,8 +8310,11 @@ export async function handleApiRequest(req, res) {
           const elapsed = Date.now() - start;
 
           // Optional time/material estimate via the existing estimator.
+          // Use the print material's density so weight/waste are per-material.
           const { estimate } = await import('./gcode-time-estimator.js');
-          const est = estimate(result.gcode);
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14, PVA: 1.23, HIPS: 1.04 };
+          const matKey = String(settings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
 
           const gcodeBuf = Buffer.from(result.gcode, 'utf-8');
           const outName = filename.replace(/\.[^.]+$/, '') + '.gcode';
@@ -7857,10 +8327,248 @@ export async function handleApiRequest(req, res) {
             'X-Triangles': String(result.triangles),
             'X-Estimated-Time-Sec': String(est.timeSeconds),
             'X-Filament-G': String(est.weightG),
+            'X-Waste-G': String(est.wasteWeightG ?? 0),
           });
           return res.end(gcodeBuf);
         } catch (e) {
           return sendJson(res, { error: e.message, stack: e.stack?.slice(0, 1000) }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-objects') {
+      // Preview slice of multiple objects (no upload). JSON { filename, settings,
+      // objects:[{stl(base64), settings}] }. Honors print_sequence=by_object.
+      const chunks = []; let total = 0; const limit = 200 * 1024 * 1024; let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          if (!Array.isArray(body.objects) || !body.objects.length) return sendJson(res, { error: 'objects required' }, 400);
+          const { bufferToMesh } = await import('./format-converter.js');
+          const globalSettings = buildNativeSettings(body.settings || {}, { bedTemp: 60, nozzleTemp: 210, material: 'PLA' });
+          const objects = [];
+          for (const o of body.objects) {
+            const mesh = await bufferToMesh(Buffer.from(String(o.stl || ''), 'base64'), 'obj.stl');
+            objects.push({ mesh, settings: buildNativeSettings(o.settings || {}, {}) });
+          }
+          const start = Date.now();
+          const { sliceObjectsGcode } = await import('./native-slicer.js');
+          const result = await sliceObjectsGcode(objects, globalSettings);
+          const { estimate } = await import('./gcode-time-estimator.js');
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14 };
+          const matKey = String(globalSettings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'X-Slicer': 'native-objects',
+            'X-Slice-Duration-Ms': String(Date.now() - start),
+            'X-Layer-Count': String(result.layers),
+            'X-Estimated-Time-Sec': String(est.timeSeconds),
+            'X-Filament-G': String(est.weightG),
+            'X-Waste-G': String(est.wasteWeightG ?? 0),
+            'X-Sequential': result.sequential ? '1' : '0',
+            'X-Warnings': encodeURIComponent(JSON.stringify(result.warnings || [])),
+          });
+          return res.end(Buffer.from(result.gcode, 'utf-8'));
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-objects-and-send') {
+      // Per-object settings: JSON { printerId, filename, print, settings(global),
+      // objects:[{stl(base64), settings(override)}] }. Each object is sliced with
+      // its own settings (path-affecting), interleaved into one G-code, uploaded.
+      const chunks = [];
+      let total = 0; const limit = 200 * 1024 * 1024; let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          const printerId = body.printerId;
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          if (!Array.isArray(body.objects) || !body.objects.length) return sendJson(res, { error: 'objects required' }, 400);
+
+          const { bufferToMesh } = await import('./format-converter.js');
+          const globalSettings = buildNativeSettings(body.settings || {}, { bedTemp: 60, nozzleTemp: 210, material: 'PLA' });
+          const objects = [];
+          for (const o of body.objects) {
+            const mesh = await bufferToMesh(Buffer.from(String(o.stl || ''), 'base64'), 'obj.stl');
+            objects.push({ mesh, settings: buildNativeSettings(o.settings || {}, {}) });
+          }
+          const start = Date.now();
+          const { sliceObjectsGcode } = await import('./native-slicer.js');
+          const result = await sliceObjectsGcode(objects, globalSettings);
+          const durationMs = Date.now() - start;
+          const gcodeFilename = String(body.filename || 'model').replace(/\.[^.]+$/, '') + '.gcode';
+          const gcodeBuffer = Buffer.from(result.gcode, 'utf-8');
+          const startNow = body.print === true && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow ? await entry.client.uploadAndPrint(gcodeFilename, gcodeBuffer) : await entry.client.uploadFile(gcodeFilename, gcodeBuffer);
+          return sendJson(res, { ok: true, slicer: 'native-objects', gcodeFilename, sizeBytes: gcodeBuffer.length, sliceDurationMs: durationMs, layers: result.layers, objects: result.objects, uploaded: true, printing: startNow, upload }, 201);
+        } catch (e) { return sendJson(res, { error: e.message }, 500); }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-multi') {
+      // Preview-only multi-material slice: JSON body { filename, settings,
+      // parts:[{extruder, stl(base64)}] }. Returns the G-code (with tool
+      // changes) so the browser preview can render the painted colours.
+      const chunks = [];
+      let total = 0;
+      const limit = 200 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          if (!Array.isArray(body.parts) || !body.parts.length) return sendJson(res, { error: 'parts required' }, 400);
+          const { bufferToMesh } = await import('./format-converter.js');
+          const meshes = [];
+          for (const p of body.parts) {
+            const buf = Buffer.from(String(p.stl || ''), 'base64');
+            const mesh = await bufferToMesh(buf, `part.stl`);
+            meshes.push({ positions: mesh.positions, indices: mesh.indices, extruder: parseInt(p.extruder, 10) || 1 });
+          }
+          const settings = buildNativeSettings(body.settings || {}, { bedTemp: 60, nozzleTemp: 210, material: 'PLA' });
+          const start = Date.now();
+          const { sliceMultiMaterialGcode } = await import('./native-slicer-multi.js');
+          const result = await sliceMultiMaterialGcode(meshes, settings);
+          const durationMs = Date.now() - start;
+          const { estimate } = await import('./gcode-time-estimator.js');
+          const FIL_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PC: 1.20, PA: 1.14, NYLON: 1.14, PVA: 1.23, HIPS: 1.04 };
+          const matKey = String(settings.material || 'PLA').toUpperCase().split(/[\s/_-]/)[0];
+          const est = estimate(result.gcode, { filamentDensityGcm3: FIL_DENSITY[matKey] || 1.24 });
+          return sendJson(res, { gcode: result.gcode, layers: result.layers, timeSec: est.timeSeconds, filamentG: est.weightG, wasteG: est.wasteWeightG ?? 0, durationMs, materials: result.materials }, 200);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-multi-and-send') {
+      // Multi-material / multi-colour slice: JSON body { printerId, filename,
+      // print, settings, parts:[{extruder, stl(base64)}] }. Slices with tool
+      // changes + flush-into-infill and uploads to the printer.
+      const chunks = [];
+      let total = 0;
+      const limit = 200 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => { total += c.length; if (total > limit) { aborted = true; req.destroy(); return; } chunks.push(c); });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'payload too large' }, 413);
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          const printerId = body.printerId;
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          if (!Array.isArray(body.parts) || !body.parts.length) return sendJson(res, { error: 'parts required' }, 400);
+
+          const { bufferToMesh } = await import('./format-converter.js');
+          const meshes = [];
+          for (const p of body.parts) {
+            const buf = Buffer.from(String(p.stl || ''), 'base64');
+            const mesh = await bufferToMesh(buf, `part.stl`);
+            meshes.push({ positions: mesh.positions, indices: mesh.indices, extruder: parseInt(p.extruder, 10) || 1 });
+          }
+          let base = { bedTemp: 60, nozzleTemp: 210, material: 'PLA' };
+          const settings = buildNativeSettings(body.settings || {}, base);
+
+          const start = Date.now();
+          const { sliceMultiMaterialGcode } = await import('./native-slicer-multi.js');
+          const result = await sliceMultiMaterialGcode(meshes, settings);
+          const durationMs = Date.now() - start;
+
+          const gcodeFilename = String(body.filename || 'model').replace(/\.[^.]+$/, '') + '.gcode';
+          const gcodeBuffer = Buffer.from(result.gcode, 'utf-8');
+          const startNow = body.print === true && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow
+            ? await entry.client.uploadAndPrint(gcodeFilename, gcodeBuffer)
+            : await entry.client.uploadFile(gcodeFilename, gcodeBuffer);
+
+          return sendJson(res, { ok: true, slicer: 'native-multi', gcodeFilename, sizeBytes: gcodeBuffer.length, sliceDurationMs: durationMs, layers: result.layers, materials: result.materials, uploaded: true, printing: startNow, upload }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
+        }
+      });
+      return;
+    }
+
+    if (method === 'POST' && path === '/api/slicer/native/slice-and-send') {
+      // Slice with the project's own pure-JS engine (no external slicer)
+      // and upload the G-code to a connected printer in one call.
+      const chunks = [];
+      let total = 0;
+      const limit = 100 * 1024 * 1024;
+      let aborted = false;
+      req.on('data', (c) => {
+        total += c.length;
+        if (total > limit) { aborted = true; req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', async () => {
+        if (aborted) return sendJson(res, { error: 'model too large (max 100 MB)' }, 413);
+        try {
+          const buf = Buffer.concat(chunks);
+          const printerId = url.searchParams.get('printerId');
+          if (!printerId) return sendJson(res, { error: 'printerId required' }, 400);
+          const entry = _printerManager?.printers?.get(printerId);
+          if (!entry) return sendJson(res, { error: 'printer not found' }, 404);
+          if (typeof entry.client?.uploadFile !== 'function') {
+            return sendJson(res, { error: `printer '${printerId}' does not support file upload` }, 400);
+          }
+
+          const filename = url.searchParams.get('filename') || 'model.stl';
+          // Bed volume + a sensible temp default drive placement/heat.
+          let base = { bedTemp: 60, nozzleTemp: 210, material: 'PLA' };
+          try {
+            const { getCapabilities } = await import('./printer-capabilities.js');
+            const caps = getCapabilities({ model: entry.config?.model, type: entry.config?.type });
+            if (Array.isArray(caps?.buildVolume)) base.bedSize = [caps.buildVolume[0], caps.buildVolume[1]];
+          } catch { /* default bed */ }
+
+          let ui = {};
+          try { const raw = url.searchParams.get('settings'); if (raw) ui = JSON.parse(raw); } catch { /* ignore bad settings */ }
+          const settings = buildNativeSettings(ui, base);
+
+          const start = Date.now();
+          const { bufferToMesh } = await import('./format-converter.js');
+          const { sliceMeshToGcode } = await import('./native-slicer.js');
+          const mesh = await bufferToMesh(buf, filename);
+          const result = await sliceMeshToGcode(mesh, settings);
+          const durationMs = Date.now() - start;
+
+          const gcodeFilename = filename.replace(/\.[^.]+$/, '') + '.gcode';
+          const gcodeBuffer = Buffer.from(result.gcode, 'utf-8');
+          const startNow = url.searchParams.get('print') === '1' && typeof entry.client.uploadAndPrint === 'function';
+          const upload = startNow
+            ? await entry.client.uploadAndPrint(gcodeFilename, gcodeBuffer)
+            : await entry.client.uploadFile(gcodeFilename, gcodeBuffer);
+
+          return sendJson(res, {
+            ok: true,
+            slicer: 'native',
+            gcodeFilename,
+            sizeBytes: gcodeBuffer.length,
+            sliceDurationMs: durationMs,
+            layers: result.layers,
+            uploaded: true,
+            printing: startNow,
+            upload,
+          }, 201);
+        } catch (e) {
+          return sendJson(res, { error: e.message }, 500);
         }
       });
       return;
@@ -7893,6 +8601,8 @@ export async function handleApiRequest(req, res) {
           const slicer = await pickSlicer({ model: entry.config?.model, type: entry.config?.type });
           if (!slicer) return sendJson(res, { error: 'no slicer available' }, 503);
 
+          let processSettings = null;
+          try { const raw = url.searchParams.get('settings'); if (raw) processSettings = buildOrcaProcessJson(JSON.parse(raw)); } catch { /* ignore bad settings */ }
           const result = await sliceModel({
             modelBuffer: buf,
             modelFilename: url.searchParams.get('filename') || 'model.stl',
@@ -7901,6 +8611,7 @@ export async function handleApiRequest(req, res) {
             printerProfile: url.searchParams.get('printerProfile') || null,
             filamentProfile: url.searchParams.get('filamentProfile') || null,
             processProfile: url.searchParams.get('processProfile') || null,
+            processSettings,
           });
           if (!result.ok) return sendJson(res, result, 500);
 

@@ -4,6 +4,7 @@ import { useT } from '../i18n';
 import { useToast } from '../toast';
 import { spoolEventLabel } from '../inventory';
 import type { Spool, SpoolEvent } from '../types';
+import { OpenSpoolTag } from './OpenSpoolTag';
 
 function fdate(iso?: string | null) {
   if (!iso) return null;
@@ -135,6 +136,8 @@ export function SpoolDrawer({ spool, onClose, onChanged }: Props) {
             ))}
           </div>
         )}
+
+        <OpenSpoolTag spoolId={spool.id} />
 
         <div className="drawer-history">
           <div className="field-label">{t('v2.inventory.history', 'History')}</div>

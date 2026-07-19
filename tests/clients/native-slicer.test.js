@@ -5,9 +5,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, _internals,
+  sliceLayer, offsetPolygon, lineInfill, layersToGcode, sliceMeshToGcode, seamStart, _internals,
 } from '../../server/native-slicer.js';
-import { box, cylinder } from '../../server/mesh-primitives.js';
+import { patternInfill, solidInfill, bestBridgeAngle } from '../../server/native-slicer-geo.js';
+import { box, cylinder, extrudePolygon, offset, unionMeshes } from '../../server/mesh-primitives.js';
 
 describe('native-slicer: sliceLayer', () => {
   it('a 10mm cube cut at z=5 yields one square polygon', () => {
@@ -45,6 +46,25 @@ describe('native-slicer: sliceLayer', () => {
     assert.ok(polys.length >= 1);
     assert.ok(polys[0].length > 16, `cylinder polygon should have many vertices, got ${polys[0].length}`);
   });
+
+  it('a concave L-prism keeps its true cross-section area (no chord across the notch)', () => {
+    // An L: 20x20 square minus its 10x10 top-right corner = 300 mm². Extruded to
+    // z=10. A mis-chained contour would cut a chord across the concave notch and
+    // change the area; the even-odd area guard rebuilds it robustly if so.
+    const L = [[0, 0], [20, 0], [20, 10], [10, 10], [10, 20], [0, 20]];
+    const h = 10, n = L.length, pos = [], idx = [];
+    const push = (x, y, z) => { pos.push(x, y, z); return pos.length / 3 - 1; };
+    const bot = L.map(([x, y]) => push(x, y, 0));
+    const top = L.map(([x, y]) => push(x, y, h));
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; idx.push(bot[i], bot[j], top[i], bot[j], top[j], top[i]); }
+    // caps (fan from vertex 0) — L is simple so a fan triangulation is valid
+    for (let i = 1; i < n - 1; i++) { idx.push(bot[0], bot[i + 1], bot[i], top[0], top[i], top[i + 1]); }
+    const mesh = { positions: new Float32Array(pos), indices: new Uint32Array(idx) };
+    const polys = sliceLayer(mesh, 5);
+    let area = 0;
+    for (const lp of polys) for (let i = 0; i < lp.length; i++) { const a = lp[i], b = lp[(i + 1) % lp.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    assert.ok(Math.abs(Math.abs(area / 2) - 300) < 5, `L cross-section area ≈ 300 (got ${Math.abs(area / 2).toFixed(1)})`);
+  });
 });
 
 describe('native-slicer: offsetPolygon', () => {
@@ -76,15 +96,18 @@ describe('native-slicer: offsetPolygon', () => {
 });
 
 describe('native-slicer: lineInfill', () => {
-  it('generates parallel hatching segments inside a square', () => {
+  it('generates connected hatching polylines inside a square', () => {
     const square = [[0, 0], [20, 0], [20, 20], [0, 20]];
     const segs = lineInfill(square, 0.3, 45, 0.4);
     assert.ok(segs.length > 0);
-    // Each segment is two points.
+    // Connected zigzag infill: each entry is a polyline of >= 2 points, each [x, y].
     for (const s of segs) {
-      assert.equal(s.length, 2);
+      assert.ok(s.length >= 2);
       assert.equal(s[0].length, 2);
     }
+    // Connecting scanlines into zigzags means far fewer separate paths than
+    // raw scanlines — a 20 mm square at 0.3 density hatches into a handful of chains.
+    assert.ok(segs.length < 12, `expected connected chains, got ${segs.length} paths`);
   });
 
   it('zero density returns empty', () => {
@@ -146,5 +169,1046 @@ describe('native-slicer: helpers', () => {
   it('_near matches points within EPS tolerance', () => {
     assert.equal(_internals._near([0, 0], [0.0005, 0.0005]), true);
     assert.equal(_internals._near([0, 0], [0.5, 0.5]), false);
+  });
+});
+
+describe('native-slicer: pressure advance & patterns', () => {
+  it('emits M900 K for Marlin pressure advance', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 6), { pressureAdvance: 0.035, supports: false });
+    assert.match(r.gcode, /M900 K0\.0350/);
+  });
+  it('emits SET_PRESSURE_ADVANCE for Klipper flavor', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 6), { pressureAdvance: 0.04, gcodeFlavor: 'klipper', supports: false });
+    assert.match(r.gcode, /SET_PRESSURE_ADVANCE ADVANCE=0\.0400/);
+  });
+  it('adaptive layer height uses fewer layers on a vertical-walled cube', async () => {
+    const uni = await sliceMeshToGcode(box(20, 20, 20), { layerHeight: 0.2, supports: false });
+    const ada = await sliceMeshToGcode(box(20, 20, 20), { layerHeight: 0.2, adaptiveLayers: true, minLayerHeight: 0.08, maxLayerHeight: 0.3, supports: false });
+    assert.ok(ada.layers < uni.layers, `adaptive ${ada.layers} should be < uniform ${uni.layers}`);
+    const zs = [...ada.gcode.matchAll(/;Z:([\d.]+)/g)].map((m) => +m[1]);
+    for (let i = 1; i < zs.length; i++) assert.ok(zs[i] > zs[i - 1], 'adaptive Z stays monotonic');
+    assert.ok(!ada.gcode.includes('NaN'));
+  });
+  it('thin-wall fill: arachne beads are the DEFAULT; classic opts back to the hatch', async () => {
+    // A 1.6 mm rib with 2 walls leaves a genuine thin gap. Arachne (a clean
+    // medial bead) is now the default like BambuStudio; wall_generator=classic
+    // is the byte-identical opt-out to the old perpendicular gap hatch.
+    const opts = { supports: false, gapFill: true, wallLoops: 2 };
+    const def = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts });
+    const arachne = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'arachne' });
+    assert.equal(arachne.gcode, def.gcode, 'default must equal arachne (beads are the default)');
+    const classic = await sliceMeshToGcode(box(1.6, 25, 4), { ...opts, wallGenerator: 'classic' });
+    assert.notEqual(classic.gcode, def.gcode, 'classic (hatch) must differ from the default bead');
+    assert.ok(!def.gcode.includes('NaN'));
+  });
+  it('lightning infill uses less material than grid (hollow interior)', async () => {
+    const grid = await sliceMeshToGcode(box(30, 30, 20), { supports: false, infillPattern: 'grid', infillDensity: 0.15 });
+    const light = await sliceMeshToGcode(box(30, 30, 20), { supports: false, infillPattern: 'lightning', infillDensity: 0.15 });
+    assert.ok(light.gcode.length < grid.gcode.length, `lightning ${light.gcode.length} should be < grid ${grid.gcode.length}`);
+    assert.ok(!light.gcode.includes('NaN'));
+    assert.equal(light.layers, grid.layers);
+  });
+  it('scarf seam changes the outer wall but is byte-identical when off', async () => {
+    const off = await sliceMeshToGcode(box(20, 20, 10), { supports: false, scarfSeam: false });
+    const off2 = await sliceMeshToGcode(box(20, 20, 10), { supports: false });
+    assert.equal(off.gcode, off2.gcode, 'scarf off must not change anything');
+    const on = await sliceMeshToGcode(box(20, 20, 10), { supports: false, scarfSeam: true, scarfLength: 5 });
+    assert.notEqual(on.gcode, off.gcode, 'scarf on must taper the seam');
+    assert.ok(!on.gcode.includes('NaN'));
+  });
+  it('fuzzy-skin painting fuzzes only inside a band, leaving the rest clean', async () => {
+    const plain = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzySkin: false });
+    const away = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzyPaint: { enforce: [[500, 500, 501, 500, 500, 501, -1000, 1000]] } });
+    const full = await sliceMeshToGcode(box(20, 20, 10), { supports: false, fuzzyPaint: { enforce: [[-1000, -1000, 1000, -1000, 1000, 1000, -1000, 1000]] } });
+    assert.equal(away.gcode.length, plain.gcode.length, 'a band away from the model leaves walls untouched');
+    assert.ok(full.gcode.length > plain.gcode.length * 2, 'a full-coverage band fuzzes the whole outline');
+  });
+  it('crosshatch infill flips direction between layer bands', () => {
+    const sq = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] };
+    const a = patternInfill(sq, 0.2, 0, 0.4, 'crosshatch', { z: 1 });
+    const b = patternInfill(sq, 0.2, 0, 0.4, 'crosshatch', { z: 3 });
+    assert.ok(a.length && b.length);
+    assert.notDeepEqual(a[0], b[0]);
+  });
+});
+
+describe('native-slicer: seam painting', () => {
+  const SQ = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  it("'back' seam starts at a rear (max-y) vertex", () => {
+    assert.equal(seamStart(SQ, 'back')[0][1], 10);
+  });
+  it('an enforced band snaps the seam into it', () => {
+    const enforce = [[-1, -1, 3, -1, -1, 3, 0, 10]];   // covers the (0,0) corner
+    assert.deepEqual(seamStart(SQ, 'back', { enforce, block: [], z: 5 })[0], [0, 0]);
+  });
+  it('a blocked band nudges the seam away', () => {
+    const block = [[8, 8, 12, 8, 10, 12, 0, 10]];      // covers (10,10), the 'back' pick
+    assert.notDeepEqual(seamStart(SQ, 'back', { enforce: [], block, z: 5 })[0], [10, 10]);
+  });
+  it('a band outside the layer z-range is ignored', () => {
+    const enforce = [[-1, -1, 3, -1, -1, 3, 0, 10]];
+    assert.equal(seamStart(SQ, 'back', { enforce, block: [], z: 50 })[0][1], 10);
+  });
+});
+
+describe('native-slicer: seam corner-hiding (aligned/nearest)', () => {
+  // Right triangle — the (20,0) vertex is the sharpest convex corner.
+  const TRI = [[0, 0], [20, 0], [0, 15]];
+  it("'aligned' hides the seam at the sharpest convex corner", () => {
+    assert.deepEqual(seamStart(TRI, 'aligned')[0], [20, 0]);
+  });
+  it("'nearest' also snaps to the sharpest corner (was a no-op before)", () => {
+    assert.deepEqual(seamStart(TRI, 'nearest')[0], [20, 0]);
+  });
+  it("'back' still picks the rear (max-y) vertex, unchanged", () => {
+    assert.deepEqual(seamStart(TRI, 'back')[0], [0, 15]);
+  });
+  it('a cornerless outline (circle) falls back to the rear', () => {
+    const circle = Array.from({ length: 48 }, (_, k) => { const a = (k / 48) * 2 * Math.PI; return [10 + 10 * Math.cos(a), 10 + 10 * Math.sin(a)]; });
+    const seam = seamStart(circle, 'aligned')[0];
+    assert.ok(seam[1] > 18, `rear-ish fallback (y=${seam[1].toFixed(1)})`);
+  });
+});
+
+describe('native-slicer: brim_type', () => {
+  const cube = box(20, 20, 20);
+  // Count extruding moves emitted under the brim feature (robust vs the
+  // FEATURE comment, which only prints on a feature change).
+  const brimLines = (g) => {
+    let inBrim = false, n = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inBrim = ln.includes('FEATURE: Brim'); continue; }
+      if (inBrim && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
+    }
+    return n;
+  };
+
+  it('outer_only generates concentric brim loops around the part', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'outer_only', supports: false });
+    assert.ok(brimLines(gcode) >= 3, `expected several brim moves, got ${brimLines(gcode)}`);
+  });
+
+  it('no_brim emits no brim even when a width is set', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'no_brim', supports: false });
+    assert.equal(brimLines(gcode), 0, 'no_brim must fully disable the brim');
+  });
+
+  it('brim_ears attaches discs at sharp corners but skips smooth outlines', async () => {
+    // A cube has 4 sharp (90°) convex corners → ears appear.
+    const cubeEars = (await sliceMeshToGcode(cube, { layerHeight: 0.2, brimWidth: 2, brimType: 'brim_ears', supports: false })).gcode;
+    assert.ok(brimLines(cubeEars) > 0, 'a cube must get corner ears');
+    // A cylinder has no sharp corners → no ears (correct, unlike a full brim).
+    const cyl = cylinder(10, 20, 48);
+    const cylEars = (await sliceMeshToGcode(cyl, { layerHeight: 0.2, brimWidth: 2, brimType: 'brim_ears', supports: false })).gcode;
+    assert.equal(brimLines(cylEars), 0, 'a smooth cylinder must get no ears');
+    // …but a full outer brim would still wrap the cylinder.
+    const cylOuter = (await sliceMeshToGcode(cyl, { layerHeight: 0.2, brimWidth: 2, brimType: 'outer_only', supports: false })).gcode;
+    assert.ok(brimLines(cylOuter) > 0, 'outer_only still brims a cylinder');
+  });
+});
+
+describe('native-slicer: raft', () => {
+  const cube = box(20, 20, 20);
+  const firstObjectZ = (g) => {
+    // The lowest wall Z = where the object starts (above any raft).
+    let feat = '', z = null;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { feat = ln.slice(10).trim(); continue; }
+      const m = ln.match(/^; --- layer \d+\/\d+ z=([\d.]+)/);
+      if (m) z = parseFloat(m[1]);
+      if (feat.includes('wall') && z != null) return z;
+    }
+    return null;
+  };
+
+  it('raft_layers adds base layers and lifts the object', async () => {
+    const none = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 0, supports: false });
+    const rafted = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 3, supports: false });
+    assert.equal(rafted.layers, none.layers + 3, 'raft adds exactly raftLayers layers');
+    const zNone = firstObjectZ(none.gcode), zRaft = firstObjectZ(rafted.gcode);
+    assert.ok(zRaft > zNone, `object should start higher with a raft (${zRaft} vs ${zNone})`);
+    assert.ok(Math.abs(zRaft - zNone - 3 * 0.2) < 1e-6, 'object lifts by exactly raft thickness');
+  });
+
+  it('a raft suppresses the object brim (raft is the adhesion)', async () => {
+    const { gcode } = await sliceMeshToGcode(cube, { layerHeight: 0.2, raftLayers: 2, brimWidth: 4, brimType: 'outer_only', supports: false });
+    assert.ok(!/; FEATURE: Brim/.test(gcode), 'no brim when a raft is present');
+  });
+});
+
+describe('native-slicer: modifier volumes', () => {
+  const slab = box(40, 40, 6);
+  const sparseMoves = (g) => {
+    let inF = false, n = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; }
+      if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++;
+    }
+    return n;
+  };
+
+  it('a high-density modifier over half the model adds infill there', async () => {
+    const base = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.08, supports: false });
+    const mod = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.08, supports: false,
+      modifiers: [{ box: [0, 0, 0, 20, 40, 6], infillDensity: 0.9 }] });
+    assert.ok(sparseMoves(mod.gcode) > sparseMoves(base.gcode) * 1.3, `modifier should densify infill: base=${sparseMoves(base.gcode)} mod=${sparseMoves(mod.gcode)}`);
+    assert.ok(!mod.gcode.includes('NaN'));
+  });
+
+  it('is byte-identical to no-modifier when the modifiers list is empty', async () => {
+    const a = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.15, supports: false });
+    const b = await sliceMeshToGcode(slab, { layerHeight: 0.3, infillDensity: 0.15, supports: false, modifiers: [] });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: manual colour changes', () => {
+  it('emits M600 at the chosen 1-based layers', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.2, supports: false, colorChangeLayers: [10, 25] });
+    assert.equal((r.gcode.match(/^M600$/gm) || []).length, 2, 'one M600 per colour change');
+    assert.match(r.gcode, /; COLOR_CHANGE L10/);
+    assert.match(r.gcode, /; COLOR_CHANGE L25/);
+  });
+  it('emits no M600 without colour changes', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.2, supports: false });
+    assert.ok(!r.gcode.includes('M600'));
+  });
+});
+
+import { sliceMultiMaterialGcode } from '../../server/native-slicer-multi.js';
+describe('native-slicer: wipe/prime tower', () => {
+  const twoColour = () => [{ ...box(20, 20, 6), extruder: 1 }, { ...box(20, 20, 6), extruder: 2 }];
+  it('prints a per-extruder wipe tower when enabled', async () => {
+    const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: true, wipeTowerWidth: 24, wipeTowerDepth: 24 });
+    assert.ok(r.gcode.includes('; FEATURE: Prime tower'), 'tower feature present');
+    assert.ok((r.gcode.match(/; FEATURE: Prime tower/g) || []).length >= 2, 'at least one tower band per extruder');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('prints no tower when disabled', async () => {
+    const r = await sliceMultiMaterialGcode(twoColour(), { layerHeight: 0.3, wipeTower: false });
+    assert.ok(!r.gcode.includes('WIPE_TOWER'));
+  });
+});
+
+import { sliceObjectsGcode } from '../../server/native-slicer.js';
+describe('native-slicer: sequential (by-object) printing', () => {
+  const objs = () => [
+    { mesh: box(12, 12, 4), settings: {} },
+    { mesh: box(12, 12, 8), settings: {} },
+  ];
+  it('by_object prints objects sequentially with an OBJECT_CHANGE hop', async () => {
+    const r = await sliceObjectsGcode(objs(), { layerHeight: 0.2, printSequence: 'by_object', supports: false });
+    assert.ok(r.sequential, 'flagged sequential');
+    assert.equal((r.gcode.match(/; OBJECT_CHANGE/g) || []).length, 1, 'one object change for two objects');
+    // Object 1 is 4mm (20 layers), object 2 is 8mm (40 layers) -> 60 combined layers.
+    assert.equal(r.layers, 60);
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('by_layer (default) interleaves and has no object change', async () => {
+    const r = await sliceObjectsGcode(objs(), { layerHeight: 0.2, supports: false });
+    assert.ok(!r.sequential);
+    assert.ok(!r.gcode.includes('OBJECT_CHANGE'));
+  });
+  it('warns when a not-last object exceeds gantry clearance', async () => {
+    const tall = [{ mesh: box(12, 12, 40), settings: {} }, { mesh: box(12, 12, 6), settings: {} }];
+    const r = await sliceObjectsGcode(tall, { layerHeight: 0.3, printSequence: 'by_object', extruderClearanceHeight: 25, supports: false });
+    assert.ok(r.warnings.length >= 1, 'a clearance warning is returned');
+  });
+});
+
+describe('native-slicer: variable layer height bands', () => {
+  it('a thin band over part of the model adds layers vs uniform', async () => {
+    const uni = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.3, supports: false });
+    // Bottom 5mm at 0.1mm (fine), rest at default 0.3mm.
+    const varh = await sliceMeshToGcode(box(20, 20, 10), { layerHeight: 0.3, supports: false, layerHeightBands: [{ z0: 0, z1: 5, h: 0.1 }] });
+    assert.ok(varh.layers > uni.layers, `variable ${varh.layers} should exceed uniform ${uni.layers}`);
+    const zs = [...varh.gcode.matchAll(/;Z:([\d.]+)/g)].map((m) => +m[1]);
+    for (let i = 1; i < zs.length; i++) assert.ok(zs[i] > zs[i - 1], 'Z stays monotonic');
+    assert.ok(!varh.gcode.includes('NaN'));
+  });
+  it('is byte-identical to uniform when no bands', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.25, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.25, supports: false, layerHeightBands: [] });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: richer settings batch', () => {
+  it('max volumetric speed caps the feedrate', async () => {
+    const fast = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.4, outerWallSpeed: 300, innerWallSpeed: 300, sparseInfillSpeed: 300, supports: false });
+    const capped = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.4, outerWallSpeed: 300, innerWallSpeed: 300, sparseInfillSpeed: 300, maxVolumetricSpeed: 5, supports: false });
+    // Only extruding moves (G1 with E and X) are volumetric-capped; travel isn't.
+    const maxF = (g) => Math.max(...g.split('\n').filter((ln) => ln.startsWith('G1') && ln.includes('X') && ln.includes('E')).map((ln) => { const m = ln.match(/F(\d+(?:\.\d+)?)/); return m ? +m[1] : 0; }));
+    // cap = 5 mm3/s / (0.4*0.2) = 62.5 mm/s = 3750 mm/min; uncapped hits 300*60=18000.
+    assert.ok(maxF(capped.gcode) < maxF(fast.gcode), 'volumetric cap lowers the top feedrate');
+    assert.ok(maxF(capped.gcode) <= 3750 + 1, `capped feedrate ~<=3750, got ${maxF(capped.gcode)}`);
+  });
+  it('fan curve ramps M106 across layers; byte-identical when unset', async () => {
+    const flat = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false });
+    const flat2 = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false, fanMinSpeed: null, fanMaxSpeed: null });
+    assert.equal(flat2.gcode, flat.gcode, 'no curve → identical');
+    const ramp = await sliceMeshToGcode(box(16, 16, 6), { layerHeight: 0.2, supports: false, fanMinSpeed: 20, fanMaxSpeed: 100, fullFanSpeedLayer: 20 });
+    const fans = [...new Set([...ramp.gcode.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(fans.length > 2, `fan should take several values, got ${fans.length}`);
+  });
+  it('min sparse infill area promotes a tiny pocket to solid (BambuStudio), not a void', async () => {
+    const withInfill = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, supports: false });
+    const promoted = await sliceMeshToGcode(box(6, 6, 4), { layerHeight: 0.2, infillDensity: 0.2, minSparseInfillArea: 200, supports: false });
+    // Interior fill = sparse + solid moves. Too small for sparse → filled DENSELY
+    // (solid) instead of skipped, so the promoted slice is not left empty inside.
+    const fillMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = /Sparse infill|Internal solid infill/.test(ln); continue; } if (inF && ln.startsWith('G1') && ln.includes('E')) n++; } return n; };
+    assert.ok(fillMoves(promoted.gcode) >= fillMoves(withInfill.gcode), 'tiny pocket is filled (promoted to solid), not emptied');
+  });
+});
+
+describe('native-slicer: skirt height', () => {
+  const skirtLines = (g) => {
+    let inF = false, n = 0;
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Skirt'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    return n;
+  };
+  it('skirt_height prints the skirt on multiple layers', async () => {
+    const one = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.3, skirtLoops: 2, supports: false });
+    const three = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.3, skirtLoops: 2, skirtHeight: 3, supports: false });
+    assert.ok(skirtLines(three.gcode) > skirtLines(one.gcode) * 2, `taller skirt: 1-layer=${skirtLines(one.gcode)} 3-layer=${skirtLines(three.gcode)}`);
+  });
+  it('default skirt height (1) is byte-identical to before', async () => {
+    const a = await sliceMeshToGcode(box(18, 18, 5), { layerHeight: 0.2, skirtLoops: 1, supports: false });
+    const b = await sliceMeshToGcode(box(18, 18, 5), { layerHeight: 0.2, skirtLoops: 1, skirtHeight: 1, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: support base pattern + interface spacing', () => {
+  // A shape with an overhang so support is actually generated.
+  const overhang = box(24, 24, 3);   // thin slab; slice with paint-enforced support
+  const supportLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Support'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  const enforceAll = [[-20, -20, 20, -20, 0, 20, 100]];   // big enforce triangle over the slab
+  it("grid base pattern adds crossing lines vs rectilinear", async () => {
+    const rect = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportDensity: 0.15, supportPaint: { enforce: enforceAll, block: [] } });
+    const grid = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportDensity: 0.15, supportBasePattern: 'grid', supportPaint: { enforce: enforceAll, block: [] } });
+    assert.ok(supportLines(grid.gcode) >= supportLines(rect.gcode), `grid should have >= support lines (rect=${supportLines(rect.gcode)} grid=${supportLines(grid.gcode)})`);
+    assert.ok(!grid.gcode.includes('NaN'));
+  });
+  it('default support (no base pattern) is byte-identical', async () => {
+    const a = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportPaint: { enforce: enforceAll, block: [] } });
+    const b = await sliceMeshToGcode(overhang, { layerHeight: 0.3, supports: true, supportBasePattern: 'rectilinear', supportPaint: { enforce: enforceAll, block: [] } });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: resolution', () => {
+  it('a coarse resolution reduces vertices on a cylinder (smaller g-code)', async () => {
+    const fine = await sliceMeshToGcode(cylinder(10, 8, 96), { layerHeight: 0.3, supports: false });
+    const coarse = await sliceMeshToGcode(cylinder(10, 8, 96), { layerHeight: 0.3, resolution: 0.5, supports: false });
+    const wallMoves = (g) => g.split('\n').filter((ln) => ln.startsWith('G1') && ln.includes('X') && ln.includes('E')).length;
+    assert.ok(wallMoves(coarse.gcode) < wallMoves(fine.gcode), `coarse should have fewer moves (fine=${wallMoves(fine.gcode)} coarse=${wallMoves(coarse.gcode)})`);
+    assert.ok(!coarse.gcode.includes('NaN'));
+  });
+  it('resolution 0 is byte-identical to default', async () => {
+    const a = await sliceMeshToGcode(cylinder(8, 6, 48), { layerHeight: 0.3, supports: false });
+    const b = await sliceMeshToGcode(cylinder(8, 6, 48), { layerHeight: 0.3, resolution: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: top surface speed', () => {
+  it('applies a distinct feedrate to the top surface', async () => {
+    // 20mm cube, top layers solid. Slow top surface to 20 mm/s.
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, topSurfaceSpeed: 20, supports: false });
+    // The topmost layers should contain solid moves at F1200 (20*60).
+    assert.match(r.gcode, /F1200(\.0+)?\b/);
+  });
+  it('no top_surface_speed is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, topSurfaceSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: initial layer infill speed + object labels', () => {
+  it('initial_layer_infill_speed sets a distinct first-layer infill feedrate', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, initialLayerInfillSpeed: 10, supports: false });
+    assert.match(r.gcode, /F600(\.0+)?\b/, 'first-layer infill at 10 mm/s = F600');
+  });
+  it('no initial_layer_infill_speed is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, firstLayerSpeed: 30, initialLayerInfillSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+  it('gcode_label_objects wraps each object with EXCLUDE_OBJECT markers', async () => {
+    const objs = [{ mesh: box(10, 10, 4), settings: {} }, { mesh: box(10, 10, 4), settings: {} }];
+    const r = await sliceObjectsGcode(objs, { layerHeight: 0.3, gcodeLabelObjects: true, supports: false });
+    assert.ok(r.gcode.includes('EXCLUDE_OBJECT_START NAME=object_1'), 'labels object 1');
+    assert.ok(r.gcode.includes('EXCLUDE_OBJECT_START NAME=object_2'), 'labels object 2');
+    assert.equal((r.gcode.match(/EXCLUDE_OBJECT_END/g) || []).length, (r.gcode.match(/EXCLUDE_OBJECT_START/g) || []).length, 'balanced start/end');
+  });
+  it('gcode_label_objects off emits no markers', async () => {
+    const r = await sliceObjectsGcode([{ mesh: box(10, 10, 4), settings: {} }, { mesh: box(10, 10, 4), settings: {} }], { layerHeight: 0.3, supports: false });
+    assert.ok(!r.gcode.includes('EXCLUDE_OBJECT'));
+  });
+});
+
+describe('native-slicer: per-feature jerk', () => {
+  it('emits distinct M205 values per feature', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, outerWallJerk: 5, infillJerk: 12, supports: false });
+    const jerks = [...new Set([...r.gcode.matchAll(/M205 X(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(jerks.includes(5) && jerks.includes(12), `expected 5 and 12 among ${jerks}`);
+  });
+  it('no per-feature jerk is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, jerk: 9, outerWallJerk: 0, infillJerk: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: ironing inset + pattern', () => {
+  const ironLines = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Ironing'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X')) n++; } return n; };
+  it('concentric ironing produces ironing moves', async () => {
+    const r = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, ironingPattern: 'concentric', supports: false });
+    assert.ok(ironLines(r.gcode) > 0, 'concentric ironing emits moves');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('ironing inset reduces ironing coverage', async () => {
+    const none = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, supports: false });
+    const inset = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.2, ironing: true, ironingInset: 4, supports: false });
+    assert.ok(ironLines(inset.gcode) <= ironLines(none.gcode), `inset should not increase ironing (none=${ironLines(none.gcode)} inset=${ironLines(inset.gcode)})`);
+  });
+  it('default ironing (rectilinear, no inset) byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, ironing: true, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, ironing: true, ironingInset: 0, ironingPattern: 'rectilinear', supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: infill anchor', () => {
+  const sparseExtent = (g) => {
+    // Total length of sparse EXTRUDE moves — anchoring lengthens each line.
+    let inF = false, pos = null, L = 0;
+    for (const ln of g.split('\n')) {
+      if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Sparse infill'); continue; }
+      const m = ln.match(/^G[01] X([-\d.]+) Y([-\d.]+)/);
+      if (!m) continue;
+      const p = [+m[1], +m[2]];
+      if (inF && ln.startsWith('G1') && /\sE[-\d.]/.test(ln) && pos) L += Math.hypot(p[0] - pos[0], p[1] - pos[1]);
+      pos = p;
+    }
+    return L;
+  };
+  it('infill_anchor lengthens the sparse infill lines', async () => {
+    const none = await sliceMeshToGcode(box(30, 30, 4), { layerHeight: 0.3, infillDensity: 0.2, supports: false });
+    const anch = await sliceMeshToGcode(box(30, 30, 4), { layerHeight: 0.3, infillDensity: 0.2, infillAnchor: 0.6, supports: false });
+    assert.ok(sparseExtent(anch.gcode) > sparseExtent(none.gcode), `anchored should be longer (none=${sparseExtent(none.gcode).toFixed(0)} anch=${sparseExtent(anch.gcode).toFixed(0)})`);
+    assert.ok(!anch.gcode.includes('NaN'));
+  });
+  it('infill_anchor 0 is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.3, infillDensity: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(24, 24, 4), { layerHeight: 0.3, infillDensity: 0.2, infillAnchor: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: initial layer flow ratio', () => {
+  const firstLayerE = (g) => {
+    // Sum of positive E deltas on layer 1 (initial layer).
+    const l1 = g.split('; --- layer 2/')[0];
+    let sum = 0;
+    // Relative extrusion (M83): each E is already a delta — positive = extrude.
+    for (const m of l1.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > 0) sum += e; }
+    return sum;
+  };
+  it('initial_layer_flow_ratio raises first-layer extrusion', async () => {
+    const base = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, supports: false });
+    const fat = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, initialLayerFlowRatio: 1.3, supports: false });
+    assert.ok(firstLayerE(fat.gcode) > firstLayerE(base.gcode) * 1.2, `1.3x flow should raise first-layer E (base=${firstLayerE(base.gcode).toFixed(1)} fat=${firstLayerE(fat.gcode).toFixed(1)})`);
+  });
+  it('initial_layer_flow_ratio unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 3), { layerHeight: 0.2, initialLayerFlowRatio: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: initial layer height', () => {
+  it('prints a thicker first layer and stacks the rest at the normal height', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, initialLayerHeight: 0.28, supports: false });
+    const zs = [...r.gcode.matchAll(/--- layer \d+\/\d+ z=([\d.]+)/g)].map((m) => +m[1]);
+    assert.ok(Math.abs(zs[0] - 0.28) < 1e-6, `first layer top at 0.28 (got ${zs[0]})`);
+    assert.ok(Math.abs(zs[1] - 0.48) < 1e-6, `second layer top at 0.48 (got ${zs[1]})`);
+    assert.ok(Math.abs((zs[2] - zs[1]) - 0.2) < 1e-6, 'subsequent layers are the normal 0.2 mm');
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('is byte-identical when the initial layer height equals the layer height', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, initialLayerHeight: 0.2, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: bridge/support acceleration', () => {
+  it('support_acceleration emits its own M204 on support moves', async () => {
+    const enforce = [[-20, -20, 20, -20, 0, 20, 100]];
+    const r = await sliceMeshToGcode(box(24, 24, 3), { layerHeight: 0.3, acceleration: 5000, outerWallAccel: 3000, supportAccel: 700, supports: true, supportPaint: { enforce, block: [] } });
+    const accels = [...new Set([...r.gcode.matchAll(/M204 P(\d+)/g)].map((m) => +m[1]))];
+    assert.ok(accels.includes(700), `expected 700 among ${accels}`);
+  });
+  it('no bridge/support accel is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, acceleration: 5000, outerWallAccel: 3000, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, acceleration: 5000, outerWallAccel: 3000, bridgeAccel: 0, supportAccel: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: only one wall top', () => {
+  const wallMoves = (g, feat) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes(`FEATURE: ${feat}`); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  it('reduces inner-wall moves on the top surface', async () => {
+    const opts = { layerHeight: 0.2, wall_loops: 3, supports: false };
+    const normal = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3 });
+    const oneTop = await sliceMeshToGcode(box(20, 20, 4), { ...opts, wallLoops: 3, onlyOneWallTop: true });
+    assert.ok(wallMoves(oneTop.gcode, 'Inner wall') < wallMoves(normal.gcode, 'Inner wall'), `top-only should cut inner walls (normal=${wallMoves(normal.gcode, 'Inner wall')} oneTop=${wallMoves(oneTop.gcode, 'Inner wall')})`);
+    assert.ok(!oneTop.gcode.includes('NaN'));
+  });
+  it('only_one_wall_top off is byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 3, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 3, onlyOneWallTop: false, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: bottom surface speed', () => {
+  // The exposed bottom skin is labelled as its own BambuStudio feature ("Bottom
+  // surface"), symmetric with the top surface. On a plate-sitting part that skin
+  // is the first layer, where first-layer speed governs (BambuStudio does the
+  // same) — so bottom_surface_speed does not override it there. The meaningful
+  // invariant is that the bottom surface is classified distinctly and that an
+  // unset (or 0) bottom_surface_speed leaves output unchanged.
+  it('labels the exposed bottom skin as a distinct Bottom surface feature', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    assert.ok(r.gcode.includes('; FEATURE: Bottom surface'), 'bottom skin labelled');
+    assert.ok(r.gcode.includes('; FEATURE: Top surface'), 'top skin labelled (symmetric)');
+  });
+  it('no bottom_surface_speed byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, solidInfillSpeed: 120, bottomSurfaceSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+import { generateSupports } from '../../server/native-slicer-support.js';
+describe('native-slicer: support interface tagging', () => {
+  it('interface hatch lines are tagged so support_interface_speed can apply', () => {
+    // A square that appears only at higher layers (air below) → support with a
+    // dense interface just under it.
+    const sq = [[0, 0], [20, 0], [20, 20], [0, 20]];
+    const layerRegions = [];
+    for (let i = 0; i < 12; i++) layerRegions.push(i >= 8 ? [{ outer: sq, holes: [] }] : []);
+    const segs = generateSupports(layerRegions, { lineWidth: 0.4, gridRes: 1, density: 0.1, layerHeight: 0.2, interfaceLayers: 2, zGapLayers: 1 });
+    const hasIface = segs.some((layer) => layer.some((p) => p.iface === true));
+    const hasBase = segs.some((layer) => layer.some((p) => p.iface === false));
+    assert.ok(hasIface, 'some interface-tagged support lines exist');
+    assert.ok(hasBase, 'some base-tagged support lines exist');
+  });
+});
+
+describe('native-slicer: first-layer wall loops', () => {
+  // Count inner-wall extrude moves within the first layer only.
+  const firstLayerInnerMoves = (g) => {
+    const l1 = g.split('; --- layer 2/')[0];
+    let inF = false, n = 0;
+    for (const ln of l1.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Inner wall'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; }
+    return n;
+  };
+  it('first_layer_wall_loops changes the first-layer perimeter count', async () => {
+    const base = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, supports: false });
+    const more = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, firstLayerWallLoops: 4, supports: false });
+    assert.ok(firstLayerInnerMoves(more.gcode) > firstLayerInnerMoves(base.gcode), `more first-layer walls (base=${firstLayerInnerMoves(base.gcode)} more=${firstLayerInnerMoves(more.gcode)})`);
+  });
+  it('first_layer_wall_loops unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, wallLoops: 2, firstLayerWallLoops: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: precise wall', () => {
+  it('precise_wall pulls the outer wall inward (smaller outer extent)', async () => {
+    const outerX = (g) => {
+      const body = g.slice(g.indexOf('; --- layer 1/'));
+      let inF = false, mx = -Infinity;
+      for (const ln of body.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('Outer wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+.*E/); if (m) mx = Math.max(mx, +m[1]); } }
+      return mx;
+    };
+    const normal = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.5, supports: false });
+    const precise = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, lineWidth: 0.5, preciseWall: true, supports: false });
+    assert.ok(outerX(precise.gcode) < outerX(normal.gcode), `precise wall should be inset (normal=${outerX(normal.gcode)} precise=${outerX(precise.gcode)})`);
+    assert.ok(!precise.gcode.includes('NaN'));
+  });
+  it('precise_wall off byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, preciseWall: false, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: travel_speed_z + retract_restart_extra', () => {
+  it('travel_speed_z sets the Z-hop feedrate', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 6), { layerHeight: 0.2, zHop: 0.4, travelSpeedZ: 12, supports: false });
+    assert.match(r.gcode, /G1 Z[\d.]+ F720\b/, 'z-hop at 12 mm/s = F720');
+  });
+  it('retract_restart_extra primes extra filament on unretract', async () => {
+    const none = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, supports: false });
+    const extra = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.3, retraction: 1, retractRestartExtra: 0.1, supports: false });
+    // Relative extrusion (M83): cumulative E = sum of all deltas. The extra
+    // primes on each unretract raise the total.
+    const lastE = (g) => { let s = 0; for (const m of g.matchAll(/E(-?\d+\.\d+)/g)) s += +m[1]; return s; };
+    assert.ok(lastE(extra.gcode) > lastE(none.gcode), 'restart extra raises cumulative E');
+  });
+  it('both unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, zHop: 0.4, supports: false });
+    const b = await sliceMeshToGcode(box(20, 20, 4), { layerHeight: 0.2, zHop: 0.4, travelSpeedZ: 0, retractRestartExtra: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+import { generateTreeSupports } from '../../server/native-slicer-tree.js';
+describe('native-slicer: tree support branch params', () => {
+  // A square that appears only at higher layers (floating) → tree support forms
+  // branches below it.
+  const floating = () => { const sq = [[0, 0], [24, 0], [24, 24], [0, 24]]; const lr = []; for (let i = 0; i < 16; i++) lr.push(i >= 10 ? [{ outer: sq, holes: [] }] : []); return lr; };
+  it('branch merge distance changes the tree support geometry', () => {
+    const a = generateTreeSupports(floating(), { gridRes: 3, layerHeight: 0.3, zGapLayers: 1 });
+    const b = generateTreeSupports(floating(), { gridRes: 3, layerHeight: 0.3, zGapLayers: 1, branchMerge: 10 });
+    const count = (segs) => segs.reduce((n, l) => n + l.length, 0);
+    assert.ok(count(a) > 0, 'baseline tree support has segments');
+    assert.notEqual(count(a), count(b), `branchMerge should change segment count (a=${count(a)} b=${count(b)})`);
+  });
+});
+
+describe('native-slicer: support bottom z distance', () => {
+  // A stepped shape: wide base (layers 0-5), then a narrow tower shifted so its
+  // overhang lands on the base top → support rests on the base (support-on-model).
+  const stepped = () => {
+    const wide = [[0, 0], [30, 0], [30, 30], [0, 30]];
+    const shelf = [[0, 20], [30, 20], [30, 30], [0, 30]];   // roof appearing at a higher layer over air
+    const lr = [];
+    for (let i = 0; i < 16; i++) {
+      if (i < 6) lr.push([{ outer: wide, holes: [] }]);           // solid base
+      else if (i >= 10) lr.push([{ outer: shelf, holes: [] }]);   // floating roof (air below y 0-20)
+      else lr.push([]);                                            // gap
+    }
+    return lr;
+  };
+  it('bottom z distance clears support resting on the model below', () => {
+    const none = generateSupports(stepped(), { lineWidth: 0.4, gridRes: 2, density: 0.3, layerHeight: 0.2, zGapLayers: 1 });
+    const gap = generateSupports(stepped(), { lineWidth: 0.4, gridRes: 2, density: 0.3, layerHeight: 0.2, zGapLayers: 1, bottomZGapLayers: 2 });
+    const count = (segs) => segs.reduce((n, l) => n + l.length, 0);
+    assert.ok(count(none) > 0, 'baseline has support');
+    assert.ok(count(gap) < count(none), `bottom gap should remove some support (none=${count(none)} gap=${count(gap)})`);
+  });
+});
+
+describe('native-slicer: filter out small gaps', () => {
+  const gapMoves = (g) => { let inF = false, n = 0; for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('FEATURE: Gap infill'); continue; } if (inF && ln.startsWith('G1') && ln.includes('X') && ln.includes('E')) n++; } return n; };
+  it('a large filter removes short gap-fill lines', async () => {
+    // gap_fill_min_length filters the perpendicular HATCH runs, so exercise the
+    // classic hatch path (the default now lays continuous Arachne beads, which
+    // have nothing short to filter).
+    const none = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', supports: false });
+    const filt = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', gapFillMinLength: 50, supports: false });
+    assert.ok(gapMoves(none.gcode) > 0, 'baseline has gap fill');
+    assert.ok(gapMoves(filt.gcode) < gapMoves(none.gcode), `filter should drop short gaps (none=${gapMoves(none.gcode)} filt=${gapMoves(filt.gcode)})`);
+  });
+  it('filter 0 byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, supports: false });
+    const b = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, gapFillMinLength: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: filament settings (chamber temp + filament gcode)', () => {
+  it('chamber_temperature emits M141', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, chamberTemp: 45, supports: false });
+    assert.match(r.gcode, /M141 S45/);
+  });
+  it('filament start/end gcode are injected around the print', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentStartGcode: '; FIL_START', filamentEndGcode: '; FIL_END', supports: false });
+    assert.ok(r.gcode.includes('; FIL_START'), 'filament start present');
+    assert.ok(r.gcode.includes('; FIL_END'), 'filament end present');
+    assert.ok(r.gcode.indexOf('; FIL_START') < r.gcode.indexOf('; --- layer 1/'), 'start before printing');
+    assert.ok(r.gcode.indexOf('; FIL_END') > r.gcode.indexOf('; --- finished'), 'end after printing');
+  });
+  it('no filament settings byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, chamberTemp: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: machine limits', () => {
+  it('emits M201/M203/M205 caps when set', async () => {
+    const r = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, machineMaxAccel: 6000, machineMaxSpeed: 300, machineMaxJerk: 12, supports: false });
+    assert.match(r.gcode, /M201 X6000 Y6000/);
+    assert.match(r.gcode, /M203 X300 Y300/);
+    assert.match(r.gcode, /M205 X12 Y12/);
+  });
+  it('no machine limits byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, machineMaxAccel: 0, machineMaxSpeed: 0, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: filament diameter', () => {
+  it('thicker filament needs less E for the same volume', async () => {
+    // Relative extrusion (M83): total filament used = sum of positive E deltas.
+    const lastE = (g) => { let s = 0; for (const m of g.matchAll(/E(-?\d+\.\d+)/g)) { const e = +m[1]; if (e > 0) s += e; } return s; };
+    const std = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 1.75, supports: false });
+    const fat = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 2.85, supports: false });
+    assert.ok(lastE(fat.gcode) < lastE(std.gcode), `2.85mm should use less E (1.75=${lastE(std.gcode)} 2.85=${lastE(fat.gcode)})`);
+  });
+  it('default 1.75 unset byte-identical', async () => {
+    const a = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, supports: false });
+    const b = await sliceMeshToGcode(box(16, 16, 4), { layerHeight: 0.2, filamentDiam: 1.75, supports: false });
+    assert.equal(b.gcode, a.gcode);
+  });
+});
+
+describe('native-slicer: variable-width emission (Arachne foundation)', () => {
+  it('a path with a widths array scales extrusion by local width', () => {
+    // Two 10mm segments; first at base width 0.4, second ramps to 0.8 (avg 0.6 = 1.5x).
+    const pts = [[0, 0], [10, 0], [20, 0]];
+    const widths = [0.4, 0.4, 0.8];
+    const layers = [{ paths: [{ feature: 'inner-wall', closed: false, pts, widths, baseW: 0.4 }] }];
+    const g = layersToGcode(layers, { layerHeight: 0.2, lineWidth: 0.4 });
+    // Pull the two extruding moves of the inner wall.
+    const es = [];
+    let inF = false;
+    for (const ln of g.split('\n')) { if (ln.startsWith('; FEATURE:')) { inF = ln.includes('Inner wall'); continue; } if (inF) { const m = ln.match(/^G1 X([-\d.]+) Y[-\d.]+ E([-\d.]+)/); if (m) es.push({ x: +m[1], e: +m[2] }); } }
+    // Relative extrusion (M83): each move's E is already the per-segment delta.
+    const seg1 = es.find((p) => Math.abs(p.x - 10) < 0.01).e;
+    const seg2 = es.find((p) => Math.abs(p.x - 20) < 0.01).e;
+    assert.ok(Math.abs(seg2 / seg1 - 1.5) < 0.05, `wider segment should extrude ~1.5x (seg1=${seg1.toFixed(4)} seg2=${seg2.toFixed(4)} ratio=${(seg2 / seg1).toFixed(2)})`);
+  });
+});
+
+import { medialBeads } from '../../server/native-slicer-arachne.js';
+describe('native-slicer: full Arachne medial beads', () => {
+  it('medialBeads traces a thin rib as one variable-width centreline', () => {
+    const rib = { outer: [[0, 0], [40, 0], [40, 1.2], [0, 1.2]], holes: [] };
+    const beads = medialBeads(rib, 0.4);
+    assert.equal(beads.length, 1, 'one bead for one rib');
+    const b = beads[0];
+    assert.ok(b.pts.length >= 2, 'a continuous polyline (simplified)');
+    const xs = b.pts.map((p) => p[0]);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'spans the rib length');
+    const wAvg = b.widths.reduce((a, c) => a + c, 0) / b.widths.length;
+    assert.ok(Math.abs(wAvg - 1.2) < 0.15, `width tracks the ~1.2mm rib (got ${wAvg.toFixed(2)})`);
+  });
+  it('arachne replaces perpendicular gap hatch with a continuous bead', async () => {
+    // Both fills are now connected, so travel counts match (~1 per layer). The
+    // real difference is the EXTRUSION path: classic hatches the thin rib with
+    // many short perpendicular segments; arachne lays one continuous bead per
+    // layer along the rib, so it emits far fewer extrusion moves.
+    const gapExtrudes = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = l.includes('FEATURE: Gap infill'); continue; } if (f && /^G1 X[-\d.]+ Y[-\d.]+ E/.test(l)) n++; } return n; };
+    const cl = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'classic', supports: false });
+    const ar = await sliceMeshToGcode(box(1.6, 25, 4), { layerHeight: 0.2, gapFill: true, wallLoops: 2, wallGenerator: 'arachne', supports: false });
+    assert.ok(gapExtrudes(ar.gcode) < gapExtrudes(cl.gcode) / 5, `arachne far fewer gap extrusion moves (classic=${gapExtrudes(cl.gcode)} arachne=${gapExtrudes(ar.gcode)})`);
+    assert.ok(!ar.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: monotonic top/bottom surface', () => {
+  const solidTravels = (g) => { let f = false, n = 0; for (const l of g.split('\n')) { if (l.startsWith('; FEATURE:')) { f = /FEATURE: (Internal solid infill|Top surface|Bottom surface)/.test(l); continue; } if (f && /^G0 X/.test(l)) n++; } return n; };
+  it('solidInfill monotonic lays every line the same direction, swept one way', () => {
+    const sq = { outer: [[0, 0], [20, 0], [20, 20], [0, 20]], holes: [] };
+    const lines = solidInfill(sq, 0, 0.4, true);   // angle 0 → horizontal lines
+    assert.ok(lines.length > 10, `many lines (${lines.length})`);
+    const dir = Math.sign(lines[0][1][0] - lines[0][0][0]);
+    for (const L of lines) { assert.equal(L.length, 2); assert.equal(Math.sign(L[1][0] - L[0][0]), dir, 'same print direction'); }
+    for (let i = 1; i < lines.length; i++) assert.ok(lines[i][0][1] >= lines[i - 1][0][1] - 1e-6, 'swept monotonically in y');
+  });
+  it('connected (non-monotonic) solid stays a zigzag with few travels', () => {
+    const sq = { outer: [[0, 0], [20, 0], [20, 20], [0, 20]], holes: [] };
+    const conn = solidInfill(sq, 0, 0.4, false);
+    assert.ok(conn.length < 4, `connected into few chains (${conn.length})`);
+  });
+  it('monotonic top surface is on by default and only affects the exposed faces', async () => {
+    const mono = await sliceMeshToGcode(box(30, 30, 4), { supports: false, topLayers: 4, bottomLayers: 4 });
+    const off = await sliceMeshToGcode(box(30, 30, 4), { supports: false, topLayers: 4, bottomLayers: 4, monotonicTopSurface: false });
+    assert.notEqual(mono.gcode, off.gcode, 'monotonic default differs from off');
+    assert.ok(solidTravels(mono.gcode) > solidTravels(off.gcode) * 5, `exposed skin laid as separate lines (mono=${solidTravels(mono.gcode)} off=${solidTravels(off.gcode)})`);
+    // But NOT all 8 shell layers — only the 2 exposed faces, so travels stay well
+    // below 8× a layer's line count (internal shells keep the connected zigzag).
+    assert.ok(solidTravels(mono.gcode) < 400, `internal shells stay connected (${solidTravels(mono.gcode)})`);
+    assert.ok(!mono.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: bridge angle detection', () => {
+  // A 40×6 plate over two supports (pillars) at x∈[-17,-11] and [11,17]; the
+  // 22 mm gap runs in X, so bridge lines must run in X (deg 0) to anchor on
+  // both pillars. Lines in Y (deg 90) over the gap have no support at either
+  // end (cantilever) and must NOT win.
+  const region = { outer: [[-20, -3], [20, -3], [20, 3], [-20, 3]], holes: [] };
+  const onPillars = (x) => (x >= -17 && x <= -11) || (x >= 11 && x <= 17);
+  it('picks the direction that spans the gap between supports', () => {
+    const deg = bestBridgeAngle(region, (x) => onPillars(x), 0.42);
+    assert.equal(deg, 0, `should bridge across X (got ${deg})`);
+  });
+  it('returns null when the region is fully supported (no bridge)', () => {
+    assert.equal(bestBridgeAngle(region, () => true, 0.42), null);
+  });
+  it('returns null when there is no anchoring on either side (all air)', () => {
+    assert.equal(bestBridgeAngle(region, () => false, 0.42), null);
+  });
+});
+
+describe('native-slicer: wall print order', () => {
+  const wallSeq = (g) => { const seq = []; for (const l of g.split('\n')) { const m = l.match(/^; FEATURE: (Outer|Inner) wall/); if (m) seq.push(m[1] === 'Outer' ? 'O' : 'I'); } return seq.join(''); };
+  it('inner-outer-inner backs the outer wall (I,O,I per region)', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'inner-outer-inner', supports: false });
+    const seq = wallSeq(r.gcode);
+    assert.ok(seq.startsWith('IOI'), `outer wall printed between inners (got ${seq.slice(0, 9)})`);
+    assert.ok(!r.gcode.includes('NaN'));
+  });
+  it('outer-inner and inner-outer differ and put the outer first / last', async () => {
+    const oi = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'outer-inner', supports: false });
+    const io = await sliceMeshToGcode(box(20, 20, 3), { perimeters: 3, wallLoops: 3, wallOrder: 'inner-outer', supports: false });
+    assert.ok(wallSeq(oi.gcode).startsWith('O'), 'outer-inner prints the outer wall first');
+    assert.ok(wallSeq(io.gcode).startsWith('I'), 'inner-outer prints an inner wall first');
+    assert.notEqual(oi.gcode, io.gcode);
+  });
+});
+
+describe('native-slicer: Arachne bead simplification', () => {
+  it('a straight bead collapses to a few points (small g-code) but keeps its span', () => {
+    const b = medialBeads({ outer: [[0, 0], [40, 0], [40, 1.2], [0, 1.2]], holes: [] }, 0.4);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].pts.length < 12, `straight bead should simplify (got ${b[0].pts.length})`);
+    const xs = b[0].pts.map((p) => p[0]);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 35, 'still spans the rib');
+  });
+});
+
+import { hilbertInfill } from '../../server/native-slicer-geo.js';
+describe('native-slicer: adaptive cubic infill', () => {
+  // Sparse-feature extrusion length per layer.
+  const sparsePerLayer = (g) => {
+    const layers = []; let inSparse = false, px = 0, py = 0;
+    for (const l of g.split('\n')) {
+      if (l.startsWith('; --- layer')) { layers.push(0); continue; }
+      if (l.startsWith('; FEATURE:')) { inSparse = l.includes('FEATURE: Sparse infill'); continue; }
+      const m = l.match(/^G1 X([-\d.]+) Y([-\d.]+) E/);
+      if (m) { const x = +m[1], y = +m[2]; if (inSparse && layers.length) layers[layers.length - 1] += Math.hypot(x - px, y - py); px = x; py = y; }
+      else { const t = l.match(/^G[01] X([-\d.]+) Y([-\d.]+)/); if (t) { px = +t[1]; py = +t[2]; } }
+    }
+    return layers.map((v, i) => ({ i, v })).filter((o) => o.v > 0.5);   // layers that actually have sparse infill
+  };
+  it('lays denser infill in the layers just below the top than deep inside', async () => {
+    const g = (await sliceMeshToGcode(box(30, 30, 24), { infillPattern: 'adaptivecubic', infillDensity: 0.08, topLayers: 4, bottomLayers: 4, supports: false })).gcode;
+    const sp = sparsePerLayer(g);
+    assert.ok(sp.length >= 8, `enough sparse layers (${sp.length})`);
+    const meanTop = sp.slice(-4).reduce((a, o) => a + o.v, 0) / 4;   // nearest the top skin
+    const meanDeep = sp.slice(0, 4).reduce((a, o) => a + o.v, 0) / 4; // deep inside
+    assert.ok(meanTop > meanDeep * 1.3, `near-top denser than deep (top=${meanTop.toFixed(0)} deep=${meanDeep.toFixed(0)})`);
+  });
+  it('plain cubic stays uniform (control)', async () => {
+    const g = (await sliceMeshToGcode(box(30, 30, 24), { infillPattern: 'cubic', infillDensity: 0.08, topLayers: 4, bottomLayers: 4, supports: false })).gcode;
+    const sp = sparsePerLayer(g);
+    const meanTop = sp.slice(-4).reduce((a, o) => a + o.v, 0) / 4;
+    const meanDeep = sp.slice(0, 4).reduce((a, o) => a + o.v, 0) / 4;
+    assert.ok(meanTop < meanDeep * 1.3, `uniform, no near-top boost (top=${meanTop.toFixed(0)} deep=${meanDeep.toFixed(0)})`);
+  });
+});
+
+describe('native-slicer: Hilbert-curve infill', () => {
+  it('fills a square with connected polylines whose points stay inside', () => {
+    const paths = hilbertInfill({ outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [] }, 0.3, 0.4);
+    // The curve is continuous, so a convex square yields very few (ideally one)
+    // long polylines rather than thousands of segments.
+    assert.ok(paths.length < 8, `few connected chains (got ${paths.length})`);
+    const totalPts = paths.reduce((a, p) => a + p.length, 0);
+    assert.ok(totalPts > 20, `many points (got ${totalPts})`);
+    for (const path of paths) for (const [px, py] of path) assert.ok(px >= -0.1 && px <= 40.1 && py >= -0.1 && py <= 40.1, `point (${px},${py}) inside`);
+  });
+  it('leaves holes empty', () => {
+    const region = { outer: [[0, 0], [40, 0], [40, 40], [0, 40]], holes: [[[14, 14], [26, 14], [26, 26], [14, 26]]] };
+    for (const path of hilbertInfill(region, 0.3, 0.4)) for (const [mx, my] of path) {
+      assert.ok(!(mx > 15 && mx < 25 && my > 15 && my < 25), 'no point inside the hole');
+    }
+  });
+  it('empty for a degenerate region', () => {
+    assert.deepEqual(hilbertInfill({ outer: [[0, 0], [1, 0]], holes: [] }, 0.3, 0.4), []);
+  });
+});
+
+describe('native-slicer: tree supports honor "on build plate only"', () => {
+  // Two stacked slabs with an air gap: the upper slab's underside sits directly
+  // above the lower slab, so any support there rests ON the model — "on build
+  // plate only" must drop it (it can never reach the bed).
+  const slab = { outer: [[0, 0], [30, 0], [30, 10], [0, 10]], holes: [] };
+  const stacked = [];
+  for (let i = 0; i < 20; i++) stacked.push(i < 10 || i >= 15 ? [slab] : []);
+  const total = (segs) => segs.reduce((a, l) => a + l.length, 0);
+  it('normal tree support fills the gap (rests on the lower slab)', () => {
+    const segs = generateTreeSupports(stacked, { gridRes: 3, zGapLayers: 1 });
+    assert.ok(total(segs) > 0, 'tree supports the upper slab');
+  });
+  it('on-plate-only drops support that would rest on the model', () => {
+    const segs = generateTreeSupports(stacked, { gridRes: 3, zGapLayers: 1, onPlateOnly: true });
+    assert.equal(total(segs), 0, 'no support — none of it could reach the bed');
+  });
+});
+
+describe('native-slicer: forced cooling on short layers', () => {
+  const maxFan = (g) => Math.max(0, ...[...g.matchAll(/M106 S(\d+)/g)].map((m) => +m[1]));
+  it('ramps the fan to full on layers slowed for the minimum layer time', async () => {
+    // 5x5x20 tower: tiny, fast layers, vertical walls (no overhang fan to
+    // confound the test). Flat 40% fan curve as the baseline.
+    const opts = { fanSpeed: 40, fanMinSpeed: 40, fanMaxSpeed: 40, supports: false };
+    const cold = await sliceMeshToGcode(box(5, 5, 20), { ...opts });                    // no min layer time
+    const cool = await sliceMeshToGcode(box(5, 5, 20), { ...opts, minLayerTime: 30 });  // force cooling
+    assert.ok(maxFan(cool.gcode) > maxFan(cold.gcode), `forced cooling raises the fan (cold=${maxFan(cold.gcode)} cool=${maxFan(cool.gcode)})`);
+    assert.ok(maxFan(cool.gcode) >= 254, `ramps to ~full fan S255 (got ${maxFan(cool.gcode)})`);
+  });
+  it('respects a lower cooling_fan_speed cap (heat-sensitive materials)', async () => {
+    const opts = { fanSpeed: 20, fanMinSpeed: 20, fanMaxSpeed: 20, minLayerTime: 30, coolingFanSpeed: 50, supports: false };
+    const g = (await sliceMeshToGcode(box(5, 5, 20), opts)).gcode;
+    assert.equal(maxFan(g), Math.round(50 * 2.55), `capped at cooling_fan_speed=50 (got ${maxFan(g)})`);
+  });
+});
+
+describe('native-slicer: per-firmware G-code dialects (real machine profiles)', () => {
+  const base = { pressureAdvance: 0.04, machineMaxSpeed: 200, machineMaxAccel: 5000, machineMaxJerk: 9, jerk: 9, acceleration: 3000, supports: false };
+  const head = (g) => g.split('; --- prime line ---')[0];   // just the start block
+  it('Marlin: M900 K + M201/M203/M205', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'marlin' })).gcode);
+    assert.match(g, /M900 K0\.0400/);
+    assert.match(g, /M201 X5000/);
+    assert.match(g, /M203 X200 /);
+    assert.match(g, /M205 X9 /);
+    assert.doesNotMatch(g, /SET_VELOCITY_LIMIT|SET_PRESSURE_ADVANCE|M572/);
+  });
+  it('Klipper: SET_PRESSURE_ADVANCE + SET_VELOCITY_LIMIT, no M900/M201/M203/M205 jerk', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'klipper' })).gcode);
+    assert.match(g, /SET_PRESSURE_ADVANCE ADVANCE=0\.0400/);
+    assert.match(g, /SET_VELOCITY_LIMIT[^\n]*VELOCITY=200/);
+    assert.match(g, /SET_VELOCITY_LIMIT[^\n]*ACCEL=5000/);
+    assert.doesNotMatch(g, /M900/);
+    assert.doesNotMatch(g, /M201 |M203 /);   // caps expressed via SET_VELOCITY_LIMIT
+    assert.doesNotMatch(g, /M205 X9/);        // jerk N/A on Klipper
+  });
+  it('RepRapFirmware: M572 PA + M203 in mm/min + M566 jerk', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'reprap' })).gcode);
+    assert.match(g, /M572 D0 S0\.0400/);
+    assert.match(g, /M203 X12000/);           // 200 mm/s -> 12000 mm/min
+    assert.match(g, /M566 X540/);             // 9 mm/s jerk -> 540 mm/min
+    assert.doesNotMatch(g, /M900|SET_PRESSURE_ADVANCE/);
+  });
+  it('Bambu: Marlin-style M900 K + M201/M203', async () => {
+    const g = head((await sliceMeshToGcode(box(10, 10, 10), { ...base, gcodeFlavor: 'bambu' })).gcode);
+    assert.match(g, /M900 K0\.0400/);
+    assert.match(g, /M201 X5000/);
+    assert.match(g, /M203 X200 /);
+    assert.doesNotMatch(g, /SET_VELOCITY_LIMIT|M572/);
+  });
+});
+
+describe('native-slicer: full Arachne finger fill (thin necks in thick parts)', () => {
+  // A 10x10 thick block with a thin 1.2mm tab sticking out (a "keyhole"). The
+  // block core takes normal infill; the thin tab is a locally-thin finger that
+  // classic slicing leaves as a void (region-level gap-fill never triggers,
+  // because the whole contour is not thin). Full Arachne must bead the tab.
+  const keyhole = () => extrudePolygon([
+    [0, 0], [10, 0], [10, 4.4], [24, 4.4], [24, 5.6], [10, 5.6], [10, 10], [0, 10],
+  ], 3);
+  // Total extruded filament deep in the tab (x > 18) — the thin finger past the
+  // single perimeter. Arachne fills it (a medial bead or concentric walls);
+  // classic leaves the interior a void, so it deposits far less there.
+  const fillInTab = (g) => {
+    let e = 0, absE = true, x = 0, prevE = 0;
+    for (const l of g.split('\n')) {
+      if (/^M83/.test(l)) absE = false; else if (/^M82/.test(l)) absE = true;
+      const m = l.match(/^G1 X([-\d.]+) Y[-\d.]+ E(-?[\d.]+)/);
+      if (m) { const nx = +m[1], ev = +m[2]; const de = absE ? ev - prevE : ev; prevE = absE ? ev : prevE; if (nx > 18 && de > 0) e += de; }
+    }
+    return e;
+  };
+  it('arachne fills the thin tab; classic leaves it a void', async () => {
+    const opts = { layerHeight: 0.2, perimeters: 1, gapFill: true, supports: false };
+    const classic = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'classic' });
+    const arachne = await sliceMeshToGcode(keyhole(), { ...opts, wallGenerator: 'arachne' });
+    assert.ok(fillInTab(arachne.gcode) > fillInTab(classic.gcode) + 1, `arachne fills the thin tab more than classic (arachne=${fillInTab(arachne.gcode).toFixed(1)} classic=${fillInTab(classic.gcode).toFixed(1)})`);
+    assert.ok(!arachne.gcode.includes('NaN'));
+  });
+});
+
+describe('native-slicer: Arachne adaptive grid (large thin regions)', () => {
+  const ring = (rOuter, rInner, cx = 90, n = 160) => {
+    const circle = (r) => Array.from({ length: n }, (_, k) => { const a = (k / n) * 2 * Math.PI; return [r * Math.cos(a) + cx, r * Math.sin(a) + cx]; });
+    return { outer: circle(rOuter), holes: [circle(rInner)] };
+  };
+  it('a small thin ring is traced by beads (baseline)', () => {
+    // ~30mm across, 1mm wall — well under the cell budget at the default grid.
+    const beads = medialBeads(ring(15, 14, 20), 0.4);
+    assert.ok(beads.length > 0, 'small thin ring yields beads');
+  });
+  it('a LARGE thin ring still yields beads instead of being skipped', () => {
+    // ~170mm across, 1mm wall. At the default gridRes (0.2mm) this is
+    // ~858x858 = 736k cells, over the old 400k hard cap that returned [] and
+    // fell back to perpendicular hatch. The adaptive grid must coarsen (without
+    // blurring the 1mm feature) and still trace the ring as a continuous bead.
+    const beads = medialBeads(ring(85, 84), 0.4);
+    assert.ok(beads.length > 0, 'large thin ring yields beads via the adaptive grid');
+    assert.ok(beads.every((b) => b.pts.every((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))), 'no NaN in bead points');
+  });
+});
+
+// A watertight hollow square box: outer W×D×H with a centered w×d hole through
+// it. Slices to an annulus (outer contour + a hole) so we can check that the
+// perimeter bounding the hole is classified as an EXTERNAL wall (it faces air).
+function hollowBox(W, D, H, w, d) {
+  const ox = W / 2, oy = D / 2, ix = w / 2, iy = d / 2;
+  const P = []; const push = (x, y, z) => { P.push(x, y, z); return P.length / 3 - 1; };
+  const ob = [push(-ox, -oy, 0), push(ox, -oy, 0), push(ox, oy, 0), push(-ox, oy, 0)];
+  const ot = [push(-ox, -oy, H), push(ox, -oy, H), push(ox, oy, H), push(-ox, oy, H)];
+  const ib = [push(-ix, -iy, 0), push(ix, -iy, 0), push(ix, iy, 0), push(-ix, iy, 0)];
+  const it = [push(-ix, -iy, H), push(ix, -iy, H), push(ix, iy, H), push(-ix, iy, H)];
+  const I = []; const q = (a, b, c, dd) => { I.push(a, b, c, a, c, dd); };
+  q(ob[0], ob[1], ot[1], ot[0]); q(ob[1], ob[2], ot[2], ot[1]); q(ob[2], ob[3], ot[3], ot[2]); q(ob[3], ob[0], ot[0], ot[3]);
+  q(ib[1], ib[0], it[0], it[1]); q(ib[2], ib[1], it[1], it[2]); q(ib[3], ib[2], it[2], it[3]); q(ib[0], ib[3], it[3], it[0]);
+  q(ot[0], ot[1], it[1], it[0]); q(ot[1], ot[2], it[2], it[1]); q(ot[2], ot[3], it[3], it[2]); q(ot[3], ot[0], it[0], it[3]);
+  q(ob[1], ob[0], ib[0], ib[1]); q(ob[2], ob[1], ib[1], ib[2]); q(ob[3], ob[2], ib[2], ib[3]); q(ob[0], ob[3], ib[3], ib[0]);
+  return { positions: new Float32Array(P), indices: new Uint32Array(I) };
+}
+
+describe('native-slicer: hole/cavity perimeters are external walls', () => {
+  const perLayer = (g, feat) => {
+    const layers = new Set(); let cur = -1, f = '';
+    for (const l of g.split('\n')) {
+      const m = l.match(/^; --- layer (\d+)/); if (m) cur = +m[1];
+      if (l.startsWith('; FEATURE:')) f = l.slice(10).trim();
+      if (f === feat && /^G1 .*E/.test(l)) layers.add(cur);
+    }
+    return layers.size;
+  };
+  const count = (g, feat) => (g.match(new RegExp(`; FEATURE: ${feat}`, 'g')) || []).length;
+
+  it('labels the loop bounding a hole as Outer wall, not Inner wall', async () => {
+    // Each annular layer has TWO external boundaries (outer contour + hole), so
+    // with 2 walls there are ~2 Outer wall and ~2 Inner wall loops per layer —
+    // NOT 1 outer / 3 inner (the bug where hole loops were all inner-wall).
+    const r = await sliceMeshToGcode(hollowBox(20, 20, 8, 10, 10), { layerHeight: 0.2, wall_loops: 2, infill_density: 20, top_layers: 3, bottom_layers: 3, supports: false });
+    const outer = count(r.gcode, 'Outer wall'), inner = count(r.gcode, 'Inner wall');
+    // The hole doubles the external-perimeter count: outer ≈ inner (both loops).
+    assert.ok(outer > r.layers, `hole boundary should add outer walls (outer=${outer}, layers=${r.layers})`);
+    assert.ok(Math.abs(outer - inner) < inner * 0.5, `outer and inner wall counts should be comparable (outer=${outer} inner=${inner})`);
+  });
+
+  it('a solid box (no hole) has one Outer wall loop per layer', async () => {
+    const r = await sliceMeshToGcode(box(20, 20, 8), { layerHeight: 0.2, wall_loops: 2, infill_density: 20, supports: false });
+    // One external contour → Outer wall on essentially every layer, once each.
+    assert.ok(perLayer(r.gcode, 'Outer wall') >= r.layers - 2, 'outer wall on each layer');
+    assert.ok(count(r.gcode, 'Outer wall') <= r.layers + 2, 'exactly one outer loop per layer (no spurious hole walls)');
   });
 });

@@ -8,22 +8,35 @@
 
 import { getDb } from './connection.js';
 import { computeMargin } from './order-margins.js';
+import { getPartStock } from './parts.js';
+import { getBomCost } from './bom.js';
 
 // Columns a client may set on create/update (id/timestamps are managed here).
 const WRITABLE = [
   'sku', 'name', 'description', 'category', 'price', 'currency', 'file_hash', 'filename',
   'filament_type', 'filament_weight_g', 'print_time_min', 'material_cost',
-  'labor_cost', 'electricity_cost', 'wear_cost', 'image_url', 'stock_qty', 'active',
+  'labor_cost', 'electricity_cost', 'wear_cost', 'image_url', 'stock_qty', 'active', 'part_id',
 ];
 
-/** Attach unit COGS and margin to a raw row. */
+/**
+ * Attach unit COGS and margin. A product linked to an inventory part exposes
+ * its live finished-good stock (part_stock) and BOM cost, and — when no manual
+ * cost breakdown is set — uses the BOM cost as COGS so margin reflects reality.
+ */
 function _withMargin(row) {
   if (!row) return null;
-  const cogs =
+  const manualCogs =
     (row.material_cost || 0) + (row.labor_cost || 0) +
     (row.electricity_cost || 0) + (row.wear_cost || 0);
+  let partStock = null;
+  let bomCost = null;
+  if (row.part_id != null) {
+    partStock = getPartStock(row.part_id);
+    bomCost = getBomCost(row.part_id);
+  }
+  const cogs = manualCogs > 0 ? manualCogs : (bomCost || 0);
   const m = computeMargin(row.price || 0, cogs);
-  return { ...row, unit_cogs: m.cogs, margin: m.margin, margin_pct: m.margin_pct };
+  return { ...row, unit_cogs: m.cogs, margin: m.margin, margin_pct: m.margin_pct, part_stock: partStock, bom_cost: bomCost };
 }
 
 function _validate(data, { partial = false } = {}) {
@@ -63,8 +76,8 @@ export function createShopProduct(data = {}) {
       `INSERT INTO shop_products
         (sku, name, description, category, price, currency, file_hash, filename, filament_type,
          filament_weight_g, print_time_min, material_cost, labor_cost, electricity_cost,
-         wear_cost, image_url, stock_qty, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         wear_cost, image_url, stock_qty, active, part_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       data.sku ? String(data.sku).trim() : null,
       name,
@@ -84,6 +97,7 @@ export function createShopProduct(data = {}) {
       data.image_url || null,
       data.stock_qty ?? null,
       active,
+      data.part_id ?? null,
     );
     return getShopProduct(Number(result.lastInsertRowid));
   } catch (e) {
