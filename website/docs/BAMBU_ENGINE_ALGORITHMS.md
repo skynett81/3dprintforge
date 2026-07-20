@@ -3,7 +3,7 @@
 Extracted from `bambulab/BambuStudio@master` `src/libslic3r/`. Primitive mapping:
 `intersection_ex`→`clipIntersection`, `diff_ex`→`clipDifference`, `union_ex`→`clipUnion`
 (native-slicer-bool.js), `offset/expand/shrink`→`offsetPolygon`, `offset2(a,d1,d2)`→
-`offsetPolygon(offsetPolygon(a,d1),d2)` (opening if d1<0<d2), `opening(p,r)`=`offset2(p,-r,+r)`.
+`offsetPolygon(offsetPolygon(a,d1),d2)` (opening if `d1<0<d2`), `opening(p,r)`=`offset2(p,-r,+r)`.
 
 ## 1. Fill-surface classification (PrintObject.cpp) — DONE via native-slicer-regions.js
 Per layer i, region S = layer slices; upper = layer[i+1], lower = layer[i-1]:
@@ -29,7 +29,7 @@ Per layer i, region S = layer slices; upper = layer[i+1], lower = layer[i-1]:
 ## 3. connect_infill — anchor line-ends onto perimeter (FillBase.cpp:1501)
 Project each infill end onto boundary → ContourIntersectionPoint (T-joint), insert as real contour
 vertex, arc-length param, doubly-link joints per ring. Passes: (A) greedy shortest-arc-first: if
-arc<anchor_length_max take WHOLE perimeter arc between two ends (gap-free) via take(); else hook
+`arc<anchor_length_max` take WHOLE perimeter arc between two ends (gap-free) via take(); else hook
 anchor_length via take_limited(). Union-find merges polylines. Trim hooks by line_half_width and
 consumed arcs. clip_distance=1.7·spacing, distance_colliding=0.8·spacing.
 
@@ -55,7 +55,7 @@ Onion loop: `last` = previous wall CENTERLINE (i=0 starts = slice boundary). Eac
 
 ## 6. Overhang degree (OverhangDetector.cpp) — exact formula
 Reference edge = RAW lower slice. Per sampled point (every 2mm), signed dist d to lower(+½nozzle);
-real_dist = ½nozzle + d = signed dist to raw lower edge. If |real_dist|>w/2: degree = d<0?0:100.
+real_dist = ½nozzle + d = signed dist to raw lower edge. If `|real_dist|>w/2`: degree = `d<0?0:100`.
 Else degree = (w/2 + real_dist)/w · 100 (LINEAR across a one-line-width band centered on the edge).
 Terrace onto {0,10,25,50,75,100} (6 levels). Low-pass: length-weighted avg over ±6.5mm window,
 stop at bridge paths. Bridge test per remaining piece: chord < arc-length ⇒ not straight.

@@ -33,6 +33,9 @@
     "webpack-dev-server": {
       "path-to-regexp": "^8.4.2"
     },
+    "webpack-bundle-analyzer": {
+      "ws": "^7.5.13"
+    },
     "sockjs": {
       "uuid": "^14.0.0"
     }
