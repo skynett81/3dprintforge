@@ -4,6 +4,35 @@ All notable changes to 3DPrintForge.
 
 ---
 
+## Unreleased — v2 dashboard, MCP, native slicer & a full security pass
+
+The `v2` development line was consolidated into `main`, and the GitHub
+code-scanning / dependency backlog was cleared.
+
+### New on the main line (from the v2 branch)
+- **React `/v2` dashboard** — a second, modern dashboard served at `/v2`, sharing the same backend and REST API as the classic dashboard
+- **MCP server** — control the printer fleet and inventory from Claude (or any MCP client) via the Model Context Protocol (`server/mcp-server.js`)
+- **Native slicer** — a built-in pure-JS slicing engine alongside the existing Slicer Bridge to OrcaSlicer/BambuStudio/Snapmaker Orca CLI
+- **Deeper inventory** — suppliers, purchase orders, unified stock ledger, reorder engine and stocktake on top of the existing spool inventory
+
+### Security
+- Fixed every CodeQL finding in the code: XSS escaping, SSRF guards (`server/ssrf-guard.js`), path-traversal containment (`server/path-safety.js`), prototype-pollution guards, log-forging and file-system-race fixes
+- **Broken-access-control fix** — sensitive GET reads (API keys, user list, database backups, notification/store secrets, remote-node and network config) are now admin-only instead of readable by any low-privilege `view` user
+- Enabled Dependabot and secret push protection; patched all dependency advisories across the server, the `/v2` frontend and the docs site to zero
+
+---
+
+## v1.1.25 — Shop & CRM storefront (2026-07-12)
+
+Built-in commerce: a public storefront, order and invoice management, and margin analytics.
+
+### Shop & CRM
+- Public storefront at `/shop` — a catalog of active products (public-safe fields only) with unauthenticated customer order placement
+- CRM — customers, orders, invoices (printable HTML), and per-product margin / unit-COGS analytics
+- Buy-side — supplier price comparison, purchase orders with shipment tracking, a cross-supplier shopping list, and an auto-reorder scheduler
+
+---
+
 ## v1.1.24 — Spoolman server, OBS overlay, pressure-advance pattern calibration & a big QoL/accessibility pass (2026-06-11)
 
 A large quality release. 3DPrintForge becomes a drop-in Spoolman server, ships an embeddable OBS/kiosk streaming overlay, adds the line-pattern pressure-advance calibration method, and lands a broad quality-of-life, undo-safety and accessibility sweep across the whole UI — plus authenticator-app 2FA for Bambu Cloud login and several real fixes for features that silently did nothing.

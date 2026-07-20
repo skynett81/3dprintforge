@@ -14,22 +14,21 @@ Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
 - **Real-time monitoring** — live temperature gauges, sparkline graphs, print progress, 3D model preview
 - **Multi-printer** — manage all your printers from one dashboard with instant switching
+- **Two dashboards** — the classic zero-framework dashboard, plus a modern React dashboard at `/v2` (same backend and API)
 - **Print Guard** — automatic protection using xcam + 5 sensor monitors (temp, filament, fan, stall, errors)
 - **Print Queue** — multi-printer dispatch with load balancing and pre-print filament checks
-- **Filament Inventory** — favorites, color filters, bulk add, HueForge TD, CSV import, Spoolman sync
-- **Model Forge** — 51 parametric 3D generators across 8 categories: organization (Gridfinity, storage boxes, cable labels), mechanical (gears, pulleys, springs, hinges, snap-fits), printer (spool adapters, cable chains, first-layer tests, nozzle storage), home (hooks, clips, pots, organizers, wall plates, lidded boxes), tech (phone/headphone stands, VESA mounts, Raspberry Pi cases, battery holders), creative (voronoi, topographic maps, 3D QR, shapes, honeycomb, dice towers, miniature bases)
-- **Slicer Studio** — built-in pure-JS slicing engine + Slicer Bridge to OrcaSlicer/BambuStudio/Snapmaker Orca CLI, with profile system and Three.js viewport
-- **Scene Composer** — 3D scene editor with BSP-tree CSG (boolean mesh operations)
-- **AI Model Forge** — text-to-3D generator with intent parser
-- **Mesh Repair Toolkit** — automatic repair of broken STL/3MF files
-- **Cloud Slicer** — upload files, auto-slice with OrcaSlicer/PrusaSlicer, FTPS to printer
+- **Inventory system** — spools, stock ledger, suppliers, purchase orders, BOM, QR labels, stocktake, reorder engine, warranty/attachments, HueForge TD, CSV import, Spoolman + SpoolmanDB sync
+- **Shop & CRM** — built-in public storefront (`/shop`), customer orders, invoices, and per-product margin/COGS analytics
+- **Slicer Studio** — built-in pure-JS native slicing engine + Slicer Bridge to OrcaSlicer/BambuStudio/Snapmaker Orca CLI, with a profile system, Three.js viewport, and FTPS/upload-to-printer
+- **Model Forge** — 50 parametric 3D generators across 8 categories: organization (Gridfinity, storage boxes, cable labels), mechanical (gears, pulleys, springs, hinges, snap-fits), printer (spool adapters, cable chains, first-layer tests, nozzle storage), home (hooks, clips, pots, organizers, wall plates, lidded boxes), tech (phone/headphone stands, VESA mounts, Raspberry Pi cases, battery holders), creative (voronoi, topographic maps, 3D QR, shapes, honeycomb, dice towers, miniature bases)
+- **MCP server** — control your printer fleet and inventory from Claude (or any MCP client) via the Model Context Protocol
 - **7 notification channels** — Telegram, Discord, Email, Webhook, ntfy, Pushover, SMS
 - **17 brands / 93 models** — Bambu Lab, Snapmaker, Prusa, Creality, Elegoo, Voron, RatRig, QIDI, Sovol, Anycubic, BIQU, Kywoo, Mingda, Tronxy, Two Trees, AnkerMake, FlashForge, plus any Klipper/Moonraker, OctoPrint, Duet/RRF or Repetier-Server host
-- **Security hardened** — CIS/NIS2 aligned: scrypt auth, CSRF, CSP, rate limiting, TOFU cert pinning, SSRF guards
-- **590+ API endpoints** — full REST API with OpenAPI docs at `/api/docs`
+- **Security hardened** — role-based access control (scrypt auth, RBAC), CSRF, CSP, HSTS, rate limiting, SSRF guards, path-traversal containment, TOFU cert pinning. CodeQL code scanning and Dependabot clean
+- **1000+ API endpoints** — full REST API with OpenAPI docs at `/api/docs`
 - **English UI** — entire application in English, documentation site available in English and Norwegian
 - **Docusaurus documentation** — available at `/docs/` and on GitHub Pages
-- **Zero frameworks** — pure HTML/CSS/JS frontend, Node.js 22 backend with 12 npm packages
+- **No web framework** — vanilla HTML/CSS/JS classic frontend, React only for the `/v2` dashboard, Node.js 22 backend with 16 npm dependencies and the built-in SQLite
 - **Desktop app (Electron)** — optional native desktop build for Linux (AppImage, deb, rpm, Flatpak, tar.gz), Windows, macOS with system tray, native notifications, auto-updater, and auto-start at login
 
 ---
@@ -392,7 +391,7 @@ Configure in **Settings > Notifications** in the dashboard:
 | Pushover | API token + user key |
 | SMS | Twilio or generic HTTP gateway |
 
-13 events available including print status, errors, maintenance, queue, and filament alerts. Quiet hours supported.
+Events for print status, printer errors, maintenance, queue, drying, and filament/low-stock alerts, with per-event channel routing and priority. Quiet hours supported.
 
 ---
 

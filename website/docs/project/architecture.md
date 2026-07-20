@@ -16,7 +16,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla HTML/CSS/JS — 31 component modules, no build step, no frameworks |
-| Backend | Node.js 22 with 6 npm packages: `mqtt`, `ws`, `basic-ftp`, `admin-lte`, `ssh2`, `@3mfconsortium/lib3mf` |
+| Backend | Node.js 22 with 16 runtime npm packages: `mqtt`, `ws`, `basic-ftp`, `ssh2`, `qrcode`, `jszip`, `admin-lte`, `bootstrap`, `@3mfconsortium/lib3mf`, `@snapmaker/snapmaker-sacp-sdk`, `@jscad/modeling`, `@jscad/stl-serializer`, `@modelcontextprotocol/sdk`, `clipper-lib`, `occt-import-js`, `tigertag` |
 | Database | SQLite (built into Node.js 22 via SQLite (innebygd)) |
 | Camera | ffmpeg transcodes RTSPS to MPEG1, jsmpeg renders in browser |
 | Real-time | WebSocket hub broadcasts printer state to all connected clients |
@@ -40,8 +40,8 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 |--------|---------|
 | `index.js` | HTTP/HTTPS servers, auto-SSL, CSP/HSTS headers, static files, demo mode |
 | `config.js` | Configuration loading, defaults, env overrides, and migrations |
-| `database.js` | SQLite schema, 60 migrations, CRUD operations |
-| `api-routes.js` | REST API (590+ endpoints) |
+| `database.js` | SQLite schema, 175 migrations, CRUD operations |
+| `api-routes.js` | REST API (1000+ endpoints) |
 | `auth.js` | Authentication and session management |
 | `backup.js` | Backup and restore functionality |
 | `printer-manager.js` | Printer lifecycle, MQTT connection management |
@@ -63,6 +63,11 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 | `ecom-license.js` | License management |
 | `failure-detection.js` | Failure detection and analysis |
 | `mesh-builder.js` | Parametric 3D mesh generation (createBox, createCylinder, createText) |
+| `native-slicer.js` | Built-in pure-JS slicing engine (bridge to OrcaSlicer/BambuStudio CLI optional) |
+| `mcp-server.js` | Model Context Protocol server — control fleet + inventory from Claude |
+| `crm-invoice.js` | Invoice generation for the Shop & CRM module |
+
+> The modern React `/v2` dashboard is a separate frontend served on the same backend and API; its source lives in `frontend/`.
 
 ### Demo Modules
 
@@ -131,8 +136,8 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 ├── server/                    # Backend (24 modules)
 │   ├── index.js               # Entry point (auto-SSL, CSP, HSTS)
 │   ├── config.js              # Configuration
-│   ├── database.js            # SQLite database (60 migrations)
-│   ├── api-routes.js          # REST API (590+ endpoints)
+│   ├── database.js            # SQLite database (175 migrations)
+│   ├── api-routes.js          # REST API (1000+ endpoints)
 │   ├── auth.js                # Authentication
 │   ├── backup.js              # Backup and restore
 │   ├── printer-manager.js     # Printer management
@@ -154,7 +159,7 @@ Browser <──WS:9001+──> ffmpeg  <──RTSPS:322───> Camera
 │   ├── ecom-license.js        # License management
 │   ├── failure-detection.js   # Failure detection
 │   ├── mesh-builder.js        # Parametric 3D mesh generation
-│   ├── generators/            # Model Forge generators (51 tools)
+│   ├── generators/            # Model Forge generators (50 tools)
 │   │   ├── sign-maker.js      # Sign Maker
 │   │   ├── lithophane.js      # Lithophane
 │   │   ├── storage-box.js     # Storage Box

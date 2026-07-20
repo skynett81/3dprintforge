@@ -67,13 +67,39 @@ Complete feature list for 3DPrintForge v1.1.16.
 - **Shareable color palette** — public URL with color swatches and view counter
 - **Enhanced import** — drag-and-drop CSV/JSON with auto-detection for Polymaker, Prusament, eSUN, Spoolman formats
 - **Duplicate detection** during import with preview table
-- **Spoolman integration** — optional connection to external Spoolman server
+- **Spoolman integration** — optional connection to external Spoolman server, plus periodic SpoolmanDB catalog sync
 - Stock health visualization, low stock warnings
+
+### Full Inventory System
+
+Beyond spool tracking, 3DPrintForge includes a complete inventory management system:
+
+- **Stock ledger** — unified, append-only movement log with manual stock adjustments
+- **Suppliers & price comparison** — track suppliers and compare per-item pricing
+- **Purchase orders** — create POs, track shipments across suppliers, cross-supplier shopping list
+- **Reorder engine** — automatic reorder point detection and auto-reorder scheduling
+- **Bill of Materials (BOM)** — multi-part assemblies with build reservations
+- **QR labels & stocktake** — printable QR labels for locations/items and guided stocktake
+- **Warranty & attachments** — warranty tracking and file attachments per item
+- **CSV import/export** across inventory entities
+
+## Shop & CRM
+
+- **Public storefront** — customer-facing catalog served at `/shop`
+- **Customer orders** — order capture, fulfillment tracking, and status management
+- **Invoices** — invoice generation and CRM records
+- **Margin & COGS** — per-product margin engine with cost-of-goods tracking
+
+## MCP Server
+
+- **Model Context Protocol server** — control the printer fleet and inventory directly from Claude (or any MCP client)
+- Add with `claude mcp add` pointing at `server/mcp-server.js`
 
 ## Cloud Slicer
 
 - **File upload** — drag-and-drop upload zone for 3MF, G-code, STL, OBJ, STEP (up to 100 MB)
-- **Local slicer bridge** — auto-detects OrcaSlicer and PrusaSlicer CLI
+- **Native slicer** — built-in pure-JS slicing engine (regions, supports, tree supports, infill patterns, Arachne/beading, arc fitting) with no external dependency
+- **Local slicer bridge** — auto-detects OrcaSlicer / BambuStudio / PrusaSlicer CLI
 - **Automatic slicing** — STL/OBJ/STEP to 3MF with filament estimates and print time
 - **FTPS upload** — uploads sliced files directly to printer SD card
 - Job tracking (uploading, slicing, ready, uploaded)
@@ -134,14 +160,15 @@ Quiet hours support — no notifications during specified time window.
 - **Auto-update** — checks GitHub Releases, one-click update with automatic backup
 - **Setup wizard** — web-based first-time configuration
 - **Zero framework frontend** — pure HTML/CSS/JS, no build step
+- **/v2 React dashboard** — a second, modern React dashboard served at `/v2` on the same backend and API (source in `frontend/`)
 - **Layout lock** — drag-and-drop module ordering in all panels
 - **Demo mode** — 3 mock printers for testing without hardware
 - **Pterodactyl / wisp.gg** — ready-made egg file for game panel hosting
 - **HMS error database** — 269 error codes with descriptions and wiki links
 
-## Model Forge (51 tools)
+## Model Forge (50 tools)
 
-51 parametric 3D generators across 8 categories, built into the dashboard — create custom models without leaving the browser. A selection:
+50 parametric 3D generators across 8 categories, built into the dashboard — create custom models without leaving the browser. A selection:
 
 | Tool | Description |
 |------|-------------|
@@ -174,7 +201,7 @@ Quiet hours support — no notifications during specified time window.
 
 ## Security
 
-10 hardening improvements (CIS/NIS2 compliant):
+Hardening improvements (CIS/NIS2 aligned):
 
 - **TOFU cert pinning** — Trust-on-first-use certificate pinning for MQTT connections
 - **First-message WebSocket authentication** — secure WS connection from first message
@@ -183,13 +210,16 @@ Quiet hours support — no notifications during specified time window.
 - **HTTPS by default** — auto-generated self-signed SSL certificates, forced HTTPS redirect, HSTS headers
 - **CSRF protection** — validation on state-changing requests
 - **Rate limiting** — 200 req/min per IP (API), 5 login attempts per 15 min
-- **Session management** — role-based permissions (admin, controls, print, queue, view)
+- **Session management** — role-based access control (admin, controls, print, queue, view)
 - **API key support** — Bearer token or X-API-Key header authentication
+- **SSRF guard** — outbound requests (image cache, webhooks, price checks) validated against a private-IP block-list
+- **Path-traversal containment** — user-supplied file paths normalised and confined to allowed directories
+- **CI security scanning** — CodeQL and Dependabot run in GitHub Actions (currently clean)
 - **Server management** — restart and clear cache from the dashboard
 
 ## API
 
-- **590+ REST endpoints** with OpenAPI documentation at `/api/docs`
+- **1000+ REST endpoints** with OpenAPI documentation at `/api/docs`
 - Rate limiting with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
 - RESTful pattern: `GET/POST/PUT/DELETE /api/{resource}[/:id]`
 - Error responses: `{ error: "message" }` with appropriate HTTP status codes
