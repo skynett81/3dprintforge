@@ -269,7 +269,21 @@ function _loadSpoolmanDb() {
 
 // Map route patterns to required permissions for write operations
 // GET routes require 'view' (all roles have this). Write routes are gated by category.
-function getRoutePermission(method, path) {
+export function getRoutePermission(method, path) {
+  // Sensitive admin resources are admin-only for ALL methods, INCLUDING
+  // GET. These reads expose API keys, user PII, full-database backups,
+  // notification-channel and storefront credentials, and remote-node
+  // secrets — a low-privilege 'view' user must not be able to read them.
+  // (Checked before the blanket GET->view rule below.)
+  if (path.startsWith('/api/keys') || path.startsWith('/api/users') || path.startsWith('/api/roles')) return 'admin';
+  if (path.startsWith('/api/backup')) return 'admin';
+  if (path.startsWith('/api/webhooks')) return 'admin';
+  if (path.startsWith('/api/remote-nodes')) return 'admin';
+  if (path.startsWith('/api/network') || path.startsWith('/api/discovery')) return 'admin';
+  if (path === '/api/notifications/config') return 'admin';
+  if (path.startsWith('/api/ecommerce/configs')) return 'admin';
+  if (path === '/api/auth/config' || path.startsWith('/api/auth/totp')) return 'admin';
+
   if (method === 'GET') return 'view';
 
   // Admin-only routes
