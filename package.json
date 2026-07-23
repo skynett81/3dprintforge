@@ -55,17 +55,17 @@
     "bootstrap": "^5.3.8",
     "clipper-lib": "^6.4.2",
     "jszip": "^3.10.1",
-    "mqtt": "^5.15.1",
+    "mqtt": "^5.15.2",
     "occt-import-js": "^0.0.23",
     "qrcode": "^1.5.4",
     "ssh2": "^1.17.0",
     "tigertag": "^1.1.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "axe-core": "^4.12.1",
     "electron": "^41.5.0",
-    "electron-builder": "^26.8.1",
+    "electron-builder": "^26.15.3",
     "electron-updater": "^6.8.3"
   },
   "overrides": {
