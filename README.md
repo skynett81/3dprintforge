@@ -4,6 +4,13 @@
 
 Created by **SkyNett81** &bull; [AGPL-3.0 License](LICENSE)
 
+[![Tests](https://github.com/skynett81/3dprintforge/actions/workflows/test.yml/badge.svg)](https://github.com/skynett81/3dprintforge/actions/workflows/test.yml)
+[![CodeQL](https://github.com/skynett81/3dprintforge/actions/workflows/codeql.yml/badge.svg)](https://github.com/skynett81/3dprintforge/actions/workflows/codeql.yml)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub Discussions](https://img.shields.io/github/discussions/skynett81/3dprintforge)](https://github.com/skynett81/3dprintforge/discussions)
+
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21NRKM7)
 
 ![3DPrintForge](docs/project/dashboard.png)
