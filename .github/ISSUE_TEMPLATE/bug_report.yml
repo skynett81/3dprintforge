@@ -1,0 +1,83 @@
+name: 🐛 Bug report
+description: Report something that isn't working correctly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections
+        below so we can reproduce and fix it quickly.
+  - type: checkboxes
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues and this hasn't been reported yet
+          required: true
+        - label: I'm running a recent version of 3DPrintForge
+          required: true
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the problem?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 3DPrintForge version
+      description: Shown in the startup banner or the UI footer.
+      placeholder: "e.g. 1.1.25"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Node.js version
+      placeholder: "output of: node -v"
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: How are you running it?
+      options:
+        - npm (bare metal)
+        - Docker
+        - Electron desktop app
+        - Pterodactyl egg
+        - Other
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Operating system
+      placeholder: "e.g. Ubuntu 24.04, Windows 11, macOS 15"
+  - type: input
+    attributes:
+      label: Printer(s) involved
+      description: Brand, model, and connection protocol if the bug is printer-related.
+      placeholder: "e.g. Bambu Lab P1S (MQTT/LAN)"
+  - type: textarea
+    attributes:
+      label: Logs
+      description: |
+        Relevant server logs. If you run via systemd:
+        `journalctl --user -u 3dprintforge --since "10 minutes ago"`
+      render: shell
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Screenshots, config snippets (redact secrets!), anything else.

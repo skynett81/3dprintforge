@@ -1,0 +1,43 @@
+name: 🖨️ Printer support request
+description: Request support for a printer brand, model, or protocol
+labels: ["printer-support", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Want 3DPrintForge to support your printer? The more detail you provide
+        about how it communicates, the more likely it can be added.
+  - type: input
+    attributes:
+      label: Printer brand and model
+      placeholder: "e.g. Elegoo Neptune 4 Pro"
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: What firmware / control interface does it use?
+      options:
+        - Klipper / Moonraker
+        - OctoPrint
+        - PrusaLink
+        - Bambu Lab (MQTT)
+        - Snapmaker (SACP / HTTP)
+        - Duet / RepRapFirmware
+        - Repetier-Server
+        - FlashForge
+        - AnkerMake
+        - Proprietary / cloud only
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: API / protocol details
+      description: >
+        Any docs, IP/port info, or details about how the printer exposes its
+        state and accepts commands. Links to firmware/API documentation are gold.
+  - type: checkboxes
+    attributes:
+      label: Can you help test?
+      options:
+        - label: I own this printer and can test a work-in-progress integration

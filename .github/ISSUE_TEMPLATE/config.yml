@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/skynett81/3dprintforge/discussions
+    about: Ask questions, share setups, and discuss ideas with the community.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/skynett81/3dprintforge/security/advisories/new
+    about: Please report security issues privately — do NOT open a public issue.
+  - name: 📖 Documentation
+    url: https://skynett81.github.io/3dprintforge/
+    about: Setup guides, printer configuration, and feature docs.

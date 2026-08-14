@@ -441,11 +441,20 @@ docker compose pull && docker compose up -d
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b my-feature`
-3. Run in dev mode: `npm run dev`
-4. Test with demo: `npm run demo`
-5. Submit a pull request
+Contributions are very welcome — bug reports, features, printer integrations,
+translations, and docs. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full
+guide, and please follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Quick start:
+
+1. Fork the repository and create a feature branch: `git checkout -b feat/my-feature`
+2. Install and run against simulated printers: `npm install && npm run demo`
+3. Make your change and add tests
+4. Run the checks: `npm test` (and `npm --prefix frontend test` if you touched `/v2`)
+5. Open a pull request against `main`
+
+New here? Look for issues labelled **good first issue**. Questions? Start a
+[Discussion](https://github.com/skynett81/3dprintforge/discussions).
 
 ---
 
