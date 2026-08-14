@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { useT } from '../i18n';
 
 export interface CommandItem {

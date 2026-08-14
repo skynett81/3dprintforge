@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState, type JSX } from 'react';
 import { useAuth, useResource } from './hooks';
 import { parseHash, buildHash } from './router';
 import { api } from './api';
