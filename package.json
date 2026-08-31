@@ -51,7 +51,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@snapmaker/snapmaker-sacp-sdk": "^0.1.1",
     "admin-lte": "^4.0.0-rc7",
-    "basic-ftp": "^6.0.1",
+    "basic-ftp": "^6.2.1",
     "bootstrap": "^5.3.8",
     "clipper-lib": "^6.4.2",
     "jszip": "^3.10.1",
@@ -65,7 +65,7 @@
   "devDependencies": {
     "axe-core": "^4.12.1",
     "electron": "^43.4.0",
-    "electron-builder": "^26.8.1",
+    "electron-builder": "^26.15.3",
     "electron-updater": "^6.8.3"
   },
   "overrides": {
