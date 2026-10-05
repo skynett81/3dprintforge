@@ -55,7 +55,7 @@
     "basic-ftp": "^6.2.1",
     "bootstrap": "^5.3.8",
     "clipper-lib": "^6.4.2",
-    "jszip": "^3.10.1",
+    "jszip": "^3.10.2",
     "mqtt": "^5.15.1",
     "occt-import-js": "^0.0.23",
     "qrcode": "^1.5.4",
